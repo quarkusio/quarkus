@@ -19,12 +19,10 @@ import java.util.ArrayList;
 import java.util.Base64;
 import java.util.EnumMap;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalInt;
-import java.util.Set;
 import java.util.StringTokenizer;
 import java.util.concurrent.Callable;
 import java.util.function.Function;
@@ -57,6 +55,7 @@ import io.quarkus.oidc.common.runtime.config.OidcCommonConfig.Tls.Verification;
 import io.quarkus.proxy.ProxyConfigurationRegistry;
 import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.runtime.util.ClassPathUtils;
+import io.quarkus.spiffe.client.SpiffeClient;
 import io.quarkus.tls.runtime.config.TlsConfigUtils;
 import io.smallrye.jwt.algorithm.SignatureAlgorithm;
 import io.smallrye.jwt.build.Jwt;
@@ -64,15 +63,16 @@ import io.smallrye.jwt.build.JwtSignatureBuilder;
 import io.smallrye.jwt.util.KeyUtils;
 import io.smallrye.jwt.util.ResourceUtils;
 import io.smallrye.mutiny.Uni;
+import io.vertx.core.MultiMap;
+import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpClientOptions;
 import io.vertx.core.http.HttpHeaders;
+import io.vertx.core.http.PoolOptions;
 import io.vertx.core.json.DecodeException;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.net.KeyStoreOptions;
 import io.vertx.core.net.ProxyOptions;
-import io.vertx.mutiny.core.MultiMap;
 import io.vertx.mutiny.core.Vertx;
-import io.vertx.mutiny.core.buffer.Buffer;
 import io.vertx.mutiny.ext.web.client.HttpRequest;
 import io.vertx.mutiny.ext.web.client.HttpResponse;
 
@@ -180,21 +180,89 @@ public class OidcCommonUtils {
                             "'%1$scredentials.secret' and '%1$scredentials.client-secret' properties are mutually exclusive",
                             configPrefix));
         }
-        if ((creds.secret().isPresent() || creds.clientSecret().value().isPresent()) && creds.jwt().secret().isPresent()) {
+        boolean clientSecretConfigured = creds.secret().isPresent()
+                || creds.clientSecret().value().isPresent()
+                || creds.clientSecret().provider().key().isPresent();
+        boolean jwtSecretConfigured = creds.jwt().secret().isPresent()
+                || creds.jwt().secretProvider().key().isPresent();
+
+        if (clientSecretConfigured && jwtSecretConfigured) {
             throw new ConfigurationException(
                     String.format(
-                            "Use only '%1$scredentials.secret' or '%1$scredentials.client-secret' or '%1$scredentials.jwt.secret' property",
+                            "Only one of client secret or JWT secret authentication methods can be configured,"
+                                    + " but '%1$scredentials' has both a client secret and a JWT secret property set",
                             configPrefix));
         }
+        int jwtKeyPropsCount = (creds.jwt().key().isPresent() ? 1 : 0)
+                + (creds.jwt().keyFile().isPresent() ? 1 : 0)
+                + (creds.jwt().keyStoreFile().isPresent() ? 1 : 0);
+        if (jwtKeyPropsCount > 1) {
+            throw new ConfigurationException(
+                    String.format(
+                            "Only one of '%1$scredentials.jwt.key', '%1$scredentials.jwt.key-file'"
+                                    + " or '%1$scredentials.jwt.key-store-file' can be configured",
+                            configPrefix));
+        }
+        boolean jwtKeyConfigured = jwtKeyPropsCount == 1;
+        boolean jwtBearerOrSpiffe = creds.jwt().source() == Source.BEARER
+                || creds.jwt().source() == Source.SPIFFE_JWT;
+
+        if (jwtSecretConfigured && jwtKeyConfigured) {
+            throw new ConfigurationException(
+                    String.format(
+                            "Only one of JWT secret or JWT private key authentication methods can be configured,"
+                                    + " but '%1$scredentials.jwt' has both a JWT secret and a JWT key property set",
+                            configPrefix));
+        }
+        if (clientSecretConfigured && jwtKeyConfigured) {
+            throw new ConfigurationException(
+                    String.format(
+                            "Only one of client secret or JWT private key authentication methods can be configured,"
+                                    + " but '%1$scredentials' has both a client secret and a JWT key property set",
+                            configPrefix));
+        }
+        if (clientSecretConfigured && jwtBearerOrSpiffe) {
+            throw new ConfigurationException(
+                    String.format(
+                            "Only one of client secret or JWT bearer/SPIFFE authentication methods can be configured,"
+                                    + " but '%1$scredentials' has both a client secret and '%1$scredentials.jwt.source=%2$s' set",
+                            configPrefix, creds.jwt().source().toString().toLowerCase()));
+        }
+        if (jwtKeyConfigured && jwtBearerOrSpiffe) {
+            throw new ConfigurationException(
+                    String.format(
+                            "Only one of JWT private key or JWT bearer/SPIFFE authentication methods can be configured,"
+                                    + " but '%1$scredentials' has both a JWT key property and '%1$scredentials.jwt.source=%2$s' set",
+                            configPrefix, creds.jwt().source().toString().toLowerCase()));
+        }
+        if (jwtSecretConfigured && jwtBearerOrSpiffe) {
+            throw new ConfigurationException(
+                    String.format(
+                            "Only one of JWT secret or JWT bearer/SPIFFE authentication methods can be configured,"
+                                    + " but '%1$scredentials' has both a JWT secret and '%1$scredentials.jwt.source=%2$s' set",
+                            configPrefix, creds.jwt().source().toString().toLowerCase()));
+        }
+
         Credentials.Jwt jwt = creds.jwt();
-        if (jwt.source() != Credentials.Jwt.Source.CLIENT) {
+        if (jwt.source() == Source.BEARER) {
             if (isServerConfig && jwt.tokenPath().isEmpty()) {
                 throw new ConfigurationException(
-                        "Token path must be set when the JWT source is '" + jwt.source().name().toLowerCase() + "'");
+                        String.format("'%scredentials.jwt.token-path' must be set when the JWT source is 'bearer'",
+                                configPrefix));
             }
-        } else if (jwt.tokenPath().isPresent()) {
-            throw new ConfigurationException(
-                    "Token path can only be set when the JWT source is 'bearer' or 'spiffe'");
+        } else if (jwt.source() == Source.SPIFFE_JWT) {
+            if (jwt.tokenPath().isEmpty() && Arc.container().select(SpiffeClient.class).isUnsatisfied()) {
+                throw new ConfigurationException(String.format(
+                        "'%1$scredentials.jwt.source' is set to 'spiffe-jwt', but no SPIFFE JWT-SVID provider is available."
+                                + " Either set '%1$scredentials.jwt.token-path' to a file containing the JWT-SVID,"
+                                + " or add the 'quarkus-spiffe-client' extension to fetch JWT-SVIDs"
+                                + " from the SPIFFE Workload API",
+                        configPrefix));
+            }
+        } else if (jwt.source() == Source.CLIENT && jwt.tokenPath().isPresent()) {
+            throw new ConfigurationException(String.format(
+                    "'%scredentials.jwt.token-path' can only be set when the JWT source is 'bearer' or 'spiffe-jwt'",
+                    configPrefix));
         }
     }
 
@@ -227,6 +295,7 @@ public class OidcCommonUtils {
     }
 
     public static void setHttpClientOptions(OidcCommonConfig oidcConfig, HttpClientOptions options,
+            PoolOptions poolOptions,
             TlsConfigSupport tlsSupport, ProxyConfigurationRegistry proxyConfigurationRegistry) {
 
         Optional<ProxyOptions> proxyOpt = toProxyOptions(oidcConfig.proxy(), proxyConfigurationRegistry);
@@ -236,7 +305,7 @@ public class OidcCommonUtils {
 
         OptionalInt maxPoolSize = oidcConfig.maxPoolSize();
         if (maxPoolSize.isPresent()) {
-            options.setMaxPoolSize(maxPoolSize.getAsInt());
+            poolOptions.setHttp1MaxSize(maxPoolSize.getAsInt());
         }
 
         options.setConnectTimeout((int) oidcConfig.connectionTimeout().toMillis());
@@ -423,30 +492,12 @@ public class OidcCommonUtils {
                         && clientSecretMethod(creds) == Secret.Method.BASIC);
     }
 
-    public static boolean isClientJwtAuthRequired(Credentials creds, boolean server) {
-        Set<String> props = new HashSet<>();
-        if (creds.jwt().secret().isPresent()) {
-            props.add(".credentials.jwt.secret");
-        }
-        if (creds.jwt().secretProvider().key().isPresent()) {
-            props.add(".credentials.jwt.secret-provider.key");
-        }
-        if (creds.jwt().key().isPresent()) {
-            props.add(".credentials.jwt.key");
-        }
-        if (creds.jwt().keyFile().isPresent()) {
-            props.add(".credentials.jwt.key-file");
-        }
-        if (creds.jwt().keyStoreFile().isPresent()) {
-            props.add(".credentials.jwt.key-store-file");
-        }
-        if (props.size() > 1) {
-            final String prefix = server ? "quarkus.oidc" : "quarkus.oidc-client";
-            throw new ConfigurationException("""
-                    Only a single OIDC JWT credential key property can be configured, but you have configured: %s"""
-                    .formatted(props.stream().map(p -> (prefix + p)).collect(Collectors.joining(","))));
-        }
-        return props.size() == 1;
+    public static boolean isClientJwtAuthRequired(Credentials creds) {
+        return creds.jwt().secret().isPresent()
+                || creds.jwt().secretProvider().key().isPresent()
+                || creds.jwt().key().isPresent()
+                || creds.jwt().keyFile().isPresent()
+                || creds.jwt().keyStoreFile().isPresent();
     }
 
     public static boolean isClientSecretPostAuthRequired(Credentials creds) {
@@ -621,8 +672,8 @@ public class OidcCommonUtils {
 
     }
 
-    public static Uni<Key> initClientJwtKey(OidcClientCommonConfig oidcConfig, boolean server) {
-        if (isClientJwtAuthRequired(oidcConfig.credentials(), server)) {
+    public static Uni<Key> initClientJwtKey(OidcClientCommonConfig oidcConfig) {
+        if (isClientJwtAuthRequired(oidcConfig.credentials())) {
             return clientJwtKey(oidcConfig.credentials());
         }
         return Uni.createFrom().nullItem();
@@ -946,6 +997,10 @@ public class OidcCommonUtils {
 
     public static String getJwtContentPart(String jwt) {
         StringTokenizer tokens = new StringTokenizer(jwt, ".");
+        if (!tokens.hasMoreTokens()) {
+            // An empty or delimiter-only token has no parts at all.
+            return null;
+        }
         // part 1: skip the token headers
         tokens.nextToken();
         if (!tokens.hasMoreTokens()) {
@@ -993,17 +1048,30 @@ public class OidcCommonUtils {
         });
     }
 
-    public static ClientAssertionProvider getClientAssertionProvider(io.vertx.core.Vertx vertx, Credentials credentialsConfig,
-            Function<String, RuntimeException> exceptionCreator) {
+    public static ClientAssertionProvider getClientAssertionProvider(io.vertx.core.Vertx vertx,
+            Credentials credentialsConfig, Optional<String> authServerUrl) {
         var jwtConfig = credentialsConfig.jwt();
         if (jwtConfig.source() != Source.CLIENT && jwtConfig.tokenPath().isPresent()) {
             var clientAssertionProvider = new KubernetesServiceClientAssertionProvider(vertx, jwtConfig.tokenPath().get(),
                     jwtConfig.source());
-            if (clientAssertionProvider.getClientAssertion() == null) {
-                throw exceptionCreator
-                        .apply("Cannot find a valid "
-                                + (jwtConfig.source() == Source.SPIFFE_JWT ? "SPIFFE JWT-SVID" : "JWT bearer")
-                                + " token at path: " + jwtConfig.tokenPath().get());
+            if (clientAssertionProvider.getAvailableClientAssertion() == null) {
+                LOG.warnf("Cannot find a valid %s token at path: %s, deferring token loading to request time",
+                        jwtConfig.source() == Source.SPIFFE_JWT ? "SPIFFE JWT-SVID" : "JWT bearer",
+                        jwtConfig.tokenPath().get());
+            }
+            return clientAssertionProvider;
+        } else if (jwtConfig.source() == Source.SPIFFE_JWT) {
+            var audience = jwtConfig.audience().or(() -> authServerUrl).orElseThrow(
+                    () -> new ConfigurationException(
+                            "'credentials.jwt.source' is set to 'spiffe-jwt', but no audience is available."
+                                    + " Either set 'credentials.jwt.audience' or 'auth-server-url'"));
+            var clientAssertionProvider = SpiffeClientAssertionProvider.forAudience(vertx, audience);
+            if (clientAssertionProvider == null) {
+                throw new ConfigurationException(
+                        "'credentials.jwt.source' is set to 'spiffe-jwt', but no SPIFFE JWT-SVID provider is available."
+                                + " Either set 'credentials.jwt.token-path' to a file containing the JWT-SVID,"
+                                + " or add the 'quarkus-spiffe-client' extension to fetch JWT-SVIDs"
+                                + " from the SPIFFE Workload API");
             }
             return clientAssertionProvider;
         }

@@ -16,7 +16,7 @@ import io.quarkus.redis.datasource.keys.ReactiveKeyCommands;
 import io.quarkus.redis.datasource.keys.ReactiveKeyScanCursor;
 import io.quarkus.redis.datasource.keys.RedisValueType;
 import io.smallrye.mutiny.Uni;
-import io.vertx.mutiny.redis.client.Response;
+import io.vertx.redis.client.Response;
 
 public class ReactiveKeyCommandsImpl<K> extends AbstractKeyCommands<K> implements ReactiveKeyCommands<K> {
 

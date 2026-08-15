@@ -58,6 +58,9 @@ public class ComponentDescriptor {
             if (!this.licenses.isEmpty()) {
                 this.licenses = new ArrayList<>(this.licenses);
             }
+            if (!this.components.isEmpty()) {
+                this.components = new ArrayList<>(this.components);
+            }
         }
 
         /**
@@ -212,6 +215,21 @@ public class ComponentDescriptor {
         }
 
         /**
+         * Adds a nested (bundled) component to this component.
+         *
+         * @param component the nested component descriptor
+         * @return this builder
+         */
+        public Builder addComponent(ComponentDescriptor component) {
+            Objects.requireNonNull(component, "component is required");
+            if (this.components.isEmpty()) {
+                this.components = new ArrayList<>(2);
+            }
+            this.components.add(component);
+            return this;
+        }
+
+        /**
          * Builds an immutable ComponentDescriptor from this builder.
          *
          * @return a new immutable ComponentDescriptor instance
@@ -239,6 +257,7 @@ public class ComponentDescriptor {
     protected String pedigree;
     protected boolean topLevel;
     protected List<LicenseInfo> licenses = List.of();
+    protected List<ComponentDescriptor> components = List.of();
 
     private ComponentDescriptor() {
     }
@@ -254,6 +273,7 @@ public class ComponentDescriptor {
         this.pedigree = builder.pedigree;
         this.topLevel = builder.topLevel;
         this.licenses = List.copyOf(builder.licenses);
+        this.components = List.copyOf(builder.components);
     }
 
     /**
@@ -395,6 +415,19 @@ public class ComponentDescriptor {
      */
     public List<LicenseInfo> getLicenses() {
         return licenses;
+    }
+
+    /**
+     * Gets nested (bundled) components contained within this component.
+     * <p>
+     * These represent artifacts that have been shaded or bundled into this
+     * component's JAR, detected by the presence of additional
+     * {@code META-INF/maven/.../pom.properties} entries.
+     *
+     * @return an unmodifiable list of nested component descriptors, empty if none
+     */
+    public List<ComponentDescriptor> getComponents() {
+        return components;
     }
 
     protected ComponentDescriptor ensureImmutable() {

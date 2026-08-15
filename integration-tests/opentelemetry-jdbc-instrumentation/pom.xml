@@ -80,7 +80,7 @@
         </dependency>
         <dependency>
             <groupId>org.testcontainers</groupId>
-            <artifactId>testcontainers-oracle-xe</artifactId>
+            <artifactId>testcontainers-oracle-free</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>

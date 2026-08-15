@@ -8,8 +8,9 @@ import jakarta.inject.Singleton;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.quarkus.reactive.datasource.PoolCreator;
 import io.quarkus.test.QuarkusExtensionTest;
-import io.vertx.pgclient.spi.PgDriver;
+import io.vertx.pgclient.PgBuilder;
 import io.vertx.sqlclient.Pool;
 
 public class MultiplePgPoolCreatorsForSameDatasourceTest {
@@ -30,11 +31,12 @@ public class MultiplePgPoolCreatorsForSameDatasourceTest {
     }
 
     @Singleton
-    public static class AnotherPgPoolCreator implements PgPoolCreator {
+    public static class AnotherPgPoolCreator implements PoolCreator {
 
         @Override
         public Pool create(Input input) {
-            return PgDriver.INSTANCE.createPool(input.vertx(), input.pgConnectOptionsList(), input.poolOptions());
+            return PgBuilder.pool().with(input.poolOptions()).using(input.vertx()).connectingTo(input.connectOptionsList())
+                    .build();
         }
     }
 

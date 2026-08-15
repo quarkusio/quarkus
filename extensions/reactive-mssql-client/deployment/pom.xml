@@ -43,6 +43,10 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-smallrye-health-spi</artifactId>
         </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-tls-registry-deployment-spi</artifactId>
+        </dependency>
 
         <dependency>
             <groupId>io.quarkus</groupId>
@@ -78,6 +82,12 @@
     </dependencies>
 
     <build>
+        <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>true</filtering>
+            </resource>
+        </resources>
         <testResources>
             <testResource>
                 <directory>src/test/resources</directory>
@@ -85,6 +95,34 @@
             </testResource>
         </testResources>
         <plugins>
+            <plugin>
+                <groupId>io.smallrye.certs</groupId>
+                <artifactId>smallrye-certificate-generator-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <!--
+                        Must execute early so that certs are available
+                        when the Docker Maven Plugin stops/starts the container.
+                         -->
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>generate</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <certificates>
+                        <certificate>
+                            <name>mssql-server</name>
+                            <formats>
+                                <format>PEM</format>
+                            </formats>
+                            <cn>sql1</cn>
+                            <duration>2</duration>
+                        </certificate>
+                    </certificates>
+                </configuration>
+            </plugin>
             <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <executions>
@@ -106,6 +144,9 @@
                 <artifactId>maven-surefire-plugin</artifactId>
                 <configuration>
                     <skip>true</skip>
+                    <systemPropertyVariables combine.children="append">
+                        <mssql.default.version>${mssql.default.version}</mssql.default.version>
+                    </systemPropertyVariables>
                 </configuration>
             </plugin>
         </plugins>
@@ -148,6 +189,9 @@
                                     <name>${mssql.image}</name>
                                     <alias>quarkus-test-mssql</alias>
                                     <run>
+                                        <!-- Workaround for https://github.com/microsoft/mssql-docker/issues/954
+                                            SQL Server 2025 crashes when the visible CPU count is not a power of 2. -->
+                                        <cpuSet>0</cpuSet>
                                         <ports>
                                             <port>1435:1433</port>
                                         </ports>
@@ -155,6 +199,13 @@
                                             <ACCEPT_EULA>Y</ACCEPT_EULA>
                                             <MSSQL_SA_PASSWORD>yourStrong(!)Password</MSSQL_SA_PASSWORD>
                                         </env>
+                                        <volumes>
+                                            <bind>
+                                                <volume>${project.build.directory}/certificates/mssql-server.crt:/etc/ssl/certs/mssql.pem:ro</volume>
+                                                <volume>${project.build.directory}/certificates/mssql-server.key:/etc/ssl/certs/mssql.key:ro</volume>
+                                                <volume>${project.basedir}/src/test/resources/tls/mssql-tls.conf:/var/opt/mssql/mssql.conf:ro</volume>
+                                            </bind>
+                                        </volumes>
                                         <log>
                                             <prefix>MSSQL:</prefix>
                                             <date>default</date>

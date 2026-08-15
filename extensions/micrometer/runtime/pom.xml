@@ -58,7 +58,7 @@
 
         <dependency>
             <groupId>io.micrometer</groupId>
-            <artifactId>micrometer-registry-prometheus-simpleclient</artifactId>
+            <artifactId>micrometer-registry-prometheus</artifactId>
             <optional>true</optional>
         </dependency>
 
@@ -66,6 +66,12 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-opentelemetry</artifactId>
             <optional>true</optional>
+            <exclusions>
+                <exclusion>
+                    <groupId>io.smallrye.common</groupId>
+                    <artifactId>smallrye-common-vertx-context</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
         <!-- Dependencies for Binding (optional) -->
@@ -138,6 +144,12 @@
             <groupId>io.quarkus.resteasy.reactive</groupId>
             <artifactId>resteasy-reactive-client</artifactId>
             <optional>true</optional>
+        </dependency>
+
+        <dependency>
+            <groupId>org.graalvm.sdk</groupId>
+            <artifactId>nativeimage</artifactId>
+            <scope>provided</scope>
         </dependency>
 
         <!-- Test -->

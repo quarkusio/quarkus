@@ -73,6 +73,8 @@ import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.ExtensionSslNativeSupportBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
+import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
+import io.quarkus.deployment.builditem.GeneratedServiceProviderBuildItem;
 import io.quarkus.deployment.builditem.RunTimeConfigBuilderBuildItem;
 import io.quarkus.deployment.builditem.StaticInitConfigBuilderBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageProxyDefinitionBuildItem;
@@ -316,12 +318,14 @@ class RestClientProcessor {
     void generateRestClientConfigBuilder(
             List<RestClientBuildItem> restClients,
             BuildProducer<GeneratedClassBuildItem> generatedClass,
+            BuildProducer<GeneratedResourceBuildItem> generatedResource,
+            BuildProducer<GeneratedServiceProviderBuildItem> generatedServiceProvider,
             BuildProducer<StaticInitConfigBuilderBuildItem> staticInitConfigBuilder,
             BuildProducer<RunTimeConfigBuilderBuildItem> runTimeConfigBuilder) {
 
         List<RegisteredRestClient> registeredRestClients = toRegisteredRestClients(restClients);
-        RestClientConfigUtils.generateRestClientConfigBuilder(registeredRestClients, generatedClass, staticInitConfigBuilder,
-                runTimeConfigBuilder);
+        RestClientConfigUtils.generateRestClientConfigBuilder(registeredRestClients, generatedClass, generatedResource,
+                generatedServiceProvider, staticInitConfigBuilder, runTimeConfigBuilder);
     }
 
     @BuildStep

@@ -1,1 +1,0 @@
-io.quarkus.micrometer.runtime.binder.vertx.RestClientBuilderMetricsListener

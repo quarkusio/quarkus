@@ -2,7 +2,6 @@ package io.quarkus.devtools.codestarts.quarkus;
 
 import static io.quarkus.devtools.codestarts.quarkus.QuarkusCodestartCatalog.Language.JAVA;
 import static io.quarkus.devtools.codestarts.quarkus.QuarkusCodestartCatalog.Language.KOTLIN;
-import static io.quarkus.devtools.codestarts.quarkus.QuarkusCodestartCatalog.Language.SCALA;
 import static io.quarkus.devtools.testing.FakeExtensionCatalog.FAKE_EXTENSION_CATALOG;
 import static io.quarkus.devtools.testing.FakeExtensionCatalog.FAKE_QUARKUS_CODESTART_CATALOG;
 
@@ -18,7 +17,7 @@ class RESTEasyCodestartTest {
             .quarkusCodestartCatalog(FAKE_QUARKUS_CODESTART_CATALOG)
             .extensionCatalog(FAKE_EXTENSION_CATALOG)
             .codestarts("resteasy")
-            .languages(JAVA, KOTLIN, SCALA)
+            .languages(JAVA, KOTLIN)
             .build();
 
     @Test

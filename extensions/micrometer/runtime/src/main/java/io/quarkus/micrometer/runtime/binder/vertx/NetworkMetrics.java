@@ -11,9 +11,9 @@ import io.micrometer.core.instrument.Tag;
 import io.micrometer.core.instrument.Tags;
 import io.quarkus.micrometer.runtime.meters.Gauges;
 import io.vertx.core.net.SocketAddress;
-import io.vertx.core.spi.metrics.TCPMetrics;
+import io.vertx.core.spi.metrics.TransportMetrics;
 
-public class NetworkMetrics implements TCPMetrics<LongTaskTimer.Sample> {
+public class NetworkMetrics implements TransportMetrics<LongTaskTimer.Sample> {
 
     final MeterRegistry registry;
     final DistributionSummary received;
@@ -118,6 +118,14 @@ public class NetworkMetrics implements TCPMetrics<LongTaskTimer.Sample> {
         exceptionCounter
                 .withTags(this.tags.and(Tag.of("class", t.getClass().getName())))
                 .increment();
+    }
+
+    LongTaskTimer getConnDuration() {
+        return connDuration;
+    }
+
+    LongAdder getConnCount() {
+        return connCount;
     }
 
     public static String toString(SocketAddress remoteAddress) {

@@ -54,7 +54,7 @@ public class JacocoProcessor {
         return new FeatureBuildItem("jacoco");
     }
 
-    @BuildStep(onlyIf = IsTest.class)
+    @BuildStep
     void transform(BuildProducer<BytecodeTransformerBuildItem> bytecodeTransformers,
             OutputTargetBuildItem outputTargetBuildItem,
             ApplicationArchivesBuildItem applicationArchivesBuildItem,
@@ -62,6 +62,11 @@ public class JacocoProcessor {
             CurateOutcomeBuildItem curateOutcomeBuildItem,
             LaunchModeBuildItem launchModeBuildItem,
             JacocoConfig config) throws Exception {
+        // LaunchModeBuildItem.isTest() is used instead of IsTest BooleanSupplier
+        // so that dev mode tests (QuarkusDevModeTest) are also covered
+        if (!launchModeBuildItem.isTest()) {
+            return;
+        }
         if (launchModeBuildItem.isAuxiliaryApplication()) {
             //no code coverage for continuous testing, it does not really make sense
             return;

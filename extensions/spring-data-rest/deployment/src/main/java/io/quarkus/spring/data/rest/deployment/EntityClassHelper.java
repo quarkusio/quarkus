@@ -5,7 +5,9 @@ import static io.quarkus.spring.data.rest.deployment.RepositoryMethodsImplemento
 import static io.quarkus.spring.data.rest.deployment.RepositoryMethodsImplementor.LIST_CRUD_REPOSITORY_INTERFACE;
 import static io.quarkus.spring.data.rest.deployment.RepositoryMethodsImplementor.LIST_PAGING_AND_SORTING_REPOSITORY_INTERFACE;
 import static io.quarkus.spring.data.rest.deployment.RepositoryMethodsImplementor.PAGING_AND_SORTING_REPOSITORY_INTERFACE;
+import static java.lang.constant.ConstantDescs.CD_void;
 
+import java.lang.constant.ClassDesc;
 import java.util.List;
 
 import jakarta.persistence.Id;
@@ -17,9 +19,11 @@ import org.jboss.jandex.FieldInfo;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
+import org.jboss.jandex.gizmo2.Jandex2Gizmo;
 
 import io.quarkus.deployment.bean.JavaBeanUtil;
-import io.quarkus.gizmo.MethodDescriptor;
+import io.quarkus.gizmo2.desc.ClassMethodDesc;
+import io.quarkus.gizmo2.desc.MethodDesc;
 
 public class EntityClassHelper {
 
@@ -50,26 +54,29 @@ public class EntityClassHelper {
         throw new IllegalArgumentException("Couldn't find id field of " + classInfo);
     }
 
-    public MethodDescriptor getSetter(String className, FieldInfo field) {
+    public MethodDesc getSetter(String className, FieldInfo field) {
         return getSetter(index.getClassByName(DotName.createSimple(className)), field);
     }
 
-    public MethodDescriptor getSetter(ClassInfo entityClass, FieldInfo field) {
-        MethodDescriptor setter = getMethod(entityClass, JavaBeanUtil.getSetterName(field.name()), field.type());
+    public MethodDesc getSetter(ClassInfo entityClass, FieldInfo field) {
+        MethodDesc setter = getMethod(entityClass, JavaBeanUtil.getSetterName(field.name()), field.type());
         if (setter != null) {
             return setter;
         }
-        return MethodDescriptor.ofMethod(entityClass.toString(),
-                EnhancerConstants.PERSISTENT_FIELD_WRITER_PREFIX + field.name(), void.class, field.type().name().toString());
+        return ClassMethodDesc.of(
+                ClassDesc.of(entityClass.toString()),
+                EnhancerConstants.PERSISTENT_FIELD_WRITER_PREFIX + field.name(),
+                CD_void,
+                Jandex2Gizmo.classDescOf(field.type()));
     }
 
-    public MethodDescriptor getMethod(ClassInfo entityClass, String name, Type... parameters) {
+    public MethodDesc getMethod(ClassInfo entityClass, String name, Type... parameters) {
         if (entityClass == null) {
             return null;
         }
         MethodInfo methodInfo = entityClass.method(name, parameters);
         if (methodInfo != null) {
-            return MethodDescriptor.of(methodInfo);
+            return Jandex2Gizmo.methodDescOf(methodInfo);
         } else if (entityClass.superName() != null) {
             return getMethod(index.getClassByName(entityClass.superName()), name, parameters);
         }

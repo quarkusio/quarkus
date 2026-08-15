@@ -2,7 +2,7 @@ package io.quarkus.it.resteasy.mutiny.regression.bug25818;
 
 import jakarta.enterprise.context.ApplicationScoped;
 
-import io.vertx.core.Context;
+import io.smallrye.common.vertx.ContextLocals;
 import io.vertx.core.Vertx;
 
 @ApplicationScoped
@@ -14,11 +14,10 @@ public class BlockingService {
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
-        Context context = Vertx.currentContext();
-        if (context == null) {
+        if (Vertx.currentContext() == null) {
             return "~~ context is null ~~";
         } else {
-            return "hello-" + context.getLocal("hello-target");
+            return "hello-" + ContextLocals.<String> get("hello-target", null);
         }
     }
 }

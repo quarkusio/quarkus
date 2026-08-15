@@ -31,6 +31,7 @@ import io.quarkus.gizmo2.ParamVar;
 import io.quarkus.gizmo2.TypeArgument;
 import io.quarkus.gizmo2.desc.ConstructorDesc;
 import io.quarkus.gizmo2.desc.FieldDesc;
+import io.smallrye.common.annotation.SuppressForbidden;
 
 public class AnnotationProxyProvider {
 
@@ -134,6 +135,7 @@ public class AnnotationProxyProvider {
         }
 
         @SuppressWarnings("unchecked")
+        @SuppressForbidden(reason = "Annotation proxies are a legitimate use of dynamic proxies")
         private A proxy() {
             ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
             if (classLoader == null) {

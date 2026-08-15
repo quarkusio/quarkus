@@ -44,7 +44,7 @@ public class MultipleDataSourcesTest {
 
         public CompletionStage<Void> verify() {
             CompletableFuture<Void> cf = new CompletableFuture<>();
-            mySQLClient.query("SELECT 1").execute(ar -> {
+            mySQLClient.query("SELECT 1").execute().onComplete(ar -> {
                 if (ar.failed()) {
                     cf.completeExceptionally(ar.cause());
                 } else {
@@ -64,7 +64,7 @@ public class MultipleDataSourcesTest {
 
         public CompletionStage<Void> verify() {
             CompletableFuture<Void> cf = new CompletableFuture<>();
-            mySQLClient.query("SELECT 1").execute(ar -> {
+            mySQLClient.query("SELECT 1").execute().onComplete(ar -> {
                 if (ar.failed()) {
                     cf.completeExceptionally(ar.cause());
                 } else {

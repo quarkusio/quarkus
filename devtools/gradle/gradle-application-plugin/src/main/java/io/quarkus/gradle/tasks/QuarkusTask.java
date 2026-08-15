@@ -52,12 +52,20 @@ public abstract class QuarkusTask extends DefaultTask {
         return extension;
     }
 
+    /**
+     * Whether Quarkus workers run in a forked JVM (process isolation) rather than in-process in the
+     * Gradle daemon (class-loader isolation).
+     */
+    static boolean isWorkerProcessIsolated() {
+        // Use process isolation by default, unless Gradle's started with its debugging system property or the
+        // system property `gradle.quarkus.gradle-worker.no-process` is set to `true`.
+        return !(Boolean.getBoolean("org.gradle.debug") || Boolean.getBoolean("gradle.quarkus.gradle-worker.no-process"));
+    }
+
     WorkQueue workQueue(Map<String, String> configMap, List<Action<? super JavaForkOptions>> forkOptionsSupplier) {
         WorkerExecutor workerExecutor = getWorkerExecutor();
 
-        // Use process isolation by default, unless Gradle's started with its debugging system property or the
-        // system property `gradle.quarkus.gradle-worker.no-process` is set to `true`.
-        if (Boolean.getBoolean("org.gradle.debug") || Boolean.getBoolean("gradle.quarkus.gradle-worker.no-process")) {
+        if (!isWorkerProcessIsolated()) {
             return workerExecutor.classLoaderIsolation();
         }
 

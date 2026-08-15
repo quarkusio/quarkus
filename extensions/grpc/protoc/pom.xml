@@ -96,6 +96,7 @@
                                     <excludes>
                                         <exclude>com/google/protobuf/*</exclude>
                                         <exclude>com/google/protobuf/compiler/*</exclude>
+                                        <exclude>com/google/protobuf/util/*</exclude>
                                     </excludes>
                                 </filter>
                             </filters>

@@ -35,7 +35,7 @@ public interface ContainerImageOpenshiftConfig {
         if (version.isJava21OrHigher() == CompiledJavaVersionBuildItem.JavaVersion.Status.TRUE) {
             return ContainerImages.S2I_JAVA_21;
         }
-        return ContainerImages.S2I_JAVA_17;
+        throw new IllegalArgumentException("Unsupported Java version: " + version);
     }
 
     /**
@@ -49,12 +49,9 @@ public interface ContainerImageOpenshiftConfig {
      * The value of this property is used to create an ImageStream for the builder image used in the OpenShift build.
      * When it references images already available in the internal OpenShift registry, the corresponding streams are used
      * instead.
-     * When the application is built against Java 25 or higher, {@code registry.access.redhat.com/ubi9/openjdk-25:1.24}
+     * When the application is built against Java 25 or higher, {@code registry.access.redhat.com/ubi10/openjdk-25:1.24}
      * is used as the default.
-     * Otherwise, when the application is built against Java 21 to Java 24,
-     * {@code registry.access.redhat.com/ubi9/openjdk-21:1.24}
-     * is used as the default.
-     * Otherwise {@code registry.access.redhat.com/ubi9/openjdk-17:1.24} is used as the default.
+     * Otherwise {@code registry.access.redhat.com/ubi10/openjdk-21:1.24} is used as the default.
      */
     Optional<String> baseJvmImage();
 

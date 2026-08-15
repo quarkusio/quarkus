@@ -5,7 +5,6 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = HTTP Reference
 include::_attributes.adoc[]
-:categories: web
 :summary: Learn more about configuring Quarkus' Vert.x based HTTP layer - and Undertow if you are using servlets.
 :numbered:
 :sectnums:
@@ -100,17 +99,67 @@ Quarkus validates these values at build time.
 
 This feature can be used in both development and production environments.
 
+[[http-compression]]
 === HTTP Compression
 
-The response body of a static resource is not compressed by default.
-You can enable the HTTP compression support by means of `quarkus.http.enable-compression=true`.
-If compression support is enabled then the response body is compressed if the `Content-Type` header derived from the file name of a resource is a compressed media type as configured via `quarkus.http.compress-media-types`.
+The response body of an HTTP response is not compressed by default.
+You can enable HTTP compression support by setting `quarkus.http.enable-compression=true`.
 
-TIP: By default, the following list of media types is compressed: `text/html`, `text/plain`, `text/xml`, `text/css`, `text/javascript`, `application/javascript`, `application/json`, `application/graphql+json` and `application/xhtml+xml`.
+If compression is enabled, the response body is compressed when the `Content-Type` header matches one of the media types configured via `quarkus.http.compress-media-types`.
 
-NOTE: If the client does not indicate its support for HTTP compression in a request header, e.g. `Accept-Encoding: deflate, gzip, br`, then the response body is not compressed.
+TIP: By default, the following media types are compressed: `text/html`, `text/plain`, `text/xml`, `text/css`, `text/javascript`, `application/javascript`, `application/json`, `application/graphql+json`, and `application/xhtml+xml`.
 
-TIP: Brotli compression is not available by default. You can enable it by setting `quarkus.http.compressors=deflate,gzip,br`. In case of building native image, it adds around 1MB to your executable size.
+NOTE: If the client does not indicate support for HTTP compression in the request (e.g., `Accept-Encoding: deflate, gzip, br`), the response body is not compressed.
+
+==== Minimum response size
+
+By default, all responses matching the configured media types are compressed regardless of their size.
+Use `quarkus.http.compression-content-size-threshold` to set a minimum response body size (in bytes) that triggers compression.
+Responses smaller than this threshold are sent uncompressed, avoiding the CPU overhead of compressing small payloads.
+
+[source,properties]
+----
+quarkus.http.enable-compression=true
+# Only compress responses larger than 1KB
+quarkus.http.compression-content-size-threshold=1024
+----
+
+NOTE: The threshold only applies when the response `Content-Length` is known. Chunked responses (where the total size is not known upfront) are always eligible for compression when compression is enabled.
+
+==== Compression level
+
+Use `quarkus.http.compression-level` to control the compression level for gzip and deflate.
+Higher values produce smaller output at the cost of more CPU usage.
+When not set, the compressor's default level is used.
+
+[source,properties]
+----
+quarkus.http.enable-compression=true
+quarkus.http.compression-level=6
+----
+
+==== Brotli compression
+
+Brotli compression is not available by default.
+Enable it by adding `br` to the compressors list:
+
+[source,properties]
+----
+quarkus.http.compressors=deflate,gzip,br
+----
+
+TIP: Enabling Brotli adds approximately 1MB to native executable size because it requires bundling the Brotli4J native library.
+
+==== Per-endpoint control
+
+The RESTEasy Reactive and Reactive Routes extensions allow enabling or disabling compression on individual endpoints using the `@io.quarkus.vertx.http.Compressed` and `@io.quarkus.vertx.http.Uncompressed` annotations.
+See the xref:rest.adoc#http-compression[Quarkus REST] and xref:reactive-routes.adoc#http-compression[Reactive Routes] guides for details.
+
+==== Request decompression
+
+Quarkus can also decompress incoming request bodies.
+Enable this with `quarkus.http.enable-decompression=true`.
+The client must indicate the compression format in the `Content-Encoding` request header (e.g., `gzip`, `deflate`, or `br`).
 
 [[static-resources-config]]
 === Other Configurations
@@ -257,6 +306,23 @@ By default, Quarkus listens to port 8443 for SSL secured connections and 8444 wh
 
 These ports can be configured in your `application.properties` with the properties `quarkus.http.ssl-port` and `quarkus.http.test-ssl-port`.
 
+=== Configure the HTTPS host independently
+
+By default, both the plain HTTP and HTTPS listeners bind to the host configured with `quarkus.http.host`.
+When you need to bind them to different network interfaces, set `quarkus.http.ssl-host` for the HTTPS listener.
+When not set, HTTPS uses the same host as plain HTTP.
+
+This is useful when HTTP should only be reachable locally (for example local administration) while HTTPS
+should be reachable from remote clients:
+
+[source,properties]
+----
+quarkus.http.host=127.0.0.1
+quarkus.http.ssl-host=0.0.0.0
+quarkus.http.ssl.certificate.files=/path/to/certificate
+quarkus.http.ssl.certificate.key-files=/path/to/key
+----
+
 === Disable the HTTP port
 
 It is possible to disable the HTTP port and only support secure requests. This is done via the
@@ -351,6 +417,17 @@ quarkus.http.filter.any-order.matches=/paths/order.*
 
 Will include the `Cache-Control: max-age=1` header when `/paths/order` is requested.
 
+When using aggressive cache headers (for example, for static assets behind a CDN), you can set `apply-on-success=true`
+to apply headers only on successful (2xx) responses.
+This prevents CDNs from caching error responses such as 403 or 500.
+
+[source, properties]
+----
+quarkus.http.filter.static.header."Cache-Control"=public, max-age=31536000, immutable
+quarkus.http.filter.static.matches=/static/.*
+quarkus.http.filter.static.apply-on-success=true
+----
+
 include::{generated-dir}/config/quarkus-vertx-http_quarkus.http.filter.adoc[leveloffset=+1, opts=optional]
 
 == Support 100-Continue in vert.x
@@ -379,6 +456,14 @@ quarkus.http.http2=false
 Note that some configuration attributes are specific to HTTP/2.
 For example, to configure the max header list size (~ header), you need to configure the `quarkus.http.limits.max-header-list-size` attribute.
 You can also enable or disable HTTP/2 push using `quarkus.http.http2-push-enabled`.
+
+== HTTP/3 Support
+
+HTTP/3 (QUIC) is available as an experimental extension.
+It uses QUIC over UDP instead of TCP and requires TLS.
+
+To enable HTTP/3, add the `quarkus-http3` extension to your project.
+See the xref:http3-reference.adoc[HTTP/3 reference guide] for configuration and usage details.
 
 == Listening on a Random Port
 
@@ -439,6 +524,68 @@ port.
 
 To make your Quarkus application accessible to another application running on a different domain, you need to configure cross-origin resource sharing (CORS).
 For more information about the CORS filter that Quarkus provides, see the Quarkus xref:security-cors.adoc#cors-filter[CORS filter] section of the "Cross-origin resource sharing" guide.
+
+[[host-header-validation]]
+== HTTP Host header validation
+
+Quarkus can validate the HTTP `Host` header on incoming requests to protect against DNS rebinding attacks and host header poisoning.
+
+When `quarkus.http.host` is set to a localhost name (`localhost`, `127.0.0.1`, or `[::1]`), host validation is automatically enabled in **dev** and **production** modes.
+Only requests whose `Host` header matches one of the known localhost names are accepted; all others receive a `400 Bad Request` response.
+
+[WARNING]
+====
+This automatic behavior is a change from previous Quarkus versions, where no `Host` header validation was performed.
+If your application runs behind a reverse proxy that rewrites the `Host` header, you may need to either:
+
+* configure the allowed hosts explicitly with `quarkus.http.host-validation.allowed-hosts`, or
+* disable the automatic validation with `quarkus.http.host-validation.require-localhost=false`.
+====
+
+=== Configuring allowed hosts
+
+To restrict requests to a specific set of host names, use `allowed-hosts`:
+
+[source, properties]
+----
+quarkus.http.host-validation.allowed-hosts=example.com,api.example.com
+----
+
+The check is case-insensitive and only validates the host name, not the port.
+
+=== Requiring localhost only
+
+To explicitly require that only localhost names are accepted:
+
+[source, properties]
+----
+quarkus.http.host-validation.require-localhost=true
+----
+
+To disable automatic localhost validation when the server is bound to a localhost address:
+
+[source, properties]
+----
+quarkus.http.host-validation.require-localhost=false
+----
+
+NOTE: `allowed-hosts` and `require-localhost` are mutually exclusive.
+Setting both results in a configuration error.
+
+=== Reverse proxy considerations
+
+When running behind a reverse proxy, enable proxy header forwarding so that Quarkus validates the forwarded host instead of the proxy's internal host name:
+
+[source, properties]
+----
+quarkus.http.proxy.proxy-address-forwarding=true
+quarkus.http.proxy.allow-forwarded=true
+quarkus.http.host-validation.allowed-hosts=public-api.example.com
+----
+
+This works with both the standard `Forwarded` header and the `X-Forwarded-Host` header.
+
+include::{generated-dir}/config/quarkus-vertx-http_quarkus.http.host-validation.adoc[leveloffset=+1, opts=optional]
 
 == HTTP Limits Configuration
 
@@ -562,25 +709,26 @@ Use `quarkus.http.access-log.exclude-pattern=/some/path/.*` to exclude all entri
 
 == Arbitrary customizations
 
-Quarkus allows users to arbitrarily customize the options of HTTP servers started by Quarkus via the use of `io.quarkus.vertx.http.HttpServerOptionsCustomizer`.
+Quarkus allows users to arbitrarily customize the configuration of HTTP servers started by Quarkus via the use of `io.quarkus.vertx.http.HttpServerConfigCustomizer`.
 For example, if the HTTP port needs to be set programmatically, then the following code could be used:
 
 [source,java]
 ----
 import jakarta.inject.Singleton;
-import io.quarkus.vertx.http.HttpServerOptionsCustomizer;
+import io.quarkus.vertx.http.HttpServerConfigCustomizer;
+import io.vertx.core.http.HttpServerConfig;
 
 @Singleton <1>
-public class MyCustomizer implements HttpServerOptionsCustomizer {
+public class MyCustomizer implements HttpServerConfigCustomizer {
 
     @Override
-    public void customizeHttpServer(HttpServerOptions options) { <2>
-        options.setPort(9998);
+    public void customizeHttpServer(HttpServerConfig config) { <2>
+        config.setPort(9998);
     }
 }
 ----
 <1> By making the class a managed bean, Quarkus will take the customizer into account when it starts the Vert.x servers
-<2> In this case, we only care about customizing the HTTP server, so we just override the `customizeHttpServer` method, but users should be aware that `HttpServerOptionsCustomizer` allows configuring the HTTPS and Domain Socket servers as well
+<2> In this case, we only care about customizing the HTTP server, so we just override the `customizeHttpServer` method, but users should be aware that `HttpServerConfigCustomizer` allows configuring the HTTPS and Domain Socket servers as well
 
 
 == How to execute logic when HTTP server started
@@ -653,6 +801,42 @@ quarkus.http.proxy.trusted-proxy[1].subject-dn=CN=envoy-client,O=MyOrg
 <3> TLS client authentication must be enabled via `quarkus.http.ssl.client-auth` set to `request` or `required`.
 
 NOTE: Configure enough DN components to uniquely identify your proxy. Using only `CN=my-proxy` will match any certificate with that CN, regardless of issuing organization.
+
+When multiple CAs are trusted, different CAs could issue certificates with the same Subject DN.
+To also verify the trust anchor, reference a certificate alias in the HTTP server's truststore.
+Both conditions must match — the Subject DN and the trust anchor.
+The following example uses the xref:./tls-registry-reference.adoc[TLS centralized configuration] to set up mTLS and proxy trust:
+
+[source,properties]
+----
+quarkus.tls.key-store.p12.path=server-keystore.p12
+quarkus.tls.key-store.p12.password=secret
+quarkus.tls.trust-store.p12.path=server-truststore.p12 <1>
+quarkus.tls.trust-store.p12.password=secret
+quarkus.http.ssl.client-auth=request
+
+# Proxy trust
+quarkus.http.proxy.proxy-address-forwarding=true
+quarkus.http.proxy.allow-forwarded=true
+quarkus.http.proxy.trusted-proxy[0].subject-dn=CN=my-proxy,O=MyOrg
+quarkus.http.proxy.trusted-proxy[0].truststore-alias=my-proxy-ca <2>
+----
+<1> The truststore must be configured via the TLS registry and must contain a certificate entry with alias `my-proxy-ca`.
+<2> The alias is resolved from `server-truststore.p12`.
+
+When the truststore is configured with PEM certificates, aliases are assigned automatically as `cert-0`, `cert-1`, and so on, based on the order in the configuration:
+
+[source,properties]
+----
+quarkus.tls.trust-store.pem.certs=proxy-ca.crt,other-ca.crt <1>
+quarkus.http.proxy.trusted-proxy[0].truststore-alias=cert-0 <2>
+----
+<1> `proxy-ca.crt` becomes `cert-0`, `other-ca.crt` becomes `cert-1`.
+<2> References `proxy-ca.crt`.
+
+Since PEM aliases depend on ordering, we recommend using a xref:tls-registry-reference.adoc#pkcs12_truststores[PKCS12 truststore] to avoid certificate list ordering issues.
+
+WARNING: The configured Subject DN is trusted to be unique only among clients signed by the CA referenced by the truststore alias. Only reference a CA that you control or trust not to issue another certificate with the same Subject DN.
 
 Both configurations related to standard and non-standard headers can be combined, although the standard headers configuration will have precedence. However, combining them has security implications as clients can forge requests with a forwarded header that is not overwritten by the proxy. Therefore, proxies should strip unexpected `Forwarded` or `X-Forwarded-*` headers from the client.
 
@@ -727,9 +911,10 @@ Route order constants defined in `io.quarkus.vertx.http.runtime.RouteConstants` 
 | `Integer.MIN_VALUE` | `ROUTE_ORDER_ACCESS_LOG_HANDLER` | Access-log handler, if enabled in the configuration.
 | `Integer.MIN_VALUE` | `ROUTE_ORDER_RECORD_START_TIME` | Handler adding the start-time, if enabled in the configuration.
 | `Integer.MIN_VALUE` | `ROUTE_ORDER_HOT_REPLACEMENT` | -replacement body handler.
-| `Integer.MIN_VALUE` | `ROUTE_ORDER_BODY_HANDLER_MANAGEMENT` | Body handler for the management router.
 | `Integer.MIN_VALUE` | `ROUTE_ORDER_HEADERS` | Handlers that add headers specified in the configuration.
-| `Integer.MIN_VALUE` | `ROUTE_ORDER_CORS_MANAGEMENT` | CORS-Origin handler of the management router.
+| `Integer.MIN_VALUE + 1` | `ROUTE_ORDER_HOST_VALIDATION_MANAGEMENT` | Host validation handler of the management router.
+| `Integer.MIN_VALUE + 2` | `ROUTE_ORDER_CORS_MANAGEMENT` | CORS-Origin handler of the management router.
+| `Integer.MIN_VALUE + 3` | `ROUTE_ORDER_BODY_HANDLER_MANAGEMENT` | Body handler for the management router.
 | `Integer.MIN_VALUE + 1` | `ROUTE_ORDER_BODY_HANDLER` | Body handler.
 | `-2` | `ROUTE_ORDER_UPLOAD_LIMIT` | Route that enforces the upload body size limit.
 | `0` | `ROUTE_ORDER_COMPRESSION` | Compression handler.

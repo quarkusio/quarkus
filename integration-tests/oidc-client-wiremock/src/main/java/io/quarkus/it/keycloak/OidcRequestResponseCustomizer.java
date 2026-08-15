@@ -9,8 +9,8 @@ import io.quarkus.oidc.common.OidcRequestContextProperties;
 import io.quarkus.oidc.common.OidcRequestFilter;
 import io.quarkus.oidc.common.OidcResponseFilter;
 import io.smallrye.mutiny.Uni;
+import io.vertx.core.buffer.Buffer;
 import io.vertx.core.json.JsonObject;
-import io.vertx.mutiny.core.buffer.Buffer;
 
 @ApplicationScoped
 @Unremovable

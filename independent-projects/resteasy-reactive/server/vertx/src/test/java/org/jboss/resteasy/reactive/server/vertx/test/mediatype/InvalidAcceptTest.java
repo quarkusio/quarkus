@@ -9,6 +9,7 @@ import java.util.function.Supplier;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.MediaType;
 
 import org.jboss.resteasy.reactive.server.vertx.test.framework.ResteasyReactiveUnitTest;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
@@ -38,13 +39,36 @@ public class InvalidAcceptTest {
                 .statusCode(406);
     }
 
+    @Test
+    public void testSubResource() {
+        given().config(config().encoderConfig(encoderConfig().encodeContentTypeAs("invalid", ContentType.TEXT))).body("dummy")
+                .accept("invalid").get("/hello/sub")
+                .then()
+                .statusCode(406);
+    }
+
     @Path("hello")
     public static class HelloResource {
 
-        @Produces("text/plain")
+        @Produces(MediaType.TEXT_PLAIN)
         @GET
         public String hello() {
             return "hello";
+        }
+
+        @Produces(MediaType.TEXT_PLAIN)
+        @Path("sub")
+        public SubResource helloSub() {
+            return new SubResource();
+        }
+    }
+
+    private static class SubResource {
+
+        @GET
+        @Produces(MediaType.TEXT_PLAIN)
+        public String hello() {
+            return "sub-answer";
         }
     }
 }

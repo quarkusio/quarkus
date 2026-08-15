@@ -34,6 +34,7 @@ public class RegularGrpcServiceWithPlainTextTest extends GrpcServiceTestBase {
                                     GreeterGrpc.class, HelloRequest.class, HelloReply.class, MutinyGreeterGrpc.class,
                                     HelloRequestOrBuilder.class, HelloReplyOrBuilder.class,
                                     EmptyProtos.class, Messages.class, MutinyTestServiceGrpc.class,
-                                    TestServiceGrpc.class));
+                                    TestServiceGrpc.class, io.grpc.testing.integration.Test.class,
+                                    io.grpc.examples.helloworld.HelloWorldProto.class));
 
 }

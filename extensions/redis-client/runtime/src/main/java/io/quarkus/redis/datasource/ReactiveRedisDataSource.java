@@ -5,8 +5,6 @@ import static io.quarkus.redis.runtime.datasource.Marshaller.STRING_TYPE_REFEREN
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-
 import io.quarkus.redis.datasource.autosuggest.ReactiveAutoSuggestCommands;
 import io.quarkus.redis.datasource.bitmap.ReactiveBitMapCommands;
 import io.quarkus.redis.datasource.bloom.ReactiveBloomCommands;
@@ -33,9 +31,10 @@ import io.quarkus.redis.datasource.transactions.TransactionResult;
 import io.quarkus.redis.datasource.value.ReactiveValueCommands;
 import io.smallrye.common.annotation.Experimental;
 import io.smallrye.mutiny.Uni;
-import io.vertx.mutiny.redis.client.Command;
 import io.vertx.mutiny.redis.client.Redis;
-import io.vertx.mutiny.redis.client.Response;
+import io.vertx.redis.client.Command;
+import io.vertx.redis.client.Response;
+import tools.jackson.core.type.TypeReference;
 
 /**
  * Non-Blocking and Reactive Redis Data Source.
@@ -990,16 +989,6 @@ public interface ReactiveRedisDataSource {
      * @return the response
      */
     Uni<Response> execute(Command command, String... args);
-
-    /**
-     * Executes a command.
-     * This method is used to execute commands not offered by the API.
-     *
-     * @param command the command
-     * @param args the parameters, encoded as String.
-     * @return the response
-     */
-    Uni<Response> execute(io.vertx.redis.client.Command command, String... args);
 
     /**
      * @return the underlying Redis client.

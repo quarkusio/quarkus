@@ -18,7 +18,7 @@ public class CookieAttribute implements ExchangeAttribute {
 
     @Override
     public String readAttribute(final RoutingContext exchange) {
-        Cookie cookie = exchange.getCookie(cookieName);
+        Cookie cookie = exchange.request().getCookie(cookieName);
         if (cookie == null) {
             return null;
         }

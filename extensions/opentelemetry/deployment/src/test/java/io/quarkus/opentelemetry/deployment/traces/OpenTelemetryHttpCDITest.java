@@ -2,7 +2,7 @@ package io.quarkus.opentelemetry.deployment.traces;
 
 import static io.opentelemetry.api.trace.SpanKind.INTERNAL;
 import static io.opentelemetry.api.trace.SpanKind.SERVER;
-import static io.opentelemetry.semconv.incubating.CodeIncubatingAttributes.CODE_FUNCTION_NAME;
+import static io.opentelemetry.semconv.CodeAttributes.CODE_FUNCTION_NAME;
 import static io.quarkus.opentelemetry.deployment.common.TestUtil.assertStringAttribute;
 import static io.quarkus.opentelemetry.deployment.common.exporter.TestSpanExporter.getSpanByKindAndParentId;
 import static org.assertj.core.api.Assertions.assertThat;

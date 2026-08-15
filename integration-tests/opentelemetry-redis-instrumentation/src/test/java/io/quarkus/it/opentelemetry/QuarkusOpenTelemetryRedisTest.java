@@ -5,7 +5,6 @@ import static io.opentelemetry.semconv.NetworkAttributes.NETWORK_LOCAL_ADDRESS;
 import static io.opentelemetry.semconv.NetworkAttributes.NETWORK_LOCAL_PORT;
 import static io.opentelemetry.semconv.NetworkAttributes.NETWORK_PEER_ADDRESS;
 import static io.opentelemetry.semconv.NetworkAttributes.NETWORK_PEER_PORT;
-import static io.opentelemetry.semconv.incubating.DbIncubatingAttributes.DB_CONNECTION_STRING;
 import static io.opentelemetry.semconv.incubating.DbIncubatingAttributes.DB_OPERATION;
 import static io.opentelemetry.semconv.incubating.DbIncubatingAttributes.DB_SYSTEM;
 import static io.opentelemetry.semconv.incubating.DbIncubatingAttributes.DbSystemNameIncubatingValues.REDIS;
@@ -35,7 +34,7 @@ import io.opentelemetry.api.trace.SpanKind;
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.RestAssured;
 import io.restassured.common.mapper.TypeRef;
-import io.vertx.mutiny.redis.client.Command;
+import io.vertx.redis.client.Command;
 
 @QuarkusTest
 @SuppressWarnings("unchecked")
@@ -45,7 +44,6 @@ class QuarkusOpenTelemetryRedisTest {
     static final String REACTIVE_KEY = "reactive-key";
     static final String REACTIVE_VALUE = "reactive-value";
     static final String INVALID_OPERATION_PATH = "invalid-operation";
-    static final String CONNECTION_STRING = "localhost:16379";
 
     String getKey(String k) {
         return k;
@@ -94,7 +92,6 @@ class QuarkusOpenTelemetryRedisTest {
         assertEquals("set", setAttributes.get(DB_OPERATION.getKey()));
         assertEquals(REDIS, setAttributes.get(DB_SYSTEM.getKey()));
         assertEquals("0", setAttributes.get(DB_NAMESPACE.getKey()));
-        assertEquals(CONNECTION_STRING, setAttributes.get(DB_CONNECTION_STRING.getKey()));
         assertEquals("127.0.0.1", setAttributes.get(NETWORK_PEER_ADDRESS.getKey()));
         assertEquals(16379, setAttributes.get(NETWORK_PEER_PORT.getKey()));
         assertEquals("localhost", setAttributes.get(NETWORK_LOCAL_ADDRESS.getKey()));
@@ -104,7 +101,6 @@ class QuarkusOpenTelemetryRedisTest {
         assertEquals("get", getAttributes.get(DB_OPERATION.getKey()));
         assertEquals(REDIS, getAttributes.get(DB_SYSTEM.getKey()));
         assertEquals("0", setAttributes.get(DB_NAMESPACE.getKey()));
-        assertEquals(CONNECTION_STRING, setAttributes.get(DB_CONNECTION_STRING.getKey()));
         assertEquals("127.0.0.1", setAttributes.get(NETWORK_PEER_ADDRESS.getKey()));
         assertEquals(16379, setAttributes.get(NETWORK_PEER_PORT.getKey()));
         assertEquals("localhost", setAttributes.get(NETWORK_LOCAL_ADDRESS.getKey()));
@@ -176,7 +172,6 @@ class QuarkusOpenTelemetryRedisTest {
         assertEquals("set", setAttributes.get(DB_OPERATION.getKey()));
         assertEquals(REDIS, setAttributes.get(DB_SYSTEM.getKey()));
         assertEquals("0", setAttributes.get(DB_NAMESPACE.getKey()));
-        assertEquals(CONNECTION_STRING, setAttributes.get(DB_CONNECTION_STRING.getKey()));
         assertEquals("127.0.0.1", setAttributes.get(NETWORK_PEER_ADDRESS.getKey()));
         assertEquals(16379, setAttributes.get(NETWORK_PEER_PORT.getKey()));
         assertEquals("localhost", setAttributes.get(NETWORK_LOCAL_ADDRESS.getKey()));
@@ -186,7 +181,6 @@ class QuarkusOpenTelemetryRedisTest {
         assertEquals("get", getAttributes.get(DB_OPERATION.getKey()));
         assertEquals(REDIS, getAttributes.get(DB_SYSTEM.getKey()));
         assertEquals("0", getAttributes.get(DB_NAMESPACE.getKey()));
-        assertEquals(CONNECTION_STRING, setAttributes.get(DB_CONNECTION_STRING.getKey()));
         assertEquals("127.0.0.1", setAttributes.get(NETWORK_PEER_ADDRESS.getKey()));
         assertEquals(16379, setAttributes.get(NETWORK_PEER_PORT.getKey()));
         assertEquals("localhost", setAttributes.get(NETWORK_LOCAL_ADDRESS.getKey()));

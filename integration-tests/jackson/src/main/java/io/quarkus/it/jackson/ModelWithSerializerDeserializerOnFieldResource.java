@@ -10,9 +10,8 @@ import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import io.quarkus.it.jackson.model.ModelWithSerializerAndDeserializerOnField;
+import tools.jackson.databind.ObjectMapper;
 
 @Path("fieldserder")
 public class ModelWithSerializerDeserializerOnFieldResource {

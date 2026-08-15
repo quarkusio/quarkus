@@ -1,12 +1,5 @@
 package io.quarkus.vertx.core.runtime;
 
-import static io.quarkus.vertx.core.runtime.SSLConfigHelper.configureJksKeyCertOptions;
-import static io.quarkus.vertx.core.runtime.SSLConfigHelper.configurePemKeyCertOptions;
-import static io.quarkus.vertx.core.runtime.SSLConfigHelper.configurePemTrustOptions;
-import static io.quarkus.vertx.core.runtime.SSLConfigHelper.configurePfxKeyCertOptions;
-import static io.quarkus.vertx.core.runtime.SSLConfigHelper.configurePfxTrustOptions;
-import static io.vertx.core.file.impl.FileResolverImpl.CACHE_DIR_BASE_PROP_NAME;
-
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -17,8 +10,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Random;
 import java.util.Set;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
@@ -36,18 +28,25 @@ import io.netty.channel.EventLoopGroup;
 import io.netty.util.concurrent.FastThreadLocal;
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.InstanceHandle;
-import io.quarkus.runtime.*;
+import io.quarkus.runtime.ExecutorRecorder;
+import io.quarkus.runtime.IOThreadDetector;
+import io.quarkus.runtime.LaunchMode;
+import io.quarkus.runtime.RuntimeValue;
+import io.quarkus.runtime.ShutdownContext;
+import io.quarkus.runtime.ThreadPoolConfig;
 import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.runtime.shutdown.ShutdownConfig;
 import io.quarkus.vertx.core.runtime.config.AddressResolverConfiguration;
-import io.quarkus.vertx.core.runtime.config.ClusterConfiguration;
-import io.quarkus.vertx.core.runtime.config.EventBusConfiguration;
+import io.quarkus.vertx.core.runtime.config.NativeTransportMode;
+import io.quarkus.vertx.core.runtime.config.NativeTransportType;
+import io.quarkus.vertx.core.runtime.config.VertxBuildTimeConfig;
 import io.quarkus.vertx.core.runtime.config.VertxConfiguration;
 import io.quarkus.vertx.core.runtime.context.VertxContextSafetyToggle;
 import io.quarkus.vertx.mdc.provider.LateBoundMDCProvider;
 import io.quarkus.vertx.runtime.VertxCurrentContextFactory;
 import io.quarkus.vertx.runtime.jackson.QuarkusJacksonFactory;
 import io.smallrye.common.cpu.ProcessorInfo;
+import io.smallrye.common.vertx.VertxContext;
 import io.smallrye.mutiny.infrastructure.Infrastructure;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Context;
@@ -55,17 +54,16 @@ import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.core.VertxOptions;
 import io.vertx.core.dns.AddressResolverOptions;
-import io.vertx.core.eventbus.EventBusOptions;
 import io.vertx.core.file.FileSystemOptions;
-import io.vertx.core.http.ClientAuth;
-import io.vertx.core.impl.ContextInternal;
-import io.vertx.core.impl.VertxBuilder;
+import io.vertx.core.impl.SysProps;
 import io.vertx.core.impl.VertxImpl;
 import io.vertx.core.impl.VertxThread;
+import io.vertx.core.internal.ContextInternal;
+import io.vertx.core.internal.VertxBootstrap;
 import io.vertx.core.spi.VerticleFactory;
 import io.vertx.core.spi.VertxServiceProvider;
 import io.vertx.core.spi.VertxThreadFactory;
-import io.vertx.core.spi.resolver.ResolverProvider;
+import io.vertx.core.transport.Transport;
 
 @Recorder
 public class VertxCoreRecorder {
@@ -82,6 +80,21 @@ public class VertxCoreRecorder {
     static volatile VertxSupplier vertx;
 
     static volatile int blockingThreadPoolSize;
+
+    /**
+     * Store the set of native transports found in the classpath at build time.
+     * This is used to check if the required native transport (if any) is available.
+     */
+    static volatile Set<String> detectedNativeTransports = Set.of();
+
+    /**
+     * Sets the list of native transports found in the classpath at build time.
+     *
+     * @param transports the set of transport, empty if none.
+     */
+    public void setDetectedNativeTransports(Set<String> transports) {
+        detectedNativeTransports = transports;
+    }
 
     /**
      * This is a bit of a hack. In dev mode we undeploy all the verticles on restart, except
@@ -106,20 +119,30 @@ public class VertxCoreRecorder {
     private final RuntimeValue<ThreadPoolConfig> threadPoolConfig;
     private final RuntimeValue<ShutdownConfig> shutdownConfig;
 
-    public VertxCoreRecorder(RuntimeValue<VertxConfiguration> vertxConfig, RuntimeValue<ThreadPoolConfig> threadPoolConfig,
+    /**
+     * We keep a static reference on the build time config as we need to pass it for the Vert.x creation after failures.
+     */
+    static VertxBuildTimeConfig buildTimeConfig;
+
+    public VertxCoreRecorder(VertxBuildTimeConfig btConfig, RuntimeValue<VertxConfiguration> vertxConfig,
+            RuntimeValue<ThreadPoolConfig> threadPoolConfig,
             RuntimeValue<ShutdownConfig> shutdownConfig) {
+        buildTimeConfig = btConfig;
         this.vertxConfig = vertxConfig;
         this.threadPoolConfig = threadPoolConfig;
         this.shutdownConfig = shutdownConfig;
     }
 
     public Supplier<Vertx> configureVertx(LaunchMode launchMode, ShutdownContext shutdown,
-            List<Consumer<VertxOptions>> customizers, List<String> vertxServiceProviderClassNames,
+            List<Consumer<VertxBootstrap>> bootstrapCustomizers, List<Consumer<VertxOptions>> optionsCustomizers,
+            List<String> vertxServiceProviderClassNames,
             List<String> verticleFactoryClassNames, ExecutorService executorProxy) {
         // The wrapper previously here to prevent the executor to be shutdown prematurely is moved to higher level to the io.quarkus.runtime.ExecutorRecorder
         QuarkusExecutorFactory.sharedExecutor = executorProxy;
+
         if (launchMode != LaunchMode.DEVELOPMENT) {
-            vertx = new VertxSupplier(launchMode, vertxConfig.getValue(), customizers, threadPoolConfig.getValue(), shutdown,
+            vertx = new VertxSupplier(launchMode, vertxConfig.getValue(), new ArrayList<>(bootstrapCustomizers),
+                    new ArrayList<>(optionsCustomizers), threadPoolConfig.getValue(), shutdown,
                     vertxServiceProviderClassNames, verticleFactoryClassNames);
             // we need this to be part of the last shutdown tasks because closing it early (basically before Arc)
             // could cause problem to beans that rely on Vert.x and contain shutdown tasks
@@ -133,7 +156,9 @@ public class VertxCoreRecorder {
             });
         } else {
             if (vertx == null) {
-                vertx = new VertxSupplier(launchMode, vertxConfig.getValue(), customizers, threadPoolConfig.getValue(),
+                vertx = new VertxSupplier(launchMode, vertxConfig.getValue(), new ArrayList<>(bootstrapCustomizers),
+                        new ArrayList<>(optionsCustomizers),
+                        threadPoolConfig.getValue(),
                         shutdown, vertxServiceProviderClassNames, verticleFactoryClassNames);
             } else if (vertx.v != null) {
                 tryCleanTccl();
@@ -148,7 +173,7 @@ public class VertxCoreRecorder {
                             if (!id.equals(webDeploymentId)) {
                                 CountDownLatch latch = new CountDownLatch(1);
                                 latches.add(latch);
-                                vertx.v.undeploy(id, new Handler<AsyncResult<Void>>() {
+                                vertx.v.undeploy(id).onComplete(new Handler<AsyncResult<Void>>() {
                                     @Override
                                     public void handle(AsyncResult<Void> event) {
                                         latch.countDown();
@@ -200,7 +225,7 @@ public class VertxCoreRecorder {
     static void shutdownDevMode() {
         if (vertx != null) {
             CountDownLatch latch = new CountDownLatch(1);
-            vertx.get().close(new Handler<AsyncResult<Void>>() {
+            vertx.get().close().onComplete(new Handler<AsyncResult<Void>>() {
                 @Override
                 public void handle(AsyncResult<Void> event) {
                     latch.countDown();
@@ -223,7 +248,7 @@ public class VertxCoreRecorder {
         return vertx;
     }
 
-    public static Vertx initialize(VertxConfiguration conf, VertxOptionsCustomizer customizer,
+    public static Vertx initialize(VertxConfiguration conf, VertxCustomizer customizer,
             ThreadPoolConfig threadPoolConfig, ShutdownContext shutdown,
             LaunchMode launchMode, List<String> vertxServiceProviderClassNames,
             List<String> verticleFactoryClassNames) {
@@ -231,10 +256,9 @@ public class VertxCoreRecorder {
         VertxOptions options = new VertxOptions();
 
         if (conf != null) {
-            convertToVertxOptions(conf, options, threadPoolConfig, true, shutdown);
+            convertToVertxOptions(conf, options, threadPoolConfig, shutdown);
         }
 
-        // Allow extension customizers to do their thing
         if (customizer != null) {
             customizer.customize(options);
         }
@@ -249,35 +273,57 @@ public class VertxCoreRecorder {
                 return createVertxThread(target, name, worker, maxExecTime, maxExecTimeUnit, launchMode, nonDevModeTccl);
             }
         };
-        List<VertxServiceProvider> vertxServiceProviders = instantiateServices(vertxServiceProviderClassNames,
-                VertxServiceProvider.class);
-        List<VerticleFactory> verticleFactories = instantiateServices(verticleFactoryClassNames, VerticleFactory.class);
+        if (vertxServiceProviderClassNames == null) {
+            vertxServiceProviderClassNames = Collections.emptyList();
+        }
+        if (verticleFactoryClassNames == null) {
+            verticleFactoryClassNames = Collections.emptyList();
+        }
 
-        if (conf != null && conf.cluster() != null && conf.cluster().clustered()) {
-            CompletableFuture<Vertx> latch = new CompletableFuture<>();
-            new VertxBuilder(options)
-                    .serviceProviders(vertxServiceProviders)
-                    .verticleFactories(verticleFactories)
-                    .threadFactory(vertxThreadFactory)
-                    .executorServiceFactory(new QuarkusExecutorFactory(conf, launchMode))
-                    .init().clusteredVertx(new Handler<AsyncResult<Vertx>>() {
-                        @Override
-                        public void handle(AsyncResult<Vertx> ar) {
-                            if (ar.failed()) {
-                                latch.completeExceptionally(ar.cause());
-                            } else {
-                                latch.complete(ar.result());
-                            }
-                        }
-                    });
-            vertx = latch.join();
-        } else {
-            vertx = new VertxBuilder(options)
-                    .serviceProviders(vertxServiceProviders)
-                    .verticleFactories(verticleFactories)
-                    .threadFactory(vertxThreadFactory)
-                    .executorServiceFactory(new QuarkusExecutorFactory(conf, launchMode))
-                    .init().vertx();
+        var bootstrap = VertxBootstrap.create()
+                .options(options.setDisableTCCL(true))
+                .executorServiceFactory(new QuarkusExecutorFactory(conf, launchMode))
+                .threadFactory(vertxThreadFactory);
+
+        if (launchMode != LaunchMode.DEVELOPMENT) {
+            List<VertxServiceProvider> vertxServiceProviders = instantiateServices(vertxServiceProviderClassNames,
+                    VertxServiceProvider.class);
+            bootstrap.serviceProviders(vertxServiceProviders);
+        }
+
+        List<VerticleFactory> verticleFactories = instantiateServices(verticleFactoryClassNames, VerticleFactory.class);
+        bootstrap.verticleFactories(verticleFactories);
+
+        if (customizer != null) {
+            customizer.customize(bootstrap);
+        }
+
+        if (buildTimeConfig != null) {
+            NativeTransportType transportType = buildTimeConfig.nativeTransportType();
+            if (transportType != NativeTransportType.AUTO) {
+                io.vertx.core.transport.Transport requested = switch (transportType) {
+                    case EPOLL -> Transport.EPOLL;
+                    case KQUEUE -> Transport.KQUEUE;
+                    case IO_URING -> Transport.IO_URING;
+                    default -> null;
+                };
+                if (requested != null && requested.available()) {
+                    bootstrap.transport(requested.implementation());
+                }
+            } else if (buildTimeConfig.nativeTransport() != NativeTransportMode.DISABLED) {
+                // VertxBootstrap does not check VertxOptions.setPreferNativeTransport,
+                // so we mirror what VertxBuilder does: auto-detect the best transport.
+                Transport nativeTransport = Transport.nativeTransport();
+                if (nativeTransport != null && nativeTransport.available()) {
+                    bootstrap.transport(nativeTransport.implementation());
+                }
+            }
+        }
+
+        vertx = bootstrap.init().vertx();
+
+        for (VerticleFactory verticleFactory : verticleFactories) {
+            vertx.registerVerticleFactory(verticleFactory);
         }
 
         vertx.exceptionHandler(new Handler<Throwable>() {
@@ -308,7 +354,7 @@ public class VertxCoreRecorder {
 
     /**
      * Depending on the launch mode we may need to handle the TCCL differently.
-     *
+     * <p>
      * For dev mode it can change, so we don't want to capture the original TCCL (as this would be a leak). For other modes we
      * just want a fixed TCCL, and leaks are not an issue.
      *
@@ -340,32 +386,165 @@ public class VertxCoreRecorder {
         return thread;
     }
 
+    /**
+     * Validate and Log native transport selection.
+     * <p>
+     * The validation depends on the value of native-transport and native-transport-type:
+     *
+     * <ol>
+     * <li>If native-transport is set to disabled, it will use NIO.</li>
+     * <li>If native-transport is set to if-available (or a specific type is selected), and native-transport-type is set to
+     * auto, it will pick the most appropriate one. If no native transport is found on the classpath, it will use NIO</li>
+     * <li>If native-transport is set to required and native-transport-type selects an explicit transport, it will use
+     * this transport. If not found, an exception is thrown.</li>
+     * </ol>
+     *
+     * @param vertx the vert.x instance
+     * @return the vert.x instance
+     */
     private static Vertx logVertxInitialization(Vertx vertx) {
-        LOGGER.debugf("Vertx has Native Transport Enabled: %s", vertx.isNativeTransportEnabled());
+        if (buildTimeConfig == null) {
+            LOGGER.debugf("Vertx has Native Transport Enabled: %s", vertx.isNativeTransportEnabled());
+            return vertx;
+        }
+
+        NativeTransportType requestedType = buildTimeConfig.nativeTransportType();
+        NativeTransportMode mode = buildTimeConfig.nativeTransport();
+        boolean preferNative = mode != NativeTransportMode.DISABLED || requestedType != NativeTransportType.AUTO;
+        boolean required = mode == NativeTransportMode.REQUIRED;
+
+        if (!preferNative) {
+            LOGGER.debugf("Vertx has Native Transport Enabled: %s", vertx.isNativeTransportEnabled());
+            return vertx;
+        }
+
+        if (vertx.isNativeTransportEnabled()) {
+            if (requestedType != NativeTransportType.AUTO) {
+                Transport requestedTransport = switch (requestedType) {
+                    case EPOLL -> Transport.EPOLL;
+                    case KQUEUE -> Transport.KQUEUE;
+                    case IO_URING -> Transport.IO_URING;
+                    default -> null;
+                };
+                if (requestedTransport != null && requestedTransport.available()) {
+                    LOGGER.infof("Native transport enabled: %s", requestedType.transportName);
+                } else if (requestedTransport != null) {
+                    // We have an explicit request for a given transport, but it's not available
+                    String activeTransport = detectActiveTransportName();
+                    String msg = String.format(
+                            "Requested native transport '%s' but '%s' was loaded instead.",
+                            requestedType.transportName, activeTransport);
+                    if (required) {
+                        throw new IllegalStateException(msg);
+                    }
+                    LOGGER.warnf(msg);
+                }
+            } else {
+                // auto
+                String activeTransport = detectActiveTransportName();
+                LOGGER.infof("Native transport enabled: %s", activeTransport);
+            }
+        } else {
+            Set<String> detected = detectedNativeTransports;
+            String msg;
+            if (detected.isEmpty()) {
+                msg = "Native transport was requested but no native transport dependency was found. "
+                        + "Add io.netty:netty-transport-native-epoll (Linux) or "
+                        + "io.netty:netty-transport-native-kqueue (macOS) to your project. "
+                        + "See the Native Transport Reference guide for details.";
+            } else {
+                Transport requestedTransport = null;
+                if (requestedType != NativeTransportType.AUTO) {
+                    requestedTransport = switch (requestedType) {
+                        case EPOLL -> Transport.EPOLL;
+                        case KQUEUE -> Transport.KQUEUE;
+                        case IO_URING -> Transport.IO_URING;
+                        default -> null;
+                    };
+                } else {
+                    if (detected.contains("epoll")) {
+                        requestedTransport = Transport.EPOLL;
+                    } else if (detected.contains("io_uring")) {
+                        requestedTransport = Transport.IO_URING;
+                    }
+                }
+
+                // Prefer the transport-specific cause (more precise), fall back to Vert.x-level cause
+                Throwable cause = null;
+                if (requestedTransport != null) {
+                    cause = requestedTransport.unavailabilityCause();
+                }
+                if (cause == null) {
+                    cause = vertx.unavailableNativeTransportCause();
+                }
+
+                if (cause != null) {
+                    msg = String.format(
+                            "Native transport was requested and %s was found on the classpath, "
+                                    + "but it failed to load on this platform. Cause: %s",
+                            detected, cause.getMessage());
+                } else {
+                    msg = String.format(
+                            "Native transport was requested and %s was found on the classpath, "
+                                    + "but it failed to load on this platform.",
+                            detected);
+                }
+
+                if (required) {
+                    if (requestedTransport != null && requestedTransport.unavailabilityCause() != null) {
+                        LOGGER.errorf("Unable to load native transport: " + requestedTransport.name(),
+                                requestedTransport.unavailabilityCause());
+                    }
+                    throw new IllegalStateException(msg, cause);
+                }
+            }
+            LOGGER.warn(msg);
+        }
+
         return vertx;
     }
 
+    private static String detectActiveTransportName() {
+        try {
+            var epoll = Transport.EPOLL;
+            if (epoll != null && epoll.available()) {
+                return NativeTransportType.EPOLL.transportName;
+            }
+        } catch (Throwable ignored) {
+        }
+        try {
+            var kqueue = Transport.KQUEUE;
+            if (kqueue != null && kqueue.available()) {
+                return NativeTransportType.KQUEUE.transportName;
+            }
+        } catch (Throwable ignored) {
+        }
+        try {
+            var iouring = Transport.IO_URING;
+            if (iouring != null && iouring.available()) {
+                return NativeTransportType.IO_URING.transportName;
+            }
+        } catch (Throwable ignored) {
+            // Ignore the loading issue, it will be made available using `unavailableNativeTransportCause`
+        }
+        return "unknown";
+    }
+
     private static VertxOptions convertToVertxOptions(VertxConfiguration conf, VertxOptions options,
-            ThreadPoolConfig threadPoolConfig, boolean allowClustering,
+            ThreadPoolConfig threadPoolConfig,
             ShutdownContext shutdown) {
 
         if (!conf.useAsyncDNS()) {
-            System.setProperty(ResolverProvider.DISABLE_DNS_RESOLVER_PROP_NAME, "true");
+            System.setProperty(SysProps.DISABLE_DNS_RESOLVER.name, "true");
         }
 
         setAddressResolverOptions(conf, options);
-
-        if (allowClustering) {
-            // Order matters, as the cluster options modifies the event bus options.
-            setEventBusOptions(conf, options);
-            initializeClusterOptions(conf, options);
-        }
 
         FileSystemOptions fileSystemOptions = new FileSystemOptions()
                 .setFileCachingEnabled(conf.caching())
                 .setClassPathResolvingEnabled(conf.classpathResolving());
 
-        String fileCacheDir = System.getProperty(CACHE_DIR_BASE_PROP_NAME);
+        String fileCacheDir = System.getProperty(SysProps.FILE_CACHE_DIR.name);
         if (fileCacheDir == null) {
             fileCacheDir = conf.cacheDirectory().orElse(null);
         }
@@ -415,7 +594,7 @@ public class VertxCoreRecorder {
         options.setInternalBlockingPoolSize(conf.internalBlockingPoolSize());
         blockingThreadPoolSize = conf.internalBlockingPoolSize();
 
-        options.setBlockedThreadCheckInterval(conf.warningExceptionTime().toMillis());
+        options.setBlockedThreadCheckInterval(conf.blockedThreadCheckInterval().toMillis());
         if (conf.eventLoopsPoolSize().isPresent()) {
             options.setEventLoopPoolSize(conf.eventLoopsPoolSize().getAsInt());
         } else {
@@ -430,7 +609,13 @@ public class VertxCoreRecorder {
 
         options.setWarningExceptionTime(conf.warningExceptionTime().toNanos());
 
-        options.setPreferNativeTransport(conf.preferNativeTransport());
+        boolean preferNative = buildTimeConfig != null
+                && (buildTimeConfig.nativeTransport() != NativeTransportMode.DISABLED
+                        || buildTimeConfig.nativeTransportType() != NativeTransportType.AUTO);
+        options.setPreferNativeTransport(preferNative);
+
+        options.setDisableTCCL(true);
+        options.setUseDaemonThread(false);
 
         return options;
     }
@@ -466,7 +651,7 @@ public class VertxCoreRecorder {
             FastThreadLocal.destroy();
             CountDownLatch latch = new CountDownLatch(1);
             AtomicReference<Throwable> problem = new AtomicReference<>();
-            vertx.v.close(new Handler<AsyncResult<Void>>() {
+            vertx.v.close().onComplete(new Handler<AsyncResult<Void>>() {
                 @Override
                 public void handle(AsyncResult<Void> ar) {
                     if (ar.failed()) {
@@ -497,68 +682,15 @@ public class VertxCoreRecorder {
         }
     }
 
-    private static void initializeClusterOptions(VertxConfiguration conf, VertxOptions options) {
-        ClusterConfiguration cluster = conf.cluster();
-        options.getEventBusOptions().setClusterPingReplyInterval(cluster.pingReplyInterval().toMillis());
-        options.getEventBusOptions().setClusterPingInterval(cluster.pingInterval().toMillis());
-        if (cluster.host() != null) {
-            options.getEventBusOptions().setHost(cluster.host());
-        }
-        if (cluster.port().isPresent()) {
-            options.getEventBusOptions().setPort(cluster.port().getAsInt());
-        }
-        if (cluster.publicHost().isPresent()) {
-            options.getEventBusOptions().setClusterPublicHost(cluster.publicHost().get());
-        }
-        if (cluster.publicPort().isPresent()) {
-            options.getEventBusOptions().setPort(cluster.publicPort().getAsInt());
-        }
-    }
-
-    private static void setEventBusOptions(VertxConfiguration conf, VertxOptions options) {
-        EventBusConfiguration eb = conf.eventbus();
-        EventBusOptions opts = new EventBusOptions();
-        opts.setAcceptBacklog(eb.acceptBacklog().orElse(-1));
-        opts.setClientAuth(ClientAuth.valueOf(eb.clientAuth().toUpperCase()));
-        opts.setConnectTimeout((int) (Math.min(Integer.MAX_VALUE, eb.connectTimeout().toMillis())));
-        opts.setIdleTimeout(
-                eb.idleTimeout().isPresent()
-                        ? (int) Math.max(1, Math.min(Integer.MAX_VALUE, eb.idleTimeout().get().getSeconds()))
-                        : 0);
-        opts.setSendBufferSize(eb.sendBufferSize().orElse(-1));
-        opts.setSoLinger(eb.soLinger().orElse(-1));
-        opts.setSsl(eb.ssl());
-        opts.setReceiveBufferSize(eb.receiveBufferSize().orElse(-1));
-        opts.setReconnectAttempts(eb.reconnectAttempts());
-        opts.setReconnectInterval(eb.reconnectInterval().toMillis());
-        opts.setReuseAddress(eb.reuseAddress());
-        opts.setReusePort(eb.reusePort());
-        opts.setTrafficClass(eb.trafficClass().orElse(-1));
-        opts.setTcpKeepAlive(eb.tcpKeepAlive());
-        opts.setTcpNoDelay(eb.tcpNoDelay());
-        opts.setTrustAll(eb.trustAll());
-
-        // Certificates and trust.
-        configurePemKeyCertOptions(opts, eb.keyCertificatePem());
-        configureJksKeyCertOptions(opts, eb.keyCertificateJks());
-        configurePfxKeyCertOptions(opts, eb.keyCertificatePfx());
-
-        configurePemTrustOptions(opts, eb.trustCertificatePem());
-        configureJksKeyCertOptions(opts, eb.trustCertificateJks());
-        configurePfxTrustOptions(opts, eb.trustCertificatePfx());
-
-        options.setEventBusOptions(opts);
-    }
-
     private static void setAddressResolverOptions(VertxConfiguration conf, VertxOptions options) {
         AddressResolverConfiguration ar = conf.resolver();
         AddressResolverOptions opts = new AddressResolverOptions();
-        opts.setCacheMaxTimeToLive(ar.cacheMaxTimeToLive());
-        opts.setCacheMinTimeToLive(ar.cacheMinTimeToLive());
-        opts.setCacheNegativeTimeToLive(ar.cacheNegativeTimeToLive());
+        opts.setCacheMaxTimeToLive((int) ar.cacheMaxTimeToLive().toSeconds());
+        opts.setCacheMinTimeToLive((int) ar.cacheMinTimeToLive().toSeconds());
+        opts.setCacheNegativeTimeToLive((int) ar.cacheNegativeTimeToLive().toSeconds());
         opts.setMaxQueries(ar.maxQueries());
         opts.setQueryTimeout(ar.queryTimeout().toMillis());
-        opts.setHostsRefreshPeriod(ar.hostRefreshPeriod());
+        opts.setHostsRefreshPeriod((int) ar.hostRefreshPeriod().toMillis());
         opts.setOptResourceEnabled(ar.optResourceEnabled());
         opts.setRdFlag(ar.rdFlag());
         opts.setNdots(ar.ndots());
@@ -588,7 +720,7 @@ public class VertxCoreRecorder {
             @Override
             public EventLoopGroup get() {
                 vertx.get();
-                return ((VertxImpl) vertx.v).getAcceptorEventLoopGroup();
+                return ((VertxImpl) vertx.v).acceptorEventLoopGroup();
             }
         };
     }
@@ -597,7 +729,7 @@ public class VertxCoreRecorder {
         return new Supplier<EventLoopGroup>() {
             @Override
             public EventLoopGroup get() {
-                return vertx.get().nettyEventLoopGroup();
+                return ((VertxImpl) vertx.v).nettyEventLoopGroup();
             }
         };
     }
@@ -669,39 +801,55 @@ public class VertxCoreRecorder {
         return new ContextHandler<Object>() {
             @Override
             public Object captureContext() {
-                return Vertx.currentContext();
+                io.vertx.core.Context ctx = Vertx.currentContext();
+                if (ctx == null) {
+                    return null;
+                }
+                // Snapshot local context data and MDC at capture time (on the submitting
+                // thread) so that concurrent modifications to the original context after
+                // submission don't affect the dispatched task.
+                ConcurrentHashMap<String, Object> localSnapshot = new ConcurrentHashMap<>(
+                        VertxContext.localContextData(ctx));
+                ConcurrentHashMap<String, Object> mdcSnapshot = new ConcurrentHashMap<>(
+                        VertxMDC.MDC_LOCAL.get(ctx, ConcurrentHashMap::new));
+                return new Object[] { ctx, localSnapshot, mdcSnapshot };
             }
 
             @Override
             public void runWith(Runnable task, Object context) {
+                if (context == null) {
+                    task.run();
+                    return;
+                }
+                Object[] captured = (Object[]) context;
+                ContextInternal vertxContext = (ContextInternal) captured[0];
+                ConcurrentHashMap<String, Object> localSnapshot = (ConcurrentHashMap<String, Object>) captured[1];
+                ConcurrentHashMap<String, Object> mdcSnapshot = (ConcurrentHashMap<String, Object>) captured[2];
+
                 ContextInternal currentContext = (ContextInternal) Vertx.currentContext();
-                // Only do context handling if it's non-null
-                if (context != null && context != currentContext) {
-                    ContextInternal vertxContext = (ContextInternal) context;
-                    // The CDI contexts must not be propagated
-                    // First test if VertxCurrentContextFactory is actually used
-                    if (ignoredKeys != null) {
-                        ConcurrentMap<Object, Object> local = vertxContext.localContextData();
-                        if (containsIgnoredKey(ignoredKeys, local)) {
-                            // Duplicate the context, copy the data, remove the request context
-                            vertxContext = vertxContext.duplicate();
-                            vertxContext.localContextData().putAll(local);
-                            ignoredKeys.forEach(vertxContext.localContextData()::remove);
-                            VertxContextSafetyToggle.setContextSafe(vertxContext, true);
-                        }
+                if (vertxContext != currentContext) {
+                    // Each dispatched task gets its own duplicate context to prevent
+                    // concurrent threads from clobbering each other's local context data
+                    ContextInternal taskContext = vertxContext.duplicate();
+                    VertxContext.localContextData(taskContext).putAll(localSnapshot);
+                    VertxMDC.MDC_LOCAL.get(taskContext, ConcurrentHashMap::new).putAll(mdcSnapshot);
+
+                    if (ignoredKeys != null && containsIgnoredKey(ignoredKeys, localSnapshot)) {
+                        ignoredKeys.forEach(VertxContext.localContextData(taskContext)::remove);
                     }
-                    vertxContext.beginDispatch();
+                    VertxContextSafetyToggle.setContextSafe(taskContext, true);
+                    taskContext.beginDispatch();
                     try {
                         task.run();
                     } finally {
-                        vertxContext.endDispatch(currentContext);
+                        taskContext.endDispatch(currentContext);
                     }
                 } else {
                     task.run();
                 }
             }
 
-            private boolean containsIgnoredKey(List<String> keys, Map<Object, Object> localContextData) {
+            private boolean containsIgnoredKey(List<String> keys, Map<String, Object> localContextData) {
                 if (keys.isEmpty()) {
                     return false;
                 }
@@ -721,8 +869,9 @@ public class VertxCoreRecorder {
     }
 
     public static Supplier<Vertx> recoverFailedStart(VertxConfiguration config, ThreadPoolConfig threadPoolConfig) {
-        return vertx = new VertxSupplier(LaunchMode.DEVELOPMENT, config, Collections.emptyList(), threadPoolConfig, null,
-                List.of(), List.of());
+        return vertx = new VertxSupplier(LaunchMode.DEVELOPMENT, config, Collections.emptyList(), Collections.emptyList(),
+                threadPoolConfig, null, List.of(),
+                List.of());
 
     }
 
@@ -736,20 +885,22 @@ public class VertxCoreRecorder {
     static class VertxSupplier implements Supplier<Vertx> {
         final LaunchMode launchMode;
         final VertxConfiguration config;
-        final VertxOptionsCustomizer customizer;
+        final VertxCustomizer customizer;
         final ThreadPoolConfig threadPoolConfig;
         final ShutdownContext shutdown;
         final List<String> vertxServiceProviderClassNames;
         final List<String> verticleFactoryClassNames;
         Vertx v;
 
-        VertxSupplier(LaunchMode launchMode, VertxConfiguration config, List<Consumer<VertxOptions>> customizers,
+        VertxSupplier(LaunchMode launchMode, VertxConfiguration config,
+                List<Consumer<VertxBootstrap>> bootstrapCustomizers,
+                List<Consumer<VertxOptions>> optionCustomizers,
                 ThreadPoolConfig threadPoolConfig,
                 ShutdownContext shutdown,
                 List<String> vertxServiceProviderClassNames, List<String> verticleFactoryClassNames) {
             this.launchMode = launchMode;
             this.config = config;
-            this.customizer = new VertxOptionsCustomizer(customizers);
+            this.customizer = new VertxCustomizer(bootstrapCustomizers, optionCustomizers);
             this.threadPoolConfig = threadPoolConfig;
             this.shutdown = shutdown;
             this.vertxServiceProviderClassNames = vertxServiceProviderClassNames;
@@ -766,25 +917,38 @@ public class VertxCoreRecorder {
         }
     }
 
-    static class VertxOptionsCustomizer {
-        final List<Consumer<VertxOptions>> customizers;
+    public static class VertxCustomizer {
+        private final List<Consumer<VertxBootstrap>> bootstrapCustomizers;
+        private final List<Consumer<VertxOptions>> optionCustomizers;
 
-        VertxOptionsCustomizer(List<Consumer<VertxOptions>> customizers) {
-            this.customizers = customizers;
+        VertxCustomizer(List<Consumer<VertxBootstrap>> bootstrapCustomizers,
+                List<Consumer<VertxOptions>> optionCustomizers) {
+            this.bootstrapCustomizers = bootstrapCustomizers;
+            this.optionCustomizers = optionCustomizers;
+            // Append runtime customizers at the end of the list.
             if (Arc.container() != null) {
                 List<InstanceHandle<io.quarkus.vertx.VertxOptionsCustomizer>> instances = Arc.container()
                         .listAll(io.quarkus.vertx.VertxOptionsCustomizer.class);
                 for (InstanceHandle<io.quarkus.vertx.VertxOptionsCustomizer> customizer : instances) {
-                    customizers.add(customizer.get());
+                    optionCustomizers.add(customizer.get());
                 }
+
+                // No Runtime customization of the VertxBootstrap, it's an internal Vert.x API.
             }
         }
 
         VertxOptions customize(VertxOptions options) {
-            for (Consumer<VertxOptions> x : customizers) {
+            for (Consumer<VertxOptions> x : optionCustomizers) {
                 x.accept(options);
             }
             return options;
+        }
+
+        VertxBootstrap customize(VertxBootstrap bootstrap) {
+            for (Consumer<VertxBootstrap> x : bootstrapCustomizers) {
+                x.accept(bootstrap);
+            }
+            return bootstrap;
         }
     }
 

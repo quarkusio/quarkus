@@ -10,8 +10,6 @@ import java.util.concurrent.TimeUnit;
 import org.hamcrest.Matcher;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledForJreRange;
-import org.junit.jupiter.api.condition.JRE;
 
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTest;
@@ -103,7 +101,6 @@ public class KafkaContextPropagationTest {
         }
 
         @Test
-        @EnabledForJreRange(min = JRE.JAVA_21)
         void testVirtualThread() {
             given().body("rose").post("/flowers/virtual-thread").then()
                     .statusCode(500)
@@ -117,7 +114,6 @@ public class KafkaContextPropagationTest {
         }
 
         @Test
-        @EnabledForJreRange(min = JRE.JAVA_21)
         void testVirtualThreadUni() {
             given().body("rose").post("/flowers/uni/virtual-thread").then()
                     .statusCode(500)
@@ -177,7 +173,6 @@ public class KafkaContextPropagationTest {
         }
 
         @Test
-        @EnabledForJreRange(min = JRE.JAVA_21)
         void testVirtualThread() {
             given().body("rose").post("/flowers/contextual/virtual-thread").then().statusCode(204);
             given().body("peony").post("/flowers/contextual/virtual-thread").then().statusCode(204);
@@ -185,7 +180,6 @@ public class KafkaContextPropagationTest {
         }
 
         @Test
-        @EnabledForJreRange(min = JRE.JAVA_21)
         void testVirtualThreadUni() {
             given().body("rose").post("/flowers/contextual/uni/virtual-thread").then().statusCode(204);
             given().body("peony").post("/flowers/contextual/uni/virtual-thread").then().statusCode(204);
@@ -275,7 +269,6 @@ public class KafkaContextPropagationTest {
         }
 
         @Test
-        @EnabledForJreRange(min = JRE.JAVA_21)
         void testVirtualThread() {
             given().body("rose").post("/flowers/mutiny/virtual-thread").then()
                     .statusCode(500)
@@ -289,7 +282,6 @@ public class KafkaContextPropagationTest {
         }
 
         @Test
-        @EnabledForJreRange(min = JRE.JAVA_21)
         void testVirtualThreadUni() {
             given().body("rose").post("/flowers/mutiny/uni/virtual-thread").then()
                     .statusCode(500)

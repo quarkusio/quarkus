@@ -5,7 +5,6 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Using the REST Client
 include::_attributes.adoc[]
-:categories: web
 :summary: This guide explains how to use the REST Client.
 :topics: rest,rest-client,resteasy-reactive
 :extensions: io.quarkus:quarkus-rest-client,io.quarkus:quarkus-rest-client-jackson,io.quarkus:quarkus-rest-client-jsonb
@@ -330,6 +329,36 @@ public interface ExtensionsService {
 }
 ----
 
+=== Matrix Parameters
+
+Matrix parameters can be specified with `@MatrixParam` or `@RestMatrix`. The `@RestMatrix` annotation is equivalent to
+`@MatrixParam`, but the name is optional — when omitted, the parameter name is used.
+
+[source, java]
+----
+package org.acme.rest.client;
+
+import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
+import org.jboss.resteasy.reactive.RestMatrix;
+
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.MatrixParam;
+import jakarta.ws.rs.Path;
+
+@Path("/greet")
+@RegisterRestClient
+public interface GreetingService {
+
+    @GET
+    String greet(@MatrixParam("name") String name);
+
+    @GET
+    String greetRest(@RestMatrix String name);
+}
+----
+
+Calling `greet("world")` sends a request to `/greet;name=world`.
+
 === Dynamic base URLs
 
 The REST client allows for a per invocation override of the base URL using the `io.quarkus.rest.client.reactive.Url` annotation.
@@ -549,6 +578,24 @@ quarkus.rest-client.alpn=true
 // or for a single REST Client:
 quarkus.rest-client.extensions-api.alpn=true
 ----
+
+[[http3]]
+=== HTTP/3 Support
+
+The REST Client can connect to HTTP/3 servers when the `quarkus-http3` extension is on the classpath.
+HTTP/3 is disabled by default.
+To enable it:
+
+[source, properties]
+----
+// for all REST Clients:
+quarkus.rest-client.http3=true
+// or for a single REST Client:
+quarkus.rest-client.my-client.http3=true
+----
+
+The target server must support HTTP/3 and the connection must use TLS.
+See the xref:http3-reference.adoc[HTTP/3 reference guide] for server-side setup and additional details.
 
 == Programmatic client creation with QuarkusRestClientBuilder
 
@@ -2011,6 +2058,24 @@ The port the proxy is listening can be found in startup logs. An example entry i
 ----
 Started HTTP proxy server on http://localhost:38227 for REST Client 'org.acme.SomeClient'
 ----
+
+== Unix domain socket
+
+The REST client can connect to a server listening on a Unix domain socket instead of using a network connection.
+This is useful when communicating with services co-located on the same host (for example, a local daemon or sidecar) without going through the network stack.
+
+To use a domain socket, set the `domain-socket` property to the path of the socket file.
+The `url` (or `uri`) property is still required — it provides the HTTP `Host` header and request path:
+
+[source,properties]
+----
+quarkus.rest-client.my-client.url=http://localhost
+quarkus.rest-client.my-client.domain-socket=/var/run/my-service.sock
+----
+
+The network connection is replaced by the socket; `host` and `port` from the URL are used only for the HTTP `Host` header.
+
+NOTE: Unix domain sockets are not available on Windows.
 
 == Package and run the application
 

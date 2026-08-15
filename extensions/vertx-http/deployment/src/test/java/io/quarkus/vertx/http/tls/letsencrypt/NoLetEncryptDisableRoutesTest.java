@@ -99,7 +99,7 @@ public class NoLetEncryptDisableRoutesTest {
     }
 
     private <T> T await(Future<T> future) {
-        return future.toCompletionStage().toCompletableFuture().join();
+        return future.await();
     }
 
     @ApplicationScoped

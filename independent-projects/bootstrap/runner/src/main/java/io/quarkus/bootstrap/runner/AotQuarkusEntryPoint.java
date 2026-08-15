@@ -40,9 +40,7 @@ public class AotQuarkusEntryPoint {
     }
 
     private static void doRun(String... args) throws Throwable {
-        Path jarPath = QuarkusEntryPoint.resolveJarPath(
-                AotQuarkusEntryPoint.class.getProtectionDomain().getCodeSource().getLocation(),
-                AotQuarkusEntryPoint.class.getResource(AotQuarkusEntryPoint.class.getSimpleName() + ".class"));
+        Path jarPath = QuarkusEntryPoint.resolveJarPath(AotQuarkusEntryPoint.class);
         if (jarPath == null) {
             throw new IllegalStateException("Unable to determine launch jar path");
         }

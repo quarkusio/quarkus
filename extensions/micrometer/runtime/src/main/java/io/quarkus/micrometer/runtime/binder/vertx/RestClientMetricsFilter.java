@@ -71,7 +71,6 @@ public class RestClientMetricsFilter implements ResteasyReactiveClientRequestFil
                     httpMetricsConfig.getClientMatchPatterns(),
                     httpMetricsConfig.getClientIgnorePatterns(),
                     templatePath == null ? requestContext.getUri().getPath() : templatePath);
-
             if (requestPath != null) {
                 Timer.Sample sample = requestMetric.getSample();
                 int statusCode = responseContext.getStatus();

@@ -9,7 +9,7 @@ import io.quarkus.redis.datasource.transactions.ReactiveTransactionalRedisDataSo
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
-import io.vertx.mutiny.redis.client.Response;
+import io.vertx.redis.client.Response;
 
 public class ReactiveTransactionalJsonCommandsImpl<K> extends AbstractTransactionalCommands
         implements ReactiveTransactionalJsonCommands<K> {

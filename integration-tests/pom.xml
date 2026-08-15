@@ -161,6 +161,7 @@
             </activation>
             <modules>
                 <module>core</module>
+                <module>agroal</module>
                 <module>avro-reload</module>
                 <module>awt</module>
                 <module>awt-packaging</module>
@@ -235,8 +236,10 @@
                 <module>hibernate-orm-envers</module>
                 <module>hibernate-orm-spatial</module>
                 <module>hibernate-orm-vector</module>
+                <module>hibernate-orm-temporal</module>
                 <module>vertx-http</module>
                 <module>vertx-http-compressors</module>
+                <module>vertx-native-transport</module>
                 <module>vertx-web</module>
                 <module>vertx-web-jackson</module>
                 <module>vertx</module>
@@ -250,6 +253,7 @@
                 <module>spring-cloud-config-client</module>
                 <module>spring-data-rest</module>
                 <module>spring-tx</module>
+                <module>spring-test</module>
                 <module>infinispan-cache</module>
                 <module>elytron-security</module>
                 <module>elytron-security-oauth2</module>
@@ -271,6 +275,7 @@
                 <module>oidc-dev-services</module>
                 <module>oidc-mtls</module>
                 <module>oidc-dpop</module>
+                <module>oidc-spiffe</module>
                 <module>oidc-token-propagation</module>
                 <module>oidc-token-propagation-reactive</module>
                 <module>openapi</module>
@@ -317,7 +322,7 @@
                 <module>virtual-http-resteasy</module>
                 <module>command-mode</module>
                 <module>maven</module>
-                <module>scala</module>
+
                 <module>kotlin</module>
                 <module>kotlin-maven-invoker</module>
                 <module>mongodb-panache</module>
@@ -361,6 +366,9 @@
                 <module>resteasy-reactive-kotlin</module>
                 <module>rest-client-reactive</module>
                 <module>rest-client-reactive-http2</module>
+                <module>http-3-rest</module>
+                <module>http-3-rest-client</module>
+                <module>http-3-rest-auto-tls</module>
                 <module>rest-client-reactive-kotlin-serialization</module>
                 <module>rest-client-reactive-kotlin-serialization-with-validator</module>
                 <module>rest-client-reactive-multipart</module>
@@ -381,6 +389,7 @@
                 <module>elasticsearch-rest-client</module>
                 <module>elasticsearch-java-client</module>
                 <module>micrometer-prometheus</module>
+                <module>micrometer-prometheus-opentelemetry</module>
                 <module>micrometer-security</module>
                 <module>micrometer-opentelemetry</module>
                 <module>opentelemetry</module>
@@ -416,7 +425,6 @@
                 <module>jfr-opentelemetry</module>
                 <!-- gRPC tests -->
                 <module>grpc-descriptor-sets</module>
-                <module>grpc-inprocess</module>
                 <module>grpc-vertx</module>
                 <module>grpc-tls</module>
                 <module>grpc-cli</module>
@@ -442,13 +450,13 @@
                 <module>grpc-proto3</module>
                 <module>grpc-proto4</module>
                 <module>grpc-encoding</module>
+                <module>grpc-domain-socket</module>
                 <module>google-cloud-functions-http</module>
                 <module>google-cloud-functions</module>
                 <module>istio</module>
                 <module>management-interface</module>
                 <module>management-interface-auth</module>
                 <module>mtls-certificates</module>
-                <!-- Virtual threads test -->
                 <module>virtual-threads</module>
                 <module>mutiny-native-jctools</module>
             </modules>

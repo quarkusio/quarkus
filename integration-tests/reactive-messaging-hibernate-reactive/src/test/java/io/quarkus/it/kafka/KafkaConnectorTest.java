@@ -25,13 +25,7 @@ public class KafkaConnectorTest {
     protected static final TypeRef<List<Fruit>> FRUIT_TYPE_REF = new TypeRef<List<Fruit>>() {
     };
 
-    protected static final TypeRef<List<Person>> PERSON_TYPE_REF = new TypeRef<List<Person>>() {
-    };
-
     protected static final TypeRef<List<Pet>> PET_TYPE_REF = new TypeRef<List<Pet>>() {
-    };
-
-    protected static final TypeRef<PeopleState> PEOPLE_STATE_TYPE_REF = new TypeRef<PeopleState>() {
     };
 
     @Test
@@ -50,20 +44,6 @@ public class KafkaConnectorTest {
                 .assertThat().statusCode(is(Response.Status.NO_CONTENT.getStatusCode()));
 
         await().untilAsserted(() -> Assertions.assertEquals(6, get("/kafka/fruits").as(FRUIT_TYPE_REF).size()));
-    }
-
-    @Test
-    public void testPeople() {
-        await().untilAsserted(() -> Assertions.assertEquals(get("/kafka/people").as(PERSON_TYPE_REF).size(), 6));
-        await().untilAsserted(() -> {
-            io.restassured.response.Response response = get("/kafka/people-state/{consumerGroupId}/{topic}/{partition}",
-                    "people-checkpoint", "people", 0);
-            Assertions.assertNotNull(response);
-            Assertions.assertTrue(response.asString().length() > 0);
-            PeopleState state = response.as(PEOPLE_STATE_TYPE_REF);
-            Assertions.assertNotNull(state);
-            Assertions.assertEquals("bob;alice;tom;jerry;anna;ken", state.names);
-        });
     }
 
     @Test
@@ -86,5 +66,26 @@ public class KafkaConnectorTest {
 
         await().untilAsserted(() -> Assertions.assertEquals(6, get("/kafka/pets").as(PET_TYPE_REF).size()));
         await().untilAsserted(() -> Assertions.assertEquals(6, get("/kafka/pets-consumed").as(PET_TYPE_REF).size()));
+    }
+
+    @Test
+    public void testExactlyOnceWithTransaction() {
+        await().atMost(java.time.Duration.ofSeconds(30)).untilAsserted(() -> {
+            List<String> processed = get("/kafka/exactly-once-fruit-processed").as(new TypeRef<List<String>>() {
+            });
+            Assertions.assertTrue(processed.size() >= 4, "Expected at least 4 processed, got " + processed.size());
+        });
+        await().atMost(java.time.Duration.ofSeconds(30)).untilAsserted(() -> {
+            List<String> results = get("/kafka/exactly-once-fruit-results").as(new TypeRef<List<String>>() {
+            });
+            Assertions.assertTrue(results.size() >= 4, "Expected at least 4 results, got " + results.size());
+            Assertions.assertTrue(results.contains("persisted-fruit-0"));
+        });
+        // Verify fruits were persisted to the database by the @WithTransaction method
+        await().atMost(java.time.Duration.ofSeconds(30)).untilAsserted(() -> {
+            List<?> fruits = get("/kafka/exactly-once-fruits").as(new TypeRef<List<?>>() {
+            });
+            Assertions.assertTrue(fruits.size() >= 4, "Expected at least 4 persisted fruits, got " + fruits.size());
+        });
     }
 }

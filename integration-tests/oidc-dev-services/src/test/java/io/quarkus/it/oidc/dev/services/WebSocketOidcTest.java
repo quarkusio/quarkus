@@ -21,9 +21,6 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import io.netty.handler.codec.http.websocketx.WebSocketCloseStatus;
 import io.quarkus.it.oidc.dev.services.SecurityIdentityUpdateWebSocket.ResponseDto;
 import io.quarkus.test.common.http.TestHTTPResource;
@@ -33,6 +30,7 @@ import io.vertx.core.Vertx;
 import io.vertx.core.http.WebSocket;
 import io.vertx.core.http.WebSocketClient;
 import io.vertx.core.http.WebSocketConnectOptions;
+import tools.jackson.databind.ObjectMapper;
 
 @QuarkusTest
 public class WebSocketOidcTest {
@@ -129,13 +127,9 @@ public class WebSocketOidcTest {
                         if (r.succeeded()) {
                             WebSocket ws = r.result();
                             ws.textMessageHandler(msg -> {
-                                try {
-                                    var responseDto = objectMapper.readValue(msg,
-                                            SecurityIdentityUpdateWebSocket.ResponseDto.class);
-                                    messages.add(responseDto);
-                                } catch (JsonProcessingException e) {
-                                    throw new RuntimeException(e);
-                                }
+                                var responseDto = objectMapper.readValue(msg,
+                                        SecurityIdentityUpdateWebSocket.ResponseDto.class);
+                                messages.add(responseDto);
                             });
                             ws1.set(ws);
                             connectedLatch.countDown();
@@ -310,11 +304,7 @@ public class WebSocketOidcTest {
             metadata = null;
         }
         var requestDto = new SecurityIdentityUpdateWebSocket.RequestDto(message, metadata);
-        try {
-            return objectMapper.writeValueAsString(requestDto);
-        } catch (JsonProcessingException e) {
-            throw new RuntimeException(e);
-        }
+        return objectMapper.writeValueAsString(requestDto);
     }
 
 }

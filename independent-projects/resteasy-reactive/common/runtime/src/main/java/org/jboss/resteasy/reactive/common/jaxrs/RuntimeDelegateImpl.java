@@ -144,7 +144,6 @@ public class RuntimeDelegateImpl extends RuntimeDelegate {
 
     @Override
     public EntityPart.Builder createEntityPartBuilder(String s) throws IllegalArgumentException {
-        // TODO: figure out how to implement this
-        throw new UnsupportedOperationException("Pending implementation");
+        return new EntityPartBuilderImpl(s);
     }
 }

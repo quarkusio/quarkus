@@ -14,7 +14,7 @@ import org.slf4j.LoggerFactory;
 import io.vertx.mutiny.core.Vertx;
 import io.vertx.mutiny.redis.client.Redis;
 import io.vertx.mutiny.redis.client.RedisAPI;
-import io.vertx.mutiny.redis.client.Response;
+import io.vertx.redis.client.Response;
 import io.vertx.redis.client.RedisOptions;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;

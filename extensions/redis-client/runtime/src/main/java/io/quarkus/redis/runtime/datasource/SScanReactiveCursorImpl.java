@@ -7,8 +7,8 @@ import java.util.List;
 import io.quarkus.redis.datasource.set.ReactiveSScanCursor;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
-import io.vertx.mutiny.redis.client.Command;
-import io.vertx.mutiny.redis.client.Response;
+import io.vertx.redis.client.Command;
+import io.vertx.redis.client.Response;
 
 public class SScanReactiveCursorImpl<V> extends AbstractRedisCommands implements ReactiveSScanCursor<V> {
 

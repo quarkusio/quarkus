@@ -24,7 +24,7 @@ import io.quarkus.redis.datasource.search.SpellCheckArgs;
 import io.quarkus.redis.datasource.search.SpellCheckResponse;
 import io.quarkus.redis.datasource.search.SynDumpResponse;
 import io.smallrye.mutiny.Uni;
-import io.vertx.mutiny.redis.client.Response;
+import io.vertx.redis.client.Response;
 import io.vertx.redis.client.ResponseType;
 
 public class ReactiveSearchCommandsImpl<K> extends AbstractSearchCommands<K>

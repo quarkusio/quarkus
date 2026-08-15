@@ -1,5 +1,6 @@
 package io.quarkus.spring.boot.properties.deployment;
 
+import java.lang.constant.ClassDesc;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -24,6 +25,7 @@ import org.jboss.jandex.FieldInfo;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
+import org.jboss.jandex.gizmo2.Jandex2Gizmo;
 import org.jboss.logging.Logger;
 
 import io.quarkus.arc.deployment.ConfigPropertyBuildItem;
@@ -33,19 +35,21 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.bean.JavaBeanUtil;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveMethodBuildItem;
-import io.quarkus.gizmo.BranchResult;
-import io.quarkus.gizmo.BytecodeCreator;
-import io.quarkus.gizmo.ClassCreator;
-import io.quarkus.gizmo.ClassOutput;
-import io.quarkus.gizmo.FieldCreator;
-import io.quarkus.gizmo.FieldDescriptor;
-import io.quarkus.gizmo.MethodCreator;
-import io.quarkus.gizmo.MethodDescriptor;
-import io.quarkus.gizmo.ResultHandle;
+import io.quarkus.gizmo2.ClassOutput;
+import io.quarkus.gizmo2.Const;
+import io.quarkus.gizmo2.Expr;
+import io.quarkus.gizmo2.Gizmo;
+import io.quarkus.gizmo2.LocalVar;
+import io.quarkus.gizmo2.creator.BlockCreator;
+import io.quarkus.gizmo2.creator.ClassCreator;
+import io.quarkus.gizmo2.desc.ClassMethodDesc;
+import io.quarkus.gizmo2.desc.ConstructorDesc;
+import io.quarkus.gizmo2.desc.FieldDesc;
+import io.quarkus.gizmo2.desc.InterfaceMethodDesc;
+import io.quarkus.gizmo2.desc.MethodDesc;
 import io.quarkus.runtime.StartupEvent;
 import io.quarkus.runtime.util.HashUtil;
 import io.quarkus.runtime.util.StringUtil;
-import io.quarkus.spring.boot.properties.deployment.ConfigurationPropertiesUtil.ReadOptionalResponse;
 import io.smallrye.config.Config;
 import io.smallrye.config.ConfigMapping;
 
@@ -103,43 +107,50 @@ final class ClassConfigurationPropertiesUtil {
      *
      * This class is useful in order to ensure that validation errors will prevent application startup
      */
-    static void generateStartupObserverThatInjectsConfigClass(ClassOutput classOutput, Set<DotName> configClasses) {
-        try (ClassCreator classCreator = ClassCreator.builder().classOutput(classOutput)
-                .className(ConfigurationPropertiesUtil.PACKAGE_TO_PLACE_GENERATED_CLASSES + ".ConfigPropertiesObserver")
-                .build()) {
-            classCreator.addAnnotation(Dependent.class);
+    static void generateStartupObserverThatInjectsConfigClass(ClassOutput classOutput,
+            Set<DotName> configClasses) {
+        Gizmo gizmo = Gizmo.create(classOutput);
+        gizmo.class_(ConfigurationPropertiesUtil.PACKAGE_TO_PLACE_GENERATED_CLASSES + ".ConfigPropertiesObserver", cc -> {
+            cc.addAnnotation(Dependent.class);
 
-            Map<DotName, FieldDescriptor> configClassToFieldDescriptor = new HashMap<>(configClasses.size());
+            Map<DotName, FieldDesc> configClassToFieldDesc = new HashMap<>(configClasses.size());
 
             for (DotName configClass : configClasses) {
                 String configClassStr = configClass.toString();
-                FieldCreator fieldCreator = classCreator
-                        .getFieldCreator(
-                                configClass.isInner() ? configClass.local()
-                                        : configClass.withoutPackagePrefix() + "_" + HashUtil.sha1(configClassStr),
-                                configClassStr)
-                        .setModifiers(Modifier.PUBLIC); // done to prevent warning during the build
-                fieldCreator.addAnnotation(Inject.class);
-
-                configClassToFieldDescriptor.put(configClass, fieldCreator.getFieldDescriptor());
+                String fieldName = configClass.isInner() ? configClass.local()
+                        : configClass.withoutPackagePrefix() + "_" + HashUtil.sha1(configClassStr);
+                FieldDesc fd = cc.field(fieldName, ifc -> {
+                    ifc.setType(ClassDesc.of(configClassStr));
+                    ifc.public_(); // done to prevent warning during the build
+                    ifc.addAnnotation(Inject.class);
+                });
+                configClassToFieldDesc.put(configClass, fd);
             }
 
-            try (MethodCreator methodCreator = classCreator.getMethodCreator("onStartup", void.class, StartupEvent.class)) {
-                methodCreator.getParameterAnnotations(0).addAnnotation(Observes.class);
-                for (DotName configClass : configClasses) {
-                    /*
-                     * We call toString on the bean which ensure that bean is created thus ensuring
-                     * validation is actually performed
-                     */
-                    ResultHandle field = methodCreator.readInstanceField(configClassToFieldDescriptor.get(configClass),
-                            methodCreator.getThis());
-                    methodCreator.invokeVirtualMethod(
-                            MethodDescriptor.ofMethod(configClass.toString(), "toString", String.class.getName()),
-                            field);
-                }
-                methodCreator.returnValue(null); // the method doesn't need to do anything
-            }
-        }
+            cc.defaultConstructor();
+
+            cc.method("onStartup", mc -> {
+                mc.returning(void.class);
+                mc.public_();
+                mc.parameter("ev", pc -> {
+                    pc.setType(StartupEvent.class);
+                    pc.addAnnotation(Observes.class);
+                });
+                mc.body(bc -> {
+                    for (DotName configClass : configClasses) {
+                        /*
+                         * We call toString on the bean which ensure that bean is created thus ensuring
+                         * validation is actually performed
+                         */
+                        bc.invokeVirtual(
+                                ClassMethodDesc.of(ClassDesc.of(configClass.toString()), "toString",
+                                        String.class),
+                                bc.get(mc.this_().field(configClassToFieldDesc.get(configClass))));
+                    }
+                    bc.return_(); // the method doesn't need to do anything
+                });
+            });
+        });
     }
 
     /**
@@ -183,18 +194,25 @@ final class ClassConfigurationPropertiesUtil {
          */
 
         String methodName = "produce" + configPropertiesClassInfo.name().withoutPackagePrefix();
-        try (MethodCreator methodCreator = producerClassCreator.getMethodCreator(
-                methodName, configObjectClassStr, produceMethodParameterTypes)) {
-            methodCreator.addAnnotation(Produces.class);
-            ResultHandle configObject = populateConfigObject(classLoader, configPropertiesClassInfo, prefixStr, namingStrategy,
-                    failOnMismatchingMember, instanceFactory, methodCreator);
+        producerClassCreator.method(methodName, mc -> {
+            mc.returning(ClassDesc.of(configObjectClassStr));
+            mc.public_();
+            mc.addAnnotation(Produces.class);
 
-            if (needsValidation) {
-                createValidationCodePath(methodCreator, configObject, prefixStr);
-            } else {
-                methodCreator.returnValue(configObject);
-            }
-        }
+            var configParam = mc.parameter("config", ClassDesc.of(Config.class.getName()));
+            var validatorParam = needsValidation ? mc.parameter("validator", ClassDesc.of(VALIDATOR_CLASS)) : null;
+
+            mc.body(bc -> {
+                Expr configObject = populateConfigObject(classLoader, configPropertiesClassInfo, prefixStr, namingStrategy,
+                        failOnMismatchingMember, instanceFactory, bc, configParam);
+
+                if (needsValidation) {
+                    createValidationCodePath(bc, configObject, validatorParam);
+                } else {
+                    bc.return_(configObject);
+                }
+            });
+        });
 
         return needsValidation;
     }
@@ -216,16 +234,16 @@ final class ClassConfigurationPropertiesUtil {
         }
     }
 
-    private ResultHandle populateConfigObject(ClassLoader classLoader, ClassInfo configClassInfo, String prefixStr,
+    private Expr populateConfigObject(ClassLoader classLoader, ClassInfo configClassInfo, String prefixStr,
             ConfigMapping.NamingStrategy namingStrategy,
             boolean failOnMismatchingMember,
-            ConfigurationPropertiesMetadataBuildItem.InstanceFactory instanceFactory, MethodCreator methodCreator) {
+            ConfigurationPropertiesMetadataBuildItem.InstanceFactory instanceFactory, BlockCreator bc, Expr configParam) {
         String configObjectClassStr = configClassInfo.name().toString();
-        ResultHandle configObject;
+        LocalVar configObject;
         if (instanceFactory == null) {
-            configObject = methodCreator.newInstance(MethodDescriptor.ofConstructor(configObjectClassStr));
+            configObject = bc.localVar("configObject", bc.new_(ConstructorDesc.of(ClassDesc.of(configObjectClassStr))));
         } else {
-            configObject = instanceFactory.apply(methodCreator, configObjectClassStr);
+            configObject = bc.localVar("configObject", instanceFactory.apply(bc, configObjectClassStr));
         }
 
         // Fields with a default value will be removed from this list at the end of the method.
@@ -287,11 +305,10 @@ final class ClassConfigurationPropertiesUtil {
                  */
                 DotName fieldTypeDotName = fieldType.name();
                 ClassInfo fieldTypeClassInfo = applicationIndex.getClassByName(fieldType.name());
-                ResultHandle config = methodCreator.getMethodParam(0);
                 if (fieldTypeClassInfo != null) {
                     if (DotNames.ENUM.equals(fieldTypeClassInfo.superName())) {
-                        populateTypicalProperty(methodCreator, configObject, configPropertyBuildItemCandidates,
-                                currentClassInHierarchy, field, useFieldAccess, fieldType, setter, config,
+                        populateTypicalProperty(bc, configObject, configPropertyBuildItemCandidates,
+                                currentClassInHierarchy, field, useFieldAccess, fieldType, setter, configParam,
                                 getFullConfigName(prefixStr, namingStrategy, field));
 
                         // we need to register the 'valueOf' method of the enum for reflection because
@@ -315,10 +332,10 @@ final class ClassConfigurationPropertiesUtil {
                                     "Nested configuration class '" + fieldTypeClassInfo + "' must be public ");
                         }
 
-                        ResultHandle nestedConfigObject = populateConfigObject(classLoader, fieldTypeClassInfo,
+                        Expr nestedConfigObject = populateConfigObject(classLoader, fieldTypeClassInfo,
                                 getFullConfigName(prefixStr, namingStrategy, field), namingStrategy, failOnMismatchingMember,
-                                null, methodCreator);
-                        createWriteValue(methodCreator, configObject, field, setter, useFieldAccess, nestedConfigObject);
+                                null, bc, configParam);
+                        createWriteValue(bc, configObject, field, setter, useFieldAccess, nestedConfigObject);
                     } else {
                         LOGGER.warn("Nested configuration class '" + fieldTypeClassInfo
                                 + "' declared in '" + currentClassInHierarchy.name() + "." + field.name() + "' is either an "
@@ -333,29 +350,33 @@ final class ClassConfigurationPropertiesUtil {
                         // config.getOptionalValue
                         if (genericType.kind() != Type.Kind.PARAMETERIZED_TYPE) {
                             ConfigurationPropertiesUtil.registerImplicitConverter(genericType, reflectiveClasses);
-                            ResultHandle setterValue = methodCreator.invokeInterfaceMethod(
-                                    MethodDescriptor.ofMethod(Config.class, "getOptionalValue", Optional.class, String.class,
+                            Expr setterValue = bc.invokeInterface(
+                                    MethodDesc.of(Config.class, "getOptionalValue", Optional.class, String.class,
                                             Class.class),
-                                    config, methodCreator.load(fullConfigName),
-                                    methodCreator.loadClassFromTCCL(genericType.name().toString()));
-                            createWriteValue(methodCreator, configObject, field, setter, useFieldAccess, setterValue);
+                                    configParam, Const.of(fullConfigName),
+                                    Const.of(Jandex2Gizmo.classDescOf(genericType)));
+                            createWriteValue(bc, configObject, field, setter, useFieldAccess, setterValue);
                         } else {
                             // convert the String value and populate an Optional with it
-                            ReadOptionalResponse readOptionalResponse = ConfigurationPropertiesUtil
-                                    .createReadOptionalValueAndConvertIfNeeded(
-                                            fullConfigName,
-                                            genericType, field.declaringClass().name(), methodCreator, config);
-                            createWriteValue(readOptionalResponse.getIsPresentTrue(), configObject, field, setter,
-                                    useFieldAccess,
-                                    readOptionalResponse.getIsPresentTrue().invokeStaticMethod(
-                                            MethodDescriptor.ofMethod(Optional.class, "of", Optional.class, Object.class),
-                                            readOptionalResponse.getValue()));
-
-                            // set Optional.empty if the value isn't set
-                            createWriteValue(readOptionalResponse.getIsPresentFalse(), configObject, field, setter,
-                                    useFieldAccess,
-                                    readOptionalResponse.getIsPresentFalse().invokeStaticMethod(
-                                            MethodDescriptor.ofMethod(Optional.class, "empty", Optional.class)));
+                            final boolean fUseFieldAccess = useFieldAccess;
+                            final MethodInfo fSetter = setter;
+                            ConfigurationPropertiesUtil.createReadOptionalValueAndConvertIfNeeded(
+                                    fullConfigName,
+                                    genericType, field.declaringClass().name(), bc, configParam,
+                                    (trueBranch, value) -> {
+                                        Expr optionalOf = trueBranch.invokeStatic(
+                                                MethodDesc.of(Optional.class, "of", Optional.class, Object.class),
+                                                value);
+                                        createWriteValue(trueBranch, configObject, field, fSetter, fUseFieldAccess,
+                                                optionalOf);
+                                    },
+                                    falseBranch -> {
+                                        // set Optional.empty if the value isn't set
+                                        Expr optionalEmpty = falseBranch.invokeStatic(
+                                                MethodDesc.of(Optional.class, "empty", Optional.class));
+                                        createWriteValue(falseBranch, configObject, field, fSetter, fUseFieldAccess,
+                                                optionalEmpty);
+                                    });
                         }
                     } else if (ConfigurationPropertiesUtil.isListOfObject(fieldType)) {
                         if (!capabilities.isPresent(Capability.CONFIG_YAML)) {
@@ -363,14 +384,14 @@ final class ClassConfigurationPropertiesUtil {
                                     "Support for List of objects in classes annotated with '@ConfigProperties' is only possible via the 'quarkus-config-yaml' extension. Offending field is '"
                                             + field.name() + "' of class '" + field.declaringClass().name().toString());
                         }
-                        ResultHandle setterValue = yamlListObjectHandler.handle(new YamlListObjectHandler.FieldMember(field),
-                                methodCreator, config,
+                        Expr setterValue = yamlListObjectHandler.handle(new YamlListObjectHandler.FieldMember(field),
+                                bc, configParam,
                                 getEffectiveConfigName(namingStrategy, field), fullConfigName);
-                        createWriteValue(methodCreator, configObject, field, setter, useFieldAccess, setterValue);
+                        createWriteValue(bc, configObject, field, setter, useFieldAccess, setterValue);
                     } else {
                         ConfigurationPropertiesUtil.registerImplicitConverter(fieldType, reflectiveClasses);
-                        populateTypicalProperty(methodCreator, configObject, configPropertyBuildItemCandidates,
-                                currentClassInHierarchy, field, useFieldAccess, fieldType, setter, config,
+                        populateTypicalProperty(bc, configObject, configPropertyBuildItemCandidates,
+                                currentClassInHierarchy, field, useFieldAccess, fieldType, setter, configParam,
                                 fullConfigName);
                     }
                 }
@@ -407,10 +428,10 @@ final class ClassConfigurationPropertiesUtil {
     }
 
     // creates the bytecode needed to populate anything other than a nested config object or an optional
-    private static void populateTypicalProperty(MethodCreator methodCreator, ResultHandle configObject,
+    private static void populateTypicalProperty(BlockCreator bc, Expr configObject,
             List<ConfigPropertyBuildItemCandidate> configPropertyBuildItemCandidates, ClassInfo currentClassInHierarchy,
             FieldInfo field, boolean useFieldAccess, Type fieldType, MethodInfo setter,
-            ResultHandle config, String fullConfigName) {
+            Expr config, String fullConfigName) {
         /*
          * We want to support cases where the Config class defines a default value for fields
          * by simply specifying the default value in its constructor
@@ -419,23 +440,25 @@ final class ClassConfigurationPropertiesUtil {
          * and if the value is not null we don't fail
          */
         if (shouldCheckForDefaultValue(currentClassInHierarchy, field)) {
-            ReadOptionalResponse readOptionalResponse = ConfigurationPropertiesUtil.createReadOptionalValueAndConvertIfNeeded(
+            ConfigurationPropertiesUtil.createReadOptionalValueAndConvertIfNeeded(
                     fullConfigName,
-                    fieldType, field.declaringClass().name(), methodCreator, config);
-
-            // call the setter if the optional contained data
-            createWriteValue(readOptionalResponse.getIsPresentTrue(), configObject, field, setter,
-                    useFieldAccess,
-                    readOptionalResponse.getValue());
+                    fieldType, field.declaringClass().name(), bc, config,
+                    (trueBranch, value) -> {
+                        // call the setter if the optional contained data
+                        createWriteValue(trueBranch, configObject, field, setter, useFieldAccess, value);
+                    },
+                    falseBranch -> {
+                        // do nothing when the value is absent - keep the default
+                    });
         } else {
             /*
              * In this case we want a missing property to cause an exception that we don't handle
              * So we call config.getValue making sure to handle collection values
              */
-            ResultHandle setterValue = ConfigurationPropertiesUtil.createReadMandatoryValueAndConvertIfNeeded(
+            Expr setterValue = ConfigurationPropertiesUtil.createReadMandatoryValueAndConvertIfNeeded(
                     fullConfigName, fieldType,
-                    field.declaringClass().name(), methodCreator, config);
-            createWriteValue(methodCreator, configObject, field, setter, useFieldAccess, setterValue);
+                    field.declaringClass().name(), bc, config);
+            createWriteValue(bc, configObject, field, setter, useFieldAccess, setterValue);
 
         }
         if (field.type().kind() != Type.Kind.PRIMITIVE) { // the JVM assigns primitive types a default even though it doesn't show up in the bytecode
@@ -478,25 +501,23 @@ final class ClassConfigurationPropertiesUtil {
         }
     }
 
-    private static void createWriteValue(BytecodeCreator bytecodeCreator, ResultHandle configObject, FieldInfo field,
-            MethodInfo setter, boolean useFieldAccess, ResultHandle value) {
+    private static void createWriteValue(BlockCreator bc, Expr configObject, FieldInfo field,
+            MethodInfo setter, boolean useFieldAccess, Expr value) {
         if (useFieldAccess) {
-            createFieldWrite(bytecodeCreator, configObject, field, value);
+            createFieldWrite(bc, configObject, field, value);
         } else {
-            createSetterCall(bytecodeCreator, configObject, setter, value);
+            createSetterCall(bc, configObject, setter, value);
         }
     }
 
-    private static void createSetterCall(BytecodeCreator bytecodeCreator, ResultHandle configObject,
-            MethodInfo setter, ResultHandle value) {
-        bytecodeCreator.invokeVirtualMethod(
-                MethodDescriptor.of(setter),
-                configObject, value);
+    private static void createSetterCall(BlockCreator bc, Expr configObject,
+            MethodInfo setter, Expr value) {
+        bc.invokeVirtual(Jandex2Gizmo.methodDescOf(setter), configObject, value);
     }
 
-    private static void createFieldWrite(BytecodeCreator bytecodeCreator, ResultHandle configObject,
-            FieldInfo field, ResultHandle value) {
-        bytecodeCreator.writeInstanceField(FieldDescriptor.of(field), configObject, value);
+    private static void createFieldWrite(BlockCreator bc, Expr configObject,
+            FieldInfo field, Expr value) {
+        bc.set(configObject.field(Jandex2Gizmo.fieldDescOf(field)), value);
     }
 
     private static boolean shouldCheckForDefaultValue(ClassInfo configPropertiesClassInfo, FieldInfo field) {
@@ -514,21 +535,20 @@ final class ClassConfigurationPropertiesUtil {
      * If errors are found an IllegalArgumentException is thrown and the message
      * is constructed by calling the previously generated VIOLATION_SET_TO_STRING_METHOD
      */
-    private static void createValidationCodePath(MethodCreator bytecodeCreator, ResultHandle configObject,
-            String configPrefix) {
-        ResultHandle validationResult = bytecodeCreator.invokeInterfaceMethod(
-                MethodDescriptor.ofMethod(VALIDATOR_CLASS, "validate", Set.class, Object.class, Class[].class),
-                bytecodeCreator.getMethodParam(1), configObject,
-                bytecodeCreator.newArray(Class.class, 0));
-        ResultHandle constraintSetIsEmpty = bytecodeCreator.invokeInterfaceMethod(
-                MethodDescriptor.ofMethod(Set.class, "isEmpty", boolean.class), validationResult);
-        BranchResult constraintSetIsEmptyBranch = bytecodeCreator.ifNonZero(constraintSetIsEmpty);
-        constraintSetIsEmptyBranch.trueBranch().returnValue(configObject);
-
-        BytecodeCreator constraintSetIsEmptyFalse = constraintSetIsEmptyBranch.falseBranch();
-
-        ResultHandle exception = constraintSetIsEmptyFalse.newInstance(
-                MethodDescriptor.ofConstructor(CONSTRAINT_VIOLATION_EXCEPTION_CLASS, Set.class.getName()), validationResult);
-        constraintSetIsEmptyFalse.throwException(exception);
+    private static void createValidationCodePath(BlockCreator bc, Expr configObject, Expr validatorParam) {
+        LocalVar validationResult = bc.localVar("validationResult", bc.invokeInterface(
+                InterfaceMethodDesc.of(ClassDesc.of(VALIDATOR_CLASS), "validate", Set.class, Object.class, Class[].class),
+                validatorParam, configObject,
+                bc.newEmptyArray(Class.class, 0)));
+        Expr constraintSetIsEmpty = bc.invokeInterface(
+                MethodDesc.of(Set.class, "isEmpty", boolean.class), validationResult);
+        bc.ifElse(constraintSetIsEmpty, trueBranch -> {
+            trueBranch.return_(configObject);
+        }, falseBranch -> {
+            Expr exception = falseBranch.new_(
+                    ConstructorDesc.of(ClassDesc.of(CONSTRAINT_VIOLATION_EXCEPTION_CLASS), Set.class),
+                    validationResult);
+            falseBranch.throw_(exception);
+        });
     }
 }

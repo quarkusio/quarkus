@@ -7,15 +7,12 @@ import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
 
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledForJreRange;
-import org.junit.jupiter.api.condition.JRE;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.micrometer.runtime.binder.virtualthreads.VirtualThreadCollector;
 import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.junit.common.DisabledOnSemeru;
 
-@EnabledForJreRange(min = JRE.JAVA_21)
 @DisabledOnSemeru(reason = "JFR is not supported on Semeru yet")
 public class VirtualThreadMetricsWithTagsTest {
 

@@ -197,9 +197,6 @@ public class SimpleQuarkusRestTestCase {
 
         RestAssured.get("/simple/writer/vertx-buffer")
                 .then().body(Matchers.equalTo("VERTX-BUFFER"));
-
-        RestAssured.get("/simple/writer/mutiny-buffer")
-                .then().body(Matchers.equalTo("MUTINY-BUFFER"));
     }
 
     @DisabledOnOs(OS.WINDOWS)

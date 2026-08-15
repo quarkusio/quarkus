@@ -57,6 +57,7 @@ import io.quarkus.deployment.pkg.builditem.JarBuildItem;
 import io.quarkus.deployment.pkg.builditem.JarTreeShakeBuildItem;
 import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
 import io.quarkus.deployment.util.FileUtil;
+import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.maven.dependency.ArtifactKey;
 import io.quarkus.maven.dependency.GACT;
 import io.quarkus.maven.dependency.ResolvedDependency;
@@ -248,6 +249,8 @@ abstract class AbstractFastJarBuilder extends AbstractJarBuilder<JarBuildItem> {
             }
         }
         final Map<ArtifactKey, List<Path>> copiedArtifacts = new HashMap<>();
+        Path bootstrapRunnerPath = null;
+        List<ArtifactCoords> bootArtifacts = new ArrayList<>();
         Set<PosixFilePermission> newFilePermissions = probeNewFilePermissions(baseLib);
         for (ResolvedDependency appDep : curateOutcome.getApplicationModel().getRuntimeDependencies()) {
             if (!rebuild) {
@@ -260,6 +263,13 @@ abstract class AbstractFastJarBuilder extends AbstractJarBuilder<JarBuildItem> {
             }
             if (parentFirstArtifactKeys.contains(appDep.getKey())) {
                 appDep.getResolvedPaths().forEach(parentFirst::add);
+                bootArtifacts.add(appDep);
+                if ("quarkus-bootstrap-runner".equals(appDep.getArtifactId())) {
+                    List<Path> paths = copiedArtifacts.get(appDep.getKey());
+                    if (paths != null && !paths.isEmpty()) {
+                        bootstrapRunnerPath = paths.get(0);
+                    }
+                }
             }
         }
         for (AdditionalApplicationArchiveBuildItem i : additionalApplicationArchives) {
@@ -292,9 +302,20 @@ abstract class AbstractFastJarBuilder extends AbstractJarBuilder<JarBuildItem> {
 
         runnerJar.toFile().setReadable(true, false);
         Path initJar = buildDir.resolve(FastJarFormat.QUARKUS_RUN_JAR);
+        List<ArtifactCoords> mainDeps = new ArrayList<>(bootArtifacts);
         manifestConfig.setMainPurl(Purl.generic(initJar.getFileName().toString(), appArtifact.getVersion()))
-                .setMainDependencies(List.of(curateOutcome.getApplicationModel().getAppArtifact()))
+                .setMainDependencies(mainDeps)
                 .setMainPath(initJar);
+
+        if (bootstrapRunnerPath != null) {
+            manifestConfig.addFileDependency(bootstrapRunnerPath, runnerJar);
+            manifestConfig.addFileDependency(bootstrapRunnerPath, generatedZip);
+            manifestConfig.addFileDependency(bootstrapRunnerPath, appInfo);
+            if (fastJarJars.transformedJar != null) {
+                manifestConfig.addFileDependency(bootstrapRunnerPath, fastJarJars.transformedJar);
+            }
+        }
+
         boolean mutableJar = packageConfig.jar().type() == MUTABLE_JAR;
         if (mutableJar) {
             //we output the properties in a reproducible manner, so we remove the date comment
@@ -388,6 +409,7 @@ abstract class AbstractFastJarBuilder extends AbstractJarBuilder<JarBuildItem> {
                 }
                 lines.sort(Comparator.naturalOrder());
                 Files.write(deplist, lines);
+                manifestConfig.addFileDependency(initJar, deplist);
             }
         } else {
             //if it is a rebuild we might have classes
@@ -471,39 +493,8 @@ abstract class AbstractFastJarBuilder extends AbstractJarBuilder<JarBuildItem> {
                         }
                     }
                 }
-                // When tree shake level is CLASSES, add non-reachable classes to removal set.
-                // Use walkRaw to handle multi-release JARs: we need to add both base and
-                // versioned entry paths to the removal set for unreachable classes.
-                if (treeShakeResult != null
-                        && treeShakeResult.isClassesShaken()) {
-                    try (var pathTree = appDep.getContentTree().open()) {
-                        pathTree.walkRaw(visit -> {
-                            String rel = visit.getRelativePath("/");
-                            String classRel = rel;
-                            // For multi-release entries, extract the actual class path
-                            if (rel.startsWith("META-INF/versions/")) {
-                                String afterVersions = rel.substring("META-INF/versions/".length());
-                                int slash = afterVersions.indexOf('/');
-                                if (slash > 0) {
-                                    classRel = afterVersions.substring(slash + 1);
-                                } else {
-                                    return;
-                                }
-                            }
-                            if (classRel.endsWith(".class") && !classRel.equals("module-info.class")) {
-                                String className = classRel.substring(0, classRel.length() - 6).replace('/', '.');
-                                if (!treeShakeResult.getReachableClassNames().contains(className)) {
-                                    int dollarIdx = className.indexOf('$');
-                                    if (dollarIdx < 0
-                                            || !treeShakeResult.getReachableClassNames()
-                                                    .contains(className.substring(0, dollarIdx))) {
-                                        // Add the raw path (base or META-INF/versions/N/...) to removal set
-                                        removedFromThisArchive.add(rel);
-                                    }
-                                }
-                            }
-                        });
-                    }
+                if (treeShakeResult != null) {
+                    treeShakeResult.collectUnreachableEntries(appDep, removedFromThisArchive);
                 }
                 if (removedFromThisArchive.isEmpty()) {
                     // COPY_ATTRIBUTES triggers clonefile(2) on JDK 20+/macOS APFS, enabling

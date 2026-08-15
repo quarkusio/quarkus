@@ -13,6 +13,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusExtensionTest;
 import io.vertx.core.Vertx;
+import io.vertx.core.buffer.Buffer;
 
 public class VertxProducerTest {
 
@@ -43,7 +44,7 @@ public class VertxProducerTest {
 
         public void verify() throws Exception {
             CountDownLatch latch = new CountDownLatch(1);
-            vertx.fileSystem().readFile("files/lorem.txt", ar -> {
+            vertx.fileSystem().readFile("files/lorem.txt").onComplete(ar -> {
                 if (ar.failed()) {
                     ar.cause().printStackTrace();
                 } else {
@@ -63,7 +64,7 @@ public class VertxProducerTest {
 
         public void verify() throws Exception {
             CountDownLatch latch = new CountDownLatch(1);
-            CompletionStage<io.vertx.mutiny.core.buffer.Buffer> stage = vertx.fileSystem().readFile("files/lorem.txt")
+            CompletionStage<Buffer> stage = vertx.fileSystem().readFile("files/lorem.txt")
                     .subscribeAsCompletionStage();
             stage.thenAccept(buffer -> latch.countDown());
             latch.await(5, TimeUnit.SECONDS);

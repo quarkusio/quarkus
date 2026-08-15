@@ -31,11 +31,6 @@ import org.jboss.resteasy.reactive.server.ServerExceptionMapper;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonView;
-import com.fasterxml.jackson.core.json.JsonReadFeature;
-import com.fasterxml.jackson.core.json.JsonWriteFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.ObjectReader;
-import com.fasterxml.jackson.databind.ObjectWriter;
 
 import io.quarkus.resteasy.reactive.jackson.CustomDeserialization;
 import io.quarkus.resteasy.reactive.jackson.CustomSerialization;
@@ -44,6 +39,12 @@ import io.quarkus.runtime.BlockingOperationControl;
 import io.smallrye.common.annotation.NonBlocking;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
+import tools.jackson.core.json.JsonReadFeature;
+import tools.jackson.core.json.JsonWriteFeature;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectReader;
+import tools.jackson.databind.ObjectWriter;
+import tools.jackson.databind.node.ObjectNode;
 
 @Path("/simple")
 @NonBlocking
@@ -571,6 +572,21 @@ public class SimpleJsonResource extends SuperClass<Person> {
         return new ItemJsonValuePrivateField(value);
     }
 
+    @GET
+    @Path("/json-value-inherited-from-interface")
+    @Produces(MediaType.APPLICATION_JSON)
+    public ItemJsonValueInheritedFromInterface.Wrapper echoJsonValueInheritedFromInterface(@RestQuery String value) {
+        return new ItemJsonValueInheritedFromInterface.Wrapper(value);
+    }
+
+    @GET
+    @Path("/json-value-inherited-from-interface-two-level")
+    @Produces(MediaType.APPLICATION_JSON)
+    public ItemJsonValueInheritedFromInterface.TwoLevelWrapper echoJsonValueInheritedFromInterfaceTwoLevel(
+            @RestQuery String value) {
+        return new ItemJsonValueInheritedFromInterface.TwoLevelWrapper(value);
+    }
+
     @POST
     @Path("/product-price")
     @Consumes(MediaType.APPLICATION_JSON)
@@ -639,7 +655,7 @@ public class SimpleJsonResource extends SuperClass<Person> {
                 throw new IllegalArgumentException(
                         "Type'" + type.getTypeName() + "' cannot be handled. Only 'Person' type is valid");
             }
-            return objectMapper.writer().without(JsonWriteFeature.QUOTE_FIELD_NAMES);
+            return objectMapper.writer().without(JsonWriteFeature.QUOTE_PROPERTY_NAMES);
         }
     }
 
@@ -660,7 +676,7 @@ public class SimpleJsonResource extends SuperClass<Person> {
                 throw new IllegalArgumentException(
                         "Type'" + type.getTypeName() + "' cannot be handled. Only 'Person' type is valid");
             }
-            return objectMapper.reader().with(JsonReadFeature.ALLOW_UNQUOTED_FIELD_NAMES);
+            return objectMapper.reader().with(JsonReadFeature.ALLOW_UNQUOTED_PROPERTY_NAMES);
         }
     }
 
@@ -707,6 +723,13 @@ public class SimpleJsonResource extends SuperClass<Person> {
     }
 
     @POST
+    @Path("/json-alias-same-as-field-name-echo")
+    @Consumes(MediaType.APPLICATION_JSON)
+    public JsonAliasSameAsFieldNameBean echoJsonAliasSameAsFieldName(JsonAliasSameAsFieldNameBean record) {
+        return record;
+    }
+
+    @POST
     @Path("/annotation-naming")
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
@@ -741,6 +764,54 @@ public class SimpleJsonResource extends SuperClass<Person> {
     @Path("/polymorphic-item-ser")
     public PolymorphicItemResponse polymorphicItemSer() {
         return new PolymorphicItemResponse(new PolymorphicItem.TypeA("hello"));
+    }
+
+    @POST
+    @Path("/object-node")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    public ObjectNode objectNode(ObjectNode body) {
+        return body;
+    }
+
+    @POST
+    @Path("/no-arg-ctor-pojo-echo")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    public NoArgConstructorPojo echoNoArgConstructorPojo(NoArgConstructorPojo obj) {
+        return obj;
+    }
+
+    @POST
+    @Path("/multi-ctor-pojo-echo")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    public MultiConstructorPojo echoMultiConstructorPojo(MultiConstructorPojo obj) {
+        return obj;
+    }
+
+    @POST
+    @Path("/no-matching-ctor-pojo-echo")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    public NoMatchingCtorPojo echoNoMatchingCtorPojo(NoMatchingCtorPojo obj) {
+        return obj;
+    }
+
+    @POST
+    @Path("/required-creator-property")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    public RequiredCreatorProperty echoRequiredCreatorProperty(RequiredCreatorProperty obj) {
+        return obj;
+    }
+
+    @POST
+    @Path("/polymorphic-creator-property")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    public PolymorphicCreatorProperty echoPolymorphicCreatorProperty(PolymorphicCreatorProperty obj) {
+        return obj;
     }
 
     @GET

@@ -25,7 +25,7 @@ public class DevModeResource {
     @Produces(MediaType.TEXT_PLAIN)
     public CompletionStage<Response> checkConnectionFailure() throws SQLException {
         CompletableFuture<Response> future = new CompletableFuture<>();
-        client.query("SELECT 1 FROM DUAL").execute(ar -> {
+        client.query("SELECT 1 FROM DUAL").execute().onComplete(ar -> {
             Class<?> expectedExceptionClass = OracleException.class;
             if (ar.succeeded()) {
                 future.complete(Response.serverError().entity("Expected SQL query to fail").build());
@@ -44,7 +44,7 @@ public class DevModeResource {
     @Produces(MediaType.TEXT_PLAIN)
     public CompletionStage<Response> checkConnectionSuccess() throws SQLException {
         CompletableFuture<Response> future = new CompletableFuture<>();
-        client.query("SELECT 1 FROM DUAL").execute(ar -> {
+        client.query("SELECT 1 FROM DUAL").execute().onComplete(ar -> {
             if (ar.succeeded()) {
                 future.complete(Response.ok().build());
             } else {

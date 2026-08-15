@@ -45,6 +45,12 @@ public abstract class QuarkusWorker<P extends QuarkusParams> implements WorkActi
      * of bootstrap; nothing is restored on exit. A symmetric tear-down would erase legitimate
      * inter-task state, for example properties a build step set via
      * {@link System#setProperty(String, String)} during augmentation.
+     *
+     * <p>
+     * Runs only in a forked worker, where the JVM is throwaway; the caller gates this on
+     * {@link QuarkusParams#getProcessIsolated()}.
+     * In-process, the worker shares the daemon's {@link System} properties, so scrubbing them would
+     * <a href="https://github.com/quarkusio/quarkus/issues/55131">corrupt the running build</a>.
      */
     void resetQuarkusSystemProperties() {
         Map<String, String> intended = getParameters().getForkedSystemProperties().getOrElse(Map.of());
@@ -63,7 +69,9 @@ public abstract class QuarkusWorker<P extends QuarkusParams> implements WorkActi
     }
 
     CuratedApplication createAppCreationContext() throws BootstrapException {
-        resetQuarkusSystemProperties();
+        if (getParameters().getProcessIsolated().get()) {
+            resetQuarkusSystemProperties();
+        }
         QuarkusParams params = getParameters();
         Path buildDir = params.getTargetDirectory().getAsFile().get().toPath();
         String baseName = params.getBaseName().get();

@@ -11,8 +11,6 @@ import org.jboss.resteasy.reactive.common.processor.TargetJavaVersion;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledForJreRange;
-import org.junit.jupiter.api.condition.JRE;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.resteasy.reactive.server.spi.TargetJavaVersionBuildItem;
@@ -21,7 +19,6 @@ import io.restassured.RestAssured;
 import io.smallrye.common.annotation.Blocking;
 import io.smallrye.common.annotation.RunOnVirtualThread;
 
-@EnabledForJreRange(min = JRE.JAVA_19)
 public class ApplicationWithRunOnVirtualThreadTest {
 
     @RegisterExtension

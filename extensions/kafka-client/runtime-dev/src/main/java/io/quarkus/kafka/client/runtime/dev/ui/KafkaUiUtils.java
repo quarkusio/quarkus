@@ -48,6 +48,7 @@ import io.quarkus.kafka.client.runtime.dev.ui.model.response.KafkaNode;
 import io.quarkus.kafka.client.runtime.dev.ui.model.response.KafkaTopic;
 import io.smallrye.common.annotation.Identifier;
 import io.vertx.core.buffer.Buffer;
+import io.vertx.core.internal.buffer.BufferInternal;
 import io.vertx.core.json.JsonObject;
 
 @Singleton
@@ -255,7 +256,8 @@ public class KafkaUiUtils {
 
     public <T> T fromJson(Buffer buffer, Class<T> type) {
         try {
-            JsonParser parser = objectMapper.createParser((InputStream) new ByteBufInputStream(buffer.getByteBuf()));
+            BufferInternal actual = (BufferInternal) buffer;
+            JsonParser parser = objectMapper.createParser((InputStream) new ByteBufInputStream(actual.getByteBuf()));
             return objectMapper.readValue(parser, type);
         } catch (IOException e) {
             return null;

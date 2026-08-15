@@ -390,6 +390,8 @@ export class QwcHeader extends observeState(QwcHotReloadElement) {
             path="${relativePath}"
             ?embed=${link.page.embed}
             externalUrl="${link.page.metadata.externalUrl}"
+            dynamicUrlMethodName="${link.page.metadata.dynamicUrlMethodName}"
+            dynamicUrlMethodNameParams="${link.page.metadata.dynamicUrlMethodNameParams}"
             webcomponent="${link.page.componentLink}"
             staticLabel="${link.page.staticLabel}"
             dynamicLabel="${link.page.dynamicLabel}"

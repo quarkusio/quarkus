@@ -5,7 +5,7 @@ import java.util.Map;
 import io.quarkus.redis.datasource.topk.ReactiveTransactionalTopKCommands;
 import io.quarkus.redis.datasource.transactions.ReactiveTransactionalRedisDataSource;
 import io.smallrye.mutiny.Uni;
-import io.vertx.mutiny.redis.client.Response;
+import io.vertx.redis.client.Response;
 
 public class ReactiveTransactionalTopKCommandsImpl<K, V> extends AbstractTransactionalCommands
         implements ReactiveTransactionalTopKCommands<K, V> {

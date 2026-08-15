@@ -8,9 +8,8 @@ import java.util.Iterator;
 
 import org.junit.jupiter.api.Test;
 
-import com.fasterxml.jackson.databind.JsonNode;
-
 import io.quarkus.devui.tests.DevUIJsonRPCTest;
+import tools.jackson.databind.JsonNode;
 
 /**
  * All DevUI tests check the same api call, with different configuration and different expected results.
@@ -39,7 +38,7 @@ public abstract class AbstractDevUITest extends DevUIJsonRPCTest {
         assertNotNull(indexedEntities);
         assertTrue(indexedEntities.isArray());
 
-        Iterator<JsonNode> managedEntitiesIterator = indexedEntities.elements();
+        Iterator<JsonNode> managedEntitiesIterator = indexedEntities.iterator();
         while (managedEntitiesIterator.hasNext()) {
             JsonNode myEntity = managedEntitiesIterator.next();
             String javaClassName = myEntity.get("javaClass").asText();

@@ -100,6 +100,8 @@ public class CacheConstructorsFeature implements Feature {
                 "com.github.benmanes.caffeine.cache.SSMSA",
                 "com.github.benmanes.caffeine.cache.SSMSAW",
                 "com.github.benmanes.caffeine.cache.SSMSW",
+                // Used by Hibernate ORM's weight-based 2LC cache: expire after access, bounded by weight
+                "com.github.benmanes.caffeine.cache.SSMWA",
                 "com.github.benmanes.caffeine.cache.SSW",
         };
     }

@@ -153,7 +153,7 @@ public class JavaxNetSslTrustStoreProviderTest {
 
     TrustManager[] trustManagers(String key) throws Exception {
         final TlsConfiguration javaNetSsl = certificates.get(key).orElseThrow();
-        final TrustManagerFactory javaNetSslTrustManagerFactory = javaNetSsl.getSSLOptions().getTrustOptions()
+        final TrustManagerFactory javaNetSslTrustManagerFactory = javaNetSsl.getServerSSLOptions().getTrustOptions()
                 .getTrustManagerFactory(vertx);
         return javaNetSslTrustManagerFactory.getTrustManagers();
     }

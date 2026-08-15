@@ -26,7 +26,6 @@ import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.Set;
@@ -44,6 +43,7 @@ import org.keycloak.representations.idm.RoleRepresentation;
 import org.keycloak.representations.idm.RolesRepresentation;
 import org.keycloak.representations.idm.UserRepresentation;
 import org.keycloak.util.JsonSerialization;
+import org.testcontainers.Testcontainers;
 import org.testcontainers.containers.BindMode;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.wait.strategy.Wait;
@@ -72,8 +72,8 @@ import io.quarkus.runtime.configuration.MemorySize;
 import io.smallrye.mutiny.TimeoutException;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.Vertx;
+import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpHeaders;
-import io.vertx.mutiny.core.buffer.Buffer;
 import io.vertx.mutiny.ext.web.client.HttpResponse;
 import io.vertx.mutiny.ext.web.client.WebClient;
 
@@ -192,45 +192,13 @@ public class KeycloakDevServicesProcessor {
         // same if the config and the realm file modified times are same and the other way around
         StringBuilder serviceConfigIdentifier = new StringBuilder();
 
-        // TODO: use the builtin hashcode once https://github.com/smallrye/smallrye-config/issues/1462 is fixed
-        int configHashCode = Objects.hash(
-                config.enabled(),
-                config.imageName(),
-                config.keycloakXImage(),
-                config.shared(),
-                config.serviceName(),
-                config.realmPath(),
-                safeMapHash(config.resourceAliases()),
-                safeMapHash(config.resourceMappings()),
-                config.javaOpts(),
-                config.showLogs(),
-                config.startCommand(),
-                config.features(),
-                config.realmName(),
-                config.createRealm(),
-                config.createClient(),
-                config.startWithDisabledTenant(),
-                safeMapHash(config.users()),
-                safeMapHash(config.roles()),
-                config.port(),
-                safeMapHash(config.containerEnv()),
-                config.containerMemoryLimit(),
-                config.webClientTimeout(),
-                config.disableHttps());
-        serviceConfigIdentifier.append(configHashCode);
+        serviceConfigIdentifier.append(config.hashCode());
 
         for (int fileTimeHashCode : getRealmFileLastModifiedDateHashCode(config.realmPath())) {
             serviceConfigIdentifier.append(";"); // separator
             serviceConfigIdentifier.append(fileTimeHashCode);
         }
         return serviceConfigIdentifier.toString();
-    }
-
-    private static int safeMapHash(Map<?, ?> map) {
-        if (map == null)
-            return 0;
-
-        return map.entrySet().stream().mapToInt(e -> Objects.hash(e.getKey(), e.getValue())).sum();
     }
 
     private static Map<String, Function<StartableContainer<QuarkusOidcContainer>, String>> createLazyConfigMap(
@@ -558,6 +526,12 @@ public class KeycloakDevServicesProcessor {
                 }
             } else {
                 addExposedPort(KEYCLOAK_PORT);
+            }
+
+            if (config.hostAccessiblePorts().isPresent()) {
+                for (int port : config.hostAccessiblePorts().get()) {
+                    Testcontainers.exposeHostPorts(port);
+                }
             }
 
             if (sharedContainer && LaunchMode.current() == LaunchMode.DEVELOPMENT) {

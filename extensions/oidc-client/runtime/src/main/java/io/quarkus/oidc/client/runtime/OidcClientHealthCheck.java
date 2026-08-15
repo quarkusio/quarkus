@@ -15,7 +15,7 @@ import org.eclipse.microprofile.health.Readiness;
 import io.quarkus.oidc.client.OidcClient;
 import io.quarkus.oidc.common.runtime.OidcCommonUtils;
 import io.smallrye.mutiny.Uni;
-import io.vertx.mutiny.core.buffer.Buffer;
+import io.vertx.core.buffer.Buffer;
 import io.vertx.mutiny.ext.web.client.HttpRequest;
 
 @Readiness

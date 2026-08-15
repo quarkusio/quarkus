@@ -5,7 +5,6 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = SmallRye GraphQL Client
 include::_attributes.adoc[]
-:categories: web
 :summary: This guide explains how to leverage SmallRye GraphQL Client to consume GraphQL services.
 :topics: graphql
 :extensions: io.quarkus:quarkus-smallrye-graphql-client

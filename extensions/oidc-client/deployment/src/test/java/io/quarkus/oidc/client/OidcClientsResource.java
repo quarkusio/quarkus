@@ -10,6 +10,7 @@ import jakarta.ws.rs.PathParam;
 
 import org.eclipse.microprofile.config.ConfigProvider;
 
+import io.quarkus.oidc.client.runtime.OidcClientConfig;
 import io.smallrye.mutiny.Uni;
 
 @Path("/clients")
@@ -33,11 +34,12 @@ public class OidcClientsResource {
     @GET
     @Path("tokenOnDemand")
     public Uni<String> tokenOnDemand() {
-        OidcClientConfig cfg = new OidcClientConfig();
-        cfg.setId("dynamic");
-        cfg.setAuthServerUrl(ConfigProvider.getConfig().getValue("quarkus.oidc-client.auth-server-url", String.class));
-        cfg.setClientId(ConfigProvider.getConfig().getValue("quarkus.oidc-client.client-id", String.class));
-        cfg.getCredentials().setSecret("secret");
+        var cfg = OidcClientConfig.builder()
+                .id("dynamic")
+                .authServerUrl(ConfigProvider.getConfig().getValue("quarkus.oidc-client.auth-server-url", String.class))
+                .clientId(ConfigProvider.getConfig().getValue("quarkus.oidc-client.client-id", String.class))
+                .credentials("secret")
+                .build();
         return clients.newClient(cfg).onItem().transformToUni(new Function<OidcClient, Uni<? extends String>>() {
 
             @Override

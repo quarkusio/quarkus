@@ -24,7 +24,7 @@ import io.quarkus.test.common.http.TestHTTPResource;
 import io.quarkus.test.vertx.RunOnVertxContext;
 import io.quarkus.test.vertx.UniAsserter;
 import io.smallrye.mutiny.Uni;
-import io.vertx.core.impl.NoStackTraceException;
+import io.vertx.core.VertxException;
 
 public class BufferEntityInExceptionMapperTest {
 
@@ -40,7 +40,7 @@ public class BufferEntityInExceptionMapperTest {
     public void testBlocking() {
         Client client = createClient();
 
-        assertThatThrownBy(client::hello).isInstanceOfSatisfying(NoStackTraceException.class,
+        assertThatThrownBy(client::hello).isInstanceOfSatisfying(VertxException.class,
                 e -> assertThat(e).hasMessage("dummy"));
     }
 
@@ -50,7 +50,7 @@ public class BufferEntityInExceptionMapperTest {
         Client client = createClient();
 
         asserter.assertThat(
-                () -> client.uniHello().onFailure(NoStackTraceException.class).recoverWithItem(Throwable::getMessage),
+                () -> client.uniHello().onFailure(VertxException.class).recoverWithItem(Throwable::getMessage),
                 (res) -> {
                     assertThat(res).isEqualTo("dummy");
                 });
@@ -92,7 +92,7 @@ public class BufferEntityInExceptionMapperTest {
         @Override
         public RuntimeException toThrowable(Response response) {
             response.bufferEntity();
-            return new NoStackTraceException("dummy");
+            return new VertxException("dummy");
         }
 
     }

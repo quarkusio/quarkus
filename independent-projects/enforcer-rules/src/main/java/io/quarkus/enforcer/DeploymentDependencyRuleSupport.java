@@ -25,14 +25,23 @@ import org.apache.maven.project.MavenProject;
 
 public abstract class DeploymentDependencyRuleSupport extends AbstractEnforcerRule {
 
-    protected static final String GROUP_ID_PREFIX = "io.quarkus";
     protected static final String DEPLOYMENT_ARTIFACT_ID_SUFFIX = "-deployment";
 
     private static final String EXT_PROPERTIES_PATH = "META-INF/quarkus-extension.properties";
     private static final Map<String, Optional<String>> DEPLOYMENT_GAV_CACHE = new ConcurrentHashMap<>();
 
+    /**
+     * Only artifacts whose group ID starts with this prefix are checked.
+     * Defaults to {@code io.quarkus}.
+     */
+    private String groupIdPrefix = "io.quarkus";
+
     @Inject
     private MavenProject project;
+
+    public void setGroupIdPrefix(String groupIdPrefix) {
+        this.groupIdPrefix = groupIdPrefix;
+    }
 
     @Override
     public final void execute() throws EnforcerRuleException {
@@ -48,7 +57,7 @@ public abstract class DeploymentDependencyRuleSupport extends AbstractEnforcerRu
 
         Map<String, Artifact> nonDeploymentArtifactsByGAV = project.getArtifacts().stream()
                 .filter(artifact -> "jar".equals(artifact.getType()))
-                .filter(artifact -> artifact.getGroupId().startsWith(GROUP_ID_PREFIX))
+                .filter(artifact -> artifact.getGroupId().startsWith(groupIdPrefix))
                 .filter(artifact -> !artifact.getArtifactId().endsWith(DEPLOYMENT_ARTIFACT_ID_SUFFIX))
                 .collect(Collectors.toMap(this::buildGAVKey, a -> a));
 
@@ -62,7 +71,7 @@ public abstract class DeploymentDependencyRuleSupport extends AbstractEnforcerRu
         }
 
         Map<String, Dependency> directDepsByGAV = project.getDependencies().stream()
-                .filter(d -> d.getGroupId().startsWith(GROUP_ID_PREFIX))
+                .filter(d -> d.getGroupId().startsWith(groupIdPrefix))
                 .collect(Collectors.toMap(d -> d.getGroupId() + ":" + d.getArtifactId() + ":" + d.getVersion(), d -> d,
                         (a, b) -> a));
 

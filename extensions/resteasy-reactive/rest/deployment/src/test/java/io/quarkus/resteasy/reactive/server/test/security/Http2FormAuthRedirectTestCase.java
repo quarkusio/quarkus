@@ -67,7 +67,7 @@ public class Http2FormAuthRedirectTestCase {
                     .add("j_password", "wrongpassword");
             WebClient.create(vertx, options)
                     .post(sslUrl.getPort(), sslUrl.getHost(), sslUrl.getPath())
-                    .sendForm(formParams, ar -> {
+                    .sendForm(formParams).onComplete(ar -> {
                         if (ar.succeeded()) {
                             HttpResponse<Buffer> response = ar.result();
                             result.complete(response.statusCode());

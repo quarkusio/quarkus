@@ -5,6 +5,8 @@ import static io.quarkus.oidc.token.propagation.common.runtime.TokenPropagationC
 
 import java.lang.reflect.Method;
 import java.util.Collections;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.function.Consumer;
 
 import jakarta.annotation.PostConstruct;
@@ -33,6 +35,7 @@ import io.quarkus.security.spi.runtime.MethodDescription;
 import io.quarkus.vertx.core.runtime.context.VertxContextSafetyToggle;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.Vertx;
+import io.vertx.core.internal.ContextInternal;
 
 @Priority(Priorities.AUTHENTICATION)
 public class AccessTokenRequestReactiveFilter implements ResteasyReactiveClientRequestFilter {
@@ -175,7 +178,9 @@ public class AccessTokenRequestReactiveFilter implements ResteasyReactiveClientR
 
     private static TokenCredential getTokenCredentialFromContext() {
         VertxContextSafetyToggle.validateContextIfExists(ERROR_MSG, ERROR_MSG);
-        return Vertx.currentContext().getLocal(TokenCredential.class.getName());
+        ConcurrentMap<Object, Object> locals = ((ContextInternal) Vertx.currentContext())
+                .getLocal(ContextInternal.LOCAL_MAP, ConcurrentHashMap::new);
+        return (TokenCredential) locals.get(TokenCredential.class.getName());
     }
 
     private Uni<String> exchangeToken(String token) {

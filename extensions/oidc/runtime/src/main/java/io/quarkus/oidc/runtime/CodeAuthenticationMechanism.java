@@ -99,7 +99,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
 
     public Uni<SecurityIdentity> authenticate(RoutingContext context,
             IdentityProviderManager identityProviderManager, OidcTenantConfig oidcTenantConfig) {
-        final Map<String, Cookie> cookies = context.request().cookieMap();
+        final Map<String, Cookie> cookies = OidcUtils.cookieSetToMap(context.request().cookies());
         final String sessionCookieValue = OidcUtils.getSessionCookie(context.data(), cookies, oidcTenantConfig);
 
         // If the session is already established then try to re-authenticate
@@ -224,6 +224,14 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                                 // This is an original redirect from IDP, check if the original request path and query need to be restored
                                 CodeAuthenticationStateBean stateBean = getCodeAuthenticationBean(parsedStateCookieValue,
                                         tenantContext);
+
+                                try {
+                                    validateAuthorizationResponseIssuer(requestParams, tenantContext);
+                                } catch (AuthenticationCompletionException ex) {
+                                    LOG.error(ex.getMessage());
+                                    throw ex;
+                                }
+
                                 if (stateBean != null && stateBean.getRestorePath() != null) {
                                     String restorePath = stateBean.getRestorePath();
                                     int userQueryIndex = restorePath.indexOf("?");
@@ -288,7 +296,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
             }
             MultiMap queries = redirectContext.additionalQueryParams();
             if (!queries.isEmpty()) {
-                String encoded = OidcCommonUtils.encodeForm(new io.vertx.mutiny.core.MultiMap(queries)).toString();
+                String encoded = OidcCommonUtils.encodeForm(queries).toString();
                 String sep = redirectUri.lastIndexOf("?") > 0 ? AMP : QUESTION_MARK;
                 redirectUri += (sep + encoded);
             }
@@ -343,7 +351,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
 
     private String getRequestParametersAsQuery(RoutingContext context, MultiMap requestParams, OidcTenantConfig oidcConfig) {
         if (ResponseMode.FORM_POST == oidcConfig.authentication().responseMode().orElse(ResponseMode.QUERY)) {
-            return OidcCommonUtils.encodeForm(new io.vertx.mutiny.core.MultiMap(requestParams)).toString();
+            return OidcCommonUtils.encodeForm(requestParams).toString();
         } else {
             return context.request().query();
         }
@@ -894,6 +902,27 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
         return null;
     }
 
+    private void validateAuthorizationResponseIssuer(MultiMap requestParams, TenantConfigContext configContext) {
+        String expectedIssuer = configContext.getOidcMetadata().getIssuer();
+
+        if (expectedIssuer == null || OidcProvider.ANY_ISSUER.equals(expectedIssuer)) {
+            return;
+        }
+
+        String issParam = requestParams.get(OidcConstants.CODE_FLOW_ISSUER);
+
+        if (issParam != null) {
+            if (!issParam.equals(expectedIssuer)) {
+                throw new AuthenticationCompletionException(String.format(
+                        "Authorization response 'iss' parameter '%s' does not match the expected issuer '%s'",
+                        issParam, expectedIssuer));
+            }
+        } else if (configContext.getOidcMetadata().isAuthorizationResponseIssParameterSupported()) {
+            throw new AuthenticationCompletionException(
+                    "Authorization response 'iss' parameter is required but is not present");
+        }
+    }
+
     private Uni<SecurityIdentity> performCodeFlow(IdentityProviderManager identityProviderManager,
             RoutingContext context, TenantConfigContext configContext, MultiMap requestParams,
             String[] parsedStateCookieValue) {
@@ -903,6 +932,14 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
 
         // This is an original redirect from IDP, check if the original request path and query need to be restored
         CodeAuthenticationStateBean stateBean = getCodeAuthenticationBean(parsedStateCookieValue, configContext);
+
+        try {
+            validateAuthorizationResponseIssuer(requestParams, configContext);
+        } catch (AuthenticationCompletionException ex) {
+            LOG.error(ex.getMessage());
+            throw ex;
+        }
+
         if (stateBean != null && stateBean.getRestorePath() != null) {
             String restorePath = stateBean.getRestorePath();
             int userQueryIndex = restorePath.indexOf("?");
@@ -1050,21 +1087,12 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
     }
 
     private static String logAuthenticationError(RoutingContext context, Throwable t) {
-        String errorMessage = null;
-        final boolean accessTokenFailure = context.get(OidcUtils.CODE_ACCESS_TOKEN_FAILURE) != null;
-        if (accessTokenFailure) {
-            errorMessage = """
-                    Access token verification has failed: %s
-                    """.formatted(errorMessage(t));
-            LOG.error(errorMessage);
-        } else {
-            errorMessage = """
-                    ID token verification has failed: %s
-                    """.formatted(errorMessage(t));
-            LOG.error(errorMessage);
-        }
-
-        return errorMessage;
+        String tokenType = context.get(OidcUtils.CODE_ACCESS_TOKEN_FAILURE) != null ? "Access" : "ID";
+        String errorMessage = errorMessage(t);
+        String authenticationError = String.format("%s token verification has failed%s",
+                tokenType, errorMessage.isEmpty() ? "" : ": " + errorMessage);
+        LOG.error(authenticationError, t);
+        return authenticationError;
     }
 
     private static boolean prepareNonceForVerification(RoutingContext context, OidcTenantConfig oidcConfig,
@@ -1083,7 +1111,8 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
     }
 
     private static String errorMessage(Throwable t) {
-        return t.getCause() != null ? t.getCause().getMessage() : t.getMessage();
+        String message = t.getCause() != null ? t.getCause().getMessage() : t.getMessage();
+        return message != null ? message : "";
     }
 
     private CodeAuthenticationStateBean getCodeAuthenticationBean(String[] parsedStateCookieValue,
@@ -1461,7 +1490,8 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                     @Override
                     public Uni<SecurityIdentity> apply(final AuthorizationCodeTokens tokens, final Throwable t) {
                         if (t != null) {
-                            LOG.debugf("ID token refresh has failed: %s", errorMessage(t));
+                            String detail = errorMessage(t);
+                            LOG.debugf("ID token refresh has failed%s", detail.isEmpty() ? "" : ": " + detail);
                             if (autoRefresh) {
                                 // Token refresh was initiated while ID token was still valid
                                 if (fallback != null) {
@@ -1509,7 +1539,9 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                                     }).onFailure().transform(new Function<Throwable, Throwable>() {
                                         @Override
                                         public Throwable apply(Throwable tInner) {
-                                            LOG.warnf("Verifying the refreshed ID token failed %s", errorMessage(tInner));
+                                            String detail = errorMessage(tInner);
+                                            LOG.warnf("Verifying the refreshed ID token failed%s",
+                                                    detail.isEmpty() ? "" : ": " + detail);
                                             return new AuthenticationFailedException(tInner, tokenMap(currentIdToken));
                                         }
                                     });

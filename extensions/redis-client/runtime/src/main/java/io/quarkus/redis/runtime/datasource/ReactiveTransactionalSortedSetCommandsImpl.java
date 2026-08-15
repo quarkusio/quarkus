@@ -12,7 +12,7 @@ import io.quarkus.redis.datasource.sortedset.ZAggregateArgs;
 import io.quarkus.redis.datasource.sortedset.ZRangeArgs;
 import io.quarkus.redis.datasource.transactions.ReactiveTransactionalRedisDataSource;
 import io.smallrye.mutiny.Uni;
-import io.vertx.mutiny.redis.client.Response;
+import io.vertx.redis.client.Response;
 
 public class ReactiveTransactionalSortedSetCommandsImpl<K, V> extends AbstractTransactionalCommands
         implements ReactiveTransactionalSortedSetCommands<K, V> {

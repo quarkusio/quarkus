@@ -20,7 +20,7 @@ public class TestParentCommand {
     @RegisterExtension
     static final QuarkusProdModeTest config = createConfig("cli-app",
             CliParentCommand.class, RunSubCommand.class)
-            .setCommandLineParameters("run", "build");
+            .setCommandLineParameters("tpc-run", "build");
 
     @Test
     public void testParentSubCommand() {
@@ -28,7 +28,7 @@ public class TestParentCommand {
         Assertions.assertThat(config.getExitCode()).isZero();
     }
 
-    @CommandDefinition(name = "cli", description = "CLI-like parent command", groupCommands = { RunSubCommand.class })
+    @CommandDefinition(name = "tpc-cli", description = "CLI-like parent command", groupCommands = { RunSubCommand.class })
     public static class CliParentCommand implements Command<CommandInvocation> {
 
         @Option(shortName = 'v', name = "verbose", description = "Enable verbose output", hasValue = false)
@@ -45,7 +45,7 @@ public class TestParentCommand {
         }
     }
 
-    @CommandDefinition(name = "run", description = "Run a task")
+    @CommandDefinition(name = "tpc-run", description = "Run a task")
     public static class RunSubCommand implements Command<CommandInvocation> {
 
         @ParentCommand

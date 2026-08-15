@@ -324,6 +324,16 @@ public interface QuarkusRestClientBuilder extends Configurable<QuarkusRestClient
     QuarkusRestClientBuilder enableCompression(boolean enableCompression);
 
     /**
+     * Specifies the path to a Unix domain socket. When set, the client connects to the server
+     * using a Unix domain socket instead of a network connection. The {@code url} or {@code uri}
+     * property is still required for the request path and HTTP {@code Host} header.
+     *
+     * @param path the path to the Unix domain socket
+     * @return the current builder with the domain socket path set
+     */
+    QuarkusRestClientBuilder domainSocket(String path);
+
+    /**
      * Based on the configured QuarkusRestClientBuilder, creates a new instance of the given REST interface to invoke API calls
      * against.
      *

@@ -5,7 +5,6 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Writing REST Services with Quarkus REST (formerly RESTEasy Reactive)
 include::_attributes.adoc[]
-:categories: web
 :topics: rest,resteasy-reactive,virtual-threads
 :extensions: io.quarkus:quarkus-rest,io.quarkus:quarkus-rest-jackson,io.quarkus:quarkus-rest-jsonb,io.quarkus:quarkus-rest-client,io.quarkus:quarkus-rest-client-jackson,io.quarkus:quarkus-rest-client-jsonb
 :summary: Discover how to develop highly scalable reactive REST services with Jakarta REST and Quarkus REST.
@@ -1005,6 +1004,11 @@ when the client isn't going to use the response anyway.
 If instead of cancelling the pipeline, it should be completed regardless of the state of the HTTP connection, Quarkus REST provides the `org.jboss.resteasy.reactive.server.Cancellable` annotation
 which can be applied to REST classes or methods to control the cancellation behavior.
 
+NOTE: When a client drops the connection, `ContainerResponseFilter` implementations are normally skipped.
+If you need a `ContainerResponseFilter` to run even when the connection is closed, annotate the filter class with `@Cancellable(false)`.
+Only filters explicitly marked as non-cancellable will run; other response filters are still skipped.
+For declarative response filters, use `@ServerResponseFilter(cancellable = false)` to achieve the same effect.
+
 === Streaming support
 
 If you want to stream your response element by element, you can make your endpoint method return a
@@ -1751,6 +1755,11 @@ Setting this property applies reflection-free optimization to deserialization an
 When enabled, {project-name} generates `StdSerializer` and `StdDeserializer` implementations at build time for each class requiring JSON conversion. The application then processes objects returned by REST endpoints using these generated serializers and deserializers, eliminating reliance on reflection and improving performance.
 
 Developers can further customize JSON processing by implementing the `ObjectMapperCustomizer` interface. This interface allows fine-grained control over the `ObjectMapper`, enabling the registration of custom serializers and deserializers while ensuring compatibility with the reflection-free optimization. If additional configuration is needed, implement an `ObjectMapperCustomizer` bean and register any necessary modules or settings.
+
+[NOTE]
+====
+Reflection-free serializers are not compatible with Kotlin classes, since they break Kotlin-specific features such as default parameter values and non-null type enforcement. As a result, reflection-free serializers are not generated for Kotlin classes.
+====
 
 ===== Completely customized per method serialization/deserialization
 
@@ -3419,6 +3428,7 @@ Or plain text:
 < {"name":"roquefort"}
 ----
 
+[[http-compression]]
 === HTTP Compression
 
 The body of an HTTP response is not compressed by default.
@@ -3437,6 +3447,10 @@ The response body is never compressed if:
 TIP: By default, the following list of media types is compressed: `text/html`, `text/plain`, `text/xml`, `text/css`, `text/javascript`, `application/javascript`, `application/json`, `application/graphql+json` and `application/xhtml+xml`.
 
 NOTE: If the client does not support HTTP compression then the response body is not compressed.
+
+You can also set a minimum response body size (in bytes) for compression using `quarkus.http.compression-content-size-threshold`, control the compression level with `quarkus.http.compression-level`, and enable Brotli by adding `br` to `quarkus.http.compressors`.
+
+TIP: See the xref:http-reference.adoc#http-compression[HTTP reference guide] for the full list of compression configuration options including minimum response size, compression level, Brotli, and request decompression.
 
 
 == Include/Exclude Jakarta REST classes

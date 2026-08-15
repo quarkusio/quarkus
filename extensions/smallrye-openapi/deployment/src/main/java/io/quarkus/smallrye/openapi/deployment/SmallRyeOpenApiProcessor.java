@@ -17,11 +17,8 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.EnumMap;
-import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -48,7 +45,12 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
 import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
 import org.eclipse.microprofile.openapi.annotations.responses.APIResponses;
 import org.eclipse.microprofile.openapi.annotations.security.SecurityRequirement;
+import org.eclipse.microprofile.openapi.models.OpenAPI;
 import org.eclipse.microprofile.openapi.models.Operation;
+import org.eclipse.microprofile.openapi.models.PathItem;
+import org.eclipse.microprofile.openapi.models.Paths;
+import org.eclipse.microprofile.openapi.models.media.Content;
+import org.eclipse.microprofile.openapi.models.parameters.Parameter;
 import org.eclipse.microprofile.openapi.spi.OASFactoryResolver;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
@@ -66,7 +68,6 @@ import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanArchiveIndexBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.arc.deployment.BuildExclusionsBuildItem;
-import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.Feature;
@@ -74,7 +75,6 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Consume;
 import io.quarkus.deployment.annotations.ExecutionTime;
-import io.quarkus.deployment.annotations.Produce;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.AdditionalIndexedClassesBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
@@ -82,7 +82,6 @@ import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
 import io.quarkus.deployment.builditem.HotDeploymentWatchedFileBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
-import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
@@ -90,6 +89,7 @@ import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.deployment.logging.LogCleanupFilterBuildItem;
+import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
 import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
 import io.quarkus.deployment.util.IoUtil;
 import io.quarkus.resteasy.common.spi.ResteasyDotNames;
@@ -125,13 +125,13 @@ import io.quarkus.vertx.http.deployment.FilterBuildItem;
 import io.quarkus.vertx.http.deployment.HttpRootPathBuildItem;
 import io.quarkus.vertx.http.deployment.NonApplicationRootPathBuildItem;
 import io.quarkus.vertx.http.deployment.SecurityInformationBuildItem;
-import io.quarkus.vertx.http.deployment.devmode.NotFoundPageDisplayableEndpointBuildItem;
+import io.quarkus.vertx.http.deployment.spi.GeneratedStaticResourceBuildItem;
 import io.quarkus.vertx.http.deployment.spi.RouteBuildItem;
+import io.quarkus.vertx.http.deployment.spi.WebDependencyJarBuildItem;
 import io.quarkus.vertx.http.runtime.management.ManagementInterfaceBuildTimeConfig;
 import io.quarkus.vertx.http.runtime.security.SecurityHandlerPriorities;
 import io.quarkus.vertx.http.security.AuthorizationPolicy;
 import io.smallrye.openapi.api.OpenApiConfig;
-import io.smallrye.openapi.api.OpenApiDocument;
 import io.smallrye.openapi.api.OperationHandler;
 import io.smallrye.openapi.api.SmallRyeOpenAPI;
 import io.smallrye.openapi.api.constants.SecurityConstants;
@@ -172,8 +172,6 @@ public class SmallRyeOpenApiProcessor {
     private static final String VERT_X = "Vert.x";
 
     private static final String MANAGEMENT_ENABLED = "quarkus.smallrye-openapi.management.enabled";
-
-    private static final DotName NAME_OPEN_API_FILTER = DotName.createSimple(OpenApiFilter.class);
 
     @BuildStep
     FeatureBuildItem feature() {
@@ -226,18 +224,18 @@ public class SmallRyeOpenApiProcessor {
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
     @Consume(BeanContainerBuildItem.class)
-    void prepareDocuments(BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
+    void prepareDocuments(
             OpenApiFilteredIndexViewBuildItem apiFilteredIndexViewBuildItem,
             List<SecurityInformationBuildItem> securityInformationBuildItems,
             OpenApiRecorder recorder,
             SmallRyeOpenApiConfig openApiConfig, LaunchModeBuildItem launch,
-            Optional<SecurityTransformerBuildItem> securityTransformerBuildItem) {
-        Config config = ConfigProvider.getConfig();
+            Optional<SecurityTransformerBuildItem> securityTransformerBuildItem,
+            DocumentFiltersBuildItem documentFiltersBuildItem) {
 
         openApiConfig.documents().forEach((documentName, documentConfig) -> {
 
-            Map<OpenApiFilter.RunStage, List<String>> filtersByStage = getUserDefinedFiltersByStage(config,
-                    apiFilteredIndexViewBuildItem.getIndex(), documentName);
+            Map<OpenApiFilter.RunStage, List<String>> filtersByStage = documentFiltersBuildItem
+                    .filterNamesFor(documentName);
 
             AutoSecurityFilter autoSecurityFilter = null;
             if (securityConfig(launch, documentConfig::autoAddSecurity)) {
@@ -248,15 +246,6 @@ public class SmallRyeOpenApiProcessor {
             }
 
             recorder.prepareDocument(autoSecurityFilter, filtersByStage, documentName);
-
-            List<String> allRuntimeFilters = new ArrayList<>();
-            filtersByStage.forEach((stage, filters) -> {
-                if (stage != OpenApiFilter.RunStage.BUILD) {
-                    allRuntimeFilters.addAll(filters);
-                }
-            });
-            reflectiveClass.produce(ReflectiveClassBuildItem.builder(allRuntimeFilters.toArray(new String[] {}))
-                    .reason(getClass().getName()).build());
         });
     }
 
@@ -267,125 +256,16 @@ public class SmallRyeOpenApiProcessor {
     }
 
     @BuildStep
-    @Record(ExecutionTime.STATIC_INIT)
-    void registerAnnotatedUserDefinedRuntimeFilters(
-            BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
-            BuildProducer<UnremovableBeanBuildItem> unremovableBeans,
-            OpenApiFilteredIndexViewBuildItem openApiFilteredIndexViewBuildItem,
-            OpenApiRecorder recorder) {
-
-        Config config = ConfigProvider.getConfig();
-        IndexView index = openApiFilteredIndexViewBuildItem.getIndex();
-        Collection<AnnotationInstance> annotations = index.getAnnotations(NAME_OPEN_API_FILTER);
-        Set<String> userDefinedRuntimeFilters = new LinkedHashSet<>();
-
-        for (AnnotationInstance annotation : annotations) {
-            List<String> documentNames = extractDocumentNames(index, annotation);
-
-            for (String documentName : documentNames) {
-                Config wrappedConfig = OpenApiConfigHelper.wrap(config, documentName);
-                userDefinedRuntimeFilters.addAll(getUserDefinedRuntimeStartupFilters(wrappedConfig, index, documentName));
-                userDefinedRuntimeFilters
-                        .addAll(getUserDefinedFilters(index, documentName, OpenApiFilter.RunStage.RUNTIME_PER_REQUEST));
-            }
-        }
-
-        String[] runtimeFilterClassNames = userDefinedRuntimeFilters.toArray(new String[] {});
-
-        reflectiveClass.produce(ReflectiveClassBuildItem.builder(runtimeFilterClassNames)
-                .reason(getClass().getName()).build());
-
-        // Make sure the filter beans are kept so they may be loaded programmatically at runtime
-        unremovableBeans.produce(UnremovableBeanBuildItem.beanClassNames(runtimeFilterClassNames));
-    }
-
-    @BuildStep
-    @Produce(ServiceStartBuildItem.class)
-    void validateOpenApiFilterStages(BeanArchiveIndexBuildItem indexBuildItem) {
-        IndexView index = indexBuildItem.getIndex();
-        Collection<AnnotationInstance> annotations = index.getAnnotations(NAME_OPEN_API_FILTER);
-
-        for (AnnotationInstance annotation : annotations) {
-            AnnotationValue stagesValue = annotation.valueWithDefault(index, "stages");
-            if (stagesValue.asArrayList().isEmpty()) {
-                log.warnf(
-                        "@OpenApiFilter on '%s' will not be run, since the stages array is set to an empty array (stages = {}).",
-                        annotation.target().asClass().name());
-            }
-        }
-    }
-
-    @BuildStep
-    @Produce(ServiceStartBuildItem.class)
-    void validateOpenApiFilterDocumentNames(SmallRyeOpenApiConfig config,
-            OpenApiFilteredIndexViewBuildItem openApiFilteredIndexViewBuildItem) {
-        IndexView index = openApiFilteredIndexViewBuildItem.getIndex();
-        Collection<AnnotationInstance> annotations = index.getAnnotations(NAME_OPEN_API_FILTER);
-
-        Map<DotName, Set<String>> problematicDocumentNames = new HashMap<>();
-        for (AnnotationInstance annotation : annotations) {
-            List<String> documentNames = extractDocumentNames(index, annotation);
-
-            for (String documentName : documentNames) {
-                if (documentName.equals(OpenApiFilter.DEFAULT_DOCUMENT_NAME)) {
-                    continue;
-                }
-                if (documentName.equals(OpenApiFilter.FILTER_RUN_FOR_ANY_DOCUMENT)) {
-                    continue;
-                }
-
-                if (config.documents().containsKey(documentName)) {
-                    continue;
-                }
-
-                problematicDocumentNames.computeIfAbsent(annotation.target().asClass().name(), ignored -> new LinkedHashSet<>())
-                        .add(documentName);
-            }
-        }
-
-        if (!problematicDocumentNames.isEmpty()) {
-            Set<String> validDocumentNamesValues = new HashSet<>(config.documents().keySet());
-            validDocumentNamesValues.add(OpenApiFilter.FILTER_RUN_FOR_ANY_DOCUMENT);
-
-            String message = """
-                    Following instances of the OpenAPIFilter annotation are invalid because of a misconfigured documentNames value.
-                    Valid values are: %s
-                    """
-                    .formatted(validDocumentNamesValues);
-            message += problematicDocumentNames.entrySet().stream()
-                    .map(entry -> String.format("@OpenAPIFilter '%s' references unknown document names: %s",
-                            entry.getKey(),
-                            entry.getValue()))
-                    .collect(Collectors.joining("; "));
-            throw new IllegalArgumentException(message);
-        }
-    }
-
-    private List<String> extractDocumentNames(IndexView index, AnnotationInstance openApiFilterAnnotation) {
-
-        AnnotationValue annotationValue = openApiFilterAnnotation.valueWithDefault(index, "documentNames");
-
-        List<String> documentNames = new ArrayList<>();
-        for (AnnotationValue value : annotationValue.asArrayList()) {
-            documentNames.add(value.asString());
-        }
-
-        return documentNames;
-    }
-
-    @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
     void handler(LaunchModeBuildItem launch,
-            BuildProducer<NotFoundPageDisplayableEndpointBuildItem> displayableEndpoints,
             BuildProducer<RouteBuildItem> routes,
             BuildProducer<SystemPropertyBuildItem> systemProperties,
             OpenApiRecorder recorder,
             NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem,
-            OpenApiFilteredIndexViewBuildItem apiFilteredIndexViewBuildItem,
             ShutdownContextBuildItem shutdownContext,
             SmallRyeOpenApiConfig openApiConfig,
             List<FilterBuildItem> filterBuildItems,
-            ManagementInterfaceBuildTimeConfig managementBuildTimeConfig) {
+            ManagementInterfaceBuildTimeConfig managementBuildTimeConfig, DocumentFiltersBuildItem documentFiltersBuildItem) {
         /*
          * <em>Ugly Hack</em>
          * In dev mode, we pass a classloader to load the up to date OpenAPI document.
@@ -418,12 +298,10 @@ public class SmallRyeOpenApiProcessor {
             String documentName = entry.getKey();
             OpenApiDocumentConfig documentConfig = entry.getValue();
 
-            boolean hasPerRequestFilters = !getUserDefinedFilters(
-                    apiFilteredIndexViewBuildItem.getIndex(), documentName, OpenApiFilter.RunStage.RUNTIME_PER_REQUEST)
-                    .isEmpty();
+            boolean hasPerRequestFilters = !documentFiltersBuildItem
+                    .filterNamesFor(documentName, OpenApiFilter.RunStage.RUNTIME_PER_REQUEST).isEmpty();
 
-            boolean dynamic = documentConfig.alwaysRunFilter() || hasPerRequestFilters;
-            Handler<RoutingContext> handler = recorder.handler(documentName, dynamic);
+            Handler<RoutingContext> handler = recorder.handler(documentName, hasPerRequestFilters);
 
             String managementEnabledKey = MANAGEMENT_ENABLED;
 
@@ -606,118 +484,6 @@ public class SmallRyeOpenApiProcessor {
             }
 
         });
-    }
-
-    private List<String> getUserDefinedRuntimeStartupFilters(Config config, IndexView index, String documentName) {
-        @SuppressWarnings("removal")
-        List<String> userDefinedFilters = getUserDefinedFilters(index,
-                documentName, OpenApiFilter.RunStage.RUNTIME_STARTUP, OpenApiFilter.RunStage.RUN);
-        // Also add the MP way
-        config.getOptionalValue(OASConfig.FILTER, String.class).ifPresent(userDefinedFilters::add);
-        return userDefinedFilters;
-    }
-
-    /**
-     * Builds a map of all user-defined filters grouped by their resolved {@link OpenApiFilter.RunStage}.
-     * The map never contains {@link OpenApiFilter.RunStage#BOTH} as a key; filters annotated with
-     * {@code BOTH} are resolved to {@code BUILD} + {@code RUN}.
-     */
-    @SuppressWarnings("removal")
-    private Map<OpenApiFilter.RunStage, List<String>> getUserDefinedFiltersByStage(Config config, IndexView index,
-            String documentName) {
-        Map<OpenApiFilter.RunStage, List<String>> result = new EnumMap<>(OpenApiFilter.RunStage.class);
-        for (OpenApiFilter.RunStage stage : OpenApiFilter.RunStage.values()) {
-            if (stage == OpenApiFilter.RunStage.BOTH) {
-                continue;
-            }
-            result.put(stage, getUserDefinedFilters(index, documentName, stage));
-        }
-
-        // Also add the MP way
-        config.getOptionalValue(OASConfig.FILTER, String.class)
-                .ifPresent(filter -> result.get(OpenApiFilter.RunStage.RUN).add(filter));
-        return result;
-    }
-
-    /**
-     * resolves the effective stages from {@link OpenApiFilter#stages()} and {@link OpenApiFilter#value()}.
-     *
-     * @param ai the OpenApiFilter annotation placed on an OASFilter implementation
-     * @param index
-     * @return set of the Runstages this OasFilter should run in, never null.
-     *         {@link io.quarkus.smallrye.openapi.OpenApiFilter.RunStage#BOTH} will not be present, instead it will be resolved
-     *         to {@link io.quarkus.smallrye.openapi.OpenApiFilter.RunStage#BUILD} +
-     *         {@link io.quarkus.smallrye.openapi.OpenApiFilter.RunStage#RUN}
-     * @deprecated This will be removed once {@link OpenApiFilter#value()} is also removed.
-     */
-    @Deprecated(since = "3.32", forRemoval = true)
-    @SuppressWarnings("removal")
-    private Set<OpenApiFilter.RunStage> resolveStages(AnnotationInstance ai, IndexView index) {
-
-        // remember: AnnotationInstance.value does NOT return default values, and instead return null if not explicitly set
-
-        Set<OpenApiFilter.RunStage> runStages = EnumSet.noneOf(OpenApiFilter.RunStage.class);
-        AnnotationValue stages = ai.value("stages");
-        if (stages != null) {
-            for (AnnotationValue sv : stages.asArrayList()) {
-                runStages.add(OpenApiFilter.RunStage.valueOf(sv.asEnum()));
-            }
-        } else {
-            AnnotationValue value = ai.value();
-            if (value != null) {
-                runStages.add(OpenApiFilter.RunStage.valueOf(value.asEnum()));
-            } else {
-                stages = ai.valueWithDefault(index, "stages");
-                for (AnnotationValue sv : stages.asArrayList()) {
-                    runStages.add(OpenApiFilter.RunStage.valueOf(sv.asEnum()));
-                }
-            }
-        }
-
-        if (runStages.remove(OpenApiFilter.RunStage.BOTH)) {
-            runStages.add(OpenApiFilter.RunStage.BUILD);
-            runStages.add(OpenApiFilter.RunStage.RUN);
-        }
-
-        return runStages;
-    }
-
-    private List<String> getUserDefinedFilters(IndexView index, String documentName,
-            OpenApiFilter.RunStage... requestedStages) {
-        Comparator<Object> comparator = Comparator
-                .comparing(x -> ((AnnotationInstance) x).valueWithDefault(index, "priority").asInt())
-                .reversed();
-
-        return index
-                .getAnnotations(OpenApiFilter.class)
-                .stream()
-                .filter(ai -> {
-                    Set<OpenApiFilter.RunStage> resolved = resolveStages(ai, index);
-                    for (OpenApiFilter.RunStage stage : requestedStages) {
-                        if (resolved.contains(stage)) {
-                            return true;
-                        }
-                    }
-                    return false;
-                })
-                .filter(ai -> {
-                    List<String> documentNames = extractDocumentNames(index, ai);
-                    for (String dn : documentNames) {
-                        if (dn.equals(OpenApiFilter.FILTER_RUN_FOR_ANY_DOCUMENT)) {
-                            return true;
-                        }
-                        if (dn.equals(documentName)) {
-                            return true;
-                        }
-                    }
-
-                    return false;
-                })
-                .sorted(comparator)
-                .map(ai -> ai.target().asClass())
-                .filter(c -> c.interfaceNames().contains(DotName.createSimple(OASFilter.class.getName())))
-                .map(c -> c.name().toString())
-                .collect(Collectors.toList());
     }
 
     private boolean isManagement(ManagementInterfaceBuildTimeConfig managementBuildTimeConfig,
@@ -1194,7 +960,8 @@ public class SmallRyeOpenApiProcessor {
             HttpRootPathBuildItem httpRootPathBuildItem,
             SmallRyeOpenApiConfig smallRyeOpenApiConfig,
             OutputTargetBuildItem outputTargetBuildItem,
-            List<IgnoreStaticDocumentBuildItem> ignoreStaticDocumentBuildItems) {
+            List<IgnoreStaticDocumentBuildItem> ignoreStaticDocumentBuildItems,
+            DocumentFiltersBuildItem documentFiltersBuildItem) {
 
         ClassLoader loader = Thread.currentThread().getContextClassLoader();
         FilteredIndexView index = openApiFilteredIndexViewBuildItem.getIndex();
@@ -1238,6 +1005,7 @@ public class SmallRyeOpenApiProcessor {
                     urlIgnorePatterns,
                     capabilities,
                     oasFilters,
+                    documentFiltersBuildItem.filterNamesFor(documentName, OpenApiFilter.RunStage.BUILD),
                     httpRootPathBuildItem,
                     operationHandler);
 
@@ -1256,7 +1024,9 @@ public class SmallRyeOpenApiProcessor {
                 nativeImageResources.produce(new NativeImageResourceBuildItem(name));
             });
 
-            SmallRyeOpenAPI storedOpenAPI = applyRuntimeFilters(openAPI, documentName, documentConfig, config, index);
+            SmallRyeOpenAPI storedOpenAPI = applyRuntimeStartupFilters(openAPI,
+                    documentFiltersBuildItem.filterNamesFor(documentName, OpenApiFilter.RunStage.RUNTIME_STARTUP),
+                    documentConfig);
 
             // Store schema if configured
             documentConfig.storeSchemaDirectory().ifPresent(storageDir -> {
@@ -1272,7 +1042,7 @@ public class SmallRyeOpenApiProcessor {
             });
 
             openApiDocumentProducer
-                    .produce(new OpenApiDocumentBuildItem(toOpenApiDocument(storedOpenAPI), storedOpenAPI, documentName));
+                    .produce(new OpenApiDocumentBuildItem(storedOpenAPI, documentName));
         });
     }
 
@@ -1285,6 +1055,7 @@ public class SmallRyeOpenApiProcessor {
             List<Pattern> urlIgnorePatterns,
             Capabilities capabilities,
             List<OASFilter> oasFilters,
+            List<String> filterNames,
             HttpRootPathBuildItem httpRootPathBuildItem,
             OperationHandler operationHandler) {
 
@@ -1317,7 +1088,7 @@ public class SmallRyeOpenApiProcessor {
                 // available for filters running at startup.
                 .withIntermediateModel(true);
 
-        getUserDefinedFilters(index, documentName, OpenApiFilter.RunStage.BUILD).forEach(builder::addFilterName);
+        filterNames.forEach(builder::addFilterName);
 
         // This should be the final filter to run
         builder.addFilter(new DefaultInfoFilter(config));
@@ -1325,12 +1096,10 @@ public class SmallRyeOpenApiProcessor {
         return builder.build();
     }
 
-    private SmallRyeOpenAPI applyRuntimeFilters(
+    private SmallRyeOpenAPI applyRuntimeStartupFilters(
             SmallRyeOpenAPI openAPI,
-            String documentName,
-            OpenApiDocumentConfig documentConfig,
-            Config config,
-            FilteredIndexView index) {
+            List<String> filterNames,
+            OpenApiDocumentConfig documentConfig) {
 
         Supplier<SmallRyeOpenAPI.Builder> filterOnlyBuilder = () -> {
             var runtimeFilterBuilder = SmallRyeOpenAPI.builder()
@@ -1348,23 +1117,12 @@ public class SmallRyeOpenApiProcessor {
 
         try {
             SmallRyeOpenAPI.Builder builder = filterOnlyBuilder.get();
-            getUserDefinedRuntimeStartupFilters(config, index, documentName).forEach(builder::addFilterName);
+            builder.withFilterNames(filterNames);
             return builder.build();
         } catch (Exception e) {
             // Try again without the user-defined runtime filters
             return filterOnlyBuilder.get().build();
         }
-    }
-
-    /**
-     * We need to use the deprecated OpenApiDocument as long as
-     * OpenApiDocumentBuildItem needs to be produced.
-     */
-    @SuppressWarnings("deprecation")
-    OpenApiDocument toOpenApiDocument(SmallRyeOpenAPI finalOpenAPI) {
-        OpenApiDocument output = OpenApiDocument.newInstance();
-        output.set(finalOpenAPI.model());
-        return output;
     }
 
     @BuildStep
@@ -1658,5 +1416,351 @@ public class SmallRyeOpenApiProcessor {
 
         IndexView getIndex();
 
+    }
+
+    @BuildStep
+    void generateRestJsClient(
+            SmallRyeOpenApiConfig openApiConfig,
+            List<OpenApiDocumentBuildItem> openApiDocuments,
+            BuildProducer<GeneratedStaticResourceBuildItem> staticResourceProducer) {
+
+        if (!openApiConfig.jsClient().enabled()) {
+            return;
+        }
+
+        ClassLoader tccl = Thread.currentThread().getContextClassLoader();
+        for (String resource : List.of("rest/rest-client.js", "rest/rest-client.d.ts")) {
+            try (InputStream is = tccl.getResourceAsStream(resource)) {
+                if (is == null) {
+                    throw new IllegalStateException(resource + " not found on classpath");
+                }
+                String fileName = resource.substring(resource.lastIndexOf('/') + 1);
+                staticResourceProducer.produce(
+                        new GeneratedStaticResourceBuildItem(
+                                "/_static/quarkus-rest/" + fileName,
+                                IoUtil.readBytes(is)));
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
+            }
+        }
+
+        for (OpenApiDocumentBuildItem doc : openApiDocuments) {
+            if (!doc.isDefaultDocument()) {
+                continue;
+            }
+            OpenAPI model = doc.getSmallRyeOpenAPI().model();
+            String proxyJs = generateRestProxy(model);
+            staticResourceProducer.produce(
+                    new GeneratedStaticResourceBuildItem(
+                            "/_static/quarkus-rest-api/rest-api.js",
+                            proxyJs.getBytes(StandardCharsets.UTF_8)));
+            String proxyDts = generateRestProxyDts(model);
+            staticResourceProducer.produce(
+                    new GeneratedStaticResourceBuildItem(
+                            "/_static/quarkus-rest-api/rest-api.d.ts",
+                            proxyDts.getBytes(StandardCharsets.UTF_8)));
+        }
+    }
+
+    @BuildStep
+    void registerRestWebDependency(
+            SmallRyeOpenApiConfig openApiConfig,
+            CurateOutcomeBuildItem curateOutcome,
+            BuildProducer<WebDependencyJarBuildItem> webDependencyProducer) {
+
+        if (!openApiConfig.jsClient().enabled()) {
+            return;
+        }
+
+        curateOutcome.getApplicationModel().getDependencies().stream()
+                .filter(dep -> dep.getGroupId().equals("io.quarkus")
+                        && dep.getArtifactId().equals("quarkus-smallrye-openapi"))
+                .findFirst()
+                .ifPresent(dep -> webDependencyProducer.produce(new WebDependencyJarBuildItem(
+                        dep.getKey(),
+                        dep.getResolvedPaths().getSinglePath(),
+                        Map.of(
+                                "@quarkus/rest", "/_static/quarkus-rest/rest-client.js",
+                                "@quarkus/rest/", "/_static/quarkus-rest/",
+                                "@quarkus/rest-api", "/_static/quarkus-rest-api/rest-api.js",
+                                "@quarkus/rest-api/", "/_static/quarkus-rest-api/"))));
+    }
+
+    private String generateRestProxy(OpenAPI model) {
+        StringBuilder js = new StringBuilder();
+        js.append("import { RestClient } from '@quarkus/rest';\n\n");
+        js.append("export const client = new RestClient();\n\n");
+
+        Paths paths = model.getPaths();
+        if (paths == null || paths.getPathItems() == null) {
+            return js.toString();
+        }
+
+        Map<String, List<OperationEntry>> byTag = new java.util.TreeMap<>();
+
+        for (Map.Entry<String, PathItem> pathEntry : paths.getPathItems().entrySet()) {
+            String path = pathEntry.getKey();
+            PathItem pathItem = pathEntry.getValue();
+            if (pathItem.getOperations() == null) {
+                continue;
+            }
+            for (Map.Entry<PathItem.HttpMethod, Operation> opEntry : pathItem.getOperations().entrySet()) {
+                PathItem.HttpMethod httpMethod = opEntry.getKey();
+                Operation op = opEntry.getValue();
+
+                String functionName = op.getOperationId();
+                if (functionName == null || functionName.isEmpty()) {
+                    functionName = httpMethod.name().toLowerCase()
+                            + sanitizePath(path);
+                }
+
+                String tag = "Default";
+                if (op.getTags() != null && !op.getTags().isEmpty()) {
+                    tag = op.getTags().get(0);
+                }
+
+                byTag.computeIfAbsent(tag, k -> new ArrayList<>())
+                        .add(new OperationEntry(functionName, httpMethod, path, op));
+            }
+        }
+
+        for (Map.Entry<String, List<OperationEntry>> tagEntry : byTag.entrySet()) {
+            String tag = sanitizeIdentifier(tagEntry.getKey());
+            List<OperationEntry> ops = tagEntry.getValue();
+            ops.sort(Comparator.comparing(e -> e.functionName));
+
+            js.append("export const ").append(tag).append(" = {\n");
+            for (int i = 0; i < ops.size(); i++) {
+                OperationEntry entry = ops.get(i);
+                generateOperationFunction(js, entry);
+                if (i < ops.size() - 1) {
+                    js.append(",");
+                }
+                js.append("\n");
+            }
+            js.append("};\n\n");
+        }
+
+        return js.toString();
+    }
+
+    private void generateOperationFunction(StringBuilder js, OperationEntry entry) {
+        Operation op = entry.operation;
+        String method = entry.httpMethod.name();
+
+        List<String> pathParamNames = new ArrayList<>();
+        List<String> queryParamNames = new ArrayList<>();
+        List<String> headerParamNames = new ArrayList<>();
+        List<String> cookieParamNames = new ArrayList<>();
+
+        if (op.getParameters() != null) {
+            for (Parameter param : op.getParameters()) {
+                if (param.getIn() == null || param.getName() == null) {
+                    continue;
+                }
+                switch (param.getIn()) {
+                    case PATH -> pathParamNames.add(param.getName());
+                    case QUERY -> queryParamNames.add(param.getName());
+                    case HEADER -> headerParamNames.add(param.getName());
+                    case COOKIE -> cookieParamNames.add(param.getName());
+                }
+            }
+        }
+
+        boolean hasBody = op.getRequestBody() != null;
+        String consumesType = null;
+        if (hasBody && op.getRequestBody().getContent() != null) {
+            Content content = op.getRequestBody().getContent();
+            if (content.getMediaTypes() != null && !content.getMediaTypes().isEmpty()) {
+                consumesType = content.getMediaTypes().keySet().iterator().next();
+            }
+        }
+
+        String producesType = null;
+        if (op.getResponses() != null) {
+            var successResp = op.getResponses().getAPIResponse("200");
+            if (successResp == null) {
+                successResp = op.getResponses().getAPIResponse("201");
+            }
+            if (successResp != null && successResp.getContent() != null
+                    && successResp.getContent().getMediaTypes() != null
+                    && !successResp.getContent().getMediaTypes().isEmpty()) {
+                producesType = successResp.getContent().getMediaTypes().keySet().iterator().next();
+            }
+        }
+
+        List<String> allParamNames = new ArrayList<>();
+        if (hasBody) {
+            allParamNames.add("body");
+        }
+        allParamNames.addAll(pathParamNames);
+        allParamNames.addAll(queryParamNames);
+        allParamNames.addAll(headerParamNames);
+        allParamNames.addAll(cookieParamNames);
+
+        js.append("    ").append(escapeJsIdentifier(entry.functionName)).append(": (");
+        if (!allParamNames.isEmpty()) {
+            js.append("{ ");
+            js.append(String.join(", ", allParamNames));
+            js.append(" } = {}");
+        }
+        js.append(") => client.request('").append(method).append("', '")
+                .append(escapeJs(entry.path)).append("', { ");
+
+        List<String> opts = new ArrayList<>();
+        if (!pathParamNames.isEmpty()) {
+            opts.add("pathParams: { " + String.join(", ", pathParamNames) + " }");
+        }
+        if (!queryParamNames.isEmpty()) {
+            opts.add("queryParams: { " + String.join(", ", queryParamNames) + " }");
+        }
+        if (!headerParamNames.isEmpty()) {
+            opts.add("headerParams: { " + String.join(", ", headerParamNames) + " }");
+        }
+        if (!cookieParamNames.isEmpty()) {
+            opts.add("cookieParams: { " + String.join(", ", cookieParamNames) + " }");
+        }
+        if (hasBody) {
+            opts.add("body");
+        }
+        if (consumesType != null && !"application/json".equals(consumesType)) {
+            opts.add("contentType: '" + escapeJs(consumesType) + "'");
+        }
+        if (producesType != null && !"application/json".equals(producesType)) {
+            opts.add("accept: '" + escapeJs(producesType) + "'");
+        }
+
+        js.append(String.join(", ", opts));
+        js.append(" })");
+    }
+
+    private String generateRestProxyDts(OpenAPI model) {
+        StringBuilder dts = new StringBuilder();
+        dts.append("import { RestClient } from '@quarkus/rest';\n\n");
+        dts.append("export declare const client: RestClient;\n\n");
+
+        Paths paths = model.getPaths();
+        if (paths == null || paths.getPathItems() == null) {
+            return dts.toString();
+        }
+
+        Map<String, List<OperationEntry>> byTag = new java.util.TreeMap<>();
+
+        for (Map.Entry<String, PathItem> pathEntry : paths.getPathItems().entrySet()) {
+            String path = pathEntry.getKey();
+            PathItem pathItem = pathEntry.getValue();
+            if (pathItem.getOperations() == null) {
+                continue;
+            }
+            for (Map.Entry<PathItem.HttpMethod, Operation> opEntry : pathItem.getOperations().entrySet()) {
+                PathItem.HttpMethod httpMethod = opEntry.getKey();
+                Operation op = opEntry.getValue();
+
+                String functionName = op.getOperationId();
+                if (functionName == null || functionName.isEmpty()) {
+                    functionName = httpMethod.name().toLowerCase()
+                            + sanitizePath(path);
+                }
+
+                String tag = "Default";
+                if (op.getTags() != null && !op.getTags().isEmpty()) {
+                    tag = op.getTags().get(0);
+                }
+
+                byTag.computeIfAbsent(tag, k -> new ArrayList<>())
+                        .add(new OperationEntry(functionName, httpMethod, path, op));
+            }
+        }
+
+        for (Map.Entry<String, List<OperationEntry>> tagEntry : byTag.entrySet()) {
+            String tag = sanitizeIdentifier(tagEntry.getKey());
+            List<OperationEntry> ops = tagEntry.getValue();
+            ops.sort(Comparator.comparing(e -> e.functionName));
+
+            dts.append("export declare const ").append(tag).append(": {\n");
+            for (OperationEntry entry : ops) {
+                generateOperationDts(dts, entry);
+            }
+            dts.append("};\n\n");
+        }
+
+        return dts.toString();
+    }
+
+    private void generateOperationDts(StringBuilder dts, OperationEntry entry) {
+        Operation op = entry.operation;
+
+        List<String> paramFields = new ArrayList<>();
+
+        if (op.getRequestBody() != null) {
+            paramFields.add("body?: unknown");
+        }
+
+        if (op.getParameters() != null) {
+            for (Parameter param : op.getParameters()) {
+                if (param.getIn() == null || param.getName() == null) {
+                    continue;
+                }
+                String tsType = param.getIn() == Parameter.In.PATH ? "string | number" : "string";
+                boolean required = param.getIn() == Parameter.In.PATH;
+                paramFields.add(param.getName() + (required ? "" : "?") + ": " + tsType);
+            }
+        }
+
+        dts.append("    ").append(escapeJsIdentifier(entry.functionName)).append(": (");
+        if (!paramFields.isEmpty()) {
+            dts.append("params: { ");
+            dts.append(String.join("; ", paramFields));
+            dts.append(" }");
+        }
+        dts.append(") => Promise<unknown>;\n");
+    }
+
+    static String sanitizePath(String path) {
+        StringBuilder sb = new StringBuilder();
+        boolean capitalizeNext = true;
+        for (char c : path.toCharArray()) {
+            if (c == '/' || c == '{' || c == '}' || c == '-' || c == '_' || c == '.') {
+                capitalizeNext = true;
+            } else if (capitalizeNext) {
+                sb.append(Character.toUpperCase(c));
+                capitalizeNext = false;
+            } else {
+                sb.append(c);
+            }
+        }
+        return sb.toString();
+    }
+
+    static String sanitizeIdentifier(String name) {
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < name.length(); i++) {
+            char c = name.charAt(i);
+            if (sb.isEmpty() ? Character.isJavaIdentifierStart(c) : Character.isJavaIdentifierPart(c)) {
+                sb.append(c);
+            }
+        }
+        return sb.isEmpty() ? "Default" : sb.toString();
+    }
+
+    static String escapeJsIdentifier(String name) {
+        if (name == null || name.isEmpty()) {
+            return "unnamed";
+        }
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < name.length(); i++) {
+            char c = name.charAt(i);
+            if (sb.isEmpty() ? Character.isJavaIdentifierStart(c) : Character.isJavaIdentifierPart(c)) {
+                sb.append(c);
+            }
+        }
+        return sb.isEmpty() ? "unnamed" : sb.toString();
+    }
+
+    static String escapeJs(String value) {
+        return value.replace("\\", "\\\\").replace("'", "\\'");
+    }
+
+    private record OperationEntry(String functionName, PathItem.HttpMethod httpMethod, String path, Operation operation) {
     }
 }

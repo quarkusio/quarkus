@@ -121,6 +121,11 @@ public final class VertxGrpcSender implements GrpcSender {
             return shutdownResult;
         }
 
+        if (client == null) {
+            logger.log(Level.FINE, "Client is null. Cannot close.");
+            return shutdownResult;
+        }
+
         try {
             client.close()
                     .onSuccess(

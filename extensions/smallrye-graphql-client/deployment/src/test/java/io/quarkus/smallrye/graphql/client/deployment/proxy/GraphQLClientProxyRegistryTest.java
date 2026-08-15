@@ -4,6 +4,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.net.URI;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import jakarta.inject.Inject;
@@ -52,7 +54,7 @@ public class GraphQLClientProxyRegistryTest {
      * Starts a simple HTTP proxy server that forwards requests to the final destination.
      */
     @BeforeAll
-    public static void startProxyServer() throws ExecutionException, InterruptedException {
+    public static void startProxyServer() throws ExecutionException, InterruptedException, TimeoutException {
         vertx = Vertx.vertx();
         proxyClient = vertx.createHttpClient();
         proxyServer = vertx.createHttpServer().requestHandler(originalRequest -> {
@@ -69,7 +71,7 @@ public class GraphQLClientProxyRegistryTest {
                                         originalRequest.response().setStatusCode(500).end();
                                         return;
                                     }
-                                    proxyRequest.result().send(originalRequestBody, proxyRequestResponse -> {
+                                    proxyRequest.result().send(originalRequestBody).onComplete(proxyRequestResponse -> {
                                         if (proxyRequestResponse.succeeded()) {
                                             originalRequest.response()
                                                     .setStatusCode(proxyRequestResponse.result().statusCode());
@@ -93,22 +95,19 @@ public class GraphQLClientProxyRegistryTest {
                 e.printStackTrace();
                 originalRequest.response().setStatusCode(500).end();
             }
-        }).listen(3456).toCompletionStage().toCompletableFuture().get();
+        }).listen(3456).await(10, TimeUnit.SECONDS);
     }
 
     @AfterAll
-    public static void stopProxyServer() {
+    public static void stopProxyServer() throws TimeoutException {
         if (proxyServer != null) {
-            proxyServer.close(x -> {
-            });
+            proxyServer.close().await(10, TimeUnit.SECONDS);
         }
         if (proxyClient != null) {
-            proxyClient.close(x -> {
-            });
+            proxyClient.close().await(10, TimeUnit.SECONDS);
         }
         if (vertx != null) {
-            vertx.close(x -> {
-            });
+            vertx.close().await(10, TimeUnit.SECONDS);
         }
     }
 

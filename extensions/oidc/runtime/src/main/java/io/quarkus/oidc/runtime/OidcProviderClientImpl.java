@@ -6,10 +6,11 @@ import static io.quarkus.oidc.common.runtime.OidcCommonUtils.getClientAssertionP
 import java.io.Closeable;
 import java.net.SocketException;
 import java.security.Key;
+import java.time.Duration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -37,11 +38,11 @@ import io.quarkus.oidc.common.runtime.config.OidcClientCommonConfig.Credentials.
 import io.quarkus.security.credential.TokenCredential;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.groups.UniOnItem;
+import io.vertx.core.MultiMap;
 import io.vertx.core.Vertx;
+import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpHeaders;
 import io.vertx.core.json.JsonObject;
-import io.vertx.mutiny.core.MultiMap;
-import io.vertx.mutiny.core.buffer.Buffer;
 import io.vertx.mutiny.ext.web.client.HttpRequest;
 import io.vertx.mutiny.ext.web.client.HttpResponse;
 
@@ -99,7 +100,7 @@ public class OidcProviderClientImpl implements OidcProviderClient, Closeable {
     private final Map<OidcEndpoint.Type, List<OidcRequestFilter>> requestFilters;
     private final Map<OidcEndpoint.Type, List<OidcResponseFilter>> responseFilters;
     private final boolean clientSecretQueryAuthentication;
-    private final Map<String, Uni<AuthorizationCodeTokens>> refreshTokenToTokensUni;
+    private final MemoryCache<Uni<AuthorizationCodeTokens>> refreshTokenCache;
     private final String jwtSecret;
     private volatile String clientSecret;
     private volatile String clientSecretBasicAuthScheme;
@@ -124,7 +125,12 @@ public class OidcProviderClientImpl implements OidcProviderClient, Closeable {
         this.clientSecretQueryAuthentication = clientCredentials.clientSecretQueryAuthentication;
         this.clientSecret = clientCredentials.clientSecret;
         this.jwtSecret = clientCredentials.jwtSecret;
-        this.refreshTokenToTokensUni = new ConcurrentHashMap<>();
+        Duration refreshTokenCacheTtl = oidcConfig.token().refreshTokenCacheTimeToLive();
+        if (refreshTokenCacheTtl.isZero()) {
+            this.refreshTokenCache = null;
+        } else {
+            this.refreshTokenCache = new MemoryCache<>(vertx, Optional.of(refreshTokenCacheTtl), refreshTokenCacheTtl, 10_000);
+        }
     }
 
     void setOidcProvider(OidcProvider oidcProvider) {
@@ -147,19 +153,20 @@ public class OidcProviderClientImpl implements OidcProviderClient, Closeable {
 
     Uni<JsonWebKeySet> getJsonWebKeySet(OidcRequestContextProperties contextProperties) {
         final OidcRequestContextProperties requestProps = getRequestProps(contextProperties);
-        return doGetJsonWebKeySet(requestProps, List.of())
+        return withAsyncCredentials().flatMap(asyncCredentials -> doGetJsonWebKeySet(requestProps, List.of(), asyncCredentials)
                 .onFailure(OidcCommonUtils.validOidcClientRedirect(metadata.getJsonWebKeySetUri()))
                 .recoverWithUni(
                         new Function<Throwable, Uni<? extends JsonWebKeySet>>() {
                             @Override
                             public Uni<JsonWebKeySet> apply(Throwable t) {
                                 OidcClientRedirectException ex = (OidcClientRedirectException) t;
-                                return doGetJsonWebKeySet(requestProps, ex.getCookies());
+                                return doGetJsonWebKeySet(requestProps, ex.getCookies(), asyncCredentials);
                             }
-                        });
+                        }));
     }
 
-    private Uni<JsonWebKeySet> doGetJsonWebKeySet(OidcRequestContextProperties requestProps, List<String> cookies) {
+    private Uni<JsonWebKeySet> doGetJsonWebKeySet(OidcRequestContextProperties requestProps, List<String> cookies,
+            AsyncCredentials asyncCredentials) {
         LOG.debugf("Get verification JWT Key Set at %s", metadata.getJsonWebKeySetUri());
         HttpRequest<Buffer> request = client.getAbs(metadata.getJsonWebKeySetUri());
         if (!cookies.isEmpty()) {
@@ -168,17 +175,19 @@ public class OidcProviderClientImpl implements OidcProviderClient, Closeable {
         final UniOnItem<HttpResponse<Buffer>> httpResponse;
         if (oidcConfig.credentials().forAllEndpoints()) {
             var requestPropsCopy = requestProps != null ? new OidcRequestContextProperties(requestProps.getAll()) : null;
-            var preparedRequest = prepareGetJsonWebKeySetRequest(requestProps, cookies, true);
+            var preparedRequest = prepareGetJsonWebKeySetRequest(requestProps, cookies, true, asyncCredentials);
             httpResponse = withCredentialsRetry(preparedRequest,
-                    () -> prepareGetJsonWebKeySetRequest(requestPropsCopy, cookies, true));
+                    () -> prepareGetJsonWebKeySetRequest(requestPropsCopy, cookies, true, asyncCredentials))
+                    .onItem();
         } else {
-            httpResponse = prepareGetJsonWebKeySetRequest(requestProps, cookies, false).httpRequestUni.onItem();
+            httpResponse = prepareGetJsonWebKeySetRequest(requestProps, cookies, false, asyncCredentials).httpRequestUni
+                    .onItem();
         }
         return httpResponse.transformToUni(resp -> getJsonWebKeySet(requestProps, resp));
     }
 
     private PreparedHttpRequest prepareGetJsonWebKeySetRequest(OidcRequestContextProperties requestProps, List<String> cookies,
-            boolean addCredentials) {
+            boolean addCredentials, AsyncCredentials asyncCredentials) {
         LOG.debugf("Get verification JWT Key Set at %s", metadata.getJsonWebKeySetUri());
         HttpRequest<Buffer> request = client.getAbs(metadata.getJsonWebKeySetUri());
         if (!cookies.isEmpty()) {
@@ -189,7 +198,7 @@ public class OidcProviderClientImpl implements OidcProviderClient, Closeable {
             credentialsToRetry = setHttpAuthorizationForJwks(request,
                     new ClientCredentials(null, clientSecret, null, clientSecretBasicAuthScheme,
                             jwtAssertionProvided, clientAssertionProvider, clientSecretQueryAuthentication),
-                    oidcConfig);
+                    oidcConfig, asyncCredentials);
         }
         var filteredRequest = filterHttpRequest(requestProps, OidcEndpoint.Type.JWKS, request, null)
                 .flatMap(httpRequest -> OidcCommonUtils.sendRequest(vertx, httpRequest, oidcConfig.useBlockingDnsLookup()));
@@ -264,7 +273,7 @@ public class OidcProviderClientImpl implements OidcProviderClient, Closeable {
     }
 
     public Uni<TokenIntrospection> introspectAccessToken(final String token) {
-        final MultiMap introspectionParams = new MultiMap(io.vertx.core.MultiMap.caseInsensitiveMultiMap());
+        final MultiMap introspectionParams = MultiMap.caseInsensitiveMultiMap();
         introspectionParams.add(OidcConstants.INTROSPECTION_TOKEN, token);
         introspectionParams.add(OidcConstants.INTROSPECTION_TOKEN_TYPE_HINT, OidcConstants.ACCESS_TOKEN_VALUE);
         final OidcRequestContextProperties requestProps = getRequestProps(null, null);
@@ -306,7 +315,7 @@ public class OidcProviderClientImpl implements OidcProviderClient, Closeable {
     }
 
     Uni<AuthorizationCodeTokens> getAuthorizationCodeTokens(String code, String redirectUri, String codeVerifier) {
-        final MultiMap codeGrantParams = new MultiMap(io.vertx.core.MultiMap.caseInsensitiveMultiMap());
+        final MultiMap codeGrantParams = MultiMap.caseInsensitiveMultiMap();
         codeGrantParams.add(OidcConstants.GRANT_TYPE, OidcConstants.AUTHORIZATION_CODE);
         codeGrantParams.add(OidcConstants.CODE_FLOW_CODE, code);
         codeGrantParams.add(OidcConstants.CODE_FLOW_REDIRECT_URI, redirectUri);
@@ -323,27 +332,31 @@ public class OidcProviderClientImpl implements OidcProviderClient, Closeable {
     }
 
     Uni<AuthorizationCodeTokens> refreshAuthorizationCodeTokens(String refreshToken) {
+        if (refreshTokenCache == null) {
+            return refreshAuthorizationCodeTokensWithoutCaching(refreshToken);
+        }
+
+        Uni<AuthorizationCodeTokens> refreshUni = refreshTokenCache.getOrComputeDeferredValue(refreshToken,
+                cacheEntry -> refreshAuthorizationCodeTokensWithoutCaching(refreshToken)
+                        .invoke(cacheEntry::startCachingPeriod)
+                        .onFailure().invoke(cacheEntry::remove)
+                        .memoize().indefinitely());
+
         var ctx = Vertx.currentContext();
-        Uni<AuthorizationCodeTokens> refreshUni = refreshTokenToTokensUni.computeIfAbsent(refreshToken, rt -> {
-            final MultiMap refreshGrantParams = new MultiMap(io.vertx.core.MultiMap.caseInsensitiveMultiMap());
-            refreshGrantParams.add(OidcConstants.GRANT_TYPE, OidcConstants.REFRESH_TOKEN_GRANT);
-            refreshGrantParams.add(OidcConstants.REFRESH_TOKEN_VALUE, rt);
-            final OidcRequestContextProperties requestProps = getRequestProps(OidcConstants.REFRESH_TOKEN_GRANT);
-            try {
-                return getHttpResponse(requestProps, metadata.getTokenUri(), refreshGrantParams, TokenOperation.REFRESH,
-                        OidcEndpoint.Type.TOKEN)
-                        .transformToUni(resp -> getAuthorizationCodeTokens(requestProps, resp))
-                        .onTermination().invoke(() -> refreshTokenToTokensUni.remove(rt))
-                        .memoize().indefinitely();
-            } catch (Throwable t) {
-                refreshTokenToTokensUni.remove(rt);
-                throw t;
-            }
-        });
         if (ctx != null) {
             return refreshUni.emitOn(command -> ctx.runOnContext(ignored -> command.run()));
         }
         return refreshUni;
+    }
+
+    private Uni<AuthorizationCodeTokens> refreshAuthorizationCodeTokensWithoutCaching(String refreshToken) {
+        final MultiMap refreshGrantParams = MultiMap.caseInsensitiveMultiMap();
+        refreshGrantParams.add(OidcConstants.GRANT_TYPE, OidcConstants.REFRESH_TOKEN_GRANT);
+        refreshGrantParams.add(OidcConstants.REFRESH_TOKEN_VALUE, refreshToken);
+        final OidcRequestContextProperties requestProps = getRequestProps(OidcConstants.REFRESH_TOKEN_GRANT);
+        return getHttpResponse(requestProps, metadata.getTokenUri(), refreshGrantParams, TokenOperation.REFRESH,
+                OidcEndpoint.Type.TOKEN)
+                .transformToUni(resp -> getAuthorizationCodeTokens(requestProps, resp));
     }
 
     public Uni<Boolean> revokeAccessToken(String accessToken) {
@@ -355,14 +368,17 @@ public class OidcProviderClientImpl implements OidcProviderClient, Closeable {
     }
 
     public Uni<AuthorizationCodeTokens> getRefreshTokenRequest(String refreshToken) {
-        return refreshTokenToTokensUni.get(refreshToken);
+        if (refreshTokenCache == null) {
+            return null;
+        }
+        return refreshTokenCache.get(refreshToken);
     }
 
     private Uni<Boolean> revokeToken(String token, String tokenTypeHint) {
 
         if (metadata.getRevocationUri() != null) {
             OidcRequestContextProperties requestProps = getRequestProps(null, null);
-            MultiMap tokenRevokeParams = new MultiMap(io.vertx.core.MultiMap.caseInsensitiveMultiMap());
+            MultiMap tokenRevokeParams = MultiMap.caseInsensitiveMultiMap();
             tokenRevokeParams.set(OidcConstants.REVOCATION_TOKEN, token);
             tokenRevokeParams.set(OidcConstants.REVOCATION_TOKEN_TYPE_HINT, tokenTypeHint);
 
@@ -393,7 +409,8 @@ public class OidcProviderClientImpl implements OidcProviderClient, Closeable {
     }
 
     private PreparedHttpRequest prepareHttpRequest(OidcRequestContextProperties requestProps, String uri,
-            MultiMap formBody, TokenOperation op, OidcEndpoint.Type endpointType, Buffer bodyBuffer) {
+            MultiMap formBody, TokenOperation op, OidcEndpoint.Type endpointType, Buffer bodyBuffer,
+            AsyncCredentials asyncCredentials) {
         HttpRequest<Buffer> request = client.postAbs(uri);
 
         final Buffer buffer;
@@ -414,7 +431,7 @@ public class OidcProviderClientImpl implements OidcProviderClient, Closeable {
                     credentialsToRetry = PreparedHttpRequest.CredentialsToRetry.CLIENT_SECRET_BASIC_AUTH_SCHEME;
                 }
             } else if (jwtAssertionProvided) {
-                final String clientAssertion = clientAssertionProvider.getClientAssertion();
+                final String clientAssertion = asyncCredentials.clientAssertion;
                 if (clientAssertion == null) {
                     throw new OIDCException(String.format(
                             "Cannot get token for tenant '%s' because a %s client_assertion is not available",
@@ -498,18 +515,22 @@ public class OidcProviderClientImpl implements OidcProviderClient, Closeable {
         boolean hasClientSecretProvider = hasClientSecretProvider();
         if (hasClientSecretProvider) {
             // copy to avoid duplications on credentials refresh
-            var delegate = io.vertx.core.MultiMap.caseInsensitiveMultiMap().addAll(formBody.getDelegate());
-            newFormBody = new MultiMap(delegate);
+            newFormBody = MultiMap.caseInsensitiveMultiMap().addAll(formBody);
         } else {
             newFormBody = formBody;
         }
 
-        var preparedRequest = prepareHttpRequest(requestProps, uri, newFormBody, op, endpointType, bodyBuffer);
-        if (hasClientSecretProvider && preparedRequest.credentialsToRetry != null) {
-            return withCredentialsRetry(preparedRequest,
-                    () -> prepareHttpRequest(requestProps, uri, formBody, op, endpointType, bodyBuffer));
-        }
-        return preparedRequest.httpRequestUni.onItem();
+        return withAsyncCredentials()
+                .flatMap(asyncCredentials -> {
+                    var preparedRequest = prepareHttpRequest(requestProps, uri, newFormBody, op, endpointType, bodyBuffer,
+                            asyncCredentials);
+                    if (hasClientSecretProvider && preparedRequest.credentialsToRetry != null) {
+                        return withCredentialsRetry(preparedRequest,
+                                () -> prepareHttpRequest(requestProps, uri, formBody, op, endpointType, bodyBuffer,
+                                        asyncCredentials));
+                    }
+                    return preparedRequest.httpRequestUni;
+                }).onItem();
     }
 
     private boolean hasClientSecretProvider() {
@@ -659,23 +680,24 @@ public class OidcProviderClientImpl implements OidcProviderClient, Closeable {
     }
 
     static void setHttpAuthorizationForDiscovery(HttpRequest<Buffer> request,
-            ClientCredentials clientCredentials, OidcClientCommonConfig oidcConfig) {
-        setHttpAuthorization(request, clientCredentials, oidcConfig, MetadataOperation.DISCOVERY);
+            ClientCredentials clientCredentials, OidcClientCommonConfig oidcConfig, AsyncCredentials asyncCredentials) {
+        setHttpAuthorization(request, clientCredentials, oidcConfig, MetadataOperation.DISCOVERY, asyncCredentials);
     }
 
     static PreparedHttpRequest.CredentialsToRetry setHttpAuthorizationForJwks(HttpRequest<Buffer> request,
-            ClientCredentials clientCredentials, OidcClientCommonConfig oidcConfig) {
-        return setHttpAuthorization(request, clientCredentials, oidcConfig, MetadataOperation.JWKS);
+            ClientCredentials clientCredentials, OidcClientCommonConfig oidcConfig, AsyncCredentials asyncCredentials) {
+        return setHttpAuthorization(request, clientCredentials, oidcConfig, MetadataOperation.JWKS, asyncCredentials);
     }
 
     private static PreparedHttpRequest.CredentialsToRetry setHttpAuthorization(HttpRequest<Buffer> request,
-            ClientCredentials clientCredentials, OidcClientCommonConfig oidcConfig, MetadataOperation op) {
+            ClientCredentials clientCredentials, OidcClientCommonConfig oidcConfig, MetadataOperation op,
+            AsyncCredentials asyncCredentials) {
         if (clientCredentials.clientSecretBasicAuthScheme != null) {
             request.putHeader(AUTHORIZATION_HEADER, clientCredentials.clientSecretBasicAuthScheme);
             return PreparedHttpRequest.CredentialsToRetry.CLIENT_SECRET_BASIC_AUTH_SCHEME;
         } else if (clientCredentials.jwtAssertionProvided && clientCredentials.clientAssertionProvider != null
                 && oidcConfig.credentials().jwt().source() == OidcClientCommonConfig.Credentials.Jwt.Source.BEARER) {
-            final String clientAssertion = clientCredentials.clientAssertionProvider.getClientAssertion();
+            final String clientAssertion = asyncCredentials.clientAssertion;
             if (clientAssertion == null) {
                 throw new OIDCException(String.format(
                         "Cannot access the %s endpoint for client '%s' because a JWT bearer client_assertion is not available",
@@ -686,7 +708,7 @@ public class OidcProviderClientImpl implements OidcProviderClient, Closeable {
         return null;
     }
 
-    private UniOnItem<HttpResponse<Buffer>> withCredentialsRetry(PreparedHttpRequest preparedRequest,
+    private Uni<HttpResponse<Buffer>> withCredentialsRetry(PreparedHttpRequest preparedRequest,
             Supplier<PreparedHttpRequest> refreshRequestSupplier) {
         return preparedRequest.httpRequestUni.flatMap(httpResponse -> {
             if (httpResponse.statusCode() == 401) {
@@ -725,7 +747,7 @@ public class OidcProviderClientImpl implements OidcProviderClient, Closeable {
                 });
             }
             return Uni.createFrom().item(httpResponse);
-        }).onItem();
+        });
     }
 
     static boolean isIntrospection(TokenOperation op) {
@@ -740,14 +762,14 @@ public class OidcProviderClientImpl implements OidcProviderClient, Closeable {
         final boolean jwtAssertionProvided = oidcConfig.credentials().jwt()
                 .source() != OidcClientCommonConfig.Credentials.Jwt.Source.CLIENT;
         final ClientAssertionProvider assertionProvider = getClientAssertionProvider(vertx, oidcConfig.credentials(),
-                OIDCException::new);
+                oidcConfig.authServerUrl());
         final boolean queryAuth = oidcConfig.credentials().clientSecret().method().orElse(null) == Method.QUERY;
         return OidcCommonUtils.clientSecret(oidcConfig.credentials())
                 .onItem().ifNotNull()
                 .transform(clientSecret -> new ClientCredentials(null, clientSecret, null,
                         OidcCommonUtils.initClientSecretBasicAuth(oidcConfig, clientSecret),
                         jwtAssertionProvided, assertionProvider, queryAuth))
-                .onItem().ifNull().switchTo(() -> OidcCommonUtils.initClientJwtKey(oidcConfig, true)
+                .onItem().ifNull().switchTo(() -> OidcCommonUtils.initClientJwtKey(oidcConfig)
                         .onItem().ifNotNull()
                         .transform(key -> new ClientCredentials(key, null, null, null,
                                 jwtAssertionProvided, assertionProvider, queryAuth))
@@ -775,9 +797,25 @@ public class OidcProviderClientImpl implements OidcProviderClient, Closeable {
         return null;
     }
 
+    private Uni<AsyncCredentials> withAsyncCredentials() {
+        return withAsyncCredentials(clientAssertionProvider);
+    }
+
+    static Uni<AsyncCredentials> withAsyncCredentials(ClientAssertionProvider clientAssertionProvider) {
+        if (clientAssertionProvider != null) {
+            return clientAssertionProvider.getClientAssertion().map(AsyncCredentials::new);
+        }
+        return AsyncCredentials.UNI_WITH_EMPTY_CREDENTIALS;
+    }
+
     record ClientCredentials(Key clientJwtKey, String clientSecret, String jwtSecret,
             String clientSecretBasicAuthScheme,
             boolean jwtAssertionProvided, ClientAssertionProvider clientAssertionProvider,
             boolean clientSecretQueryAuthentication) {
+    }
+
+    record AsyncCredentials(String clientAssertion) {
+        private static final Uni<AsyncCredentials> UNI_WITH_EMPTY_CREDENTIALS = Uni.createFrom()
+                .item(new AsyncCredentials(null));
     }
 }

@@ -49,18 +49,6 @@ import org.eclipse.aether.resolution.DependencyRequest;
 import org.eclipse.aether.resolution.DependencyResult;
 import org.eclipse.aether.util.artifact.JavaScopes;
 
-import com.fasterxml.jackson.core.json.JsonReadFeature;
-import com.fasterxml.jackson.core.util.DefaultIndenter;
-import com.fasterxml.jackson.core.util.DefaultPrettyPrinter;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.PropertyNamingStrategies;
-import com.fasterxml.jackson.databind.SerializationFeature;
-import com.fasterxml.jackson.databind.json.JsonMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
-
 import io.quarkus.bootstrap.BootstrapConstants;
 import io.quarkus.bootstrap.model.ApplicationModelBuilder;
 import io.quarkus.bootstrap.resolver.maven.BootstrapMavenContext;
@@ -77,6 +65,18 @@ import io.quarkus.maven.capabilities.CapabilityConfig;
 import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.maven.dependency.ArtifactKey;
 import io.quarkus.maven.dependency.GACTV;
+import io.quarkus.platform.tools.ExtensionMetadataValidator;
+import tools.jackson.core.json.JsonReadFeature;
+import tools.jackson.core.util.DefaultIndenter;
+import tools.jackson.core.util.DefaultPrettyPrinter;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.PropertyNamingStrategies;
+import tools.jackson.databind.SerializationFeature;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.node.ArrayNode;
+import tools.jackson.databind.node.ObjectNode;
+import tools.jackson.dataformat.yaml.YAMLMapper;
 
 /**
  * Generates Quarkus extension descriptor for the runtime artifact.
@@ -329,7 +329,7 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
                 extObject.put("name", project.getName());
             } else {
                 JsonNode node = extObject.get(ARTIFACT_ID);
-                String defaultName = node.asText();
+                String defaultName = node.asString();
                 int i = 0;
                 if (defaultName.startsWith("quarkus-")) {
                     i = "quarkus-".length();
@@ -370,15 +370,29 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
 
         completeCodestartArtifact(mapper, extObject);
 
+        try {
+            ExtensionMetadataValidator.validate(extObject);
+        } catch (IOException e) {
+            throw new MojoExecutionException(e.getMessage(), e.getCause());
+        }
+
         final DefaultPrettyPrinter prettyPrinter = new DefaultPrettyPrinter();
         prettyPrinter.indentArraysWith(DefaultIndenter.SYSTEM_LINEFEED_INSTANCE);
 
         try (BufferedWriter bw = Files
                 .newBufferedWriter(output.resolve(BootstrapConstants.QUARKUS_EXTENSION_FILE_NAME))) {
-            bw.write(getMapper(true).writer(prettyPrinter).writeValueAsString(extObject));
+            bw.write(getMapper(true).writer().with(prettyPrinter).writeValueAsString(extObject));
         } catch (IOException e) {
             throw new MojoExecutionException(
                     "Failed to persist " + output.resolve(BootstrapConstants.QUARKUS_EXTENSION_FILE_NAME), e);
+        }
+
+        try (BufferedWriter bw = Files
+                .newBufferedWriter(output.resolve(BootstrapConstants.QUARKUS_EXTENSION_JSON_FILE_NAME))) {
+            bw.write(getMapper(false).writer().with(prettyPrinter).writeValueAsString(extObject));
+        } catch (IOException e) {
+            throw new MojoExecutionException(
+                    "Failed to persist " + output.resolve(BootstrapConstants.QUARKUS_EXTENSION_JSON_FILE_NAME), e);
         }
     }
 
@@ -885,25 +899,6 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
         final DependencyNode deploymentNode = collectDeploymentDeps().getRoot();
         visitDeploymentDeps(rootDeployment, deploymentNode);
 
-        if (!rootDeployment.riskyDeploymentDeps.isEmpty()) {
-            final Log log = getLog();
-            List<ArtifactKey> risks = new ArrayList<>(rootDeployment.riskyDeploymentDeps.size());
-            for (Map.Entry<ArtifactKey, org.eclipse.aether.artifact.Artifact> e : rootDeployment.unexpectedDeploymentDeps
-                    .entrySet()) {
-                // TODO this check doesn't make sense, if the second one isn't right it's worse?
-                if (rootDeployment.allDeploymentDeps.contains(e.getKey())) {
-                    risks.add(e.getKey());
-                } else {
-                    risks.add(toKey(e.getValue()));
-                }
-            }
-
-            log.warn("The deployment artifact " + rootDeploymentGact
-                    + " depends on the following Quarkus extension deployment artifacts whose corresponding runtime artifacts were not found among the dependencies of "
-                    + project.getArtifact() + ":");
-            highlightInTree(deploymentNode, risks);
-        }
-
         if (rootDeployment.hasErrors()) {
             final Log log = getLog();
             log.error("Quarkus Extension Dependency Verification Error");
@@ -1054,9 +1049,7 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
         if (node != null) {
             if (!node.present) {
                 node.present = true;
-                if (!isExemptGact(node.gact)) {
-                    --rootDeployment.deploymentDepsTotal;
-                }
+                --rootDeployment.deploymentDepsTotal;
                 if (rootDeployment.allRtDeps.contains(key)) {
                     rootDeployment.deploymentsOnRtCp.add(key);
                 }
@@ -1064,12 +1057,7 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
         } else if (!rootDeployment.allRtDeps.contains(key)) {
             final ArtifactKey deployment = getDeploymentKey(artifact);
             if (deployment != null) {
-                if (isExemptGact(deployment)) {
-                    rootDeployment.riskyDeploymentDeps.put(deployment, artifact);
-                } else {
-                    rootDeployment.unexpectedDeploymentDeps.put(deployment, artifact);
-
-                }
+                rootDeployment.unexpectedDeploymentDeps.put(deployment, artifact);
             }
         }
         visitDeploymentDeps(rootDeployment, dep);
@@ -1083,9 +1071,7 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
         if (deployment != null) {
             currentNode = currentNode.newChild(deployment, ++currentId);
             root.expectedDeploymentNodes.put(currentNode.gact, currentNode);
-            if (!isExemptGact(currentNode.gact)) {
-                ++root.deploymentDepsTotal;
-            }
+            ++root.deploymentDepsTotal;
             if (root.allRtDeps.contains(deployment)) {
                 root.deploymentsOnRtCp.add(deployment);
                 if (root.directRuntimeDeps.contains(deployment)) {
@@ -1103,11 +1089,6 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
             }
         }
         visitRuntimeDeps(root, currentNode, currentId, node);
-    }
-
-    private static boolean isExemptGact(ArtifactKey gact) {
-        return (gact.getArtifactId().equals("quarkus-devservices")
-                || gact.getArtifactId().equals("quarkus-devservices-deployment")) && gact.getGroupId().equals("io.quarkus");
     }
 
     private void visitRuntimeDeps(RootNode root, Node currentNode, int currentId, DependencyNode node)
@@ -1286,9 +1267,9 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
     private ObjectMapper getMapper(boolean yaml) {
 
         if (yaml) {
-            YAMLFactory yf = new YAMLFactory();
-            return new ObjectMapper(yf)
-                    .setPropertyNamingStrategy(PropertyNamingStrategies.KEBAB_CASE);
+            return YAMLMapper.builder()
+                    .propertyNamingStrategy(PropertyNamingStrategies.KEBAB_CASE)
+                    .build();
         } else {
             return JsonMapper.builder()
                     .enable(SerializationFeature.INDENT_OUTPUT)
@@ -1331,16 +1312,12 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
         final Set<ArtifactKey> allRtDeps = new HashSet<>();
         final Set<ArtifactKey> allDeploymentDeps = new HashSet<>();
         final Map<ArtifactKey, org.eclipse.aether.artifact.Artifact> unexpectedDeploymentDeps = new HashMap<>(0);
-        final Map<ArtifactKey, org.eclipse.aether.artifact.Artifact> riskyDeploymentDeps = new HashMap<>(0);
 
         int deploymentDepsTotal = 1;
         List<ArtifactKey> deploymentsOnRtCp = new ArrayList<>(0);
 
         RootNode(ArtifactKey gact, int id) {
             super(null, gact, id);
-            if (isExemptGact(gact)) {
-                deploymentDepsTotal = 0;
-            }
         }
 
         boolean hasErrors() {

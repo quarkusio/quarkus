@@ -2,6 +2,7 @@ package io.quarkus.vertx.http.runtime;
 
 import java.net.InetAddress;
 import java.security.cert.Certificate;
+import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -18,6 +19,7 @@ import javax.naming.ldap.LdapName;
 import javax.naming.ldap.Rdn;
 import javax.net.ssl.SSLPeerUnverifiedException;
 import javax.net.ssl.SSLSession;
+import javax.net.ssl.X509TrustManager;
 import javax.security.auth.x500.X500Principal;
 
 import org.jboss.logging.Logger;
@@ -29,22 +31,60 @@ public interface TrustedProxyCheck {
 
     Logger LOGGER = Logger.getLogger(TrustedProxyCheck.class.getName());
 
-    static TrustedProxyCheck allowAll() {
-        return new TrustedProxyCheck() {
-            @Override
-            public boolean isProxyAllowed() {
-                return true;
-            }
-        };
-    }
+    TrustedProxyCheck ALLOW_ALL = new TrustedProxyCheck() {
+        @Override
+        public boolean isProxyAllowed() {
+            return true;
+        }
+    };
 
-    static TrustedProxyCheck denyAll() {
-        return new TrustedProxyCheck() {
-            @Override
-            public boolean isProxyAllowed() {
-                return false;
+    TrustedProxyCheck DENY_ALL = new TrustedProxyCheck() {
+        @Override
+        public boolean isProxyAllowed() {
+            return false;
+        }
+    };
+
+    static TrustedProxyCheck createTruststoreCheck(HttpServerRequest event, X509TrustManager trustManager, String alias) {
+        final SSLSession sslSession = event.sslSession();
+        if (sslSession == null) {
+            LOGGER.debug("No SSL session, proxy truststore check cannot be performed");
+            return DENY_ALL;
+        }
+
+        final Certificate[] peerCerts;
+        try {
+            peerCerts = sslSession.getPeerCertificates();
+        } catch (SSLPeerUnverifiedException e) {
+            LOGGER.debug("Peer certificate not available, proxy truststore check cannot be performed");
+            return DENY_ALL;
+        }
+
+        if (peerCerts == null || peerCerts.length == 0) {
+            LOGGER.debug("No peer certificates, proxy truststore check cannot be performed");
+            return DENY_ALL;
+        }
+
+        X509Certificate[] chain = new X509Certificate[peerCerts.length];
+        for (int i = 0; i < peerCerts.length; i++) {
+            if (!(peerCerts[i] instanceof X509Certificate x509Certificate)) {
+                LOGGER.debugf("Unexpected peer certificate type %s, proxy truststore check cannot be performed",
+                        peerCerts[i].getClass().getName());
+                return DENY_ALL;
             }
-        };
+            chain[i] = x509Certificate;
+        }
+
+        String authType = chain[0].getPublicKey().getAlgorithm();
+        try {
+            trustManager.checkClientTrusted(chain, authType);
+            LOGGER.debugf("Client certificate chain matches trusted proxy alias '%s'", alias);
+            return ALLOW_ALL;
+        } catch (CertificateException e) {
+            LOGGER.tracef(e, "Client certificate chain did not match trusted proxy alias '%s'", alias);
+        }
+
+        return DENY_ALL;
     }
 
     /**
@@ -59,7 +99,7 @@ public interface TrustedProxyCheck {
         final SSLSession sslSession = event.sslSession();
         if (sslSession == null) {
             LOGGER.debug("No SSL session, proxy DN check cannot be performed");
-            return denyAll();
+            return DENY_ALL;
         }
 
         final Certificate[] peerCertificates;
@@ -67,23 +107,23 @@ public interface TrustedProxyCheck {
             peerCertificates = sslSession.getPeerCertificates();
         } catch (SSLPeerUnverifiedException e) {
             LOGGER.debug("Peer certificate not available, proxy DN check cannot be performed");
-            return denyAll();
+            return DENY_ALL;
         }
 
         if (peerCertificates == null || peerCertificates.length == 0
                 || !(peerCertificates[0] instanceof X509Certificate peerCert)) {
             LOGGER.debug("No X509 peer certificate, proxy DN check cannot be performed");
-            return denyAll();
+            return DENY_ALL;
         }
 
         final X500Principal peerDn = peerCert.getSubjectX500Principal();
         if (matchesAnyTrustedDn(peerDn, trustedDns)) {
             LOGGER.debugf("Proxy DN '%s' matches trusted DN", peerDn);
-            return allowAll();
+            return ALLOW_ALL;
         }
 
         LOGGER.debugf("Proxy DN '%s' does not match any trusted DN", peerDn);
-        return denyAll();
+        return DENY_ALL;
     }
 
     static boolean matchesAnyTrustedDn(X500Principal peerDn, List<List<Rdn>> trustedDns) {

@@ -279,7 +279,7 @@ public final class ModuleWriter {
                         }
                     }
                 }), zb -> {
-                    zb.withVersion(ClassFile.JAVA_17_VERSION, 0);
+                    zb.withVersion(ClassFile.JAVA_21_VERSION, 0);
                     if (moduleInfo.mainClassName() != null) {
                         zb.with(ModuleMainClassAttribute.of(ClassDesc.of(moduleInfo.mainClassName())));
                     }

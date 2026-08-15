@@ -5,8 +5,10 @@ import java.util.Optional;
 
 import javax.net.ssl.SSLContext;
 
+import io.vertx.core.net.ClientSSLOptions;
 import io.vertx.core.net.KeyCertOptions;
-import io.vertx.core.net.SSLOptions;
+import io.vertx.core.net.SSLEngineOptions;
+import io.vertx.core.net.ServerSSLOptions;
 import io.vertx.core.net.TrustOptions;
 
 /**
@@ -54,11 +56,18 @@ public interface TlsConfiguration {
     TrustOptions getTrustStoreOptions();
 
     /**
-     * Returns the (Vert.x) SSL options.
+     * Returns the server-side SSL options.
      *
-     * @return the {@link SSLOptions}, {@code null} if not configured.
+     * @return the {@link ServerSSLOptions}, {@code null} if not configured.
      */
-    SSLOptions getSSLOptions();
+    ServerSSLOptions getServerSSLOptions();
+
+    /**
+     * Returns the client-side SSL options.
+     *
+     * @return the {@link ClientSSLOptions}, {@code null} if not configured.
+     */
+    ClientSSLOptions getClientSSLOptions();
 
     /**
      * Creates and returns the SSL Context.
@@ -99,6 +108,16 @@ public interface TlsConfiguration {
      * @return {@code true} if the configuration has been reloaded, {@code false} otherwise.
      */
     boolean reload();
+
+    /**
+     * Returns the SSL engine options to use, if explicitly configured.
+     * When empty, Vert.x selects the engine automatically based on the PQC enforcement policy.
+     *
+     * @return the {@link SSLEngineOptions} if configured, or empty.
+     */
+    default Optional<SSLEngineOptions> getSslEngineOptions() {
+        return Optional.empty();
+    }
 
     /**
      * Returns the name which was associated with this configuration

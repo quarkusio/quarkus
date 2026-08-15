@@ -4,8 +4,8 @@ import java.util.Objects;
 
 public class GeneratedResource {
 
-    private String publicPath;
-    private byte[] content;
+    private final String publicPath;
+    private final byte[] content;
 
     public GeneratedResource(String publicPath, byte[] content) {
         this.publicPath = publicPath;

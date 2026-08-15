@@ -1,5 +1,7 @@
 package io.quarkus.it.rest;
 
+import java.io.IOException;
+
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
@@ -24,7 +26,7 @@ public class ServerSentEventResource {
     @GET
     @Path("/stream")
     @Produces(MediaType.SERVER_SENT_EVENTS)
-    public void sendData(@Context SseEventSink sink) {
+    public void sendData(@Context SseEventSink sink) throws IOException {
         // send a stream of few events
         try {
             for (int i = 0; i < 3; i++) {
@@ -44,7 +46,7 @@ public class ServerSentEventResource {
     @Path("/stream-html")
     @Produces(MediaType.SERVER_SENT_EVENTS)
     @SseElementType("text/html")
-    public void sendHtmlData(@Context SseEventSink sink) {
+    public void sendHtmlData(@Context SseEventSink sink) throws IOException {
         // send a stream of few events
         try {
             for (int i = 0; i < 3; i++) {
@@ -64,7 +66,7 @@ public class ServerSentEventResource {
     @Path("/stream-xml")
     @SseElementType(MediaType.TEXT_XML)
     @Produces(MediaType.SERVER_SENT_EVENTS)
-    public void sendXmlData(@Context SseEventSink sink) {
+    public void sendXmlData(@Context SseEventSink sink) throws IOException {
         // send a stream of few events
         try {
             for (int i = 0; i < 3; i++) {

@@ -1,7 +1,14 @@
 package io.quarkus.tests.simpleextension.deployment;
 
+import java.util.Optional;
+
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.utility.DockerImageName;
+
+import com.github.dockerjava.api.model.ExposedPort;
+import com.github.dockerjava.api.model.HostConfig;
+import com.github.dockerjava.api.model.PortBinding;
+import com.github.dockerjava.api.model.Ports;
 
 import io.quarkus.deployment.builditem.Startable;
 
@@ -13,11 +20,20 @@ public class SimpleContainer extends GenericContainer<io.quarkus.tests.simpleext
 
     private String classLoaderNameOnStart;
 
-    public SimpleContainer() {
+    public SimpleContainer(Optional<Integer> fixedPort) {
         super(dockerImageName);
-        this //.waitingFor(Wait.forLogMessage(".*" + "resuming normal operations" + ".*", 1))
-                .withReuse(true)
-                .withExposedPorts(HTTPD_PORT);
+        this.withReuse(true);
+        //.waitingFor(Wait.forLogMessage(".*" + "resuming normal operations" + ".*", 1)) should work, doesn't :(
+        if (fixedPort.isPresent()) {
+            this.withCreateContainerCmdModifier(cmd -> cmd.withHostConfig(
+                    new HostConfig()
+                            .withPortBindings(
+                                    new PortBinding(
+                                            Ports.Binding.bindPort(fixedPort.get()),
+                                            new ExposedPort(HTTPD_PORT)))));
+        } else {
+            this.withExposedPorts(HTTPD_PORT);
+        }
     }
 
     @Override
@@ -39,5 +55,10 @@ public class SimpleContainer extends GenericContainer<io.quarkus.tests.simpleext
 
     public String getClassLoaderNameOnStart() {
         return classLoaderNameOnStart;
+    }
+
+    @Override
+    public String getContainerId() {
+        return super.getContainerId();
     }
 }

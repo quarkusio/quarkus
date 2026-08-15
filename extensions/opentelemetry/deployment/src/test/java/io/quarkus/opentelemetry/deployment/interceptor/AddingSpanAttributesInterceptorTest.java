@@ -1,7 +1,7 @@
 package io.quarkus.opentelemetry.deployment.interceptor;
 
 import static io.opentelemetry.api.trace.SpanKind.INTERNAL;
-import static io.opentelemetry.semconv.incubating.CodeIncubatingAttributes.CODE_FUNCTION_NAME;
+import static io.opentelemetry.semconv.CodeAttributes.CODE_FUNCTION_NAME;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;

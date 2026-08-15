@@ -75,11 +75,6 @@ class QuarkusCodestartBuildIT extends PlatformAwareTestBase {
         generateProjectRunTests("maven", "kotlin", getExtensionCodestarts());
     }
 
-    @Test
-    public void testRunTogetherCodestartsScala() throws Exception {
-        generateProjectRunTests("maven", "scala", getExtensionCodestarts());
-    }
-
     @ParameterizedTest
     @MethodSource("getLanguages")
     public void testGradle(String language) throws Exception {
@@ -104,12 +99,6 @@ class QuarkusCodestartBuildIT extends PlatformAwareTestBase {
     @MethodSource("getExamplesCodestarts")
     public void testExampleCodestartsKotlin(String codestart) throws Exception {
         generateProjectRunTests("maven", "kotlin", singletonList(codestart));
-    }
-
-    @ParameterizedTest
-    @MethodSource("getExamplesCodestarts")
-    public void testExampleCodestartsScala(String codestart) throws Exception {
-        generateProjectRunTests("maven", "scala", singletonList(codestart));
     }
 
     private void generateProjectRunTests(String buildTool, String language, List<String> codestarts)
@@ -162,7 +151,7 @@ class QuarkusCodestartBuildIT extends PlatformAwareTestBase {
     }
 
     private Stream<Arguments> getLanguages() {
-        return Stream.of("java", "kotlin", "scala")
+        return Stream.of("java", "kotlin")
                 .map(Arguments::of);
     }
 

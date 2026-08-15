@@ -38,7 +38,7 @@ public class EmptyHostTest {
 
         public void register(@Observes Router router) {
 
-            router.route("/hello").handler(ctx -> ctx.response().end("Hello World! " + ctx.request().host()));
+            router.route("/hello").handler(ctx -> ctx.response().end("Hello World! " + ctx.request().authority()));
         }
 
     }

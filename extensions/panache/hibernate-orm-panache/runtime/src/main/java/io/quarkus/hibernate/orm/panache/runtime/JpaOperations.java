@@ -6,6 +6,7 @@ import java.util.stream.Stream;
 import org.hibernate.Session;
 
 import io.quarkus.hibernate.orm.panache.common.runtime.AbstractManagedJpaOperations;
+import io.quarkus.panache.common.Sort;
 
 public class JpaOperations extends AbstractManagedJpaOperations<PanacheQueryImpl<?>> {
     /**
@@ -14,9 +15,11 @@ public class JpaOperations extends AbstractManagedJpaOperations<PanacheQueryImpl
     public static final JpaOperations INSTANCE = new JpaOperations();
 
     @Override
-    protected PanacheQueryImpl<?> createPanacheQuery(Session session, String query, String originalQuery, String orderBy,
+    protected PanacheQueryImpl<?> createPanacheQuery(Session session, Class<?> entityClass, String query,
+            String originalQuery,
+            Sort sort,
             Object paramsArrayOrMap) {
-        return new PanacheQueryImpl<>(session, query, originalQuery, orderBy, paramsArrayOrMap);
+        return new PanacheQueryImpl<>(session, entityClass, query, originalQuery, sort, paramsArrayOrMap);
     }
 
     @Override

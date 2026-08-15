@@ -7,7 +7,6 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 = Migrate from Vert.x OIDC to Quarkus OIDC
 include::_attributes.adoc[]
 :diataxis-type: tutorial
-:categories: security,web
 :topics: security,oidc,vertx
 :extensions: io.quarkus:quarkus-oidc
 
@@ -41,7 +40,7 @@ https://how-to.vertx.io/web-and-oauth2-oidc/#create-a-project[Create the project
   
   <properties>
     <! ... --> 
-    <vertx.version>5.0.16</vertx.version>
+    <vertx.version>5.1.5</vertx.version>
     <main.verticle>howto.oauth_oidc.MainVerticle</main.verticle>
     <launcher.class>io.vertx.launcher.application.VertxApplication</launcher.class>
   </properties>

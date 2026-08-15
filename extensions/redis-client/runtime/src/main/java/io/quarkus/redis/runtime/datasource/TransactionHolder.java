@@ -6,7 +6,7 @@ import java.util.function.Function;
 
 import io.quarkus.redis.datasource.transactions.OptimisticLockingTransactionResult;
 import io.quarkus.redis.datasource.transactions.TransactionResult;
-import io.vertx.mutiny.redis.client.Response;
+import io.vertx.redis.client.Response;
 import io.vertx.redis.client.ResponseType;
 
 public class TransactionHolder {
@@ -28,7 +28,7 @@ public class TransactionHolder {
                 results.add(mappers.get(i).apply(responsePart));
             } else {
                 hasErrors = true;
-                results.add(responsePart.getDelegate()); // it's also an exception
+                results.add(responsePart); // it's also an exception
             }
         }
         return new TransactionResultImpl(discarded, hasErrors, results);
@@ -44,7 +44,7 @@ public class TransactionHolder {
                 results.add(mappers.get(i).apply(responsePart));
             } else {
                 hasErrors = true;
-                results.add(responsePart.getDelegate()); // it's also an exception
+                results.add(responsePart); // it's also an exception
             }
         }
         return new OptimisticLockingTransactionResultImpl<>(discarded, hasErrors, input, results);

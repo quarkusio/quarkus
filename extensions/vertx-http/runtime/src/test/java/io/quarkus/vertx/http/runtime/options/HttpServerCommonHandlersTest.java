@@ -217,6 +217,7 @@ class HttpServerCommonHandlersTest {
         when(filterConfig.order()).thenReturn(OptionalInt.of(10));
         when(filterConfig.methods()).thenReturn(Optional.empty());
         when(filterConfig.header()).thenReturn(Map.of("X-Filter", "value"));
+        when(filterConfig.applyOnSuccess()).thenReturn(false);
 
         Route route = mock(Route.class, org.mockito.Answers.RETURNS_DEEP_STUBS);
         Route orderedRoute = mock(Route.class, org.mockito.Answers.RETURNS_DEEP_STUBS);
@@ -241,6 +242,7 @@ class HttpServerCommonHandlersTest {
         when(filterConfig.order()).thenReturn(OptionalInt.of(5));
         when(filterConfig.methods()).thenReturn(Optional.of(List.of("GET", "POST")));
         when(filterConfig.header()).thenReturn(Map.of("X-Filter", "value"));
+        when(filterConfig.applyOnSuccess()).thenReturn(false);
 
         Route getRoute = mock(Route.class, org.mockito.Answers.RETURNS_DEEP_STUBS);
         Route getOrderedRoute = mock(Route.class, org.mockito.Answers.RETURNS_DEEP_STUBS);
@@ -261,6 +263,150 @@ class HttpServerCommonHandlersTest {
         verify(router).routeWithRegex(HttpMethod.POST, "/api/.*");
         verify(getOrderedRoute).handler(any(Handler.class));
         verify(postOrderedRoute).handler(any(Handler.class));
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void applyFilters_applyOnSuccess_registersHeadersEndHandler() {
+        FilterConfig filterConfig = mock(FilterConfig.class);
+        when(filterConfig.matches()).thenReturn("/api/.*");
+        when(filterConfig.order()).thenReturn(OptionalInt.of(10));
+        when(filterConfig.methods()).thenReturn(Optional.empty());
+        when(filterConfig.header()).thenReturn(Map.of("Cache-Control", "max-age=31536000"));
+        when(filterConfig.applyOnSuccess()).thenReturn(true);
+
+        Route route = mock(Route.class, org.mockito.Answers.RETURNS_DEEP_STUBS);
+        Route orderedRoute = mock(Route.class, org.mockito.Answers.RETURNS_DEEP_STUBS);
+        when(router.routeWithRegex("/api/.*")).thenReturn(route);
+        when(route.order(10)).thenReturn(orderedRoute);
+
+        ArgumentCaptor<Handler<RoutingContext>> handlerCaptor = ArgumentCaptor.forClass(Handler.class);
+        Map<String, FilterConfig> filters = new LinkedHashMap<>();
+        filters.put("filter1", filterConfig);
+
+        HttpServerCommonHandlers.applyFilters(filters, router);
+
+        verify(orderedRoute).handler(handlerCaptor.capture());
+        handlerCaptor.getValue().handle(routingContext);
+        verify(routingContext).addHeadersEndHandler(any(Handler.class));
+        verify(routingContext).next();
+    }
+
+    @Test
+    void applyFilterHeaders_applyOnSuccess_addsHeadersOn2xx() {
+        HttpServerResponse response = mock(HttpServerResponse.class, org.mockito.Answers.RETURNS_DEEP_STUBS);
+        MultiMap responseHeaders = mock(MultiMap.class);
+        when(routingContext.response()).thenReturn(response);
+        when(response.getStatusCode()).thenReturn(200);
+        when(response.headers()).thenReturn(responseHeaders);
+        when(responseHeaders.getAll("Cache-Control")).thenReturn(Collections.emptyList());
+        when(responseHeaders.set(eq("Cache-Control"), eq("max-age=31536000"))).thenReturn(responseHeaders);
+
+        HttpServerCommonHandlers.applyFilterHeaders(routingContext, Map.of("Cache-Control", "max-age=31536000"), true);
+        ArgumentCaptor<Handler<Void>> headersEndHandlerCaptor = ArgumentCaptor.forClass(Handler.class);
+        verify(routingContext).addHeadersEndHandler(headersEndHandlerCaptor.capture());
+        headersEndHandlerCaptor.getValue().handle(null);
+
+        verify(responseHeaders).set("Cache-Control", "max-age=31536000");
+    }
+
+    @Test
+    void applyFilterHeaders_applyOnSuccess_skipsHeadersOnNon2xx() {
+        HttpServerResponse response = mock(HttpServerResponse.class, org.mockito.Answers.RETURNS_DEEP_STUBS);
+        MultiMap responseHeaders = mock(MultiMap.class);
+        when(routingContext.response()).thenReturn(response);
+        when(response.getStatusCode()).thenReturn(403);
+        when(response.headers()).thenReturn(responseHeaders);
+
+        HttpServerCommonHandlers.applyFilterHeaders(routingContext, Map.of("Cache-Control", "max-age=31536000"), true);
+        ArgumentCaptor<Handler<Void>> headersEndHandlerCaptor = ArgumentCaptor.forClass(Handler.class);
+        verify(routingContext).addHeadersEndHandler(headersEndHandlerCaptor.capture());
+        headersEndHandlerCaptor.getValue().handle(null);
+
+        verify(responseHeaders, never()).set(anyString(), anyString());
+    }
+
+    @Test
+    void applyFilterHeaders_applyOnSuccess_addsHeadersOn204() {
+        HttpServerResponse response = mock(HttpServerResponse.class, org.mockito.Answers.RETURNS_DEEP_STUBS);
+        MultiMap responseHeaders = mock(MultiMap.class);
+        when(routingContext.response()).thenReturn(response);
+        when(response.getStatusCode()).thenReturn(204);
+        when(response.headers()).thenReturn(responseHeaders);
+        when(responseHeaders.getAll("Cache-Control")).thenReturn(Collections.emptyList());
+        when(responseHeaders.set(eq("Cache-Control"), eq("max-age=31536000"))).thenReturn(responseHeaders);
+
+        HttpServerCommonHandlers.applyFilterHeaders(routingContext, Map.of("Cache-Control", "max-age=31536000"), true);
+        ArgumentCaptor<Handler<Void>> headersEndHandlerCaptor = ArgumentCaptor.forClass(Handler.class);
+        verify(routingContext).addHeadersEndHandler(headersEndHandlerCaptor.capture());
+        headersEndHandlerCaptor.getValue().handle(null);
+
+        verify(responseHeaders).set("Cache-Control", "max-age=31536000");
+    }
+
+    @Test
+    void applyFilterHeaders_applyOnSuccess_addsHeadersOnCustom2xx() {
+        HttpServerResponse response = mock(HttpServerResponse.class, org.mockito.Answers.RETURNS_DEEP_STUBS);
+        MultiMap responseHeaders = mock(MultiMap.class);
+        when(routingContext.response()).thenReturn(response);
+        when(response.getStatusCode()).thenReturn(267);
+        when(response.headers()).thenReturn(responseHeaders);
+        when(responseHeaders.getAll("Cache-Control")).thenReturn(Collections.emptyList());
+        when(responseHeaders.set(eq("Cache-Control"), eq("max-age=31536000"))).thenReturn(responseHeaders);
+
+        HttpServerCommonHandlers.applyFilterHeaders(routingContext, Map.of("Cache-Control", "max-age=31536000"), true);
+        ArgumentCaptor<Handler<Void>> headersEndHandlerCaptor = ArgumentCaptor.forClass(Handler.class);
+        verify(routingContext).addHeadersEndHandler(headersEndHandlerCaptor.capture());
+        headersEndHandlerCaptor.getValue().handle(null);
+
+        verify(responseHeaders).set("Cache-Control", "max-age=31536000");
+    }
+
+    @Test
+    void applyFilterHeaders_applyOnSuccess_skipsHeadersOn199() {
+        HttpServerResponse response = mock(HttpServerResponse.class, org.mockito.Answers.RETURNS_DEEP_STUBS);
+        MultiMap responseHeaders = mock(MultiMap.class);
+        when(routingContext.response()).thenReturn(response);
+        when(response.getStatusCode()).thenReturn(199);
+        when(response.headers()).thenReturn(responseHeaders);
+
+        HttpServerCommonHandlers.applyFilterHeaders(routingContext, Map.of("Cache-Control", "max-age=31536000"), true);
+        ArgumentCaptor<Handler<Void>> headersEndHandlerCaptor = ArgumentCaptor.forClass(Handler.class);
+        verify(routingContext).addHeadersEndHandler(headersEndHandlerCaptor.capture());
+        headersEndHandlerCaptor.getValue().handle(null);
+
+        verify(responseHeaders, never()).set(anyString(), anyString());
+    }
+
+    @Test
+    void applyFilterHeaders_applyOnSuccess_skipsHeadersOn500() {
+        HttpServerResponse response = mock(HttpServerResponse.class, org.mockito.Answers.RETURNS_DEEP_STUBS);
+        MultiMap responseHeaders = mock(MultiMap.class);
+        when(routingContext.response()).thenReturn(response);
+        when(response.getStatusCode()).thenReturn(500);
+        when(response.headers()).thenReturn(responseHeaders);
+
+        HttpServerCommonHandlers.applyFilterHeaders(routingContext, Map.of("Cache-Control", "max-age=31536000"), true);
+        ArgumentCaptor<Handler<Void>> headersEndHandlerCaptor = ArgumentCaptor.forClass(Handler.class);
+        verify(routingContext).addHeadersEndHandler(headersEndHandlerCaptor.capture());
+        headersEndHandlerCaptor.getValue().handle(null);
+
+        verify(responseHeaders, never()).set(anyString(), anyString());
+    }
+
+    @Test
+    void applyFilterHeaders_withoutApplyOnSuccess_addsHeadersImmediately() {
+        HttpServerResponse response = mock(HttpServerResponse.class, org.mockito.Answers.RETURNS_DEEP_STUBS);
+        MultiMap responseHeaders = mock(MultiMap.class);
+        when(routingContext.response()).thenReturn(response);
+        when(response.headers()).thenReturn(responseHeaders);
+        when(responseHeaders.getAll("Cache-Control")).thenReturn(Collections.emptyList());
+        when(responseHeaders.set(eq("Cache-Control"), eq("max-age=31536000"))).thenReturn(responseHeaders);
+
+        HttpServerCommonHandlers.applyFilterHeaders(routingContext, Map.of("Cache-Control", "max-age=31536000"), false);
+
+        verify(routingContext, never()).addHeadersEndHandler(any(Handler.class));
+        verify(responseHeaders).set("Cache-Control", "max-age=31536000");
     }
 
     @SuppressWarnings("unchecked")

@@ -13,6 +13,7 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.gradle.api.GradleException;
+import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.tasks.TaskCollection;
@@ -39,8 +40,14 @@ public abstract class QuarkusPlatformTask extends QuarkusTask {
 
     private volatile ExtensionCatalogResolver catalogResolver;
 
+    // Captured at configuration time so the task actions do not call Task.getProject() at execution time, which is
+    // deprecated and removed in Gradle 10. The platform tasks are not compatible with the configuration cache, so
+    // holding a Project reference is acceptable (it is never serialized).
+    private final transient Project project;
+
     QuarkusPlatformTask(String description) {
         super(description);
+        this.project = getProject();
     }
 
     private ExtensionCatalog extensionsCatalog(boolean limitExtensionsToImportedPlatforms, MessageWriter log) {
@@ -71,12 +78,12 @@ public abstract class QuarkusPlatformTask extends QuarkusTask {
     }
 
     protected List<ArtifactCoords> importedPlatforms() {
-        final List<Dependency> bomDeps = listProjectBoms(getProject());
+        final List<Dependency> bomDeps = listProjectBoms(project);
         if (bomDeps.isEmpty()) {
             throw new GradleException("No platforms detected in the project");
         }
 
-        final Configuration boms = getProject().getConfigurations()
+        final Configuration boms = project.getConfigurations()
                 .detachedConfiguration(bomDeps.toArray(new org.gradle.api.artifacts.Dependency[0]));
         final Set<ArtifactKey> processedKeys = new HashSet<>(1);
 
@@ -99,12 +106,12 @@ public abstract class QuarkusPlatformTask extends QuarkusTask {
     }
 
     protected String quarkusCoreVersion() {
-        final List<Dependency> bomDeps = listProjectBoms(getProject());
+        final List<Dependency> bomDeps = listProjectBoms(project);
         if (bomDeps.isEmpty()) {
             throw new GradleException("No platforms detected in the project");
         }
 
-        final Configuration boms = getProject().getConfigurations()
+        final Configuration boms = project.getConfigurations()
                 .detachedConfiguration(bomDeps.toArray(new org.gradle.api.artifacts.Dependency[0]));
 
         final AtomicReference<String> quarkusVersionRef = new AtomicReference<>();
@@ -126,26 +133,26 @@ public abstract class QuarkusPlatformTask extends QuarkusTask {
         final GradleMessageWriter log = messageWriter();
         final ExtensionCatalog catalog = extensionsCatalog(limitExtensionsToImportedPlatforms, log);
 
-        final Path projectDirPath = getProject().getProjectDir().toPath();
-        final Path rootProjectPath = getProject().getParent() != null ? getProject().getRootProject().getProjectDir().toPath()
+        final Path projectDirPath = project.getProjectDir().toPath();
+        final Path rootProjectPath = project.getParent() != null ? project.getRootProject().getProjectDir().toPath()
                 : projectDirPath;
         final BuildFile buildFile;
         if (Files.exists(rootProjectPath.resolve("settings.gradle.kts"))
                 && Files.exists(projectDirPath.resolve("build.gradle.kts"))) {
-            buildFile = new GradleKotlinProjectBuildFile(getProject(), catalog);
+            buildFile = new GradleKotlinProjectBuildFile(project, catalog);
         } else if (Files.exists(rootProjectPath.resolve("settings.gradle"))
                 && Files.exists(projectDirPath.resolve("build.gradle"))) {
-            buildFile = new GradleGroovyProjectBuildFile(getProject(), catalog);
+            buildFile = new GradleGroovyProjectBuildFile(project, catalog);
         } else {
             throw new GradleException(
                     "Mixed DSL is not supported. Both build and settings file need to use either Kotlin or Groovy DSL");
         }
         final JavaVersion javaVersion = resolveProjectJavaVersion();
-        return QuarkusProjectHelper.getProject(getProject().getProjectDir().toPath(), catalog, buildFile, javaVersion, log);
+        return QuarkusProjectHelper.getProject(project.getProjectDir().toPath(), catalog, buildFile, javaVersion, log);
     }
 
     private JavaVersion resolveProjectJavaVersion() {
-        TaskCollection<JavaCompile> compileTasks = getProject().getTasks().withType(JavaCompile.class);
+        TaskCollection<JavaCompile> compileTasks = project.getTasks().withType(JavaCompile.class);
         if (compileTasks.isEmpty()) {
             return JavaVersion.NA;
         }

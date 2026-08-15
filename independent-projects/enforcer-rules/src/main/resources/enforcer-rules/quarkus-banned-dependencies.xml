@@ -53,6 +53,8 @@
                 <exclude>org.jboss.marshalling:jboss-marshalling-osgi</exclude>
                 <exclude>org.jboss.spec.javax.servlet:jboss-servlet-api_3.1_spec</exclude>
                 <exclude>org.glassfish:jakarta.json</exclude>
+                <!-- The groupId for Yasson changed from org.eclipse to org.eclipse.yasson in version 3.0.5 -->
+                <exclude>org.eclipse:yasson</exclude>
                 <exclude>org.eclipse.parsson:jakarta.json</exclude>
                 <!-- Ensure none of the deps use netty-all. This forces deps to use more fine grained netty artifacts -->
                 <exclude>io.netty:netty-all</exclude>
@@ -117,6 +119,13 @@
                 <exclude>io.github.dmlloyd:jdk-classfile-backport</exclude>
                 <!-- org.lz4:lz4-java is abandoned and has a CVE -->
                 <exclude>org.lz4:lz4-java</exclude>
+                <!-- org.fusesource.jansi:jansi is abandoned and has a CVE -->
+                <exclude>org.fusesource.jansi:jansi</exclude>
+                <!-- Artemis artifacts relocated from org.apache.activemq to org.apache.artemis -->
+                <!-- see https://artemis.apache.org/artemis-tlp-groupid-migration -->
+                <!-- Can't exclude them yet as the migration needs to be done in downstream
+                     quarkiverse extensions first: should not be a problem as there are relocations in place -->
+                <!-- exclude>org.apache.activemq:artemis-*</exclude -->
             </excludes>
             <includes>
                 <!-- this is for REST Assured -->

@@ -8,17 +8,17 @@ import java.util.Map;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
-import io.quarkus.devui.spi.AbstractDevUIBuildItem;
-import io.quarkus.devui.spi.buildtime.jsonrpc.AbstractJsonRpcMethod;
-import io.quarkus.devui.spi.buildtime.jsonrpc.DeploymentJsonRpcMethod;
-import io.quarkus.devui.spi.buildtime.jsonrpc.RecordedJsonRpcMethod;
+import io.quarkus.devjsonrpc.spi.AbstractDevBuildItem;
+import io.quarkus.devjsonrpc.spi.jsonrpc.AbstractJsonRpcMethod;
+import io.quarkus.devjsonrpc.spi.jsonrpc.DeploymentJsonRpcMethod;
+import io.quarkus.devjsonrpc.spi.jsonrpc.RecordedJsonRpcMethod;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.annotations.Usage;
 
 /**
  * Holds any Build time actions for Dev UI the extension has
  */
-public final class BuildTimeActionBuildItem extends AbstractDevUIBuildItem {
+public final class BuildTimeActionBuildItem extends AbstractDevBuildItem {
 
     private final List<DeploymentJsonRpcMethod> deploymentActions = new ArrayList<>();
     private final List<DeploymentJsonRpcMethod> deploymentSubscriptions = new ArrayList<>();

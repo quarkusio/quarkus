@@ -21,6 +21,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusExtensionTest;
 import io.smallrye.common.vertx.ContextLocals;
+import io.smallrye.common.vertx.VertxContext;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.Context;
 import io.vertx.core.Vertx;
@@ -126,7 +127,7 @@ public class ContextLocalPropagationTest {
         }
 
         public static void putLocal(Object key, Object value) {
-            determineRestClientContext().putLocal(key, value);
+            determineRestClientContext().getLocal(VertxContext.DATA_MAP_LOCAL).put(key.toString(), value);
         }
 
         private static Context determineRestClientContext() {

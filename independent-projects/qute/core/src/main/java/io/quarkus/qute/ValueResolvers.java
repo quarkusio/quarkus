@@ -64,7 +64,12 @@ public final class ValueResolvers {
         }
 
         public boolean appliesTo(EvalContext context) {
-            if (context.getBase() == null) {
+            Object base = context.getBase();
+            if (base == null) {
+                return false;
+            }
+            // Skip Results.NotFound - let the property-not-found-strategy handle it
+            if (Results.isNotFound(base)) {
                 return false;
             }
             String name = context.getName();
@@ -528,7 +533,12 @@ public final class ValueResolvers {
         public CompletionStage<Object> resolve(EvalContext context) {
             if (context.getBase() instanceof CharSequence) {
                 return context.evaluate(context.getParams().get(0))
-                        .thenApply(param -> context.getBase().toString() + (param != null ? param.toString() : ""));
+                        .thenCompose(param -> {
+                            if (param == null || Results.isNotFound(param)) {
+                                return Results.notFound(context);
+                            }
+                            return CompletedStage.of(context.getBase().toString() + param.toString());
+                        });
             }
             return super.resolve(context);
         }

@@ -22,9 +22,9 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageProxyDefinitionBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyBuildItem;
-import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.deployment.pkg.steps.NativeOrNativeSourcesBuild;
 
@@ -33,21 +33,26 @@ class AeshNativeImageProcessor {
     private static final Logger LOGGER = Logger.getLogger(AeshNativeImageProcessor.class);
 
     /**
-     * Registers aesh annotation processor generated {@code CommandMetadataProvider}
-     * implementations for ServiceLoader discovery in native images.
+     * Registers aesh metadata discovery resources for native images.
+     * <p>
+     * Aesh discovers {@code MetadataRegistry} implementations via a resource file
+     * ({@code META-INF/aesh/registry}) before falling back to ServiceLoader.
+     * Registering the resource file is sufficient and avoids ServiceLoader overhead
+     * at startup.
      */
     @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
-    void registerMetadataProviders(BuildProducer<ServiceProviderBuildItem> serviceProviders) {
+    void registerMetadataProviders(BuildProducer<ServiceProviderBuildItem> serviceProviders,
+            BuildProducer<NativeImageResourceBuildItem> nativeResources) {
         serviceProviders.produce(ServiceProviderBuildItem.allProvidersFromClassPath(
                 "org.aesh.command.metadata.CommandMetadataProvider"));
+        nativeResources.produce(new NativeImageResourceBuildItem("META-INF/aesh/registry"));
     }
 
     @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
     void reflectionConfiguration(CombinedIndexBuildItem combinedIndexBuildItem,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClasses,
             BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchies,
-            BuildProducer<NativeImageProxyDefinitionBuildItem> nativeImageProxies,
-            BuildProducer<RuntimeInitializedClassBuildItem> runtimeInitializedClasses) {
+            BuildProducer<NativeImageProxyDefinitionBuildItem> nativeImageProxies) {
         IndexView index = combinedIndexBuildItem.getIndex();
 
         Collection<DotName> annotationsToAnalyze = Arrays.asList(
@@ -116,9 +121,11 @@ class AeshNativeImageProcessor {
                 .build()));
 
         // Register aesh internal classes that are instantiated reflectively at runtime.
-        // These are used as defaults or selected dynamically based on field types
+        // InternalCommandMetadataRegistry is loaded by resource-file discovery via Class.forName().
+        // The others are used as defaults or selected dynamically based on field types
         // (e.g. BooleanOptionCompleter for boolean fields, FileOptionCompleter for File fields).
         reflectiveClasses.produce(ReflectiveClassBuildItem.builder(
+                "org.aesh.command.internal.InternalCommandMetadataRegistry",
                 "org.aesh.command.impl.completer.BooleanOptionCompleter",
                 "org.aesh.command.impl.completer.FileOptionCompleter",
                 "org.aesh.command.impl.completer.NullOptionCompleter",

@@ -1,7 +1,8 @@
 package io.quarkus.vertx.http.certReload;
 
+import static io.quarkus.vertx.http.certReload.CertReloadTestHelper.assertTlsFails;
+import static io.quarkus.vertx.http.certReload.CertReloadTestHelper.httpsGet;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.io.File;
 import java.io.IOException;
@@ -11,8 +12,6 @@ import java.security.cert.X509Certificate;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
-
-import javax.net.ssl.SSLHandshakeException;
 
 import jakarta.enterprise.event.Event;
 import jakarta.enterprise.event.Observes;
@@ -32,11 +31,7 @@ import io.smallrye.certs.Format;
 import io.smallrye.certs.junit5.Certificate;
 import io.smallrye.certs.junit5.Certificates;
 import io.vertx.core.Vertx;
-import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpClientOptions;
-import io.vertx.core.http.HttpClientRequest;
-import io.vertx.core.http.HttpClientResponse;
-import io.vertx.core.http.HttpMethod;
 import io.vertx.core.net.PemTrustOptions;
 import io.vertx.ext.web.Router;
 
@@ -54,7 +49,7 @@ public class MainHttpServerTlsCertificateReloadWithTlsRegistryAndUpdateEventTest
 
     @RegisterExtension
     static final QuarkusExtensionTest config = new QuarkusExtensionTest()
-            .withApplicationRoot((jar) -> jar.addClasses(MyBean.class))
+            .withApplicationRoot((jar) -> jar.addClasses(MyBean.class, CertReloadTestHelper.class))
             .overrideConfigKey("quarkus.http.ssl.insecure-requests", "redirect")
             .overrideConfigKey("quarkus.tls.key-store.pem.0.cert", temp.getAbsolutePath() + "/tls.crt")
             .overrideConfigKey("quarkus.tls.key-store.pem.0.key", temp.getAbsolutePath() + "/tls.key")
@@ -104,12 +99,7 @@ public class MainHttpServerTlsCertificateReloadWithTlsRegistryAndUpdateEventTest
                 .setDefaultHost(url.getHost())
                 .setTrustOptions(new PemTrustOptions().addCertPath("target/certificates/reload-A-ca.crt"));
 
-        String response1 = vertx.createHttpClient(options)
-                .request(HttpMethod.GET, "/hello")
-                .flatMap(HttpClientRequest::send)
-                .flatMap(HttpClientResponse::body)
-                .map(Buffer::toString)
-                .toCompletionStage().toCompletableFuture().join();
+        String response1 = httpsGet(vertx, options, "/hello");
 
         // Update certs
         Files.copy(new File("target/certificates/reload-B.crt").toPath(),
@@ -122,22 +112,12 @@ public class MainHttpServerTlsCertificateReloadWithTlsRegistryAndUpdateEventTest
         event.fire(new CertificateUpdatedEvent("<default>", registry.getDefault().orElseThrow()));
 
         // The client truststore is not updated, thus it should fail.
-        assertThatThrownBy(() -> vertx.createHttpClient(options)
-                .request(HttpMethod.GET, "/hello")
-                .flatMap(HttpClientRequest::send)
-                .flatMap(HttpClientResponse::body)
-                .map(Buffer::toString)
-                .toCompletionStage().toCompletableFuture().join()).hasCauseInstanceOf(SSLHandshakeException.class);
+        assertTlsFails(vertx, options, "/hello");
 
         var options2 = new HttpClientOptions(options)
                 .setTrustOptions(new PemTrustOptions().addCertPath("target/certificates/reload-B-ca.crt"));
 
-        var response2 = vertx.createHttpClient(options2)
-                .request(HttpMethod.GET, "/hello")
-                .flatMap(HttpClientRequest::send)
-                .flatMap(HttpClientResponse::body)
-                .map(Buffer::toString)
-                .toCompletionStage().toCompletableFuture().join();
+        String response2 = httpsGet(vertx, options2, "/hello");
 
         assertThat(response1).isNotEqualTo(response2); // Because cert duration are different.
 
@@ -145,12 +125,7 @@ public class MainHttpServerTlsCertificateReloadWithTlsRegistryAndUpdateEventTest
         registry.getDefault().orElseThrow().reload();
         event.fire(new CertificateUpdatedEvent("<default>", registry.getDefault().orElseThrow()));
 
-        var response3 = vertx.createHttpClient(options2)
-                .request(HttpMethod.GET, "/hello")
-                .flatMap(HttpClientRequest::send)
-                .flatMap(HttpClientResponse::body)
-                .map(Buffer::toString)
-                .toCompletionStage().toCompletableFuture().join();
+        String response3 = httpsGet(vertx, options2, "/hello");
 
         assertThat(response2).isEqualTo(response3);
     }

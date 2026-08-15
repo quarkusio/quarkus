@@ -20,6 +20,7 @@ import io.grpc.examples.helloworld.HelloReply;
 import io.grpc.examples.helloworld.HelloReplyOrBuilder;
 import io.grpc.examples.helloworld.HelloRequest;
 import io.grpc.examples.helloworld.HelloRequestOrBuilder;
+import io.grpc.examples.helloworld.HelloWorldProto;
 import io.grpc.examples.helloworld.MutinyGreeterGrpc;
 import io.quarkus.grpc.server.services.MutinyHelloService;
 import io.quarkus.test.QuarkusExtensionTest;
@@ -29,6 +30,7 @@ public class ServerInterceptorPriorityTest {
     @RegisterExtension
     static final QuarkusExtensionTest config = new QuarkusExtensionTest().setArchiveProducer(
             () -> ShrinkWrap.create(JavaArchive.class)
+                    .addPackage(HelloWorldProto.class.getPackage())
                     .addClasses(MutinyHelloService.class, MyFirstInterceptor.class, MySecondInterceptor.class,
                             GreeterGrpc.class, Greeter.class, GreeterBean.class, HelloRequest.class, HelloReply.class,
                             MutinyGreeterGrpc.class,
@@ -43,7 +45,7 @@ public class ServerInterceptorPriorityTest {
 
     @BeforeEach
     public void init() {
-        channel = ManagedChannelBuilder.forAddress("localhost", 9001)
+        channel = ManagedChannelBuilder.forAddress("localhost", 8081)
                 .usePlaintext()
                 .build();
     }

@@ -23,10 +23,12 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
-import io.quarkus.gizmo.FieldDescriptor;
-import io.quarkus.gizmo.MethodCreator;
-import io.quarkus.gizmo.MethodDescriptor;
-import io.quarkus.gizmo.ResultHandle;
+import io.quarkus.gizmo2.Const;
+import io.quarkus.gizmo2.Expr;
+import io.quarkus.gizmo2.LocalVar;
+import io.quarkus.gizmo2.creator.BlockCreator;
+import io.quarkus.gizmo2.desc.FieldDesc;
+import io.quarkus.gizmo2.desc.MethodDesc;
 import io.quarkus.spring.boot.properties.runtime.SpringBootConfigProperties;
 import io.smallrye.config.ConfigMapping;
 
@@ -127,22 +129,19 @@ public class ConfigurationPropertiesProcessor {
         static final ArcInstanceFactory INSTANCE = new ArcInstanceFactory();
 
         @Override
-        public ResultHandle apply(MethodCreator methodCreator, String configObjectClassName) {
+        public Expr apply(BlockCreator bc, String configObjectClassName) {
             // Arc.container().instance(configObjectClassName, SpringBootConfigProperties.Literal.class).get():
-            ResultHandle containerHandle = methodCreator
-                    .invokeStaticMethod(MethodDescriptor.ofMethod(Arc.class, "container", ArcContainer.class));
-            ResultHandle qualifiersHandle = methodCreator.newArray(Annotation.class, 1);
-            ResultHandle qualifierInstanceHandle = methodCreator.readStaticField(FieldDescriptor
-                    .of(SpringBootConfigProperties.Literal.class, "INSTANCE", SpringBootConfigProperties.Literal.class));
-            methodCreator.writeArrayValue(qualifiersHandle, 0, qualifierInstanceHandle);
-            ResultHandle instanceHandle = methodCreator.invokeInterfaceMethod(
-                    MethodDescriptor.ofMethod(ArcContainer.class, "instance", InstanceHandle.class, Class.class,
+            LocalVar containerHandle = bc.localVar("container",
+                    bc.invokeStatic(MethodDesc.of(Arc.class, "container", ArcContainer.class)));
+            LocalVar qualifiersHandle = bc.localVar("qualifiers", bc.newArray(Annotation.class,
+                    bc.getStaticField(FieldDesc.of(SpringBootConfigProperties.Literal.class, "INSTANCE"))));
+            LocalVar instanceHandle = bc.localVar("instanceHandle", bc.invokeInterface(
+                    MethodDesc.of(ArcContainer.class, "instance", InstanceHandle.class, Class.class,
                             Annotation[].class),
-                    containerHandle, methodCreator.loadClassFromTCCL(configObjectClassName),
-                    qualifiersHandle);
-            return methodCreator
-                    .invokeInterfaceMethod(MethodDescriptor.ofMethod(InstanceHandle.class, "get", Object.class),
-                            instanceHandle);
+                    containerHandle, bc.classForName(Const.of(configObjectClassName)),
+                    qualifiersHandle));
+            return bc.invokeInterface(MethodDesc.of(InstanceHandle.class, "get", Object.class),
+                    instanceHandle);
         }
     }
 }

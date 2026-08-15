@@ -6,7 +6,6 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 = Using OpenTelemetry Logging
 include::_attributes.adoc[]
 :extension-status: preview
-:categories: observability
 :summary: This guide explains how your Quarkus application can utilize OpenTelemetry Logging to provide centralised logging for interactive web applications.
 :topics: observability,opentelemetry,logging
 :extensions: io.quarkus:quarkus-opentelemetry
@@ -51,7 +50,7 @@ include::{includes}/devtools/create-app.adoc[]
 
 This command generates the Maven project and imports the `quarkus-opentelemetry` extension,
 which includes the default OpenTelemetry support,
-and a gRPC span exporter for https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/protocol/otlp.md[OTLP].
+and an OTLP span exporter for https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/protocol/otlp.md[OTLP].
 
 If you already have your Quarkus project configured, you can add the `quarkus-opentelemetry` extension
 to your project by running the following command in your project base directory:
@@ -114,13 +113,13 @@ The only mandatory configuration for OpenTelemetry Logging is the one enabling i
 quarkus.otel.logs.enabled=true
 ----
 
-To change any of the default property values, here is an example on how to configure the default OTLP gRPC Exporter within the application, using the `src/main/resources/application.properties` file:
+To change any of the default property values, here is an example on how to configure the default OTLP Exporter within the application, using the `src/main/resources/application.properties` file:
 
 [source,properties]
 ----
 quarkus.application.name=myservice // <1>
 quarkus.otel.logs.enabled=true // <2>
-quarkus.otel.exporter.otlp.logs.endpoint=http://localhost:4317 // <3>
+quarkus.otel.exporter.otlp.logs.endpoint=http://localhost:4318 // <3>
 quarkus.otel.exporter.otlp.logs.headers=authorization=Bearer my_secret // <4>
 ----
 
@@ -128,9 +127,9 @@ quarkus.otel.exporter.otlp.logs.headers=authorization=Bearer my_secret // <4>
 If not set, it will default to the artifact id.
 <2> Enable the OpenTelemetry logging.
 Must be set at build time.
-<3> gRPC endpoint to send the logs.
-If not set, it will default to `http://localhost:4317`.
-<4> Optional gRPC headers commonly used for authentication.
+<3> OTLP endpoint to send the logs.
+If not set, it will default to `http://localhost:4318`.
+<4> Optional headers commonly used for authentication.
 
 To configure the connection using the same properties for all signals, please check the base xref:opentelemetry.adoc#create-the-configuration[configuration section of the OpenTelemetry guide].
 
@@ -156,6 +155,10 @@ We have 2 options:
 === See the data
 
 ==== Grafana OTel LGTM option
+
+A Dev Service will receive your app's telemetry.
+
+The Grafana-OTel-LGTM Dev Service will start automatically on Dev Mode and data will be automatically sent to it.
 
 * Take a look at: xref:observability-devservices-lgtm.adoc[Getting Started with Grafana-OTel-LGTM].
 

@@ -21,7 +21,9 @@ public class QuarkusRuntimeInitDialectFactoryInitiator implements StandardServic
     private final Dialect dialect;
     private final Optional<String> datasourceName;
     private final DatabaseVersion buildTimeDbVersion;
+    private final boolean dbVersionUserSpecified;
     private final boolean versionCheckEnabled;
+    private final boolean startOffline;
 
     public QuarkusRuntimeInitDialectFactoryInitiator(String persistenceUnitName,
             boolean isFromPersistenceXml, Dialect dialect,
@@ -31,9 +33,9 @@ public class QuarkusRuntimeInitDialectFactoryInitiator implements StandardServic
         this.isFromPersistenceXml = isFromPersistenceXml;
         this.dialect = dialect;
         this.datasourceName = recordedConfig.getDataSource();
-        // We set the version from the dialect since if it wasn't provided explicitly through the `recordedConfig.getDbVersion()`
-        // then the version from `DialectVersions.Defaults` will be used:
+        // We set the version from the dialect since it can be overridden from persistence.xml or unsupported config
         this.buildTimeDbVersion = dialect.getVersion();
+        this.dbVersionUserSpecified = recordedConfig.isDbVersionUserSpecified();
         HibernateOrmRuntimeConfigPersistenceUnit.HibernateOrmConfigPersistenceUnitDatabase database = runtimePuConfig
                 .database();
 
@@ -42,8 +44,9 @@ public class QuarkusRuntimeInitDialectFactoryInitiator implements StandardServic
                     "When using offline mode `quarkus.hibernate-orm.database.start-offline=true`, version check `quarkus.hibernate-orm.database.version-check.enabled` must be unset or set to `false`");
         }
 
+        this.startOffline = database.startOffline();
         this.versionCheckEnabled = runtimePuConfig.database().versionCheckEnabled()
-                .orElse(!database.startOffline());
+                .orElse(!startOffline);
     }
 
     @Override
@@ -54,6 +57,6 @@ public class QuarkusRuntimeInitDialectFactoryInitiator implements StandardServic
     @Override
     public DialectFactory initiateService(Map<String, Object> configurationValues, ServiceRegistryImplementor registry) {
         return new QuarkusRuntimeInitDialectFactory(persistenceUnitName, isFromPersistenceXml, dialect, datasourceName,
-                buildTimeDbVersion, versionCheckEnabled);
+                buildTimeDbVersion, dbVersionUserSpecified, versionCheckEnabled, startOffline);
     }
 }

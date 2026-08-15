@@ -33,9 +33,9 @@ import io.quarkus.proxy.ProxyConfigurationRegistry;
 import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.runtime.configuration.ConfigurationException;
 import io.smallrye.mutiny.Uni;
+import io.vertx.core.MultiMap;
 import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpHeaders;
-import io.vertx.mutiny.core.MultiMap;
 
 @Recorder
 public class OidcClientRecorder {
@@ -100,7 +100,6 @@ public class OidcClientRecorder {
                         "Either 'quarkus.oidc-client.auth-server-url' or absolute 'quarkus.oidc-client.token-path' URL must be set");
             }
             OidcCommonUtils.verifyEndpointUrl(getEndpointUrl(oidcConfig));
-            OidcCommonUtils.verifyCommonConfiguration(oidcConfig, false, false);
         } catch (Throwable t) {
             LOG.debug(t.getMessage());
             String message = String.format("'%s' client configuration is not initialized", oidcClientId);
@@ -108,6 +107,7 @@ public class OidcClientRecorder {
         }
 
         try {
+            OidcCommonUtils.verifyCommonConfiguration(oidcConfig, false, false);
             OidcCommonUtils.validateCredentialsForAllEndpoints(oidcConfig.credentials());
         } catch (ConfigurationException e) {
             return Uni.createFrom().failure(e);
@@ -164,7 +164,7 @@ public class OidcClientRecorder {
         MultiMap tokenGrantParams = null;
 
         if (oidcConfig.grant().type() != Grant.Type.REFRESH) {
-            tokenGrantParams = new MultiMap(io.vertx.core.MultiMap.caseInsensitiveMultiMap());
+            tokenGrantParams = MultiMap.caseInsensitiveMultiMap();
             setGrantClientParams(oidcConfig, tokenGrantParams, grantType);
 
             if (oidcConfig.grantOptions() != null) {
@@ -204,7 +204,7 @@ public class OidcClientRecorder {
             }
         }
 
-        MultiMap commonRefreshGrantParams = new MultiMap(io.vertx.core.MultiMap.caseInsensitiveMultiMap());
+        MultiMap commonRefreshGrantParams = MultiMap.caseInsensitiveMultiMap();
         setGrantClientParams(oidcConfig, commonRefreshGrantParams, OidcConstants.REFRESH_TOKEN_GRANT);
 
         return OidcClientImpl.of(client, metadataResolver, grantType,
@@ -247,13 +247,12 @@ public class OidcClientRecorder {
                     } else if (clientCredentials.jwtAssertionProvided()
                             && clientCredentials.clientAssertionProvider() != null
                             && oidcConfig.credentials().jwt().source() == Credentials.Jwt.Source.BEARER) {
-                        String assertion = clientCredentials.clientAssertionProvider().getClientAssertion();
-                        if (assertion == null) {
-                            throw new OidcClientException(
-                                    "Cannot access discovery endpoint because a JWT bearer client_assertion is not available");
-                        }
-                        context.request().putHeader(String.valueOf(HttpHeaders.AUTHORIZATION),
-                                OidcConstants.BEARER_SCHEME + " " + assertion);
+                        return clientCredentials.clientAssertionProvider().getClientAssertion()
+                                .onItem().ifNull().failWith(() -> new OidcClientException(
+                                        "Cannot access discovery endpoint because a JWT bearer client_assertion is not available"))
+                                .invoke(assertion -> context.request().putHeader(String.valueOf(HttpHeaders.AUTHORIZATION),
+                                        OidcConstants.BEARER_SCHEME + " " + assertion))
+                                .replaceWithVoid();
                     }
                     return Uni.createFrom().voidItem();
                 }

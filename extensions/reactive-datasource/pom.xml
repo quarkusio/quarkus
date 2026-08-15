@@ -16,6 +16,6 @@
     <modules>
         <module>deployment</module>
         <module>runtime</module>
-        <module>spi</module>
+        <module>deployment-spi</module>
     </modules>
 </project>

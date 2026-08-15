@@ -26,12 +26,11 @@ import io.quarkus.opentelemetry.runtime.config.runtime.OTelRuntimeConfig;
 @Singleton
 @GlobalInterceptor
 public class GrpcTracingClientInterceptor implements ClientInterceptor {
-    private final OpenTelemetry openTelemetry;
     private final Instrumenter<GrpcRequest, Status> instrumenter;
+    private final OpenTelemetry openTelemetry;
 
     public GrpcTracingClientInterceptor(final OpenTelemetry openTelemetry, final OTelRuntimeConfig runtimeConfig) {
         this.openTelemetry = openTelemetry;
-
         InstrumenterBuilder<GrpcRequest, Status> builder = Instrumenter.builder(
                 openTelemetry,
                 INSTRUMENTATION_NAME,
@@ -55,13 +54,56 @@ public class GrpcTracingClientInterceptor implements ClientInterceptor {
         boolean shouldStart = instrumenter.shouldStart(parentContext, grpcRequest);
         if (shouldStart) {
             Context spanContext = instrumenter.start(parentContext, grpcRequest);
-            try (Scope ignored = spanContext.makeCurrent()) {
-                ClientCall<ReqT, RespT> clientCall = next.newCall(method, callOptions);
-                return new TracingClientCall<>(clientCall, spanContext, grpcRequest);
-            }
+            Scope scope = spanContext.makeCurrent();
+            ClientCall<ReqT, RespT> clientCall = next.newCall(method, callOptions);
+            return new TracingClientCall<>(clientCall, spanContext, scope, grpcRequest);
         }
 
         return next.newCall(method, callOptions);
+    }
+
+    private class TracingClientCallListener<ReqT> extends SimpleForwardingClientCallListener<ReqT> {
+        private final Context spanContext;
+        private final Scope scope;
+        private final GrpcRequest grpcRequest;
+
+        public TracingClientCallListener(final ClientCall.Listener<ReqT> delegate, final Context spanContext,
+                final Scope scope, final GrpcRequest grpcRequest) {
+            super(delegate);
+            this.spanContext = spanContext;
+            this.scope = scope;
+            this.grpcRequest = grpcRequest;
+        }
+
+        @Override
+        public void onClose(final Status status, final Metadata trailers) {
+            try (scope) {
+                instrumenter.end(spanContext, grpcRequest, status, status.getCause());
+            }
+            super.onClose(status, trailers);
+        }
+    }
+
+    private class TracingClientCall<ReqT, RespT> extends ForwardingClientCall.SimpleForwardingClientCall<ReqT, RespT> {
+        private final Context spanContext;
+        private final Scope scope;
+        private final GrpcRequest grpcRequest;
+
+        protected TracingClientCall(final ClientCall<ReqT, RespT> delegate, final Context spanContext,
+                final Scope scope, final GrpcRequest grpcRequest) {
+            super(delegate);
+            this.spanContext = spanContext;
+            this.scope = scope;
+            this.grpcRequest = grpcRequest;
+        }
+
+        @Override
+        public void start(final Listener<RespT> responseListener, final Metadata headers) {
+            GrpcRequest clientRequest = GrpcRequest.client(grpcRequest.getMethodDescriptor(), headers);
+            openTelemetry.getPropagators().getTextMapPropagator()
+                    .inject(spanContext, clientRequest, GrpcTextMapSetter.INSTANCE);
+            super.start(new TracingClientCallListener<>(responseListener, spanContext, scope, clientRequest), headers);
+        }
     }
 
     private enum GrpcTextMapSetter implements TextMapSetter<GrpcRequest> {
@@ -72,44 +114,6 @@ public class GrpcTracingClientInterceptor implements ClientInterceptor {
             if (carrier != null && carrier.getMetadata() != null) {
                 carrier.getMetadata().put(Metadata.Key.of(key, Metadata.ASCII_STRING_MARSHALLER), value);
             }
-        }
-    }
-
-    private class TracingClientCallListener<ReqT> extends SimpleForwardingClientCallListener<ReqT> {
-        private final Context spanContext;
-        private final GrpcRequest grpcRequest;
-
-        public TracingClientCallListener(final ClientCall.Listener<ReqT> delegate, final Context spanContext,
-                final GrpcRequest grpcRequest) {
-            super(delegate);
-            this.spanContext = spanContext;
-            this.grpcRequest = grpcRequest;
-        }
-
-        @Override
-        public void onClose(final Status status, final Metadata trailers) {
-            instrumenter.end(spanContext, grpcRequest, status, status.getCause());
-            super.onClose(status, trailers);
-        }
-    }
-
-    private class TracingClientCall<ReqT, RespT> extends ForwardingClientCall.SimpleForwardingClientCall<ReqT, RespT> {
-        private final Context spanContext;
-        private final GrpcRequest grpcRequest;
-
-        protected TracingClientCall(final ClientCall<ReqT, RespT> delegate, final Context spanContext,
-                final GrpcRequest grpcRequest) {
-            super(delegate);
-            this.spanContext = spanContext;
-            this.grpcRequest = grpcRequest;
-        }
-
-        @Override
-        public void start(final Listener<RespT> responseListener, final Metadata headers) {
-            GrpcRequest clientRequest = GrpcRequest.client(grpcRequest.getMethodDescriptor(), headers);
-            openTelemetry.getPropagators().getTextMapPropagator().inject(spanContext, clientRequest,
-                    GrpcTextMapSetter.INSTANCE);
-            super.start(new TracingClientCallListener<>(responseListener, spanContext, clientRequest), headers);
         }
     }
 }

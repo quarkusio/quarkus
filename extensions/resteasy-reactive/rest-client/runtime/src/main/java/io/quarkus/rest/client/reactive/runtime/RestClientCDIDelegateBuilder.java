@@ -89,6 +89,7 @@ public class RestClientCDIDelegateBuilder<T> {
         configureShared(builder);
         configureLogging(builder);
         configureCustomProperties(builder);
+        configureDomainSocket(builder);
         configureClientOptionsCustomizer(builder);
     }
 
@@ -163,6 +164,9 @@ public class RestClientCDIDelegateBuilder<T> {
 
         Boolean http2 = oneOf(restClientConfig.http2()).orElse(configRoot.http2());
         builder.property(QuarkusRestClientProperties.HTTP2, http2);
+
+        Boolean http3 = oneOf(restClientConfig.http3()).orElse(configRoot.http3());
+        builder.property(QuarkusRestClientProperties.HTTP3, http3);
 
         Optional<MemorySize> http2UpgradeMaxContentLength = oneOf(restClientConfig.http2UpgradeMaxContentLength(),
                 configRoot.http2UpgradeMaxContentLength());
@@ -446,6 +450,10 @@ public class RestClientCDIDelegateBuilder<T> {
         } catch (URISyntaxException e) {
             throw new IllegalArgumentException("The value of URL was invalid " + baseUrl, e);
         }
+    }
+
+    private void configureDomainSocket(QuarkusRestClientBuilder builder) {
+        restClientConfig.domainSocket().ifPresent(builder::domainSocket);
     }
 
     private void configureClientOptionsCustomizer(QuarkusRestClientBuilder builder) {

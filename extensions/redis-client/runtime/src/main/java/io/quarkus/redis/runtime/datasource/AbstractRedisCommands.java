@@ -3,7 +3,7 @@ package io.quarkus.redis.runtime.datasource;
 import java.util.Set;
 
 import io.smallrye.mutiny.Uni;
-import io.vertx.mutiny.redis.client.Response;
+import io.vertx.redis.client.Response;
 import io.vertx.redis.client.ResponseType;
 
 public class AbstractRedisCommands {

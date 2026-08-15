@@ -1,5 +1,6 @@
 package io.quarkus.spring.web.deployment;
 
+import java.lang.constant.ClassDesc;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
@@ -11,11 +12,15 @@ import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.DotName;
 
-import io.quarkus.gizmo.ClassCreator;
-import io.quarkus.gizmo.ClassOutput;
-import io.quarkus.gizmo.MethodCreator;
-import io.quarkus.gizmo.MethodDescriptor;
-import io.quarkus.gizmo.ResultHandle;
+import io.quarkus.gizmo2.ClassOutput;
+import io.quarkus.gizmo2.Expr;
+import io.quarkus.gizmo2.GenericType;
+import io.quarkus.gizmo2.Gizmo;
+import io.quarkus.gizmo2.TypeArgument;
+import io.quarkus.gizmo2.creator.BlockCreator;
+import io.quarkus.gizmo2.creator.ClassCreator;
+import io.quarkus.gizmo2.creator.ModifierFlag;
+import io.quarkus.gizmo2.desc.ClassMethodDesc;
 import io.quarkus.runtime.util.HashUtil;
 
 abstract class AbstractExceptionMapperGenerator {
@@ -28,53 +33,67 @@ abstract class AbstractExceptionMapperGenerator {
 
     private final boolean isResteasyClassic;
 
-    AbstractExceptionMapperGenerator(DotName exceptionDotName, ClassOutput classOutput, boolean isResteasyClassic) {
+    AbstractExceptionMapperGenerator(DotName exceptionDotName, ClassOutput classOutput,
+            boolean isResteasyClassic) {
         this.exceptionDotName = exceptionDotName;
         this.classOutput = classOutput;
         this.isResteasyClassic = isResteasyClassic;
     }
 
-    abstract void generateMethodBody(MethodCreator toResponse);
+    abstract void generateMethodBody(BlockCreator bc, Expr thisRef, Expr exceptionParam);
 
     String generate() {
         String generatedClassName = "io.quarkus.spring.web.mappers." + exceptionDotName.withoutPackagePrefix() + "_Mapper_"
                 + HashUtil.sha1(exceptionDotName.toString());
         String exceptionClassName = exceptionDotName.toString();
+        ClassDesc exceptionClassDesc = ClassDesc.of(exceptionClassName);
+        ClassDesc generatedClassDesc = ClassDesc.of(generatedClassName);
 
-        try (ClassCreator cc = ClassCreator.builder()
-                .classOutput(classOutput).className(generatedClassName)
-                .interfaces(ExceptionMapper.class)
-                .signature(String.format("Ljava/lang/Object;L" + ExceptionMapper.class.getName().replace(".", "/") + "<L%s;>;",
-                        exceptionClassName.replace('.', '/')))
-                .build()) {
+        Gizmo gizmo = Gizmo.create(classOutput);
+        gizmo.class_(generatedClassName, cc -> {
+            cc.implements_(GenericType.ofClass(ExceptionMapper.class,
+                    TypeArgument.of(exceptionClassDesc)));
+            cc.defaultConstructor();
 
             preGenerateMethodBody(cc);
 
-            try (MethodCreator toResponse = cc.getMethodCreator("toResponse", Response.class.getName(), exceptionClassName)) {
-                generateMethodBody(toResponse);
-            }
+            // toResponse method with the specific exception type
+            cc.method("toResponse", mc -> {
+                mc.public_();
+                mc.returning(Response.class);
+                var exceptionParam = mc.parameter("exception", exceptionClassDesc);
+                mc.body(bc -> {
+                    generateMethodBody(bc, mc.this_(), exceptionParam);
+                });
+            });
 
             // bridge method
-            try (MethodCreator bridgeToResponse = cc.getMethodCreator("toResponse", Response.class, Throwable.class)) {
-                MethodDescriptor toResponse = MethodDescriptor.ofMethod(generatedClassName, "toResponse",
-                        Response.class.getName(), exceptionClassName);
-                ResultHandle castedObject = bridgeToResponse.checkCast(bridgeToResponse.getMethodParam(0), exceptionClassName);
-                ResultHandle result = bridgeToResponse.invokeVirtualMethod(toResponse, bridgeToResponse.getThis(),
-                        castedObject);
-                bridgeToResponse.returnValue(result);
-            }
-        }
+            cc.method("toResponse", mc -> {
+                mc.public_();
+                mc.addFlag(ModifierFlag.BRIDGE);
+                mc.addFlag(ModifierFlag.SYNTHETIC);
+                mc.returning(Response.class);
+                var throwableParam = mc.parameter("throwable", Throwable.class);
+                mc.body(bc -> {
+                    Expr castedObject = bc.cast(throwableParam, exceptionClassDesc);
+                    Expr result = bc.invokeVirtual(
+                            ClassMethodDesc.of(generatedClassDesc, "toResponse",
+                                    ClassDesc.of(Response.class.getName()), exceptionClassDesc),
+                            mc.this_(), castedObject);
+                    bc.return_(result);
+                });
+            });
+        });
 
         if (isResteasyClassic) {
             String generatedSubtypeClassName = "io.quarkus.spring.web.mappers.Subtype" + exceptionDotName.withoutPackagePrefix()
                     + "Mapper_" + HashUtil.sha1(exceptionDotName.toString());
             // additionally generate a dummy subtype to get past the RESTEasy's ExceptionMapper check for synthetic classes
-            try (ClassCreator cc = ClassCreator.builder()
-                    .classOutput(classOutput).className(generatedSubtypeClassName)
-                    .superClass(generatedClassName)
-                    .build()) {
+            gizmo.class_(generatedSubtypeClassName, cc -> {
+                cc.extends_(generatedClassDesc);
                 cc.addAnnotation(Provider.class);
-            }
+                cc.defaultConstructor();
+            });
 
             return generatedSubtypeClassName;
         }

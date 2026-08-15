@@ -4,7 +4,7 @@ import io.quarkus.cache.runtime.dev.ui.CacheJsonRPCService;
 import io.quarkus.deployment.IsLocalDevelopment;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
-import io.quarkus.devui.spi.JsonRPCProvidersBuildItem;
+import io.quarkus.devjsonrpc.spi.JsonRPCProvidersBuildItem;
 import io.quarkus.devui.spi.page.CardPageBuildItem;
 import io.quarkus.devui.spi.page.Page;
 

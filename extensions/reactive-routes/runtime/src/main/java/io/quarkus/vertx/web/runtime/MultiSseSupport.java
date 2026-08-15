@@ -15,7 +15,6 @@ import io.vertx.core.http.HttpServerResponse;
 import io.vertx.core.json.Json;
 import io.vertx.ext.web.RoutingContext;
 
-@SuppressWarnings("ReactiveStreamsSubscriberImplementation")
 public class MultiSseSupport {
 
     private MultiSseSupport() {
@@ -63,7 +62,7 @@ public class MultiSseSupport {
             @Override
             public void onNext(Buffer item) {
                 initialize(response);
-                response.write(item, new Handler<>() {
+                response.write(item).onComplete(new Handler<>() {
                     @Override
                     public void handle(AsyncResult<Void> ar) {
                         onWriteDone(upstream, ar, rc);
@@ -101,7 +100,7 @@ public class MultiSseSupport {
                 Buffer buffer = Buffer.buffer("data: ").appendBuffer(item).appendString("\n")
                         .appendString("id: " + count.getAndIncrement())
                         .appendString("\n\n");
-                response.write(buffer, new Handler<>() {
+                response.write(buffer).onComplete(new Handler<>() {
                     @Override
                     public void handle(AsyncResult<Void> ar) {
                         onWriteDone(upstream, ar, rc);
@@ -119,15 +118,6 @@ public class MultiSseSupport {
                 endOfStream(response);
             }
         });
-    }
-
-    public static void subscribeMutinyBuffer(Multi<io.vertx.mutiny.core.buffer.Buffer> multi, RoutingContext rc) {
-        subscribeBuffer(multi.map(new Function<>() {
-            @Override
-            public Buffer apply(io.vertx.mutiny.core.buffer.Buffer b) {
-                return b.getDelegate();
-            }
-        }), rc);
     }
 
     public static void subscribeObject(Multi<Object> multi, RoutingContext rc) {

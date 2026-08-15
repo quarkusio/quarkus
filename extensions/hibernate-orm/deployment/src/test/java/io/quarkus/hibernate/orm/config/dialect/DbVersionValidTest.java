@@ -11,6 +11,7 @@ import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.quarkus.hibernate.orm.H2Util;
 import io.quarkus.hibernate.orm.MyEntity;
 import io.quarkus.hibernate.orm.SmokeTestUtils;
 import io.quarkus.hibernate.orm.runtime.config.DialectVersions;
@@ -18,7 +19,7 @@ import io.quarkus.test.QuarkusExtensionTest;
 
 public class DbVersionValidTest {
 
-    private static final String ACTUAL_H2_VERSION = DialectVersions.Defaults.H2;
+    private static final String ACTUAL_H2_VERSION = H2Util.getActualVersion();
     private static final String CONFIGURED_DB_VERSION;
     static {
         // We will set the DB version to something lower than the actual version: this is valid.
@@ -31,7 +32,7 @@ public class DbVersionValidTest {
     @RegisterExtension
     static QuarkusExtensionTest runner = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
-                    .addClass(SmokeTestUtils.class)
+                    .addClasses(SmokeTestUtils.class, H2Util.class)
                     .addClass(MyEntity.class))
             .withConfigurationResource("application.properties")
             .overrideConfigKey("quarkus.datasource.db-version", CONFIGURED_DB_VERSION);

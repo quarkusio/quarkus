@@ -5,9 +5,10 @@ import java.io.Closeable;
 import io.quarkus.arc.Arc;
 import io.quarkus.oidc.common.runtime.config.OidcCommonConfig;
 import io.quarkus.proxy.ProxyConfigurationRegistry;
+import io.vertx.core.buffer.Buffer;
+import io.vertx.core.http.PoolOptions;
 import io.vertx.ext.web.client.WebClientOptions;
 import io.vertx.mutiny.core.Vertx;
-import io.vertx.mutiny.core.buffer.Buffer;
 import io.vertx.mutiny.ext.web.client.HttpRequest;
 import io.vertx.mutiny.ext.web.client.WebClient;
 
@@ -66,7 +67,8 @@ public final class OidcWebClient implements Closeable {
     private static WebClient createWebClient(OidcCommonConfig oidcConfig, OidcTlsSupport.TlsConfigSupport tlsConfigSupport,
             Vertx vertx, ProxyConfigurationRegistry proxyConfigurationRegistry) {
         WebClientOptions options = new WebClientOptions().setFollowRedirects(oidcConfig.followRedirects());
-        OidcCommonUtils.setHttpClientOptions(oidcConfig, options, tlsConfigSupport, proxyConfigurationRegistry);
+        OidcCommonUtils.setHttpClientOptions(oidcConfig, options, new PoolOptions(), tlsConfigSupport,
+                proxyConfigurationRegistry);
         return WebClient.create(vertx, options);
     }
 }

@@ -1,6 +1,6 @@
 package io.quarkus.opentelemetry.runtime.tracing.cdi;
 
-import static io.opentelemetry.semconv.incubating.CodeIncubatingAttributes.CODE_FUNCTION_NAME;
+import static io.opentelemetry.semconv.CodeAttributes.CODE_FUNCTION_NAME;
 import static io.quarkus.opentelemetry.runtime.config.build.OTelBuildConfig.INSTRUMENTATION_NAME;
 
 import java.lang.annotation.Annotation;

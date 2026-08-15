@@ -15,6 +15,7 @@ import io.grpc.examples.helloworld.HelloReply;
 import io.grpc.examples.helloworld.HelloReplyOrBuilder;
 import io.grpc.examples.helloworld.HelloRequest;
 import io.grpc.examples.helloworld.HelloRequestOrBuilder;
+import io.grpc.examples.helloworld.HelloWorldProto;
 import io.grpc.examples.helloworld.MutinyGreeterGrpc;
 import io.quarkus.grpc.GrpcClient;
 import io.quarkus.grpc.server.services.HelloService;
@@ -29,7 +30,7 @@ public class ClientStubCompressionTest {
                             MutinyGreeterGrpc.class, GreeterGrpc.class,
                             MutinyGreeterGrpc.MutinyGreeterStub.class,
                             HelloService.class, HelloRequest.class, HelloReply.class,
-                            HelloReplyOrBuilder.class, HelloRequestOrBuilder.class))
+                            HelloReplyOrBuilder.class, HelloRequestOrBuilder.class, HelloWorldProto.class))
             .withConfigurationResource("hello-config-compression.properties");
 
     @Inject

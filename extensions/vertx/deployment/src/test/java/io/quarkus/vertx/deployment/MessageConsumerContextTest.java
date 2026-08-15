@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.time.Duration;
 import java.util.Set;
+import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
@@ -18,7 +19,6 @@ import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.vertx.ConsumeEvent;
 import io.smallrye.common.annotation.Blocking;
 import io.smallrye.mutiny.Uni;
-import io.vertx.core.impl.ConcurrentHashSet;
 import io.vertx.mutiny.core.eventbus.EventBus;
 import io.vertx.mutiny.core.eventbus.Message;
 
@@ -92,7 +92,7 @@ public class MessageConsumerContextTest {
 
         static volatile CountDownLatch latch;
 
-        static final Set<String> MESSAGES = new ConcurrentHashSet<>();
+        static final Set<String> MESSAGES = new CopyOnWriteArraySet<>();
 
         @ConsumeEvent("pub")
         void pub1(String name) {

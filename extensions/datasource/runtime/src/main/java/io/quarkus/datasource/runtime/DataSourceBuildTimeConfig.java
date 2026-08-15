@@ -2,6 +2,7 @@ package io.quarkus.datasource.runtime;
 
 import java.util.Optional;
 
+import io.quarkus.runtime.annotations.ConfigDocDefault;
 import io.quarkus.runtime.annotations.ConfigDocSection;
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.configuration.TrimmedStringConverter;
@@ -23,7 +24,8 @@ public interface DataSourceBuildTimeConfig {
      * as the string returned by `java.sql.DatabaseMetaData#getDatabaseProductVersion()`
      * for your database's JDBC driver.
      * This numbering scheme may be different from the most popular one for your database;
-     * for example Microsoft SQL Server 2016 would be version `13`.
+     * for example Microsoft SQL Server 2016 would be version `13`,
+     * and Oracle Database 26ai would be version `23.26`.
      *
      * As a rule, the version set here should be as high as possible,
      * but must be lower than or equal to the version of any database your application will connect to.
@@ -40,11 +42,20 @@ public interface DataSourceBuildTimeConfig {
      * leading to a startup failure when the actual version is lower
      * or simply a warning in case the database cannot be reached.
      *
-     * The default for this property is specific to each extension;
-     * the Hibernate ORM extension will default to the oldest version it supports.
+     * If not set, the default depends on the `db-kind`:
+     * * DB2: `{db2-default-version}`
+     * * MariaDB: `{mariadb-default-version}`
+     * * Microsoft SQL Server: `{mssql-default-version}`
+     * * MySQL: `{mysql-default-version}`
+     * * Oracle: `{oracle-default-version}`
+     * * PostgreSQL: `{postgres-default-version}`
+     *
+     * If you are connecting to an older database version, you must explicitly set this property
+     * to match your actual database version to avoid runtime errors.
      *
      * @asciidoclet
      */
+    @ConfigDocDefault("Depends on `db-kind`, see description.")
     Optional<@WithConverter(TrimmedStringConverter.class) String> dbVersion();
 
     /**

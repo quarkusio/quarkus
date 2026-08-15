@@ -16,8 +16,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-
 import io.quarkus.redis.datasource.geo.GeoAddArgs;
 import io.quarkus.redis.datasource.geo.GeoCommands;
 import io.quarkus.redis.datasource.geo.GeoItem;
@@ -33,6 +31,7 @@ import io.quarkus.redis.datasource.sortedset.ScoredValue;
 import io.quarkus.redis.datasource.sortedset.SortedSetCommands;
 import io.quarkus.redis.datasource.transactions.TransactionResult;
 import io.quarkus.redis.runtime.datasource.BlockingRedisDataSourceImpl;
+import tools.jackson.core.type.TypeReference;
 
 @SuppressWarnings("unchecked")
 public class GeoCommandsTest extends DatasourceTestBase {

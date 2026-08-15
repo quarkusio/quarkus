@@ -6,16 +6,19 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.quarkus.deployment.IsDevResourcesSupportedByLaunchMode;
+import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.BuildSteps;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
+import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.RunTimeConfigBuilderBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.observability.runtime.DevResourceShutdownRecorder;
 import io.quarkus.observability.runtime.DevResourcesConfigBuilder;
 import io.quarkus.observability.runtime.config.ObservabilityConfiguration;
+import io.quarkus.runtime.LaunchMode;
 
 @BuildSteps(onlyIf = { IsDevResourcesSupportedByLaunchMode.class, DevResourcesProcessor.IsEnabled.class })
 class DevResourcesProcessor {
@@ -28,9 +31,16 @@ class DevResourcesProcessor {
     }
 
     @BuildStep
-    public RunTimeConfigBuilderBuildItem registerDevResourcesConfigSource() {
+    public void registerDevResourcesConfigSource(LaunchModeBuildItem launchMode,
+            ObservabilityConfiguration configuration,
+            BuildProducer<RunTimeConfigBuilderBuildItem> configBuilder) {
+        if (launchMode.getLaunchMode() == LaunchMode.TEST && !configuration.enabledInTests()) {
+            log.info("Dev resources are disabled in test mode by default. "
+                    + "Set quarkus.observability.enabled-in-tests=true to enable.");
+            return;
+        }
         log.info("Adding dev resources config builder");
-        return new RunTimeConfigBuilderBuildItem(DevResourcesConfigBuilder.class);
+        configBuilder.produce(new RunTimeConfigBuilderBuildItem(DevResourcesConfigBuilder.class));
     }
 
     @BuildStep

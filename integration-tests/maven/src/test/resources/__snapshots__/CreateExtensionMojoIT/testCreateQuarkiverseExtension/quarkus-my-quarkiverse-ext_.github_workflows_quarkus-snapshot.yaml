@@ -18,4 +18,4 @@ jobs:
     secrets: inherit
     with:
       ecosystem_ci_repo_path: quarkiverse-my-quarkiverse-ext
-      java_version: 17
+      java_version: 21

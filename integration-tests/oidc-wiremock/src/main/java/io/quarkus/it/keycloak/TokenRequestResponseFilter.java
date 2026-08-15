@@ -15,8 +15,8 @@ import io.quarkus.oidc.common.OidcRequestFilter;
 import io.quarkus.oidc.common.OidcResponseFilter;
 import io.quarkus.oidc.common.runtime.OidcConstants;
 import io.quarkus.oidc.runtime.OidcUtils;
+import io.vertx.core.buffer.Buffer;
 import io.vertx.core.json.JsonObject;
-import io.vertx.mutiny.core.buffer.Buffer;
 
 @ApplicationScoped
 @Unremovable

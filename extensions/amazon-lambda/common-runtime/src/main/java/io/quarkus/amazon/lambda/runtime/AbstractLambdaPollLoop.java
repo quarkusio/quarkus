@@ -13,14 +13,13 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.jboss.logging.Logger;
 import org.jboss.logging.MDC;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.ObjectReader;
-
 import io.quarkus.runtime.Application;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.value.registry.ValueRegistry;
 import io.quarkus.value.registry.ValueRegistry.RuntimeKey;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectReader;
 
 public abstract class AbstractLambdaPollLoop {
     private static final Logger log = Logger.getLogger(AbstractLambdaPollLoop.class);
@@ -301,7 +300,8 @@ public abstract class AbstractLambdaPollLoop {
         // if we are running in test mode, or native mode outside the lambda container, then don't output stack trace for socket errors
 
         boolean lambdaEnv = System.getenv("AWS_LAMBDA_RUNTIME_API") != null;
-        boolean testOrDevEnv = LaunchMode.current() == LaunchMode.TEST || LaunchMode.current() == LaunchMode.DEVELOPMENT;
+        boolean testOrDevEnv = LaunchMode.current() == LaunchMode.TEST || LaunchMode.current() == LaunchMode.DEVELOPMENT
+                || AmazonLambdaApi.isTestMode();
         boolean graceful = ((ex instanceof SocketException) && testOrDevEnv)
                 || (ex instanceof UnknownHostException && !lambdaEnv);
 

@@ -22,6 +22,17 @@
         <quarkus.version>${project.version}</quarkus.version>
     </properties>
 
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>com.networknt</groupId>
+                <artifactId>json-schema-validator</artifactId>
+                <!-- this needs to match what CycloneDX uses -->
+                <version>3.0.6</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>
@@ -42,6 +53,14 @@
               <exclusion>
                   <groupId>org.apache.maven.wagon</groupId>
                   <artifactId>*</artifactId>
+              </exclusion>
+              <exclusion>
+                  <groupId>org.apache.httpcomponents</groupId>
+                  <artifactId>httpclient</artifactId>
+              </exclusion>
+              <exclusion>
+                  <groupId>org.apache.httpcomponents</groupId>
+                  <artifactId>httpcore</artifactId>
               </exclusion>
             </exclusions>
         </dependency>
@@ -207,6 +226,11 @@
             <artifactId>junit-jupiter-engine</artifactId>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-devtools-testing</artifactId>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>
@@ -230,7 +254,7 @@
             <plugin>
                 <groupId>org.eclipse.sisu</groupId>
                 <artifactId>sisu-maven-plugin</artifactId>
-                <version>1.0.0</version>
+                <version>1.0.1</version>
                 <executions>
                     <execution>
                         <id>index-project</id>

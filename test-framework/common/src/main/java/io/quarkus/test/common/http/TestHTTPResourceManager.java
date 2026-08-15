@@ -15,8 +15,8 @@ import io.quarkus.bootstrap.app.RunningQuarkusApplication;
 import io.quarkus.runtime.test.TestHttpEndpointProvider;
 import io.quarkus.test.common.ListeningAddress;
 import io.quarkus.value.registry.ValueRegistry;
-import io.quarkus.value.registry.ValueRegistry.RuntimeKey;
 import io.smallrye.config.Config;
+import io.smallrye.config.SmallRyeConfig;
 
 public class TestHTTPResourceManager {
 
@@ -76,13 +76,19 @@ public class TestHTTPResourceManager {
             Config config,
             List<Function<Class<?>, String>> endpointProviders) {
 
-        Map<Class<?>, TestHTTPResourceProvider<?>> providers = getProviders();
+        Map<Class<?>, TestHTTPResourceProvider<?>> providers = null;
         Class<?> c = testCase.getClass();
         while (c != Object.class) {
             TestHTTPEndpoint classEndpointAnnotation = c.getAnnotation(TestHTTPEndpoint.class);
             for (Field f : c.getDeclaredFields()) {
                 TestHTTPResource resource = f.getAnnotation(TestHTTPResource.class);
                 if (resource != null) {
+                    if (config == null) {
+                        config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
+                    }
+                    if (providers == null) {
+                        providers = getProviders();
+                    }
                     TestHTTPResourceProvider<?> provider = providers.get(f.getType());
                     if (provider == null) {
                         throw new RuntimeException(
@@ -167,7 +173,7 @@ public class TestHTTPResourceManager {
 
     public static String testManagementUrl(ValueRegistry valueRegistry, Config config, String... paths) {
         String host = host(config, "quarkus.management.host");
-        int port = valueRegistry.getOrDefault(RuntimeKey.intKey("quarkus.management.test-port"), 9001);
+        int port = valueRegistry.getOrDefault(ListeningAddress.MANAGEMENT_TEST_PORT, 9001);
         String managementRootPath = managementRootPath(config, paths);
         return "http://" + host + ":" + port + managementRootPath;
     }
@@ -181,7 +187,7 @@ public class TestHTTPResourceManager {
 
     public static String testManagementUrlSsl(ValueRegistry valueRegistry, Config config, String... paths) {
         String host = host(config, "quarkus.management.host");
-        int port = valueRegistry.getOrDefault(RuntimeKey.intKey("quarkus.management.test-port"), 9001);
+        int port = valueRegistry.getOrDefault(ListeningAddress.MANAGEMENT_TEST_PORT, 9001);
         String managementRootPath = managementRootPath(config, paths);
         return "https://" + host + ":" + port + managementRootPath;
     }

@@ -3,6 +3,7 @@ package io.quarkus.it.vertx;
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.emptyOrNullString;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.nullValue;
 
 import java.util.List;
 
@@ -106,6 +107,55 @@ public class FilterTestCase {
                 .header("Cache-Control", is("max-age=1"))
                 .body(is("ok"));
 
+    }
+
+    @Test
+    void testApplyOnSuccessFilterOnSuccess() {
+        given()
+                .get("/filter/apply-on-success/ok")
+                .then()
+                .statusCode(200)
+                .header("Cache-Control", is("max-age=31536000"))
+                .body(is("ok"));
+    }
+
+    @Test
+    void testApplyOnSuccessFilterOnNoContent() {
+        given()
+                .get("/filter/apply-on-success/no-content")
+                .then()
+                .statusCode(204)
+                .header("Cache-Control", is("max-age=31536000"));
+    }
+
+    @Test
+    void testApplyOnSuccessFilterOnCustomInRangeStatus() {
+        given()
+                .get("/filter/apply-on-success/custom-in-range")
+                .then()
+                .statusCode(267)
+                .header("Cache-Control", is("max-age=31536000"))
+                .body(is("custom-success"));
+    }
+
+    @Test
+    void testApplyOnSuccessFilterOnError() {
+        given()
+                .get("/filter/apply-on-success/error")
+                .then()
+                .statusCode(403)
+                .header("Cache-Control", nullValue())
+                .body(is("forbidden"));
+    }
+
+    @Test
+    void testApplyOnSuccessFilterOnServerError() {
+        given()
+                .get("/filter/apply-on-success/server-error")
+                .then()
+                .statusCode(500)
+                .header("Cache-Control", nullValue())
+                .body(is("error"));
     }
 
 }

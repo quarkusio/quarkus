@@ -40,6 +40,7 @@ import io.quarkus.bootstrap.model.ApplicationModel;
 import io.quarkus.bootstrap.utils.BuildToolHelper;
 import io.quarkus.bootstrap.workspace.ArtifactSources;
 import io.quarkus.bootstrap.workspace.SourceDir;
+import io.quarkus.deployment.builditem.DevServicesAdditionalConfigBuildItem;
 import io.quarkus.deployment.builditem.DevServicesCustomizerBuildItem;
 import io.quarkus.deployment.builditem.DevServicesLauncherConfigResultBuildItem;
 import io.quarkus.deployment.builditem.DevServicesNetworkIdBuildItem;
@@ -49,7 +50,7 @@ import io.quarkus.deployment.util.ContainerRuntimeUtil;
 import io.quarkus.paths.PathList;
 import io.quarkus.runtime.logging.LoggingSetupRecorder;
 import io.quarkus.test.common.ArtifactLauncher;
-import io.quarkus.test.common.ListeningAddress;
+import io.quarkus.test.common.ListeningAddresses;
 import io.quarkus.test.common.PathTestHelper;
 import io.quarkus.test.common.TestClassIndexer;
 import io.quarkus.test.common.TestResourceManager;
@@ -123,7 +124,7 @@ public final class IntegrationTestUtil {
         ((TestResourceManager) state.getTestResourceManager()).inject(valueRegistry, testInstance);
     }
 
-    static Optional<ListeningAddress> startLauncher(ArtifactLauncher<?> launcher, Map<String, String> additionalProperties)
+    static ListeningAddresses startLauncher(ArtifactLauncher<?> launcher, Map<String, String> additionalProperties)
             throws IOException {
         try {
             launcher.includeAsSysProps(additionalProperties);
@@ -249,7 +250,8 @@ public final class IntegrationTestUtil {
                 propertyMap.put(s, s2);
             }
         }, DevServicesLauncherConfigResultBuildItem.class.getName(), DevServicesNetworkIdBuildItem.class.getName(),
-                DevServicesRegistryBuildItem.class.getName(), DevServicesCustomizerBuildItem.class.getName());
+                DevServicesRegistryBuildItem.class.getName(), DevServicesCustomizerBuildItem.class.getName(),
+                DevServicesAdditionalConfigBuildItem.class.getName());
 
         networkId = propertyMap.get("quarkus.test.container.network");
         boolean manageNetwork = false;

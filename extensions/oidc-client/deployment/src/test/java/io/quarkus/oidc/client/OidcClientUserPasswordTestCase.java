@@ -15,11 +15,13 @@ import java.util.concurrent.TimeUnit;
 import java.util.logging.LogRecord;
 import java.util.stream.Collectors;
 
+import org.hamcrest.Matchers;
 import org.jboss.logging.Logger;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.oidc.client.runtime.OidcClientImpl;
+import io.quarkus.oidc.common.runtime.OidcCommonUtils;
 import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.restassured.RestAssured;
@@ -62,6 +64,30 @@ public class OidcClientUserPasswordTestCase {
                 .statusCode(200)
                 .body(equalTo("alice"));
 
+        assertFalse(OidcCommonUtils.decodeJwtContent(token).getString("scope").contains("openid"));
+    }
+
+    @Test
+    public void testPasswordGrantTokenProviderWithAdditionalParams() {
+        String token = RestAssured.when().get("/client/tokenprovider-with-params").body().asString();
+        RestAssured.given().auth().oauth2(token)
+                .when().get("/protected")
+                .then()
+                .statusCode(200)
+                .body(equalTo("alice"));
+
+        assertTrue(OidcCommonUtils.decodeJwtContent(token).getString("scope").contains("openid"));
+    }
+
+    @Test
+    public void testNamedPasswordGrantTokenProvider() {
+        String token = RestAssured.when().get("/client/public-tokenprovider")
+                .then()
+                .statusCode(200)
+                .body(Matchers.notNullValue())
+                .body(Matchers.not(Matchers.blankString()))
+                .extract().body().asString();
+        assertEquals("quarkus-public-app", OidcCommonUtils.decodeJwtContent(token).getString("azp"));
     }
 
     @Test

@@ -34,10 +34,6 @@
             <artifactId>quarkus-mutiny</artifactId>
         </dependency>
         <dependency>
-            <groupId>io.smallrye.common</groupId>
-            <artifactId>smallrye-common-vertx-context</artifactId>
-        </dependency>
-        <dependency>
             <groupId>io.quarkus.security</groupId>
             <artifactId>quarkus-security</artifactId>
             <exclusions>
@@ -91,7 +87,7 @@
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
+            <groupId>tools.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
             <scope>test</scope>
         </dependency>

@@ -4,14 +4,17 @@ import static io.quarkus.it.jpa.postgresql.DevServicesPostgresqFixedPortTest.fin
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.File;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.DockerClientFactory;
+
+import com.github.dockerjava.api.model.Container;
+import com.github.dockerjava.api.model.ContainerPort;
 
 import io.quarkus.maven.it.MojoTestBase;
 import io.quarkus.maven.it.verifier.MavenProcessInvocationResult;
@@ -25,18 +28,17 @@ import io.quarkus.maven.it.verifier.RunningInvoker;
  * reuse the container from the first run. If it cannot (because the process-uuid label
  * changed), the second run fails with a port conflict.
  * <p>
- * This test is disabled until the issue is fixed.
  */
-@Disabled("https://github.com/quarkusio/quarkus/issues/53312 - process-uuid label prevents container reuse")
 class DevServicesPostgresqlContainerReuseTest extends MojoTestBase {
 
     private static final int FIXED_PORT = 55432;
 
     @BeforeAll
-    static void checkPortIsClear() {
-        assertThat(findContainerOnPort(FIXED_PORT))
-                .as("Port %d must not be in use before the test starts", FIXED_PORT)
-                .isNull();
+    static void ensurePortIsClear() {
+        String containerId = findContainerOnPort(FIXED_PORT);
+        if (containerId != null) {
+            DockerClientFactory.lazyClient().removeContainerCmd(containerId).withForce(true).exec();
+        }
     }
 
     @AfterAll
@@ -86,4 +88,20 @@ class DevServicesPostgresqlContainerReuseTest extends MojoTestBase {
                 .isEqualTo(firstContainerId);
     }
 
+    private static String findContainerOnPort(int publicPort) {
+        return DockerClientFactory.lazyClient().listContainersCmd().exec().stream()
+                .filter(container -> hasPublicPort(container, publicPort))
+                .map(Container::getId)
+                .findFirst()
+                .orElse(null);
+    }
+
+    private static boolean hasPublicPort(Container container, int publicPort) {
+        if (container.getPorts() == null) {
+            return false;
+        }
+        return Arrays.stream(container.getPorts())
+                .map(ContainerPort::getPublicPort)
+                .anyMatch(p -> p != null && p == publicPort);
+    }
 }

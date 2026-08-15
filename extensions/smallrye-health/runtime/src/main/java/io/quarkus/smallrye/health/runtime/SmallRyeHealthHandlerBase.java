@@ -108,6 +108,9 @@ public abstract class SmallRyeHealthHandlerBase implements Handler<RoutingContex
             if (requestContext != null) {
                 requestContext.terminate();
             }
+            if (!ctx.response().ended()) {
+                ctx.response().setStatusCode(503).end();
+            }
         });
     }
 }

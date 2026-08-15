@@ -19,6 +19,5 @@
         <module>deployment</module>
         <module>test-spi</module>
         <module>deployment-spi</module>
-        <module>runtime-spi</module>
     </modules>
 </project>

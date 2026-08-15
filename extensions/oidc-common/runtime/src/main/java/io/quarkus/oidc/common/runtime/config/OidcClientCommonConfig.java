@@ -223,8 +223,11 @@ public interface OidcClientCommonConfig extends OidcCommonConfig {
             Optional<String> keyPassword();
 
             /**
-             * The JWT audience (`aud`) claim value.
+             * The JWT audience ({@code aud}) claim value.
              * By default, the audience is set to the address of the OpenId Connect Provider's token endpoint.
+             * When the JWT {@link #source()} is {@link Source#SPIFFE_JWT}, the audience defaults to the
+             * {@link OidcCommonConfig#authServerUrl() auth-server-url} instead. If the OIDC provider's
+             * issuer URL differs from the {@code auth-server-url}, set this property explicitly.
              */
             Optional<String> audience();
 

@@ -19,7 +19,6 @@ import io.quarkus.deployment.annotations.Consume;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Produce;
 import io.quarkus.deployment.annotations.Record;
-import io.quarkus.deployment.builditem.RuntimeConfigSetupCompleteBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.runtime.configuration.ConfigurationException;
@@ -118,7 +117,6 @@ public class SmallRyeStorkProcessor {
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
     @Consume(AlwaysBuildItem.class)
-    @Consume(RuntimeConfigSetupCompleteBuildItem.class)
     @Consume(SyntheticBeansRuntimeInitBuildItem.class)
     @Consume(StorkRegistrationConfigReadyBuildItem.class)
     @Produce(StorkInitializedBuildItem.class)

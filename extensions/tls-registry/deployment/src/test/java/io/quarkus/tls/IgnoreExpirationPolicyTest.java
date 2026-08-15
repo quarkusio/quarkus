@@ -75,7 +75,7 @@ public class IgnoreExpirationPolicyTest {
                 .listen(8081).toCompletionStage().toCompletableFuture().join();
 
         CountDownLatch latch = new CountDownLatch(1);
-        client.get(8081, "localhost", "/").send(ar -> {
+        client.get(8081, "localhost", "/").send().onComplete(ar -> {
             assertThat(ar.succeeded()).isTrue();
             assertThat(ar.result().bodyAsString()).isEqualTo("Hello");
             latch.countDown();

@@ -21,6 +21,8 @@ import io.quarkus.hibernate.search.backend.elasticsearch.common.runtime.Hibernat
 
 public final class HibernateSearchBackendElasticsearchConfigHandler {
 
+    private static final String DEFAULT_ES_CLIENT = "elasticsearch-rest5";
+
     public static void contributeBackendBuildTimeProperties(BiConsumer<String, Object> propertyCollector,
             MapperContext mapperContext,
             Map<String, HibernateSearchBackendElasticsearchBuildTimeConfig> backendConfigs) {
@@ -66,6 +68,9 @@ public final class HibernateSearchBackendElasticsearchConfigHandler {
                     : elasticsearchBackendConfig.indexes().get(indexName);
             contributeBackendIndexBuildTimeProperties(propertyCollector, mapperContext, backendName, indexName, indexConfig);
         }
+
+        propertyCollector.accept(BackendSettings.backendKey(backendName, ElasticsearchBackendSettings.CLIENT_FACTORY),
+                DEFAULT_ES_CLIENT);
     }
 
     private static void contributeBackendIndexBuildTimeProperties(BiConsumer<String, Object> propertyCollector,

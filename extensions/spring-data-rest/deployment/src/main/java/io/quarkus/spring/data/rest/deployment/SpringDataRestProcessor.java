@@ -23,13 +23,13 @@ import org.springframework.data.repository.PagingAndSortingRepository;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.GeneratedBeanBuildItem;
-import io.quarkus.arc.deployment.GeneratedBeanGizmoAdaptor;
+import io.quarkus.arc.deployment.GeneratedBeanGizmo2Adaptor;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
-import io.quarkus.gizmo.ClassOutput;
+import io.quarkus.gizmo2.ClassOutput;
 import io.quarkus.rest.data.panache.RestDataPanacheException;
 import io.quarkus.rest.data.panache.deployment.ResourceMetadata;
 import io.quarkus.rest.data.panache.deployment.RestDataResourceBuildItem;
@@ -112,7 +112,7 @@ class SpringDataRestProcessor {
             ResourceMethodsImplementor methodsImplementor,
             IndexView index,
             Set<ClassInfo> repositoriesToImplement) {
-        ClassOutput classOutput = new GeneratedBeanGizmoAdaptor(implementationsProducer);
+        ClassOutput classOutput = new GeneratedBeanGizmo2Adaptor(implementationsProducer);
         ResourceImplementor resourceImplementor = new ResourceImplementor(methodsImplementor);
         EntityClassHelper entityClassHelper = new EntityClassHelper(index);
         for (ClassInfo classInfo : repositoriesToImplement) {

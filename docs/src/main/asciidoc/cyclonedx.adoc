@@ -6,7 +6,6 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 [id="cyclonedx"]
 = Generating and Using CycloneDX SBOMs
 include::_attributes.adoc[]
-:categories: tooling
 :summary: This guide explains how to generate and use SBOMs for Quarkus applications in the CycloneDX format.
 :topics: sbom
 :extensions: io.quarkus:quarkus-cyclonedx
@@ -47,7 +46,9 @@ For Quarkus Maven projects, dependency SBOMs can be generated with the `quarkus:
 
 `XML` format can be requested by setting the `format` goal parameter (or `quarkus.dependency.sbom.format` property) to `xml`.
 
-Each component in the generated SBOM will include the `quarkus:component:scope` property indicating whether the component is used at runtime or only at development/build time.
+Development/build-time dependencies will have their CycloneDX `scope` set to `excluded` (see <<build-time-dependencies>>), while runtime dependencies omit the `scope` field (defaulting to `required` per the specification).
+
+Optionally, the `quarkus:component:scope` custom property can be included on each component by setting `includeQuarkusComponentScope` to `true` (or `-Dquarkus.dependency.sbom.include-quarkus-component-scope=true`). When enabled, each component will carry a property indicating whether it is a `runtime` or `development` dependency:
 
 [source,json]
 ----
@@ -87,7 +88,7 @@ cyclonedxBom {
 }
 ----
 
-Given that the plugin is not aware of how Quarkus uses these dependencies, it will not be able to set the `quarkus:component:scope` property for components. On the other hand, the requested configuration name can be used to indicate which scope to target.
+Given that the plugin is not aware of how Quarkus uses these dependencies, it will not be able to set the CycloneDX `scope` field or the `quarkus:component:scope` property for components. On the other hand, the requested configuration name can be used to indicate which scope to target.
 
 [[embedded-dependency-sboms]]
 == Embedded Dependency SBOMs
@@ -184,6 +185,46 @@ By default, generated JSON SBOMs are not pretty-printed. To enable pretty-printi
 quarkus.cyclonedx.pretty-print=true
 ----
 
+=== Libraries-only mode
+
+By default, the generated SBOM includes all components of the application distribution, including generic file components such as non-Maven JARs and other generated files. To include only components identified as libraries (i.e., those with a recognized package type such as Maven or npm), use:
+
+[source,properties]
+----
+quarkus.cyclonedx.libraries-only=true
+----
+
+When enabled, components that would be classified as `file` type in CycloneDX (generic PURL components with a file system path or distribution path) are excluded from the generated SBOM along with their dependency relationships.
+
+=== Runtime-only mode
+
+By default, the generated SBOM includes both runtime and development/build-time dependencies. To include only runtime dependencies, use:
+
+[source,properties]
+----
+quarkus.cyclonedx.runtime-only=true
+----
+
+When enabled, development/build-time dependencies (those with CycloneDX `scope` set to `excluded`) are excluded entirely from the generated SBOM along with their dependency relationships. This can be useful when the SBOM is intended for runtime vulnerability scanning and build-time components are not relevant.
+
+=== CycloneDX schema version
+
+By default, the SBOM is generated using the latest CycloneDX schema version supported by the integrated library. A specific version can be requested:
+
+[source,properties]
+----
+quarkus.cyclonedx.schema-version=1.5
+----
+
+=== License text
+
+License text is not included in generated SBOMs by default. To include the full text of resolved licenses:
+
+[source,properties]
+----
+quarkus.cyclonedx.include-license-text=true
+----
+
 === Pedigree
 
 Pedigree is a way to provide information that patches or modifications have been applied to a component.
@@ -216,17 +257,11 @@ SBOMs for Fast JAR packaging type will use the executable JAR file as their main
 
 ==== Runtime Components
 
-Every file in the resulting Fast JAR distribution will appear in the SBOM with the `quarkus:component:scope` property set to `runtime` and `evidence.occurrences.location` field pointing to the location of the component in the application distribution directory, for example:
+Every file in the resulting Fast JAR distribution will appear in the SBOM with an `evidence.occurrences.location` field pointing to the location of the component in the application distribution directory. Runtime components do not set the CycloneDX `scope` field, which defaults to `required` per the specification. For example:
 
 [source,json]
 ----
       "purl" : "pkg:maven/org.jboss.slf4j/slf4j-jboss-logmanager@2.0.0.Final?type=jar",
-      "properties" : [
-        {
-          "name" : "quarkus:component:scope",
-          "value" : "runtime"
-        }
-      ],
       "evidence" : {
         "occurrences" : [
           {
@@ -241,20 +276,18 @@ Every file in the resulting Fast JAR distribution will appear in the SBOM with t
 `evidence.occurrences.location` was introduced in CycloneDX schema version 1.5, for older versions the location will be indicated using the `quarkus:component:location` property.
 ====
 
+[[build-time-dependencies]]
 ==== Build time dependencies
 
-Build time dependencies will be recorded with the `quarkus:component:scope` property set to `development`:
+Build time dependencies will have their CycloneDX `scope` set to `excluded`:
 
 [source,json]
 ----
       "purl" : "pkg:maven/org.apache.httpcomponents/httpclient@4.5.14?type=jar",
-      "properties" : [
-        {
-          "name" : "quarkus:component:scope",
-          "value" : "development"
-        }
-      ]
+      "scope" : "excluded"
 ----
+
+The `excluded` scope indicates that these components are not reachable within a call graph at runtime, as defined by the CycloneDX specification. Runtime components omit the `scope` field, which defaults to `required` per the specification.
 
 They will not include `evidence.occurrences.location` since they will not be found in the distribution.
 
@@ -302,17 +335,12 @@ NOTE: The SBOM is always GZIP-compressed before being embedded as a global symbo
 
 Mutable JAR distribution is similar to the Fast JAR one except it also includes build time dependencies to support re-augmentation (re-building) of an application.
 
-SBOMs generated for Mutable JAR distributions will also record locations of components that will be used during re-augmentation process using `evidence.occurrences.location` but keeping their `quarkus:component:scope` property set to `development`. For example:
+SBOMs generated for Mutable JAR distributions will also record locations of components that will be used during re-augmentation process using `evidence.occurrences.location` but keeping their CycloneDX `scope` set to `excluded`. For example:
 
 [source,json]
 ----
       "purl" : "pkg:maven/org.apache.httpcomponents/httpcore@4.4.16?type=jar",
-      "properties" : [
-        {
-          "name" : "quarkus:component:scope",
-          "value" : "development"
-        }
-      ],
+      "scope" : "excluded",
       "evidence" : {
         "occurrences" : [
           {
@@ -480,7 +508,7 @@ When `project.build.outputTimestamp` is configured in the Maven project (the sta
 |===
 |Name |Value range |Description
 
-|`quarkus:component:scope` |`runtime` or `development` |Indicates whether a component is a runtime or a build/development time dependency of an application.
+|`quarkus:component:scope` |`runtime` or `development` |Indicates whether a component is a runtime or a build/development time dependency of an application. Disabled by default; enable with `quarkus.cyclonedx.include-quarkus-component-scope=true`. Development components always have their CycloneDX `scope` set to `excluded` regardless of this setting.
 |`quarkus:component:location` |String representing a file system path using `/` as a path element |Used in SBOMs with schema versions 1.4 or older. Starting from schema 1.5, `evidence.occurrences.location` is used instead. This property is used only if a component is found in the distribution. The value is a relative path to a file pointing to the location of a component in a distribution using `/` as a path element separator.
 |===
 
@@ -555,7 +583,7 @@ SbomContributionBuildItem contributeNpmComponents() {
 * Extensions must not designate a main component — only the core application contribution does that.
 * Components from any package ecosystem can be contributed using the appropriate `Purl` type (e.g., `Purl.npm(...)`, `Purl.maven(...)`, `Purl.generic(...)`, or `Purl.of(type, ...)` for other ecosystems).
 * Set `topLevel(true)` on components that are direct dependencies of the application (e.g., packages declared in `package.json`). Transitive dependencies should not be marked as top-level.
-* The `scope` field classifies components as `runtime` or `development` dependencies, which is recorded in the SBOM as the `quarkus:component:scope` property.
+* The `scope` field classifies components as `runtime` or `development` dependencies. Development components have their CycloneDX `scope` set to `excluded`. When `quarkus.cyclonedx.include-quarkus-component-scope` is enabled, the scope is also recorded as the `quarkus:component:scope` custom property.
 * The `integrity` field can carry an SRI-format hash (e.g., from lock files) for component verification.
 * Dependency relationships are optional. If you only need to list components without expressing their dependency graph, use `SbomContribution.ofComponents(...)`.
 

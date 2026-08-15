@@ -3,13 +3,13 @@ package io.quarkus.devui.deployment;
 import java.util.HashMap;
 import java.util.Map;
 
-import io.quarkus.devui.spi.AbstractDevUIBuildItem;
+import io.quarkus.devjsonrpc.spi.AbstractDevBuildItem;
 import io.quarkus.devui.spi.buildtime.BuildTimeData;
 
 /**
  * Write javascript file containing const vars with build time data
  */
-public final class BuildTimeConstBuildItem extends AbstractDevUIBuildItem {
+public final class BuildTimeConstBuildItem extends AbstractDevBuildItem {
 
     private final Map<String, BuildTimeData> buildTimeData;
 

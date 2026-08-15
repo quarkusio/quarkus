@@ -122,6 +122,13 @@ public class DB2DevServicesProcessor {
 
                 container.withEnv(containerConfig.getContainerEnv());
 
+                String effectiveImageName = containerConfig.getImageName()
+                        .orElseGet(() -> ConfigureUtil.getDefaultImageNameFor("db2"));
+                if (devServicesConfig.licenseAcceptance()
+                        .map(images -> images.contains(effectiveImageName)).orElse(false)) {
+                    container.addEnv("LICENSE", "accept");
+                }
+
                 containerConfig.getAdditionalJdbcUrlProperties().forEach(container::withUrlParam);
                 containerConfig.getCommand().ifPresent(container::setCommand);
                 containerConfig.getInitScriptPath().ifPresent(container::withInitScripts);
@@ -165,7 +172,19 @@ public class DB2DevServicesProcessor {
 
         @Override
         protected void configure() {
-            super.configure();
+            try {
+                super.configure();
+            } catch (IllegalStateException e) {
+                if (e.getMessage() != null && e.getMessage().contains("license agreement")) {
+                    throw new IllegalStateException(
+                            "The container image " + getDockerImageName()
+                                    + " requires you to accept a license agreement."
+                                    + " To accept, add the following to your Quarkus configuration:"
+                                    + " quarkus.devservices.license-acceptance=" + getDockerImageName(),
+                            e);
+                }
+                throw e;
+            }
 
             if (useSharedNetwork) {
                 return;

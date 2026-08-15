@@ -35,11 +35,15 @@ public class AeshWebSocketAuthenticatedTest {
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .withApplicationRoot(jar -> jar.addClasses(
+                    AeshWebSocketTestHelper.class,
                     HelloCommand.class,
                     GoodbyeCommand.class,
                     TestIdentityProvider.class,
                     TestIdentityController.class))
-            .overrideConfigKey("quarkus.aesh.websocket.authenticated", "true");
+            .overrideConfigKey("quarkus.aesh.websocket.authenticated", "true")
+            .overrideConfigKey("quarkus.websockets-next.server.traffic-logging.enabled", "true")
+            .overrideConfigKey("quarkus.log.category.\"io.quarkus.websockets.next.traffic\".level", "DEBUG")
+            .overrideConfigKey("quarkus.log.category.\"io.quarkus.aesh\".level", "DEBUG");
 
     @TestHTTPResource("/aesh/terminal")
     URI wsUri;
@@ -79,7 +83,7 @@ public class AeshWebSocketAuthenticatedTest {
 
     @Test
     public void testAuthenticatedConnectionSucceeds() throws Exception {
-        CopyOnWriteArrayList<String> messages = new CopyOnWriteArrayList<>();
+        StringBuilder output = new StringBuilder();
         CountDownLatch latch = new CountDownLatch(1);
 
         WebSocketClient client = vertx.createWebSocketClient();
@@ -95,28 +99,22 @@ public class AeshWebSocketAuthenticatedTest {
                 return;
             }
             var ws = ar.result();
-
-            ws.textMessageHandler(msg -> {
-                messages.add(msg);
-                if (msg.contains("Hello World!")) {
-                    latch.countDown();
-                }
-            });
-
+            AeshWebSocketTestHelper.sendCommandOnPrompt(ws, "hello", "Hello World!", output, latch);
             ws.writeTextMessage("{\"action\":\"init\",\"cols\":80,\"rows\":24}");
-
-            vertx.setTimer(500, id -> {
-                ws.writeTextMessage("{\"action\":\"read\",\"data\":\"hello\\r\"}");
+            // Retry init if server did not respond (handles slow JVMs like Semeru)
+            vertx.setTimer(2000, id -> {
+                if (output.length() == 0) {
+                    ws.writeTextMessage("{\"action\":\"init\",\"cols\":80,\"rows\":24}");
+                }
             });
         });
 
-        boolean completed = latch.await(10, TimeUnit.SECONDS);
-        String allOutput = String.join("", messages);
+        boolean completed = latch.await(30, TimeUnit.SECONDS);
 
         Assertions.assertThat(completed)
-                .as("Expected to receive 'Hello World!' in WebSocket output within 10s. Received: %s", allOutput)
+                .as("Expected to receive 'Hello World!' in WebSocket output within 30s. Received: %s", output)
                 .isTrue();
-        Assertions.assertThat(allOutput).contains("Hello World!");
+        Assertions.assertThat(output.toString()).contains("Hello World!");
     }
 
     private static String basicAuth(String username, String password) {

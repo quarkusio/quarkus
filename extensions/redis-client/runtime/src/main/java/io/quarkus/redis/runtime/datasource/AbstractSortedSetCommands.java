@@ -27,8 +27,8 @@ import io.quarkus.redis.datasource.sortedset.ZAggregateArgs;
 import io.quarkus.redis.datasource.sortedset.ZRangeArgs;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.helpers.ParameterValidation;
-import io.vertx.mutiny.redis.client.Command;
-import io.vertx.mutiny.redis.client.Response;
+import io.vertx.redis.client.Command;
+import io.vertx.redis.client.Response;
 import io.vertx.redis.client.ResponseType;
 
 class AbstractSortedSetCommands<K, V> extends ReactiveSortable<K, V> {
@@ -756,7 +756,7 @@ class AbstractSortedSetCommands<K, V> extends ReactiveSortable<K, V> {
     }
 
     ScoredValue<V> decodeAsScoredValue(Response r) {
-        if (r == null || r.getDelegate() == null) {
+        if (r == null) {
             return null;
         }
 
@@ -809,14 +809,14 @@ class AbstractSortedSetCommands<K, V> extends ReactiveSortable<K, V> {
     }
 
     List<ScoredValue<V>> decodePopResponseWithCount(Response r) {
-        if (r != null && r.getDelegate() != null && r.size() > 1) {
+        if (r != null && r.size() > 1) {
             return decodeAsListOfScoredValues(r.get(1));
         }
         return Collections.emptyList();
     }
 
     ScoredValue<V> decodePopResponse(Response r) {
-        if (r == null || r.getDelegate() == null) {
+        if (r == null) {
             return null;
         }
         List<ScoredValue<V>> values = decodeAsListOfScoredValues(r.get(1));

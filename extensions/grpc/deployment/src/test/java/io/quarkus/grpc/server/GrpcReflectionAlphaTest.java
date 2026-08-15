@@ -31,7 +31,6 @@ import io.quarkus.grpc.GrpcService;
 import io.quarkus.test.QuarkusExtensionTest;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
-import io.smallrye.mutiny.operators.multi.processors.UnicastProcessor;
 
 /**
  * Check the behavior of the reflection service (v1alpha)
@@ -50,18 +49,15 @@ public class GrpcReflectionAlphaTest {
     @GrpcClient("reflection-service")
     MutinyServerReflectionGrpc.MutinyServerReflectionStub reflection;
 
-    private UnicastProcessor<Reflection.ServerReflectionRequest> processor;
     private ResettableSubscriber<Reflection.ServerReflectionResponse> subscriber;
 
     @BeforeEach
     public void setUp() {
-        processor = UnicastProcessor.create();
         subscriber = new ResettableSubscriber<>();
     }
 
     @AfterEach
     public void cleanUp() {
-        processor.onComplete();
         subscriber.cancel();
     }
 
@@ -111,10 +107,10 @@ public class GrpcReflectionAlphaTest {
 
     private Reflection.ServerReflectionResponse invoke(Reflection.ServerReflectionRequest request) {
         subscriber.reset();
-        Multi<Reflection.ServerReflectionResponse> multi = reflection.serverReflectionInfo(processor);
+        Multi<Reflection.ServerReflectionResponse> multi = reflection.serverReflectionInfo(Multi.createFrom().item(request));
         multi.subscribe().withSubscriber(subscriber);
         subscriber.awaitForSubscription();
-        processor.onNext(request);
+        subscriber.request(1);
         return subscriber.awaitAndGetLast();
     }
 
@@ -232,7 +228,7 @@ public class GrpcReflectionAlphaTest {
 
     private static class ResettableSubscriber<T> implements Flow.Subscriber<T> {
 
-        private Flow.Subscription subscription;
+        private volatile Flow.Subscription subscription;
         private volatile T last;
         private boolean completed;
         private Throwable failure;
@@ -244,22 +240,26 @@ public class GrpcReflectionAlphaTest {
 
         public void reset() {
             this.subscription = null;
+            this.last = null;
         }
 
         public void awaitForSubscription() {
             await().until(() -> subscription != null);
         }
 
+        public void request(long re) {
+            subscription.request(re);
+        }
+
         public T awaitAndGetLast() {
             validate();
-            last = null;
-            subscription.request(1);
             await().until(() -> last != null);
             return last;
         }
 
         @Override
         public void onNext(T t) {
+            System.out.println("Got " + t);
             last = t;
         }
 

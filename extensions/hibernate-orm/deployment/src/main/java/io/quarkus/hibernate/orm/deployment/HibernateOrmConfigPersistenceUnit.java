@@ -178,6 +178,12 @@ public interface HibernateOrmConfigPersistenceUnit {
     HibernateOrmConfigPersistenceUnitJdbc jdbc();
 
     /**
+     * Reactive related configuration.
+     */
+    @ConfigDocSection
+    HibernateOrmConfigPersistenceUnitReactive reactive();
+
+    /**
      * Fetching logic configuration.
      */
     @ConfigDocSection
@@ -261,6 +267,7 @@ public interface HibernateOrmConfigPersistenceUnit {
                 query().isAnyPropertySet() ||
                 database().isAnyPropertySet() ||
                 jdbc().isAnyPropertySet() ||
+                reactive().isAnyPropertySet() ||
                 !cache().isEmpty() ||
                 !secondLevelCachingEnabled() ||
                 multitenant().isPresent() ||
@@ -678,6 +685,20 @@ public interface HibernateOrmConfigPersistenceUnit {
     interface HibernateOrmConfigPersistenceUnitJdbc {
 
         /**
+         * Whether to bootstrap a blocking (JDBC) Hibernate ORM instance for this persistence unit.
+         * <p>
+         * Use {@code quarkus.hibernate-orm.jdbc.enabled} for the default persistence unit
+         * and {@code quarkus.hibernate-orm."<persistence-unit-name>".jdbc.enabled} for named persistence units.
+         * This is the per-persistence-unit replacement for the deprecated {@code quarkus.hibernate-orm.blocking}.
+         * <p>
+         * If not set, this is inferred from whether a JDBC datasource is available for this persistence unit,
+         * as well as the global (deprecated) `quarkus.hibernate-orm.blocking` setting.
+         *
+         * @asciidoclet
+         */
+        Optional<Boolean> enabled();
+
+        /**
          * The time zone pushed to the JDBC driver.
          *
          * See `quarkus.hibernate-orm.mapping.timezone.default-storage`.
@@ -695,7 +716,28 @@ public interface HibernateOrmConfigPersistenceUnit {
         OptionalInt statementBatchSize();
 
         default boolean isAnyPropertySet() {
-            return timezone().isPresent() || statementFetchSize().isPresent() || statementBatchSize().isPresent();
+            return enabled().isPresent() || timezone().isPresent() || statementFetchSize().isPresent()
+                    || statementBatchSize().isPresent();
+        }
+    }
+
+    @ConfigGroup
+    interface HibernateOrmConfigPersistenceUnitReactive {
+
+        /**
+         * Whether to bootstrap a reactive Hibernate Reactive instance for this persistence unit.
+         * <p>
+         * Use {@code quarkus.hibernate-orm.reactive.enabled} for the default persistence unit
+         * and {@code quarkus.hibernate-orm."<persistence-unit-name>".reactive.enabled} for named persistence units.
+         * <p>
+         * If not set, this is inferred from whether a reactive datasource is available for this persistence unit.
+         *
+         * @asciidoclet
+         */
+        Optional<Boolean> enabled();
+
+        default boolean isAnyPropertySet() {
+            return enabled().isPresent();
         }
     }
 
@@ -725,9 +767,30 @@ public interface HibernateOrmConfigPersistenceUnit {
     interface HibernateOrmConfigPersistenceUnitCacheMemory {
         /**
          * The maximum number of objects kept in memory in the cache.
+         * <p>
+         * Mutually exclusive with {@code maximum-weight}.
          */
         @ConfigDocDefault("10000")
         OptionalLong objectCount();
+
+        /**
+         * The maximum total weight of objects kept in memory in the cache.
+         * <p>
+         * When set, eviction is based on the total weight of cached entries rather than their count.
+         * This is useful for entities with highly variable sizes (e.g., JSON blobs).
+         * <p>
+         * Mutually exclusive with {@code object-count}. Requires a {@code weigher-class} to assign
+         * weights to entries; without one, each entry has a default weight of 1.
+         */
+        OptionalLong maximumWeight();
+
+        /**
+         * The fully qualified class name of a {@code com.github.benmanes.caffeine.cache.Weigher}
+         * implementation used to assign weights to cache entries.
+         * <p>
+         * Only used when {@code maximum-weight} is set. The class must have a public no-arg constructor.
+         */
+        Optional<String> weigherClass();
     }
 
     @ConfigGroup

@@ -1,5 +1,7 @@
 package io.quarkus.websockets.next.runtime;
 
+import java.util.concurrent.ConcurrentHashMap;
+
 import jakarta.enterprise.context.RequestScoped;
 import jakarta.inject.Inject;
 
@@ -104,7 +106,8 @@ public class WebSocketSecurityIdentityAssociation implements CurrentIdentityAsso
     private static SecuritySupport getSecuritySupportFromCtx() {
         Context context = Vertx.currentContext();
         if (context != null && VertxContext.isDuplicatedContext(context)) {
-            if (context.getLocal(ContextSupport.WEB_SOCKET_CONN_KEY) instanceof WebSocketConnectionImpl connection) {
+            var contextMap = context.getLocal(VertxContext.DATA_MAP_LOCAL, ConcurrentHashMap::new);
+            if (contextMap.get(ContextSupport.WEB_SOCKET_CONN_KEY) instanceof WebSocketConnectionImpl connection) {
                 return connection.securitySupport();
             }
         }

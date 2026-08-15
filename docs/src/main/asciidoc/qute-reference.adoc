@@ -5,7 +5,6 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Qute Reference Guide
 include::_attributes.adoc[]
-:categories: miscellaneous
 :summary: Learn everything you need to know about the Qute template engine.
 :numbered:
 :sectnums:
@@ -159,6 +158,16 @@ A section may also declare nested section blocks: `{#if item.valid} Valid. {#els
 Unparsed Character Data::
 It is used to mark the content that should be rendered but _not parsed_.
 It starts with the sequence `{|`  and ends with the sequence `|}`: `{| <script>if(true){alert('Qute is cute!')};</script> |}`, and could be multi-line.
++
+The number of `|` (pipe) characters in the opening delimiter can be increased to avoid conflicts with content that itself contains `|}`.
+The closing delimiter must use the same number of pipes as the opening delimiter.
+For example, `{||||` starts an unparsed block that only ends with `||||}`, making it safe to include `|}` in the content: `{|||| content with |} inside ||||}`.
++
+[NOTE]
+====
+Consecutive `|` characters immediately after `{|` are now counted as part of the opening delimiter.
+For example, `{||foo|}` was previously interpreted as single-pipe unparsed character data with content `|foo`, but is now interpreted as a double-pipe opening that requires `||}` to close.
+====
 +
 [WARNING]
 ====

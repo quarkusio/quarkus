@@ -308,8 +308,5 @@ public final class GraalVM {
                     "Cannot parse version from output: \n" + stringOutput);
         }
 
-        public boolean isJava17() {
-            return javaVersion.feature() == 17;
-        }
     }
 }

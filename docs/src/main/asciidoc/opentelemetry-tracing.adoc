@@ -5,7 +5,6 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Using OpenTelemetry Tracing
 include::_attributes.adoc[]
-:categories: observability
 :summary: This guide explains how your Quarkus application can utilize OpenTelemetry Tracing to provide distributed tracing for interactive web applications.
 :topics: observability,opentelemetry,tracing
 :extensions: io.quarkus:quarkus-opentelemetry
@@ -50,7 +49,7 @@ include::{includes}/devtools/create-app.adoc[]
 
 This command generates the Maven project and imports the `quarkus-opentelemetry` extension,
 which includes the default OpenTelemetry support,
-and a gRPC span exporter for https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/protocol/otlp.md[OTLP].
+and an OTLP span exporter for https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/protocol/otlp.md[OTLP].
 
 If you already have your Quarkus project configured, you can add the `quarkus-opentelemetry` extension
 to your project by running the following command in your project base directory:
@@ -121,7 +120,9 @@ We have several options:
 * Logging exporter
 
 === Grafana OTel LGTM option
-A Dev Service that will receive your app's telemetry. Only the dependency is needed.
+A Dev Service will receive your app's telemetry.
+
+The Grafana-OTel-LGTM Dev Service will start automatically on Dev Mode and data will be automatically sent to it.
 
 * Take a look at: xref:observability-devservices-lgtm.adoc[Getting Started with Grafana-OTel-LGTM].
 
@@ -191,9 +192,9 @@ Now we are ready to run our application. If using `application.properties` to co
 
 include::{includes}/devtools/dev.adoc[]
 
-or if configuring the OTLP gRPC endpoint via JVM arguments:
+or if configuring the OTLP endpoint via JVM arguments:
 
-:dev-additional-parameters: -Djvm.args="-Dquarkus.otel.exporter.otlp.traces.endpoint=http://localhost:4317"
+:dev-additional-parameters: -Djvm.args="-Dquarkus.otel.exporter.otlp.traces.endpoint=http://localhost:4318"
 include::{includes}/devtools/dev.adoc[]
 :!dev-additional-parameters:
 
@@ -373,6 +374,13 @@ quarkus.otel.traces.sampler=traceidratio
 # Runtime property:
 quarkus.otel.traces.sampler.arg=0.5
 ----
+
+[NOTE]
+====
+As of Quarkus 4, the default sampling ratio changed from 100% (1.0d) to 10% (0.1d) to reduce overhead in production environments.
+In development mode, sampling defaults to 100% (1.0d) to ensure all traces are captured for debugging.
+====
+
 [TIP]
 ====
 
@@ -381,7 +389,7 @@ An interesting use case for the sampler is to activate and deactivate tracing ex
 ----
 # build time property only:
 quarkus.otel.traces.sampler=traceidratio
-# On (default). All traces are exported:
+# On. All traces are exported:
 quarkus.otel.traces.sampler.arg=1.0
 # Off. No traces are exported:
 quarkus.otel.traces.sampler.arg=0.0

@@ -7,7 +7,6 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 = Creating a tutorial
 include::_attributes.adoc[]
 :diataxis-type: tutorial
-:categories: contributing
 :topics: internals,documentation
 
 Create a new tutorial that guides users through creating, running, and testing a Quarkus application that uses annotations from an imaginary extension.
@@ -45,20 +44,20 @@ Copy `docs/src/main/diataxis/_templates/template-tutorial.adoc` from the Quarkus
 [id="acme-serve-http-requests-tutorial"] // <1>
 = Serve Http requests using the Acme extension // <2>
 include::_attributes.adoc[] // <3>
-:categories: web // <4>
-:extension-status: experimental // <5>
+:extension-status: experimental // <4>
 ----
 
 <1> Use the file name as a unique id for the section.
 <2> Add the title as a top-level heading.
 <3> Include additional attributes that help define consistent formatting and provide source portability.
-<4> Specify the `web` category, as our imaginary extension works with Http requests.
-<5> Our imaginary `acme` extension is experimental, so we include the extension status declaration in the header.
+<4> Our imaginary `acme` extension is experimental, so we include the extension status declaration in the header.
 
 .Document Preview
 --
 The preview of your document should contain the chosen title as a styled header at the top of the page.
 --
+
+Add `acme-serve-http-requests-tutorial.adoc` to the appropriate category or subcategory in `docs/src/main/resources/categories.yaml`.
 
 == Add an abstract
 

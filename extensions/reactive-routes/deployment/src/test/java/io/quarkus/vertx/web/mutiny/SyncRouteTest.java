@@ -42,9 +42,6 @@ public class SyncRouteTest {
         when().get("hello-buffer-sync").then().statusCode(200).body(is("Sync Buffer"))
                 .header("content-type", is(nullValue()));
 
-        when().get("hello-buffer-mutiny-sync").then().statusCode(200).body(is("Sync Mutiny Buffer"))
-                .header("content-type", is(nullValue()));
-
         when().get("/person-sync").then().statusCode(200)
                 .body("name", is("neo"))
                 .body("id", is(12345))
@@ -85,11 +82,6 @@ public class SyncRouteTest {
         @Route(path = "hello-buffer-sync")
         Buffer helloBufferSync(RoutingContext context) {
             return Buffer.buffer("Sync Buffer");
-        }
-
-        @Route(path = "hello-buffer-mutiny-sync")
-        io.vertx.mutiny.core.buffer.Buffer helloMutinyBufferSync(RoutingContext context) {
-            return io.vertx.mutiny.core.buffer.Buffer.buffer("Sync Mutiny Buffer");
         }
 
         @Route(path = "fail-sync")

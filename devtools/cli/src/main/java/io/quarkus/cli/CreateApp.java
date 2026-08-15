@@ -35,6 +35,10 @@ public class CreateApp extends BaseCreateCommand {
     @CommandLine.Option(order = 2, paramLabel = "NAME", names = { "--name" }, description = "Name of the project.")
     String name;
 
+    @CommandLine.Option(order = 2, paramLabel = "CLASSNAME", names = {
+            "--class-name" }, description = "Name of the Jakarta REST Resource.")
+    String className;
+
     @CommandLine.Option(order = 3, paramLabel = "DESCRIPTION", names = {
             "--description" }, description = "Description of the project.")
     String description;
@@ -75,6 +79,7 @@ public class CreateApp extends BaseCreateCommand {
             setSourceTypeExtensions(extensions, sourceType);
             setCodegenOptions(codeGeneration);
             setValue(CreateProjectKey.PROJECT_NAME, name);
+            setValue(CreateProjectKey.RESOURCE_CLASS_NAME, className);
             setValue(CreateProjectKey.PROJECT_DESCRIPTION, description);
             setValue(CreateProjectKey.DATA, dataOptions.data);
 
@@ -115,6 +120,7 @@ public class CreateApp extends BaseCreateCommand {
                 + ", codeGeneration=" + codeGeneration
                 + ", extensions=" + extensions
                 + ", name=" + name
+                + ", className=" + className
                 + ", description=" + description
                 + ", project=" + super.toString()
                 + ", data=" + dataOptions.data

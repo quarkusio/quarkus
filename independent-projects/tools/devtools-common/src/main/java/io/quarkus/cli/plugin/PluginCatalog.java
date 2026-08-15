@@ -11,6 +11,7 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
@@ -62,6 +63,7 @@ public class PluginCatalog implements Catalog<PluginCatalog> {
         this(version, DATETIME_FORMATTER.format(lastUpdate), plugins, catalogLocation);
     }
 
+    @JsonCreator
     public PluginCatalog(String version, String lastUpdate, Map<String, Plugin> plugins, Optional<Path> catalogLocation) {
         this.version = version;
         this.lastUpdate = lastUpdate;

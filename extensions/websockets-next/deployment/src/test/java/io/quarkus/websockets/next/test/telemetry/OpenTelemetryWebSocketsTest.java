@@ -42,6 +42,7 @@ public class OpenTelemetryWebSocketsTest {
             .withApplicationRoot(root -> root
                     .addClasses(BounceEndpoint.class, WSClient.class, InMemorySpanExporterProducer.class, BounceClient.class)
                     .addAsResource(new StringAsset("""
+                            quarkus.otel.traces.sampler=always_on
                             quarkus.otel.bsp.export.timeout=1s
                             quarkus.otel.bsp.schedule.delay=50
                             """), "application.properties"))

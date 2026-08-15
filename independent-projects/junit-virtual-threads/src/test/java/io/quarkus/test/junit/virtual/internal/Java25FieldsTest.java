@@ -2,8 +2,6 @@ package io.quarkus.test.junit.virtual.internal;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
-import org.junit.jupiter.api.condition.EnabledForJreRange;
-import org.junit.jupiter.api.condition.JRE;
 
 import io.quarkus.test.junit.virtual.VirtualThreadUnit;
 
@@ -12,7 +10,6 @@ import io.quarkus.test.junit.virtual.VirtualThreadUnit;
  * in error messages.
  */
 @VirtualThreadUnit
-@EnabledForJreRange(min = JRE.JAVA_21)
 @DisabledIfSystemProperty(named = "java.runtime.name", matches = ".*Semeru.*", disabledReason = "Semeru doesn't support JFR yet")
 public class Java25FieldsTest {
 

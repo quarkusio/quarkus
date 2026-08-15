@@ -10,7 +10,7 @@ import java.util.Optional;
 import java.util.OptionalInt;
 
 import org.jboss.logging.Logger;
-import org.testcontainers.containers.OracleContainer;
+import org.testcontainers.oracle.OracleContainer;
 import org.testcontainers.utility.DockerImageName;
 import org.testcontainers.utility.MountableFile;
 
@@ -38,7 +38,7 @@ public class OracleDevServicesProcessor {
      * This is the container name as defined by the Testcontainer's OracleContainer:
      * does not necessarily match the container name that Quarkus will default to use.
      */
-    public static final String ORIGINAL_IMAGE_NAME = "gvenzl/oracle-xe";
+    public static final String ORIGINAL_IMAGE_NAME = "gvenzl/oracle-free";
     public static final int PORT = 1521;
 
     private static final OracleDatasourceServiceConfigurator configurator = new OracleDatasourceServiceConfigurator();

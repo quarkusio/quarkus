@@ -2,18 +2,17 @@ package io.quarkus.it.opentelemetry.output;
 
 import jakarta.inject.Singleton;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.module.SimpleModule;
-
 import io.opentelemetry.sdk.trace.data.SpanData;
-import io.quarkus.jackson.ObjectMapperCustomizer;
+import io.quarkus.jackson.JsonMapperBuilderCustomizer;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.module.SimpleModule;
 
 @Singleton
-public class SpanDataModuleSerializer implements ObjectMapperCustomizer {
+public class SpanDataModuleSerializer implements JsonMapperBuilderCustomizer {
     @Override
-    public void customize(ObjectMapper objectMapper) {
+    public void customize(JsonMapper.Builder builder) {
         SimpleModule simpleModule = new SimpleModule();
         simpleModule.addSerializer(SpanData.class, new SpanDataSerializer());
-        objectMapper.registerModule(simpleModule);
+        builder.addModule(simpleModule);
     }
 }

@@ -1,0 +1,144 @@
+name: Reproducibility checks
+
+permissions:
+  contents: read
+  issues: write
+  packages: read
+
+on:
+  schedule:
+    - cron: '0 3 * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: "workflow = ${{ github.workflow }}, ref = ${{ github.event.ref }}"
+  cancel-in-progress: ${{ github.repository != 'quarkusio/quarkus' }}
+
+env:
+  LANG: en_US.UTF-8
+  MAVEN_OPTS: -Xmx3g -XX:MaxMetaspaceSize=1g
+  COMMON_MAVEN_ARGS: "-e -B --settings .github/mvn-settings.xml --fail-at-end"
+  QUICK_INSTALL_MAVEN_ARGS: "-Dscalpel.enabled=false -DskipTests -DskipITs -DskipDocs -Dinvoker.skip -Dskip.gradle.tests -Djbang.skip -Dtruststore.skip -Dno-format -Dno-build-cache -Dno-test-modules -Prelocations"
+  COMMON_TEST_MAVEN_ARGS: "-Dformat.skip -Denforcer.skip -DskipDocs -Dforbiddenapis.skip -DskipExtensionValidation -DskipCodestartValidation"
+  REPRODUCIBILITY_MAVEN_ARGS: "-Dno-build-cache -Dquarkus-internal.test.reproducibility-check=5"
+
+jobs:
+  reproducibility-checks:
+    name: ${{ matrix.name }}
+    runs-on: ubuntu-latest
+    if: github.repository == 'quarkusio/quarkus' || github.event_name == 'workflow_dispatch'
+    timeout-minutes: 360
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - id: jvm
+            name: "Reproducibility checks - Deployment tests"
+            artifact-name: deployment-tests-reproducibility
+            issue-number: 55830
+          - id: jakarta-rest-tck
+            name: "Reproducibility checks - Jakarta REST TCK"
+            artifact-name: jakarta-rest-tck-reproducibility
+            issue-number: 55832
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Get SHA
+        id: quarkus-sha
+        run: |
+          echo "sha=$(git rev-parse HEAD)" >> $GITHUB_OUTPUT
+      - name: Extract base JDK version from POM
+        id: base-jdk
+        run: |
+          BASE_JDK=$(grep -oP '<maven.compiler.release>\K[0-9]+' independent-projects/parent/pom.xml)
+          echo "base-jdk-version=${BASE_JDK}" >> $GITHUB_OUTPUT
+          echo "Base JDK version: ${BASE_JDK}"
+      - name: Set up JDK ${{ steps.base-jdk.outputs.base-jdk-version }}
+        uses: actions/setup-java@03ad4de0992f5dab5e18fcb136590ce7c4a0ac95 # v5.6.0
+        with:
+          distribution: temurin
+          java-version: ${{ steps.base-jdk.outputs.base-jdk-version }}
+      - name: Reclaim Disk Space
+        run: .github/ci-prerequisites.sh
+      - name: Print disk usage before build
+        run: .github/ci-disk-usage.sh
+      - name: Gradle Enterprise environment
+        run: |
+          echo "GE_TAGS=jdk-${{ steps.base-jdk.outputs.base-jdk-version }},reproducibility-check" >> "$GITHUB_ENV"
+          echo "GE_CUSTOM_VALUES=gh-job-name=${{ matrix.name }}" >> "$GITHUB_ENV"
+      - name: Setup Develocity Build Scan capture
+        uses: gradle/develocity-actions/setup-maven@0e1f30c14ab56d0c1ecf229a0ffc3eb3e40e4642 # v2.2
+        with:
+          capture-strategy: ON_DEMAND
+          job-name: ${{ matrix.name }}
+          add-pr-comment: false
+          add-job-summary: false
+          develocity-access-key: ${{ secrets.GRADLE_ENTERPRISE_ACCESS_KEY }}
+          develocity-token-expiry: 6
+      - name: Build Quarkus
+        run: ./mvnw $COMMON_MAVEN_ARGS $QUICK_INSTALL_MAVEN_ARGS -pl '!docs' clean install
+      - name: Run deployment JVM reproducibility check
+        if: matrix.id == 'jvm'
+        env:
+          CAPTURE_BUILD_SCAN: true
+        run: |
+          deployment_module_list=$(.github/list-deployment-modules.sh)
+          ./mvnw $COMMON_MAVEN_ARGS $COMMON_TEST_MAVEN_ARGS $REPRODUCIBILITY_MAVEN_ARGS -pl "$deployment_module_list" -Dsurefire.timeout=1200 -Dquarkus.test.hang-detection-timeout=300 clean test
+      - name: Run Jakarta REST TCK reproducibility check
+        if: matrix.id == 'jakarta-rest-tck'
+        env:
+          CAPTURE_BUILD_SCAN: true
+        run: ./mvnw $COMMON_MAVEN_ARGS $COMMON_TEST_MAVEN_ARGS $REPRODUCIBILITY_MAVEN_ARGS -Dtcks -pl tcks/jakarta-rest -amd clean verify
+      - name: Print disk usage after build
+        if: always()
+        run: .github/ci-disk-usage.sh
+      - name: Prepare failure archive
+        if: failure()
+        run: find . -name '*-reports' -type d -o -name '*.log' | tar -czf test-reports.tgz -T -
+      - name: Upload failure archive
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: test-reports-${{ matrix.artifact-name }}
+          path: test-reports.tgz
+          retention-days: 7
+      - name: Prepare build reports archive
+        if: always()
+        run: |
+          7z a -tzip build-reports.zip -r \
+              '**/target/*-reports/TEST-*.xml' \
+              '**/target/*-reports-*/TEST-*.xml' \
+              'target/build-report.json' \
+              'target/gradle-build-scan-url.txt' \
+              LICENSE
+      - name: Upload build reports
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: build-reports-${{ github.run_attempt }}-${{ matrix.name }}
+          path: build-reports.zip
+          retention-days: 7
+      - name: Upload reproducibility debug dumps
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: debug-${{ github.run_attempt }}-${{ matrix.name }}
+          path: '**/target/debug/**'
+          if-no-files-found: ignore
+          retention-days: 28
+      - name: Upload build.log
+        if: failure() || cancelled()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: build-logs-${{ matrix.name }}
+          path: '**/build.log'
+          retention-days: 7
+      - name: Report status
+        if: always() && github.repository == 'quarkusio/quarkus'
+        uses: quarkusio/report-status-in-issue@main
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          status: ${{ job.status }}
+          issue-repository: ${{ github.repository }}
+          issue-number: ${{ matrix.issue-number }}
+          quarkus-sha: ${{ steps.quarkus-sha.outputs.sha }}
+          project-sha: ${{ steps.quarkus-sha.outputs.sha }}

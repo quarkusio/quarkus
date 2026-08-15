@@ -49,7 +49,7 @@ public class OidcMtlsBasicAuthTest {
 
         try {
             // HTTP 200
-            HttpResponse<io.vertx.mutiny.core.buffer.Buffer> resp = webClient.get("/multiple-auth-mechanisms/mtls-jwt-lax")
+            HttpResponse<Buffer> resp = webClient.get("/multiple-auth-mechanisms/mtls-jwt-lax")
                     .putHeader("Authorization",
                             OidcConstants.BEARER_SCHEME + " " + getAccessToken("backend-service", null, "alice"))
                     .send().await()
@@ -79,7 +79,7 @@ public class OidcMtlsBasicAuthTest {
 
         try {
             // HTTP 200
-            HttpResponse<io.vertx.mutiny.core.buffer.Buffer> resp = webClient.get("/multiple-auth-mechanisms/mtls-jwt")
+            HttpResponse<Buffer> resp = webClient.get("/multiple-auth-mechanisms/mtls-jwt")
                     .putHeader("Authorization",
                             OidcConstants.BEARER_SCHEME + " " + getAccessToken("backend-service", null, "alice"))
                     .send().await()
@@ -109,7 +109,7 @@ public class OidcMtlsBasicAuthTest {
 
         try {
             // HTTP 403, basic & mTLS are expected and basic is missing
-            HttpResponse<io.vertx.mutiny.core.buffer.Buffer> resp = webClient.get("/multiple-auth-mechanisms/mtls-basic")
+            HttpResponse<Buffer> resp = webClient.get("/multiple-auth-mechanisms/mtls-basic")
                     .putHeader("Authorization",
                             OidcConstants.BEARER_SCHEME + " " + getAccessToken("backend-service", null, "alice"))
                     .send().await()

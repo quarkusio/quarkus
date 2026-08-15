@@ -1,14 +1,12 @@
 package io.quarkus.deployment.steps;
 
 import static io.quarkus.deployment.annotations.ExecutionTime.RUNTIME_INIT;
-import static io.quarkus.deployment.configuration.ConfigMappingUtils.processConfigMapping;
-import static io.quarkus.deployment.configuration.ConfigMappingUtils.processExtensionConfigMapping;
 import static io.quarkus.deployment.configuration.RunTimeConfigurationGenerator.CONFIG_RUNTIME_NAME;
 import static io.quarkus.deployment.configuration.RunTimeConfigurationGenerator.CONFIG_STATIC_NAME;
-import static io.quarkus.deployment.steps.ConfigBuildSteps.SERVICES_PREFIX;
 import static io.quarkus.deployment.util.ServiceUtil.classNamesNamedIn;
 import static io.smallrye.config.SmallRyeConfig.SMALLRYE_CONFIG_LOCATIONS;
 import static java.util.stream.Collectors.toSet;
+import static org.jboss.jandex.AnnotationTarget.Kind.CLASS;
 import static org.objectweb.asm.Opcodes.ACC_STATIC;
 
 import java.io.Closeable;
@@ -19,6 +17,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -32,14 +31,18 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.function.BooleanSupplier;
 
 import jakarta.annotation.Priority;
 
 import org.eclipse.microprofile.config.ConfigProvider;
+import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
 import org.eclipse.microprofile.config.spi.ConfigSource;
 import org.eclipse.microprofile.config.spi.ConfigSourceProvider;
 import org.eclipse.microprofile.config.spi.Converter;
 import org.jboss.jandex.AnnotationInstance;
+import org.jboss.jandex.AnnotationTarget;
+import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.ParameterizedType;
@@ -47,6 +50,7 @@ import org.jboss.jandex.Type;
 import org.objectweb.asm.Opcodes;
 
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
+import io.quarkus.deployment.ConfigBuildTimeConfig;
 import io.quarkus.deployment.GeneratedClassGizmoAdaptor;
 import io.quarkus.deployment.IsProduction;
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -55,10 +59,12 @@ import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
-import io.quarkus.deployment.builditem.ConfigClassBuildItem;
 import io.quarkus.deployment.builditem.ConfigMappingBuildItem;
+import io.quarkus.deployment.builditem.ConfigMappingsRegistrarBuildItem;
 import io.quarkus.deployment.builditem.ConfigurationBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
+import io.quarkus.deployment.builditem.GeneratedConfigClassBuildItem;
+import io.quarkus.deployment.builditem.GeneratedConfigClassBuildItem.ConfigClassImplementation;
 import io.quarkus.deployment.builditem.HotDeploymentWatchedFileBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.LiveReloadBuildItem;
@@ -72,20 +78,21 @@ import io.quarkus.deployment.builditem.SuppressNonRuntimeConfigChangedWarningBui
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveMethodBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
+import io.quarkus.deployment.configuration.DotNames;
 import io.quarkus.deployment.configuration.RunTimeConfigurationGenerator;
 import io.quarkus.deployment.configuration.tracker.ConfigTrackingConfig;
 import io.quarkus.deployment.configuration.tracker.ConfigTrackingWriter;
-import io.quarkus.deployment.pkg.NativeConfig;
 import io.quarkus.deployment.pkg.builditem.ArtifactResultBuildItem;
 import io.quarkus.deployment.pkg.builditem.BuildSystemTargetBuildItem;
 import io.quarkus.deployment.pkg.steps.NativeOrNativeSourcesBuild;
 import io.quarkus.deployment.recording.RecorderContext;
+import io.quarkus.deployment.util.ServiceUtil;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.FieldDescriptor;
 import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
-import io.quarkus.hibernate.validator.spi.AdditionalConstrainedClassBuildItem;
 import io.quarkus.paths.PathCollection;
 import io.quarkus.runtime.BuildAnalyticsConfig;
 import io.quarkus.runtime.BuilderConfig;
@@ -98,11 +105,18 @@ import io.quarkus.runtime.configuration.ConfigDiagnostic;
 import io.quarkus.runtime.configuration.ConfigRecorder;
 import io.quarkus.runtime.configuration.ConfigUtils;
 import io.quarkus.runtime.configuration.DisableableConfigSource;
+import io.quarkus.runtime.configuration.FixedAtBuildTimeConfigBuilder;
 import io.quarkus.runtime.configuration.QuarkusConfigValue;
 import io.quarkus.runtime.configuration.RuntimeConfigBuilder;
 import io.quarkus.runtime.configuration.StaticInitConfigBuilder;
+import io.quarkus.runtime.configuration.SystemOnlySourcesConfigBuilder;
+import io.quarkus.runtime.graal.InetRunTime;
 import io.smallrye.config.Config;
+import io.smallrye.config.ConfigMappingHandler;
 import io.smallrye.config.ConfigMappingInterface;
+import io.smallrye.config.ConfigMappingInterface.LeafProperty;
+import io.smallrye.config.ConfigMappingInterface.MapProperty;
+import io.smallrye.config.ConfigMappingInterface.Property;
 import io.smallrye.config.ConfigMappingLoader;
 import io.smallrye.config.ConfigMappingMetadata;
 import io.smallrye.config.ConfigMappings;
@@ -110,6 +124,7 @@ import io.smallrye.config.ConfigMappings.ConfigClass;
 import io.smallrye.config.ConfigSourceFactory;
 import io.smallrye.config.ConfigSourceInterceptor;
 import io.smallrye.config.ConfigSourceInterceptorFactory;
+import io.smallrye.config.ConfigValidator;
 import io.smallrye.config.ConfigValue;
 import io.smallrye.config.DefaultValuesConfigSource;
 import io.smallrye.config.SecretKeysHandler;
@@ -117,21 +132,89 @@ import io.smallrye.config.SecretKeysHandlerFactory;
 import io.smallrye.config.SmallRyeConfig;
 import io.smallrye.config.SmallRyeConfigBuilder;
 import io.smallrye.config.SmallRyeConfigBuilderCustomizer;
+import io.smallrye.config.SmallRyeConfigProviderResolver;
 
 public class ConfigGenerationBuildStep {
+    private static final String SERVICES_PREFIX = "META-INF/services/";
+
+    // Types with a SmallRye Config built-in converter (Converters.ALL_CONVERTERS) that Quarkus core does
+    // NOT also register a converter for via the Converter SPI - these need no reflection at all.
+    //
+    // Types Quarkus DOES register an SPI converter for (e.g. Duration, Locale, InetAddress, Pattern) are
+    // deliberately excluded here, even where SmallRye also has a built-in: the generated config builder
+    // resolves the SPI converter's target type via Class.forName(String) at runtime (see
+    // AbstractConfigBuilder#withConverter), and on Mandrel that resolution is only reliable when the
+    // class has at least its public methods registered - constructors-only is not enough (see
+    // registerConverterReflection below, which registers public methods for every type not in this set).
+    // (Copied as a constant to avoid the processing overhead of computing the list, as it rarely changes -
+    // kept in sync via ConfigGenerationBuildStepTest)
+    private static final Set<String> SMALLRYE_BUILT_IN_CONVERTER_TYPES = Set.of(
+            "java.lang.String",
+            "java.lang.Boolean",
+            "java.lang.Double",
+            "java.lang.Float",
+            "java.lang.Long",
+            "java.lang.Integer",
+            "java.lang.Short",
+            "java.lang.Byte",
+            "java.lang.Character",
+            "java.lang.Class",
+            "java.util.UUID",
+            "java.util.Currency",
+            "java.util.BitSet",
+            "java.io.File",
+            "java.net.URI",
+            "java.time.format.DateTimeFormatter",
+            "java.lang.CharSequence",
+            "java.util.OptionalInt",
+            "java.util.OptionalLong",
+            "java.util.OptionalDouble");
+
+    @BuildStep
+    void nativeSupport(BuildProducer<RuntimeInitializedClassBuildItem> runtimeInitializedClassProducer) {
+        runtimeInitializedClassProducer.produce(new RuntimeInitializedClassBuildItem(InetRunTime.class.getName()));
+        runtimeInitializedClassProducer.produce(new RuntimeInitializedClassBuildItem(
+                "io.quarkus.runtime.configuration.RuntimeConfigBuilder$UuidConfigSource$Holder"));
+    }
+
+    /**
+     * Registers all config components descriptors for native image.
+     * <p>
+     * The initialized Config used by Quarkus does not require them, but users may be instantiating their own Config.
+     */
+    @BuildStep
+    void nativeServiceProviders(BuildProducer<ServiceProviderBuildItem> providerProducer) throws IOException {
+        providerProducer.produce(new ServiceProviderBuildItem(ConfigProviderResolver.class.getName(),
+                SmallRyeConfigProviderResolver.class.getName()));
+        ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
+        for (Class<?> serviceClass : Arrays.asList(
+                Converter.class,
+                ConfigSource.class,
+                ConfigSourceProvider.class,
+                ConfigSourceFactory.class,
+                ConfigSourceInterceptor.class,
+                ConfigSourceInterceptorFactory.class,
+                SecretKeysHandler.class,
+                SecretKeysHandlerFactory.class,
+                ConfigValidator.class,
+                SmallRyeConfigBuilderCustomizer.class,
+                ConfigMappingHandler.class)) {
+            String serviceName = serviceClass.getName();
+            Set<String> names = ServiceUtil.classNamesNamedIn(classLoader, SERVICES_PREFIX + serviceName);
+            if (!names.isEmpty()) {
+                providerProducer.produce(new ServiceProviderBuildItem(serviceName, names));
+            }
+        }
+    }
+
     private static final MethodDescriptor CONFIG_BUILDER = MethodDescriptor.ofMethod(ConfigBuilder.class,
             "configBuilder", SmallRyeConfigBuilder.class, SmallRyeConfigBuilder.class);
     private static final MethodDescriptor WITH_SOURCES = MethodDescriptor.ofMethod(SmallRyeConfigBuilder.class,
             "withSources", SmallRyeConfigBuilder.class, ConfigSource[].class);
 
     @BuildStep
-    void nativeSupport(BuildProducer<RuntimeInitializedClassBuildItem> runtimeInitializedClassProducer) {
-        runtimeInitializedClassProducer.produce(new RuntimeInitializedClassBuildItem(
-                "io.quarkus.runtime.configuration.RuntimeConfigBuilder$UuidConfigSource$Holder"));
-    }
-
-    @BuildStep
     void buildTimeRunTimeConfig(
+            ConfigBuildTimeConfig configBuildTimeConfig,
             ConfigurationBuildItem configItem,
             BuildProducer<GeneratedClassBuildItem> generatedClass,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
@@ -158,6 +241,15 @@ public class ConfigGenerationBuildStep {
                 if (entry.getValue().getValue() != null) {
                     clinit.invokeInterfaceMethod(put, map, clinit.load(entry.getKey()),
                             clinit.load(entry.getValue().getValue()));
+                }
+            }
+
+            if (configBuildTimeConfig.fixedAtBuildTime()) {
+                for (Map.Entry<String, ConfigValue> entry : configItem.getReadResult().getRunTimeValues().entrySet()) {
+                    if (entry.getValue().getValue() != null) {
+                        clinit.invokeInterfaceMethod(put, map, clinit.load(entry.getKey()),
+                                clinit.load(entry.getValue().getValue()));
+                    }
                 }
             }
 
@@ -188,51 +280,204 @@ public class ConfigGenerationBuildStep {
     }
 
     @BuildStep
-    void generateMappings(
-            NativeConfig nativeConfig,
+    void discoverConfigMappings(
             ConfigurationBuildItem configItem,
             CombinedIndexBuildItem combinedIndex,
-            BuildProducer<GeneratedClassBuildItem> generatedClasses,
-            BuildProducer<ReflectiveClassBuildItem> reflectiveClasses,
-            BuildProducer<ReflectiveMethodBuildItem> reflectiveMethods,
-            BuildProducer<ConfigClassBuildItem> configClasses,
-            BuildProducer<AdditionalConstrainedClassBuildItem> additionalConstrainedClasses) {
+            BuildProducer<ConfigMappingBuildItem> configMappings) {
 
-        Map<String, GeneratedClassBuildItem> generatedConfigClasses = new HashMap<>();
+        outer: for (AnnotationInstance instance : combinedIndex.getIndex().getAnnotations(DotNames.CONFIG_MAPPING)) {
+            AnnotationTarget target = instance.target();
+            if (!target.kind().equals(CLASS)) {
+                continue;
+            }
 
-        processConfigMapping(nativeConfig, configItem, combinedIndex, generatedConfigClasses, reflectiveClasses,
-                reflectiveMethods,
-                configClasses, additionalConstrainedClasses);
+            ClassInfo configClass = target.asClass();
+            // Ignore scanned classes from the quarkus-processor.
+            // Usually they are not available in Jandex, but there are cases where extensions have jandex to their
+            // own classes, or user applications adding @ConfigRoot to generate documentation.
+            // In that case, it would generate duplicates.
+            for (Class<?> type : configItem.getReadResult().getAllMappingsByClass().keySet()) {
+                if (type.getName().equals(configClass.name().toString())) {
+                    break outer;
+                }
+            }
 
-        List<ConfigClass> buildTimeRunTimeMappings = configItem.getReadResult().getBuildTimeRunTimeMappings();
-        for (ConfigClass buildTimeRunTimeMapping : buildTimeRunTimeMappings) {
-            processExtensionConfigMapping(nativeConfig, buildTimeRunTimeMapping, combinedIndex, generatedConfigClasses,
-                    reflectiveClasses,
-                    reflectiveMethods, configClasses, additionalConstrainedClasses);
-        }
-
-        List<ConfigClass> runTimeMappings = configItem.getReadResult().getRunTimeMappings();
-        for (ConfigClass runTimeMapping : runTimeMappings) {
-            processExtensionConfigMapping(nativeConfig, runTimeMapping, combinedIndex, generatedConfigClasses,
-                    reflectiveClasses,
-                    reflectiveMethods,
-                    configClasses, additionalConstrainedClasses);
-        }
-
-        for (GeneratedClassBuildItem generatedConfigClass : generatedConfigClasses.values()) {
-            generatedClasses.produce(generatedConfigClass);
+            AnnotationValue annotationPrefix = instance.value("prefix");
+            String prefix = annotationPrefix != null ? annotationPrefix.asString() : "";
+            configMappings.produce(new ConfigMappingBuildItem(configClass, prefix, combinedIndex.getIndex()));
         }
     }
 
     @BuildStep
-    void generateBuilders(
+    void generateConfigMappings(
+            ConfigurationBuildItem configItem,
+            List<ConfigMappingBuildItem> configMappings,
+            BuildProducer<GeneratedConfigClassBuildItem> configClasses) {
+
+        // Extensions ConfigRoots / ConfigMappings - Build Time - Runtime Fixed
+        for (ConfigClass buildTimeRunTimeMapping : configItem.getReadResult().getBuildTimeRunTimeMappings()) {
+            configClasses.produce(GeneratedConfigClassBuildItem.of(buildTimeRunTimeMapping.getType()));
+        }
+
+        // Extensions ConfigRoots / ConfigMappings - Runtime
+        for (ConfigClass runTimeMapping : configItem.getReadResult().getRunTimeMappings()) {
+            configClasses.produce(GeneratedConfigClassBuildItem.of(runTimeMapping.getType()));
+        }
+
+        // Application ConfigMappings
+        for (ConfigMappingBuildItem configMapping : configMappings) {
+            configClasses.produce(GeneratedConfigClassBuildItem.of(loadClass(configMapping.getConfigClassName())));
+        }
+    }
+
+    @BuildStep
+    void processGeneratedConfigClasses(
+            List<GeneratedConfigClassBuildItem> generatedConfigClasses,
+            BuildProducer<GeneratedClassBuildItem> generatedClasses,
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClasses,
+            BuildProducer<ReflectiveMethodBuildItem> reflectiveMethods) {
+
+        Map<Class<?>, ConfigClassImplementation> elements = new HashMap<>();
+        for (GeneratedConfigClassBuildItem generatedConfigClass : generatedConfigClasses) {
+            elements.putAll(generatedConfigClass.getElements());
+        }
+
+        for (Entry<Class<?>, ConfigClassImplementation> element : elements.entrySet()) {
+            Class<?> configClass = element.getKey();
+            ConfigClassImplementation configImplementation = element.getValue();
+
+            // Generate the bytecode
+            generatedClasses.produce(new GeneratedClassBuildItem(
+                    configImplementation.isApplicationClass(),
+                    configImplementation.getName(),
+                    configImplementation.getBytes()));
+
+            // Register for Reflection
+            reflectiveClasses.produce(ReflectiveClassBuildItem.builder(configImplementation.getName())
+                    .reason("SmallRye Config generated class")
+                    .constructors().methods().build());
+            reflectiveMethods.produce(new ReflectiveMethodBuildItem("SmallRye Config generated class",
+                    configClass.getName(), "getProperties", new String[0]));
+            reflectiveMethods.produce(new ReflectiveMethodBuildItem("SmallRye Config generated class",
+                    configClass.getName(), "getSecrets", new String[0]));
+
+            registerImplicitConverters(configClass, reflectiveClasses);
+        }
+    }
+
+    private static void registerImplicitConverters(
+            Class<?> configClass,
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClasses) {
+
+        ConfigMappingInterface mapping = ConfigMappingLoader.getConfigMapping(configClass);
+        for (Property property : mapping.getProperties()) {
+            if (property.hasConvertWith()) {
+                Class<? extends Converter<?>> convertWith;
+                if (property.isLeaf()) {
+                    convertWith = property.asLeaf().getConvertWith();
+                } else {
+                    convertWith = property.asPrimitive().getConvertWith();
+                }
+                reflectiveClasses.produce(ReflectiveClassBuildItem.builder(convertWith)
+                        .reason("Required by Config Converter " + convertWith.getName())
+                        .build());
+            }
+
+            registerImplicitConverter(property, reflectiveClasses);
+
+            if (property.isMap()) {
+                MapProperty mapProperty = property.asMap();
+                if (mapProperty.hasKeyConvertWith()) {
+                    reflectiveClasses.produce(ReflectiveClassBuildItem.builder(mapProperty.getKeyConvertWith())
+                            .reason("Required by Config Converter " + mapProperty.getKeyConvertWith().getName())
+                            .build());
+                } else {
+                    registerConverterReflection(mapProperty.getKeyRawType(), reflectiveClasses);
+                }
+
+                registerImplicitConverter(mapProperty.getValueProperty(), reflectiveClasses);
+            }
+        }
+    }
+
+    private static void registerImplicitConverter(
+            Property property,
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClasses) {
+
+        if (property.isLeaf() && !property.isOptional()) {
+            LeafProperty leafProperty = property.asLeaf();
+            if (leafProperty.hasConvertWith()) {
+                reflectiveClasses.produce(ReflectiveClassBuildItem.builder(leafProperty.getConvertWith())
+                        .reason("Required by Config Converter " + leafProperty.getConvertWith().getName())
+                        .build());
+            } else {
+                registerConverterReflection(leafProperty.getValueRawType(), reflectiveClasses);
+            }
+        } else if (property.isOptional()) {
+            registerImplicitConverter(property.asOptional().getNestedProperty(), reflectiveClasses);
+        } else if (property.isCollection()) {
+            registerImplicitConverter(property.asCollection().getElement(), reflectiveClasses);
+        }
+    }
+
+    /**
+     * Registers a config property's raw type for reflection, unless it's in
+     * {@link #SMALLRYE_BUILT_IN_CONVERTER_TYPES}. Public methods are enough: types with no explicit
+     * converter rely on this for SmallRye to probe implicit converter methods ({@code valueOf},
+     * {@code parse}, {@code of}, ...), which per the MicroProfile Config spec are always public.
+     */
+    private static void registerConverterReflection(
+            Class<?> rawType,
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClasses) {
+
+        String rawTypeName = rawType.getName();
+        if (SMALLRYE_BUILT_IN_CONVERTER_TYPES.contains(rawTypeName)) {
+            return;
+        }
+
+        reflectiveClasses.produce(ReflectiveClassBuildItem.builder(rawType)
+                .reason("Required by Config Converter " + rawTypeName)
+                .publicMethods()
+                .build());
+    }
+
+    @BuildStep(onlyIf = SystemOnlySources.class)
+    void systemOnlySources(BuildProducer<StaticInitConfigBuilderBuildItem> staticInitConfigBuilder,
+            BuildProducer<RunTimeConfigBuilderBuildItem> runTimeConfigBuilder) {
+        // TODO - radcortez - YAML sources are still available because they are registered directly.
+        staticInitConfigBuilder.produce(new StaticInitConfigBuilderBuildItem(SystemOnlySourcesConfigBuilder.class.getName()));
+        runTimeConfigBuilder.produce(new RunTimeConfigBuilderBuildItem(SystemOnlySourcesConfigBuilder.class.getName()));
+    }
+
+    private static class SystemOnlySources implements BooleanSupplier {
+        ConfigBuildTimeConfig configBuildTimeConfig;
+
+        @Override
+        public boolean getAsBoolean() {
+            return configBuildTimeConfig.systemOnly() && !configBuildTimeConfig.fixedAtBuildTime();
+        }
+    }
+
+    @BuildStep
+    void fixedAtBuildTimeSources(ConfigBuildTimeConfig config,
+            BuildProducer<StaticInitConfigBuilderBuildItem> staticInitConfigBuilder,
+            BuildProducer<RunTimeConfigBuilderBuildItem> runTimeConfigBuilder) {
+        if (config.fixedAtBuildTime()) {
+            staticInitConfigBuilder
+                    .produce(new StaticInitConfigBuilderBuildItem(FixedAtBuildTimeConfigBuilder.class.getName()));
+            runTimeConfigBuilder.produce(new RunTimeConfigBuilderBuildItem(FixedAtBuildTimeConfigBuilder.class.getName()));
+        }
+    }
+
+    @BuildStep
+    void generateConfigBuilders(
             ConfigurationBuildItem configItem,
             CombinedIndexBuildItem combinedIndex,
-            List<ConfigMappingBuildItem> configMappings,
-            List<RunTimeConfigurationDefaultBuildItem> runTimeDefaults,
-            Optional<ReproducibilityCheckBuildItem> reproducibilityCheck,
             List<StaticInitConfigBuilderBuildItem> staticInitConfigBuilders,
             List<RunTimeConfigBuilderBuildItem> runTimeConfigBuilders,
+            List<RunTimeConfigurationDefaultBuildItem> runTimeDefaults,
+            Optional<ConfigMappingsRegistrarBuildItem> configMappings,
+            Optional<ReproducibilityCheckBuildItem> reproducibilityCheck,
             BuildProducer<GeneratedClassBuildItem> generatedClass,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass) throws Exception {
 
@@ -934,29 +1179,52 @@ public class ConfigGenerationBuildStep {
                 continue;
             }
 
-            try {
-                Class<?> serviceClass = classloader.loadClass(service);
-                if (serviceClass.isAnnotationPresent(StaticInitSafe.class)) {
-                    staticSafe.add(service);
-                }
-            } catch (ClassNotFoundException e) {
-                // Ignore
+            Class<?> serviceClass = loadClass(service);
+            if (serviceClass.isAnnotationPresent(StaticInitSafe.class)) {
+                staticSafe.add(service);
             }
         }
         return staticSafe;
     }
 
-    private static Set<ConfigClass> staticSafeConfigMappings(List<ConfigMappingBuildItem> configMappings) {
-        return configMappings.stream()
-                .filter(ConfigMappingBuildItem::isStaticInitSafe)
-                .map(ConfigMappingBuildItem::toConfigClass)
-                .collect(toSet());
+    private static Set<ConfigClass> staticSafeConfigMappings(Optional<ConfigMappingsRegistrarBuildItem> configMappings) {
+        if (configMappings.isEmpty()) {
+            return Collections.emptySet();
+        }
+
+        Set<ConfigClass> configClasses = new HashSet<>();
+        for (Entry<String, Set<String>> entry : configMappings.get().getConfigMappings().entrySet()) {
+            for (String prefix : entry.getValue()) {
+                Class<?> klass = loadClass(entry.getKey());
+                if (klass.isAnnotationPresent(StaticInitSafe.class)) {
+                    configClasses.add(ConfigClass.configClass(klass, prefix));
+                }
+            }
+        }
+        return configClasses;
     }
 
-    private static Set<ConfigClass> runtimeConfigMappings(List<ConfigMappingBuildItem> configMappings) {
-        return configMappings.stream()
-                .map(ConfigMappingBuildItem::toConfigClass)
-                .collect(toSet());
+    private static Set<ConfigClass> runtimeConfigMappings(Optional<ConfigMappingsRegistrarBuildItem> configMappings) {
+        if (configMappings.isEmpty()) {
+            return Collections.emptySet();
+        }
+
+        Set<ConfigClass> configClasses = new HashSet<>();
+        for (Entry<String, Set<String>> entry : configMappings.get().getConfigMappings().entrySet()) {
+            for (String prefix : entry.getValue()) {
+                configClasses.add(ConfigClass.configClass(loadClass(entry.getKey()), prefix));
+            }
+        }
+        return configClasses;
+    }
+
+    private static Class<?> loadClass(final String name) {
+        ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
+        try {
+            return classLoader.loadClass(name);
+        } catch (ClassNotFoundException e) {
+            throw new IllegalStateException("The class (" + name + ") cannot be created during deployment.", e);
+        }
     }
 
     private static Type getConverterType(final ClassInfo converter, final CombinedIndexBuildItem combinedIndex) {

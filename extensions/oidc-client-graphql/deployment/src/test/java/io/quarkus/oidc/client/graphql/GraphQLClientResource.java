@@ -43,7 +43,7 @@ public class GraphQLClientResource {
     @GET
     @Path("/default-dynamic")
     public String dynamicClientDefault() throws ExecutionException, InterruptedException {
-        return dynamicClient.executeSync("query { principalName }").getData().getString("principalName");
+        return dynamicClient.executeSync("query { principalName }").getData().get("principalName").asText();
     }
 
     @Inject
@@ -53,7 +53,7 @@ public class GraphQLClientResource {
     @GET
     @Path("/jdoe-dynamic")
     public String dynamicClientJDoe() throws ExecutionException, InterruptedException {
-        return jDoeDynamicClient.executeSync("query { principalName }").getData().getString("principalName");
+        return jDoeDynamicClient.executeSync("query { principalName }").getData().get("principalName").asText();
     }
 
     @Inject
@@ -63,7 +63,7 @@ public class GraphQLClientResource {
     @GET
     @Path("/admin-dynamic")
     public String dynamicClientAdmin() throws ExecutionException, InterruptedException {
-        return adminDynamicClient.executeSync("query { principalName }").getData().getString("principalName");
+        return adminDynamicClient.executeSync("query { principalName }").getData().get("principalName").asText();
     }
 
 }

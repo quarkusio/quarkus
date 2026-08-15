@@ -154,6 +154,8 @@ public interface MicrometerConfig {
     /** Build / static runtime config for binders */
     @ConfigGroup
     interface BinderConfig {
+        HttpConfigGroup http();
+
         HttpClientConfigGroup httpClient();
 
         HttpServerConfigGroup httpServer();

@@ -1,5 +1,7 @@
 package io.quarkus.reactive.datasource.deployment;
 
+import java.util.Optional;
+
 import io.quarkus.builder.item.MultiBuildItem;
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
 import io.quarkus.datasource.runtime.DataSourceBuildTimeConfig;
@@ -14,14 +16,17 @@ final class AggregatedDataSourceBuildTimeConfigBuildItem extends MultiBuildItem 
     private final DataSourceReactiveBuildTimeConfig reactiveConfig;
 
     private final String dbKind;
+    private final Optional<String> dbVersion;
 
     AggregatedDataSourceBuildTimeConfigBuildItem(String name, DataSourceBuildTimeConfig dataSourceConfig,
             DataSourceReactiveBuildTimeConfig reactiveConfig,
-            String dbKind) {
+            String dbKind,
+            Optional<String> dbVersion) {
         this.name = name;
         this.dataSourceConfig = dataSourceConfig;
         this.reactiveConfig = reactiveConfig;
         this.dbKind = dbKind;
+        this.dbVersion = dbVersion;
     }
 
     public String getName() {
@@ -42,5 +47,9 @@ final class AggregatedDataSourceBuildTimeConfigBuildItem extends MultiBuildItem 
 
     public String getDbKind() {
         return dbKind;
+    }
+
+    public Optional<String> getDbVersion() {
+        return dbVersion;
     }
 }

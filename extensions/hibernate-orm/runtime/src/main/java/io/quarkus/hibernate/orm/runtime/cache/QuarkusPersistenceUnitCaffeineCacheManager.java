@@ -4,6 +4,7 @@ import java.net.URI;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
+import java.util.Optional;
 import java.util.OptionalLong;
 import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
@@ -14,6 +15,7 @@ import javax.cache.Caching;
 import javax.cache.configuration.Configuration;
 import javax.cache.spi.CachingProvider;
 
+import com.github.benmanes.caffeine.cache.Weigher;
 import com.github.benmanes.caffeine.jcache.configuration.CaffeineConfiguration;
 
 /**
@@ -87,9 +89,37 @@ public class QuarkusPersistenceUnitCaffeineCacheManager implements CacheManager 
         var quarkusConfig = this.configuration.caches().getOrDefault(cacheName,
                 QuarkusPersistenceUnitCacheConfiguration.Cache.DEFAULT);
         CaffeineConfiguration<K, V> caffeineConfig = new CaffeineConfiguration<>();
-        caffeineConfig.setMaximumSize(OptionalLong.of(quarkusConfig.maxSize()));
+
+        if (quarkusConfig.hasMaximumWeight()) {
+            // Weight-based eviction
+            caffeineConfig.setMaximumWeight(OptionalLong.of(quarkusConfig.maximumWeight()));
+            if (quarkusConfig.hasWeigherClass()) {
+                Weigher<K, V> weigher = instantiateWeigher(quarkusConfig.weigherClassName());
+                caffeineConfig.setWeigherFactory(Optional.of(() -> weigher));
+            }
+        } else {
+            // Count-based eviction (default)
+            caffeineConfig.setMaximumSize(OptionalLong.of(quarkusConfig.maxSize()));
+        }
+
         caffeineConfig.setExpireAfterAccess(OptionalLong.of(quarkusConfig.maxIdle().toNanos()));
         return delegate.createCache(cacheName, caffeineConfig);
+    }
+
+    @SuppressWarnings("unchecked")
+    private <K, V> Weigher<K, V> instantiateWeigher(String className) {
+        try {
+            Class<?> weigherClass = Thread.currentThread().getContextClassLoader().loadClass(className);
+            if (!Weigher.class.isAssignableFrom(weigherClass)) {
+                throw new IllegalStateException(
+                        "Weigher class '" + className + "' must implement com.github.benmanes.caffeine.cache.Weigher");
+            }
+            return (Weigher<K, V>) weigherClass.getConstructor().newInstance();
+        } catch (IllegalStateException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new IllegalStateException("Unable to instantiate weigher class: " + className, e);
+        }
     }
 
     @Override

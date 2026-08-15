@@ -39,10 +39,13 @@
 
         <!-- HTTP -->
         <module>vertx-http</module>
+        <module>devjsonrpc</module>
+        <module>devmcp</module>
         <module>devui</module>
         <module>undertow</module>
         <module>websockets</module>
         <module>websockets-next</module>
+        <module>http3</module>
         <module>web-dependency-locator</module>
         <module>resteasy-reactive</module>
         <module>reactive-routes</module>
@@ -162,6 +165,7 @@
         <module>keycloak-admin-rest-client</module>
         <module>keycloak-admin-resteasy-client</module>
         <module>credentials</module>
+        <module>spiffe-client</module>
 
         <!-- SBOM -->
         <module>cyclonedx</module>
@@ -189,7 +193,6 @@
 
         <!-- Additional languages -->
         <module>kotlin</module>
-        <module>scala</module>
 
         <!-- Kubernetes -->
         <module>container-image</module>

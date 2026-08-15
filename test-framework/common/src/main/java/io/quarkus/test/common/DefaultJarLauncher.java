@@ -80,7 +80,7 @@ public class DefaultJarLauncher implements JarArtifactLauncher {
     }
 
     @Override
-    public Optional<ListeningAddress> start() throws IOException {
+    public ListeningAddresses start() throws IOException {
         start(new String[0], true);
         Function<IntegrationTestStartedNotifier.Context, IntegrationTestStartedNotifier.Result> startedFunction = createStartedFunction();
         LogRuntimeConfig logRuntimeConfig = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class)
@@ -88,7 +88,7 @@ public class DefaultJarLauncher implements JarArtifactLauncher {
         logFile = logRuntimeConfig.file().path().toPath();
         if (startedFunction != null) {
             waitForStartedFunction(startedFunction, quarkusProcess, waitTimeSeconds, logFile);
-            return Optional.empty();
+            return ListeningAddresses.EMPTY;
         } else {
             return waitForCapturedListeningData(quarkusProcess, logRuntimeConfig.file().path().toPath(), waitTimeSeconds);
         }

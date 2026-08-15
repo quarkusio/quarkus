@@ -9,6 +9,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.BiConsumer;
 import java.util.function.Function;
 
 import jakarta.ws.rs.RuntimeType;
@@ -60,6 +61,12 @@ public class ResteasyReactiveInterceptorScanner {
 
     public static void scanForContainerRequestFilters(ResourceInterceptors interceptors, IndexView index,
             ApplicationScanningResult applicationScanningResult) {
+        scanForContainerRequestFilters(interceptors, index, applicationScanningResult, null);
+    }
+
+    public static void scanForContainerRequestFilters(ResourceInterceptors interceptors, IndexView index,
+            ApplicationScanningResult applicationScanningResult,
+            BiConsumer<ClassInfo, ResourceInterceptor<ContainerResponseFilter>> responseFilterConsumer) {
         //the quarkus version of these filters will not be in the index
         //so you need an explicit check for both
 
@@ -90,6 +97,9 @@ public class ResteasyReactiveInterceptorScanner {
                 continue;
             }
             setFilterMethodSourceForRespFilter(index, specRespFilters, filterClass, interceptor);
+            if (responseFilterConsumer != null) {
+                responseFilterConsumer.accept(filterClass, interceptor);
+            }
         }
     }
 

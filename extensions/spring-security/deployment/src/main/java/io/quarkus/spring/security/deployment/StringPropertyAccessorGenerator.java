@@ -1,21 +1,22 @@
 package io.quarkus.spring.security.deployment;
 
-import static io.quarkus.gizmo.MethodDescriptor.ofMethod;
-
 import java.util.Set;
 
 import jakarta.inject.Singleton;
 
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.FieldInfo;
+import org.jboss.jandex.gizmo2.Jandex2Gizmo;
 
 import io.quarkus.deployment.bean.JavaBeanUtil;
-import io.quarkus.gizmo.BranchResult;
-import io.quarkus.gizmo.BytecodeCreator;
-import io.quarkus.gizmo.ClassCreator;
-import io.quarkus.gizmo.ClassOutput;
-import io.quarkus.gizmo.MethodCreator;
-import io.quarkus.gizmo.ResultHandle;
+import io.quarkus.gizmo2.ClassOutput;
+import io.quarkus.gizmo2.Const;
+import io.quarkus.gizmo2.Expr;
+import io.quarkus.gizmo2.Gizmo;
+import io.quarkus.gizmo2.LocalVar;
+import io.quarkus.gizmo2.ParamVar;
+import io.quarkus.gizmo2.desc.ClassMethodDesc;
+import io.quarkus.gizmo2.desc.MethodDesc;
 import io.quarkus.runtime.util.HashUtil;
 import io.quarkus.spring.security.runtime.interceptor.accessor.StringPropertyAccessor;
 
@@ -55,33 +56,38 @@ final class StringPropertyAccessorGenerator {
      */
     static String generate(DotName className, Set<FieldInfo> properties, ClassOutput classOutput) {
         String generatedClassName = getAccessorClassName(className);
-        try (ClassCreator cc = ClassCreator.builder()
-                .classOutput(classOutput).className(generatedClassName)
-                .interfaces(StringPropertyAccessor.class)
-                .build()) {
-
+        Gizmo.create(classOutput).class_(generatedClassName, cc -> {
+            cc.implements_(StringPropertyAccessor.class);
             cc.addAnnotation(Singleton.class);
+            cc.defaultConstructor();
 
-            try (MethodCreator access = cc.getMethodCreator("access", String.class.getName(), Object.class, String.class)) {
-                ResultHandle objectParam = access.getMethodParam(0);
-                ResultHandle propertyParam = access.getMethodParam(1);
-                ResultHandle castedObjectParam = access.checkCast(objectParam, className.toString());
-                for (FieldInfo fieldInfo : properties) {
-                    ResultHandle propertyName = access.load(fieldInfo.name());
-                    ResultHandle propertyNameEquals = access.invokeVirtualMethod(
-                            ofMethod(Object.class, "equals", boolean.class, Object.class),
-                            propertyName, propertyParam);
-                    BranchResult propertyNameEqualsBranch = access.ifNonZero(propertyNameEquals);
-                    BytecodeCreator propertyNameEqualsTrue = propertyNameEqualsBranch.trueBranch();
-                    ResultHandle result = propertyNameEqualsTrue.invokeVirtualMethod(
-                            ofMethod(className.toString(), "get" + JavaBeanUtil.capitalize(fieldInfo.name()),
-                                    String.class.getName()),
-                            castedObjectParam);
-                    propertyNameEqualsTrue.returnValue(result);
-                }
-                access.throwException(IllegalArgumentException.class, "Property unknown");
-            }
-        }
+            cc.method("access", mc -> {
+                mc.public_();
+                mc.returning(String.class);
+                ParamVar objectParam = mc.parameter("obj", Object.class);
+                ParamVar propertyParam = mc.parameter("property", String.class);
+
+                mc.body(bc -> {
+                    LocalVar castedObjectParam = bc.localVar("castedObj",
+                            bc.cast(objectParam, Jandex2Gizmo.classDescOf(className)));
+                    for (FieldInfo fieldInfo : properties) {
+                        Expr propertyName = Const.of(fieldInfo.name());
+                        Expr propertyNameEquals = bc.invokeVirtual(
+                                MethodDesc.of(Object.class, "equals", boolean.class, Object.class),
+                                propertyName, propertyParam);
+                        bc.if_(propertyNameEquals, trueBlock -> {
+                            Expr result = trueBlock.invokeVirtual(
+                                    ClassMethodDesc.of(Jandex2Gizmo.classDescOf(className),
+                                            "get" + JavaBeanUtil.capitalize(fieldInfo.name()),
+                                            String.class),
+                                    castedObjectParam);
+                            trueBlock.return_(result);
+                        });
+                    }
+                    bc.throw_(IllegalArgumentException.class, "Property unknown");
+                });
+            });
+        });
         return generatedClassName;
     }
 }

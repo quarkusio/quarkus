@@ -43,8 +43,6 @@ import org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames;
 import org.jboss.resteasy.reactive.server.util.MethodId;
 
 import com.fasterxml.jackson.annotation.JsonView;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.exc.MismatchedInputException;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.SynthesisFinishedBuildItem;
@@ -62,7 +60,6 @@ import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
-import io.quarkus.deployment.builditem.RuntimeConfigSetupCompleteBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.resteasy.reactive.common.deployment.JaxRsResourceIndexBuildItem;
@@ -99,6 +96,8 @@ import io.quarkus.security.spi.RolesAllowedConfigExpResolverBuildItem;
 import io.quarkus.vertx.deployment.ReinitializeVertxJsonBuildItem;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.exc.MismatchedInputException;
 
 public class ResteasyReactiveJacksonProcessor {
 
@@ -386,7 +385,6 @@ public class ResteasyReactiveJacksonProcessor {
 
     @Record(ExecutionTime.RUNTIME_INIT)
     @BuildStep
-    @Consume(RuntimeConfigSetupCompleteBuildItem.class)
     @Consume(SynthesisFinishedBuildItem.class)
     public void initializeRolesAllowedConfigExp(ResteasyReactiveServerJacksonRecorder recorder,
             Optional<InitAndValidateRolesAllowedConfigExp> initAndValidateItem) {
@@ -568,8 +566,14 @@ public class ResteasyReactiveJacksonProcessor {
         if (effectiveReturnType.name().equals(ResteasyReactiveDotNames.SET) ||
                 effectiveReturnType.name().equals(ResteasyReactiveDotNames.COLLECTION) ||
                 effectiveReturnType.name().equals(ResteasyReactiveDotNames.LIST)) {
+            if (effectiveReturnType.kind() != Type.Kind.PARAMETERIZED_TYPE) {
+                return null;
+            }
             effectiveReturnType = effectiveReturnType.asParameterizedType().arguments().get(0);
         } else if (effectiveReturnType.name().equals(ResteasyReactiveDotNames.MAP)) {
+            if (effectiveReturnType.kind() != Type.Kind.PARAMETERIZED_TYPE) {
+                return null;
+            }
             effectiveReturnType = effectiveReturnType.asParameterizedType().arguments().get(1);
         }
         return effectiveReturnType;

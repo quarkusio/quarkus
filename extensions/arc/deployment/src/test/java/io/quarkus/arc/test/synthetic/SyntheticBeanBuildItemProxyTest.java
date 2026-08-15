@@ -44,7 +44,7 @@ public class SyntheticBeanBuildItemProxyTest {
                     public void execute(BuildContext context) {
                         BytecodeRecorderImpl bytecodeRecorder = new BytecodeRecorderImpl(true,
                                 TestRecorder.class.getSimpleName(),
-                                "test", "" + TestRecorder.class.hashCode(), true, s -> null);
+                                "test", "" + TestRecorder.class.hashCode(), true);
                         // We need to use reflection due to some class loading problems
                         Object recorderProxy = bytecodeRecorder.getRecordingProxy(TestRecorder.class);
                         try {

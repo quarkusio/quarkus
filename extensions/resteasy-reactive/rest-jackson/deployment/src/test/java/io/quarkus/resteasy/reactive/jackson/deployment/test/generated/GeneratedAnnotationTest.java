@@ -38,19 +38,39 @@ public class GeneratedAnnotationTest extends AbstractGeneratedAnnotationTest {
                                     IgnorePropertiesCreatorRecord.class,
                                     IgnoreAnySetterBean.class,
                                     AnyGetterBean.class,
+                                    FieldAnyGetterBean.class,
+                                    FieldAnySetterBean.class,
                                     ManagedReferenceParent.class,
                                     ManagedReferenceChild.class,
+                                    DateFormatBean.class,
+                                    DateStringShapeWithPatternBean.class,
+                                    DurationFormatBean.class,
+                                    NumberShapedTemporalBean.class,
+                                    ZonedDateTimeFormatBean.class,
                                     FormatShape.class,
                                     FormatBean.class,
+                                    FormatArrayShapeBean.class,
+                                    FormatArrayShapeNoOrderBean.class,
+                                    FormatStringShapeBean.class,
+                                    FormatNumberBooleanBean.class,
+                                    FormatDateTimestampBean.class,
                                     GetterSetterBean.class,
                                     IgnoredType.class,
                                     IgnoreTypeBean.class,
                                     IncludeBean.class,
                                     PropertyOrderBean.class,
                                     RawValueBean.class,
-                                    PackageProtectedBean.class)
+                                    PackageProtectedBean.class,
+                                    SpecialCharPropertyBean.class,
+                                    TestWithJsonPropertyDto.class,
+                                    UnwrappedIgnorePropertiesBean.class,
+                                    UnwrappedIgnorePropertiesBean.User.class,
+                                    UnwrappedWithPrefixBean.class,
+                                    UnwrappedWithPrefixBean.Address.class,
+                                    JavaBeansTransientBean.class)
                             .addAsResource(new StringAsset(
                                     "quarkus.jackson.fail-on-unknown-properties=true\n" +
+                                            "quarkus.jackson.default-view-inclusion=true\n" +
                                             "quarkus.rest.jackson.optimization.enable-reflection-free-serializers=false\n"),
                                     "application.properties");
                 }

@@ -280,6 +280,20 @@ public class ParserTest {
                 + "|}").data("name", "world").render());
         assertEquals("Hello world <strong>", engine.parse("Hello {name} {|<strong>|}").data("name", "world").render());
         assertEquals("Hello {name} world", engine.parse("Hello{| {name} |}{name}").data("name", "world").render());
+
+        // Multi-pipe CDATA: 4 pipes
+        assertEquals("hello", engine.parse("{||||hello||||}").render());
+        // Multi-pipe CDATA: 3 pipes
+        assertEquals("text", engine.parse("{|||text|||}").render());
+        // Multi-pipe CDATA: content with |} inside is safe
+        assertEquals("hello |}world", engine.parse("{||||hello |}world||||}").render());
+        // Multi-pipe CDATA: content with ||} inside is safe
+        assertEquals("x |||}y", engine.parse("{||||x |||}y||||}").render());
+        // Multi-pipe CDATA alongside regular expressions
+        assertEquals("Hello world safe|}end",
+                engine.parse("Hello {name} {||||safe|}end||||}").data("name", "world").render());
+        // Multi-pipe CDATA: content with Qute expressions is not parsed
+        assertEquals("{name}", engine.parse("{|||{name}|||}").render());
     }
 
     @Test

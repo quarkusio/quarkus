@@ -6,6 +6,7 @@ import java.util.stream.Stream;
 import org.hibernate.StatelessSession;
 
 import io.quarkus.hibernate.orm.panache.common.runtime.AbstractStatelessJpaOperations;
+import io.quarkus.panache.common.Sort;
 
 public class JpaStatelessOperations extends AbstractStatelessJpaOperations<PanacheQueryImpl<?>> {
     /**
@@ -14,10 +15,11 @@ public class JpaStatelessOperations extends AbstractStatelessJpaOperations<Panac
     public static final JpaStatelessOperations INSTANCE = new JpaStatelessOperations();
 
     @Override
-    protected PanacheQueryImpl<?> createPanacheQuery(StatelessSession session, String query, String originalQuery,
-            String orderBy,
+    protected PanacheQueryImpl<?> createPanacheQuery(StatelessSession session, Class<?> entityClass, String query,
+            String originalQuery,
+            Sort sort,
             Object paramsArrayOrMap) {
-        return new PanacheQueryImpl<>(session, query, originalQuery, orderBy, paramsArrayOrMap);
+        return new PanacheQueryImpl<>(session, entityClass, query, originalQuery, sort, paramsArrayOrMap);
     }
 
     @Override

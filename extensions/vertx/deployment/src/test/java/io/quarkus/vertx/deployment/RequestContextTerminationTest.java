@@ -42,7 +42,7 @@ public class RequestContextTerminationTest {
     void assertTerminated(String address) throws InterruptedException {
         BlockingQueue<Object> synchronizer = new LinkedBlockingQueue<>();
         Converter.DESTROYED.set(false);
-        eventBus.request(address, "bongo", ar -> {
+        eventBus.request(address, "bongo").onComplete(ar -> {
             if (ar.succeeded()) {
                 try {
                     synchronizer.put(ar.result().body());

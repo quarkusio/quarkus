@@ -1,7 +1,5 @@
 package io.quarkus.funqy.runtime.bindings.knative.events;
 
-import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.lang.reflect.Type;
 import java.time.OffsetDateTime;
 import java.util.Base64;
@@ -11,13 +9,12 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.ObjectReader;
-
 import io.quarkus.funqy.knative.events.AbstractCloudEvent;
 import io.quarkus.funqy.knative.events.CloudEvent;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectReader;
 
 class JsonCloudEventImpl<T> extends AbstractCloudEvent<T> implements CloudEvent<T> {
     String id;
@@ -138,7 +135,7 @@ class JsonCloudEventImpl<T> extends AbstractCloudEvent<T> implements CloudEvent<
 
         if (extensions == null) {
             extensions = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
-            event.fields().forEachRemaining(e -> {
+            event.properties().forEach(e -> {
                 if (!reservedAttributes.contains(e.getKey())) {
                     extensions.put(e.getKey(), e.getValue().textValue());
                 }
@@ -180,12 +177,8 @@ class JsonCloudEventImpl<T> extends AbstractCloudEvent<T> implements CloudEvent<
             return data;
         }
         if ((dataContentType() == null || dataContentType().startsWith("application/json")) && !byte[].class.equals(dataType)) {
-            try {
-                data = reader.readValue(event.get("data"));
-                return data;
-            } catch (IOException e) {
-                throw new UncheckedIOException(e);
-            }
+            data = reader.readValue(event.get("data"));
+            return data;
         } else if (byte[].class.equals(dataType)) {
             try {
                 if (majorSpecVersion() == 0) {
@@ -227,7 +220,7 @@ class JsonCloudEventImpl<T> extends AbstractCloudEvent<T> implements CloudEvent<
                     }
                 }
 
-            } catch (JsonProcessingException e) {
+            } catch (JacksonException e) {
                 throw new RuntimeException(e);
             }
         } else {

@@ -20,7 +20,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.StringTokenizer;
@@ -87,14 +86,7 @@ class OidcDevServicesProcessor {
         // Dev Services are restarted if the "service config" is different then the previous one
         // we can't rely on the static variables, hence the idea in this method is to trust the hash code is
 
-        // TODO: use the builtin hashcode once https://github.com/smallrye/smallrye-config/issues/1462 is fixed
-        int configHashCode = Objects.hash(
-                config.enabled().orElse(true), // goal is to have deterministic value, not correct 'enabled' flag
-                config.accessTokenExpiresIn(),
-                config.idTokenExpiresIn(),
-                safeMapHash(config.roles()));
-
-        return configHashCode + SERVICE_CONFIG_IDENTIFIER_SEPARATOR + getOidcClientSecret()
+        return config.hashCode() + SERVICE_CONFIG_IDENTIFIER_SEPARATOR + getOidcClientSecret()
                 + SERVICE_CONFIG_IDENTIFIER_SEPARATOR + getOidcClientId() + SERVICE_CONFIG_IDENTIFIER_SEPARATOR
                 + getOidcApplicationType();
     }
@@ -109,13 +101,6 @@ class OidcDevServicesProcessor {
             lazyConfigMap.put(CLIENT_ID_CONFIG_KEY, s -> s.oidcClientId);
         }
         return Collections.unmodifiableMap(lazyConfigMap);
-    }
-
-    private static int safeMapHash(Map<?, ?> map) {
-        if (map == null)
-            return 0;
-
-        return map.entrySet().stream().mapToInt(e -> Objects.hash(e.getKey(), e.getValue())).sum();
     }
 
     private static boolean shouldStartServer(OidcDevServicesConfig devServicesConfig,
@@ -407,11 +392,12 @@ class OidcDevServicesProcessor {
 
                 // this is done on delegates because closing Mutiny wrapper can result in unrelated exception
                 // when other tests (not necessarily using this dev services) run after a test using this service
-                anHttpServer.getDelegate().close(httpServerResult -> {
+
+                anHttpServer.getDelegate().close().onComplete(httpServerResult -> {
                     if (httpServerResult != null && httpServerResult.failed()) {
                         LOG.error("Failed to close HTTP Server", httpServerResult.cause());
                     }
-                    aVertx.getDelegate().close(vertxResult -> {
+                    aVertx.getDelegate().close().onComplete(vertxResult -> {
                         if (vertxResult != null && vertxResult.failed()) {
                             LOG.error("Failed to close Vertx instance", vertxResult.cause());
                         }

@@ -137,7 +137,7 @@ export class QwcExtensionLink extends QwcHotReloadElement {
             this._observer.cancel();
         }
         
-        if(!this.embed && this.dynamicUrlMethodName){
+        if(this.dynamicUrlMethodName){
             let jrpc;
             let methodName = this.dynamicUrlMethodName;
             if (this.dynamicUrlMethodName.includes(':')) {
@@ -245,6 +245,7 @@ export class QwcExtensionLink extends QwcHotReloadElement {
                     </span>
                 </a>
                 ${this._renderBadge()}
+                ${this._renderExternalIcon()}
                 `;
         }else{
             return html`<a class="extensionLink" ?router-ignore=true>
@@ -262,6 +263,15 @@ export class QwcExtensionLink extends QwcHotReloadElement {
             }else{
                 return html`<qui-badge tiny pill><span>${this._effectiveLabel}</span></qui-badge>`;
             }
+        }
+    }
+
+    _renderExternalIcon() {
+        if (this.embed && this._effectiveExternalUrl) {
+            if (this._effectiveLabel && this.isHTML(this._effectiveLabel)) {
+                return;
+            }
+            return html`<a style='color: var(--lumo-contrast-80pct);' href='${this._effectiveExternalUrl}' target='_blank'><vaadin-icon class='icon' icon='font-awesome-solid:up-right-from-square'></vaadin-icon></a>`;
         }
     }
 

@@ -33,7 +33,7 @@ public class CertificateUpdateEventListener {
             if (!registrationsToUpdate.isEmpty()) {
                 CountDownLatch latch = new CountDownLatch(registrationsToUpdate.size());
                 for (var registration : registrationsToUpdate) {
-                    registration.webClient.updateSSLOptions(event.tlsConfiguration().getSSLOptions())
+                    registration.webClient.updateSSLOptions(event.tlsConfiguration().getClientSSLOptions())
                             .subscribe().with(
                                     ignored -> {
                                         LOG.infof("The TLS configuration `%s` used by the WebClient of the %s has been updated",

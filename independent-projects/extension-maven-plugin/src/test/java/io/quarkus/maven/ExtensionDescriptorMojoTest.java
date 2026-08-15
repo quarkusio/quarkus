@@ -113,6 +113,69 @@ class ExtensionDescriptorMojoTest extends AbstractMojoTestCase {
     }
 
     @Test
+    public void shouldCreateJsonMetadata()
+            throws Exception {
+
+        ExtensionDescriptorMojo mojo = makeMojo("simple-pom-with-checks-disabled");
+        File jsonFile = getGeneratedExtensionMetadataFile(mojo.project.getBasedir(),
+                "target/classes/META-INF/quarkus-extension.json");
+
+        if (jsonFile.exists()) {
+            Files.delete(jsonFile.toPath());
+        }
+        mojo.execute();
+        assertTrue(jsonFile.exists());
+
+        tools.jackson.databind.ObjectMapper mapper = tools.jackson.databind.json.JsonMapper.builder().build();
+        tools.jackson.databind.JsonNode jsonNode = mapper.readTree(jsonFile);
+        assertNotNull(jsonNode.get("name"));
+        assertEquals("an arbitrary name", jsonNode.get("name").asText());
+        assertNotNull(jsonNode.get("artifact"));
+        assertEquals("io.quackiverse:test-artifact::jar:1.4.2-SNAPSHOT", jsonNode.get("artifact").asText());
+
+    }
+
+    @Test
+    public void shouldFailOnInvalidStatusArray()
+            throws Exception {
+        ExtensionDescriptorMojo mojo = makeMojo("simple-pom-with-checks-disabled");
+
+        Path yamlPath = mojo.project.getBasedir().toPath().resolve("target/classes/META-INF/quarkus-extension.yaml");
+        Files.createDirectories(yamlPath.getParent());
+        Files.writeString(yamlPath, ""
+                + "name: \"an arbitrary name\"\n"
+                + "metadata:\n"
+                + "  status:\n"
+                + "  - \"stable\"\n"
+                + "  - \"deprecated\"\n");
+
+        try {
+            Exception thrown = Assertions.assertThrows(MojoExecutionException.class, mojo::execute);
+            Assertions.assertTrue(thrown.getMessage().contains("Invalid quarkus-extension.yaml metadata"),
+                    "Expected schema validation error but got:\n" + thrown.getMessage());
+            Assertions.assertTrue(thrown.getMessage().contains("status"),
+                    "Expected status field to be mentioned but got:\n" + thrown.getMessage());
+        } finally {
+            Files.deleteIfExists(yamlPath);
+        }
+    }
+
+    @Test
+    public void shouldAcceptDeprecatedStatus()
+            throws Exception {
+        ExtensionDescriptorMojo mojo = makeMojo("simple-pom-with-checks-disabled");
+
+        Path yamlPath = mojo.project.getBasedir().toPath().resolve("target/classes/META-INF/quarkus-extension.yaml");
+        Files.createDirectories(yamlPath.getParent());
+        Files.writeString(yamlPath, ""
+                + "name: \"an arbitrary name\"\n"
+                + "metadata:\n"
+                + "  status: \"deprecated\"\n");
+
+        mojo.execute();
+    }
+
+    @Test
     public void shouldReadLocalParentsForScmInfo()
             throws Exception {
 

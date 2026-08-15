@@ -7,6 +7,7 @@ import io.quarkus.runtime.annotations.ConfigDocDefault;
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.smallrye.config.WithDefault;
 import io.vertx.pgclient.SslMode;
+import io.vertx.pgclient.SslNegotiation;
 
 @ConfigGroup
 public interface DataSourceReactivePostgreSQLConfig {
@@ -24,6 +25,20 @@ public interface DataSourceReactivePostgreSQLConfig {
      */
     @ConfigDocDefault("disable")
     Optional<SslMode> sslMode();
+
+    /**
+     * SSL negotiation mode.
+     * <p>
+     * Determines how SSL/TLS negotiation is performed with the PostgreSQL server:
+     * <ul>
+     * <li>{@link SslNegotiation#POSTGRES} — traditional negotiation; the client sends an SSL request message
+     * before the TLS handshake. Compatible with all PostgreSQL versions.</li>
+     * <li>{@link SslNegotiation#DIRECT} — direct SSL; the TLS handshake starts immediately on connect, with
+     * no prior SSL request message. Requires PostgreSQL 17 or later.</li>
+     * </ul>
+     * When not set, the Vert.x client default applies ({@link SslNegotiation#POSTGRES}).
+     */
+    Optional<SslNegotiation> sslNegotiation();
 
     /**
      * Level 7 proxies can load balance queries on several connections to the actual database.

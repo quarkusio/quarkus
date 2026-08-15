@@ -71,6 +71,7 @@ public class BootstrapAppModelFactory {
     Set<ArtifactKey> reloadableModules = Set.of();
 
     private Collection<io.quarkus.maven.dependency.Dependency> forcedDependencies = List.of();
+    private Set<ArtifactKey> excludedDependencies = Set.of();
 
     private BootstrapAppModelFactory() {
     }
@@ -128,6 +129,12 @@ public class BootstrapAppModelFactory {
     public BootstrapAppModelFactory setForcedDependencies(
             Collection<io.quarkus.maven.dependency.Dependency> forcedDependencies) {
         this.forcedDependencies = forcedDependencies;
+        return this;
+    }
+
+    public BootstrapAppModelFactory setExcludedDependencies(
+            Set<ArtifactKey> excludedDependencies) {
+        this.excludedDependencies = excludedDependencies;
         return this;
     }
 
@@ -256,7 +263,8 @@ public class BootstrapAppModelFactory {
                 }
             }
             CurationResult curationResult = new CurationResult(getAppModelResolver()
-                    .resolveManagedModel(appArtifact, forcedDependencies, managingProject, reloadableModules));
+                    .resolveManagedModel(appArtifact, forcedDependencies, excludedDependencies, managingProject,
+                            reloadableModules));
             if (cachedCpPath != null) {
                 Files.createDirectories(cachedCpPath.getParent());
                 try {
@@ -349,7 +357,7 @@ public class BootstrapAppModelFactory {
                 }
                 modelResolver.relink(appArtifact, appArtifactPath);
                 //we need some way to figure out dependencies here
-                appModel = modelResolver.resolveManagedModel(appArtifact, List.of(), managingProject,
+                appModel = modelResolver.resolveManagedModel(appArtifact, List.of(), Set.of(), managingProject,
                         reloadableModules);
             } catch (AppModelResolverException | IOException e) {
                 throw new RuntimeException("Failed to resolve initial application dependencies", e);

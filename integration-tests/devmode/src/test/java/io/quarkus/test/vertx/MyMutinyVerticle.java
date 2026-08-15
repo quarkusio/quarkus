@@ -13,7 +13,7 @@ public class MyMutinyVerticle extends AbstractVerticle {
     public Uni<Void> asyncStart() {
         return vertx.eventBus().consumer("address")
                 .handler(m -> m.reply("ok-" + id))
-                .completionHandler();
+                .completion();
     }
 
 }

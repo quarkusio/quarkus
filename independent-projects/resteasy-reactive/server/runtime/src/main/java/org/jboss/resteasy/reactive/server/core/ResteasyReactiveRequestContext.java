@@ -162,6 +162,7 @@ public abstract class ResteasyReactiveRequestContext
     private boolean producesChecked;
 
     private RequestMapper.RequestMatch<RestInitialHandler.InitialMatch> initialMatch;
+    private volatile boolean connectionClosed;
 
     public ResteasyReactiveRequestContext(Deployment deployment,
             ThreadSetupAction requestContext, ServerRestHandler[] handlerChain, ServerRestHandler[] abortHandlerChain) {
@@ -213,8 +214,7 @@ public abstract class ResteasyReactiveRequestContext
     public void setupInitialMatchAndRestart(RequestMapper.RequestMatch<RestInitialHandler.InitialMatch> initialMatch) {
         this.initialMatch = initialMatch;
 
-        // add a default close handler that simply discards whatever REST handlers still remain to be run
-        serverResponse().addCloseHandler(new DiscardRemainingRunner(this));
+        serverResponse().addCloseHandler(new ConnectionCloseHandler(this));
 
         restart(initialMatch.value.handlers);
         setMaxPathParams(initialMatch.value.maxPathParams);
@@ -439,16 +439,6 @@ public abstract class ResteasyReactiveRequestContext
         super.close();
     }
 
-    /**
-     * This method ensures that no more handlers will run and that all the resources tied to the request are closed
-     */
-    private void discardRemaining() {
-        int length = getHandlers().length;
-        if (length > 0) {
-            setPosition(length);
-        }
-    }
-
     public LazyResponse getResponse() {
         return response;
     }
@@ -526,7 +516,13 @@ public abstract class ResteasyReactiveRequestContext
         // Note: we could store our cache as normalised, but I'm not sure if the vertx one is normalised
         if (absoluteUri == null) {
             try {
-                absoluteUri = new URI(getScheme(), getAuthority(), path, query, null).toASCIIString();
+                if (scheme != null || authority != null || query != null) {
+                    absoluteUri = new URI(getScheme(), getAuthority(), path, query, null).toASCIIString();
+                } else {
+                    URI original = URI.create(serverRequest().getRequestAbsoluteUri());
+                    absoluteUri = new URI(original.getScheme(), original.getRawAuthority(), path,
+                            original.getRawQuery(), original.getRawFragment()).toASCIIString();
+                }
             } catch (URISyntaxException e) {
                 throw new RuntimeException(e);
             }
@@ -626,7 +622,7 @@ public abstract class ResteasyReactiveRequestContext
 
     public Annotation[] getMethodAnnotations() {
         if (methodAnnotations == null) {
-            if (target == null) {
+            if (target == null || target.getLazyMethod() == null) {
                 return EMPTY_ANNOTATIONS;
             }
             return target.getLazyMethod().getAnnotations();
@@ -869,6 +865,7 @@ public abstract class ResteasyReactiveRequestContext
             }
             String newPath = sb.toString();
             this.path = newPath;
+            this.absoluteUri = null;
             if (this.remaining != null) {
                 this.remaining = newPath.substring(getPathWithoutPrefix().length() - this.remaining.length());
             }
@@ -1217,6 +1214,11 @@ public abstract class ResteasyReactiveRequestContext
     }
 
     @Override
+    protected boolean isHandlerCanceled(int pos) {
+        return connectionClosed && handlers[pos].isCancellable();
+    }
+
+    @Override
     protected abstract Executor getEventLoop();
 
     public abstract Runnable registerTimer(long millis, Runnable task);
@@ -1345,17 +1347,21 @@ public abstract class ResteasyReactiveRequestContext
 
     }
 
-    private static class DiscardRemainingRunner implements Runnable {
+    /**
+     * The idea of this class is to prevent the execution of the remaining handlers
+     * that are cancellable (which all are by default)
+     */
+    private static class ConnectionCloseHandler implements Runnable {
 
         private ResteasyReactiveRequestContext context;
 
-        private DiscardRemainingRunner(ResteasyReactiveRequestContext context) {
+        private ConnectionCloseHandler(ResteasyReactiveRequestContext context) {
             this.context = context;
         }
 
         @Override
         public void run() {
-            context.discardRemaining();
+            context.connectionClosed = true;
             context = null;
         }
     }

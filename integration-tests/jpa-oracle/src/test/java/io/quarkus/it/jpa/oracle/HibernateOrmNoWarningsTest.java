@@ -21,17 +21,24 @@ import io.quarkus.test.junit.QuarkusTest;
 @QuarkusTest
 @QuarkusTestResource(value = LogCollectingTestResource.class, restrictToAnnotatedClass = true, initArgs = {
         @ResourceArg(name = LogCollectingTestResource.LEVEL, value = "WARNING"),
-        @ResourceArg(name = LogCollectingTestResource.INCLUDE, value = "org\\.hibernate\\..*"),
-        // Ignore logs about schema management:
-        // they are unfortunate (https://github.com/quarkusio/quarkus/issues/16204)
-        // but for now we have to live with them.
-        // Ignore logs about JCache region factory being closed "twice", too: the log filter is apparently ignored,
-        // see https://github.com/quarkusio/quarkus/issues/48346
-        @ResourceArg(name = LogCollectingTestResource.EXCLUDE, value = "org\\.hibernate\\.tool\\.schema.*,org\\.hibernate\\.orm\\.cache.*")
+        @ResourceArg(name = LogCollectingTestResource.INCLUDE, value = "org\\.hibernate\\..*")
 })
 public class HibernateOrmNoWarningsTest {
+
+    private static int getOracleMajorVersion() {
+        String version = System.getProperty("oracle.db-version");
+        if (version == null || version.isEmpty()) {
+            version = System.getProperty("oracle.default.version");
+        }
+        if (version == null || version.isEmpty()) {
+            return Integer.MAX_VALUE;
+        }
+        return Integer.parseInt(version.split("\\.")[0]);
+    }
+
     @Test
     public void testNoWarningsOnStartup() {
+        int oracleMajorVersion = getOracleMajorVersion();
         assertThat(LogCollectingTestResource.current().getRecords()
                 // Ignore logs about JDBC fetch size: Oracle's default is very wrong.
                 // See:
@@ -40,7 +47,15 @@ public class HibernateOrmNoWarningsTest {
                 // https://in.relation.to/2025/01/24/jdbc-fetch-size/
                 // https://github.com/hibernate/hibernate-orm/pull/10636
                 // Also, the Hibernate team is in talks with Oracle to get this fixed, so hopefully this will disappear soon.
-                .stream().filter(r -> !r.getMessage().contains("Low default JDBC fetch size")))
+                .stream().filter(r -> !r.getMessage().contains("Low default JDBC fetch size"))
+                // Ignore warnings about dropping non-existent tables on Oracle < 23.
+                // Oracle 23c added "DROP TABLE IF EXISTS", but older versions (19, 21) don't support it,
+                // so Hibernate's drop-and-create schema generation logs a warning (ORA-00942)
+                // when the table doesn't exist yet on the first run.
+                .filter(r -> oracleMajorVersion >= 23
+                        || !LogCollectingTestResource.format(r).contains("ORA-00942"))
+                .filter(r -> oracleMajorVersion >= 23
+                        || !LogCollectingTestResource.format(r).contains("ORA-02289")))
                 // There shouldn't be any warning or error
                 .as("Startup logs (warning or higher)")
                 .extracting(LogCollectingTestResource::format)

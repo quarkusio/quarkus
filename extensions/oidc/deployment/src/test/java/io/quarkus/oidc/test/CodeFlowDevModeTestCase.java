@@ -49,7 +49,10 @@ public class CodeFlowDevModeTestCase {
             CustomTenantConfigResolver.class,
             CustomTokenStateManager.class,
             OidcConfigSource.class,
-            SecretProvider.class
+            SecretProvider.class,
+            TestAuthenticationCompletionAction.class,
+            TestAuthenticationCompletionAction2.class,
+            MultipleAuthCompletionActionsResource.class
     };
 
     @RegisterExtension
@@ -114,6 +117,10 @@ public class CodeFlowDevModeTestCase {
             page = loginForm.getButtonByName("login").click();
 
             assertEquals("alice", page.getBody().asNormalizedText());
+
+            // Both authentication completion actions must've been called exactly once
+            page = webClient.getPage("http://localhost:8080/auth-completion-counts");
+            assertEquals("1:1", page.getBody().asNormalizedText());
 
             Cookie sessionCookie = getSessionCookie(webClient, null);
             assertNotNull(sessionCookie);

@@ -1,5 +1,8 @@
 package io.quarkus.oidc.runtime;
 
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+
 import io.quarkus.oidc.AccessTokenCredential;
 import io.quarkus.oidc.IdTokenCredential;
 import io.quarkus.oidc.common.runtime.OidcConstants;
@@ -12,6 +15,7 @@ import io.quarkus.vertx.http.runtime.security.HttpAuthenticationMechanism;
 import io.quarkus.vertx.http.runtime.security.HttpSecurityUtils;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.Vertx;
+import io.vertx.core.internal.ContextInternal;
 import io.vertx.ext.web.RoutingContext;
 
 abstract class AbstractOidcAuthenticationMechanism {
@@ -52,14 +56,16 @@ abstract class AbstractOidcAuthenticationMechanism {
             final var tokenCredential = (token instanceof IdTokenCredential)
                     ? new AccessTokenCredential(context.get(OidcConstants.ACCESS_TOKEN_VALUE))
                     : token;
-            ctx.putLocal(TokenCredential.class.getName(), tokenCredential);
+            ConcurrentMap<Object, Object> locals = ((ContextInternal) ctx)
+                    .getLocal(ContextInternal.LOCAL_MAP, ConcurrentHashMap::new);
+            locals.put(TokenCredential.class.getName(), tokenCredential);
             return identityProviderManager
                     .authenticate(HttpSecurityUtils.setRoutingContextAttribute(new TokenAuthenticationRequest(token), context))
                     .invoke(new Runnable() {
                         @Override
                         public void run() {
                             // remove as we recommend to acquire TokenCredential via CDI
-                            ctx.removeLocal(TokenCredential.class.getName());
+                            locals.remove(TokenCredential.class.getName());
                         }
                     });
         }

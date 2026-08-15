@@ -51,8 +51,8 @@ import io.quarkus.gizmo2.Expr;
  * <li>{@link #registerScopes()}</li>
  * <li>{@link #registerBeans()}</li>
  * <li>{@link #registerSyntheticInjectionPoints(io.quarkus.arc.processor.BeanRegistrar.RegistrationContext)}</li>
- * <li>{@link BeanDeployment#initBeanByTypeMap()}</li>
  * <li>{@link #registerSyntheticObservers()}</li>
+ * <li>{@link #synthesisFinished()}
  * <li>{@link #initialize(Consumer, List)}</li>
  * <li>{@link #validate(Consumer)}</li>
  * <li>{@link #processValidationErrors(io.quarkus.arc.processor.BeanDeploymentValidator.ValidationContext)}</li>
@@ -146,6 +146,9 @@ public class BeanProcessor {
     /**
      * Analyze the deployment and register all beans and observers declared on the classes. Furthermore, register all synthetic
      * beans provided by bean registrars.
+     * <p>
+     * Note that synthetic bean configurators may be finished after this method completes, but not later
+     * than the {@link #initialize(Consumer, List)} is called.
      *
      * @return the context applied to {@link BeanRegistrar}
      */
@@ -164,6 +167,16 @@ public class BeanProcessor {
 
     public ObserverRegistrar.RegistrationContext registerSyntheticObservers() {
         return beanDeployment.registerSyntheticObservers(observerRegistrars);
+    }
+
+    /**
+     * Notify the bean deployment that all synthetic beans and observers have been registered.
+     * <p>
+     * Must be called after all synthetic bean configurators are finished and before
+     * {@link #initialize(Consumer, List)}.
+     */
+    public void synthesisFinished() {
+        beanDeployment.synthesisFinished();
     }
 
     /**
@@ -573,8 +586,8 @@ public class BeanProcessor {
         registerScopes();
         RegistrationContext registrationContext = registerBeans();
         registerSyntheticInjectionPoints(registrationContext);
-        beanDeployment.initBeanByTypeMap();
         registerSyntheticObservers();
+        synthesisFinished();
         initialize(unsupportedBytecodeTransformer, Collections.emptyList());
         ValidationContext validationContext = validate(unsupportedBytecodeTransformer);
         processValidationErrors(validationContext);

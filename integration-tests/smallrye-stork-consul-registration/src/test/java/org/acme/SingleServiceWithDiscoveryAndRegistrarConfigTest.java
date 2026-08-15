@@ -1,6 +1,8 @@
 package org.acme;
 
 import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.Matchers.hasItem;
+import static org.hamcrest.Matchers.matchesPattern;
 
 import java.util.Map;
 
@@ -42,10 +44,11 @@ public class SingleServiceWithDiscoveryAndRegistrarConfigTest {
 
     @Test
     public void test() {
-        RestAssured.get("http://localhost:8500/v1/agent/service/red-service")
+        RestAssured.get("http://localhost:8500/v1/catalog/service/red-service")
                 .then()
                 .statusCode(200)
-                .body(containsString("\"Service\": \"red-service\""));
+                .body(containsString("\"ServiceName\": \"red-service\""))
+                .body("ServiceID", hasItem(matchesPattern("^red-service::[0-9.]+::8080")));
 
     }
 

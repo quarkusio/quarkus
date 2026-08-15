@@ -16,12 +16,12 @@ import io.opentelemetry.sdk.trace.SpanProcessor;
 import io.opentelemetry.sdk.trace.export.SimpleSpanProcessor;
 import io.opentelemetry.sdk.trace.export.SpanExporter;
 import io.quarkus.opentelemetry.deployment.common.TestUtil;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class LoggingSpanExporterTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest()
+    static final QuarkusExtensionTest TEST = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar.addClass(TestUtil.class))
             .overrideConfigKey("quarkus.otel.traces.exporter", "logging")
             .overrideConfigKey("quarkus.otel.metrics.exporter", "none")

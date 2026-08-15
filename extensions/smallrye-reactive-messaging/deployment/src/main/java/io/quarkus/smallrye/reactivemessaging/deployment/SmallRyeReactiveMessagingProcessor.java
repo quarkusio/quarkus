@@ -5,7 +5,7 @@ import static io.quarkus.smallrye.reactivemessaging.deployment.ReactiveMessaging
 import static io.quarkus.smallrye.reactivemessaging.deployment.ReactiveMessagingDotNames.INCOMINGS;
 import static io.quarkus.smallrye.reactivemessaging.deployment.ReactiveMessagingDotNames.RUN_ON_VIRTUAL_THREAD;
 
-import java.lang.reflect.Modifier;
+import java.lang.constant.ClassDesc;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -29,6 +29,7 @@ import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
+import org.jboss.jandex.gizmo2.Jandex2Gizmo;
 import org.jboss.logging.Logger;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
@@ -45,7 +46,7 @@ import io.quarkus.arc.processor.KotlinUtils;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.builder.item.SimpleBuildItem;
 import io.quarkus.deployment.Feature;
-import io.quarkus.deployment.GeneratedClassGizmoAdaptor;
+import io.quarkus.deployment.GeneratedClassGizmo2Adaptor;
 import io.quarkus.deployment.IsDevelopment;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -53,23 +54,27 @@ import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
+import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
+import io.quarkus.deployment.builditem.GeneratedServiceProviderBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.deployment.metrics.MetricsCapabilityBuildItem;
 import io.quarkus.deployment.recording.RecorderContext;
-import io.quarkus.gizmo.ClassCreator;
-import io.quarkus.gizmo.ClassOutput;
-import io.quarkus.gizmo.FieldDescriptor;
-import io.quarkus.gizmo.MethodCreator;
-import io.quarkus.gizmo.MethodDescriptor;
-import io.quarkus.gizmo.ResultHandle;
+import io.quarkus.gizmo2.Const;
+import io.quarkus.gizmo2.Expr;
+import io.quarkus.gizmo2.Gizmo;
+import io.quarkus.gizmo2.LocalVar;
+import io.quarkus.gizmo2.ParamVar;
+import io.quarkus.gizmo2.desc.ConstructorDesc;
+import io.quarkus.gizmo2.desc.FieldDesc;
 import io.quarkus.runtime.metrics.MetricsFactory;
 import io.quarkus.runtime.util.HashUtil;
 import io.quarkus.smallrye.health.deployment.spi.HealthBuildItem;
 import io.quarkus.smallrye.reactivemessaging.deployment.items.ChannelDirection;
 import io.quarkus.smallrye.reactivemessaging.deployment.items.ConnectorManagedChannelBuildItem;
+import io.quarkus.smallrye.reactivemessaging.deployment.items.CustomInvokerBuildItem;
 import io.quarkus.smallrye.reactivemessaging.deployment.items.InjectedChannelBuildItem;
 import io.quarkus.smallrye.reactivemessaging.deployment.items.InjectedEmitterBuildItem;
 import io.quarkus.smallrye.reactivemessaging.deployment.items.MediatorBuildItem;
@@ -268,17 +273,26 @@ public class SmallRyeReactiveMessagingProcessor {
             List<ConnectorManagedChannelBuildItem> connectorManagedChannels,
             List<InjectedEmitterBuildItem> emitterFields,
             List<InjectedChannelBuildItem> channelFields,
+            List<CustomInvokerBuildItem> customInvokers,
             BuildProducer<GeneratedClassBuildItem> generatedClass,
+            BuildProducer<GeneratedResourceBuildItem> generatedResources,
+            BuildProducer<GeneratedServiceProviderBuildItem> generatedServiceProviders,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<RunTimeConfigurationDefaultBuildItem> defaultConfig,
             ReactiveMessagingConfiguration conf) {
 
-        ClassOutput classOutput = new GeneratedClassGizmoAdaptor(generatedClass, true);
+        Gizmo gizmo = Gizmo
+                .create(new GeneratedClassGizmo2Adaptor(generatedClass, generatedResources, generatedServiceProviders, true));
 
         Set<String> connectorManagedIncomingChannels = connectorManagedChannels.stream()
                 .filter(c -> c.getDirection() == ChannelDirection.INCOMING)
                 .map(ConnectorManagedChannelBuildItem::getName)
                 .collect(Collectors.toSet());
+
+        Map<String, CustomInvokerBuildItem> customInvokerMap = new HashMap<>();
+        for (CustomInvokerBuildItem item : customInvokers) {
+            customInvokerMap.put(item.getMethodId(), item);
+        }
 
         List<QuarkusMediatorConfiguration> mediatorConfigurations = new ArrayList<>(mediatorMethods.size());
         List<WorkerConfiguration> workerConfigurations = new ArrayList<>();
@@ -293,6 +307,9 @@ public class SmallRyeReactiveMessagingProcessor {
         for (MediatorBuildItem mediatorMethod : mediatorMethods) {
             MethodInfo methodInfo = mediatorMethod.getMethod();
             BeanInfo bean = mediatorMethod.getBean();
+
+            String methodId = CustomInvokerBuildItem.mediatorMethodId(methodInfo);
+            CustomInvokerBuildItem customInvoker = customInvokerMap.get(methodId);
 
             if (QuarkusMediatorConfigurationUtil.hasBlockingAnnotation(methodInfo)) {
                 // Just in case both annotation are used, use @Blocking value.
@@ -326,11 +343,12 @@ public class SmallRyeReactiveMessagingProcessor {
                                 Thread.currentThread().getContextClassLoader(), conf.strict(),
                                 consumesFromConnector(methodInfo, connectorManagedIncomingChannels)
                                         ? conf.blockingSignaturesExecutionMode()
-                                        : ReactiveMessagingConfiguration.ExecutionMode.EVENT_LOOP); // disable execution mode setting for inner channels
+                                        : ReactiveMessagingConfiguration.ExecutionMode.EVENT_LOOP,
+                                customInvoker); // disable execution mode setting for inner channels
                 mediatorConfigurations.add(mediatorConfiguration);
 
                 String generatedInvokerName = generateInvoker(bean, methodInfo, isSuspendMethod, mediatorConfiguration,
-                        classOutput);
+                        gizmo, customInvokerMap);
                 /*
                  * We need to register the invoker's constructor for reflection since it will be called inside smallrye.
                  * We could potentially lift this restriction with some extra CDI bean generation, but it's probably not worth
@@ -394,7 +412,14 @@ public class SmallRyeReactiveMessagingProcessor {
      */
     private String generateInvoker(BeanInfo bean, MethodInfo method, boolean isSuspendMethod,
             QuarkusMediatorConfiguration mediatorConfiguration,
-            ClassOutput classOutput) {
+            Gizmo gizmo, Map<String, CustomInvokerBuildItem> customInvokerMap) {
+
+        String methodId = CustomInvokerBuildItem.mediatorMethodId(method);
+        CustomInvokerBuildItem customInvoker = customInvokerMap.get(methodId);
+        if (customInvoker != null) {
+            return customInvoker.getInvokerClassName();
+        }
+
         String baseName;
         if (bean.getImplClazz().enclosingClass() != null) {
             baseName = DotNames.simpleName(bean.getImplClazz().enclosingClass()) + "_"
@@ -420,91 +445,105 @@ public class SmallRyeReactiveMessagingProcessor {
         }
 
         if (!isSuspendMethod) {
-            generateStandardInvoker(method, classOutput, generatedName);
+            generateStandardInvoker(method, gizmo, generatedName);
         } else if (!mediatorConfiguration.getIncoming().isEmpty()) {
-            generateSubscribingCoroutineInvoker(method, classOutput, generatedName);
+            generateSubscribingCoroutineInvoker(method, gizmo, generatedName);
         }
 
         return generatedName.replace('/', '.');
     }
 
-    private void generateStandardInvoker(MethodInfo method, ClassOutput classOutput, String generatedName) {
-        try (ClassCreator invoker = ClassCreator.builder().classOutput(classOutput).className(generatedName)
-                .interfaces(Invoker.class)
-                .build()) {
+    private void generateStandardInvoker(MethodInfo method, Gizmo gizmo, String generatedName) {
+        String dotName = generatedName.replace('/', '.');
+        gizmo.class_(dotName, cc -> {
+            cc.implements_(Invoker.class);
 
             String beanInstanceType = method.declaringClass().name().toString();
-            FieldDescriptor beanInstanceField = invoker.getFieldCreator("beanInstance", beanInstanceType)
-                    .getFieldDescriptor();
+            FieldDesc beanInstanceField = cc.field("beanInstance", fc -> {
+                fc.setType(ClassDesc.of(beanInstanceType));
+            });
 
             // generate a constructor that takes the bean instance as an argument
             // the method parameter needs to be of type Object because that is what is used as the call site in SmallRye
             // Reactive Messaging
-            try (MethodCreator ctor = invoker.getMethodCreator("<init>", void.class, Object.class)) {
-                ctor.setModifiers(Modifier.PUBLIC);
-                ctor.invokeSpecialMethod(MethodDescriptor.ofConstructor(Object.class), ctor.getThis());
-                ResultHandle self = ctor.getThis();
-                ResultHandle beanInstance = ctor.getMethodParam(0);
-                ctor.writeInstanceField(beanInstanceField, self, beanInstance);
-                ctor.returnValue(null);
-            }
+            cc.constructor(ctc -> {
+                ctc.public_();
+                ParamVar beanParam = ctc.parameter("arg0", pc -> pc.setType(Object.class));
+                ctc.body(bc -> {
+                    bc.invokeSpecial(ConstructorDesc.of(Object.class), cc.this_());
+                    bc.set(cc.this_().field(beanInstanceField), beanParam);
+                    bc.return_();
+                });
+            });
 
-            try (MethodCreator invoke = invoker.getMethodCreator(
-                    MethodDescriptor.ofMethod(generatedName, "invoke", Object.class, Object[].class))) {
-
-                int parametersCount = method.parametersCount();
-                String[] argTypes = new String[parametersCount];
-                ResultHandle[] args = new ResultHandle[parametersCount];
-                for (int i = 0; i < parametersCount; i++) {
-                    // the only method argument of io.smallrye.reactive.messaging.Invoker is an object array, so we need to pull out
-                    // each argument and put it in the target method arguments array
-                    args[i] = invoke.readArrayValue(invoke.getMethodParam(0), i);
-                    argTypes[i] = method.parameterType(i).name().toString();
-                }
-                ResultHandle result = invoke.invokeVirtualMethod(
-                        MethodDescriptor.ofMethod(beanInstanceType, method.name(),
-                                method.returnType().name().toString(), argTypes),
-                        invoke.readInstanceField(beanInstanceField, invoke.getThis()), args);
-                if (ReactiveMessagingDotNames.VOID.equals(method.returnType().name())) {
-                    invoke.returnValue(invoke.loadNull());
-                } else {
-                    invoke.returnValue(result);
-                }
-            }
-        }
+            cc.method("invoke", mc -> {
+                mc.public_();
+                mc.returning(Object.class);
+                ParamVar argsParam = mc.parameter("args", pc -> pc.setType(Object[].class));
+                mc.body(bc -> {
+                    int parametersCount = method.parametersCount();
+                    LocalVar[] args = new LocalVar[parametersCount];
+                    for (int i = 0; i < parametersCount; i++) {
+                        args[i] = bc.localVar("arg" + i, bc.get(argsParam.elem(i)));
+                    }
+                    LocalVar beanInstance = bc.localVar("beanInstance",
+                            bc.get(cc.this_().field(beanInstanceField)));
+                    Expr result = bc.invokeVirtual(
+                            Jandex2Gizmo.methodDescOf(method),
+                            beanInstance, List.of(args));
+                    if (ReactiveMessagingDotNames.VOID.equals(method.returnType().name())) {
+                        bc.return_(Const.ofNull(Object.class));
+                    } else {
+                        bc.return_(result);
+                    }
+                });
+            });
+        });
     }
 
-    private void generateSubscribingCoroutineInvoker(MethodInfo method, ClassOutput classOutput, String generatedName) {
-        try (ClassCreator invoker = ClassCreator.builder().classOutput(classOutput).className(generatedName)
-                .superClass(ReactiveMessagingDotNames.ABSTRACT_SUBSCRIBING_COROUTINE_INVOKER.toString())
-                .build()) {
+    private void generateSubscribingCoroutineInvoker(MethodInfo method, Gizmo gizmo, String generatedName) {
+        String dotName = generatedName.replace('/', '.');
+        String superClassName = ReactiveMessagingDotNames.ABSTRACT_SUBSCRIBING_COROUTINE_INVOKER.toString();
+        String continuationType = ReactiveMessagingDotNames.CONTINUATION.toString();
+        gizmo.class_(dotName, cc -> {
+            cc.extends_(ClassDesc.of(superClassName));
 
             // generate a constructor that takes the bean instance as an argument
             // the method parameter type needs to be Object, because that is what is used as the call site in SmallRye
             // Reactive Messaging
-            try (MethodCreator ctor = invoker.getMethodCreator("<init>", void.class, Object.class)) {
-                ctor.setModifiers(Modifier.PUBLIC);
-                ctor.invokeSpecialMethod(
-                        MethodDescriptor.ofConstructor(
-                                ReactiveMessagingDotNames.ABSTRACT_SUBSCRIBING_COROUTINE_INVOKER.toString(),
-                                Object.class.getName()),
-                        ctor.getThis(),
-                        ctor.getMethodParam(0));
-                ctor.returnValue(null);
-            }
+            cc.constructor(ctc -> {
+                ctc.public_();
+                ParamVar beanParam = ctc.parameter("arg0", pc -> pc.setType(Object.class));
+                ctc.body(bc -> {
+                    bc.invokeSpecial(
+                            ConstructorDesc.of(ClassDesc.of(superClassName), Object.class),
+                            cc.this_(),
+                            beanParam);
+                    bc.return_();
+                });
+            });
 
-            try (MethodCreator invoke = invoker.getMethodCreator("invokeBean", Object.class, Object.class, Object[].class,
-                    ReactiveMessagingDotNames.CONTINUATION.toString())) {
-                ResultHandle[] args = new ResultHandle[method.parametersCount()];
-                ResultHandle array = invoke.getMethodParam(1);
-                for (int i = 0; i < method.parametersCount() - 1; ++i) {
-                    args[i] = invoke.readArrayValue(array, i);
-                }
-                args[args.length - 1] = invoke.getMethodParam(2);
-                ResultHandle result = invoke.invokeVirtualMethod(method, invoke.getMethodParam(0), args);
-                invoke.returnValue(result);
-            }
-        }
+            cc.method("invokeBean", mc -> {
+                mc.public_();
+                mc.returning(Object.class);
+                ParamVar beanInstanceParam = mc.parameter("beanInstance", pc -> pc.setType(Object.class));
+                ParamVar arrayParam = mc.parameter("args", pc -> pc.setType(Object[].class));
+                ParamVar continuationParam = mc.parameter("continuation",
+                        pc -> pc.setType(ClassDesc.of(continuationType)));
+                mc.body(bc -> {
+                    int parametersCount = method.parametersCount();
+                    LocalVar[] args = new LocalVar[parametersCount];
+                    for (int i = 0; i < parametersCount - 1; ++i) {
+                        args[i] = bc.localVar("arg" + i, bc.get(arrayParam.elem(i)));
+                    }
+                    args[args.length - 1] = bc.localVar("continuation", continuationParam);
+                    Expr result = bc.invokeVirtual(
+                            Jandex2Gizmo.methodDescOf(method),
+                            beanInstanceParam, List.of(args));
+                    bc.return_(result);
+                });
+            });
+        });
     }
 
     @BuildStep(onlyIf = IsDevelopment.class)

@@ -26,7 +26,8 @@ public class UnsupportedAnnotationWithReflectionFreeSerializersTest extends Abst
                                     "quarkus.rest.jackson.optimization.enable-reflection-free-serializers=true\n"),
                                     "application.properties");
                 }
-            }).setLogRecordPredicate(record -> record.getLevel().equals(Level.INFO)
+            }).traceCategories("io.quarkus.resteasy.reactive.jackson.deployment.processor.JacksonCodeGenerator")
+            .setLogRecordPredicate(record -> record.getLevel().equals(Level.FINE)
                     && record.getLoggerName().equals(
                             "io.quarkus.resteasy.reactive.jackson.deployment.processor.JacksonCodeGenerator"))
             .assertLogRecords(records -> assertThat(records).isNotEmpty());

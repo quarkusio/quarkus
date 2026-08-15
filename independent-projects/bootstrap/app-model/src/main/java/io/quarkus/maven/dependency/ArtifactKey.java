@@ -11,6 +11,18 @@ public interface ArtifactKey extends Comparable<ArtifactKey> {
     }
 
     /**
+     * Creates an artifact key for a JAR artifact with the given groupId and artifactId.
+     * The classifier will be empty and the type will be "jar".
+     *
+     * @param groupId artifact groupId
+     * @param artifactId artifact id
+     * @return artifact key for a JAR artifact
+     */
+    static ArtifactKey of(String groupId, String artifactId) {
+        return new GACT(groupId, artifactId, "", ArtifactCoords.TYPE_JAR);
+    }
+
+    /**
      * Creates an artifact key that consists of an artifact's groupId and artifactId.
      * The classifier and type will be left empty.
      *

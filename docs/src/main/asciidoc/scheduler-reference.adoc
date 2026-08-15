@@ -5,7 +5,6 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Scheduler Reference Guide
 include::_attributes.adoc[]
-:categories: miscellaneous
 :summary: Learn more about the Scheduler extension.
 :numbered:
 :sectnums:
@@ -63,6 +62,9 @@ Some CDI events are fired synchronously and asynchronously when specific events 
 |===
 |Type |Event description
 
+|`io.quarkus.scheduler.StartedExecution`
+|An execution of a scheduled job was started.
+
 |`io.quarkus.scheduler.SuccessfulExecution`
 |An execution of a scheduled job completed successfully.
 
@@ -71,6 +73,9 @@ Some CDI events are fired synchronously and asynchronously when specific events 
 
 |`io.quarkus.scheduler.SkippedExecution`
 |An execution of a scheduled job was skipped.
+
+|`io.quarkus.scheduler.DelayedExecution`
+|An execution of a scheduled job was delayed.
 
 |`io.quarkus.scheduler.SchedulerPaused`
 |The scheduler was paused.
@@ -579,6 +584,46 @@ It is often desirable to disable the scheduler when running the tests.
 The scheduler can be disabled through the runtime config property `quarkus.scheduler.enabled`.
 If set to `false` the scheduler is not started even though the application contains scheduled methods.
 You can even disable the scheduler for particular <<getting-started-testing#testing_different_profiles,Test Profiles>>.
+
+=== Controlling the Scheduler in Tests
+
+In a `@QuarkusTest` the scheduler normally starts after the test application bootstrap, which means that `@Scheduled` methods may be invoked _before_ the test infrastructure is ready; for example, before `@InjectMock` has had a chance to install mocks.
+If a scheduled method depends on a CDI bean that is mocked in the test, the first invocations can observe the real bean instead of the mock.
+
+To avoid this, start the scheduler in _halted_ mode and resume it manually in each test method after all mocks are configured:
+
+.application.properties
+[source,properties]
+----
+%test.quarkus.scheduler.start-mode=halted
+----
+
+.Test class
+[source,java]
+----
+@QuarkusTest
+class MyScheduledTest {
+
+    @Inject
+    Scheduler scheduler;
+
+    @InjectMock
+    MyService mock;
+
+    @Test
+    void testScheduledMethod() throws InterruptedException {
+        Mockito.when(mock.doWork()).thenReturn("test-value");
+        scheduler.resume(); // <1>
+        try {
+            // ...assert scheduled behavior
+        } finally {
+            scheduler.pause(); // <2>
+        }
+    }
+}
+----
+<1> Resume the scheduler after all mocks are configured so that `@Scheduled` methods only observe mocked beans.
+<2> Pause the scheduler again to prevent interference with subsequent test methods.
 
 == Metrics
 

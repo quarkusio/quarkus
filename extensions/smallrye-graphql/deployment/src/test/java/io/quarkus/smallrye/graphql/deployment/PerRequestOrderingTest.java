@@ -1,7 +1,5 @@
 package io.quarkus.smallrye.graphql.deployment;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.concurrent.CompletableFuture;
@@ -25,8 +23,9 @@ import io.restassured.RestAssured;
 import io.smallrye.common.annotation.Blocking;
 
 /**
- * Verifies that ordered blocking GraphQL resolvers serialize <em>per request</em>, not across all
- * requests sharing an event loop.
+ * Verifies that blocking GraphQL resolvers from different requests run concurrently,
+ * and that parallel query fields within a single request are also allowed to run
+ * concurrently (as the GraphQL spec permits).
  */
 public class PerRequestOrderingTest extends AbstractGraphQLTest {
 
@@ -75,24 +74,21 @@ public class PerRequestOrderingTest extends AbstractGraphQLTest {
     }
 
     /**
-     * A single request that selects three parallel root fields. With per-request ordering (and the
-     * default ordered=true), the three resolvers must run one-at-a-time on the worker pool even
-     * though graphql-java's async execution strategy fans them out concurrently.
+     * A single request that selects three parallel root fields. The GraphQL spec allows query
+     * fields to resolve in parallel, and unordered {@code executeBlocking} lets them do so.
      * <p>
-     * Asserts that exactly one resolver is ever parked at a time; a second never shows up while
-     * the first is held.
+     * Asserts that at least 2 resolvers park simultaneously, confirming no within-request
+     * serialization that would deadlock reactive clients (see issue #29141).
      */
     @Test
-    public void parallelFieldsWithinOneRequestAreSerialized() throws Exception {
+    public void parallelFieldsWithinOneRequestRunConcurrently() throws Exception {
         var pool = Executors.newSingleThreadExecutor();
         CompletableFuture<Void> f = null;
         try {
             f = CompletableFuture.runAsync(() -> postOk(getPayload("{ a: lock b: lock c: lock }")), pool);
 
-            assertTrue(ManagedLockResource.locker.awaitParked(1, 5, TimeUnit.SECONDS),
-                    "Expected the first resolver to park within 5s");
-            assertFalse(ManagedLockResource.locker.awaitParked(1, 500, TimeUnit.MILLISECONDS),
-                    "Expected within-request ordering but a second resolver parked concurrently");
+            assertTrue(ManagedLockResource.locker.awaitParked(2, 5, TimeUnit.SECONDS),
+                    "Expected at least 2 resolvers to run concurrently within one request");
         } finally {
             ManagedLockResource.locker.releaseAll();
             if (f != null) {
@@ -100,8 +96,8 @@ public class PerRequestOrderingTest extends AbstractGraphQLTest {
             }
             pool.shutdown();
         }
-        assertEquals(1, ManagedLockResource.maxInFlight.get(),
-                "Within a single request, ordered blocking resolvers must not overlap, but maxInFlight="
+        assertTrue(ManagedLockResource.maxInFlight.get() >= 2,
+                "Expected concurrent execution within a request, but maxInFlight="
                         + ManagedLockResource.maxInFlight.get());
     }
 

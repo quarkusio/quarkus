@@ -16,7 +16,7 @@ public class Schema1MetadataBuilderContributor implements MetadataBuilderContrib
 
             @Override
             public String[] sqlDropStrings(SqlStringGenerationContext context) {
-                return new String[0];
+                return new String[] { "drop schema if exists \"SCHEMA1\"" };
             }
         });
     }

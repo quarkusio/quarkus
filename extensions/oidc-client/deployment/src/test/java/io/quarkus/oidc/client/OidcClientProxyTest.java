@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
@@ -66,7 +67,7 @@ class OidcClientProxyTest {
         var keycloakUrl = new URL(ConfigProvider.getConfig().getValue("keycloak.url", String.class));
         try {
             httpServer.requestHandler(serverReq -> {
-                serverReq.headers().forEach(HEADERS::put);
+                serverReq.headers().forEach((k, v) -> HEADERS.put(k.toLowerCase(Locale.ROOT), v));
                 serverReq.body().onSuccess(serverReqBody -> httpClient
                         .request(serverReq.method(), keycloakUrl.getPort(), keycloakUrl.getHost(), serverReq.path())
                         .flatMap(clientReq -> {
@@ -91,10 +92,10 @@ class OidcClientProxyTest {
 
             // assert proxy configuration
             Awaitility.await().atMost(10, TimeUnit.SECONDS)
-                    .until(() -> HEADERS.containsKey("host") && HEADERS.containsKey("Proxy-Authorization"));
+                    .until(() -> HEADERS.containsKey("host") && HEADERS.containsKey("proxy-authorization"));
             assertTrue(HEADERS.get("host").contains("localhost:"),
                     () -> "Expected host header '%s' to contain 'localhost:'".formatted(HEADERS.get("host")));
-            String proxyAuthorization = HEADERS.get("Proxy-Authorization");
+            String proxyAuthorization = HEADERS.get("proxy-authorization");
             assertTrue(proxyAuthorization.contains("Basic "),
                     () -> "Proxy authorization does not contain basic authentication credentials: " + proxyAuthorization);
             String basicCredentials = new String(Base64.decode(proxyAuthorization.substring("Basic ".length()).trim()),

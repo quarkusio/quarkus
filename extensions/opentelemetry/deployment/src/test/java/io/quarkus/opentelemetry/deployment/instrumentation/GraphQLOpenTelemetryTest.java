@@ -65,6 +65,7 @@ public class GraphQLOpenTelemetryTest {
                             smallrye.graphql.events.enabled=true
                             quarkus.otel.metrics.exporter=none
                             quarkus.otel.traces.exporter=test-span-exporter
+                            quarkus.otel.traces.sampler.arg=1.0d
                             """),
                             "application.properties")
                     .addAsResource(new StringAsset(TestSpanExporterProvider.class.getCanonicalName()),
@@ -124,7 +125,8 @@ public class GraphQLOpenTelemetryTest {
     }
 
     @Test
-    @Disabled // TODO: flaky test, find out how to fix it
+    @Disabled
+    // TODO: flaky test, find out how to fix it
     void nestedCdiBeanInsideQueryTraceTest() throws ExecutionException, InterruptedException {
         String request = getPayload("query {\n" +
                 "  helloAfterSecond\n" +

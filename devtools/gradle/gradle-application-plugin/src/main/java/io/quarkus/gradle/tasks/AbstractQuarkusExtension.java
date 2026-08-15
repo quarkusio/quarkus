@@ -19,6 +19,7 @@ import org.gradle.api.provider.ListProperty;
 import org.gradle.api.provider.MapProperty;
 import org.gradle.api.provider.Property;
 import org.gradle.api.provider.Provider;
+import org.gradle.api.provider.ProviderFactory;
 import org.gradle.api.tasks.SourceSet;
 import org.gradle.process.JavaForkOptions;
 
@@ -92,15 +93,16 @@ public abstract class AbstractQuarkusExtension {
     /**
      * Returns only quarkus-relevant project properties, to avoid registering all project
      * properties as configuration cache inputs.
+     *
+     * Uses {@code gradlePropertiesPrefixedBy} rather than {@code Project.getProperties()}: the latter
+     * enumerates the whole project property bag and is not allowed under Isolated Projects, while the
+     * former returns only the matching keys and is configuration-cache friendly.
      */
     private Map<String, String> getQuarkusRelevantProjectProperties() {
         Map<String, String> result = new HashMap<>();
-        for (Map.Entry<String, ?> entry : project.getProperties().entrySet()) {
-            if (entry.getValue() != null
-                    && (entry.getKey().startsWith("quarkus.") || entry.getKey().startsWith("platform.quarkus."))) {
-                result.put(entry.getKey(), entry.getValue().toString());
-            }
-        }
+        ProviderFactory providers = project.getProviders();
+        result.putAll(providers.gradlePropertiesPrefixedBy("quarkus.").get());
+        result.putAll(providers.gradlePropertiesPrefixedBy("platform.quarkus.").get());
         return result;
     }
 
@@ -151,10 +153,9 @@ public abstract class AbstractQuarkusExtension {
             profile = quarkusBuildProperties.get().get(QUARKUS_PROFILE);
         }
         if (profile == null) {
-            Object p = project.getProperties().get(QUARKUS_PROFILE);
-            if (p != null) {
-                profile = p.toString();
-            }
+            // gradleProperty instead of Project.getProperties().get(...), which is not allowed under
+            // Isolated Projects.
+            profile = project.getProviders().gradleProperty(QUARKUS_PROFILE).getOrNull();
         }
         if (profile == null) {
             profile = "prod";

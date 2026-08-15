@@ -43,8 +43,6 @@ import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-
 import io.mvnpm.importmap.Aggregator;
 import io.mvnpm.importmap.Location;
 import io.mvnpm.importmap.model.Imports;
@@ -62,8 +60,11 @@ import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
 import io.quarkus.deployment.util.IoUtil;
 import io.quarkus.dev.console.DevConsoleManager;
 import io.quarkus.dev.spi.DevModeType;
+import io.quarkus.devjsonrpc.deployment.DeploymentMethodBuildItem;
+import io.quarkus.devjsonrpc.spi.AbstractDevBuildItem;
+import io.quarkus.devjsonrpc.spi.jsonrpc.DeploymentJsonRpcMethod;
+import io.quarkus.devjsonrpc.spi.jsonrpc.RecordedJsonRpcMethod;
 import io.quarkus.devui.deployment.extension.Extension;
-import io.quarkus.devui.spi.AbstractDevUIBuildItem;
 import io.quarkus.devui.spi.Constants;
 import io.quarkus.devui.spi.DevContextBuildItem;
 import io.quarkus.devui.spi.DevUIContent;
@@ -71,8 +72,6 @@ import io.quarkus.devui.spi.buildtime.BuildTimeActionBuildItem;
 import io.quarkus.devui.spi.buildtime.BuildTimeData;
 import io.quarkus.devui.spi.buildtime.QuteTemplateBuildItem;
 import io.quarkus.devui.spi.buildtime.StaticContentBuildItem;
-import io.quarkus.devui.spi.buildtime.jsonrpc.DeploymentJsonRpcMethod;
-import io.quarkus.devui.spi.buildtime.jsonrpc.RecordedJsonRpcMethod;
 import io.quarkus.devui.spi.page.AbstractPageBuildItem;
 import io.quarkus.devui.spi.page.CardPageBuildItem;
 import io.quarkus.devui.spi.page.FooterPageBuildItem;
@@ -83,7 +82,7 @@ import io.quarkus.devui.spi.page.SettingPageBuildItem;
 import io.quarkus.devui.spi.page.UnlistedPageBuildItem;
 import io.quarkus.maven.dependency.ResolvedDependency;
 import io.quarkus.vertx.http.deployment.NonApplicationRootPathBuildItem;
-import io.vertx.core.json.jackson.DatabindCodec;
+import tools.jackson.core.JacksonException;
 
 /**
  * This creates static content that is used in dev UI. For example the index.html and any other data (json) available on build
@@ -361,7 +360,7 @@ public class BuildTimeContentProcessor {
 
         InternalImportMapBuildItem internalImportMapBuildItem = new InternalImportMapBuildItem();
 
-        var mapper = DatabindCodec.mapper().writer();
+        var mapper = io.vertx.core.json.jackson.v3.DatabindCodec.mapper().writer();
         Map<String, String> descriptions = new HashMap<>();
         Map<String, String> mcpDefaultEnabled = new HashMap<>();
         Map<String, String> contentTypes = new HashMap<>();
@@ -387,7 +386,7 @@ public class BuildTimeContentProcessor {
                             contentTypes.put(fullName, contentType);
                         }
                         data.put(key, value);
-                    } catch (JsonProcessingException ex) {
+                    } catch (JacksonException ex) {
                         log.error("Could not create Json Data for Dev UI page", ex);
                     }
                 }
@@ -547,7 +546,7 @@ public class BuildTimeContentProcessor {
             Optional<EffectiveIdeBuildItem> effectiveIdeBuildItem,
             DevUIConfig devUIConfig) {
 
-        BuildTimeConstBuildItem internalBuildTimeData = new BuildTimeConstBuildItem(AbstractDevUIBuildItem.DEV_UI);
+        BuildTimeConstBuildItem internalBuildTimeData = new BuildTimeConstBuildItem(AbstractDevBuildItem.DEV_UI);
 
         addThemeBuildTimeData(internalBuildTimeData, devUIConfig, themeVarsProducer);
         addMenuSectionBuildTimeData(internalBuildTimeData, internalPages, extensionsBuildItem);

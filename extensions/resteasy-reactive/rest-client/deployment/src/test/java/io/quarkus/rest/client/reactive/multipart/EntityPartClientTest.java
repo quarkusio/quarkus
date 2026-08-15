@@ -1,0 +1,88 @@
+package io.quarkus.rest.client.reactive.multipart;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+import java.io.IOException;
+import java.net.URI;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.function.Supplier;
+
+import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.client.Client;
+import jakarta.ws.rs.client.ClientBuilder;
+import jakarta.ws.rs.client.Entity;
+import jakarta.ws.rs.core.EntityPart;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
+
+import org.jboss.shrinkwrap.api.ShrinkWrap;
+import org.jboss.shrinkwrap.api.spec.JavaArchive;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+
+import io.quarkus.test.QuarkusExtensionTest;
+import io.quarkus.test.common.http.TestHTTPResource;
+
+public class EntityPartClientTest {
+
+    @RegisterExtension
+    static final QuarkusExtensionTest TEST = new QuarkusExtensionTest()
+            .setArchiveProducer(new Supplier<>() {
+                @Override
+                public JavaArchive get() {
+                    return ShrinkWrap.create(JavaArchive.class)
+                            .addClasses(EchoResource.class);
+                }
+            });
+
+    @TestHTTPResource
+    URI baseUri;
+
+    @Test
+    void sendAndReceiveEntityParts() throws IOException {
+        List<EntityPart> parts = List.of(
+                EntityPart.withName("greeting")
+                        .content("hello")
+                        .mediaType(MediaType.TEXT_PLAIN_TYPE)
+                        .build(),
+                EntityPart.withName("count")
+                        .content("42")
+                        .mediaType(MediaType.TEXT_PLAIN_TYPE)
+                        .build());
+
+        Client client = ClientBuilder.newClient();
+        try {
+            Response response = client.target(baseUri).path("/echo-parts")
+                    .request(MediaType.TEXT_PLAIN)
+                    .post(Entity.entity(parts, MediaType.MULTIPART_FORM_DATA_TYPE));
+
+            assertThat(response.getStatus()).isEqualTo(200);
+            String body = response.readEntity(String.class);
+            assertThat(body).contains("greeting=hello");
+            assertThat(body).contains("count=42");
+        } finally {
+            client.close();
+        }
+    }
+
+    @Path("/echo-parts")
+    public static class EchoResource {
+
+        @POST
+        @Consumes(MediaType.MULTIPART_FORM_DATA)
+        @Produces(MediaType.TEXT_PLAIN)
+        public String echo(List<EntityPart> parts) throws IOException {
+            List<String> results = new ArrayList<>();
+            for (EntityPart part : parts) {
+                String content = new String(part.getContent().readAllBytes(), StandardCharsets.UTF_8);
+                results.add(part.getName() + "=" + content);
+            }
+            return String.join(",", results);
+        }
+    }
+}

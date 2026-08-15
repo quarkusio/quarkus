@@ -38,6 +38,8 @@ import org.jboss.resteasy.microprofile.client.RestClientProxy;
 import org.jboss.resteasy.microprofile.client.header.ClientHeaderFillingException;
 import org.jboss.resteasy.microprofile.client.header.ClientHeaderProviders;
 
+import io.smallrye.common.annotation.SuppressForbidden;
+
 /**
  * Quarkus version of {@link org.jboss.resteasy.microprofile.client.ProxyInvocationHandler} retaining the ability to
  * create a custom interceptor chain and invoke it manually.
@@ -239,6 +241,7 @@ public class QuarkusProxyInvocationHandler implements InvocationHandler {
      * @param client the client to use
      * @return the new proxy
      */
+    @SuppressForbidden(reason = "REST client proxies require dynamic proxy generation")
     static Object createProxy(final Class<?> resourceInterface, final Object target, final boolean addExtendedInterfaces,
             final Set<Object> providers, final ResteasyClient client) {
         final Class<?>[] interfaces;

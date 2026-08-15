@@ -4,7 +4,8 @@ import jakarta.enterprise.inject.spi.CDI;
 
 import org.jboss.logging.Logger;
 
-import io.quarkus.devui.runtime.comms.JsonRpcRouter;
+import io.quarkus.devjsonrpc.runtime.comms.JsonRpcRouter;
+import io.quarkus.devjsonrpc.runtime.jsonrpc.JsonRpcRequest;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Handler;
 import io.vertx.core.http.ServerWebSocket;
@@ -19,7 +20,7 @@ public class DevUIWebSocketHandler implements Handler<RoutingContext> {
     @Override
     public void handle(RoutingContext event) {
         if (WEBSOCKET.equalsIgnoreCase(event.request().getHeader(UPGRADE)) && !event.request().isEnded()) {
-            event.request().toWebSocket(new Handler<AsyncResult<ServerWebSocket>>() {
+            event.request().toWebSocket().onComplete(new Handler<AsyncResult<ServerWebSocket>>() {
                 @Override
                 public void handle(AsyncResult<ServerWebSocket> event) {
                     if (event.succeeded()) {
@@ -35,10 +36,18 @@ public class DevUIWebSocketHandler implements Handler<RoutingContext> {
         event.next();
     }
 
-    private void addSocket(ServerWebSocket session) {
+    private void addSocket(ServerWebSocket socket) {
         try {
             JsonRpcRouter jsonRpcRouter = CDI.current().select(JsonRpcRouter.class).get();
-            jsonRpcRouter.addSocket(session);
+            DevUISessionManager sessionManager = CDI.current().select(DevUISessionManager.class).get();
+            JavaScriptResponseWriter writer = new JavaScriptResponseWriter(socket);
+            sessionManager.addSession(writer);
+            socket.textMessageHandler((e) -> {
+                JsonRpcRequest jsonRpcRequest = jsonRpcRouter.getJsonRpcCodec().readRequest(e);
+                jsonRpcRouter.route(jsonRpcRequest, writer);
+            }).closeHandler((e) -> {
+                sessionManager.purge();
+            });
         } catch (IllegalStateException ise) {
             LOG.debug("Failed to connect to dev ui ws server, " + ise.getMessage());
         }

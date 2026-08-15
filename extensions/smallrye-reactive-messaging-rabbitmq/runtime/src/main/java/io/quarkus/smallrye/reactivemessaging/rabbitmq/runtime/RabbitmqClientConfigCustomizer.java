@@ -2,20 +2,23 @@ package io.quarkus.smallrye.reactivemessaging.rabbitmq.runtime;
 
 import java.util.Optional;
 
+import javax.net.ssl.SSLContext;
+
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
 import org.eclipse.microprofile.config.Config;
 import org.jboss.logging.Logger;
 
+import com.rabbitmq.client.ConnectionFactory;
+import com.rabbitmq.client.SslContextFactory;
+
 import io.quarkus.tls.TlsConfiguration;
 import io.quarkus.tls.TlsConfigurationRegistry;
-import io.quarkus.tls.runtime.config.TlsConfigUtils;
 import io.smallrye.reactive.messaging.ClientCustomizer;
-import io.vertx.rabbitmq.RabbitMQOptions;
 
 @ApplicationScoped
-public class RabbitmqClientConfigCustomizer implements ClientCustomizer<RabbitMQOptions> {
+public class RabbitmqClientConfigCustomizer implements ClientCustomizer<ConnectionFactory> {
 
     private static final Logger log = Logger.getLogger(RabbitmqClientConfigCustomizer.class);
 
@@ -23,16 +26,27 @@ public class RabbitmqClientConfigCustomizer implements ClientCustomizer<RabbitMQ
     TlsConfigurationRegistry tlsRegistry;
 
     @Override
-    public RabbitMQOptions customize(String channel, Config channelConfig, RabbitMQOptions options) {
+    public ConnectionFactory customize(String channel, Config channelConfig, ConnectionFactory connectionFactory) {
         Optional<String> tlsConfigName = channelConfig.getOptionalValue("tls-configuration-name", String.class);
         if (tlsConfigName.isPresent()) {
             String tlsConfig = tlsConfigName.get();
             Optional<TlsConfiguration> maybeTlsConfig = tlsRegistry.get(tlsConfig);
             if (maybeTlsConfig.isPresent()) {
-                TlsConfigUtils.configure(options, maybeTlsConfig.get());
+                TlsConfiguration tlsConfiguration = maybeTlsConfig.get();
+                connectionFactory.setSslContextFactory(new SslContextFactory() {
+                    @Override
+                    public SSLContext create(String name) {
+                        try {
+                            return tlsConfiguration.createSSLContext();
+                        } catch (Exception e) {
+                            throw new RuntimeException(e);
+                        }
+
+                    }
+                });
                 log.debugf("Configured RabbitMQOptions for channel %s with TLS configuration %s", channel, tlsConfig);
             }
         }
-        return options;
+        return connectionFactory;
     }
 }

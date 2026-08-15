@@ -32,10 +32,7 @@ public class ConfigEntityPUAssigmentUsingOnlyPanacheEntityBaseTest {
             // In a real-world scenario, this would be used only if there are multiple PUs,
             // but this is simpler and enough to reproduce the issue.
             .overrideConfigKey("quarkus.hibernate-orm.packages", EntityExtendingOnlyPanacheEntityBase.class.getPackageName())
-            .setLogRecordPredicate(record -> record.getLevel().intValue() >= Level.WARNING.intValue()
-                    // Ignore logs about JCache region factory being closed "twice": the log filter is apparently ignored,
-                    // see https://github.com/quarkusio/quarkus/issues/48346
-                    && !record.getMessage().contains("HHH90001002"))
+            .setLogRecordPredicate(record -> record.getLevel().intValue() >= Level.WARNING.intValue())
             // We don't expect any warning, in particular not:
             // "Could not find a suitable persistence unit for model classes:"
             .assertLogRecords(records -> assertThat(records).extracting(LOG_FORMATTER::format).isEmpty());

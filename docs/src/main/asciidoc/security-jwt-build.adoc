@@ -6,7 +6,6 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 [id="security-jwt-build"]
 = Build, sign, and encrypt JSON Web Tokens
 include::_attributes.adoc[]
-:categories: security
 :topics: security,jwt
 :extensions: io.quarkus:quarkus-smallrye-jwt-build
 
@@ -347,6 +346,8 @@ You can also consider using a JSON Web Key (JWK) or JSON Web Key Set (JWK Set) f
 ----
 
 You can also use `io.smallrye.jwt.util.KeyUtils` to generate a pair of asymmetric RSA or EC keys. These keys can be stored in `JWK`, `JWK Set`, or `PEM` format.
+
+TIP: The Quarkus CLI can generate PEM-encoded RSA or EC key pairs and configure `application.properties` for you: `quarkus jwt generate-key`. See xref:security-jwt.adoc#generating-keys-with-the-quarkus-cli[Generating keys with the Quarkus CLI] for details.
 
 == SmallRye JWT Builder configuration
 

@@ -51,7 +51,6 @@ import io.quarkus.deployment.IsDevelopment;
 import io.quarkus.deployment.IsProduction;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
-import io.quarkus.deployment.annotations.Consume;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.AdditionalIndexedClassesBuildItem;
@@ -66,7 +65,6 @@ import io.quarkus.deployment.builditem.LogCategoryBuildItem;
 import io.quarkus.deployment.builditem.ModuleEnableNativeAccessBuildItem;
 import io.quarkus.deployment.builditem.NativeImageFeatureBuildItem;
 import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
-import io.quarkus.deployment.builditem.RuntimeConfigSetupCompleteBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageConfigBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageProxyDefinitionBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBundleBuildItem;
@@ -361,7 +359,6 @@ public class KafkaProcessor {
         return new ModuleEnableNativeAccessBuildItem("org.xerial.snappy");
     }
 
-    @Consume(RuntimeConfigSetupCompleteBuildItem.class)
     @BuildStep(onlyIf = IsProduction.class)
     @Record(ExecutionTime.RUNTIME_INIT)
     void checkBoostrapServers(KafkaRecorder recorder, Capabilities capabilities) {

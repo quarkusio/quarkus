@@ -93,7 +93,6 @@ import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
 import io.quarkus.deployment.builditem.GeneratedServiceProviderBuildItem;
-import io.quarkus.deployment.builditem.RuntimeConfigSetupCompleteBuildItem;
 import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyBuildItem;
@@ -527,7 +526,6 @@ public class WebSocketProcessor {
         }
     }
 
-    @Consume(RuntimeConfigSetupCompleteBuildItem.class) // HTTP Upgrade checks may need config during the initialization
     @Consume(SyntheticBeansRuntimeInitBuildItem.class) // SecurityHttpUpgradeCheck is runtime init due to runtime config
     @Record(RUNTIME_INIT)
     @BuildStep

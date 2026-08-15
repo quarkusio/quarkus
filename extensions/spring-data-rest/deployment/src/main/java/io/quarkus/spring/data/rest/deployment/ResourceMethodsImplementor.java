@@ -1,15 +1,15 @@
 package io.quarkus.spring.data.rest.deployment;
 
-import static io.quarkus.gizmo.MethodDescriptor.ofMethod;
-
 import java.lang.annotation.Annotation;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;
 import io.quarkus.arc.InstanceHandle;
-import io.quarkus.gizmo.BytecodeCreator;
-import io.quarkus.gizmo.ClassCreator;
-import io.quarkus.gizmo.ResultHandle;
+import io.quarkus.gizmo2.Const;
+import io.quarkus.gizmo2.LocalVar;
+import io.quarkus.gizmo2.creator.BlockCreator;
+import io.quarkus.gizmo2.creator.ClassCreator;
+import io.quarkus.gizmo2.desc.MethodDesc;
 
 public interface ResourceMethodsImplementor {
 
@@ -33,16 +33,17 @@ public interface ResourceMethodsImplementor {
 
     void implementDelete(ClassCreator classCreator, String repositoryInterface);
 
-    default ResultHandle getRepositoryInstance(BytecodeCreator creator, String repositoryInterface) {
-        ResultHandle arcContainer = creator.invokeStaticMethod(ofMethod(Arc.class, "container", ArcContainer.class));
-        ResultHandle instanceHandle = creator.invokeInterfaceMethod(
-                ofMethod(ArcContainer.class, "instance", InstanceHandle.class, Class.class, Annotation[].class),
-                arcContainer, creator.loadClassFromTCCL(repositoryInterface), creator.newArray(Annotation.class, 0));
-        ResultHandle instance = creator.invokeInterfaceMethod(
-                ofMethod(InstanceHandle.class, "get", Object.class), instanceHandle);
-        creator.ifNull(instance)
-                .trueBranch()
-                .throwException(RuntimeException.class, repositoryInterface + " instance was not found");
+    default LocalVar getRepositoryInstance(BlockCreator bc, String repositoryInterface) {
+        LocalVar arcContainer = bc.localVar("arcContainer",
+                bc.invokeStatic(MethodDesc.of(Arc.class, "container", ArcContainer.class)));
+        LocalVar instanceHandle = bc.localVar("instanceHandle", bc.invokeInterface(
+                MethodDesc.of(ArcContainer.class, "instance", InstanceHandle.class, Class.class, Annotation[].class),
+                arcContainer, bc.classForName(Const.of(repositoryInterface)), bc.newArray(Annotation.class)));
+        LocalVar instance = bc.localVar("instance", bc.invokeInterface(
+                MethodDesc.of(InstanceHandle.class, "get", Object.class), instanceHandle));
+        bc.if_(bc.isNull(instance), trueBranch -> {
+            trueBranch.throw_(RuntimeException.class, repositoryInterface + " instance was not found");
+        });
 
         return instance;
     }

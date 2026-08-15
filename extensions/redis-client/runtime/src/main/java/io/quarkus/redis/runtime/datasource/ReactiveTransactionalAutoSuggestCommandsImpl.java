@@ -4,7 +4,7 @@ import io.quarkus.redis.datasource.autosuggest.GetArgs;
 import io.quarkus.redis.datasource.autosuggest.ReactiveTransactionalAutoSuggestCommands;
 import io.quarkus.redis.datasource.transactions.ReactiveTransactionalRedisDataSource;
 import io.smallrye.mutiny.Uni;
-import io.vertx.mutiny.redis.client.Response;
+import io.vertx.redis.client.Response;
 
 public class ReactiveTransactionalAutoSuggestCommandsImpl<K> extends AbstractTransactionalCommands
         implements ReactiveTransactionalAutoSuggestCommands<K> {

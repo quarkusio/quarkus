@@ -81,6 +81,7 @@ class Parser implements ParserHelper, ParserDelegate, WithOrigin, ErrorInitializ
     private final Deque<Scope> scopeStack;
     private int sectionBlockIdx;
     private boolean ignoreContent;
+    private int cdataPipeCount;
     private AtomicInteger expressionIdGenerator;
     private final List<Function<String, String>> contentFilters;
     private boolean hasLineSeparator;
@@ -331,19 +332,29 @@ class Parser implements ParserHelper, ParserDelegate, WithOrigin, ErrorInitializ
     }
 
     private void cdata(char character) {
-        if (character == END_DELIMITER && buffer.length() > 0
-                && isCdataEnd(buffer.charAt(buffer.length() - 1))) {
+        if (character == CDATA_START_DELIMITER && buffer.length() == 0) {
+            cdataPipeCount++;
+            return;
+        }
+        if (character == END_DELIMITER && buffer.length() >= cdataPipeCount
+                && isCdataEnd()) {
             // End of cdata
             state = State.TEXT;
-            buffer.deleteCharAt(buffer.length() - 1);
+            buffer.delete(buffer.length() - cdataPipeCount, buffer.length());
             flushText();
         } else {
             buffer.append(character);
         }
     }
 
-    private boolean isCdataEnd(char character) {
-        return character == CDATA_END_DELIMITER;
+    private boolean isCdataEnd() {
+        int start = buffer.length() - cdataPipeCount;
+        for (int i = start; i < buffer.length(); i++) {
+            if (buffer.charAt(i) != CDATA_END_DELIMITER) {
+                return false;
+            }
+        }
+        return true;
     }
 
     private void tag(char character) {
@@ -380,6 +391,7 @@ class Parser implements ParserHelper, ParserDelegate, WithOrigin, ErrorInitializ
                 buffer.append(character);
                 state = State.COMMENT;
             } else if (character == CDATA_START_DELIMITER) {
+                cdataPipeCount = 1;
                 state = State.CDATA;
             } else {
                 buffer.append(character);

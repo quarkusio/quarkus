@@ -5,9 +5,11 @@ permissions:
   issues: write
   packages: read
 
-on:
-  schedule:
-    - cron: '0 3 * * *'
+# CI disabled for Vert.x 5 experimental branch - uncomment the 'on' triggers below to re-enable
+#on:
+#  schedule:
+#    - cron: '0 3 * * *'
+on: [workflow_dispatch]
 env:
   LANG: en_US.UTF-8
   MVNW_REPOURL: https://maven-central.storage-download.googleapis.com/maven2
@@ -20,7 +22,7 @@ jobs:
       MAVEN_OPTS: -Xmx2560m
       JBANG_REPO: $HOME/release/repository
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: main
       - name: Get SHA
@@ -29,11 +31,17 @@ jobs:
           echo "sha=$(git rev-parse HEAD)" >> $GITHUB_OUTPUT
       - name: Reclaim Disk Space
         run: .github/ci-prerequisites.sh
-      - name: Set up JDK 17
-        uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v5.2.0
+      - name: Extract base JDK version from POM
+        id: base-jdk
+        run: |
+          BASE_JDK=$(grep -oP '<maven.compiler.release>\K[0-9]+' independent-projects/parent/pom.xml)
+          echo "base-jdk-version=${BASE_JDK}" >> $GITHUB_OUTPUT
+          echo "Base JDK version: ${BASE_JDK}"
+      - name: Set up JDK ${{ steps.base-jdk.outputs.base-jdk-version }}
+        uses: actions/setup-java@03ad4de0992f5dab5e18fcb136590ce7c4a0ac95 # v5.6.0
         with:
           distribution: temurin
-          java-version: 17
+          java-version: ${{ steps.base-jdk.outputs.base-jdk-version }}
       - name: Create maven repo
         run: mkdir -p $HOME/release/repository
       - name: Build and Test

@@ -4,6 +4,7 @@ import java.util.Properties;
 
 import org.junit.jupiter.api.BeforeEach;
 
+import io.quarkus.bootstrap.model.ApplicationModelBuilder;
 import io.quarkus.bootstrap.resolver.TsArtifact;
 import io.quarkus.bootstrap.resolver.TsQuarkusExt;
 import io.quarkus.maven.dependency.ArtifactCoords;
@@ -28,9 +29,14 @@ public class SbomContributionFastJarTest extends SbomContributionTestBase {
         var myLib = TsArtifact.jar("my-lib");
         myLib.addDependency(acmeCommon);
 
+        var bootstrapRunner = TsArtifact.jar("quarkus-bootstrap-runner");
+
         var myExt = new TsQuarkusExt("my-ext");
         myExt.getRuntime().addDependency(myLib);
+        myExt.getRuntime().addDependency(bootstrapRunner);
         myExt.getDeployment().addDependency(otherLib);
+        myExt.setDescriptorProp(ApplicationModelBuilder.RUNNER_PARENT_FIRST_ARTIFACTS,
+                bootstrapRunner.getKey().toString());
 
         return TsArtifact.jar("app", "2.0")
                 .addManagedDependency(platformDescriptor())
@@ -50,7 +56,10 @@ public class SbomContributionFastJarTest extends SbomContributionTestBase {
     @BeforeEach
     public void initExpectedComponents() {
 
-        expectMavenComponent(ArtifactCoords.jar(TsArtifact.DEFAULT_GROUP_ID, "app", "2.0"), comp -> {
+        final ArtifactCoords appCoords = ArtifactCoords.jar(TsArtifact.DEFAULT_GROUP_ID, "app", "2.0");
+        final ArtifactCoords bootstrapRunnerCoords = artifactCoords("quarkus-bootstrap-runner");
+
+        expectMavenComponent(appCoords, comp -> {
             assertDistributionPath(comp, "app/quarkus-application.jar");
             assertVersion(comp, "2.0");
             assertDependencies(comp,
@@ -101,13 +110,29 @@ public class SbomContributionFastJarTest extends SbomContributionTestBase {
         expectMavenComponent(artifactCoords("my-ext"), comp -> {
             assertDistributionPath(comp, "lib/main/io.quarkus.bootstrap.test.my-ext-1.jar");
             assertVersion(comp, TsArtifact.DEFAULT_VERSION);
-            assertDependencies(comp, artifactCoords("my-lib"));
+            assertDependencies(comp,
+                    artifactCoords("my-lib"),
+                    bootstrapRunnerCoords);
             assertDependencyScope(comp, ComponentDescriptor.SCOPE_RUNTIME);
         });
 
+        // quarkus-run.jar depends on boot jars and quarkus-app-dependencies.txt
         expectFileComponent("quarkus-run.jar", comp -> {
             assertVersion(comp, "2.0");
-            assertDependencies(comp, ArtifactCoords.jar(TsArtifact.DEFAULT_GROUP_ID, "app", "2.0"));
+            assertDependencyBomRefs(comp,
+                    toBomRef(bootstrapRunnerCoords),
+                    "pkg:generic/quarkus-app-dependencies.txt@2.0");
+            assertDependencyScope(comp, ComponentDescriptor.SCOPE_RUNTIME);
+        });
+
+        // bootstrap runner depends on app jar, generated-bytecode, and quarkus-application.dat
+        expectMavenComponent(bootstrapRunnerCoords, comp -> {
+            assertDistributionPath(comp, "lib/boot/io.quarkus.bootstrap.test.quarkus-bootstrap-runner-1.jar");
+            assertVersion(comp, TsArtifact.DEFAULT_VERSION);
+            assertDependencyBomRefs(comp,
+                    toBomRef(appCoords),
+                    "pkg:generic/generated-bytecode.jar@2.0",
+                    "pkg:generic/quarkus-application.dat@2.0");
             assertDependencyScope(comp, ComponentDescriptor.SCOPE_RUNTIME);
         });
 

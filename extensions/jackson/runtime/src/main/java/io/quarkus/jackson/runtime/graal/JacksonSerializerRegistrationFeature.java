@@ -11,11 +11,13 @@ import javax.xml.namespace.QName;
 import org.graalvm.nativeimage.hosted.Feature;
 import org.graalvm.nativeimage.hosted.RuntimeReflection;
 
-import com.fasterxml.jackson.databind.deser.std.DateDeserializers;
-import com.fasterxml.jackson.databind.ext.CoreXMLDeserializers;
-import com.fasterxml.jackson.databind.ext.CoreXMLSerializers;
-import com.fasterxml.jackson.databind.ser.std.SqlDateSerializer;
-import com.fasterxml.jackson.databind.ser.std.SqlTimeSerializer;
+import tools.jackson.databind.ext.CoreXMLDeserializers;
+import tools.jackson.databind.ext.QNameSerializer;
+import tools.jackson.databind.ext.XMLGregorianCalendarSerializer;
+import tools.jackson.databind.ext.sql.JavaSqlDateDeserializer;
+import tools.jackson.databind.ext.sql.JavaSqlDateSerializer;
+import tools.jackson.databind.ext.sql.JavaSqlTimeSerializer;
+import tools.jackson.databind.ext.sql.JavaSqlTimestampDeserializer;
 
 /**
  * Registers Jackson serializers/deserializers for reflection only when their corresponding
@@ -35,18 +37,19 @@ public class JacksonSerializerRegistrationFeature implements Feature {
     public void beforeAnalysis(BeforeAnalysisAccess access) {
         // java.sql serializers/deserializers
         registerWhenReachable(access, new Class<?>[] { Date.class }, true,
-                SqlDateSerializer.class,
-                DateDeserializers.SqlDateDeserializer.class);
+                JavaSqlDateSerializer.class,
+                JavaSqlDateDeserializer.class);
 
         registerWhenReachable(access, new Class<?>[] { Time.class }, true,
-                SqlTimeSerializer.class);
+                JavaSqlTimeSerializer.class);
 
         registerWhenReachable(access, new Class<?>[] { Timestamp.class }, true,
-                DateDeserializers.TimestampDeserializer.class);
+                JavaSqlTimestampDeserializer.class);
 
-        // CoreXMLSerializers/CoreXMLDeserializers handle XMLGregorianCalendar, QName, and Duration
+        // CoreXMLDeserializers handles XMLGregorianCalendar, QName, and Duration
         registerWhenReachable(access, new Class<?>[] { XMLGregorianCalendar.class, QName.class, Duration.class }, false,
-                CoreXMLSerializers.class,
+                QNameSerializer.class,
+                XMLGregorianCalendarSerializer.class,
                 CoreXMLDeserializers.class);
     }
 

@@ -7,8 +7,6 @@ Requires `hibernate-search-orm-elasticsearch` + `hibernate-orm` (or `hibernate-o
 
 ```properties
 quarkus.hibernate-search-orm.elasticsearch.version=9
-quarkus.hibernate-orm.schema-management.strategy=drop-and-create
-%prod.quarkus.hibernate-orm.schema-management.strategy=update
 ```
 
 Dev Services starts Elasticsearch automatically. The version property must match — check the Dev Services log for the actual version started.

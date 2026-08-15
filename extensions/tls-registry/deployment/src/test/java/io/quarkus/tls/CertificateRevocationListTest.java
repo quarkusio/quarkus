@@ -31,8 +31,8 @@ public class CertificateRevocationListTest {
     void test() {
         TlsConfiguration def = certificates.getDefault().orElseThrow();
         TlsConfiguration foo = certificates.get("foo").orElseThrow();
-        assertThat(def.getSSLOptions().getCrlValues()).hasSize(1);
-        assertThat(foo.getSSLOptions().getCrlValues()).hasSize(1);
+        assertThat(def.getServerSSLOptions().getCrlValues()).hasSize(1);
+        assertThat(foo.getServerSSLOptions().getCrlValues()).hasSize(1);
     }
 
 }

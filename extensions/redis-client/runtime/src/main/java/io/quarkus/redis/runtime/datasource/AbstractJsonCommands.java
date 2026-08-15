@@ -13,8 +13,8 @@ import io.smallrye.mutiny.Uni;
 import io.vertx.core.json.Json;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
-import io.vertx.mutiny.redis.client.Command;
-import io.vertx.mutiny.redis.client.Response;
+import io.vertx.redis.client.Command;
+import io.vertx.redis.client.Response;
 
 public class AbstractJsonCommands<K> extends AbstractRedisCommands {
     private static final JsonSetArgs JSON_SET_DEFAULT = new JsonSetArgs();

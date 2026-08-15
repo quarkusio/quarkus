@@ -37,6 +37,7 @@ import io.quarkus.test.common.http.TestHTTPResource;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.subscription.MultiEmitter;
 import io.vertx.core.Vertx;
+import io.vertx.core.VertxException;
 
 public class MultiByteFileTest {
     public static final int BYTES_SENT = 5_000_000; // 5 megs
@@ -137,7 +138,7 @@ public class MultiByteFileTest {
                 () -> {
                     long iteration = i.getAndIncrement();
                     if (iteration > BYTES_SENT / 2) {
-                        throw new RuntimeException("forced");
+                        throw VertxException.noStackTrace("forced");
                     }
                     return (byte) ((iteration + 1) % 123);
                 }).atMost(BYTES_SENT);

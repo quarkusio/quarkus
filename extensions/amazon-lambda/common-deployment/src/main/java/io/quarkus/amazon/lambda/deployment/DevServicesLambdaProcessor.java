@@ -14,6 +14,8 @@ import io.quarkus.amazon.lambda.runtime.AmazonLambdaApi;
 import io.quarkus.amazon.lambda.runtime.LambdaHotReplacementRecorder;
 import io.quarkus.amazon.lambda.runtime.MockEventServer;
 import io.quarkus.amazon.lambda.runtime.MockEventServerConfig;
+import io.quarkus.deployment.Capabilities;
+import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.IsLiveReloadSupportedByLaunchMode;
 import io.quarkus.deployment.IsProduction;
@@ -55,6 +57,7 @@ public class DevServicesLambdaProcessor {
     @BuildStep(onlyIfNot = IsProduction.class) // This is required for testing so run it even if devservices.enabled=false
     public void startEventServer(LaunchModeBuildItem launchModeBuildItem,
             LambdaBuildConfig config,
+            Capabilities capabilities,
             Optional<EventServerOverrideBuildItem> override,
             Optional<EventServerPortOverrideBuildItem> portOverride,
             BuildProducer<DevServicesResultBuildItem> devServicePropertiesProducer) {
@@ -78,7 +81,16 @@ public class DevServicesLambdaProcessor {
         String portPropertySuffix = isTest ? "test-port" : "dev-port";
         String propName = "quarkus.lambda.mock-event-server." + portPropertySuffix;
 
-        int overridePort = portOverride.map(EventServerPortOverrideBuildItem::getPort).orElse(Integer.MIN_VALUE);
+        int resolvedOverridePort = portOverride.map(EventServerPortOverrideBuildItem::getPort).orElse(Integer.MIN_VALUE);
+        // Both the Lambda mock event server and Vert.x HTTP default to 8080 in dev mode.
+        // When HTTP is present, use an ephemeral port for the event server to avoid the conflict.
+        // amazon-lambda-http / amazon-lambda-rest may already supply EventServerPortOverrideBuildItem(0).
+        if (resolvedOverridePort < 0
+                && launchMode == LaunchMode.DEVELOPMENT
+                && capabilities.isPresent(Capability.VERTX_HTTP)) {
+            resolvedOverridePort = 0;
+        }
+        final int overridePort = resolvedOverridePort;
 
         // No compose support, and no using of external services, so no need to discover existing services
 

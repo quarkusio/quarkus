@@ -7,7 +7,6 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 :extension-status: preview
 :devtools-no-gradle:
 include::_attributes.adoc[]
-:categories: cloud
 :summary: This guide explains Funqy's AWS Lambda binding.
 :topics: aws,lambda,serverless,function,cloud,funqy
 :extensions: io.quarkus:quarkus-funqy-amazon-lambda

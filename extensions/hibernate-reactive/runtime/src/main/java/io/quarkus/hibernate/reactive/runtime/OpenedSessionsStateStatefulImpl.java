@@ -11,6 +11,9 @@ public class OpenedSessionsStateStatefulImpl extends OpenedSessionsState<Mutiny.
         return sessionFactory.createSession();
     }
 
+    protected OpenedSessionsStateStatefulImpl() {
+    }
+
     @Override
     protected Class<Mutiny.Session> getSessionType() {
         return Mutiny.Session.class;
@@ -24,5 +27,10 @@ public class OpenedSessionsStateStatefulImpl extends OpenedSessionsState<Mutiny.
     @Override
     protected Uni<Void> flushSession(Mutiny.Session session) {
         return session.flush();
+    }
+
+    @Override
+    protected Mutiny.Transaction currentTransaction(Mutiny.Session session) {
+        return session.currentTransaction();
     }
 }

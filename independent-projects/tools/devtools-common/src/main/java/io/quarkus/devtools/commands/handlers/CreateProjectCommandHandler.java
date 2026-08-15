@@ -249,6 +249,7 @@ public class CreateProjectCommandHandler implements QuarkusCommandHandler {
                     .addCodestarts(invocation.getValue(EXTRA_CODESTARTS, Set.of()))
                     .noBuildToolWrapper(invocation.getValue(NO_BUILDTOOL_WRAPPER, false))
                     .noDockerfiles(invocation.getValue(NO_DOCKERFILES, false))
+                    .useConfigDir(invocation.getValue(USE_CONFIG_DIR, false))
                     .addData(depInfo.getPlatformProjectData())
                     .addData(platformData)
                     .addData(toCodestartData(invocation.getValues()))

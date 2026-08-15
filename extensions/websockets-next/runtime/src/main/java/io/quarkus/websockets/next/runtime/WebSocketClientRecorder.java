@@ -1,6 +1,7 @@
 package io.quarkus.websockets.next.runtime;
 
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
 
 import io.quarkus.runtime.annotations.RecordableConstructor;
@@ -20,7 +21,9 @@ public class WebSocketClientRecorder {
             public Object get() {
                 Context context = Vertx.currentContext();
                 if (context != null && VertxContext.isDuplicatedContext(context)) {
-                    Object connection = context.getLocal(ContextSupport.WEB_SOCKET_CONN_KEY);
+                    Object connection = context
+                            .getLocal(VertxContext.DATA_MAP_LOCAL, ConcurrentHashMap::new)
+                            .get(ContextSupport.WEB_SOCKET_CONN_KEY);
                     if (connection != null) {
                         return connection;
                     }

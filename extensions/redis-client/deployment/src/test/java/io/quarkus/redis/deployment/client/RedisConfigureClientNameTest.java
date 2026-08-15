@@ -12,8 +12,8 @@ import io.quarkus.redis.client.RedisClientName;
 import io.quarkus.redis.datasource.RedisDataSource;
 import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.common.QuarkusTestResource;
-import io.vertx.mutiny.redis.client.Response;
 import io.vertx.redis.client.Command;
+import io.vertx.redis.client.Response;
 
 @QuarkusTestResource(RedisTestResource.class)
 public class RedisConfigureClientNameTest {

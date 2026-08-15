@@ -50,7 +50,7 @@ public class SSLOptionsCompositionTest {
     @Test
     void testFullSSLOptionsComposition() {
         TlsConfiguration tlsConfig = certificates.get("full").orElseThrow();
-        SSLOptions options = tlsConfig.getSSLOptions();
+        SSLOptions options = tlsConfig.getServerSSLOptions();
 
         assertThat(options).isNotNull();
         assertThat(options.getKeyCertOptions()).isNotNull();
@@ -68,7 +68,7 @@ public class SSLOptionsCompositionTest {
     @Test
     void testMinimalSSLOptionsHaveDefaults() {
         TlsConfiguration tlsConfig = certificates.get("minimal").orElseThrow();
-        SSLOptions options = tlsConfig.getSSLOptions();
+        SSLOptions options = tlsConfig.getServerSSLOptions();
 
         assertThat(options).isNotNull();
         assertThat(options.getKeyCertOptions()).isNull();

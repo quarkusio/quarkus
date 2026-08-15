@@ -807,6 +807,35 @@ public abstract class AbstractSimpleJsonTest {
     }
 
     @Test
+    public void testJsonAliasSameAsFieldName() {
+        String uuid = "a1b2c3d4-e5f6-7890-abcd-ef1234567890";
+
+        // Test using the alias "documentId"
+        RestAssured
+                .with()
+                .body("{\"name\":\"test\",\"documentId\":\"" + uuid + "\"}")
+                .contentType("application/json; charset=utf-8")
+                .post("/simple/json-alias-same-as-field-name-echo")
+                .then()
+                .statusCode(200)
+                .contentType("application/json")
+                .body("name", Matchers.is("test"))
+                .body("id", Matchers.is(uuid));
+
+        // Test using the field name "id" which is also listed in @JsonAlias
+        RestAssured
+                .with()
+                .body("{\"name\":\"test2\",\"id\":\"" + uuid + "\"}")
+                .contentType("application/json; charset=utf-8")
+                .post("/simple/json-alias-same-as-field-name-echo")
+                .then()
+                .statusCode(200)
+                .contentType("application/json")
+                .body("name", Matchers.is("test2"))
+                .body("id", Matchers.is(uuid));
+    }
+
+    @Test
     public void testRecordWithEmptyConstructorEcho() {
         RestAssured
                 .with()
@@ -818,6 +847,48 @@ public abstract class AbstractSimpleJsonTest {
                 .contentType("application/json")
                 .body("name", Matchers.is("Bart"))
                 .body("age", Matchers.is(5));
+    }
+
+    @Test
+    public void testPojoWithNoArgConstructorEcho() {
+        RestAssured
+                .with()
+                .body("{\"name\":\"hello\",\"description\":\"world\"}")
+                .contentType("application/json; charset=utf-8")
+                .post("/simple/no-arg-ctor-pojo-echo")
+                .then()
+                .statusCode(200)
+                .contentType("application/json")
+                .body("name", Matchers.is("hello"))
+                .body("description", Matchers.is("world"));
+    }
+
+    @Test
+    public void testPojoWithNoMatchingConstructorEcho() {
+        RestAssured
+                .with()
+                .body("{\"name\":\"hello\",\"description\":\"world\"}")
+                .contentType("application/json; charset=utf-8")
+                .post("/simple/no-matching-ctor-pojo-echo")
+                .then()
+                .statusCode(200)
+                .contentType("application/json")
+                .body("name", Matchers.is("hello"))
+                .body("description", Matchers.is("world"));
+    }
+
+    @Test
+    public void testPojoWithMultipleConstructorsEcho() {
+        RestAssured
+                .with()
+                .body("{\"name\":\"hello\",\"description\":\"world\"}")
+                .contentType("application/json; charset=utf-8")
+                .post("/simple/multi-ctor-pojo-echo")
+                .then()
+                .statusCode(200)
+                .contentType("application/json")
+                .body("name", Matchers.is("hello"))
+                .body("description", Matchers.is("world"));
     }
 
     @Test
@@ -924,6 +995,26 @@ public abstract class AbstractSimpleJsonTest {
                 .then()
                 .statusCode(200)
                 .body(Matchers.equalTo(Integer.toString(795)));
+    }
+
+    @Test
+    void testJsonValueInheritedFromInterface() {
+        RestAssured.given()
+                .queryParam("value", "ENABLED")
+                .get("/simple/json-value-inherited-from-interface")
+                .then()
+                .statusCode(200)
+                .body(Matchers.equalTo("\"ENABLED\""));
+    }
+
+    @Test
+    void testJsonValueInheritedFromInterfaceTwoLevel() {
+        RestAssured.given()
+                .queryParam("value", "ENABLED")
+                .get("/simple/json-value-inherited-from-interface-two-level")
+                .then()
+                .statusCode(200)
+                .body(Matchers.equalTo("\"ENABLED\""));
     }
 
     @Test
@@ -1040,46 +1131,6 @@ public abstract class AbstractSimpleJsonTest {
 
     @Test
     public void testPrimitiveTypesBean() {
-        RestAssured
-                .with()
-                .body("""
-                        {
-                        "charPrimitive":"b",
-                        "characterPrimitive":"c",
-                        "shortPrimitive":4,
-                        "shortInstance":5,
-                        "intPrimitive":6,
-                        "integerInstance":7,
-                        "longPrimitive":8,
-                        "longInstance":9,
-                        "floatPrimitive":10.3,
-                        "floatInstance":11.4,
-                        "doublePrimitive":12.5,
-                        "doubleInstance":13.6,
-                        "booleanPrimitive":true,
-                        "booleanInstance":false
-                        }
-                        """)
-                .contentType("application/json; charset=utf-8")
-                .post("/simple/primitive-types-bean")
-                .then()
-                .statusCode(200)
-                .contentType("application/json")
-                .body("charPrimitive", Matchers.is("b"))
-                .body("characterPrimitive", Matchers.is("c"))
-                .body("shortPrimitive", Matchers.equalTo(4))
-                .body("shortInstance", Matchers.equalTo(5))
-                .body("intPrimitive", Matchers.equalTo(6))
-                .body("integerInstance", Matchers.equalTo(7))
-                .body("longPrimitive", Matchers.equalTo(8))
-                .body("longInstance", Matchers.equalTo(9))
-                .body("floatPrimitive", Matchers.equalTo(10.3F))
-                .body("floatInstance", Matchers.equalTo(11.4F))
-                .body("doublePrimitive", Matchers.equalTo(12.5F))
-                .body("doubleInstance", Matchers.equalTo(13.6F))
-                .body("booleanPrimitive", Matchers.equalTo(true))
-                .body("booleanInstance", Matchers.equalTo(false));
-
         // Note: characters are handled weirdly on the Jackson side, we cannot fully test them.
         RestAssured
                 .with()
@@ -1181,6 +1232,86 @@ public abstract class AbstractSimpleJsonTest {
     }
 
     @Test
+    public void testNullBoxedFieldsPresentInRecord() {
+        // Reproducer for https://github.com/quarkusio/quarkus/issues/55137
+        // Null boxed Integer/Boolean fields must be serialized as null, not omitted
+        RestAssured
+                .with()
+                .body("""
+                        {
+                        "characterPrimitive":"c"
+                        }
+                        """)
+                .contentType("application/json; charset=utf-8")
+                .post("/simple/primitive-types-record")
+                .then()
+                .statusCode(200)
+                .contentType("application/json")
+                .body("$", hasKey("shortInstance"))
+                .body("$", hasKey("integerInstance"))
+                .body("$", hasKey("longInstance"))
+                .body("$", hasKey("floatInstance"))
+                .body("$", hasKey("doubleInstance"))
+                .body("$", hasKey("booleanInstance"));
+    }
+
+    @Test
+    public void testNullBoxedFieldsPresentInBean() {
+        // Reproducer for https://github.com/quarkusio/quarkus/issues/55137
+        // Null boxed Integer/Boolean fields must be serialized as null, not omitted
+        RestAssured
+                .with()
+                .body("""
+                        {
+                        "characterPrimitive":"c"
+                        }
+                        """)
+                .contentType("application/json; charset=utf-8")
+                .post("/simple/primitive-types-bean")
+                .then()
+                .statusCode(200)
+                .contentType("application/json")
+                .body("$", hasKey("shortInstance"))
+                .body("$", hasKey("integerInstance"))
+                .body("$", hasKey("longInstance"))
+                .body("$", hasKey("floatInstance"))
+                .body("$", hasKey("doubleInstance"))
+                .body("$", hasKey("booleanInstance"));
+    }
+
+    @Test
+    public void testNullCharacterFieldInBean() {
+        // Reproducer for https://github.com/quarkusio/quarkus/issues/55519
+        // Null boxed Character field must be serialized as null without NPE
+        RestAssured
+                .with()
+                .body("{}")
+                .contentType("application/json; charset=utf-8")
+                .post("/simple/primitive-types-bean")
+                .then()
+                .statusCode(200)
+                .contentType("application/json")
+                .body("$", hasKey("characterPrimitive"))
+                .body("characterPrimitive", Matchers.nullValue());
+    }
+
+    @Test
+    public void testNullCharacterFieldInRecord() {
+        // Reproducer for https://github.com/quarkusio/quarkus/issues/55519
+        // Null boxed Character field must be serialized as null without NPE
+        RestAssured
+                .with()
+                .body("{}")
+                .contentType("application/json; charset=utf-8")
+                .post("/simple/primitive-types-record")
+                .then()
+                .statusCode(200)
+                .contentType("application/json")
+                .body("$", hasKey("characterPrimitive"))
+                .body("characterPrimitive", Matchers.nullValue());
+    }
+
+    @Test
     void testShouldDeserializePolymorphicItems() {
         RestAssured
                 .with()
@@ -1278,6 +1409,72 @@ public abstract class AbstractSimpleJsonTest {
                 .statusCode(200)
                 .body("item.type", CoreMatchers.is("type_a"))
                 .body("item.value", CoreMatchers.is("hello"));
+    }
+
+    @Test
+    void objectNode_shouldPreserveFieldNames() {
+        given()
+                .body("{\"name\":\"\",\"limit\":42}")
+                .contentType("application/json")
+                .when()
+                .post("/simple/object-node")
+                .then()
+                .statusCode(200)
+                .contentType("application/json")
+                .body("name", is(""))
+                .body("limit", is(42));
+    }
+
+    @Test
+    void testJsonCreatorRequiredPropertyEnforced() {
+        // Omit the required "name" property — should fail with 400
+        RestAssured
+                .with()
+                .body("{\"value\":\"hello\"}")
+                .contentType("application/json")
+                .post("/simple/required-creator-property")
+                .then()
+                .statusCode(400);
+    }
+
+    @Test
+    void testJsonCreatorRequiredPropertyPresent() {
+        // Include the required "name" property — should succeed
+        RestAssured
+                .with()
+                .body("{\"name\":\"test\",\"value\":\"hello\"}")
+                .contentType("application/json")
+                .post("/simple/required-creator-property")
+                .then()
+                .statusCode(200)
+                .body("name", CoreMatchers.is("test"))
+                .body("value", CoreMatchers.is("hello"));
+    }
+
+    @Test
+    void testJsonCreatorWithPolymorphicProperty() {
+        // A @JsonCreator parameter with a polymorphic (@JsonTypeInfo) type cannot be handled by the
+        // generated reflection-free deserializer and must fall back to the reflection-based one
+        RestAssured
+                .with()
+                .body("{\"item\":{\"type\":\"type_a\",\"value\":\"hello\"}}")
+                .contentType("application/json")
+                .post("/simple/polymorphic-creator-property")
+                .then()
+                .statusCode(200)
+                .body("item.value", CoreMatchers.is("hello"));
+    }
+
+    @Test
+    void testJsonCreatorWithPolymorphicPropertyMissing() {
+        // Omit the required polymorphic "item" property — should fail with 400
+        RestAssured
+                .with()
+                .body("{}")
+                .contentType("application/json")
+                .post("/simple/polymorphic-creator-property")
+                .then()
+                .statusCode(400);
     }
 
     @Test

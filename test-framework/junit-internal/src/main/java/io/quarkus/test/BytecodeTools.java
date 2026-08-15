@@ -3,6 +3,7 @@ package io.quarkus.test;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -70,6 +71,29 @@ class BytecodeTools {
         options.put(IFernflowerPreferences.REMOVE_SYNTHETIC, "0");
         options.put(IFernflowerPreferences.REMOVE_BRIDGE, "0");
         return Map.copyOf(options);
+    }
+
+    static void dumpClassBytes(Map<String, byte[]> classes, Path outputDir) throws IOException {
+        for (Map.Entry<String, byte[]> entry : classes.entrySet()) {
+            Path outputFile = outputDir.resolve(entry.getKey());
+            Files.createDirectories(outputFile.getParent());
+            Files.write(outputFile, entry.getValue());
+        }
+    }
+
+    static Map<String, byte[]> loadClassBytes(Path inputDir) throws IOException {
+        Map<String, byte[]> result = new HashMap<>();
+        try (var walk = Files.walk(inputDir)) {
+            walk.filter(Files::isRegularFile).forEach(file -> {
+                try {
+                    String relativePath = inputDir.relativize(file).toString();
+                    result.put(relativePath, Files.readAllBytes(file));
+                } catch (IOException e) {
+                    throw new UncheckedIOException(e);
+                }
+            });
+        }
+        return result;
     }
 
     static InMemoryClassDiff diff(Map<String, byte[]> reference, Map<String, byte[]> current) {

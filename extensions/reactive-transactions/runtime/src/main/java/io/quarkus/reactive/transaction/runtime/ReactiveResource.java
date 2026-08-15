@@ -8,4 +8,8 @@ public interface ReactiveResource {
     Uni<?> beforeCommit(Context context);
 
     Uni<?> afterCommit(Context context);
+
+    default boolean isMarkedForRollback(Context context) {
+        return false;
+    }
 }

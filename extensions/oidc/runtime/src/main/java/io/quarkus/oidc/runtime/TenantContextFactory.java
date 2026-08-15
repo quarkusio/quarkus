@@ -301,6 +301,14 @@ final class TenantContextFactory {
                 LOG.warn(
                         "Session age extension will not be effective because 'quarkus.oidc.token.refresh-expired=true' is not set");
             }
+            if (!oidcConfig.token().refreshExpired()
+                    && !oidcConfig.token().refreshTokenCacheTimeToLive().isZero()) {
+                throw new ConfigurationException(
+                        "'" + getConfigPropertyForTenant(tenantId, "token.refresh-expired")
+                                + "' must be enabled to use '"
+                                + getConfigPropertyForTenant(tenantId, "token.refresh-token-cache-time-to-live")
+                                + "'");
+            }
         }
 
         if (oidcConfig.tokenStateManager()
@@ -492,9 +500,11 @@ final class TenantContextFactory {
                 OidcRequestFilter authFilter = new OidcRequestFilter() {
                     @Override
                     public Uni<Void> filter(OidcRequestFilterContext context) {
-                        OidcProviderClientImpl.setHttpAuthorizationForDiscovery(context.request(),
-                                clientCredentials, oidcConfig);
-                        return Uni.createFrom().voidItem();
+                        return OidcProviderClientImpl.withAsyncCredentials(clientCredentials.clientAssertionProvider())
+                                .invoke(asyncCredentials -> OidcProviderClientImpl.setHttpAuthorizationForDiscovery(
+                                        context.request(),
+                                        clientCredentials, oidcConfig, asyncCredentials))
+                                .replaceWithVoid();
                     }
                 };
                 discoveryFilters.computeIfAbsent(OidcEndpoint.Type.DISCOVERY, k -> new ArrayList<>()).add(authFilter);

@@ -41,6 +41,7 @@ public class OpenTelemetrySpanSecurityEventsTest {
                             quarkus.otel.security-events.enabled=true
                             quarkus.otel.metrics.exporter=none
                             quarkus.otel.security-events.event-types=AUTHENTICATION_SUCCESS,AUTHORIZATION_SUCCESS,OTHER
+                            quarkus.otel.traces.sampler.arg=1.0d
                             """), "application.properties"));
 
     @Inject

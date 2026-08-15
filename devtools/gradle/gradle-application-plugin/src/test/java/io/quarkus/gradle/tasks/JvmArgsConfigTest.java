@@ -14,9 +14,9 @@ import java.util.List;
 import org.apache.commons.io.FileUtils;
 import org.gradle.testkit.runner.BuildResult;
 import org.gradle.testkit.runner.BuildTask;
-import org.gradle.testkit.runner.GradleRunner;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
+
+import io.quarkus.gradle.testing.BaseGradleTest;
 
 /**
  * Test that verifies the Quarkus Gradle plugin properly configures JVM arguments and system property
@@ -26,16 +26,13 @@ import org.junit.jupiter.api.io.TempDir;
  * - jvmArgs("--add-opens=java.base/java.lang=ALL-UNNAMED")
  * - jvmArgs("--add-exports=java.base/jdk.internal.module=ALL-UNNAMED")
  */
-public class JvmArgsConfigTest {
+public class JvmArgsConfigTest extends BaseGradleTest {
 
     private static final String LOGGING_MANAGER_PROP_NAME = "java.util.logging.manager";
     private static final String LOGGING_MANAGER_PROP_VALUE = "org.jboss.logmanager.LogManager";
     private static final String OPENS_LANG_INVOKE = "--add-opens=java.base/java.lang.invoke=ALL-UNNAMED";
     private static final String OPENS_LANG = "--add-opens=java.base/java.lang=ALL-UNNAMED";
     private static final String EXPORTS_INTERNAL_MODULE = "--add-exports=java.base/jdk.internal.module=ALL-UNNAMED";
-
-    @TempDir
-    Path testProjectDir;
 
     @Test
     void testJvmArgsAndSystemPropsAreConfigured() throws IOException, URISyntaxException {
@@ -44,11 +41,7 @@ public class JvmArgsConfigTest {
         FileUtils.copyDirectory(new File(url.toURI()), testProjectDir.toFile());
         FileUtils.copyFile(new File("../gradle.properties"), testProjectDir.resolve("gradle.properties").toFile());
 
-        BuildResult result = GradleRunner.create()
-                .withPluginClasspath()
-                .withProjectDir(testProjectDir.toFile())
-                .withArguments("test", "--info", "--stacktrace")
-                .build();
+        BuildResult result = buildResult("test");
 
         BuildTask testResult = result.task(":test");
         assertThat(testResult).isNotNull();

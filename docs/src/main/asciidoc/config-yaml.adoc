@@ -6,7 +6,6 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 = YAML configuration
 include::_attributes.adoc[]
 :diataxis-type: howto
-:categories: core
 :summary: Optionally, use application.yaml instead of application.properties to configure your application.
 :topics: configuration
 :extensions: io.quarkus:quarkus-config-yaml
@@ -85,8 +84,8 @@ quarkus:
       url: jdbc:postgresql://localhost:5432/quarkus_test
 
   hibernate-orm:
-    database:
-      generation: drop-and-create
+    schema-management:
+      strategy: create
 
   oidc:
     enabled: true

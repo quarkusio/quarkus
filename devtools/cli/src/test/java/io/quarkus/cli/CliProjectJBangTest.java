@@ -168,21 +168,6 @@ public class CliProjectJBangTest {
     }
 
     @Test
-    public void testCreateArgJava17() throws Exception {
-        CliDriver.Result result = CliDriver.execute(workspaceRoot, "create", "app", "--jbang",
-                "-e", "-B", "--verbose",
-                "--java", "17");
-
-        // We don't need to retest this, just need to make sure all the arguments were passed through
-        Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode, "Expected OK return code." + result);
-
-        Path javaMain = validateJBangSourcePackage(project, ""); // no package name
-        String source = CliDriver.readFileAsString(javaMain);
-        Assertions.assertTrue(source.contains("//JAVA 17"),
-                "Generated source should contain //JAVA 17. Found:\n" + source);
-    }
-
-    @Test
     public void testCreateArgJava21() throws Exception {
         CliDriver.Result result = CliDriver.execute(workspaceRoot, "create", "app", "--jbang",
                 "-e", "-B", "--verbose",

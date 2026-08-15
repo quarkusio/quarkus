@@ -182,12 +182,12 @@ public class HttpBinderConfiguration {
         return "http.server.push";
     }
 
-    public String getHttpServerWebSocketConnectionsName() {
-        return "http.server.websocket.connections";
+    public String getHttpServerRequestBodySizeName() {
+        return "http.server.request.body.size";
     }
 
-    public String getHttpClientWebSocketConnectionsName() {
-        return "http.client.websocket.connections";
+    public String getHttpServerWebSocketConnectionsName() {
+        return "http.server.websocket.connections";
     }
 
     public String getHttpClientRequestsName() {

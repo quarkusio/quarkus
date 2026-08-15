@@ -8,7 +8,7 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
-import java.io.UnsupportedEncodingException;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -460,24 +460,6 @@ public class CreateProjectMojoIT extends QuarkusPlatformAwareMojoTestBase {
     }
 
     @Test
-    public void testProjectGenerationFromScratchWithJava17() throws MavenInvocationException, IOException {
-        testDir = initEmptyProject("projects/project-generation-with-java17");
-        assertThat(testDir).isDirectory();
-        invoker = initInvoker(testDir);
-
-        Properties properties = new Properties();
-        properties.put("javaVersion", "17");
-
-        InvocationResult result = setup(properties);
-        assertThat(result.getExitCode()).isZero();
-
-        testDir = new File(testDir, "code-with-quarkus");
-        assertThat(new File(testDir, "pom.xml")).isFile();
-        assertThat(FileUtils.readFileToString(new File(testDir, "pom.xml"), "UTF-8"))
-                .contains("maven.compiler.release>17<");
-    }
-
-    @Test
     public void testProjectGenerationFromScratchWithJava21() throws MavenInvocationException, IOException {
         testDir = initEmptyProject("projects/project-generation-with-java21");
         assertThat(testDir).isDirectory();
@@ -493,25 +475,6 @@ public class CreateProjectMojoIT extends QuarkusPlatformAwareMojoTestBase {
         assertThat(new File(testDir, "pom.xml")).isFile();
         assertThat(FileUtils.readFileToString(new File(testDir, "pom.xml"), "UTF-8"))
                 .contains("maven.compiler.release>21<");
-    }
-
-    @Test
-    public void testProjectGenerationFromScratchWithGradleJava17() throws MavenInvocationException, IOException {
-        testDir = initEmptyProject("projects/project-generation-with-gradle-java17");
-        assertThat(testDir).isDirectory();
-        invoker = initInvoker(testDir);
-
-        Properties properties = new Properties();
-        properties.put("javaVersion", "17");
-        properties.put("buildTool", "gradle");
-
-        InvocationResult result = setup(properties);
-        assertThat(result.getExitCode()).isZero();
-
-        testDir = new File(testDir, "code-with-quarkus");
-        assertThat(new File(testDir, "build.gradle")).isFile();
-        assertThat(FileUtils.readFileToString(new File(testDir, "build.gradle"), "UTF-8"))
-                .contains("sourceCompatibility = JavaVersion.VERSION_17");
     }
 
     @Test
@@ -599,8 +562,7 @@ public class CreateProjectMojoIT extends QuarkusPlatformAwareMojoTestBase {
         assertThat(greeting).containsIgnoringCase("hello");
     }
 
-    private InvocationResult setup(Properties params)
-            throws MavenInvocationException, FileNotFoundException, UnsupportedEncodingException {
+    private InvocationResult setup(Properties params) throws MavenInvocationException, FileNotFoundException {
 
         params.setProperty("platformGroupId", ToolsConstants.IO_QUARKUS);
         params.setProperty("platformArtifactId", "quarkus-bom");
@@ -615,8 +577,8 @@ public class CreateProjectMojoIT extends QuarkusPlatformAwareMojoTestBase {
         request.setProperties(params);
 
         File log = new File(testDir, "build-create-" + testDir.getName() + ".log");
-        PrintStreamLogger logger = new PrintStreamLogger(new PrintStream(new FileOutputStream(log), false, "UTF-8"),
-                InvokerLogger.DEBUG);
+        PrintStreamLogger logger = new PrintStreamLogger(
+                new PrintStream(new FileOutputStream(log), false, StandardCharsets.UTF_8), InvokerLogger.DEBUG);
         invoker.setLogger(logger);
         return invoker.execute(request);
     }

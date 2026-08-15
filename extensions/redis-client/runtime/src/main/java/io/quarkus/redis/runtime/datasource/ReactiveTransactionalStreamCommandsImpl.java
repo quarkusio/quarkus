@@ -15,7 +15,7 @@ import io.quarkus.redis.datasource.stream.XReadGroupArgs;
 import io.quarkus.redis.datasource.stream.XTrimArgs;
 import io.quarkus.redis.datasource.transactions.ReactiveTransactionalRedisDataSource;
 import io.smallrye.mutiny.Uni;
-import io.vertx.mutiny.redis.client.Response;
+import io.vertx.redis.client.Response;
 
 public class ReactiveTransactionalStreamCommandsImpl<K, F, V> extends AbstractTransactionalCommands
         implements ReactiveTransactionalStreamCommands<K, F, V> {

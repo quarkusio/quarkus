@@ -9,12 +9,12 @@ import java.util.Map;
 
 import jakarta.inject.Inject;
 
-import org.elasticsearch.client.Request;
-import org.elasticsearch.client.RestClient;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledOnOs;
 import org.junit.jupiter.api.condition.OS;
 
+import co.elastic.clients.transport.rest5_client.low_level.Request;
+import co.elastic.clients.transport.rest5_client.low_level.Rest5Client;
 import io.quarkus.test.common.DevServicesContext;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.QuarkusTestProfile;
@@ -46,7 +46,7 @@ public class HibernateSearchElasticsearchWithElasticsearchJavaClientDevServicesT
     DevServicesContext context;
 
     @Inject
-    RestClient client;
+    Rest5Client client;
 
     @Test
     public void testDevServicesProperties() {
@@ -60,7 +60,7 @@ public class HibernateSearchElasticsearchWithElasticsearchJavaClientDevServicesT
                 .statusCode(200)
                 .body(is("0"));
 
-        assertThat(client.performRequest(new Request("GET", "/")).getStatusLine().getStatusCode())
+        assertThat(client.performRequest(new Request("GET", "/")).getStatusCode())
                 .isEqualTo(200);
 
     }

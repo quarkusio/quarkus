@@ -23,6 +23,7 @@ import io.quarkus.vertx.http.runtime.security.ChallengeData;
 import io.quarkus.vertx.http.runtime.security.HttpAuthenticationMechanism;
 import io.quarkus.vertx.http.runtime.security.HttpCredentialTransport;
 import io.smallrye.mutiny.Uni;
+import io.vertx.core.http.Cookie;
 import io.vertx.ext.web.RoutingContext;
 
 @ApplicationScoped
@@ -130,7 +131,8 @@ public class OidcAuthenticationMechanism implements HttpAuthenticationMechanism 
 
     private static void setTenantIdAttribute(RoutingContext context) {
         if (context.get(OidcUtils.TENANT_ID_ATTRIBUTE) == null) {
-            for (String cookieName : context.cookieMap().keySet()) {
+            for (Cookie cookie : context.request().cookies()) {
+                String cookieName = cookie.getName();
                 if (OidcUtils.isSessionCookie(cookieName)) {
                     setTenantIdAttribute(context, OidcUtils.SESSION_COOKIE_NAME, cookieName, true);
                     break;

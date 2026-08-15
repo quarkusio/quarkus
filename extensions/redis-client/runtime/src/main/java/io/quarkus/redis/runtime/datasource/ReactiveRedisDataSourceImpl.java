@@ -9,8 +9,6 @@ import java.util.List;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-
 import io.quarkus.redis.datasource.ReactiveRedisDataSource;
 import io.quarkus.redis.datasource.autosuggest.ReactiveAutoSuggestCommands;
 import io.quarkus.redis.datasource.bitmap.ReactiveBitMapCommands;
@@ -38,12 +36,13 @@ import io.quarkus.redis.datasource.transactions.TransactionResult;
 import io.quarkus.redis.datasource.value.ReactiveValueCommands;
 import io.smallrye.mutiny.Uni;
 import io.vertx.mutiny.core.Vertx;
-import io.vertx.mutiny.redis.client.Command;
 import io.vertx.mutiny.redis.client.Redis;
 import io.vertx.mutiny.redis.client.RedisAPI;
 import io.vertx.mutiny.redis.client.RedisConnection;
-import io.vertx.mutiny.redis.client.Request;
-import io.vertx.mutiny.redis.client.Response;
+import io.vertx.redis.client.Command;
+import io.vertx.redis.client.Request;
+import io.vertx.redis.client.Response;
+import tools.jackson.core.type.TypeReference;
 
 public class ReactiveRedisDataSourceImpl implements ReactiveRedisDataSource, RedisCommandExecutor {
 
@@ -232,16 +231,6 @@ public class ReactiveRedisDataSourceImpl implements ReactiveRedisDataSource, Red
     public Uni<Response> execute(Command command, String... args) {
         nonNull(command, "command");
         Request request = Request.cmd(command);
-        for (String arg : args) {
-            request.arg(arg);
-        }
-        return execute(request);
-    }
-
-    @Override
-    public Uni<Response> execute(io.vertx.redis.client.Command command, String... args) {
-        nonNull(command, "command");
-        Request request = Request.newInstance(io.vertx.redis.client.Request.cmd(command));
         for (String arg : args) {
             request.arg(arg);
         }

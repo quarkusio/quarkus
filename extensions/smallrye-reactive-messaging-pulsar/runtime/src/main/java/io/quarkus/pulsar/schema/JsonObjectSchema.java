@@ -7,6 +7,7 @@ import org.apache.pulsar.common.schema.SchemaType;
 
 import io.netty.buffer.ByteBuf;
 import io.vertx.core.buffer.Buffer;
+import io.vertx.core.internal.buffer.BufferInternal;
 import io.vertx.core.json.JsonObject;
 
 public class JsonObjectSchema extends AbstractSchema<JsonObject> {
@@ -22,7 +23,7 @@ public class JsonObjectSchema extends AbstractSchema<JsonObject> {
     public JsonObject decode(ByteBuf byteBuf) {
         if (byteBuf == null)
             return null;
-        Buffer buffer = Buffer.buffer(byteBuf);
+        Buffer buffer = BufferInternal.buffer(byteBuf);
         return buffer.toJsonObject();
     }
 

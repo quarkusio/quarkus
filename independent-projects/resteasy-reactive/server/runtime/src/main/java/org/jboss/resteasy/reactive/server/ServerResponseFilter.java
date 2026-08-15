@@ -66,4 +66,11 @@ public @interface ServerResponseFilter {
      * The priority with which this response filter will be executed
      */
     int priority() default Priorities.USER;
+
+    /**
+     * Whether the filter can be cancelled when the client drops the connection.
+     * Set to {@code false} to ensure this filter runs even when the client closes
+     * the connection before the response is completed.
+     */
+    boolean cancellable() default true;
 }

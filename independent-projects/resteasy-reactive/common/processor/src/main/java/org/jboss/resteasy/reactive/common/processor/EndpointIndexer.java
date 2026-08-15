@@ -17,6 +17,7 @@ import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNa
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.DOUBLE;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.DUMMY_ELEMENT_TYPE;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.ENCODED;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.ENTITY_PART;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.FLOAT;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.FORM_PARAM;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.GET;
@@ -134,7 +135,6 @@ import org.jboss.resteasy.reactive.common.model.MethodParameter;
 import org.jboss.resteasy.reactive.common.model.ParameterType;
 import org.jboss.resteasy.reactive.common.model.ResourceClass;
 import org.jboss.resteasy.reactive.common.model.ResourceMethod;
-import org.jboss.resteasy.reactive.common.processor.TargetJavaVersion.Status;
 import org.jboss.resteasy.reactive.common.processor.scanning.ApplicationScanningResult;
 import org.jboss.resteasy.reactive.common.processor.scanning.ResteasyReactiveScanner;
 import org.jboss.resteasy.reactive.common.processor.scanning.ScannedSerializer;
@@ -165,13 +165,12 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
     protected static final String[] EMPTY_STRING_ARRAY = new String[] {};
     private static final String[] PRODUCES_PLAIN_TEXT_NEGOTIATED = new String[] { MediaType.TEXT_PLAIN, MediaType.WILDCARD };
     private static final String[] PRODUCES_PLAIN_TEXT = new String[] { MediaType.TEXT_PLAIN };
+    private static final String MULTIPART_MESSAGE_BODY_WRITER = "org.jboss.resteasy.reactive.server.core.multipart.MultipartMessageBodyWriter";
     public static final String CDI_WRAPPER_SUFFIX = "$$CDIWrapper";
 
     public static final String METHOD_CONTEXT_CUSTOM_RETURN_TYPE_KEY = "METHOD_CONTEXT_CUSTOM_RETURN_TYPE_KEY";
     public static final String METHOD_CONTEXT_ANNOTATION_STORE = "ANNOTATION_STORE";
     public static final String METHOD_PRODUCES = "METHOD_PRODUCES";
-
-    private static final boolean JDK_SUPPORTS_VIRTUAL_THREADS;
 
     static {
         primitiveTypes = Map.ofEntries(
@@ -207,14 +206,6 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
                 entry(CHARACTER, Character.class),
                 entry(BIG_DECIMAL, BigDecimal.class),
                 entry(BIG_INTEGER, BigInteger.class));
-
-        boolean isJDKCompatible = true;
-        try {
-            Class.forName("java.lang.ThreadBuilders");
-        } catch (ClassNotFoundException e) {
-            isJDKCompatible = false;
-        }
-        JDK_SUPPORTS_VIRTUAL_THREADS = isJDKCompatible;
     }
 
     protected final IndexView index;
@@ -238,7 +229,6 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
     private final Set<DotName> parameterContainerTypes;
     private final MultipartReturnTypeIndexerExtension multipartReturnTypeIndexerExtension;
     private final TargetJavaVersion targetJavaVersion;
-
     private final Function<ClassInfo, Supplier<Boolean>> isDisabledCreator;
 
     private final Predicate<Map<DotName, AnnotationInstance>> skipMethodParameter;
@@ -665,7 +655,8 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
                         || type == ParameterType.MULTI_PART_FORM) {
                     // transform the bean param
                     formParamRequired |= handleBeanParam(actualEndpointInfo, paramType, methodParameters, i, fileFormNames);
-                } else if (type == ParameterType.FORM || type == ParameterType.MULTI_PART_DATA_INPUT) {
+                } else if (type == ParameterType.FORM || type == ParameterType.MULTI_PART_DATA_INPUT
+                        || type == ParameterType.ENTITY_PART_LIST) {
                     formParamRequired = true;
                 }
             }
@@ -736,19 +727,30 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
                         streamElementType = defaultProducesForType[0];
                     }
                 } else if (MediaType.MULTIPART_FORM_DATA.equals(produces[0])) {
-                    if (RESPONSE.equals(nonAsyncReturnType.name())) {
-                        throw new DeploymentException(
-                                String.format(
-                                        "Endpoints that produce a Multipart result cannot return '%s' - consider returning '%s' instead. Offending method is '%s#%s'",
-                                        RESPONSE,
-                                        REST_RESPONSE,
-                                        currentMethodInfo.declaringClass().name(), currentMethodInfo));
+                    if (RESPONSE.equals(nonAsyncReturnType.name())
+                            || REST_RESPONSE.equals(nonAsyncReturnType.name())) {
+                        returnsMultipart = true;
+                        additionalWriters.add(
+                                MULTIPART_MESSAGE_BODY_WRITER,
+                                MediaType.MULTIPART_FORM_DATA,
+                                LIST.toString());
+                    } else if (nonAsyncReturnType.kind() == Kind.PARAMETERIZED_TYPE
+                            && nonAsyncReturnType.asParameterizedType().name().equals(LIST)
+                            && !nonAsyncReturnType.asParameterizedType().arguments().isEmpty()
+                            && nonAsyncReturnType.asParameterizedType().arguments().get(0).name()
+                                    .equals(ENTITY_PART)) {
+                        returnsMultipart = true;
+                        additionalWriters.add(
+                                MULTIPART_MESSAGE_BODY_WRITER,
+                                MediaType.MULTIPART_FORM_DATA,
+                                LIST.toString());
+                    } else {
+                        // Handle multipart form data responses
+                        ClassInfo multipartClassInfo = index.getClassByName(nonAsyncReturnType.name());
+                        returnsMultipart = multipartReturnTypeIndexerExtension.handleMultipartForReturnType(
+                                additionalWriters,
+                                multipartClassInfo, index);
                     }
-
-                    // Handle multipart form data responses
-                    ClassInfo multipartClassInfo = index.getClassByName(nonAsyncReturnType.name());
-                    returnsMultipart = multipartReturnTypeIndexerExtension.handleMultipartForReturnType(additionalWriters,
-                            multipartClassInfo, index);
                 }
             }
             Set<String> nameBindingNames = nameBindingNames(currentMethodInfo, classNameBindings);
@@ -884,15 +886,6 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
         Map.Entry<AnnotationTarget, AnnotationInstance> nonBlockingAnnotation = getInheritableAnnotation(info, NON_BLOCKING);
 
         if (runOnVirtualThreadAnnotation != null) {
-            if (!JDK_SUPPORTS_VIRTUAL_THREADS) {
-                throw new DeploymentException("Method '" + info.name() + "' of class '" + info.declaringClass().name()
-                        + "' uses @RunOnVirtualThread but the JDK version '" + Runtime.version() +
-                        "' and doesn't support virtual threads");
-            }
-            if (targetJavaVersion.isJava19OrHigher() == Status.FALSE) {
-                throw new DeploymentException("Method '" + info.name() + "' of class '" + info.declaringClass().name()
-                        + "' uses @RunOnVirtualThread but the target JDK version doesn't support virtual threads. Please configure your build tool to target Java 19 or above");
-            }
             if (!blocking) {
                 if (blockingAnnotation != null) {
                     return false;
@@ -1403,6 +1396,13 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
                 builder.setType(ParameterType.MULTI_PART_DATA_INPUT);
                 builder.setSingle(true);
                 return builder;
+            } else if (!field && paramType.kind() == Kind.PARAMETERIZED_TYPE
+                    && paramType.asParameterizedType().name().equals(LIST)
+                    && !paramType.asParameterizedType().arguments().isEmpty()
+                    && paramType.asParameterizedType().arguments().get(0).name().equals(ENTITY_PART)) {
+                builder.setType(ParameterType.ENTITY_PART_LIST);
+                builder.setSingle(true);
+                return builder;
             } else {
                 //un-annotated field
                 //just ignore it
@@ -1773,7 +1773,6 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
             }
         };
         private TargetJavaVersion targetJavaVersion = new TargetJavaVersion.Unknown();
-
         private Function<ClassInfo, Supplier<Boolean>> isDisabledCreator = null;
 
         private Predicate<Map<DotName, AnnotationInstance>> skipMethodParameter = null;

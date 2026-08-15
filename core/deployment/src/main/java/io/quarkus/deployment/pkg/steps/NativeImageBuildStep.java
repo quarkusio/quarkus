@@ -46,6 +46,7 @@ import io.quarkus.deployment.pkg.builditem.BuildPgoOptimizedNativeRequestBuildIt
 import io.quarkus.deployment.pkg.builditem.BuildPgoOptimizedNativeResultBuildItem;
 import io.quarkus.deployment.pkg.builditem.BuildSystemTargetBuildItem;
 import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
+import io.quarkus.deployment.pkg.builditem.JarTreeShakeBuildItem;
 import io.quarkus.deployment.pkg.builditem.NativeImageBuildItem;
 import io.quarkus.deployment.pkg.builditem.NativeImageRunnerBuildItem;
 import io.quarkus.deployment.pkg.builditem.NativeImageSourceJarBuildItem;
@@ -103,16 +104,20 @@ public class NativeImageBuildStep {
 
     @BuildStep(onlyIf = NativeBuild.class)
     ArtifactResultBuildItem result(NativeImageBuildItem image,
-            CurateOutcomeBuildItem curateOutcomeBuildItem) {
+            CurateOutcomeBuildItem curateOutcomeBuildItem,
+            JarTreeShakeBuildItem treeShakeResult) {
         NativeImageBuildItem.GraalVMVersion graalVMVersion = image.getGraalVMInfo();
+        var manifestConfig = new CoreSbomContributionConfig()
+                .setApplicationModel(curateOutcomeBuildItem.getApplicationModel())
+                .setMainPurl(Purl.generic(image.getPath().getFileName().toString(),
+                        curateOutcomeBuildItem.getApplicationModel().getAppArtifact().getVersion()))
+                .setMainDependencies(List.of(curateOutcomeBuildItem.getApplicationModel().getAppArtifact()))
+                .setMainPath(image.getPath());
+        for (ResolvedDependency dep : curateOutcomeBuildItem.getApplicationModel().getDependencies()) {
+            manifestConfig.addComponent(dep, null, treeShakeResult.computePedigree(dep.getKey()));
+        }
         return new ArtifactResultBuildItem(image.getPath(), ARTIFACT_RESULT_TYPE,
-                graalVMVersion.toMap(),
-                new CoreSbomContributionConfig()
-                        .setApplicationModel(curateOutcomeBuildItem.getApplicationModel())
-                        .setMainPurl(Purl.generic(image.getPath().getFileName().toString(),
-                                curateOutcomeBuildItem.getApplicationModel().getAppArtifact().getVersion()))
-                        .setMainDependencies(List.of(curateOutcomeBuildItem.getApplicationModel().getAppArtifact()))
-                        .setMainPath(image.getPath()));
+                graalVMVersion.toMap(), manifestConfig);
     }
 
     @BuildStep(onlyIf = NativeSourcesBuild.class)
@@ -937,6 +942,19 @@ public class NativeImageBuildStep {
                     nativeImageArgs.add("--install-exit-handlers");
                 }
 
+                // Enable the new single callsite inliner on Mandrel 25.0.4+ by default.
+                // The feature is not yet available upstream, so do not enable for versions >= 25.1
+                if (graalVMVersion.compareTo(io.quarkus.runtime.graal.GraalVM.Version.VERSION_25_0_4) >= 0
+                        && graalVMVersion.compareTo(io.quarkus.runtime.graal.GraalVM.Version.VERSION_25_1_0) < 0
+                        && graalVMVersion.getDistribution() == Distribution.MANDREL) {
+                    final List<String> additionalBuildArgs = NativeConfigUtils.getNativeAdditionalBuildArgs(nativeConfig);
+                    if (additionalBuildArgs.stream().noneMatch(arg -> arg.contains("AOTSingleCallsiteInline"))) {
+                        log.info(
+                                "Single callsite inlining has been enabled for this build. It aims to improve runtime performance at the expense of 1-2% binary size increase. To disable this feature use -Dquarkus.native.additional-build-args-append=-H:-AOTSingleCallsiteInline");
+                        addExperimentalVMOption(nativeImageArgs, "-H:+AOTSingleCallsiteInline");
+                    }
+                }
+
                 /*
                  * Any parameters following this call are forced over the user provided parameters in
                  * quarkus.native.additional-build-args or quarkus.native.additional-build-args-append. So if you need
@@ -970,6 +988,11 @@ public class NativeImageBuildStep {
                         && graalVMVersion.compareTo(io.quarkus.runtime.graal.GraalVM.Version.VERSION_25_0_0) < 0
                         && (CPU.host() == CPU.x64)) {
                     addExperimentalVMOption(nativeImageArgs, "-H:+ForeignAPISupport");
+                }
+
+                // Netty 4.2's CleanerJava25 uses Arena.ofShared() for direct buffer cleanup
+                if (graalVMVersion.compareTo(io.quarkus.runtime.graal.GraalVM.Version.VERSION_25_0_0) >= 0) {
+                    addExperimentalVMOption(nativeImageArgs, "-H:+SharedArenaSupport");
                 }
 
                 if (nativeConfig.headless()) {

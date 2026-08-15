@@ -26,7 +26,7 @@ import io.restassured.RestAssured;
  */
 public class SimpleContextPropagationTest {
     private static Class[] testClasses = {
-            ContextEndpoint.class, RequestBean.class, ContextEntity.class, TestResources.class, CompletionExceptionMapper.class,
+            ContextEndpoint.class, RequestBean.class, ContextEntity.class, CompletionExceptionMapper.class,
             TransactionalBean.class
     };
 

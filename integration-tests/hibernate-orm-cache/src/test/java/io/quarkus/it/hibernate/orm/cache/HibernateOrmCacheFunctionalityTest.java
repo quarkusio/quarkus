@@ -29,4 +29,18 @@ public class HibernateOrmCacheFunctionalityTest {
                 .then().body(is("86400"));
     }
 
+    @Test
+    public void testEntityMaximumWeightOverride() {
+        RestAssured.when()
+                .get("/hibernate-orm-cache/maximum-weight/io.quarkus.it.hibernate.orm.cache.DataBlob")
+                .then().body(is("50000"));
+    }
+
+    @Test
+    public void testEntityWeigherConfigured() {
+        RestAssured.when()
+                .get("/hibernate-orm-cache/has-weigher/io.quarkus.it.hibernate.orm.cache.DataBlob")
+                .then().body(is("true"));
+    }
+
 }

@@ -92,6 +92,14 @@
             </exclusions>
         </dependency>
         <dependency>
+            <groupId>io.vertx</groupId>
+            <artifactId>vertx-grpcio-server</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.vertx</groupId>
+            <artifactId>vertx-grpcio-client</artifactId>
+        </dependency>
+        <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-vertx</artifactId>
         </dependency>

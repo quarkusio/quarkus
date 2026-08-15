@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
 
 import org.eclipse.microprofile.config.ConfigProvider;
@@ -17,7 +18,6 @@ import org.eclipse.microprofile.config.spi.ConfigSource;
 
 import io.smallrye.config.ConfigValue;
 import io.smallrye.config.SmallRyeConfig;
-import io.vertx.core.impl.ConcurrentHashSet;
 
 public class ConfigDescriptionsManager implements Supplier<ConfigDescriptionsManager> {
 
@@ -35,7 +35,7 @@ public class ConfigDescriptionsManager implements Supplier<ConfigDescriptionsMan
      *
      * This is static to persist across restarts
      */
-    private static Set<String> addedConfigKeys = new ConcurrentHashSet<>();
+    private static Set<String> addedConfigKeys = ConcurrentHashMap.newKeySet();
 
     public ConfigDescriptionsManager() {
         this(List.of());

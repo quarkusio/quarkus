@@ -24,7 +24,11 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-devui-spi</artifactId>
+            <artifactId>quarkus-devjsonrpc</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-devmcp</artifactId>
         </dependency>
     </dependencies>
 

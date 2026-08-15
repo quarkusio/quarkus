@@ -1,7 +1,7 @@
 package io.quarkus.oidc.token.propagation.common.deployment;
 
 import java.lang.annotation.RetentionPolicy;
-import java.lang.reflect.Modifier;
+import java.lang.constant.ClassDesc;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
@@ -13,12 +13,12 @@ import jakarta.inject.Singleton;
 import org.jboss.jandex.MethodInfo;
 
 import io.quarkus.arc.deployment.GeneratedBeanBuildItem;
-import io.quarkus.arc.deployment.GeneratedBeanGizmoAdaptor;
+import io.quarkus.arc.deployment.GeneratedBeanGizmo2Adaptor;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.deployment.annotations.BuildProducer;
-import io.quarkus.gizmo.ClassCreator;
-import io.quarkus.gizmo.MethodDescriptor;
-import io.quarkus.gizmo.ResultHandle;
+import io.quarkus.gizmo2.Const;
+import io.quarkus.gizmo2.Gizmo;
+import io.quarkus.gizmo2.desc.ConstructorDesc;
 import io.quarkus.runtime.util.HashUtil;
 import io.quarkus.security.spi.runtime.MethodDescription;
 
@@ -47,29 +47,37 @@ public final class AccessTokenRequestFilterGenerator {
         return cache.computeIfAbsent(
                 new RequestFilterKey(instance.getClientName(), instance.exchangeTokenActivated(), methodDescription),
                 i -> {
-                    var adaptor = new GeneratedBeanGizmoAdaptor(generatedBeanProducer);
+                    Gizmo gizmo = Gizmo.create(new GeneratedBeanGizmo2Adaptor(generatedBeanProducer));
                     String className = createUniqueClassName(i, instance);
-                    try (ClassCreator classCreator = ClassCreator.builder()
-                            .className(className)
-                            .superClass(requestFilterClass)
-                            .classOutput(adaptor)
-                            .build()) {
-                        classCreator.addAnnotation(Priority.class).add("value", AUTHENTICATION);
-                        classCreator.addAnnotation(Singleton.class);
+                    gizmo.class_(className, cc -> {
+                        cc.extends_(requestFilterClass);
+                        cc.addAnnotation(Priority.class, ac -> ac.add("value", AUTHENTICATION));
+                        cc.addAnnotation(Singleton.class);
+                        cc.defaultConstructor();
 
                         if (!i.clientName().isEmpty()) {
-                            try (var methodCreator = classCreator.getMethodCreator("getClientName", String.class)) {
-                                methodCreator.addAnnotation(Override.class.getName(), RetentionPolicy.CLASS);
-                                methodCreator.setModifiers(Modifier.PROTECTED);
-                                methodCreator.returnValue(methodCreator.load(i.clientName()));
-                            }
+                            cc.method("getClientName", mc -> {
+                                mc.addAnnotation(ClassDesc.of(Override.class.getName()), RetentionPolicy.CLASS, ac -> {
+                                });
+                                mc.protected_();
+                                mc.returning(String.class);
+
+                                mc.body(bc -> {
+                                    bc.return_(i.clientName());
+                                });
+                            });
                         }
                         if (i.exchangeTokenActivated()) {
-                            try (var methodCreator = classCreator.getMethodCreator("isExchangeToken", boolean.class)) {
-                                methodCreator.addAnnotation(Override.class.getName(), RetentionPolicy.CLASS);
-                                methodCreator.setModifiers(Modifier.PROTECTED);
-                                methodCreator.returnBoolean(true);
-                            }
+                            cc.method("isExchangeToken", mc -> {
+                                mc.addAnnotation(ClassDesc.of(Override.class.getName()), RetentionPolicy.CLASS, ac -> {
+                                });
+                                mc.protected_();
+                                mc.returning(boolean.class);
+
+                                mc.body(bc -> {
+                                    bc.return_(true);
+                                });
+                            });
                         }
 
                         /*
@@ -78,29 +86,30 @@ public final class AccessTokenRequestFilterGenerator {
                          * }
                          */
                         if (i.methodDescription() != null) {
-                            try (var methodCreator = classCreator.getMethodCreator("getMethodDescription",
-                                    MethodDescription.class)) {
-                                methodCreator.addAnnotation(Override.class.getName(), RetentionPolicy.CLASS);
-                                methodCreator.setModifiers(Modifier.PROTECTED);
+                            cc.method("getMethodDescription", mc -> {
+                                mc.addAnnotation(ClassDesc.of(Override.class.getName()), RetentionPolicy.CLASS, ac -> {
+                                });
+                                mc.protected_();
+                                mc.returning(MethodDescription.class);
 
-                                // String methodName
-                                var methodName = methodCreator.load(i.methodDescription().getMethodName());
-                                // String declaringClassName
-                                var declaringClassName = methodCreator.load(i.methodDescription().getClassName());
-                                // String[] paramTypes
-                                var paramTypes = methodCreator.marshalAsArray(String[].class,
-                                        Arrays.stream(i.methodDescription().getParameterTypes()).map(methodCreator::load)
-                                                .toArray(ResultHandle[]::new));
-                                // new MethodDescription(declaringClassName, methodName, parameterTypes)
-                                var methodDescriptionCtor = MethodDescriptor.ofConstructor(MethodDescription.class,
-                                        String.class, String.class, String[].class);
-                                var newMethodDescription = methodCreator.newInstance(methodDescriptionCtor, declaringClassName,
-                                        methodName, paramTypes);
-                                // return new MethodDescription(declaringClassName, methodName, parameterTypes);
-                                methodCreator.returnValue(newMethodDescription);
-                            }
+                                mc.body(bc -> {
+                                    // String[] paramTypes
+                                    var paramTypes = bc.newArray(String.class,
+                                            Arrays.asList(i.methodDescription().getParameterTypes()),
+                                            Const::of);
+                                    // new MethodDescription(declaringClassName, methodName, parameterTypes)
+                                    var newMethodDescription = bc.new_(
+                                            ConstructorDesc.of(MethodDescription.class,
+                                                    String.class, String.class, String[].class),
+                                            Const.of(i.methodDescription().getClassName()),
+                                            Const.of(i.methodDescription().getMethodName()),
+                                            paramTypes);
+                                    // return new MethodDescription(declaringClassName, methodName, parameterTypes);
+                                    bc.return_(newMethodDescription);
+                                });
+                            });
                         }
-                    }
+                    });
                     unremovableBeansProducer.produce(UnremovableBeanBuildItem.beanClassNames(className));
                     return className;
                 });

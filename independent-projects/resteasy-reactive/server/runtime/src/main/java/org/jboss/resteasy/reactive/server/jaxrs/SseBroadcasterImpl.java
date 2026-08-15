@@ -165,7 +165,7 @@ public class SseBroadcasterImpl implements SseBroadcaster {
                 outputQueue.forEach(eventSink -> {
                     try {
                         eventSink.close();
-                    } catch (RuntimeException e) {
+                    } catch (Exception e) {
                         log.debug(e.getLocalizedMessage());
                     } finally {
                         notifyOnCloseListeners(eventSink);

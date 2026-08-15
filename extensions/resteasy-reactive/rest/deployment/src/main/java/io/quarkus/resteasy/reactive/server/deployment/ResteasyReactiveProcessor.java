@@ -123,7 +123,6 @@ import org.jboss.resteasy.reactive.server.providers.serialisers.ServerFileBodyHa
 import org.jboss.resteasy.reactive.server.spi.RuntimeConfiguration;
 import org.jboss.resteasy.reactive.server.spi.ServerRestHandler;
 import org.jboss.resteasy.reactive.server.vertx.serializers.ServerMutinyAsyncFileMessageBodyWriter;
-import org.jboss.resteasy.reactive.server.vertx.serializers.ServerMutinyBufferMessageBodyWriter;
 import org.jboss.resteasy.reactive.server.vertx.serializers.ServerVertxAsyncFileMessageBodyWriter;
 import org.jboss.resteasy.reactive.server.vertx.serializers.ServerVertxBufferMessageBodyWriter;
 import org.jboss.resteasy.reactive.spi.BeanFactory;
@@ -316,10 +315,6 @@ public class ResteasyReactiveProcessor {
                 io.vertx.core.buffer.Buffer.class.getName(), Collections.singletonList(MediaType.WILDCARD), RuntimeType.SERVER,
                 true,
                 Priorities.USER));
-        writerBuildItemBuildProducer.produce(new MessageBodyWriterBuildItem(ServerMutinyBufferMessageBodyWriter.class.getName(),
-                io.vertx.mutiny.core.buffer.Buffer.class.getName(), Collections.singletonList(MediaType.WILDCARD),
-                RuntimeType.SERVER, true,
-                Priorities.USER));
         writerBuildItemBuildProducer
                 .produce(new MessageBodyWriterBuildItem(ServerVertxAsyncFileMessageBodyWriter.class.getName(),
                         io.vertx.core.file.AsyncFile.class.getName(), Collections.singletonList(MediaType.WILDCARD),
@@ -336,7 +331,7 @@ public class ResteasyReactiveProcessor {
     AggregatedParameterContainersBuildItem aggregateParameterContainers(
             Optional<ResourceScanningResultBuildItem> resourceScanningResultBuildItem,
             List<ParameterContainersBuildItem> parameterContainersBuildItems) {
-        if (!resourceScanningResultBuildItem.isPresent()) {
+        if (resourceScanningResultBuildItem.isEmpty()) {
             return new AggregatedParameterContainersBuildItem(Set.of(), Set.of());
         }
         Set<DotName> scannedParameterContainers = new HashSet<>();
@@ -360,7 +355,7 @@ public class ResteasyReactiveProcessor {
             BuildProducer<GeneratedBeanBuildItem> generatedBeanBuildItemBuildProducer,
             BuildProducer<AdditionalBeanBuildItem> additionalBeanBuildItemBuildProducer,
             AggregatedParameterContainersBuildItem aggregatedParameterContainersBuildItem) {
-        if (!resourceScanningResultBuildItem.isPresent()) {
+        if (resourceScanningResultBuildItem.isEmpty()) {
             return;
         }
 
@@ -397,7 +392,7 @@ public class ResteasyReactiveProcessor {
             BuildProducer<GeneratedClassBuildItem> generatedClass,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<ClassLevelExceptionMappersBuildItem> classLevelExceptionMappers) {
-        if (!resourceScanningResultBuildItem.isPresent()) {
+        if (resourceScanningResultBuildItem.isEmpty()) {
             return;
         }
         List<MethodInfo> methodExceptionMapper = resourceScanningResultBuildItem.get().getResult()
@@ -436,7 +431,7 @@ public class ResteasyReactiveProcessor {
     public void unremovableBeans(Optional<ResourceScanningResultBuildItem> resourceScanningResultBuildItem,
             BuildProducer<UnremovableBeanBuildItem> unremovableBeans,
             AggregatedParameterContainersBuildItem aggregatedParameterContainersBuildItem) {
-        if (!resourceScanningResultBuildItem.isPresent()) {
+        if (resourceScanningResultBuildItem.isEmpty()) {
             return;
         }
         Set<DotName> parameterContainers = getPotentialBeans(resourceScanningResultBuildItem.get().getResult().getIndex(),
@@ -493,7 +488,7 @@ public class ResteasyReactiveProcessor {
             List<GeneratedJaxRsResourceBuildItem> generatedJaxRsResourcesBuildItems,
             Optional<TargetJavaVersionBuildItem> maybeTargetJavaVersionBuildItem) {
 
-        if (!resourceScanningResultBuildItem.isPresent()) {
+        if (resourceScanningResultBuildItem.isEmpty()) {
             // no detected @Path, bail out
             return;
         }
@@ -676,7 +671,7 @@ public class ResteasyReactiveProcessor {
                     .setResteasyReactiveRecorder(recorder)
                     .setApplicationClassPredicate(applicationClassPredicate)
                     .setValidateEndpoint(validationPredicatesBuildItems.stream().map(item -> item.getPredicate())
-                            .collect(Collectors.toUnmodifiableList()))
+                            .toList())
                     .setTargetJavaVersion(
                             determineTargetJavaVersion(compiledJavaVersionBuildItem, maybeTargetJavaVersionBuildItem))
                     .setIsDisabledCreator(new Function<>() {
@@ -778,6 +773,11 @@ public class ResteasyReactiveProcessor {
             for (DotName methodAnnotation : result.getHttpAnnotationToMethod().keySet()) {
                 for (AnnotationInstance instance : index.getAnnotations(methodAnnotation)) {
                     MethodInfo method = instance.target().asMethod();
+
+                    if (method.isSynthetic()) {
+                        continue;
+                    }
+
                     ClassInfo classInfo = method.declaringClass();
 
                     // Reject known client interfaces (See predicate above)
@@ -797,6 +797,11 @@ public class ResteasyReactiveProcessor {
             for (AnnotationInstance instance : index.getAnnotations(ResteasyReactiveDotNames.PATH)) {
                 if (instance.target().kind() == AnnotationTarget.Kind.METHOD) {
                     MethodInfo method = instance.target().asMethod();
+
+                    if (method.isSynthetic()) {
+                        continue;
+                    }
+
                     ClassInfo classInfo = method.declaringClass();
 
                     // Reject known client interfaces (See predicate above)
@@ -1122,7 +1127,7 @@ public class ResteasyReactiveProcessor {
         allBeanTypes.add(clazz.name());
 
         ClassInfo currentClazz = clazz;
-        while (!ResteasyReactiveDotNames.OBJECT.equals(currentClazz.name()) && currentClazz != null) {
+        while (currentClazz != null && !ResteasyReactiveDotNames.OBJECT.equals(currentClazz.name())) {
             if (currentClazz.isAbstract()) {
                 allBeanTypes.add(currentClazz.name());
             }
@@ -1198,7 +1203,9 @@ public class ResteasyReactiveProcessor {
      */
     @BuildStep
     public void providersFromClasspath(BuildProducer<MessageBodyReaderBuildItem> messageBodyReaderProducer,
-            BuildProducer<MessageBodyWriterBuildItem> messageBodyWriterProducer) {
+            BuildProducer<MessageBodyWriterBuildItem> messageBodyWriterProducer,
+            BuildProducer<JaxrsFeatureBuildItem> featureProducer,
+            BuildProducer<DynamicFeatureBuildItem> dynamicFeatureProducer) {
         String fileName = "META-INF/services/" + Providers.class.getName();
         // we never want to include the Classic RESTEasy providers - these can end up on the classpath by using the Keycloak client for example
         Predicate<String> ignoredProviders = s -> s.startsWith("org.jboss.resteasy.plugins.providers");
@@ -1248,7 +1255,6 @@ public class ResteasyReactiveProcessor {
                         }
                         messageBodyWriterProducer.produce(builder.build()); // TODO: does it make sense to limit these to the Server?
                     }
-                    // TODO: handle other providers as well
                 } catch (ClassNotFoundException e) {
                     log.warn("Unable to load class '" + providerClassName
                             + "' when trying to determine what kind of JAX-RS Provider it is.", e);
@@ -1256,6 +1262,23 @@ public class ResteasyReactiveProcessor {
             }
         } catch (IOException e) {
             log.warn("Unable to properly detect and parse the contents of '" + fileName + "'", e);
+        }
+
+        discoverServiceProviders("META-INF/services/" + jakarta.ws.rs.core.Feature.class.getName(),
+                className -> featureProducer.produce(new JaxrsFeatureBuildItem(className, true)));
+        discoverServiceProviders("META-INF/services/" + jakarta.ws.rs.container.DynamicFeature.class.getName(),
+                className -> dynamicFeatureProducer.produce(new DynamicFeatureBuildItem(className, true)));
+    }
+
+    private void discoverServiceProviders(String serviceFile, Consumer<String> producer) {
+        try {
+            Set<String> classNames = new HashSet<>(ServiceUtil.classNamesNamedIn(
+                    Thread.currentThread().getContextClassLoader(), serviceFile));
+            for (String className : classNames) {
+                producer.accept(className);
+            }
+        } catch (IOException e) {
+            log.warn("Unable to properly detect and parse the contents of '" + serviceFile + "'", e);
         }
     }
 
@@ -1796,9 +1819,9 @@ public class ResteasyReactiveProcessor {
             return;
         }
 
-        Map<Class<?>, Supplier<?>> runtimeConfigMap = new HashMap<>();
+        Map<String, Supplier<?>> runtimeConfigMap = new HashMap<>();
         for (HandlerConfigurationProviderBuildItem item : items) {
-            runtimeConfigMap.put(item.getConfigClass(), item.getValueSupplier());
+            runtimeConfigMap.put(item.getConfigClass().getName(), item.getValueSupplier());
         }
 
         recorder.configureHandlers(deployment.get().getDeployment(), runtimeConfigMap);

@@ -49,8 +49,8 @@ import io.quarkus.redis.runtime.datasource.AbstractTransactionalRedisCommandGrou
 import io.quarkus.redis.runtime.datasource.ReactiveRedisDataSourceImpl;
 import io.quarkus.redis.runtime.datasource.RedisCommandExecutor;
 import io.quarkus.redis.runtime.datasource.TransactionHolder;
-import io.vertx.mutiny.redis.client.Command;
-import io.vertx.mutiny.redis.client.Response;
+import io.vertx.redis.client.Command;
+import io.vertx.redis.client.Response;
 
 /**
  * A tools generating the various interface and implementation from the existing reactive API.

@@ -42,6 +42,7 @@ public class JvmMetricsTest extends BaseJvmMetricsTest {
                             .add(new StringAsset(
                                     "quarkus.otel.metrics.enabled=true\n" +
                                             "quarkus.otel.traces.exporter=none\n" +
+                                            "quarkus.otel.traces.sampler.arg=1.0d\n" +
                                             "quarkus.otel.logs.exporter=none\n" +
                                             "quarkus.otel.metrics.exporter=in-memory\n" +
                                             "quarkus.otel.metric.export.interval=300ms\n"),

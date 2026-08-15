@@ -9,15 +9,19 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Properties;
 
+import org.gradle.testkit.runner.BuildResult;
+import org.gradle.testkit.runner.GradleRunner;
+import org.gradle.testkit.runner.TaskOutcome;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-
+import io.quarkus.extension.gradle.QuarkusExtensionPlugin;
 import io.quarkus.extension.gradle.TestUtils;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.node.ArrayNode;
+import tools.jackson.databind.node.ObjectNode;
 
 public class ExtensionDescriptorTaskTest {
 
@@ -32,6 +36,19 @@ public class ExtensionDescriptorTaskTest {
         File settingFile = new File(testProjectDir, "settings.gradle");
         String settingsContent = "rootProject.name = 'test'";
         TestUtils.writeFile(settingFile, settingsContent);
+    }
+
+    @Test
+    public void shouldBeUpToDateWhenInputsAndOutputsAreUnchanged() throws IOException {
+        TestUtils.writeFile(buildFile, TestUtils.getDefaultGradleBuildFileContent(true, Collections.emptyList(), ""));
+
+        BuildResult firstRun = runExtensionDescriptorTask();
+        assertThat(firstRun.task(":" + QuarkusExtensionPlugin.EXTENSION_DESCRIPTOR_TASK_NAME).getOutcome())
+                .isEqualTo(TaskOutcome.SUCCESS);
+
+        BuildResult secondRun = runExtensionDescriptorTask();
+        assertThat(secondRun.task(":" + QuarkusExtensionPlugin.EXTENSION_DESCRIPTOR_TASK_NAME).getOutcome())
+                .isEqualTo(TaskOutcome.UP_TO_DATE);
     }
 
     @Test
@@ -54,6 +71,15 @@ public class ExtensionDescriptorTaskTest {
         assertThat(extensionDescriptor.get("name").asText()).isEqualTo("test");
         assertThat(extensionDescriptor.get("artifact").asText()).isEqualTo("org.acme:test::jar:1.0.0");
         assertThat(extensionDescriptor.has("description")).isFalse();
+
+        // Assert JSON file is also generated
+        File extensionJsonFile = new File(testProjectDir, "build/resources/main/META-INF/quarkus-extension.json");
+        assertThat(extensionJsonFile).exists();
+
+        JsonMapper jsonMapper = JsonMapper.builder().build();
+        ObjectNode jsonDescriptor = jsonMapper.readValue(extensionJsonFile, ObjectNode.class);
+        assertThat(jsonDescriptor.get("name").asText()).isEqualTo("test");
+        assertThat(jsonDescriptor.get("artifact").asText()).isEqualTo("org.acme:test::jar:1.0.0");
 
         // Assert metadata node
         assertThat(extensionDescriptor.has("metadata")).isTrue();
@@ -160,6 +186,29 @@ public class ExtensionDescriptorTaskTest {
     }
 
     @Test
+    public void shouldFailOnInvalidStatusArray() throws IOException {
+        TestUtils.writeFile(buildFile, TestUtils.getDefaultGradleBuildFileContent(true, Collections.emptyList(), ""));
+        File metaInfDir = new File(testProjectDir, "src/main/resources/META-INF");
+        metaInfDir.mkdirs();
+        String invalid = "name: extension-name\n" +
+                "metadata:\n" +
+                "  status:\n" +
+                "  - stable\n" +
+                "  - deprecated\n";
+        TestUtils.writeFile(new File(metaInfDir, "quarkus-extension.yaml"), invalid);
+
+        BuildResult result = GradleRunner.create()
+                .withPluginClasspath()
+                .withProjectDir(testProjectDir)
+                .withArguments("extensionDescriptor", "-S")
+                .buildAndFail();
+
+        assertThat(result.task(":extensionDescriptor").getOutcome()).isEqualTo(TaskOutcome.FAILED);
+        assertThat(result.getOutput()).contains("Invalid quarkus-extension.yaml metadata");
+        assertThat(result.getOutput()).contains("status");
+    }
+
+    @Test
     public void shouldGenerateDescriptorWithCapabilities() throws IOException {
         String buildFileContent = TestUtils.getDefaultGradleBuildFileContent(true, Collections.emptyList(),
                 "capabilities { \n" +
@@ -204,6 +253,14 @@ public class ExtensionDescriptorTaskTest {
         assertThat(extensionDescriptor.get("metadata").get("scm-url").asText())
                 .as("Check source location %s", extensionDescriptor.get("scm-url"))
                 .isEqualTo("https://github.com/some/repo");
+    }
+
+    private BuildResult runExtensionDescriptorTask() {
+        return GradleRunner.create()
+                .withPluginClasspath()
+                .withProjectDir(testProjectDir)
+                .withArguments(QuarkusExtensionPlugin.EXTENSION_DESCRIPTOR_TASK_NAME, "-S")
+                .build();
     }
 
 }

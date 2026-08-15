@@ -17,5 +17,4 @@ metadata:
     languages:
       - "java"
       - "kotlin"
-      - "scala"
     artifact: "io.quarkus:quarkus-project-core-extension-codestarts"

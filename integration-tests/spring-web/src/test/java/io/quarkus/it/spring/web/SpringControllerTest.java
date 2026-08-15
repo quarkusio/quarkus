@@ -1,6 +1,7 @@
 package io.quarkus.it.spring.web;
 
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
 
 import org.junit.jupiter.api.Test;
 
@@ -42,6 +43,16 @@ public class SpringControllerTest {
         RestAssured.given().contentType("application/json").body("{\"name\":\"George\"}").post("/greeting/person").then()
                 .contentType("application/json")
                 .body(containsString("hello George"));
+    }
+
+    @Test
+    public void testResponseEntityWithCustomHeadersAndStatus() {
+        RestAssured.when().get("/greeting/re/headers/hello").then()
+                .statusCode(201)
+                .header("X-Custom-Header", is("custom-value"))
+                .header("X-Request-Id", is("12345"))
+                .contentType("application/json")
+                .body(containsString("hello"));
     }
 
     @Test

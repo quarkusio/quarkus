@@ -86,6 +86,8 @@ import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.ExtensionSslNativeSupportBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
+import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
+import io.quarkus.deployment.builditem.GeneratedServiceProviderBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.RunTimeConfigBuilderBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
@@ -594,11 +596,13 @@ class RestClientReactiveProcessor {
     void generateRestClientConfigBuilder(
             List<RegisteredRestClientBuildItem> restClients,
             BuildProducer<GeneratedClassBuildItem> generatedClass,
+            BuildProducer<GeneratedResourceBuildItem> generatedResource,
+            BuildProducer<GeneratedServiceProviderBuildItem> generatedServiceProvider,
             BuildProducer<StaticInitConfigBuilderBuildItem> staticInitConfigBuilder,
             BuildProducer<RunTimeConfigBuilderBuildItem> runTimeConfigBuilder) {
 
         RestClientConfigUtils.generateRestClientConfigBuilder(toRegisteredRestClients(restClients), generatedClass,
-                staticInitConfigBuilder, runTimeConfigBuilder);
+                generatedResource, generatedServiceProvider, staticInitConfigBuilder, runTimeConfigBuilder);
     }
 
     @BuildStep

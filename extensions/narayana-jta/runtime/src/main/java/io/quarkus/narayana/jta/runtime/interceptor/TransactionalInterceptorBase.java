@@ -17,6 +17,7 @@ import java.util.function.Function;
 
 import jakarta.inject.Inject;
 import jakarta.interceptor.InvocationContext;
+import jakarta.transaction.RollbackException;
 import jakarta.transaction.Status;
 import jakarta.transaction.SystemException;
 import jakarta.transaction.Transaction;
@@ -396,7 +397,7 @@ public abstract class TransactionalInterceptorBase implements Serializable {
 
         for (Class<?> rollbackOnClass : transactional.rollbackOn()) {
             if (rollbackOnClass.isAssignableFrom(t.getClass())) {
-                tx.setRollbackOnly();
+                safeSetRollbackOnly(tx);
                 return;
             }
         }
@@ -404,7 +405,7 @@ public abstract class TransactionalInterceptorBase implements Serializable {
         Rollback rollbackAnnotation = t.getClass().getAnnotation(Rollback.class);
         if (rollbackAnnotation != null) {
             if (rollbackAnnotation.value()) {
-                tx.setRollbackOnly();
+                safeSetRollbackOnly(tx);
             }
             // in both cases, behaviour is specified by the annotation
             return;
@@ -412,8 +413,29 @@ public abstract class TransactionalInterceptorBase implements Serializable {
 
         // RuntimeException and Error are un-checked exceptions and rollback is expected
         if (t instanceof RuntimeException || t instanceof Error) {
-            tx.setRollbackOnly();
+            safeSetRollbackOnly(tx);
             return;
+        }
+    }
+
+    /**
+     * Sets the transaction to rollback-only, guarding against the case where
+     * the transaction has already been rolled back (e.g., by the transaction reaper).
+     * <p>
+     * Without this guard, {@code tx.setRollbackOnly()} on a dead transaction throws
+     * {@link IllegalStateException}, which would propagate through
+     * {@link #handleExceptionNoThrow} and mask the original business exception.
+     */
+    private void safeSetRollbackOnly(Transaction tx) throws SystemException {
+        try {
+            int status = tx.getStatus();
+            if (status != Status.STATUS_NO_TRANSACTION
+                    && status != Status.STATUS_ROLLEDBACK
+                    && status != Status.STATUS_COMMITTED) {
+                tx.setRollbackOnly();
+            }
+        } catch (IllegalStateException e) {
+            log.warn("Cannot set rollback-only, transaction already ended", e);
         }
     }
 
@@ -426,7 +448,11 @@ public abstract class TransactionalInterceptorBase implements Serializable {
     protected void endTransaction(TransactionManager tm, Transaction tx, RunnableWithException afterEndTransaction)
             throws Exception {
         try {
-            if (tx != tm.getTransaction()) {
+            Transaction current = tm.getTransaction();
+            if (current == null) {
+                throw new RollbackException("Transaction was already rolled back (e.g., by the transaction reaper)");
+            }
+            if (tx != current) {
                 throw new RuntimeException(jtaLogger.i18NLogger.get_wrong_tx_on_thread());
             }
 

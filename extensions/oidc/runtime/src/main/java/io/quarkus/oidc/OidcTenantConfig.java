@@ -2383,6 +2383,8 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
          */
         public Optional<Duration> refreshTokenTimeSkew = Optional.empty();
 
+        private Duration refreshTokenCacheTimeToLive = Duration.ZERO;
+
         /**
          * The forced JWK set refresh interval in minutes.
          */
@@ -2663,6 +2665,7 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
             principalClaim = mapping.principalClaim();
             refreshExpired = mapping.refreshExpired();
             refreshTokenTimeSkew = mapping.refreshTokenTimeSkew();
+            refreshTokenCacheTimeToLive = mapping.refreshTokenCacheTimeToLive();
             forcedJwkRefreshInterval = mapping.forcedJwkRefreshInterval();
             header = mapping.header();
             authorizationScheme = mapping.authorizationScheme();
@@ -2731,6 +2734,11 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
         @Override
         public Optional<Duration> refreshTokenTimeSkew() {
             return refreshTokenTimeSkew;
+        }
+
+        @Override
+        public Duration refreshTokenCacheTimeToLive() {
+            return refreshTokenCacheTimeToLive;
         }
 
         @Override

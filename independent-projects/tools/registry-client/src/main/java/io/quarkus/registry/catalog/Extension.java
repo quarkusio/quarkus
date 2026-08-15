@@ -12,6 +12,7 @@ public interface Extension {
 
     String MD_SHORT_NAME = "short-name";
     String MD_NESTED_CODESTART_NAME = "codestart.name";
+    String MD_NESTED_CODESTART_EXTRA_NAMES = "codestart.extra-names";
     String MD_NESTED_CODESTART_LANGUAGES = "codestart.languages";
     String MD_NESTED_CODESTART_KIND = "codestart.kind";
     String MD_NESTED_CODESTART_ARTIFACT = "codestart.artifact";

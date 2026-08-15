@@ -63,7 +63,7 @@ public class DecompressionTest {
         public void register(@Observes Router router) {
             router.post("/echo").handler(BodyHandler.create());
             router.post("/echo").handler(rc -> {
-                rc.response().end(rc.getBodyAsString());
+                rc.response().end(rc.body().asString());
             });
         }
 

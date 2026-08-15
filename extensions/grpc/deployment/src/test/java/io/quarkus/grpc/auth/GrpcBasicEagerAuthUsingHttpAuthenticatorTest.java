@@ -8,7 +8,6 @@ public class GrpcBasicEagerAuthUsingHttpAuthenticatorTest extends GrpcAuthTestBa
 
     @RegisterExtension
     static final QuarkusExtensionTest config = createQuarkusExtensionTest("""
-            quarkus.grpc.server.use-separate-server=false
             quarkus.grpc.clients.securityClient.host=localhost
             quarkus.grpc.clients.securityClient.port=8081
             """, false);

@@ -8,6 +8,7 @@ import javax.inject.Inject;
 
 import org.gradle.api.DefaultTask;
 import org.gradle.api.GradleException;
+import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.ResolvedArtifact;
 import org.gradle.api.artifacts.ResolvedModuleVersion;
@@ -29,12 +30,18 @@ public class ValidateExtensionTask extends DefaultTask {
     private Configuration runtimeModuleClasspath;
     private Configuration deploymentModuleClasspath;
 
+    // Captured at configuration time so the task action does not call Task.getProject() at execution time, which is
+    // deprecated and removed in Gradle 10. This task is not compatible with the configuration cache, so holding a
+    // Project reference is acceptable (it is never serialized).
+    private final transient Project project;
+
     @Inject
     public ValidateExtensionTask(QuarkusExtensionConfiguration quarkusExtensionConfiguration,
             Configuration runtimeModuleClasspath) {
         setDescription("Validate extension dependencies");
         setGroup("quarkus");
 
+        this.project = getProject();
         this.runtimeModuleClasspath = runtimeModuleClasspath;
         this.onlyIf(t -> !quarkusExtensionConfiguration.isValidationDisabled().get());
 
@@ -86,7 +93,7 @@ public class ValidateExtensionTask extends DefaultTask {
     private List<ArtifactKey> collectRuntimeExtensionsDeploymentKeys(Set<ResolvedArtifact> runtimeArtifacts) {
         List<ArtifactKey> runtimeExtensions = new ArrayList<>();
         for (ResolvedArtifact resolvedArtifact : runtimeArtifacts) {
-            ExtensionDependency<?> extension = DependencyUtils.getExtensionInfoOrNull(getProject(), resolvedArtifact);
+            ExtensionDependency<?> extension = DependencyUtils.getExtensionInfoOrNull(project, resolvedArtifact);
             if (extension != null) {
                 if (extension instanceof ProjectExtensionDependency) {
                     final ProjectExtensionDependency ped = (ProjectExtensionDependency) extension;

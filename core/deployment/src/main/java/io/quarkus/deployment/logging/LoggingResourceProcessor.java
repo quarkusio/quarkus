@@ -32,8 +32,6 @@ import org.aesh.command.Command;
 import org.aesh.command.CommandDefinition;
 import org.aesh.command.CommandException;
 import org.aesh.command.CommandResult;
-import org.aesh.command.GroupCommand;
-import org.aesh.command.GroupCommandDefinition;
 import org.aesh.command.completer.CompleterInvocation;
 import org.aesh.command.completer.OptionCompleter;
 import org.aesh.command.invocation.CommandInvocation;
@@ -742,16 +740,11 @@ public final class LoggingResourceProcessor {
 
     private static final String SRC_MAIN_JAVA = "src/main/java";
 
-    @GroupCommandDefinition(name = "log", description = "Logging Commands")
-    public static class LogCommand implements GroupCommand {
+    @CommandDefinition(name = "log", description = "Logging Commands", groupCommands = { SetLogLevelCommand.class })
+    public static class LogCommand implements Command {
 
         @Option(shortName = 'h', hasValue = false, overrideRequired = true)
         public boolean help;
-
-        @Override
-        public List<Command> getCommands() {
-            return List.of(new SetLogLevelCommand());
-        }
 
         @Override
         public CommandResult execute(CommandInvocation commandInvocation) throws CommandException, InterruptedException {

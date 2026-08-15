@@ -1,6 +1,8 @@
 package org.acme;
 
 import static org.awaitility.Awaitility.await;
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.Matchers.hasSize;
 
 import java.util.concurrent.TimeUnit;
 
@@ -36,9 +38,10 @@ public class DeregistrationTest {
     public void testDeregistrationAfterShutdown() throws Exception {
 
         // Ensure service is registered
-        RestAssured.get("http://localhost:8500/v1/agent/service/consul-deregistration-test")
+        RestAssured.get("http://localhost:8500/v1/catalog/service/consul-deregistration-test")
                 .then()
-                .statusCode(200);
+                .statusCode(200)
+                .body(containsString("\"ServiceName\": \"consul-deregistration-test\""));
 
         // Stop the app
         app.stop();
@@ -47,9 +50,10 @@ public class DeregistrationTest {
         await()
                 .atMost(20, TimeUnit.SECONDS)
                 .pollInterval(100, TimeUnit.MILLISECONDS)
-                .untilAsserted(() -> RestAssured.get("http://localhost:8500/v1/agent/service/consul-deregistration-test")
+                .untilAsserted(() -> RestAssured.get("http://localhost:8500/v1/catalog/service/consul-deregistration-test")
                         .then()
-                        .statusCode(404));
+                        .statusCode(200)
+                        .body("$", hasSize(0)));
 
     }
 

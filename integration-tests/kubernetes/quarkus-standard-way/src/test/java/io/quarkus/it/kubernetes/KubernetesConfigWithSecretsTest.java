@@ -55,6 +55,7 @@ public class KubernetesConfigWithSecretsTest {
                         assertThat(rule.getApiGroups()).containsExactly("");
                         assertThat(rule.getResources()).containsExactly("secrets");
                         assertThat(rule.getVerbs()).containsExactly("get");
+                        assertThat(rule.getResourceNames()).containsExactly("my-secret");
                     });
                 });
             });

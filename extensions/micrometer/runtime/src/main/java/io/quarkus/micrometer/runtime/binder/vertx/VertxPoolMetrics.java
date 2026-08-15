@@ -14,7 +14,7 @@ import io.vertx.core.spi.metrics.PoolMetrics;
 /**
  * Adaptation of the Vert.x Pool Metrics implementation for Quarkus Micrometer.
  */
-public class VertxPoolMetrics implements PoolMetrics<EventTiming> {
+public class VertxPoolMetrics implements PoolMetrics<EventTiming, EventTiming> {
 
     private final String poolType;
     private final int maxPoolSize;
@@ -25,7 +25,6 @@ public class VertxPoolMetrics implements PoolMetrics<EventTiming> {
     private final LongAdder idle;
     private final LongAdder queue;
     private final Counter completed;
-    private final Counter rejected;
     private final Timer queueDelay;
 
     VertxPoolMetrics(MeterRegistry registry, String poolType, String poolName, int maxPoolSize,
@@ -75,11 +74,6 @@ public class VertxPoolMetrics implements PoolMetrics<EventTiming> {
                 .description("Number of times resources from the pool have been acquired")
                 .tags(tags)
                 .register(registry);
-
-        rejected = Counter.builder(name("rejected"))
-                .description("Number of times submissions to the pool have been rejected")
-                .tags(tags)
-                .register(registry);
     }
 
     private String name(String suffix) {
@@ -87,22 +81,19 @@ public class VertxPoolMetrics implements PoolMetrics<EventTiming> {
     }
 
     @Override
-    public EventTiming submitted() {
+    public EventTiming enqueue() {
         queue.increment();
         return new EventTiming(queueDelay);
     }
 
     @Override
-    public void rejected(EventTiming submitted) {
+    public void dequeue(EventTiming submitted) {
         queue.decrement();
-        rejected.increment();
         submitted.end();
     }
 
     @Override
-    public EventTiming begin(EventTiming submitted) {
-        queue.decrement();
-        submitted.end();
+    public EventTiming begin() {
         current.increment();
         if (idle != null) {
             idle.decrement();
@@ -112,14 +103,13 @@ public class VertxPoolMetrics implements PoolMetrics<EventTiming> {
     }
 
     @Override
-    public void end(EventTiming timer, boolean succeeded) {
+    public void end(EventTiming timer) {
         current.decrement();
         if (idle != null) {
             idle.increment();
         }
         computeRatio(current.longValue());
         timer.end();
-
         completed.increment();
     }
 

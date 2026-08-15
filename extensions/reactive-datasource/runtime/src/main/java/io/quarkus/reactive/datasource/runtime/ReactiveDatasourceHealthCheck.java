@@ -25,17 +25,21 @@ public abstract class ReactiveDatasourceHealthCheck implements HealthCheck {
 
     private static final Logger log = Logger.getLogger(ReactiveDatasourceHealthCheck.class);
 
-    private final Map<String, Pool> pools = new ConcurrentHashMap<>();
+    private final Map<String, PoolHealthEntry> pools = new ConcurrentHashMap<>();
     private final String healthCheckResponseName;
-    private final String healthCheckSQL;
+    private final String defaultHealthCheckSQL;
 
-    protected ReactiveDatasourceHealthCheck(String healthCheckResponseName, String healthCheckSQL) {
+    protected ReactiveDatasourceHealthCheck(String healthCheckResponseName, String defaultHealthCheckSQL) {
         this.healthCheckResponseName = healthCheckResponseName;
-        this.healthCheckSQL = healthCheckSQL;
+        this.defaultHealthCheckSQL = defaultHealthCheckSQL;
     }
 
-    protected void addPool(String name, Pool p) {
-        final Pool previous = pools.put(name, p);
+    protected void addPool(String name, Pool pool) {
+        addPool(name, pool, defaultHealthCheckSQL);
+    }
+
+    protected void addPool(String name, Pool pool, String healthCheckSQL) {
+        final PoolHealthEntry previous = pools.put(name, new PoolHealthEntry(pool, healthCheckSQL));
         if (previous != null) {
             throw new IllegalStateException("Duplicate pool name: " + name);
         }
@@ -46,17 +50,17 @@ public abstract class ReactiveDatasourceHealthCheck implements HealthCheck {
         HealthCheckResponseBuilder builder = HealthCheckResponse.named(healthCheckResponseName);
         builder.up();
 
-        for (Map.Entry<String, Pool> poolEntry : pools.entrySet()) {
+        for (Map.Entry<String, PoolHealthEntry> poolEntry : pools.entrySet()) {
             final String dataSourceName = poolEntry.getKey();
-            final Pool pool = poolEntry.getValue();
+            final PoolHealthEntry entry = poolEntry.getValue();
             try {
                 CompletableFuture<Void> databaseConnectionAttempt = new CompletableFuture<>();
                 Context context = Vertx.currentContext();
                 if (context != null) {
                     log.debug("Run health check on the current Vert.x context");
                     context.runOnContext(v -> {
-                        pool.query(healthCheckSQL)
-                                .execute(ar -> {
+                        entry.pool.query(entry.healthCheckSQL)
+                                .execute().onComplete(ar -> {
                                     checkFailure(ar, builder, dataSourceName);
                                     databaseConnectionAttempt.complete(null);
                                 });
@@ -64,8 +68,8 @@ public abstract class ReactiveDatasourceHealthCheck implements HealthCheck {
                 } else {
                     log.warn("Vert.x context unavailable to perform health check of reactive datasource `" + dataSourceName
                             + "`. This is unlikely to work correctly.");
-                    pool.query(healthCheckSQL)
-                            .execute(ar -> {
+                    entry.pool.query(entry.healthCheckSQL)
+                            .execute().onComplete(ar -> {
                                 checkFailure(ar, builder, dataSourceName);
                                 databaseConnectionAttempt.complete(null);
                             });
@@ -115,4 +119,13 @@ public abstract class ReactiveDatasourceHealthCheck implements HealthCheck {
         return ReactiveDataSourceUtil.dataSourceName(bean);
     }
 
+    private static class PoolHealthEntry {
+        final Pool pool;
+        final String healthCheckSQL;
+
+        PoolHealthEntry(Pool pool, String healthCheckSQL) {
+            this.pool = pool;
+            this.healthCheckSQL = healthCheckSQL;
+        }
+    }
 }

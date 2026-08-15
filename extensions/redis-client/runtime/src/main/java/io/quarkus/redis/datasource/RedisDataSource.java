@@ -6,8 +6,6 @@ import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-
 import io.quarkus.redis.datasource.autosuggest.AutoSuggestCommands;
 import io.quarkus.redis.datasource.bitmap.BitMapCommands;
 import io.quarkus.redis.datasource.bloom.BloomCommands;
@@ -33,8 +31,9 @@ import io.quarkus.redis.datasource.transactions.TransactionResult;
 import io.quarkus.redis.datasource.transactions.TransactionalRedisDataSource;
 import io.quarkus.redis.datasource.value.ValueCommands;
 import io.smallrye.common.annotation.Experimental;
-import io.vertx.mutiny.redis.client.Command;
-import io.vertx.mutiny.redis.client.Response;
+import io.vertx.redis.client.Command;
+import io.vertx.redis.client.Response;
+import tools.jackson.core.type.TypeReference;
 
 /**
  * Synchronous / Blocking Redis Data Source.
@@ -990,16 +989,6 @@ public interface RedisDataSource {
      * @return the response
      */
     Response execute(Command command, String... args);
-
-    /**
-     * Executes a command.
-     * This method is used to execute commands not offered by the API.
-     *
-     * @param command the command
-     * @param args the parameters, encoded as String.
-     * @return the response
-     */
-    Response execute(io.vertx.redis.client.Command command, String... args);
 
     /**
      * @return the reactive data source.

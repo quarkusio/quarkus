@@ -2,18 +2,17 @@ package io.quarkus.io.opentelemetry.jackson;
 
 import jakarta.inject.Singleton;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.module.SimpleModule;
-
-import io.quarkus.jackson.ObjectMapperCustomizer;
+import io.quarkus.jackson.JsonMapperBuilderCustomizer;
 import io.vertx.redis.client.impl.types.ErrorType;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.module.SimpleModule;
 
 @Singleton
-public class RegisterCustomModuleCustomizer implements ObjectMapperCustomizer {
+public class RegisterCustomModuleCustomizer implements JsonMapperBuilderCustomizer {
 
-    public void customize(ObjectMapper mapper) {
+    public void customize(JsonMapper.Builder builder) {
         SimpleModule module = new SimpleModule();
         module.addSerializer(ErrorType.class, new ErrorTypeSerializer());
-        mapper.registerModule(module);
+        builder.addModule(module);
     }
 }

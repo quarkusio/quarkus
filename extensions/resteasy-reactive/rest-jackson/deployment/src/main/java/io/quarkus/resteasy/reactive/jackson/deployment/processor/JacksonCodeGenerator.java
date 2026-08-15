@@ -55,12 +55,12 @@ import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.annotation.JsonUnwrapped;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.fasterxml.jackson.annotation.JsonView;
-import com.fasterxml.jackson.databind.PropertyNamingStrategy;
-import com.fasterxml.jackson.databind.annotation.JsonNaming;
 
 import io.quarkus.deployment.GeneratedClassGizmoAdaptor;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
+import io.quarkus.gizmo.AssignableResultHandle;
+import io.quarkus.gizmo.BranchResult;
 import io.quarkus.gizmo.BytecodeCreator;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.FieldDescriptor;
@@ -68,10 +68,24 @@ import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.resteasy.reactive.jackson.SecureField;
+import tools.jackson.databind.PropertyNamingStrategy;
+import tools.jackson.databind.annotation.JsonNaming;
 
 public abstract class JacksonCodeGenerator {
 
     private static final Logger log = Logger.getLogger(JacksonCodeGenerator.class);
+
+    private static final String[] EMPTY_STRING_ARRAY = new String[0];
+    private static final DotName KOTLIN_METADATA = DotName.createSimple("kotlin.Metadata");
+
+    private static final Set<String> UNSUPPORTED_JAKARTA_PERSISTENCE_ANNOTATIONS = Set.of(
+            "jakarta.persistence.Transient",
+            "jakarta.persistence.Basic",
+            "jakarta.persistence.OneToMany",
+            "jakarta.persistence.ManyToOne",
+            "jakarta.persistence.OneToOne",
+            "jakarta.persistence.ManyToMany",
+            "jakarta.persistence.ElementCollection");
 
     private static final Set<String> SUPPORTED_JACKSON_ANNOTATIONS = Set.of(
             JacksonAnnotation.class.getName(),
@@ -108,7 +122,7 @@ public abstract class JacksonCodeGenerator {
     protected final Set<String> generatedClassNames = new HashSet<>();
     protected final Deque<ClassInfo> toBeGenerated = new ArrayDeque<>();
 
-    public JacksonCodeGenerator(BuildProducer<GeneratedClassBuildItem> generatedClassBuildItemBuildProducer,
+    protected JacksonCodeGenerator(BuildProducer<GeneratedClassBuildItem> generatedClassBuildItemBuildProducer,
             IndexView jandexIndex) {
         this.generatedClassBuildItemBuildProducer = generatedClassBuildItemBuildProducer;
         this.jandexIndex = jandexIndex;
@@ -117,14 +131,18 @@ public abstract class JacksonCodeGenerator {
     protected abstract String getSuperClassName();
 
     protected String[] getInterfacesNames(ClassInfo classInfo) {
-        return new String[0];
+        return EMPTY_STRING_ARRAY;
     }
 
     protected abstract String getClassSuffix();
 
     public Collection<String> create(Collection<ClassInfo> classInfos) {
         Set<String> createdClasses = new HashSet<>();
-        toBeGenerated.addAll(classInfos);
+        for (ClassInfo classInfo : classInfos) {
+            if (shouldGenerateCodeFor(classInfo)) {
+                toBeGenerated.add(classInfo);
+            }
+        }
 
         while (!toBeGenerated.isEmpty()) {
             create(toBeGenerated.removeFirst()).ifPresent(createdClasses::add);
@@ -140,7 +158,7 @@ public abstract class JacksonCodeGenerator {
         }
         Optional<String> unknownAnnotation = findUnknownAnnotation(classInfo);
         if (unknownAnnotation.isPresent()) {
-            log.infof("Skipping generation of reflection-free Jackson serializer for class %s" +
+            log.debugf("Skipping generation of reflection-free Jackson serializer for class %s" +
                     " because it contains the unsupported Jackson annotation %s", beanClassName, unknownAnnotation.get());
             return Optional.empty();
         }
@@ -158,7 +176,7 @@ public abstract class JacksonCodeGenerator {
     }
 
     private void createConstructor(ClassCreator classCreator, String beanClassName) {
-        MethodCreator constructor = classCreator.getConstructorCreator(new String[0]);
+        MethodCreator constructor = classCreator.getConstructorCreator(EMPTY_STRING_ARRAY);
         constructor.invokeSpecialMethod(
                 MethodDescriptor.ofConstructor(getSuperClassName(), "java.lang.Class"),
                 constructor.getThis(), constructor.loadClass(beanClassName));
@@ -221,14 +239,22 @@ public abstract class JacksonCodeGenerator {
     }
 
     private static boolean vetoedClassName(String className) {
-        return className.startsWith("java.") || className.startsWith("jakarta.") || className.startsWith("io.vertx.core.json.");
+        return className.startsWith("java.") || className.startsWith("jakarta.")
+                || className.startsWith("io.vertx.core.json.")
+                || className.startsWith("com.fasterxml.jackson.databind.")
+                || className.startsWith("tools.jackson.databind.");
     }
 
-    private static Optional<String> findUnknownAnnotation(ClassInfo classInfo) {
-        return classInfo.annotations().stream()
+    private Optional<String> findUnknownAnnotation(ClassInfo classInfo) {
+        Optional<String> unknown = classInfo.annotations().stream()
                 .map(a -> a.name().toString())
                 .filter(FieldSpecs::isUnknownAnnotation)
                 .findFirst();
+        if (unknown.isPresent()) {
+            return unknown;
+        }
+        Optional<String> fromSuperClass = onSuperClass(classInfo, this::findUnknownAnnotation);
+        return fromSuperClass != null ? fromSuperClass : Optional.empty();
     }
 
     protected enum FieldKind {
@@ -237,7 +263,7 @@ public abstract class JacksonCodeGenerator {
         LIST(true),
         SET(true),
         MAP(true),
-        OPTIONAL(true),
+        WRAPPER(true),
         TYPE_VARIABLE(true);
 
         private final boolean generic;
@@ -251,9 +277,9 @@ public abstract class JacksonCodeGenerator {
         }
     }
 
-    private static final DotName COLLECTION_NAME = DotName.createSimple(Collection.class);
+    protected static final DotName COLLECTION_NAME = DotName.createSimple(Collection.class);
     private static final DotName SET_NAME = DotName.createSimple(Set.class);
-    private static final DotName MAP_NAME = DotName.createSimple(Map.class);
+    protected static final DotName MAP_NAME = DotName.createSimple(Map.class);
 
     protected FieldKind registerTypeToBeGenerated(Type fieldType, String typeName) {
         if (fieldType instanceof TypeVariable) {
@@ -273,10 +299,8 @@ public abstract class JacksonCodeGenerator {
                     registerTypeToBeGenerated(pType.arguments().get(0));
                     return FieldKind.LIST;
                 }
-                if (Optional.class.getName().equals(typeName)) {
-                    registerTypeToBeGenerated(pType.arguments().get(0));
-                    return FieldKind.OPTIONAL;
-                }
+                registerTypeToBeGenerated(pType.arguments().get(0));
+                return FieldKind.WRAPPER;
             }
             if (pType.arguments().size() == 2 && isAssignableTo(typeName, MAP_NAME)) {
                 registerTypeToBeGenerated(pType.arguments().get(0));
@@ -288,7 +312,7 @@ public abstract class JacksonCodeGenerator {
         return FieldKind.OBJECT;
     }
 
-    private boolean isAssignableTo(String typeName, DotName targetName) {
+    protected boolean isAssignableTo(String typeName, DotName targetName) {
         if (typeName.equals(targetName.toString())) {
             return true;
         }
@@ -310,6 +334,13 @@ public abstract class JacksonCodeGenerator {
     }
 
     private void registerTypeToBeGenerated(Type type) {
+        // a type argument can be parameterized itself, like the List<Foo> in a Map<String, List<Foo>>,
+        // so recurse to reach the Foo nested in it
+        if (type instanceof ParameterizedType pType) {
+            for (Type argument : pType.arguments()) {
+                registerTypeToBeGenerated(argument);
+            }
+        }
         registerTypeToBeGenerated(type.name().toString());
     }
 
@@ -336,7 +367,33 @@ public abstract class JacksonCodeGenerator {
     }
 
     protected boolean shouldGenerateCodeFor(ClassInfo classInfo) {
-        return !classInfo.isEnum();
+        return !classInfo.isEnum() && !classInfo.hasDeclaredAnnotation(KOTLIN_METADATA);
+    }
+
+    protected static boolean isClassFormatShapeArray(ClassInfo classInfo) {
+        AnnotationInstance format = classInfo.declaredAnnotation(DotName.createSimple(JsonFormat.class.getName()));
+        if (format == null) {
+            return false;
+        }
+        AnnotationValue shape = format.value("shape");
+        return shape != null && "ARRAY".equals(shape.asEnum());
+    }
+
+    private static final DotName JSON_TYPE_INFO = DotName.createSimple(JsonTypeInfo.class);
+
+    protected boolean hasJsonTypeInfoInTypeChain(Type type) {
+        ClassInfo classInfo = jandexIndex.getClassByName(type.name());
+        if (classInfo != null && classInfo.hasDeclaredAnnotation(JSON_TYPE_INFO)) {
+            return true;
+        }
+        if (type instanceof ParameterizedType pType) {
+            for (Type arg : pType.arguments()) {
+                if (hasJsonTypeInfoInTypeChain(arg)) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     protected static String anyGetterBackingFieldName(MethodInfo anyGetterMethod) {
@@ -347,7 +404,7 @@ public abstract class JacksonCodeGenerator {
         return methodName;
     }
 
-    private MethodInfo getterMethodInfo(ClassInfo classInfo, FieldInfo fieldInfo) {
+    protected MethodInfo getterMethodInfo(ClassInfo classInfo, FieldInfo fieldInfo) {
         MethodInfo namedAccessor = findMethod(classInfo, fieldInfo.name());
         if (namedAccessor != null
                 && (classInfo.isRecord() || namedAccessor.hasAnnotation(JsonProperty.class)
@@ -425,8 +482,18 @@ public abstract class JacksonCodeGenerator {
         for (MethodInfo method : classMethods(classInfo)) {
             if (method.hasAnnotation(JsonAnyGetter.class)
                     && method.parametersCount() == 0
-                    && !java.lang.reflect.Modifier.isStatic(method.flags())) {
+                    && !Modifier.isStatic(method.flags())) {
                 return method;
+            }
+        }
+        return null;
+    }
+
+    protected FieldInfo findAnyGetterField(ClassInfo classInfo) {
+        for (FieldInfo field : classFields(classInfo)) {
+            if (field.hasAnnotation(JsonAnyGetter.class)
+                    && !Modifier.isStatic(field.flags())) {
+                return field;
             }
         }
         return null;
@@ -461,8 +528,9 @@ public abstract class JacksonCodeGenerator {
         return null;
     }
 
-    protected FieldSpecs fieldSpecsFromFieldParam(MethodParameterInfo paramInfo, PropertyNamingStrategy namingStrategy) {
-        return new FieldSpecs(paramInfo, namingStrategy);
+    protected FieldSpecs fieldSpecsFromFieldParam(ClassInfo classInfo, MethodParameterInfo paramInfo,
+            PropertyNamingStrategy namingStrategy) {
+        return new FieldSpecs(classInfo, paramInfo, namingStrategy);
     }
 
     protected static class FieldSpecs {
@@ -471,6 +539,7 @@ public abstract class JacksonCodeGenerator {
         final String jsonName;
         final boolean hasExplicitJsonName;
         final String[] aliases;
+        final boolean required;
         final Type fieldType;
 
         private final Map<String, AnnotationInstance> annotations = new HashMap<>();
@@ -505,9 +574,17 @@ public abstract class JacksonCodeGenerator {
             this.jsonName = result.name;
             this.hasExplicitJsonName = result.explicit;
             this.aliases = jsonAliases();
+            this.required = isRequired();
         }
 
-        FieldSpecs(MethodParameterInfo paramInfo, PropertyNamingStrategy namingStrategy) {
+        FieldSpecs(ClassInfo classInfo, MethodParameterInfo paramInfo, PropertyNamingStrategy namingStrategy) {
+            if (classInfo != null) {
+                FieldInfo field = classInfo.field(paramInfo.name());
+                if (field != null) {
+                    this.fieldInfo = field;
+                    readAnnotations(field);
+                }
+            }
             readAnnotations(paramInfo);
             this.fieldType = paramInfo.type();
             this.fieldName = paramInfo.name();
@@ -515,6 +592,7 @@ public abstract class JacksonCodeGenerator {
             this.jsonName = result.name;
             this.hasExplicitJsonName = result.explicit;
             this.aliases = jsonAliases();
+            this.required = isRequired();
         }
 
         private void readAnnotations(AnnotationTarget target) {
@@ -543,7 +621,18 @@ public abstract class JacksonCodeGenerator {
                     return value.asStringArray();
                 }
             }
-            return new String[0];
+            return EMPTY_STRING_ARRAY;
+        }
+
+        private boolean isRequired() {
+            AnnotationInstance jsonProperty = annotations.get(JsonProperty.class.getName());
+            if (jsonProperty != null) {
+                AnnotationValue req = jsonProperty.value("required");
+                if (req != null) {
+                    return req.asBoolean();
+                }
+            }
+            return false;
         }
 
         private record JsonNameResult(String name, boolean explicit) {
@@ -594,12 +683,36 @@ public abstract class JacksonCodeGenerator {
             return methodName;
         }
 
+        boolean isAutoDetectedGetter() {
+            return fieldInfo == null && methodInfo != null
+                    && annotations.get(JsonProperty.class.getName()) == null
+                    && annotations.get(JsonGetter.class.getName()) == null;
+        }
+
         boolean isIgnoredField() {
-            return annotations.get(JsonIgnore.class.getName()) != null;
+            return annotations.get(JsonIgnore.class.getName()) != null
+                    || annotations.get(java.beans.Transient.class.getName()) != null;
         }
 
         boolean isUnwrapped() {
             return annotations.get(JsonUnwrapped.class.getName()) != null;
+        }
+
+        String unwrappedPrefix() {
+            AnnotationInstance ann = annotations.get(JsonUnwrapped.class.getName());
+            AnnotationValue prefix = ann == null ? null : ann.value("prefix");
+            return prefix == null ? "" : prefix.asString();
+        }
+
+        String unwrappedSuffix() {
+            AnnotationInstance ann = annotations.get(JsonUnwrapped.class.getName());
+            AnnotationValue suffix = ann == null ? null : ann.value("suffix");
+            return suffix == null ? "" : suffix.asString();
+        }
+
+        String[] fieldIgnoreProperties() {
+            AnnotationInstance ann = annotations.get(JsonIgnoreProperties.class.getName());
+            return ann == null || ann.value() == null ? EMPTY_STRING_ARRAY : ann.value().asStringArray();
         }
 
         boolean isBackReference() {
@@ -610,13 +723,41 @@ public abstract class JacksonCodeGenerator {
             return annotations.get(JsonRawValue.class.getName()) != null;
         }
 
-        boolean isFormatShapeNumber() {
+        String formatShape() {
             AnnotationInstance format = annotations.get(JsonFormat.class.getName());
             if (format == null) {
-                return false;
+                return null;
             }
             AnnotationValue shape = format.value("shape");
-            return shape != null && "NUMBER".equals(shape.asEnum());
+            return shape != null ? shape.asEnum() : null;
+        }
+
+        boolean isFormatShapeNumber() {
+            return "NUMBER".equals(formatShape());
+        }
+
+        String formatPattern() {
+            AnnotationInstance format = annotations.get(JsonFormat.class.getName());
+            if (format == null) {
+                return null;
+            }
+            AnnotationValue pattern = format.value("pattern");
+            if (pattern == null || pattern.asString().isEmpty()) {
+                return null;
+            }
+            return pattern.asString();
+        }
+
+        String formatTimezone() {
+            AnnotationInstance format = annotations.get(JsonFormat.class.getName());
+            if (format == null) {
+                return null;
+            }
+            AnnotationValue timezone = format.value("timezone");
+            if (timezone == null || timezone.asString().isEmpty() || "##default".equals(timezone.asString())) {
+                return null;
+            }
+            return timezone.asString();
         }
 
         String jsonIncludeValue() {
@@ -637,7 +778,8 @@ public abstract class JacksonCodeGenerator {
             if (ann.startsWith("com.fasterxml.jackson.")) {
                 return !SUPPORTED_JACKSON_ANNOTATIONS.contains(ann);
             }
-            return ann.startsWith("jakarta.persistence.");
+            return ann.startsWith("jakarta.persistence.") &&
+                    UNSUPPORTED_JAKARTA_PERSISTENCE_ANNOTATIONS.contains(ann);
         }
 
         String[] viewClasses() {
@@ -655,7 +797,7 @@ public abstract class JacksonCodeGenerator {
 
         ResultHandle toValueWriterHandle(BytecodeCreator bytecode, ResultHandle valueHandle) {
             return switch (fieldType.name().toString()) {
-                case "char", "java.lang.Character" -> bytecode.invokeVirtualMethod(
+                case "char" -> bytecode.invokeVirtualMethod(
                         MethodDescriptor.ofMethod(String.class, "charAt", char.class, int.class), valueHandle,
                         bytecode.load(0));
                 default -> valueHandle;
@@ -666,8 +808,16 @@ public abstract class JacksonCodeGenerator {
             ResultHandle handle = accessorHandle(bytecode, valueHandle);
 
             return switch (fieldType.name().toString()) {
-                case "char", "java.lang.Character" -> bytecode.invokeStaticMethod(
+                case "char" -> bytecode.invokeStaticMethod(
                         MethodDescriptor.ofMethod(Character.class, "toString", String.class, char.class), handle);
+                case "java.lang.Character" -> {
+                    AssignableResultHandle result = bytecode.createVariable(String.class);
+                    BranchResult nullCheck = bytecode.ifNull(handle);
+                    nullCheck.trueBranch().assign(result, nullCheck.trueBranch().loadNull());
+                    nullCheck.falseBranch().assign(result, nullCheck.falseBranch().invokeStaticMethod(
+                            MethodDescriptor.ofMethod(Character.class, "toString", String.class, char.class), handle));
+                    yield result;
+                }
                 default -> handle;
             };
         }

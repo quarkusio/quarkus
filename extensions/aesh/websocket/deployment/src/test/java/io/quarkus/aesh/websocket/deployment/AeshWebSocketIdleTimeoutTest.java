@@ -3,7 +3,6 @@ package io.quarkus.aesh.websocket.deployment;
 import java.net.URI;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import jakarta.inject.Inject;
 
@@ -29,8 +28,12 @@ public class AeshWebSocketIdleTimeoutTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot(jar -> jar.addClasses(HelloCommand.class))
-            .overrideConfigKey("quarkus.aesh.websocket.idle-timeout", "2s");
+            .withApplicationRoot(jar -> jar.addClasses(
+                    AeshWebSocketTestHelper.class, HelloCommand.class))
+            .overrideConfigKey("quarkus.aesh.websocket.idle-timeout", "2s")
+            .overrideConfigKey("quarkus.websockets-next.server.traffic-logging.enabled", "true")
+            .overrideConfigKey("quarkus.log.category.\"io.quarkus.websockets.next.traffic\".level", "DEBUG")
+            .overrideConfigKey("quarkus.log.category.\"io.quarkus.aesh\".level", "DEBUG");
 
     @TestHTTPResource("/aesh/terminal")
     URI wsUri;
@@ -40,9 +43,9 @@ public class AeshWebSocketIdleTimeoutTest {
 
     @Test
     public void testIdleSessionIsClosed() throws Exception {
-        AtomicBoolean commandWorked = new AtomicBoolean(false);
         CountDownLatch commandLatch = new CountDownLatch(1);
         CountDownLatch closedLatch = new CountDownLatch(1);
+        StringBuilder output = new StringBuilder();
 
         WebSocketClient client = vertx.createWebSocketClient();
         try {
@@ -59,26 +62,24 @@ public class AeshWebSocketIdleTimeoutTest {
                 }
                 var ws = ar.result();
 
-                ws.textMessageHandler(msg -> {
-                    if (msg.contains("Hello World!")) {
-                        commandWorked.set(true);
-                        commandLatch.countDown();
-                    }
-                });
+                AeshWebSocketTestHelper.sendCommandOnPrompt(ws, "hello", "Hello World!",
+                        output, commandLatch);
 
                 ws.closeHandler(v -> closedLatch.countDown());
 
-                // Initialize and send a command
                 ws.writeTextMessage("{\"action\":\"init\",\"cols\":80,\"rows\":24}");
-                vertx.setTimer(500, id -> {
-                    ws.writeTextMessage("{\"action\":\"read\",\"data\":\"hello\\r\"}");
+                // Retry init if server did not respond (handles slow JVMs like Semeru)
+                vertx.setTimer(2000, id -> {
+                    if (output.length() == 0) {
+                        ws.writeTextMessage("{\"action\":\"init\",\"cols\":80,\"rows\":24}");
+                    }
                 });
             });
 
             // Verify the command works
-            boolean cmdOk = commandLatch.await(10, TimeUnit.SECONDS);
+            boolean cmdOk = commandLatch.await(30, TimeUnit.SECONDS);
             Assertions.assertThat(cmdOk).as("Command should produce output").isTrue();
-            Assertions.assertThat(commandWorked.get()).isTrue();
+            Assertions.assertThat(output.toString()).contains("Hello World!");
 
             // Now wait for idle timeout (2s timeout + up to 1s check + buffer)
             boolean closed = closedLatch.await(6, TimeUnit.SECONDS);

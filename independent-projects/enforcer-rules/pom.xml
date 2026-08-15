@@ -100,7 +100,7 @@
             <plugin>
                 <groupId>org.eclipse.sisu</groupId>
                 <artifactId>sisu-maven-plugin</artifactId>
-                <version>1.0.0</version>
+                <version>1.0.1</version>
                 <executions>
                     <execution>
                         <id>index-project</id>
@@ -135,7 +135,7 @@
                     <dependency>
                         <groupId>org.apache.groovy</groupId>
                         <artifactId>groovy</artifactId>
-                        <version>5.0.6</version>
+                        <version>5.0.8</version>
                     </dependency>
                 </dependencies>
             </plugin>

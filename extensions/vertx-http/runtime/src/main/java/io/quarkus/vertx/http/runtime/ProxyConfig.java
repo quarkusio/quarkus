@@ -149,6 +149,7 @@ public interface ProxyConfig {
 
     /**
      * Identify trusted proxies by their TLS client certificate Subject DN.
+     * Optionally, a truststore alias can be specified to also verify the trust anchor.
      * Each entry defines a trusted proxy whose forwarded headers are honored when the client certificate matches.
      * Use the indexed property format to configure multiple trusted proxies:
      * {@code quarkus.http.proxy.trusted-proxy[0].subject-dn=CN=my-proxy,O=MyOrg}.
@@ -171,6 +172,12 @@ public interface ProxyConfig {
          */
         @WithConverter(TrimmedStringConverter.class)
         String subjectDn();
+
+        /**
+         * Alias of a certificate entry in the TLS registry truststore used by the HTTP server.
+         * When set, the client's certificate chain is validated against the certificate stored under this alias.
+         */
+        Optional<@WithConverter(TrimmedStringConverter.class) String> truststoreAlias();
     }
 
     /**

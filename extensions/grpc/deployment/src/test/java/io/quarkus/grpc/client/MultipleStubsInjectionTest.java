@@ -18,12 +18,14 @@ import io.grpc.examples.goodbyeworld.GoodbyeReply;
 import io.grpc.examples.goodbyeworld.GoodbyeReplyOrBuilder;
 import io.grpc.examples.goodbyeworld.GoodbyeRequest;
 import io.grpc.examples.goodbyeworld.GoodbyeRequestOrBuilder;
+import io.grpc.examples.goodbyeworld.GoodbyeWorldProto;
 import io.grpc.examples.goodbyeworld.MutinyFarewellGrpc;
 import io.grpc.examples.helloworld.GreeterGrpc;
 import io.grpc.examples.helloworld.HelloReply;
 import io.grpc.examples.helloworld.HelloReplyOrBuilder;
 import io.grpc.examples.helloworld.HelloRequest;
 import io.grpc.examples.helloworld.HelloRequestOrBuilder;
+import io.grpc.examples.helloworld.HelloWorldProto;
 import io.grpc.examples.helloworld.MutinyGreeterGrpc;
 import io.quarkus.grpc.GrpcClient;
 import io.quarkus.grpc.server.services.GoodbyeService;
@@ -43,7 +45,8 @@ public class MultipleStubsInjectionTest {
                             MutinyFarewellGrpc.class, FarewellGrpc.class,
                             MutinyFarewellGrpc.MutinyFarewellStub.class,
                             GoodbyeService.class, GoodbyeRequest.class, GoodbyeReply.class,
-                            GoodbyeReplyOrBuilder.class, GoodbyeRequestOrBuilder.class))
+                            GoodbyeReplyOrBuilder.class, GoodbyeRequestOrBuilder.class, HelloWorldProto.class,
+                            GoodbyeWorldProto.class))
             .withConfigurationResource("hello-config.properties");
 
     @Inject

@@ -70,6 +70,12 @@ If you change a runtime module, rebuild its deployment module too.
 | `-Dincremental` | Only build changed modules |
 | `-Dtest-containers -Dstart-containers` | Auto-start containers for tests (always use when running tests) |
 
+**Do NOT run tests from multiple modules in parallel.** The Quarkus core
+repository does not support parallel testing — there will be port conflicts.
+Do not use Maven's parallel build flags (`-T`, `-T1C`, `--threads`) when
+running tests, and do not launch multiple `./mvnw` test invocations
+concurrently. Run test modules sequentially.
+
 **Do NOT use `-Dno-format`** to skip formatting checks. Formatting and
 import sorting are applied automatically during compilation — there is no
 need for a separate step. Let the build fix formatting for you.

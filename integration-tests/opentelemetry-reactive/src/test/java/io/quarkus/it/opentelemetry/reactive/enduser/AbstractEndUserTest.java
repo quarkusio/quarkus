@@ -2,7 +2,7 @@ package io.quarkus.it.opentelemetry.reactive.enduser;
 
 import static io.opentelemetry.semconv.UrlAttributes.URL_PATH;
 import static io.opentelemetry.semconv.incubating.EnduserIncubatingAttributes.ENDUSER_ID;
-import static io.opentelemetry.semconv.incubating.EnduserIncubatingAttributes.ENDUSER_ROLE;
+import static io.opentelemetry.semconv.incubating.UserIncubatingAttributes.USER_ROLES;
 import static io.quarkus.it.opentelemetry.reactive.Utils.getSpans;
 import static io.restassured.RestAssured.get;
 import static io.restassured.RestAssured.given;
@@ -17,6 +17,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.time.Duration;
+import java.util.List;
 import java.util.Map;
 
 import org.awaitility.Awaitility;
@@ -32,7 +33,7 @@ public abstract class AbstractEndUserTest {
 
     private static final String HTTP_PERM_AUGMENTOR_ROLE = "HTTP-PERM-AUGMENTOR";
     private static final String END_USER_ID_ATTR = ENDUSER_ID.getKey();
-    private static final String END_USER_ROLE_ATTR = ENDUSER_ROLE.getKey();
+    private static final String END_USER_ROLE_ATTR = USER_ROLES.getKey();
     private static final String READER_ROLE = "READER";
     private static final String WRITER_ROLE = "WRITER";
     private static final String WRITER_HTTP_PERM_ROLE = "WRITER-HTTP-PERM";
@@ -382,8 +383,9 @@ public abstract class AbstractEndUserTest {
         assertNull(spanData.get(END_USER_ROLE_ATTR), spanData.toString());
     }
 
-    private static String getRolesAttribute(Map<String, Object> spanData) {
-        var roles = (String) spanData.get(END_USER_ROLE_ATTR);
+    @SuppressWarnings("unchecked")
+    private static List<String> getRolesAttribute(Map<String, Object> spanData) {
+        var roles = (List<String>) spanData.get(END_USER_ROLE_ATTR);
         assertNotNull(roles, spanData.toString());
         return roles;
     }

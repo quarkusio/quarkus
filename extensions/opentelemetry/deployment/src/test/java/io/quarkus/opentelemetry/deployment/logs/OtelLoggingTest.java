@@ -2,11 +2,11 @@ package io.quarkus.opentelemetry.deployment.logs;
 
 import static io.opentelemetry.api.trace.SpanKind.INTERNAL;
 import static io.opentelemetry.sdk.testing.assertj.OpenTelemetryAssertions.assertThat;
+import static io.opentelemetry.semconv.CodeAttributes.CODE_FUNCTION_NAME;
+import static io.opentelemetry.semconv.CodeAttributes.CODE_LINE_NUMBER;
 import static io.opentelemetry.semconv.ExceptionAttributes.EXCEPTION_MESSAGE;
 import static io.opentelemetry.semconv.ExceptionAttributes.EXCEPTION_STACKTRACE;
 import static io.opentelemetry.semconv.ExceptionAttributes.EXCEPTION_TYPE;
-import static io.opentelemetry.semconv.incubating.CodeIncubatingAttributes.CODE_FUNCTION_NAME;
-import static io.opentelemetry.semconv.incubating.CodeIncubatingAttributes.CODE_LINE_NUMBER;
 import static io.opentelemetry.semconv.incubating.LogIncubatingAttributes.LOG_FILE_PATH;
 import static io.opentelemetry.semconv.incubating.ThreadIncubatingAttributes.THREAD_ID;
 import static io.opentelemetry.semconv.incubating.ThreadIncubatingAttributes.THREAD_NAME;
@@ -55,6 +55,7 @@ public class OtelLoggingTest {
                             .add(new StringAsset(
                                     "quarkus.otel.logs.enabled=true\n" +
                                             "quarkus.otel.traces.enabled=true\n" +
+                                            "quarkus.otel.traces.sampler.arg=1.0d\n" +
                                             "quarkus.log.category.\"io.quarkus.opentelemetry\".level=INFO\n"),
                                     "application.properties"));
 
@@ -95,7 +96,7 @@ public class OtelLoggingTest {
                                 .containsEntry(CODE_FUNCTION_NAME.getKey(),
                                         "io.quarkus.opentelemetry.deployment.logs.OtelLoggingTest$JBossLoggingBean.hello")
                                 .containsEntry(THREAD_NAME.getKey(), Thread.currentThread().getName())
-                                .containsEntry(THREAD_ID.getKey(), Thread.currentThread().getId())
+                                .containsEntry(THREAD_ID.getKey(), Thread.currentThread().threadId())
                                 .containsEntry("log.logger.namespace", "org.jboss.logging.Logger")
                                 .containsKey(CODE_LINE_NUMBER.getKey())
                                 .containsEntry("bridge.name",
@@ -135,7 +136,7 @@ public class OtelLoggingTest {
                                 .containsEntry(CODE_FUNCTION_NAME.getKey(),
                                         "io.quarkus.opentelemetry.deployment.logs.OtelLoggingTest$JBossLoggingBean.helloTraced")
                                 .containsEntry(THREAD_NAME.getKey(), Thread.currentThread().getName())
-                                .containsEntry(THREAD_ID.getKey(), Thread.currentThread().getId())
+                                .containsEntry(THREAD_ID.getKey(), Thread.currentThread().threadId())
                                 .containsEntry("log.logger.namespace", "org.jboss.logging.Logger")
                                 .containsKey(CODE_LINE_NUMBER.getKey())
                                 .doesNotContainKey(EXCEPTION_TYPE)
@@ -195,7 +196,7 @@ public class OtelLoggingTest {
                                 .containsEntry(CODE_FUNCTION_NAME.getKey(),
                                         "io.quarkus.opentelemetry.deployment.logs.OtelLoggingTest$JBossLoggingBean.helloLogFormating")
                                 .containsEntry(THREAD_NAME.getKey(), Thread.currentThread().getName())
-                                .containsEntry(THREAD_ID.getKey(), Thread.currentThread().getId())
+                                .containsEntry(THREAD_ID.getKey(), Thread.currentThread().threadId())
                                 .containsEntry("log.logger.namespace", "org.jboss.logging.Logger")
                                 .containsKey(CODE_LINE_NUMBER.getKey())
                                 .doesNotContainKey(EXCEPTION_TYPE)
@@ -231,7 +232,7 @@ public class OtelLoggingTest {
                                 .containsEntry(CODE_FUNCTION_NAME.getKey(),
                                         "io.quarkus.opentelemetry.deployment.logs.OtelLoggingTest$JBossLoggingBean.helloLogParameterValue")
                                 .containsEntry(THREAD_NAME.getKey(), Thread.currentThread().getName())
-                                .containsEntry(THREAD_ID.getKey(), Thread.currentThread().getId())
+                                .containsEntry(THREAD_ID.getKey(), Thread.currentThread().threadId())
                                 .containsEntry("log.logger.namespace", "org.jboss.logging.Logger")
                                 .containsKey(CODE_LINE_NUMBER.getKey())
                                 .doesNotContainKey(EXCEPTION_TYPE)

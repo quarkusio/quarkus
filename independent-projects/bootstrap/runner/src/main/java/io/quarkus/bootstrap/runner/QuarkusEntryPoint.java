@@ -44,9 +44,7 @@ public class QuarkusEntryPoint {
     }
 
     private static void doRun(String... args) throws Throwable {
-        Path jarPath = resolveJarPath(
-                QuarkusEntryPoint.class.getProtectionDomain().getCodeSource().getLocation(),
-                QuarkusEntryPoint.class.getResource(QuarkusEntryPoint.class.getSimpleName() + ".class"));
+        Path jarPath = resolveJarPath(QuarkusEntryPoint.class);
         if (jarPath == null) {
             throw new IllegalStateException("Unable to determine launch jar path");
         }
@@ -77,12 +75,19 @@ public class QuarkusEntryPoint {
         }
     }
 
-    // Visible for testing
-    static Path resolveJarPath(URL location, URL classResource) throws URISyntaxException {
+    static Path resolveJarPath(Class<?> entryPointClass) throws URISyntaxException {
+        URL location = entryPointClass.getProtectionDomain().getCodeSource().getLocation();
         if (location != null) {
             return Path.of(location.toURI());
         }
+
         // account for https://bugs.openjdk.org/browse/JDK-8376576
+        return resolveJarPathFromClassResource(
+                entryPointClass.getResource(entryPointClass.getSimpleName() + ".class"));
+    }
+
+    // Visible for testing
+    static Path resolveJarPathFromClassResource(URL classResource) throws URISyntaxException {
         if (classResource != null) {
             String fullPath = classResource.toString();
             if (fullPath.startsWith("jar:")) {

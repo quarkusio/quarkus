@@ -460,7 +460,9 @@ public class ArcContainerImpl implements ArcContainer {
             beforeDestroyQualifiers.add(BeforeDestroyed.Literal.APPLICATION);
             beforeDestroyQualifiers.add(Any.Literal.INSTANCE);
             try {
-                EventImpl.createNotifier(Object.class, Object.class, beforeDestroyQualifiers, this, false, null)
+                EventImpl
+                        .createShutdownNotifier(Object.class, Object.class, beforeDestroyQualifiers, this, null,
+                                ArcShutdownAction.CDI_BEFORE_DESTROYED_APPLICATION_CONTEXT)
                         .notify(toString());
             } catch (Exception e) {
                 LOGGER.warn("An error occurred during delivery of the @BeforeDestroyed(ApplicationScoped.class) event", e);
@@ -472,7 +474,8 @@ public class ArcContainerImpl implements ArcContainer {
             destroyQualifiers.add(Destroyed.Literal.APPLICATION);
             destroyQualifiers.add(Any.Literal.INSTANCE);
             try {
-                EventImpl.createNotifier(Object.class, Object.class, destroyQualifiers, this, false, null).notify(toString());
+                EventImpl.createShutdownNotifier(Object.class, Object.class, destroyQualifiers, this, null,
+                        ArcShutdownAction.CDI_DESTROYED_APPLICATION_CONTEXT).notify(toString());
             } catch (Exception e) {
                 LOGGER.warn("An error occurred during delivery of the @Destroyed(ApplicationScoped.class) event", e);
             }

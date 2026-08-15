@@ -1,6 +1,5 @@
 package io.quarkus.resteasy.reactive.jackson.deployment.test;
 
-import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.util.Comparator;
 
@@ -18,26 +17,21 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializerProvider;
-import com.fasterxml.jackson.databind.module.SimpleModule;
-import com.fasterxml.jackson.databind.ser.std.StdSerializer;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
 import io.quarkus.arc.Unremovable;
 import io.quarkus.test.QuarkusExtensionTest;
 import io.restassured.RestAssured;
-import io.restassured.internal.mapping.Jackson2Mapper;
 import io.restassured.response.Response;
+import tools.jackson.core.JsonGenerator;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.SerializationContext;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.module.SimpleModule;
+import tools.jackson.databind.ser.std.StdSerializer;
 
 public class CustomSerializerTest {
     private static final OffsetDateTime FIXED_TIME = OffsetDateTime.now();
-    private static final Jackson2Mapper MAPPER = new Jackson2Mapper((type, charset) -> {
-        final ObjectMapper mapper = new ObjectMapper();
-        mapper.registerModule(new JavaTimeModule());
-        return mapper;
-    });
+    private static final ObjectMapper MAPPER = new ObjectMapper();
 
     @RegisterExtension
     static QuarkusExtensionTest test = new QuarkusExtensionTest().withEmptyApplication();
@@ -47,7 +41,7 @@ public class CustomSerializerTest {
         final Response response = RestAssured.given().get("custom-serializer");
         Assertions.assertThat(response.statusCode()).isEqualTo(StatusCode.OK);
 
-        final CustomData actual = response.as(CustomData.class, MAPPER);
+        final CustomData actual = MAPPER.readValue(response.asString(), CustomData.class);
         final CustomData expected = new CustomData("test-data", FIXED_TIME);
         Assertions.assertThat(actual)
                 .usingComparatorForType(Comparator.comparing(OffsetDateTime::toInstant), OffsetDateTime.class)
@@ -91,12 +85,11 @@ public class CustomSerializerTest {
 
         @Override
         public void serialize(final CustomData customData, final JsonGenerator jsonGenerator,
-                final SerializerProvider serializerProvider)
-                throws IOException {
+                final SerializationContext serializationContext) {
             jsonGenerator.writeStartObject();
-            jsonGenerator.writeStringField("name", customData.getName());
+            jsonGenerator.writeStringProperty("name", customData.getName());
             if (customData.getTime() != null) {
-                jsonGenerator.writeObjectField("time", customData.getTime());
+                jsonGenerator.writePOJOProperty("time", customData.getTime());
             }
             jsonGenerator.writeEndObject();
         }
@@ -108,12 +101,11 @@ public class CustomSerializerTest {
 
         @Override
         public ObjectMapper getContext(final Class<?> type) {
-            final ObjectMapper objectMapper = new ObjectMapper();
             final SimpleModule simpleModule = new SimpleModule("custom-data");
             simpleModule.addSerializer(new CustomDataSerializer());
-            objectMapper.registerModule(simpleModule);
-            objectMapper.registerModule(new JavaTimeModule());
-            return objectMapper;
+            return JsonMapper.builder()
+                    .addModule(simpleModule)
+                    .build();
         }
     }
 

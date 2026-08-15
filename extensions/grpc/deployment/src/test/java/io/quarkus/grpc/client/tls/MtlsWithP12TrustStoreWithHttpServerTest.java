@@ -29,10 +29,7 @@ class MtlsWithP12TrustStoreWithHttpServerTest {
             quarkus.grpc.clients.hello.tls.key-certificate-p12.path=target/certs/grpc-client-keystore.p12
             quarkus.grpc.clients.hello.tls.key-certificate-p12.password=password
             quarkus.grpc.clients.hello.tls.enabled=true
-            quarkus.grpc.clients.hello.use-quarkus-grpc-client=true
 
-            quarkus.grpc.server.use-separate-server=false
-            quarkus.grpc.server.plain-text=false # Force the client to use TLS for the tests
 
             quarkus.http.ssl.certificate.key-store-file=target/certs/grpc-keystore.jks
             quarkus.http.ssl.certificate.key-store-password=password

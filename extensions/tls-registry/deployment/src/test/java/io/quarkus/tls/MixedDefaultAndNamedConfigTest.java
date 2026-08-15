@@ -61,15 +61,15 @@ public class MixedDefaultAndNamedConfigTest {
         assertThat(defConfig.getKeyStoreOptions()).isNotNull();
         assertThat(defConfig.getTrustStoreOptions()).isNotNull();
         assertThat(defConfig.isTrustAll()).isFalse();
-        assertThat(defConfig.getSSLOptions().getEnabledSecureTransportProtocols()).containsExactly("TLSv1.3");
-        assertThat(defConfig.getSSLOptions().isUseAlpn()).isTrue();
+        assertThat(defConfig.getServerSSLOptions().getEnabledSecureTransportProtocols()).containsExactly("TLSv1.3");
+        assertThat(defConfig.getServerSSLOptions().isUseAlpn()).isTrue();
 
         assertThat(httpConfig.getKeyStoreOptions()).isNotNull();
         assertThat(httpConfig.getTrustStoreOptions()).isNotNull();
         assertThat(httpConfig.isTrustAll()).isFalse();
-        assertThat(httpConfig.getSSLOptions().getEnabledSecureTransportProtocols())
+        assertThat(httpConfig.getServerSSLOptions().getEnabledSecureTransportProtocols())
                 .containsExactlyInAnyOrder("TLSv1.3", "TLSv1.2");
-        assertThat(httpConfig.getSSLOptions().isUseAlpn()).isFalse();
+        assertThat(httpConfig.getServerSSLOptions().isUseAlpn()).isFalse();
 
         assertThat(grpcConfig.isTrustAll()).isTrue();
         assertThat(grpcConfig.getHostnameVerificationAlgorithm()).hasValue("NONE");

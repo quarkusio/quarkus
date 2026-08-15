@@ -1,57 +1,46 @@
 package io.quarkus.deployment.builditem;
 
+import static io.quarkus.deployment.builditem.ConfigClassInfo.collectTypes;
+
 import java.util.Objects;
+import java.util.Set;
+
+import org.jboss.jandex.ClassInfo;
+import org.jboss.jandex.IndexView;
+import org.jboss.jandex.Type;
 
 import io.quarkus.builder.item.MultiBuildItem;
 
 /**
- * A {@link MultiBuildItem} used to register a class annotated with {@code @ConfigProperties}
- * for build-time configuration mapping in Quarkus.
- *
- * <p>
- * This build item allows Quarkus to generate an implementation of the configuration class
- * based on the provided prefix, enabling strong typing and reflection-free access
- * to configuration properties.
- * </p>
- *
- * <p>
- * Multiple instances of this build item can be produced, one for each configuration class.
- * </p>
+ * Discovered classes annotated with {@link org.eclipse.microprofile.config.inject.ConfigProperties}.
  *
  * @see org.eclipse.microprofile.config.inject.ConfigProperties
  */
-public final class ConfigPropertiesBuildItem extends MultiBuildItem implements Comparable<ConfigPropertiesBuildItem> {
-    private final Class<?> configClass;
+public final class ConfigPropertiesBuildItem extends MultiBuildItem
+        implements ConfigClassInfo, Comparable<ConfigPropertiesBuildItem> {
+    private final ClassInfo configClass;
     private final String prefix;
+    private final Set<Type> types;
 
-    /**
-     * Constructs a new {@code ConfigPropertiesBuildItem}.
-     *
-     * @param configClass the class annotated with {@code @ConfigProperties}. Must not be {@code null}.
-     * @param prefix the configuration prefix associated with the class. Must not be {@code null}.
-     */
-    public ConfigPropertiesBuildItem(final Class<?> configClass, final String prefix) {
+    public ConfigPropertiesBuildItem(ClassInfo configClass, String prefix, IndexView index) {
         this.configClass = configClass;
         this.prefix = prefix;
+        this.types = collectTypes(configClass, index);
     }
 
-    /**
-     * Returns the configuration class annotated with {@code @ConfigProperties}.
-     *
-     * @return the configuration class.
-     */
-    public Class<?> getConfigClass() {
+    @Override
+    public ClassInfo getConfigClass() {
         return configClass;
     }
 
-    /**
-     * Returns the configuration prefix that should be used to map configuration properties
-     * to the annotated class.
-     *
-     * @return the configuration prefix.
-     */
+    @Override
     public String getPrefix() {
         return prefix;
+    }
+
+    @Override
+    public Set<Type> getTypes() {
+        return types;
     }
 
     @Override
@@ -69,7 +58,7 @@ public final class ConfigPropertiesBuildItem extends MultiBuildItem implements C
 
     @Override
     public int compareTo(ConfigPropertiesBuildItem o) {
-        int result = this.configClass.getName().compareTo(o.configClass.getName());
+        int result = getConfigClassName().compareTo(o.getConfigClassName());
         if (result != 0) {
             return result;
         }

@@ -61,7 +61,8 @@ public class OpenTelemetryMpContextPropagationTest {
             return this.threadContext
                     .withContextCapture(CompletableFuture.supplyAsync(
                             () -> message, this.customExecutorService))
-                    .thenApplyAsync(msg -> msg + "-" + Span.current().getSpanContext().getTraceId(), customExecutorService);
+                    .thenApplyAsync(msg -> msg + "-" + Span.current().getSpanContext().getTraceId(),
+                            customExecutorService);
         }
     }
 }

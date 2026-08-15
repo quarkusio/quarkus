@@ -8,10 +8,6 @@ import jakarta.enterprise.inject.spi.CDI;
 
 import org.jboss.logging.Logger;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectReader;
-import com.fasterxml.jackson.databind.ObjectWriter;
-
 import io.netty.buffer.ByteBufInputStream;
 import io.quarkus.arc.ManagedContext;
 import io.quarkus.arc.runtime.BeanContainer;
@@ -26,7 +22,10 @@ import io.quarkus.vertx.http.runtime.security.QuarkusHttpUser;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpMethod;
+import io.vertx.core.internal.buffer.BufferInternal;
 import io.vertx.ext.web.RoutingContext;
+import tools.jackson.databind.ObjectReader;
+import tools.jackson.databind.ObjectWriter;
 
 public class VertxRequestHandler implements Handler<RoutingContext> {
     private static final Logger log = Logger.getLogger("io.quarkus.funqy");
@@ -98,10 +97,10 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
                 dispatch(routingContext, invoker, finalInput);
             });
         } else if (routingContext.request().method() == HttpMethod.POST) {
-            var buff = routingContext.getBody();
+            var buff = routingContext.body().buffer();
             Object input = null;
             if (buff != null && buff.length() > 0) {
-                ByteBufInputStream in = new ByteBufInputStream(buff.getByteBuf());
+                ByteBufInputStream in = new ByteBufInputStream(((BufferInternal) buff).getByteBuf());
                 ObjectReader reader = (ObjectReader) invoker.getBindingContext().get(ObjectReader.class.getName());
                 try {
                     input = reader.readValue((InputStream) in);
@@ -150,7 +149,7 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
                             ObjectWriter writer = (ObjectWriter) invoker.getBindingContext().get(ObjectWriter.class.getName());
                             try {
                                 routingContext.response().end(writer.writeValueAsString(o));
-                            } catch (JsonProcessingException e) {
+                            } catch (Exception e) {
                                 log.error("Failed to marshal", e);
                                 routingContext.fail(400);
                             }

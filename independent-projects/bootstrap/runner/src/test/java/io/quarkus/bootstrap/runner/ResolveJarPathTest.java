@@ -15,7 +15,7 @@ public class ResolveJarPathTest {
     public void plusInPathIsPreserved() throws Exception {
         URL location = new URI("file:///opt/packages/myapp/1.0.0+build123/quarkus-app/quarkus-run.jar").toURL();
 
-        Path resolved = QuarkusEntryPoint.resolveJarPath(location, null);
+        Path resolved = Path.of(location.toURI());
 
         assertThat(resolved).isEqualTo(Path.of("/opt/packages/myapp/1.0.0+build123/quarkus-app/quarkus-run.jar"));
     }
@@ -24,7 +24,7 @@ public class ResolveJarPathTest {
     public void spacesInPathAreDecoded() throws Exception {
         URL location = new URI("file:///opt/my%20app/quarkus-app/quarkus-run.jar").toURL();
 
-        Path resolved = QuarkusEntryPoint.resolveJarPath(location, null);
+        Path resolved = Path.of(location.toURI());
 
         assertThat(resolved).isEqualTo(Path.of("/opt/my app/quarkus-app/quarkus-run.jar"));
     }
@@ -35,7 +35,7 @@ public class ResolveJarPathTest {
                 "jar:file:///opt/packages/1.0.0+build123/quarkus-app/quarkus-run.jar!/io/quarkus/bootstrap/runner/QuarkusEntryPoint.class")
                 .toURL();
 
-        Path resolved = QuarkusEntryPoint.resolveJarPath(null, classResource);
+        Path resolved = QuarkusEntryPoint.resolveJarPathFromClassResource(classResource);
 
         assertThat(resolved).isEqualTo(Path.of("/opt/packages/1.0.0+build123/quarkus-app/quarkus-run.jar"));
     }
@@ -46,13 +46,13 @@ public class ResolveJarPathTest {
                 "jar:file:///opt/my%20app/quarkus-run.jar!/io/quarkus/bootstrap/runner/QuarkusEntryPoint.class")
                 .toURL();
 
-        Path resolved = QuarkusEntryPoint.resolveJarPath(null, classResource);
+        Path resolved = QuarkusEntryPoint.resolveJarPathFromClassResource(classResource);
 
         assertThat(resolved).isEqualTo(Path.of("/opt/my app/quarkus-run.jar"));
     }
 
     @Test
-    public void returnsNullWhenBothArgumentsAreNull() throws URISyntaxException {
-        assertThat(QuarkusEntryPoint.resolveJarPath(null, null)).isNull();
+    public void returnsNullWhenArgumentIsNull() throws URISyntaxException {
+        assertThat(QuarkusEntryPoint.resolveJarPathFromClassResource(null)).isNull();
     }
 }

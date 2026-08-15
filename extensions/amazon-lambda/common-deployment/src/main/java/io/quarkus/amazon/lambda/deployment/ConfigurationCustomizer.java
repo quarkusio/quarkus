@@ -10,7 +10,10 @@ import io.smallrye.config.SmallRyeConfigBuilder;
 import io.smallrye.config.SmallRyeConfigBuilderCustomizer;
 
 /**
- * A configuration customizer to change the default packaging to legacy-jar.
+ * Defaults packaging to {@code legacy-jar} so ZIP/SAM Lambda deployments keep
+ * working out of the box. Explicit configuration (for example
+ * {@code quarkus.package.jar.type=fast-jar} for JVM container images) overrides
+ * this default.
  */
 public final class ConfigurationCustomizer implements SmallRyeConfigBuilderCustomizer {
     public void configBuilder(final SmallRyeConfigBuilder builder) {

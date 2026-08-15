@@ -6,7 +6,6 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 = Getting Started to Quarkus Messaging with RabbitMQ
 :extension-status: preview
 include::_attributes.adoc[]
-:categories: messaging
 :topics: messaging,reactive-messaging,rabbitmq
 :extensions: io.quarkus:quarkus-messaging-rabbitmq
 

@@ -39,7 +39,7 @@ public class TestConsoleMode {
         Assertions.assertThat(true).isTrue();
     }
 
-    @CommandDefinition(name = "greet", description = "Greet someone")
+    @CommandDefinition(name = "tcm-greet", description = "Greet someone")
     public static class GreetCliCommand implements Command<CommandInvocation> {
 
         @Option(shortName = 'n', name = "name", description = "Name to greet", defaultValue = "World")
@@ -52,7 +52,7 @@ public class TestConsoleMode {
         }
     }
 
-    @CommandDefinition(name = "calc", description = "Calculate sum of two numbers")
+    @CommandDefinition(name = "tcm-calc", description = "Calculate sum of two numbers")
     public static class CalcCliCommand implements Command<CommandInvocation> {
 
         @Option(shortName = 'a', name = "a", description = "First number", defaultValue = "0")

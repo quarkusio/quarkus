@@ -205,7 +205,7 @@ public class OidcClientRegistrationTest {
                         assertTrue(clientRegistered,
                                 "Log file must contain a default client registration confirmation");
                         assertTrue(registeredClientUpdated,
-                                "Log file must contain a a default client's name update confirmation");
+                                "Log file must contain a default client's name update confirmation");
                     }
                 });
     }

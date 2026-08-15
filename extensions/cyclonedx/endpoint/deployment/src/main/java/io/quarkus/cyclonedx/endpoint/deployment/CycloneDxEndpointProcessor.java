@@ -1,15 +1,19 @@
 package io.quarkus.cyclonedx.endpoint.deployment;
 
+import java.util.List;
 import java.util.Optional;
 
 import io.quarkus.cyclonedx.deployment.spi.EmbeddedSbomMetadataBuildItem;
 import io.quarkus.cyclonedx.deployment.spi.EmbeddedSbomRequestBuildItem;
 import io.quarkus.cyclonedx.endpoint.runtime.CycloneDxEndpointRecorder;
+import io.quarkus.deployment.IsProduction;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
+import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
+import io.quarkus.deployment.sbom.SbomGeneratedResourceBuildItem;
 import io.quarkus.vertx.http.deployment.spi.RouteBuildItem;
 import io.quarkus.vertx.http.runtime.management.ManagementInterfaceBuildTimeConfig;
 
@@ -31,6 +35,22 @@ public class CycloneDxEndpointProcessor {
             BuildProducer<EmbeddedSbomRequestBuildItem> producer) {
         if (config.enabled()) {
             producer.produce(new EmbeddedSbomRequestBuildItem());
+        }
+    }
+
+    /**
+     * Makes SBOM resources available on the dev-mode classpath.
+     * <p>
+     * In dev and test modes the JAR packaging step that merges
+     * {@link SbomGeneratedResourceBuildItem} into the archive is not executed,
+     * so this step re-publishes them as {@link GeneratedResourceBuildItem}
+     * instances so the endpoint handler can load the SBOM from the classpath.
+     */
+    @BuildStep(onlyIfNot = IsProduction.class)
+    void registerSbomResourcesForDevMode(List<SbomGeneratedResourceBuildItem> sbomResources,
+            BuildProducer<GeneratedResourceBuildItem> resourceProducer) {
+        for (SbomGeneratedResourceBuildItem sbom : sbomResources) {
+            resourceProducer.produce(new GeneratedResourceBuildItem(sbom.getName(), sbom.getData()));
         }
     }
 

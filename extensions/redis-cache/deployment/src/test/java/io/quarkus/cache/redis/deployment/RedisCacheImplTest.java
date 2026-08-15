@@ -30,11 +30,11 @@ import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.infrastructure.Infrastructure;
 import io.vertx.core.json.Json;
 import io.vertx.mutiny.core.Vertx;
-import io.vertx.mutiny.redis.client.Command;
 import io.vertx.mutiny.redis.client.Redis;
-import io.vertx.mutiny.redis.client.Request;
-import io.vertx.mutiny.redis.client.Response;
+import io.vertx.redis.client.Command;
 import io.vertx.redis.client.RedisOptions;
+import io.vertx.redis.client.Request;
+import io.vertx.redis.client.Response;
 
 class RedisCacheImplTest {
 

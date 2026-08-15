@@ -21,15 +21,13 @@ class TlsWithP12TrustStoreTest {
 
     private static final String configuration = """
             quarkus.grpc.clients.hello.host=localhost
-            quarkus.grpc.clients.hello.port=9001
-            quarkus.grpc.clients.hello.plain-text=false
             quarkus.grpc.clients.hello.tls.trust-certificate-p12.path=target/certs/grpc-client-truststore.p12
             quarkus.grpc.clients.hello.tls.trust-certificate-p12.password=password
             quarkus.grpc.clients.hello.tls.enabled=true
-            quarkus.grpc.clients.hello.use-quarkus-grpc-client=true
 
-            quarkus.grpc.server.ssl.certificate=target/certs/grpc.crt
-            quarkus.grpc.server.ssl.key=target/certs/grpc.key
+            quarkus.tls.http.key-store.pem.0.cert=target/certs/grpc.crt
+            quarkus.tls.http.key-store.pem.0.key=target/certs/grpc.key
+            quarkus.http.tls-configuration-name=http
             """;
 
     @RegisterExtension

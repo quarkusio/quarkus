@@ -135,6 +135,10 @@ public class RestAssuredStateManager {
         }
     }
 
+    public static void setTestUri(URI baseUri) {
+        setTestUri(baseUri, null);
+    }
+
     public static void setTestUri(URI baseUri, String additionalPath) {
         if (!REST_ASSURED_PRESENT) {
             return;

@@ -8,10 +8,9 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import com.fasterxml.jackson.databind.JsonNode;
-
 import io.quarkus.devui.tests.DevUIBuildTimeDataTest;
 import io.quarkus.test.QuarkusDevModeTest;
+import tools.jackson.databind.JsonNode;
 
 public class DevUIQuteBuildTimeDataTest extends DevUIBuildTimeDataTest {
 
@@ -36,7 +35,7 @@ public class DevUIQuteBuildTimeDataTest extends DevUIBuildTimeDataTest {
         Assertions.assertNotNull(templates);
         Assertions.assertTrue(templates.isArray());
 
-        Iterator<JsonNode> en = templates.elements();
+        Iterator<JsonNode> en = templates.iterator();
         boolean exists = false;
         while (en.hasNext()) {
             JsonNode template = en.next();

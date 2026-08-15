@@ -21,18 +21,19 @@ import io.quarkus.test.junit.QuarkusTest;
 @QuarkusTest
 @QuarkusTestResource(value = LogCollectingTestResource.class, restrictToAnnotatedClass = true, initArgs = {
         @ResourceArg(name = LogCollectingTestResource.LEVEL, value = "WARNING"),
-        @ResourceArg(name = LogCollectingTestResource.INCLUDE, value = "org\\.hibernate\\..*"),
-        // Ignore logs about schema management:
-        // they are unfortunate (https://github.com/quarkusio/quarkus/issues/16204)
-        // but for now we have to live with them.
-        // Ignore logs about JCache region factory being closed "twice", too: the log filter is apparently ignored,
-        // see https://github.com/quarkusio/quarkus/issues/48346
-        @ResourceArg(name = LogCollectingTestResource.EXCLUDE, value = "org\\.hibernate\\.tool\\.schema.*,org\\.hibernate\\.orm\\.cache.*")
+        @ResourceArg(name = LogCollectingTestResource.INCLUDE, value = "org\\.hibernate\\..*")
 })
 public class HibernateOrmNoWarningsTest {
     @Test
     public void testNoWarningsOnStartup() {
-        assertThat(LogCollectingTestResource.current().getRecords())
+        assertThat(LogCollectingTestResource.current().getRecords()
+                // Ignore warnings about dropping foreign keys on non-existent tables.
+                // Hibernate ORM uses "ALTER TABLE ... DROP FOREIGN KEY",
+                // but that fails when the table itself does not exist.
+                .stream().filter(r -> {
+                    String msg = LogCollectingTestResource.format(r);
+                    return !msg.contains("drop foreign key") || !msg.contains("doesn't exist");
+                }))
                 // There shouldn't be any warning or error
                 .as("Startup logs (warning or higher)")
                 .extracting(LogCollectingTestResource::format)

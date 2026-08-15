@@ -63,8 +63,15 @@ public final class ExtensionProcessor {
         return getMetadataValue(extension, MD_BUILT_WITH_QUARKUS_CORE).asString();
     }
 
+    @Deprecated(forRemoval = true)
     public static String getCodestartName(Extension extension) {
         return getMetadataValue(extension, MD_NESTED_CODESTART_NAME).asString();
+    }
+
+    public static List<String> getCodestartNames(Extension extension) {
+        final List<String> names = new ArrayList<>(getMetadataValue(extension, MD_NESTED_CODESTART_NAME).asStringList());
+        names.addAll(getMetadataValue(extension, MD_NESTED_CODESTART_EXTRA_NAMES).asStringList());
+        return names;
     }
 
     public static Optional<ArtifactCoords> getBom(Extension extension) {
@@ -87,7 +94,7 @@ public final class ExtensionProcessor {
     }
 
     public static CodestartKind getCodestartKind(Extension extension) {
-        if (getCodestartName(extension) == null) {
+        if (getCodestartNames(extension).isEmpty()) {
             return null;
         }
         return getMetadataValue(extension, MD_NESTED_CODESTART_KIND).toEnum(CodestartKind.class,
@@ -177,8 +184,13 @@ public final class ExtensionProcessor {
         return getShortName(extension);
     }
 
+    @Deprecated(forRemoval = true)
     public String getCodestartName() {
         return getCodestartName(extension);
+    }
+
+    public List<String> getCodestartNames() {
+        return getCodestartNames(extension);
     }
 
     public List<String> getCategories() {

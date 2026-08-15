@@ -1,15 +1,17 @@
 package io.quarkus.spring.security.deployment.roles;
 
-import static io.quarkus.gizmo.MethodDescriptor.ofMethod;
+import static org.jboss.jandex.gizmo2.Jandex2Gizmo.fieldDescOf;
 
 import org.jboss.jandex.FieldInfo;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;
 import io.quarkus.arc.InstanceHandle;
-import io.quarkus.gizmo.BytecodeCreator;
-import io.quarkus.gizmo.FieldDescriptor;
-import io.quarkus.gizmo.ResultHandle;
+import io.quarkus.gizmo2.Const;
+import io.quarkus.gizmo2.Expr;
+import io.quarkus.gizmo2.LocalVar;
+import io.quarkus.gizmo2.creator.BlockCreator;
+import io.quarkus.gizmo2.desc.MethodDesc;
 
 public class FromBeanHasRoleValueProducer implements HasRoleValueProducer {
 
@@ -22,14 +24,14 @@ public class FromBeanHasRoleValueProducer implements HasRoleValueProducer {
     }
 
     @Override
-    public ResultHandle apply(BytecodeCreator creator) {
-        ResultHandle arcContainer = creator
-                .invokeStaticMethod(ofMethod(Arc.class, "container", ArcContainer.class));
-        ResultHandle instanceHandle = creator.invokeInterfaceMethod(
-                ofMethod(ArcContainer.class, "instance", InstanceHandle.class, String.class),
-                arcContainer, creator.load(beanName));
-        ResultHandle bean = creator
-                .invokeInterfaceMethod(ofMethod(InstanceHandle.class, "get", Object.class), instanceHandle);
-        return creator.readInstanceField(FieldDescriptor.of(fieldInfo), bean);
+    public Expr apply(BlockCreator creator) {
+        LocalVar arcContainer = creator.localVar("arcContainer", creator
+                .invokeStatic(MethodDesc.of(Arc.class, "container", ArcContainer.class)));
+        LocalVar instanceHandle = creator.localVar("instanceHandle", creator.invokeInterface(
+                MethodDesc.of(ArcContainer.class, "instance", InstanceHandle.class, String.class),
+                arcContainer, Const.of(beanName)));
+        LocalVar bean = creator.localVar("bean", creator
+                .invokeInterface(MethodDesc.of(InstanceHandle.class, "get", Object.class), instanceHandle));
+        return creator.get(bean.field(fieldDescOf(fieldInfo)));
     }
 }

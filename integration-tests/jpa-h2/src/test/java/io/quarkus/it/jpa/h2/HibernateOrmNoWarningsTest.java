@@ -23,9 +23,7 @@ import io.quarkus.test.junit.QuarkusTest;
         @ResourceArg(name = LogCollectingTestResource.LEVEL, value = "WARNING"),
         @ResourceArg(name = LogCollectingTestResource.INCLUDE, value = "org\\.hibernate\\..*"),
         //We actually have a single warning, caused by the intentional peculiarities of io.quarkus.it.jpa.h2.CompanyCustomer:
-        // Ignore logs about JCache region factory being closed "twice", too: the log filter is apparently ignored,
-        // see https://github.com/quarkusio/quarkus/issues/48346
-        @ResourceArg(name = LogCollectingTestResource.EXCLUDE, value = "org\\.hibernate\\.metamodel\\.internal\\.EntityRepresentationStrategyPojoStandard,org\\.hibernate\\.orm\\.cache.*"),
+        @ResourceArg(name = LogCollectingTestResource.EXCLUDE, value = "org\\.hibernate\\.metamodel\\.internal\\.EntityRepresentationStrategyPojoStandard"),
 })
 public class HibernateOrmNoWarningsTest {
     @Test

@@ -57,6 +57,10 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-smallrye-health-spi</artifactId>
         </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-tls-registry-deployment-spi</artifactId>
+        </dependency>
 
         <dependency>
             <groupId>io.quarkus</groupId>
@@ -92,6 +96,12 @@
     </dependencies>
 
     <build>
+        <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>true</filtering>
+            </resource>
+        </resources>
         <testResources>
             <testResource>
                 <directory>src/test/resources</directory>
@@ -120,6 +130,9 @@
                 <artifactId>maven-surefire-plugin</artifactId>
                 <configuration>
                     <skip>true</skip>
+                    <systemPropertyVariables combine.children="append">
+                        <oracle.default.version>${oracle.default.version}</oracle.default.version>
+                    </systemPropertyVariables>
                 </configuration>
             </plugin>
         </plugins>

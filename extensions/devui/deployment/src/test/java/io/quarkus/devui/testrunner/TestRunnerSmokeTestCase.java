@@ -12,13 +12,12 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import io.quarkus.devui.tests.DevUIJsonRPCTest;
 import io.quarkus.test.ContinuousTestingTestUtils;
 import io.quarkus.test.ContinuousTestingTestUtils.TestStatus;
 import io.quarkus.test.QuarkusDevModeTest;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 
 public class TestRunnerSmokeTestCase extends DevUIJsonRPCTest {
     ObjectMapper mapper = new ObjectMapper();
@@ -63,7 +62,7 @@ public class TestRunnerSmokeTestCase extends DevUIJsonRPCTest {
         JsonNode results = jsonRPCResult.get("results");
         Assertions.assertNotNull(results);
 
-        Iterator<Map.Entry<String, JsonNode>> fields = results.fields();
+        Iterator<Map.Entry<String, JsonNode>> fields = results.properties().iterator();
 
         while (fields.hasNext()) {
             JsonNode testResult = fields.next().getValue();

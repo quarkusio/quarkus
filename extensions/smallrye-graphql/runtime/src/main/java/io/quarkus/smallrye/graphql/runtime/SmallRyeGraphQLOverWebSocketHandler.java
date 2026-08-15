@@ -32,7 +32,7 @@ public class SmallRyeGraphQLOverWebSocketHandler extends SmallRyeGraphQLAbstract
     protected void doHandle(final RoutingContext ctx) {
         if (ctx.request().headers().contains(HttpHeaders.UPGRADE, HttpHeaders.WEBSOCKET, true) && !ctx.request().isEnded()) {
             Map<String, Object> metaData = getMetaData(ctx);
-            ctx.request().toWebSocket(event -> {
+            ctx.request().toWebSocket().onComplete(event -> {
                 if (event.succeeded()) {
                     ServerWebSocket serverWebSocket = event.result();
                     String subprotocol = serverWebSocket.subProtocol();

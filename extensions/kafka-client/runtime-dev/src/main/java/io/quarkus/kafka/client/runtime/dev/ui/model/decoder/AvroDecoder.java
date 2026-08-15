@@ -2,6 +2,7 @@ package io.quarkus.kafka.client.runtime.dev.ui.model.decoder;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
 import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -54,11 +55,11 @@ public class AvroDecoder implements KafkaMessageDecoder {
     // 1 magic byte + 4 bytes schema ID
     private static final int HEADER_LENGTH = 5;
 
-    @ConfigProperty(name = "mp.messaging.connector.smallrye-kafka.apicurio.registry.url", defaultValue = "")
-    String apicurioRegistryUrl;
+    @ConfigProperty(name = "mp.messaging.connector.smallrye-kafka.apicurio.registry.url")
+    Optional<String> apicurioRegistryUrl;
 
-    @ConfigProperty(name = "mp.messaging.connector.smallrye-kafka.schema.registry.url", defaultValue = "")
-    String confluentRegistryUrl;
+    @ConfigProperty(name = "mp.messaging.connector.smallrye-kafka.schema.registry.url")
+    Optional<String> confluentRegistryUrl;
 
     private Deserializer<GenericRecord> deserializer;
 
@@ -85,11 +86,13 @@ public class AvroDecoder implements KafkaMessageDecoder {
         Map<String, Object> config = new HashMap<>();
         config.put("specific.avro.reader", false); // GenericRecord, not specific class
 
-        if (!confluentRegistryUrl.isBlank() && isClassPresent("io.confluent.kafka.serializers.KafkaAvroDeserializer")) {
-            config.put("schema.registry.url", confluentRegistryUrl);
+        if (confluentRegistryUrl.filter(url -> !url.isBlank()).isPresent()
+                && isClassPresent("io.confluent.kafka.serializers.KafkaAvroDeserializer")) {
+            config.put("schema.registry.url", confluentRegistryUrl.get());
             deserializer = createConfluentDeserializer(config);
-        } else if (!apicurioRegistryUrl.isBlank() && isClassPresent("io.apicurio.registry.serde.avro.AvroKafkaDeserializer")) {
-            config.put("apicurio.registry.url", apicurioRegistryUrl);
+        } else if (apicurioRegistryUrl.filter(url -> !url.isBlank()).isPresent()
+                && isClassPresent("io.apicurio.registry.serde.avro.AvroKafkaDeserializer")) {
+            config.put("apicurio.registry.url", apicurioRegistryUrl.get());
             deserializer = createApicurioDeserializer(config);
         }
     }

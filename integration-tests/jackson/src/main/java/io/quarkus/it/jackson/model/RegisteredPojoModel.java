@@ -4,10 +4,10 @@ import java.io.IOException;
 
 import com.fasterxml.jackson.annotation.JsonIdentityInfo;
 import com.fasterxml.jackson.annotation.ObjectIdGenerators;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.runtime.annotations.RegisterForReflection;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * Simple POJO model class.

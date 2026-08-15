@@ -1,7 +1,5 @@
 package io.quarkus.oidc.runtime;
 
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -11,13 +9,13 @@ import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Event;
 import jakarta.enterprise.inject.Instance;
-import jakarta.enterprise.inject.Instance.Handle;
 import jakarta.enterprise.inject.spi.BeanManager;
 import jakarta.inject.Inject;
 
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.logging.Logger;
 
+import io.quarkus.arc.All;
 import io.quarkus.oidc.AuthenticationCompletionAction;
 import io.quarkus.oidc.JavaScriptRequestChecker;
 import io.quarkus.oidc.OIDCException;
@@ -59,6 +57,8 @@ public class DefaultTenantConfigResolver {
     @Inject
     Instance<JavaScriptRequestChecker> javaScriptRequestChecker;
 
+    @Inject
+    @All
     List<AuthenticationCompletionAction> authenticationCompletionActions;
 
     @Inject
@@ -79,7 +79,6 @@ public class DefaultTenantConfigResolver {
 
     DefaultTenantConfigResolver(BlockingSecurityExecutor blockingExecutor, BeanManager beanManager,
             Instance<TenantResolver> tenantResolverInstance,
-            Instance<AuthenticationCompletionAction> authenticationCompletionAction,
             @ConfigProperty(name = "quarkus.oidc.resolve-tenants-with-issuer") boolean resolveTenantsWithIssuer,
             @ConfigProperty(name = "quarkus.security.events.enabled") boolean securityEventsEnabled,
             @ConfigProperty(name = "quarkus.http.root-path") String rootPath, TenantConfigBean tenantConfigBean) {
@@ -91,7 +90,6 @@ public class DefaultTenantConfigResolver {
         this.rootPath = rootPath;
         this.staticTenantResolver = new StaticTenantResolver(tenantConfigBean, rootPath, resolveTenantsWithIssuer,
                 tenantResolverInstance);
-        this.authenticationCompletionActions = authenticationCompletionActions(authenticationCompletionAction);
     }
 
     @PostConstruct
@@ -244,19 +242,6 @@ public class DefaultTenantConfigResolver {
 
     UserInfoCache getUserInfoCache() {
         return userInfoCache.isResolvable() ? userInfoCache.get() : null;
-    }
-
-    private static List<AuthenticationCompletionAction> authenticationCompletionActions(
-            Instance<AuthenticationCompletionAction> authorizationCodeFlowCompletionAction) {
-        if (authorizationCodeFlowCompletionAction.isResolvable()) {
-            List<AuthenticationCompletionAction> actions = new ArrayList<>();
-            for (Handle<AuthenticationCompletionAction> h : authorizationCodeFlowCompletionAction.handles()) {
-                actions.add(h.get());
-            }
-            return Collections.unmodifiableList(actions);
-        } else {
-            return List.of();
-        }
     }
 
     private Uni<OidcTenantConfig> getDynamicTenantConfig(RoutingContext context) {

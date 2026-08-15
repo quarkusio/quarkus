@@ -21,12 +21,17 @@ public interface QuarkusParams extends WorkParameters {
      *
      * <p>
      * This map does not seed
-     * {@link io.quarkus.bootstrap.app.QuarkusBootstrap#setBuildSystemProperties};
+     * {@link io.quarkus.bootstrap.app.QuarkusBootstrap.Builder#setBuildSystemProperties};
      * {@link #getBuildSystemProperties()} does, and so feeds the on-disk
      * {@code build-system.properties}. Keeping the two maps separate leaves that artifact
      * unchanged.
      */
     MapProperty<String, String> getForkedSystemProperties();
+
+    /**
+     * Whether this worker runs in a forked JVM rather than in-process in the Gradle daemon.
+     */
+    Property<Boolean> getProcessIsolated();
 
     Property<String> getBaseName();
 

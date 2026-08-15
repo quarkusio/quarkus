@@ -3,8 +3,6 @@ package io.quarkus.tls;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import java.util.concurrent.CountDownLatch;
-
 import javax.net.ssl.SSLHandshakeException;
 
 import jakarta.inject.Inject;
@@ -70,12 +68,12 @@ public class ExpiredTrustStoreWithMTLSTest {
     @AfterEach
     void cleanup() {
         if (server != null) {
-            server.close().toCompletionStage().toCompletableFuture().join();
+            server.close().await();
         }
     }
 
     @Test
-    void testWarn() throws InterruptedException {
+    void testWarn() {
         TlsConfiguration cf = certificates.get("warn").orElseThrow();
         assertThat(cf.getTrustStoreOptions()).isNotNull();
 
@@ -89,16 +87,11 @@ public class ExpiredTrustStoreWithMTLSTest {
                 .setClientAuth(ClientAuth.REQUIRED)
                 .setTrustOptions(certificates.getDefault().orElseThrow().getTrustStoreOptions())
                 .setKeyCertOptions(certificates.getDefault().orElseThrow().getKeyStoreOptions()))
-                .requestHandler(rc -> rc.response().end("Hello")).listen(8081).toCompletionStage().toCompletableFuture().join();
+                .requestHandler(rc -> rc.response().end("Hello")).listen(8081).await();
 
-        CountDownLatch latch = new CountDownLatch(1);
-        client.get(8081, "localhost", "/").send(ar -> {
-            assertThat(ar.succeeded()).isTrue();
-            assertThat(ar.result().bodyAsString()).isEqualTo("Hello");
-            latch.countDown();
-        });
-
-        assertThat(latch.await(10, java.util.concurrent.TimeUnit.SECONDS)).isTrue();
+        var response = client.get(8081, "localhost", "/").send()
+                .await();
+        assertThat(response.bodyAsString()).isEqualTo("Hello");
     }
 
     @Test
@@ -116,9 +109,9 @@ public class ExpiredTrustStoreWithMTLSTest {
                 .setClientAuth(ClientAuth.REQUIRED)
                 .setTrustOptions(certificates.getDefault().orElseThrow().getTrustStoreOptions())
                 .setKeyCertOptions(certificates.getDefault().orElseThrow().getKeyStoreOptions()))
-                .requestHandler(rc -> rc.response().end("Hello")).listen(8081).toCompletionStage().toCompletableFuture().join();
+                .requestHandler(rc -> rc.response().end("Hello")).listen(8081).await();
 
         assertThatThrownBy(() -> client.get(8081, "localhost", "/")
-                .send().toCompletionStage().toCompletableFuture().join()).hasCauseInstanceOf(SSLHandshakeException.class);
+                .send().await()).isInstanceOf(SSLHandshakeException.class);
     }
 }

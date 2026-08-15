@@ -388,7 +388,11 @@ This additional processing step is done even if `quarkus.smallrye-openapi.store-
 
 === The MicroProfile OpenAPI way
 
-The Microprofile OpenAPI specification defines that *one* OASFilter implementation can be specified using the `mp.openapi.filter` configuration property. This filter will be run during RunStage `RUNTIME_STARTUP`.
+The Microprofile OpenAPI specification defines that *one* OASFilter implementation can be specified using the `mp.openapi.filter` configuration property, which is useful when adopting a filter from a shared library. This filter will be run during RunStage `RUNTIME_STARTUP` for every configured document.
+
+The RunStages and documents this filter applies to can be changed by annotating the filter class itself with `@OpenApiFilter`.
+
+Note that extending a filter registered through `mp.openapi.filter` won't prevent that filter from running. You can disable that filter by specifying `mp.openapi.filter=` in a higher priority config source, effectively resetting this config property.
 
 == Loading OpenAPI Schema From Static Files
 

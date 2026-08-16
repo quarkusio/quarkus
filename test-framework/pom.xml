@@ -45,6 +45,7 @@
         <module>observability</module>
         <module>spring-test</module>
         <module>aesh</module>
+        <module>prometheus-metrics</module>
     </modules>
 
     <build>

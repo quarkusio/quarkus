@@ -39,6 +39,12 @@ interface SpiffeClientBuildTimeConfig {
         @ConfigDocDefault("Defaults to `tcp` on Windows and `unix` on all other platforms.")
         Optional<Transport> transport();
 
+        /**
+         * The port for the bundle HTTP server to listen on.
+         */
+        @WithDefault("18443")
+        int httpPort();
+
         enum Transport {
             TCP,
             UNIX

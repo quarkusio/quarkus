@@ -9,6 +9,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.vertx.http.runtime.CertificateConfig;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.net.KeyCertOptions;
@@ -61,6 +62,10 @@ public class TlsUtils {
 
         if (singleTrustStoreFile != null) { // We have a single trust store file.
             String type = getTruststoreType(singleTrustStoreFile, certificates.trustStoreFileType());
+            if (singleTrustStoreFile.toString().equals("none") && !type.equalsIgnoreCase("PKCS11")) {
+                throw new ConfigurationException(
+                        "Truststore file property can only be set to 'none' when a truststore file type is PKCS11");
+            }
             if (type.equalsIgnoreCase("pem")) {
                 byte[] cert = getFileContent(singleTrustStoreFile);
                 return new PemTrustOptions()
@@ -158,11 +163,19 @@ public class TlsUtils {
     private static KeyStoreOptions createKeyStoreOptions(Path path, Optional<String> password, String type,
             Optional<String> provider, Optional<String> alias,
             Optional<String> aliasPassword) throws IOException {
-        byte[] data = getFileContent(path);
+        Buffer value;
+        if (path.toString().equals("none")) {
+            if (!type.equalsIgnoreCase("PKCS11")) {
+                throw new ConfigurationException(
+                        "Keystore file property can only be set to 'none' when a keystore file type is PKCS11");
+            }
+            value = null;
+        } else {
+            value = Buffer.buffer(getFileContent(path));
+        }
         return new KeyStoreOptions()
                 .setPassword(password.orElse(null))
-                .setValue(Buffer.buffer(data))
-                .setType(type.toUpperCase())
+                .setValue(value).setType(type.toUpperCase())
                 .setProvider(provider.orElse(null))
                 .setAlias(alias.orElse(null))
                 .setAliasPassword(aliasPassword.orElse(null));

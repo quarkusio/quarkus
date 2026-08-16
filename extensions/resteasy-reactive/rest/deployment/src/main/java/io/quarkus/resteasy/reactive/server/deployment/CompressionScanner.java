@@ -1,9 +1,9 @@
 package io.quarkus.resteasy.reactive.server.deployment;
 
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
@@ -58,7 +58,11 @@ public class CompressionScanner implements MethodScanner {
             return Collections.emptyList();
         }
         ResteasyReactiveCompressionHandler handler = new ResteasyReactiveCompressionHandler(
-                Set.copyOf(httpBuildTimeConfig.compressMediaTypes().orElse(Collections.emptyList())));
+                // Avoid using Set.copyOf() here as it creates SetN<E> with unstable iteration order.
+                // This leads to bytecode being unstable across builds. Prefer using HashSet wrapped
+                // in Collections.unmodifiableSet() instead.
+                Collections.unmodifiableSet(
+                        new HashSet<>(httpBuildTimeConfig.compressMediaTypes().orElse(Collections.emptyList()))));
         handler.setCompression(compression);
         String[] produces = (String[]) methodContext.get(EndpointIndexer.METHOD_PRODUCES);
         if ((produces != null) && (produces.length > 0)) {

@@ -57,10 +57,15 @@ public interface ManagementInterfaceBuildTimeConfig {
     boolean enableCompression();
 
     /**
-     * When enabled, vert.x will decompress the request's body if it's compressed.
+     * Enables inbound request body decompression on the management interface, based on the {@code Content-Encoding}
+     * header.
      * <p>
-     * Note that the compression format (e.g., gzip) must be specified in the Content-Encoding header
-     * in the request.
+     * When {@code false} (the default), request body bytes are passed through unchanged and {@code Content-Encoding}
+     * is not interpreted for inbound decompression.
+     * <p>
+     * See the <a href="https://quarkus.io/guides/http-reference#inbound-http-decompression">HTTP reference guide</a>
+     * for supported codings, GraalVM native limits, security considerations, and failure behavior.
+     * The primary HTTP server equivalent is {@code quarkus.http.enable-decompression}.
      */
     @WithDefault("false")
     boolean enableDecompression();

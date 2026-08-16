@@ -3,6 +3,7 @@ package io.quarkus.cyclonedx.deployment;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -20,6 +21,7 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.AppModelProviderBuildItem;
 import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
+import io.quarkus.deployment.pkg.PackageConfig;
 import io.quarkus.deployment.pkg.builditem.ArtifactResultBuildItem;
 import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
 import io.quarkus.deployment.pkg.builditem.JarTreeShakeBuildItem;
@@ -50,6 +52,7 @@ public class CycloneDxProcessor {
      * @param artifactResultBuildItems packaged artifact results carrying {@link CoreSbomContributionConfig}
      * @param sbomContributions extension SBOM contributions (npm, PyPI, etc.)
      * @param cdxSbomConfig CycloneDX SBOM generation configuration
+     * @param packageConfig packaging configuration, providing the reproducible build timestamp
      * @param sbomProducer SBOM build item producer
      */
     @BuildStep
@@ -58,6 +61,7 @@ public class CycloneDxProcessor {
             List<ArtifactResultBuildItem> artifactResultBuildItems,
             List<SbomContributionBuildItem> sbomContributions,
             CycloneDxConfig cdxSbomConfig,
+            PackageConfig packageConfig,
             BuildProducer<SbomBuildItem> sbomProducer) {
         if (!cdxSbomConfig.enabled() || artifactResultBuildItems.isEmpty()) {
             return;
@@ -79,6 +83,7 @@ public class CycloneDxProcessor {
                     .setLibrariesOnly(cdxSbomConfig.librariesOnly())
                     .setRuntimeOnly(cdxSbomConfig.runtimeOnly())
                     .setIncludeQuarkusComponentScope(cdxSbomConfig.includeQuarkusComponentScope())
+                    .setOutputTimestamp(packageConfig.outputTimestamp().orElse(null))
                     .setContributions(contributions)
                     .generate()) {
                 sbomProducer.produce(new SbomBuildItem(sbom));
@@ -131,6 +136,7 @@ public class CycloneDxProcessor {
      * @param treeShakeResult tree-shake results used to compute pedigree notes for shaken dependencies
      * @param embeddedSbomRequests explicit requests to embed an SBOM
      * @param sbomContributions extension SBOM contributions (npm, PyPI, etc.)
+     * @param packageConfig packaging configuration, providing the reproducible build timestamp
      */
     @BuildStep
     public void generateEmbeddedSbom(BuildProducer<SbomGeneratedResourceBuildItem> sbomResourceProducer,
@@ -139,13 +145,14 @@ public class CycloneDxProcessor {
             AppModelProviderBuildItem appModelProviderBuildItem,
             JarTreeShakeBuildItem treeShakeResult,
             List<EmbeddedSbomRequestBuildItem> embeddedSbomRequests,
-            List<SbomContributionBuildItem> sbomContributions) {
+            List<SbomContributionBuildItem> sbomContributions,
+            PackageConfig packageConfig) {
         if (!isEmbeddedSbomEnabled(cdxConfig, embeddedSbomRequests)) {
             return;
         }
 
         byte[] sbomBytes = generateEmbeddedSbomBytes(cdxConfig, curateOutcomeBuildItem, appModelProviderBuildItem,
-                computePedigrees(treeShakeResult), sbomContributions);
+                computePedigrees(treeShakeResult), sbomContributions, packageConfig.outputTimestamp().orElse(null));
         String effectiveResourceName = effectiveResourceName(cdxConfig.embedded());
         if (cdxConfig.embedded().compress()) {
             sbomBytes = gzip(sbomBytes);
@@ -158,7 +165,8 @@ public class CycloneDxProcessor {
             CurateOutcomeBuildItem curateOutcomeBuildItem,
             AppModelProviderBuildItem appModelProviderBuildItem,
             Map<ArtifactKey, String> pedigrees,
-            List<SbomContributionBuildItem> sbomContributions) {
+            List<SbomContributionBuildItem> sbomContributions,
+            Instant outputTimestamp) {
         final String resourceName = cdxConfig.embedded().resourceName();
 
         CoreSbomContributionConfig config = new CoreSbomContributionConfig()
@@ -176,6 +184,7 @@ public class CycloneDxProcessor {
                 .setLibrariesOnly(cdxConfig.librariesOnly())
                 .setRuntimeOnly(cdxConfig.runtimeOnly())
                 .setIncludeQuarkusComponentScope(cdxConfig.includeQuarkusComponentScope())
+                .setOutputTimestamp(outputTimestamp)
                 .setContributions(collectContributions(coreContribution, sbomContributions))
                 .generateText();
 

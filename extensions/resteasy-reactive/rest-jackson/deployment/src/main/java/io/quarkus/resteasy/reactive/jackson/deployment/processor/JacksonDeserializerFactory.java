@@ -409,7 +409,7 @@ public class JacksonDeserializerFactory extends JacksonCodeGenerator {
         Switch.StringSwitch strSwitch = loopCreator.stringSwitch(fieldName);
 
         // save constructor field names before deserializeFields modifies the set
-        Set<String> ctorFields = Set.copyOf(deserData.constructorFields);
+        Set<String> ctorFields = new HashSet<>(deserData.constructorFields);
 
         Set<String> ignoredProperties = new HashSet<>(getIgnoredProperties(deserData.classInfo));
         MethodInfo anyGetterMethod = findAnyGetterMethod(deserData.classInfo);

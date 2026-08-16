@@ -57,6 +57,7 @@ import io.quarkus.hibernate.orm.deployment.HibernateOrmProcessor;
 import io.quarkus.hibernate.orm.deployment.JpaModelPersistenceUnitMappingBuildItem;
 import io.quarkus.hibernate.orm.deployment.PersistenceUnitDescriptorBuildItem;
 import io.quarkus.hibernate.orm.deployment.spi.AdditionalJpaModelBuildItem;
+import io.quarkus.hibernate.orm.deployment.spi.QuarkusDataModelBuildItem;
 import io.quarkus.panache.common.deployment.PanacheMethodCustomizerBuildItem;
 import io.quarkus.panache.hibernate.common.deployment.HibernateEnhancersRegisteredBuildItem;
 import io.quarkus.security.spi.SecuredInterfaceAnnotationBuildItem;
@@ -119,6 +120,15 @@ public final class QuarkusDataHibernateProcessor {
                 new AdditionalJpaModelBuildItem(DOTNAME_PANACHE_STATELESS_BLOCKING_ENTITY.toString()));
         models.produce(
                 new AdditionalJpaModelBuildItem(DOTNAME_PANACHE_STATELESS_REACTIVE_ENTITY.toString()));
+    }
+
+    @BuildStep
+    void addInnerRepositoryInterfacesToJpaModel(CombinedIndexBuildItem index,
+            BuildProducer<QuarkusDataModelBuildItem> quarkusDataModel) {
+        collectEntityInnerInterfaces(index.getIndex(),
+                (memberClass, implementingBean) -> quarkusDataModel.produce(new QuarkusDataModelBuildItem(
+                        memberClass.name().toString(),
+                        memberClass.enclosingClass().toString())));
     }
 
     @BuildStep

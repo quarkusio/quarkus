@@ -7,7 +7,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
-import org.hibernate.boot.archive.scan.spi.Scanner;
 import org.hibernate.integrator.spi.Integrator;
 
 import io.quarkus.hibernate.orm.runtime.boot.FastBootMetadataBuilder;
@@ -26,17 +25,12 @@ public final class PersistenceUnitsHolder {
     /**
      * Initialize JPA for use in Quarkus. In a native image. This must be called
      * from within a static init method.
-     * <p>
-     * The scanner may be null to use the default scanner, or a custom scanner can be
-     * used to stop Hibernate scanning. It is expected that the scanner will be
-     * provided by Quarkus via its hold of Jandex info.
      */
     static void initializeJpa(
             List<QuarkusPersistenceUnitDefinition> puDefinitions,
-            Scanner scanner,
             Collection<Class<? extends Integrator>> additionalIntegrators,
             PreGeneratedProxies preGeneratedProxies) {
-        persistenceUnits = constructMetadataAdvance(puDefinitions, scanner, additionalIntegrators, preGeneratedProxies);
+        persistenceUnits = constructMetadataAdvance(puDefinitions, additionalIntegrators, preGeneratedProxies);
     }
 
     public static Map<PersistenceUnitKey, QuarkusPersistenceUnitDescriptor> getPersistenceUnits() {
@@ -61,7 +55,7 @@ public final class PersistenceUnitsHolder {
     }
 
     private static PersistenceUnits constructMetadataAdvance(
-            final List<QuarkusPersistenceUnitDefinition> parsedPersistenceXmlDescriptors, Scanner scanner,
+            final List<QuarkusPersistenceUnitDefinition> parsedPersistenceXmlDescriptors,
             Collection<Class<? extends Integrator>> additionalIntegrators,
             PreGeneratedProxies proxyClassDefinitions) {
         int size = parsedPersistenceXmlDescriptors.size();
@@ -78,7 +72,7 @@ public final class PersistenceUnitsHolder {
                         unit.getName() + (unit.isReactive() ? " (reactive)" : "")));
             }
 
-            RecordedState metadata = createMetadata(unit, scanner, additionalIntegrators, proxyClassDefinitions);
+            RecordedState metadata = createMetadata(unit, additionalIntegrators, proxyClassDefinitions);
             recordedStates.put(key, metadata);
         }
 
@@ -98,9 +92,9 @@ public final class PersistenceUnitsHolder {
         return name;
     }
 
-    public static RecordedState createMetadata(QuarkusPersistenceUnitDefinition unit, Scanner scanner,
+    public static RecordedState createMetadata(QuarkusPersistenceUnitDefinition unit,
             Collection<Class<? extends Integrator>> additionalIntegrators, PreGeneratedProxies proxyDefinitions) {
-        FastBootMetadataBuilder fastBootMetadataBuilder = new FastBootMetadataBuilder(unit, scanner, additionalIntegrators,
+        FastBootMetadataBuilder fastBootMetadataBuilder = new FastBootMetadataBuilder(unit, additionalIntegrators,
                 proxyDefinitions);
         return fastBootMetadataBuilder.build();
     }

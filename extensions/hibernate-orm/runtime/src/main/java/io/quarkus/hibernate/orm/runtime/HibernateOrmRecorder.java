@@ -19,7 +19,6 @@ import jakarta.persistence.spi.LoadState;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.StatelessSession;
-import org.hibernate.boot.archive.scan.spi.Scanner;
 import org.hibernate.engine.spi.SessionLazyDelegator;
 import org.hibernate.integrator.spi.Integrator;
 import org.hibernate.relational.SchemaManager;
@@ -76,7 +75,7 @@ public class HibernateOrmRecorder {
     }
 
     public BeanContainerListener initMetadata(List<QuarkusPersistenceUnitDefinition> parsedPersistenceXmlDescriptors,
-            Scanner scanner, Collection<Class<? extends Integrator>> additionalIntegrators) {
+            Collection<Class<? extends Integrator>> additionalIntegrators) {
         SchemaManagementIntegrator.clearDsMap();
         for (QuarkusPersistenceUnitDefinition i : parsedPersistenceXmlDescriptors) {
             if (i.getConfig().getDataSource().isPresent()) {
@@ -86,7 +85,7 @@ public class HibernateOrmRecorder {
         return new BeanContainerListener() {
             @Override
             public void created(BeanContainer beanContainer) {
-                PersistenceUnitsHolder.initializeJpa(parsedPersistenceXmlDescriptors, scanner, additionalIntegrators,
+                PersistenceUnitsHolder.initializeJpa(parsedPersistenceXmlDescriptors, additionalIntegrators,
                         proxyDefinitions);
             }
         };

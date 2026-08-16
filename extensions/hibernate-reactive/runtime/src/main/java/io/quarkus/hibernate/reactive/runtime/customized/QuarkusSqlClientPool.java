@@ -5,15 +5,15 @@ import java.util.concurrent.CompletionStage;
 import org.hibernate.engine.jdbc.spi.JdbcServices;
 import org.hibernate.engine.jdbc.spi.SqlExceptionHelper;
 import org.hibernate.engine.jdbc.spi.SqlStatementLogger;
-import org.hibernate.reactive.pool.impl.SqlClientPool;
-import org.hibernate.reactive.util.impl.CompletionStages;
+import org.hibernate.reactive.pool.internal.SqlClientPool;
+import org.hibernate.reactive.util.internal.CompletionStages;
 import org.hibernate.service.spi.ServiceRegistryAwareService;
 import org.hibernate.service.spi.ServiceRegistryImplementor;
 
 import io.vertx.sqlclient.Pool;
 
 /**
- * An alternative implementation of {@link org.hibernate.reactive.pool.impl.ExternalSqlClientPool}
+ * An alternative implementation of {@link org.hibernate.reactive.pool.internal.ExternalSqlClientPool}
  * which retrieves SQL loggers / exception handlers lazily,
  * to avoid a circular dependency JdbcEnvironment => pool => JdbcServices => JdbcEnvironment.
  */

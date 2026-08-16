@@ -20,7 +20,7 @@ import java.util.logging.Level;
 
 import jakarta.persistence.PersistenceUnitTransactionType;
 
-import org.hibernate.reactive.provider.impl.ReactiveIntegrator;
+import org.hibernate.reactive.provider.internal.ReactiveIntegrator;
 import org.jboss.logging.Logger;
 
 import io.quarkus.agroal.spi.JdbcDataSourceBuildItem;
@@ -71,11 +71,11 @@ public final class HibernateReactiveProcessor {
     private static final String HIBERNATE_REACTIVE = "Hibernate Reactive";
     private static final Logger LOG = Logger.getLogger(HibernateReactiveProcessor.class);
     static final String[] REFLECTIVE_CONSTRUCTORS_NEEDED = {
-            "org.hibernate.reactive.persister.entity.impl.ReactiveSingleTableEntityPersister",
-            "org.hibernate.reactive.persister.entity.impl.ReactiveJoinedSubclassEntityPersister",
-            "org.hibernate.reactive.persister.entity.impl.ReactiveUnionSubclassEntityPersister",
-            "org.hibernate.reactive.persister.collection.impl.ReactiveOneToManyPersister",
-            "org.hibernate.reactive.persister.collection.impl.ReactiveBasicCollectionPersister",
+            "org.hibernate.reactive.persister.entity.internal.ReactiveSingleTableEntityPersister",
+            "org.hibernate.reactive.persister.entity.internal.ReactiveJoinedSubclassEntityPersister",
+            "org.hibernate.reactive.persister.entity.internal.ReactiveUnionSubclassEntityPersister",
+            "org.hibernate.reactive.persister.collection.internal.ReactiveOneToManyPersister",
+            "org.hibernate.reactive.persister.collection.internal.ReactiveBasicCollectionPersister",
     };
 
     @BuildStep
@@ -335,7 +335,8 @@ public final class HibernateReactiveProcessor {
                 persistenceUnitName,
                 new HibernateReactivePersistenceUnitProviderHelper(),
                 PersistenceUnitTransactionType.RESOURCE_LOCAL,
-                new ArrayList<>(model == null ? Collections.emptySet() : model.allModelClassAndPackageNames()),
+                new ArrayList<>(model == null ? Collections.emptySet() : model.allModelClassNames()),
+                new ArrayList<>(model == null ? Collections.emptySet() : model.modelPackageNames()),
                 new Properties(),
                 true);
 

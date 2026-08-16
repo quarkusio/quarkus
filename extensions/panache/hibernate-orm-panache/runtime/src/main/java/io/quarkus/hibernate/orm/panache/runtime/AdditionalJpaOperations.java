@@ -31,24 +31,46 @@ public class AdditionalJpaOperations {
     @SuppressWarnings("rawtypes")
     public static PanacheQuery<?> find(AbstractManagedJpaOperations<?> jpaOperations, Class<?> entityClass, String query,
             String countQuery, Sort sort, Map<String, Object> params) {
+        return find(jpaOperations, entityClass, entityClass, query, countQuery, sort, params);
+    }
+
+    @SuppressWarnings("rawtypes")
+    public static PanacheQuery<?> find(AbstractManagedJpaOperations<?> jpaOperations, Class<?> entityClass,
+            Class<?> resultType, String query,
+            String countQuery, Sort sort, Map<String, Object> params) {
         String findQuery = createFindQuery(entityClass, query, jpaOperations.paramCount(params));
         Session session = jpaOperations.getSession(entityClass);
-        SelectionQuery hibernateQuery = session.createSelectionQuery(sort != null ? findQuery + toOrderBy(sort) : findQuery);
+        SelectionQuery hibernateQuery = session.createSelectionQuery(sort != null ? findQuery + toOrderBy(sort) : findQuery,
+                resultType);
         JpaOperations.bindParameters(hibernateQuery, params);
         return new CustomCountPanacheQuery(session, hibernateQuery, countQuery, params);
     }
 
     public static PanacheQuery<?> find(AbstractManagedJpaOperations<?> jpaOperations, Class<?> entityClass, String query,
             String countQuery, Sort sort, Parameters parameters) {
-        return find(jpaOperations, entityClass, query, countQuery, sort, parameters.map());
+        return find(jpaOperations, entityClass, entityClass, query, countQuery, sort, parameters.map());
+    }
+
+    public static PanacheQuery<?> find(AbstractManagedJpaOperations<?> jpaOperations, Class<?> entityClass,
+            Class<?> resultType, String query,
+            String countQuery, Sort sort, Parameters parameters) {
+        return find(jpaOperations, entityClass, resultType, query, countQuery, sort, parameters.map());
     }
 
     @SuppressWarnings("rawtypes")
     public static PanacheQuery<?> find(AbstractManagedJpaOperations<?> jpaOperations, Class<?> entityClass, String query,
             String countQuery, Sort sort, Object... params) {
+        return find(jpaOperations, entityClass, entityClass, query, countQuery, sort, params);
+    }
+
+    @SuppressWarnings("rawtypes")
+    public static PanacheQuery<?> find(AbstractManagedJpaOperations<?> jpaOperations, Class<?> entityClass,
+            Class<?> resultType, String query,
+            String countQuery, Sort sort, Object... params) {
         String findQuery = createFindQuery(entityClass, query, jpaOperations.paramCount(params));
         Session session = jpaOperations.getSession(entityClass);
-        SelectionQuery hibernateQuery = session.createSelectionQuery(sort != null ? findQuery + toOrderBy(sort) : findQuery);
+        SelectionQuery hibernateQuery = session.createSelectionQuery(sort != null ? findQuery + toOrderBy(sort) : findQuery,
+                resultType);
         JpaOperations.bindParameters(hibernateQuery, params);
         return new CustomCountPanacheQuery(session, hibernateQuery, countQuery, params);
     }
@@ -86,7 +108,7 @@ public class AdditionalJpaOperations {
                 .getEntityPersister(entityClass.getName(), null)
                 .getPropertyCascadeStyles();
         boolean doCascade = Arrays.stream(propertyCascadeStyles)
-                .anyMatch(cascadeStyle -> cascadeStyle.doCascade(CascadingActions.DELETE));
+                .anyMatch(cascadeStyle -> cascadeStyle.doCascade(CascadingActions.REMOVE));
         boolean hasElementCollection = declaredAttributes.stream()
                 .anyMatch(attribute -> attribute.getPersistentAttributeType()
                         .equals(Attribute.PersistentAttributeType.ELEMENT_COLLECTION));

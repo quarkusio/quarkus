@@ -37,7 +37,7 @@ public class XmlMappingOnlyAttributeConverterResource {
             transaction.commit();
 
             transaction.begin();
-            assertThat(session.createNativeQuery("select myData from myentity").getResultList())
+            assertThat(session.createNativeQuery("select myData from myentity", String.class).getResultList())
                     .containsExactly("foo");
             transaction.commit();
         } catch (Exception | AssertionError e) {

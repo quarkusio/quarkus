@@ -1,17 +1,31 @@
 package io.quarkus.hibernate.orm.runtime.session;
 
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
 import jakarta.enterprise.context.ContextNotActiveException;
 import jakarta.enterprise.inject.Instance;
+import jakarta.persistence.CacheRetrieveMode;
+import jakarta.persistence.CacheStoreMode;
+import jakarta.persistence.ConnectionConsumer;
+import jakarta.persistence.ConnectionFunction;
+import jakarta.persistence.EntityAgent;
 import jakarta.persistence.EntityGraph;
+import jakarta.persistence.EntityManagerFactory;
+import jakarta.persistence.FindOption;
+import jakarta.persistence.LockModeType;
+import jakarta.persistence.StatementReference;
 import jakarta.persistence.TransactionRequiredException;
+import jakarta.persistence.TypedQuery;
 import jakarta.persistence.TypedQueryReference;
-import jakarta.persistence.criteria.CriteriaDelete;
 import jakarta.persistence.criteria.CriteriaQuery;
-import jakarta.persistence.criteria.CriteriaUpdate;
+import jakarta.persistence.criteria.CriteriaSelect;
+import jakarta.persistence.criteria.CriteriaStatement;
+import jakarta.persistence.metamodel.Metamodel;
+import jakarta.persistence.sql.ResultSetMapping;
 import jakarta.transaction.Status;
 import jakarta.transaction.TransactionManager;
 import jakarta.transaction.TransactionSynchronizationRegistry;
@@ -30,12 +44,13 @@ import org.hibernate.graph.RootGraph;
 import org.hibernate.jdbc.ReturningWork;
 import org.hibernate.jdbc.Work;
 import org.hibernate.procedure.ProcedureCall;
+import org.hibernate.query.MutationOrSelectionQuery;
 import org.hibernate.query.MutationQuery;
 import org.hibernate.query.NativeQuery;
-import org.hibernate.query.Query;
 import org.hibernate.query.SelectionQuery;
 import org.hibernate.query.criteria.HibernateCriteriaBuilder;
 import org.hibernate.query.criteria.JpaCriteriaInsert;
+import org.jspecify.annotations.NonNull;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.hibernate.orm.runtime.HibernateOrmRuntimeConfig;
@@ -138,9 +153,30 @@ public class TransactionScopedStatelessSession implements StatelessSession {
         }
     }
 
-    @Deprecated
     @Override
-    public Query createQuery(String qlString) {
+    public void refreshMultiple(@NonNull List<?> entities) {
+        checkBlocking();
+        try (SessionResult emr = acquireSession()) {
+            if (!emr.allowModification) {
+                throw new TransactionRequiredException(TRANSACTION_IS_NOT_ACTIVE);
+            }
+            emr.statelessSession.refreshMultiple(entities);
+        }
+    }
+
+    @Override
+    public void refresh(@NonNull Object entity, @NonNull LockModeType lockMode) {
+        checkBlocking();
+        try (SessionResult emr = acquireSession()) {
+            if (!emr.allowModification) {
+                throw new TransactionRequiredException(TRANSACTION_IS_NOT_ACTIVE);
+            }
+            emr.statelessSession.refresh(entity, lockMode);
+        }
+    }
+
+    @Override
+    public MutationOrSelectionQuery createQuery(String qlString) {
         checkBlocking();
         //TODO: this needs some thought for how it works outside a tx
         try (SessionResult emr = acquireSession()) {
@@ -149,33 +185,31 @@ public class TransactionScopedStatelessSession implements StatelessSession {
     }
 
     @Override
-    public <T> Query<T> createQuery(CriteriaQuery<T> criteriaQuery) {
+    public <T> SelectionQuery<T> createQuery(CriteriaSelect<T> criteriaQuery) {
         checkBlocking();
         try (SessionResult emr = acquireSession()) {
             return emr.statelessSession.createQuery(criteriaQuery);
         }
     }
 
-    @Deprecated
     @Override
-    public Query createQuery(CriteriaUpdate updateQuery) {
+    public MutationQuery createStatement(CriteriaStatement<?> criteriaStatement) {
         checkBlocking();
         try (SessionResult emr = acquireSession()) {
-            return emr.statelessSession.createQuery(updateQuery);
-        }
-    }
-
-    @Deprecated
-    @Override
-    public Query createQuery(CriteriaDelete deleteQuery) {
-        checkBlocking();
-        try (SessionResult emr = acquireSession()) {
-            return emr.statelessSession.createQuery(deleteQuery);
+            return emr.statelessSession.createStatement(criteriaStatement);
         }
     }
 
     @Override
-    public <T> Query<T> createQuery(String qlString, Class<T> resultClass) {
+    public <R> SelectionQuery<R> createSelectionQuery(CriteriaSelect<R> criteria) {
+        checkBlocking();
+        try (SessionResult emr = acquireSession()) {
+            return emr.statelessSession.createSelectionQuery(criteria);
+        }
+    }
+
+    @Override
+    public <R> SelectionQuery<R> createQuery(String qlString, Class<R> resultClass) {
         checkBlocking();
         try (SessionResult emr = acquireSession()) {
             return emr.statelessSession.createQuery(qlString, resultClass);
@@ -183,16 +217,23 @@ public class TransactionScopedStatelessSession implements StatelessSession {
     }
 
     @Override
-    public <R> Query<R> createQuery(TypedQueryReference<R> typedQueryReference) {
+    public <T> SelectionQuery<T> createQuery(String hqlString, EntityGraph<T> entityGraph) {
+        checkBlocking();
+        try (SessionResult emr = acquireSession()) {
+            return emr.statelessSession.createQuery(hqlString, entityGraph);
+        }
+    }
+
+    @Override
+    public <R> SelectionQuery<R> createQuery(TypedQueryReference<R> typedQueryReference) {
         checkBlocking();
         try (SessionResult emr = acquireSession()) {
             return emr.statelessSession.createQuery(typedQueryReference);
         }
     }
 
-    @Deprecated
     @Override
-    public Query createNamedQuery(String name) {
+    public MutationOrSelectionQuery createNamedQuery(String name) {
         checkBlocking();
         try (SessionResult emr = acquireSession()) {
             return emr.statelessSession.createNamedQuery(name);
@@ -200,10 +241,42 @@ public class TransactionScopedStatelessSession implements StatelessSession {
     }
 
     @Override
-    public <T> Query<T> createNamedQuery(String name, Class<T> resultClass) {
+    public <T> SelectionQuery<T> createNamedQuery(String name, Class<T> resultClass) {
         checkBlocking();
         try (SessionResult emr = acquireSession()) {
             return emr.statelessSession.createNamedQuery(name, resultClass);
+        }
+    }
+
+    @Override
+    public MutationQuery createNamedStatement(String name) {
+        checkBlocking();
+        try (SessionResult emr = acquireSession()) {
+            return emr.statelessSession.createNamedStatement(name);
+        }
+    }
+
+    @Override
+    public <R> NativeQuery<R> createNamedQuery(String name, String resultSetMappingName) {
+        checkBlocking();
+        try (SessionResult emr = acquireSession()) {
+            return emr.statelessSession.createNamedQuery(name, resultSetMappingName);
+        }
+    }
+
+    @Override
+    public <R> NativeQuery<R> createNamedQuery(String name, String resultSetMappingName, Class<R> resultClass) {
+        checkBlocking();
+        try (SessionResult emr = acquireSession()) {
+            return emr.statelessSession.createNamedQuery(name, resultSetMappingName, resultClass);
+        }
+    }
+
+    @Override
+    public MutationQuery createNativeStatement(String sql) {
+        checkBlocking();
+        try (SessionResult emr = acquireSession()) {
+            return emr.statelessSession.createNativeStatement(sql);
         }
     }
 
@@ -231,6 +304,14 @@ public class TransactionScopedStatelessSession implements StatelessSession {
         checkBlocking();
         try (SessionResult emr = acquireSession()) {
             return emr.statelessSession.createNativeQuery(sqlString, resultSetMapping);
+        }
+    }
+
+    @Override
+    public <T> TypedQuery<T> createNativeQuery(String sql, ResultSetMapping<T> resultSetMapping) {
+        checkBlocking();
+        try (SessionResult emr = acquireSession()) {
+            return emr.statelessSession.createNativeQuery(sql, resultSetMapping);
         }
     }
 
@@ -282,15 +363,23 @@ public class TransactionScopedStatelessSession implements StatelessSession {
     }
 
     @Override
+    public Object find(String entityName, Object key, FindOption... findOptions) {
+        checkBlocking();
+        try (SessionResult emr = acquireSession()) {
+            return emr.statelessSession.find(entityName, key, findOptions);
+        }
+    }
+
+    @Override
     public void close() {
         throw new IllegalStateException("Not supported for transaction scoped entity managers");
     }
 
     @Override
-    public Object insert(Object o) {
+    public void insert(Object o) {
         checkBlocking();
         try (SessionResult emr = acquireSession()) {
-            return emr.statelessSession.insert(o);
+            emr.statelessSession.insert(o);
         }
     }
 
@@ -321,10 +410,22 @@ public class TransactionScopedStatelessSession implements StatelessSession {
     }
 
     @Override
+    public EntityManagerFactory getEntityManagerFactory() {
+        return sessionFactory;
+    }
+
+    @Override
     public HibernateCriteriaBuilder getCriteriaBuilder() {
         checkBlocking();
         try (SessionResult emr = acquireSession()) {
             return emr.statelessSession.getCriteriaBuilder();
+        }
+    }
+
+    @Override
+    public Metamodel getMetamodel() {
+        try (SessionResult emr = acquireSession()) {
+            return emr.statelessSession.getMetamodel();
         }
     }
 
@@ -406,10 +507,25 @@ public class TransactionScopedStatelessSession implements StatelessSession {
     }
 
     @Override
-    public void fetch(Object o) {
+    public <T> T fetch(T o) {
         checkBlocking();
         try (SessionResult emr = acquireSession()) {
-            emr.statelessSession.fetch(o);
+            return emr.statelessSession.fetch(o);
+        }
+    }
+
+    @Override
+    public void addOption(EntityAgent.Option option) {
+        checkBlocking();
+        try (SessionResult emr = acquireSession()) {
+            emr.statelessSession.addOption(option);
+        }
+    }
+
+    @Override
+    public Set<Option> getOptions() {
+        try (SessionResult emr = acquireSession()) {
+            return emr.statelessSession.getOptions();
         }
     }
 
@@ -430,10 +546,10 @@ public class TransactionScopedStatelessSession implements StatelessSession {
     }
 
     @Override
-    public <T> T get(Class<T> entityType, Object id, LockMode lockMode) {
+    public <T> T get(Class<T> entityClass, Object id, FindOption... options) {
         checkBlocking();
         try (SessionResult emr = acquireSession()) {
-            return emr.statelessSession.get(entityType, id, lockMode);
+            return emr.statelessSession.get(entityClass, id, options);
         }
     }
 
@@ -446,6 +562,14 @@ public class TransactionScopedStatelessSession implements StatelessSession {
     }
 
     @Override
+    public Object get(String entityName, Object key, FindOption... findOptions) {
+        checkBlocking();
+        try (SessionResult emr = acquireSession()) {
+            return emr.statelessSession.get(entityName, key, findOptions);
+        }
+    }
+
+    @Override
     public Object get(String entityName, Object id, LockMode lockMode) {
         checkBlocking();
         try (SessionResult emr = acquireSession()) {
@@ -454,42 +578,108 @@ public class TransactionScopedStatelessSession implements StatelessSession {
     }
 
     @Override
-    public <T> T get(EntityGraph<T> graph, Object id) {
+    public <T> T get(EntityGraph<T> graph, Object id, FindOption... options) {
         checkBlocking();
         try (SessionResult emr = acquireSession()) {
-            return emr.statelessSession.get(graph, id);
+            return emr.statelessSession.get(graph, id, options);
         }
     }
 
     @Override
-    public <T> T get(EntityGraph<T> graph, Object id, LockMode lockMode) {
+    public <T> List<T> getMultiple(Class<T> entityClass, List<?> ids, FindOption... options) {
         checkBlocking();
         try (SessionResult emr = acquireSession()) {
-            return emr.statelessSession.get(graph, id, lockMode);
+            return emr.statelessSession.getMultiple(entityClass, ids, options);
         }
     }
 
     @Override
-    public <T> List<T> getMultiple(Class<T> entityClass, List<?> ids) {
+    public <T> List<T> getMultiple(EntityGraph<T> entityGraph, List<?> ids, FindOption... options) {
         checkBlocking();
         try (SessionResult emr = acquireSession()) {
-            return emr.statelessSession.getMultiple(entityClass, ids);
+            return emr.statelessSession.getMultiple(entityGraph, ids, options);
         }
     }
 
     @Override
-    public <T> List<T> getMultiple(Class<T> entityClass, List<?> ids, LockMode lockMode) {
+    public <T> T find(Class<T> entityClass, Object id) {
         checkBlocking();
         try (SessionResult emr = acquireSession()) {
-            return emr.statelessSession.getMultiple(entityClass, ids, lockMode);
+            return emr.statelessSession.find(entityClass, id);
         }
     }
 
     @Override
-    public <T> List<T> getMultiple(EntityGraph<T> entityGraph, List<?> ids) {
+    public <T> T find(Class<T> entityClass, Object id, FindOption... options) {
         checkBlocking();
         try (SessionResult emr = acquireSession()) {
-            return emr.statelessSession.getMultiple(entityGraph, ids);
+            return emr.statelessSession.find(entityClass, id, options);
+        }
+    }
+
+    @Override
+    public <T> T find(EntityGraph<T> graph, Object id, FindOption... options) {
+        checkBlocking();
+        try (SessionResult emr = acquireSession()) {
+            return emr.statelessSession.find(graph, id, options);
+        }
+    }
+
+    @Override
+    public <T> List<T> findMultiple(Class<T> entityClass, List<?> ids, FindOption... options) {
+        checkBlocking();
+        try (SessionResult emr = acquireSession()) {
+            return emr.statelessSession.findMultiple(entityClass, ids, options);
+        }
+    }
+
+    @Override
+    public <T> List<T> findMultiple(EntityGraph<T> graph, List<?> ids, FindOption... options) {
+        checkBlocking();
+        try (SessionResult emr = acquireSession()) {
+            return emr.statelessSession.findMultiple(graph, ids, options);
+        }
+    }
+
+    @Override
+    public void setCacheRetrieveMode(CacheRetrieveMode cacheRetrieveMode) {
+        try (SessionResult emr = acquireSession()) {
+            emr.statelessSession.setCacheRetrieveMode(cacheRetrieveMode);
+        }
+    }
+
+    @Override
+    public void setCacheStoreMode(CacheStoreMode cacheStoreMode) {
+        try (SessionResult emr = acquireSession()) {
+            emr.statelessSession.setCacheStoreMode(cacheStoreMode);
+        }
+    }
+
+    @Override
+    public CacheRetrieveMode getCacheRetrieveMode() {
+        try (SessionResult emr = acquireSession()) {
+            return emr.statelessSession.getCacheRetrieveMode();
+        }
+    }
+
+    @Override
+    public CacheStoreMode getCacheStoreMode() {
+        try (SessionResult emr = acquireSession()) {
+            return emr.statelessSession.getCacheStoreMode();
+        }
+    }
+
+    @Override
+    public void setProperty(String propertyName, Object value) {
+        try (SessionResult emr = acquireSession()) {
+            emr.statelessSession.setProperty(propertyName, value);
+        }
+    }
+
+    @Override
+    public Map<String, Object> getProperties() {
+        try (SessionResult emr = acquireSession()) {
+            return emr.statelessSession.getProperties();
         }
     }
 
@@ -555,15 +745,6 @@ public class TransactionScopedStatelessSession implements StatelessSession {
         }
     }
 
-    @Deprecated
-    @Override
-    public Query getNamedQuery(String queryName) {
-        checkBlocking();
-        try (SessionResult emr = acquireSession()) {
-            return emr.statelessSession.getNamedQuery(queryName);
-        }
-    }
-
     @Override
     public ProcedureCall getNamedProcedureCall(String name) {
         checkBlocking();
@@ -626,15 +807,6 @@ public class TransactionScopedStatelessSession implements StatelessSession {
         }
     }
 
-    @Deprecated
-    @Override
-    public NativeQuery getNamedNativeQuery(String name) {
-        checkBlocking();
-        try (SessionResult emr = acquireSession()) {
-            return emr.statelessSession.getNamedNativeQuery(name);
-        }
-    }
-
     @Override
     public <R> NativeQuery<R> createNativeQuery(String sqlString, Class<R> resultClass, String tableAlias) {
         checkBlocking();
@@ -648,14 +820,6 @@ public class TransactionScopedStatelessSession implements StatelessSession {
         checkBlocking();
         try (SessionResult emr = acquireSession()) {
             return emr.statelessSession.createNativeQuery(sqlString, resultSetMappingName, resultClass);
-        }
-    }
-
-    @Override
-    public SelectionQuery<?> createSelectionQuery(String hqlString) {
-        checkBlocking();
-        try (SessionResult emr = acquireSession()) {
-            return emr.statelessSession.createSelectionQuery(hqlString);
         }
     }
 
@@ -692,18 +856,26 @@ public class TransactionScopedStatelessSession implements StatelessSession {
     }
 
     @Override
-    public MutationQuery createMutationQuery(CriteriaUpdate updateQuery) {
+    public MutationQuery createStatement(String hqlString) {
         checkBlocking();
         try (SessionResult emr = acquireSession()) {
-            return emr.statelessSession.createMutationQuery(updateQuery);
+            return emr.statelessSession.createStatement(hqlString);
         }
     }
 
     @Override
-    public MutationQuery createMutationQuery(CriteriaDelete deleteQuery) {
+    public MutationQuery createStatement(StatementReference statementReference) {
         checkBlocking();
         try (SessionResult emr = acquireSession()) {
-            return emr.statelessSession.createMutationQuery(deleteQuery);
+            return emr.statelessSession.createStatement(statementReference);
+        }
+    }
+
+    @Override
+    public MutationQuery createMutationQuery(CriteriaStatement<?> criteriaStatement) {
+        checkBlocking();
+        try (SessionResult emr = acquireSession()) {
+            return emr.statelessSession.createMutationQuery(criteriaStatement);
         }
     }
 
@@ -724,14 +896,6 @@ public class TransactionScopedStatelessSession implements StatelessSession {
     }
 
     @Override
-    public SelectionQuery<?> createNamedSelectionQuery(String name) {
-        checkBlocking();
-        try (SessionResult emr = acquireSession()) {
-            return emr.statelessSession.createNamedSelectionQuery(name);
-        }
-    }
-
-    @Override
     public <R> SelectionQuery<R> createNamedSelectionQuery(String name, Class<R> resultType) {
         checkBlocking();
         try (SessionResult emr = acquireSession()) {
@@ -744,15 +908,6 @@ public class TransactionScopedStatelessSession implements StatelessSession {
         checkBlocking();
         try (SessionResult emr = acquireSession()) {
             return emr.statelessSession.createNamedMutationQuery(name);
-        }
-    }
-
-    @Deprecated
-    @Override
-    public NativeQuery getNamedNativeQuery(String name, String resultSetMapping) {
-        checkBlocking();
-        try (SessionResult emr = acquireSession()) {
-            return emr.statelessSession.getNamedNativeQuery(name, resultSetMapping);
         }
     }
 
@@ -809,10 +964,34 @@ public class TransactionScopedStatelessSession implements StatelessSession {
     }
 
     @Override
+    public <T> RootGraph<T> getEntityGraph(Class<T> rootType, String graphName) {
+        checkBlocking();
+        try (SessionResult emr = acquireSession()) {
+            return emr.statelessSession.getEntityGraph(rootType, graphName);
+        }
+    }
+
+    @Override
     public <T> List<EntityGraph<? super T>> getEntityGraphs(Class<T> entityClass) {
         checkBlocking();
         try (SessionResult emr = acquireSession()) {
             return emr.statelessSession.getEntityGraphs(entityClass);
+        }
+    }
+
+    @Override
+    public <C> void runWithConnection(ConnectionConsumer<C> action) {
+        checkBlocking();
+        try (SessionResult emr = acquireSession()) {
+            emr.statelessSession.runWithConnection(action);
+        }
+    }
+
+    @Override
+    public <C, T> T callWithConnection(ConnectionFunction<C, T> function) {
+        checkBlocking();
+        try (SessionResult emr = acquireSession()) {
+            return emr.statelessSession.callWithConnection(function);
         }
     }
 

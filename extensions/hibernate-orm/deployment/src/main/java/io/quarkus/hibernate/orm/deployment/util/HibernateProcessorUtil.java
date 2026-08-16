@@ -26,6 +26,8 @@ import jakarta.persistence.SharedCacheMode;
 import jakarta.persistence.ValidationMode;
 
 import org.hibernate.cfg.AvailableSettings;
+import org.hibernate.cfg.SchemaToolingSettings;
+import org.hibernate.cfg.ValidationSettings;
 import org.hibernate.id.SequenceMismatchStrategy;
 import org.hibernate.jpa.boot.spi.JpaSettings;
 import org.hibernate.jpa.boot.spi.PersistenceUnitDescriptor;
@@ -375,8 +377,9 @@ public final class HibernateProcessorUtil {
             desc.getProperties().setProperty(AvailableSettings.GENERATE_STATISTICS, "true");
             //When statistics are enabled, the default in Hibernate ORM is to also log them after each
             // session; turn that off by default as it's very noisy:
-            desc.getProperties().setProperty(AvailableSettings.LOG_SESSION_METRICS,
-                    String.valueOf(hibernateOrmConfig.logSessionMetrics().orElse(false)));
+            // TODO Luca LOG_SESSION_METRICS is no more in 8.0
+            //            desc.getProperties().setProperty(AvailableSettings.LOG_SESSION_METRICS,
+            //                    String.valueOf(hibernateOrmConfig.logSessionMetrics().orElse(false)));
         }
 
         // Caching
@@ -480,15 +483,21 @@ public final class HibernateProcessorUtil {
 
     private static void configureValidation(QuarkusPersistenceUnitDescriptor descriptor,
             HibernateOrmConfigPersistenceUnit config) {
+        String validationMode;
         if (!config.validation().enabled()) {
-            descriptor.getProperties().setProperty(AvailableSettings.JAKARTA_VALIDATION_MODE, ValidationMode.NONE.name());
+            validationMode = ValidationMode.NONE.name();
         } else {
+            validationMode = config.validation().mode()
+                    .stream()
+                    .map(Enum::name)
+                    .collect(Collectors.joining(","));
+        }
+        descriptor.getProperties().setProperty(ValidationSettings.JAKARTA_VALIDATION_MODE, validationMode);
+        // JPA 4.0 / ORM 8.0: validation constraints (@Size, @NotNull, ...) now influence DDL by default.
+        // When validation is disabled, also disable their effect on schema generation.
+        if (validationMode.equals(ValidationMode.NONE.name())) {
             descriptor.getProperties().setProperty(
-                    AvailableSettings.JAKARTA_VALIDATION_MODE,
-                    config.validation().mode()
-                            .stream()
-                            .map(Enum::name)
-                            .collect(Collectors.joining(",")));
+                    SchemaToolingSettings.APPLY_VALIDATION_CONSTRAINTS, "DISABLED");
         }
     }
 

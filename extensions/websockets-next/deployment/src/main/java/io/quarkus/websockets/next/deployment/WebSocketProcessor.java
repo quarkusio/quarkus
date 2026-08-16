@@ -15,6 +15,7 @@ import static org.jboss.jandex.gizmo2.Jandex2Gizmo.classDescOf;
 import static org.jboss.jandex.gizmo2.Jandex2Gizmo.methodDescOf;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -954,7 +955,10 @@ public class WebSocketProcessor {
                                 + "correctly. Please open issue in Quarkus project");
                     }
                 })
-                .collect(Collectors.toUnmodifiableMap(Map.Entry::getKey, Map.Entry::getValue));
+                // do not use Collectors.toUnmodifiableMap() here - its iteration order is not stable
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (previous, current) -> {
+                    throw new IllegalStateException("Multiple WebSocket endpoints with the same id");
+                }));
     }
 
     private static Map<String, Set<String>> collectEndpointAuthorizationPolicies(SecurityTransformer securityTransformer,
@@ -2000,7 +2004,7 @@ public class WebSocketProcessor {
         private final Map<String, SecurityCheck> endpointIdToSecurityCheck;
 
         private EndpointSecurityChecksBuildItem(Map<String, SecurityCheck> endpointIdToSecurityCheck) {
-            this.endpointIdToSecurityCheck = endpointIdToSecurityCheck;
+            this.endpointIdToSecurityCheck = Collections.unmodifiableMap(endpointIdToSecurityCheck);
         }
     }
 
@@ -2008,7 +2012,9 @@ public class WebSocketProcessor {
         private final Map<String, Set<String>> policyNameToEndpoints;
 
         private AuthorizationPolicyToEndpointsBuildItem(Map<String, Set<String>> policyNameToEndpoints) {
-            this.policyNameToEndpoints = Map.copyOf(policyNameToEndpoints);
+            // Map.copyOf() must not be used here - it produces unstable iteration order
+            Map<String, Set<String>> copiedMap = new HashMap<>(policyNameToEndpoints);
+            this.policyNameToEndpoints = Collections.unmodifiableMap(copiedMap);
         }
     }
 }

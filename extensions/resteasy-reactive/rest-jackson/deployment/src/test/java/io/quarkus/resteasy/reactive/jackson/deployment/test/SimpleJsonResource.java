@@ -807,6 +807,22 @@ public class SimpleJsonResource extends SuperClass<Person> {
     }
 
     @POST
+    @Path("/collection-subclass-with-property")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    public CollectionSubclassWithProperty echoCollectionSubclassWithProperty(CollectionSubclassWithProperty obj) {
+        return obj;
+    }
+
+    @POST
+    @Path("/map-subclass-with-property")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    public MapSubclassWithProperty echoMapSubclassWithProperty(MapSubclassWithProperty obj) {
+        return obj;
+    }
+
+    @POST
     @Path("/polymorphic-creator-property")
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)

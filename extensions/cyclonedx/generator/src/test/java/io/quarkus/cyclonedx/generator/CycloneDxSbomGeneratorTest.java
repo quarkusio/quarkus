@@ -226,9 +226,9 @@ class CycloneDxSbomGeneratorTest {
                 .setContributions(List.of(contribution))
                 .generateText().get(0));
 
+        // pinned to a literal on purpose; we need to make sure that the serial number is deterministic
         assertThat(bom1.getSerialNumber())
-                .isNotNull()
-                .startsWith("urn:uuid:")
+                .isEqualTo("urn:uuid:9d197c65-1a43-3cf5-bb49-5a88553d1dfc")
                 .isEqualTo(bom2.getSerialNumber());
     }
 

@@ -45,7 +45,7 @@ public class RegistrarConfigDoesNotLeakBetweenServicesTest {
         RestAssured.get(ConsulTestUtils.serviceUrl("red-service"))
                 .then()
                 .statusCode(200)
-                .body(containsString("\"ServiceName\": \"red-service\""));
+                .body(containsString("\"Service\": \"red-service\""));
 
         ConsulTestUtils.assertServiceNotRegistered("blue-service");
 

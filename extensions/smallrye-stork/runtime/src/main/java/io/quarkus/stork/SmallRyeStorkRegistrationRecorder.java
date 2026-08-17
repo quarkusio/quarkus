@@ -48,7 +48,7 @@ public class SmallRyeStorkRegistrationRecorder {
                 int port = StorkConfigUtil.getOrDefaultPort(parameters, quarkusConfig);
                 if (storkServiceRegistrarConfiguration.instanceName().isPresent()) {
                     Uni<Void> registration = Stork.getInstance().getService(serviceName)
-                            .registerInstance(storkServiceRegistrarConfiguration.instanceName().get(), host, port);
+                            .registerNamedInstance(storkServiceRegistrarConfiguration.instanceName().get(), host, port);
                     awaitOrSubscribe(registration, serviceName, "registration");
                 } else {
                     Uni<Void> registration = Stork.getInstance().getService(serviceName)
@@ -114,7 +114,7 @@ public class SmallRyeStorkRegistrationRecorder {
             if (storkServiceRegistrarConfiguration.instanceName().isPresent()) {
                 deregistration = Stork.getInstance()
                         .getService(serviceName)
-                        .deregisterServiceInstance(storkServiceRegistrarConfiguration.instanceName().get());
+                        .deregisterNamedInstance(storkServiceRegistrarConfiguration.instanceName().get());
                 awaitOrSubscribe(deregistration, serviceName, "deregistration");
             } else {
                 Map<String, String> parameters = serviceConfig.serviceRegistrar().parameters();

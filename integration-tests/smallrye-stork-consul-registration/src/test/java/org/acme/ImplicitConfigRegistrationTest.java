@@ -1,6 +1,7 @@
 package org.acme;
 
 import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.Matchers.matchesPattern;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledOnOs;
@@ -30,7 +31,9 @@ public class ImplicitConfigRegistrationTest {
         RestAssured.get(ConsulTestUtils.serviceUrl("quarkus-integration-test-smallrye-stork-consul-registration"))
                 .then()
                 .statusCode(200)
-                .body(containsString("\"ServiceName\": \"quarkus-integration-test-smallrye-stork-consul-registration\""));
+                .body(containsString("\"Service\": \"quarkus-integration-test-smallrye-stork-consul-registration\""))
+                .body("ID",
+                        matchesPattern("^quarkus-integration-test-smallrye-stork-consul-registration::[0-9.]+::8080"));
 
     }
 

@@ -395,7 +395,7 @@ public class StorkConfigUtilTest {
 
             @Override
             public Optional<String> instanceName() {
-                return Optional.of(instanceName);
+                return Optional.ofNullable(instanceName);
             }
 
             @Override

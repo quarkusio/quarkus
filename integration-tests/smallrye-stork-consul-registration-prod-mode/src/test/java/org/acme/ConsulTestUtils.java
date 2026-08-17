@@ -1,13 +1,12 @@
 package org.acme;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
 
 import java.util.Map;
 
 import io.restassured.RestAssured;
 
-public final class ConsulTestUtils {
+final class ConsulTestUtils {
 
     private static final String CONSUL_SERVICES_URL = "http://localhost:8500/v1/agent/services";
     private static final String CONSUL_SERVICE_URL = "http://localhost:8500/v1/agent/service/";
@@ -32,10 +31,5 @@ public final class ConsulTestUtils {
         String serviceId = findServiceId(serviceName);
         assertNotNull(serviceId, "Service '" + serviceName + "' should be registered in Consul");
         return CONSUL_SERVICE_URL + serviceId;
-    }
-
-    static void assertServiceNotRegistered(String serviceName) {
-        assertNull(findServiceId(serviceName),
-                "Service '" + serviceName + "' should not be registered in Consul");
     }
 }

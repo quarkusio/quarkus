@@ -151,11 +151,11 @@ curl -sL https://raw.githubusercontent.com/quarkusio/quarkus-ecosystem-ci/main/s
 ### Building main
 
 > [!NOTE]
-> It is recommended to build Quarkus with Java 17 as it is the minimum requirement for Quarkus.
+> It is recommended to build Quarkus with Java 21 as it is the minimum requirement for Quarkus.
 >
-> You can however build Quarkus with more recent JDKs (such as Java 21) but some Gradle-related modules need to be able to find a Java 17 toolchain so you will need to have Java 17 around.
+> You can however build Quarkus with more recent JDKs (such as Java 25) but some Gradle-related modules need to be able to find a Java 21 toolchain so you will need to have Java 21 around.
 >
-> The easiest way to achieve that is to use [SDKMAN!](https://sdkman.io/) to install Java 17 alongside your preferred JDK: it will be automatically detected by Gradle when building the Gradle modules.
+> The easiest way to achieve that is to use [SDKMAN!](https://sdkman.io/) to install Java 21 alongside your preferred JDK: it will be automatically detected by Gradle when building the Gradle modules.
 
 You can build Quarkus using the following commands:
 
@@ -269,11 +269,10 @@ have slipped past any of the tests. This job will automatically open an issue if
 Here are the steps to follow to run a build of the Superheroes against your change:
 
 1. [Build](#build) your local branch of the Quarkus codebase containing your change.
-2. Switch to Java 21
-3. `git clone https://github.com/quarkusio/quarkus-super-heroes.git`
-4. `cd quarkus-super-heroes`
-5. `scripts/build-against-quarkus-main.sh`
-6. Wait for build to finish. It should take only a couple of minutes (< 10).
+2. `git clone https://github.com/quarkusio/quarkus-super-heroes.git`
+3. `cd quarkus-super-heroes`
+4. `scripts/build-against-quarkus-main.sh`
+5. Wait for build to finish. It should take only a couple of minutes (< 10).
 
 ## Setup
 
@@ -287,7 +286,7 @@ If you have not done so on this machine, you need to:
   * Windows:
     * enable longpaths: `git config --global core.longpaths true`
     * avoid CRLF breaks: `git config --global core.autocrlf false`
-* Install Java SDK 17+ (OpenJDK recommended)
+* Install Java SDK 21+ (OpenJDK recommended)
 * Install [GraalVM](https://quarkus.io/guides/building-native-image)
 * Install platform C developer tools:
     * Linux
@@ -687,7 +686,7 @@ When debugging a test (and especially flaky tests), you might want to temporaril
 You can easily do it by adding `-Dno-build-cache` to your Maven command.
 
 The remote cache is stored on the Develocity server and is populated by CI.
-To be able to benefit from the remote cache, you need to use a Java version tested on CI (at the moment, either 17 or 21) and the same Maven version (thus why it is recommended to use the Maven wrapper aka `./mvnw`).
+To be able to benefit from the remote cache, you need to use a Java version tested on CI (at the moment, either 21 or 25) and the same Maven version (thus why it is recommended to use the Maven wrapper aka `./mvnw`).
 Note that the local cache alone should bring you a significant speedup.
 
 The local cache is stored in the `~/.m2/.develocity/build-cache/` directory.

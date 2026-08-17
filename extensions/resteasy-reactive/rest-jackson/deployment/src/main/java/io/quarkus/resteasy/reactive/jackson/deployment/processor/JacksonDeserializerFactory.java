@@ -10,6 +10,7 @@ import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -413,7 +414,8 @@ public class JacksonDeserializerFactory extends JacksonCodeGenerator {
         Switch.StringSwitch strSwitch = loopCreator.stringSwitch(fieldName);
 
         // save constructor field names before deserializeFields modifies the set
-        Set<String> ctorFields = new HashSet<>(deserData.constructorFields);
+        // Avoid using Set.copyOf() here as it creates SetN<E> with unstable iteration order.
+        Set<String> ctorFields = Collections.unmodifiableSet(new HashSet<>(deserData.constructorFields));
 
         Set<String> ignoredProperties = new HashSet<>(getIgnoredProperties(deserData.classInfo));
         MethodInfo anyGetterMethod = findAnyGetterMethod(deserData.classInfo);

@@ -251,7 +251,8 @@ public final class IntegrationTestUtil {
             }
         }, DevServicesLauncherConfigResultBuildItem.class.getName(), DevServicesNetworkIdBuildItem.class.getName(),
                 DevServicesRegistryBuildItem.class.getName(), DevServicesCustomizerBuildItem.class.getName(),
-                DevServicesAdditionalConfigBuildItem.class.getName());
+                DevServicesAdditionalConfigBuildItem.class.getName(),
+                io.quarkus.deployment.builditem.DevServicesSharedNetworkBuildItem.class.getName());
 
         networkId = propertyMap.get("quarkus.test.container.network");
         boolean manageNetwork = false;

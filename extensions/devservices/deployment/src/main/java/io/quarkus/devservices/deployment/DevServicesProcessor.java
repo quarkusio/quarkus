@@ -10,7 +10,6 @@ import static io.quarkus.deployment.dev.testing.MessageFormat.UNDERLINE;
 import static io.quarkus.devservices.common.ConfigureUtil.configureLabels;
 import static io.quarkus.devservices.common.ConfigureUtil.shouldConfigureSharedServiceLabel;
 
-import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -26,11 +25,9 @@ import java.util.concurrent.Flow;
 import java.util.concurrent.SubmissionPublisher;
 import java.util.function.Supplier;
 
-import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
 import org.testcontainers.DockerClientFactory;
 import org.testcontainers.containers.GenericContainer;
-import org.testcontainers.containers.Network;
 import org.testcontainers.containers.output.FrameConsumerResultCallback;
 import org.testcontainers.containers.output.OutputFrame;
 
@@ -46,13 +43,10 @@ import io.quarkus.deployment.annotations.Produce;
 import io.quarkus.deployment.builditem.ApplicationInstanceIdBuildItem;
 import io.quarkus.deployment.builditem.ConsoleCommandBuildItem;
 import io.quarkus.deployment.builditem.CuratedApplicationShutdownBuildItem;
-import io.quarkus.deployment.builditem.DevServicesComposeProjectBuildItem;
 import io.quarkus.deployment.builditem.DevServicesCustomizerBuildItem;
 import io.quarkus.deployment.builditem.DevServicesLauncherConfigResultBuildItem;
-import io.quarkus.deployment.builditem.DevServicesNetworkIdBuildItem;
 import io.quarkus.deployment.builditem.DevServicesRegistryBuildItem;
 import io.quarkus.deployment.builditem.DevServicesResultBuildItem;
-import io.quarkus.deployment.builditem.DevServicesSharedNetworkBuildItem;
 import io.quarkus.deployment.builditem.DockerStatusBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.RunTimeConfigBuilderBuildItem;
@@ -84,60 +78,6 @@ public class DevServicesProcessor {
     static volatile boolean logForwardEnabled = false;
     static Set<ContainerLogForwarder> containerLogForwarders = new HashSet<>();
 
-    @BuildStep
-    public DevServicesNetworkIdBuildItem networkId(
-            DevServicesConfig devServicesConfig,
-            List<DevServicesSharedNetworkBuildItem> sharedNetworkBuildItems,
-            Optional<DevServicesComposeProjectBuildItem> composeProjectBuildItem) {
-        Optional<String> configuredNetwork = ConfigProvider.getConfig().getOptionalValue(
-                "quarkus.test.container.network", String.class);
-        String networkId = configuredNetwork.flatMap(this::getOrCreateNetworkId)
-                .or(() -> composeProjectBuildItem.map(DevServicesComposeProjectBuildItem::getDefaultNetworkId))
-                .orElseGet(() -> (devServicesConfig.launchOnSharedNetwork() || !sharedNetworkBuildItems.isEmpty())
-                        ? getSharedNetworkId()
-                        : null);
-        return new DevServicesNetworkIdBuildItem(networkId);
-    }
-
-    private Optional<String> getOrCreateNetworkId(String name) {
-        // Skip creation for pre-defined/reserved network names
-        if ("default".equals(name) || // alias to choose the platform-specific default network stack
-                "host".equals(name) || // NetworkMode host is selected
-                "none".equals(name) || // NetworkMode none is selected
-                "bridge".equals(name) || // NetworkMode bridge is selected (default network on Linux)
-                "nat".equals(name) || // NetworkMode nat is selected (default network on Windows)
-                "container".equals(name) || // NetworkMode container is selected
-                name.startsWith("container:") // NetworkMode container is selected with a specific container name or id
-        ) {
-            return Optional.of(name);
-        }
-        var networks = DockerClientFactory.lazyClient().listNetworksCmd().exec();
-        for (var network : networks) {
-            if (network.getName().equals(name)) {
-                return Optional.of(network.getId());
-            }
-        }
-        // if the network doesn't exist, create it
-        try {
-            // do the cleanup in a shutdown hook because there might be more services (launched via QuarkusTestResourceLifecycleManager) connected to the network
-            String id = DockerClientFactory.lazyClient().createNetworkCmd().withName(name).exec().getId();
-            Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
-                @Override
-                public void run() {
-                    try {
-                        DockerClientFactory.lazyClient().removeNetworkCmd(id).exec();
-                    } catch (Exception e) {
-                        log.errorf("Unable to delete container network '%s'", id);
-                    }
-                }
-            }));
-            return Optional.of(id);
-        } catch (Exception e) {
-            log.warnf(e, "Creating container network '%s' completed unsuccessfully", name);
-            return Optional.empty();
-        }
-    }
-
     @BuildStep(onlyIf = IsDevServicesSupportedByLaunchMode.class)
     @Produce(ServiceStartBuildItem.class)
     public DevServicesCustomizerBuildItem containerCustomizer(LaunchModeBuildItem launchModeBuildItem,
@@ -160,31 +100,6 @@ public class DevServicesProcessor {
             }
             return startable;
         });
-    }
-
-    /**
-     * Get the network id from the shared testcontainers network, Creates the SHARED Network instance if not already created
-     *
-     * @return the network id if available, null otherwise
-     */
-    private String getSharedNetworkId() {
-        try {
-            Method id;
-            Object sharedNetwork;
-            var tccl = Thread.currentThread().getContextClassLoader();
-            if (tccl.getName().contains("Deployment")) {
-                Class<?> networkClass = tccl.getParent().loadClass("org.testcontainers.containers.Network");
-                sharedNetwork = networkClass.getField("SHARED").get(null);
-                Class<?> networkImplClass = tccl.getParent().loadClass("org.testcontainers.containers.Network$NetworkImpl");
-                id = networkImplClass.getDeclaredMethod("getId");
-            } else {
-                sharedNetwork = Network.SHARED;
-                id = Network.NetworkImpl.class.getDeclaredMethod("getId");
-            }
-            return (String) id.invoke(sharedNetwork);
-        } catch (Exception e) {
-            return null;
-        }
     }
 
     @BuildStep(onlyIf = IsDevServicesSupportedByLaunchMode.class)

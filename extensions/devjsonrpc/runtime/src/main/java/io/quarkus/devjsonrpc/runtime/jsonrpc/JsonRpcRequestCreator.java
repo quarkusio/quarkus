@@ -26,7 +26,8 @@ public class JsonRpcRequestCreator {
     public JsonRpcRequest create(Map<String, Object> jsonMap) {
         JsonRpcRequest jsonRpcRequest = new JsonRpcRequest(this.jsonMapper);
         if (jsonMap.containsKey(ID)) {
-            jsonRpcRequest.setId(((Number) jsonMap.get(ID)).intValue());
+            // Per JSON-RPC 2.0 the id may be a String or a Number; keep whatever the client sent.
+            jsonRpcRequest.setId(jsonMap.get(ID));
         }
         if (jsonMap.containsKey(JSONRPC)) {
             jsonRpcRequest.setJsonrpc((String) jsonMap.get(JSONRPC));

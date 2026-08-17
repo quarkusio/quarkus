@@ -27,7 +27,9 @@ public class McpResponseWriter implements JsonRpcResponseWriter {
         String output = message + "\n\n";
         int length = output.getBytes(StandardCharsets.UTF_8).length;
 
-        if (!response.closed()) {
+        // Guard on both closed() and ended(): a response may already be ended (e.g. by a route that both wrote a
+        // reply and then failed) without being closed yet, and calling end() again would throw.
+        if (!response.closed() && !response.ended()) {
             response.putHeader("Content-Type", "application/json")
                     .putHeader("Content-Length", String.valueOf(length))
                     .end(output);

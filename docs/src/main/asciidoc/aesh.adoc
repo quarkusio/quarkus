@@ -3,7 +3,7 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= Command Mode with Aesh
+= Command mode with Aesh
 include::_attributes.adoc[]
 :summary: Develop command line applications with the Aesh extension.
 :topics: command-line,cli,aesh,ssh,websocket,terminal

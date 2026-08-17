@@ -3,7 +3,7 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= Quarkus Extension for Spring Scheduling API
+= Quarkus extension for Spring Scheduling API
 include::_attributes.adoc[]
 :summary: While you are encouraged to use the Scheduler or Quartz extensions to schedule tasks, Quarkus provides a compatibility layer for Spring Scheduled in the form of the spring-scheduled extension.
 :topics: spring,scheduling,compatibility

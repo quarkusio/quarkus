@@ -3,7 +3,7 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= Funqy HTTP Binding with Google Cloud Functions
+= Funqy HTTP binding with Google Cloud Functions
 :extension-status: preview
 include::_attributes.adoc[]
 :summary: This guide explains Funqy's Google Cloud Platform Functions HTTP binding.

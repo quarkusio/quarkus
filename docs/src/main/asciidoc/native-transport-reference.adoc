@@ -3,7 +3,7 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= Native Transport Reference
+= Native transport reference
 include::_attributes.adoc[]
 :categories: web
 :summary: Configure Netty native transports (epoll, kqueue, io_uring) for improved I/O performance.

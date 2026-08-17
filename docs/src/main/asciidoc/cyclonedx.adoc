@@ -4,7 +4,7 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 [id="cyclonedx"]
-= Generating and Using CycloneDX SBOMs
+= Generating and using CycloneDX SBOMs
 include::_attributes.adoc[]
 :summary: This guide explains how to generate and use SBOMs for Quarkus applications in the CycloneDX format.
 :topics: sbom

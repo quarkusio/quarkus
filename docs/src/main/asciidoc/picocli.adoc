@@ -3,7 +3,7 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= Command Mode with Picocli
+= Command mode with Picocli
 include::_attributes.adoc[]
 :summary: Simplify command line applications creation with the Picocli extension.
 :topics: command-line,cli,picocli

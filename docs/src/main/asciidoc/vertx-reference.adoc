@@ -3,7 +3,7 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= Vert.x Reference Guide
+= Vert.x reference guide
 include::_attributes.adoc[]
 :keywords: vertx event verticle
 :summary: This reference guide provides advanced details about the usage and the configuration of the Vert.x instance used by Quarkus.

@@ -43,7 +43,7 @@ public class DeregistrationTest {
         RestAssured.get("http://localhost:8500/v1/agent/service/" + serviceId)
                 .then()
                 .statusCode(200)
-                .body(containsString("\"ServiceName\": \"consul-deregistration-test\""));
+                .body(containsString("\"Service\": \"consul-deregistration-test\""));
 
         app.stop();
 

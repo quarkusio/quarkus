@@ -1,7 +1,6 @@
 package org.acme;
 
 import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.matchesPattern;
 
 import java.util.Map;
@@ -48,8 +47,8 @@ public class MixedStorkServicesConfigIsolationTest {
         RestAssured.get(ConsulTestUtils.serviceUrl("red-service"))
                 .then()
                 .statusCode(200)
-                .body(containsString("\"ServiceName\": \"red-service\""))
-                .body("ServiceID", hasItem(matchesPattern("^red-service::[0-9.]+::8080")));
+                .body(containsString("\"Service\": \"red-service\""))
+                .body("ID", matchesPattern("^red-service::[0-9.]+::8080"));
 
         ConsulTestUtils.assertServiceNotRegistered("blue-service");
 

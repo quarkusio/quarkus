@@ -219,6 +219,7 @@
         <!-- Dev UI -->
         <importmap.version>1.0.11</importmap.version>
         <webauthn4j.version>0.30.3.RELEASE</webauthn4j.version>
+        <jsoup.version>1.23.1</jsoup.version>
     </properties>
 
     <pluginRepositories>
@@ -6420,6 +6421,11 @@
                 <groupId>org.aesh</groupId>
                 <artifactId>aesh</artifactId>
                 <version>${aesh.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.jsoup</groupId>
+                <artifactId>jsoup</artifactId>
+                <version>${jsoup.version}</version>
             </dependency>
 
             <!-- Picocli -->

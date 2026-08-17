@@ -1,9 +1,15 @@
 package io.quarkus.security.test.permissionsallowed.checker;
 
+import static io.quarkus.security.test.permissionsallowed.checker.StaticPermissionsAllowed.securityIdentityStringVarargsStaticMethod;
+import static io.quarkus.security.test.permissionsallowed.checker.StaticPermissionsAllowed.stringAndStringArrayArgumentsStaticMethod;
+import static io.quarkus.security.test.permissionsallowed.checker.StaticPermissionsAllowed.stringVarargsStaticMethod;
+import static io.quarkus.security.test.permissionsallowed.checker.StringArrayPermissionCheckers.EXPECTED_ARRAY_LENGTH;
 import static io.quarkus.security.test.utils.IdentityMock.ADMIN;
 import static io.quarkus.security.test.utils.IdentityMock.USER;
 import static io.quarkus.security.test.utils.SecurityTestUtils.assertFailureFor;
 import static io.quarkus.security.test.utils.SecurityTestUtils.assertSuccess;
+
+import java.util.Map;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -22,6 +28,9 @@ public class PermissionCheckerMethodArgsTest {
 
     private static final AuthData USER_WITH_AUGMENTORS = new AuthData(USER, true);
     private static final AuthData ADMIN_WITH_AUGMENTORS = new AuthData(ADMIN, true);
+    private static final AuthData EXPECTED_2_ARGUMENTS = getAuthData(2);
+    private static final String[] ARRAY_WITH_2_ARGUMENTS = new String[] { "one", "two" };
+    private static final String[] ARRAY_WITH_3_ARGUMENTS = new String[] { "one", "two", "three" };
 
     @RegisterExtension
     static final QuarkusExtensionTest config = new QuarkusExtensionTest()
@@ -34,10 +43,110 @@ public class PermissionCheckerMethodArgsTest {
                             PermissionChecker1stMethodArg.class, PermissionChecker2ndMethodArg.class,
                             PermissionChecker3rdMethodArg.class, PermissionChecker4thMethodArg.class,
                             PermissionChecker5thMethodArg.class, PermissionChecker6thMethodArg.class,
-                            PermissionChecker7thMethodArg.class));
+                            PermissionChecker7thMethodArg.class, StringArrayPermissionCheckers.class,
+                            StaticPermissionsAllowed.class));
 
     @Inject
     MethodArgsBean bean;
+
+    @Test
+    public void testStringVarargs() {
+        assertSuccess(() -> bean.stringVarargsArgument("one", "two"), "stringVarargsArgument", EXPECTED_2_ARGUMENTS);
+        assertFailureFor(() -> bean.stringVarargsArgument("one", "two", "three"), ForbiddenException.class,
+                EXPECTED_2_ARGUMENTS);
+    }
+
+    @Test
+    public void testSecurityIdentityAndStringVarargs() {
+        assertSuccess(() -> bean.securityIdentityAndStringVarargsArgument("one", "two"),
+                "securityIdentityAndStringVarargsArgument", EXPECTED_2_ARGUMENTS);
+        assertFailureFor(() -> bean.securityIdentityAndStringVarargsArgument("one", "two", "three"), ForbiddenException.class,
+                EXPECTED_2_ARGUMENTS);
+    }
+
+    @Test
+    public void testSingleStringArrayArguments() {
+        assertSuccess(() -> bean.singleStringArrayArgument(ARRAY_WITH_2_ARGUMENTS), "singleStringArrayArgument",
+                EXPECTED_2_ARGUMENTS);
+        assertFailureFor(() -> bean.singleStringArrayArgument(ARRAY_WITH_3_ARGUMENTS), ForbiddenException.class,
+                EXPECTED_2_ARGUMENTS);
+    }
+
+    @Test
+    public void testTwoStringArrayArguments() {
+        assertSuccess(() -> bean.twoStringArrayArguments(ARRAY_WITH_2_ARGUMENTS, ARRAY_WITH_2_ARGUMENTS),
+                "twoStringArrayArguments", EXPECTED_2_ARGUMENTS);
+        assertFailureFor(() -> bean.twoStringArrayArguments(ARRAY_WITH_3_ARGUMENTS, ARRAY_WITH_3_ARGUMENTS),
+                ForbiddenException.class, EXPECTED_2_ARGUMENTS);
+    }
+
+    @Test
+    public void testStringArrayAndSecurityIdentity() {
+        assertSuccess(() -> bean.stringArrayArgumentAndSecurityIdentity(ARRAY_WITH_2_ARGUMENTS),
+                "stringArrayArgumentAndSecurityIdentity", EXPECTED_2_ARGUMENTS);
+        assertFailureFor(() -> bean.stringArrayArgumentAndSecurityIdentity(ARRAY_WITH_3_ARGUMENTS), ForbiddenException.class,
+                EXPECTED_2_ARGUMENTS);
+    }
+
+    @Test
+    public void testTwoStringArraysAndSecurityIdentity() {
+        assertSuccess(() -> bean.twoStringArrayArgumentsAndSecurityIdentity(ARRAY_WITH_2_ARGUMENTS, ARRAY_WITH_2_ARGUMENTS),
+                "twoStringArrayArgumentsAndSecurityIdentity", EXPECTED_2_ARGUMENTS);
+        assertFailureFor(() -> bean.twoStringArrayArgumentsAndSecurityIdentity(ARRAY_WITH_3_ARGUMENTS, ARRAY_WITH_3_ARGUMENTS),
+                ForbiddenException.class, EXPECTED_2_ARGUMENTS);
+    }
+
+    @Test
+    public void testSecurityIdentityAndStringArrayArgument() {
+        assertSuccess(() -> bean.securityIdentityAndStringArrayArgument(ARRAY_WITH_2_ARGUMENTS),
+                "securityIdentityAndStringArrayArgument", EXPECTED_2_ARGUMENTS);
+        assertFailureFor(() -> bean.securityIdentityAndStringArrayArgument(ARRAY_WITH_3_ARGUMENTS), ForbiddenException.class,
+                EXPECTED_2_ARGUMENTS);
+    }
+
+    @Test
+    public void testStringAndStringArrayArgumentsStaticMethod() {
+        assertSuccess(() -> stringAndStringArrayArgumentsStaticMethod("expected", ARRAY_WITH_2_ARGUMENTS),
+                "stringAndStringArrayArgumentsStaticMethod", EXPECTED_2_ARGUMENTS);
+        assertFailureFor(() -> stringAndStringArrayArgumentsStaticMethod("unexpected", ARRAY_WITH_2_ARGUMENTS),
+                ForbiddenException.class, EXPECTED_2_ARGUMENTS);
+        assertFailureFor(() -> stringAndStringArrayArgumentsStaticMethod("expected", ARRAY_WITH_3_ARGUMENTS),
+                ForbiddenException.class, EXPECTED_2_ARGUMENTS);
+    }
+
+    @Test
+    public void testStringVarargsStaticMethod() {
+        assertSuccess(() -> stringVarargsStaticMethod(ARRAY_WITH_2_ARGUMENTS), "stringVarargsStaticMethod",
+                EXPECTED_2_ARGUMENTS);
+        assertFailureFor(() -> stringVarargsStaticMethod(ARRAY_WITH_3_ARGUMENTS), ForbiddenException.class,
+                EXPECTED_2_ARGUMENTS);
+    }
+
+    @Test
+    public void testSecurityIdentityStringVarargsStaticMethod() {
+        assertSuccess(() -> securityIdentityStringVarargsStaticMethod(ARRAY_WITH_2_ARGUMENTS),
+                "securityIdentityStringVarargsStaticMethod", EXPECTED_2_ARGUMENTS);
+        assertFailureFor(() -> securityIdentityStringVarargsStaticMethod(ARRAY_WITH_3_ARGUMENTS), ForbiddenException.class,
+                EXPECTED_2_ARGUMENTS);
+    }
+
+    @Test
+    public void testStringArrayArgumentFollowedByMultipleArguments() {
+        String[] anotherArguments = new String[] { "anotherArguments", "1" };
+        String[] arguments = new String[] { "arguments", "3" };
+        assertSuccess(() -> bean.stringArrayAndMultipleArguments(arguments, 5L, anotherArguments, 3),
+                "stringArrayAndMultipleArguments", EXPECTED_2_ARGUMENTS);
+        assertFailureFor(() -> bean.stringArrayAndMultipleArguments(arguments, 6L, anotherArguments, 3),
+                ForbiddenException.class, EXPECTED_2_ARGUMENTS);
+        assertFailureFor(() -> bean.stringArrayAndMultipleArguments(arguments, 5L, anotherArguments, 2),
+                ForbiddenException.class, EXPECTED_2_ARGUMENTS);
+        assertFailureFor(() -> bean.stringArrayAndMultipleArguments(anotherArguments, 5L, arguments, 2),
+                ForbiddenException.class, EXPECTED_2_ARGUMENTS);
+        String[] anotherArguments2 = new String[] { "anotherArguments", "1", "7" };
+        String[] arguments2 = new String[] { "arguments", "3", "5" };
+        assertFailureFor(() -> bean.stringArrayAndMultipleArguments(arguments2, 5L, anotherArguments2, 3),
+                ForbiddenException.class, EXPECTED_2_ARGUMENTS);
+    }
 
     @Test
     public void testOnlySecurityIdentityCheckerArg() {
@@ -237,6 +346,46 @@ public class PermissionCheckerMethodArgsTest {
     @ApplicationScoped
     public static class MethodArgsBean {
 
+        @PermissionsAllowed("string-varargs")
+        public String stringVarargsArgument(String... arguments) {
+            return "stringVarargsArgument";
+        }
+
+        @PermissionsAllowed("security-identity-and-string-varargs")
+        public String securityIdentityAndStringVarargsArgument(String... arguments) {
+            return "securityIdentityAndStringVarargsArgument";
+        }
+
+        @PermissionsAllowed("string-array-and-multiple-arguments")
+        public String stringArrayAndMultipleArguments(String[] arguments, Long id, String[] anotherArguments, int pk) {
+            return "stringArrayAndMultipleArguments";
+        }
+
+        @PermissionsAllowed("single-string-array")
+        public String singleStringArrayArgument(String[] arguments) {
+            return "singleStringArrayArgument";
+        }
+
+        @PermissionsAllowed("two-string-array")
+        public String twoStringArrayArguments(String[] arguments1, String[] arguments2) {
+            return "twoStringArrayArguments";
+        }
+
+        @PermissionsAllowed("single-string-array-and-security-identity")
+        public String stringArrayArgumentAndSecurityIdentity(String[] arguments) {
+            return "stringArrayArgumentAndSecurityIdentity";
+        }
+
+        @PermissionsAllowed("two-string-arrays-and-security-identity")
+        public String twoStringArrayArgumentsAndSecurityIdentity(String[] arguments1, String[] arguments2) {
+            return "twoStringArrayArgumentsAndSecurityIdentity";
+        }
+
+        @PermissionsAllowed("security-identity-and-single-string-array")
+        public String securityIdentityAndStringArrayArgument(String[] arguments) {
+            return "securityIdentityAndStringArrayArgument";
+        }
+
         @PermissionsAllowed("only-security-identity")
         public String zeroSecuredMethodArguments() {
             return "zeroSecuredMethodArguments";
@@ -345,5 +494,9 @@ public class PermissionCheckerMethodArgsTest {
                 Object seven) {
             return "sevenSecuredMethodArguments_2_inclusive";
         }
+    }
+
+    private static AuthData getAuthData(int expectedArrayLength) {
+        return new AuthData(USER_WITH_AUGMENTORS, Map.of(EXPECTED_ARRAY_LENGTH, expectedArrayLength));
     }
 }

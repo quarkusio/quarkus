@@ -209,28 +209,34 @@ public class FilerUtil {
     }
 
     public Optional<Map<String, Object>> getExtensionMetadata() {
-        String extensionMetadataDescriptor = "META-INF/quarkus-extension.yaml";
+        Optional<Map<String, Object>> result = readExtensionMetadata("META-INF/quarkus-extension.json", false);
+        if (result.isPresent()) {
+            return result;
+        }
+        return readExtensionMetadata("META-INF/quarkus-extension.yaml", true);
+    }
 
+    @SuppressWarnings("unchecked")
+    private Optional<Map<String, Object>> readExtensionMetadata(String path, boolean yaml) {
         try {
-            FileObject fileObject = processingEnv.getFiler().getResource(StandardLocation.CLASS_OUTPUT, "",
-                    extensionMetadataDescriptor);
+            FileObject fileObject = processingEnv.getFiler().getResource(StandardLocation.CLASS_OUTPUT, "", path);
             if (fileObject == null) {
                 return Optional.empty();
             }
 
             try (InputStream is = fileObject.openInputStream()) {
-                String yamlMetadata = new String(is.readAllBytes(), StandardCharsets.UTF_8);
-                Map<String, Object> extensionMetadata = JacksonMappers.yamlObjectReader().readValue(yamlMetadata, Map.class);
+                String content = new String(is.readAllBytes(), StandardCharsets.UTF_8);
+                Map<String, Object> extensionMetadata = yaml
+                        ? JacksonMappers.yamlObjectReader().readValue(content, Map.class)
+                        : JacksonMappers.jsonObjectReader().readValue(content, Map.class);
 
                 return Optional.of(extensionMetadata);
             }
         } catch (NoSuchFileException | FileNotFoundException e) {
-            // ignore
-            // we could get the URI, create a Path and check that the path exists but it seems a bit overkill
             return Optional.empty();
         } catch (IOException e) {
             processingEnv.getMessager().printMessage(Kind.WARNING,
-                    "Unable to read extension metadata file: " + extensionMetadataDescriptor + " because of "
+                    "Unable to read extension metadata file: " + path + " because of "
                             + e.getClass().getName() + ": " + e.getMessage());
             return Optional.empty();
         }

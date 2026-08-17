@@ -22,12 +22,14 @@ public interface BootstrapConstants {
     String OUTPUT_SOURCES_DIR = "OUTPUT_SOURCES_DIR";
 
     String QUARKUS_EXTENSION_FILE_NAME = "quarkus-extension.yaml";
+    String QUARKUS_EXTENSION_JSON_FILE_NAME = "quarkus-extension.json";
 
     String META_INF = "META-INF";
 
     String DESCRIPTOR_PATH = META_INF + '/' + DESCRIPTOR_FILE_NAME;
     String BUILD_STEPS_PATH = META_INF + "/quarkus-build-steps.list";
     String EXTENSION_METADATA_PATH = META_INF + '/' + QUARKUS_EXTENSION_FILE_NAME;
+    String EXTENSION_JSON_METADATA_PATH = META_INF + '/' + QUARKUS_EXTENSION_JSON_FILE_NAME;
 
     String PROP_DEPLOYMENT_ARTIFACT = "deployment-artifact";
     String PROP_PROVIDES_CAPABILITIES = "provides-capabilities";

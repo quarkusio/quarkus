@@ -174,6 +174,7 @@ public class TestRegistryClientBuilder {
                 final Extension.Mutable mutable = e.mutable();
                 mutable.setOrigins(List.of());
                 mutable.build().persist(zip.getPath(BootstrapConstants.EXTENSION_METADATA_PATH));
+                mutable.build().persist(zip.getPath(BootstrapConstants.EXTENSION_JSON_METADATA_PATH));
             } catch (IOException e1) {
                 throw new UncheckedIOException(e1);
             }

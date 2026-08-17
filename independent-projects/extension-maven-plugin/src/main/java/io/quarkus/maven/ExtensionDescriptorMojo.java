@@ -387,6 +387,14 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
             throw new MojoExecutionException(
                     "Failed to persist " + output.resolve(BootstrapConstants.QUARKUS_EXTENSION_FILE_NAME), e);
         }
+
+        try (BufferedWriter bw = Files
+                .newBufferedWriter(output.resolve(BootstrapConstants.QUARKUS_EXTENSION_JSON_FILE_NAME))) {
+            bw.write(getMapper(false).writer(prettyPrinter).writeValueAsString(extObject));
+        } catch (IOException e) {
+            throw new MojoExecutionException(
+                    "Failed to persist " + output.resolve(BootstrapConstants.QUARKUS_EXTENSION_JSON_FILE_NAME), e);
+        }
     }
 
     private void recordDevModeConfig(Properties props) {

@@ -47,13 +47,16 @@ import org.jboss.jandex.JandexReflection;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
 import org.jboss.logging.Logger;
-import org.yaml.snakeyaml.Yaml;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.arc.processor.DotNames;
 import io.quarkus.bootstrap.BootstrapConstants;
+import io.quarkus.bootstrap.util.ExtensionMetadataUtil;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.IsLocalDevelopment;
@@ -797,7 +800,8 @@ public class DevUIProcessor {
         Map<String, List<UnlistedPageBuildItem>> unlistedPagesMap = getUnlistedPagesMap(curateOutcomeBuildItem,
                 unlistedPageBuildItems);
 
-        final Yaml yaml = new Yaml();
+        final ObjectMapper jsonMapper = new ObjectMapper();
+        final ObjectMapper yamlMapper = new ObjectMapper(new YAMLFactory());
         List<Extension> activeExtensions = new ArrayList<>();
         List<Extension> inactiveExtensions = new ArrayList<>();
         List<Extension> sectionMenuExtensions = new ArrayList<>();
@@ -807,27 +811,30 @@ public class DevUIProcessor {
 
         for (ResolvedDependency runtimeExt : curateOutcomeBuildItem.getApplicationModel()
                 .getDependencies(DependencyFlags.RUNTIME_EXTENSION_ARTIFACT)) {
-            runtimeExt.getContentTree().accept(BootstrapConstants.EXTENSION_METADATA_PATH, extYamlVisit -> {
-                if (extYamlVisit == null) {
+            ExtensionMetadataUtil.acceptExtensionMetadata(runtimeExt.getContentTree(), extMetadataVisit -> {
+                if (extMetadataVisit == null) {
                     // this could be an exception but previously the code was simply looking for this resource on the classpath
-                    log.error("Failed to locate " + BootstrapConstants.EXTENSION_METADATA_PATH + " in "
+                    log.error("Failed to locate extension metadata in "
                             + runtimeExt.toCompactCoords());
                     return;
                 }
-                final Path extYaml = extYamlVisit.getPath();
+                final Path extMetadataFile = extMetadataVisit.getPath();
                 try {
                     Extension extension = new Extension();
-                    final String extensionYaml;
-                    try (Scanner scanner = new Scanner(Files.newBufferedReader(extYaml, StandardCharsets.UTF_8))) {
+                    final String extensionContent;
+                    try (Scanner scanner = new Scanner(
+                            Files.newBufferedReader(extMetadataFile, StandardCharsets.UTF_8))) {
                         scanner.useDelimiter("\\A");
-                        extensionYaml = scanner.hasNext() ? scanner.next() : null;
+                        extensionContent = scanner.hasNext() ? scanner.next() : null;
                     }
-                    if (extensionYaml == null) {
+                    if (extensionContent == null) {
                         // This is a internal extension (like this one, Dev UI)
                         return;
                     }
 
-                    final Map<String, Object> extensionMap = yaml.load(extensionYaml);
+                    final Map<String, Object> extensionMap = extMetadataFile.toString().endsWith(".json")
+                            ? jsonMapper.readValue(extensionContent, Map.class)
+                            : yamlMapper.readValue(extensionContent, Map.class);
 
                     if (extensionMap.containsKey(NAME)) {
 
@@ -1041,7 +1048,7 @@ public class DevUIProcessor {
                     }
                 } catch (IOException | RuntimeException e) {
                     // don't abort, just log, to prevent a single extension from breaking entire dev ui
-                    log.error("Failed to process extension descriptor " + extYaml.toUri(), e);
+                    log.error("Failed to process extension descriptor " + extMetadataFile.toUri(), e);
                 }
             });
         }

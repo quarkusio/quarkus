@@ -24,6 +24,8 @@ public final class JacksonMappers {
             .setSerializationInclusion(JsonInclude.Include.NON_DEFAULT).writer();
     private static final ObjectReader YAML_OBJECT_READER = new ObjectMapper(new YAMLFactory())
             .registerModule(new ParameterNamesModule()).reader();
+    private static final ObjectReader JSON_OBJECT_READER = new ObjectMapper()
+            .registerModule(new ParameterNamesModule()).reader();
 
     private JacksonMappers() {
     }
@@ -38,5 +40,9 @@ public final class JacksonMappers {
 
     public static ObjectReader yamlObjectReader() {
         return YAML_OBJECT_READER;
+    }
+
+    public static ObjectReader jsonObjectReader() {
+        return JSON_OBJECT_READER;
     }
 }

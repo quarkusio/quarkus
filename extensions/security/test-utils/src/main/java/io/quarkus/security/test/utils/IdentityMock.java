@@ -38,6 +38,7 @@ public class IdentityMock implements SecurityIdentity {
     private static volatile Set<Permission> permissions = new HashSet<>();
     private static volatile String name;
     private static volatile boolean applyAugmentors;
+    private static Map<String, Object> attributes;
 
     public static void setUpAuth(AuthData auth) {
         IdentityMock.anonymous = auth.anonymous;
@@ -45,6 +46,7 @@ public class IdentityMock implements SecurityIdentity {
         IdentityMock.name = auth.name;
         IdentityMock.permissions = auth.permissions == null ? Set.of() : auth.permissions;
         IdentityMock.applyAugmentors = auth.applyAugmentors;
+        IdentityMock.attributes = auth.attributes == null ? Map.of() : Map.copyOf(auth.attributes);
     }
 
     @Override
@@ -90,14 +92,15 @@ public class IdentityMock implements SecurityIdentity {
         return Set.of();
     }
 
+    @SuppressWarnings("unchecked")
     @Override
     public <T> T getAttribute(String s) {
-        return null;
+        return (T) attributes.get(s);
     }
 
     @Override
     public Map<String, Object> getAttributes() {
-        return Map.of();
+        return attributes;
     }
 
     @Override

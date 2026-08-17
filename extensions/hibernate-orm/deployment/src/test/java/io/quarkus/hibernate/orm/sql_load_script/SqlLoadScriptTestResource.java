@@ -2,6 +2,7 @@ package io.quarkus.hibernate.orm.sql_load_script;
 
 import jakarta.inject.Inject;
 import jakarta.persistence.EntityManager;
+import jakarta.transaction.Transactional;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 
@@ -18,6 +19,7 @@ public class SqlLoadScriptTestResource {
     @GET
     @Path("/{id}")
     @Produces(MediaType.TEXT_PLAIN)
+    @Transactional
     public String getName(@PathParam("id") long id) {
         MyEntity entity = em.find(MyEntity.class, id);
         if (entity != null) {

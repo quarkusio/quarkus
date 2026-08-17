@@ -1829,7 +1829,7 @@ jobs:
           develocity-token-expiry: 6
       - name: Create Oracle Test Pilot Database
         id: create_database
-        uses: oracle-actions/setup-testpilot@0e9d9b877bb35f65e3f1f1c54c6a425329dd7ece # v1.0.27
+        uses: oracle-actions/setup-testpilot@5622b688a27bde714b9b914a5147d6d96aa0af6f # v1.0.29
         with:
           oci-service: ${{ matrix.oci-service }}
           action: create
@@ -1864,7 +1864,7 @@ jobs:
       - name: Delete Oracle Test Pilot Database
         id: delete_database
         if: always() && steps.create_database.outcome == 'success'
-        uses: oracle-actions/setup-testpilot@0e9d9b877bb35f65e3f1f1c54c6a425329dd7ece # v1.0.27
+        uses: oracle-actions/setup-testpilot@5622b688a27bde714b9b914a5147d6d96aa0af6f # v1.0.29
         with:
           oci-service: ${{ matrix.oci-service }}
           action: delete
@@ -1948,7 +1948,7 @@ jobs:
           develocity-token-expiry: 6
       - name: Create Oracle Test Pilot Database
         id: create_database
-        uses: oracle-actions/setup-testpilot@0e9d9b877bb35f65e3f1f1c54c6a425329dd7ece # v1.0.27
+        uses: oracle-actions/setup-testpilot@5622b688a27bde714b9b914a5147d6d96aa0af6f # v1.0.29
         with:
           oci-service: ${{ matrix.oci-service }}
           action: create
@@ -1986,7 +1986,7 @@ jobs:
       - name: Delete Oracle Test Pilot Database
         id: delete_database
         if: always() && steps.create_database.outcome == 'success'
-        uses: oracle-actions/setup-testpilot@0e9d9b877bb35f65e3f1f1c54c6a425329dd7ece # v1.0.27
+        uses: oracle-actions/setup-testpilot@5622b688a27bde714b9b914a5147d6d96aa0af6f # v1.0.29
         with:
           oci-service: ${{ matrix.oci-service }}
           action: delete

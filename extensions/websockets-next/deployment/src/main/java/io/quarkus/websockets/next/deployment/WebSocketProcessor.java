@@ -944,7 +944,7 @@ public class WebSocketProcessor {
 
     private static Map<String, SecurityCheck> collectEndpointSecurityChecks(List<WebSocketEndpointBuildItem> endpoints,
             ClassSecurityCheckStorageBuildItem storage, IndexView index, SecurityTransformer securityTransformer) {
-        return endpoints
+        Map<String, SecurityCheck> endpointSecurityChecks = endpoints
                 .stream().<Map.Entry<String, SecurityCheck>> mapMulti((endpoint, consumer) -> {
                     var beanName = endpoint.beanClassName();
                     if (storage.getSecurityCheck(beanName) instanceof SecurityCheck check) {
@@ -955,10 +955,13 @@ public class WebSocketProcessor {
                                 + "correctly. Please open issue in Quarkus project");
                     }
                 })
-                // do not use Collectors.toUnmodifiableMap() here - its iteration order is not stable
+                // Do not use Collectors.toUnmodifiableMap() here - its iteration order is not stable.
+                // Instead, collect to a regular HashMap<K, V> and wrap it in Collections.unmodifiableMap()
+                // down below.
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (previous, current) -> {
                     throw new IllegalStateException("Multiple WebSocket endpoints with the same id");
                 }));
+        return Collections.unmodifiableMap(endpointSecurityChecks);
     }
 
     private static Map<String, Set<String>> collectEndpointAuthorizationPolicies(SecurityTransformer securityTransformer,

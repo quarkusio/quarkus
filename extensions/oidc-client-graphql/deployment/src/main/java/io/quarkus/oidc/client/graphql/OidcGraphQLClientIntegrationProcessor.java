@@ -4,6 +4,7 @@ import static io.quarkus.deployment.annotations.ExecutionTime.RUNTIME_INIT;
 import static io.quarkus.oidc.client.runtime.OidcClientsConfig.DEFAULT_CLIENT_KEY;
 
 import java.lang.constant.ClassDesc;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -198,8 +199,13 @@ class OidcGraphQLClientIntegrationProcessor {
 
         private GraphQLTokenProducerInfo(Map<String, String> oidcClientToTokenProducerBeanName,
                 Map<String, String> configKeysToOidcClientsFromCombinedIndex) {
-            this.oidcClientToTokenProducerBeanName = Map.copyOf(oidcClientToTokenProducerBeanName);
-            this.configKeysToOidcClientsFromCombinedIndex = Map.copyOf(configKeysToOidcClientsFromCombinedIndex);
+            // Avoid using Map.copyOf() here as it creates MapN<K,V> with unstable iteration order.
+            // This leads to bytecode being unstable across builds. Prefer using HashMap and then
+            // wrapping it with Collections.unmodifiableMap() to ensure stable iteration order.
+            this.oidcClientToTokenProducerBeanName = Collections
+                    .unmodifiableMap(new HashMap<>(oidcClientToTokenProducerBeanName));
+            this.configKeysToOidcClientsFromCombinedIndex = Collections
+                    .unmodifiableMap(new HashMap<>(configKeysToOidcClientsFromCombinedIndex));
         }
     }
 }

@@ -158,6 +158,20 @@ public class YamlMetadataGenerator {
 
         Map<String, DocMetadata> metadataByFile = index.metadataByFile();
 
+        List<String> pinned = (List<String>) root.get("pinned");
+        if (pinned != null) {
+            List<Object> enrichedPinned = new ArrayList<>(pinned.size());
+            for (String guide : pinned) {
+                DocMetadata metadata = metadataByFile.get(guide);
+                if (metadata != null) {
+                    enrichedPinned.add(metadataToMap(metadata));
+                } else {
+                    enrichedPinned.add(guide);
+                }
+            }
+            root.put("pinned", enrichedPinned);
+        }
+
         List<Map<String, Object>> categories = (List<Map<String, Object>>) root.get("categories");
         if (categories != null) {
             for (Map<String, Object> category : categories) {

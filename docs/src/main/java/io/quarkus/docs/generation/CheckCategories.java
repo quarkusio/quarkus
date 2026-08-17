@@ -36,9 +36,13 @@ public class CheckCategories {
 
         System.out.println("[INFO] Checking categories using: " + categoriesFile);
 
-        Set<String> categoryIds = extractCategoryIdsFromCategories(categoriesFile);
-        Set<String> categorizedGuides = extractGuidesFromCategories(categoriesFile);
+        Map<String, Object> root = readCategoriesYaml(categoriesFile);
+
+        Set<String> categoryIds = extractCategoryIds(root);
+        Set<String> categorizedGuides = extractGuides(root);
         Set<String> allGuides = listGuides(srcDir);
+
+        Set<String> pinnedGuides = extractPinnedGuides(root);
 
         Set<String> unknownCategoryIds = new TreeSet<>(categoryIds);
         unknownCategoryIds.removeAll(knownYamlMetadataCategoryIds());
@@ -48,6 +52,9 @@ public class CheckCategories {
 
         Set<String> staleGuides = new TreeSet<>(categorizedGuides);
         staleGuides.removeAll(allGuides);
+
+        Set<String> stalePinnedGuides = new TreeSet<>(pinnedGuides);
+        stalePinnedGuides.removeAll(allGuides);
 
         StringBuilder errorLog = new StringBuilder();
         if (!unknownCategoryIds.isEmpty()) {
@@ -68,6 +75,13 @@ public class CheckCategories {
                     "The following guides are referenced in categories.yaml but do not exist:",
                     staleGuides);
             errorLog.append("\nPlease remove or update these entries in src/main/resources/categories.yaml\n");
+        }
+        if (!stalePinnedGuides.isEmpty()) {
+            appendEntries(errorLog,
+                    "The following pinned guides are referenced in categories.yaml but do not exist:",
+                    stalePinnedGuides);
+            errorLog.append(
+                    "\nPlease remove or update these entries in the pinned section of src/main/resources/categories.yaml\n");
         }
 
         if (errorLog.length() > 0) {
@@ -94,14 +108,25 @@ public class CheckCategories {
     }
 
     @SuppressWarnings("unchecked")
-    static Set<String> extractCategoryIdsFromCategories(Path categoriesFile) throws IOException {
-        YAMLMapper om = new YAMLMapper();
-
-        Map<String, Object> root;
+    static Map<String, Object> readCategoriesYaml(Path categoriesFile) throws IOException {
+        YAMLMapper yamlMapper = new YAMLMapper();
         try (InputStream is = Files.newInputStream(categoriesFile)) {
-            root = om.readValue(is, Map.class);
+            return yamlMapper.readValue(is, Map.class);
         }
+    }
 
+    @SuppressWarnings("unchecked")
+    static Set<String> extractPinnedGuides(Map<String, Object> root) {
+        Set<String> pinned = new TreeSet<>();
+        List<String> pinnedList = (List<String>) root.get("pinned");
+        if (pinnedList != null) {
+            pinned.addAll(pinnedList);
+        }
+        return pinned;
+    }
+
+    @SuppressWarnings("unchecked")
+    static Set<String> extractCategoryIds(Map<String, Object> root) {
         Set<String> categoryIds = new TreeSet<>();
         List<Map<String, Object>> categories = (List<Map<String, Object>>) root.get("categories");
         if (categories != null) {
@@ -113,14 +138,7 @@ public class CheckCategories {
     }
 
     @SuppressWarnings("unchecked")
-    static Set<String> extractGuidesFromCategories(Path categoriesFile) throws IOException {
-        YAMLMapper om = new YAMLMapper();
-
-        Map<String, Object> root;
-        try (InputStream is = Files.newInputStream(categoriesFile)) {
-            root = om.readValue(is, Map.class);
-        }
-
+    static Set<String> extractGuides(Map<String, Object> root) {
         Set<String> guides = new HashSet<>();
         List<Map<String, Object>> categories = (List<Map<String, Object>>) root.get("categories");
         if (categories != null) {

@@ -5,6 +5,9 @@
 # Do not maintain :categories: attributes in guide headers.
 # The docs build injects generated category metadata into copied target sources.
 
+pinned:
+  - all-config.adoc
+
 categories:
   - id: getting-started
     title: Getting started

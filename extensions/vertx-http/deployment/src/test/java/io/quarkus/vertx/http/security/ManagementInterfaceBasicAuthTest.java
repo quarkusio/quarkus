@@ -7,6 +7,7 @@ import java.util.function.Supplier;
 
 import jakarta.enterprise.event.Observes;
 
+import org.hamcrest.Matchers;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
@@ -19,14 +20,19 @@ import io.quarkus.security.test.utils.TestIdentityProvider;
 import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.common.http.TestHTTPResource;
 import io.quarkus.vertx.http.ManagementInterface;
+import io.quarkus.vertx.http.runtime.security.ManagementInterfaceHttpAuthorizer;
 import io.quarkus.vertx.http.runtime.security.QuarkusHttpUser;
+import io.quarkus.vertx.http.runtime.security.SecurityHandlerPriorities;
 import io.restassured.RestAssured;
+import io.vertx.ext.web.RoutingContext;
 
 /**
  * Tests that basic authentication is enabled for the management interface when no other
  * mechanism is available.
  */
 public class ManagementInterfaceBasicAuthTest {
+
+    private static final String CHECK_RESULT_HEADER = "check-result-header-name";
 
     @RegisterExtension
     static QuarkusExtensionTest test = new QuarkusExtensionTest().setArchiveProducer(new Supplier<>() {
@@ -48,10 +54,14 @@ public class ManagementInterfaceBasicAuthTest {
     @TestHTTPResource(value = "/metrics", management = true)
     URL metrics;
 
+    @TestHTTPResource(value = "/traces", management = true)
+    URL traces;
+
     @BeforeAll
     public static void setup() {
         TestIdentityController.resetRoles()
-                .add("admin", "admin", "admin");
+                .add("admin", "admin", "admin")
+                .add("user", "user", "user");
     }
 
     @Test
@@ -65,7 +75,8 @@ public class ManagementInterfaceBasicAuthTest {
                 .then()
                 .assertThat()
                 .statusCode(200)
-                .body(equalTo("admin:" + metrics.getPath()));
+                .body(equalTo("admin:" + metrics.getPath()))
+                .header(CHECK_RESULT_HEADER, Matchers.is("true"));
 
     }
 
@@ -77,7 +88,22 @@ public class ManagementInterfaceBasicAuthTest {
                 .get(metrics)
                 .then()
                 .assertThat()
-                .statusCode(401);
+                .statusCode(401)
+                .header(CHECK_RESULT_HEADER, Matchers.is("false"));
+
+    }
+
+    @Test
+    public void testBasicAuthFailureInsufficientRoles() {
+        RestAssured
+                .given()
+                .auth().preemptive().basic("user", "user")
+                .redirects().follow(false)
+                .get(metrics)
+                .then()
+                .assertThat()
+                .statusCode(403)
+                .header(CHECK_RESULT_HEADER, Matchers.is("false"));
 
     }
 
@@ -107,6 +133,21 @@ public class ManagementInterfaceBasicAuthTest {
     }
 
     @Test
+    public void testPermissionEvaluationReturnsNullWhenNoAuthorization() {
+        RestAssured
+                .given()
+                .auth().preemptive().basic("admin", "admin")
+                .redirects().follow(false)
+                .when()
+                .get(traces)
+                .then()
+                .assertThat()
+                .statusCode(200)
+                .body(equalTo("admin:" + traces.getPath()))
+                .header(CHECK_RESULT_HEADER, Matchers.nullValue());
+    }
+
+    @Test
     public void testBasicAuthFailureWrongPasswordWithMatrix() {
         RestAssured
                 .given()
@@ -121,17 +162,31 @@ public class ManagementInterfaceBasicAuthTest {
 
     public static class ManagementPathHandler {
 
-        void setup(@Observes ManagementInterface mi) {
-            mi.router().get("/q/metrics").handler(event -> {
-                QuarkusHttpUser user = (QuarkusHttpUser) event.user();
-                StringBuilder ret = new StringBuilder();
-                if (user != null) {
-                    ret.append(user.getSecurityIdentity().getPrincipal().getName());
-                }
-                ret.append(":");
-                ret.append(event.normalizedPath());
-                event.response().end(ret.toString());
-            });
+        void setup(@Observes ManagementInterface mi, ManagementInterfaceHttpAuthorizer managementAuthorizer) {
+            mi.router().route().order(-1 * (SecurityHandlerPriorities.AUTHENTICATION - 10))
+                    .handler(event -> managementAuthorizer
+                            .evaluatePermission(event).subscribe().with(
+                                    checkResult -> {
+                                        if (checkResult != null) {
+                                            event.response().putHeader(CHECK_RESULT_HEADER,
+                                                    Boolean.toString(checkResult.isPermitted()));
+                                        }
+                                        event.next();
+                                    },
+                                    throwable -> event.fail(500, throwable)));
+            mi.router().get("/q/metrics").handler(ManagementInterfaceBasicAuthTest::respond);
+            mi.router().get("/q/traces").handler(ManagementInterfaceBasicAuthTest::respond);
         }
+    }
+
+    private static void respond(RoutingContext event) {
+        QuarkusHttpUser user = (QuarkusHttpUser) event.user();
+        StringBuilder ret = new StringBuilder();
+        if (user != null) {
+            ret.append(user.getSecurityIdentity().getPrincipal().getName());
+        }
+        ret.append(":");
+        ret.append(event.normalizedPath());
+        event.response().end(ret.toString());
     }
 }

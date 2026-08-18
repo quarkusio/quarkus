@@ -51,14 +51,17 @@ final class TenantContextFactory {
     private final OidcTlsSupport tlsSupport;
     private final boolean securityEventsEnabled;
     private final ProxyConfigurationRegistry proxyConfigurationRegistry;
+    private final Set<OidcRoute> allowedRoutes;
 
     TenantContextFactory(Vertx vertx, TlsConfigurationRegistry tlsConfigurationRegistry, boolean securityEventsEnabled,
-            ProxyConfigurationRegistry proxyConfigurationRegistry) {
+            ProxyConfigurationRegistry proxyConfigurationRegistry,
+            Set<OidcRoute> allowedRoutes) {
         this.vertx = vertx;
         this.tlsSupport = OidcTlsSupport.of(tlsConfigurationRegistry);
         this.securityEventsEnabled = securityEventsEnabled;
         this.tenantsExpectingServerAvailableEvents = ConcurrentHashMap.newKeySet();
         this.proxyConfigurationRegistry = proxyConfigurationRegistry;
+        this.allowedRoutes = allowedRoutes;
     }
 
     TenantConfigContext createDefaultTenantConfig(Map<String, OidcTenantConfig> staticTenants, OidcTenantConfig defaultTenant) {
@@ -203,6 +206,7 @@ final class TenantContextFactory {
             }
             OidcCommonUtils.verifyEndpointUrl(oidcConfig.authServerUrl().get());
             OidcCommonUtils.verifyCommonConfiguration(oidcConfig, OidcUtils.isServiceApp(oidcConfig), true);
+            verifyAllowedRoutes(oidcConfig, tenantId);
         } catch (ConfigurationException t) {
             return Uni.createFrom().failure(t);
         }
@@ -349,6 +353,19 @@ final class TenantContextFactory {
         }
 
         return createOidcProvider(oidcConfig).flatMap(p -> TenantConfigContext.createReady(p, oidcConfig));
+    }
+
+    private void verifyAllowedRoutes(OidcTenantConfig oidcConfig, String tenantId) {
+        if (!allowedRoutes.contains(OidcRoute.BACKCHANNEL_LOGOUT) && oidcConfig.logout().backchannel().path().isPresent()) {
+            LOG.warnf("'%s' is configured but the 'backchannel-logout' route is not in"
+                    + " 'quarkus.oidc.allowed-routes'; this tenant will not support back-channel logout",
+                    getConfigPropertyForTenant(tenantId, "logout.backchannel.path"), tenantId);
+        }
+        if (!allowedRoutes.contains(OidcRoute.RESOURCE_METADATA) && oidcConfig.resourceMetadata().enabled()) {
+            LOG.warnf("'%s' is enabled but the 'resource-metadata' route is not in"
+                    + " 'quarkus.oidc.allowed-routes'; this tenant will not provide protected resource metadata",
+                    getConfigPropertyForTenant(tenantId, "resource-metadata.enabled"), tenantId);
+        }
     }
 
     private String getConfigPropertyForTenant(String tenantId, String configSubKey) {

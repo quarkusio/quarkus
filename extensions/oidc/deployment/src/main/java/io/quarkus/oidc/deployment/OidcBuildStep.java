@@ -94,6 +94,7 @@ import io.quarkus.oidc.runtime.OidcConfigurationAndProviderProducer;
 import io.quarkus.oidc.runtime.OidcIdentityProvider;
 import io.quarkus.oidc.runtime.OidcJsonWebTokenProducer;
 import io.quarkus.oidc.runtime.OidcRecorder;
+import io.quarkus.oidc.runtime.OidcRoute;
 import io.quarkus.oidc.runtime.OidcSessionImpl;
 import io.quarkus.oidc.runtime.OidcTenantDefaultIdConfigBuilder;
 import io.quarkus.oidc.runtime.OidcTokenCredentialProducer;
@@ -204,7 +205,8 @@ public class OidcBuildStep {
     }
 
     @BuildStep
-    public void additionalBeans(BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
+    public void additionalBeans(OidcBuildTimeConfig buildTimeConfig,
+            BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
         AdditionalBeanBuildItem.Builder builder = AdditionalBeanBuildItem.builder().setUnremovable();
 
         builder.addBeanClass(OidcAuthenticationMechanism.class)
@@ -215,10 +217,15 @@ public class OidcBuildStep {
                 .addBeanClass(DefaultTenantConfigResolver.class)
                 .addBeanClass(DefaultTokenStateManager.class)
                 .addBeanClass(OidcSessionImpl.class)
-                .addBeanClass(BackChannelLogoutHandler.class)
-                .addBeanClass(ResourceMetadataHandler.class)
                 .addBeanClass(AzureAccessTokenCustomizer.class);
         additionalBeans.produce(builder.build());
+
+        if (isRouteAllowed(buildTimeConfig, OidcRoute.BACKCHANNEL_LOGOUT)) {
+            additionalBeans.produce(AdditionalBeanBuildItem.unremovableOf(BackChannelLogoutHandler.class));
+        }
+        if (isRouteAllowed(buildTimeConfig, OidcRoute.RESOURCE_METADATA)) {
+            additionalBeans.produce(AdditionalBeanBuildItem.unremovableOf(ResourceMetadataHandler.class));
+        }
     }
 
     @BuildStep
@@ -357,13 +364,15 @@ public class OidcBuildStep {
 
     @Record(ExecutionTime.RUNTIME_INIT)
     @BuildStep
-    SyntheticBeanBuildItem setup(OidcRecorder recorder, CoreVertxBuildItem vertxBuildItem,
+    SyntheticBeanBuildItem setup(OidcBuildTimeConfig buildTimeConfig, OidcRecorder recorder,
+            CoreVertxBuildItem vertxBuildItem,
             TlsRegistryBuildItem tlsRegistryBuildItem,
             ProxyRegistryBuildItem proxyRegistryBuildItem) {
         return SyntheticBeanBuildItem.configure(TenantConfigBean.class).unremovable().types(TenantConfigBean.class)
                 .addInjectionPoint(ParameterizedType.create(EVENT, ClassType.create(Oidc.class)))
                 .createWith(recorder.createTenantConfigBean(vertxBuildItem.getVertx(), tlsRegistryBuildItem.registry(),
-                        proxyRegistryBuildItem.registry()))
+                        proxyRegistryBuildItem.registry(),
+                        buildTimeConfig.allowedRoutes()))
                 .destroyer(TenantConfigBean.Destroyer.class)
                 .scope(Singleton.class) // this should have been @ApplicationScoped but fails for some reason
                 .setRuntimeInit()
@@ -500,7 +509,11 @@ public class OidcBuildStep {
 
     @Record(ExecutionTime.STATIC_INIT)
     @BuildStep
-    FilterBuildItem registerBackChannelLogoutHandler(BeanContainerBuildItem beanContainerBuildItem, OidcRecorder recorder) {
+    FilterBuildItem registerBackChannelLogoutHandler(OidcBuildTimeConfig buildTimeConfig,
+            BeanContainerBuildItem beanContainerBuildItem, OidcRecorder recorder) {
+        if (!isRouteAllowed(buildTimeConfig, OidcRoute.BACKCHANNEL_LOGOUT)) {
+            return null;
+        }
         Handler<RoutingContext> handler = recorder.getBackChannelLogoutHandler(beanContainerBuildItem.getValue());
         return new FilterBuildItem(handler, SecurityHandlerPriorities.AUTHORIZATION - 50);
     }
@@ -515,7 +528,11 @@ public class OidcBuildStep {
 
     @Record(ExecutionTime.STATIC_INIT)
     @BuildStep
-    FilterBuildItem registerResourceMetadataHandler(BeanContainerBuildItem beanContainerBuildItem, OidcRecorder recorder) {
+    FilterBuildItem registerResourceMetadataHandler(OidcBuildTimeConfig buildTimeConfig,
+            BeanContainerBuildItem beanContainerBuildItem, OidcRecorder recorder) {
+        if (!isRouteAllowed(buildTimeConfig, OidcRoute.RESOURCE_METADATA)) {
+            return null;
+        }
         Handler<RoutingContext> handler = recorder.getResourceMetadataHandler(beanContainerBuildItem.getValue());
         return new FilterBuildItem(handler, SecurityHandlerPriorities.AUTHORIZATION - 50);
     }
@@ -549,6 +566,10 @@ public class OidcBuildStep {
         return injectionPointTargetInfo != null
                 && !injectionPointTargetInfo.startsWith(QUARKUS_TOKEN_PROPAGATION_PACKAGE)
                 && !injectionPointTargetInfo.startsWith(SMALLRYE_JWT_PACKAGE);
+    }
+
+    private static boolean isRouteAllowed(OidcBuildTimeConfig config, OidcRoute route) {
+        return config.allowedRoutes().contains(route);
     }
 
     public static class IsEnabled implements BooleanSupplier {

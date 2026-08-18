@@ -3,6 +3,7 @@ package io.quarkus.oidc.runtime;
 import static io.quarkus.runtime.configuration.DurationConverter.parseDuration;
 
 import java.time.Duration;
+import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -62,7 +63,8 @@ public class OidcRecorder {
     @RuntimeInit
     public Function<SyntheticCreationalContext<TenantConfigBean>, TenantConfigBean> createTenantConfigBean(
             Supplier<Vertx> vertx, Supplier<TlsConfigurationRegistry> registry,
-            Supplier<ProxyConfigurationRegistry> proxyConfigurationRegistrySupplier) {
+            Supplier<ProxyConfigurationRegistry> proxyConfigurationRegistrySupplier,
+            Set<OidcRoute> allowedRoutes) {
         return new Function<SyntheticCreationalContext<TenantConfigBean>, TenantConfigBean>() {
             @Override
             public TenantConfigBean apply(SyntheticCreationalContext<TenantConfigBean> ctx) {
@@ -70,7 +72,7 @@ public class OidcRecorder {
                 ctx.getInjectedReference(new TypeLiteral<Event<Oidc>>() {
                 }).fire(oidc);
                 return new TenantConfigBean(vertx.get(), registry.get(), oidc, securityConfig.getValue().events().enabled(),
-                        proxyConfigurationRegistrySupplier.get());
+                        proxyConfigurationRegistrySupplier.get(), allowedRoutes);
             }
         };
     }

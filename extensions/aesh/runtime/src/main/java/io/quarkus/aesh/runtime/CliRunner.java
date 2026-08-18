@@ -15,7 +15,6 @@ import org.aesh.command.CommandNotFoundHandler;
 import org.aesh.command.CommandResult;
 import org.aesh.command.CommandRuntime;
 import org.aesh.command.impl.registry.AeshCommandRegistryBuilder;
-import org.aesh.command.invocation.CommandInvocation;
 import org.aesh.command.settings.SubCommandModeSettings;
 import org.jboss.logging.Logger;
 
@@ -73,14 +72,26 @@ public class CliRunner implements QuarkusApplication {
             var registryBuilder = registryFactory.create();
             var registry = ((AeshCommandRegistryBuilder) registryBuilder).create();
 
-            var runtimeBuilder = AeshCommandRuntimeBuilder.<CommandInvocation> builder()
-                    .commandRegistry(registry);
+            // Build settings with customizers applied so that custom providers
+            // (e.g. CommandInvocationProvider) are available for single-command execution.
+            // Without this, commands that expect a custom CommandInvocation subtype
+            // would receive DefaultCommandInvocation and fail with ClassCastException.
+            var settings = CliSettingsHelper.createBaseSettings(configuration, customizers).build();
+
+            var runtimeBuilder = AeshCommandRuntimeBuilder.builder()
+                    .commandRegistry(registry)
+                    .commandInvocationProvider(settings.commandInvocationProvider())
+                    .completerInvocationProvider(settings.completerInvocationProvider())
+                    .converterInvocationProvider(settings.converterInvocationProvider())
+                    .validatorInvocationProvider(settings.validatorInvocationProvider())
+                    .optionActivatorProvider(settings.optionActivatorProvider())
+                    .commandActivatorProvider(settings.commandActivatorProvider());
 
             if (commandNotFoundHandler.isResolvable()) {
                 runtimeBuilder.commandNotFoundHandler(commandNotFoundHandler.get());
             }
 
-            CommandRuntime<CommandInvocation> runtime = runtimeBuilder.build();
+            CommandRuntime runtime = runtimeBuilder.build();
 
             String commandLine = joinArgs(args);
             long startTime = System.currentTimeMillis();

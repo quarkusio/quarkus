@@ -136,6 +136,12 @@ public class QuarkusSecurityTestExtension implements QuarkusTestBeforeEachCallba
         if (quarkusPermissionAugmentor.isResolvable()) {
             augmentors.add(quarkusPermissionAugmentor);
         }
+        // 3. a test framework extension contributes an augmentor applied automatically, like the
+        // OIDC one enforcing the @AuthenticationContext step-up authentication policy
+        var augmentorExtension = container.select(TestSecurityIdentityAugmentorExtension.class);
+        if (augmentorExtension.isResolvable()) {
+            augmentors.add(augmentorExtension);
+        }
         if (!augmentors.isEmpty()) {
             for (var testMechanism : container.select(AbstractTestHttpAuthenticationMechanism.class)) {
                 testMechanism.setSecurityIdentityAugmentors(augmentors);

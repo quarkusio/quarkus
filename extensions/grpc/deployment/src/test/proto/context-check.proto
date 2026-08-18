@@ -1,0 +1,21 @@
+syntax = "proto3";
+
+option java_multiple_files = true;
+option java_package = "io.quarkus.grpc.context.proto";
+option java_outer_classname = "ContextCheckProto";
+
+package contextcheck;
+
+service ContextCheck {
+    rpc Check (CheckRequest) returns (CheckReply) {}
+    rpc CheckBlocking (CheckRequest) returns (CheckReply) {}
+    rpc CheckVirtual (CheckRequest) returns (CheckReply) {}
+}
+
+message CheckRequest {
+    string name = 1;
+}
+
+message CheckReply {
+    string contextState = 1;
+}

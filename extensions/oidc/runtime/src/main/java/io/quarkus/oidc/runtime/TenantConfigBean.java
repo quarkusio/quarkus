@@ -3,6 +3,7 @@ package io.quarkus.oidc.runtime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 
@@ -28,9 +29,10 @@ public final class TenantConfigBean {
     private final TenantContextFactory tenantContextFactory;
 
     TenantConfigBean(Vertx vertx, TlsConfigurationRegistry tlsConfigurationRegistry, OidcImpl oidc,
-            boolean securityEventsEnabled, ProxyConfigurationRegistry proxyConfigurationRegistry) {
+            boolean securityEventsEnabled, ProxyConfigurationRegistry proxyConfigurationRegistry,
+            Set<OidcRoute> allowedRoutes) {
         this.tenantContextFactory = new TenantContextFactory(vertx, tlsConfigurationRegistry, securityEventsEnabled,
-                proxyConfigurationRegistry);
+                proxyConfigurationRegistry, allowedRoutes);
         this.dynamicTenantsConfig = new ConcurrentHashMap<>();
 
         this.staticTenantsConfig = tenantContextFactory.createStaticTenantConfigs(oidc.getStaticTenantConfigs(),

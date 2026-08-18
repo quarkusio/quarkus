@@ -743,6 +743,11 @@ The back-channel notification contains a logout token. It must be cached so that
 
 `quarkus.oidc.logout.backchannel.token-cache-size`, `quarkus.oidc.logout.backchannel.token-cache-time-to-live` and `quarkus.oidc.logout.backchannel.clean-up-timer-interval` are properties for managing the back-channel notification cache.
 
+[NOTE]
+====
+If you know that neither static nor dynamic OIDC tenants will need to handle back-channel logout notifications, you can disable an HTTP route that accepts these notifications to avoid unnecessary overhead, see the <<allowed-routes>> section for more information.
+====
+
 [[front-channel-logout]]
 === Front-channel logout
 
@@ -1382,6 +1387,47 @@ The resource identifier URL scheme is set to `HTTPS` by default. You can enable 
 `quarkus.oidc.resource-metadata.authorization-server` allows to customize an authorization server URL that will be included in the resource metadata. The `quarkus.oidc.auth-server-url` URL is included by default, however, for some cases where an OIDC proxy interposes over the actual OIDC provider, returning the OIDC proxy's URL is required instead.
 
 See also the <<oidc-metadata-properties>> for details about the OIDC provider metadata that Quarkus OIDC uses for its work.
+
+[NOTE]
+====
+If you know that neither static nor dynamic OIDC tenants will need to provide protected resource metadata, you can disable an HTTP route that supports protected resource metadata requests to avoid unnecessary overhead, see the <<allowed-routes>> section for more information.
+====
+
+[[allowed-routes]]
+=== Allowed Routes
+
+.OIDC allowed routes property
+[options="header"]
+|====
+|Property name |Default |Description
+
+|quarkus.oidc.allowed-routes |`backchannel-logout,resource-metadata`|OIDC routes that tenants can use
+|====
+
+To be able to support https://openid.net/specs/openid-connect-backchannel-1_0.html[OIDC back-channel logout] and https://datatracker.ietf.org/doc/rfc9728/[OAuth2 Protected Resource Metadata] requests for both static and dynamic OIDC tenants, `quarkus-oidc` must register routes that require dedicated HTTP handlers to manage such requests for all the OIDC tenants.
+
+However, it is not always possible to figure out at start-up if such routes will actually be needed. For example, only dynamic OIDC tenants may choose to support one or all of the features these routes are meant to support.
+
+This property can be used to inform the OIDC runtime that either some or all the supported routes are not needed, thus avoiding unnecessary overhead.
+
+Supported values:
+
+* `backchannel-logout` - enables an HTTP route for OIDC tenants to receive <<back-channel-logout,back-channel logout>> notifications
+* `resource-metadata` - enables an HTTP route for OIDC tenants to handle requests for <<resource-metadata-properties,protected resource metadata>>
+
+For example, if your tenants only need back-channel logout:
+
+[source,properties]
+----
+quarkus.oidc.allowed-routes=backchannel-logout
+----
+
+If no tenant needs any of these routes, leave the property empty:
+
+[source,properties]
+----
+quarkus.oidc.allowed-routes=
+----
 
 == References
 

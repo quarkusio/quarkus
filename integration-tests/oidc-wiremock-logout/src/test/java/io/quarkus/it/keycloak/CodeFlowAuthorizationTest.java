@@ -37,6 +37,23 @@ public class CodeFlowAuthorizationTest {
     WireMockServer wireMockServer;
 
     @Test
+    public void testDisallowedResourceMetadataRouteDoesNotPreventDynamicTenantCreation() {
+        // resource-metadata route is not in allowed-routes, but the tenant enables it;
+        // a warning is logged and the tenant is created successfully
+        RestAssured.given()
+                .when().redirects().follow(false)
+                .get("http://localhost:8081/service/resource-metadata-tenant")
+                .then()
+                .statusCode(302);
+
+        RestAssured.given()
+                .when().redirects().follow(false)
+                .get("http://localhost:8081/service/resource-metadata-tenant?disabled")
+                .then()
+                .statusCode(302);
+    }
+
+    @Test
     public void testCodeFlowFormPostAndBackChannelLogout() throws Exception {
         testCodeFlowFormPostAndBackChannelLogout("code-flow-form-post", "back-channel-logout");
     }

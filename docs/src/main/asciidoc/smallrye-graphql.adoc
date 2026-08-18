@@ -518,6 +518,46 @@ Queries can be run on a virtual thread by adding `@RunOnVirtualThread` to the me
 
 Please note the general guidelines for using xref:./virtual-threads.adoc[virtual threads]
 
+=== Transactions
+
+When a JTA transaction manager is available (for example when you use
+xref:./hibernate-orm.adoc[Hibernate ORM] or the `quarkus-narayana-jta`
+extension), the extension automatically makes blocking GraphQL operations
+transactional, as if they were annotated with `@Transactional`. This is a
+convenient default for resolvers that read from or write to a database.
+
+A method receives this implicit `@Transactional` only when all of the
+following are true:
+
+* The `TRANSACTIONS` capability is present (a JTA extension is on the classpath).
+* Hibernate Reactive is *not* present (reactive session management handles
+  transactions itself, so nothing is added).
+* The method is a GraphQL operation (`@Query`, `@Mutation`, `@Subscription`,
+  `@Name`, `@Resolver` or a `@Source` method) on a `@GraphQLApi` class.
+* The method returns a blocking type. Reactive return types (`Uni`, `Multi`,
+  `CompletionStage`, `CompletableFuture` or `Publisher`) are never made
+  transactional.
+* The method is not annotated with `@NonBlocking`.
+* The method is not already annotated with `@Transactional` (an explicit
+  annotation always wins).
+
+To opt a specific operation out of this behavior - for example when the
+resolver calls a library that manages its own JDBC transactions - annotate it
+with `@Transactional(Transactional.TxType.NOT_SUPPORTED)`:
+
+[source,java]
+----
+    @Query("aiGenerationQuota")
+    @Transactional(Transactional.TxType.NOT_SUPPORTED)
+    public AiQuota getRemainingQuota() {
+        // ...
+    }
+----
+
+You can also use any other `TxType` (such as `REQUIRES_NEW`) to control how the
+operation participates in transactions, since an explicit `@Transactional`
+takes precedence over the implicit one.
+
 == Abstract Types
 
 The current schema is simple with only two concrete types, `Hero` and `Film`.

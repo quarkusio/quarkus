@@ -3,9 +3,8 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= Quarkus Messaging Extensions
+= Quarkus Messaging extensions
 include::_attributes.adoc[]
-:categories: messaging
 :topics: messaging,reactive-messaging
 :extensions: io.quarkus:quarkus-messaging
 :rm_blocking_annotation: https://javadoc.io/doc/io.smallrye.reactive/smallrye-reactive-messaging-api/latest/io/smallrye/reactive/messaging/annotations/Blocking.html

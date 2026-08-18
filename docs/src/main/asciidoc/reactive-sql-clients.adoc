@@ -3,9 +3,8 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= Reactive SQL Clients
+= Reactive SQL clients
 include::_attributes.adoc[]
-:categories: data
 :summary: This guide covers how to use the Reactive SQL Clients in Quarkus.
 :config-file: application.properties
 :topics: data,database,reactive,sql

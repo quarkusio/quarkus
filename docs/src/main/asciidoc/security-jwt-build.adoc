@@ -6,7 +6,6 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 [id="security-jwt-build"]
 = Build, sign, and encrypt JSON Web Tokens
 include::_attributes.adoc[]
-:categories: security
 :topics: security,jwt
 :extensions: io.quarkus:quarkus-smallrye-jwt-build
 

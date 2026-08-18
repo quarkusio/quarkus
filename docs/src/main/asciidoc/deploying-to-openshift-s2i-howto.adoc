@@ -7,7 +7,6 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 = Using S2I to deploy {project-name} applications to {openshift}
 include::_attributes.adoc[]
 :diataxis-type: howto
-:categories: cloud, native
 :summary: This guide describes how to build and deploy a Quarkus application on {openshift} by using Source-to-Image (S2I).
 :topics: devops,kubernetes,openshift,cloud,deployment
 :extensions: io.quarkus:quarkus-openshift

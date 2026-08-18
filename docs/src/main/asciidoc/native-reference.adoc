@@ -4,9 +4,8 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 [id="native-reference"]
-= Native Reference Guide
+= Native reference guide
 include::_attributes.adoc[]
-:categories: native
 :topics: native
 
 This guide is a companion to the

@@ -3,9 +3,8 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= Quarkus Extension for Spring Transaction API
+= Quarkus extension for Spring Transaction API
 include::_attributes.adoc[]
-:categories: compatibility
 :summary: While you are encouraged to use Jakarta @Transactional directly, Quarkus provides a compatibility layer for Spring @Transactional in the form of the spring-tx extension.
 :topics: spring,transactions,compatibility
 :extensions: io.quarkus:quarkus-spring-tx

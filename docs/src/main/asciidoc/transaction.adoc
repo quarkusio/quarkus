@@ -6,7 +6,6 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 = Using transactions in Quarkus
 include::_attributes.adoc[]
 :diataxis-type: reference
-:categories: data,getting-started
 :topics: data,jpa,jta,transactions,narayana
 :extensions: io.quarkus:quarkus-narayana-jta
 

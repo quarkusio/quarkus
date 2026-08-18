@@ -6,7 +6,6 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 [id="logging"]
 = Logging configuration
 include::_attributes.adoc[]
-:categories: core,getting-started,observability
 :diataxis-type: reference
 :topics: logging,observability
 :toclevels: 4

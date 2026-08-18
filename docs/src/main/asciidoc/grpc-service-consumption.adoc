@@ -3,9 +3,8 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= Consuming a gRPC Service
+= Consuming a gRPC service
 include::_attributes.adoc[]
-:categories: serialization
 :summary: This guide explains how to consume gRPC services in your Quarkus application.
 :topics: grpc
 :extensions: io.quarkus:quarkus-grpc

@@ -5,7 +5,6 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Simplified Hibernate Reactive with Panache
 include::_attributes.adoc[]
-:categories: data
 :summary: Simplified reactive ORM layer based on Hibernate Reactive.
 :config-file: application.properties
 :topics: data,hibernate-reactive,panache,sql

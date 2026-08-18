@@ -3,10 +3,9 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= Google Cloud Functions (Serverless)
+= Google Cloud Functions (serverless)
 :extension-status: preview
 include::_attributes.adoc[]
-:categories: cloud
 :summary: This guide explains how you can deploy Quarkus-based Google Cloud Functions.
 :topics: google,gcp,serverless,function,cloud
 :extensions: io.quarkus:quarkus-google-cloud-functions

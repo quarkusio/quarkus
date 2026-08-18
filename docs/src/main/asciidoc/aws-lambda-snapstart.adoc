@@ -3,9 +3,8 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= AWS Lambda SnapStart Configuration
+= AWS Lambda SnapStart configuration
 include::_attributes.adoc[]
-:categories: cloud
 :summary: This document explains how to optimize your AWS Lambda application for SnapStart
 :topics: aws,lambda,serverless,function,snapstart,cloud
 

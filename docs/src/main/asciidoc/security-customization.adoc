@@ -3,9 +3,8 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= Security Tips and Tricks
+= Security tips and tricks
 include::_attributes.adoc[]
-:categories: security
 :topics: security
 :extensions: io.quarkus:quarkus-security
 

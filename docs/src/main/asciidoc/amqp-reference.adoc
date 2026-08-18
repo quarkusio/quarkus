@@ -3,9 +3,8 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= Reactive Messaging AMQP 1.0 Connector Reference Documentation
+= Reactive Messaging AMQP 1.0 Connector reference documentation
 include::_attributes.adoc[]
-:categories: messaging
 :extensions: io.quarkus:quarkus-messaging-amqp
 :topics: messaging,amqp
 

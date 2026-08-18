@@ -8,13 +8,19 @@ import java.security.cert.X509Certificate;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledOnOs;
+import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.io.TempDir;
 
 import io.smallrye.certs.ca.CaGenerator;
 
 public class CaGenerationTest {
 
+    // Disabled on Windows: CaGenerator does not close the keystore output stream
+    // (https://github.com/smallrye/smallrye-certificate-generator/issues/92), which keeps the .p12 file
+    // locked so @TempDir cleanup fails there. Revert this annotation once that issue is fixed.
     @Test
+    @DisabledOnOs(OS.WINDOWS)
     public void testCaGeneration(@TempDir Path tempDir) throws Exception {
         File caFile = tempDir.resolve("quarkus-dev-root-ca.pem").toFile();
         File pkFile = tempDir.resolve("quarkus-dev-root-key.pem").toFile();

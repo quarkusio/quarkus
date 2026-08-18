@@ -51,11 +51,20 @@ public class GenerateCACommand implements Callable<Integer> {
             }
         }
 
+        generateCA(CA_FILE, PK_FILE, KEYSTORE_FILE);
+
+        return 0;
+    }
+
+    // Visible for testing
+    void generateCA(File caFile, File pkFile, File keystoreFile) throws Exception {
         String username = System.getProperty("user.name", "");
-        CaGenerator generator = new CaGenerator(CA_FILE, PK_FILE, KEYSTORE_FILE, "quarkus");
+        CaGenerator generator = new CaGenerator(caFile, pkFile, keystoreFile, "quarkus");
+        // The country (C) attribute must be a valid 2-letter ISO 3166-1 code, so it is left unset here
+        // (there is no meaningful country for the Quarkus Dev CA).
         generator
                 .generate("quarkus-dev-root-ca", "Quarkus Development (" + username + ")", "Quarkus Development",
-                        "home", "world", "universe");
+                        "home", "world", null);
         if (install) {
             LOGGER.info("🔥 Installing the CA certificate in the system truststore...");
             generator.installToSystem();
@@ -69,8 +78,6 @@ public class GenerateCACommand implements Callable<Integer> {
         }
 
         LOGGER.info("✅ Quarkus Dev CA certificate generated and installed");
-
-        return 0;
     }
 
     private boolean hasExpired() throws Exception {

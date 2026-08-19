@@ -113,7 +113,7 @@ jobs:
       - name: Set up JDK 25
         uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
         with:
-          distribution: semeru
+          distribution: temurin
           java-version: 25
           architecture: ppc64le
       - name: Restore Maven Repository
@@ -195,7 +195,7 @@ jobs:
             name: "JDK 25",
             java-version: 25,
             java-version-gradle: 25,
-            java-distribution: "semeru",
+            java-distribution: "temurin",
             os-name: "ubuntu-24.04-ppc64le",
             architecture: "ppc64le",
             maven_opts: "-Xmx6g -XX:MaxMetaspaceSize=2g",

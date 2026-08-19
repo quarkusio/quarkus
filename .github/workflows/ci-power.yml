@@ -93,7 +93,7 @@ jobs:
             echo "common-maven-args=${COMMON_MAVEN_ARGS}" >> $GITHUB_OUTPUT
           fi
 
-  build-jdk25:
+  initial-build:
     name: "Initial JDK 25 Build"
     needs: [ configure ]
     runs-on: ubuntu-24.04-ppc64le
@@ -181,7 +181,7 @@ jobs:
   jvm-tests:
     name: ${{ matrix.java.name }}
     runs-on: ${{ matrix.java.os-name }}
-    needs: [configure, build-jdk25]
+    needs: [configure, initial-build]
     timeout-minutes: 400
     env:
       MAVEN_OPTS: ${{ matrix.java.maven_opts }}
@@ -198,7 +198,7 @@ jobs:
             java-distribution: "semeru",
             os-name: "ubuntu-24.04-ppc64le",
             architecture: "ppc64le",
-            maven_opts: "-Xmx4g -XX:MaxMetaspaceSize=2g",
+            maven_opts: "-Xmx6g -XX:MaxMetaspaceSize=2g",
             maven_args: ""
           }
     steps:
@@ -337,7 +337,7 @@ jobs:
   build-report:
     runs-on: ubuntu-latest
     name: Build report
-    needs: [build-jdk25,jvm-tests]
+    needs: [initial-build, jvm-tests]
     if: always()
     steps:
       - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1

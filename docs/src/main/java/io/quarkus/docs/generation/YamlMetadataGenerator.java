@@ -536,7 +536,6 @@ public class YamlMetadataGenerator {
             switch (errorKey) {
                 case "missing-id":
                 case "not-diataxis-type":
-                case "missing-categories": // categories are injected from categories.yaml by InjectCategories at build time
                     return true;
             }
             return false;
@@ -556,8 +555,6 @@ public class YamlMetadataGenerator {
                     return "Document summary (either summary attribute or the preamble) is longer than 26 words. See https://quarkus.io/guides/doc-reference#doc-header-optional";
                 case "missing-id":
                     return "Document does not define an id. See https://quarkus.io/guides/doc-reference#document-header";
-                case "missing-categories":
-                    return "Document is not listed in categories.yaml. See https://quarkus.io/guides/doc-reference#categories";
                 case "not-diataxis-type":
                     return "Document type not recognized. It either does not have a diataxis-type attribute or does not follow naming conventions. See https://quarkus.io/guides/doc-reference#document-header";
                 case "toc":
@@ -724,9 +721,6 @@ public class YamlMetadataGenerator {
 
             if (id == null) {
                 messages.record("missing-id", path);
-            }
-            if (this.categories.isEmpty()) {
-                messages.record("missing-categories", path);
             }
         }
 

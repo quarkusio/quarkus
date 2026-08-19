@@ -69,7 +69,10 @@ class DataSourceDefinitionBlockingProcessor {
             DataSourceDbKindResolverBuildItem dbKindResolverBuildItem) {
         var dbKindResolver = dbKindResolverBuildItem.get();
         return new DataSourceRequestHandlerBuildItem(ProgrammingParadigm.BLOCKING,
-                dataSourceName -> {
+                (paradigm, dataSourceName) -> {
+                    if (paradigm != ProgrammingParadigm.BLOCKING) {
+                        return List.of();
+                    }
                     var unavailableReasons = new ArrayList<Reason>();
                     if (!jdbcConfig.dataSources().get(dataSourceName).jdbc().enabled()) {
                         unavailableReasons.add(new Reason(String.format(Locale.ROOT, """
@@ -80,7 +83,7 @@ class DataSourceDefinitionBlockingProcessor {
                                 DataSourceUtil.dataSourcePropertyKey(dataSourceName, "jdbc"))));
                     }
                     if (dbKindResolver.getOptional(dataSourceName).isEmpty()) {
-                        unavailableReasons.add(dbKindResolver.unavailableReason(dataSourceName, ProgrammingParadigm.BLOCKING));
+                        unavailableReasons.add(dbKindResolver.unavailableReason(dataSourceName, paradigm));
                     }
                     return unavailableReasons;
                 });

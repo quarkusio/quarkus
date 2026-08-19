@@ -1,9 +1,9 @@
 package io.quarkus.deployment.component;
 
+import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
-import java.util.function.Function;
 
 import io.quarkus.runtime.util.ProgrammingParadigm;
 import io.quarkus.runtime.util.Reason;
@@ -24,15 +24,15 @@ import io.quarkus.runtime.util.Reason;
 @FunctionalInterface
 public interface ComponentLookup {
 
-    static ComponentLookup of(Function<String, List<Reason>> blockingUnavailableReasonFunction,
-            Function<String, List<Reason>> reactiveUnavailableReasonFunction) {
+    static ComponentLookup of(List<AvailabilityRule> rules) {
         return new ComponentLookup() {
             @Override
             public List<Reason> unavailableReasons(String name, ProgrammingParadigm paradigm) {
-                return switch (paradigm) {
-                    case BLOCKING -> blockingUnavailableReasonFunction.apply(name);
-                    case REACTIVE -> reactiveUnavailableReasonFunction.apply(name);
-                };
+                var result = new ArrayList<Reason>();
+                for (AvailabilityRule rule : rules) {
+                    result.addAll(rule.unavailableReasons(paradigm, name));
+                }
+                return result;
             }
         };
     }

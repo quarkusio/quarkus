@@ -6,15 +6,7 @@ import static io.vertx.core.http.HttpMethod.POST;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.security.KeyPair;
-import java.security.KeyPairGenerator;
-import java.security.Signature;
-import java.security.interfaces.ECPublicKey;
-import java.security.spec.ECGenParameterSpec;
-import java.time.Instant;
-import java.util.Base64;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
@@ -22,6 +14,10 @@ import java.util.function.BooleanSupplier;
 
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
+import org.jose4j.jwk.EcJwkGenerator;
+import org.jose4j.jwk.EllipticCurveJsonWebKey;
+import org.jose4j.jwk.JsonWebKey;
+import org.jose4j.keys.EllipticCurves;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 
@@ -39,6 +35,8 @@ import io.quarkus.spiffe.client.runtime.internal.proto.JWTSVID;
 import io.quarkus.spiffe.client.runtime.internal.proto.JWTSVIDRequest;
 import io.quarkus.spiffe.client.runtime.internal.proto.JWTSVIDResponse;
 import io.smallrye.common.os.OS;
+import io.smallrye.jwt.algorithm.SignatureAlgorithm;
+import io.smallrye.jwt.build.Jwt;
 import io.vertx.core.Vertx;
 import io.vertx.core.VertxOptions;
 import io.vertx.core.buffer.Buffer;
@@ -90,7 +88,8 @@ public final class SpiffeDevServicesProcessor {
         devServicesResultProducer.produce(
                 DevServicesResultBuildItem.<SpiffeWorkloadApiDevServer> owned()
                         .feature(SpiffeClientProcessor.FEATURE)
-                        .startable(() -> new SpiffeWorkloadApiDevServer(transport))
+                        .serviceConfig(config.devservices().hashCode())
+                        .startable(() -> new SpiffeWorkloadApiDevServer(transport, config.devservices().httpPort()))
                         .configProvider(Map.of(
                                 ENDPOINT_SOCKET_CONFIG_KEY, Startable::getConnectionInfo,
                                 BASE_URL_CONFIG_KEY, SpiffeWorkloadApiDevServer::baseUrl))
@@ -122,8 +121,9 @@ public final class SpiffeDevServicesProcessor {
         private static final String UNIX = "unix://";
 
         private final Transport transport;
+        private final int httpPort;
         private final Set<String> errorMessages;
-        private volatile JwtSvidSigner signer;
+        private volatile EllipticCurveJsonWebKey signingKey;
         private volatile Vertx vertx;
         private volatile HttpServer grpcServer;
         private volatile HttpServer httpServer;
@@ -131,8 +131,9 @@ public final class SpiffeDevServicesProcessor {
         private volatile String endpointSocket;
         private volatile ServerMode mode = ServerMode.HEALTHY;
 
-        private SpiffeWorkloadApiDevServer(Transport transport) {
+        private SpiffeWorkloadApiDevServer(Transport transport, int httpPort) {
             this.transport = transport;
+            this.httpPort = httpPort;
             this.errorMessages = new HashSet<>();
         }
 
@@ -151,13 +152,19 @@ public final class SpiffeDevServicesProcessor {
         }
 
         private void serveBundleEndpoint(HttpServerRequest request) {
-            JsonObject bundle = new JsonObject()
-                    .put("spiffe_sequence", 1)
-                    .put("spiffe_refresh_hint", 300)
-                    .put("keys", new JsonArray().add(signer.publicKeyJwk()));
-            request.response()
-                    .putHeader("content-type", "application/json")
-                    .end(bundle.encode());
+            try {
+                JsonObject jwk = new JsonObject(signingKey.toJson(JsonWebKey.OutputControlLevel.PUBLIC_ONLY));
+                JsonObject bundle = new JsonObject()
+                        .put("spiffe_sequence", 1)
+                        .put("spiffe_refresh_hint", 300)
+                        .put("keys", new JsonArray().add(jwk));
+                request.response()
+                        .putHeader("content-type", "application/json")
+                        .end(bundle.encode());
+            } catch (Exception e) {
+                LOG.error("Failed to serve SPIFFE bundle endpoint", e);
+                request.response().setStatusCode(500).end(e.getMessage());
+            }
         }
 
         private void handleControlMode(HttpServerRequest request) {
@@ -251,9 +258,10 @@ public final class SpiffeDevServicesProcessor {
             try {
                 jwtRequest = JWTSVIDRequest.parseFrom(message.getBytes());
             } catch (InvalidProtocolBufferException e) {
+                LOG.error("Failed to parse FetchJWTSVID request", e);
                 request.response()
                         .status(GrpcStatus.INVALID_ARGUMENT)
-                        .statusMessage("invalid protobuf request")
+                        .statusMessage("invalid protobuf request: " + e.getMessage())
                         .end();
                 return;
             }
@@ -267,16 +275,29 @@ public final class SpiffeDevServicesProcessor {
                 return;
             }
 
-            Instant expiry = Instant.now().plusSeconds(DEFAULT_TTL_SECONDS);
-            String token = signer.sign(DEFAULT_SPIFFE_ID, audiences, expiry);
-            JWTSVID svid = JWTSVID.newBuilder()
-                    .setSpiffeId(DEFAULT_SPIFFE_ID)
-                    .setSvid(token)
-                    .build();
-            JWTSVIDResponse response = JWTSVIDResponse.newBuilder()
-                    .addSvids(svid)
-                    .build();
-            request.response().end(Buffer.buffer(response.toByteArray()));
+            try {
+                String token = Jwt.subject(DEFAULT_SPIFFE_ID)
+                        .audience(audiences)
+                        .expiresIn(DEFAULT_TTL_SECONDS)
+                        .jws()
+                        .algorithm(SignatureAlgorithm.ES256)
+                        .keyId(signingKey.getKeyId())
+                        .sign(signingKey.getPrivateKey());
+                JWTSVID svid = JWTSVID.newBuilder()
+                        .setSpiffeId(DEFAULT_SPIFFE_ID)
+                        .setSvid(token)
+                        .build();
+                JWTSVIDResponse response = JWTSVIDResponse.newBuilder()
+                        .addSvids(svid)
+                        .build();
+                request.response().end(Buffer.buffer(response.toByteArray()));
+            } catch (Exception e) {
+                LOG.error("Failed to sign JWT-SVID in SPIFFE dev service", e);
+                request.response()
+                        .status(GrpcStatus.INTERNAL)
+                        .statusMessage("failed to sign JWT-SVID: " + e.getMessage())
+                        .end();
+            }
         }
 
         @Override
@@ -314,7 +335,14 @@ public final class SpiffeDevServicesProcessor {
 
         @Override
         public void start() {
-            signer = new JwtSvidSigner();
+            try {
+                signingKey = EcJwkGenerator.generateJwk(EllipticCurves.P256);
+                signingKey.setKeyId("quarkus-spiffe-dev-svc");
+                signingKey.setUse("jwt-svid");
+            } catch (Exception e) {
+                errorMessages.add("Failed to generate EC P-256 signing key: " + e.getMessage());
+                throw new RuntimeException("Failed to generate EC P-256 signing key", e);
+            }
             // trying to keep resources minimal:
             vertx = Vertx.vertx(new VertxOptions().setWorkerPoolSize(1).setEventLoopPoolSize(1));
 
@@ -359,13 +387,14 @@ public final class SpiffeDevServicesProcessor {
         }
 
         private void startHttpServer() {
-            httpServer = vertx.createHttpServer(new HttpServerOptions().setPort(0));
+            httpServer = vertx.createHttpServer(new HttpServerOptions().setPort(httpPort));
             try {
                 httpServer.requestHandler(this::handleHttpRequest)
-                        .listen(SocketAddress.inetSocketAddress(0, "127.0.0.1"))
+                        .listen(SocketAddress.inetSocketAddress(httpPort, "127.0.0.1"))
                         .toCompletionStage()
                         .toCompletableFuture()
                         .get(20, TimeUnit.SECONDS);
+                LOG.debugf("Started SPIFFE HTTP server on port %s", httpServer.actualPort());
             } catch (Exception e) {
                 errorMessages.add("Failed to start SPIFFE HTTP server: " + e.getMessage());
                 throw new RuntimeException("Failed to start SPIFFE HTTP server", e);
@@ -380,104 +409,6 @@ public final class SpiffeDevServicesProcessor {
         @Override
         public String getContainerId() {
             return null;
-        }
-    }
-
-    private static final class JwtSvidSigner {
-
-        private static final Base64.Encoder URL_ENCODER = Base64.getUrlEncoder().withoutPadding();
-        private static final String HEADER = URL_ENCODER.encodeToString("{\"alg\":\"ES256\",\"typ\":\"JWT\"}".getBytes());
-        private static final int P256_COORDINATE_LENGTH = 32;
-
-        private final KeyPair keyPair;
-
-        private JwtSvidSigner() {
-            try {
-                KeyPairGenerator generator = KeyPairGenerator.getInstance("EC");
-                generator.initialize(new ECGenParameterSpec("secp256r1"));
-                this.keyPair = generator.generateKeyPair();
-            } catch (Exception e) {
-                throw new RuntimeException("Failed to generate EC P-256 key pair", e);
-            }
-        }
-
-        JsonObject publicKeyJwk() {
-            ECPublicKey pub = (ECPublicKey) keyPair.getPublic();
-            byte[] x = toFixedLength(pub.getW().getAffineX().toByteArray());
-            byte[] y = toFixedLength(pub.getW().getAffineY().toByteArray());
-            return new JsonObject()
-                    .put("kty", "EC")
-                    .put("kid", "dev-authority")
-                    .put("use", "jwt-svid")
-                    .put("crv", "P-256")
-                    .put("x", URL_ENCODER.encodeToString(x))
-                    .put("y", URL_ENCODER.encodeToString(y));
-        }
-
-        private static byte[] toFixedLength(byte[] coordinate) {
-            if (coordinate.length == P256_COORDINATE_LENGTH) {
-                return coordinate;
-            }
-            byte[] result = new byte[P256_COORDINATE_LENGTH];
-            if (coordinate.length > P256_COORDINATE_LENGTH) {
-                System.arraycopy(coordinate, coordinate.length - P256_COORDINATE_LENGTH, result, 0, P256_COORDINATE_LENGTH);
-            } else {
-                System.arraycopy(coordinate, 0, result, P256_COORDINATE_LENGTH - coordinate.length, coordinate.length);
-            }
-            return result;
-        }
-
-        String sign(String spiffeId, Set<String> audiences, Instant expiry) {
-            long now = Instant.now().getEpochSecond();
-            long exp = expiry.getEpochSecond();
-
-            String payload = URL_ENCODER.encodeToString(
-                    new JsonObject()
-                            .put("sub", spiffeId)
-                            .put("aud", new JsonArray(List.copyOf(audiences)))
-                            .put("exp", exp)
-                            .put("iat", now)
-                            .encode()
-                            .getBytes());
-
-            String signingInput = HEADER + "." + payload;
-
-            try {
-                Signature sig = Signature.getInstance("SHA256withECDSA");
-                sig.initSign(keyPair.getPrivate());
-                sig.update(signingInput.getBytes());
-                byte[] derSignature = sig.sign();
-                byte[] jwsSignature = derToJws(derSignature);
-                return signingInput + "." + URL_ENCODER.encodeToString(jwsSignature);
-            } catch (Exception e) {
-                throw new RuntimeException("Failed to sign JWT", e);
-            }
-        }
-
-        private static byte[] derToJws(byte[] der) {
-            int offset = 2;
-            int rLength = der[offset + 1] & 0xFF;
-            offset += 2;
-            byte[] r = extractCoordinate(der, offset, rLength);
-            offset += rLength;
-            int sLength = der[offset + 1] & 0xFF;
-            offset += 2;
-            byte[] s = extractCoordinate(der, offset, sLength);
-
-            byte[] result = new byte[P256_COORDINATE_LENGTH * 2];
-            System.arraycopy(r, 0, result, 0, P256_COORDINATE_LENGTH);
-            System.arraycopy(s, 0, result, P256_COORDINATE_LENGTH, P256_COORDINATE_LENGTH);
-            return result;
-        }
-
-        private static byte[] extractCoordinate(byte[] der, int offset, int length) {
-            byte[] coord = new byte[P256_COORDINATE_LENGTH];
-            if (length > P256_COORDINATE_LENGTH) {
-                System.arraycopy(der, offset + (length - P256_COORDINATE_LENGTH), coord, 0, P256_COORDINATE_LENGTH);
-            } else {
-                System.arraycopy(der, offset, coord, P256_COORDINATE_LENGTH - length, length);
-            }
-            return coord;
         }
     }
 

@@ -1258,6 +1258,8 @@ quarkus.oidc-client.credentials.jwt.source=spiffe-jwt
 The JWT-SVID audience defaults to the `quarkus.oidc-client.auth-server-url` value.
 If the OIDC provider's issuer differs from `quarkus.oidc-client.auth-server-url`, set `quarkus.oidc-client.credentials.jwt.audience` explicitly.
 
+TIP: For development and testing with Keycloak, see xref:security-spiffe-client.adoc#keycloak-dev-svc-integration[SPIFFE integration with Dev Services for Keycloak].
+
 ==== Apple POST JWT
 
 Apple OpenID Connect provider uses the `client_secret_post` method, where the secret is a JWT produced with the `private_key_jwt` authentication method, but with Apple account-specific issuer and subject properties.

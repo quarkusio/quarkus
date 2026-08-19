@@ -173,13 +173,26 @@ final class SpiffeClientImpl implements SpiffeClient {
                     "JWT-SVID proto SPIFFE ID does not match the 'sub' claim; proto: " + svid.getSpiffeId() + ", sub: " + sub);
         }
 
-        JsonArray aud = payload.getJsonArray("aud");
+        Object aud = payload.getValue("aud");
         if (aud == null) {
             throw new SpiffeConnectionException("JWT-SVID from SPIRE agent is missing the required 'aud' claim");
         }
-        Set<String> audience = new HashSet<>(aud.size());
-        for (int i = 0; i < aud.size(); i++) {
-            audience.add(aud.getString(i));
+        final Set<String> audience;
+        if (aud instanceof JsonArray audienceAsArray) {
+            audience = new HashSet<>(audienceAsArray.size());
+            for (int i = 0; i < audienceAsArray.size(); i++) {
+                if (audienceAsArray.getValue(i) instanceof String audienceAsString) {
+                    audience.add(audienceAsString);
+                } else {
+                    throw new SpiffeConnectionException(
+                            "JWT-SVID 'aud' array element at index " + i + " is not a string:" + audienceAsArray.getValue(i));
+                }
+            }
+        } else if (aud instanceof String audienceAsString) {
+            audience = Set.of(audienceAsString);
+        } else {
+            throw new SpiffeConnectionException(
+                    "JWT-SVID 'aud' claim is not a string or array of strings");
         }
         if (!audience.containsAll(requestedAudiences)) {
             throw new SpiffeConnectionException(

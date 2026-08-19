@@ -6,6 +6,7 @@ import java.util.function.Function;
 import jakarta.enterprise.inject.Produces;
 
 import io.opentelemetry.api.trace.Span;
+import io.opentelemetry.context.Context;
 import io.quarkus.opentelemetry.runtime.QuarkusContextStorage;
 
 public class OpenTelemetryExemplarSamplerProvider {
@@ -34,7 +35,14 @@ public class OpenTelemetryExemplarSamplerProvider {
             }
 
             private <T> T get(Function<io.opentelemetry.api.trace.SpanContext, T> valueExtractor) {
-                return Optional.ofNullable(Span.fromContextOrNull(QuarkusContextStorage.INSTANCE.current()))
+                // QuarkusContextStorage.current() may return null when there is no Vert.x / fallback
+                // context. OpenTelemetry 1.62+ treats Span.fromContextOrNull(null) as API misuse and
+                // emits a WARNING on io.opentelemetry.usage (#55855).
+                Context context = QuarkusContextStorage.INSTANCE.current();
+                if (context == null) {
+                    return null;
+                }
+                return Optional.ofNullable(Span.fromContextOrNull(context))
                         .map(Span::getSpanContext)
                         .map(valueExtractor)
                         .orElse(null);

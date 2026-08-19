@@ -4,11 +4,9 @@ import static io.quarkus.reactive.datasource.deployment.ReactiveDataSourceBuildU
 import static io.quarkus.reactive.datasource.deployment.ReactiveDataSourceBuildUtil.qualifiers;
 import static io.quarkus.reactive.datasource.deployment.ReactiveDataSourceDotNames.INJECT_INSTANCE;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
@@ -32,14 +30,6 @@ import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.arc.deployment.ValidationPhaseBuildItem;
 import io.quarkus.arc.deployment.devui.Name;
 import io.quarkus.arc.processor.BeanInfo;
-import io.quarkus.datasource.common.runtime.DataSourceUtil;
-import io.quarkus.datasource.deployment.DataSourceProcessorUtil;
-import io.quarkus.datasource.deployment.spi.DataSourceDbKindResolverBuildItem;
-import io.quarkus.datasource.deployment.spi.DataSourceDefinitionBuildItem;
-import io.quarkus.datasource.deployment.spi.DataSourceLookupBuildItem;
-import io.quarkus.datasource.deployment.spi.DataSourceRequestBuildItem;
-import io.quarkus.datasource.deployment.spi.DataSourceRequestHandlerBuildItem;
-import io.quarkus.datasource.deployment.spi.DefaultDataSourceDbVersionBuildItem;
 import io.quarkus.datasource.runtime.DataSourcesBuildTimeConfig;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
@@ -49,12 +39,9 @@ import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.reactive.datasource.PoolCreator;
 import io.quarkus.reactive.datasource.ReactiveDataSource;
-import io.quarkus.reactive.datasource.runtime.DataSourcesReactiveBuildTimeConfig;
 import io.quarkus.reactive.datasource.runtime.ReactivePoolRecorder;
 import io.quarkus.reactive.datasource.runtime.ReactivePoolsHealthConfig;
 import io.quarkus.reactive.datasource.spi.ReactivePoolBuildItem;
-import io.quarkus.runtime.util.ProgrammingParadigm;
-import io.quarkus.runtime.util.Reason;
 import io.quarkus.smallrye.health.deployment.spi.HealthBuildItem;
 import io.vertx.sqlclient.Pool;
 
@@ -66,88 +53,6 @@ class ReactiveDataSourceProcessor {
             new Type[] { POOL_CREATOR_TYPE }, null);
     private static final DotName POOL = DotName.createSimple(Pool.class);
     private static final Type POOL_TYPE = ClassType.create(POOL);
-
-    @BuildStep
-    DataSourceRequestHandlerBuildItem defineDataSourceRequestHandler(
-            DataSourcesReactiveBuildTimeConfig reactiveConfig,
-            DataSourceDbKindResolverBuildItem dbKindResolverBuildItem) {
-        var dbKindResolver = dbKindResolverBuildItem.get();
-        return new DataSourceRequestHandlerBuildItem(ProgrammingParadigm.REACTIVE, dataSourceName -> {
-            var unavailableReasons = new ArrayList<Reason>();
-            if (!reactiveConfig.dataSources().get(dataSourceName).reactive().enabled()) {
-                unavailableReasons.add(new Reason(String.format(Locale.ROOT, """
-                        Reactive datasource '%s' was disabled explicitly by setting '%s' to 'false'. \
-                        Refer to https://quarkus.io/guides/datasource for guidance.
-                        """,
-                        dataSourceName,
-                        DataSourceUtil.dataSourcePropertyKey(dataSourceName, "reactive"))));
-            }
-            if (dbKindResolver.getOptional(dataSourceName).isEmpty()) {
-                unavailableReasons.add(dbKindResolver.unavailableReason(dataSourceName, ProgrammingParadigm.REACTIVE));
-            }
-            return unavailableReasons;
-        });
-    }
-
-    @BuildStep
-    void collectImplicitReactiveDataSourceRequests(
-            DataSourcesBuildTimeConfig config,
-            DataSourcesReactiveBuildTimeConfig reactiveConfig,
-            DataSourceLookupBuildItem lookupBuildItem,
-            BuildProducer<DataSourceRequestBuildItem> dataSourceRequests) {
-        Predicate<String> enabled = name -> reactiveConfig.dataSources().get(name).reactive().enabled();
-        DataSourceProcessorUtil.collectImplicitDataSourceRequestsFromConfiguration(
-                ProgrammingParadigm.REACTIVE, config, config.dataSources().keySet(), "*", enabled,
-                dataSourceRequests);
-        DataSourceProcessorUtil.collectImplicitDataSourceRequestsFromConfiguration(
-                ProgrammingParadigm.REACTIVE, config, reactiveConfig.dataSources().keySet(), "reactive.*", enabled,
-                dataSourceRequests);
-
-        // We don't derive requests from injection points of datasource related beans,
-        // because those could just be referencing custom beans,
-        // as we suggest in https://quarkus.io/guides/datasource#datasource-active
-        // TODO https://github.com/quarkusio/quarkus/issues/55217
-        //  Find a way to collect injection points for a given DS that have no matching user-defined producer
-    }
-
-    @BuildStep
-    public void defineReactiveDataSources(
-            DataSourcesBuildTimeConfig config,
-            DataSourcesReactiveBuildTimeConfig reactiveConfig,
-            DataSourceDbKindResolverBuildItem dbKindResolutionBuildItem,
-            DataSourceLookupBuildItem lookupBuildItem,
-            List<DataSourceRequestBuildItem> dataSourceReferences,
-            List<DefaultDataSourceDbVersionBuildItem> defaultDbVersions,
-            BuildProducer<ReactiveDataSourceDefinitionBuildItem> dataSourceDefinitions,
-            BuildProducer<DataSourceDefinitionBuildItem> definedDataSources,
-            BuildProducer<ValidationPhaseBuildItem.ValidationErrorBuildItem> validationErrors) {
-        Set<String> defined = DataSourceProcessorUtil.defineDataSources(
-                ProgrammingParadigm.REACTIVE, config,
-                lookupBuildItem,
-                dataSourceReferences,
-                validationErrors);
-
-        if (defined.isEmpty()) {
-            log.warn("The Datasource Reactive dependency is present but no Reactive datasources have been defined.");
-            return;
-        }
-
-        for (String dataSourceName : defined) {
-            String dbKind = dbKindResolutionBuildItem.get().getOptional(dataSourceName)
-                    // Should not throw since DataSourceProcessorUtil.defineDataSources skips datasources with no db-kind.
-                    .orElseThrow();
-
-            definedDataSources.produce(new DataSourceDefinitionBuildItem(dataSourceName, dbKind, ProgrammingParadigm.REACTIVE));
-
-            dataSourceDefinitions.produce(new ReactiveDataSourceDefinitionBuildItem(dataSourceName,
-                    config.dataSources().get(dataSourceName),
-                    reactiveConfig.dataSources().get(dataSourceName).reactive(),
-                    dbKind,
-                    config.dataSources().get(dataSourceName).dbVersion()
-                            .or(() -> DefaultDataSourceDbVersionBuildItem.resolveDefaultDbVersion(dbKind,
-                                    defaultDbVersions, config.dbVersionDefaults()))));
-        }
-    }
 
     @BuildStep
     void addQualifierAsBean(BuildProducer<AdditionalBeanBuildItem> additionalBeans) {

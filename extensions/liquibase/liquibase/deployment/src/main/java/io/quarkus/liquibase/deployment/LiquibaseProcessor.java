@@ -3,7 +3,8 @@ package io.quarkus.liquibase.deployment;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Paths;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -16,6 +17,7 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import javax.sql.DataSource;
@@ -36,6 +38,7 @@ import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.arc.processor.DotNames;
+import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -71,7 +74,6 @@ import io.quarkus.liquibase.runtime.LiquibaseRecorder;
 import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.maven.dependency.Dependency;
 import io.quarkus.paths.PathFilter;
-import io.quarkus.runtime.util.StringUtil;
 import liquibase.change.DatabaseChangeProperty;
 import liquibase.changelog.ChangeLogParameters;
 import liquibase.changelog.DatabaseChangeLog;
@@ -267,25 +269,9 @@ class LiquibaseProcessor {
             liquibaseDataSources.add(liquibaseBuildConfig.datasources().get(dataSourceName));
         }
 
-        ChangeLogParameters changeLogParameters = new ChangeLogParameters();
-        ChangeLogParserFactory changeLogParserFactory = ChangeLogParserFactory.getInstance();
-
         LinkedHashSet<LogicalPhysicalAlias> allAliases = new LinkedHashSet<>();
-        for (LiquibaseDataSourceBuildTimeConfig liquibaseDataSourceConfig : liquibaseDataSources) {
-            Optional<List<String>> oSearchPaths = liquibaseDataSourceConfig.searchPath();
-            String changeLog = liquibaseDataSourceConfig.changeLog();
-            String parsedChangeLog = parseChangeLog(oSearchPaths, changeLog);
-
-            try (ResourceAccessor resourceAccessor = resolveResourceAccessor(oSearchPaths, changeLog)) {
-                ChangeLogParser parser = changeLogParserFactory.getParser(parsedChangeLog, resourceAccessor);
-                DatabaseChangeLog root = parser.parse(parsedChangeLog, changeLogParameters, resourceAccessor);
-                if (root != null) {
-                    allAliases.addAll(LiquibaseChangeLogResourceDiscovery.scan(root).logicalPhysicalAliases());
-                }
-            } catch (Exception ex) {
-                throw new IllegalStateException(ex);
-            }
-        }
+        forEachChangeLog(liquibaseDataSources, changelog -> allAliases.addAll(
+                LiquibaseChangeLogResourceDiscovery.scan(changelog).logicalPhysicalAliases()));
 
         byte[] mappingBytes = mergeLogicalPathMappingProperties(allAliases);
         if (mappingBytes != null) {
@@ -423,70 +409,119 @@ class LiquibaseProcessor {
             liquibaseDataSources.add(liquibaseBuildConfig.datasources().get(dataSourceName));
         }
 
-        ChangeLogParameters changeLogParameters = new ChangeLogParameters();
-        ChangeLogParserFactory changeLogParserFactory = ChangeLogParserFactory.getInstance();
         Set<String> resources = new LinkedHashSet<>();
-        for (LiquibaseDataSourceBuildTimeConfig liquibaseDataSourceConfig : liquibaseDataSources) {
-
-            Optional<List<String>> oSearchPaths = liquibaseDataSourceConfig.searchPath();
-            String changeLog = liquibaseDataSourceConfig.changeLog();
-            String parsedChangeLog = parseChangeLog(oSearchPaths, changeLog);
-
-            try (ResourceAccessor resourceAccessor = resolveResourceAccessor(oSearchPaths, changeLog)) {
-                ChangeLogParser parser = changeLogParserFactory.getParser(parsedChangeLog, resourceAccessor);
-                DatabaseChangeLog changelog = parser.parse(parsedChangeLog, changeLogParameters, resourceAccessor);
-                if (changelog != null) {
-                    resources.addAll(LiquibaseChangeLogResourceDiscovery.scan(changelog).resourcePaths());
-                }
-            } catch (Exception ex) {
-                throw new IllegalStateException(ex);
-            }
-        }
+        forEachChangeLog(liquibaseDataSources, changelog -> resources.addAll(
+                LiquibaseChangeLogResourceDiscovery.scan(changelog).resourcePaths()));
 
         LOGGER.debugf("Liquibase changeLogs: %s", resources);
         return new ArrayList<>(resources);
     }
 
-    private ResourceAccessor resolveResourceAccessor(Optional<List<String>> oSearchPaths, String changeLog)
-            throws FileNotFoundException {
-
-        CompositeResourceAccessor compositeResourceAccessor = new CompositeResourceAccessor();
-        compositeResourceAccessor
-                .addResourceAccessor(new ClassLoaderResourceAccessor(Thread.currentThread().getContextClassLoader()));
-
-        if (!changeLog.startsWith("filesystem:") && oSearchPaths.isEmpty()) {
-            return compositeResourceAccessor;
+    /**
+     * Resolves and parses the change log for each datasource configuration, passing each
+     * successfully parsed {@link DatabaseChangeLog} to the given consumer. Configurations
+     * whose change log cannot be found are silently skipped.
+     *
+     * @param configs the datasource build-time configurations to process
+     * @param consumer receives each successfully parsed {@link DatabaseChangeLog}
+     */
+    private static void forEachChangeLog(List<LiquibaseDataSourceBuildTimeConfig> configs,
+            Consumer<DatabaseChangeLog> consumer) {
+        ChangeLogParameters changeLogParameters = new ChangeLogParameters();
+        ChangeLogParserFactory changeLogParserFactory = ChangeLogParserFactory.getInstance();
+        try (var classpathAccessor = new ClassLoaderResourceAccessor(Thread.currentThread().getContextClassLoader())) {
+            for (LiquibaseDataSourceBuildTimeConfig config : configs) {
+                ResolvedChangeLog resolved = resolveChangeLog(config.changeLog(), config.searchPath(),
+                        classpathAccessor);
+                if (resolved == null) {
+                    LOGGER.debugf("Liquibase changeLog '%s' not found, skipping", config.changeLog());
+                    continue;
+                }
+                try (resolved) {
+                    ChangeLogParser parser = changeLogParserFactory.getParser(resolved.path(),
+                            resolved.resourceAccessor());
+                    DatabaseChangeLog changelog = parser.parse(resolved.path(), changeLogParameters,
+                            resolved.resourceAccessor());
+                    if (changelog != null) {
+                        consumer.accept(changelog);
+                    }
+                }
+            }
+        } catch (Exception ex) {
+            throw new IllegalStateException(ex);
         }
-
-        if (oSearchPaths.isEmpty()) {
-            compositeResourceAccessor.addResourceAccessor(
-                    new DirectoryResourceAccessor(
-                            Paths.get(StringUtil.changePrefix(changeLog, "filesystem:", "")).getParent()));
-            return compositeResourceAccessor;
-        }
-
-        for (String searchPath : oSearchPaths.get()) {
-            compositeResourceAccessor.addResourceAccessor(new DirectoryResourceAccessor(Paths.get(searchPath)));
-        }
-
-        return compositeResourceAccessor;
     }
 
-    private String parseChangeLog(Optional<List<String>> oSearchPaths, String changeLog) {
+    /**
+     * A resolved change log with the path to pass to the Liquibase parser and the
+     * {@link ResourceAccessor} to use for reading it. Implements {@link AutoCloseable}
+     * so it can be used in try-with-resources; only closes the accessor when it owns it.
+     */
+    private record ResolvedChangeLog(String path, ResourceAccessor resourceAccessor, boolean ownsAccessor)
+            implements
+                AutoCloseable {
+        @Override
+        public void close() throws Exception {
+            if (ownsAccessor) {
+                resourceAccessor.close();
+            }
+        }
+    }
 
-        if (changeLog.startsWith("filesystem:") && oSearchPaths.isEmpty()) {
-            return Paths.get(StringUtil.changePrefix(changeLog, "filesystem:", "")).getFileName().toString();
+    /**
+     * Resolves the configured change log to the path and {@link ResourceAccessor} that should be
+     * passed to the Liquibase parser, returning {@code null} if the resource cannot be found.
+     * <p>
+     * {@code filesystem:} paths are resolved against the file system (using search paths if configured),
+     * while classpath resources (with or without the {@code classpath:} prefix) are looked up on the
+     * runtime classpath via {@link QuarkusClassLoader#isResourcePresentAtRuntime(String)}.
+     *
+     * @param changeLog the configured change log path, possibly prefixed with {@code filesystem:} or {@code classpath:}
+     * @param oSearchPaths optional search paths checked for both {@code filesystem:} and unprefixed change logs
+     * @param classpathAccessor shared classpath accessor reused for classpath-only change logs;
+     *        {@code filesystem:} and search-path cases create their own accessor
+     * @return the resolved change log, or {@code null} if the change log was not found
+     */
+    private static ResolvedChangeLog resolveChangeLog(String changeLog, Optional<List<String>> oSearchPaths,
+            ClassLoaderResourceAccessor classpathAccessor)
+            throws FileNotFoundException {
+        boolean filesystemOnly = changeLog.startsWith("filesystem:");
+
+        if (filesystemOnly) {
+            changeLog = changeLog.substring("filesystem:".length());
+        } else {
+            if (changeLog.startsWith("classpath:")) {
+                changeLog = changeLog.substring("classpath:".length());
+            }
+            if (QuarkusClassLoader.isResourcePresentAtRuntime(changeLog)) {
+                return new ResolvedChangeLog(changeLog, classpathAccessor, false);
+            }
         }
 
-        if (changeLog.startsWith("filesystem:")) {
-            return StringUtil.changePrefix(changeLog, "filesystem:", "");
+        if (oSearchPaths.isPresent()) {
+            for (String sp : oSearchPaths.get()) {
+                if (Files.exists(Path.of(sp).resolve(changeLog))) {
+                    CompositeResourceAccessor accessor = new CompositeResourceAccessor();
+                    accessor.addResourceAccessor(
+                            new ClassLoaderResourceAccessor(Thread.currentThread().getContextClassLoader()));
+                    for (String searchPath : oSearchPaths.get()) {
+                        accessor.addResourceAccessor(new DirectoryResourceAccessor(Path.of(searchPath)));
+                    }
+                    return new ResolvedChangeLog(changeLog, accessor, true);
+                }
+            }
+        } else if (filesystemOnly) {
+            Path path = Path.of(changeLog);
+            if (Files.exists(path)) {
+                CompositeResourceAccessor accessor = new CompositeResourceAccessor();
+                accessor.addResourceAccessor(
+                        new ClassLoaderResourceAccessor(Thread.currentThread().getContextClassLoader()));
+                accessor.addResourceAccessor(new DirectoryResourceAccessor(path.getParent()));
+                return new ResolvedChangeLog(path.getFileName().toString(), accessor, true);
+            }
         }
 
-        if (changeLog.startsWith("classpath:")) {
-            return StringUtil.changePrefix(changeLog, "classpath:", "");
-        }
-
-        return changeLog;
+        return null;
     }
 
 }

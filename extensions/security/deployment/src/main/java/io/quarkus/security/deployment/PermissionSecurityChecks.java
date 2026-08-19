@@ -1282,7 +1282,7 @@ interface PermissionSecurityChecks {
                     final boolean isSecondParamStringArr = !secondParamIsNotStringArr(constructor);
 
                     // determine if we want to pass actions param to Permission constructor
-                    if (isSecondParamStringArr) {
+                    if (isSecondParamStringArr && !permissionKey.isQuarkusPermission()) {
                         int foundIx = findSecuredMethodParamIndex(securedMethod, constructor, 1,
                                 permissionKey.paramsRemainder, permissionKey.params, -1, paramConverterGenerator.index)
                                 .methodParamIdx();
@@ -1519,9 +1519,12 @@ interface PermissionSecurityChecks {
                 // - user specifically opted so (by setting PermissionsAllowed#params)
                 // - autodetect strategy is used and:
                 //   - permission constructor has more than 2 args
-                //   - permission constructor has 2 args and second param is not string array
+                //   - permission constructor has 2 args and second param is:
+                //      - not string array
+                //      - string array passed to the QuarkusPermission, for @PermissionChecker doesn't recognize actions
                 return permissionKey.notAutodetectParams() || constructor.parametersCount() > 2
-                        || (constructor.parametersCount() == 2 && secondParamIsNotStringArr(constructor));
+                        || (constructor.parametersCount() == 2
+                                && (secondParamIsNotStringArr(constructor) || permissionKey.isQuarkusPermission()));
             }
 
             private static boolean secondParamIsNotStringArr(MethodInfo constructor) {

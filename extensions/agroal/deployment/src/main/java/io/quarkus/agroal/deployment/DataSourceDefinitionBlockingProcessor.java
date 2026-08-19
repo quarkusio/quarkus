@@ -46,7 +46,7 @@ import io.quarkus.runtime.util.Reason;
 
 /**
  * Handles the lifecycle of {@link ProgrammingParadigm#BLOCKING JDBC} datasources:
- * declaring availability rules for the {@link DataSourceLookupBuildItem lookup},
+ * declaring the JDBC datasource {@link DataSourceLookupBuildItem lookup},
  * collecting requests from configuration, and producing definitions.
  * <p>
  * A <b>request</b> ({@link DataSourceRequestBuildItem}) declares that a datasource is needed,
@@ -69,7 +69,10 @@ class DataSourceDefinitionBlockingProcessor {
             DataSourceDbKindResolverBuildItem dbKindResolverBuildItem) {
         var dbKindResolver = dbKindResolverBuildItem.get();
         return new DataSourceRequestHandlerBuildItem(ProgrammingParadigm.BLOCKING,
-                dataSourceName -> {
+                (dataSourceName, paradigm) -> {
+                    if (paradigm != ProgrammingParadigm.BLOCKING) {
+                        return List.of();
+                    }
                     var unavailableReasons = new ArrayList<Reason>();
                     if (!jdbcConfig.dataSources().get(dataSourceName).jdbc().enabled()) {
                         unavailableReasons.add(new Reason(String.format(Locale.ROOT, """
@@ -80,7 +83,7 @@ class DataSourceDefinitionBlockingProcessor {
                                 DataSourceUtil.dataSourcePropertyKey(dataSourceName, "jdbc"))));
                     }
                     if (dbKindResolver.getOptional(dataSourceName).isEmpty()) {
-                        unavailableReasons.add(dbKindResolver.unavailableReason(dataSourceName, ProgrammingParadigm.BLOCKING));
+                        unavailableReasons.add(dbKindResolver.unavailableReason(dataSourceName, paradigm));
                     }
                     return unavailableReasons;
                 });

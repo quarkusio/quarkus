@@ -6,9 +6,7 @@ import static io.quarkus.hibernate.reactive.deployment.ClassNames.MUTINY_SESSION
 import static io.quarkus.hibernate.reactive.deployment.ClassNames.MUTINY_STATELESS_SESSION;
 
 import java.util.Arrays;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.function.Supplier;
 
 import jakarta.enterprise.context.ApplicationScoped;

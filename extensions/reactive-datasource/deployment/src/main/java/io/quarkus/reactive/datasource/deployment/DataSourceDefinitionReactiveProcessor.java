@@ -26,7 +26,7 @@ import io.quarkus.runtime.util.Reason;
 
 /**
  * Handles the lifecycle of {@link ProgrammingParadigm#REACTIVE reactive} datasources:
- * declaring availability rules for the {@link DataSourceLookupBuildItem lookup},
+ * declaring the reactive datasource {@link DataSourceLookupBuildItem lookup},
  * collecting requests from configuration, and producing definitions.
  * <p>
  * A <b>request</b> ({@link DataSourceRequestBuildItem}) declares that a datasource is needed,
@@ -48,21 +48,25 @@ class DataSourceDefinitionReactiveProcessor {
             DataSourcesReactiveBuildTimeConfig reactiveConfig,
             DataSourceDbKindResolverBuildItem dbKindResolverBuildItem) {
         var dbKindResolver = dbKindResolverBuildItem.get();
-        return new DataSourceRequestHandlerBuildItem(ProgrammingParadigm.REACTIVE, dataSourceName -> {
-            var unavailableReasons = new ArrayList<Reason>();
-            if (!reactiveConfig.dataSources().get(dataSourceName).reactive().enabled()) {
-                unavailableReasons.add(new Reason(String.format(Locale.ROOT, """
-                        Reactive datasource '%s' was disabled explicitly by setting '%s' to 'false'. \
-                        Refer to https://quarkus.io/guides/datasource for guidance.
-                        """,
-                        dataSourceName,
-                        DataSourceUtil.dataSourcePropertyKey(dataSourceName, "reactive"))));
-            }
-            if (dbKindResolver.getOptional(dataSourceName).isEmpty()) {
-                unavailableReasons.add(dbKindResolver.unavailableReason(dataSourceName, ProgrammingParadigm.REACTIVE));
-            }
-            return unavailableReasons;
-        });
+        return new DataSourceRequestHandlerBuildItem(ProgrammingParadigm.REACTIVE,
+                (dataSourceName, paradigm) -> {
+                    if (paradigm != ProgrammingParadigm.REACTIVE) {
+                        return List.of();
+                    }
+                    var unavailableReasons = new ArrayList<Reason>();
+                    if (!reactiveConfig.dataSources().get(dataSourceName).reactive().enabled()) {
+                        unavailableReasons.add(new Reason(String.format(Locale.ROOT, """
+                                Reactive datasource '%s' was disabled explicitly by setting '%s' to 'false'. \
+                                Refer to https://quarkus.io/guides/datasource for guidance.
+                                """,
+                                dataSourceName,
+                                DataSourceUtil.dataSourcePropertyKey(dataSourceName, "reactive"))));
+                    }
+                    if (dbKindResolver.getOptional(dataSourceName).isEmpty()) {
+                        unavailableReasons.add(dbKindResolver.unavailableReason(dataSourceName, paradigm));
+                    }
+                    return unavailableReasons;
+                });
     }
 
     @BuildStep

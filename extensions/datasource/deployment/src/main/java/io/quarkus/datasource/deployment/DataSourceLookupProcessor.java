@@ -1,12 +1,14 @@
 package io.quarkus.datasource.deployment;
 
+import java.util.ArrayList;
+import java.util.EnumSet;
 import java.util.List;
-import java.util.function.Function;
 
 import io.quarkus.datasource.deployment.spi.DataSourceLookupBuildItem;
 import io.quarkus.datasource.deployment.spi.DataSourceRequestHandlerBuildItem;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.component.ComponentLookup;
+import io.quarkus.runtime.util.ProgrammingParadigm;
 import io.quarkus.runtime.util.Reason;
 
 /**
@@ -22,32 +24,26 @@ class DataSourceLookupProcessor {
 
     @BuildStep
     DataSourceLookupBuildItem defineLookup(List<DataSourceRequestHandlerBuildItem> handlers) {
-        boolean blockingFound = false;
-        boolean reactiveFound = false;
-        Function<String, List<Reason>> blockingUnavailableFunction = ignored -> List
-                .of(new Reason("Agroal extension is absent"));
-        Function<String, List<Reason>> reactiveUnavailableFunction = ignored -> List
-                .of(new Reason("Reactive Datasource extension is absent"));
+        List<ComponentLookup> delegates = new ArrayList<>();
+        EnumSet<ProgrammingParadigm> unhandledParadigms = EnumSet.allOf(ProgrammingParadigm.class);
         for (DataSourceRequestHandlerBuildItem handler : handlers) {
-            switch (handler.getParadigm()) {
-                case BLOCKING -> {
-                    if (blockingFound) {
-                        throw new IllegalStateException("Multiple blocking datasource request handlers " + handlers);
-                    }
-                    blockingFound = true;
-                    blockingUnavailableFunction = handler.getUnavailableFunction();
-                }
-                case REACTIVE -> {
-                    if (reactiveFound) {
-                        throw new IllegalStateException("Multiple blocking datasource request handlers " + handlers);
-                    }
-                    reactiveFound = true;
-                    reactiveUnavailableFunction = handler.getUnavailableFunction();
-                }
+            var paradigm = handler.getParadigm();
+            if (!unhandledParadigms.remove(paradigm)) {
+                throw new IllegalStateException("Multiple " + paradigm + " datasource request handlers: " + handlers);
             }
+            delegates.add(handler.getLookup());
         }
+        for (ProgrammingParadigm unhandled : unhandledParadigms) {
+            delegates.add(missingExtensionLookup(unhandled));
+        }
+        return new DataSourceLookupBuildItem(ComponentLookup.of(delegates));
+    }
 
-        return new DataSourceLookupBuildItem(
-                ComponentLookup.of(blockingUnavailableFunction, reactiveUnavailableFunction));
+    private static ComponentLookup missingExtensionLookup(ProgrammingParadigm missing) {
+        String message = switch (missing) {
+            case BLOCKING -> "Agroal extension is absent";
+            case REACTIVE -> "Reactive Datasource extension is absent";
+        };
+        return (name, paradigm) -> paradigm == missing ? List.of(new Reason(message)) : List.of();
     }
 }

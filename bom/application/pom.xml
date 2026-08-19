@@ -16,7 +16,7 @@
     <properties>
         <angus-activation.version>2.0.3</angus-activation.version>
         <angus-mail.version>2.0.5</angus-mail.version> <!-- keep in sync with angus-activation (mail depends on activation) -->
-        <bouncycastle.version>1.85</bouncycastle.version>
+        <bouncycastle.version>1.85.2</bouncycastle.version>
         <bouncycastle.fips.version>2.1.3</bouncycastle.fips.version>
         <bouncycastle.tls.fips.version>2.1.24</bouncycastle.tls.fips.version>
         <cyclonedx.version>12.2.0</cyclonedx.version>
@@ -132,7 +132,7 @@
         <db2-jdbc.version>12.1.5.0</db2-jdbc.version>
         <shrinkwrap.version>1.2.6</shrinkwrap.version>
         <hamcrest.version>2.2</hamcrest.version><!-- The version needs to be compatible with both REST Assured and Awaitility -->
-        <junit.jupiter.version>6.1.2</junit.jupiter.version>
+        <junit.jupiter.version>6.1.3</junit.jupiter.version>
         <infinispan.version>16.0.14</infinispan.version>
         <infinispan.protostream.version>6.0.7</infinispan.protostream.version>
         <caffeine.version>3.2.4</caffeine.version>
@@ -155,12 +155,12 @@
         <cloudevents-api.version>3.0.0</cloudevents-api.version>
         <azure-functions-java-library.version>3.3.0</azure-functions-java-library.version>
         <azure-functions-java-spi.version>1.1.0</azure-functions-java-spi.version>
-        <kotlin.version>2.4.0</kotlin.version>
+        <kotlin.version>2.4.10</kotlin.version>
         <kotlin.coroutine.version>1.11.0</kotlin.coroutine.version>
         <kotlin-serialization.version>1.11.0</kotlin-serialization.version>
         <kotlin-metadata.version>0.9.0</kotlin-metadata.version>
         <azure.toolkit-lib.version>0.53.0</azure.toolkit-lib.version>
-        <dekorate.version>4.1.8</dekorate.version> <!-- Please check with Java Operator SDK team before updating -->
+        <dekorate.version>4.1.11</dekorate.version> <!-- Please check with Java Operator SDK team before updating -->
         <maven-invoker.version>3.2.0</maven-invoker.version>
         <awaitility.version>4.3.0</awaitility.version>
         <jboss-logmanager.version>3.2.2.Final</jboss-logmanager.version>
@@ -223,6 +223,7 @@
         <!-- Dev UI -->
         <importmap.version>1.0.11</importmap.version>
         <webauthn4j.version>0.30.3.RELEASE</webauthn4j.version>
+        <jsoup.version>1.23.1</jsoup.version>
     </properties>
 
     <pluginRepositories>
@@ -6662,6 +6663,11 @@
             </dependency>
             <dependency>
                 <groupId>org.jline</groupId>
+                <artifactId>jline</artifactId>
+                <version>${jline.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.jline</groupId>
                 <artifactId>jansi</artifactId>
                 <version>${jline.version}</version>
             </dependency>
@@ -6684,6 +6690,11 @@
                 <groupId>org.aesh</groupId>
                 <artifactId>terminal-ssh</artifactId>
                 <version>${aesh-readline.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.jsoup</groupId>
+                <artifactId>jsoup</artifactId>
+                <version>${jsoup.version}</version>
             </dependency>
 
             <!-- Apache SSHD Netty transport (sshd-core and sshd-common already managed) -->

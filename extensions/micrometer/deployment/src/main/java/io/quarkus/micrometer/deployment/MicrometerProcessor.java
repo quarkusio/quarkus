@@ -1,6 +1,7 @@
 package io.quarkus.micrometer.deployment;
 
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.function.BooleanSupplier;
@@ -216,7 +217,7 @@ public class MicrometerProcessor {
             List<MetricsFactoryConsumerBuildItem> metricsFactoryConsumerBuildItems,
             ShutdownContextBuildItem shutdownContextBuildItem) {
 
-        Set<Class<? extends MeterRegistry>> typeClasses = new HashSet<>();
+        Set<Class<? extends MeterRegistry>> typeClasses = new LinkedHashSet<>();
         for (MicrometerRegistryProviderBuildItem item : providerClassItems) {
             typeClasses.add(item.getRegistryClass());
         }

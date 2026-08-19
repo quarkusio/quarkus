@@ -2,12 +2,15 @@ package io.quarkus.liquibase.mongodb.deployment;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.TreeMap;
 
@@ -22,6 +25,7 @@ import org.jboss.logging.Logger;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
+import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -218,12 +222,14 @@ class LiquibaseMongodbProcessor {
 
         ChangeLogParameters changeLogParameters = new ChangeLogParameters();
         ChangeLogParserFactory changeLogParserFactory = ChangeLogParserFactory.getInstance();
-        ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
-
         LinkedHashSet<LogicalPhysicalAlias> allAliases = new LinkedHashSet<>();
-        try (var classLoaderResourceAccessor = new ClassLoaderResourceAccessor(classLoader)) {
+        try (var classLoaderResourceAccessor = new ClassLoaderResourceAccessor(
+                Thread.currentThread().getContextClassLoader())) {
             for (LiquibaseMongodbBuildTimeClientConfig buildConfig : liquibaseBuildConfig.clientConfigs().values()) {
-                String changeLog = buildConfig.changeLog();
+                String changeLog = resolveChangeLog(buildConfig.changeLog(), buildConfig.searchPath());
+                if (changeLog == null) {
+                    continue;
+                }
                 ChangeLogParser parser = changeLogParserFactory.getParser(changeLog, classLoaderResourceAccessor);
                 DatabaseChangeLog root = parser.parse(changeLog, changeLogParameters, classLoaderResourceAccessor);
                 if (root != null) {
@@ -355,16 +361,19 @@ class LiquibaseMongodbProcessor {
 
             Set<String> resources = new LinkedHashSet<>();
             for (LiquibaseMongodbBuildTimeClientConfig buildConfig : liquibaseBuildConfig.clientConfigs().values()) {
-                ChangeLogParser parser = changeLogParserFactory.getParser(buildConfig.changeLog(),
-                        classLoaderResourceAccessor);
-                DatabaseChangeLog changelog = parser.parse(buildConfig.changeLog(), changeLogParameters,
+                String changeLog = resolveChangeLog(buildConfig.changeLog(), buildConfig.searchPath());
+                if (changeLog == null) {
+                    LOGGER.debugf("Liquibase changeLog '%s' not found, skipping", buildConfig.changeLog());
+                    continue;
+                }
+                ChangeLogParser parser = changeLogParserFactory.getParser(changeLog, classLoaderResourceAccessor);
+                DatabaseChangeLog changelog = parser.parse(changeLog, changeLogParameters,
                         classLoaderResourceAccessor);
                 if (changelog != null) {
                     resources.addAll(LiquibaseChangeLogResourceDiscovery.scan(changelog).resourcePaths());
                 }
             }
             LOGGER.debugf("Liquibase changeLogs: %s", resources);
-
             return new ArrayList<>(resources);
 
         } catch (Exception ex) {
@@ -372,6 +381,48 @@ class LiquibaseMongodbProcessor {
             throw new IllegalStateException(
                     "Error while loading the liquibase changelogs: %s".formatted(ex.getMessage()), ex);
         }
+    }
+
+    /**
+     * Resolves the configured change log to the path that should be passed to the Liquibase parser,
+     * returning {@code null} if the resource cannot be found.
+     * <p>
+     * {@code filesystem:} paths are resolved against the file system (using search paths if configured),
+     * while classpath resources (with or without the {@code classpath:} prefix) are looked up on the
+     * runtime classpath via {@link QuarkusClassLoader#isResourcePresentAtRuntime(String)}.
+     *
+     * @param changeLog the configured change log path, possibly prefixed with {@code filesystem:} or {@code classpath:}
+     * @param oSearchPaths optional search paths checked for both {@code filesystem:} and unprefixed change logs
+     * @return the resolved path for the parser, or {@code null} if the change log was not found
+     */
+    private static String resolveChangeLog(String changeLog, Optional<List<String>> oSearchPaths) {
+        boolean filesystemOnly = changeLog.startsWith("filesystem:");
+
+        if (filesystemOnly) {
+            changeLog = changeLog.substring("filesystem:".length());
+        } else {
+            if (changeLog.startsWith("classpath:")) {
+                changeLog = changeLog.substring("classpath:".length());
+            }
+            if (QuarkusClassLoader.isResourcePresentAtRuntime(changeLog)) {
+                return changeLog;
+            }
+        }
+
+        if (oSearchPaths.isPresent()) {
+            for (String sp : oSearchPaths.get()) {
+                if (Files.exists(Path.of(sp).resolve(changeLog))) {
+                    return changeLog;
+                }
+            }
+        } else if (filesystemOnly) {
+            Path path = Path.of(changeLog);
+            if (Files.exists(path)) {
+                return path.getFileName().toString();
+            }
+        }
+
+        return null;
     }
 
 }

@@ -63,7 +63,7 @@ export class QwcArcObservers extends LitElement {
             return html`${this._renderFilterBar()}
                 <vaadin-grid .items="${this._filteredObservers}" class="arctable" theme="no-border">
 
-                    <vaadin-grid-sort-column path="declaringClass.name" auto-width
+                    <vaadin-grid-sort-column path="source" auto-width
                         header=${msg('Source', { id: 'quarkus-arc-source' })}
                         ${columnBodyRenderer(this._sourceRenderer, [])}
                         resizable>
@@ -116,9 +116,9 @@ export class QwcArcObservers extends LitElement {
                             };
                             if (searchTerm?.trim()) {
                                 this._filteredObservers = this._observers.filter(
-                                    ({ declaringClass, observedType , priority}) => {
+                                    ({ source, observedType , priority}) => {
                                         return !searchTerm ||
-                                            matchesTerm(declaringClass?.name) ||
+                                            matchesTerm(source) ||
                                             matchesTerm(observedType?.name) ||
                                             matchesTerm(priority.toString());
                                 });
@@ -131,7 +131,10 @@ export class QwcArcObservers extends LitElement {
   }
   
   _sourceRenderer(bean){
-    return html`<qui-ide-link fileName='${bean.declaringClass.name}'><code>${bean.declaringClass.name}</code><code class="method">#${bean.methodName}()</code></qui-ide-link>`;
+    if (bean.declaringClass?.name) {
+      return html`<qui-ide-link fileName='${bean.declaringClass.name}'><code>${bean.source}</code><code class="method">#${bean.methodName}()</code></qui-ide-link>`;
+    }
+    return html`<code>${bean.source}</code>`;
   }
 
   _typeRenderer(bean){

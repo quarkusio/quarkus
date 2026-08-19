@@ -414,20 +414,29 @@ public class CycloneDxSbomGenerator {
     /**
      * Generates a serial number for the BOM in {@code urn:uuid:} format.
      * <p>
-     * The UUID is derived from the BOM's {@link Bom#hashCode() hashCode}, which covers
-     * metadata, components, dependency relationships, properties, and other structural
-     * fields. When a reproducible {@link #setOutputTimestamp(Instant) output timestamp}
-     * is configured, the serial number is fully deterministic across identical builds.
+     * The UUID is derived from the serialized BOM, not from {@link Bom#hashCode() Bom.hashCode()}.
+     * The latter folds in the identity hash codes of the {@link Component.Type} and
+     * {@link Component.Scope} enum constants, and those are drawn from a per-thread PRNG, so they
+     * differ between builds even when the BOM content is identical. Serializing to a compact JSON
+     * form keeps the serial number a pure function of the BOM content, independent of the
+     * configured output format and of {@code prettyPrint}. Combined with a reproducible
+     * {@link #setOutputTimestamp(Instant) output timestamp}, the serial number is then stable
+     * across identical builds.
      * <p>
-     * Must be called after the BOM is fully assembled and before the serial number
-     * itself is set, since {@code Bom.hashCode()} includes the serial number field.
+     * Must be called after the BOM is fully assembled and before the serial number itself is set,
+     * so that the serialized form it hashes does not yet contain one.
      *
      * @param bom the fully assembled BOM (with serial number still {@code null})
      * @return a {@code urn:uuid:} serial number string
      */
-    private static String generateSerialNumber(Bom bom) {
-        return "urn:uuid:" + UUID.nameUUIDFromBytes(
-                Integer.toString(bom.hashCode()).getBytes(StandardCharsets.UTF_8));
+    private String generateSerialNumber(Bom bom) {
+        final String content;
+        try {
+            content = BomGeneratorFactory.createJson(getSchemaVersion(), bom).toJsonString(false);
+        } catch (Throwable e) {
+            throw new RuntimeException("Failed to serialize the SBOM to compute its serial number", e);
+        }
+        return "urn:uuid:" + UUID.nameUUIDFromBytes(content.getBytes(StandardCharsets.UTF_8));
     }
 
     private void renderMainComponent(Bom bom, ComponentDescriptor descriptor) {

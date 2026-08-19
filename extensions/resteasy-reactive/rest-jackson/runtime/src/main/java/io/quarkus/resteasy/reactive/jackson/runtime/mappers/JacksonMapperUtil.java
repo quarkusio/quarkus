@@ -4,6 +4,7 @@ import java.lang.reflect.Array;
 import java.lang.reflect.Method;
 import java.lang.reflect.Type;
 import java.math.BigDecimal;
+import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.time.Duration;
 import java.time.Instant;
@@ -92,6 +93,21 @@ public class JacksonMapperUtil {
             sdf.setTimeZone(TimeZone.getTimeZone(timezone));
         }
         generator.writeString(sdf.format(value));
+    }
+
+    public static void serializeDefaultFormatDate(Object value, String timezone, JsonGenerator generator,
+            SerializationContext context) {
+        if (value == null) {
+            generator.writeNull();
+            return;
+        }
+        // mirrors Jackson's DateSerializer: the configured date format (StdDateFormat unless overridden),
+        // re-zoned to the timezone from the @JsonFormat annotation, if any
+        DateFormat dateFormat = (DateFormat) context.getConfig().getDateFormat().clone();
+        if (timezone != null) {
+            dateFormat.setTimeZone(TimeZone.getTimeZone(timezone));
+        }
+        generator.writeString(dateFormat.format(value));
     }
 
     public static void serializeFormattedTemporal(Object value, String pattern, String timezone,

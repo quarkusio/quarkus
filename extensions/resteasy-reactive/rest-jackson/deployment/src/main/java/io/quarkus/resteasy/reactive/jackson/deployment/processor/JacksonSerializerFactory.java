@@ -624,7 +624,8 @@ public class JacksonSerializerFactory extends JacksonCodeGenerator {
             } else if ("STRING".equals(formatShape) && fieldSpecs.formatPattern() == null && isJavaTimeDateType(typeName)) {
                 writeToStringValue(fieldSpecs, bytecode, ctx, pkgName, arg);
             } else if ("STRING".equals(formatShape) && fieldSpecs.formatPattern() == null && isJavaUtilDateType(typeName)) {
-                writeToStringValue(fieldSpecs, bytecode, ctx, pkgName, arg);
+                // java.util.Date#toString() is not a valid representation: use the configured date format instead
+                writeDefaultFormatDateValue(fieldSpecs, bytecode, ctx, pkgName, arg);
             } else if (fieldSpecs.isFormatShapeNumber() && isBooleanType(typeName)) {
                 writeNumberShapedBoolean(fieldSpecs, bytecode, ctx, pkgName, typeName, arg);
             } else if (fieldSpecs.isFormatShapeNumber() && isJavaUtilDateType(typeName)) {
@@ -682,6 +683,19 @@ public class JacksonSerializerFactory extends JacksonCodeGenerator {
                 bytecode.load(fieldSpecs.formatPattern()),
                 timezone != null ? bytecode.load(timezone) : bytecode.loadNull(),
                 ctx.jsonGenerator);
+    }
+
+    private static void writeDefaultFormatDateValue(FieldSpecs fieldSpecs, BytecodeCreator bytecode,
+            GenerationSerializationContext ctx,
+            String pkgName, ResultHandle arg) {
+        writeFieldName(fieldSpecs, bytecode, ctx, pkgName);
+        String timezone = fieldSpecs.formatTimezone();
+        MethodDescriptor serializeDefaultFormat = MethodDescriptor.ofMethod(JacksonMapperUtil.class.getName(),
+                "serializeDefaultFormatDate", void.class, Object.class, String.class, JsonGenerator.class,
+                SerializationContext.class);
+        bytecode.invokeStaticMethod(serializeDefaultFormat, arg,
+                timezone != null ? bytecode.load(timezone) : bytecode.loadNull(),
+                ctx.jsonGenerator, ctx.serializerProvider);
     }
 
     private static void writeToStringValue(FieldSpecs fieldSpecs, BytecodeCreator bytecode,

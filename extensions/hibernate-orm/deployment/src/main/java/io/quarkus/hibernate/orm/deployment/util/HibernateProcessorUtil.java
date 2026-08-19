@@ -56,6 +56,7 @@ import io.quarkus.hibernate.orm.runtime.HibernateOrmRuntimeConfig;
 import io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil;
 import io.quarkus.hibernate.orm.runtime.boot.QuarkusPersistenceUnitDescriptor;
 import io.quarkus.hibernate.orm.runtime.cache.QuarkusPersistenceUnitCacheConfiguration;
+import io.quarkus.hibernate.orm.runtime.migration.MultiTenancyStrategy;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.runtime.util.ProgrammingParadigm;
@@ -262,6 +263,12 @@ public final class HibernateProcessorUtil {
 
     public static boolean isHibernateValidatorPresent(Capabilities capabilities) {
         return capabilities.isPresent(Capability.HIBERNATE_VALIDATOR);
+    }
+
+    public static MultiTenancyStrategy getMultiTenancyStrategy(Optional<String> multitenancyStrategy) {
+        return MultiTenancyStrategy
+                .valueOf(multitenancyStrategy.orElse(MultiTenancyStrategy.NONE.name())
+                        .toUpperCase(Locale.ROOT));
     }
 
     public static Optional<SupportedDatabaseKind> setDialectAndStorageEngine(

@@ -30,7 +30,6 @@ public class DataSourceProcessorUtil {
 
     public static void collectImplicitDataSourceRequestsFromConfiguration(
             ProgrammingParadigm paradigm,
-            DataSourcesBuildTimeConfig dsConfig,
             Set<String> keySet, String radicalWildcard, Predicate<String> enabled,
             BuildProducer<DataSourceRequestBuildItem> dataSourceRequests) {
         LOG.debugf("Collecting implicit %s datasource requests from configuration '%s': keySet = %s",

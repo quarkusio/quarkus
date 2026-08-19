@@ -84,8 +84,6 @@ import io.quarkus.arc.processor.DotNames;
 import io.quarkus.builder.BuildException;
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
 import io.quarkus.datasource.common.runtime.DatabaseKind;
-import io.quarkus.datasource.deployment.spi.DataSourceLookupBuildItem;
-import io.quarkus.datasource.deployment.spi.DataSourceRequestBuildItem;
 import io.quarkus.datasource.deployment.spi.DefaultDataSourceDbVersionBuildItem;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
@@ -119,7 +117,6 @@ import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveMethodBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
-import io.quarkus.deployment.component.ComponentLookup;
 import io.quarkus.deployment.index.LazyIndexer;
 import io.quarkus.deployment.pkg.AotJarEnabled;
 import io.quarkus.deployment.pkg.steps.NativeOrNativeSourcesBuild;
@@ -136,8 +133,6 @@ import io.quarkus.hibernate.orm.deployment.spi.AdditionalJpaModelBuildItem;
 import io.quarkus.hibernate.orm.deployment.spi.AdditionalPersistenceUnitBuildItem;
 import io.quarkus.hibernate.orm.deployment.spi.DatabaseKindDialectBuildItem;
 import io.quarkus.hibernate.orm.deployment.spi.PersistenceUnitDefinedBuildItem;
-import io.quarkus.hibernate.orm.deployment.spi.PersistenceUnitLookupBuildItem;
-import io.quarkus.hibernate.orm.deployment.spi.PersistenceUnitRequestBuildItem;
 import io.quarkus.hibernate.orm.deployment.spi.SqlLoadScriptDefaultBuildItem;
 import io.quarkus.hibernate.orm.deployment.util.HibernateProcessorUtil;
 import io.quarkus.hibernate.orm.dev.HibernateOrmDevIntegrator;
@@ -167,7 +162,6 @@ import io.quarkus.panache.hibernate.common.deployment.HibernateModelClassCandida
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.runtime.util.ProgrammingParadigm;
-import io.quarkus.runtime.util.Reason;
 import io.quarkus.security.spi.SecuredInterfaceAnnotationBuildItem;
 import net.bytebuddy.description.type.TypeDescription;
 import net.bytebuddy.dynamic.ClassFileLocator;
@@ -408,117 +402,6 @@ public final class HibernateOrmProcessor {
     }
 
     @BuildStep
-    PersistenceUnitLookupBuildItem defineLookup(HibernateOrmConfig config,
-            Capabilities capabilities,
-            List<AdditionalPersistenceUnitBuildItem> additionalPersistenceUnits,
-            DataSourceLookupBuildItem dataSourceLookupBuildItem) {
-        var dataSourceLookup = dataSourceLookupBuildItem.getLookup();
-        var blockingEnabled = config.blocking();
-        if (!blockingEnabled) {
-            LOG.infof("Hibernate ORM was disabled explicitly by quarkus.hibernate-orm.blocking=false."
-                    + " This property is deprecated: use 'quarkus.hibernate-orm.jdbc.enabled=false' instead"
-                    + " (or the per-persistence-unit equivalent).");
-        }
-        var hibernateReactivePresent = capabilities.isPresent(Capability.HIBERNATE_REACTIVE);
-
-        return new PersistenceUnitLookupBuildItem(new ComponentLookup() {
-            @Override
-            public List<Reason> unavailableReasons(String name, ProgrammingParadigm paradigm) {
-                var unavailableReasons = new ArrayList<Reason>();
-                switch (paradigm) {
-                    case BLOCKING -> {
-                        if (!blockingEnabled) {
-                            unavailableReasons.add(new Reason(String.format(Locale.ROOT,
-                                    "Hibernate ORM was disabled explicitly by setting '%s' to 'false'",
-                                    HibernateOrmRuntimeConfig.puPropertyKey(name, "blocking"))));
-                        }
-                        if (!config.persistenceUnits().get(name).jdbc().enabled().orElse(true)) {
-                            unavailableReasons.add(new Reason(String.format(Locale.ROOT,
-                                    "Hibernate ORM was disabled explicitly by setting '%s' to 'false'",
-                                    HibernateOrmRuntimeConfig.puPropertyKey(name, "jdbc.enabled"))));
-                        }
-                    }
-                    case REACTIVE -> {
-                        if (!hibernateReactivePresent) {
-                            unavailableReasons.add(new Reason("Hibernate Reactive extension is absent"));
-                        }
-                        if (!config.persistenceUnits().get(name).reactive().enabled().orElse(true)) {
-                            unavailableReasons.add(new Reason(String.format(Locale.ROOT,
-                                    "Hibernate Reactive was disabled explicitly by setting '%s' to 'false'",
-                                    HibernateOrmRuntimeConfig.puPropertyKey(name, "reactive.enabled"))));
-                        }
-                    }
-                }
-                Optional<String> dataSourceName = additionalPersistenceUnits.stream()
-                        .filter(item -> item.getPersistenceUnitName().equals(name))
-                        .findFirst()
-                        .flatMap(AdditionalPersistenceUnitBuildItem::getDataSourceName)
-                        .or(() -> HibernateProcessorUtil.getDataSourceName(config, name));
-                if (dataSourceName.isPresent()) {
-                    List<Reason> dataSourceUnavailableReason = dataSourceLookup.unavailableReasons(dataSourceName.get(),
-                            paradigm);
-                    if (!dataSourceUnavailableReason.isEmpty()) {
-                        unavailableReasons.add(new Reason(
-                                String.format(Locale.ROOT, "%s datasource '%s' cannot be created",
-                                        switch (paradigm) {
-                                            case BLOCKING -> "JDBC";
-                                            case REACTIVE -> "Reactive";
-                                        },
-                                        dataSourceName.get()),
-                                dataSourceUnavailableReason));
-                    }
-                } else {
-                    MultiTenancyStrategy multiTenancyStrategy = getMultiTenancyStrategy(
-                            config.persistenceUnits().get(name).multitenant());
-                    // Reactive does not support multitenancy so we always require a datasource (explicit or implied)
-                    // See https://github.com/quarkusio/quarkus/issues/15959
-                    boolean reactive = ProgrammingParadigm.REACTIVE.equals(paradigm);
-                    if (reactive || multiTenancyStrategy != MultiTenancyStrategy.DATABASE) {
-                        String dsConfigProperty = HibernateOrmRuntimeConfig.puPropertyKey(name, "datasource");
-                        unavailableReasons.add(new Reason(String.format(Locale.ROOT,
-                                "Datasource must be defined for persistence unit '%s'. "
-                                        + "Set the datasource via the '%s' property. "
-                                        + (reactive ? ""
-                                                : "Alternatively, for dynamic datasource selection, set '%s=database'. ")
-                                        + "Refer to https://quarkus.io/guides/datasource "
-                                        + (reactive ? "" : "or https://quarkus.io/guides/hibernate-orm#database-approach ")
-                                        + "for guidance.",
-                                name, dsConfigProperty, dsConfigProperty)));
-                    }
-                }
-                return unavailableReasons;
-            }
-        });
-    }
-
-    @BuildStep
-    void collectImplicitBlockingPersistenceUnitRequests(Capabilities capabilities, HibernateOrmConfig config,
-            JpaModelPerPersistenceUnitBuildItem jpaModelPerPersistenceUnit,
-            PersistenceUnitLookupBuildItem lookupBuildItem,
-            BuildProducer<PersistenceUnitRequestBuildItem> puRequests) {
-        HibernateProcessorUtil.collectPersistenceUnitRequestsFromConfiguration(ProgrammingParadigm.BLOCKING,
-                capabilities, config,
-                jpaModelPerPersistenceUnit, lookupBuildItem, puRequests);
-
-        // We don't derive requests from injection points of persistence unit related beans,
-        // because those could just be referencing custom beans,
-        // as we suggest in https://quarkus.io/guides/hibernate-orm#persistence-unit-active
-        // TODO https://github.com/quarkusio/quarkus/issues/55217
-        //  Find a way to collect injection points for a given PU that have no matching user-defined producer
-    }
-
-    @BuildStep
-    void defineBlockingPersistenceUnits(HibernateOrmConfig hibernateOrmConfig,
-            PersistenceUnitLookupBuildItem lookupBuildItem,
-            List<PersistenceUnitRequestBuildItem> puRequests,
-            List<PersistenceXmlDescriptorBuildItem> persistenceXmlDescriptors,
-            List<AdditionalPersistenceUnitBuildItem> additionalPersistenceUnits,
-            BuildProducer<PersistenceUnitDefinitionBuildItem> persistenceUnitDefinitions) {
-        HibernateProcessorUtil.definePersistenceUnits(ProgrammingParadigm.BLOCKING, hibernateOrmConfig, lookupBuildItem,
-                puRequests, persistenceXmlDescriptors, additionalPersistenceUnits, persistenceUnitDefinitions);
-    }
-
-    @BuildStep
     void aggregateDefinedPersistenceUnits(
             List<PersistenceUnitDefinitionBuildItem> puDefinitions,
             BuildProducer<PersistenceUnitDefinedBuildItem> definedPersistenceUnits) {
@@ -532,23 +415,6 @@ public final class HibernateOrmProcessor {
         for (var entry : paradigmsByName.entrySet()) {
             definedPersistenceUnits.produce(new PersistenceUnitDefinedBuildItem(
                     entry.getKey(), dataSourceByName.get(entry.getKey()), entry.getValue()));
-        }
-    }
-
-    @BuildStep
-    public void produceBlockingDatasourceReferencesFromPersistenceUnits(
-            List<PersistenceUnitDefinitionBuildItem> puDefinitions,
-            BuildProducer<DataSourceRequestBuildItem> datasourceReferences) {
-        for (PersistenceUnitDefinitionBuildItem puDefinition : puDefinitions) {
-            if (!ProgrammingParadigm.BLOCKING.equals(puDefinition.getParadigm())
-                    || puDefinition.getDataSourceName().isEmpty()) {
-                continue;
-            }
-            Reason reason = new Reason(
-                    "Hibernate ORM persistence unit '" + puDefinition.getPersistenceUnitName() + "'",
-                    puDefinition.getReasons());
-            datasourceReferences.produce(new DataSourceRequestBuildItem(puDefinition.getDataSourceName().get(),
-                    ProgrammingParadigm.BLOCKING, reason));
         }
     }
 
@@ -607,7 +473,7 @@ public final class HibernateOrmProcessor {
                                     jdbcDataSource.map(JdbcDataSourceBuildItem::isDbVersionUserSpecified).orElse(false),
                                     Optional.ofNullable(xmlDescriptor.getProperties().getProperty(AvailableSettings.DIALECT)),
                                     Set.of(), // Not relevant for persistence.xml, because such a PU never gets deactivated.
-                                    getMultiTenancyStrategy(
+                                    HibernateProcessorUtil.getMultiTenancyStrategy(
                                             Optional.ofNullable(persistenceXmlDescriptorBuildItem.getDescriptor()
                                                     .getProperties().getProperty("hibernate.multiTenancy"))), //FIXME this property is meaningless in Hibernate ORM 6
                                     hibernateOrmConfig.database().ormCompatibilityVersion(),
@@ -1274,7 +1140,8 @@ public final class HibernateOrmProcessor {
                 false);
         Set<String> entityClassNames = model.entityClassNames();
 
-        MultiTenancyStrategy multiTenancyStrategy = getMultiTenancyStrategy(persistenceUnitConfig.multitenant());
+        MultiTenancyStrategy multiTenancyStrategy = HibernateProcessorUtil
+                .getMultiTenancyStrategy(persistenceUnitConfig.multitenant());
 
         Optional<String> explicitDialect = additionalPuConfig
                 .flatMap(PersistenceUnitDefinitionBuildItem.AdditionalConfig::explicitDialect)
@@ -1765,13 +1632,6 @@ public final class HibernateOrmProcessor {
         }
         scanner.setClassDescriptors(classDescriptors);
         return scanner;
-    }
-
-    private static MultiTenancyStrategy getMultiTenancyStrategy(Optional<String> multitenancyStrategy) {
-        final MultiTenancyStrategy multiTenancyStrategy = MultiTenancyStrategy
-                .valueOf(multitenancyStrategy.orElse(MultiTenancyStrategy.NONE.name())
-                        .toUpperCase(Locale.ROOT));
-        return multiTenancyStrategy;
     }
 
     private PreGeneratedProxies generateProxies(Set<String> managedClassAndPackageNames, IndexView combinedIndex,

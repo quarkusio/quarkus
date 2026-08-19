@@ -58,7 +58,8 @@ public class StorkRegistrarConfigRecorder {
         String serviceName = quarkusConfig.getValue("quarkus.application.name", String.class);
         if (registrationConfigs.isEmpty()) {
             runtimeConfig.getValue().serviceConfiguration().put(serviceName,
-                    StorkConfigUtil.buildRegistrarOnlyConfiguration(serviceRegistrarType, healthCheckUrl));
+                    StorkConfigUtil.createMinimalAutoRegistrarConfig(serviceRegistrarType,
+                            healthCheckUrl));
         } else if (registrationConfigs.size() == 1) {
             serviceName = registrationConfigs.get(0).serviceName();
             runtimeConfig.getValue().serviceConfiguration().computeIfPresent(serviceName,

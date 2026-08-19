@@ -38,7 +38,7 @@ import io.vertx.core.http.ServerWebSocket;
  */
 public class JsonRpcRouter {
 
-    private final Map<Integer, Cancellable> activeSubscriptions = new ConcurrentHashMap<>();
+    private final Map<Object, Cancellable> activeSubscriptions = new ConcurrentHashMap<>();
 
     // Map json-rpc method to java in runtime classpath
     private Map<String, JsonRpcMethod> runtimeMethodsMap;
@@ -240,8 +240,10 @@ public class JsonRpcRouter {
                                 && map.containsKey("response") && map.get("alreadySerialized").equals("true")) {
                             Object response = map.get("response");
 
-                            // The message response was already serialized, write text directly to socket
-                            jrrw.write("{\"id\":" + jsonRpcRequest.getId() + ",\"result\":{\"messageType\":\""
+                            // The message response was already serialized, write text directly to socket.
+                            // Serialize the id through the mapper so a String id is quoted correctly.
+                            String serializedId = codec.getJsonMapper().toString(jsonRpcRequest.getId(), false);
+                            jrrw.write("{\"id\":" + serializedId + ",\"result\":{\"messageType\":\""
                                     + map.get("messageType") + "\",\"object\":" + response + "}}");
                         } else {
                             codec.writeResponse(jrrw, jsonRpcRequest.getId(), item, MessageType.Response);

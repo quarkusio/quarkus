@@ -28,21 +28,29 @@ public final class JsonRpcCodec {
         return jsonRpcRequestCreator.mcpCreate((JsonObject) jsonMapper.fromString(json, Object.class));
     }
 
-    public void writeResponse(JsonRpcResponseWriter writer, int id, Object object, MessageType messageType) {
+    public void writeResponse(JsonRpcResponseWriter writer, Object id, Object object, MessageType messageType) {
         Object decoratedObject = writer.decorateObject(object, messageType);
         writeResponse(writer, new JsonRpcResponse(id, decoratedObject));
     }
 
-    public void writeMethodNotFoundResponse(JsonRpcResponseWriter writer, int id, String jsonRpcMethodName) {
+    public void writeMethodNotFoundResponse(JsonRpcResponseWriter writer, Object id, String jsonRpcMethodName) {
         writeResponse(writer, new JsonRpcResponse(id,
                 new JsonRpcResponse.Error(METHOD_NOT_FOUND, "Method [" + jsonRpcMethodName + "] not found")));
     }
 
-    public void writeErrorResponse(JsonRpcResponseWriter writer, int id, String jsonRpcMethodName, Throwable exception) {
+    public void writeErrorResponse(JsonRpcResponseWriter writer, Object id, String jsonRpcMethodName, Throwable exception) {
         LOG.error("Error in JsonRPC Call", exception);
         writeResponse(writer, new JsonRpcResponse(id,
                 new JsonRpcResponse.Error(INTERNAL_ERROR,
                         "Method [" + jsonRpcMethodName + "] failed: " + exception.getMessage())));
+    }
+
+    /**
+     * Writes a JSON-RPC error response with an explicit error code, used when a request cannot be parsed or is not a
+     * valid Request object. This must always write something back so a client never hangs waiting for a response.
+     */
+    public void writeErrorResponse(JsonRpcResponseWriter writer, Object id, int code, String message) {
+        writeResponse(writer, new JsonRpcResponse(id, new JsonRpcResponse.Error(code, message)));
     }
 
     private void writeResponse(JsonRpcResponseWriter writer, JsonRpcResponse response) {

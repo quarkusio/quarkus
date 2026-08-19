@@ -361,6 +361,111 @@ public class DevMcpTest {
     }
 
     @Test
+    public void testStringIdIsHandled() {
+        // Per JSON-RPC 2.0 and the MCP spec the id may be a String. A String id must be handled correctly and
+        // echoed back as-is, rather than causing a ClassCastException that leaves the client hanging.
+        String jsonBody = """
+                    {
+                      "jsonrpc": "2.0",
+                      "id": "abc-123",
+                      "method": "tools/list"
+                    }
+                """;
+
+        RestAssured
+                .given()
+                .contentType(ContentType.JSON)
+                .body(jsonBody)
+                .when()
+                .post("/q/dev-mcp")
+                .then()
+                .statusCode(200)
+                .log().all()
+                .body("id", CoreMatchers.equalTo("abc-123"))
+                .body("jsonrpc", CoreMatchers.equalTo("2.0"))
+                .body("result.tools.name", CoreMatchers.hasItem("devui-logstream_getLogger"));
+
+    }
+
+    @Test
+    public void testStringIdIsHandledForToolsCall() {
+        // A String id must also survive a tools/call, which is wrapped in a CallToolResult and takes a different
+        // response path than tools/list. The id must still be echoed back as-is.
+        String jsonBody = """
+                    {
+                      "jsonrpc": "2.0",
+                      "id": "call-abc-123",
+                      "method": "tools/call",
+                      "params": {
+                        "name": "devui-logstream_getLogger",
+                        "arguments": {
+                          "loggerName": "io.quarkus"
+                        }
+                      }
+                    }
+                """;
+
+        RestAssured
+                .given()
+                .contentType(ContentType.JSON)
+                .body(jsonBody)
+                .when()
+                .post("/q/dev-mcp")
+                .then()
+                .statusCode(200)
+                .log().all()
+                .body("id", CoreMatchers.equalTo("call-abc-123"))
+                .body("jsonrpc", CoreMatchers.equalTo("2.0"))
+                .body("result.content.type", CoreMatchers.hasItem("text"))
+                .body("result.content.text", CoreMatchers.notNullValue());
+
+    }
+
+    @Test
+    public void testMalformedJsonReturnsParseError() {
+        // A malformed request must never leave the client hanging; it must produce a JSON-RPC parse error response.
+        String jsonBody = "{ this is not valid json ";
+
+        RestAssured
+                .given()
+                .contentType(ContentType.JSON)
+                .body(jsonBody)
+                .when()
+                .post("/q/dev-mcp")
+                .then()
+                .statusCode(200)
+                .log().all()
+                .body("jsonrpc", CoreMatchers.equalTo("2.0"))
+                .body("error.code", CoreMatchers.equalTo(-32700));
+
+    }
+
+    @Test
+    public void testMissingMethodReturnsInvalidRequest() {
+        // A request without a method is not a valid Request object and must produce an Invalid Request error.
+        String jsonBody = """
+                    {
+                      "jsonrpc": "2.0",
+                      "id": 42
+                    }
+                """;
+
+        RestAssured
+                .given()
+                .contentType(ContentType.JSON)
+                .body(jsonBody)
+                .when()
+                .post("/q/dev-mcp")
+                .then()
+                .statusCode(200)
+                .log().all()
+                .body("id", CoreMatchers.equalTo(42))
+                .body("jsonrpc", CoreMatchers.equalTo("2.0"))
+                .body("error.code", CoreMatchers.equalTo(-32600));
+
+    }
+
+    @Test
     public void testResourcesReadWithInvalidUri() {
         String jsonBody = """
                     {

@@ -5,7 +5,8 @@ import java.util.Map;
 import io.quarkus.devui.runtime.jsonrpc.json.JsonMapper;
 
 public final class JsonRpcRequest {
-    private int id;
+    // Per JSON-RPC 2.0 the id may be a String or a Number (or absent for notifications), so it is kept as an Object.
+    private Object id;
     private String jsonrpc = JsonRpcKeys.VERSION;
     private String method;
     private Map<String, Object> params;
@@ -15,11 +16,11 @@ public final class JsonRpcRequest {
         this.jsonMapper = jsonMapper;
     }
 
-    public int getId() {
+    public Object getId() {
         return id;
     }
 
-    public void setId(int id) {
+    public void setId(Object id) {
         this.id = id;
     }
 

@@ -45,6 +45,10 @@ public class JsonRpcRequestCreator {
      * @return JsonRpcRequest the remapped request
      */
     private JsonRpcRequest remap(JsonRpcRequest jsonRpcRequest) {
+        // A request without a method is not a valid Request object; leave it untouched so the caller can report it.
+        if (jsonRpcRequest.getMethod() == null) {
+            return jsonRpcRequest;
+        }
         if (jsonRpcRequest.getMethod().equalsIgnoreCase(TOOLS_SLASH_CALL)) {
 
             Map params = jsonRpcRequest.getParams();
@@ -70,7 +74,8 @@ public class JsonRpcRequestCreator {
     private JsonRpcRequest createWithFilter(JsonObject jsonObject, String... filter) {
         JsonRpcRequest jsonRpcRequest = new JsonRpcRequest(this.jsonMapper);
         if (jsonObject.containsKey(ID)) {
-            jsonRpcRequest.setId(jsonObject.getInteger(ID));
+            // Per JSON-RPC 2.0 the id may be a String or a Number; keep whatever the client sent.
+            jsonRpcRequest.setId(jsonObject.getValue(ID));
         }
         if (jsonObject.containsKey(JSONRPC)) {
             jsonRpcRequest.setJsonrpc(jsonObject.getString(JSONRPC));

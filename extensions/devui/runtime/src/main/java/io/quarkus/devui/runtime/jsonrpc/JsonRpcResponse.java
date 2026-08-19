@@ -4,18 +4,18 @@ import static io.quarkus.devui.runtime.jsonrpc.JsonRpcKeys.VERSION;
 
 public final class JsonRpcResponse {
 
-    // Public for serialization
-    public final int id;
+    // Public for serialization. Per JSON-RPC 2.0 the id may be a String or a Number (or null), so it is kept as an Object.
+    public final Object id;
     public final Object result;
     public final Error error;
 
-    public JsonRpcResponse(int id, Object result) {
+    public JsonRpcResponse(Object id, Object result) {
         this.id = id;
         this.result = result;
         this.error = null;
     }
 
-    public JsonRpcResponse(int id, Error error) {
+    public JsonRpcResponse(Object id, Error error) {
         this.id = id;
         this.result = null;
         this.error = error;

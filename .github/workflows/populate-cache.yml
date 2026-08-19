@@ -4,12 +4,10 @@ permissions:
   contents: read
   packages: read
 
-# CI disabled for Vert.x 5 experimental branch - uncomment the 'on' triggers below to re-enable
-#on:
-#  workflow_dispatch:
-#  schedule:
-#    - cron: '0 3 * * 1'
-on: [workflow_dispatch]
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 3 * * 1'
 
 env:
   # Workaround testsuite locale issue

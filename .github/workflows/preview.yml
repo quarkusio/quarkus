@@ -1,12 +1,10 @@
 name: Surge.sh Preview
 
-# CI disabled for Vert.x 5 experimental branch - uncomment the 'on' triggers below to re-enable
-#on:
-#  workflow_run:
-#    workflows: ["Quarkus Documentation CI"]
-#    types:
-#      - completed
-on: [workflow_dispatch]
+on:
+  workflow_run:
+    workflows: ["Quarkus Documentation CI"]
+    types:
+      - completed
 
 defaults:
   run:

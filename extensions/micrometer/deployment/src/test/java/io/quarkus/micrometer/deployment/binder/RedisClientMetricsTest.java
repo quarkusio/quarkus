@@ -28,7 +28,8 @@ import io.vertx.redis.client.Request;
 public class RedisClientMetricsTest {
 
     @RegisterExtension
-    static final QuarkusExtensionTest config = new QuarkusExtensionTest();
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
+            .overrideConfigKey("quarkus.otel.enabled", "false");
 
     final static SimpleMeterRegistry registry = new SimpleMeterRegistry();
 

@@ -16,6 +16,7 @@ public class VirtualThreadMetricsDisabledTest {
     @RegisterExtension
     static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withConfigurationResource("test-logging.properties")
+            .overrideConfigKey("quarkus.otel.enabled", "false")
             .overrideConfigKey("quarkus.micrometer.binder.virtual-threads.enabled", "true")
 
             .overrideConfigKey("quarkus.micrometer.binder-enabled-default", "false")

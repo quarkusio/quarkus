@@ -12,6 +12,6 @@ metadata:
   guide: "https://quarkus.io/guides/telemetry-micrometer-to-opentelemetry"
   categories:
   - "observability"
-  status: "preview"
+  status: "stable"
   config:
   - "quarkus.micrometer.otel."

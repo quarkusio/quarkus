@@ -39,10 +39,11 @@ public class VertxHttpInstrumentationDisabledTest {
                             "META-INF/services/io.opentelemetry.sdk.autoconfigure.spi.traces.ConfigurableSpanExporterProvider"))
             .overrideConfigKey("quarkus.otel.traces.exporter", "test-span-exporter")
             .overrideConfigKey("quarkus.otel.traces.sampler.arg", "1.0d")
-            .overrideConfigKey("quarkus.otel.metrics.exporter", "none")
-            .overrideConfigKey("quarkus.otel.logs.exporter", "none")
+            .overrideConfigKey("quarkus.otel.metrics.enabled", "false")
+            .overrideConfigKey("quarkus.otel.logs.enabled", "false")
             .overrideConfigKey("quarkus.otel.bsp.schedule.delay", "200")
-            .overrideConfigKey("quarkus.otel.instrument.vertx-http", "false");
+            .overrideConfigKey("quarkus.otel.instrument.vertx-http", "false")
+            .overrideConfigKey("quarkus.datasource.devservices.enabled", "false");
 
     @Inject
     TestSpanExporter spanExporter;

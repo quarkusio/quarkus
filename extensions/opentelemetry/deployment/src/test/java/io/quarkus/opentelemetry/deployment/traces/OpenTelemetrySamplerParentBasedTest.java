@@ -38,7 +38,7 @@ public class OpenTelemetrySamplerParentBasedTest {
                     .addClasses(TestSpanExporter.class, TestSpanExporterProvider.class, HelloResource.class)
                     .addAsResource(new StringAsset(TestSpanExporterProvider.class.getCanonicalName()),
                             "META-INF/services/io.opentelemetry.sdk.autoconfigure.spi.traces.ConfigurableSpanExporterProvider"))
-            .withConfigurationResource("resource-config/application-no-metrics.properties")
+            .withConfigurationResource("resource-config/application-just-tracing.properties")
             .overrideConfigKey("quarkus.log.category.\"io.quarkus.opentelemetry\".level", "DEBUG")
             .overrideConfigKey("quarkus.otel.traces.sampler", "parentbased_always_on")
             .overrideConfigKey("quarkus.otel.traces.suppress-application-uris", "/hello");

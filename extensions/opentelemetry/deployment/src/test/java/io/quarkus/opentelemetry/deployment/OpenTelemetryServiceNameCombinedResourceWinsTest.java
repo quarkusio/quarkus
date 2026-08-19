@@ -19,5 +19,6 @@ public class OpenTelemetryServiceNameCombinedResourceWinsTest extends OpenTeleme
             .overrideRuntimeConfigKey("quarkus.otel.bsp.schedule.delay", "50")// speed up test
             .overrideRuntimeConfigKey("quarkus.otel.service.name", SERVICE_NAME)
             .overrideRuntimeConfigKey("quarkus.otel.resource.attributes", "service.name=" + "attributes-must-fail")
-            .overrideRuntimeConfigKey("quarkus.otel.traces.sampler.arg", "1.0d");
+            .overrideRuntimeConfigKey("quarkus.otel.traces.sampler.arg", "1.0d")
+            .overrideConfigKey("quarkus.datasource.devservices.enabled", "false");
 }

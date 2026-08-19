@@ -59,14 +59,24 @@ public class GraphQLOpenTelemetryTest {
             .withApplicationRoot((jar) -> jar
                     .addClasses(HelloResource.class, CustomCDIBean.class, TestSpanExporterProvider.class,
                             TestSpanExporter.class, SemconvResolver.class)
-                    .addAsResource(new StringAsset("""
-                            smallrye.graphql.allowGet=true
-                            smallrye.graphql.printDataFetcherException=true
-                            smallrye.graphql.events.enabled=true
-                            quarkus.otel.metrics.exporter=none
-                            quarkus.otel.traces.exporter=test-span-exporter
-                            quarkus.otel.traces.sampler.arg=1.0d
-                            """),
+                    .addAsResource(
+                            new StringAsset(
+                                    """
+                                            smallrye.graphql.allowGet=true
+                                            smallrye.graphql.printDataFetcherException=true
+                                            smallrye.graphql.events.enabled=true
+                                            quarkus.otel.traces.exporter=test-span-exporter
+                                            quarkus.otel.traces.sampler.arg=1.0d
+                                            quarkus.otel.metrics.enabled=false
+                                            quarkus.otel.logs.enabled=false
+                                            quarkus.log.category."io.opentelemetry.usage".min-level=ALL
+                                            quarkus.log.category."io.opentelemetry.usage".level=ALL
+                                            quarkus.datasource.devservices.enabled=false
+                                            quarkus.otel.experimental.shutdown-wait-time=1000ms
+                                            quarkus.log.category.\\"io.quarkus.opentelemetry.runtime.propagation.OpenTelemetryMpContextPropagationProvider\\".level=DEBUG
+                                            quarkus.log.category.\\"io.quarkus.opentelemetry.runtime.QuarkusContextStorage\\".level=DEBUG
+                                            quarkus.log.category.\\"io.quarkus.opentelemetry.runtime.MDCEnabledContextStorage\\".level=DEBUG
+                                            """),
                             "application.properties")
                     .addAsResource(new StringAsset(TestSpanExporterProvider.class.getCanonicalName()),
                             "META-INF/services/io.opentelemetry.sdk.autoconfigure.spi.traces.ConfigurableSpanExporterProvider")
@@ -127,6 +137,17 @@ public class GraphQLOpenTelemetryTest {
     @Test
     @Disabled
     // TODO: flaky test, find out how to fix it
+    // Research: This gets an additional span from the same parent:
+    // SpanData{spanContext=ImmutableSpanContext{traceId=50c4146f2399caabc90debb0d23e7946, spanId=d0d33ccd932ee37b,
+    // ...
+    // parentSpanContext=ImmutableSpanContext{traceId=50c4146f2399caabc90debb0d23e7946, spanId=8052926066139dd7,
+    // ...
+    // instrumentationScopeInfo=InstrumentationScopeInfo{name=io.quarkus.opentelemetry, version=null, schemaUrl=null,
+    // attributes={}}, name=GraphQL, kind=INTERNAL, startEpochNanos=1785750830560600719,
+    // endEpochNanos=1785750830589680922, attributes=AttributesMap{data={graphql.executionId=131475186260,
+    // graphql.operationName=, graphql.operationType=QUERY}, capacity=128, totalAddedValues=3},
+    // totalAttributeCount=3, events=[], totalRecordedEvents=0, links=[], totalRecordedLinks=0,
+    // status=ImmutableStatusData{statusCode=UNSET, description=}, hasEnded=true}
     void nestedCdiBeanInsideQueryTraceTest() throws ExecutionException, InterruptedException {
         String request = getPayload("query {\n" +
                 "  helloAfterSecond\n" +

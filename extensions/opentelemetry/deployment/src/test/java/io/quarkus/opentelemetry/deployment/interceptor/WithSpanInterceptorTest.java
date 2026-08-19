@@ -55,7 +55,7 @@ public class WithSpanInterceptorTest {
                             .addAsManifestResource(
                                     "META-INF/services-config/io.opentelemetry.sdk.autoconfigure.spi.traces.ConfigurableSpanExporterProvider",
                                     "services/io.opentelemetry.sdk.autoconfigure.spi.traces.ConfigurableSpanExporterProvider")
-                            .addAsResource("resource-config/application-no-metrics.properties", "application.properties"));
+                            .addAsResource("resource-config/application-just-tracing.properties", "application.properties"));
 
     @Inject
     SpanBean spanBean;

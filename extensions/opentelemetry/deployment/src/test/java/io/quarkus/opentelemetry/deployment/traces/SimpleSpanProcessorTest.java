@@ -46,8 +46,9 @@ public class SimpleSpanProcessorTest {
             .overrideConfigKey("quarkus.otel.simple", "true")
             .overrideConfigKey("quarkus.otel.traces.exporter", "test-span-exporter")
             .overrideConfigKey("quarkus.otel.traces.sampler.arg", "1.0d")
-            .overrideConfigKey("quarkus.otel.metrics.exporter", "none")
-            .overrideConfigKey("quarkus.otel.logs.exporter", "none");
+            .overrideConfigKey("quarkus.otel.metrics.enabled", "false")
+            .overrideConfigKey("quarkus.otel.logs.enabled", "false")
+            .overrideConfigKey("quarkus.datasource.devservices.enabled", "false");
 
     @Inject
     OpenTelemetry openTelemetry;

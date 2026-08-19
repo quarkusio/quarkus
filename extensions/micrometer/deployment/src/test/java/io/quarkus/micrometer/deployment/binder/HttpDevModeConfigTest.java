@@ -19,7 +19,8 @@ public class HttpDevModeConfigTest {
             .withApplicationRoot((jar) -> jar
                     .addClass(HelloResource.class)
                     .addClass(MeterResource.class)
-                    .add(new StringAsset("quarkus.micrometer.binder-enabled-default=false\n" +
+                    .add(new StringAsset("quarkus.otel.enabled=false\n" +
+                            "quarkus.micrometer.binder-enabled-default=false\n" +
                             "quarkus.micrometer.binder.http-client.enabled=true\n" +
                             "quarkus.micrometer.binder.http-server.enabled=true\n" +
                             "quarkus.micrometer.binder.http-server.ignore-patterns=/http\n" +

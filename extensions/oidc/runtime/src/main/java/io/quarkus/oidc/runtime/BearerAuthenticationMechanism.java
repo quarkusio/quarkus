@@ -64,11 +64,11 @@ public class BearerAuthenticationMechanism extends AbstractOidcAuthenticationMec
 
             List<String> proofs = context.request().headers().getAll(OidcConstants.DPOP_SCHEME);
             if (proofs == null || proofs.isEmpty()) {
-                LOG.warn("DPOP proof header must be present to verify the DPOP access token binding");
+                LOG.warn("DPoP proof header must be present to verify the DPoP access token binding");
                 throw new AuthenticationFailedException(tokenMap(token));
             }
             if (proofs.size() != 1) {
-                LOG.warn("Only a single DPOP proof header is accepted");
+                LOG.warnf("Only a single DPoP proof header is accepted, %d headers are available", proofs.size());
                 throw new AuthenticationFailedException(tokenMap(token));
             }
             String proof = proofs.get(0);
@@ -78,20 +78,20 @@ public class BearerAuthenticationMechanism extends AbstractOidcAuthenticationMec
             JsonObject proofJwtClaims = OidcCommonUtils.decodeJwtContent(proof);
 
             if (!OidcConstants.DPOP_TOKEN_TYPE.equals(proofJwtHeaders.getString(OidcConstants.TOKEN_TYPE_HEADER))) {
-                LOG.warn("Invalid DPOP proof token type ('typ') header");
+                LOG.warn("Invalid DPoP proof token type ('typ') header");
                 throw new AuthenticationFailedException(tokenMap(token));
             }
 
             // Check HTTP method and request URI
             String proofHttpMethod = proofJwtClaims.getString(OidcConstants.DPOP_HTTP_METHOD);
             if (proofHttpMethod == null) {
-                LOG.warn("DPOP proof HTTP method claim is missing");
+                LOG.warn("DPoP proof HTTP method claim is missing");
                 throw new AuthenticationFailedException(tokenMap(token));
             }
 
             String httpMethod = context.request().method().name();
             if (!httpMethod.equals(proofHttpMethod)) {
-                LOG.warnf("DPOP proof HTTP method claim %s does not match the request HTTP method %s", proofHttpMethod,
+                LOG.warnf("DPoP proof HTTP method claim %s does not match the request HTTP method %s", proofHttpMethod,
                         httpMethod);
                 throw new AuthenticationFailedException(tokenMap(token));
             }
@@ -99,7 +99,7 @@ public class BearerAuthenticationMechanism extends AbstractOidcAuthenticationMec
             // Check HTTP request URI
             String proofHttpRequestUri = proofJwtClaims.getString(OidcConstants.DPOP_HTTP_REQUEST_URI);
             if (proofHttpRequestUri == null) {
-                LOG.warn("DPOP proof HTTP request uri claim is missing");
+                LOG.warn("DPoP proof HTTP request uri claim is missing");
                 throw new AuthenticationFailedException(tokenMap(token));
             }
 
@@ -109,7 +109,7 @@ public class BearerAuthenticationMechanism extends AbstractOidcAuthenticationMec
                 httpRequestUri = httpRequestUri.substring(0, queryIndex);
             }
             if (!httpRequestUri.equals(proofHttpRequestUri)) {
-                LOG.warnf("DPOP proof HTTP request uri claim %s does not match the request HTTP uri %s", proofHttpRequestUri,
+                LOG.warnf("DPoP proof HTTP request uri claim %s does not match the request HTTP uri %s", proofHttpRequestUri,
                         httpRequestUri);
                 throw new AuthenticationFailedException(tokenMap(token));
             }

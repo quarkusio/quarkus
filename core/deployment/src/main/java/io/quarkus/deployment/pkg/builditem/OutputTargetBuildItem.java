@@ -14,16 +14,23 @@ import io.quarkus.maven.dependency.ArtifactKey;
 public final class OutputTargetBuildItem extends SimpleBuildItem {
 
     private final Path outputDirectory;
+    private final Path packageOutputDirectory;
     private final String baseName;
     private final String originalBaseName;
     private final boolean rebuild;
     private final Properties buildSystemProperties;
     private final Optional<Set<ArtifactKey>> includedOptionalDependencies;
 
-    public OutputTargetBuildItem(Path outputDirectory, String baseName, String originalBaseName, boolean rebuild,
+    public OutputTargetBuildItem(
+            Path outputDirectory,
+            Path packageOutputDirectory,
+            String baseName,
+            String originalBaseName,
+            boolean rebuild,
             Properties buildSystemProperties,
             Optional<Set<ArtifactKey>> includedOptionalDependencies) {
         this.outputDirectory = outputDirectory;
+        this.packageOutputDirectory = packageOutputDirectory;
         this.baseName = baseName;
         this.originalBaseName = originalBaseName;
         this.rebuild = rebuild;
@@ -33,6 +40,10 @@ public final class OutputTargetBuildItem extends SimpleBuildItem {
 
     public Path getOutputDirectory() {
         return outputDirectory;
+    }
+
+    public Path getPackageOutputDirectory() {
+        return packageOutputDirectory;
     }
 
     /**

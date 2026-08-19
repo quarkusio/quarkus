@@ -361,7 +361,18 @@ public class JaxrsClientReactiveProcessor {
                 .setSkipMethodParameter(new Predicate<Map<DotName, AnnotationInstance>>() {
                     @Override
                     public boolean test(Map<DotName, AnnotationInstance> anns) {
-                        return anns.containsKey(NOT_BODY) || anns.containsKey(URL);
+                        if (anns.containsKey(NOT_BODY)) {
+                            return true;
+                        }
+
+                        for (final DotName annotationName : anns.keySet()) {
+                            final ClassInfo type = index.getClassByName(annotationName);
+                            if (type != null && type.declaredAnnotation(NOT_BODY) != null) {
+                                return true;
+                            }
+                        }
+
+                        return false;
                     }
                 })
                 .setValidateEndpoint(validationPredicatesBuildItems.stream().map(item -> item.getPredicate())

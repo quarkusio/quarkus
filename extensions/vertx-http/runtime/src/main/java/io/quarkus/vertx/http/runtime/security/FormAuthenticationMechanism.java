@@ -120,36 +120,6 @@ public class FormAuthenticationMechanism implements HttpAuthenticationMechanism 
         this.priority = runtimeForm.priority();
     }
 
-    /**
-     * @deprecated use {@link #FormAuthenticationMechanism(FormAuthConfig, Optional)}
-     */
-    @Deprecated(forRemoval = true, since = "3.25")
-    public FormAuthenticationMechanism(String loginPage, String postLocation,
-            String usernameParameter, String passwordParameter, String errorPage, String landingPage,
-            boolean redirectAfterLogin, String locationCookie, String cookieSameSite, String cookiePath,
-            String cookieDomain, PersistentLoginManager loginManager) {
-        this.loginPage = loginPage;
-        this.postLocation = postLocation;
-        this.usernameParameter = usernameParameter;
-        this.passwordParameter = passwordParameter;
-        this.locationCookie = locationCookie;
-        this.errorPage = errorPage;
-        this.landingPage = landingPage;
-        this.redirectToLandingPage = landingPage != null && redirectAfterLogin;
-        this.redirectToLoginPage = loginPage != null;
-        this.redirectToErrorPage = errorPage != null;
-        this.cookieSameSite = CookieSameSite.valueOf(cookieSameSite);
-        this.cookiePath = cookiePath;
-        this.cookieDomain = cookieDomain;
-        this.loginManager = loginManager;
-        this.isFormAuthEventObserver = false;
-        this.formAuthEvent = null;
-        this.landingPageQueryParams = null;
-        this.loginPageQueryParams = null;
-        this.errorPageQueryParams = null;
-        this.priority = HttpAuthenticationMechanism.DEFAULT_PRIORITY;
-    }
-
     public Uni<SecurityIdentity> runFormAuth(final RoutingContext exchange,
             final IdentityProviderManager securityContext) {
         exchange.request().setExpectMultipart(true);
@@ -258,22 +228,6 @@ public class FormAuthenticationMechanism implements HttpAuthenticationMechanism 
             cookie.setDomain(cookieDomain);
         }
         exchange.response().addCookie(cookie);
-    }
-
-    /**
-     * @deprecated this method hasn't been used by this class for some time now; if you implement this mechanism
-     *             and have a use case with this method, please let us no so that we can document and test it
-     */
-    @Deprecated(since = "3.31", forRemoval = true)
-    protected void servePage(final RoutingContext exchange, final String location) {
-        sendRedirect(exchange, location);
-    }
-
-    static void sendRedirect(final RoutingContext exchange, final String location) {
-        String loc = assembleRedirectLocation(exchange, location, null);
-        exchange.response().headers().add(HttpHeaderNames.LOCATION, loc);
-        exchange.response().setStatusCode(302);
-        exchange.response().end();
     }
 
     static Uni<ChallengeData> getRedirect(final RoutingContext exchange, final String location,

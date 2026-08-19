@@ -9,8 +9,12 @@ import java.util.Optional;
 import java.util.OptionalInt;
 
 import org.jboss.logging.Logger;
+import org.testcontainers.DockerClientFactory;
 import org.testcontainers.mssqlserver.MSSQLServerContainer;
 import org.testcontainers.utility.DockerImageName;
+
+import com.github.dockerjava.api.model.HostConfig;
+import com.github.dockerjava.api.model.Info;
 
 import io.quarkus.datasource.common.runtime.DatabaseKind;
 import io.quarkus.datasource.deployment.spi.DatasourceStartable;
@@ -64,10 +68,17 @@ public class MSSQLDevServicesProcessor {
                 startupTimeout.ifPresent(container::withStartupTimeout);
 
                 // Workaround for https://github.com/microsoft/mssql-docker/issues/954
-                // SQL Server 2025 crashes when the visible CPU count is not a power of 2.
-                int safeCpuCount = Integer.highestOneBit(Runtime.getRuntime().availableProcessors());
-                container.withCreateContainerCmdModifier(
-                        cmd -> cmd.getHostConfig().withCpusetCpus("0-" + (safeCpuCount - 1)));
+                // SQL Server crashes when the visible CPU count is not a power of 2.
+                // Use the container engine CPU count (Podman/Docker VM), not the JVM host
+                // count — otherwise we can request CPUs the VM does not have (#56084).
+                container.withCreateContainerCmdModifier(cmd -> {
+                    HostConfig hostConfig = cmd.getHostConfig();
+                    if (hostConfig == null) {
+                        hostConfig = new HostConfig();
+                        cmd.withHostConfig(hostConfig);
+                    }
+                    hostConfig.withCpusetCpus(cpusetCpus(containerEngineCpuCount()));
+                });
 
                 String effectivePassword = containerConfig.getPassword()
                         .orElse(password.orElse(DEFAULT_DATABASE_STRONG_PASSWORD));
@@ -109,6 +120,28 @@ public class MSSQLDevServicesProcessor {
                         .map(containerAddress -> configurator.composeRunningService(containerAddress, containerConfig));
             }
         });
+    }
+
+    /**
+     * SQL Server requires a power-of-two visible CPU count. Round the engine CPU count
+     * down to the nearest power of two so the cpuset stays inside the VM.
+     */
+    static String cpusetCpus(int availableCpus) {
+        int safeCpuCount = Integer.highestOneBit(Math.max(1, availableCpus));
+        return "0-" + (safeCpuCount - 1);
+    }
+
+    static int containerEngineCpuCount() {
+        try {
+            Info info = DockerClientFactory.lazyClient().infoCmd().exec();
+            Integer ncpu = info == null ? null : info.getNCPU();
+            if (ncpu != null && ncpu > 0) {
+                return ncpu;
+            }
+        } catch (RuntimeException e) {
+            LOG.debug("Unable to determine container engine CPU count; pinning SQL Server to 1 CPU", e);
+        }
+        return 1;
     }
 
     private static class QuarkusMSSQLServerContainer extends MSSQLServerContainer implements DatasourceStartable {

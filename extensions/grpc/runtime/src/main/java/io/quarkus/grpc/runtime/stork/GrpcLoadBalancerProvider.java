@@ -77,6 +77,8 @@ public class GrpcLoadBalancerProvider extends LoadBalancerProvider {
     public LoadBalancer newLoadBalancer(LoadBalancer.Helper helper) {
         return new LoadBalancer() {
 
+            Map<ServiceInstance, Subchannel> previousSubChannels = new TreeMap<>(
+                    Comparator.comparingLong(ServiceInstance::getId));
             String serviceName;
 
             @Override
@@ -101,6 +103,7 @@ public class GrpcLoadBalancerProvider extends LoadBalancerProvider {
                 for (EquivalentAddressGroup addressGroup : addresses) {
                     ServiceInstance serviceInstance = addressGroup.getAttributes()
                             .get(GrpcStorkServiceDiscovery.SERVICE_INSTANCE);
+                    previousSubChannels.remove(serviceInstance);
                     CreateSubchannelArgs subChannelArgs = CreateSubchannelArgs.newBuilder()
                             .setAddresses(addressGroup)
                             .setAttributes(addressGroup.getAttributes())
@@ -143,6 +146,11 @@ public class GrpcLoadBalancerProvider extends LoadBalancerProvider {
                     subChannels.put(serviceInstance, subchannel);
                 }
 
+                for (Subchannel value : previousSubChannels.values()) {
+                    log.info("shutting down subchannel");
+                    value.shutdown();
+                }
+                previousSubChannels = subChannels;
                 helper.updateBalancingState(state.get(), picker);
             }
 

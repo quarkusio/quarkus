@@ -23,7 +23,7 @@ For more on origin definitions, see the link:https://datatracker.ietf.org/doc/ht
 
 To enforce CORS policies in your application, enable the Quarkus CORS filter by adding the following line to the `src/main/resources/application.properties` file:
 
-[source, properties]
+[source,properties]
 ----
 quarkus.http.cors.enabled=true
 ----
@@ -49,7 +49,7 @@ include::{generated-dir}/config/quarkus-vertx-http_quarkus.http.cors.adoc[levelo
 
 The following example shows a complete CORS filter configuration, including a regular expression to define one of the origins.
 
-[source, properties]
+[source,properties]
 ----
 quarkus.http.cors.enabled=true <1>
 quarkus.http.cors.origins=http://example.com,http://www.example.io,/https://([a-z0-9\\-_]+)\\\\.app\\\\.mydomain\\\\.com/ <2>
@@ -61,7 +61,8 @@ quarkus.http.cors.access-control-allow-credentials=true <7>
 ----
 
 <1> Enables the CORS filter.
-<2> Specifies allowed origins, including a regular expression. When not specified, CORS is not permitted, and only same-origin requests are allowed.
+<2> Specifies allowed origins, including a regular expression.
+When not specified, CORS is not permitted, and only same-origin requests are allowed.
 <3> Lists allowed HTTP methods for cross-origin requests.
 <4> Declares custom headers that clients can include in requests.
 <5> Identifies response headers that clients can access.
@@ -93,7 +94,7 @@ In such cases, to improve the HTTP cache performance, you might want to return a
 
 Also, since configuring origins during development can be challenging, consider allowing all origins in development mode:
 
-[source, properties]
+[source,properties]
 ----
 quarkus.http.cors.enabled=true
 %dev.quarkus.http.cors.origins=/.*/
@@ -123,7 +124,7 @@ public class CorsProgrammaticConfig {
 }
 ----
 
-The `io.quarkus.vertx.http.security.CORS` builder allows you to create a complete CORS configuration:
+Use the `io.quarkus.vertx.http.security.CORS` builder to create a complete CORS configuration:
 
 [source,java]
 ----
@@ -147,4 +148,4 @@ public class CorsProgrammaticConfig {
 
 * xref:security-overview.adoc[Quarkus Security overview]
 * xref:http-reference.adoc[Quarkus HTTP Reference]
-* link:https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS[Mozilla HTTP CORS documentation]
+* link:https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/CORS[Mozilla HTTP CORS documentation]

@@ -1,6 +1,8 @@
 package io.quarkus.vertx.http.runtime.devmode;
 
 import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.ObjectInputFilter;
 import java.io.ObjectInputStream;
 import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
@@ -130,7 +132,7 @@ public class RemoteSyncHandler implements Handler<HttpServerRequest> {
                     @Override
                     public Void call() {
                         try {
-                            Throwable problem = (Throwable) new ObjectInputStream(new ByteArrayInputStream(b.getBytes()))
+                            Throwable problem = (Throwable) createFilteredObjectInputStream(b.getBytes())
                                     .readObject();
                             //update the problem if it has changed
                             if (problem != null || remoteProblem != null) {
@@ -192,7 +194,7 @@ public class RemoteSyncHandler implements Handler<HttpServerRequest> {
                     r.nextBytes(sessionId);
                     currentSession = Base64.getEncoder().encodeToString(sessionId);
                     currentSessionCounter = 0;
-                    RemoteDevState state = (RemoteDevState) new ObjectInputStream(new ByteArrayInputStream(b.getBytes()))
+                    RemoteDevState state = (RemoteDevState) createFilteredObjectInputStream(b.getBytes())
                             .readObject();
                     remoteProblem = state.getAugmentProblem();
                     if (state.getAugmentProblem() != null) {
@@ -251,7 +253,7 @@ public class RemoteSyncHandler implements Handler<HttpServerRequest> {
     private void handleDelete(HttpServerRequest event) {
         if (checkSession(event, event.path().getBytes(StandardCharsets.UTF_8)))
             return;
-        hotReplacementContext.updateFile(event.path(), null);
+        hotReplacementContext.updateFile(stripRootPath(event.path()), null);
         event.response().end();
     }
 
@@ -288,6 +290,35 @@ public class RemoteSyncHandler implements Handler<HttpServerRequest> {
             return true;
         }
         return false;
+    }
+
+    /**
+     * Creates an {@link ObjectInputStream} with a deny-by-default deserialization filter
+     * for the remote dev protocol.
+     * <p>
+     * The remote dev client ({@code HttpRemoteDevClient}) serializes {@link RemoteDevState}
+     * (containing a {@code HashMap<String, String>} of file hashes and a {@code Throwable}
+     * for build errors) and standalone {@code Throwable} instances. The allowlist covers
+     * the class families needed to deserialize these objects:
+     * <ul>
+     * <li>{@code io.quarkus.dev.spi.RemoteDevState}: the protocol's state object</li>
+     * <li>{@code java.lang.*}: String, Throwable/Exception subclasses, StackTraceElement, Number</li>
+     * <li>{@code java.io.*}: IOException and subclasses thrown during builds</li>
+     * <li>{@code java.util.*}: HashMap, ArrayList (suppressed exceptions list)</li>
+     * <li>{@code java.math.*}: referenced by serialization internals</li>
+     * </ul>
+     * The trailing {@code !*} rejects everything else.
+     */
+    private static ObjectInputStream createFilteredObjectInputStream(byte[] data) throws IOException {
+        ObjectInputStream ois = new ObjectInputStream(new ByteArrayInputStream(data));
+        ois.setObjectInputFilter(ObjectInputFilter.Config.createFilter(
+                "io.quarkus.dev.spi.RemoteDevState;"
+                        + "java.lang.*;"
+                        + "java.io.*;"
+                        + "java.util.*;"
+                        + "java.math.*;"
+                        + "!*"));
+        return ois;
     }
 
     public void close() {

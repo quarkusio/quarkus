@@ -13,7 +13,7 @@ This document explains how the dev mode in Quarkus differs from a production app
 
 == Intro
 
-Quarkus provides a dev mode (explained in more detail xref:maven-tooling.adoc#dev-mode[here] and link:gradle-tooling#dev-mode[here]) which greatly aids
+Quarkus provides a dev mode (explained in more detail xref:maven-tooling.adoc#dev-mode[here] and xref:gradle-tooling.adoc#dev-mode[here]) which greatly aids
 during development but should *NEVER* be used in production.
 
 [[architectural-differences]]

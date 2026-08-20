@@ -16,6 +16,7 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.DevServicesResultBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.dev.devservices.DevServicesConfig;
+import io.quarkus.devservices.common.StartableContainer;
 
 public class SimpleDevServicesProcessor {
 
@@ -34,11 +35,14 @@ public class SimpleDevServicesProcessor {
         return DevServicesResultBuildItem.owned()
                 .feature("quarkus-Basic")
                 .serviceName(FEATURE)
-                .startable(() -> new SimpleContainer(fixedPort))
+                .startable(() -> {
+                    SimpleContainer container = new SimpleContainer(fixedPort);
+                    return new StartableContainer<>(container, c -> c.getConnectionInfo());
+                })
                 .config(Map.of(QUARKUS_SIMPLE_EXTENSION_STATIC_THING, "some value"))
                 .configProvider(Map.of(QUARKUS_SIMPLE_EXTENSION_BASE_URL,
                         c -> c.getConnectionInfo(), SIMPLE_EXTENSION_CLASSLOADER_ON_SERVICE_START,
-                        c -> c.getClassLoaderNameOnStart(), SIMPLE_EXTENSION_CONTAINER_ID,
+                        c -> ((SimpleContainer) c.getContainer()).getClassLoaderNameOnStart(), SIMPLE_EXTENSION_CONTAINER_ID,
                         c -> c.getContainerId()))
                 .build();
 

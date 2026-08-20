@@ -67,9 +67,17 @@ public final class ConfigureUtil {
      * When Testcontainers reuse is enabled for a container, the label must be omitted
      * so the Docker create command hash stays stable across JVM restarts.
      */
+    /**
+     * Whether Testcontainers reuse is enabled for this container, meaning it should
+     * survive JVM shutdown and be reused by subsequent runs.
+     */
+    public static boolean isReusable(GenericContainer<?> container) {
+        return TestcontainersConfiguration.getInstance().environmentSupportsReuse()
+                && container.isShouldBeReused();
+    }
+
     public static boolean shouldConfigureProcessUuidLabel(GenericContainer<?> container) {
-        return !(TestcontainersConfiguration.getInstance().environmentSupportsReuse()
-                && container.isShouldBeReused());
+        return !isReusable(container);
     }
 
     public static void configureLabels(GenericContainer<?> container, LaunchMode launchMode) {

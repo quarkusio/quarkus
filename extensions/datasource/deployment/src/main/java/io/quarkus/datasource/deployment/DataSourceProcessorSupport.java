@@ -22,10 +22,15 @@ import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.runtime.util.ProgrammingParadigm;
 import io.quarkus.runtime.util.Reason;
 
-public class DataSourceProcessorUtil {
-    private static final Logger LOG = Logger.getLogger(DataSourceProcessorUtil.class);
+/**
+ * Shared logic for JDBC and reactive datasource deployment processors:
+ * collecting implicit datasource requests from configuration
+ * and defining datasources from requests.
+ */
+public final class DataSourceProcessorSupport {
+    private static final Logger LOG = Logger.getLogger(DataSourceProcessorSupport.class);
 
-    private DataSourceProcessorUtil() {
+    private DataSourceProcessorSupport() {
     }
 
     public static void collectImplicitDataSourceRequestsFromConfiguration(
@@ -42,7 +47,7 @@ public class DataSourceProcessorUtil {
 
             // TODO possible improvement: we could ignore configuration when the JDBC datasource can't be requested for JDBC
             //   (see DataSourceLookupBuildItem) but can be requested for Reactive, and vice-versa?
-            //   See similar code in io.quarkus.hibernate.orm.deployment.util.HibernateProcessorUtil.collectPersistenceUnitReferencesFromConfiguration
+            //   See similar code in io.quarkus.hibernate.orm.deployment.util.PersistenceUnitDefinitionSupport.collectPersistenceUnitRequestsFromConfiguration
 
             dataSourceRequests.produce(new DataSourceRequestBuildItem(name, paradigm,
                     String.format(Locale.ROOT, "Configuration '%s'",

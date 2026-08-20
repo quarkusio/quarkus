@@ -277,7 +277,7 @@ Connect with `ssh -p 2222 localhost`. Configure with:
 quarkus.aesh.ssh.port=2222
 quarkus.aesh.ssh.host=localhost
 quarkus.aesh.ssh.password=mysecret
-quarkus.aesh.ssh.enabled=true
+quarkus.aesh.ssh.enabled=true  # build-time property
 ```
 
 > **Note:** These features are intended for development. Secure them appropriately in production.

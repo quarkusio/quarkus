@@ -56,11 +56,6 @@ public class SshServerLifecycle implements TransportSessionInfo {
     private volatile ScheduledExecutorService idleScheduler;
 
     void onStart(@Observes StartupEvent event) throws Exception {
-        if (!config.enabled()) {
-            LOG.info("Aesh SSH server is disabled");
-            return;
-        }
-
         // In native images, security providers registered during build-time
         // class initialization are not preserved. Re-register them at runtime
         // so SSHD can use them for key generation and crypto operations.

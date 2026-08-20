@@ -34,10 +34,10 @@ public class StorkMetricsTest {
             .overrideConfigKey("quarkus.otel.enabled", "false")
             .overrideConfigKey("pingpong/mp-rest/url", "stork://pingpong-service")
             .overrideConfigKey("quarkus.stork.pingpong-service.service-discovery.type", "static")
-            .overrideConfigKey("quarkus.stork.pingpong-service.service-discovery.address-list", "${test.url}")
+            .overrideConfigKey("quarkus.stork.pingpong-service.service-discovery.address-list", "http://localhost:8081")
             .overrideConfigKey("greeting/mp-rest/url", "stork://greeting-service/greeting")
             .overrideConfigKey("quarkus.stork.greeting-service.service-discovery.type", "static")
-            .overrideConfigKey("quarkus.stork.greeting-service.service-discovery.address-list", "${test.url}")
+            .overrideConfigKey("quarkus.stork.greeting-service.service-discovery.address-list", "http://localhost:8081")
             .overrideConfigKey("quarkus.redis.devservices.enabled", "false")
             .overrideConfigKey("quarkus.log.category.\"io.micrometer.core.instrument\".level", "DEBUG")
             .withApplicationRoot((jar) -> jar

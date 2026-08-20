@@ -24,7 +24,7 @@ import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.ValidationPhaseBuildItem;
 import io.quarkus.arc.processor.DotNames;
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
-import io.quarkus.datasource.deployment.DataSourceProcessorUtil;
+import io.quarkus.datasource.deployment.DataSourceProcessorSupport;
 import io.quarkus.datasource.deployment.spi.DataSourceDbKindResolverBuildItem;
 import io.quarkus.datasource.deployment.spi.DataSourceDefinitionBuildItem;
 import io.quarkus.datasource.deployment.spi.DataSourceLookupBuildItem;
@@ -96,10 +96,10 @@ class DataSourceDefinitionBlockingProcessor {
             DataSourceLookupBuildItem lookupBuildItem,
             BuildProducer<DataSourceRequestBuildItem> dataSourceRequests) {
         Predicate<String> enabled = name -> jdbcConfig.dataSources().get(name).jdbc().enabled();
-        DataSourceProcessorUtil.collectImplicitDataSourceRequestsFromConfiguration(
+        DataSourceProcessorSupport.collectImplicitDataSourceRequestsFromConfiguration(
                 ProgrammingParadigm.BLOCKING, config, config.dataSources().keySet(), "*", enabled,
                 dataSourceRequests);
-        DataSourceProcessorUtil.collectImplicitDataSourceRequestsFromConfiguration(
+        DataSourceProcessorSupport.collectImplicitDataSourceRequestsFromConfiguration(
                 ProgrammingParadigm.BLOCKING, config, jdbcConfig.dataSources().keySet(), "jdbc.*", enabled,
                 dataSourceRequests);
 
@@ -128,7 +128,7 @@ class DataSourceDefinitionBlockingProcessor {
             BuildProducer<ServiceProviderBuildItem> service,
             BuildProducer<ExtensionSslNativeSupportBuildItem> sslNativeSupport,
             BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
-        Set<String> defined = DataSourceProcessorUtil.defineDataSources(
+        Set<String> defined = DataSourceProcessorSupport.defineDataSources(
                 ProgrammingParadigm.BLOCKING, config,
                 lookupBuildItem,
                 dataSourceReferences,
@@ -142,7 +142,7 @@ class DataSourceDefinitionBlockingProcessor {
         boolean otelJdbcInstrumentationActive = false;
         for (String dataSourceName : defined) {
             String dbKind = dbKindResolutionBuildItem.get().getOptional(dataSourceName)
-                    // Should not throw since DataSourceProcessorUtil.defineDataSources skips datasources with no db-kind.
+                    // Should not throw since DataSourceProcessorSupport.defineDataSources skips datasources with no db-kind.
                     .orElseThrow();
 
             definedDataSources.produce(new DataSourceDefinitionBuildItem(dataSourceName, dbKind, ProgrammingParadigm.BLOCKING));

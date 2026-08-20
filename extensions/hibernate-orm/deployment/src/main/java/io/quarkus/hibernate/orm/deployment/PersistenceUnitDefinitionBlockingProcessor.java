@@ -10,7 +10,7 @@ import io.quarkus.deployment.annotations.BuildSteps;
 import io.quarkus.hibernate.orm.deployment.spi.AdditionalPersistenceUnitBuildItem;
 import io.quarkus.hibernate.orm.deployment.spi.PersistenceUnitLookupBuildItem;
 import io.quarkus.hibernate.orm.deployment.spi.PersistenceUnitRequestBuildItem;
-import io.quarkus.hibernate.orm.deployment.util.HibernateProcessorUtil;
+import io.quarkus.hibernate.orm.deployment.util.PersistenceUnitDefinitionSupport;
 import io.quarkus.runtime.util.ProgrammingParadigm;
 import io.quarkus.runtime.util.Reason;
 
@@ -36,7 +36,7 @@ class PersistenceUnitDefinitionBlockingProcessor {
             JpaModelPerPersistenceUnitBuildItem jpaModelPerPersistenceUnit,
             PersistenceUnitLookupBuildItem lookupBuildItem,
             BuildProducer<PersistenceUnitRequestBuildItem> puRequests) {
-        HibernateProcessorUtil.collectPersistenceUnitRequestsFromConfiguration(ProgrammingParadigm.BLOCKING,
+        PersistenceUnitDefinitionSupport.collectPersistenceUnitRequestsFromConfiguration(ProgrammingParadigm.BLOCKING,
                 capabilities, config,
                 jpaModelPerPersistenceUnit, lookupBuildItem, puRequests);
 
@@ -54,7 +54,8 @@ class PersistenceUnitDefinitionBlockingProcessor {
             List<PersistenceXmlDescriptorBuildItem> persistenceXmlDescriptors,
             List<AdditionalPersistenceUnitBuildItem> additionalPersistenceUnits,
             BuildProducer<PersistenceUnitDefinitionBuildItem> persistenceUnitDefinitions) {
-        HibernateProcessorUtil.definePersistenceUnits(ProgrammingParadigm.BLOCKING, hibernateOrmConfig, lookupBuildItem,
+        PersistenceUnitDefinitionSupport.definePersistenceUnits(ProgrammingParadigm.BLOCKING, hibernateOrmConfig,
+                lookupBuildItem,
                 puRequests, persistenceXmlDescriptors, additionalPersistenceUnits, persistenceUnitDefinitions);
     }
 

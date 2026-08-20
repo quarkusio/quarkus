@@ -10,7 +10,7 @@ import org.jboss.logging.Logger;
 
 import io.quarkus.arc.deployment.ValidationPhaseBuildItem;
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
-import io.quarkus.datasource.deployment.DataSourceProcessorUtil;
+import io.quarkus.datasource.deployment.DataSourceProcessorSupport;
 import io.quarkus.datasource.deployment.spi.DataSourceDbKindResolverBuildItem;
 import io.quarkus.datasource.deployment.spi.DataSourceDefinitionBuildItem;
 import io.quarkus.datasource.deployment.spi.DataSourceLookupBuildItem;
@@ -76,10 +76,10 @@ class DataSourceDefinitionReactiveProcessor {
             DataSourceLookupBuildItem lookupBuildItem,
             BuildProducer<DataSourceRequestBuildItem> dataSourceRequests) {
         Predicate<String> enabled = name -> reactiveConfig.dataSources().get(name).reactive().enabled();
-        DataSourceProcessorUtil.collectImplicitDataSourceRequestsFromConfiguration(
+        DataSourceProcessorSupport.collectImplicitDataSourceRequestsFromConfiguration(
                 ProgrammingParadigm.REACTIVE, config, config.dataSources().keySet(), "*", enabled,
                 dataSourceRequests);
-        DataSourceProcessorUtil.collectImplicitDataSourceRequestsFromConfiguration(
+        DataSourceProcessorSupport.collectImplicitDataSourceRequestsFromConfiguration(
                 ProgrammingParadigm.REACTIVE, config, reactiveConfig.dataSources().keySet(), "reactive.*", enabled,
                 dataSourceRequests);
 
@@ -101,7 +101,7 @@ class DataSourceDefinitionReactiveProcessor {
             BuildProducer<ReactiveDataSourceDefinitionBuildItem> dataSourceDefinitions,
             BuildProducer<DataSourceDefinitionBuildItem> definedDataSources,
             BuildProducer<ValidationPhaseBuildItem.ValidationErrorBuildItem> validationErrors) {
-        Set<String> defined = DataSourceProcessorUtil.defineDataSources(
+        Set<String> defined = DataSourceProcessorSupport.defineDataSources(
                 ProgrammingParadigm.REACTIVE, config,
                 lookupBuildItem,
                 dataSourceReferences,
@@ -114,7 +114,7 @@ class DataSourceDefinitionReactiveProcessor {
 
         for (String dataSourceName : defined) {
             String dbKind = dbKindResolutionBuildItem.get().getOptional(dataSourceName)
-                    // Should not throw since DataSourceProcessorUtil.defineDataSources skips datasources with no db-kind.
+                    // Should not throw since DataSourceProcessorSupport.defineDataSources skips datasources with no db-kind.
                     .orElseThrow();
 
             definedDataSources.produce(new DataSourceDefinitionBuildItem(dataSourceName, dbKind, ProgrammingParadigm.REACTIVE));

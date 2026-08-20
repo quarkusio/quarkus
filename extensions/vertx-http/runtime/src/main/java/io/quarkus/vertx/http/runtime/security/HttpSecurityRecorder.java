@@ -438,8 +438,7 @@ public class HttpSecurityRecorder {
                             public void accept(SecurityIdentity identity, Throwable throwable, Boolean aBoolean) {
                                 if (identity != null) {
                                     //when the result is evaluated we set the user, even if it is evaluated lazily
-                                    ((io.vertx.ext.web.impl.UserContextInternal) event.userContext())
-                                            .setUser(new QuarkusHttpUser(identity));
+                                    QuarkusHttpUser.setUser(event, new QuarkusHttpUser(identity));
                                 } else if (throwable != null) {
                                     //handle the auth failure
                                     //this can be customised

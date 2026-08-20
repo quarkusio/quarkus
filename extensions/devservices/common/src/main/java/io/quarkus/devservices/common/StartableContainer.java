@@ -48,6 +48,11 @@ public class StartableContainer<T extends GenericContainer<?>> implements Starta
     }
 
     @Override
+    public boolean isReusable() {
+        return ConfigureUtil.isReusable(container);
+    }
+
+    @Override
     public void close() {
         container.close();
     }

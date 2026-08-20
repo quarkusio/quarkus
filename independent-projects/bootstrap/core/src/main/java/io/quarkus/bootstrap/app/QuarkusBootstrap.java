@@ -95,6 +95,7 @@ public class QuarkusBootstrap implements Serializable {
     private final boolean defaultFlatTestClassPath;
     private final Collection<ArtifactKey> parentFirstArtifacts;
     private final Supplier<DependencyInfoProvider> depInfoProvider;
+    private final AugmentationClassLoaderManager augmentationClassLoaderManager;
 
     private QuarkusBootstrap(Builder builder) {
         this.applicationRoot = builder.applicationRoot;
@@ -130,6 +131,9 @@ public class QuarkusBootstrap implements Serializable {
         this.defaultFlatTestClassPath = builder.flatClassPath;
         this.parentFirstArtifacts = builder.parentFirstArtifacts;
         this.depInfoProvider = builder.depInfoProvider;
+        this.augmentationClassLoaderManager = builder.augmentationClassLoaderManager != null
+                ? builder.augmentationClassLoaderManager
+                : DefaultAugmentationClassLoaderManager.getInstance();
     }
 
     public CuratedApplication bootstrap() throws BootstrapException {
@@ -289,7 +293,8 @@ public class QuarkusBootstrap implements Serializable {
                 .setExcludedDependencies(excludedDependencies)
                 .setDisableClasspathCache(disableClasspathCache)
                 .addClassLoaderEventListeners(classLoadListeners)
-                .setExistingModel(existingModel);
+                .setExistingModel(existingModel)
+                .setAugmentationClassLoaderManager(augmentationClassLoaderManager);
         if (appArtifact != null) {
             builder.setAppArtifact(appArtifact);
         } else {
@@ -311,6 +316,10 @@ public class QuarkusBootstrap implements Serializable {
 
     public Supplier<DependencyInfoProvider> getDependencyInfoProvider() {
         return depInfoProvider;
+    }
+
+    public AugmentationClassLoaderManager getAugmentationClassLoaderManager() {
+        return augmentationClassLoaderManager;
     }
 
     public static class Builder {
@@ -347,6 +356,7 @@ public class QuarkusBootstrap implements Serializable {
         boolean auxiliaryApplication;
         List<ArtifactKey> parentFirstArtifacts = new ArrayList<>();
         Supplier<DependencyInfoProvider> depInfoProvider;
+        AugmentationClassLoaderManager augmentationClassLoaderManager;
 
         public Builder() {
         }
@@ -576,6 +586,12 @@ public class QuarkusBootstrap implements Serializable {
 
         public Builder setDependencyInfoProvider(Supplier<DependencyInfoProvider> depInfoProvider) {
             this.depInfoProvider = depInfoProvider;
+            return this;
+        }
+
+        public Builder setAugmentationClassLoaderManager(
+                AugmentationClassLoaderManager augmentationClassLoaderManager) {
+            this.augmentationClassLoaderManager = augmentationClassLoaderManager;
             return this;
         }
 

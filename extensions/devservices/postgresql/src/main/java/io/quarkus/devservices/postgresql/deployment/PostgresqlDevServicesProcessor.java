@@ -19,10 +19,6 @@ import org.testcontainers.utility.DockerImageName;
 
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
 import io.quarkus.datasource.common.runtime.DatabaseKind;
-import io.quarkus.datasource.deployment.spi.DatasourceStartable;
-import io.quarkus.datasource.deployment.spi.DevServicesDatasourceContainerConfig;
-import io.quarkus.datasource.deployment.spi.DevServicesDatasourceProvider;
-import io.quarkus.datasource.deployment.spi.DevServicesDatasourceProviderBuildItem;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.ConsoleCommandBuildItem;
@@ -33,6 +29,11 @@ import io.quarkus.devservices.common.ConfigureUtil;
 import io.quarkus.devservices.common.JBossLoggingConsumer;
 import io.quarkus.devservices.common.Labels;
 import io.quarkus.devservices.common.Volumes;
+import io.quarkus.devservices.datasource.common.DatasourceStartable;
+import io.quarkus.devservices.datasource.common.DatasourceStartableContainer;
+import io.quarkus.devservices.datasource.common.DevServicesDatasourceContainerConfig;
+import io.quarkus.devservices.datasource.common.DevServicesDatasourceProvider;
+import io.quarkus.devservices.datasource.common.DevServicesDatasourceProviderBuildItem;
 import io.quarkus.runtime.LaunchMode;
 import io.smallrye.common.cpu.CPU;
 
@@ -106,7 +107,7 @@ public class PostgresqlDevServicesProcessor {
                     container.withLogConsumer(new JBossLoggingConsumer(LOG));
                 }
 
-                return container;
+                return new DatasourceStartableContainer<>(container);
             }
 
             @Override
@@ -136,7 +137,6 @@ public class PostgresqlDevServicesProcessor {
         private final boolean useSharedNetwork;
 
         private final String hostName;
-        private DevServicesDatasourceProvider.RunningDevServicesDatasource runningDevServicesDatasource;
 
         public QuarkusPostgreSQLContainer(Optional<String> imageName, OptionalInt fixedExposedPort,
                 String defaultNetworkId, boolean useSharedNetwork) {
@@ -232,15 +232,6 @@ public class PostgresqlDevServicesProcessor {
         @Override
         public void close() {
             super.close();
-        }
-
-        @Override
-        public DevServicesDatasourceProvider.RunningDevServicesDatasource runningDevServicesDatasource() {
-            // Cache, since this is going to be called a lot
-            if (runningDevServicesDatasource == null) {
-                runningDevServicesDatasource = DatasourceStartable.super.runningDevServicesDatasource();
-            }
-            return runningDevServicesDatasource;
         }
     }
 }

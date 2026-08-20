@@ -176,6 +176,7 @@ Dependent beans injected into the fields and test method arguments are correctly
 
 NOTE: Arguments of a `@ParameterizedTest` method that are provided by an `ArgumentsProvider`, for example with `@org.junit.jupiter.params.provider.ValueArgumentsProvider`, must be annotated with `@SkipInject`. 
 
+[[tested_components]]
 === Tested components
 
 The initial set of tested components is derived from the test class:
@@ -492,6 +493,31 @@ public class FooTest {
 ----
 <1> The interceptor bindings of the resulting interceptor are specified by annotating the method with the interceptor binding types.
 <2> Defines the interception type.
+
+== Code coverage with JaCoCo
+
+Unlike `@QuarkusTest`, a `QuarkusComponentTest` does not start a full Quarkus application.
+Instead, the tested components are loaded by a dedicated class loader and their bytecode may be transformed, for example to add interception logic.
+As a result, the coverage data collected by the JaCoCo Java agent would normally be incomplete or missing for the tested components.
+
+To fix this, the `QuarkusComponentTest` integrates with xref:tests-with-coverage.adoc[JaCoCo] automatically.
+If the `quarkus-jacoco` dependency is present on the test classpath, then the classes loaded by the component test class loader are instrumented for JaCoCo coverage, and the coverage data is collected as expected.
+
+[source,xml]
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-jacoco</artifactId>
+    <scope>test</scope>
+</dependency>
+----
+
+No additional configuration is needed - the integration is enabled as soon as the dependency is available.
+
+The set of instrumented classes corresponds to the <<tested_components,tested components>>, i.e. the classes that are added to the bean archive index.
+By default, this includes the component types derived from the test class (fields annotated with `@Inject`, resolvable test method parameters and, if enabled, static nested classes) as well as the classes added explicitly via `@QuarkusComponentTest#value()` or `QuarkusComponentTestExtensionBuilder#addComponentClasses()`.
+
+NOTE: If you need to record the coverage for a class that is not a tested component - for example a helper class that is not a CDI bean - then you have to add it explicitly via `@QuarkusComponentTest#value()` or `QuarkusComponentTestExtensionBuilder#addComponentClasses()`; otherwise it is not instrumented and no coverage data is collected for it.
 
 == Testing alongside other JUnit Extensions
 

@@ -23,11 +23,15 @@ import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
 import io.quarkus.deployment.pkg.builditem.ArtifactResultBuildItem;
 import io.quarkus.deployment.pkg.steps.NativeOrNativeSourcesBuild;
+import io.quarkus.runtime.LaunchMode;
 import io.quarkus.smallrye.health.deployment.spi.HealthBuildItem;
 
 class AeshSshProcessor {
 
     private static final Logger LOG = Logger.getLogger(AeshSshProcessor.class);
+
+    private static final DotName SSH_SERVER_LIFECYCLE_CLASS = DotName
+            .createSimple(SshServerLifecycle.class);
 
     private static final DotName HEALTH_CHECK_CLASS = DotName
             .createSimple("io.quarkus.aesh.ssh.runtime.health.AeshSshHealthCheck");
@@ -38,13 +42,32 @@ class AeshSshProcessor {
     }
 
     @BuildStep
-    AdditionalBeanBuildItem registerBeans() {
-        return AdditionalBeanBuildItem.unremovableOf(SshServerLifecycle.class);
+    AdditionalBeanBuildItem registerBeans(AeshSshBuildTimeConfig config) {
+        if (config.enabled()) {
+            return AdditionalBeanBuildItem.unremovableOf(SshServerLifecycle.class);
+        }
+        return null;
     }
 
     @BuildStep
-    AeshRemoteTransportBuildItem remoteTransport() {
-        return new AeshRemoteTransportBuildItem("ssh");
+    void disableBeansIfNotEnabled(AeshSshBuildTimeConfig config,
+            BuildProducer<AnnotationsTransformerBuildItem> transformers) {
+        if (!config.enabled()) {
+            // Veto the SSH server lifecycle bean so Arc does not discover
+            // it via classpath scanning when SSH is disabled.
+            transformers.produce(new AnnotationsTransformerBuildItem(
+                    AnnotationTransformation.forClasses()
+                            .whenClass(c -> c.name().equals(SSH_SERVER_LIFECYCLE_CLASS))
+                            .transform(ctx -> ctx.add(Vetoed.class))));
+        }
+    }
+
+    @BuildStep
+    AeshRemoteTransportBuildItem remoteTransport(AeshSshBuildTimeConfig config) {
+        if (config.enabled()) {
+            return new AeshRemoteTransportBuildItem("ssh");
+        }
+        return null;
     }
 
     @BuildStep
@@ -54,13 +77,17 @@ class AeshSshProcessor {
         }
         return new HealthBuildItem(
                 "io.quarkus.aesh.ssh.runtime.health.AeshSshHealthCheck",
-                buildTimeConfig.healthEnabled());
+                buildTimeConfig.enabled() && buildTimeConfig.healthEnabled());
     }
 
     @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
-    void nativeImageConfiguration(BuildProducer<RuntimeInitializedClassBuildItem> runtimeInitializedClasses,
+    void nativeImageConfiguration(AeshSshBuildTimeConfig config,
+            BuildProducer<RuntimeInitializedClassBuildItem> runtimeInitializedClasses,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClasses,
             BuildProducer<NativeImageProxyDefinitionBuildItem> proxyDefinitions) {
+        if (!config.enabled()) {
+            return;
+        }
         // MontgomeryCurve creates KeyPairGenerator instances (containing SecureRandom)
         // in its enum constants' static initializer. GraalVM does not allow Random
         // instances in the image heap, so defer to runtime.
@@ -111,8 +138,8 @@ class AeshSshProcessor {
 
     @BuildStep
     @Produce(ArtifactResultBuildItem.class)
-    void warnIfInsecureInProduction(LaunchModeBuildItem launchMode) {
-        if (launchMode.getLaunchMode() == io.quarkus.runtime.LaunchMode.NORMAL) {
+    void warnIfInsecureInProduction(AeshSshBuildTimeConfig config, LaunchModeBuildItem launchMode) {
+        if (config.enabled() && launchMode.getLaunchMode() == LaunchMode.NORMAL) {
             LOG.warn("Aesh SSH extension is included in a production build. " +
                     "Ensure authentication is configured via 'quarkus.aesh.ssh.password' or " +
                     "'quarkus.aesh.ssh.authorized-keys-file', or disable with " +
@@ -125,11 +152,13 @@ class AeshSshProcessor {
     void disableHealthCheckIfNotNeeded(AeshSshBuildTimeConfig buildTimeConfig,
             Capabilities capabilities,
             BuildProducer<AnnotationsTransformerBuildItem> transformers) {
-        // Veto the health check class if the SmallRye Health extension is not
-        // present or if health checks are disabled by config. This prevents Arc
-        // from trying to load the class (which implements HealthCheck and would
-        // fail with NoClassDefFoundError when the health extension is absent).
-        if (!capabilities.isPresent(Capability.SMALLRYE_HEALTH) || !buildTimeConfig.healthEnabled()) {
+        // Veto the health check class if SSH is disabled, the SmallRye Health
+        // extension is not present, or health checks are disabled by config.
+        // This prevents Arc from trying to load the class (which implements
+        // HealthCheck and would fail with NoClassDefFoundError when the health
+        // extension is absent).
+        if (!buildTimeConfig.enabled() || !capabilities.isPresent(Capability.SMALLRYE_HEALTH)
+                || !buildTimeConfig.healthEnabled()) {
             transformers.produce(new AnnotationsTransformerBuildItem(
                     AnnotationTransformation.forClasses()
                             .whenClass(c -> c.name().equals(HEALTH_CHECK_CLASS))

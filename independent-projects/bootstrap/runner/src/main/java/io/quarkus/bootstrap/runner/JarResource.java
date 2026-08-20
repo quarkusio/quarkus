@@ -106,21 +106,7 @@ public class JarResource implements ClassLoadingResource {
                 return null;
             }
             try {
-                final URL resUrl = getUrl(path, getRealName(entry, resource));
-                // wrap it up into a "jar" protocol URL
-                //horrible hack to deal with '?' characters in the URL
-                //seems to be the only way, the URI constructor just does not let you handle them in a sane way
-                var file = new StringBuilder((resUrl.getProtocol() == null ? 4 : resUrl.getProtocol().length()) + 1 +
-                        resUrl.getPath().length() + (resUrl.getQuery() == null ? 0 : 3 + resUrl.getQuery().length()));
-                // protocol shouldn't be null, but let's be safe
-                file.append(resUrl.getProtocol());
-                file.append(':');
-                file.append(resUrl.getPath());
-                if (resUrl.getQuery() != null) {
-                    file.append("%3F");
-                    file.append(resUrl.getQuery());
-                }
-                return new URL("jar", null, file.toString());
+                return getResourceUrl(path.toUri(), getRealName(entry, resource));
             } catch (MalformedURLException | URISyntaxException e) {
                 throw new RuntimeException(e);
             }
@@ -145,19 +131,38 @@ public class JarResource implements ClassLoadingResource {
             return realName;
         }
 
-        private static URL getUrl(Path jarPath, String realName) throws MalformedURLException, URISyntaxException {
-            final URI jarUri = jarPath.toUri();
-            // first create a URI which includes both the jar file path and the relative resource name
-            // and then invoke a toURL on it. The URI reconstruction allows for any encoding to be done
-            // for the "path" which includes the "realName"
-            var ssp = new StringBuilder(jarUri.getPath().length() + realName.length() + 2);
-            ssp.append(jarUri.getPath());
-            ssp.append("!/");
-            ssp.append(realName);
-            // we use this particular constructor to work around https://bugs.openjdk.org/browse/JDK-8140634
-            // see https://github.com/quarkusio/quarkus/issues/52292
-            return new URI(jarUri.getScheme(), null, ssp.toString(), null, null).toURL();
+    }
+
+    static URL getResourceUrl(URI jarUri, String realName) throws URISyntaxException, MalformedURLException {
+        // first create a URI which includes both the jar file path and the relative resource name
+        // and then invoke a toURL on it. The URI reconstruction allows for any encoding to be done
+        // for the "path" which includes the "realName"
+        var ssp = new StringBuilder(jarUri.getPath().length() + realName.length() + 2);
+        ssp.append(jarUri.getPath());
+        ssp.append("!/");
+        ssp.append(realName);
+        // we use this particular constructor to work around https://bugs.openjdk.org/browse/JDK-8140634
+        // see https://github.com/quarkusio/quarkus/issues/52292
+        final URL resUrl = new URI(jarUri.getScheme(), jarUri.getAuthority(), ssp.toString(), null, null).toURL();
+        // wrap it up into a "jar" protocol URL
+        //horrible hack to deal with '?' characters in the URL
+        //seems to be the only way, the URI constructor just does not let you handle them in a sane way
+        var file = new StringBuilder((resUrl.getProtocol() == null ? 4 : resUrl.getProtocol().length()) + 1 +
+                (resUrl.getAuthority() == null ? 0 : 2 + resUrl.getAuthority().length()) + resUrl.getPath().length() +
+                (resUrl.getQuery() == null ? 0 : 3 + resUrl.getQuery().length()));
+        // protocol shouldn't be null, but let's be safe
+        file.append(resUrl.getProtocol());
+        file.append(':');
+        if (resUrl.getAuthority() != null) {
+            file.append("//");
+            file.append(resUrl.getAuthority());
         }
+        file.append(resUrl.getPath());
+        if (resUrl.getQuery() != null) {
+            file.append("%3F");
+            file.append(resUrl.getQuery());
+        }
+        return new URL("jar", null, file.toString());
     }
 
     @Override

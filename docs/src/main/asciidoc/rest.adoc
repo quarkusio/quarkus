@@ -1761,6 +1761,26 @@ Developers can further customize JSON processing by implementing the `ObjectMapp
 Reflection-free serializers are not compatible with Kotlin classes, since they break Kotlin-specific features such as default parameter values and non-null type enforcement. As a result, reflection-free serializers are not generated for Kotlin classes.
 ====
 
+To exclude a single class from this optimization, annotate it with `@io.quarkus.resteasy.reactive.jackson.DisableReflectionFreeSerialization`:
+
+[source,java]
+----
+@DisableReflectionFreeSerialization
+public class Person {
+    // ...
+}
+----
+
+No serializer and no deserializer is generated for the annotated class, so Jackson falls back to its standard reflection-based processing for it, while every other class of the application keeps using its generated serializer and deserializer.
+This includes the classes that reference the annotated class in one of their fields: they are still optimized, and only the annotated field value is processed by Jackson itself.
+
+Use this annotation when a class relies on a Jackson feature that the generated serializers do not reproduce faithfully, so that you can keep the optimization enabled for the rest of the application instead of turning it off altogether.
+
+[NOTE]
+====
+The annotation is not inherited: annotating a class does not exclude its subclasses.
+====
+
 ===== Completely customized per method serialization/deserialization
 
 There are times when you need to completely customize the serialization/deserialization of a POJO on a per Jakarta REST method basis or on a per Jakarta REST resource basis. For such use cases, you can use the `@io.quarkus.resteasy.reactive.jackson.CustomSerialization` and `@io.quarkus.resteasy.reactive.jackson.CustomDeserialization` annotations in the REST method or in the REST resource at class level. These annotations allow you to fully configure the `com.fasterxml.jackson.databind.ObjectWriter`/`com.fasterxml.jackson.databind.ObjectReader`.

@@ -12,6 +12,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.jboss.logmanager.MDCProvider;
 
+import io.smallrye.common.vertx.VertxContext;
 import io.vertx.core.Context;
 import io.vertx.core.Vertx;
 import io.vertx.core.spi.context.storage.ContextLocal;
@@ -365,6 +366,29 @@ public enum VertxMDC implements MDCProvider {
             return inheritableThreadLocalMap.get();
         }
 
-        return ctx.getLocal(MDC_LOCAL, ConcurrentHashMap::new);
+        return ctx.getLocal(MDC_LOCAL, () -> initialContextualDataMap(ctx));
+    }
+
+    /**
+     * A context created for a nested operation may be duplicated from the root context rather than from the
+     * context the operation originates from, in which case it only keeps a reference to that originating
+     * context and none of its Vert.x context locals. This is how the REST Client creates the context of each
+     * invocation. Without inheriting the originating context's MDC, log statements emitted while the nested
+     * operation runs — such as the REST Client request/response logs — lose the contextual data of the
+     * originating request, including the OpenTelemetry trace identifiers.
+     * See <a href="https://github.com/quarkusio/quarkus/issues/55828">GitHub issue #55828</a>.
+     */
+    private static ConcurrentHashMap<String, Object> initialContextualDataMap(Context ctx) {
+        Context parent = ctx.getLocal(VertxContext.PARENT_CONTEXT_LOCAL);
+        // the immediate parent may not have logged anything yet and so have no materialized MDC map,
+        // in which case we keep walking up the (bounded, read-only) parent chain
+        for (int depth = 0; parent != null && parent != ctx && depth < 8; depth++) {
+            ConcurrentHashMap<String, Object> parentMap = parent.getLocal(MDC_LOCAL);
+            if (parentMap != null) {
+                return new ConcurrentHashMap<>(parentMap);
+            }
+            parent = parent.getLocal(VertxContext.PARENT_CONTEXT_LOCAL);
+        }
+        return new ConcurrentHashMap<>();
     }
 }

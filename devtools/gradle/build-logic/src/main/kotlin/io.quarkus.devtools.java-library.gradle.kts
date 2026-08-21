@@ -1,3 +1,5 @@
+import io.quarkus.devtools.javadoc.registerStrictJavadoc
+
 plugins {
     id("java-library")
     id("java-test-fixtures")
@@ -33,6 +35,8 @@ tasks.named<Javadoc>(JavaPlugin.JAVADOC_TASK_NAME) {
     options.encoding = "UTF-8"
     (options as? CoreJavadocOptions)?.addStringOption("Xdoclint:-reference", "-quiet")
 }
+
+registerStrictJavadoc()
 
 tasks.named<Test>(JavaPlugin.TEST_TASK_NAME) {
     useJUnitPlatform()

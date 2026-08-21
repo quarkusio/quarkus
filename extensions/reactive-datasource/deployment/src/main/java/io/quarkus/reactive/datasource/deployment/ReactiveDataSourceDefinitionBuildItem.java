@@ -12,7 +12,7 @@ import io.quarkus.reactive.datasource.runtime.DataSourceReactiveBuildTimeConfig;
  * <p>
  * It holds build-time configuration and various datasource-related information that is resolved early.
  */
-final class ReactiveDataSourceDefinitionBuildItem extends MultiBuildItem {
+public final class ReactiveDataSourceDefinitionBuildItem extends MultiBuildItem {
 
     private final String name;
 
@@ -23,7 +23,7 @@ final class ReactiveDataSourceDefinitionBuildItem extends MultiBuildItem {
     private final String dbKind;
     private final Optional<String> dbVersion;
 
-    ReactiveDataSourceDefinitionBuildItem(String name, DataSourceBuildTimeConfig dataSourceConfig,
+    public ReactiveDataSourceDefinitionBuildItem(String name, DataSourceBuildTimeConfig dataSourceConfig,
             DataSourceReactiveBuildTimeConfig reactiveConfig,
             String dbKind,
             Optional<String> dbVersion) {

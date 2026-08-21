@@ -1,10 +1,11 @@
-package io.quarkus.hibernate.orm.deployment;
+package io.quarkus.hibernate.orm.deployment.component;
 
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
 import io.quarkus.builder.item.MultiBuildItem;
+import io.quarkus.hibernate.orm.deployment.HibernateOrmConfigPersistenceUnit;
 import io.quarkus.runtime.util.ProgrammingParadigm;
 import io.quarkus.runtime.util.Reason;
 

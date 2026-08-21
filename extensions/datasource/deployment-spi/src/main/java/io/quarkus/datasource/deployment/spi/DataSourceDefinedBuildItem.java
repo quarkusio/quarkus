@@ -9,7 +9,7 @@ import io.quarkus.runtime.util.ProgrammingParadigm;
  * Represents a datasource that has been determined to exist.
  * <p>
  * Each datasource appears at most once, with the set of paradigms it was defined for.
- * Produced from {@link DataSourceDefinitionBuildItem} instances.
+ * Produced from {@link io.quarkus.datasource.deployment.spi.component.DataSourceDefinitionBuildItem} instances.
  */
 public final class DataSourceDefinedBuildItem extends MultiBuildItem {
 

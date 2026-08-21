@@ -1,4 +1,4 @@
-package io.quarkus.hibernate.orm.deployment;
+package io.quarkus.hibernate.orm.deployment.component;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -7,13 +7,14 @@ import java.util.Optional;
 
 import org.jboss.logging.Logger;
 
-import io.quarkus.datasource.deployment.spi.DataSourceLookupBuildItem;
+import io.quarkus.datasource.deployment.spi.component.DataSourceLookupBuildItem;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.component.ComponentLookup;
+import io.quarkus.hibernate.orm.deployment.HibernateOrmConfig;
 import io.quarkus.hibernate.orm.deployment.spi.AdditionalPersistenceUnitBuildItem;
-import io.quarkus.hibernate.orm.deployment.spi.PersistenceUnitLookupBuildItem;
+import io.quarkus.hibernate.orm.deployment.spi.component.PersistenceUnitLookupBuildItem;
 import io.quarkus.hibernate.orm.deployment.util.HibernateProcessorUtil;
 import io.quarkus.hibernate.orm.runtime.HibernateOrmRuntimeConfig;
 import io.quarkus.hibernate.orm.runtime.migration.MultiTenancyStrategy;
@@ -27,7 +28,7 @@ import io.quarkus.runtime.util.Reason;
  * or whether the backing datasource can be created.
  *
  * @see PersistenceUnitDefinitionBlockingProcessor
- * @see io.quarkus.hibernate.reactive.deployment.PersistenceUnitDefinitionReactiveProcessor
+ * @see io.quarkus.hibernate.reactive.deployment.component.PersistenceUnitDefinitionReactiveProcessor
  */
 class PersistenceUnitLookupProcessor {
 

@@ -1,4 +1,4 @@
-package io.quarkus.datasource.deployment;
+package io.quarkus.datasource.deployment.component;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -14,8 +14,8 @@ import org.jboss.logging.Logger;
 
 import io.quarkus.arc.deployment.ValidationPhaseBuildItem;
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
-import io.quarkus.datasource.deployment.spi.DataSourceLookupBuildItem;
-import io.quarkus.datasource.deployment.spi.DataSourceRequestBuildItem;
+import io.quarkus.datasource.deployment.spi.component.DataSourceLookupBuildItem;
+import io.quarkus.datasource.deployment.spi.component.DataSourceRequestBuildItem;
 import io.quarkus.datasource.runtime.DataSourcesBuildTimeConfig;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.runtime.configuration.ConfigurationException;
@@ -47,7 +47,7 @@ public final class DataSourceProcessorSupport {
 
             // TODO possible improvement: we could ignore configuration when the JDBC datasource can't be requested for JDBC
             //   (see DataSourceLookupBuildItem) but can be requested for Reactive, and vice-versa?
-            //   See similar code in io.quarkus.hibernate.orm.deployment.util.PersistenceUnitDefinitionSupport.collectPersistenceUnitRequestsFromConfiguration
+            //   See similar code in io.quarkus.hibernate.orm.deployment.component.PersistenceUnitDefinitionSupport.collectPersistenceUnitRequestsFromConfiguration
 
             dataSourceRequests.produce(new DataSourceRequestBuildItem(name, paradigm,
                     String.format(Locale.ROOT, "Configuration '%s'",

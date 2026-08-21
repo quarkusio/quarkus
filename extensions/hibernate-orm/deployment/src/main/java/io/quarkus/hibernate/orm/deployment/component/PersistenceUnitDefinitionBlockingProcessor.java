@@ -1,16 +1,19 @@
-package io.quarkus.hibernate.orm.deployment;
+package io.quarkus.hibernate.orm.deployment.component;
 
 import java.util.List;
 
-import io.quarkus.datasource.deployment.spi.DataSourceRequestBuildItem;
+import io.quarkus.datasource.deployment.spi.component.DataSourceRequestBuildItem;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.BuildSteps;
+import io.quarkus.hibernate.orm.deployment.HibernateOrmConfig;
+import io.quarkus.hibernate.orm.deployment.HibernateOrmEnabled;
+import io.quarkus.hibernate.orm.deployment.JpaModelPerPersistenceUnitBuildItem;
+import io.quarkus.hibernate.orm.deployment.PersistenceXmlDescriptorBuildItem;
 import io.quarkus.hibernate.orm.deployment.spi.AdditionalPersistenceUnitBuildItem;
-import io.quarkus.hibernate.orm.deployment.spi.PersistenceUnitLookupBuildItem;
-import io.quarkus.hibernate.orm.deployment.spi.PersistenceUnitRequestBuildItem;
-import io.quarkus.hibernate.orm.deployment.util.PersistenceUnitDefinitionSupport;
+import io.quarkus.hibernate.orm.deployment.spi.component.PersistenceUnitLookupBuildItem;
+import io.quarkus.hibernate.orm.deployment.spi.component.PersistenceUnitRequestBuildItem;
 import io.quarkus.runtime.util.ProgrammingParadigm;
 import io.quarkus.runtime.util.Reason;
 
@@ -26,7 +29,7 @@ import io.quarkus.runtime.util.Reason;
  * reason chain; otherwise a definition is produced for downstream consumption.
  *
  * @see PersistenceUnitLookupProcessor
- * @see io.quarkus.hibernate.reactive.deployment.PersistenceUnitDefinitionReactiveProcessor
+ * @see io.quarkus.hibernate.reactive.deployment.component.PersistenceUnitDefinitionReactiveProcessor
  */
 @BuildSteps(onlyIf = HibernateOrmEnabled.class)
 class PersistenceUnitDefinitionBlockingProcessor {

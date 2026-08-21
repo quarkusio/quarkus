@@ -1,4 +1,4 @@
-package io.quarkus.hibernate.orm.deployment.util;
+package io.quarkus.hibernate.orm.deployment.component;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -19,11 +19,11 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.hibernate.orm.deployment.HibernateOrmConfig;
 import io.quarkus.hibernate.orm.deployment.HibernateOrmConfigPersistenceUnit;
 import io.quarkus.hibernate.orm.deployment.JpaModelPerPersistenceUnitBuildItem;
-import io.quarkus.hibernate.orm.deployment.PersistenceUnitDefinitionBuildItem;
 import io.quarkus.hibernate.orm.deployment.PersistenceXmlDescriptorBuildItem;
 import io.quarkus.hibernate.orm.deployment.spi.AdditionalPersistenceUnitBuildItem;
-import io.quarkus.hibernate.orm.deployment.spi.PersistenceUnitLookupBuildItem;
-import io.quarkus.hibernate.orm.deployment.spi.PersistenceUnitRequestBuildItem;
+import io.quarkus.hibernate.orm.deployment.spi.component.PersistenceUnitLookupBuildItem;
+import io.quarkus.hibernate.orm.deployment.spi.component.PersistenceUnitRequestBuildItem;
+import io.quarkus.hibernate.orm.deployment.util.HibernateProcessorUtil;
 import io.quarkus.hibernate.orm.runtime.HibernateOrmRuntimeConfig;
 import io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil;
 import io.quarkus.runtime.configuration.ConfigurationException;
@@ -34,8 +34,8 @@ import io.quarkus.runtime.util.Reason;
  * Shared logic for persistence unit definition processors (blocking and reactive):
  * collecting persistence unit requests from configuration and defining persistence units.
  *
- * @see HibernateProcessorSupport
- * @see HibernateProcessorUtil
+ * @see io.quarkus.hibernate.orm.deployment.util.HibernateProcessorSupport
+ * @see io.quarkus.hibernate.orm.deployment.util.HibernateProcessorUtil
  */
 public final class PersistenceUnitDefinitionSupport {
     private static final Logger LOG = Logger.getLogger(PersistenceUnitDefinitionSupport.class);

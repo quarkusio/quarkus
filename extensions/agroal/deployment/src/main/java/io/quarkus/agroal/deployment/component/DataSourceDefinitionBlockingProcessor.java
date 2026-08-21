@@ -1,4 +1,4 @@
-package io.quarkus.agroal.deployment;
+package io.quarkus.agroal.deployment.component;
 
 import static io.quarkus.deployment.Capability.OPENTELEMETRY_TRACER;
 
@@ -15,6 +15,7 @@ import javax.sql.XADataSource;
 
 import org.jboss.logging.Logger;
 
+import io.quarkus.agroal.deployment.JdbcDataSourceDefinitionBuildItem;
 import io.quarkus.agroal.runtime.AgroalOpenTelemetryWrapper;
 import io.quarkus.agroal.runtime.DataSourceJdbcBuildTimeConfig;
 import io.quarkus.agroal.runtime.DataSourcesJdbcBuildTimeConfig;
@@ -24,13 +25,13 @@ import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.ValidationPhaseBuildItem;
 import io.quarkus.arc.processor.DotNames;
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
-import io.quarkus.datasource.deployment.DataSourceProcessorSupport;
+import io.quarkus.datasource.deployment.component.DataSourceProcessorSupport;
 import io.quarkus.datasource.deployment.spi.DataSourceDbKindResolverBuildItem;
-import io.quarkus.datasource.deployment.spi.DataSourceDefinitionBuildItem;
-import io.quarkus.datasource.deployment.spi.DataSourceLookupBuildItem;
-import io.quarkus.datasource.deployment.spi.DataSourceRequestBuildItem;
-import io.quarkus.datasource.deployment.spi.DataSourceRequestHandlerBuildItem;
 import io.quarkus.datasource.deployment.spi.DefaultDataSourceDbVersionBuildItem;
+import io.quarkus.datasource.deployment.spi.component.DataSourceDefinitionBuildItem;
+import io.quarkus.datasource.deployment.spi.component.DataSourceLookupBuildItem;
+import io.quarkus.datasource.deployment.spi.component.DataSourceRequestBuildItem;
+import io.quarkus.datasource.deployment.spi.component.DataSourceRequestHandlerBuildItem;
 import io.quarkus.datasource.runtime.DataSourcesBuildTimeConfig;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Feature;
@@ -56,8 +57,8 @@ import io.quarkus.runtime.util.Reason;
  * {@code ConfigurationException} is thrown with the full reason chain; otherwise a definition
  * is produced for downstream consumption (connection pool creation, dev services, etc.).
  *
- * @see DataSourceLookupProcessor
- * @see io.quarkus.reactive.datasource.deployment.DataSourceDefinitionReactiveProcessor
+ * @see io.quarkus.datasource.deployment.component.DataSourceLookupProcessor
+ * @see io.quarkus.reactive.datasource.deployment.component.DataSourceDefinitionReactiveProcessor
  */
 class DataSourceDefinitionBlockingProcessor {
 

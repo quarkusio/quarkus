@@ -50,7 +50,7 @@ import io.quarkus.runtime.configuration.ConfigurationException;
  * Shared logic for Hibernate ORM and Hibernate Reactive deployment processors:
  * configuring properties, dialects, and SQL load scripts.
  *
- * @see PersistenceUnitDefinitionSupport
+ * @see io.quarkus.hibernate.orm.deployment.component.PersistenceUnitDefinitionSupport
  * @see HibernateProcessorUtil
  */
 public final class HibernateProcessorSupport {

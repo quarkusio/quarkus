@@ -1,4 +1,4 @@
-package io.quarkus.datasource.deployment.spi;
+package io.quarkus.datasource.deployment.spi.component;
 
 import io.quarkus.builder.item.SimpleBuildItem;
 import io.quarkus.deployment.component.ComponentLookup;

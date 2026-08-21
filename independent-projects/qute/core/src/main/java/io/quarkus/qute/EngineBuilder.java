@@ -475,6 +475,11 @@ public final class EngineBuilder {
         }
 
         @Override
+        public boolean rawContent() {
+            return delegate.rawContent();
+        }
+
+        @Override
         public MissingEndTagStrategy missingEndTagStrategy() {
             return delegate.missingEndTagStrategy();
         }

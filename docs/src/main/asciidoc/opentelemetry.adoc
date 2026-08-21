@@ -400,11 +400,9 @@ A viable option could be to expose that data through a REST endpoint method:
 
 For more details please take a look at the https://github.com/quarkusio/quarkus/blob/main/integration-tests/opentelemetry/src/main/java/io/quarkus/it/opentelemetry/ExporterResource.java[ExporterResource] in the Quarkus integration tests.
 
-=== The OpenTelemetry OTLP exporter
+=== OpenTelemetry Java SDK OTLP exporter
 
-This is currently not supported in Quarkus. Configuration example for traces: `quarkus.otel.tracing.exporter=otlp`.
-
-However, it's also not needed because Quarkus own default exporters will send data using the OTLP protocol.
+The OpenTelemetry Java SDK OTLP exporter is not supported in Quarkus. It is not needed because Quarkus own default exporters send data using the OTLP protocol.
 
 === On Quarkiverse
 Additional exporters will be available in the Quarkiverse https://docs.quarkiverse.io/quarkus-opentelemetry-exporter/dev/index.html[quarkus-opentelemetry-exporter] project.

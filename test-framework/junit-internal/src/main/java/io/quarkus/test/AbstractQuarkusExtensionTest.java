@@ -112,7 +112,7 @@ public abstract class AbstractQuarkusExtensionTest<S extends AbstractQuarkusExte
         rootLogger = (Logger) LogManager.getLogManager().getLogger("");
     }
 
-    boolean started = false;
+    protected boolean started = false;
 
     private Path deploymentDir;
     private Consumer<Throwable> assertException;
@@ -142,7 +142,7 @@ public abstract class AbstractQuarkusExtensionTest<S extends AbstractQuarkusExte
     private boolean useSecureConnection;
 
     private Class<?> actualTestClass;
-    private Object actualTestInstance;
+    protected Object actualTestInstance;
     private String[] commandLineParameters = new String[0];
 
     private boolean allowTestClassOutsideDeployment;
@@ -482,6 +482,14 @@ public abstract class AbstractQuarkusExtensionTest<S extends AbstractQuarkusExte
         invocation.skip();
     }
 
+    /**
+     * Called immediately before each test method is invoked on the Quarkus test instance.
+     * Subclasses may override to perform per-invocation setup (e.g. copying parameter fields).
+     * The default implementation does nothing.
+     */
+    protected void onBeforeMethodInvocation(ExtensionContext extensionContext) {
+    }
+
     private Object runExtensionMethod(ReflectiveInvocationContext<Method> invocationContext, ExtensionContext extensionContext,
             boolean testMethodInvokersAllowed) throws Throwable {
         Method newMethod = null;
@@ -530,6 +538,7 @@ public abstract class AbstractQuarkusExtensionTest<S extends AbstractQuarkusExte
             }
         }
 
+        onBeforeMethodInvocation(extensionContext);
         try {
             newMethod.setAccessible(true);
             if (testMethodInvokerToUse != null) {
@@ -565,6 +574,10 @@ public abstract class AbstractQuarkusExtensionTest<S extends AbstractQuarkusExte
 
     @Override
     public void beforeAll(ExtensionContext extensionContext) throws Exception {
+        doBeforeAll(extensionContext);
+    }
+
+    protected void doBeforeAll(ExtensionContext extensionContext) throws Exception {
         TestConfigUtil.cleanUp();
         GroovyClassValue.disable();
         //set the right launch mode in the outer CL, used by the HTTP host config source
@@ -818,8 +831,13 @@ public abstract class AbstractQuarkusExtensionTest<S extends AbstractQuarkusExte
 
     @Override
     public void afterAll(ExtensionContext extensionContext) throws Exception {
+        doAfterAll(extensionContext);
+    }
+
+    protected void doAfterAll(ExtensionContext extensionContext) throws Exception {
         actualTestClass = null;
         actualTestInstance = null;
+        started = false;
         List<LogRecord> records = null;
         if (assertLogRecords != null) {
             records = new ArrayList<>(inMemoryLogHandler.records);
@@ -1226,6 +1244,32 @@ public abstract class AbstractQuarkusExtensionTest<S extends AbstractQuarkusExte
             customRuntimeApplicationProperties = new HashMap<>();
         }
         customRuntimeApplicationProperties.put(propertyKey, propertyValue);
+        return (S) this;
+    }
+
+    /**
+     * Resets mutable per-invocation state on this extension instance.
+     * <p>
+     * This method is intended for use with JUnit 5's {@link org.junit.jupiter.params.ParameterizedClass}:
+     * call it from a {@link org.junit.jupiter.params.BeforeParameterizedClassInvocation} method to clear
+     * configuration and log-record state left by the previous parameterization, so each invocation
+     * starts with a clean slate.
+     *
+     * @return {@code this}, for method chaining.
+     */
+    public S resetForParameterizedClass() {
+        this.customApplicationProperties = null;
+        this.customRuntimeApplicationProperties = null;
+        this.assertLogRecords = null;
+        this.inMemoryLogHandler = new InMemoryLogHandler(r -> false);
+        this.forcedDependencies = Collections.emptyList();
+        this.excludedDependencies = Collections.emptySet();
+        this.assertException = null;
+        this.beforeAllCustomizer = null;
+        this.afterAllCustomizer = null;
+        this.afterUndeployListener = null;
+        this.buildChainCustomizers = new ArrayList<>();
+        this.commandLineParameters = new String[0];
         return (S) this;
     }
 

@@ -95,7 +95,8 @@ public class HibernateOrmCdiProcessor {
             ClassNames.STATEMENT_INSPECTOR,
             ClassNames.FORMAT_MAPPER,
             ClassNames.FUNCTION_CONTRIBUTOR,
-            ClassNames.TYPE_CONTRIBUTOR);
+            ClassNames.TYPE_CONTRIBUTOR,
+            ClassNames.WEIGHER);
 
     @BuildStep
     AnnotationsTransformerBuildItem convertJpaResourceAnnotationsToQualifier(

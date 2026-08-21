@@ -3,6 +3,7 @@ package io.quarkus.redis.deployment.client;
 import static io.quarkus.devservices.common.ConfigureUtil.configureSharedServiceLabel;
 import static io.quarkus.devservices.common.ConfigureUtil.getDefaultImageNameFor;
 import static io.quarkus.devservices.common.ContainerLocator.locateContainerWithLabels;
+import static io.quarkus.devservices.common.Labels.expectedPortConfig;
 import static io.quarkus.redis.runtime.client.config.RedisConfig.HOSTS;
 import static io.quarkus.redis.runtime.client.config.RedisConfig.getPropertyName;
 
@@ -31,6 +32,7 @@ import io.quarkus.deployment.dev.devservices.DevServicesConfig;
 import io.quarkus.devservices.common.ComposeLocator;
 import io.quarkus.devservices.common.ConfigureUtil;
 import io.quarkus.devservices.common.ContainerLocator;
+import io.quarkus.devservices.common.Labels;
 import io.quarkus.redis.runtime.client.config.RedisConfig;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.configuration.ConfigUtils;
@@ -128,10 +130,12 @@ public class DevServicesRedisProcessor {
             io.quarkus.redis.deployment.client.DevServicesConfig devServicesConfig,
             LaunchMode launchMode,
             boolean useSharedNetwork) {
-        return redisContainerLocator.locateContainer(devServicesConfig.serviceName(), devServicesConfig.shared(), launchMode)
+        return redisContainerLocator
+                .locateContainer(devServicesConfig.serviceName(), devServicesConfig.shared(), launchMode,
+                        expectedPortConfig(devServicesConfig.port()))
                 .or(() -> ComposeLocator.locateContainer(composeProjectBuildItem,
                         List.of(devServicesConfig.imageName().orElseGet(() -> getDefaultImageNameFor("redis"))),
-                        REDIS_EXPOSED_PORT, launchMode, useSharedNetwork))
+                        REDIS_EXPOSED_PORT, launchMode, useSharedNetwork, devServicesConfig.port()))
                 .map(containerAddress -> {
                     String redisUrl = REDIS_SCHEME + containerAddress.getUrl();
                     return DevServicesResultBuildItem.discovered()
@@ -181,6 +185,7 @@ public class DevServicesRedisProcessor {
             this.useSharedNetwork = useSharedNetwork;
 
             this.hostName = ConfigureUtil.configureNetwork(this, defaultNetworkId, useSharedNetwork, "redis");
+            Labels.addPortConfigLabel(this, fixedExposedPort);
         }
 
         public QuarkusPortRedisContainer withSharedServiceLabel(LaunchMode launchMode, String serviceName) {

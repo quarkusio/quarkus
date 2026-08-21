@@ -1,6 +1,7 @@
 package io.quarkus.elasticsearch.restclient.common.deployment;
 
 import static io.quarkus.devservices.common.ContainerLocator.locateContainerWithLabels;
+import static io.quarkus.devservices.common.Labels.expectedPortConfig;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -8,6 +9,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.OptionalInt;
 import java.util.Set;
 import java.util.function.Function;
 
@@ -115,10 +117,12 @@ public class DevServicesElasticsearchProcessor {
                         container.withLabel(DEV_SERVICE_LABEL, config.serviceName());
                         container.withLabel(Labels.QUARKUS_DEV_SERVICE, config.serviceName());
                     }
-                    if (config.port().isPresent()) {
+                    OptionalInt fixedPort = config.port().map(OptionalInt::of).orElse(OptionalInt.empty());
+                    if (fixedPort.isPresent()) {
                         container.setPortBindings(
-                                List.of(config.port().get() + ":" + ELASTICSEARCH_PORT));
+                                List.of(fixedPort.getAsInt() + ":" + ELASTICSEARCH_PORT));
                     }
+                    Labels.addPortConfigLabel(container, fixedPort);
 
                     container.withEnv(config.containerEnv());
                     container.withReuse(config.reuse());
@@ -144,11 +148,13 @@ public class DevServicesElasticsearchProcessor {
             DevservicesElasticsearchBuildItemsConfiguration buildItemsConfig,
             LaunchMode launchMode,
             boolean useSharedNetwork) {
+        OptionalInt fixedPort = config.port().map(OptionalInt::of).orElse(OptionalInt.empty());
         return ELASTICSEARCH_CONTAINER_LOCATOR
-                .locateContainer(config.serviceName(), config.shared(), launchMode)
+                .locateContainer(config.serviceName(), config.shared(), launchMode,
+                        expectedPortConfig(fixedPort))
                 .or(() -> ComposeLocator.locateContainer(composeProjectBuildItem,
                         List.of(resolvedImageName.getUnversionedPart(), "elasticsearch", "opensearch"),
-                        ELASTICSEARCH_PORT, launchMode, useSharedNetwork))
+                        ELASTICSEARCH_PORT, launchMode, useSharedNetwork, fixedPort))
                 .map(containerAddress -> DevServicesResultBuildItem.discovered()
                         .feature(Feature.ELASTICSEARCH_REST_CLIENT_COMMON)
                         .containerId(containerAddress.getId())

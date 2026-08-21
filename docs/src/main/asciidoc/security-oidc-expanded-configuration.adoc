@@ -242,6 +242,8 @@ JWT https://openid.net/specs/openid-connect-core-1_0.html#ClientAuthentication[p
 |quarkus.oidc.credentials.jwt.key-id ||The key id
 |quarkus.oidc.credentials.jwt.key-password ||The key password
 |quarkus.oidc.credentials.jwt.signature-algorithm |RS256|Signature algorithm
+|quarkus.oidc.credentials.jwt.public-key ||The inlined public key (PEM or certificate)
+|quarkus.oidc.credentials.jwt.public-key-file ||The public key file (PEM or certificate)
 |====
 
 `quarkus.oidc.credentials.jwt.key` contains an inlined Base64-encoded private key representation, and is especially useful when you need to supply it as an environment property.
@@ -250,6 +252,9 @@ JWT https://openid.net/specs/openid-connect-core-1_0.html#ClientAuthentication[p
 `quarkus.oidc.credentials.jwt.key-store-file`, `quarkus.oidc.credentials.jwt.key-store-password`, `quarkus.oidc.credentials.jwt.key-id` and `quarkus.oidc.credentials.jwt.key-password` can be used to extract the private key from a keystore.
 
 By default, RSA `RS256` algorithm is used to sign a JWT authentication token but it can be changed with `quarkus.oidc.credentials.jwt.signature-algorithm`, for example, to Elliptic Curve `ES256`.
+
+`quarkus.oidc.credentials.jwt.public-key` and `quarkus.oidc.credentials.jwt.public-key-file` are only meaningful in the context of <<client-id-metadata-document,Client ID Metadata Document>> registration.
+When a private key is configured and the client-id is a <<client-id-metadata-document,CIMD>> HTTPS URL, the corresponding public key is published in the metadata document's `jwks` property, and `token_endpoint_auth_method` is automatically set to `private_key_jwt`, enabling asymmetric client authentication without pre-registration.
 
 See also the <<jwt-authentication-headers-claims>> section below for details about customizing the generated JWT token.
 
@@ -1393,6 +1398,31 @@ See also the <<oidc-metadata-properties>> for details about the OIDC provider me
 If you know that neither static nor dynamic OIDC tenants will need to provide protected resource metadata, you can disable an HTTP route that supports protected resource metadata requests to avoid unnecessary overhead, see the <<allowed-routes>> section for more information.
 ====
 
+[[client-id-metadata-document]]
+=== Client ID Metadata Document
+
+The link:https://datatracker.ietf.org/doc/html/draft-ietf-oauth-client-id-metadata-document[OAuth Client ID Metadata Document (CIMD)] specification enables OAuth clients to use an HTTPS URL as their `client_id`. That URL points to a JSON document containing the client's metadata, which the authorization server fetches on demand instead of requiring the client to be pre-registered.
+
+CIMD is enabled automatically for Quarkus OIDC web applications whose OIDC `quarkus.oidc.client-id` is a valid HTTPS URL, when other required properties such as `quarkus.oidc.client-name` and `quarkus.oidc.authentication.redirect-path` are also set.
+
+.Client ID Metadata Document properties
+[options="header"]
+|====
+|Property name |Default |Description
+
+|quarkus.oidc.cimd.force-https-scheme |true|Force that a client id set as CIMD URL has an HTTPS scheme
+|====
+
+The CIMD URL scheme must be set to `HTTPS` by default. You can enable an `HTTP` URL scheme with `quarkus.oidc.cimd.force-https-scheme=false`, it can be particularly useful in simple demos and tests.
+
+[NOTE]
+====
+If you know that neither static nor dynamic OIDC tenants will support CIMD, you can disable an HTTP route that supports CIMD requests to avoid unnecessary overhead, see the <<allowed-routes>> section for more information.
+====
+
+To learn more about Client ID Metadata Document support, see the xref:security-oidc-client-id-metadata-document.adoc[OAuth Client ID Metadata Document] guide.
+
+
 [[allowed-routes]]
 === Allowed Routes
 
@@ -1401,10 +1431,10 @@ If you know that neither static nor dynamic OIDC tenants will need to provide pr
 |====
 |Property name |Default |Description
 
-|quarkus.oidc.allowed-routes |`backchannel-logout,resource-metadata`|OIDC routes that tenants can use
+|quarkus.oidc.allowed-routes |`backchannel-logout,resource-metadata,cimd`|OIDC routes that tenants can use
 |====
 
-To be able to support https://openid.net/specs/openid-connect-backchannel-1_0.html[OIDC back-channel logout] and https://datatracker.ietf.org/doc/rfc9728/[OAuth2 Protected Resource Metadata] requests for both static and dynamic OIDC tenants, `quarkus-oidc` must register routes that require dedicated HTTP handlers to manage such requests for all the OIDC tenants.
+To be able to support https://openid.net/specs/openid-connect-backchannel-1_0.html[OIDC back-channel logout], https://datatracker.ietf.org/doc/rfc9728/[OAuth2 Protected Resource Metadata] and https://datatracker.ietf.org/doc/html/draft-ietf-oauth-client-id-metadata-document[OAuth Client ID Metadata Document] requests, `quarkus-oidc` must register routes that require dedicated HTTP handlers for all static and dynamic OIDC tenants that must support all or one of these features.
 
 However, it is not always possible to figure out at start-up if such routes will actually be needed. For example, only dynamic OIDC tenants may choose to support one or all of the features these routes are meant to support.
 
@@ -1414,6 +1444,7 @@ Supported values:
 
 * `backchannel-logout` - enables an HTTP route for OIDC tenants to receive <<back-channel-logout,back-channel logout>> notifications
 * `resource-metadata` - enables an HTTP route for OIDC tenants to handle requests for <<resource-metadata-properties,protected resource metadata>>
+* `cimd` - enables an HTTP route for OIDC tenants to handle requests for <<client-id-metadata-document,Client ID Metadata Document>>
 
 For example, if your tenants only need back-channel logout:
 

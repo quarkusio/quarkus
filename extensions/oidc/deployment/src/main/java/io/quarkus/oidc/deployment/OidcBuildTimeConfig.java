@@ -48,6 +48,6 @@ public interface OidcBuildTimeConfig {
      * Supported HTTP routes for OIDC tenant features.
      * To avoid unnecessary overhead, remove routes that are not required by any of the OIDC tenants.
      */
-    @WithDefault("backchannel-logout,resource-metadata")
+    @WithDefault("backchannel-logout,resource-metadata,client-id-metadata")
     Set<OidcRoute> allowedRoutes();
 }

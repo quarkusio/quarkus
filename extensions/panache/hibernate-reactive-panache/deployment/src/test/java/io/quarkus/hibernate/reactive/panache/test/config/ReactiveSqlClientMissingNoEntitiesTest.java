@@ -12,6 +12,13 @@ import io.quarkus.maven.dependency.ArtifactKey;
 import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.vertx.RunOnVertxContext;
 
+/**
+ * No entities, no injection, no configuration: Hibernate Reactive should not create
+ * any persistence unit, and the application should start successfully even without
+ * a reactive SQL client.
+ *
+ * @see <a href="https://github.com/quarkusio/quarkus/issues/51268">#51268</a>.
+ */
 public class ReactiveSqlClientMissingNoEntitiesTest {
 
     @RegisterExtension

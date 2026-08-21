@@ -25,26 +25,14 @@ public class MailResource {
     @Inject
     Mailer defaultMailer;
 
-    @MailerName("start-tls-legacy")
-    Mailer startTlsLegacyMailer;
-
     @MailerName("start-tls-registry")
     Mailer startTlsRegistryMailer;
 
     @MailerName("start-tls-registry-trust-all")
     Mailer startTlsRegistryMailerWithTrustAll;
 
-    @MailerName("start-tls-legacy-trust-all")
-    Mailer startTlsLegacyMailerWithTrustAll;
-
-    @MailerName("tls-legacy")
-    Mailer tlsLegacyMailer;
-
     @MailerName("tls-registry")
     Mailer tlsRegistryMailer;
-
-    @MailerName("tls-legacy-trust-all")
-    Mailer tlsLegacyMailerWithTrustAll;
 
     @MailerName("tls-registry-trust-all")
     Mailer tlsRegistryMailerWithTrustAll;
@@ -57,13 +45,9 @@ public class MailResource {
             return defaultMailer;
         }
         return switch (name) {
-            case "start-tls-legacy" -> startTlsLegacyMailer;
             case "start-tls-registry" -> startTlsRegistryMailer;
             case "start-tls-registry-trust-all" -> startTlsRegistryMailerWithTrustAll;
-            case "start-tls-legacy-trust-all" -> startTlsLegacyMailerWithTrustAll;
-            case "tls-legacy" -> tlsLegacyMailer;
             case "tls-registry" -> tlsRegistryMailer;
-            case "tls-legacy-trust-all" -> tlsLegacyMailerWithTrustAll;
             case "tls-registry-trust-all" -> tlsRegistryMailerWithTrustAll;
             default -> throw new IllegalArgumentException("Unknown mailer " + name);
         };

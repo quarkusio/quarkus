@@ -126,7 +126,7 @@ public class LoggingJsonRecorder {
 
     private RuntimeValue<Optional<Formatter>> getDefaultFormatter(JsonConfig config,
             OverridableJsonConfig overridableJsonConfig, List<JsonProvider> providers) {
-        if (!config.enabled().orElse(config.enable())) {
+        if (!config.enabled().orElse(true)) {
             return new RuntimeValue<>(Optional.empty());
         }
 

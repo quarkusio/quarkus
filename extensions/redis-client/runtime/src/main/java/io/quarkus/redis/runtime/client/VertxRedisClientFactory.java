@@ -104,11 +104,7 @@ public class VertxRedisClientFactory {
         options.setPassword(config.password().orElse(null));
         config.poolCleanerInterval().ifPresent(d -> options.setPoolCleanerInterval((int) d.toMillis()));
         config.poolRecycleTimeout().ifPresent(d -> options.setPoolRecycleTimeout((int) d.toMillis()));
-        // the Vert.x Redis client will only unify `topologyCacheTTL` and `hashSlotCacheTTL` in version 5.1,
-        // but in Quarkus, we unify them already
-        long topologyCacheTtl = config.topologyCacheTtl().orElse(config.hashSlotCacheTtl()).toMillis();
-        options.setHashSlotCacheTTL(topologyCacheTtl);
-        options.setTopologyCacheTTL(topologyCacheTtl);
+        config.topologyCacheTtl().ifPresent(d -> options.setTopologyCacheTTL((int) d.toMillis()));
 
         config.role().ifPresent(options::setRole);
         options.setType(config.clientType());
@@ -197,33 +193,22 @@ public class VertxRedisClientFactory {
         net.setReconnectInterval(config.reconnectInterval().toMillis());
 
         tcp.localAddress().ifPresent(net::setLocalAddress);
-        if (tcp.proxyOptions().host().isPresent()) {
+        Optional<ProxyConfiguration> proxyConfig = proxyRegistry.get(tcp.proxyConfigurationName());
+        proxyConfig.ifPresent(proxy -> {
             ProxyOptions po = new ProxyOptions();
-            po.setHost(tcp.proxyOptions().host().get());
-            po.setType(tcp.proxyOptions().type());
-            po.setPort(tcp.proxyOptions().port());
-            tcp.proxyOptions().username().ifPresent(po::setUsername);
-            tcp.proxyOptions().password().ifPresent(po::setPassword);
-            net.setProxyOptions(po);
-            tcp.nonProxyHosts().ifPresent(net::setNonProxyHosts);
-        } else {
-            Optional<ProxyConfiguration> proxyConfig = proxyRegistry.get(tcp.proxyConfigurationName());
-            proxyConfig.ifPresent(proxy -> {
-                ProxyOptions po = new ProxyOptions();
-                po.setHost(proxy.host());
-                po.setPort(proxy.port());
-                po.setUsername(proxy.username().orElse(null));
-                po.setPassword(proxy.password().orElse(null));
-                po.setConnectTimeout(proxy.proxyConnectTimeout().orElse(null));
-                po.setType(switch (proxy.type()) {
-                    case HTTP -> ProxyType.HTTP;
-                    case SOCKS4 -> ProxyType.SOCKS4;
-                    case SOCKS5 -> ProxyType.SOCKS5;
-                });
-                net.setProxyOptions(po);
-                proxy.nonProxyHosts().ifPresent(net::setNonProxyHosts);
+            po.setHost(proxy.host());
+            po.setPort(proxy.port());
+            po.setUsername(proxy.username().orElse(null));
+            po.setPassword(proxy.password().orElse(null));
+            po.setConnectTimeout(proxy.proxyConnectTimeout().orElse(null));
+            po.setType(switch (proxy.type()) {
+                case HTTP -> ProxyType.HTTP;
+                case SOCKS4 -> ProxyType.SOCKS4;
+                case SOCKS5 -> ProxyType.SOCKS5;
             });
-        }
+            net.setProxyOptions(po);
+            proxy.nonProxyHosts().ifPresent(net::setNonProxyHosts);
+        });
         tcp.readIdleTimeout().ifPresent(d -> net.setReadIdleTimeout((int) d.toSeconds()));
         tcp.reconnectAttempts().ifPresent(net::setReconnectAttempts);
         tcp.reconnectInterval().ifPresent(v -> net.setReconnectInterval(v.toMillis()));

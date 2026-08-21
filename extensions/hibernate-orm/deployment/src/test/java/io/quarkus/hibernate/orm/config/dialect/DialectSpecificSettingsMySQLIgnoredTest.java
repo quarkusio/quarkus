@@ -23,7 +23,6 @@ public class DialectSpecificSettingsMySQLIgnoredTest {
                     .addAsResource("application-start-offline-mysql-dialect.properties", "application.properties"))
             .setLogRecordPredicate(record -> HibernateProcessorUtil.class.getName().equals(record.getLoggerName()))
             .overrideConfigKey("quarkus.datasource.db-kind", "") // This will override to default which is H2
-            .overrideConfigKey("quarkus.hibernate-orm.dialect.storage-engine", "")
             .overrideConfigKey("quarkus.hibernate-orm.dialect.mysql.bytes-per-character", "8") // This will be ignored
             .overrideConfigKey("quarkus.hibernate-orm.dialect.mysql.no-backslash-escapes", "true") // This will be ignored
             .setLogRecordPredicate(record -> HibernateProcessorUtil.class.getName().equals(record.getLoggerName()))

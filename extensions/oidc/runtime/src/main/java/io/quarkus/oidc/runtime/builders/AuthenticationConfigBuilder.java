@@ -35,7 +35,7 @@ public final class AuthenticationConfigBuilder {
             boolean allowMultipleCodeFlows, boolean failOnMissingStateParam, boolean failOnUnresolvedKid,
             Optional<Boolean> userInfoRequired, Optional<Duration> sessionAgeExtension,
             Duration stateCookieAge, boolean javaScriptAutoRedirect, Optional<Boolean> idTokenRequired,
-            Optional<Duration> internalIdTokenLifespan, Optional<Boolean> pkceRequired, Optional<String> pkceSecret,
+            Optional<Duration> internalIdTokenLifespan, Optional<Boolean> pkceRequired,
             Optional<String> stateSecret, PushedAuthorizationRequest par,
             Optional<RichAuthorizationRequests> rar) implements Authentication {
     }
@@ -73,7 +73,6 @@ public final class AuthenticationConfigBuilder {
     private Optional<Boolean> idTokenRequired;
     private Optional<Duration> internalIdTokenLifespan;
     private Optional<Boolean> pkceRequired;
-    private Optional<String> pkceSecret;
     private Optional<String> stateSecret;
     private PushedAuthorizationRequest par;
     private Optional<RichAuthorizationRequests> rar;
@@ -123,7 +122,6 @@ public final class AuthenticationConfigBuilder {
         this.idTokenRequired = authentication.idTokenRequired();
         this.internalIdTokenLifespan = authentication.internalIdTokenLifespan();
         this.pkceRequired = authentication.pkceRequired();
-        this.pkceSecret = authentication.pkceSecret();
         this.stateSecret = authentication.stateSecret();
         this.par = authentication.par();
         this.rar = authentication.rar();
@@ -674,6 +672,6 @@ public final class AuthenticationConfigBuilder {
                 failOnMissingStateParam,
                 failOnUnresolvedKid,
                 userInfoRequired, sessionAgeExtension, stateCookieAge, javaScriptAutoRedirect, idTokenRequired,
-                internalIdTokenLifespan, pkceRequired, pkceSecret, stateSecret, par, rar);
+                internalIdTokenLifespan, pkceRequired, stateSecret, par, rar);
     }
 }

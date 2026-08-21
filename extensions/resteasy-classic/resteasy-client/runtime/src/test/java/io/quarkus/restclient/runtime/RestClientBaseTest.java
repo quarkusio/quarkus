@@ -122,7 +122,6 @@ class RestClientBaseTest {
         restClientBase.configureBuilder(restClientBuilderMock);
 
         verify(restClientBuilderMock).baseUrl(new URL("http://localhost:8080"));
-        verify(restClientBuilderMock).proxyAddress("host1", 123);
         verify(restClientBuilderMock).connectTimeout(100, MILLISECONDS);
         verify(restClientBuilderMock).readTimeout(101, MILLISECONDS);
         verify(restClientBuilderMock).hostnameVerifier(Mockito.any(MyHostnameVerifier1.class));
@@ -168,7 +167,6 @@ class RestClientBaseTest {
 
         // then
         verify(restClientBuilderMock).baseUrl(new URL("http://localhost:8080"));
-        verify(restClientBuilderMock).proxyAddress("host2", 123);
         verify(restClientBuilderMock).connectTimeout(200, MILLISECONDS);
         verify(restClientBuilderMock).readTimeout(201, MILLISECONDS);
         verify(restClientBuilderMock).hostnameVerifier(Mockito.any(MyHostnameVerifier2.class));
@@ -183,7 +181,7 @@ class RestClientBaseTest {
 
     private static Map<String, String> createSampleConfigRoot() {
         Map<String, String> rootConfig = new HashMap<>();
-        rootConfig.put("quarkus.rest-client.proxy-address", "host2:123");
+        rootConfig.put("quarkus.rest-client.proxy-configuration-name", "none");
         rootConfig.put("quarkus.rest-client.connect-timeout", "200");
         rootConfig.put("quarkus.rest-client.read-timeout", "201");
         rootConfig.put("quarkus.rest-client.hostname-verifier",
@@ -207,7 +205,6 @@ class RestClientBaseTest {
         // properties only configurable via client config
         clientConfig.put("quarkus.rest-client." + restClientName + ".url", "http://localhost");
         // properties that override configRoot counterparts
-        clientConfig.put("quarkus.rest-client." + restClientName + ".proxy-address", "host1:123");
         clientConfig.put("quarkus.rest-client." + restClientName + ".connect-timeout", "100");
         clientConfig.put("quarkus.rest-client." + restClientName + ".read-timeout", "101");
         clientConfig.put("quarkus.rest-client." + restClientName + ".hostname-verifier",

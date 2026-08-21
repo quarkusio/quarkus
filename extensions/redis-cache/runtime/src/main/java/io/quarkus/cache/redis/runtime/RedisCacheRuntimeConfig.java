@@ -9,14 +9,6 @@ import io.quarkus.runtime.annotations.ConfigGroup;
 @ConfigGroup
 public interface RedisCacheRuntimeConfig {
     /**
-     * The default time to live of the item stored in the cache.
-     *
-     * @deprecated Use {@link #expireAfterWrite} instead. This will be removed after Quarkus 3.20.
-     */
-    @Deprecated(forRemoval = true, since = "3.3.0")
-    Optional<Duration> ttl();
-
-    /**
      * Specifies that each entry should be automatically removed from the cache once a fixed duration has elapsed after
      * the entry's creation, or the most recent replacement of its value.
      */

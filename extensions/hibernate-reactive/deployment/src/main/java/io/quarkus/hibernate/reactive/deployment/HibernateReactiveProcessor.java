@@ -262,7 +262,6 @@ public final class HibernateReactiveProcessor {
                         io.quarkus.hibernate.orm.runtime.migration.MultiTenancyStrategy.NONE,
                         hibernateOrmConfig.database().ormCompatibilityVersion(),
                         persistenceUnitConfig.unsupportedProperties()),
-                null,
                 model.xmlMappings(),
                 false,
                 isHibernateValidatorPresent(capabilities)));

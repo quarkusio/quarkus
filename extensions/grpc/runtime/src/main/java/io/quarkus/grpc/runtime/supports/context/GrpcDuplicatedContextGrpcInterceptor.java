@@ -3,6 +3,7 @@ package io.quarkus.grpc.runtime.supports.context;
 import static io.quarkus.vertx.core.runtime.context.VertxContextSafetyToggle.setContextSafe;
 
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -31,6 +32,7 @@ import io.vertx.core.Vertx;
 @GlobalInterceptor
 public class GrpcDuplicatedContextGrpcInterceptor implements ServerInterceptor, Prioritized {
     private static final Logger log = Logger.getLogger(GrpcDuplicatedContextGrpcInterceptor.class.getName());
+    private static final String GRPC_CONTEXT_CLEANUP_KEY = "io.quarkus.grpc.context.cleanup";
 
     @Inject
     ExceptionHandlerProvider ehp;
@@ -63,6 +65,12 @@ public class GrpcDuplicatedContextGrpcInterceptor implements ServerInterceptor, 
         io.grpc.Context current = io.grpc.Context.current();
         return onClose -> {
             io.grpc.Context previous = current.attach();
+            Context dc = Vertx.currentContext();
+            boolean isDuplicated = dc != null && VertxContext.isDuplicatedContext(dc);
+            if (isDuplicated) {
+                dc.getLocal(VertxContext.DATA_MAP_LOCAL, ConcurrentHashMap::new).put(GRPC_CONTEXT_CLEANUP_KEY,
+                        (Runnable) () -> current.detach(previous));
+            }
             try {
                 var forwardingCall = new ForwardingServerCall<ReqT, RespT>() {
                     @Override
@@ -72,13 +80,25 @@ public class GrpcDuplicatedContextGrpcInterceptor implements ServerInterceptor, 
 
                     @Override
                     public void close(Status status, Metadata trailers) {
+                        if (isDuplicated) {
+                            Context currentDc = Vertx.currentContext();
+                            if (currentDc != null) {
+                                var local = currentDc.getLocal(VertxContext.DATA_MAP_LOCAL, ConcurrentHashMap::new);
+                                Runnable cleanup = (Runnable) local.remove(GRPC_CONTEXT_CLEANUP_KEY);
+                                if (cleanup != null) {
+                                    cleanup.run();
+                                }
+                            }
+                        }
                         onClose.run();
                         super.close(status, trailers);
                     }
                 };
                 return next.startCall(forwardingCall, headers);
             } finally {
-                current.detach(previous);
+                if (!isDuplicated) {
+                    current.detach(previous);
+                }
             }
         };
     }
@@ -181,7 +201,14 @@ public class GrpcDuplicatedContextGrpcInterceptor implements ServerInterceptor, 
 
         @Override
         public void onCancel() {
-            invoke(ServerCall.Listener::onCancel);
+            invoke(listener -> {
+                var local = context.getLocal(VertxContext.DATA_MAP_LOCAL, ConcurrentHashMap::new);
+                Runnable cleanup = (Runnable) local.remove(GRPC_CONTEXT_CLEANUP_KEY);
+                if (cleanup != null) {
+                    cleanup.run();
+                }
+                listener.onCancel();
+            });
         }
 
         @Override

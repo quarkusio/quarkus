@@ -29,6 +29,14 @@ public class ContextStorageOverride extends Context.Storage {
 
     @Override
     public void detach(Context context, Context toRestore) {
+        // it is possible that a previous call to detach removed the local map entry when cleaning up the context.
+        // Due to how io.grpc and quarkus-grpc interact, it is possible that this cleanup be followed by detach(C1,C1),
+        // in which case we would put a stale context back in the map we just cleaned.
+        // To make sure it doesn't happen we return when we encounter detach(C1,C1).
+        // detach(ROOT, ROOT) is a special case used by grpc internals and must not be short-circuited.
+        if (toRestore == context && context != Context.ROOT) {
+            return;
+        }
         io.vertx.core.Context dc = Vertx.currentContext();
         if (toRestore != Context.ROOT) {
             if (dc != null && VertxContext.isDuplicatedContext(dc)) {
@@ -39,7 +47,8 @@ public class ContextStorageOverride extends Context.Storage {
             }
         } else {
             if (dc != null && VertxContext.isDuplicatedContext(dc)) {
-                // Do nothing - duplicated context are not shared.
+                var local = dc.getLocal(VertxContext.DATA_MAP_LOCAL, ConcurrentHashMap::new);
+                local.remove(GRPC_CONTEXT);
             } else {
                 fallback.set(null);
             }

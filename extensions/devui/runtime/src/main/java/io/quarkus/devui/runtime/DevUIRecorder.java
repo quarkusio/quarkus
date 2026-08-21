@@ -129,10 +129,6 @@ public class DevUIRecorder {
         };
     }
 
-    public Handler<RoutingContext> createLocalHostOnlyFilter(List<String> hosts) {
-        return new LocalHostOnlyFilter(hosts);
-    }
-
     public Handler<RoutingContext> createDevUICorsFilter(List<String> hosts) {
         return new DevUICORSFilter(hosts);
     }

@@ -288,7 +288,7 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
         final String quarkusCoreVersionRange = requiresQuarkusCore == null ? toVersionRange(quarkusCoreVersion)
                 : requiresQuarkusCore;
         if (quarkusCoreVersionRange != null) {
-            props.put("requires-quarkus-version", quarkusCoreVersionRange);
+            props.put(BootstrapConstants.PROP_REQUIRES_QUARKUS_VERSION, quarkusCoreVersionRange);
         }
         final Path output = outputDirectory.toPath().resolve(BootstrapConstants.META_INF);
         try {

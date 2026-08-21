@@ -27,6 +27,7 @@ import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type.Kind;
+import org.jboss.logging.Logger;
 
 import io.quarkus.arc.deployment.AnnotationsTransformerBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
@@ -48,10 +49,12 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Consume;
 import io.quarkus.deployment.annotations.ExecutionTime;
+import io.quarkus.deployment.annotations.Produce;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
+import io.quarkus.deployment.pkg.builditem.ArtifactResultBuildItem;
 import io.quarkus.deployment.util.JandexUtil;
 import io.quarkus.hibernate.orm.deployment.HibernateOrmProcessor;
 import io.quarkus.hibernate.orm.deployment.JpaModelPersistenceUnitMappingBuildItem;
@@ -65,6 +68,8 @@ import io.quarkus.security.spi.SecurityTransformer;
 import io.quarkus.security.spi.SecurityTransformerBuildItem;
 
 public final class QuarkusDataHibernateProcessor {
+
+    private static final Logger LOG = Logger.getLogger(QuarkusDataHibernateProcessor.class);
 
     /**
      * Collection of Jakarta Data annotations for which we create a repository, if they're detected on an inner interface.
@@ -169,6 +174,27 @@ public final class QuarkusDataHibernateProcessor {
                     && !panacheEntityBaseSubclass.name().equals(DOTNAME_PANACHE_STATELESS_REACTIVE_ENTITY)) {
                 entityClasses.produce(new QuarkusDataEntityClassBuildItem(panacheEntityBaseSubclass));
             }
+        }
+    }
+
+    @BuildStep
+    @Produce(ArtifactResultBuildItem.class)
+    void validateMetamodelGenerated(
+            CombinedIndexBuildItem index,
+            List<QuarkusDataEntityClassBuildItem> entityClasses) {
+        List<String> missingMetamodels = new ArrayList<>();
+        for (QuarkusDataEntityClassBuildItem entityClass : entityClasses) {
+            String entityClassName = entityClass.get().name().toString();
+            String metamodelClassName = entityClassName + "_";
+            if (index.getIndex().getClassByName(metamodelClassName) == null) {
+                missingMetamodels.add(entityClassName);
+            }
+        }
+        if (!missingMetamodels.isEmpty()) {
+            LOG.warnf("Missing generated metamodel classes for Quarkus Data entities: %s. "
+                    + "Make sure you have configured the quarkus-data-processor annotation processor. "
+                    + "See https://quarkus.io/guides/quarkus-data-hibernate#importing-the-extension-and-configuration",
+                    missingMetamodels);
         }
     }
 

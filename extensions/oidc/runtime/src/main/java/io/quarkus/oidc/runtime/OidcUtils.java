@@ -8,9 +8,12 @@ import static io.quarkus.vertx.http.runtime.security.HttpSecurityUtils.getRoutin
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.security.Key;
+import java.security.KeyPair;
+import java.security.KeyPairGenerator;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
+import java.security.spec.ECGenParameterSpec;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -43,6 +46,7 @@ import org.jose4j.jwt.JwtClaims;
 import org.jose4j.jwt.consumer.InvalidJwtException;
 import org.jose4j.lang.JoseException;
 
+import io.quarkus.arc.Arc;
 import io.quarkus.oidc.AccessTokenCredential;
 import io.quarkus.oidc.AuthorizationCodeFlow;
 import io.quarkus.oidc.AuthorizationCodeTokens;
@@ -59,6 +63,7 @@ import io.quarkus.oidc.UserInfo;
 import io.quarkus.oidc.common.OidcEndpoint;
 import io.quarkus.oidc.common.OidcRequestFilter;
 import io.quarkus.oidc.common.OidcResponseFilter;
+import io.quarkus.oidc.common.runtime.AttestationKeyRegistry;
 import io.quarkus.oidc.common.runtime.OidcCommonUtils;
 import io.quarkus.oidc.common.runtime.OidcConstants;
 import io.quarkus.oidc.runtime.OidcTenantConfig.ApplicationType;
@@ -77,6 +82,8 @@ import io.quarkus.security.runtime.QuarkusSecurityIdentity.Builder;
 import io.quarkus.vertx.http.runtime.security.HttpSecurityUtils;
 import io.smallrye.jwt.algorithm.ContentEncryptionAlgorithm;
 import io.smallrye.jwt.algorithm.KeyEncryptionAlgorithm;
+import io.smallrye.jwt.algorithm.SignatureAlgorithm;
+import io.smallrye.jwt.build.Jwt;
 import io.smallrye.jwt.util.KeyUtils;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.subscription.UniEmitter;
@@ -1136,5 +1143,65 @@ public final class OidcUtils {
             return parConfig.enabled().get();
         }
         return metadata.isRequirePushedAuthorizationRequests();
+    }
+
+    public static AttestationKeyRegistry initAttestationJwtContext(OidcTenantConfig oidcConfig) {
+        if (oidcConfig.credentials().attestation().enabled()) {
+            AttestationKeyRegistry registry = Arc.container().instance(AttestationKeyRegistry.class).get();
+            if (registry == null) {
+                throw new RuntimeException("AttestationKeyRegistry bean is not available");
+            }
+            try {
+                SignatureAlgorithm sigAlg = SignatureAlgorithm
+                        .fromAlgorithm(oidcConfig.credentials().attestation().signatureAlgorithm().name());
+                String ecCurve = resolveAttestationEcCurve(sigAlg);
+                KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("EC");
+                keyPairGenerator.initialize(new ECGenParameterSpec(ecCurve));
+                KeyPair attestationKeyPair = keyPairGenerator.generateKeyPair();
+                KeyPair instanceKeyPair = keyPairGenerator.generateKeyPair();
+                registry.register(oidcConfig.tenantId().get(), attestationKeyPair, instanceKeyPair,
+                        sigAlg, oidcConfig.credentials().jwt().lifespan());
+                return registry;
+            } catch (Exception ex) {
+                throw new RuntimeException("Failed to generate attestation key pairs", ex);
+            }
+        }
+        return null;
+    }
+
+    static String resolveAttestationEcCurve(SignatureAlgorithm sigAlg) {
+        return switch (sigAlg) {
+            case ES256 -> "secp256r1";
+            case ES384 -> "secp384r1";
+            case ES512 -> "secp521r1";
+            default -> throw new RuntimeException(
+                    "Unsupported attestation signature algorithm: " + sigAlg
+                            + ". Only EC algorithms (ES256, ES384, ES512) are supported");
+        };
+    }
+
+    public static String buildClientAttestationJwt(String clientId,
+            AttestationKeyRegistry.AttestationJwtContext ctx) {
+        JsonObject cnf = new JsonObject().put("jwk",
+                AttestationKeyRegistry.convertPublicKeyToJwk(ctx.instanceKeyPair().getPublic(),
+                        ctx.signatureAlgorithm()));
+        return Jwt.issuer(clientId)
+                .subject(clientId)
+                .claim(OidcConstants.CONFIRMATION_CLAIM, cnf.getMap())
+                .expiresIn(ctx.lifespan())
+                .jws()
+                .type(OidcConstants.CLIENT_ATTESTATION_JWT_TYPE)
+                .algorithm(ctx.signatureAlgorithm())
+                .keyId(ctx.kid())
+                .sign((PrivateKey) ctx.attestationKeyPair().getPrivate());
+    }
+
+    public static String buildClientAttestationPopJwt(String clientId, String audience,
+            AttestationKeyRegistry.AttestationJwtContext ctx) {
+        return Jwt.issuer(clientId)
+                .audience(audience)
+                .jws()
+                .type(OidcConstants.CLIENT_ATTESTATION_POP_JWT_TYPE)
+                .sign((PrivateKey) ctx.instanceKeyPair().getPrivate());
     }
 }

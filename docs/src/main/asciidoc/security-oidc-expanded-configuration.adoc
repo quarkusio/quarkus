@@ -300,6 +300,28 @@ When the xref:security-spiffe-client.adoc[SPIFFE Client] extension is present an
 
 See the <<tls-properties>> section if the MTLS authentication is required.
 
+[[client-attestation]]
+=== Attestation
+
+https://datatracker.ietf.org/doc/draft-ietf-oauth-attestation-based-client-auth/[OAuth 2.0 Attestation-Based Client Authentication] specifies a mechanism that allows OAuth2 client to prove its authenticity verified by a client attester and authenticate without using a client secret.
+
+.Client attestation properties
+[options="header"]
+|====
+|Property name |Default |Description
+
+|quarkus.oidc.credentials.attestation.enabled |false|Enable a custom attestation or default self-attestation
+|quarkus.oidc.credentials.attestation.signature-algorithm |ES256|Attestation JWT PoP token signature algorithm
+|====
+
+`quarkus.oidc.credentials.attestation.enabled=true` enables an attestation-based client authentication, using either a registered `io.quarkus.oidc.common.ClientAttester` attester or a default self-attestation.
+
+`quarkus.oidc.credentials.attestation.signature-algorithm` specifies an Attestation JWT PoP token signature algorithm, and, in case of the self-attestation, an Attestation JWT signature algorithm.
+
+Currently, only `ES256`, `ES384` and `ES512` signature algorithms are supported. Custom client attesters can chose any other standard JWT token signature algorithm.
+
+Note that the client attestation may also be used alongside other forms of the client authentication to prove the workload provenance.
+
 === Introspection credentials
 
 When the tokens must be introspected, some providers may require the introspection specific authentication credentials, as opposed to the already configured OIDC client id and one of the OIDC client authentication credentials:
@@ -1401,10 +1423,10 @@ If you know that neither static nor dynamic OIDC tenants will need to provide pr
 |====
 |Property name |Default |Description
 
-|quarkus.oidc.allowed-routes |`backchannel-logout,resource-metadata`|OIDC routes that tenants can use
+|quarkus.oidc.allowed-routes |`backchannel-logout,resource-metadata,client-attestation`|OIDC routes that tenants can use
 |====
 
-To be able to support https://openid.net/specs/openid-connect-backchannel-1_0.html[OIDC back-channel logout] and https://datatracker.ietf.org/doc/rfc9728/[OAuth2 Protected Resource Metadata] requests for both static and dynamic OIDC tenants, `quarkus-oidc` must register routes that require dedicated HTTP handlers to manage such requests for all the OIDC tenants.
+To be able to support https://openid.net/specs/openid-connect-backchannel-1_0.html[OIDC back-channel logout] and https://datatracker.ietf.org/doc/rfc9728/[OAuth2 Protected Resource Metadata] requests, as well as https://datatracker.ietf.org/doc/draft-ietf-oauth-attestation-based-client-auth/[OAuth 2.0 Attestation-Based Client Authentication] in a self-attestation mode, `quarkus-oidc` must register routes that require dedicated HTTP handlers for all static and dynamic OIDC tenants that must support all or one of these features.
 
 However, it is not always possible to figure out at start-up if such routes will actually be needed. For example, only dynamic OIDC tenants may choose to support one or all of the features these routes are meant to support.
 
@@ -1414,6 +1436,7 @@ Supported values:
 
 * `backchannel-logout` - enables an HTTP route for OIDC tenants to receive <<back-channel-logout,back-channel logout>> notifications
 * `resource-metadata` - enables an HTTP route for OIDC tenants to handle requests for <<resource-metadata-properties,protected resource metadata>>
+* `client-attestation` - enables an HTTP route for OIDC tenants to authenticate to OIDC providers with the  <<client-attestation,client attestation tokens>>
 
 For example, if your tenants only need back-channel logout:
 

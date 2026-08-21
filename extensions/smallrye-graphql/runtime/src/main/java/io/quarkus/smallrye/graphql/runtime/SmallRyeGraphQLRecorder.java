@@ -107,7 +107,7 @@ public class SmallRyeGraphQLRecorder {
             String graphqlUiPath, List<FileSystemStaticHandler.StaticWebRootConfiguration> webRootConfigurations,
             ShutdownContext shutdownContext) {
 
-        if (runtimeConfig.getValue().enable().orElse(runtimeConfig.getValue().enabled())) {
+        if (runtimeConfig.getValue().enabled()) {
             WebJarStaticHandler handler = new WebJarStaticHandler(graphqlUiFinalDestination, graphqlUiPath,
                     webRootConfigurations);
             shutdownContext.addShutdownTask(new ShutdownContext.CloseRunnable(handler));

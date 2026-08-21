@@ -367,7 +367,23 @@ public abstract class JacksonCodeGenerator {
     }
 
     protected boolean shouldGenerateCodeFor(ClassInfo classInfo) {
-        return !classInfo.isEnum() && !classInfo.hasDeclaredAnnotation(KOTLIN_METADATA);
+        return !classInfo.isEnum() && !classInfo.hasDeclaredAnnotation(KOTLIN_METADATA)
+                && !isMapOrCollectionSubtype(classInfo);
+    }
+
+    /**
+     * Jackson (de)serializes a Map or Collection subtype through its container shape and ignores any
+     * bean properties the class declares, so the bean-style (de)serializers generated here would change
+     * semantics and silently drop the container content. Leave those classes to Jackson.
+     */
+    private boolean isMapOrCollectionSubtype(ClassInfo classInfo) {
+        String typeName = classInfo.name().toString();
+        if (isAssignableTo(typeName, MAP_NAME) || isAssignableTo(typeName, COLLECTION_NAME)) {
+            log.debugf("Skipping serializer generation for class '%s' because it is a Map or Collection subtype",
+                    typeName);
+            return true;
+        }
+        return false;
     }
 
     protected static boolean isClassFormatShapeArray(ClassInfo classInfo) {

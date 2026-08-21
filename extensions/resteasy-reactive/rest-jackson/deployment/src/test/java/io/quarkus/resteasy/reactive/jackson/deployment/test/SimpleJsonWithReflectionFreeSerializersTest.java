@@ -45,7 +45,9 @@ public class SimpleJsonWithReflectionFreeSerializersTest extends AbstractSimpleJ
                                     PolymorphicItemResponse.class, PolymorphicItem.class,
                                     SensorMetadata.class, SensorMetadata.ComponentMetadata.class, SensorUnit.class,
                                     FinalCollectionHolder.class, RequiredCreatorProperty.class,
-                                    PolymorphicCreatorProperty.class, NoArgConstructorPojo.class,
+                                    PolymorphicCreatorProperty.class, MapSubclassWithProperty.class,
+                                    CollectionSubclassWithProperty.class,
+                                    NoArgConstructorPojo.class,
                                     MultiConstructorPojo.class, NoMatchingCtorPojo.class)
                             .addAsResource(new StringAsset("admin-expression=admin\n" +
                                     "user-expression=user\n" +

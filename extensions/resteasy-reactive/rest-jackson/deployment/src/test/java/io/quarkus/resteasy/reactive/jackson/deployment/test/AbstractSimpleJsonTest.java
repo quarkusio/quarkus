@@ -1452,6 +1452,36 @@ public abstract class AbstractSimpleJsonTest {
     }
 
     @Test
+    void testMapSubclassWithProperty() {
+        // Jackson (de)serializes a Map subclass through its map shape, ignoring bean properties, so the
+        // generated (de)serializers must not handle it: they would bind only the bean properties and
+        // silently drop every map entry
+        RestAssured
+                .with()
+                .body("{\"declared\":\"d\",\"extra\":1}")
+                .contentType("application/json")
+                .post("/simple/map-subclass-with-property")
+                .then()
+                .statusCode(200)
+                .body("declared", CoreMatchers.is("d"))
+                .body("extra", CoreMatchers.is(1));
+    }
+
+    @Test
+    void testCollectionSubclassWithProperty() {
+        // Jackson (de)serializes a Collection subclass through its array shape, ignoring bean
+        // properties, so the generated (de)serializers must not handle it either
+        RestAssured
+                .with()
+                .body("[\"one\",\"two\"]")
+                .contentType("application/json")
+                .post("/simple/collection-subclass-with-property")
+                .then()
+                .statusCode(200)
+                .body(CoreMatchers.equalTo("[\"one\",\"two\"]"));
+    }
+
+    @Test
     void testJsonCreatorWithPolymorphicProperty() {
         // A @JsonCreator parameter with a polymorphic (@JsonTypeInfo) type cannot be handled by the
         // generated reflection-free deserializer and must fall back to the reflection-based one

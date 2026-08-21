@@ -1,4 +1,4 @@
-package io.quarkus.datasource.deployment.spi;
+package io.quarkus.datasource.deployment.spi.component;
 
 import io.quarkus.builder.item.MultiBuildItem;
 import io.quarkus.deployment.component.AvailabilityRule;

@@ -1,18 +1,19 @@
-package io.quarkus.hibernate.reactive.deployment;
+package io.quarkus.hibernate.reactive.deployment.component;
 
 import java.util.List;
 
-import io.quarkus.datasource.deployment.spi.DataSourceRequestBuildItem;
+import io.quarkus.datasource.deployment.spi.component.DataSourceRequestBuildItem;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.BuildSteps;
 import io.quarkus.hibernate.orm.deployment.HibernateOrmConfig;
 import io.quarkus.hibernate.orm.deployment.JpaModelPerPersistenceUnitBuildItem;
-import io.quarkus.hibernate.orm.deployment.PersistenceUnitDefinitionBuildItem;
-import io.quarkus.hibernate.orm.deployment.spi.PersistenceUnitLookupBuildItem;
-import io.quarkus.hibernate.orm.deployment.spi.PersistenceUnitRequestBuildItem;
-import io.quarkus.hibernate.orm.deployment.util.PersistenceUnitDefinitionSupport;
+import io.quarkus.hibernate.orm.deployment.component.PersistenceUnitDefinitionBuildItem;
+import io.quarkus.hibernate.orm.deployment.component.PersistenceUnitDefinitionSupport;
+import io.quarkus.hibernate.orm.deployment.spi.component.PersistenceUnitLookupBuildItem;
+import io.quarkus.hibernate.orm.deployment.spi.component.PersistenceUnitRequestBuildItem;
+import io.quarkus.hibernate.reactive.deployment.HibernateReactiveEnabled;
 import io.quarkus.runtime.util.ProgrammingParadigm;
 import io.quarkus.runtime.util.Reason;
 
@@ -27,8 +28,8 @@ import io.quarkus.runtime.util.Reason;
  * the persistence unit unavailable, a {@code ConfigurationException} is thrown with the full
  * reason chain; otherwise a definition is produced for downstream consumption.
  *
- * @see io.quarkus.hibernate.orm.deployment.PersistenceUnitLookupProcessor
- * @see io.quarkus.hibernate.orm.deployment.PersistenceUnitDefinitionBlockingProcessor
+ * @see io.quarkus.hibernate.orm.deployment.component.PersistenceUnitLookupProcessor
+ * @see io.quarkus.hibernate.orm.deployment.component.PersistenceUnitDefinitionBlockingProcessor
  */
 @BuildSteps(onlyIf = HibernateReactiveEnabled.class)
 class PersistenceUnitDefinitionReactiveProcessor {

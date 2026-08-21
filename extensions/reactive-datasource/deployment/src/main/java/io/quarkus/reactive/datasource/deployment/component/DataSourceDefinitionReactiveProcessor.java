@@ -1,4 +1,4 @@
-package io.quarkus.reactive.datasource.deployment;
+package io.quarkus.reactive.datasource.deployment.component;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -10,16 +10,17 @@ import org.jboss.logging.Logger;
 
 import io.quarkus.arc.deployment.ValidationPhaseBuildItem;
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
-import io.quarkus.datasource.deployment.DataSourceProcessorSupport;
+import io.quarkus.datasource.deployment.component.DataSourceProcessorSupport;
 import io.quarkus.datasource.deployment.spi.DataSourceDbKindResolverBuildItem;
-import io.quarkus.datasource.deployment.spi.DataSourceDefinitionBuildItem;
-import io.quarkus.datasource.deployment.spi.DataSourceLookupBuildItem;
-import io.quarkus.datasource.deployment.spi.DataSourceRequestBuildItem;
-import io.quarkus.datasource.deployment.spi.DataSourceRequestHandlerBuildItem;
 import io.quarkus.datasource.deployment.spi.DefaultDataSourceDbVersionBuildItem;
+import io.quarkus.datasource.deployment.spi.component.DataSourceDefinitionBuildItem;
+import io.quarkus.datasource.deployment.spi.component.DataSourceLookupBuildItem;
+import io.quarkus.datasource.deployment.spi.component.DataSourceRequestBuildItem;
+import io.quarkus.datasource.deployment.spi.component.DataSourceRequestHandlerBuildItem;
 import io.quarkus.datasource.runtime.DataSourcesBuildTimeConfig;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.reactive.datasource.deployment.ReactiveDataSourceDefinitionBuildItem;
 import io.quarkus.reactive.datasource.runtime.DataSourcesReactiveBuildTimeConfig;
 import io.quarkus.runtime.util.ProgrammingParadigm;
 import io.quarkus.runtime.util.Reason;
@@ -36,8 +37,8 @@ import io.quarkus.runtime.util.Reason;
  * {@code ConfigurationException} is thrown with the full reason chain; otherwise a definition
  * is produced for downstream consumption (reactive pool creation, dev services, etc.).
  *
- * @see DataSourceLookupProcessor
- * @see io.quarkus.agroal.deployment.DataSourceDefinitionBlockingProcessor
+ * @see io.quarkus.datasource.deployment.component.DataSourceLookupProcessor
+ * @see io.quarkus.agroal.deployment.component.DataSourceDefinitionBlockingProcessor
  */
 class DataSourceDefinitionReactiveProcessor {
 

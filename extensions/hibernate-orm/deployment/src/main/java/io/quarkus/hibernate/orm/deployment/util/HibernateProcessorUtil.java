@@ -16,7 +16,7 @@ import io.quarkus.hibernate.orm.runtime.migration.MultiTenancyStrategy;
  * Small helpers for Hibernate ORM deployment processors.
  *
  * @see HibernateProcessorSupport
- * @see PersistenceUnitDefinitionSupport
+ * @see io.quarkus.hibernate.orm.deployment.component.PersistenceUnitDefinitionSupport
  */
 public final class HibernateProcessorUtil {
 

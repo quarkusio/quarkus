@@ -46,7 +46,7 @@ import io.quarkus.elasticsearch.restclient.common.deployment.ElasticsearchCommon
 import io.quarkus.hibernate.orm.deployment.PersistenceUnitDescriptorBuildItem;
 import io.quarkus.hibernate.orm.deployment.integration.HibernateOrmIntegrationRuntimeConfiguredBuildItem;
 import io.quarkus.hibernate.orm.deployment.integration.HibernateOrmIntegrationStaticConfiguredBuildItem;
-import io.quarkus.hibernate.orm.deployment.spi.PersistenceUnitRequestBuildItem;
+import io.quarkus.hibernate.orm.deployment.spi.component.PersistenceUnitRequestBuildItem;
 import io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil;
 import io.quarkus.hibernate.orm.runtime.integration.HibernateOrmIntegrationRuntimeInitListener;
 import io.quarkus.hibernate.orm.runtime.integration.HibernateOrmIntegrationStaticInitListener;

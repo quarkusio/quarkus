@@ -8,8 +8,8 @@ import java.util.Set;
 
 import io.quarkus.datasource.deployment.spi.DataSourceDbKindResolverBuildItem;
 import io.quarkus.datasource.deployment.spi.DataSourceDefinedBuildItem;
-import io.quarkus.datasource.deployment.spi.DataSourceDefinitionBuildItem;
 import io.quarkus.datasource.deployment.spi.DefaultDataSourceDbKindBuildItem;
+import io.quarkus.datasource.deployment.spi.component.DataSourceDefinitionBuildItem;
 import io.quarkus.datasource.runtime.DataSourcesBuildTimeConfig;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;

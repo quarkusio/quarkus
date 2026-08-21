@@ -26,7 +26,7 @@ public final class JdbcDataSourceDefinitionBuildItem extends MultiBuildItem {
 
     private final Optional<String> dbVersion;
 
-    JdbcDataSourceDefinitionBuildItem(String name, DataSourceBuildTimeConfig dataSourceConfig,
+    public JdbcDataSourceDefinitionBuildItem(String name, DataSourceBuildTimeConfig dataSourceConfig,
             DataSourceJdbcBuildTimeConfig jdbcConfig,
             String dbKind,
             String resolvedDriverClass,

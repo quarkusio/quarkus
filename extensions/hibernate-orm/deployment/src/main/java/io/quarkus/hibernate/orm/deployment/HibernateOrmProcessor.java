@@ -125,6 +125,7 @@ import io.quarkus.deployment.util.IoUtil;
 import io.quarkus.deployment.util.ServiceUtil;
 import io.quarkus.gizmo2.Gizmo;
 import io.quarkus.hibernate.orm.PersistenceUnit;
+import io.quarkus.hibernate.orm.deployment.component.PersistenceUnitDefinitionBuildItem;
 import io.quarkus.hibernate.orm.deployment.integration.HibernateOrmIntegrationRuntimeConfiguredBuildItem;
 import io.quarkus.hibernate.orm.deployment.integration.HibernateOrmIntegrationStaticConfiguredBuildItem;
 import io.quarkus.hibernate.orm.deployment.integration.QuarkusClassFileLocator;

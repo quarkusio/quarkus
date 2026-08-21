@@ -10,16 +10,20 @@ import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
 
 import javax.imageio.ImageIO;
 
+import org.eclipse.microprofile.config.ConfigProvider;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
+import io.quarkus.runtime.logging.LogRuntimeConfig;
 import io.quarkus.test.junit.QuarkusTest;
+import io.smallrye.config.SmallRyeConfig;
 
 /**
  * Tests image encoders.
@@ -98,6 +102,12 @@ public class ImageEncodersTest {
         }
         Assertions.assertTrue(errors.isEmpty(),
                 "There were errors verifying image data, see:\n" + String.join("\n", errors) + "\n");
-        checkLog(null, "Encoders");
+        checkLog(null, "Encoders", getLogPath());
+    }
+
+    protected Path getLogPath() {
+        SmallRyeConfig config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
+        LogRuntimeConfig logRuntimeConfig = config.getConfigMapping(LogRuntimeConfig.class);
+        return logRuntimeConfig.file().path().toPath();
     }
 }

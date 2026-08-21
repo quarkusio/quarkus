@@ -8,18 +8,26 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 import org.awaitility.Awaitility;
 import org.awaitility.core.ThrowingRunnable;
+import org.eclipse.microprofile.config.ConfigProvider;
 import org.junit.jupiter.api.Test;
 
+import io.quarkus.runtime.logging.LogRuntimeConfig;
 import io.quarkus.test.junit.QuarkusTest;
+import io.smallrye.config.SmallRyeConfig;
 
 @QuarkusTest
 public class VerticleTest {
+
+    protected Path getLogPath() {
+        SmallRyeConfig config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
+        LogRuntimeConfig logRuntimeConfig = config.getConfigMapping(LogRuntimeConfig.class);
+        return logRuntimeConfig.file().path().toPath();
+    }
 
     @Test
     public void testBareVerticle() {
@@ -35,7 +43,7 @@ public class VerticleTest {
 
     @Test
     public void testMdcVerticle() {
-        Path logDirectory = Paths.get(".", "target");
+        Path logFilePath = getLogPath();
         String value = UUID.randomUUID().toString();
         given().queryParam("value", value)
                 .get("/vertx-test/verticles/mdc")
@@ -46,7 +54,6 @@ public class VerticleTest {
                 .untilAsserted(new ThrowingRunnable() {
                     @Override
                     public void run() throws Throwable {
-                        final Path logFilePath = logDirectory.resolve("quarkus.log");
                         assertTrue(Files.exists(logFilePath),
                                 "quarkus log file " + logFilePath + " is missing");
                         String data = Files.readString(logFilePath);

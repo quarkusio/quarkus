@@ -17,13 +17,16 @@ import java.nio.file.Paths;
 import java.util.concurrent.TimeUnit;
 
 import org.awaitility.core.ThrowingRunnable;
+import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
+import io.quarkus.runtime.logging.LogRuntimeConfig;
 import io.quarkus.runtime.util.ClassPathUtils;
 import io.quarkus.test.common.http.TestHTTPResource;
 import io.quarkus.test.junit.QuarkusTest;
+import io.smallrye.config.SmallRyeConfig;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.net.KeyStoreOptions;
@@ -82,19 +85,20 @@ public class BouncyCastleFipsJsseTestCase {
         return webClientOptions;
     }
 
+    protected Path getLogPath() {
+        SmallRyeConfig config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
+        LogRuntimeConfig logRuntimeConfig = config.getConfigMapping(LogRuntimeConfig.class);
+        return logRuntimeConfig.file().path().toPath();
+    }
+
     protected void checkLog(boolean serverOnly) {
-        final Path logDirectory = Paths.get(".", "target");
         given().pollInterval(100, TimeUnit.MILLISECONDS)
                 .atMost(10, TimeUnit.SECONDS)
                 .untilAsserted(new ThrowingRunnable() {
                     @Override
                     public void run() throws Throwable {
-                        Path accessLogFilePath = logDirectory.resolve("quarkus.log");
+                        Path accessLogFilePath = getLogPath();
                         boolean fileExists = Files.exists(accessLogFilePath);
-                        if (!fileExists) {
-                            accessLogFilePath = logDirectory.resolve("target/quarkus.log");
-                            fileExists = Files.exists(accessLogFilePath);
-                        }
                         Assertions.assertTrue(fileExists, "access log file " + accessLogFilePath + " is missing");
 
                         boolean checkClientPassed = serverOnly;

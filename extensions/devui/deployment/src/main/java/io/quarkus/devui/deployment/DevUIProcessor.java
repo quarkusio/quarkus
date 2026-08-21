@@ -189,11 +189,6 @@ public class DevUIProcessor {
                 JsonMapper.Factory.deploymentLinker()
                         .createLinkData(DevJsonRpcProcessor.createCodecFactory(codecCustomizers)));
 
-        routeProducer.produce(nonApplicationRootPathBuildItem.routeBuilder()
-                .orderedRoute(DEVUI + SLASH_ALL, -2 * SecurityHandlerPriorities.CORS)
-                .handler(recorder.createLocalHostOnlyFilter(devUIConfig.hosts().orElse(null)))
-                .build());
-
         if (devUIConfig.cors().enabled()) {
             routeProducer.produce(nonApplicationRootPathBuildItem.routeBuilder()
                     .orderedRoute(DEVUI + SLASH_ALL, -1 * SecurityHandlerPriorities.CORS)

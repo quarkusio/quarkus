@@ -8,18 +8,22 @@ import static io.restassured.RestAssured.given;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
 import javax.imageio.ImageIO;
 
+import org.eclipse.microprofile.config.ConfigProvider;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
+import io.quarkus.runtime.logging.LogRuntimeConfig;
 import io.quarkus.test.junit.QuarkusTest;
+import io.smallrye.config.SmallRyeConfig;
 
 /**
  * Tests generated geometry, primitive shapes, fonts,
@@ -92,7 +96,7 @@ public class ImageGeometryFontsTest {
                             expected[0], expected[1], expected[2], expected[3],
                             actual[0], actual[1], actual[2], actual[3]));
         }
-        checkLog(null, "Geometry and Fonts");
+        checkLog(null, "Geometry and Fonts", getLogPath());
     }
 
     /**
@@ -131,5 +135,11 @@ public class ImageGeometryFontsTest {
                 .extract().asString();
         Assertions.assertTrue(response.contains("HBShaper invoked successfully"),
                 "Expected HBShaper to process text successfully, but got: " + response);
+    }
+
+    protected Path getLogPath() {
+        SmallRyeConfig config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
+        LogRuntimeConfig logRuntimeConfig = config.getConfigMapping(LogRuntimeConfig.class);
+        return logRuntimeConfig.file().path().toPath();
     }
 }

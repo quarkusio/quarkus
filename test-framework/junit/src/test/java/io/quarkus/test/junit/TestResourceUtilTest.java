@@ -3,13 +3,16 @@ package io.quarkus.test.junit;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
+import java.nio.file.Path;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
 import org.junit.jupiter.api.Test;
 
+import io.quarkus.runtime.logging.LogRuntimeConfig;
 import io.quarkus.test.common.QuarkusTestResourceLifecycleManager;
+import io.smallrye.config.Config;
 
 public class TestResourceUtilTest {
 
@@ -33,6 +36,11 @@ public class TestResourceUtilTest {
         String identifier1 = TestResourceUtil.getReloadGroupIdentifier(TestClass.class, ProfileClassWithResources.class);
         String identifier2 = TestResourceUtil.getReloadGroupIdentifier(TestClass.class, ProfileClass.class);
         assertNotEquals(identifier2, identifier1);
+    }
+
+    private static Path runtimeConfiguredLogPath() {
+        LogRuntimeConfig logRuntimeConfig = Config.get().getConfigMapping(LogRuntimeConfig.class);
+        return logRuntimeConfig.file().path().toPath();
     }
 }
 

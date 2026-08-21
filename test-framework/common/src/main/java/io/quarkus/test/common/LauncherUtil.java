@@ -30,6 +30,7 @@ import org.eclipse.microprofile.config.ConfigProvider;
 
 import com.google.common.annotations.VisibleForTesting;
 
+import io.quarkus.runtime.logging.LogRuntimeConfig;
 import io.smallrye.common.os.OS;
 import io.smallrye.config.SmallRyeConfig;
 
@@ -38,6 +39,55 @@ public final class LauncherUtil {
     public static final int LOG_CHECK_INTERVAL = 50;
 
     private LauncherUtil() {
+    }
+
+    /**
+     * Derives a unique log file path from the configured base path by inserting {@code suffix} before the file
+     * extension (or appending it when there is no extension).
+     *
+     * @param suffix the per-instance suffix to insert (e.g. a random string or a container-name fragment)
+     * @return a sibling path of the configured log file path with {@code suffix} embedded in the filename
+     */
+    static Path buildUniqueLogPath(String suffix) {
+        SmallRyeConfig config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
+        LogRuntimeConfig logRuntimeConfig = config.getConfigMapping(LogRuntimeConfig.class);
+        return LauncherUtil.buildUniqueLogPath(logRuntimeConfig, suffix);
+    }
+
+    /**
+     * Derives a unique log file path from the configured base path by inserting {@code suffix} before the file
+     * extension (or appending it when there is no extension).
+     *
+     * @param logRuntimeConfig the log runtime configuration from which the base path is derived
+     * @param suffix the per-instance suffix to insert (e.g. a random string or a container-name fragment)
+     * @return a sibling path of the configured log file path with {@code suffix} embedded in the filename
+     */
+    static Path buildUniqueLogPath(LogRuntimeConfig logRuntimeConfig, String suffix) {
+        Path base = logRuntimeConfig.file().path().toPath();
+        return LauncherUtil.buildUniqueLogPath(base, suffix);
+    }
+
+    /**
+     * Derives a unique log file path from the configured base path by inserting {@code suffix} before the file
+     * extension (or appending it when there is no extension).
+     *
+     * <pre>
+     *   target/quarkus.log + "xKpQm" → target/quarkus-xKpQm.log
+     *   target/quarkus     + "xKpQm" → target/quarkus-xKpQm
+     * </pre>
+     *
+     * @param baseLogPath the configured log file path (e.g. from {@code quarkus.log.file.path})
+     * @param suffix the per-instance suffix to insert (e.g. a random string or a container-name fragment)
+     * @return a sibling path of {@code baseLogPath} with {@code suffix} embedded in the filename
+     */
+    static Path buildUniqueLogPath(Path baseLogPath, String suffix) {
+        String baseName = baseLogPath.getFileName().toString();
+        int dotIndex = baseName.lastIndexOf('.');
+        String uniqueName = dotIndex >= 0
+                ? baseName.substring(0, dotIndex) + "-" + suffix + baseName.substring(dotIndex)
+                : baseName + "-" + suffix;
+        Path parent = baseLogPath.getParent();
+        return parent != null ? parent.resolve(uniqueName) : Path.of(uniqueName);
     }
 
     /**
@@ -90,17 +140,17 @@ public final class LauncherUtil {
      * listening on.
      * If the wait time is exceeded an {@code IllegalStateException} is thrown.
      */
-    static ListeningAddresses waitForCapturedListeningData(Process quarkusProcess, Path logFile, long waitTimeSeconds) {
+    static ListeningResults waitForCapturedListeningData(Process quarkusProcess, Path logFile, long waitTimeSeconds) {
         ensureProcessIsAlive(quarkusProcess);
 
         CountDownLatch signal = new CountDownLatch(1);
-        AtomicReference<ListeningAddresses> resultReference = new AtomicReference<>();
+        AtomicReference<ListeningResults> resultReference = new AtomicReference<>();
         CaptureListeningDataReader captureListeningDataReader = new CaptureListeningDataReader(logFile,
                 Duration.ofSeconds(waitTimeSeconds), signal, resultReference);
         new Thread(captureListeningDataReader, "capture-listening-data").start();
         try {
             signal.await(waitTimeSeconds + 2, TimeUnit.SECONDS); // wait enough for the signal to be given by the capturing thread
-            ListeningAddresses result = resultReference.get();
+            ListeningResults result = resultReference.get();
             if (result != null) {
                 return result;
             }
@@ -244,13 +294,13 @@ public final class LauncherUtil {
         private final Path processOutput;
         private final Duration waitTime;
         private final CountDownLatch signal;
-        private final AtomicReference<ListeningAddresses> resultReference;
+        private final AtomicReference<ListeningResults> resultReference;
         private final Pattern listeningRegex = Pattern.compile(
                 "Listening on:\\s+(https?)://[^:]*:(\\d+)(?:.*Management interface listening on (https?)://[^:]*:(\\d+))?");
         private final Pattern startedRegex = Pattern.compile(".*Quarkus .* started in \\d+.*s.*");
 
         public CaptureListeningDataReader(Path processOutput, Duration waitTime, CountDownLatch signal,
-                AtomicReference<ListeningAddresses> resultReference) {
+                AtomicReference<ListeningResults> resultReference) {
             this.processOutput = processOutput;
             this.waitTime = waitTime;
             this.signal = signal;
@@ -282,7 +332,7 @@ public final class LauncherUtil {
 
                         Matcher regexMatcher = listeningRegex.matcher(line);
                         if (regexMatcher.find()) {
-                            dataDetermined(regexMatcher.group(1), Integer.valueOf(regexMatcher.group(2)),
+                            dataDetermined(regexMatcher.group(1), Integer.valueOf(regexMatcher.group(2)), processOutput,
                                     regexMatcher.group(3), regexMatcher.group(3) != null
                                             ? Integer.valueOf(regexMatcher.group(4))
                                             : null);
@@ -301,7 +351,7 @@ public final class LauncherUtil {
                         // or waiting the next check interval will exceed the bailout time, it's time to finish waiting:
                         if (now + LOG_CHECK_INTERVAL > bailoutTime || now - 2 * LOG_CHECK_INTERVAL > timeStarted) {
                             if (started) {
-                                dataDetermined(null, null, null, null); // no http, all is null
+                                dataDetermined(null, null, null, null, null); // no http, all is null
                             } else {
                                 unableToDetermineData("Waited " + waitTime.getSeconds() + " seconds for " + processOutput
                                         + " to contain info about the listening port and protocol but no such info was found. "
@@ -343,15 +393,15 @@ public final class LauncherUtil {
             return false;
         }
 
-        private void dataDetermined(String protocol, Integer port,
+        private void dataDetermined(String protocol, Integer port, Path logPath,
                 String managementProtocol, Integer managementPort) {
-            Optional<ListeningAddress> address = port != null && protocol != null
-                    ? Optional.of(new ListeningAddress(port, protocol))
+            Optional<ListeningResult> address = port != null && protocol != null
+                    ? Optional.of(new ListeningResult(port, protocol, logPath))
                     : Optional.empty();
             Optional<ListeningAddress> managementAddress = managementPort != null && managementProtocol != null
                     ? Optional.of(new ListeningAddress(managementPort, managementProtocol))
                     : Optional.empty();
-            this.resultReference.set(new ListeningAddresses(address, managementAddress));
+            this.resultReference.set(new ListeningResults(address, managementAddress));
             signal.countDown();
         }
 

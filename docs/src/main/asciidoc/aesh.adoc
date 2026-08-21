@@ -807,7 +807,7 @@ quarkus.aesh.ssh.password=mysecret
 # Path to the host key file (default: hostkey.ser)
 quarkus.aesh.ssh.host-key-file=hostkey.ser
 
-# Enable or disable the SSH server (default: true)
+# Enable or disable the SSH server at build time (default: true)
 quarkus.aesh.ssh.enabled=true
 ----
 

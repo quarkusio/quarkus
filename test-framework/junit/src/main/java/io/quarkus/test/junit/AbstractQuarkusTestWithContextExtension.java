@@ -20,6 +20,8 @@ public abstract class AbstractQuarkusTestWithContextExtension extends AbstractTe
 
     public static final String IO_QUARKUS_TESTING_TYPE = "io.quarkus.testing.type";
 
+    private static final String MAVEN_FORK_STATE = "io.quarkus.test.junit.internal.MavenForkState";
+
     @Override
     public void handleTestExecutionException(ExtensionContext context, Throwable throwable) throws Throwable {
         markTestAsFailed(context, throwable);
@@ -62,7 +64,9 @@ public abstract class AbstractQuarkusTestWithContextExtension extends AbstractTe
 
     protected QuarkusTestExtensionState getState(ExtensionContext context) {
         ExtensionContext.Store store = getStoreFromContext(context);
-        Object o = store.get(QuarkusTestExtensionState.class.getName());
+        boolean mavenFork = isMavenFork();
+        Object[] mavenForkState = mavenFork ? getMavenForkState() : null;
+        Object o = mavenFork ? mavenForkState[0] : store.get(QuarkusTestExtensionState.class.getName());
         if (o != null) {
 
             QuarkusTestExtensionState state;
@@ -74,8 +78,11 @@ public abstract class AbstractQuarkusTestWithContextExtension extends AbstractTe
                 state = QuarkusTestExtensionState.clone(o);
             }
 
-            Class<?> testingTypeOfState = store.get(IO_QUARKUS_TESTING_TYPE, Class.class);
-            if (!this.getTestingType().equals(testingTypeOfState)) {
+            Object testingTypeOfState = mavenFork ? mavenForkState[1]
+                    : store.get(IO_QUARKUS_TESTING_TYPE, Class.class);
+            boolean sameTestingType = mavenFork ? this.getTestingType().getName().equals(testingTypeOfState)
+                    : this.getTestingType().equals(testingTypeOfState);
+            if (!sameTestingType) {
                 // The current state was created by a different testing type, so we need to renew it, so the new state is
                 // compatible with the current testing type.
                 try {
@@ -85,7 +92,11 @@ public abstract class AbstractQuarkusTestWithContextExtension extends AbstractTe
                     // ignoring exceptions when closing state.
 
                 } finally {
-                    getStoreFromContext(context).remove(QuarkusTestExtensionState.class.getName());
+                    if (mavenFork) {
+                        setMavenForkState(null, null);
+                    } else {
+                        store.remove(QuarkusTestExtensionState.class.getName());
+                    }
                 }
 
                 return null;
@@ -102,8 +113,12 @@ public abstract class AbstractQuarkusTestWithContextExtension extends AbstractTe
         ExtensionContext.Store store = getStoreFromContext(context);
         store.put(ValueRegistry.class.getName(), context.getStore(GLOBAL).get(ValueRegistry.class.getName()));
         store.put(Config.class.getName(), context.getStore(GLOBAL).get(Config.class.getName()));
-        store.put(QuarkusTestExtensionState.class.getName(), state);
-        store.put(IO_QUARKUS_TESTING_TYPE, this.getTestingType());
+        if (isMavenFork()) {
+            setMavenForkState(state, state == null ? null : this.getTestingType().getName());
+        } else {
+            store.put(QuarkusTestExtensionState.class.getName(), state);
+            store.put(IO_QUARKUS_TESTING_TYPE, this.getTestingType());
+        }
     }
 
     protected ExtensionContext.Store getStoreFromContext(ExtensionContext context) {
@@ -120,6 +135,35 @@ public abstract class AbstractQuarkusTestWithContextExtension extends AbstractTe
         QuarkusTestExtensionState state = getState(context);
         if (state != null) {
             state.setTestFailed(throwable);
+        }
+    }
+
+    private static boolean isMavenFork() {
+        return System.getProperty("surefire.real.class.path") != null;
+    }
+
+    private static Object[] getMavenForkState() {
+        try {
+            return (Object[]) getMavenForkStateStore().getMethod("get").invoke(null);
+        } catch (ReflectiveOperationException e) {
+            throw new IllegalStateException("Unable to read Quarkus test state for the Maven fork", e);
+        }
+    }
+
+    private static void setMavenForkState(Object state, String testingType) {
+        try {
+            getMavenForkStateStore().getMethod("set", Object.class, String.class).invoke(null, state, testingType);
+        } catch (ReflectiveOperationException e) {
+            throw new IllegalStateException("Unable to store Quarkus test state for the Maven fork", e);
+        }
+    }
+
+    private static Class<?> getMavenForkStateStore() {
+        try {
+            // Quarkus test classloaders can change when profiles do, while the system classloader spans the Maven fork.
+            return ClassLoader.getSystemClassLoader().loadClass(MAVEN_FORK_STATE);
+        } catch (ClassNotFoundException e) {
+            throw new IllegalStateException("Unable to load the Quarkus test state store for the Maven fork", e);
         }
     }
 }

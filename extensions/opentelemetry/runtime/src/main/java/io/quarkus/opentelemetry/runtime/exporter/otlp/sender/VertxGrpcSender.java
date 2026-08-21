@@ -96,6 +96,11 @@ public final class VertxGrpcSender implements GrpcSender {
             Consumer<GrpcResponse> onResponse,
             Consumer<Throwable> onError) {
         if (isShutdown.get()) {
+            // The caller completes the result of the export in one of the two callbacks, so exactly one of
+            // them has to be invoked. Returning without calling either leaves the export result uncompleted
+            // forever, which in turn blocks the shutdown of the batch processor that is waiting for it.
+            // See https://github.com/quarkusio/quarkus/issues/55614
+            onError.accept(new IllegalStateException("The OpenTelemetry exporter has been shut down"));
             return;
         }
 
@@ -176,18 +181,13 @@ public final class VertxGrpcSender implements GrpcSender {
                 .onFailure(new Predicate<Throwable>() {
                     @Override
                     public boolean test(Throwable t) {
-                        // Will not retry on shutdown
-                        return t instanceof IllegalStateException ||
-                                t instanceof RejectedExecutionException;
+                        // Will not retry on shutdown, but the failure still has to reach the subscriber:
+                        // recovering with a Uni that never emits would leave the export uncompleted.
+                        // See https://github.com/quarkusio/quarkus/issues/55614
+                        return !(t instanceof IllegalStateException ||
+                                t instanceof RejectedExecutionException);
                     }
                 })
-                .recoverWithUni(new Supplier<Uni<? extends GrpcClientRequest<Buffer, Buffer>>>() {
-                    @Override
-                    public Uni<? extends GrpcClientRequest<Buffer, Buffer>> get() {
-                        return Uni.createFrom().nothing();
-                    }
-                })
-                .onFailure()
                 .retry()
                 .withBackOff(Duration.ofMillis(100))
                 .atMost(numberOfAttempts)

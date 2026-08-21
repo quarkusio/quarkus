@@ -123,9 +123,10 @@ public class ArcContainerImpl implements ArcContainer {
         List<InjectableDecorator<?>> decorators = new ArrayList<>();
         List<InjectableObserverMethod<?>> observers = new ArrayList<>();
         Set<String> interceptorBindings = new HashSet<>();
+        Map<String, Set<String>> interceptorBindingNonbindingMembers = new HashMap<>();
         Map<Class<? extends Annotation>, Set<Annotation>> transitiveInterceptorBindings = new HashMap<>();
-        Map<String, Set<String>> qualifierNonbindingMembers = new HashMap<>();
         Set<String> qualifiers = new HashSet<>();
+        Map<String, Set<String>> qualifierNonbindingMembers = new HashMap<>();
         Supplier<ContextInstances> applicationContextInstances = null;
         Supplier<ContextInstances> requestContextInstances = null;
         this.currentContextFactory = currentContextFactory == null ? new ThreadLocalCurrentContextFactory()
@@ -152,9 +153,10 @@ public class ArcContainerImpl implements ArcContainer {
             removedBeans.add(c.getRemovedBeans());
             observers.addAll(c.getObservers());
             interceptorBindings.addAll(c.getInterceptorBindings());
+            interceptorBindingNonbindingMembers.putAll(c.getInterceptorBindingNonbindingMembers());
             transitiveInterceptorBindings.putAll(c.getTransitiveInterceptorBindings());
-            qualifierNonbindingMembers.putAll(c.getQualifierNonbindingMembers());
             qualifiers.addAll(c.getQualifiers());
+            qualifierNonbindingMembers.putAll(c.getQualifierNonbindingMembers());
             if (applicationContextInstances == null) {
                 applicationContextInstances = c.getContextInstances().get(ApplicationScoped.class);
             }
@@ -200,7 +202,8 @@ public class ArcContainerImpl implements ArcContainer {
             }
         });
         this.registeredQualifiers = new Qualifiers(qualifiers, qualifierNonbindingMembers);
-        this.registeredInterceptorBindings = new InterceptorBindings(interceptorBindings, transitiveInterceptorBindings);
+        this.registeredInterceptorBindings = new InterceptorBindings(interceptorBindings,
+                interceptorBindingNonbindingMembers, transitiveInterceptorBindings);
 
         ApplicationContext applicationContext = applicationContextInstances != null
                 ? new ApplicationContext(applicationContextInstances.get())
@@ -692,34 +695,34 @@ public class ArcContainerImpl implements ArcContainer {
         }
         // Try to resolve the ambiguity and return the set of disambiguated beans
 
-        // First remove the default beans
-        List<InjectableBean<?>> nonDefault = new ArrayList<>(matching);
-        for (Iterator<InjectableBean<?>> iterator = nonDefault.iterator(); iterator.hasNext();) {
-            if (iterator.next().isDefaultBean()) {
+        // First remove the reserve beans
+        List<InjectableBean<?>> nonReserves = new ArrayList<>(matching);
+        for (Iterator<InjectableBean<?>> iterator = nonReserves.iterator(); iterator.hasNext();) {
+            if (iterator.next().isReserve()) {
                 iterator.remove();
             }
         }
-        if (nonDefault.isEmpty()) {
-            // All the matching beans were default
+        if (nonReserves.isEmpty()) {
+            // All the matching beans were reserves
             // Sort them by priority, uses 0 when no priority was defined
-            List<InjectableBean<?>> priorityDefaultBeans = new ArrayList<>(matching);
-            priorityDefaultBeans.sort(ArcContainerImpl::compareDefaultBeans);
-            Integer highest = priorityDefaultBeans.get(0).getPriority();
-            for (Iterator<InjectableBean<?>> iterator = priorityDefaultBeans.iterator(); iterator.hasNext();) {
+            List<InjectableBean<?>> priorityReserveBeans = new ArrayList<>(matching);
+            priorityReserveBeans.sort(ArcContainerImpl::compareReserveBeans);
+            Integer highest = priorityReserveBeans.get(0).getPriority();
+            for (Iterator<InjectableBean<?>> iterator = priorityReserveBeans.iterator(); iterator.hasNext();) {
                 if (!highest.equals(iterator.next().getPriority())) {
                     iterator.remove();
                 }
             }
-            if (priorityDefaultBeans.size() == 1) {
-                return Set.of(priorityDefaultBeans.get(0));
+            if (priorityReserveBeans.size() == 1) {
+                return Set.of(priorityReserveBeans.get(0));
             }
-            return Set.copyOf(priorityDefaultBeans);
-        } else if (nonDefault.size() == 1) {
-            return Set.of(nonDefault.get(0));
+            return Set.copyOf(priorityReserveBeans);
+        } else if (nonReserves.size() == 1) {
+            return Set.of(nonReserves.get(0));
         }
 
-        // More than one non-default bean remains - eliminate beans that don't have a priority
-        List<InjectableBean<?>> priorityBeans = new ArrayList<>(nonDefault);
+        // More than one non-reserve bean remains - eliminate beans that don't have a priority
+        List<InjectableBean<?>> priorityBeans = new ArrayList<>(nonReserves);
         for (Iterator<InjectableBean<?>> iterator = priorityBeans.iterator(); iterator.hasNext();) {
             if (!isAlternativeOrDeclaredOnAlternative(iterator.next())) {
                 iterator.remove();
@@ -727,7 +730,7 @@ public class ArcContainerImpl implements ArcContainer {
         }
         if (priorityBeans.isEmpty()) {
             // No alternative/priority beans are present
-            return Set.copyOf(nonDefault);
+            return Set.copyOf(nonReserves);
         } else if (priorityBeans.size() == 1) {
             return Set.of(priorityBeans.get(0));
         } else {
@@ -864,8 +867,8 @@ public class ArcContainerImpl implements ArcContainer {
         return priority2.compareTo(priority1);
     }
 
-    // Used to compare default beans; disregards alternative, only looks at priority value
-    private static int compareDefaultBeans(InjectableBean<?> bean1, InjectableBean<?> bean2) {
+    // Used to compare reserve beans; unlike alternatives, only looks at priority value
+    private static int compareReserveBeans(InjectableBean<?> bean1, InjectableBean<?> bean2) {
         // The highest priority wins
         Integer priority2 = bean2.getPriority();
         Integer priority1 = bean1.getPriority();
@@ -941,14 +944,8 @@ public class ArcContainerImpl implements ArcContainer {
     }
 
     private boolean hasAllInterceptionBindings(InjectableInterceptor<?> interceptor, Iterable<Annotation> bindings) {
-        // The method or constructor has all the interceptor bindings of the interceptor
-        for (Annotation binding : interceptor.getInterceptorBindings()) {
-            // The resolution rules are the same for qualifiers
-            if (!registeredQualifiers.hasQualifier(bindings, binding)) {
-                return false;
-            }
-        }
-        return true;
+        return Annotations.areAllPresent(interceptor.getInterceptorBindings(), bindings,
+                registeredInterceptorBindings.interceptorBindingNonbindingMembers);
     }
 
     /**

@@ -270,12 +270,20 @@ public final class BeanStream implements Iterable<BeanInfo> {
 
     /**
      *
-     * @return the new stream of default beans
-     * @see BeanInfo#isDefaultBean()
+     * @return the new stream of reserve beans
+     * @see BeanInfo#isReserve()
      */
-    public BeanStream defaultBeans() {
-        stream = stream.filter(BeanInfo::isDefaultBean);
+    public BeanStream reserveBeans() {
+        stream = stream.filter(BeanInfo::isReserve);
         return this;
+    }
+
+    /**
+     * @deprecated use {@link #reserveBeans()}
+     */
+    @Deprecated(forRemoval = true, since = "4.0")
+    public BeanStream defaultBeans() {
+        return reserveBeans();
     }
 
     /**

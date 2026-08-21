@@ -30,6 +30,10 @@ public final class SyntheticCreationalContextImpl<T> implements SyntheticCreatio
         return creationalContext;
     }
 
+    public Map<TypeAndQualifiers, Object> getInjectedReferences() {
+        return injectedReferences;
+    }
+
     @Override
     public void push(T incompleteInstance) {
         creationalContext.push(incompleteInstance);

@@ -14,6 +14,7 @@ import io.quarkus.arc.Arc;
 import io.quarkus.arc.DefaultBean;
 import io.quarkus.arc.test.ArcTestContainer;
 
+@Deprecated
 public class DefaultProducerMethodTest {
 
     @RegisterExtension

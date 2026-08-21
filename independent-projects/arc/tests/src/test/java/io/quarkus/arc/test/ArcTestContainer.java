@@ -101,6 +101,7 @@ public class ArcTestContainer implements BeforeEachCallback, AfterEachCallback {
         private final List<Predicate<BeanInfo>> removalExclusions;
         private AlternativePriorities alternativePriorities;
         private final List<BuildCompatibleExtension> buildCompatibleExtensions;
+        private final List<Class<?>> asyncHandlers;
         private boolean strictCompatibility = false;
         private boolean optimizeContexts = false;
         private final List<Predicate<ClassInfo>> excludeTypes;
@@ -123,6 +124,7 @@ public class ArcTestContainer implements BeforeEachCallback, AfterEachCallback {
             beanDeploymentValidators = new ArrayList<>();
             removalExclusions = new ArrayList<>();
             buildCompatibleExtensions = new ArrayList<>();
+            asyncHandlers = new ArrayList<>();
             excludeTypes = new ArrayList<>();
         }
 
@@ -231,6 +233,11 @@ public class ArcTestContainer implements BeforeEachCallback, AfterEachCallback {
             return this;
         }
 
+        public final Builder asyncHandler(Class<?> asyncHandler) {
+            this.asyncHandlers.add(asyncHandler);
+            return this;
+        }
+
         public Builder strictCompatibility(boolean strictCompatibility) {
             this.strictCompatibility = strictCompatibility;
             return this;
@@ -285,6 +292,7 @@ public class ArcTestContainer implements BeforeEachCallback, AfterEachCallback {
     private final AlternativePriorities alternativePriorities;
 
     private final List<BuildCompatibleExtension> buildCompatibleExtensions;
+    private final List<Class<?>> asyncHandlers;
 
     private final boolean strictCompatibility;
     private final boolean optimizeContexts;
@@ -313,6 +321,7 @@ public class ArcTestContainer implements BeforeEachCallback, AfterEachCallback {
         this.removalExclusions = Collections.emptyList();
         this.alternativePriorities = null;
         this.buildCompatibleExtensions = Collections.emptyList();
+        this.asyncHandlers = Collections.emptyList();
         this.strictCompatibility = false;
         this.optimizeContexts = false;
         this.excludeTypes = Collections.emptyList();
@@ -341,6 +350,7 @@ public class ArcTestContainer implements BeforeEachCallback, AfterEachCallback {
         this.removalExclusions = builder.removalExclusions;
         this.alternativePriorities = builder.alternativePriorities;
         this.buildCompatibleExtensions = builder.buildCompatibleExtensions;
+        this.asyncHandlers = builder.asyncHandlers;
         this.strictCompatibility = builder.strictCompatibility;
         this.optimizeContexts = builder.optimizeContexts;
         this.excludeTypes = builder.excludeTypes;
@@ -419,9 +429,11 @@ public class ArcTestContainer implements BeforeEachCallback, AfterEachCallback {
             }
         }
 
-        ExtensionsEntryPoint buildCompatibleExtensions = new ExtensionsEntryPoint(this.buildCompatibleExtensions);
+        ClassLoader old = Thread.currentThread().getContextClassLoader();
 
-        {
+        try {
+            ExtensionsEntryPoint buildCompatibleExtensions = new ExtensionsEntryPoint(this.buildCompatibleExtensions);
+
             IndexView overallIndex = applicationIndex != null
                     ? CompositeIndex.create(immutableBeanArchiveIndex, applicationIndex)
                     : immutableBeanArchiveIndex;
@@ -438,19 +450,15 @@ public class ArcTestContainer implements BeforeEachCallback, AfterEachCallback {
                 throw new IllegalStateException("Failed to create index", e);
             }
             immutableBeanArchiveIndex = CompositeIndex.create(immutableBeanArchiveIndex, additionalIndex);
-        }
 
-        ClassLoader old = Thread.currentThread().getContextClassLoader();
-
-        if (reproducibilityRuns > 0 && !shouldFail) {
-            ExtensionContext.Store classStore = getClassExtensionStore(context);
-            if (classStore.get(KEY_REPRODUCIBILITY_DONE) == null) {
-                classStore.put(KEY_IMMUTABLE_INDEX, immutableBeanArchiveIndex);
-                classStore.put(KEY_APPLICATION_INDEX, applicationIndex);
+            if (reproducibilityRuns > 0 && !shouldFail) {
+                ExtensionContext.Store classStore = getClassExtensionStore(context);
+                if (classStore.get(KEY_REPRODUCIBILITY_DONE) == null) {
+                    classStore.put(KEY_IMMUTABLE_INDEX, immutableBeanArchiveIndex);
+                    classStore.put(KEY_APPLICATION_INDEX, applicationIndex);
+                }
             }
-        }
 
-        try {
             String arcContainerAbsolutePath = ArcTestContainer.class.getClassLoader()
                     .getResource(ArcTestContainer.class.getName().replace(".", "/") + ".class").getFile();
             int targetClassesIndex = arcContainerAbsolutePath.indexOf(TARGET_TEST_CLASSES);
@@ -620,6 +628,7 @@ public class ArcTestContainer implements BeforeEachCallback, AfterEachCallback {
         injectionPointsTransformers.forEach(builder::addInjectionPointTransformer);
         observerTransformers.forEach(builder::addObserverTransformer);
         beanDeploymentValidators.forEach(builder::addBeanDeploymentValidator);
+        asyncHandlers.forEach(builder::addAsyncHandler);
         excludeTypes.forEach(builder::addExcludeType);
         builder.setRemoveUnusedBeans(removeUnusedBeans);
         for (Predicate<BeanInfo> exclusion : removalExclusions) {

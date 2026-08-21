@@ -79,10 +79,11 @@ public class SubclassGenerator extends AbstractGenerator {
 
     static final String SUBCLASS_SUFFIX = "_Subclass";
     static final String MARK_CONSTRUCTED_METHOD_NAME = "arc$markConstructed";
+    static final String MARK_DESTROYED_METHOD_NAME = "arc$markDestroyed";
     static final String DESTROY_METHOD_NAME = "arc$destroy";
 
     protected static final String FIELD_NAME_PREDESTROYS = "arc$preDestroys";
-    protected static final String FIELD_NAME_CONSTRUCTED = "arc$constructed";
+    protected static final String FIELD_NAME_ALIVE = "arc$alive";
 
     private final Predicate<DotName> applicationClassPredicate;
     private final Set<String> existingClasses;
@@ -165,9 +166,7 @@ public class SubclassGenerator extends AbstractGenerator {
                 preDestroys = null;
             }
 
-            // `volatile` is perhaps not best, this field is monotonic (once `true`, it never becomes `false` again),
-            // so maybe making the `markConstructed` method `synchronized` would be enough (?)
-            FieldDesc constructedField = cc.field(FIELD_NAME_CONSTRUCTED, fc -> {
+            FieldDesc aliveField = cc.field(FIELD_NAME_ALIVE, fc -> {
                 fc.private_();
                 fc.volatile_();
                 fc.setType(boolean.class);
@@ -322,13 +321,20 @@ public class SubclassGenerator extends AbstractGenerator {
             });
 
             for (MethodGroup group : codeGenInfo.methodGroups()) {
-                generateInitMetadata(cc, bean, providerType, aroundInvokesField, constructedField, group,
+                generateInitMetadata(cc, bean, providerType, aroundInvokesField, aliveField, group,
                         forwardingMethods, interceptorChainKeys, bindingKeys);
             }
 
             cc.method(MARK_CONSTRUCTED_METHOD_NAME, mc -> {
                 mc.body(bc -> {
-                    bc.set(cc.this_().field(constructedField), Const.of(true));
+                    bc.set(cc.this_().field(aliveField), Const.of(true));
+                    bc.return_();
+                });
+            });
+
+            cc.method(MARK_DESTROYED_METHOD_NAME, mc -> {
+                mc.body(bc -> {
+                    bc.set(cc.this_().field(aliveField), Const.of(false));
                     bc.return_();
                 });
             });
@@ -363,7 +369,7 @@ public class SubclassGenerator extends AbstractGenerator {
     }
 
     private void generateInitMetadata(ClassCreator cc, BeanInfo bean, Type providerType,
-            FieldDesc aroundInvokesField, FieldDesc constructedField, MethodGroup group,
+            FieldDesc aroundInvokesField, FieldDesc aliveField, MethodGroup group,
             Map<MethodDesc, MethodDesc> forwardingMethods, Map<List<InterceptorInfo>, String> interceptorChainKeys,
             Map<Set<AnnotationInstanceEquivalenceProxy>, String> bindingKeys) {
 
@@ -492,7 +498,7 @@ public class SubclassGenerator extends AbstractGenerator {
 
                         // Finally create the intercepted method
                         MethodDesc forwardDescriptor = forwardingMethods.get(methodDesc);
-                        createInterceptedMethod(method, cc, metadataField, constructedField, forwardDescriptor, cc::this_);
+                        createInterceptedMethod(method, cc, metadataField, aliveField, forwardDescriptor, cc::this_);
                     } else {
                         // Only decorators are applied
                         cc.method(methodDesc, dmc -> {
@@ -501,8 +507,8 @@ public class SubclassGenerator extends AbstractGenerator {
                                 params.add(dmc.parameter(param.nameOrDefault()));
                             }
                             dmc.body(db0 -> {
-                                // Delegate to super class if not constructed yet
-                                db0.ifNot(cc.this_().field(constructedField), db1 -> {
+                                // Delegate to super class if not alive
+                                db0.ifNot(cc.this_().field(aliveField), db1 -> {
                                     if (method.isAbstract()) {
                                         db1.throw_(IllegalStateException.class, "Cannot invoke abstract method");
                                     } else {
@@ -864,7 +870,7 @@ public class SubclassGenerator extends AbstractGenerator {
     }
 
     static void createInterceptedMethod(MethodInfo method, ClassCreator subclass,
-            FieldDesc metadataField, FieldDesc constructedField, MethodDesc forwardMethod,
+            FieldDesc metadataField, FieldDesc aliveField, MethodDesc forwardMethod,
             Supplier<Expr> getTarget) {
 
         subclass.method(methodDescOf(method), mc -> {
@@ -876,8 +882,8 @@ public class SubclassGenerator extends AbstractGenerator {
                 mc.throws_(classDescOf(exception));
             }
             mc.body(b0 -> {
-                // Delegate to super class if not constructed yet
-                b0.ifNot(subclass.this_().field(constructedField), b1 -> {
+                // Delegate to super class if not alive
+                b0.ifNot(subclass.this_().field(aliveField), b1 -> {
                     if (Modifier.isAbstract(method.flags())) {
                         b1.throw_(IllegalStateException.class, "Cannot invoke abstract method");
                     } else {

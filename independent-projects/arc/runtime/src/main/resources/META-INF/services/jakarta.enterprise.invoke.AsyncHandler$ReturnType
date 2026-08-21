@@ -1,0 +1,5 @@
+io.quarkus.arc.impl.invoke.CompletableFutureAsyncHandler
+io.quarkus.arc.impl.invoke.CompletionStageAsyncHandler
+io.quarkus.arc.impl.invoke.FlowPublisherAsyncHandler
+io.quarkus.arc.impl.invoke.MultiAsyncHandler
+io.quarkus.arc.impl.invoke.UniAsyncHandler

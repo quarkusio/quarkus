@@ -13,8 +13,11 @@ import jakarta.interceptor.InterceptorBinding;
  * This allows the test method to modify the database as required, and then have
  * these changes reverted at the end of the method.
  *
- * @see TestTransaction for JTA transactions.
+ * @deprecated Use {@link TestTransaction} instead. When used on a method that returns
+ *             {@link io.smallrye.mutiny.Uni}, {@code @TestTransaction} automatically uses
+ *             a reactive transaction with rollback.
  */
+@Deprecated(forRemoval = true, since = "4.0.0")
 @InterceptorBinding
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ ElementType.TYPE, ElementType.METHOD })

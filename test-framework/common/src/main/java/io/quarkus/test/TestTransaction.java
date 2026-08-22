@@ -8,12 +8,13 @@ import java.lang.annotation.Target;
 import jakarta.interceptor.InterceptorBinding;
 
 /**
- * Indicates that this method should be run in a rollback only JTA transaction.
- *
- * This allows the test method to modify the database as required, and then have
- * these changes reverted at the end of the method.
- *
- * @see TestReactiveTransaction for reactive transaction
+ * Indicates that this method should be run in a rollback-only transaction.
+ * <p>
+ * For imperative tests, a JTA transaction is used.
+ * <p>
+ * For reactive tests (when {@code quarkus-hibernate-reactive} is present), test methods
+ * that return {@code Uni} automatically run on a Vert.x event loop context with a reactive
+ * transaction that is rolled back at the end.
  */
 @InterceptorBinding
 @Retention(RetentionPolicy.RUNTIME)

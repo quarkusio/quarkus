@@ -21,8 +21,7 @@ public class AsyncSyslogHandlerTest {
             .withConfigurationResource("application-async-syslog.properties")
             .withApplicationRoot((jar) -> jar
                     .addClass(LoggingTestsHelper.class)
-                    .addAsManifestResource("application.properties", "microprofile-config.properties"))
-            .setLogFileName("AsyncSyslogHandlerTest.log");
+                    .addAsManifestResource("application.properties", "microprofile-config.properties"));
 
     @Test
     public void asyncSyslogHandlerConfigurationTest() throws NullPointerException {

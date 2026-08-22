@@ -17,20 +17,17 @@ import jakarta.ws.rs.client.ClientBuilder;
 import jakarta.ws.rs.client.WebTarget;
 import jakarta.ws.rs.sse.SseEventSource;
 
-import org.eclipse.microprofile.config.ConfigProvider;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import io.quarkus.test.common.http.TestHTTPEndpoint;
 import io.quarkus.test.common.http.TestHTTPResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.http.ContentType;
 
 @QuarkusTest
 class OutputResourceTest {
-
     private static final String RESOURCE_PATH = "/jpa-envers-test/output";
-    @TestHTTPEndpoint(OutputResource.class)
+
     @TestHTTPResource
     URL url;
 
@@ -46,6 +43,7 @@ class OutputResourceTest {
 
     @Test
     public void testSseWithAnnotation() throws InterruptedException, URISyntaxException, MalformedURLException {
+        System.out.println(url);
         doTestSee("annotation", "dummy");
     }
 
@@ -57,8 +55,7 @@ class OutputResourceTest {
     private void doTestSee(String path, String expectedDataValue)
             throws URISyntaxException, InterruptedException, MalformedURLException {
         Client client = ClientBuilder.newBuilder().build();
-        WebTarget target = client.target(new URL(ConfigProvider.getConfig().getValue("test.url", String.class)).toURI())
-                .path(RESOURCE_PATH).path(path);
+        WebTarget target = client.target(url.toURI()).path(RESOURCE_PATH).path(path);
         try (SseEventSource sse = SseEventSource.target(target).build()) {
             CountDownLatch latch = new CountDownLatch(1);
             List<Throwable> errors = new CopyOnWriteArrayList<>();

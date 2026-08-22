@@ -21,8 +21,7 @@ public class AsyncConsoleHandlerTest {
             .withConfigurationResource("application-async-console-log.properties")
             .withApplicationRoot((jar) -> jar
                     .addClass(LoggingTestsHelper.class)
-                    .addAsManifestResource("application.properties", "microprofile-config.properties"))
-            .setLogFileName("AsyncConsoleHandlerTest.log");
+                    .addAsManifestResource("application.properties", "microprofile-config.properties"));
 
     @Test
     public void asyncConsoleHandlerConfigurationTest() {

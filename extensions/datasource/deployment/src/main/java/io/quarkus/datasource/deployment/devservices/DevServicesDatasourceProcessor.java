@@ -13,6 +13,7 @@ import java.util.stream.Collectors;
 
 import org.jboss.logging.Logger;
 
+import io.quarkus.datasource.common.devservices.VolumeMount;
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
 import io.quarkus.datasource.deployment.spi.DataSourceFeatureRequirementBuildItem;
 import io.quarkus.datasource.deployment.spi.DatabaseFeature;
@@ -25,6 +26,7 @@ import io.quarkus.datasource.deployment.spi.DevServicesDatasourceProviderBuildIt
 import io.quarkus.datasource.deployment.spi.DevServicesDatasourceResultBuildItem;
 import io.quarkus.datasource.runtime.DataSourceBuildTimeConfig;
 import io.quarkus.datasource.runtime.DataSourcesBuildTimeConfig;
+import io.quarkus.datasource.runtime.DevServicesBuildTimeConfig;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.IsDevServicesSupportedByLaunchMode;
@@ -143,6 +145,7 @@ public class DevServicesDatasourceProcessor {
             res.put(name + ".devservices.reuse", config.devservices().reuse());
             res.put(name + ".devservices.username", config.devservices().username());
             res.put(name + ".devservices.volumes", config.devservices().volumes());
+            res.put(name + ".devservices.mounts", config.devservices().mounts());
             Optional<String> username = ConfigUtils.getFirstOptionalValue(
                     DataSourceUtil.dataSourcePropertyKeys(name, "username"), String.class);
             res.put(name + ".username", username);
@@ -427,10 +430,26 @@ public class DevServicesDatasourceProcessor {
                 dataSourceBuildTimeConfig.devservices().initScriptPath(),
                 dataSourceBuildTimeConfig.devservices().initPrivilegedScriptPath(),
                 dataSourceBuildTimeConfig.devservices().volumes(),
+                toVolumeMounts(dataSourceBuildTimeConfig.devservices().mounts()),
                 dataSourceBuildTimeConfig.devservices().reuse(),
                 dataSourceBuildTimeConfig.devservices().showLogs(),
                 datasourceName,
                 requiredFeatures);
+    }
+
+    private static List<VolumeMount> toVolumeMounts(Optional<List<DevServicesBuildTimeConfig.Mount>> mounts) {
+        if (mounts.isEmpty()) {
+            return Collections.emptyList();
+        }
+        List<VolumeMount> result = new ArrayList<>(mounts.get().size());
+        for (DevServicesBuildTimeConfig.Mount mount : mounts.get()) {
+            VolumeMount.Type type = switch (mount.type()) {
+                case BIND -> VolumeMount.Type.BIND;
+                case CLASSPATH -> VolumeMount.Type.CLASSPATH;
+            };
+            result.add(new VolumeMount(type, mount.source(), mount.target(), mount.readOnly()));
+        }
+        return result;
     }
 
     private void setDataSourceProperties(Map<String, String> propertiesMap, String dbName, String propertyKeyRadical,

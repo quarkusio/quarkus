@@ -123,10 +123,29 @@ public interface DevServicesBuildTimeConfig {
      * When using a file system location, the volume will be generated with read-write permission,
      * potentially leading to data loss or modification in your file system.
      * <p>
+     * Consider using {@code mounts} instead:
+     * it does not encode the host location in the configuration key,
+     * making it usable through environment variables, and allows selecting the access mode explicitly.
+     * <p>
      * This has no effect if the provider is not a container-based database, such as H2 or Derby.
      */
     @ConfigDocMapKey("host-path")
     Map<String, String> volumes();
+
+    /**
+     * The volume mounts to be mapped to the container, as an indexed list.
+     *
+     * This is the structured alternative to `volumes`,
+     * modeled after the long syntax of Docker Compose volumes.
+     * Because mount information is not encoded in configuration keys,
+     * this form can be set through environment variables,
+     * for example `QUARKUS_DATASOURCE_DEVSERVICES_MOUNTS_0_SOURCE`.
+     *
+     * This has no effect if the provider is not a container-based database, such as H2 or Derby.
+     *
+     * @asciidoclet
+     */
+    Optional<List<Mount>> mounts();
 
     /**
      * Whether to keep Dev Service containers running *after a dev mode session or test suite execution*
@@ -160,5 +179,58 @@ public interface DevServicesBuildTimeConfig {
      */
     @WithDefault("false")
     boolean showLogs();
+
+    /**
+     * A volume mount to be mapped to the container.
+     */
+    @ConfigGroup
+    interface Mount {
+
+        /**
+         * The type of the mount.
+         *
+         * @asciidoclet
+         */
+        @WithDefault("bind")
+        Type type();
+
+        /**
+         * The source of the mount:
+         * a host file system path for `bind` mounts,
+         * or a resource path for `classpath` mounts.
+         *
+         * @asciidoclet
+         */
+        String source();
+
+        /**
+         * The container location the source is mounted to.
+         *
+         * @asciidoclet
+         */
+        String target();
+
+        /**
+         * Whether the mount is read-only.
+         *
+         * Note that read-only `classpath` mounts are copied into the container,
+         * so changes to the source are not reflected in the container.
+         *
+         * @asciidoclet
+         */
+        @WithDefault("false")
+        boolean readOnly();
+
+        enum Type {
+            /**
+             * Bind mount of a host file system path.
+             */
+            BIND,
+            /**
+             * Mount of a resource resolved from the application classpath.
+             */
+            CLASSPATH
+        }
+    }
 
 }

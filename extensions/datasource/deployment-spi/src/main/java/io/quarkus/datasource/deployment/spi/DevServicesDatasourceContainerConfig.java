@@ -7,6 +7,8 @@ import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.Set;
 
+import io.quarkus.datasource.common.devservices.VolumeMount;
+
 public class DevServicesDatasourceContainerConfig {
 
     private final Optional<String> imageName;
@@ -21,6 +23,7 @@ public class DevServicesDatasourceContainerConfig {
     private final Optional<List<String>> initScriptPath;
     private final Optional<List<String>> initPrivilegedScriptPath;
     private final Map<String, String> volumes;
+    private final List<VolumeMount> mounts;
     private final boolean reuse;
     private final boolean showLogs;
     private final String datasourceName;
@@ -38,6 +41,7 @@ public class DevServicesDatasourceContainerConfig {
             Optional<List<String>> initScriptPath,
             Optional<List<String>> initPrivilegedScriptPath,
             Map<String, String> volumes,
+            List<VolumeMount> mounts,
             boolean reuse,
             boolean showLogs,
             String datasourceName,
@@ -54,6 +58,7 @@ public class DevServicesDatasourceContainerConfig {
         this.initScriptPath = initScriptPath;
         this.initPrivilegedScriptPath = initPrivilegedScriptPath;
         this.volumes = volumes;
+        this.mounts = mounts != null ? mounts : Collections.emptyList();
         this.reuse = reuse;
         this.showLogs = showLogs;
         this.datasourceName = datasourceName;
@@ -110,6 +115,10 @@ public class DevServicesDatasourceContainerConfig {
 
     public Map<String, String> getVolumes() {
         return volumes;
+    }
+
+    public List<VolumeMount> getMounts() {
+        return mounts;
     }
 
     public boolean isReuse() {

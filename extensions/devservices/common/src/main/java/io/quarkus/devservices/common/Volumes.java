@@ -1,9 +1,12 @@
 package io.quarkus.devservices.common;
 
+import java.util.List;
 import java.util.Map;
 
 import org.testcontainers.containers.BindMode;
 import org.testcontainers.containers.GenericContainer;
+
+import io.quarkus.datasource.common.devservices.VolumeMount;
 
 public final class Volumes {
 
@@ -18,11 +21,29 @@ public final class Volumes {
         for (Map.Entry<String, String> volume : volumes.entrySet()) {
             String hostLocation = volume.getKey();
             if (volume.getKey().startsWith(CLASSPATH)) {
-                container.withClasspathResourceMapping(hostLocation.replaceFirst(CLASSPATH, EMPTY), volume.getValue(),
-                        BindMode.READ_ONLY);
+                addMount(container, VolumeMount.classpath(hostLocation.replaceFirst(CLASSPATH, EMPTY), volume.getValue(),
+                        true));
             } else {
-                container.withFileSystemBind(hostLocation, volume.getValue(), BindMode.READ_WRITE);
+                addMount(container, VolumeMount.bind(hostLocation, volume.getValue(), false));
             }
+        }
+    }
+
+    public static void addMounts(GenericContainer<?> container, List<VolumeMount> mounts) {
+        for (VolumeMount mount : mounts) {
+            addMount(container, mount);
+        }
+    }
+
+    private static void addMount(GenericContainer<?> container, VolumeMount mount) {
+        BindMode bindMode = mount.readOnly() ? BindMode.READ_ONLY : BindMode.READ_WRITE;
+        switch (mount.type()) {
+            case CLASSPATH:
+                container.withClasspathResourceMapping(mount.source(), mount.target(), bindMode);
+                break;
+            case BIND:
+                container.withFileSystemBind(mount.source(), mount.target(), bindMode);
+                break;
         }
     }
 }

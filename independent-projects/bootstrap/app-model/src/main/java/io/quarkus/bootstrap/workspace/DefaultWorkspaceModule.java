@@ -29,19 +29,37 @@ public class DefaultWorkspaceModule implements WorkspaceModule, Serializable {
         private Builder() {
         }
 
+        /**
+         * Populates this builder from the workspace-module map representation.
+         * <p>
+         * The module ID entry is required. Module directory, build directory, and build-file entries are optional; when
+         * absent, this method does not modify the corresponding builder values. Other supported collection entries are
+         * also applied only when present.
+         *
+         * @param map workspace-module representation
+         * @return this builder
+        */
         @Override
         public Builder fromMap(Map<String, Object> map) {
             setModuleId(WorkspaceModuleId.fromString((String) map.get(BootstrapConstants.MAPPABLE_MODULE_ID)));
-            setModuleDir(Path.of((String) map.get(BootstrapConstants.MAPPABLE_MODULE_DIR)));
-            setBuildDir(Path.of((String) map.get(BootstrapConstants.MAPPABLE_BUILD_DIR)));
+            String moduleDir = (String) map.get(BootstrapConstants.MAPPABLE_MODULE_DIR);
+            if (moduleDir != null) {
+                setModuleDir(Path.of(moduleDir));
+            }
+            String buildDir = (String) map.get(BootstrapConstants.MAPPABLE_BUILD_DIR);
+            if (buildDir != null) {
+                setBuildDir(Path.of(buildDir));
+            }
 
             Collection<String> buildFilesStr = (Collection<String>) map.get(BootstrapConstants.MAPPABLE_BUILD_FILES);
-            final Path[] buildFiles = new Path[buildFilesStr.size()];
-            int i = 0;
-            for (String buildFileStr : buildFilesStr) {
-                buildFiles[i++] = Path.of(buildFileStr);
+            if (buildFilesStr != null) {
+                final Path[] buildFiles = new Path[buildFilesStr.size()];
+                int i = 0;
+                for (String buildFileStr : buildFilesStr) {
+                    buildFiles[i++] = Path.of(buildFileStr);
+                }
+                setBuildFiles(PathList.of(buildFiles));
             }
-            setBuildFiles(PathList.of(buildFiles));
 
             Collection<Map<String, Object>> sourcesMap = (Collection<Map<String, Object>>) map
                     .get(BootstrapConstants.MAPPABLE_ARTIFACT_SOURCES);

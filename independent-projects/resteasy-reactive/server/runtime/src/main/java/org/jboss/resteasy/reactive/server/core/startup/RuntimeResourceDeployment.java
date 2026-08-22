@@ -185,9 +185,13 @@ public class RuntimeResourceDeployment {
 
         //setup reader and writer interceptors first
         ServerRestHandler interceptorHandler = interceptorDeployment.setupInterceptorHandler();
-        //we want interceptors in the abort handler chain
+        //we want interceptors in the abort handler chain, as the exception may have been thrown
+        //by a handler that runs before the interceptor handler (e.g. a security check)
         List<ServerRestHandler> abortHandlingChain = new ArrayList<>(
                 3 + (interceptorHandler != null ? 1 : 0) + (info.getPreExceptionMapperHandler() != null ? 1 : 0));
+        if (interceptorHandler != null) {
+            abortHandlingChain.add(interceptorHandler);
+        }
 
         List<ServerRestHandler> handlers = new ArrayList<>(HANDLERS_CAPACITY);
         // we add null as the first item to make sure that subsequent items are added in the proper positions

@@ -19,6 +19,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.DigestException;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -91,6 +92,7 @@ import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
 import io.quarkus.deployment.pkg.builditem.UpxCompressedBuildItem;
 import io.quarkus.deployment.pkg.jar.FastJarFormat;
 import io.quarkus.deployment.pkg.steps.NativeBuild;
+import io.quarkus.deployment.util.BoundedProcessRunner;
 import io.quarkus.deployment.util.ContainerRuntimeUtil;
 import io.quarkus.fs.util.ZipUtils;
 import io.quarkus.maven.dependency.ResolvedDependency;
@@ -103,6 +105,7 @@ public class JibProcessor {
     public static final String JIB = "jib";
     private static final IsClassPredicate IS_CLASS_PREDICATE = new IsClassPredicate();
     private static final String BINARY_NAME_IN_CONTAINER = "application";
+    private static final Duration PROCESS_FORCE_TIMEOUT = Duration.ofSeconds(5);
 
     // The source for this can be found at https://github.com/jboss-container-images/openjdk/blob/ubi9/modules/run/artifacts/opt/jboss/container/java/run/run-java.sh
     // A list of env vars that affect this script can be found at https://rh-openjdk.github.io/redhat-openjdk-containers/ubi9/ubi9-openjdk-17.html
@@ -475,17 +478,15 @@ public class JibProcessor {
         }
 
         if (maybeJvmStartupOptimizerArchiveResult.isPresent()) {
-            JvmStartupOptimizerArchiveResultBuildItem appCDSResult = maybeJvmStartupOptimizerArchiveResult.get();
-            boolean containsAppCDSOptions = false;
-            for (String effectiveJvmArgument : entrypoint) {
-                if (effectiveJvmArgument.startsWith(appCDSResult.getType().getJvmFlag())) {
-                    containsAppCDSOptions = true;
-                    break;
-                }
-            }
-            if (!containsAppCDSOptions) {
+            JvmStartupOptimizerArchiveResultBuildItem startupArchive = maybeJvmStartupOptimizerArchiveResult.get();
+            if (!StartupArchiveLayerPlan.containsRuntimeOption(entrypoint, startupArchive.getType())) {
+                String containerArchive = workDirInContainer.resolve(startupArchive.getArchive().getFileName()).toString();
+                String runtimeOption = startupArchive.getType().renderRuntimeOption(containerArchive);
+                String currentJavaToolOptions = envVars.get("JAVA_TOOL_OPTIONS");
                 envVars.put("JAVA_TOOL_OPTIONS",
-                        appCDSResult.getType().getJvmFlag() + "=" + appCDSResult.getArchive().getFileName().toString());
+                        currentJavaToolOptions == null || currentJavaToolOptions.isBlank()
+                                ? runtimeOption
+                                : currentJavaToolOptions + " " + runtimeOption);
             }
         }
 
@@ -607,9 +608,10 @@ public class JibProcessor {
                         workDirInContainer.resolve(FastJarFormat.QUARKUS_RUN_JAR),
                         Files.getLastModifiedTime(componentsPath.resolve(FastJarFormat.QUARKUS_RUN_JAR)).toInstant())
                         .build());
-                jibContainerBuilder
-                        .addLayer(Collections.singletonList(maybeJvmStartupOptimizerArchiveResult.get().getArchive()),
-                                workDirInContainer);
+                addLayer(jibContainerBuilder,
+                        Collections.singletonList(maybeJvmStartupOptimizerArchiveResult.get().getArchive()),
+                        workDirInContainer, "jvm-startup-archive", isMutableJar, enforceModificationTime,
+                        modificationTime);
             } else {
                 jibContainerBuilder.addFileEntriesLayer(FileEntriesLayer.builder()
                         .setName("fast-jar-run")
@@ -948,6 +950,7 @@ public class JibProcessor {
         boolean pushContainerImage = containerImageConfig.isPushExplicitlyEnabled();
 
         try {
+            StartupArchiveLayerPlan archivePlan = StartupArchiveLayerPlan.from(requestBuildItem);
             ImageReference enhancedImageReference = ImageReference.parse(enhancedImage);
             Containerizer containerizer;
             if (pushContainerImage) {
@@ -958,20 +961,52 @@ public class JibProcessor {
                 containerizer = dockerDaemonContainerizer(jibConfig, enhancedImageReference);
             }
 
-            createPatchedInstance(jibConfig, baseImage)
-                    .addLayer(
-                            // Add the app.aot file to the working directory
-                            List.of(requestBuildItem.getAotFile()),
-                            AbsoluteUnixPath.get(requestBuildItem.getContainerWorkingDirectory()))
+            JibContainerBuilder builder = createPatchedInstance(jibConfig, baseImage);
+            String inheritedJavaToolOptions = inspectJavaToolOptions(determineDockerExecutable(jibConfig), baseImage);
+            addLayer(builder, List.of(archivePlan.archive()), archivePlan.destinationDirectory(),
+                    "jvm-startup-archive", false, false, Instant.EPOCH)
                     .addEnvironmentVariable("JAVA_TOOL_OPTIONS",
-                            "-XX:AOTCache=%s".formatted(requestBuildItem.getAotFile().getFileName().toString()))
+                            appendJavaToolOptions(inheritedJavaToolOptions, archivePlan.runtimeOption()))
                     .containerize(containerizer);
 
-            log.infof("Created AOT enhanced container image %s", enhancedImage);
+            log.infof("Created JVM-startup-optimized container image %s", enhancedImage);
             return new BuildAotOptimizedContainerImageResultBuildItem(enhancedImage);
         } catch (Exception e) {
-            log.error("Unable to build AOT enhanced container image for original " + baseImage, e);
+            log.error("Unable to build JVM-startup-optimized container image for original " + baseImage, e);
             throw new RuntimeException(e);
+        }
+    }
+
+    static String appendJavaToolOptions(String inherited, String startupArchiveOption) {
+        if (inherited == null || inherited.isBlank()) {
+            return startupArchiveOption;
+        }
+        return inherited + " " + startupArchiveOption;
+    }
+
+    private static String inspectJavaToolOptions(Path dockerExecutable, String image) throws IOException {
+        try {
+            BoundedProcessRunner.Result result = BoundedProcessRunner.capture(new ProcessBuilder(
+                    dockerExecutable.toString(),
+                    "image",
+                    "inspect",
+                    "--format={{range .Config.Env}}{{println .}}{{end}}",
+                    image),
+                    Duration.ofSeconds(30),
+                    PROCESS_FORCE_TIMEOUT,
+                    "Inspecting environment of base container image " + image);
+            if (result.exitCode() != 0) {
+                throw new IOException(
+                        "Unable to inspect environment of base container image " + image + ": " + result.output());
+            }
+            return result.output().lines()
+                    .filter(line -> line.startsWith("JAVA_TOOL_OPTIONS="))
+                    .map(line -> line.substring("JAVA_TOOL_OPTIONS=".length()))
+                    .findFirst()
+                    .orElse("");
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new IOException("Interrupted while inspecting environment of base container image " + image, e);
         }
     }
 

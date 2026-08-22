@@ -151,6 +151,9 @@ public class IsolatedDevModeMain implements BiConsumer<CuratedApplication, Map<S
                 }
             }
         } finally {
+            if (RuntimeUpdatesProcessor.INSTANCE != null) {
+                RuntimeUpdatesProcessor.INSTANCE.externalBuildOutputReady();
+            }
             Thread.currentThread().setContextClassLoader(old);
         }
     }

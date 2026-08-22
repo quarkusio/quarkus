@@ -11,6 +11,15 @@ pluginManagement {
     }
     plugins {
         id 'io.quarkus.extension' version "${quarkusPluginVersion}"
+        id 'io.quarkus.extension.deployment' version "${quarkusPluginVersion}"
+    }
+    resolutionStrategy {
+        eachPlugin {
+            // Exercise the implementation published by this build. Marker publication is covered by plugin tests.
+            if (requested.id.id == 'io.quarkus.extension') {
+                useModule("io.quarkus.extension:gradle-extension-plugin:${quarkusPluginVersion}")
+            }
+        }
     }
 }
 

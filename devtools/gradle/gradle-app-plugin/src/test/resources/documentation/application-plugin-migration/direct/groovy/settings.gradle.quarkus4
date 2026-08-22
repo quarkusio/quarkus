@@ -1,0 +1,17 @@
+// Source: {{source}}
+// tag::direct-standalone-plugin-management[]
+pluginManagement {
+    plugins {
+        id 'io.quarkus.application' version "${quarkusPluginVersion}"
+    }
+}
+// end::direct-standalone-plugin-management[]
+
+dependencyResolutionManagement {
+    repositories {
+        mavenLocal()
+        mavenCentral()
+    }
+}
+
+rootProject.name = 'application-plugin-direct-migration'

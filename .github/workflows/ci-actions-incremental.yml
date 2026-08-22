@@ -646,7 +646,7 @@ jobs:
         if: env.JAVA_VERSION_GRADLE != matrix.java.java-version
         uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
         with:
-          distribution: temurin
+          distribution: ${{ matrix.java.java-distribution || 'temurin' }}
           java-version: ${{ matrix.java.java-version-gradle }}
           architecture: ${{ matrix.java.architecture || 'x64' }}
 

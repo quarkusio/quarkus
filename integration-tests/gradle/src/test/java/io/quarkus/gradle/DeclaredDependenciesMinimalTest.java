@@ -38,6 +38,7 @@ public class DeclaredDependenciesMinimalTest extends QuarkusGradleWrapperTestBas
 
     private static final String CONSUMER_PROJECT_PATH = "declared-deps-minimal/consumer-gradle";
     private static final String PRODUCER_PROJECT_PATH = "declared-deps-minimal/producer-maven";
+    private static final String ENABLE_DECLARED_DEPENDENCY_COLLECTOR = "-PenableDeclaredDependencyCollector=true";
 
     private static final Set<String> EXPECTED_GROUPS = Set.of("org.acme.local", "org.acme.deps");
 
@@ -61,7 +62,7 @@ public class DeclaredDependenciesMinimalTest extends QuarkusGradleWrapperTestBas
     @DisplayName("Generate app model and verify direct dependencies")
     public void generateAppModel() throws Exception {
         File projectDir = getProjectDir(CONSUMER_PROJECT_PATH);
-        runGradleWrapper(projectDir, "clean", ":runner:quarkusGenerateAppModel", "-PenableDeclaredDependencyCollector=true");
+        runGradleWrapper(projectDir, "clean", ":runner:quarkusGenerateAppModel", ENABLE_DECLARED_DEPENDENCY_COLLECTOR);
 
         ApplicationModel appModel = ApplicationModelSerializer.deserialize(
                 projectDir.toPath().resolve("runner/build/quarkus/application-model/quarkus-app-model.dat"));
@@ -109,8 +110,7 @@ public class DeclaredDependenciesMinimalTest extends QuarkusGradleWrapperTestBas
     @DisplayName("Generate test app model and verify test-scope root dependencies")
     public void generateTestAppModel() throws Exception {
         File projectDir = getProjectDir(CONSUMER_PROJECT_PATH);
-        runGradleWrapper(projectDir, "clean", ":runner:quarkusGenerateTestAppModel",
-                "-PenableDeclaredDependencyCollector=true");
+        runGradleWrapper(projectDir, "clean", ":runner:quarkusGenerateTestAppModel", ENABLE_DECLARED_DEPENDENCY_COLLECTOR);
 
         ApplicationModel appModel = ApplicationModelSerializer.deserialize(
                 projectDir.toPath().resolve("runner/build/quarkus/application-model/quarkus-app-test-model.dat"));
@@ -137,7 +137,7 @@ public class DeclaredDependenciesMinimalTest extends QuarkusGradleWrapperTestBas
     public void normalModelDoesNotLeakTestDeps() throws Exception {
         File projectDir = getProjectDir(CONSUMER_PROJECT_PATH);
         runGradleWrapper(projectDir, "clean", ":runner:quarkusGenerateAppModel", ":runner:quarkusGenerateTestAppModel",
-                "-PenableDeclaredDependencyCollector=true");
+                ENABLE_DECLARED_DEPENDENCY_COLLECTOR);
 
         ApplicationModel normalModel = ApplicationModelSerializer.deserialize(
                 projectDir.toPath().resolve("runner/build/quarkus/application-model/quarkus-app-model.dat"));

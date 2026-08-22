@@ -8,6 +8,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import org.eclipse.microprofile.config.ConfigProvider;
+
 import io.dekorate.kubernetes.annotation.ServiceType;
 import io.dekorate.kubernetes.config.DeploymentStrategy;
 import io.dekorate.kubernetes.config.IngressBuilder;
@@ -23,6 +25,7 @@ import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.ApplicationInfoBuildItem;
+import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.InitTaskBuildItem;
 import io.quarkus.deployment.metrics.MetricsCapabilityBuildItem;
 import io.quarkus.deployment.pkg.PackageConfig;
@@ -222,6 +225,36 @@ public class VanillaKubernetesProcessor extends BaseVanillaKubernetesProcessor {
                 }
             }
         }
+    }
+
+    @BuildStep
+    public void jaxrsIngressRules(
+            ApplicationInfoBuildItem applicationInfo,
+            CombinedIndexBuildItem combinedIndex,
+            List<KubernetesPortBuildItem> ports,
+            BuildProducer<DecoratorBuildItem> decorators) {
+        if (config.ingress() == null || !config.ingress().expose()) {
+            return;
+        }
+        if (!config.ingress().exposeJaxrsPaths()) {
+            return;
+        }
+        if (!config.ingress().rules().isEmpty()) {
+            return;
+        }
+
+        String httpRootPath = ConfigProvider.getConfig()
+                .getOptionalValue("quarkus.http.root-path", String.class)
+                .orElse("/");
+        List<String> paths = JaxRsPathCollector.collect(combinedIndex.getIndex(), httpRootPath);
+        if (paths.isEmpty()) {
+            return;
+        }
+
+        String name = ResourceNameUtil.getResourceName(config, applicationInfo);
+        String host = config.ingress().host().orElse(null);
+        decorators.produce(new DecoratorBuildItem(KUBERNETES,
+                new ApplyJaxRsIngressRulesDecorator(name, paths, optionalPort(ports), host)));
     }
 
     @BuildStep

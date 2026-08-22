@@ -17,13 +17,28 @@ public class OpenTelemetryLogRecorder {
         this.runtimeConfig = runtimeConfig;
     }
 
-    public RuntimeValue<Optional<Handler>> initializeHandler(final BeanContainer beanContainer) {
+    /**
+     * Creates the handler without touching the CDI container, so it can be installed during
+     * early logging setup. Making logging setup wait for the OpenTelemetry SDK would leave
+     * all loggers running at the initial (all-enabling) level while the rest of runtime
+     * initialization — CDI startup, eagerly started services — executes, see
+     * <a href="https://github.com/quarkusio/quarkus/issues/55889">GitHub issue #55889</a>.
+     * The handler buffers published records until {@link #activateHandler} provides the SDK.
+     */
+    public RuntimeValue<Optional<Handler>> initializeHandler() {
         if (runtimeConfig.getValue().sdkDisabled() || !runtimeConfig.getValue().logs().handlerEnabled()) {
             return new RuntimeValue<>(Optional.empty());
         }
-        final OpenTelemetry openTelemetry = beanContainer.beanInstance(OpenTelemetry.class);
-        final OpenTelemetryLogHandler logHandler = new OpenTelemetryLogHandler(openTelemetry);
+        final OpenTelemetryLogHandler logHandler = new OpenTelemetryLogHandler();
         logHandler.setLevel(runtimeConfig.getValue().logs().level());
         return new RuntimeValue<>(Optional.of(logHandler));
+    }
+
+    public void activateHandler(final RuntimeValue<Optional<Handler>> handler, final BeanContainer beanContainer) {
+        if (handler.getValue().isEmpty()) {
+            return;
+        }
+        final OpenTelemetry openTelemetry = beanContainer.beanInstance(OpenTelemetry.class);
+        ((OpenTelemetryLogHandler) handler.getValue().get()).activate(openTelemetry);
     }
 }

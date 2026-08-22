@@ -21,14 +21,6 @@ import io.quarkus.security.identity.SecurityIdentityAugmentor;
 
 public class OidcTenantConfig extends OidcClientCommonConfig implements io.quarkus.oidc.runtime.OidcTenantConfig {
 
-    /**
-     * @deprecated Use {@link #builder()} to create this config
-     */
-    @Deprecated(since = "3.18", forRemoval = true)
-    public OidcTenantConfig() {
-
-    }
-
     private OidcTenantConfig(io.quarkus.oidc.runtime.OidcTenantConfig mapping) {
         super(mapping);
         tenantId = mapping.tenantId();
@@ -179,6 +171,10 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
      */
     @Deprecated(since = "3.18", forRemoval = true)
     public static class IntrospectionCredentials implements io.quarkus.oidc.runtime.OidcTenantConfig.IntrospectionCredentials {
+
+        private IntrospectionCredentials() {
+        }
+
         /**
          * Name
          */
@@ -289,6 +285,10 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
      */
     @Deprecated(since = "3.18", forRemoval = true)
     public static class CertificateChain implements io.quarkus.oidc.runtime.OidcTenantConfig.CertificateChain {
+
+        private CertificateChain() {
+        }
+
         /**
          * Common name of the leaf certificate. It must be set if the {@link #trustStoreFile} does not have
          * this certificate imported.
@@ -459,6 +459,9 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
     @Deprecated(since = "3.18", forRemoval = true)
     public static class Logout implements io.quarkus.oidc.runtime.OidcTenantConfig.Logout {
 
+        private Logout() {
+        }
+
         /**
          * The relative path of the logout endpoint at the application. If provided, the application is able to
          * initiate the
@@ -606,6 +609,10 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
      */
     @Deprecated(since = "3.18", forRemoval = true)
     public static class Backchannel implements io.quarkus.oidc.runtime.OidcTenantConfig.Backchannel {
+
+        private Backchannel() {
+        }
+
         /**
          * The relative path of the Back-Channel Logout endpoint at the application.
          * It must start with the forward slash '/', for example, '/back-channel-logout'.
@@ -724,6 +731,10 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
      */
     @Deprecated(since = "3.18", forRemoval = true)
     public static class Jwks implements io.quarkus.oidc.runtime.OidcTenantConfig.Jwks {
+
+        private Jwks() {
+        }
+
         /**
          * If JWK verification keys should be fetched at the moment a connection to the OIDC provider
          * is initialized.
@@ -838,6 +849,10 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
      */
     @Deprecated(since = "3.18", forRemoval = true)
     public static class Frontchannel implements io.quarkus.oidc.runtime.OidcTenantConfig.Frontchannel {
+
+        private Frontchannel() {
+        }
+
         /**
          * The relative path of the Front-Channel Logout endpoint at the application.
          */
@@ -868,6 +883,9 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
      */
     @Deprecated(since = "3.18", forRemoval = true)
     public static class TokenStateManager implements io.quarkus.oidc.runtime.OidcTenantConfig.TokenStateManager {
+
+        private TokenStateManager() {
+        }
 
         @Override
         public io.quarkus.oidc.runtime.OidcTenantConfig.TokenStateManager.Strategy strategy() {
@@ -1223,6 +1241,9 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
     @Deprecated(since = "3.18", forRemoval = true)
     public static class Roles implements io.quarkus.oidc.runtime.OidcTenantConfig.Roles {
 
+        private Roles() {
+        }
+
         public static Roles fromClaimPath(List<String> path) {
             return fromClaimPathAndSeparator(path, null);
         }
@@ -1328,6 +1349,9 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
      */
     @Deprecated(since = "3.18", forRemoval = true)
     public static class Authentication implements io.quarkus.oidc.runtime.OidcTenantConfig.Authentication {
+
+        private Authentication() {
+        }
 
         @Override
         public Optional<io.quarkus.oidc.runtime.OidcTenantConfig.Authentication.ResponseMode> responseMode() {
@@ -2182,6 +2206,9 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
     @Deprecated(since = "3.18", forRemoval = true)
     public static class CodeGrant implements io.quarkus.oidc.runtime.OidcTenantConfig.CodeGrant {
 
+        private CodeGrant() {
+        }
+
         /**
          * Additional parameters, in addition to the required `code` and `redirect-uri` parameters,
          * which must be included to complete the authorization code grant request.
@@ -2254,6 +2281,9 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
      */
     @Deprecated(since = "3.18", forRemoval = true)
     public static class Token implements io.quarkus.oidc.runtime.OidcTenantConfig.Token {
+
+        private Token() {
+        }
 
         public static Token fromIssuer(String issuer) {
             Token tokenClaims = new Token();
@@ -2809,6 +2839,9 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
     @Deprecated(since = "3.18", forRemoval = true)
     public static class Binding implements io.quarkus.oidc.runtime.OidcTenantConfig.Binding {
 
+        private Binding() {
+        }
+
         /**
          * If a bearer access token must be bound to the client mTLS certificate.
          * It requires that JWT tokens must contain a confirmation `cnf` claim with a SHA256 certificate thumbprint
@@ -2833,6 +2866,9 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
 
     @Deprecated(since = "3.25", forRemoval = true)
     public static class ResourceMetadata implements io.quarkus.oidc.runtime.OidcTenantConfig.ResourceMetadata {
+
+        private ResourceMetadata() {
+        }
 
         public boolean enabled;
         public Optional<String> resource = Optional.empty();

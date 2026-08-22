@@ -10,8 +10,8 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import io.quarkus.oidc.OidcRequestContext;
 import io.quarkus.oidc.OidcTenantConfig;
-import io.quarkus.oidc.OidcTenantConfig.ApplicationType;
 import io.quarkus.oidc.TenantConfigResolver;
+import io.quarkus.oidc.runtime.OidcTenantConfig.ApplicationType;
 import io.smallrye.mutiny.Uni;
 import io.vertx.ext.web.RoutingContext;
 
@@ -22,18 +22,19 @@ public class CustomTenantConfigResolver implements TenantConfigResolver {
     @ConfigProperty(name = "quarkus.oidc.auth-server-url")
     String authServerUrl;
 
-    OidcTenantConfig config = new OidcTenantConfig();
+    OidcTenantConfig config;
 
     public CustomTenantConfigResolver() {
     }
 
     @PostConstruct
     public void initConfig() {
-        config.setTenantId("tenant-before-wrong-redirect");
-        config.setAuthServerUrl(authServerUrl);
-        config.setClientId("quarkus-app");
-        config.getCredentials().setSecret("secret");
-        config.setApplicationType(ApplicationType.WEB_APP);
+        config = OidcTenantConfig.authServerUrl(authServerUrl)
+                .tenantId("tenant-before-wrong-redirect")
+                .clientId("quarkus-app")
+                .credentials().secret("secret").end()
+                .applicationType(ApplicationType.WEB_APP)
+                .build();
     }
 
     @Override

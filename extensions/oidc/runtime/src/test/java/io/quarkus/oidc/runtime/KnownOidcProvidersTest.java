@@ -9,9 +9,9 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.oidc.OidcTenantConfig;
-import io.quarkus.oidc.OidcTenantConfig.ApplicationType;
-import io.quarkus.oidc.OidcTenantConfig.Authentication.ResponseMode;
-import io.quarkus.oidc.common.runtime.OidcClientCommonConfig.Credentials.Secret.Method;
+import io.quarkus.oidc.common.runtime.config.OidcClientCommonConfig.Credentials.Secret.Method;
+import io.quarkus.oidc.runtime.OidcTenantConfig.ApplicationType;
+import io.quarkus.oidc.runtime.OidcTenantConfig.Authentication.ResponseMode;
 import io.quarkus.oidc.runtime.OidcTenantConfig.Provider;
 import io.quarkus.oidc.runtime.providers.KnownOidcProviders;
 import io.smallrye.jwt.algorithm.SignatureAlgorithm;
@@ -20,12 +20,11 @@ public class KnownOidcProvidersTest {
 
     @Test
     public void testAcceptGitHubProperties() throws Exception {
-        OidcTenantConfig tenant = new OidcTenantConfig();
-        tenant.setTenantId(OidcUtils.DEFAULT_TENANT_ID);
+        OidcTenantConfig tenant = OidcTenantConfig.builder().build();
         OidcTenantConfig config = OidcUtils.mergeTenantConfig(tenant, KnownOidcProviders.provider(Provider.GITHUB));
 
         assertEquals(OidcUtils.DEFAULT_TENANT_ID, config.getTenantId().get());
-        assertEquals(ApplicationType.WEB_APP, config.getApplicationType().get());
+        assertEquals(ApplicationType.WEB_APP, config.applicationType().get());
         assertFalse(config.isDiscoveryEnabled().get());
         assertEquals("https://github.com/login/oauth", config.getAuthServerUrl().get());
         assertEquals("authorize", config.getAuthorizationPath().get());
@@ -41,26 +40,20 @@ public class KnownOidcProvidersTest {
 
     @Test
     public void testOverrideGitHubProperties() throws Exception {
-        OidcTenantConfig tenant = new OidcTenantConfig();
-        tenant.setTenantId(OidcUtils.DEFAULT_TENANT_ID);
-
-        tenant.setApplicationType(ApplicationType.HYBRID);
-        tenant.setDiscoveryEnabled(true);
-        tenant.setAuthServerUrl("http://localhost/wiremock");
-        tenant.setAuthorizationPath("authorization");
-        tenant.setTokenPath("tokens");
-        tenant.setUserInfoPath("userinfo");
-
-        tenant.authentication.setIdTokenRequired(true);
-        tenant.authentication.setUserInfoRequired(false);
-        tenant.token.setVerifyAccessTokenWithUserInfo(false);
-        tenant.authentication.setScopes(List.of("write"));
-        tenant.token.setPrincipalClaim("firstname");
-
+        OidcTenantConfig tenant = OidcTenantConfig.builder()
+                .applicationType(ApplicationType.HYBRID)
+                .discoveryEnabled(true)
+                .authServerUrl("http://localhost/wiremock")
+                .authorizationPath("authorization")
+                .tokenPath("tokens")
+                .userInfoPath("userinfo")
+                .authentication().idTokenRequired(true).userInfoRequired(false).scopes("write").end()
+                .token().verifyAccessTokenWithUserInfo(false).principalClaim("firstname").end()
+                .build();
         OidcTenantConfig config = OidcUtils.mergeTenantConfig(tenant, KnownOidcProviders.provider(Provider.GITHUB));
 
         assertEquals(OidcUtils.DEFAULT_TENANT_ID, config.getTenantId().get());
-        assertEquals(ApplicationType.HYBRID, config.getApplicationType().get());
+        assertEquals(ApplicationType.HYBRID, config.applicationType().get());
         assertTrue(config.isDiscoveryEnabled().get());
         assertEquals("http://localhost/wiremock", config.getAuthServerUrl().get());
         assertEquals("authorization", config.getAuthorizationPath().get());
@@ -76,12 +69,11 @@ public class KnownOidcProvidersTest {
 
     @Test
     public void testAcceptTwitterProperties() throws Exception {
-        OidcTenantConfig tenant = new OidcTenantConfig();
-        tenant.setTenantId(OidcUtils.DEFAULT_TENANT_ID);
+        OidcTenantConfig tenant = OidcTenantConfig.builder().build();
         OidcTenantConfig config = OidcUtils.mergeTenantConfig(tenant, KnownOidcProviders.provider(Provider.TWITTER));
 
         assertEquals(OidcUtils.DEFAULT_TENANT_ID, config.getTenantId().get());
-        assertEquals(ApplicationType.WEB_APP, config.getApplicationType().get());
+        assertEquals(ApplicationType.WEB_APP, config.applicationType().get());
         assertFalse(config.isDiscoveryEnabled().get());
         assertEquals("https://api.twitter.com/2/oauth2", config.getAuthServerUrl().get());
         assertEquals("https://twitter.com/i/oauth2/authorize", config.getAuthorizationPath().get());
@@ -97,26 +89,20 @@ public class KnownOidcProvidersTest {
 
     @Test
     public void testOverrideTwitterProperties() throws Exception {
-        OidcTenantConfig tenant = new OidcTenantConfig();
-        tenant.setTenantId(OidcUtils.DEFAULT_TENANT_ID);
-
-        tenant.setApplicationType(ApplicationType.HYBRID);
-        tenant.setDiscoveryEnabled(true);
-        tenant.setAuthServerUrl("http://localhost/wiremock");
-        tenant.setAuthorizationPath("authorization");
-        tenant.setTokenPath("tokens");
-        tenant.setUserInfoPath("userinfo");
-
-        tenant.authentication.setIdTokenRequired(true);
-        tenant.authentication.setUserInfoRequired(false);
-        tenant.authentication.setAddOpenidScope(true);
-        tenant.authentication.setPkceRequired(false);
-        tenant.authentication.setScopes(List.of("write"));
-
+        OidcTenantConfig tenant = OidcTenantConfig.builder()
+                .applicationType(ApplicationType.HYBRID)
+                .discoveryEnabled(true)
+                .authServerUrl("http://localhost/wiremock")
+                .authorizationPath("authorization")
+                .tokenPath("tokens")
+                .userInfoPath("userinfo")
+                .authentication().idTokenRequired(true).userInfoRequired(false).addOpenidScope(true)
+                .pkceRequired(false).scopes("write").end()
+                .build();
         OidcTenantConfig config = OidcUtils.mergeTenantConfig(tenant, KnownOidcProviders.provider(Provider.TWITTER));
 
         assertEquals(OidcUtils.DEFAULT_TENANT_ID, config.getTenantId().get());
-        assertEquals(ApplicationType.HYBRID, config.getApplicationType().get());
+        assertEquals(ApplicationType.HYBRID, config.applicationType().get());
         assertTrue(config.isDiscoveryEnabled().get());
         assertEquals("http://localhost/wiremock", config.getAuthServerUrl().get());
         assertEquals("authorization", config.getAuthorizationPath().get());
@@ -132,12 +118,11 @@ public class KnownOidcProvidersTest {
 
     @Test
     public void testAcceptMastodonProperties() throws Exception {
-        OidcTenantConfig tenant = new OidcTenantConfig();
-        tenant.setTenantId(OidcUtils.DEFAULT_TENANT_ID);
+        OidcTenantConfig tenant = OidcTenantConfig.builder().build();
         OidcTenantConfig config = OidcUtils.mergeTenantConfig(tenant, KnownOidcProviders.provider(Provider.MASTODON));
 
         assertEquals(OidcUtils.DEFAULT_TENANT_ID, config.getTenantId().get());
-        assertEquals(ApplicationType.WEB_APP, config.getApplicationType().get());
+        assertEquals(ApplicationType.WEB_APP, config.applicationType().get());
         assertFalse(config.isDiscoveryEnabled().get());
         assertEquals("https://mastodon.social", config.getAuthServerUrl().get());
         assertEquals("/oauth/authorize", config.getAuthorizationPath().get());
@@ -152,25 +137,20 @@ public class KnownOidcProvidersTest {
 
     @Test
     public void testOverrideMastodonProperties() throws Exception {
-        OidcTenantConfig tenant = new OidcTenantConfig();
-        tenant.setTenantId(OidcUtils.DEFAULT_TENANT_ID);
-
-        tenant.setApplicationType(ApplicationType.HYBRID);
-        tenant.setDiscoveryEnabled(true);
-        tenant.setAuthServerUrl("http://localhost/wiremock");
-        tenant.setAuthorizationPath("authorization");
-        tenant.setTokenPath("tokens");
-        tenant.setUserInfoPath("userinfo");
-
-        tenant.authentication.setIdTokenRequired(true);
-        tenant.authentication.setUserInfoRequired(false);
-        tenant.authentication.setAddOpenidScope(true);
-        tenant.authentication.setScopes(List.of("write"));
-
+        OidcTenantConfig tenant = OidcTenantConfig.builder()
+                .applicationType(ApplicationType.HYBRID)
+                .discoveryEnabled(true)
+                .authServerUrl("http://localhost/wiremock")
+                .authorizationPath("authorization")
+                .tokenPath("tokens")
+                .userInfoPath("userinfo")
+                .authentication().idTokenRequired(true).userInfoRequired(false).addOpenidScope(true)
+                .scopes("write").end()
+                .build();
         OidcTenantConfig config = OidcUtils.mergeTenantConfig(tenant, KnownOidcProviders.provider(Provider.MASTODON));
 
         assertEquals(OidcUtils.DEFAULT_TENANT_ID, config.getTenantId().get());
-        assertEquals(ApplicationType.HYBRID, config.getApplicationType().get());
+        assertEquals(ApplicationType.HYBRID, config.applicationType().get());
         assertTrue(config.isDiscoveryEnabled().get());
         assertEquals("http://localhost/wiremock", config.getAuthServerUrl().get());
         assertEquals("authorization", config.getAuthorizationPath().get());
@@ -185,12 +165,11 @@ public class KnownOidcProvidersTest {
 
     @Test
     public void testAcceptXProperties() throws Exception {
-        OidcTenantConfig tenant = new OidcTenantConfig();
-        tenant.setTenantId(OidcUtils.DEFAULT_TENANT_ID);
+        OidcTenantConfig tenant = OidcTenantConfig.builder().build();
         OidcTenantConfig config = OidcUtils.mergeTenantConfig(tenant, KnownOidcProviders.provider(Provider.X));
 
         assertEquals(OidcUtils.DEFAULT_TENANT_ID, config.getTenantId().get());
-        assertEquals(ApplicationType.WEB_APP, config.getApplicationType().get());
+        assertEquals(ApplicationType.WEB_APP, config.applicationType().get());
         assertFalse(config.isDiscoveryEnabled().get());
         assertEquals("https://api.twitter.com/2/oauth2", config.getAuthServerUrl().get());
         assertEquals("https://twitter.com/i/oauth2/authorize", config.getAuthorizationPath().get());
@@ -206,26 +185,20 @@ public class KnownOidcProvidersTest {
 
     @Test
     public void testOverrideXProperties() throws Exception {
-        OidcTenantConfig tenant = new OidcTenantConfig();
-        tenant.setTenantId(OidcUtils.DEFAULT_TENANT_ID);
-
-        tenant.setApplicationType(ApplicationType.HYBRID);
-        tenant.setDiscoveryEnabled(true);
-        tenant.setAuthServerUrl("http://localhost/wiremock");
-        tenant.setAuthorizationPath("authorization");
-        tenant.setTokenPath("tokens");
-        tenant.setUserInfoPath("userinfo");
-
-        tenant.authentication.setIdTokenRequired(true);
-        tenant.authentication.setUserInfoRequired(false);
-        tenant.authentication.setAddOpenidScope(true);
-        tenant.authentication.setPkceRequired(false);
-        tenant.authentication.setScopes(List.of("write"));
-
+        OidcTenantConfig tenant = OidcTenantConfig.builder()
+                .applicationType(ApplicationType.HYBRID)
+                .discoveryEnabled(true)
+                .authServerUrl("http://localhost/wiremock")
+                .authorizationPath("authorization")
+                .tokenPath("tokens")
+                .userInfoPath("userinfo")
+                .authentication().idTokenRequired(true).userInfoRequired(false).addOpenidScope(true)
+                .pkceRequired(false).scopes("write").end()
+                .build();
         OidcTenantConfig config = OidcUtils.mergeTenantConfig(tenant, KnownOidcProviders.provider(Provider.X));
 
         assertEquals(OidcUtils.DEFAULT_TENANT_ID, config.getTenantId().get());
-        assertEquals(ApplicationType.HYBRID, config.getApplicationType().get());
+        assertEquals(ApplicationType.HYBRID, config.applicationType().get());
         assertTrue(config.isDiscoveryEnabled().get());
         assertEquals("http://localhost/wiremock", config.getAuthServerUrl().get());
         assertEquals("authorization", config.getAuthorizationPath().get());
@@ -241,12 +214,11 @@ public class KnownOidcProvidersTest {
 
     @Test
     public void testAcceptFacebookProperties() throws Exception {
-        OidcTenantConfig tenant = new OidcTenantConfig();
-        tenant.setTenantId(OidcUtils.DEFAULT_TENANT_ID);
+        OidcTenantConfig tenant = OidcTenantConfig.builder().build();
         OidcTenantConfig config = OidcUtils.mergeTenantConfig(tenant, KnownOidcProviders.provider(Provider.FACEBOOK));
 
         assertEquals(OidcUtils.DEFAULT_TENANT_ID, config.getTenantId().get());
-        assertEquals(ApplicationType.WEB_APP, config.getApplicationType().get());
+        assertEquals(ApplicationType.WEB_APP, config.applicationType().get());
         assertFalse(config.isDiscoveryEnabled().get());
         assertEquals("https://www.facebook.com", config.getAuthServerUrl().get());
         assertEquals("https://facebook.com/dialog/oauth/", config.getAuthorizationPath().get());
@@ -259,23 +231,19 @@ public class KnownOidcProvidersTest {
 
     @Test
     public void testOverrideFacebookProperties() throws Exception {
-        OidcTenantConfig tenant = new OidcTenantConfig();
-        tenant.setTenantId(OidcUtils.DEFAULT_TENANT_ID);
-
-        tenant.setApplicationType(ApplicationType.HYBRID);
-        tenant.setDiscoveryEnabled(true);
-        tenant.setAuthServerUrl("http://localhost/wiremock");
-        tenant.setAuthorizationPath("authorization");
-        tenant.setJwksPath("jwks");
-        tenant.setTokenPath("tokens");
-
-        tenant.authentication.setScopes(List.of("write"));
-        tenant.authentication.setForceRedirectHttpsScheme(false);
-
+        OidcTenantConfig tenant = OidcTenantConfig.builder()
+                .applicationType(ApplicationType.HYBRID)
+                .discoveryEnabled(true)
+                .authServerUrl("http://localhost/wiremock")
+                .authorizationPath("authorization")
+                .jwksPath("jwks")
+                .tokenPath("tokens")
+                .authentication().scopes("write").forceRedirectHttpsScheme(false).end()
+                .build();
         OidcTenantConfig config = OidcUtils.mergeTenantConfig(tenant, KnownOidcProviders.provider(Provider.FACEBOOK));
 
         assertEquals(OidcUtils.DEFAULT_TENANT_ID, config.getTenantId().get());
-        assertEquals(ApplicationType.HYBRID, config.getApplicationType().get());
+        assertEquals(ApplicationType.HYBRID, config.applicationType().get());
         assertTrue(config.isDiscoveryEnabled().get());
         assertEquals("http://localhost/wiremock", config.getAuthServerUrl().get());
         assertEquals("authorization", config.getAuthorizationPath().get());
@@ -288,12 +256,11 @@ public class KnownOidcProvidersTest {
 
     @Test
     public void testAcceptGoogleProperties() throws Exception {
-        OidcTenantConfig tenant = new OidcTenantConfig();
-        tenant.setTenantId(OidcUtils.DEFAULT_TENANT_ID);
+        OidcTenantConfig tenant = OidcTenantConfig.builder().build();
         OidcTenantConfig config = OidcUtils.mergeTenantConfig(tenant, KnownOidcProviders.provider(Provider.GOOGLE));
 
         assertEquals(OidcUtils.DEFAULT_TENANT_ID, config.getTenantId().get());
-        assertEquals(ApplicationType.WEB_APP, config.getApplicationType().get());
+        assertEquals(ApplicationType.WEB_APP, config.applicationType().get());
         assertEquals("https://accounts.google.com", config.getAuthServerUrl().get());
         assertEquals("name", config.getToken().getPrincipalClaim().get());
         assertEquals(List.of("openid", "email", "profile"), config.authentication.scopes.get());
@@ -302,19 +269,16 @@ public class KnownOidcProvidersTest {
 
     @Test
     public void testOverrideGoogleProperties() throws Exception {
-        OidcTenantConfig tenant = new OidcTenantConfig();
-        tenant.setTenantId(OidcUtils.DEFAULT_TENANT_ID);
-
-        tenant.setApplicationType(ApplicationType.HYBRID);
-        tenant.setAuthServerUrl("http://localhost/wiremock");
-        tenant.authentication.setScopes(List.of("write"));
-        tenant.token.setPrincipalClaim("firstname");
-        tenant.token.setVerifyAccessTokenWithUserInfo(false);
-
+        OidcTenantConfig tenant = OidcTenantConfig.builder()
+                .applicationType(ApplicationType.HYBRID)
+                .authServerUrl("http://localhost/wiremock")
+                .authentication().scopes("write").end()
+                .token().principalClaim("firstname").verifyAccessTokenWithUserInfo(false).end()
+                .build();
         OidcTenantConfig config = OidcUtils.mergeTenantConfig(tenant, KnownOidcProviders.provider(Provider.GOOGLE));
 
         assertEquals(OidcUtils.DEFAULT_TENANT_ID, config.getTenantId().get());
-        assertEquals(ApplicationType.HYBRID, config.getApplicationType().get());
+        assertEquals(ApplicationType.HYBRID, config.applicationType().get());
         assertEquals("http://localhost/wiremock", config.getAuthServerUrl().get());
         assertEquals("firstname", config.getToken().getPrincipalClaim().get());
         assertEquals(List.of("write"), config.authentication.scopes.get());
@@ -323,12 +287,11 @@ public class KnownOidcProvidersTest {
 
     @Test
     public void testAcceptMicrosoftProperties() throws Exception {
-        OidcTenantConfig tenant = new OidcTenantConfig();
-        tenant.setTenantId(OidcUtils.DEFAULT_TENANT_ID);
+        OidcTenantConfig tenant = OidcTenantConfig.builder().build();
         OidcTenantConfig config = OidcUtils.mergeTenantConfig(tenant, KnownOidcProviders.provider(Provider.MICROSOFT));
 
         assertEquals(OidcUtils.DEFAULT_TENANT_ID, config.getTenantId().get());
-        assertEquals(ApplicationType.WEB_APP, config.getApplicationType().get());
+        assertEquals(ApplicationType.WEB_APP, config.applicationType().get());
         assertEquals("https://login.microsoftonline.com/common/v2.0", config.getAuthServerUrl().get());
         assertEquals(List.of("openid", "email", "profile"), config.authentication.scopes.get());
         assertEquals("any", config.getToken().getIssuer().get());
@@ -336,19 +299,16 @@ public class KnownOidcProvidersTest {
 
     @Test
     public void testOverrideMicrosoftProperties() throws Exception {
-        OidcTenantConfig tenant = new OidcTenantConfig();
-        tenant.setTenantId(OidcUtils.DEFAULT_TENANT_ID);
-
-        tenant.setApplicationType(ApplicationType.HYBRID);
-        tenant.setAuthServerUrl("http://localhost/wiremock");
-        tenant.getToken().setIssuer("http://localhost/wiremock");
-        tenant.authentication.setScopes(List.of("write"));
-        tenant.authentication.setForceRedirectHttpsScheme(false);
-
+        OidcTenantConfig tenant = OidcTenantConfig.builder()
+                .applicationType(ApplicationType.HYBRID)
+                .authServerUrl("http://localhost/wiremock")
+                .token().issuer("http://localhost/wiremock").end()
+                .authentication().scopes("write").forceRedirectHttpsScheme(false).end()
+                .build();
         OidcTenantConfig config = OidcUtils.mergeTenantConfig(tenant, KnownOidcProviders.provider(Provider.MICROSOFT));
 
         assertEquals(OidcUtils.DEFAULT_TENANT_ID, config.getTenantId().get());
-        assertEquals(ApplicationType.HYBRID, config.getApplicationType().get());
+        assertEquals(ApplicationType.HYBRID, config.applicationType().get());
         assertEquals("http://localhost/wiremock", config.getAuthServerUrl().get());
         assertEquals(List.of("write"), config.authentication.scopes.get());
         assertEquals("http://localhost/wiremock", config.getToken().getIssuer().get());
@@ -357,16 +317,15 @@ public class KnownOidcProvidersTest {
 
     @Test
     public void testAcceptAppleProperties() throws Exception {
-        OidcTenantConfig tenant = new OidcTenantConfig();
-        tenant.setTenantId(OidcUtils.DEFAULT_TENANT_ID);
+        OidcTenantConfig tenant = OidcTenantConfig.builder().build();
         OidcTenantConfig config = OidcUtils.mergeTenantConfig(tenant, KnownOidcProviders.provider(Provider.APPLE));
 
         assertEquals(OidcUtils.DEFAULT_TENANT_ID, config.getTenantId().get());
-        assertEquals(ApplicationType.WEB_APP, config.getApplicationType().get());
+        assertEquals(ApplicationType.WEB_APP, config.applicationType().get());
         assertEquals("https://appleid.apple.com/", config.getAuthServerUrl().get());
         assertEquals(List.of("openid", "email", "name"), config.authentication.scopes.get());
-        assertEquals(ResponseMode.FORM_POST, config.authentication.responseMode.get());
-        assertEquals(Method.POST_JWT, config.credentials.clientSecret.method.get());
+        assertEquals(ResponseMode.FORM_POST, config.authentication().responseMode().get());
+        assertEquals(Method.POST_JWT, config.credentials().clientSecret().method().get());
         assertEquals("https://appleid.apple.com/", config.credentials.jwt.audience.get());
         assertEquals(SignatureAlgorithm.ES256.getAlgorithm(), config.credentials.jwt.signatureAlgorithm.get());
         assertTrue(config.authentication.forceRedirectHttpsScheme.get());
@@ -374,37 +333,33 @@ public class KnownOidcProvidersTest {
 
     @Test
     public void testOverrideAppleProperties() throws Exception {
-        OidcTenantConfig tenant = new OidcTenantConfig();
-        tenant.setTenantId(OidcUtils.DEFAULT_TENANT_ID);
-
-        tenant.setApplicationType(ApplicationType.HYBRID);
-        tenant.setAuthServerUrl("http://localhost/wiremock");
-        tenant.authentication.setScopes(List.of("write"));
-        tenant.authentication.setResponseMode(ResponseMode.QUERY);
-        tenant.credentials.clientSecret.setMethod(Method.POST);
-        tenant.credentials.jwt.setAudience("http://localhost/audience");
-        tenant.credentials.jwt.setSignatureAlgorithm(SignatureAlgorithm.ES256.getAlgorithm());
-
+        OidcTenantConfig tenant = OidcTenantConfig.builder()
+                .applicationType(ApplicationType.HYBRID)
+                .authServerUrl("http://localhost/wiremock")
+                .authentication().scopes("write").responseMode(ResponseMode.QUERY).end()
+                .credentials().clientSecret().method(Method.POST).end()
+                .jwt().audience("http://localhost/audience")
+                .signatureAlgorithm(SignatureAlgorithm.ES256.getAlgorithm()).end().end()
+                .build();
         OidcTenantConfig config = OidcUtils.mergeTenantConfig(tenant, KnownOidcProviders.provider(Provider.APPLE));
 
         assertEquals(OidcUtils.DEFAULT_TENANT_ID, config.getTenantId().get());
-        assertEquals(ApplicationType.HYBRID, config.getApplicationType().get());
+        assertEquals(ApplicationType.HYBRID, config.applicationType().get());
         assertEquals("http://localhost/wiremock", config.getAuthServerUrl().get());
         assertEquals(List.of("write"), config.authentication.scopes.get());
-        assertEquals(ResponseMode.QUERY, config.authentication.responseMode.get());
-        assertEquals(Method.POST, config.credentials.clientSecret.method.get());
+        assertEquals(ResponseMode.QUERY, config.authentication().responseMode().get());
+        assertEquals(Method.POST, config.credentials().clientSecret().method().get());
         assertEquals("http://localhost/audience", config.credentials.jwt.audience.get());
         assertEquals(SignatureAlgorithm.ES256.getAlgorithm(), config.credentials.jwt.signatureAlgorithm.get());
     }
 
     @Test
     public void testAcceptSpotifyProperties() {
-        OidcTenantConfig tenant = new OidcTenantConfig();
-        tenant.setTenantId(OidcUtils.DEFAULT_TENANT_ID);
+        OidcTenantConfig tenant = OidcTenantConfig.builder().build();
         OidcTenantConfig config = OidcUtils.mergeTenantConfig(tenant, KnownOidcProviders.provider(Provider.SPOTIFY));
 
         assertEquals(OidcUtils.DEFAULT_TENANT_ID, config.getTenantId().get());
-        assertEquals(ApplicationType.WEB_APP, config.getApplicationType().get());
+        assertEquals(ApplicationType.WEB_APP, config.applicationType().get());
         assertEquals("https://accounts.spotify.com", config.getAuthServerUrl().get());
         assertEquals(List.of("user-read-private", "user-read-email"), config.authentication.scopes.get());
         assertTrue(config.token.verifyAccessTokenWithUserInfo.get());
@@ -413,21 +368,17 @@ public class KnownOidcProvidersTest {
 
     @Test
     public void testOverrideSpotifyProperties() {
-        OidcTenantConfig tenant = new OidcTenantConfig();
-        tenant.setTenantId(OidcUtils.DEFAULT_TENANT_ID);
-
-        tenant.setApplicationType(ApplicationType.HYBRID);
-        tenant.setAuthServerUrl("http://localhost/wiremock");
-        tenant.getToken().setIssuer("http://localhost/wiremock");
-        tenant.authentication.setScopes(List.of("write"));
-        tenant.authentication.setForceRedirectHttpsScheme(false);
-        tenant.token.setPrincipalClaim("firstname");
-        tenant.token.setVerifyAccessTokenWithUserInfo(false);
-
+        OidcTenantConfig tenant = OidcTenantConfig.builder()
+                .applicationType(ApplicationType.HYBRID)
+                .authServerUrl("http://localhost/wiremock")
+                .token().issuer("http://localhost/wiremock").principalClaim("firstname")
+                .verifyAccessTokenWithUserInfo(false).end()
+                .authentication().scopes("write").forceRedirectHttpsScheme(false).end()
+                .build();
         OidcTenantConfig config = OidcUtils.mergeTenantConfig(tenant, KnownOidcProviders.provider(Provider.SPOTIFY));
 
         assertEquals(OidcUtils.DEFAULT_TENANT_ID, config.getTenantId().get());
-        assertEquals(ApplicationType.HYBRID, config.getApplicationType().get());
+        assertEquals(ApplicationType.HYBRID, config.applicationType().get());
         assertEquals("http://localhost/wiremock", config.getAuthServerUrl().get());
         assertEquals(List.of("write"), config.authentication.scopes.get());
         assertEquals("http://localhost/wiremock", config.getToken().getIssuer().get());
@@ -438,12 +389,11 @@ public class KnownOidcProvidersTest {
 
     @Test
     public void testAcceptStravaProperties() {
-        OidcTenantConfig tenant = new OidcTenantConfig();
-        tenant.setTenantId(OidcUtils.DEFAULT_TENANT_ID);
+        OidcTenantConfig tenant = OidcTenantConfig.builder().build();
         OidcTenantConfig config = OidcUtils.mergeTenantConfig(tenant, KnownOidcProviders.provider(Provider.STRAVA));
 
         assertEquals(OidcUtils.DEFAULT_TENANT_ID, config.getTenantId().get());
-        assertEquals(ApplicationType.WEB_APP, config.getApplicationType().get());
+        assertEquals(ApplicationType.WEB_APP, config.applicationType().get());
 
         assertFalse(config.discoveryEnabled.get());
         assertEquals("https://www.strava.com/oauth", config.getAuthServerUrl().get());
@@ -453,83 +403,74 @@ public class KnownOidcProvidersTest {
         assertEquals(List.of("activity:read"), config.authentication.scopes.get());
         assertTrue(config.token.verifyAccessTokenWithUserInfo.get());
         assertFalse(config.getAuthentication().idTokenRequired.get());
-        assertEquals(Method.QUERY, config.credentials.clientSecret.method.get());
+        assertEquals(Method.QUERY, config.credentials().clientSecret().method().get());
         assertEquals("/strava", config.authentication.redirectPath.get());
         assertEquals(",", config.authentication.scopeSeparator.get());
     }
 
     @Test
     public void testOverrideStravaProperties() {
-        OidcTenantConfig tenant = new OidcTenantConfig();
-        tenant.setTenantId(OidcUtils.DEFAULT_TENANT_ID);
-
-        tenant.setApplicationType(ApplicationType.HYBRID);
-        tenant.setAuthServerUrl("http://localhost/wiremock");
-        tenant.setAuthorizationPath("authorizations");
-        tenant.setTokenPath("tokens");
-        tenant.setUserInfoPath("users");
-
-        tenant.authentication.setScopes(List.of("write"));
-        tenant.token.setVerifyAccessTokenWithUserInfo(false);
-        tenant.credentials.clientSecret.setMethod(Method.BASIC);
-        tenant.authentication.setRedirectPath("/fitness-app");
-        tenant.authentication.setScopeSeparator(" ");
-
+        OidcTenantConfig tenant = OidcTenantConfig.builder()
+                .applicationType(ApplicationType.HYBRID)
+                .authServerUrl("http://localhost/wiremock")
+                .authorizationPath("authorizations")
+                .tokenPath("tokens")
+                .userInfoPath("users")
+                .authentication().scopes("write").redirectPath("/fitness-app").scopeSeparator(" ").end()
+                .token().verifyAccessTokenWithUserInfo(false).end()
+                .credentials().clientSecret().method(Method.BASIC).end().end()
+                .build();
         OidcTenantConfig config = OidcUtils.mergeTenantConfig(tenant, KnownOidcProviders.provider(Provider.STRAVA));
 
         assertEquals(OidcUtils.DEFAULT_TENANT_ID, config.getTenantId().get());
-        assertEquals(ApplicationType.HYBRID, config.getApplicationType().get());
+        assertEquals(ApplicationType.HYBRID, config.applicationType().get());
         assertEquals("http://localhost/wiremock", config.getAuthServerUrl().get());
         assertEquals("authorizations", config.getAuthorizationPath().get());
         assertEquals("tokens", config.getTokenPath().get());
         assertEquals("users", config.getUserInfoPath().get());
         assertEquals(List.of("write"), config.authentication.scopes.get());
         assertFalse(config.token.verifyAccessTokenWithUserInfo.get());
-        assertEquals(Method.BASIC, config.credentials.clientSecret.method.get());
+        assertEquals(Method.BASIC, config.credentials().clientSecret().method().get());
         assertEquals("/fitness-app", config.authentication.redirectPath.get());
         assertEquals(" ", config.authentication.scopeSeparator.get());
     }
 
     @Test
     public void testAcceptTwitchProperties() throws Exception {
-        OidcTenantConfig tenant = new OidcTenantConfig();
-        tenant.setTenantId(OidcUtils.DEFAULT_TENANT_ID);
+        OidcTenantConfig tenant = OidcTenantConfig.builder().build();
         OidcTenantConfig config = OidcUtils.mergeTenantConfig(tenant, KnownOidcProviders.provider(Provider.TWITCH));
 
         assertEquals(OidcUtils.DEFAULT_TENANT_ID, config.getTenantId().get());
-        assertEquals(ApplicationType.WEB_APP, config.getApplicationType().get());
+        assertEquals(ApplicationType.WEB_APP, config.applicationType().get());
         assertEquals("https://id.twitch.tv/oauth2", config.getAuthServerUrl().get());
-        assertEquals(Method.POST, config.credentials.clientSecret.method.get());
+        assertEquals(Method.POST, config.credentials().clientSecret().method().get());
         assertTrue(config.authentication.forceRedirectHttpsScheme.get());
     }
 
     @Test
     public void testOverrideTwitchProperties() throws Exception {
-        OidcTenantConfig tenant = new OidcTenantConfig();
-        tenant.setTenantId(OidcUtils.DEFAULT_TENANT_ID);
-
-        tenant.setApplicationType(ApplicationType.HYBRID);
-        tenant.setAuthServerUrl("http://localhost/wiremock");
-        tenant.credentials.clientSecret.setMethod(Method.BASIC);
-        tenant.authentication.setForceRedirectHttpsScheme(false);
-
+        OidcTenantConfig tenant = OidcTenantConfig.builder()
+                .applicationType(ApplicationType.HYBRID)
+                .authServerUrl("http://localhost/wiremock")
+                .credentials().clientSecret().method(Method.BASIC).end().end()
+                .authentication().forceRedirectHttpsScheme(false).end()
+                .build();
         OidcTenantConfig config = OidcUtils.mergeTenantConfig(tenant, KnownOidcProviders.provider(Provider.FACEBOOK));
 
         assertEquals(OidcUtils.DEFAULT_TENANT_ID, config.getTenantId().get());
-        assertEquals(ApplicationType.HYBRID, config.getApplicationType().get());
+        assertEquals(ApplicationType.HYBRID, config.applicationType().get());
         assertEquals("http://localhost/wiremock", config.getAuthServerUrl().get());
         assertFalse(config.getAuthentication().isForceRedirectHttpsScheme().get());
-        assertEquals(Method.BASIC, config.credentials.clientSecret.method.get());
+        assertEquals(Method.BASIC, config.credentials().clientSecret().method().get());
     }
 
     @Test
     public void testAcceptDiscordProperties() throws Exception {
-        OidcTenantConfig tenant = new OidcTenantConfig();
-        tenant.setTenantId(OidcUtils.DEFAULT_TENANT_ID);
+        OidcTenantConfig tenant = OidcTenantConfig.builder().build();
         OidcTenantConfig config = OidcUtils.mergeTenantConfig(tenant, KnownOidcProviders.provider(Provider.DISCORD));
 
         assertEquals(OidcUtils.DEFAULT_TENANT_ID, config.getTenantId().get());
-        assertEquals(ApplicationType.WEB_APP, config.getApplicationType().get());
+        assertEquals(ApplicationType.WEB_APP, config.applicationType().get());
         assertFalse(config.discoveryEnabled.get());
         assertEquals("https://discord.com/api/oauth2", config.getAuthServerUrl().get());
         assertEquals("authorize", config.getAuthorizationPath().get());
@@ -542,27 +483,24 @@ public class KnownOidcProvidersTest {
 
     @Test
     public void testOverrideDiscordProperties() throws Exception {
-        OidcTenantConfig tenant = new OidcTenantConfig();
-        tenant.setTenantId(OidcUtils.DEFAULT_TENANT_ID);
-
-        tenant.setApplicationType(ApplicationType.HYBRID);
-        tenant.setAuthServerUrl("http://localhost/wiremock");
-        tenant.credentials.clientSecret.setMethod(Method.BASIC);
-        tenant.authentication.setForceRedirectHttpsScheme(false);
-
+        OidcTenantConfig tenant = OidcTenantConfig.builder()
+                .applicationType(ApplicationType.HYBRID)
+                .authServerUrl("http://localhost/wiremock")
+                .credentials().clientSecret().method(Method.BASIC).end().end()
+                .authentication().forceRedirectHttpsScheme(false).end()
+                .build();
         OidcTenantConfig config = OidcUtils.mergeTenantConfig(tenant, KnownOidcProviders.provider(Provider.DISCORD));
 
         assertEquals(OidcUtils.DEFAULT_TENANT_ID, config.getTenantId().get());
-        assertEquals(ApplicationType.HYBRID, config.getApplicationType().get());
+        assertEquals(ApplicationType.HYBRID, config.applicationType().get());
         assertEquals("http://localhost/wiremock", config.getAuthServerUrl().get());
         assertFalse(config.getAuthentication().isForceRedirectHttpsScheme().get());
-        assertEquals(Method.BASIC, config.credentials.clientSecret.method.get());
+        assertEquals(Method.BASIC, config.credentials().clientSecret().method().get());
     }
 
     @Test
     public void testAcceptLinkedInProperties() throws Exception {
-        OidcTenantConfig tenant = new OidcTenantConfig();
-        tenant.setTenantId(OidcUtils.DEFAULT_TENANT_ID);
+        OidcTenantConfig tenant = OidcTenantConfig.builder().build();
         OidcTenantConfig config = OidcUtils.mergeTenantConfig(tenant, KnownOidcProviders.provider(Provider.LINKEDIN));
 
         assertEquals(OidcUtils.DEFAULT_TENANT_ID, config.getTenantId().get());
@@ -572,31 +510,28 @@ public class KnownOidcProvidersTest {
 
     @Test
     public void testOverrideLinkedInProperties() throws Exception {
-        OidcTenantConfig tenant = new OidcTenantConfig();
-        tenant.setTenantId(OidcUtils.DEFAULT_TENANT_ID);
-
-        tenant.setApplicationType(ApplicationType.HYBRID);
-        tenant.setAuthServerUrl("http://localhost/wiremock");
-        tenant.credentials.clientSecret.setMethod(Method.BASIC);
-        tenant.authentication.setForceRedirectHttpsScheme(false);
-
+        OidcTenantConfig tenant = OidcTenantConfig.builder()
+                .applicationType(ApplicationType.HYBRID)
+                .authServerUrl("http://localhost/wiremock")
+                .credentials().clientSecret().method(Method.BASIC).end().end()
+                .authentication().forceRedirectHttpsScheme(false).end()
+                .build();
         OidcTenantConfig config = OidcUtils.mergeTenantConfig(tenant, KnownOidcProviders.provider(Provider.LINKEDIN));
 
         assertEquals(OidcUtils.DEFAULT_TENANT_ID, config.getTenantId().get());
-        assertEquals(ApplicationType.HYBRID, config.getApplicationType().get());
+        assertEquals(ApplicationType.HYBRID, config.applicationType().get());
         assertEquals("http://localhost/wiremock", config.getAuthServerUrl().get());
         assertFalse(config.getAuthentication().isForceRedirectHttpsScheme().get());
-        assertEquals(Method.BASIC, config.credentials.clientSecret.method.get());
+        assertEquals(Method.BASIC, config.credentials().clientSecret().method().get());
     }
 
     @Test
     public void testAcceptSlackProperties() {
-        OidcTenantConfig tenant = new OidcTenantConfig();
-        tenant.setTenantId(OidcUtils.DEFAULT_TENANT_ID);
+        OidcTenantConfig tenant = OidcTenantConfig.builder().build();
         OidcTenantConfig config = OidcUtils.mergeTenantConfig(tenant, KnownOidcProviders.provider(Provider.SLACK));
 
         assertEquals(OidcUtils.DEFAULT_TENANT_ID, config.getTenantId().get());
-        assertEquals(ApplicationType.WEB_APP, config.getApplicationType().get());
+        assertEquals(ApplicationType.WEB_APP, config.applicationType().get());
         assertTrue(config.isDiscoveryEnabled().orElse(true));
         assertEquals("https://slack.com", config.getAuthServerUrl().get());
 
@@ -607,18 +542,18 @@ public class KnownOidcProvidersTest {
 
     @Test
     public void testOverrideSlackProperties() {
-        OidcTenantConfig tenant = new OidcTenantConfig();
-        tenant.setTenantId("PattiSmith");
-        tenant.setApplicationType(ApplicationType.SERVICE);
-        tenant.setDiscoveryEnabled(false);
-        tenant.setAuthServerUrl("https://private-slack.com");
-        tenant.getToken().setPrincipalClaim("I you my own principal");
-        tenant.getAuthentication().setForceRedirectHttpsScheme(false);
-        tenant.getAuthentication().setScopes(List.of("profile"));
+        OidcTenantConfig tenant = OidcTenantConfig.builder()
+                .tenantId("PattiSmith")
+                .applicationType(ApplicationType.SERVICE)
+                .discoveryEnabled(false)
+                .authServerUrl("https://private-slack.com")
+                .token().principalClaim("I you my own principal").end()
+                .authentication().forceRedirectHttpsScheme(false).scopes("profile").end()
+                .build();
         OidcTenantConfig config = OidcUtils.mergeTenantConfig(tenant, KnownOidcProviders.provider(Provider.SLACK));
 
         assertEquals("PattiSmith", config.getTenantId().get());
-        assertEquals(ApplicationType.SERVICE, config.getApplicationType().get());
+        assertEquals(ApplicationType.SERVICE, config.applicationType().get());
         assertFalse(config.isDiscoveryEnabled().orElse(true));
         assertEquals("https://private-slack.com", config.getAuthServerUrl().get());
 

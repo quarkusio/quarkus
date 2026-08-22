@@ -112,8 +112,8 @@ public class OtlpExporterProcessor {
     @BuildStep
     void logging(BuildProducer<LogCategoryBuildItem> log) {
         // Reduce the log level of the exporters because it's too much, and we do log important things ourselves.
-        log.produce(new LogCategoryBuildItem("io.opentelemetry.exporter.internal.grpc.GrpcExporter", Level.OFF));
-        log.produce(new LogCategoryBuildItem("io.opentelemetry.exporter.internal.http.HttpExporter", Level.OFF));
+        log.produce(new LogCategoryBuildItem("io.opentelemetry.exporter.otlp.internal.GrpcExporter", Level.OFF));
+        log.produce(new LogCategoryBuildItem("io.opentelemetry.exporter.otlp.internal.HttpExporter", Level.OFF));
     }
 
     @BuildStep

@@ -1,5 +1,7 @@
 package io.quarkus.oidc.runtime;
 
+import static java.util.Collections.unmodifiableList;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -27,18 +29,24 @@ public final class TenantConfigBean {
     private final Map<String, TenantConfigContext> dynamicTenantsConfig;
     private final TenantConfigContext defaultTenant;
     private final TenantContextFactory tenantContextFactory;
+    final List<OptionalOidcRouteHandler> optionalOidcRouteHandlers;
 
     TenantConfigBean(Vertx vertx, TlsConfigurationRegistry tlsConfigurationRegistry, OidcImpl oidc,
             boolean securityEventsEnabled, ProxyConfigurationRegistry proxyConfigurationRegistry,
-            Set<OidcRoute> allowedRoutes) {
+            Set<OidcRoute> allowedRoutes, boolean userInfoInjectionPointDetected,
+            List<OptionalOidcRouteHandler> optionalOidcRouteHandlers) {
         this.tenantContextFactory = new TenantContextFactory(vertx, tlsConfigurationRegistry, securityEventsEnabled,
-                proxyConfigurationRegistry, allowedRoutes);
+                proxyConfigurationRegistry, allowedRoutes, userInfoInjectionPointDetected,
+                cfg -> updateOptionalOidcRouteHandlers(cfg, null));
         this.dynamicTenantsConfig = new ConcurrentHashMap<>();
 
         this.staticTenantsConfig = tenantContextFactory.createStaticTenantConfigs(oidc.getStaticTenantConfigs(),
                 oidc.getDefaultTenantConfig());
         this.defaultTenant = tenantContextFactory.createDefaultTenantConfig(oidc.getStaticTenantConfigs(),
                 oidc.getDefaultTenantConfig());
+
+        this.optionalOidcRouteHandlers = optionalOidcRouteHandlers.isEmpty() ? null
+                : unmodifiableList(optionalOidcRouteHandlers);
     }
 
     Uni<TenantConfigContext> createDynamicTenantContext(OidcTenantConfig oidcConfig) {
@@ -55,8 +63,7 @@ public final class TenantConfigBean {
                     public TenantConfigContext apply(TenantConfigContext t) {
                         var previousValue = dynamicTenantsConfig.putIfAbsent(tenantId, t);
                         if (previousValue == null) {
-                            BackChannelLogoutHandler.fireBackChannelLogoutReadyEvent(oidcConfig);
-                            ResourceMetadataHandler.fireResourceMetadataReadyEvent(oidcConfig);
+                            updateOptionalOidcRouteHandlers(oidcConfig, null);
                         }
                         return t;
                     }
@@ -70,11 +77,18 @@ public final class TenantConfigBean {
             LOG.debugf("Updating the resolved tenant %s configuration with a new configuration", tenantId);
             var newTenant = new TenantConfigContextImpl(tenant, oidcConfig);
             dynamicTenantsConfig.put(tenantId, newTenant);
-            BackChannelLogoutHandler.fireBackChannelLogoutChangedEvent(oidcConfig, tenant);
-            ResourceMetadataHandler.fireResourceMetadataChangedEvent(oidcConfig, tenant);
+            updateOptionalOidcRouteHandlers(oidcConfig, tenant);
             return Uni.createFrom().item(newTenant);
         } else {
             return createDynamicTenantContext(oidcConfig);
+        }
+    }
+
+    private void updateOptionalOidcRouteHandlers(OidcTenantConfig oidcConfig, TenantConfigContext tenant) {
+        if (optionalOidcRouteHandlers != null) {
+            for (OptionalOidcRouteHandler optionalOidcRouteHandler : optionalOidcRouteHandlers) {
+                optionalOidcRouteHandler.updateIfPathChanged(oidcConfig, tenant, this);
+            }
         }
     }
 
@@ -129,6 +143,11 @@ public final class TenantConfigBean {
             for (var i : instance.dynamicTenantsConfig.values()) {
                 if (i.provider() != null) {
                     i.provider().close();
+                }
+            }
+            if (instance.optionalOidcRouteHandlers != null) {
+                for (OptionalOidcRouteHandler optionalOidcRouteHandler : instance.optionalOidcRouteHandlers) {
+                    optionalOidcRouteHandler.close();
                 }
             }
         }

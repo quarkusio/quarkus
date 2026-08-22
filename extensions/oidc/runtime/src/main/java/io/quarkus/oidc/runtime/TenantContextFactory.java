@@ -14,6 +14,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiFunction;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -44,24 +45,27 @@ import io.vertx.core.json.JsonObject;
 
 final class TenantContextFactory {
 
-    static volatile boolean userInfoInjectionPointDetected = false;
-
     private final Set<String> tenantsExpectingServerAvailableEvents;
     private final Vertx vertx;
     private final OidcTlsSupport tlsSupport;
     private final boolean securityEventsEnabled;
     private final ProxyConfigurationRegistry proxyConfigurationRegistry;
     private final Set<OidcRoute> allowedRoutes;
+    private final boolean userInfoInjectionPointDetected;
+    private final Consumer<OidcTenantConfig> updateOptionalOidcRouteHandler;
 
     TenantContextFactory(Vertx vertx, TlsConfigurationRegistry tlsConfigurationRegistry, boolean securityEventsEnabled,
             ProxyConfigurationRegistry proxyConfigurationRegistry,
-            Set<OidcRoute> allowedRoutes) {
+            Set<OidcRoute> allowedRoutes, boolean userInfoInjectionPointDetected,
+            Consumer<OidcTenantConfig> updateOptionalOidcRouteHandler) {
         this.vertx = vertx;
         this.tlsSupport = OidcTlsSupport.of(tlsConfigurationRegistry);
         this.securityEventsEnabled = securityEventsEnabled;
+        this.updateOptionalOidcRouteHandler = updateOptionalOidcRouteHandler;
         this.tenantsExpectingServerAvailableEvents = ConcurrentHashMap.newKeySet();
         this.proxyConfigurationRegistry = proxyConfigurationRegistry;
         this.allowedRoutes = allowedRoutes;
+        this.userInfoInjectionPointDetected = userInfoInjectionPointDetected;
     }
 
     TenantConfigContext createDefaultTenantConfig(Map<String, OidcTenantConfig> staticTenants, OidcTenantConfig defaultTenant) {
@@ -120,14 +124,16 @@ final class TenantContextFactory {
                                         + " Access to resources protected by this tenant may fail"
                                         + " if OIDC server will not become available",
                                         tenantId, t.getMessage());
-                                return TenantConfigContext.createNotReady(null, oidcConfig, staticTenantCreator);
+                                return TenantConfigContext.createNotReady(null, oidcConfig, staticTenantCreator,
+                                        updateOptionalOidcRouteHandler);
                             }
                             logTenantConfigContextFailure(t, tenantId);
                             if (t instanceof ConfigurationException
                                     && !oidcConfig.authServerUrl().isPresent()
                                     && LaunchMode.DEVELOPMENT == LaunchMode.current()) {
                                 // Let it start if it is a DEV mode and auth-server-url has not been configured yet
-                                return TenantConfigContext.createNotReady(null, oidcConfig, staticTenantCreator);
+                                return TenantConfigContext.createNotReady(null, oidcConfig, staticTenantCreator,
+                                        updateOptionalOidcRouteHandler);
                             }
                             // fail in all other cases
                             throw new OIDCException(t);
@@ -138,7 +144,7 @@ final class TenantContextFactory {
             LOG.warnf("Tenant '%s': OIDC server is not available after a %d seconds timeout, an attempt to connect will be made"
                     + " during the first request. Access to resources protected by this tenant may fail if OIDC server"
                     + " will not become available", tenantId, oidcConfig.connectionTimeout().getSeconds());
-            return TenantConfigContext.createNotReady(null, oidcConfig, staticTenantCreator);
+            return TenantConfigContext.createNotReady(null, oidcConfig, staticTenantCreator, updateOptionalOidcRouteHandler);
         }
     }
 

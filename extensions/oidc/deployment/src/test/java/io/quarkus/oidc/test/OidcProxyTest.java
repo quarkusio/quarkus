@@ -1,6 +1,7 @@
 package io.quarkus.oidc.test;
 
 import static io.quarkus.oidc.runtime.OidcUtils.TENANT_ID_ATTRIBUTE;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
@@ -23,6 +24,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import com.dd.plist.Base64;
 
+import io.quarkus.oidc.runtime.OidcRecorder;
 import io.quarkus.security.Authenticated;
 import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.common.QuarkusTestResource;
@@ -86,6 +88,14 @@ class OidcProxyTest {
         } finally {
             httpServer.close();
         }
+    }
+
+    @Test
+    void testNoOptionalRoutesRegistered() {
+        assertNull(OidcRecorder.getOptionalOidcRouteHandlers(), """
+                No OIDC route handlers should be registered, because no static tenant is configured to use them,
+                and no dynamic tenants can exist without 'TenantConfigResolver'
+                """);
     }
 
     private static void callSecuredEndpoint(String authServerUrl) {

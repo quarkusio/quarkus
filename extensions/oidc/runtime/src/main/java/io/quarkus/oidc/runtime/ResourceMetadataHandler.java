@@ -1,12 +1,11 @@
 package io.quarkus.oidc.runtime;
 
+import static io.quarkus.oidc.runtime.OptionalOidcRouteHandler.OptionalOidcRouteHandlerBuilder.isRouteRequired;
+
 import java.net.URI;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
-
-import jakarta.enterprise.event.Event;
-import jakarta.enterprise.event.Observes;
-import jakarta.inject.Singleton;
 
 import org.jboss.logging.Logger;
 
@@ -17,13 +16,12 @@ import io.quarkus.oidc.common.runtime.OidcCommonUtils;
 import io.quarkus.oidc.common.runtime.OidcConstants;
 import io.quarkus.vertx.http.runtime.security.ImmutablePathMatcher;
 import io.vertx.core.Handler;
+import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
-import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
 
-@Singleton
-public class ResourceMetadataHandler implements Handler<RoutingContext> {
+public class ResourceMetadataHandler implements OptionalOidcRouteHandler {
     private static final Logger LOG = Logger.getLogger(ResourceMetadataHandler.class);
     private static final String SLASH = "/";
     private static final String HTTP_SCHEME = "http";
@@ -31,12 +29,8 @@ public class ResourceMetadataHandler implements Handler<RoutingContext> {
     private final DefaultTenantConfigResolver resolver;
     private volatile ImmutablePathMatcher<Handler<RoutingContext>> pathMatcher;
 
-    record NewResourceMetadata() {
-    }
-
-    ResourceMetadataHandler(DefaultTenantConfigResolver resolver) {
-        this.resolver = resolver;
-        this.pathMatcher = null;
+    private ResourceMetadataHandler() {
+        this.resolver = Arc.requireContainer().select(DefaultTenantConfigResolver.class).get();
     }
 
     @Override
@@ -51,14 +45,6 @@ public class ResourceMetadataHandler implements Handler<RoutingContext> {
         }
 
         routingContext.next();
-    }
-
-    void setup(@Observes Router router) {
-        createOrUpdatePathMatcher();
-    }
-
-    synchronized void updatePathMatcher(@Observes NewResourceMetadata ignored) {
-        createOrUpdatePathMatcher();
     }
 
     private void createOrUpdatePathMatcher() {
@@ -124,6 +110,37 @@ public class ResourceMetadataHandler implements Handler<RoutingContext> {
         return protectedResourceMetadataPath;
     }
 
+    @Override
+    public void updateIfPathChanged(OidcTenantConfig oidcConfig, TenantConfigContext tenant,
+            TenantConfigBean tenantConfigBean) {
+        if (tenant == null) {
+            if (oidcConfig.resourceMetadata().enabled()) {
+                createOrUpdatePathMatcher();
+            }
+        } else if (oidcConfig.resourceMetadata().enabled() ||
+                (tenant.oidcConfig() != null && tenant.oidcConfig().resourceMetadata().enabled())) {
+            boolean resourceChanged = tenant.oidcConfig() == null
+                    || !oidcConfig.resourceMetadata().resource().orElse("")
+                            .equals(tenant.oidcConfig().resourceMetadata().resource().orElse(""))
+                    || oidcConfig.resourceMetadata().enabled() != tenant.oidcConfig().resourceMetadata().enabled()
+                    || oidcConfig.resourceMetadata().forceHttpsScheme() != tenant.oidcConfig().resourceMetadata()
+                            .forceHttpsScheme();
+            if (resourceChanged) {
+                createOrUpdatePathMatcher();
+            }
+        }
+    }
+
+    @Override
+    public void initialize() {
+        createOrUpdatePathMatcher();
+    }
+
+    @Override
+    public void close() {
+        // nothing to do
+    }
+
     private static class RouteHandler implements Handler<RoutingContext> {
         private final OidcTenantConfig oidcConfig;
         private final DefaultTenantConfigResolver resolver;
@@ -161,34 +178,6 @@ public class ResourceMetadataHandler implements Handler<RoutingContext> {
             return metadata.toString();
         }
 
-    }
-
-    static void fireResourceMetadataChangedEvent(OidcTenantConfig oidcConfig, TenantConfigContext tenant) {
-        if (oidcConfig.resourceMetadata().enabled() ||
-                (tenant.oidcConfig() != null && tenant.oidcConfig().resourceMetadata().enabled())) {
-            boolean resourceChanged = tenant.oidcConfig() == null
-                    || !oidcConfig.resourceMetadata().resource().orElse("")
-                            .equals(tenant.oidcConfig().resourceMetadata().resource().orElse(""))
-                    || oidcConfig.resourceMetadata().enabled() != tenant.oidcConfig().resourceMetadata().enabled()
-                    || oidcConfig.resourceMetadata().forceHttpsScheme() != tenant.oidcConfig().resourceMetadata()
-                            .forceHttpsScheme();
-            if (resourceChanged) {
-                fireResourceMetadataEvent();
-            }
-        }
-    }
-
-    static void fireResourceMetadataReadyEvent(OidcTenantConfig oidcConfig) {
-        if (oidcConfig.resourceMetadata().enabled()) {
-            fireResourceMetadataEvent();
-        }
-
-    }
-
-    private static void fireResourceMetadataEvent() {
-        Event<NewResourceMetadata> event = Arc.container().beanManager().getEvent()
-                .select(NewResourceMetadata.class);
-        event.fire(new NewResourceMetadata());
     }
 
     static String resourceMetadataAuthenticateParameter(RoutingContext context, DefaultTenantConfigResolver resolver,
@@ -256,5 +245,16 @@ public class ResourceMetadataHandler implements Handler<RoutingContext> {
                 .append(forwardedPrefix)
                 .append(path)
                 .toString();
+    }
+
+    public static final class ResourceMetadataHandlerBuilder implements OptionalOidcRouteHandlerBuilder {
+
+        @Override
+        public OptionalOidcRouteHandler build(Collection<OidcTenantConfig> staticTenantConfigs, Vertx ignored) {
+            if (isRouteRequired(staticTenantConfigs, tenantConfig -> tenantConfig.resourceMetadata().enabled())) {
+                return new ResourceMetadataHandler();
+            }
+            return null;
+        }
     }
 }

@@ -14,9 +14,11 @@ import de.flapdoodle.embed.mongo.transitions.RunningMongodProcess;
 import de.flapdoodle.embed.process.types.ProcessConfig;
 import de.flapdoodle.reverse.TransitionWalker;
 import de.flapdoodle.reverse.transitions.Start;
+import io.quarkus.test.DisabledOnPower;
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-public class MongoTestBase {
+@DisabledOnPower
+public abstract class MongoTestBase {
 
     private static final Logger LOGGER = Logger.getLogger(MongoTestBase.class);
     protected TransitionWalker.ReachedState<RunningMongodProcess> mongo;

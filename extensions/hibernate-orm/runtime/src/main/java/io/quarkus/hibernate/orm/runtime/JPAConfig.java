@@ -161,6 +161,7 @@ public class JPAConfig {
         private final String name;
         private final boolean isReactive;
         private volatile EntityManagerFactory value;
+        private RuntimeException startupFailure;
         private volatile boolean closed = false;
 
         LazyPersistenceUnit(String name, boolean isReactive) {
@@ -174,9 +175,17 @@ public class JPAConfig {
                     if (closed) {
                         throw new IllegalStateException("Persistence unit is closed");
                     }
+                    if (startupFailure != null) {
+                        throw startupFailure;
+                    }
                     if (value == null) {
-                        value = Persistence.createEntityManagerFactory(name,
-                                Collections.singletonMap(IS_REACTIVE_KEY, isReactive));
+                        try {
+                            value = Persistence.createEntityManagerFactory(name,
+                                    Collections.singletonMap(IS_REACTIVE_KEY, isReactive));
+                        } catch (RuntimeException e) {
+                            startupFailure = e;
+                            throw e;
+                        }
                     }
                 }
             }

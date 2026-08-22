@@ -60,6 +60,7 @@ import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
+import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
@@ -112,8 +113,9 @@ public class GrpcClientProcessor {
 
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
-    void setUpStork(GrpcStorkRecorder storkRecorder, GrpcClientBuildTimeConfig config) {
-        storkRecorder.init(config.storkProactiveConnections());
+    void setUpStork(GrpcStorkRecorder storkRecorder, GrpcClientBuildTimeConfig config,
+            ShutdownContextBuildItem shutdown) {
+        storkRecorder.init(shutdown, config.storkProactiveConnections());
     }
 
     @BuildStep

@@ -28,14 +28,17 @@ public class VertxStorkMeasuringGrpcInterceptor implements ClientInterceptor, Pr
     public <ReqT, RespT> ClientCall<ReqT, RespT> interceptCall(MethodDescriptor<ReqT, RespT> method, CallOptions callOptions,
             Channel next) {
         boolean recordTime = method.getType() == MethodDescriptor.MethodType.UNARY;
-        Context context = Context.current().withValues(
-                STORK_SERVICE_INSTANCE, new AtomicReference<>(),
+        AtomicReference<ServiceInstance> serviceInstanceRef = new AtomicReference<>();
+        // Attach only while newCall() runs so StorkGrpcChannel can capture the shared
+        // AtomicReference; metrics afterwards read that ref from the call object.
+        Context storkContext = Context.current().withValues(
+                STORK_SERVICE_INSTANCE, serviceInstanceRef,
                 STORK_MEASURE_TIME, recordTime);
-        Context oldContext = context.attach();
+        Context previous = storkContext.attach();
         try {
-            return new VertxStorkMeasuringCall<>(next.newCall(method, callOptions), recordTime);
+            return new VertxStorkMeasuringCall<>(next.newCall(method, callOptions), recordTime, serviceInstanceRef);
         } finally {
-            context.detach(oldContext);
+            storkContext.detach(previous);
         }
     }
 
@@ -45,23 +48,14 @@ public class VertxStorkMeasuringGrpcInterceptor implements ClientInterceptor, Pr
     }
 
     private static class VertxStorkMeasuringCall<ReqT, RespT> extends AbstractStorkMeasuringCall<ReqT, RespT> {
-        ServiceInstance serviceInstance;
 
-        protected VertxStorkMeasuringCall(ClientCall<ReqT, RespT> delegate, boolean recordTime) {
-            super(delegate, recordTime);
-        }
-
-        @Override
-        protected ServiceInstance serviceInstance() {
-            return serviceInstance;
+        protected VertxStorkMeasuringCall(ClientCall<ReqT, RespT> delegate, boolean recordTime,
+                AtomicReference<ServiceInstance> serviceInstanceRef) {
+            super(delegate, recordTime, serviceInstanceRef);
         }
 
         @Override
         public void start(final Listener<RespT> responseListener, final Metadata metadata) {
-            AtomicReference<ServiceInstance> ref = STORK_SERVICE_INSTANCE.get();
-            if (ref != null) {
-                serviceInstance = ref.get();
-            }
             super.start(new StorkMeasuringCallListener<>(responseListener, this), metadata);
         }
     }

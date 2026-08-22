@@ -3,6 +3,7 @@ package io.quarkus.oidc.runtime;
 import java.security.Key;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 import javax.crypto.SecretKey;
@@ -59,8 +60,8 @@ public sealed interface TenantConfigContext permits TenantConfigContextImpl, Laz
     }
 
     static TenantConfigContext createNotReady(OidcProvider provider, OidcTenantConfig config,
-            Supplier<Uni<TenantConfigContext>> staticTenantCreator) {
+            Supplier<Uni<TenantConfigContext>> staticTenantCreator, Consumer<OidcTenantConfig> updateOptionalOidcRouteHandler) {
         var notReadyContext = new TenantConfigContextImpl(provider, config, false, null);
-        return new LazyTenantConfigContext(notReadyContext, staticTenantCreator);
+        return new LazyTenantConfigContext(notReadyContext, staticTenantCreator, updateOptionalOidcRouteHandler);
     }
 }

@@ -3,6 +3,9 @@ package io.quarkus.oidc.runtime;
 import static io.quarkus.runtime.configuration.DurationConverter.parseDuration;
 
 import java.time.Duration;
+import java.util.Collection;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -16,15 +19,14 @@ import org.jboss.logging.Logger;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.SyntheticCreationalContext;
-import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.oidc.Oidc;
 import io.quarkus.oidc.OidcTenantConfig;
 import io.quarkus.oidc.TenantIdentityProvider;
+import io.quarkus.oidc.runtime.OptionalOidcRouteHandler.OptionalOidcRouteHandlerBuilder;
 import io.quarkus.proxy.ProxyConfigurationRegistry;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.runtime.annotations.RuntimeInit;
-import io.quarkus.runtime.annotations.StaticInit;
 import io.quarkus.security.AuthenticationFailedException;
 import io.quarkus.security.runtime.SecurityConfig;
 import io.quarkus.tls.TlsConfigurationRegistry;
@@ -46,33 +48,22 @@ public class OidcRecorder {
         this.securityConfig = securityConfig;
     }
 
-    public Supplier<DefaultTokenIntrospectionUserInfoCache> setupTokenCache(Supplier<Vertx> vertx) {
-        return new Supplier<DefaultTokenIntrospectionUserInfoCache>() {
-            @Override
-            public DefaultTokenIntrospectionUserInfoCache get() {
-                return new DefaultTokenIntrospectionUserInfoCache(oidcConfig.getValue(), vertx.get());
-            }
-        };
-    }
-
-    @StaticInit
-    public void setUserInfoInjectionPointDetected(boolean userInfoInjectionPointDetected) {
-        TenantContextFactory.userInfoInjectionPointDetected = userInfoInjectionPointDetected;
-    }
-
     @RuntimeInit
     public Function<SyntheticCreationalContext<TenantConfigBean>, TenantConfigBean> createTenantConfigBean(
             Supplier<Vertx> vertx, Supplier<TlsConfigurationRegistry> registry,
             Supplier<ProxyConfigurationRegistry> proxyConfigurationRegistrySupplier,
-            Set<OidcRoute> allowedRoutes) {
+            Set<OidcRoute> allowedRoutes, boolean userInfoInjectionPointDetected,
+            List<OptionalOidcRouteHandlerBuilder> optionalOidcRouteHandlerBuilders) {
         return new Function<SyntheticCreationalContext<TenantConfigBean>, TenantConfigBean>() {
             @Override
             public TenantConfigBean apply(SyntheticCreationalContext<TenantConfigBean> ctx) {
                 final OidcImpl oidc = new OidcImpl(oidcConfig.getValue());
                 ctx.getInjectedReference(new TypeLiteral<Event<Oidc>>() {
                 }).fire(oidc);
+                var optionalOidcRouteHandlers = collectOptionalOidcRouteHandlers(oidc, optionalOidcRouteHandlerBuilders, vertx);
                 return new TenantConfigBean(vertx.get(), registry.get(), oidc, securityConfig.getValue().events().enabled(),
-                        proxyConfigurationRegistrySupplier.get(), allowedRoutes);
+                        proxyConfigurationRegistrySupplier.get(), allowedRoutes, userInfoInjectionPointDetected,
+                        optionalOidcRouteHandlers);
             }
         };
     }
@@ -179,12 +170,33 @@ public class OidcRecorder {
         };
     }
 
-    public Handler<RoutingContext> getBackChannelLogoutHandler(BeanContainer beanContainer) {
-        return beanContainer.beanInstance(BackChannelLogoutHandler.class);
+    private static List<OptionalOidcRouteHandler> collectOptionalOidcRouteHandlers(OidcImpl oidc,
+            List<OptionalOidcRouteHandlerBuilder> optionalOidcRouteHandlerBuilders, Supplier<Vertx> vertx) {
+        if (optionalOidcRouteHandlerBuilders.isEmpty()) {
+            return List.of();
+        }
+        Collection<OidcTenantConfig> staticTenantConfigs = oidc.getStaticTenantConfigs().values();
+        List<OptionalOidcRouteHandler> optionalOidcRouteHandlers = new LinkedList<>();
+        for (OptionalOidcRouteHandlerBuilder optionalOidcRouteHandlerBuilder : optionalOidcRouteHandlerBuilders) {
+            var optionalOidcRouteHandler = optionalOidcRouteHandlerBuilder.build(staticTenantConfigs, vertx.get());
+            if (optionalOidcRouteHandler != null) {
+                optionalOidcRouteHandlers.add(optionalOidcRouteHandler);
+            }
+        }
+        return optionalOidcRouteHandlers;
     }
 
-    public Handler<RoutingContext> getResourceMetadataHandler(BeanContainer beanContainer) {
-        return beanContainer.beanInstance(ResourceMetadataHandler.class);
+    public Handler<RoutingContext> initializeAndGetOidcRouteHandler(int index) {
+        List<OptionalOidcRouteHandler> optionalOidcRouteHandlers = getOptionalOidcRouteHandlers();
+        if (optionalOidcRouteHandlers != null && optionalOidcRouteHandlers.size() > index) {
+            OptionalOidcRouteHandler optionalOidcRouteHandler = optionalOidcRouteHandlers.get(index);
+            optionalOidcRouteHandler.initialize();
+            return optionalOidcRouteHandler;
+        }
+        return null;
     }
 
+    public static List<OptionalOidcRouteHandler> getOptionalOidcRouteHandlers() {
+        return Arc.requireContainer().select(TenantConfigBean.class).get().optionalOidcRouteHandlers;
+    }
 }

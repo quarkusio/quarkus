@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import jakarta.inject.Inject;
 
+import org.eclipse.microprofile.config.ConfigProvider;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -15,6 +16,7 @@ public class OtlpExporterConfigTest {
     @RegisterExtension
     static final QuarkusExtensionTest TEST = new QuarkusExtensionTest()
             .withEmptyApplication()
+            .overrideConfigKey("quarkus.otel.experimental.otlp.default.enable", "true")
             .overrideConfigKey("quarkus.otel.traces.exporter", "cdi")
             .overrideConfigKey("quarkus.otel.exporter.otlp.protocol", "wrong")
             .overrideConfigKey("quarkus.otel.exporter.otlp.traces.protocol", "grpc")
@@ -45,5 +47,10 @@ public class OtlpExporterConfigTest {
         assertEquals("http/protobuf", config.logs().protocol().get().trim());
         assertTrue(config.logs().endpoint().isPresent());
         assertEquals("http://localhost", config.logs().endpoint().get().trim());
+    }
+
+    @Test
+    void testDefaultExporterConfig() {
+        assertTrue(ConfigProvider.getConfig().getValue("quarkus.otel.experimental.otlp.default.enable", Boolean.class));
     }
 }

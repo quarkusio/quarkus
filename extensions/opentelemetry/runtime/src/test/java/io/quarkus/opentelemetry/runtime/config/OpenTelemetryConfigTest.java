@@ -15,6 +15,7 @@ import java.util.Map;
 
 import org.junit.jupiter.api.Test;
 
+import io.quarkus.opentelemetry.runtime.config.build.OTelBuildConfig;
 import io.quarkus.opentelemetry.runtime.config.runtime.exporter.OtlpExporterConfigBuilder;
 import io.quarkus.opentelemetry.runtime.config.runtime.exporter.OtlpExporterMetricsConfig;
 import io.quarkus.opentelemetry.runtime.config.runtime.exporter.OtlpExporterRuntimeConfig;
@@ -195,5 +196,35 @@ class OpenTelemetryConfigTest {
         assertEquals("traces", traces.proxyOptions().host().get());
         assertTrue(traces.proxyOptions().port().isPresent());
         assertEquals(6666, traces.proxyOptions().port().getAsInt());
+    }
+
+    @Test
+    void testDefaultExporterEnabledMapping() {
+        Map<String, String> configMap = new HashMap<>();
+        configMap.put("quarkus.otel.experimental.otlp.default.enable", "true");
+
+        SmallRyeConfig config = new SmallRyeConfigBuilder()
+                .withMapping(OTelBuildConfig.class)
+                .withDefaultValues(configMap)
+                .build();
+
+        OTelBuildConfig mapping = config.getConfigMapping(OTelBuildConfig.class);
+        assertTrue(mapping.defaultExporterEnabled(),
+                "The experimental.otlp.default.enable property should be mapped to true");
+    }
+
+    @Test
+    void testDefaultExporterDisabledMapping() {
+        Map<String, String> configMap = new HashMap<>();
+        configMap.put("quarkus.otel.experimental.otlp.default.enable", "false");
+
+        SmallRyeConfig config = new SmallRyeConfigBuilder()
+                .withMapping(OTelBuildConfig.class)
+                .withDefaultValues(configMap)
+                .build();
+
+        OTelBuildConfig mapping = config.getConfigMapping(OTelBuildConfig.class);
+        assertFalse(mapping.defaultExporterEnabled(),
+                "The experimental.otlp.default.enable property should be mapped to false");
     }
 }

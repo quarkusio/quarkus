@@ -231,7 +231,7 @@ public final class MultipartSupport {
         for (FormValue value : values) {
             if (value.isFileItem()) {
                 try {
-                    ret.add(Files.readString(value.getFileItem().getFile(), Charset.defaultCharset()));
+                    ret.add(new String(readAllBytes(value.getFileItem()), Charset.defaultCharset()));
                 } catch (IOException e) {
                     throw new MultipartPartReadingException(e);
                 }
@@ -246,6 +246,13 @@ public final class MultipartSupport {
         return ret;
     }
 
+    private static byte[] readAllBytes(FileItem fileItem) throws IOException {
+        if (fileItem.isInMemory()) {
+            return fileItem.getInputStream().readAllBytes();
+        }
+        return Files.readAllBytes(fileItem.getFile());
+    }
+
     public static byte[] getByteArray(String formName, ResteasyReactiveRequestContext context) {
         FormValue value = getFirstValue(formName, context);
         if (value == null) {
@@ -253,11 +260,7 @@ public final class MultipartSupport {
         }
         if (value.isFileItem()) {
             try {
-                FileItem fileItem = value.getFileItem();
-                if (fileItem.isInMemory()) {
-                    return fileItem.getInputStream().readAllBytes();
-                }
-                return Files.readAllBytes(fileItem.getFile());
+                return readAllBytes(value.getFileItem());
             } catch (IOException e) {
                 throw new MultipartPartReadingException(e);
             }
@@ -275,7 +278,7 @@ public final class MultipartSupport {
         for (FormValue value : values) {
             if (value.isFileItem()) {
                 try {
-                    ret.add(Files.readAllBytes(value.getFileItem().getFile()));
+                    ret.add(readAllBytes(value.getFileItem()));
                 } catch (IOException e) {
                     throw new MultipartPartReadingException(e);
                 }

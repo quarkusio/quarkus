@@ -612,6 +612,10 @@ Moreover, if `quarkus.http.body.delete-uploaded-files-on-end` is set to true, Qu
 the file will reside on the file system of the server (in the directory defined by the `quarkus.http.body.uploads-directory` configuration option), but as the uploaded files are saved
 with a UUID file name and no additional metadata is saved, these files are essentially a random dump of files.
 
+By default, every file part is written to the uploads directory. Setting `quarkus.http.body.multipart.file-size-threshold` (for example to `16K`) keeps file parts up to that size in memory instead:
+such parts are reported by `FileItem#isInMemory()` and are only written to the uploads directory if their file is requested, e.g. through `FileUpload#uploadedFile()`.
+Parameters of type `byte[]`, `String` or `InputStream` read them directly from memory.
+
 
 [TIP]
 ====

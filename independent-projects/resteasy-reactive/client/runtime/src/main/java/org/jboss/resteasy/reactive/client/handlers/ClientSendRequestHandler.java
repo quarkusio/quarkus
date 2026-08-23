@@ -12,6 +12,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.concurrent.Callable;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -238,8 +239,29 @@ public class ClientSendRequestHandler implements ClientRestHandler {
                     });
                     Future<HttpClientResponse> sent = httpClientRequest.response();
                     attachSentHandlers(sent, httpClientRequest, requestContext);
+                } else if (requestContext.isInputStreamUpload() && hasWriterInterceptors(requestContext)) {
+                    // the entity has to be serialized through the writer interceptors, which means reading the whole
+                    // stream; as reading the stream may block (e.g. its data may come from a database), this is done
+                    // on a worker thread
+                    MultivaluedMap<String, String> headerMap = requestContext.getRequestHeadersAsMap();
+                    Vertx.currentContext().executeBlocking(new Callable<Buffer>() {
+                        @Override
+                        public Buffer call() throws Exception {
+                            return ClientSendRequestHandler.this.prepareBody(requestContext, headerMap);
+                        }
+                    }, false).onComplete(new Handler<>() {
+                        @Override
+                        public void handle(AsyncResult<Buffer> ar) {
+                            if (ar.failed()) {
+                                requestContext.resume(ar.cause());
+                                return;
+                            }
+                            // set the Vertx headers after we've run the interceptors because they can modify them
+                            setVertxHeaders(httpClientRequest, headerMap);
+                            sendEntity(httpClientRequest, requestContext, ar.result());
+                        }
+                    });
                 } else {
-                    Future<HttpClientResponse> sent;
                     Buffer actualEntity;
                     try {
                         actualEntity = ClientSendRequestHandler.this
@@ -248,18 +270,7 @@ public class ClientSendRequestHandler implements ClientRestHandler {
                         requestContext.resume(e);
                         return;
                     }
-                    if (actualEntity == AsyncInvokerImpl.EMPTY_BUFFER) {
-                        sent = httpClientRequest.send();
-                        if (loggingScope != LoggingScope.NONE) {
-                            clientLogger.logRequest(httpClientRequest, null, false);
-                        }
-                    } else {
-                        sent = httpClientRequest.send(actualEntity);
-                        if (loggingScope != LoggingScope.NONE) {
-                            clientLogger.logRequest(httpClientRequest, actualEntity, false);
-                        }
-                    }
-                    attachSentHandlers(sent, httpClientRequest, requestContext);
+                    sendEntity(httpClientRequest, requestContext, actualEntity);
                 }
             }
         }, new Consumer<>() {
@@ -673,10 +684,38 @@ public class ClientSendRequestHandler implements ClientRestHandler {
         return multipartFormUpload;
     }
 
+    private void sendEntity(HttpClientRequest httpClientRequest, RestClientRequestContext requestContext,
+            Buffer actualEntity) {
+        Future<HttpClientResponse> sent;
+        if (actualEntity == AsyncInvokerImpl.EMPTY_BUFFER) {
+            sent = httpClientRequest.send();
+            if (loggingScope != LoggingScope.NONE) {
+                clientLogger.logRequest(httpClientRequest, null, false);
+            }
+        } else {
+            sent = httpClientRequest.send(actualEntity);
+            if (loggingScope != LoggingScope.NONE) {
+                clientLogger.logRequest(httpClientRequest, actualEntity, false);
+            }
+        }
+        attachSentHandlers(sent, httpClientRequest, requestContext);
+    }
+
     private Buffer setRequestHeadersAndPrepareBody(HttpClientRequest httpClientRequest,
             RestClientRequestContext state)
             throws IOException {
         MultivaluedMap<String, String> headerMap = state.getRequestHeadersAsMap();
+        Buffer actualEntity = prepareBody(state, headerMap);
+        // set the Vertx headers after we've run the interceptors because they can modify them
+        setVertxHeaders(httpClientRequest, headerMap);
+        return actualEntity;
+    }
+
+    /**
+     * Serializes the entity, running the writer interceptors, and completes the headers accordingly.
+     */
+    private Buffer prepareBody(RestClientRequestContext state, MultivaluedMap<String, String> headerMap)
+            throws IOException {
         updateRequestHeadersFromConfig(state, headerMap);
 
         Buffer actualEntity = AsyncInvokerImpl.EMPTY_BUFFER;
@@ -692,8 +731,6 @@ public class ClientSendRequestHandler implements ClientRestHandler {
                 headerMap.putSingle(HttpHeaders.CONTENT_LENGTH, "0");
             }
         }
-        // set the Vertx headers after we've run the interceptors because they can modify them
-        setVertxHeaders(httpClientRequest, headerMap);
         return actualEntity;
     }
 

@@ -31,6 +31,11 @@ was chosen as it is the standard location for resources in `jar` files as define
 Quarkus can be used without Servlet, following this convention allows existing code that places its resources in this
 location to function correctly.
 
+A request for a directory, such as `/foo/`, is answered with its index page (`index.html` by default, see `quarkus.http.static-resources.index-page`).
+By default, the same directory requested without the trailing slash (`/foo`) is not found. `quarkus.http.static-resources.normalize-index-directories`
+can change this to `redirect`, which sends a permanent redirect to `/foo/` so that relative links in the index page keep resolving against the directory,
+or to `reroute`, which serves the index page at `/foo` as well. The setting applies in the same way in development mode and in a packaged application.
+
 === From web dependencies like webjars or mvnpm
 
 Look at the xref:web-dependency-locator.adoc[Web dependency locator] guide for details on how to use https://www.webjars.org[WebJars], https://mvnpm.org[mvnpm] and https://developer.mozilla.org/en-US/docs/Web/HTML/Element/script/type/importmap[importmaps]

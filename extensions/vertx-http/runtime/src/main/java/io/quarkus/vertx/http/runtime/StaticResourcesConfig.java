@@ -13,6 +13,25 @@ public interface StaticResourcesConfig {
     String indexPage();
 
     /**
+     * How a request for a directory containing an index page is handled when its path does not end with a slash,
+     * e.g. {@code /foo} when {@code /foo/index.html} exists:
+     * <ul>
+     * <li>{@code none}: nothing is served for that path</li>
+     * <li>{@code redirect}: the request is redirected to the path ending with a slash, so that relative links in the
+     * index page resolve against the directory</li>
+     * <li>{@code reroute}: the index page is served for that path</li>
+     * </ul>
+     */
+    @WithDefault("none")
+    IndexDirectories normalizeIndexDirectories();
+
+    enum IndexDirectories {
+        NONE,
+        REDIRECT,
+        REROUTE
+    }
+
+    /**
      * Set whether hidden files should be served.
      */
     @WithDefault("true")

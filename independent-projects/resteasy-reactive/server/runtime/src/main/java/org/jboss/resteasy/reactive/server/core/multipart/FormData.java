@@ -4,15 +4,21 @@ import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Deque;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.Response;
@@ -35,8 +41,38 @@ public final class FormData implements Iterable<String> {
     private final int maxValues;
     private int valueCount = 0;
 
+    private final Path tempFileLocation;
+    private final List<Path> createdFiles = Collections.synchronizedList(new ArrayList<>());
+
     public FormData(final int maxValues) {
+        this(maxValues, Paths.get(System.getProperty("java.io.tmpdir")));
+    }
+
+    /**
+     * @param tempFileLocation the directory in which the file parts are stored
+     */
+    public FormData(final int maxValues, Path tempFileLocation) {
         this.maxValues = maxValues;
+        this.tempFileLocation = Objects.requireNonNull(tempFileLocation);
+    }
+
+    /**
+     * Creates a new file in the uploads directory and records it so that {@link #getCreatedFiles()} can delete it
+     * once the request is done.
+     */
+    public Path createTempFile() throws IOException {
+        Files.createDirectories(tempFileLocation);
+        Path file = Files.createTempFile(tempFileLocation, "resteasy-reactive", "upload");
+        createdFiles.add(file);
+        return file;
+    }
+
+    /**
+     * @return all the files created through {@link #createTempFile()}, including the ones written lazily for parts
+     *         kept in memory
+     */
+    public List<Path> getCreatedFiles() {
+        return createdFiles;
     }
 
     public MultipartFormDataInput toMultipartFormDataInput() {
@@ -73,7 +109,7 @@ public final class FormData implements Iterable<String> {
         if (values == null) {
             this.values.put(name, values = new ArrayDeque<>(1));
         }
-        values.add(new FormValueImpl(value, fileName, headers));
+        values.add(new FormValueImpl(value, fileName, headers, this));
         if (++valueCount > maxValues) {
             throw paramLimitException(maxValues);
         }
@@ -184,27 +220,46 @@ public final class FormData implements Iterable<String> {
     }
 
     public static class FileItemImpl implements FileItem {
-        private final Path file;
+        private volatile Path file;
         private final byte[] content;
+        private final FormData owner;
 
         public FileItemImpl(Path file) {
             this.file = file;
             this.content = null;
+            this.owner = null;
         }
 
-        public FileItemImpl(byte[] content) {
+        /**
+         * @param owner the form the file is written through when {@link #getFile()} is called
+         */
+        public FileItemImpl(byte[] content, FormData owner) {
             this.file = null;
             this.content = content;
+            this.owner = owner;
+        }
+
+        @Override
+        public Path getFile() {
+            if (file == null) {
+                synchronized (this) {
+                    if (file == null) {
+                        try {
+                            Path tempFile = owner.createTempFile();
+                            Files.write(tempFile, content);
+                            file = tempFile;
+                        } catch (IOException e) {
+                            throw new UncheckedIOException(e);
+                        }
+                    }
+                }
+            }
+            return file;
         }
 
         @Override
         public boolean isInMemory() {
             return file == null;
-        }
-
-        @Override
-        public Path getFile() {
-            return file;
         }
 
         @Override
@@ -284,8 +339,8 @@ public final class FormData implements Iterable<String> {
             this.charset = null;
         }
 
-        FormValueImpl(byte[] data, String fileName, CaseInsensitiveMap<String> headers) {
-            this.fileItemImpl = new FileItemImpl(data);
+        FormValueImpl(byte[] data, String fileName, CaseInsensitiveMap<String> headers, FormData owner) {
+            this.fileItemImpl = new FileItemImpl(data, owner);
             this.fileName = fileName;
             this.headers = headers;
             this.value = null;

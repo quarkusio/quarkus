@@ -2,15 +2,22 @@ package io.quarkus.vertx.http.runtime.handlers;
 
 import java.nio.charset.Charset;
 
+import io.quarkus.vertx.http.runtime.StaticResourcesConfig;
 import io.quarkus.vertx.http.runtime.VertxHttpBuildTimeConfig;
 
 public record DevClasspathStaticHandlerOptions(VertxHttpBuildTimeConfig httpBuildTimeConfig, String indexPage,
-        Charset defaultEncoding) {
+        Charset defaultEncoding, StaticResourcesConfig.IndexDirectories indexDirectories) {
 
     public static class Builder {
         private VertxHttpBuildTimeConfig httpBuildTimeConfig;
         private String indexPage;
         private Charset contentEncoding;
+        private StaticResourcesConfig.IndexDirectories indexDirectories = StaticResourcesConfig.IndexDirectories.NONE;
+
+        public Builder indexDirectories(StaticResourcesConfig.IndexDirectories indexDirectories) {
+            this.indexDirectories = indexDirectories;
+            return this;
+        }
 
         public Builder indexPage(String indexPage) {
             this.indexPage = indexPage;
@@ -29,7 +36,7 @@ public record DevClasspathStaticHandlerOptions(VertxHttpBuildTimeConfig httpBuil
 
         public DevClasspathStaticHandlerOptions build() {
             return new DevClasspathStaticHandlerOptions(this.httpBuildTimeConfig, this.indexPage,
-                    this.contentEncoding);
+                    this.contentEncoding, this.indexDirectories);
         }
 
     }

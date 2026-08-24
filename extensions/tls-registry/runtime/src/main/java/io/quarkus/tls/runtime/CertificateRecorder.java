@@ -1,7 +1,5 @@
 package io.quarkus.tls.runtime;
 
-import java.security.KeyStoreException;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Optional;
@@ -115,18 +113,6 @@ public class CertificateRecorder implements TlsConfigurationRegistry {
     private static TlsConfiguration verifyCertificateConfigInternal(TlsBucketConfig config, Vertx vertx, String name) {
         // Verify the key store
         KeyStoreAndKeyCertOptions ks = getKeyStore(config, vertx, name);
-
-        if (ks != null && config.keyStore().isPresent() && config.keyStore().get().sni()) {
-            try {
-                if (Collections.list(ks.keyStore.aliases()).size() <= 1) {
-                    throw new IllegalStateException(
-                            "The SNI option cannot be used when the keystore contains only one alias or the `alias` property has been set");
-                }
-            } catch (KeyStoreException e) {
-                // Should not happen
-                throw new RuntimeException(e);
-            }
-        }
 
         // Verify the trust store
         TrustStoreAndTrustOptions ts = getTrustStore(config, vertx, name);

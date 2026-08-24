@@ -99,6 +99,7 @@ import io.quarkus.qute.deployment.TemplatesAnalysisBuildItem.TemplateAnalysis;
 import io.quarkus.qute.deployment.Types.AssignabilityCheck;
 import io.quarkus.qute.generator.Descriptors;
 import io.quarkus.qute.generator.ValueResolverGenerator;
+import io.quarkus.qute.i18n.LocaleAware;
 import io.quarkus.qute.i18n.Localized;
 import io.quarkus.qute.i18n.Message;
 import io.quarkus.qute.i18n.MessageBundle;
@@ -115,6 +116,7 @@ public class MessageBundleProcessor {
     private static final Logger LOG = Logger.getLogger(MessageBundleProcessor.class);
 
     private static final String SUFFIX = "_Bundle";
+    private static final String LOCALE_AWARE_SUFFIX = "_LocaleAware";
     private static final String BUNDLE_DEFAULT_KEY = "defaultKey";
     private static final String BUNDLE_LOCALE = "locale";
     private static final String MESSAGES = "messages";
@@ -123,7 +125,7 @@ public class MessageBundleProcessor {
     @BuildStep
     AdditionalBeanBuildItem beans() {
         return new AdditionalBeanBuildItem(MessageBundles.class, MessageBundle.class, Message.class, Localized.class,
-                MessageTemplateLocator.class);
+                LocaleAware.class, MessageTemplateLocator.class);
     }
 
     @BuildStep
@@ -159,12 +161,12 @@ public class MessageBundleProcessor {
                             // The name starts with the DEFAULT_NAME followed by an underscore, followed by simple names of all
                             // declaring classes in the hierarchy separated by underscores
                             List<String> names = new ArrayList<>();
-                            names.add(DotNames.simpleName(bundleClass));
+                            names.add(bundleClass.simpleName());
                             DotName enclosingName = bundleClass.enclosingClass();
                             while (enclosingName != null) {
                                 ClassInfo enclosingClass = index.getClassByName(enclosingName);
                                 if (enclosingClass != null) {
-                                    names.add(DotNames.simpleName(enclosingClass));
+                                    names.add(enclosingClass.simpleName());
                                     enclosingName = enclosingClass.nestingType() == NestingType.TOP_LEVEL ? null
                                             : enclosingClass.enclosingClass();
                                 }
@@ -288,6 +290,20 @@ public class MessageBundleProcessor {
                         // Just create a new instance of the generated class
                         bc.return_(bc.new_(ConstructorDesc.of(
                                 generatedImplementations.get(bundleInterface.name().toString()))));
+                    }).done();
+
+            // The message bundle resolved for the current locale - qualified with @LocaleAware
+            beanRegistration.getContext().configure(bundleInterface.name())
+                    .addType(bundle.getDefaultBundleInterface().name())
+                    .addQualifier(Names.LOCALE_AWARE)
+                    .unremovable()
+                    .scope(Singleton.class)
+                    .creator(cg -> {
+                        BlockCreator bc = cg.createMethod();
+                        // Just create a new instance of the generated forwarding class
+                        bc.return_(bc.new_(ConstructorDesc.of(
+                                generatedImplementations
+                                        .get(bundleInterface.name().toString() + SUFFIX + LOCALE_AWARE_SUFFIX))));
                     }).done();
 
             // Localized interfaces
@@ -723,6 +739,10 @@ public class MessageBundleProcessor {
                     defaultClassOutput, messageTemplateMethods, defaultKeyToMap, null, index);
             generatedTypes.put(bundleInterface.name().toString(), ClassDesc.of(bundleImpl));
 
+            // Generate a forwarding implementation that resolves the bundle for the current locale
+            String forwardingImpl = generateForwardingImplementation(bundle, defaultClassOutput);
+            generatedTypes.put(forwardingImpl, ClassDesc.of(forwardingImpl));
+
             // Generate imeplementation for each localized interface
             for (Entry<String, ClassInfo> entry : bundle.getLocalizedInterfaces().entrySet()) {
                 ClassInfo localizedInterface = entry.getValue();
@@ -765,6 +785,48 @@ public class MessageBundleProcessor {
             }
         }
         return generatedTypes;
+    }
+
+    /**
+     * Generates an implementation of the default bundle interface that forwards each message method to the message
+     * bundle resolved for the current locale. The generated class backs the bean qualified with
+     * {@link io.quarkus.qute.i18n.LocaleAware}.
+     */
+    private String generateForwardingImplementation(MessageBundleBuildItem bundle, ClassOutput classOutput) {
+        ClassInfo bundleInterface = bundle.getDefaultBundleInterface();
+        String generatedClassName = bundleInterface.name().toString() + SUFFIX + LOCALE_AWARE_SUFFIX;
+        LOG.debugf("Generate forwarding bundle implementation for %s", bundleInterface);
+
+        Gizmo gizmo = Gizmo.create(classOutput)
+                .withDebugInfo(false)
+                .withParameters(false);
+        gizmo.class_(generatedClassName, cc -> {
+            cc.implements_(classDescOf(bundleInterface));
+            cc.defaultConstructor();
+
+            for (MethodInfo method : bundleInterface.methods()) {
+                if (Modifier.isStatic(method.flags()) || !Modifier.isAbstract(method.flags())) {
+                    // Skip static and default methods
+                    continue;
+                }
+                cc.method(methodDescOf(method), mc -> {
+                    List<ParamVar> params = new ArrayList<>(method.parametersCount());
+                    for (int i = 0; i < method.parametersCount(); i++) {
+                        String paramName = method.parameterName(i);
+                        params.add(mc.parameter(paramName != null ? paramName : "arg" + i, i));
+                    }
+                    mc.body(bc -> {
+                        // Obtain the bundle for the current locale, e.g. negotiated from the Accept-Language header
+                        Expr delegate = bc.invokeStatic(io.quarkus.qute.deployment.Descriptors.BUNDLES_GET_FOR_CURRENT_LOCALE,
+                                Const.of(classDescOf(bundleInterface)));
+                        // Forward the invocation to the resolved bundle
+                        bc.return_(bc.invokeInterface(methodDescOf(method),
+                                bc.cast(delegate, classDescOf(bundleInterface)), params));
+                    });
+                });
+            }
+        });
+        return generatedClassName;
     }
 
     private Map<String, String> getLocalizedFileKeyToTemplate(MessageBundleBuildItem bundle,
@@ -934,10 +996,10 @@ public class MessageBundleProcessor {
 
         String baseName;
         if (bundleInterface.enclosingClass() != null) {
-            baseName = DotNames.simpleName(bundleInterface.enclosingClass()) + ValueResolverGenerator.NESTED_SEPARATOR
-                    + DotNames.simpleName(bundleInterface);
+            baseName = bundleInterface.enclosingClass().withoutPackagePrefix() + ValueResolverGenerator.NESTED_SEPARATOR
+                    + bundleInterface.simpleName();
         } else {
-            baseName = DotNames.simpleName(bundleInterface);
+            baseName = bundleInterface.simpleName();
         }
         if (locale != null) {
             baseName = baseName + "_" + locale;

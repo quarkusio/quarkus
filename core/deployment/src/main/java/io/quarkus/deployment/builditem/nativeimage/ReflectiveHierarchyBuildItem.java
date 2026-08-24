@@ -51,71 +51,6 @@ public final class ReflectiveHierarchyBuildItem extends MultiBuildItem {
     private final boolean unsafeAllocated;
     private final boolean ignoreNested;
 
-    /**
-     * @deprecated Use the Builder instead.
-     */
-    @Deprecated
-    public ReflectiveHierarchyBuildItem(Type type) {
-        this(type, DefaultIgnoreTypePredicate.INSTANCE);
-    }
-
-    /**
-     * @deprecated Use the Builder instead and provide a source for easy debugging.
-     */
-    @Deprecated
-    public ReflectiveHierarchyBuildItem(Type type, IndexView index) {
-        this(type, index, DefaultIgnoreTypePredicate.INSTANCE);
-    }
-
-    /**
-     * @deprecated Use the Builder instead and provide a source for easy debugging.
-     */
-    @Deprecated
-    public ReflectiveHierarchyBuildItem(Type type, Predicate<DotName> ignoreTypePredicate) {
-        this(type, ignoreTypePredicate, UNKNOWN_SOURCE);
-    }
-
-    /**
-     * @deprecated Use the Builder instead and provide a source for easy debugging.
-     */
-    @Deprecated
-    public ReflectiveHierarchyBuildItem(Type type, IndexView index, Predicate<DotName> ignoreTypePredicate) {
-        this(type, index, ignoreTypePredicate, UNKNOWN_SOURCE);
-    }
-
-    /**
-     * @deprecated Use the Builder instead and provide a source for easy debugging.
-     */
-    @Deprecated
-    public ReflectiveHierarchyBuildItem(Type type, String source) {
-        this(type, DefaultIgnoreTypePredicate.INSTANCE, source);
-    }
-
-    /**
-     * @deprecated Use the Builder instead and provide a source for easy debugging.
-     */
-    @Deprecated
-    public ReflectiveHierarchyBuildItem(Type type, IndexView index, String source) {
-        this(type, index, DefaultIgnoreTypePredicate.INSTANCE, source);
-    }
-
-    /**
-     * @deprecated Use the Builder instead and provide a source for easy debugging.
-     */
-    @Deprecated
-    public ReflectiveHierarchyBuildItem(Type type, Predicate<DotName> ignoreTypePredicate, String source) {
-        this(type, null, ignoreTypePredicate, source);
-    }
-
-    /**
-     * @deprecated Use the Builder instead and provide a source for easy debugging.
-     */
-    @Deprecated
-    public ReflectiveHierarchyBuildItem(Type type, IndexView index, Predicate<DotName> ignoreTypePredicate, String source) {
-        this(type, index, ignoreTypePredicate, DefaultIgnoreFieldPredicate.INSTANCE, DefaultIgnoreMethodPredicate.INSTANCE,
-                source, true, true, true, false, false, true);
-    }
-
     private ReflectiveHierarchyBuildItem(Type type, IndexView index, Predicate<DotName> ignoreTypePredicate,
             Predicate<FieldInfo> ignoreFieldPredicate, Predicate<MethodInfo> ignoreMethodPredicate,
             String source, boolean constructors, boolean methods, boolean fields, boolean serialization,
@@ -245,50 +180,8 @@ public final class ReflectiveHierarchyBuildItem extends MultiBuildItem {
         // when registering a hierarchy, we want to inspect what's actually needed and blindly include nested classes is not a good idea
         private boolean ignoreNested = true;
 
-        /**
-         * @deprecated use {@link ReflectiveHierarchyBuildItem#builder(Type)},
-         *             {@link ReflectiveHierarchyBuildItem#builder(String)} or
-         *             {@link ReflectiveHierarchyBuildItem#builder(DotName)} instead
-         */
-        @Deprecated(since = "3.12", forRemoval = true)
-        public Builder() {
-        }
-
         private Builder(Type type) {
             this.type = type;
-        }
-
-        /**
-         * @deprecated use {@link ReflectiveHierarchyBuildItem#builder(Type)} instead
-         */
-        @Deprecated(since = "3.12", forRemoval = true)
-        public Builder type(Type type) {
-            this.type = type;
-            return this;
-        }
-
-        /**
-         * Derives the target {@link Type} to be registered from the specified class name.
-         *
-         * @param className a {@link DotName} representing the name of the class of the Type to be registered for reflection
-         * @return this {@link Builder} instance
-         * @deprecated use {@link ReflectiveHierarchyBuildItem#builder(DotName)} instead
-         */
-        @Deprecated(since = "3.12", forRemoval = true)
-        public Builder className(DotName className) {
-            return type(Type.create(className, Type.Kind.CLASS));
-        }
-
-        /**
-         * Derives the target {@link Type} to be registered from the specified class name.
-         *
-         * @param className the name of the class of the Type to be registered for reflection
-         * @return this {@link Builder} instance
-         * @deprecated use {@link ReflectiveHierarchyBuildItem#builder(String)} instead
-         */
-        @Deprecated(since = "3.12", forRemoval = true)
-        public Builder className(String className) {
-            return className(DotName.createSimple(className));
         }
 
         public Builder index(IndexView index) {

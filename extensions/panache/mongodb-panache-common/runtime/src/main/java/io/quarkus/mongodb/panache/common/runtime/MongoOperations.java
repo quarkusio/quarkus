@@ -10,8 +10,6 @@ import java.util.stream.Stream;
 
 import jakarta.transaction.Status;
 import jakarta.transaction.Synchronization;
-import jakarta.transaction.SystemException;
-import jakarta.transaction.TransactionManager;
 import jakarta.transaction.TransactionSynchronizationRegistry;
 
 import org.bson.BsonDocument;
@@ -36,7 +34,6 @@ import io.quarkus.arc.InstanceHandle;
 import io.quarkus.mongodb.panache.common.MongoEntity;
 import io.quarkus.mongodb.panache.common.binder.NativeQueryBinder;
 import io.quarkus.mongodb.panache.common.binder.PanacheQlQueryBinder;
-import io.quarkus.mongodb.panache.common.transaction.MongoTransactionException;
 import io.quarkus.mongodb.runtime.MongoClientBeanUtil;
 import io.quarkus.panache.common.Parameters;
 import io.quarkus.panache.common.Sort;
@@ -353,7 +350,6 @@ public abstract class MongoOperations<QueryType, UpdateType> {
 
     private ClientSession registerClientSession(MongoEntity mongoEntity,
             TransactionSynchronizationRegistry registry) {
-        TransactionManager transactionManager = Arc.container().instance(TransactionManager.class).get();
         MongoClient client = MongoClientBeanUtil.mongoClient(BeanUtils.beanName(mongoEntity));
         ClientSession clientSession = client.startSession();
         clientSession.startTransaction();//TODO add txoptions from annotation
@@ -364,23 +360,19 @@ public abstract class MongoOperations<QueryType, UpdateType> {
             }
 
             @Override
-            public void afterCompletion(int i) {
-                try {
-                    if (transactionManager.getStatus() == Status.STATUS_ROLLEDBACK) {
-                        try {
-                            clientSession.abortTransaction();
-                        } finally {
-                            clientSession.close();
-                        }
-                    } else {
-                        try {
-                            clientSession.commitTransaction();
-                        } finally {
-                            clientSession.close();
-                        }
+            public void afterCompletion(int status) {
+                if (status == Status.STATUS_COMMITTED) {
+                    try {
+                        clientSession.commitTransaction();
+                    } finally {
+                        clientSession.close();
                     }
-                } catch (SystemException e) {
-                    throw new MongoTransactionException(e);
+                } else {
+                    try {
+                        clientSession.abortTransaction();
+                    } finally {
+                        clientSession.close();
+                    }
                 }
             }
         });

@@ -56,6 +56,7 @@ public class GrpcStorkServiceDiscovery extends NameResolverProvider {
         return new NameResolver() {
             Listener2 listener;
             volatile boolean resolving, shutdown;
+            Service service;
             ServiceDiscovery serviceDiscovery;
             String serviceName;
 
@@ -74,7 +75,7 @@ public class GrpcStorkServiceDiscovery extends NameResolverProvider {
                 Preconditions.checkState(this.listener == null, "already started");
                 this.listener = listener;
                 serviceName = targetUri.getHost();
-                Service service = Stork.getInstance().getService(serviceName);
+                service = Stork.getInstance().getService(serviceName);
                 if (service == null) {
                     listener.onError(
                             Status.ABORTED.withDescription("No service definition for serviceName " + serviceName + " found."));
@@ -126,6 +127,12 @@ public class GrpcStorkServiceDiscovery extends NameResolverProvider {
                         listener.onError(Status.UNAVAILABLE
                                 .withDescription("No instances available for service-name: " + serviceName));
                         return;
+                    }
+
+                    try {
+                        StorkServiceObservationSupport.recordResolvedInstances(service, instances);
+                    } catch (RuntimeException e) {
+                        log.debug("Failed to record Stork discovery observation", e);
                     }
 
                     // Always notify the listener for a non-empty resolution, even when the

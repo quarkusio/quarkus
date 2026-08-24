@@ -10,9 +10,9 @@ import static io.quarkus.vertx.core.runtime.SSLConfigHelper.configurePfxTrustOpt
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 import java.util.function.Consumer;
 
 import org.jboss.logging.Logger;
@@ -58,9 +58,9 @@ public class VertxRedisClientFactory {
             ProxyConfigurationRegistry proxyRegistry) {
         RedisOptions options = new RedisOptions();
 
-        Consumer<Set<URI>> configureOptions = new Consumer<Set<URI>>() {
+        Consumer<Collection<URI>> configureOptions = new Consumer<Collection<URI>>() {
             @Override
-            public void accept(Set<URI> uris) {
+            public void accept(Collection<URI> uris) {
                 for (URI uri : uris) {
                     if (config.configureClientName()) {
                         String client = config.clientName().orElse(name);
@@ -79,7 +79,7 @@ public class VertxRedisClientFactory {
             configureOptions.accept(config.hosts().get());
         } else if (config.hostsProviderName().isPresent()) {
             RedisHostsProvider hostsProvider = findProvider(config.hostsProviderName().get());
-            Set<URI> computedHosts = hostsProvider.getHosts();
+            Collection<URI> computedHosts = hostsProvider.getHosts();
             hosts.addAll(computedHosts);
             configureOptions.accept(computedHosts);
         } else {

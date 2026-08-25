@@ -49,7 +49,7 @@ public class RabbitMQDevServicesProcessor {
     private static final int RABBITMQ_PORT = 5672;
     private static final int RABBITMQ_HTTP_PORT = 15672;
 
-    private static final ContainerLocator rabbitmqContainerLocator = locateContainerWithLabels(RABBITMQ_PORT,
+    private static final ContainerLocator rabbitmqContainerLocator = locateContainerWithLabels(RABBITMQ_PORT, true,
             DEV_SERVICE_LABEL);
 
     private static final String RABBITMQ_HOST_PROP = "rabbitmq-host";
@@ -101,6 +101,7 @@ public class RabbitMQDevServicesProcessor {
                 })
                 .orElseGet(() -> DevServicesResultBuildItem.owned()
                         .feature(Feature.MESSAGING_RABBITMQ)
+                        .serviceName(config.serviceName())
                         .serviceConfig(config)
                         .startable(() -> {
                             ConfiguredRabbitMQContainer container = new ConfiguredRabbitMQContainer(

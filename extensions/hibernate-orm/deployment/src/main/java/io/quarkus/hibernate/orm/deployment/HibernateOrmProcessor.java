@@ -122,6 +122,7 @@ import io.quarkus.deployment.pkg.steps.NativeOrNativeSourcesBuild;
 import io.quarkus.deployment.recording.RecorderContext;
 import io.quarkus.deployment.util.IoUtil;
 import io.quarkus.deployment.util.ServiceUtil;
+import io.quarkus.dev.spi.DevModeType;
 import io.quarkus.gizmo2.Gizmo;
 import io.quarkus.hibernate.orm.PersistenceUnit;
 import io.quarkus.hibernate.orm.deployment.integration.HibernateOrmIntegrationRuntimeConfiguredBuildItem;
@@ -832,7 +833,9 @@ public final class HibernateOrmProcessor {
             integratorClasses.add((Class<? extends Integrator>) recorderContext.classProxy(integratorClassName));
         }
         if (launchMode.getLaunchMode() == LaunchMode.DEVELOPMENT) {
-            integratorClasses.add(HibernateOrmDevIntegrator.class);
+            if (launchMode.getDevModeType().orElse(null) != DevModeType.REMOTE_SERVER_SIDE) {
+                integratorClasses.add(HibernateOrmDevIntegrator.class);
+            }
             integratorClasses.add(SchemaManagementIntegrator.class);
         }
 

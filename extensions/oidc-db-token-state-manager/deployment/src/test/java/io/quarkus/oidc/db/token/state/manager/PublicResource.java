@@ -42,6 +42,15 @@ public class PublicResource {
                 .toCompletionStage());
     }
 
+    @Path("/delete-db-state-manager-table-content")
+    @GET
+    public Uni<Void> deleteDbStateManagerRows() {
+        return Uni.createFrom().completionStage(pool
+                .withTransaction(client -> client.query("DELETE FROM oidc_db_token_state_manager").execute())
+                .toCompletionStage())
+                .replaceWithVoid();
+    }
+
     @Path("/db-state-manager-tokens")
     @GET
     public Uni<String> getDbStateManagerTokens() {

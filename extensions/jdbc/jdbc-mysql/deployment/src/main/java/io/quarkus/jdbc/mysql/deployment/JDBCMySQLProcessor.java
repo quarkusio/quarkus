@@ -30,7 +30,6 @@ import io.quarkus.datasource.common.runtime.DatabaseKind;
 import io.quarkus.datasource.deployment.spi.DatabaseVersionLoader;
 import io.quarkus.datasource.deployment.spi.DefaultDataSourceDbKindBuildItem;
 import io.quarkus.datasource.deployment.spi.DefaultDataSourceDbVersionBuildItem;
-import io.quarkus.datasource.deployment.spi.DevServicesDatasourceConfigurationHandlerBuildItem;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.Feature;
@@ -45,6 +44,7 @@ import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageSystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.deployment.pkg.steps.NativeOrNativeSourcesBuild;
+import io.quarkus.devservices.datasource.common.DevServicesDatasourceConfigurationHandlerBuildItem;
 import io.quarkus.jdbc.mysql.runtime.MySQLAgroalConnectionConfigurer;
 import io.quarkus.jdbc.mysql.runtime.MySQLServiceBindingConverter;
 

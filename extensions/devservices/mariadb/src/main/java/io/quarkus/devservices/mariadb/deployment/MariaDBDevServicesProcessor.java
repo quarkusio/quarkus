@@ -15,10 +15,6 @@ import org.testcontainers.utility.DockerImageName;
 
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
 import io.quarkus.datasource.common.runtime.DatabaseKind;
-import io.quarkus.datasource.deployment.spi.DatasourceStartable;
-import io.quarkus.datasource.deployment.spi.DevServicesDatasourceContainerConfig;
-import io.quarkus.datasource.deployment.spi.DevServicesDatasourceProvider;
-import io.quarkus.datasource.deployment.spi.DevServicesDatasourceProviderBuildItem;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.DevServicesComposeProjectBuildItem;
@@ -27,6 +23,11 @@ import io.quarkus.devservices.common.ConfigureUtil;
 import io.quarkus.devservices.common.JBossLoggingConsumer;
 import io.quarkus.devservices.common.Labels;
 import io.quarkus.devservices.common.Volumes;
+import io.quarkus.devservices.datasource.common.DatasourceStartable;
+import io.quarkus.devservices.datasource.common.DatasourceStartableContainer;
+import io.quarkus.devservices.datasource.common.DevServicesDatasourceContainerConfig;
+import io.quarkus.devservices.datasource.common.DevServicesDatasourceProvider;
+import io.quarkus.devservices.datasource.common.DevServicesDatasourceProviderBuildItem;
 import io.quarkus.runtime.LaunchMode;
 
 public class MariaDBDevServicesProcessor {
@@ -84,7 +85,7 @@ public class MariaDBDevServicesProcessor {
                     container.withLogConsumer(new JBossLoggingConsumer(LOG));
                 }
 
-                return container;
+                return new DatasourceStartableContainer<>(container);
             }
 
             @Override

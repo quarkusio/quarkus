@@ -30,6 +30,7 @@ import io.quarkus.bootstrap.app.ArtifactResult;
 import io.quarkus.bootstrap.app.AugmentAction;
 import io.quarkus.bootstrap.app.AugmentResult;
 import io.quarkus.bootstrap.app.ClassChangeInformation;
+import io.quarkus.bootstrap.app.ClassTransformer;
 import io.quarkus.bootstrap.app.CuratedApplication;
 import io.quarkus.bootstrap.app.QuarkusBootstrap;
 import io.quarkus.bootstrap.app.SbomResult;
@@ -48,6 +49,7 @@ import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
 import io.quarkus.deployment.builditem.GeneratedServiceProviderBuildItem;
 import io.quarkus.deployment.builditem.LiveReloadBuildItem;
 import io.quarkus.deployment.builditem.MainClassBuildItem;
+import io.quarkus.deployment.builditem.RuntimeClassTransformerBuildItem;
 import io.quarkus.deployment.builditem.TransformedClassesBuildItem;
 import io.quarkus.deployment.jvm.ResolvedJVMRequirements;
 import io.quarkus.deployment.pkg.builditem.ArtifactResultBuildItem;
@@ -71,7 +73,8 @@ public class AugmentActionImpl implements AugmentAction {
             GeneratedResourceBuildItem.class, GeneratedServiceProviderBuildItem.class,
             ApplicationClassNameBuildItem.class,
             MainClassBuildItem.class, GeneratedFileSystemResourceHandledBuildItem.class,
-            TransformedClassesBuildItem.class, ResolvedJVMRequirements.class };
+            TransformedClassesBuildItem.class, RuntimeClassTransformerBuildItem.class,
+            ResolvedJVMRequirements.class };
 
     private final QuarkusBootstrap quarkusBootstrap;
     private final CuratedApplication curatedApplication;
@@ -87,6 +90,7 @@ public class AugmentActionImpl implements AugmentAction {
      *
      */
     private final Map<Class<?>, Object> reloadContext = new ConcurrentHashMap<>();
+    private volatile ClassTransformer classTransformer = ClassTransformer.IDENTITY;
 
     public AugmentActionImpl(CuratedApplication curatedApplication) {
         this(curatedApplication, Collections.emptyList(), Collections.emptyList());
@@ -345,6 +349,7 @@ public class AugmentActionImpl implements AugmentAction {
         try (QuarkusClassLoader classLoader = curatedApplication.createDeploymentClassLoader()) {
             @SuppressWarnings("unchecked")
             BuildResult result = runAugment(true, Collections.emptySet(), null, classLoader, NON_NORMAL_MODE_OUTPUTS);
+            updateClassTransformer(result);
             return new StartupActionImpl(curatedApplication, result);
         }
     }
@@ -360,9 +365,21 @@ public class AugmentActionImpl implements AugmentAction {
             @SuppressWarnings("unchecked")
             BuildResult result = runAugment(!hasStartedSuccessfully, changedResources, classChangeInformation, classLoader,
                     NON_NORMAL_MODE_OUTPUTS);
-
+            updateClassTransformer(result);
             return new StartupActionImpl(curatedApplication, result);
         }
+    }
+
+    private void updateClassTransformer(BuildResult result) {
+        RuntimeClassTransformerBuildItem item = result.consumeOptional(RuntimeClassTransformerBuildItem.class);
+        if (item != null) {
+            this.classTransformer = item.getTransformer();
+        }
+    }
+
+    @Override
+    public ClassTransformer getClassTransformer() {
+        return classTransformer;
     }
 
     private BuildResult runAugment(boolean firstRun, Set<String> changedResources,
@@ -382,7 +399,8 @@ public class AugmentActionImpl implements AugmentAction {
                     .setBuildSystemProperties(quarkusBootstrap.getBuildSystemProperties())
                     .setRuntimeProperties(quarkusBootstrap.getRuntimeProperties())
                     .setEffectiveModel(curatedApplication.getApplicationModel())
-                    .setDependencyInfoProvider(quarkusBootstrap.getDependencyInfoProvider());
+                    .setDependencyInfoProvider(quarkusBootstrap.getDependencyInfoProvider())
+                    .setCuratedApplicationContext(curatedApplication.getCuratedApplicationContext());
             if (quarkusBootstrap.getBaseName() != null) {
                 builder.setBaseName(quarkusBootstrap.getBaseName());
             }

@@ -28,6 +28,7 @@ import org.assertj.core.api.junit.jupiter.InjectSoftAssertions;
 import org.assertj.core.api.junit.jupiter.SoftAssertionsExtension;
 import org.gradle.testkit.runner.BuildResult;
 import org.gradle.testkit.runner.BuildTask;
+import org.gradle.testkit.runner.GradleRunner;
 import org.gradle.testkit.runner.TaskOutcome;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
@@ -220,6 +221,55 @@ public class CachingTest extends BaseGradleTest {
 
         result = buildResult(env, arguments);
         assertBuildResult("follow-up", result, ALL_UP_TO_DATE);
+    }
+
+    /**
+     * Cache entries must be reusable from a different working directory. The serialized application
+     * model embeds absolute paths, so hashing it as an {@code @InputFile} used to make the cache key a
+     * function of the checkout directory, and nothing could be resolved from a cache populated
+     * elsewhere - which is exactly the shared/remote cache case.
+     */
+    @Test
+    void buildCacheIsReusedFromADifferentProjectDirectory(@TempDir Path otherProjectDir, @TempDir Path localCacheDir)
+            throws Exception {
+        prepareGradleBuildProject("");
+        enableLocalBuildCache(testProjectDir, localCacheDir);
+
+        Map<String, String> env = cachingTestEnvironment(false);
+        String[] arguments = List.of("build", "--info", "--stacktrace", "--build-cache", "--no-configuration-cache",
+                "-Dquarkus.package.jar.type=fast-jar")
+                .toArray(new String[0]);
+
+        assertBuildResult("populate cache", buildResult(env, rerunTasks(arguments)), ALL_SUCCESS);
+
+        // Same sources and same shared cache, but a different project directory.
+        FileUtils.copyDirectory(testProjectDir.toFile(), otherProjectDir.toFile());
+        FileUtils.deleteDirectory(otherProjectDir.resolve("build").toFile());
+        FileUtils.deleteDirectory(otherProjectDir.resolve(".gradle").toFile());
+
+        BuildResult result = GradleRunner.create()
+                .withPluginClasspath()
+                .withProjectDir(otherProjectDir.toFile())
+                .withArguments(defaultGradleArguments(List.of(arguments)))
+                .withEnvironment(env)
+                .build();
+
+        soft.assertThat(taskResults(result))
+                .describedAs("output: %s", result.getOutput())
+                .containsEntry(":quarkusGenerateCode", TaskOutcome.FROM_CACHE)
+                .containsEntry(":quarkusAppPartsBuild", TaskOutcome.FROM_CACHE);
+    }
+
+    /**
+     * Points the build at a build cache directory shared between project directories, so a build run
+     * from one directory can resolve entries produced by another.
+     */
+    private static void enableLocalBuildCache(Path projectDir, Path cacheDir) throws IOException {
+        Path settings = projectDir.resolve("settings.gradle.kts");
+        String directory = cacheDir.toAbsolutePath().toString().replace("\\", "\\\\");
+        Files.writeString(settings, Files.readString(settings) + String.format(
+                "%nbuildCache {%n    local {%n        directory = \"%s\"%n        isEnabled = true%n    }%n}%n",
+                directory));
     }
 
     private static Map<String, String> cachingTestEnvironment(boolean simulateCI) {

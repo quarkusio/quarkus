@@ -32,6 +32,16 @@ public class LgtmReloadTest extends LgtmTestHelper {
         return GrafanaClient.endpoint();
     }
 
+    @Override
+    protected String prometheusEndpoint() {
+        return null;
+    }
+
+    @Override
+    protected String tempoEndpoint() {
+        return null;
+    }
+
     @Test
     public void testReload() {
         poke("/reload");

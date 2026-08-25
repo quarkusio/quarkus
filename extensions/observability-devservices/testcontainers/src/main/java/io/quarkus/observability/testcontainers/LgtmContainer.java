@@ -1,6 +1,7 @@
 package io.quarkus.observability.testcontainers;
 
 import java.nio.charset.StandardCharsets;
+import java.util.LinkedHashSet;
 import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.Set;
@@ -93,6 +94,11 @@ public class LgtmContainer extends GrafanaContainer<LgtmContainer, LgtmConfig> {
             """;
 
     private final boolean scrapingRequired;
+    private final Set<String> customDashboards = new LinkedHashSet<>();
+
+    public Set<String> getCustomDashboards() {
+        return customDashboards;
+    }
 
     public LgtmContainer(boolean scrapingRequired) {
         this(new LgtmConfigImpl(), scrapingRequired);
@@ -106,10 +112,45 @@ public class LgtmContainer extends GrafanaContainer<LgtmContainer, LgtmConfig> {
         addExposedPorts(
                 ContainerConstants.OTEL_GRPC_EXPORTER_PORT,
                 ContainerConstants.OTEL_HTTP_EXPORTER_PORT,
+                ContainerConstants.PROMETHEUS_PORT,
                 ContainerConstants.TEMPO_MCP_PORT);
         config.otelGrpcPort().ifPresent(port -> addFixedExposedPort(port, ContainerConstants.OTEL_GRPC_EXPORTER_PORT));
         config.otelHttpPort().ifPresent(port -> addFixedExposedPort(port, ContainerConstants.OTEL_HTTP_EXPORTER_PORT));
+        config.prometheusPort().ifPresent(port -> addFixedExposedPort(port, ContainerConstants.PROMETHEUS_PORT));
         config.tempoMcpPort().ifPresent(port -> addFixedExposedPort(port, ContainerConstants.TEMPO_MCP_PORT));
+
+        String tempoArgs = "--query-frontend.mcp-server.enabled=true";
+        Optional<String> extraTempoArgs = config.tempoExtraArgs();
+        if (extraTempoArgs.isPresent()) {
+            tempoArgs += " " + extraTempoArgs.get();
+        }
+        withEnv("TEMPO_EXTRA_ARGS", tempoArgs);
+        config.prometheusExtraArgs().ifPresent(a -> withEnv("PROMETHEUS_EXTRA_ARGS", a));
+        config.lokiExtraArgs().ifPresent(a -> withEnv("LOKI_EXTRA_ARGS", a));
+        config.pyroscopeExtraArgs().ifPresent(a -> withEnv("PYROSCOPE_EXTRA_ARGS", a));
+        config.otelcolExtraArgs().ifPresent(a -> withEnv("OTELCOL_EXTRA_ARGS", a));
+        // allow for timeout shutdown, default is 5sec
+        config.shutdownTimeout()
+                .ifPresent(timeout -> withEnv("LGTM_SHUTDOWN_TIMEOUT_SECONDS", Integer.toString(timeout)));
+
+        if (config.enableObi()) {
+            withEnv("ENABLE_OBI", "true");
+            withPrivilegedMode(true);
+            withCreateContainerCmdModifier(cmd -> cmd.getHostConfig().withPidMode("host"));
+            config.obiTarget().ifPresent(target -> withEnv("OBI_TARGET", target));
+            config.obiOpenPort().ifPresent(port -> withEnv("OTEL_EBPF_OPEN_PORT", port));
+            config.obiAutoTargetExe().ifPresent(exe -> withEnv("OTEL_EBPF_AUTO_TARGET_EXE", exe));
+        }
+
+        config.grafanaPluginsPreinstall().ifPresent(p -> withEnv("GF_PLUGINS_PREINSTALL", p));
+        config.grafanaHomeDashboardPath()
+                .ifPresent(p -> withEnv("GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH", p));
+
+        config.vendorOtlpEndpoint().ifPresent(e -> withEnv("OTEL_EXPORTER_OTLP_ENDPOINT", e));
+        config.vendorOtlpLogsEndpoint().ifPresent(e -> withEnv("OTEL_EXPORTER_OTLP_LOGS_ENDPOINT", e));
+        config.vendorOtlpMetricsEndpoint().ifPresent(e -> withEnv("OTEL_EXPORTER_OTLP_METRICS_ENDPOINT", e));
+        config.vendorOtlpTracesEndpoint().ifPresent(e -> withEnv("OTEL_EXPORTER_OTLP_TRACES_ENDPOINT", e));
+        config.vendorOtlpHeaders().ifPresent(h -> withEnv("OTEL_EXPORTER_OTLP_HEADERS", h));
 
         Optional<Set<LgtmComponent>> logging = config.logging();
         logging.ifPresent(set -> set.forEach(l -> withEnv("ENABLE_LOGS_" + l.name(), "true")));
@@ -120,7 +161,7 @@ public class LgtmContainer extends GrafanaContainer<LgtmContainer, LgtmConfig> {
                     withCopyFileToContainer(
                             MountableFile.forClasspathResource(GrafanaUtils.META_INF_GRAFANA + "/" + s),
                             "/otel-lgtm/" + s);
-                    log.infof("Adding custom Grafana dashboard config: %s", s);
+                    customDashboards.add(s);
                 });
 
         // Replacing bundled dashboards with our own
@@ -140,7 +181,21 @@ public class LgtmContainer extends GrafanaContainer<LgtmContainer, LgtmConfig> {
                 MountableFile.forClasspathResource("/grafana-dashboard-opentelemetry-logging.json"),
                 "/otel-lgtm/grafana-dashboard-opentelemetry-logging.json");
 
-        addFileToContainer(getPrometheusConfig().getBytes(), "/otel-lgtm/prometheus.yaml");
+        if (config.prometheusConfig().isPresent()) {
+            withCopyFileToContainer(
+                    MountableFile.forClasspathResource(config.prometheusConfig().get()),
+                    "/otel-lgtm/prometheus.yaml");
+        } else {
+            addFileToContainer(getPrometheusConfig().getBytes(), "/otel-lgtm/prometheus.yaml");
+        }
+        config.lokiConfig().ifPresent(r -> withCopyFileToContainer(
+                MountableFile.forClasspathResource(r), "/otel-lgtm/loki-config.yaml"));
+        config.tempoConfig().ifPresent(r -> withCopyFileToContainer(
+                MountableFile.forClasspathResource(r), "/otel-lgtm/tempo-config.yaml"));
+        config.pyroscopeConfig().ifPresent(r -> withCopyFileToContainer(
+                MountableFile.forClasspathResource(r), "/otel-lgtm/pyroscope-config.yaml"));
+        config.otelcolConfig().ifPresent(r -> withCopyFileToContainer(
+                MountableFile.forClasspathResource(r), "/otel-lgtm/otelcol-config.yaml"));
     }
 
     @Override
@@ -256,8 +311,123 @@ public class LgtmContainer extends GrafanaContainer<LgtmContainer, LgtmConfig> {
         }
 
         @Override
+        public OptionalInt prometheusPort() {
+            return OptionalInt.empty();
+        }
+
+        @Override
         public OptionalInt tempoMcpPort() {
             return OptionalInt.empty();
+        }
+
+        @Override
+        public OptionalInt shutdownTimeout() {
+            return OptionalInt.empty();
+        }
+
+        @Override
+        public boolean enableObi() {
+            return false;
+        }
+
+        @Override
+        public Optional<String> obiTarget() {
+            return Optional.empty();
+        }
+
+        @Override
+        public Optional<String> obiOpenPort() {
+            return Optional.empty();
+        }
+
+        @Override
+        public Optional<String> obiAutoTargetExe() {
+            return Optional.empty();
+        }
+
+        @Override
+        public Optional<String> prometheusExtraArgs() {
+            return Optional.empty();
+        }
+
+        @Override
+        public Optional<String> lokiExtraArgs() {
+            return Optional.empty();
+        }
+
+        @Override
+        public Optional<String> tempoExtraArgs() {
+            return Optional.empty();
+        }
+
+        @Override
+        public Optional<String> pyroscopeExtraArgs() {
+            return Optional.empty();
+        }
+
+        @Override
+        public Optional<String> otelcolExtraArgs() {
+            return Optional.empty();
+        }
+
+        @Override
+        public Optional<String> prometheusConfig() {
+            return Optional.empty();
+        }
+
+        @Override
+        public Optional<String> lokiConfig() {
+            return Optional.empty();
+        }
+
+        @Override
+        public Optional<String> tempoConfig() {
+            return Optional.empty();
+        }
+
+        @Override
+        public Optional<String> pyroscopeConfig() {
+            return Optional.empty();
+        }
+
+        @Override
+        public Optional<String> otelcolConfig() {
+            return Optional.empty();
+        }
+
+        @Override
+        public Optional<String> grafanaPluginsPreinstall() {
+            return Optional.empty();
+        }
+
+        @Override
+        public Optional<String> grafanaHomeDashboardPath() {
+            return Optional.empty();
+        }
+
+        @Override
+        public Optional<String> vendorOtlpEndpoint() {
+            return Optional.empty();
+        }
+
+        @Override
+        public Optional<String> vendorOtlpLogsEndpoint() {
+            return Optional.empty();
+        }
+
+        @Override
+        public Optional<String> vendorOtlpMetricsEndpoint() {
+            return Optional.empty();
+        }
+
+        @Override
+        public Optional<String> vendorOtlpTracesEndpoint() {
+            return Optional.empty();
+        }
+
+        @Override
+        public Optional<String> vendorOtlpHeaders() {
+            return Optional.empty();
         }
 
         @Override

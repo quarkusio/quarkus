@@ -1,6 +1,7 @@
 package io.quarkus.observability.devresource;
 
 import java.util.Map;
+import java.util.function.Function;
 
 import io.quarkus.observability.common.config.ContainerConfig;
 import io.quarkus.observability.common.config.ModulesConfiguration;
@@ -84,6 +85,24 @@ public interface DevResourceLifecycleManager<T extends ContainerConfig> extends 
      * @return A map of system properties that should be set for the running dev-mode app
      */
     Map<String, String> config(int privatePort, String host, int publicPort);
+
+    /**
+     * Create a map of lazily created configs from dev resource.
+     * e.g. endpoint urls, etc
+     *
+     * @param fn mapping function to lazily get properties map
+     * @return map of configs provided by dev resource
+     */
+    default <S> Map<String, Function<S, String>> configProvider(Function<S, Map<String, String>> fn) {
+        return Map.of();
+    }
+
+    /**
+     * Additional info we want to log right after dev resource was started.
+     * e.g. mounted files into testcontainer, etc
+     */
+    default void logInfo() {
+    }
 
     /**
      * Called even before {@link #start()} so that the implementation can prepare itself

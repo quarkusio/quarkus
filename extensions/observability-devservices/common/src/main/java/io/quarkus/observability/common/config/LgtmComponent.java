@@ -7,5 +7,6 @@ public enum LgtmComponent {
     TEMPO,
     PYROSCOPE,
     OTELCOL,
+    OBI,
     ALL
 }

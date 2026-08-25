@@ -161,7 +161,7 @@
         <kafka.native.image>quay.io/ogunalp/kafka-native:latest</kafka.native.image>
         <kafka.upstream.image>docker.io/apache/kafka:4.2.0</kafka.upstream.image>
         <kafka.upstream.native.image>docker.io/apache/kafka-native:4.2.0</kafka.upstream.native.image>
-        <observability.lgtm.image>docker.io/grafana/otel-lgtm:0.24.0</observability.lgtm.image>
+        <observability.lgtm.image>docker.io/grafana/otel-lgtm:0.31.0</observability.lgtm.image>
 
         <!-- Code Coverage Properties-->
         <jacoco.agent.argLine></jacoco.agent.argLine>

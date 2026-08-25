@@ -1,8 +1,14 @@
 package io.quarkus.devui.runtime.mcp;
 
+import static io.quarkus.devui.runtime.jsonrpc.JsonRpcKeys.INTERNAL_ERROR;
+import static io.quarkus.devui.runtime.jsonrpc.JsonRpcKeys.INVALID_REQUEST;
+import static io.quarkus.devui.runtime.jsonrpc.JsonRpcKeys.PARSE_ERROR;
+
 import java.util.Map;
 
 import jakarta.enterprise.inject.spi.CDI;
+
+import org.jboss.logging.Logger;
 
 import io.quarkus.devui.runtime.comms.JsonRpcRouter;
 import io.quarkus.devui.runtime.comms.MessageType;
@@ -19,6 +25,8 @@ import io.vertx.ext.web.RoutingContext;
  * Alternative Json RPC communication using Streamable HTTP for MCP
  */
 public class McpHttpHandler implements Handler<RoutingContext> {
+    private static final Logger LOG = Logger.getLogger(McpHttpHandler.class);
+
     private final String quarkusVersion;
     private final JsonMapper jsonMapper;
     private final JsonRpcCodec codec;
@@ -86,42 +94,71 @@ public class McpHttpHandler implements Handler<RoutingContext> {
         ctx.request().handler(buf -> sb.append(buf.toString()));
 
         ctx.request().endHandler(v -> {
-            JsonRpcRouter jsonRpcRouter = CDI.current().select(JsonRpcRouter.class).get();
             String input = sb.toString();
 
-            JsonRpcRequest jsonRpcRequest = codec.readMCPRequest(input);
+            // Parse the request first. A spec-legal request (e.g. a String id) or malformed JSON must never leave the
+            // client hanging with no response: on any parse failure we write a JSON-RPC error back instead.
+            JsonRpcRequest jsonRpcRequest;
+            try {
+                jsonRpcRequest = codec.readMCPRequest(input);
+            } catch (Exception e) {
+                LOG.error("Unable to parse MCP JSON-RPC request", e);
+                McpResponseWriter writer = new McpResponseWriter(ctx.response(), this.jsonMapper, "");
+                // The id cannot be trusted from an unparseable request, so it is reported as null per the spec.
+                codec.writeErrorResponse(writer, null, PARSE_ERROR,
+                        "Unable to parse JSON-RPC request: " + e.getMessage());
+                return;
+            }
 
             String methodName = jsonRpcRequest.getMethod();
-            McpResponseWriter writer = new McpResponseWriter(ctx.response(), this.jsonMapper, methodName);
-            // First see if this a protocol specific method
+            if (methodName == null) {
+                McpResponseWriter writer = new McpResponseWriter(ctx.response(), this.jsonMapper, "");
+                codec.writeErrorResponse(writer, jsonRpcRequest.getId(), INVALID_REQUEST,
+                        "Request is missing the 'method' field");
+                return;
+            }
 
-            if (methodName.equalsIgnoreCase(McpBuiltinMethods.INITIALIZE)) {
-                // This is a MCP server that initialize
-                this.routeToMCPInitialize(jsonRpcRequest, codec, writer);
-            } else if (methodName.startsWith(McpBuiltinMethods.NOTIFICATION)) {
-                // This is a MCP notification
-                this.routeToMCPNotification(jsonRpcRequest, codec, writer);
-            } else if (methodName.equalsIgnoreCase(McpBuiltinMethods.TOOLS_LIST) ||
-                    methodName.equalsIgnoreCase(McpBuiltinMethods.RESOURCES_LIST)) {
-                jsonRpcRequest.setMethod(methodName.replace(SLASH, UNDERSCORE));
-                // Make sure that parameters is empty as expected.
-                jsonRpcRequest.setParams(null);
-                jsonRpcRouter.route(jsonRpcRequest, writer);
-            } else if (methodName.equalsIgnoreCase(McpBuiltinMethods.RESOURCES_READ)) {
-                jsonRpcRequest.setMethod(methodName.replace(SLASH, UNDERSCORE));
-                // Make sure that the only parameter is uri (as expected).
-                String uri = jsonRpcRequest.getParam("uri", String.class);
-                jsonRpcRequest.getParams().clear();
-                jsonRpcRequest.setParams(Map.of("uri", uri));
-                jsonRpcRouter.route(jsonRpcRequest, writer);
-            } else {
-                if (jsonRpcRouter.isEnabled(jsonRpcRequest)) {
-                    jsonRpcRouter.route(jsonRpcRequest, writer);
-                } else {
-                    codec.writeMethodNotFoundResponse(writer, jsonRpcRequest.getId(), methodName);
-                }
+            McpResponseWriter writer = new McpResponseWriter(ctx.response(), this.jsonMapper, methodName);
+            try {
+                routeMcpRequest(jsonRpcRequest, methodName, writer);
+            } catch (Exception e) {
+                LOG.error("Error handling MCP JSON-RPC request", e);
+                codec.writeErrorResponse(writer, jsonRpcRequest.getId(), INTERNAL_ERROR,
+                        "Failed to handle JSON-RPC request: " + e.getMessage());
             }
         });
+    }
+
+    private void routeMcpRequest(JsonRpcRequest jsonRpcRequest, String methodName, McpResponseWriter writer) {
+        JsonRpcRouter jsonRpcRouter = CDI.current().select(JsonRpcRouter.class).get();
+        // First see if this a protocol specific method
+
+        if (methodName.equalsIgnoreCase(McpBuiltinMethods.INITIALIZE)) {
+            // This is a MCP server that initialize
+            this.routeToMCPInitialize(jsonRpcRequest, codec, writer);
+        } else if (methodName.startsWith(McpBuiltinMethods.NOTIFICATION)) {
+            // This is a MCP notification
+            this.routeToMCPNotification(jsonRpcRequest, codec, writer);
+        } else if (methodName.equalsIgnoreCase(McpBuiltinMethods.TOOLS_LIST) ||
+                methodName.equalsIgnoreCase(McpBuiltinMethods.RESOURCES_LIST)) {
+            jsonRpcRequest.setMethod(methodName.replace(SLASH, UNDERSCORE));
+            // Make sure that parameters is empty as expected.
+            jsonRpcRequest.setParams(null);
+            jsonRpcRouter.route(jsonRpcRequest, writer);
+        } else if (methodName.equalsIgnoreCase(McpBuiltinMethods.RESOURCES_READ)) {
+            jsonRpcRequest.setMethod(methodName.replace(SLASH, UNDERSCORE));
+            // Make sure that the only parameter is uri (as expected).
+            String uri = jsonRpcRequest.getParam("uri", String.class);
+            jsonRpcRequest.getParams().clear();
+            jsonRpcRequest.setParams(Map.of("uri", uri));
+            jsonRpcRouter.route(jsonRpcRequest, writer);
+        } else {
+            if (jsonRpcRouter.isEnabled(jsonRpcRequest)) {
+                jsonRpcRouter.route(jsonRpcRequest, writer);
+            } else {
+                codec.writeMethodNotFoundResponse(writer, jsonRpcRequest.getId(), methodName);
+            }
+        }
     }
 
     private void routeToMCPInitialize(JsonRpcRequest jsonRpcRequest, JsonRpcCodec codec, McpResponseWriter writer) {

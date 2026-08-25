@@ -34,7 +34,7 @@ public final class OidcDbTokenStateManagerInitializer {
     private volatile Long timerId = null;
     private volatile SupportedReactiveSqlClient supportedReactiveSqlClient = null;
 
-    void setSupportedReactiveSqlClient(SupportedReactiveSqlClient supportedReactiveSqlClient) {
+    public void setSupportedReactiveSqlClient(SupportedReactiveSqlClient supportedReactiveSqlClient) {
         this.supportedReactiveSqlClient = supportedReactiveSqlClient;
     }
 

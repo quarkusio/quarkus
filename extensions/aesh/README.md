@@ -239,6 +239,8 @@ public class MyCliSettings implements CliSettings {
 }
 ```
 
+`CliSettings` also supports registering custom `commandInvocationProvider`, `converterInvocationProvider`, and `validatorInvocationProvider` implementations to wrap the default invocations with application-specific context. These providers are applied in all execution modes (console REPL, console single-command, and runtime mode).
+
 ## Remote Terminal Access
 
 The extension supports remote terminal access via WebSocket and SSH, allowing users to interact with a running console-mode application from a browser or SSH client.

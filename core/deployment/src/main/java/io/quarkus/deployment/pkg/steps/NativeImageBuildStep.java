@@ -84,7 +84,6 @@ public class NativeImageBuildStep {
      */
     private static final String JAVA_HOME_ENV = "JAVA_HOME";
 
-    private static final int OOM_ERROR_VALUE = 137;
     private static final String QUARKUS_XMX_PROPERTY = "quarkus.native.native-image-xmx";
     public static final String CONTAINER_BUILD_VOLUME_PATH = "/project";
     private static final String TRUST_STORE_SYSTEM_PROPERTY_MARKER = "-Djavax.net.ssl.trustStore=";
@@ -602,19 +601,78 @@ public class NativeImageBuildStep {
     }
 
     private RuntimeException imageGenerationFailed(Throwable cause, boolean isContainerBuild) {
-        if (cause instanceof AbnormalExitException aee && aee.exitCode() == OOM_ERROR_VALUE) {
-            if (isContainerBuild && !OS.LINUX.isCurrent()) {
-                return new ImageGenerationFailureException("Image generation failed. Exit code was " + aee.exitCode()
-                        + " which indicates an out of memory error. The most likely cause is Docker not being given enough memory. Also consider increasing the Xmx value for native image generation by setting the \""
-                        + QUARKUS_XMX_PROPERTY + "\" property", cause);
-            } else {
-                return new ImageGenerationFailureException("Image generation failed. Exit code was " + aee.exitCode()
-                        + " which indicates an out of memory error. Consider increasing the Xmx value for native image generation by setting the \""
-                        + QUARKUS_XMX_PROPERTY + "\" property", cause);
-            }
-        } else {
-            return new ImageGenerationFailureException("Image generation failed", cause);
+        if (cause instanceof AbnormalExitException aee) {
+            return new ImageGenerationFailureException(describeFailure(aee.exitCode(), isContainerBuild), cause);
         }
+        return new ImageGenerationFailureException("Image generation failed", cause);
+    }
+
+    /**
+     * Turns a native-image process exit code into a human-readable explanation.
+     * <p>
+     * The codes are the ones the native-image driver uses ({@code com.oracle.svm.core.util.ExitStatus}), plus the
+     * Unix {@code 128 + signal} codes for a builder that was killed by a signal. The exit code is always included,
+     * and for failures where the builder already printed the real cause the message points at the native-image
+     * output above.
+     */
+    static String describeFailure(int exitCode, boolean isContainerBuild) {
+        String prefix = "Image generation failed with exit code " + exitCode;
+        switch (exitCode) {
+            case 1: // ExitStatus.BUILDER_ERROR
+                return prefix + ": the native-image builder reported an error. "
+                        + "See the native-image output above for the cause.";
+            case 2: // fallback image created; Quarkus passes --no-fallback and fallback images are gone since GraalVM 25.1,
+                    // so this case can be dropped once GraalVM 25.0 is no longer supported
+                return prefix + ": native-image produced a fallback image instead of a native executable. "
+                        + "See the native-image output above for the reason.";
+            case 3: // ExitStatus.OUT_OF_MEMORY (builder Java heap, via -XX:+ExitOnOutOfMemoryError)
+                return prefix + ": the native-image builder ran out of Java heap. Increase the maximum heap size for "
+                        + "the build by setting the \"" + QUARKUS_XMX_PROPERTY + "\" property.";
+            case 20: // ExitStatus.DRIVER_ERROR
+                return prefix + " (native-image driver error). See the native-image output above for the cause.";
+            case 21: // ExitStatus.DRIVER_TO_BUILDER_ERROR
+                return prefix + ": the native-image driver could not communicate with the builder. "
+                        + "See the native-image output above.";
+            case 30: // ExitStatus.WATCHDOG_EXIT
+                return prefix + ": the native-image build watchdog fired because the build appears to be stuck. "
+                        + "See the native-image output above.";
+            case 125: // ExitStatus.CONTAINER_REUSE, only expected from a bundle build with a container
+                return prefix + ": the native-image driver could not reuse its build container. "
+                        + "See the native-image output above.";
+            case 134: // 128 + 6, SIGABRT
+                return prefix + ": the native-image builder aborted (SIGABRT). See the native-image output above.";
+            case 137: // ExitStatus.OUT_OF_MEMORY_KILLED (128 + 9, SIGKILL)
+                return prefix + ": the native-image build process was killed, which indicates it ran out of memory. "
+                        + oomGuidance(isContainerBuild);
+            case 139: // 128 + 11, SIGSEGV
+                return prefix + ": the native-image builder crashed with a segmentation fault (SIGSEGV). "
+                        + "See the native-image output above.";
+            case 143: // 128 + 15, SIGTERM
+                return prefix + ": the native-image build was terminated (SIGTERM), "
+                        + "usually because of a timeout or an external stop.";
+            case 172: // ExitStatus.MISSING_METADATA
+                return prefix + ": required reachability metadata is missing. "
+                        + "See the native-image output above for the missing entries.";
+            default:
+                return prefix + ". See the native-image output above for details.";
+        }
+    }
+
+    private static String oomGuidance(boolean isContainerBuild) {
+        StringBuilder sb = new StringBuilder();
+        if (isContainerBuild && !OS.LINUX.isCurrent()) {
+            sb.append("The most likely cause is the container runtime not being given enough memory "
+                    + "(Docker Desktop: Settings > Resources; Podman: 'podman machine set --memory 8192'), "
+                    + "or a low vm.max_map_count inside its Linux VM. ");
+        }
+        sb.append("Consider increasing the Xmx value for native image generation by setting the \"")
+                .append(QUARKUS_XMX_PROPERTY).append("\" property");
+        if (isContainerBuild && OS.LINUX.isCurrent()) {
+            sb.append(", and if the machine has free memory the cause may instead be a container/cgroup memory limit, "
+                    + "a low vm.max_map_count, memory overcommit settings, or a ulimit "
+                    + "(the kernel records the real reason in dmesg / journalctl -k)");
+        }
+        return sb.append(".").toString();
     }
 
     private void checkGraalVMVersion(GraalVM.Version version) {

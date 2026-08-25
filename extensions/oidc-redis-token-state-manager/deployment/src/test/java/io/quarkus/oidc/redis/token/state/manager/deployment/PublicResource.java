@@ -32,4 +32,12 @@ public class PublicResource {
         return dataSource.key().keys("oidc:token:*").map(l -> (long) l.size());
     }
 
+    @Path("delete-oidc-token-states")
+    @GET
+    public Uni<Integer> deleteOidcTokenStates() {
+        return dataSource.key().keys("oidc:token:*")
+                .flatMap(keys -> keys.isEmpty() ? Uni.createFrom().item(0)
+                        : dataSource.key().del(keys.toArray(new String[0])).replaceWith(keys.size()));
+    }
+
 }

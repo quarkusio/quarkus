@@ -5,8 +5,6 @@ import static io.vertx.core.http.HttpHeaders.COOKIE;
 import java.util.Collections;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -21,6 +19,7 @@ import io.quarkus.security.identity.IdentityProviderManager;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.security.identity.request.AuthenticationRequest;
 import io.quarkus.security.identity.request.TokenAuthenticationRequest;
+import io.quarkus.vertx.core.runtime.ContextLocalsVertxServiceProvider;
 import io.quarkus.vertx.core.runtime.context.VertxContextSafetyToggle;
 import io.quarkus.vertx.http.runtime.security.ChallengeData;
 import io.quarkus.vertx.http.runtime.security.HttpAuthenticationMechanism;
@@ -31,7 +30,6 @@ import io.smallrye.jwt.auth.principal.JWTAuthContextInfo;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.Vertx;
 import io.vertx.core.http.Cookie;
-import io.vertx.core.internal.ContextInternal;
 import io.vertx.ext.web.RoutingContext;
 
 /**
@@ -78,9 +76,7 @@ public class JWTAuthMechanism implements HttpAuthenticationMechanism {
                 VertxContextSafetyToggle.validateContextIfExists(ERROR_MSG, ERROR_MSG);
                 final var ctx = Vertx.currentContext();
                 final var token = new JsonWebTokenCredential(jwtToken);
-                // Assume that consumers of this expect to find the context entry in the Vert.x 4 era context local maps
-                ConcurrentMap<Object, Object> localMap = ctx.getLocal(ContextInternal.LOCAL_MAP, ConcurrentHashMap::new);
-                localMap.put(TokenCredential.class.getName(), token);
+                ContextLocalsVertxServiceProvider.TOKEN_CREDENTIAL_LOCAL.put(ctx, token);
                 return identityProviderManager
                         .authenticate(HttpSecurityUtils.setRoutingContextAttribute(
                                 new TokenAuthenticationRequest(token), context))
@@ -88,7 +84,7 @@ public class JWTAuthMechanism implements HttpAuthenticationMechanism {
                             @Override
                             public void run() {
                                 // remove as we recommend to acquire TokenCredential via CDI
-                                localMap.remove(TokenCredential.class.getName());
+                                ContextLocalsVertxServiceProvider.TOKEN_CREDENTIAL_LOCAL.remove(ctx);
                             }
                         });
             }

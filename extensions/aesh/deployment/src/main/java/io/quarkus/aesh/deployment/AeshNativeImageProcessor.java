@@ -1,5 +1,9 @@
 package io.quarkus.aesh.deployment;
 
+import static io.quarkus.deployment.builditem.nativeimage.FfmType.ADDRESS;
+import static io.quarkus.deployment.builditem.nativeimage.FfmType.INT;
+import static io.quarkus.deployment.builditem.nativeimage.FfmType.LONG;
+
 import java.lang.reflect.Modifier;
 import java.util.Arrays;
 import java.util.Collection;
@@ -22,7 +26,6 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.FfmDowncallBuildItem;
-import io.quarkus.deployment.builditem.nativeimage.FfmType;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageProxyDefinitionBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
@@ -64,27 +67,38 @@ class AeshNativeImageProcessor {
      * GraalVM native image requires explicit registration of all FFM downcall
      * signatures. Without this, the FFM terminal provider fails at runtime with
      * {@code MissingForeignRegistrationError} and falls back to ExecPty.
+     * <p>
+     * Most LibC functions use {@code captureCallState} to capture {@code errno},
+     * and {@code ioctl} additionally uses {@code firstVariadicArg}.
      */
     @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
     void registerFfmDowncalls(BuildProducer<FfmDowncallBuildItem> downcalls) {
         // int isatty(int fd) — no captureCallState
-        downcalls.produce(new FfmDowncallBuildItem(FfmType.INT, FfmType.INT));
-        // int open(const char *pathname, int flags) — with captureCallState
-        downcalls.produce(new FfmDowncallBuildItem(FfmType.INT, FfmType.ADDRESS, FfmType.INT));
-        // int close(int fd) — with captureCallState
-        downcalls.produce(new FfmDowncallBuildItem(FfmType.INT, FfmType.INT));
-        // ssize_t read(int fd, void *buf, size_t count) — with captureCallState
-        downcalls.produce(new FfmDowncallBuildItem(FfmType.LONG, FfmType.INT, FfmType.ADDRESS, FfmType.LONG));
+        downcalls.produce(FfmDowncallBuildItem.builder(INT, INT).build());
+        // int open(const char *pathname, int flags)
+        downcalls.produce(FfmDowncallBuildItem.builder(INT, ADDRESS, INT)
+                .captureCallState().build());
+        // int close(int fd)
+        downcalls.produce(FfmDowncallBuildItem.builder(INT, INT)
+                .captureCallState().build());
+        // ssize_t read(int fd, void *buf, size_t count)
+        downcalls.produce(FfmDowncallBuildItem.builder(LONG, INT, ADDRESS, LONG)
+                .captureCallState().build());
         // int poll(struct pollfd *fds, nfds_t nfds, int timeout) — Linux: nfds_t=long
-        downcalls.produce(new FfmDowncallBuildItem(FfmType.INT, FfmType.ADDRESS, FfmType.LONG, FfmType.INT));
+        downcalls.produce(FfmDowncallBuildItem.builder(INT, ADDRESS, LONG, INT)
+                .captureCallState().build());
         // int poll(struct pollfd *fds, nfds_t nfds, int timeout) — macOS: nfds_t=int
-        downcalls.produce(new FfmDowncallBuildItem(FfmType.INT, FfmType.ADDRESS, FfmType.INT, FfmType.INT));
-        // int tcgetattr(int fd, struct termios *termios_p) — with captureCallState
-        downcalls.produce(new FfmDowncallBuildItem(FfmType.INT, FfmType.INT, FfmType.ADDRESS));
+        downcalls.produce(FfmDowncallBuildItem.builder(INT, ADDRESS, INT, INT)
+                .captureCallState().build());
+        // int tcgetattr(int fd, struct termios *termios_p)
+        downcalls.produce(FfmDowncallBuildItem.builder(INT, INT, ADDRESS)
+                .captureCallState().build());
         // int tcsetattr(int fd, int actions, const struct termios *termios_p)
-        downcalls.produce(new FfmDowncallBuildItem(FfmType.INT, FfmType.INT, FfmType.INT, FfmType.ADDRESS));
+        downcalls.produce(FfmDowncallBuildItem.builder(INT, INT, INT, ADDRESS)
+                .captureCallState().build());
         // int ioctl(int fd, unsigned long request, void *arg) — variadic
-        downcalls.produce(new FfmDowncallBuildItem(FfmType.INT, FfmType.INT, FfmType.LONG, FfmType.ADDRESS));
+        downcalls.produce(FfmDowncallBuildItem.builder(INT, INT, LONG, ADDRESS)
+                .captureCallState().firstVariadicArg(2).build());
     }
 
     @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)

@@ -128,6 +128,8 @@ public interface Capability {
     String OPENTELEMETRY_METRICS = QUARKUS_PREFIX + ".opentelemetry.metrics";
     String OPENTELEMETRY_LOGS = QUARKUS_PREFIX + ".opentelemetry.logs";
 
+    String MICROMETER_OPENTELEMETRY = QUARKUS_PREFIX + ".micrometer.opentelemetry";
+
     String OPENSHIFT = QUARKUS_PREFIX + ".openshift";
     String OPENSHIFT_CLIENT = OPENSHIFT + ".client";
 

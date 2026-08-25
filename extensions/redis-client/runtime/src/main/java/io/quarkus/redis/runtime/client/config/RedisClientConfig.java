@@ -2,8 +2,8 @@ package io.quarkus.redis.runtime.client.config;
 
 import java.net.URI;
 import java.time.Duration;
+import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 
 import io.quarkus.redis.client.RedisClientName;
 import io.quarkus.runtime.annotations.ConfigDocDefault;
@@ -35,7 +35,7 @@ public interface RedisClientConfig {
      *
      * @see <a href="https://www.iana.org/assignments/uri-schemes/prov/redis">Redis scheme on www.iana.org</a>
      */
-    Optional<Set<URI>> hosts();
+    Optional<List<URI>> hosts();
 
     /**
      * The hosts provider bean name.

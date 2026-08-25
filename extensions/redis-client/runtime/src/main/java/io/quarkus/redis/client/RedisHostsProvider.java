@@ -1,7 +1,7 @@
 package io.quarkus.redis.client;
 
 import java.net.URI;
-import java.util.Set;
+import java.util.Collection;
 
 /**
  * Programmatically provides redis hosts
@@ -14,5 +14,5 @@ public interface RedisHostsProvider {
      *
      * @return the hosts
      */
-    Set<URI> getHosts();
+    Collection<URI> getHosts();
 }

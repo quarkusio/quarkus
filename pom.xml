@@ -74,7 +74,7 @@
         <rest-assured.version>6.0.1</rest-assured.version>
         <hibernate-orm.version>7.4.5.Final</hibernate-orm.version> <!-- WARNING when updating, also align the versions below; checked by maven-enforcer-plugin in bom -->
         <jakarta.persistence-api.version>3.2.0</jakarta.persistence-api.version> <!-- version controlled by Hibernate ORM's needs; checked by maven-enforcer-plugin in bom -->
-        <jakarta.data-api.version>1.0.1</jakarta.data-api.version> <!-- version controlled by Hibernate ORM's needs; checked by maven-enforcer-plugin in bom -->
+        <jakarta.data-api.version>1.0.2</jakarta.data-api.version> <!-- version controlled by Hibernate ORM's needs; checked by maven-enforcer-plugin in bom -->
         <antlr.version>4.13.2</antlr.version> <!-- version controlled by Hibernate ORM's needs; checked by maven-enforcer-plugin in bom -->
         <bytebuddy.version>1.18.8</bytebuddy.version> <!-- version controlled by Hibernate ORM's needs; checked by maven-enforcer-plugin in bom -->
         <geolatte.version>1.11</geolatte.version> <!-- version controlled by Hibernate ORM's needs; checked by maven-enforcer-plugin in bom -->

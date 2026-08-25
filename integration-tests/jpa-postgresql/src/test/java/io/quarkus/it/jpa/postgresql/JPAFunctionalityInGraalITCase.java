@@ -1,7 +1,6 @@
 package io.quarkus.it.jpa.postgresql;
 
 import org.hibernate.type.descriptor.jdbc.UUIDJdbcType;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.test.junit.QuarkusIntegrationTest;
@@ -14,7 +13,6 @@ import io.quarkus.test.junit.nativeimage.ClassInclusionReport;
 public class JPAFunctionalityInGraalITCase extends JPAFunctionalityTest {
 
     @Test
-    @Disabled("With the move to Jackson 3, this needs to be reexamined") // Yoann advised me to disable this in https://quarkusio.zulipchat.com/#narrow/channel/187038-dev/topic/Jackson.203.2E0.2E0/near/611897490
     public void verifyJdkXmlParsersHavebeenEcludedFromNative() {
         final ClassInclusionReport report = ClassInclusionReport.load();
         //The following classes should be included in this applications;

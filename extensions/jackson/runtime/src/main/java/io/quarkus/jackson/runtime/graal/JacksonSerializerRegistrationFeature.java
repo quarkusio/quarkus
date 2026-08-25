@@ -10,8 +10,12 @@ import javax.xml.namespace.QName;
 
 import org.graalvm.nativeimage.hosted.Feature;
 import org.graalvm.nativeimage.hosted.RuntimeReflection;
+import org.w3c.dom.Document;
+import org.w3c.dom.Node;
 
 import tools.jackson.databind.ext.CoreXMLDeserializers;
+import tools.jackson.databind.ext.DOMDeserializer;
+import tools.jackson.databind.ext.DOMSerializer;
 import tools.jackson.databind.ext.QNameSerializer;
 import tools.jackson.databind.ext.XMLGregorianCalendarSerializer;
 import tools.jackson.databind.ext.sql.JavaSqlDateDeserializer;
@@ -22,9 +26,10 @@ import tools.jackson.databind.ext.sql.JavaSqlTimestampDeserializer;
 /**
  * Registers Jackson serializers/deserializers for reflection only when their corresponding
  * types are reachable during native image analysis. This avoids unconditionally pulling in
- * {@code java.sql.*} and {@code javax.xml.datatype.*} class hierarchies into the native image.
+ * {@code java.sql.*}, {@code javax.xml.datatype.*} and {@code org.w3c.dom.*} class hierarchies into the native image.
  *
- * See <a href="https://github.com/quarkusio/quarkus/issues/53818">GitHub issue #53818</a>.
+ * See <a href="https://github.com/quarkusio/quarkus/issues/53818">GitHub issue #53818</a> and
+ * <a href="https://github.com/quarkusio/quarkus/issues/55650">GitHub issue #55650</a>.
  */
 public class JacksonSerializerRegistrationFeature implements Feature {
 
@@ -51,6 +56,13 @@ public class JacksonSerializerRegistrationFeature implements Feature {
                 QNameSerializer.class,
                 XMLGregorianCalendarSerializer.class,
                 CoreXMLDeserializers.class);
+
+        // DOM handlers, loaded reflectively by the OptionalHandlerFactory substitution: they initialize the JDK XML
+        // parsers and transformers, which should only be in the image when a DOM type is reachable
+        registerWhenReachable(access, new Class<?>[] { Node.class, Document.class }, false,
+                DOMSerializer.class,
+                DOMDeserializer.NodeDeserializer.class,
+                DOMDeserializer.DocumentDeserializer.class);
     }
 
     private void registerWhenReachable(BeforeAnalysisAccess access, Class<?>[] triggerClasses,

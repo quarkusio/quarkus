@@ -243,6 +243,7 @@ public class JacksonSerializerFactory extends JacksonCodeGenerator {
 
         boolean isJsonValue = jsonValueFieldSpecs.isPresent();
         boolean isArrayShape = !isJsonValue && isClassFormatShapeArray(classInfo);
+        boolean isMapSubclass = !isJsonValue && !isArrayShape && isAssignableTo(beanClassName, MAP_NAME);
 
         // Generate serializeContent() — writes field content without object boundaries
         MethodCreator contentMethod = classCreator.getMethodCreator("serializeContent", void.class,
@@ -252,6 +253,9 @@ public class JacksonSerializerFactory extends JacksonCodeGenerator {
         if (isJsonValue) {
             GenerationSerializationContext ctx = new GenerationSerializationContext(contentMethod, beanClassName);
             serializeJsonValue(ctx, contentMethod, jsonValueFieldSpecs.get());
+        } else if (isMapSubclass) {
+            serializeMapEntries(contentMethod, beanClassName);
+            classCreator.getMethodCreator("<clinit>", void.class).setModifiers(ACC_STATIC).returnVoid();
         } else {
             Set<String> serializedFields = new HashSet<>();
             GenerationSerializationContext ctx = new GenerationSerializationContext(contentMethod, beanClassName);
@@ -557,6 +561,14 @@ public class JacksonSerializerFactory extends JacksonCodeGenerator {
                 MethodDescriptor.ofMethod(JacksonMapperUtil.class, "serializeAnyGetterMap", void.class,
                         Map.class, JsonGenerator.class, SerializationContext.class),
                 map, ctx.jsonGenerator, ctx.serializerProvider);
+    }
+
+    private static void serializeMapEntries(MethodCreator bytecode, String beanClassName) {
+        ResultHandle valueHandle = bytecode.checkCast(bytecode.getMethodParam(0), beanClassName);
+        bytecode.invokeStaticMethod(
+                MethodDescriptor.ofMethod(JacksonMapperUtil.class, "serializeAnyGetterMap", void.class,
+                        Map.class, JsonGenerator.class, SerializationContext.class),
+                valueHandle, bytecode.getMethodParam(1), bytecode.getMethodParam(2));
     }
 
     private FieldSpecs fieldSpecsFromMethod(MethodInfo methodInfo, PropertyNamingStrategy namingStrategy) {

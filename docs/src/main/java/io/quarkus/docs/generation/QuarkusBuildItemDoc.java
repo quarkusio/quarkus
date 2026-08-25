@@ -13,7 +13,10 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.TreeMap;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import org.eclipse.collections.api.multimap.Multimap;
@@ -21,16 +24,25 @@ import org.eclipse.collections.api.multimap.MutableMultimap;
 import org.eclipse.collections.api.tuple.Pair;
 import org.eclipse.collections.impl.factory.Multimaps;
 import org.eclipse.collections.impl.tuple.Tuples;
-import org.jboss.forge.roaster.Roaster;
-import org.jboss.forge.roaster.model.JavaDocCapable;
-import org.jboss.forge.roaster.model.source.FieldSource;
-import org.jboss.forge.roaster.model.source.JavaClassSource;
 import org.snakeyaml.engine.v2.api.Load;
 import org.snakeyaml.engine.v2.api.LoadSettings;
+
+import com.github.javaparser.ParserConfiguration;
+import com.github.javaparser.StaticJavaParser;
+import com.github.javaparser.ast.CompilationUnit;
+import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
+import com.github.javaparser.ast.body.FieldDeclaration;
+import com.github.javaparser.ast.body.VariableDeclarator;
+import com.github.javaparser.ast.comments.JavadocComment;
 
 import io.fabric8.maven.Maven;
 
 public class QuarkusBuildItemDoc {
+
+    static {
+        StaticJavaParser.getParserConfiguration()
+                .setLanguageLevel(ParserConfiguration.LanguageLevel.JAVA_21);
+    }
 
     public Path outputFile;
     public List<Path> paths;
@@ -74,35 +86,42 @@ public class QuarkusBuildItemDoc {
             Files.createDirectories(outputFile.getParent());
             out = new PrintStream(Files.newOutputStream(outputFile));
         }
-        final Multimap<String, Pair<Path, JavaClassSource>> multimap = collect();
+        final Multimap<String, Pair<Path, ClassOrInterfaceDeclaration>> multimap = collect();
         Map<String, String> names = extractNames(Paths.get("."), multimap.keySet());
         // Print Core first
         {
             printTableHeader(names.remove("Core"));
-            for (Pair<Path, JavaClassSource> source : multimap.get("Core")) {
+            for (Pair<Path, ClassOrInterfaceDeclaration> source : multimap.get("Core")) {
                 printTableRow(source);
             }
             printTableFooter();
         }
         names.forEach((key, name) -> {
             printTableHeader(name);
-            for (Pair<Path, JavaClassSource> source : multimap.get(key)) {
+            for (Pair<Path, ClassOrInterfaceDeclaration> source : multimap.get(key)) {
                 printTableRow(source);
             }
             printTableFooter();
         });
     }
 
-    private String getJavaDoc(JavaDocCapable<?> source) {
-        if (!source.hasJavaDoc()) {
+    private String getJavaDoc(Optional<JavadocComment> javadocComment) {
+        if (javadocComment.isEmpty()) {
             return "<i>No Javadoc found</i>";
         }
-        return source.getJavaDoc().getFullText();
+        return cleanJavadocComment(javadocComment.get().getContent());
     }
 
-    private Multimap<String, Pair<Path, JavaClassSource>> collect() throws IOException {
-        MutableMultimap<String, Pair<Path, JavaClassSource>> multimap = Multimaps.mutable.sortedSet
-                .with(Comparator.comparing(o -> o.getTwo().getName()));
+    static String cleanJavadocComment(String rawContent) {
+        return rawContent.lines()
+                .map(line -> line.replaceFirst("^\\s*\\*\\s?", ""))
+                .collect(Collectors.joining("\n"))
+                .strip();
+    }
+
+    private Multimap<String, Pair<Path, ClassOrInterfaceDeclaration>> collect() throws IOException {
+        MutableMultimap<String, Pair<Path, ClassOrInterfaceDeclaration>> multimap = Multimaps.mutable.sortedSet
+                .with(Comparator.comparing(o -> o.getTwo().getNameAsString()));
         for (Path path : paths) {
             Files.walkFileTree(path, new SimpleFileVisitor<>() {
                 @Override
@@ -117,37 +136,44 @@ public class QuarkusBuildItemDoc {
         return multimap;
     }
 
-    private void process(MutableMultimap<String, Pair<Path, JavaClassSource>> multimap, Path path) throws IOException {
-        JavaClassSource source = Roaster.parse(JavaClassSource.class, path.toFile());
-        // Ignore deprecated annotations and non-public classes
-        if (!source.hasAnnotation(Deprecated.class) && source.isPublic()) {
-            String name;
-            Path pom = findPom(path);
-            if (pom != null) {
-                name = Maven.readModel(pom).getName();
-            } else {
-                String pathString = path.toString();
-                int spiIdx = pathString.indexOf("/spi/src");
-                int runtimeIdx = pathString.indexOf("/runtime/src");
-                int deploymentIdx = pathString.indexOf("/deployment/src");
-                int idx = Math.max(Math.max(spiIdx, runtimeIdx), deploymentIdx);
-                int extensionsIdx = pathString.indexOf("extensions/");
-                int startIdx = 0;
-                if (extensionsIdx != -1) {
-                    startIdx = extensionsIdx + 11;
-                }
-                if (idx == -1) {
-                    name = pathString.substring(startIdx, pathString.indexOf("/", startIdx + 1));
-                } else {
-                    name = pathString.substring(startIdx, idx);
-                }
-            }
-            // sanitize name
-            name = name.replace("Quarkus - ", "")
-                    .replace(" - Deployment", "");
-            Pair<Path, JavaClassSource> pair = Tuples.pair(path, source);
-            multimap.put(name, pair);
+    private void process(MutableMultimap<String, Pair<Path, ClassOrInterfaceDeclaration>> multimap, Path path)
+            throws IOException {
+        CompilationUnit cu = StaticJavaParser.parse(path);
+        Optional<ClassOrInterfaceDeclaration> primaryType = cu.findFirst(ClassOrInterfaceDeclaration.class);
+        if (primaryType.isEmpty()) {
+            return;
         }
+        ClassOrInterfaceDeclaration classDecl = primaryType.get();
+        // Ignore deprecated annotations and non-public classes
+        if (classDecl.getAnnotationByClass(Deprecated.class).isPresent() || !classDecl.isPublic()) {
+            return;
+        }
+        String name;
+        Path pom = findPom(path);
+        if (pom != null) {
+            name = Maven.readModel(pom).getName();
+        } else {
+            String pathString = path.toString();
+            int spiIdx = pathString.indexOf("/spi/src");
+            int runtimeIdx = pathString.indexOf("/runtime/src");
+            int deploymentIdx = pathString.indexOf("/deployment/src");
+            int idx = Math.max(Math.max(spiIdx, runtimeIdx), deploymentIdx);
+            int extensionsIdx = pathString.indexOf("extensions/");
+            int startIdx = 0;
+            if (extensionsIdx != -1) {
+                startIdx = extensionsIdx + 11;
+            }
+            if (idx == -1) {
+                name = pathString.substring(startIdx, pathString.indexOf("/", startIdx + 1));
+            } else {
+                name = pathString.substring(startIdx, idx);
+            }
+        }
+        // sanitize name
+        name = name.replace("Quarkus - ", "")
+                .replace(" - Deployment", "");
+        Pair<Path, ClassOrInterfaceDeclaration> pair = Tuples.pair(path, classDecl);
+        multimap.put(name, pair);
     }
 
     private Path findPom(Path path) {
@@ -188,14 +214,14 @@ public class QuarkusBuildItemDoc {
         out.println("h|Class Name\nh|Attributes \n\n");
     }
 
-    private void printTableRow(Pair<Path, JavaClassSource> pair) {
+    private void printTableRow(Pair<Path, ClassOrInterfaceDeclaration> pair) {
         Path root = Paths.get(".").toAbsolutePath().normalize();
         String link = "https://github.com/quarkusio/quarkus/blob/" + gitRef + "/" + root.relativize(pair.getOne().normalize());
-        JavaClassSource source = pair.getTwo();
-        String className = source.getQualifiedName();
-        String attributes = buildAttributes(source);
-        String description = getJavaDoc(source);
-        String baseBuildItemText = source.isAbstract()
+        ClassOrInterfaceDeclaration classDecl = pair.getTwo();
+        String className = classDecl.getFullyQualifiedName().orElse(classDecl.getNameAsString());
+        String attributes = buildAttributes(classDecl);
+        String description = getJavaDoc(classDecl.getJavadocComment());
+        String baseBuildItemText = classDecl.isAbstract()
                 ? "icon:building[title=Non-instantiatable Build Item (can be inherited from)]"
                 : "";
 
@@ -208,16 +234,19 @@ public class QuarkusBuildItemDoc {
                 attributes));
     }
 
-    private String buildAttributes(JavaClassSource source) {
+    private String buildAttributes(ClassOrInterfaceDeclaration classDecl) {
         StringBuilder sb = new StringBuilder();
-        for (FieldSource<JavaClassSource> field : source.getFields()) {
+        for (FieldDeclaration field : classDecl.getFields()) {
             if (field.isStatic()) {
                 continue;
             }
-            sb.append(String.format("`%s %s` \n\n%s\n\n",
-                    field.getType().getQualifiedNameWithGenerics(),
-                    field.getName(),
-                    javadocToAsciidoc(getJavaDoc(field))));
+            for (VariableDeclarator variable : field.getVariables()) {
+                String fieldJavadoc = getJavaDoc(field.getJavadocComment());
+                sb.append(String.format("`%s %s` \n\n%s\n\n",
+                        variable.getType().asString(),
+                        variable.getNameAsString(),
+                        javadocToAsciidoc(fieldJavadoc)));
+            }
         }
         return sb.length() == 0 ? "None" : sb.toString();
     }
@@ -226,21 +255,37 @@ public class QuarkusBuildItemDoc {
         out.println("|===");
     }
 
-    private String javadocToAsciidoc(String content) {
-        return content
+    private static final Pattern ANCHOR_PATTERN = Pattern.compile(
+            "(?s)<a\\s+href=\\s*\"([^\"]*?)\"\\s*>(.*?)</a>");
+
+    String javadocToAsciidoc(String content) {
+        String result = content
                 .replaceAll("<p> *", "\n")
                 .replaceAll("</p> *", "\n")
                 .replaceAll("<br> *", "\n")
                 .replaceAll("\\{?@(link|see|code) ([^}]*)}", "`$2`")
-                .replaceAll("<pre>", "```\n")
-                .replaceAll("</pre>", "\n```")
+                .replaceAll("(?m)^@see ", "See ")
+                .replaceAll("<pre>", "\n[source]\n----\n")
+                .replaceAll("</pre>", "\n----\n")
                 .replaceAll("<h2>", "\n[discrete]\n== ")
                 .replaceAll("</h2> *", "\n\n")
                 .replaceAll("</?i>", "_")
                 .replaceAll("</?ul> *", "\n")
                 .replaceAll("<li>", "\n* ")
                 .replaceAll("</li> *", "\n\n")
-                .replaceAll("</?tt>", "`")
-                .replaceAll("<a href=\"([^\"]*)\">([^<]*)</a>", "$1[$2,window=_blank]");
+                .replaceAll("</?tt>", "`");
+        return convertAnchors(result);
+    }
+
+    private static String convertAnchors(String content) {
+        Matcher matcher = ANCHOR_PATTERN.matcher(content);
+        StringBuilder sb = new StringBuilder();
+        while (matcher.find()) {
+            String url = matcher.group(1).strip();
+            String text = matcher.group(2).replaceAll("\\s+", " ").strip();
+            matcher.appendReplacement(sb, Matcher.quoteReplacement(url + "[" + text + ",window=_blank]"));
+        }
+        matcher.appendTail(sb);
+        return sb.toString();
     }
 }

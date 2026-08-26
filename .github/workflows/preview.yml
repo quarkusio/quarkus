@@ -31,12 +31,6 @@ jobs:
           repository: quarkusio/quarkus
           path: quarkus-main
 
-      - name: Install git-restore-time
-        run: sudo apt-get install -y git-restore-mtime
-
-      - name: Restore mtime
-        run: git restore-mtime
-
       - name: Download PR Artifact
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
@@ -83,7 +77,6 @@ jobs:
         run: ./roq-plugin-toc/build.sh
 
       - name: Build with Maven
-        if: steps.detect.outputs.roq == 'true'
         run: QUARKUS_ROQ_GENERATOR_BATCH=true QUARKUS_PROFILE=only-latest-guides mvn -B package quarkus:run -DskipTests
 
       - name: Reduce the size of the website to be compatible with surge

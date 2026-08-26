@@ -66,8 +66,7 @@ public abstract class QuarkusTaskWithExtensionView extends QuarkusTask {
      * reader derives from its environment, plus the directories this build knows.
      */
     protected List<ApplicationModelRelocation.Root> relocationRoots() {
-        final List<ApplicationModelRelocation.Root> roots = new ArrayList<>(
-                ApplicationModelRelocation.environmentRoots());
+        final List<ApplicationModelRelocation.Root> roots = new ArrayList<>();
         roots.add(new ApplicationModelRelocation.Root(ApplicationModelRelocation.BUILD_DIR_ROOT,
                 getProjectLayout().getBuildDirectory().get().getAsFile().toPath()));
         roots.add(new ApplicationModelRelocation.Root(ApplicationModelRelocation.PROJECT_DIR_ROOT,
@@ -80,7 +79,7 @@ public abstract class QuarkusTaskWithExtensionView extends QuarkusTask {
             roots.add(new ApplicationModelRelocation.Root(ApplicationModelRelocation.ROOT_DIR_ROOT,
                     getRootDirectory().get().getAsFile().toPath()));
         }
-        return roots;
+        return ApplicationModelRelocation.withEnvironmentRoots(roots);
     }
 
     @Inject

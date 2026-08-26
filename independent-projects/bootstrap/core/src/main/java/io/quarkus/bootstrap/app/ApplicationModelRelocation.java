@@ -94,6 +94,17 @@ public class ApplicationModelRelocation {
         // a longer root first, so that a root nested inside another one wins
         final List<Root> ordered = new ArrayList<>(roots);
         ordered.sort((a, b) -> Integer.compare(b.path().toString().length(), a.path().toString().length()));
+        // Two roots sharing a name but not a location would tokenize by one and resolve by the other,
+        // silently producing a path that points somewhere else. There is no sensible way to pick
+        // between them, so refuse rather than guess.
+        final Map<String, Path> byName = new LinkedHashMap<>();
+        for (Root root : ordered) {
+            final Path previous = byName.putIfAbsent(root.name(), root.path());
+            if (previous != null && !previous.equals(root.path())) {
+                throw new IllegalArgumentException("Conflicting definitions of relocation root "
+                        + root.name() + ": " + previous + " and " + root.path());
+            }
+        }
 
         final Map<String, Object> relocated = new LinkedHashMap<>(mapValue(model, s -> tokenize(s, ordered)));
         // only the names of the roots are recorded, never their locations: a recorded location would be
@@ -174,6 +185,22 @@ public class ApplicationModelRelocation {
     public static final String GRADLE_USER_HOME_ROOT = "quarkus.gradle.user.home";
 
     /**
+     * Prefix of the names standing for the root directories of builds included in the one a model was
+     * produced for. An included build lies outside the root directory, so it needs a root of its own.
+     * <p>
+     * They are numbered by the order the build declares them, which is stable for a given build and
+     * independent of where any of it is checked out.
+     */
+    public static final String INCLUDED_BUILD_ROOT_PREFIX = "quarkus.included.build.";
+
+    /**
+     * The name of the root standing for the included build at the given index.
+     */
+    public static String includedBuildRoot(int index) {
+        return INCLUDED_BUILD_ROOT_PREFIX + index;
+    }
+
+    /**
      * The roots that can be derived from the environment alone, and are therefore available to any
      * reader of a model without having to be told about them: the local Maven repository and the Gradle
      * home. Both honour the standard overrides and fall back to their conventional locations under the
@@ -249,6 +276,28 @@ public class ApplicationModelRelocation {
         // location, and guessing the project directory would silently resolve a sibling module's jar
         // to a path nested under this module. A caller that knows the root passes it explicitly.
         return roots;
+    }
+
+    /**
+     * Combines the roots a reader can derive from its environment with roots the caller knows better,
+     * letting the caller's definition replace the derived one of the same name.
+     * <p>
+     * A build tool knows where its dependency cache actually is; the environment is only a guess at it.
+     * Passing both would leave two definitions of one name, which {@link #relocate(Map, Collection)}
+     * rejects.
+     *
+     * @param known roots the caller is authoritative about
+     * @return the environment roots, with any of the same name replaced by the caller's
+     */
+    public static List<Root> withEnvironmentRoots(Collection<Root> known) {
+        final Map<String, Root> byName = new LinkedHashMap<>();
+        for (Root root : environmentRoots()) {
+            byName.put(root.name(), root);
+        }
+        for (Root root : known) {
+            byName.put(root.name(), root);
+        }
+        return new ArrayList<>(byName.values());
     }
 
     private static void addRoot(List<Root> roots, String name, String configured, Supplier<Path> fallback) {

@@ -7,8 +7,10 @@ import static io.quarkus.gradle.tooling.dependency.DependencyDataCollector.decla
 
 import java.io.File;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -26,8 +28,12 @@ import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.ConfigurationContainer;
 import org.gradle.api.artifacts.ExternalModuleDependency;
 import org.gradle.api.artifacts.ProjectDependency;
+import org.gradle.api.file.Directory;
+import org.gradle.api.file.DirectoryProperty;
 import org.gradle.api.file.FileCollection;
+import org.gradle.api.initialization.IncludedBuild;
 import org.gradle.api.java.archives.Attributes;
+import org.gradle.api.model.ObjectFactory;
 import org.gradle.api.plugins.BasePlugin;
 import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.provider.Property;
@@ -651,6 +657,23 @@ public class QuarkusPlugin implements Plugin<Project> {
         task.getApplicationModel().set(project.getLayout().getBuildDirectory().file(quarkusModelFile));
         task.getGradleUserHomeDirectory().set(project.getGradle().getGradleUserHomeDir());
         task.getRootDirectory().set(project.getRootDir());
+        task.getIncludedBuildDirectories().set(project.provider(() -> includedBuildDirectories(project)));
+    }
+
+    /**
+     * The root directories of the builds included in this one, in declaration order. They lie outside
+     * the root directory of this build, so the serialized application model expresses paths under them
+     * relative to a root of their own.
+     */
+    private static List<Directory> includedBuildDirectories(Project project) {
+        final ObjectFactory objects = project.getObjects();
+        final List<Directory> directories = new ArrayList<>();
+        for (IncludedBuild includedBuild : project.getGradle().getIncludedBuilds()) {
+            final DirectoryProperty directory = objects.directoryProperty();
+            directory.set(includedBuild.getProjectDir());
+            directories.add(directory.get());
+        }
+        return directories;
     }
 
     private static void configureQuarkusBuildTask(Project project, QuarkusBuildTask task,

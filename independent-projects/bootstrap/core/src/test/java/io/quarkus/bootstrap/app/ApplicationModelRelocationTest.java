@@ -1,12 +1,15 @@
 package io.quarkus.bootstrap.app;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -147,6 +150,97 @@ class ApplicationModelRelocationTest {
         assertThat(deserialized.getDependencies())
                 .singleElement()
                 .satisfies(d -> assertThat(d.getResolvedPaths().getSinglePath()).isEqualTo(siblingJar));
+    }
+
+    /**
+     * Two definitions of one root name would tokenize by one and resolve by the other, silently
+     * producing a path pointing somewhere else. There is no way to choose between them, so relocation
+     * refuses rather than guesses.
+     */
+    @Test
+    void conflictingDefinitionsOfARootAreRejected() {
+        Map<String, Object> model = new LinkedHashMap<>();
+        model.put("p", "/a/foo.jar");
+
+        assertThatThrownBy(() -> ApplicationModelRelocation.relocate(model, List.of(
+                new ApplicationModelRelocation.Root("quarkus.project.dir", Path.of("/a")),
+                new ApplicationModelRelocation.Root("quarkus.project.dir", Path.of("/b")))))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("quarkus.project.dir");
+    }
+
+    /**
+     * The same root named twice with the same location is redundant, not contradictory, and must be
+     * accepted - {@code withEnvironmentRoots} relies on it being harmless.
+     */
+    @Test
+    void repeatingARootWithTheSameLocationIsAccepted() {
+        Map<String, Object> model = new LinkedHashMap<>();
+        model.put("p", "/a/foo.jar");
+
+        Map<String, Object> relocated = ApplicationModelRelocation.relocate(model, List.of(
+                new ApplicationModelRelocation.Root("quarkus.project.dir", Path.of("/a")),
+                new ApplicationModelRelocation.Root("quarkus.project.dir", Path.of("/a"))));
+
+        assertThat(relocated.get("p")).isEqualTo("${quarkus.project.dir}/foo.jar");
+    }
+
+    /**
+     * A caller that knows a root better than the environment does replaces it, rather than adding a
+     * second definition of the same name.
+     */
+    @Test
+    void callerRootsReplaceTheEnvironmentOnesOfTheSameName() {
+        Path gradleHome = Path.of("/custom/gradle-home");
+
+        List<ApplicationModelRelocation.Root> roots = ApplicationModelRelocation.withEnvironmentRoots(List.of(
+                new ApplicationModelRelocation.Root(ApplicationModelRelocation.GRADLE_USER_HOME_ROOT, gradleHome)));
+
+        assertThat(roots)
+                .filteredOn(r -> r.name().equals(ApplicationModelRelocation.GRADLE_USER_HOME_ROOT))
+                .singleElement()
+                .satisfies(r -> assertThat(r.path()).isEqualTo(gradleHome));
+        // the environment roots it does not override are still there
+        assertThat(roots).anySatisfy(r -> assertThat(r.name()).isEqualTo(ApplicationModelRelocation.LOCAL_REPO_ROOT));
+    }
+
+    /**
+     * An included build lies outside the root directory of the build including it, so its artifacts
+     * need a root of their own or they stay absolute and keep the model checkout-dependent.
+     */
+    @Test
+    void includedBuildArtifactsAreRelocated() throws IOException {
+        Path rootDir = tempDir.resolve("main-build");
+        Path includedBuild = tempDir.resolve("shared-lib");
+        Path jar = includedBuild.resolve("lib/build/libs/lib.jar");
+        Path file = tempDir.resolve("included.dat");
+
+        ApplicationModel model = new ApplicationModelBuilder()
+                .setAppArtifact(ResolvedDependencyBuilder.newInstance()
+                        .setGroupId("com.example")
+                        .setArtifactId("app")
+                        .setVersion("1.0.0")
+                        .setResolvedPath(rootDir.resolve("build/classes")))
+                .addDependency(ResolvedDependencyBuilder.newInstance()
+                        .setGroupId("com.example")
+                        .setArtifactId("lib")
+                        .setVersion("1.0.0")
+                        .setResolvedPath(jar)
+                        .setFlags(DependencyFlags.DEPLOYMENT_CP))
+                .setPlatformImports(PlatformImports.fromMap(Collections.emptyMap()))
+                .build();
+
+        List<ApplicationModelRelocation.Root> roots = List.of(
+                new ApplicationModelRelocation.Root(ApplicationModelRelocation.ROOT_DIR_ROOT, rootDir),
+                new ApplicationModelRelocation.Root(ApplicationModelRelocation.includedBuildRoot(0), includedBuild));
+        ApplicationModelSerializer.serialize(model, file, roots);
+
+        assertThat(Files.readString(file)).doesNotContain(asJson(includedBuild));
+
+        ApplicationModel deserialized = ApplicationModelSerializer.deserialize(file, roots);
+        assertThat(deserialized.getDependencies())
+                .singleElement()
+                .satisfies(d -> assertThat(d.getResolvedPaths().getSinglePath()).isEqualTo(jar));
     }
 
     private String serializeAt(Path checkout) throws IOException {

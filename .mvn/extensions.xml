@@ -27,7 +27,7 @@
     <extension>
         <groupId>eu.maveniverse.maven.nisse</groupId>
         <artifactId>extension3</artifactId>
-        <version>0.9.5</version>
+        <version>0.9.7</version>
     </extension>
     <extension>
         <groupId>eu.maveniverse.maven.njord</groupId>

@@ -159,12 +159,14 @@ class ApplicationModelRelocationTest {
      */
     @Test
     void conflictingDefinitionsOfARootAreRejected() {
+        Path a = tempDir.resolve("a");
+        Path b = tempDir.resolve("b");
         Map<String, Object> model = new LinkedHashMap<>();
-        model.put("p", "/a/foo.jar");
+        model.put("p", a.resolve("foo.jar").toString());
 
         assertThatThrownBy(() -> ApplicationModelRelocation.relocate(model, List.of(
-                new ApplicationModelRelocation.Root("quarkus.project.dir", Path.of("/a")),
-                new ApplicationModelRelocation.Root("quarkus.project.dir", Path.of("/b")))))
+                new ApplicationModelRelocation.Root("quarkus.project.dir", a),
+                new ApplicationModelRelocation.Root("quarkus.project.dir", b))))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("quarkus.project.dir");
     }
@@ -175,12 +177,13 @@ class ApplicationModelRelocationTest {
      */
     @Test
     void repeatingARootWithTheSameLocationIsAccepted() {
+        Path a = tempDir.resolve("a");
         Map<String, Object> model = new LinkedHashMap<>();
-        model.put("p", "/a/foo.jar");
+        model.put("p", a.resolve("foo.jar").toString());
 
         Map<String, Object> relocated = ApplicationModelRelocation.relocate(model, List.of(
-                new ApplicationModelRelocation.Root("quarkus.project.dir", Path.of("/a")),
-                new ApplicationModelRelocation.Root("quarkus.project.dir", Path.of("/a"))));
+                new ApplicationModelRelocation.Root("quarkus.project.dir", a),
+                new ApplicationModelRelocation.Root("quarkus.project.dir", a)));
 
         assertThat(relocated.get("p")).isEqualTo("${quarkus.project.dir}/foo.jar");
     }
@@ -191,7 +194,7 @@ class ApplicationModelRelocationTest {
      */
     @Test
     void callerRootsReplaceTheEnvironmentOnesOfTheSameName() {
-        Path gradleHome = Path.of("/custom/gradle-home");
+        Path gradleHome = tempDir.resolve("custom-gradle-home");
 
         List<ApplicationModelRelocation.Root> roots = ApplicationModelRelocation.withEnvironmentRoots(List.of(
                 new ApplicationModelRelocation.Root(ApplicationModelRelocation.GRADLE_USER_HOME_ROOT, gradleHome)));

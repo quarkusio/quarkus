@@ -35,7 +35,7 @@ class ApplicationModelRelocationTest {
         String serializedB = serializeAt(checkoutB);
 
         assertThat(serializedA).isEqualTo(serializedB);
-        assertThat(serializedA).doesNotContain(checkoutA.toString(), checkoutB.toString());
+        assertThat(serializedA).doesNotContain(asJson(checkoutA), asJson(checkoutB));
     }
 
     /**
@@ -82,7 +82,7 @@ class ApplicationModelRelocationTest {
         ApplicationModelSerializer.serialize(modelAt(checkout), file, List.of());
 
         assertThat(Files.readString(file))
-                .contains(checkout.toString())
+                .contains(asJson(checkout))
                 .doesNotContain(ApplicationModelRelocation.RELOCATION_ROOTS);
 
         ApplicationModel deserialized = ApplicationModelSerializer.deserialize(file, roots(checkout));
@@ -102,7 +102,7 @@ class ApplicationModelRelocationTest {
 
         assertThat(Files.readString(file))
                 .contains(ApplicationModelRelocation.RELOCATION_ROOTS)
-                .doesNotContain(checkout.toString());
+                .doesNotContain(asJson(checkout));
     }
 
     /**
@@ -153,6 +153,15 @@ class ApplicationModelRelocationTest {
         Path file = tempDir.resolve(checkout.getFileName() + ".dat");
         ApplicationModelSerializer.serialize(modelAt(checkout), file, roots(checkout));
         return Files.readString(file);
+    }
+
+    /**
+     * A path as it appears inside the serialized JSON. On Windows the separators are escaped, so a raw
+     * {@link Path#toString()} never occurs verbatim in the file and asserting on one would pass or fail
+     * for the wrong reason.
+     */
+    private static String asJson(Path path) {
+        return path.toString().replace("\\", "\\\\");
     }
 
     private static List<ApplicationModelRelocation.Root> roots(Path projectDir) {

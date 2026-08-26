@@ -51,7 +51,9 @@ public class JarResource implements ClassLoadingResource {
             // we use this particular constructor to work around https://bugs.openjdk.org/browse/JDK-8140634
             // see https://github.com/quarkusio/quarkus/issues/52292
             URI uri = new URI("file", null, path, null, null);
-            url = new URL((URL) null, uri.toString(), new JarUrlStreamHandler(uri));
+            JarUrlStreamHandler handler = new JarUrlStreamHandler(uri);
+            url = new URL((URL) null, uri.toString(), handler);
+            handler.setOriginalUrl(url);
         } catch (URISyntaxException | MalformedURLException e) {
             throw new RuntimeException("Unable to create protection domain for " + jarPath, e);
         }
@@ -220,12 +222,17 @@ public class JarResource implements ClassLoadingResource {
     private static class JarUrlStreamHandler extends URLStreamHandler {
 
         private final String externalForm;
+        private URL originalUrl;
 
         private JarUrlStreamHandler(URI uri) {
             this.externalForm = "file:".concat(uri.getRawPath());
             // while it would be more optimized to store the URI here for when we open connections
             // opening a connection for ProtectionDomains is actually extremely rare
             // and never done in production at runtime so we favored reducing memory allocations for the common case
+        }
+
+        private void setOriginalUrl(URL url) {
+            this.originalUrl = url;
         }
 
         @Override
@@ -235,7 +242,10 @@ public class JarResource implements ClassLoadingResource {
 
         @Override
         protected String toExternalForm(URL u) {
-            return externalForm;
+            if (u == originalUrl) {
+                return externalForm;
+            }
+            return super.toExternalForm(u);
         }
     }
 

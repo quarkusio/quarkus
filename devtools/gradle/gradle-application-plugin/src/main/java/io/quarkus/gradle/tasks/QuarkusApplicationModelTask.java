@@ -13,6 +13,7 @@ import java.io.UncheckedIOException;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashSet;
@@ -41,6 +42,7 @@ import org.gradle.api.artifacts.result.ResolvedDependencyResult;
 import org.gradle.api.artifacts.type.ArtifactTypeDefinition;
 import org.gradle.api.attributes.Attribute;
 import org.gradle.api.file.ConfigurableFileCollection;
+import org.gradle.api.file.DirectoryProperty;
 import org.gradle.api.file.FileCollection;
 import org.gradle.api.file.ProjectLayout;
 import org.gradle.api.file.RegularFileProperty;
@@ -57,6 +59,7 @@ import org.gradle.internal.component.external.model.ModuleComponentArtifactIdent
 import org.gradle.work.DisableCachingByDefault;
 
 import io.quarkus.bootstrap.BootstrapConstants;
+import io.quarkus.bootstrap.app.ApplicationModelRelocation;
 import io.quarkus.bootstrap.model.ApplicationModelBuilder;
 import io.quarkus.bootstrap.model.CapabilityContract;
 import io.quarkus.bootstrap.model.DefaultApplicationModel;
@@ -150,6 +153,23 @@ public abstract class QuarkusApplicationModelTask extends DefaultTask {
     @OutputFile
     public abstract RegularFileProperty getApplicationModel();
 
+    /**
+     * The Gradle home, whose dependency cache holds the resolved location of every external dependency
+     * in the model, and the root directory of the build, which the other modules of a multi-module
+     * project live under. Both are roots the serialized model's paths are expressed relative to.
+     * <p>
+     * Declared {@code @Internal}: a root is what a path is made relative <em>to</em>, so it must not
+     * itself contribute to any cache key - that is the whole point of recording paths relative to it.
+     */
+    @Internal
+    public abstract DirectoryProperty getGradleUserHomeDirectory();
+
+    /**
+     * @see #getGradleUserHomeDirectory()
+     */
+    @Internal
+    public abstract DirectoryProperty getRootDirectory();
+
     public QuarkusApplicationModelTask() {
         getProjectBuildFile().set(getProject().getBuildFile());
     }
@@ -178,7 +198,34 @@ public abstract class QuarkusApplicationModelTask extends DefaultTask {
         }
 
         DefaultApplicationModel model = modelBuilder.build();
-        ToolingUtils.serializeAppModel(model, getApplicationModel().get().getAsFile().toPath());
+        ToolingUtils.serializeAppModel(model, getApplicationModel().get().getAsFile().toPath(), relocationRoots());
+    }
+
+    /**
+     * The roots the serialized model's absolute paths are expressed relative to, so that identical
+     * inputs built from different checkouts serialize to identical bytes.
+     * <p>
+     * The environment roots - the local Maven repository and the Gradle home - are derived by any reader
+     * on its own; the build directory, project directory and root directory are only known here. The
+     * build directory is listed separately from the project directory because it can be configured to
+     * sit outside it.
+     */
+    private List<ApplicationModelRelocation.Root> relocationRoots() {
+        final List<ApplicationModelRelocation.Root> roots = new ArrayList<>(
+                ApplicationModelRelocation.environmentRoots());
+        roots.add(new ApplicationModelRelocation.Root(ApplicationModelRelocation.BUILD_DIR_ROOT,
+                getLayout().getBuildDirectory().get().getAsFile().toPath()));
+        roots.add(new ApplicationModelRelocation.Root(ApplicationModelRelocation.PROJECT_DIR_ROOT,
+                getLayout().getProjectDirectory().getAsFile().toPath()));
+        if (getGradleUserHomeDirectory().isPresent()) {
+            roots.add(new ApplicationModelRelocation.Root(ApplicationModelRelocation.GRADLE_USER_HOME_ROOT,
+                    getGradleUserHomeDirectory().get().getAsFile().toPath()));
+        }
+        if (getRootDirectory().isPresent()) {
+            roots.add(new ApplicationModelRelocation.Root(ApplicationModelRelocation.ROOT_DIR_ROOT,
+                    getRootDirectory().get().getAsFile().toPath()));
+        }
+        return roots;
     }
 
     private ResolvedDependencyBuilder getProjectArtifact(DefaultProjectDescriptor projectDescriptor) {

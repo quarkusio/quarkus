@@ -91,6 +91,7 @@ import org.eclipse.aether.resolution.DependencyResult;
 import org.eclipse.aether.util.artifact.JavaScopes;
 
 import io.quarkus.bootstrap.BootstrapConstants;
+import io.quarkus.bootstrap.app.ApplicationModelRelocation;
 import io.quarkus.bootstrap.app.ApplicationModelSerializer;
 import io.quarkus.bootstrap.app.ConfiguredClassLoading;
 import io.quarkus.bootstrap.app.QuarkusBootstrap;
@@ -1166,6 +1167,23 @@ public class DevMojo extends AbstractMojo {
         return null;
     }
 
+    /**
+     * The roots the serialized application model's absolute paths are expressed relative to.
+     * <p>
+     * The local repository is taken from the resolver session rather than from the environment, since
+     * Maven resolves it from settings.xml as well as from {@code -Dmaven.repo.local}.
+     */
+    private List<ApplicationModelRelocation.Root> relocationRoots() {
+        final List<ApplicationModelRelocation.Root> roots = new ArrayList<>();
+        roots.add(new ApplicationModelRelocation.Root(ApplicationModelRelocation.LOCAL_REPO_ROOT,
+                Path.of(localRepository())));
+        return roots;
+    }
+
+    private String localRepository() {
+        return repoSession.getLocalRepository().getBasedir().toPath().toAbsolutePath().toString();
+    }
+
     private void addProject(DevModeCommandLineBuilder builder, ResolvedDependency module, boolean root) throws Exception {
         if (!module.isJar()) {
             return;
@@ -1555,8 +1573,11 @@ public class DevMojo extends AbstractMojo {
                 .extensionDevModeJvmOptionFilter(extensionJvmOptions);
 
         // serialize the app model to avoid re-resolving it in the dev process
-        ApplicationModelSerializer.serialize(appModel, appModelLocation);
+        ApplicationModelSerializer.serialize(appModel, appModelLocation, relocationRoots());
         builder.jvmArgs("-D" + BootstrapConstants.SERIALIZED_APP_MODEL + "=" + appModelLocation);
+        // the dev process reads the model back and has to resolve its relocation tokens the same way,
+        // which it can only do if it sees the same local repository this session is using
+        builder.jvmArgs("-Dmaven.repo.local=" + localRepository());
 
         if (noDeps) {
             addProject(builder, appModel.getAppArtifact(), true);

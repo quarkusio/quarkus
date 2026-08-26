@@ -1,11 +1,21 @@
 package io.quarkus.gradle.tasks;
 
+import java.util.ArrayList;
+import java.util.List;
+
+import javax.inject.Inject;
+
+import org.gradle.api.file.DirectoryProperty;
+import org.gradle.api.file.ProjectLayout;
 import org.gradle.api.java.archives.Attributes;
 import org.gradle.api.provider.MapProperty;
 import org.gradle.api.tasks.Input;
+import org.gradle.api.tasks.Internal;
 import org.gradle.api.tasks.Nested;
 import org.gradle.api.tasks.Optional;
 import org.gradle.work.DisableCachingByDefault;
+
+import io.quarkus.bootstrap.app.ApplicationModelRelocation;
 
 /**
  * Quarkus task providing inputs compatible with the configuration cache, used by the {@link QuarkusGenerateCode}
@@ -34,6 +44,47 @@ public abstract class QuarkusTaskWithExtensionView extends QuarkusTask {
 
     @Input
     public abstract MapProperty<String, String> getCachingRelevantInput();
+
+    /**
+     * The root directory of the build, used to resolve the relocation tokens of the serialized
+     * application model back to absolute paths.
+     * <p>
+     * Declared {@code @Internal}: a root is what the model's paths are expressed relative <em>to</em>,
+     * so letting it contribute to the cache key would put the checkout directory straight back into it.
+     */
+    @Internal
+    public abstract DirectoryProperty getRootDirectory();
+
+    /**
+     * @see #getRootDirectory()
+     */
+    @Internal
+    public abstract DirectoryProperty getGradleUserHomeDirectory();
+
+    /**
+     * The roots to resolve the serialized application model's relocation tokens against: those every
+     * reader derives from its environment, plus the directories this build knows.
+     */
+    protected List<ApplicationModelRelocation.Root> relocationRoots() {
+        final List<ApplicationModelRelocation.Root> roots = new ArrayList<>(
+                ApplicationModelRelocation.environmentRoots());
+        roots.add(new ApplicationModelRelocation.Root(ApplicationModelRelocation.BUILD_DIR_ROOT,
+                getProjectLayout().getBuildDirectory().get().getAsFile().toPath()));
+        roots.add(new ApplicationModelRelocation.Root(ApplicationModelRelocation.PROJECT_DIR_ROOT,
+                getProjectLayout().getProjectDirectory().getAsFile().toPath()));
+        if (getGradleUserHomeDirectory().isPresent()) {
+            roots.add(new ApplicationModelRelocation.Root(ApplicationModelRelocation.GRADLE_USER_HOME_ROOT,
+                    getGradleUserHomeDirectory().get().getAsFile().toPath()));
+        }
+        if (getRootDirectory().isPresent()) {
+            roots.add(new ApplicationModelRelocation.Root(ApplicationModelRelocation.ROOT_DIR_ROOT,
+                    getRootDirectory().get().getAsFile().toPath()));
+        }
+        return roots;
+    }
+
+    @Inject
+    protected abstract ProjectLayout getProjectLayout();
 
     public QuarkusTaskWithExtensionView(String description, boolean compatible) {
         super(description, compatible);

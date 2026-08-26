@@ -10,5 +10,6 @@ metadata:
   status: "preview"
   codestart:
     name: "azure-functions"
-    languages: "java"
+    languages:
+      - "java"
     artifact: "io.quarkus:quarkus-project-core-extension-codestarts"

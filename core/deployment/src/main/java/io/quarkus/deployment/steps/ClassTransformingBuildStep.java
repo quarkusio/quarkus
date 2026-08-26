@@ -335,7 +335,7 @@ public class ClassTransformingBuildStep {
                     for (Path path : i.getResolvedPaths()) {
                         transformedClassesByJar.computeIfAbsent(path, s -> new HashSet<>())
                                 .addAll(filtered.stream()
-                                        .map(file -> new TransformedClassesBuildItem.TransformedClass(null, null, file, false))
+                                        .map(file -> new TransformedClassesBuildItem.TransformedClass(null, null, file))
                                         .collect(Collectors.toSet()));
                     }
                 }

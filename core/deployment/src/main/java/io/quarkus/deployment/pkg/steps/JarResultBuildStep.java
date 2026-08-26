@@ -240,7 +240,7 @@ public class JarResultBuildStep {
         try (BufferedWriter writer = Files.newBufferedWriter(generatedClassesFile, StandardOpenOption.CREATE)) {
             StringBuilder classes = new StringBuilder();
             for (GeneratedClassBuildItem generatedClass : generatedClasses) {
-                classes.append(generatedClass.getName().replace('/', '.')).append(System.lineSeparator());
+                classes.append(generatedClass.binaryName()).append(System.lineSeparator());
             }
 
             for (Set<TransformedClassesBuildItem.TransformedClass> transformedClassesSet : transformedClasses

@@ -79,10 +79,7 @@ public class SnapStartProcessor {
 
             for (GeneratedClassBuildItem i : generatedClasses) {
                 if (i.isApplicationClass()) {
-                    if (i.getName() != null) {
-                        String cn = i.getName().replace("/", ".");
-                        producer.produce(new PreloadClassBuildItem(cn));
-                    }
+                    producer.produce(new PreloadClassBuildItem(i.binaryName()));
                 }
             }
 

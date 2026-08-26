@@ -2,10 +2,12 @@ package io.quarkus.kafka.client.deployment;
 
 import static io.quarkus.devservices.common.ConfigureUtil.configureSharedServiceLabel;
 import static io.quarkus.devservices.common.ContainerLocator.locateContainerWithLabels;
+import static io.quarkus.devservices.common.Labels.expectedPortConfig;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.OptionalInt;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -37,6 +39,7 @@ import io.quarkus.deployment.dev.devservices.DevServicesConfig;
 import io.quarkus.devservices.common.ComposeLocator;
 import io.quarkus.devservices.common.ConfigureUtil;
 import io.quarkus.devservices.common.ContainerLocator;
+import io.quarkus.devservices.common.Labels;
 import io.quarkus.devservices.common.StartableContainer;
 import io.quarkus.runtime.configuration.ConfigUtils;
 import io.strimzi.test.container.StrimziKafkaCluster;
@@ -74,11 +77,14 @@ public class DevServicesKafkaProcessor {
             return null;
         }
         boolean useSharedNetwork = DevServicesSharedNetworkBuildItem.isSharedNetworkRequired(devServicesConfig, sharedNetwork);
+        OptionalInt fixedExposedPort = config.port().map(OptionalInt::of).orElse(OptionalInt.empty());
 
-        return kafkaContainerLocator.locateContainer(config.serviceName(), config.shared(), launchMode.getLaunchMode())
+        return kafkaContainerLocator
+                .locateContainer(config.serviceName(), config.shared(), launchMode.getLaunchMode(),
+                        expectedPortConfig(fixedExposedPort))
                 .or(() -> ComposeLocator.locateContainer(compose,
                         List.of(config.effectiveImageName(), "kafka", "strimzi", "redpanda"),
-                        KAFKA_PORT, launchMode.getLaunchMode(), useSharedNetwork))
+                        KAFKA_PORT, launchMode.getLaunchMode(), useSharedNetwork, fixedExposedPort))
                 .map(containerAddress -> {
                     createTopicPartitions(containerAddress.getUrl(), config);
                     return DevServicesResultBuildItem.discovered()
@@ -124,6 +130,8 @@ public class DevServicesKafkaProcessor {
                             strimzi.withKafkaConfigurationMap(config.strimzi().serverConfigs());
                             configureSharedServiceLabel(strimzi, launchMode.getLaunchMode(), DEV_SERVICE_LABEL,
                                     config.serviceName());
+                            Labels.addPortConfigLabel(strimzi,
+                                    config.port().map(OptionalInt::of).orElse(OptionalInt.empty()));
                         })
                         .build();
                 StrimziKafkaContainer strimzi = cluster.getBrokers().stream().findFirst().get();

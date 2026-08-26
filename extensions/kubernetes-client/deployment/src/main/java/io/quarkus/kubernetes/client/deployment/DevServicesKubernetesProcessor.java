@@ -67,6 +67,7 @@ import io.quarkus.devservices.common.ComposeLocator;
 import io.quarkus.devservices.common.ConfigureUtil;
 import io.quarkus.devservices.common.ContainerAddress;
 import io.quarkus.devservices.common.ContainerLocator;
+import io.quarkus.devservices.common.Labels;
 import io.quarkus.kubernetes.client.runtime.internal.KubernetesClientBuildTimeConfig;
 import io.quarkus.kubernetes.client.runtime.internal.KubernetesDevServicesBuildTimeConfig;
 import io.quarkus.kubernetes.client.runtime.internal.KubernetesDevServicesBuildTimeConfig.Flavor;
@@ -196,6 +197,7 @@ public class DevServicesKubernetesProcessor {
             container.withLabel(DEV_SERVICE_LABEL, config.serviceName);
             container.withLabel(QUARKUS_DEV_SERVICE, config.serviceName);
         }
+        Labels.addPortConfigLabel(container, OptionalInt.empty());
         timeout.ifPresent(container::withStartupTimeout);
         container.withEnv(config.containerEnv);
 

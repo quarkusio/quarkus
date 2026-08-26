@@ -2,6 +2,7 @@ package io.quarkus.narayana.lra.deployment.devservice;
 
 import static io.quarkus.devservices.common.ConfigureUtil.getDefaultImageNameFor;
 import static io.quarkus.devservices.common.ContainerLocator.locateContainerWithLabels;
+import static io.quarkus.devservices.common.Labels.expectedPortConfig;
 
 import java.util.List;
 import java.util.Map;
@@ -62,10 +63,11 @@ public class DevServicesLRAProcessor {
         }
 
         return lraCoordinatorContainerLocator
-                .locateContainer(config.serviceName(), config.shared(), launchMode.getLaunchMode())
+                .locateContainer(config.serviceName(), config.shared(), launchMode.getLaunchMode(),
+                        expectedPortConfig(config.port()))
                 .or(() -> ComposeLocator.locateContainer(compose,
                         List.of(config.imageName().orElseGet(() -> getDefaultImageNameFor("narayana-lra")), "lra-coordinator"),
-                        LRA_COORDINATOR_CONTAINER_PORT, launchMode.getLaunchMode(), useSharedNetwork))
+                        LRA_COORDINATOR_CONTAINER_PORT, launchMode.getLaunchMode(), useSharedNetwork, config.port()))
                 .map(containerAddress -> DevServicesResultBuildItem.discovered()
                         .feature(Feature.NARAYANA_LRA)
                         .containerId(containerAddress.getId())

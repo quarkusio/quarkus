@@ -6,6 +6,7 @@ import static io.quarkus.kafka.client.deployment.DevServicesKafkaProcessor.DEV_S
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.OptionalInt;
 
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.wait.strategy.Wait;
@@ -16,6 +17,7 @@ import com.github.dockerjava.api.command.InspectContainerResponse;
 
 import io.quarkus.deployment.builditem.Startable;
 import io.quarkus.devservices.common.ConfigureUtil;
+import io.quarkus.devservices.common.Labels;
 import io.quarkus.runtime.LaunchMode;
 
 /**
@@ -49,6 +51,7 @@ final class RedpandaKafkaContainer extends GenericContainer<RedpandaKafkaContain
                 STARTER_SCRIPT);
         waitingFor(Wait.forLogMessage(".*Started Kafka API server.*", 1));
         this.hostName = ConfigureUtil.configureNetwork(this, defaultNetworkId, useSharedNetwork, "redpanda");
+        Labels.addPortConfigLabel(this, fixedExposedPort > 0 ? OptionalInt.of(fixedExposedPort) : OptionalInt.empty());
     }
 
     public RedpandaKafkaContainer withSharedServiceLabel(LaunchMode launchMode, String serviceName) {

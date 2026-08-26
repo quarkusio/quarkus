@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.OptionalInt;
 
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.wait.strategy.Wait;
@@ -18,6 +19,7 @@ import com.github.dockerjava.api.command.InspectContainerResponse;
 
 import io.quarkus.deployment.builditem.Startable;
 import io.quarkus.devservices.common.ConfigureUtil;
+import io.quarkus.devservices.common.Labels;
 import io.quarkus.runtime.LaunchMode;
 
 public class KafkaContainer extends GenericContainer<KafkaContainer> implements Startable {
@@ -157,6 +159,7 @@ public class KafkaContainer extends GenericContainer<KafkaContainer> implements 
             throw new IllegalArgumentException("The fixed Kafka port must be greater than 0");
         } else if (fixedPort > 0) {
             addFixedExposedPort(fixedPort, 9092);
+            Labels.addPortConfigLabel(this, OptionalInt.of(fixedPort));
         }
         return this;
     }

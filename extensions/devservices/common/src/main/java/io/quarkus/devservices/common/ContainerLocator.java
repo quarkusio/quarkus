@@ -1,6 +1,7 @@
 package io.quarkus.devservices.common;
 
 import java.util.Arrays;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.BiConsumer;
@@ -87,8 +88,14 @@ public class ContainerLocator {
     }
 
     public Optional<ContainerAddress> locateContainer(String serviceName, boolean shared, LaunchMode launchMode) {
+        return locateContainer(serviceName, shared, launchMode, Map.of());
+    }
+
+    public Optional<ContainerAddress> locateContainer(String serviceName, boolean shared, LaunchMode launchMode,
+            Map<String, String> expectedConfig) {
         if (shared && launchMode == LaunchMode.DEVELOPMENT) {
             return lookup(serviceName)
+                    .filter(container -> matchesExpectedConfig(container, expectedConfig))
                     .flatMap(container -> getMappedPort(container, port).stream()
                             .flatMap(containerPort -> Optional.ofNullable(containerPort.getPublicPort())
                                     .map(port -> {
@@ -117,13 +124,37 @@ public class ContainerLocator {
         }
     }
 
+    private static boolean matchesExpectedConfig(Container container, Map<String, String> expectedConfig) {
+        if (expectedConfig == null || expectedConfig.isEmpty()) {
+            return true;
+        }
+        Map<String, String> labels = container.getLabels();
+        for (Map.Entry<String, String> entry : expectedConfig.entrySet()) {
+            String labelValue = labels.get(entry.getKey());
+            if (labelValue == null || !labelValue.equals(entry.getValue())) {
+                return false;
+            }
+        }
+        return true;
+    }
+
     /**
      * @return container id, if exists
      */
     public Optional<String> locateContainer(String serviceName, boolean shared, LaunchMode launchMode,
             BiConsumer<Integer, ContainerAddress> consumer) {
+        return locateContainer(serviceName, shared, launchMode, Map.of(), consumer);
+    }
+
+    /**
+     * @return container id, if exists
+     */
+    public Optional<String> locateContainer(String serviceName, boolean shared, LaunchMode launchMode,
+            Map<String, String> expectedConfig, BiConsumer<Integer, ContainerAddress> consumer) {
         if (shared && launchMode == LaunchMode.DEVELOPMENT) {
-            return lookup(serviceName).findAny()
+            return lookup(serviceName)
+                    .filter(container -> matchesExpectedConfig(container, expectedConfig))
+                    .findAny()
                     .map(container -> {
                         if (container.getPorts() == null) {
                             return container.getId();

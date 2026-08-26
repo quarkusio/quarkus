@@ -3,10 +3,12 @@ package io.quarkus.smallrye.reactivemessaging.rabbitmq.deployment;
 import static io.quarkus.devservices.common.ConfigureUtil.getDefaultImageNameFor;
 import static io.quarkus.devservices.common.ContainerLocator.locateContainerWithLabels;
 import static io.quarkus.devservices.common.Labels.QUARKUS_DEV_SERVICE;
+import static io.quarkus.devservices.common.Labels.expectedPortConfig;
 
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.OptionalInt;
 
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
@@ -29,6 +31,7 @@ import io.quarkus.deployment.dev.devservices.RunningContainer;
 import io.quarkus.devservices.common.ComposeLocator;
 import io.quarkus.devservices.common.ConfigureUtil;
 import io.quarkus.devservices.common.ContainerLocator;
+import io.quarkus.devservices.common.Labels;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.configuration.ConfigUtils;
 
@@ -75,10 +78,12 @@ public class RabbitMQDevServicesProcessor {
 
         boolean useSharedNetwork = DevServicesSharedNetworkBuildItem.isSharedNetworkRequired(devServicesConfig, sharedNetwork);
 
-        return rabbitmqContainerLocator.locateContainer(config.serviceName(), config.shared(), launchMode.getLaunchMode())
+        return rabbitmqContainerLocator
+                .locateContainer(config.serviceName(), config.shared(), launchMode.getLaunchMode(),
+                        expectedPortConfig(config.port()))
                 .or(() -> ComposeLocator.locateContainer(compose,
                         List.of(config.imageName().orElse(getDefaultImageNameFor("rabbitmq")), "rabbitmq"),
-                        RABBITMQ_PORT, launchMode.getLaunchMode(), useSharedNetwork))
+                        RABBITMQ_PORT, launchMode.getLaunchMode(), useSharedNetwork, config.port()))
                 .map(containerAddress -> {
                     // Discovered service path
                     RunningContainer container = containerAddress.getRunningContainer();
@@ -226,6 +231,7 @@ public class RabbitMQDevServicesProcessor {
                 throw new IllegalArgumentException("Only official rabbitmq images are supported");
             }
             hostName = ConfigureUtil.configureNetwork(this, defaultNetworkId, useSharedNetwork, "rabbitmq");
+            Labels.addPortConfigLabel(this, fixedExposedPort > 0 ? OptionalInt.of(fixedExposedPort) : OptionalInt.empty());
         }
 
         @Override

@@ -112,7 +112,6 @@ public class RuntimeResourceDeployment {
     private final ServerSerialisers serialisers;
     private final ResteasyReactiveConfig resteasyReactiveConfig;
     private final Supplier<Executor> executorSupplier;
-    private final Supplier<Executor> virtualExecutorSupplier;
     private final RuntimeInterceptorDeployment runtimeInterceptorDeployment;
     private final DynamicEntityWriter dynamicEntityWriter;
     private final ResourceLocatorHandler resourceLocatorHandler;
@@ -132,7 +131,6 @@ public class RuntimeResourceDeployment {
         this.serialisers = info.getSerialisers();
         this.resteasyReactiveConfig = info.getResteasyReactiveConfig();
         this.executorSupplier = executorSupplier;
-        this.virtualExecutorSupplier = virtualExecutorSupplier;
         this.runtimeInterceptorDeployment = runtimeInterceptorDeployment;
         this.dynamicEntityWriter = dynamicEntityWriter;
         this.resourceLocatorHandler = resourceLocatorHandler;
@@ -299,8 +297,7 @@ public class RuntimeResourceDeployment {
             List<ServerRestHandler> readBodyRequestFilters = new ArrayList<>(1);
             for (int i = handlers.size() - 2; i >= 0; i--) {
                 var serverRestHandler = handlers.get(i);
-                if (serverRestHandler instanceof ResourceRequestFilterHandler) {
-                    ResourceRequestFilterHandler resourceRequestFilterHandler = (ResourceRequestFilterHandler) serverRestHandler;
+                if (serverRestHandler instanceof ResourceRequestFilterHandler resourceRequestFilterHandler) {
                     if (resourceRequestFilterHandler.isWithFormRead()) {
                         readBodyRequestFilters.add(handlers.remove(i));
                     }
@@ -374,6 +371,7 @@ public class RuntimeResourceDeployment {
         addHandlers(handlers, clazz, method, info, HandlerChainCustomizer.Phase.BEFORE_METHOD_INVOKE);
         EndpointInvoker invoker = method.getInvoker().get();
         ServerRestHandler alternate = alternateInvoker(method, invoker);
+        //noinspection ReplaceNullCheck
         if (alternate != null) {
             handlers.add(alternate);
         } else {
@@ -429,7 +427,7 @@ public class RuntimeResourceDeployment {
                             handlers.add(new VariableProducesHandler(serverMediaType, serialisers));
                             score.add(ScoreSystem.Category.Writer, ScoreSystem.Diagnostic.WriterRunTime);
                         } else if (isSingleEffectiveWriter(buildTimeWriters)) {
-                            MessageBodyWriter<?> writer = buildTimeWriters.get(0);
+                            MessageBodyWriter<?> writer = buildTimeWriters.getFirst();
                             handlers.add(new FixedProducesHandler(mediaType, new FixedEntityWriter(
                                     writer, serialisers)));
                             if (writer instanceof ServerMessageBodyWriter)

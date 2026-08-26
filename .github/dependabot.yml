@@ -245,6 +245,8 @@ updates:
       # Hence we update major/minor Expressly versions manually.
       - dependency-name: org.glassfish.expressly:expressly
         update-types: ["version-update:semver-major", "version-update:semver-minor"]
+      # Jakarta Data is managed by the Hibernate team
+      - dependency-name: jakarta.data:jakarta.data-api
     rebase-strategy: disabled
   - package-ecosystem: maven
     directory: "/"

@@ -621,6 +621,24 @@ public class GeneratedAnnotationResource {
         return List.of(bean);
     }
 
+    // --- DateStringShapeNoPatternBean: @JsonFormat(shape = STRING) without pattern on java.util.Date ---
+
+    @GET
+    @Path("/date-string-shape-no-pattern")
+    public DateStringShapeNoPatternBean getDateStringShapeNoPattern() {
+        DateStringShapeNoPatternBean bean = new DateStringShapeNoPatternBean();
+        bean.setName("date-string-shape");
+        bean.setUtcDate(Date.from(Instant.parse("2026-07-20T11:11:11Z")));
+        bean.setPragueDate(Date.from(Instant.parse("2026-07-20T11:11:11Z")));
+        return bean;
+    }
+
+    @GET
+    @Path("/date-string-shape-no-pattern-list")
+    public List<DateStringShapeNoPatternBean> getDateStringShapeNoPatternList() {
+        return List.of(getDateStringShapeNoPattern());
+    }
+
     // --- FormatArrayShapeBean: @JsonFormat(shape = ARRAY) on class ---
 
     @GET

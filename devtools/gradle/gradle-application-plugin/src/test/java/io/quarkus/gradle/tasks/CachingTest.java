@@ -28,6 +28,7 @@ import org.assertj.core.api.junit.jupiter.InjectSoftAssertions;
 import org.assertj.core.api.junit.jupiter.SoftAssertionsExtension;
 import org.gradle.testkit.runner.BuildResult;
 import org.gradle.testkit.runner.BuildTask;
+import org.gradle.testkit.runner.GradleRunner;
 import org.gradle.testkit.runner.TaskOutcome;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
@@ -220,6 +221,146 @@ public class CachingTest extends BaseGradleTest {
 
         result = buildResult(env, arguments);
         assertBuildResult("follow-up", result, ALL_UP_TO_DATE);
+    }
+
+    /**
+     * Cache entries must be reusable from a different working directory. The serialized application
+     * model embeds absolute paths, so hashing it as an {@code @InputFile} used to make the cache key a
+     * function of the checkout directory, and nothing could be resolved from a cache populated
+     * elsewhere - which is exactly the shared/remote cache case.
+     */
+    @Test
+    void buildCacheIsReusedFromADifferentProjectDirectory(@TempDir Path otherProjectDir, @TempDir Path localCacheDir)
+            throws Exception {
+        prepareGradleBuildProject("");
+        enableLocalBuildCache(testProjectDir, localCacheDir);
+
+        Map<String, String> env = cachingTestEnvironment(false);
+        String[] arguments = List.of("build", "--info", "--stacktrace", "--build-cache", "--no-configuration-cache",
+                "-Dquarkus.package.jar.type=fast-jar")
+                .toArray(new String[0]);
+
+        assertBuildResult("populate cache", buildResult(env, rerunTasks(arguments)), ALL_SUCCESS);
+
+        // Same sources and same shared cache, but a different project directory.
+        FileUtils.copyDirectory(testProjectDir.toFile(), otherProjectDir.toFile());
+        FileUtils.deleteDirectory(otherProjectDir.resolve("build").toFile());
+        FileUtils.deleteDirectory(otherProjectDir.resolve(".gradle").toFile());
+
+        BuildResult result = GradleRunner.create()
+                .withPluginClasspath()
+                .withProjectDir(otherProjectDir.toFile())
+                .withArguments(defaultGradleArguments(List.of(arguments)))
+                .withEnvironment(env)
+                .build();
+
+        soft.assertThat(taskResults(result))
+                .describedAs("output: %s", result.getOutput())
+                .containsEntry(":quarkusGenerateCode", TaskOutcome.FROM_CACHE)
+                .containsEntry(":quarkusAppPartsBuild", TaskOutcome.FROM_CACHE);
+    }
+
+    /**
+     * The same relocation guarantee for a multi-module build. The jar of a sibling module lives under
+     * the root directory rather than under the consuming module's own project or build directory, so a
+     * fix that only accounts for the latter still leaks the checkout path through that dependency.
+     */
+    @Test
+    void buildCacheIsReusedFromADifferentProjectDirectoryForAMultiModuleBuild(@TempDir Path otherProjectDir,
+            @TempDir Path localCacheDir) throws Exception {
+        prepareGradleBuildProject("");
+        makeMultiModule(testProjectDir);
+        enableLocalBuildCache(testProjectDir, localCacheDir);
+
+        Map<String, String> env = cachingTestEnvironment(false);
+        String[] arguments = List.of("build", "--info", "--stacktrace", "--build-cache", "--no-configuration-cache",
+                "-Dquarkus.package.jar.type=fast-jar")
+                .toArray(new String[0]);
+
+        assertBuildResult("populate cache", buildResult(env, rerunTasks(arguments)), Map.of(
+                ":app:quarkusGenerateCode", TaskOutcome.SUCCESS,
+                ":app:quarkusAppPartsBuild", TaskOutcome.SUCCESS,
+                ":app:quarkusBuild", TaskOutcome.SUCCESS));
+
+        FileUtils.copyDirectory(testProjectDir.toFile(), otherProjectDir.toFile());
+        FileUtils.deleteDirectory(otherProjectDir.resolve("build").toFile());
+        FileUtils.deleteDirectory(otherProjectDir.resolve(".gradle").toFile());
+        FileUtils.deleteDirectory(otherProjectDir.resolve("library").resolve("build").toFile());
+        FileUtils.deleteDirectory(otherProjectDir.resolve("app").resolve("build").toFile());
+
+        BuildResult result = GradleRunner.create()
+                .withPluginClasspath()
+                .withProjectDir(otherProjectDir.toFile())
+                .withArguments(defaultGradleArguments(List.of(arguments)))
+                .withEnvironment(env)
+                .build();
+
+        soft.assertThat(taskResults(result))
+                .describedAs("output: %s", result.getOutput())
+                .containsEntry(":app:quarkusGenerateCode", TaskOutcome.FROM_CACHE)
+                .containsEntry(":app:quarkusAppPartsBuild", TaskOutcome.FROM_CACHE);
+    }
+
+    /**
+     * Turns the single-module fixture into a multi-module build: the Quarkus application is moved into
+     * an {@code app} subproject and given a dependency on a sibling {@code library} subproject.
+     * <p>
+     * The application has to be a subproject rather than the root for this to test anything: the jar of
+     * a sibling module then lies outside the application's own project directory, and is only covered
+     * by expressing it relative to the root of the build.
+     *
+     * @return the path of the application subproject
+     */
+    private static Path makeMultiModule(Path projectDir) throws IOException {
+        Path app = projectDir.resolve("app");
+        Files.createDirectories(app);
+        FileUtils.moveDirectory(projectDir.resolve("src").toFile(), app.resolve("src").toFile());
+        FileUtils.moveFile(projectDir.resolve("build.gradle.kts").toFile(), app.resolve("build.gradle.kts").toFile());
+
+        Path library = projectDir.resolve("library");
+        Path sources = library.resolve("src/main/java/org/acme/lib");
+        Files.createDirectories(sources);
+        Files.writeString(sources.resolve("Lib.java"), """
+                package org.acme.lib;
+
+                public class Lib {
+                    public String greet() {
+                        return "hello";
+                    }
+                }
+                """);
+        Files.writeString(library.resolve("build.gradle.kts"), """
+                plugins {
+                    java
+                }
+
+                repositories {
+                    mavenLocal()
+                    mavenCentral()
+                }
+                """);
+
+        Path settings = projectDir.resolve("settings.gradle.kts");
+        Files.writeString(settings, Files.readString(settings) + "\ninclude(\"app\")\ninclude(\"library\")\n");
+
+        Path buildScript = app.resolve("build.gradle.kts");
+        Files.writeString(buildScript, Files.readString(buildScript)
+                .replace("    implementation(\"jakarta.inject:jakarta.inject-api:2.0.1\")",
+                        "    implementation(\"jakarta.inject:jakarta.inject-api:2.0.1\")\n"
+                                + "    implementation(project(\":library\"))"));
+        return app;
+    }
+
+    /**
+     * Points the build at a build cache directory shared between project directories, so a build run
+     * from one directory can resolve entries produced by another.
+     */
+    private static void enableLocalBuildCache(Path projectDir, Path cacheDir) throws IOException {
+        Path settings = projectDir.resolve("settings.gradle.kts");
+        String directory = cacheDir.toAbsolutePath().toString().replace("\\", "\\\\");
+        Files.writeString(settings, Files.readString(settings) + String.format(
+                "%nbuildCache {%n    local {%n        directory = \"%s\"%n        isEnabled = true%n    }%n}%n",
+                directory));
     }
 
     private static Map<String, String> cachingTestEnvironment(boolean simulateCI) {

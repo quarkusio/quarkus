@@ -33,7 +33,9 @@ public final class RunningService implements Closeable {
 
     @Override
     public void close() throws IOException {
-        closeable.close();
+        if (closeable != null) {
+            closeable.close();
+        }
     }
 
     public String feature() {

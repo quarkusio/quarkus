@@ -77,6 +77,9 @@ public class QuarkusMainTestExtension extends AbstractJvmQuarkusTestExtension
         QuarkusTestExtensionState state = getState(extensionContext);
         // we reload the test resources if we changed test class and if we had or will have per-test test resources
         boolean isNewTestClass = !Objects.equals(extensionContext.getRequiredTestClass(), currentJUnitTestClass);
+        if (isNewTestClass) {
+            currentJUnitTestClass = extensionContext.getRequiredTestClass();
+        }
         if (isWrongProfile(extensionContext) || (isNewTestClass && TestResourceUtil.testResourcesRequireReload(state,
                 extensionContext.getRequiredTestClass(), getQuarkusTestProfile(extensionContext)))) {
             if (state != null) {

@@ -138,6 +138,7 @@ class RestClientReactiveProcessor {
 
     private static final Set<DotName> SKIP_COPYING_ANNOTATIONS_TO_GENERATED_CLASS = Set.of(
             REGISTER_REST_CLIENT,
+            REST_CLIENT,
             REGISTER_PROVIDER,
             REGISTER_PROVIDERS,
             CLIENT_HEADER_PARAM,

@@ -1,6 +1,10 @@
 package io.quarkus.resteasy.reactive.server.test.simple;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import java.util.function.Supplier;
+import java.util.logging.Level;
+import java.util.logging.LogRecord;
 
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
@@ -30,6 +34,10 @@ public class ApplicationWithRunOnVirtualThreadTest {
             .addBuildChainCustomizer(buildChainBuilder -> buildChainBuilder.addBuildStep(context -> {
                 context.produce(new TargetJavaVersionBuildItem(new DummyTargetJavaVersion()));
             }).produces(TargetJavaVersionBuildItem.class).build())
+            .setLogRecordPredicate(record -> record.getLevel().equals(Level.SEVERE)
+                    && record.getLoggerName()
+                            .equals("org.jboss.resteasy.reactive.server.core.startup.RuntimeResourceDeployment"))
+            .assertLogRecords(records -> assertThat(records).extracting(LogRecord::getMessage).isEmpty())
             .setArchiveProducer(new Supplier<>() {
                 @Override
                 public JavaArchive get() {

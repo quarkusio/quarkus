@@ -640,6 +640,56 @@ public class MyCliSettings implements CliSettings {
 
 Multiple `CliSettings` beans can be registered. They are applied in arbitrary order, so avoid conflicting settings across implementations.
 
+=== Custom CommandInvocation
+
+You can use `CliSettings` to register a custom `CommandInvocationProvider` that wraps the default `CommandInvocation` with application-specific context.
+This is useful when commands need shared state or services that are not available through CDI injection:
+
+[source,java]
+----
+package com.acme.aesh;
+
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
+
+import org.aesh.command.invocation.CommandInvocation;
+import org.aesh.command.invocation.CommandInvocationProvider;
+import org.aesh.command.settings.SettingsBuilder;
+
+import io.quarkus.aesh.runtime.CliSettings;
+
+@ApplicationScoped
+public class MyCliSettings implements CliSettings {
+
+    @Inject
+    MyAppContext appContext;
+
+    @Override
+    public void customize(SettingsBuilder<?> builder) {
+        builder.commandInvocationProvider(new MyInvocationProvider(appContext));
+    }
+}
+----
+
+Commands can then declare the custom invocation type and access the additional context:
+
+[source,java]
+----
+@CommandDefinition(name = "status", description = "Show status")
+public class StatusCommand implements Command<MyCommandInvocation> {
+
+    @Override
+    public CommandResult execute(MyCommandInvocation invocation) {
+        invocation.println("Context: " + invocation.getAppContext().getName());
+        return CommandResult.SUCCESS;
+    }
+}
+----
+
+The custom `CommandInvocationProvider` is applied in all execution modes: console REPL, console single-command execution (with arguments), and runtime mode.
+
+Similarly, you can register custom `ConverterInvocationProvider` and `ValidatorInvocationProvider` implementations to pass additional context to converters and validators.
+
 == Command execution listener
 
 Implement `CommandExecutionListener` as a CDI bean to receive a callback after each command completes.

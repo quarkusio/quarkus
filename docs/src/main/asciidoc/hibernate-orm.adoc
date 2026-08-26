@@ -122,7 +122,6 @@ public class SantaClausService {
     }
 }
 ----
-
 <1> Inject your Hibernate ORM session and have fun
 <2> Mark your CDI bean method as `@Transactional` and the `Session` will enlist and flush at commit.
 

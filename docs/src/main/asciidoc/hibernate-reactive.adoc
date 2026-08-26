@@ -141,7 +141,6 @@ public class SantaClausService {
     }
 }
 ----
-
 <1> Inject the reactive session directly
 <2> Use `@Transactional` for write operations such as `persist()`
 
@@ -226,7 +225,6 @@ public class FruitResource {
 
 }
 ----
-
 <1> Inject the reactive session directly
 <2> Use `@Transactional` for persist operations - creates new entities in the database
 <3> Use `@Transactional` for update operations - modifies existing entities

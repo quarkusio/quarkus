@@ -780,7 +780,6 @@ public static class HelloPropagation {
         }
     }
 ----
-
 <1> The `MAP_SETTER` handles how to store data in the carrier map that will transport the context.
 <2> `MAP_GETTER` handles how to retrieve data from the carrier map transporting the context.
 <3> The `createParentContext()` method explains how to create an OpenTelemetry context. In this case we generate the default https://www.w3.org/TR/trace-context/[W3C Trace Context] header: `traceparent`.

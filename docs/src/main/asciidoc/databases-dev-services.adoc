@@ -188,7 +188,6 @@ quarkus.datasource.devservices.volumes."/path/from"=/container/to <1>
 # Using a classpath volume:
 quarkus.datasource.devservices.volumes."classpath\:./file"=/container/to <2>
 ----
-
 <1> The file or folder "/path/from" from the local machine will be accessible at "/container/to" in the container.
 <2> When using classpath volumes, the location has to start with "classpath:". The file or folder "./file" from the project's classpath will be accessible at "/container/to" in the container.
 

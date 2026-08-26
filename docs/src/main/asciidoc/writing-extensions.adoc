@@ -544,7 +544,6 @@ metadata:
   - "data"
   status: "stable" <5>
 ----
-
 <1> the name of the extension that will be displayed to users
 <2> keywords that can be used to find the extension in the extension catalog
 <3> link to the extension's guide or documentation
@@ -2066,7 +2065,6 @@ public void keyPairDevService(LiveReloadBuildItem liveReloadBuildItem, BuildProd
 
 static record KeyPairContext(Map<String, String> properties) {}
 ----
-
 <1> You can retrieve the context from `LiveReloadBuildItem`. This call returns `null` if there is no context for the specified type; otherwise, it returns the stored instance from a previous live reload execution.
 <2> You can check if this is the first execution (not a live reload).
 <3> The `LiveReloadBuildItem#setContextObject` method allows you to set a context across live reloads.
@@ -2155,7 +2153,6 @@ public class FailingUnitTest {
     }
 }
 ----
-
 <1> The `QuarkusExtensionTest` extension must be used with a static field. If used with a non-static field, the test application is not started.
 <2> This producer is used to build the application to be tested. It uses Shrinkwrap to create a JavaArchive to test
 <3> It is possible to inject beans from our test deployment directly into the test case
@@ -2196,7 +2193,6 @@ public class PersistenceAndQuarkusConfigTest {
 
 }
 ----
-
 <1> This tells JUnit that the Quarkus deployment should fail with a specific exception
 
 
@@ -2338,7 +2334,6 @@ public class ServletChangeTestCase {
     }
 }
 ----
-
 <1> This starts the deployment, your test can modify it as part of the test suite. Quarkus will be restarted between
 each test method so every method starts with a clean deployment.
 

@@ -75,7 +75,6 @@ jdoe=p4ssw0rd <2>
 stuart=test
 noadmin=n0Adm1n
 ----
-
 <1> User `scott` has password defined as `jb0ss`
 <2> User `jdoe` has password defined as `p4ssw0rd`
 
@@ -93,7 +92,6 @@ jdoe=NoRolesUser <2>
 stuart=admin,user <3>
 noadmin=user
 ----
-
 <1> User `scott` has been assigned the roles `Admin`, `admin`, `Tester` and `user`
 <2> User `jdoe` has been assigned the role `NoRolesUser`
 <3> User `stuart` has been assigned the roles `admin` and `user`.
@@ -139,7 +137,6 @@ quarkus.security.users.embedded.users.stuart=test # <2>
 quarkus.security.users.embedded.users.jdoe=p4ssw0rd
 quarkus.security.users.embedded.users.noadmin=n0Adm1n
 ----
-
 <1> User `scott` has password `jb0ss`
 <2> User `stuart` has password `test`
 
@@ -157,7 +154,6 @@ quarkus.security.users.embedded.roles.stuart=admin,user # <2>
 quarkus.security.users.embedded.roles.jdoe=NoRolesUser
 quarkus.security.users.embedded.roles.noadmin=user
 ----
-
 <1> User `scott` has roles `Admin`, `admin`, `Tester`, and `user`
 <2> User `stuart` has roles `admin` and `user`
 

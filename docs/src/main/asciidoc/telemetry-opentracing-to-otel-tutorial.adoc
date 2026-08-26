@@ -267,7 +267,6 @@ public class GreetingResource {
     }
 }
 ----
-
 <1> The legacy OpenTracing tracer, must be replaced by the new OpenTelemetry tracer.
 <2> The `@Traced` annotation is replaced by the `@WithSpan` annotation but beware that this new annotation will always create a new Span. You shouldn't use it on JAX-RS endpoints because they are already instrumented.
 <3> The `Tag` class is replaced by the `Attribute` class. `Tags` is replaced by the `SemanticAttributes` class, which should be used whenever possible, to keep attribute names consistent with the specification.
@@ -470,7 +469,6 @@ public class GreetingResource {
     }
 }
 ----
-
 <1> The `Tracer` annotation must be removed and instead, we need to inject the OpenTelemetry SDK. We will need it in <3>.
 <2> The `@Traced` annotation is replaced by the `@WithSpan` annotation but beware that this new annotation will always create a new Span. You shouldn't use it on JAX-RS endpoints and we only have it here for demonstration purposes.
 <3> We must obtain an instance of the `legacyTracer`. The Shim includes a utility class for this purpose: `Tracer legacyTracer = OpenTracingShim.createTracerShim(openTelemetry);`

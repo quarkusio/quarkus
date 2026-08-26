@@ -393,7 +393,6 @@ public class MockAuthorizationServerTestResource implements QuarkusTestResourceL
     }
 }
 ----
-
 <1> The `start` method is invoked by Quarkus before any test is run and returns a `Map` of configuration properties that apply during the test execution.
 <2> Launch Wiremock.
 <3> Configure Wiremock to stub the calls to `/introspect` by returning an OAuth2 introspect response. You need to customize this line to return what's needed for your application (at least the scope property as roles are derived from the scope).
@@ -436,7 +435,6 @@ class TokenSecuredResourceTest {
     }
 }
 ----
-
 <1> Use the previously created `MockAuthorizationServerTestResource` as a Quarkus test resource.
 <2> Define whatever token you want, it will not be validated by the OAuth2 mock authorization server.
 <3> Use this token inside the `Authorization` header to trigger OAuth2 authentication.

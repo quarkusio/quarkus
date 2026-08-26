@@ -121,7 +121,6 @@ public class PriceConsumer {
 
 }
 ----
-
 <1> `@RunOnVirtualThread` annotation on the `@Incoming` method ensures that the method will be called on a virtual thread.
 <2> the REST client stub is injected with the `@RestClient` annotation.
 <3> `alert` method blocks the virtual thread until the REST call returns.

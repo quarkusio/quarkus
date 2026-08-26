@@ -158,7 +158,6 @@ Minimally, each document should define an id and a title, include common attribu
 \include::_attributes.adoc[] // <3>
 :diataxis-type: {type} // <4>
 ----
-
 <1> Use the filename as the ID for the document.
 <2> Define the document title following guidance in <<titles-headings>>.
 <3> Include common document attributes.
@@ -366,7 +365,6 @@ examples:
 - source: path/to/source/file/SomeClassFile.java <1>
   target: prefix-simplified-unique-filename.java <2>
 ----
-
 <1> define the path of source to be copied
 <2> define the simplified target file name to use when copying the file into the `target/asciidoc/examples` directory.
 

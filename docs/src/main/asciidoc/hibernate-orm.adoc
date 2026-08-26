@@ -122,7 +122,6 @@ public class SantaClausService {
     }
 }
 ----
-
 <1> Inject your entity manager and have fun
 <2> Mark your CDI bean method as `@Transactional` and the `EntityManager` will enlist and flush at commit.
 

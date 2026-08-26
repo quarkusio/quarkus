@@ -496,7 +496,6 @@ public class MyRedisService {
     }
 }
 ----
-
 <1> Inject the `RedisDataSource` in the constructor
 <2> Creates the `HashCommands` object.
 This object has three type parameters: the type of the key, the type of the field, and the type of the member
@@ -693,7 +692,6 @@ public static class MyRedisCounter {
 
 }
 ----
-
 <1> Retrieve the commands.
 This time we will manipulate `Long` values
 <2> Retrieve the counter associated with the given `key`.

@@ -380,7 +380,6 @@ public class GenerateToken {
     }
 }
 ----
-
 <1> Sets the `iss` (issuer) claim in the JWT.
     This value must match the server-side `mp.jwt.verify.issuer` configuration for the token to be considered valid.
 <2> Specifies the `upn` (User Principal Name) claim, which the {mp-jwt} specification defines as the preferred claim for identifying the `Principal` in container security APIs.

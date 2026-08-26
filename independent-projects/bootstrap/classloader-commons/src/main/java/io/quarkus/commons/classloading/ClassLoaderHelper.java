@@ -6,7 +6,7 @@ public final class ClassLoaderHelper {
     private static final String JDK_INTERNAL = "jdk.internal.";
     private static final String SUN_MISC = "sun.misc.";
 
-    private static final String CLASS_SUFFIX = ".class";
+    public static final String CLASS_SUFFIX = ".class";
 
     private ClassLoaderHelper() {
         //Not meant to be instantiated

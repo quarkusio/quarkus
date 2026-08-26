@@ -104,6 +104,17 @@ public class ApplicationModelRelocation {
             recordedRoots.add(root.name());
         }
         relocated.put(RELOCATION_ROOTS, recordedRoots);
+
+        // the root of the build is the one root a reader cannot derive, so record how far above the
+        // project directory it sits; that offset is the same wherever the project is checked out
+        final Path projectDir = pathOf(ordered, PROJECT_DIR_ROOT);
+        final Path rootDir = pathOf(ordered, ROOT_DIR_ROOT);
+        if (projectDir != null && rootDir != null) {
+            final int depth = depthBetween(rootDir, projectDir);
+            if (depth >= 0) {
+                relocated.put(ROOT_DIR_DEPTH, String.valueOf(depth));
+            }
+        }
         return relocated;
     }
 
@@ -132,9 +143,22 @@ public class ApplicationModelRelocation {
         for (Root root : roots) {
             resolved.put(root.name(), root.path().toString());
         }
+        // a reader that recovered the project directory but was not told the root of the build can
+        // rebuild it from the recorded offset, rather than leaving sibling modules unresolved
+        if (!resolved.containsKey(ROOT_DIR_ROOT)) {
+            final String projectDir = resolved.get(PROJECT_DIR_ROOT);
+            final Object depth = model.get(ROOT_DIR_DEPTH);
+            if (projectDir != null && depth != null) {
+                final Path rootDir = parentOf(Path.of(projectDir), depth.toString());
+                if (rootDir != null) {
+                    resolved.put(ROOT_DIR_ROOT, rootDir.toString());
+                }
+            }
+        }
 
         final Map<String, Object> absolute = new LinkedHashMap<>(mapValue(model, s -> resolve(s, resolved)));
         absolute.remove(RELOCATION_ROOTS);
+        absolute.remove(ROOT_DIR_DEPTH);
         return absolute;
     }
 
@@ -179,8 +203,21 @@ public class ApplicationModelRelocation {
 
     /**
      * Name of the root standing for the root directory of a multi-module build.
+     * <p>
+     * Unlike the other roots, this one cannot be derived by a reader on its own, so it is recorded as
+     * the number of directory levels between the project directory and the root of the build - a
+     * relative offset that survives relocation - rather than being guessed or written out absolutely.
+     *
+     * @see #ROOT_DIR_DEPTH
      */
     public static final String ROOT_DIR_ROOT = "quarkus.root.dir";
+
+    /**
+     * Key under which the distance from the project directory up to the root of the build is recorded,
+     * so that {@link #ROOT_DIR_ROOT} can be resolved by a reader that only recovered the project
+     * directory from the model's location.
+     */
+    public static final String ROOT_DIR_DEPTH = "relocation-root-dir-depth";
 
     /**
      * The roots a serialized model can be resolved against knowing nothing but where the file is: the
@@ -207,10 +244,10 @@ public class ApplicationModelRelocation {
         final Path projectDir = buildDir.getParent();
         if (projectDir != null) {
             roots.add(new Root(PROJECT_DIR_ROOT, projectDir));
-            // in a single-module build the project is the root of the build; a multi-module build has
-            // to pass its own roots, since the root cannot be recovered from the file's location
-            roots.add(new Root(ROOT_DIR_ROOT, projectDir));
         }
+        // deliberately no ROOT_DIR_ROOT: the root of the build cannot be recovered from the model's
+        // location, and guessing the project directory would silently resolve a sibling module's jar
+        // to a path nested under this module. A caller that knows the root passes it explicitly.
         return roots;
     }
 
@@ -224,6 +261,43 @@ public class ApplicationModelRelocation {
             return;
         }
         roots.add(new Root(name, path));
+    }
+
+    private static Path pathOf(List<Root> roots, String name) {
+        for (Root root : roots) {
+            if (root.name().equals(name)) {
+                return root.path();
+            }
+        }
+        return null;
+    }
+
+    /**
+     * The number of directory levels from {@code child} up to {@code ancestor}, or -1 if {@code child}
+     * is not under {@code ancestor}.
+     */
+    private static int depthBetween(Path ancestor, Path child) {
+        if (!child.startsWith(ancestor)) {
+            return -1;
+        }
+        return ancestor.relativize(child).getNameCount();
+    }
+
+    /**
+     * Walks {@code levels} directories up from {@code path}, or null if that is not possible.
+     */
+    private static Path parentOf(Path path, String levels) {
+        final int count;
+        try {
+            count = Integer.parseInt(levels);
+        } catch (NumberFormatException e) {
+            return null;
+        }
+        Path result = path;
+        for (int i = 0; i < count && result != null; i++) {
+            result = result.getParent();
+        }
+        return result;
     }
 
     private static String tokenize(String value, List<Root> roots) {

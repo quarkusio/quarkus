@@ -14,6 +14,7 @@ import org.junit.jupiter.api.io.TempDir;
 import io.quarkus.bootstrap.model.ApplicationModel;
 import io.quarkus.bootstrap.model.ApplicationModelBuilder;
 import io.quarkus.bootstrap.model.PlatformImports;
+import io.quarkus.maven.dependency.DependencyFlags;
 import io.quarkus.maven.dependency.ResolvedDependencyBuilder;
 
 class ApplicationModelRelocationTest {
@@ -102,6 +103,50 @@ class ApplicationModelRelocationTest {
         assertThat(Files.readString(file))
                 .contains(ApplicationModelRelocation.RELOCATION_ROOTS)
                 .doesNotContain(checkout.toString());
+    }
+
+    /**
+     * A reader that has nothing but the model's path - a forked test or dev JVM - must resolve a
+     * sibling module's jar correctly in a multi-module build.
+     * <p>
+     * Regression test: the root of the build used to be guessed as the project directory, which
+     * silently resolved {@code <root>/common/build/libs/common.jar} to
+     * {@code <root>/application/common/build/libs/common.jar} - a path that does not exist.
+     */
+    @Test
+    void siblingModuleJarResolvesForAReaderThatOnlyHasThePath() throws IOException {
+        Path rootDir = tempDir.resolve("build-root");
+        Path projectDir = rootDir.resolve("application");
+        Path buildDir = projectDir.resolve("build");
+        Path siblingJar = rootDir.resolve("common/build/libs/common.jar");
+        Path modelFile = buildDir.resolve("quarkus/application-model/quarkus-app-model.dat");
+
+        ApplicationModel model = new ApplicationModelBuilder()
+                .setAppArtifact(ResolvedDependencyBuilder.newInstance()
+                        .setGroupId("com.example")
+                        .setArtifactId("application")
+                        .setVersion("1.0.0")
+                        .setResolvedPath(buildDir.resolve("classes/java/main")))
+                .addDependency(ResolvedDependencyBuilder.newInstance()
+                        .setGroupId("com.example")
+                        .setArtifactId("common")
+                        .setVersion("1.0.0")
+                        .setResolvedPath(siblingJar)
+                        .setFlags(DependencyFlags.DEPLOYMENT_CP))
+                .setPlatformImports(PlatformImports.fromMap(Collections.emptyMap()))
+                .build();
+
+        ApplicationModelSerializer.serialize(model, modelFile, List.of(
+                new ApplicationModelRelocation.Root(ApplicationModelRelocation.BUILD_DIR_ROOT, buildDir),
+                new ApplicationModelRelocation.Root(ApplicationModelRelocation.PROJECT_DIR_ROOT, projectDir),
+                new ApplicationModelRelocation.Root(ApplicationModelRelocation.ROOT_DIR_ROOT, rootDir)));
+
+        // deserialize(Path) is what a forked JVM uses: roots derived from the file's location alone
+        ApplicationModel deserialized = ApplicationModelSerializer.deserialize(modelFile);
+
+        assertThat(deserialized.getDependencies())
+                .singleElement()
+                .satisfies(d -> assertThat(d.getResolvedPaths().getSinglePath()).isEqualTo(siblingJar));
     }
 
     private String serializeAt(Path checkout) throws IOException {

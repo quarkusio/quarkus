@@ -24,6 +24,7 @@ import java.util.concurrent.Executor;
 import java.util.function.Supplier;
 
 import jakarta.ws.rs.RuntimeType;
+import jakarta.ws.rs.core.EntityPart;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.MultivaluedMap;
 import jakarta.ws.rs.core.Response;
@@ -652,7 +653,7 @@ public class RuntimeResourceDeployment {
                 MultipartFormParamExtractor.Type multiPartType = null;
                 Class<Object> typeClass = null;
                 Type genericType = null;
-                if (param.type.equals("jakarta.ws.rs.core.EntityPart")) {
+                if (param.type.equals(EntityPart.class.getName())) {
                     multiPartType = MultipartFormParamExtractor.Type.EntityPart;
                 } else if (param.type.equals(FileUpload.class.getName())) {
                     multiPartType = MultipartFormParamExtractor.Type.FileUpload;

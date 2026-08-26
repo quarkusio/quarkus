@@ -143,7 +143,6 @@ applying codestarts...
 [INFO] ------------------------------------------------------------------------
 
 ----
-
 <1> The extension groupId
 <2> The extension id (not namespaced).
 <3> Indicate that we don't want to generate any test
@@ -228,7 +227,6 @@ Your extension is a multi-module project. So let's start by checking out the par
   </build>
 </project>
 ----
-
 <1> Your extension declares 2 sub-modules `deployment` and `runtime`.
 <2> Quarkus requires a recent version of the Maven compiler plugin supporting the annotationProcessorPaths configuration.
 <3> The `quarkus-bom` aligns your dependencies with those used by Quarkus during the augmentation phase.
@@ -423,7 +421,6 @@ include 'runtime', 'deployment' <2>
 
 rootProject.name = 'greeting-extension'
 ----
-
 <1> Configure the quarkus extension plugin version
 <2> Include both `runtime` and `deployment` modules
 
@@ -439,7 +436,6 @@ subprojects {
     version '1.0-SNAPSHOT'
 }
 ----
-
 <1> Apply the `java-library` plugin for all sub-modules
 <2> Apply the `maven-publish` plugin used to publish our artifacts
 <3> Globally set the group id used for publication
@@ -464,7 +460,6 @@ dependencies {
     testImplementation 'io.quarkus:quarkus-junit-internal'
 }
 ----
-
 <1> By convention, the deployment module has the `-deployment` suffix (`greeting-extension-deployment`).
 <2> The deployment module *must* depend on the `runtime` module.
 
@@ -490,7 +485,6 @@ dependencies {
     implementation platform("io.quarkus:quarkus-bom:${quarkus.version}")
 }
 ----
-
 <1> Apply the `io.quarkus.extension` plugin.
 <2> By convention, the runtime module doesn't have a suffix (and thus is named `greeting-extension`) as it is the artifact exposed to the end user.
 
@@ -550,7 +544,6 @@ public class GreetingExtensionServlet extends HttpServlet { // <1>
     }
 }
 ----
-
 <1> As usual, defining a servlet requires to extend `jakarta.servlet.http.HttpServlet`.
 <2> Since we want to respond to the HTTP GET verb, we override the `doGet` method and write `Hello` in the Servlet response's output stream.
 
@@ -584,7 +577,6 @@ class GreetingExtensionProcessor {
 
 }
 ----
-
 <1> `feature()` method is annotated with `@BuildStep` which means it is identified as a deployment task Quarkus will have to execute during the deployment.
 `BuildStep` methods are run concurrently at augmentation time to augment the application.
 They use a producer/consumer model, where a step is guaranteed not to be run until all the items that it is consuming have been produced.
@@ -655,7 +647,6 @@ class GreetingExtensionProcessor {
 
 }
 ----
-
 <1> We add a `createServlet` method which returns a `ServletBuildItem` and annotate it with `@BuildStep`.
 Now, Quarkus will process this new task which will result in the bytecode generation of the Servlet registration at build time.
 
@@ -725,7 +716,6 @@ public class GreetingExtensionTest {
 
 }
 ----
-
 <1> We register a Junit Extension which will start a Quarkus application with the Greeting extension.
 <2> We verify the application has a `greeting` endpoint responding to an HTTP GET request with an OK status (200) and a plain text body containing `Hello`
 

@@ -1028,7 +1028,6 @@ your default testing database.
   [...]
 </project>
 ----
-
 <1> The `foo` configuration profile will be used to run the tests.
 
 [WARNING]
@@ -1103,7 +1102,6 @@ These system properties above could be added to, e.g., a `surefire` and/or `fail
   [...]
 </project>
 ----
-
 <1> Propagate `maven.home` system property set by the Maven CLI to the tests
 <2> Set the Maven local repository directory for the tests
 <3> Set the Maven settings file the tests
@@ -1157,7 +1155,6 @@ Here is an example `info` output for a simple project:
 [INFO] Extensions from registry.quarkus.io: <4>
 [INFO]   io.quarkiverse.prettytime:quarkus-prettytime:2.0.1
 ----
-
 <1> Quarkus platform BOMs imported in the project (BOMs imported by parent POMs will also be reported)
 <2> Direct Quarkus extension dependencies managed by the `quarkus-bom`
 <3> Direct Quarkus extension dependencies managed by the `quarkus-camel-bom`
@@ -1220,7 +1217,6 @@ Assuming we have a project including Kogito, Camel and core Quarkus extensions a
 [INFO] Update: {quarkus-platform-groupid}:quarkus-bom:pom:2.7.1.Final -> {quarkus-version}
 [INFO] Update: {quarkus-platform-groupid}:quarkus-camel-bom:pom:2.7.1.Final -> {quarkus-version}
 ----
-
 <1> A list of currently recommended Quarkus platform BOM updates
 
 NOTE: Typically, a single project property will be used to manage all the Quarkus platform BOMs but the implementation isn't currently smart enough to point that out and will report updates for each BOM individually.
@@ -1239,7 +1235,6 @@ If we modify the project to remove all the Camel Quarkus extensions from the pro
 [INFO] Extensions from registry.quarkus.io:
 [INFO] Update: io.quarkiverse.prettytime:quarkus-prettytime:0.2.0 -> 0.2.1 <4>
 ----
-
 <1> A list of the currently recommended Quarkus platform BOM updates for the project
 <2> Given that the project does not include any Camel Quarkus extensions, the BOM import is recommended to be removed
 <3> An outdated version of the `quarkus-resteasy-reactive` is recommended to be removed in favor of the one managed by the `quarkus-bom`

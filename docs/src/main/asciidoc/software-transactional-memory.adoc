@@ -179,7 +179,6 @@ concurrency control.
     FlightServiceImpl instance = new FlightServiceImpl(); <2>
     FlightService flightServiceProxy = container.create(instance); <3>
 ----
-
 <1> You need to tell each Container about the type of objects for which it will be responsible. In this example
     it will be instances that implement the FlightService interface.
 <2> Then you create an instance that implements `FlightService`. You should not use it directly at this stage because
@@ -224,7 +223,6 @@ aa.begin(); <2>
     }
 }
 ----
-
 <1> An object for manually controlling transaction boundaries (AtomicAction and many other useful
     classes are included in the extension).
     Refer https://javadoc.io/doc/org.jboss.narayana.jta/narayana-jta/latest/com/arjuna/ats/arjuna/AtomicAction.html[to the javadoc] for more detail.

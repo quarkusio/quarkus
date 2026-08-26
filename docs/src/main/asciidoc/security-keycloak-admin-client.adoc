@@ -221,7 +221,6 @@ For example, by default, a test container will be available at a randomly alloca
 %test.quarkus.keycloak.devservices.port=${kc.admin.port.test:45180} <1>
 %test.quarkus.keycloak.admin-client.server-url=http://localhost:${kc.admin.port.test:45180}/ <2>
 ----
-
 <1> Configure the Keycloak container to listen on the `45180` port by default
 <2> Configure the Keycloak Admin Client to use the same port
 

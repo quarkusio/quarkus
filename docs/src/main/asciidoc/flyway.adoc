@@ -368,7 +368,6 @@ public class MigrationService {
     }
 }
 ----
-
 <1> Inject the Flyway object if you want to use it directly
 <2> Inject Flyway for named datasources using the Quarkus `FlywayDataSource` qualifier
 <3> Inject Flyway for named datasources

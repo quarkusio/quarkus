@@ -870,7 +870,6 @@ webAuthn.login({ username: username }) <1>
     // login failed
   });
 ----
-
 <1> The username is optional, in the case of https://www.w3.org/TR/webauthn-3/#discoverable-credential[Discoverable Credentials] (with PassKeys)
 
 === Only invoke the registration challenge and authenticator
@@ -920,7 +919,6 @@ webAuthn.loginClientSteps({ username: username }) <1>
     // login failed
   });
 ----
-
 <1> The username is optional, in the case of https://www.w3.org/TR/webauthn-3/#discoverable-credential[Discoverable Credentials] (with PassKeys)
 
 == Handling login and registration endpoints yourself

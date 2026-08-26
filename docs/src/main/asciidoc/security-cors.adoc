@@ -59,7 +59,6 @@ quarkus.http.cors.exposed-headers=Content-Disposition <5>
 quarkus.http.cors.access-control-max-age=24H <6>
 quarkus.http.cors.access-control-allow-credentials=true <7>
 ----
-
 <1> Enables the CORS filter.
 <2> Specifies allowed origins, including a regular expression.
 When not specified, CORS is not permitted, and only same-origin requests are allowed.

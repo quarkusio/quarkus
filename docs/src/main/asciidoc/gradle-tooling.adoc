@@ -80,7 +80,6 @@ test {
     systemProperty "quarkus.test.profile", "foo" <1>
 }
 ----
-
 <1> The `foo` configuration profile will be used to run the tests.
 ****
 
@@ -93,7 +92,6 @@ tasks.test {
     systemProperty("quarkus.test.profile", "foo") <1>
 }
 ----
-
 <1> The `foo` configuration profile will be used to run the tests.
 ****
 
@@ -521,7 +519,6 @@ quarkusBuild {
     }
 }
 ----
-
 <1> Set `quarkus.native.container-build` property to `true`
 <2> Set `quarkus.native.builder-image` property to `quay.io/quarkus/ubi10-quarkus-mandrel-builder-image:{mandrel-flavor}`
 ****
@@ -538,7 +535,6 @@ tasks.quarkusBuild {
     }
 }
 ----
-
 <1> Set `quarkus.native.container-build` property to `true`
 <2> Set `quarkus.native.builder-image` property to `quay.io/quarkus/ubi10-quarkus-mandrel-builder-image:{mandrel-flavor}`
 ****

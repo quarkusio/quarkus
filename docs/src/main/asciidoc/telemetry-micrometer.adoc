@@ -177,7 +177,6 @@ public StatsdMeterRegistry createStatsdMeterRegistry(StatsdConfig statsdConfig, 
           .build();
 }
 ----
-
 <1> The method returns a `@Singleton`.
 <2> The method returns the specific type of `MeterRegistry`
 

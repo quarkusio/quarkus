@@ -853,6 +853,57 @@ Supported forwarding address headers are:
 * `X-Forwarded-Ssl`
 * `X-Forwarded-Prefix`
 
+[[x-forwarded-for-selection]]
+=== Selecting the X-Forwarded-For client address
+
+By default, Quarkus takes the client address from the leftmost `X-Forwarded-For` value.
+When a proxy appends the client address rather than overwriting the header, the leftmost value is supplied by the client and cannot be trusted.
+Set `quarkus.http.proxy.x-forwarded-for-index` to select the value by its position from the right, where `1` is the rightmost value:
+
+[source,properties]
+----
+quarkus.http.proxy.proxy-address-forwarding=true
+quarkus.http.proxy.allow-x-forwarded=true
+quarkus.http.proxy.trusted-proxies=127.0.0.1
+quarkus.http.proxy.x-forwarded-for-index=1 <1>
+----
+<1> Set the index to the number of values your proxies append to `X-Forwarded-For`. One appended value places the client at index `1`, two appended values at index `2`.
+
+The index counts non-empty values only and merges repeated `X-Forwarded-For` header lines in the order received.
+When the header holds at least one value but fewer than the index, the request is rejected with a `400 Bad Request` response.
+When the header is absent or contains only empty values, the connection peer address is used.
+Selection applies to `X-Forwarded-For` only and cannot be combined with `quarkus.http.proxy.allow-forwarded`.
+
+WARNING: Select a value only when Quarkus is reachable exclusively through trusted proxies, because a client that connects directly can forge any value. The index must equal the number of values the proxies append; a lower index selects a client-supplied value.
+
+When a fixed index is not enough, for example to read a vendor header or to walk a chain of trusted addresses, provide a CDI bean that implements the `io.quarkus.vertx.http.XForwardedForSelector` interface:
+
+[source,java]
+----
+import io.quarkus.vertx.http.XForwardedForSelector;
+
+import jakarta.inject.Singleton;
+
+@Singleton
+public class ClientIpSelector implements XForwardedForSelector {
+
+    @Override
+    public String select(Context context) {
+        String clientIp = context.headers().get("X-Real-Client-IP");
+        if (clientIp != null) {
+            return clientIp;
+        }
+        return context.connectionPeer().host(); <1>
+    }
+}
+----
+<1> Falls back to the direct connection address. Returning `null` or a blank value instead rejects the request with a `400 Bad Request` response.
+
+The selector runs only when the request carries at least one non-empty `X-Forwarded-For` value.
+When the header is absent or contains only empty values, the selector is not invoked and the connection peer address is used.
+
+NOTE: At most one such bean may exist, and it cannot be combined with `quarkus.http.proxy.x-forwarded-for-index` or `quarkus.http.proxy.allow-forwarded`.
+
 [[same-site-cookie]]
 == SameSite cookies
 

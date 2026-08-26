@@ -630,10 +630,11 @@ public class VertxHttpRecorder {
             HttpServerCommonHandlers.applyHeaders(managementConfig.getValue().header(), mr);
             applyCompression(managementBuildTimeConfig.enableCompression(), mr);
 
-            Handler<HttpServerRequest> handler = HttpServerCommonHandlers.enforceDuplicatedContext(mr, mustResumeRequest);
-            handler = HttpServerCommonHandlers.applyProxy(managementConfig.getValue().proxy(), handler, vertx,
-                    managementBuildTimeConfig.tlsClientAuth(), managementConfig.getValue().tlsConfigurationName(),
+            Handler<HttpServerRequest> handler = HttpServerCommonHandlers.applyProxy(managementConfig.getValue().proxy(), mr,
+                    vertx, managementBuildTimeConfig.tlsClientAuth(), managementConfig.getValue().tlsConfigurationName(),
                     "quarkus.management");
+
+            handler = HttpServerCommonHandlers.enforceDuplicatedContext(handler, mustResumeRequest);
 
             int routesBeforeMiEvent = mr.getRoutes().size();
             event.select(ManagementInterface.class).fire(new ManagementInterfaceImpl(mr));

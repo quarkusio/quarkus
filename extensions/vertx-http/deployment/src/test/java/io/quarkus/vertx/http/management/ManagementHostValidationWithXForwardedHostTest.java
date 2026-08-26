@@ -1,8 +1,10 @@
 package io.quarkus.vertx.http.management;
 
 import static io.restassured.RestAssured.given;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.emptyString;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.not;
 
 import java.net.URL;
 
@@ -35,6 +37,9 @@ public class ManagementHostValidationWithXForwardedHostTest {
     @TestHTTPResource(value = "/my-route", management = true)
     URL myRoute;
 
+    @TestHTTPResource(value = "/remote-addr", management = true)
+    URL remoteAddrRoute;
+
     @Test
     void somePublicApiHostRequest() {
         given().header("Host", "some-public-api")
@@ -52,11 +57,32 @@ public class ManagementHostValidationWithXForwardedHostTest {
                 .body(equalTo("test route"));
     }
 
+    @Test
+    void xForwardedForSetsRemoteAddressOnManagement() {
+        given().header("X-Forwarded-Host", "public-api.com")
+                .header("X-Forwarded-For", "192.168.42.123")
+                .get(remoteAddrRoute).then()
+                .statusCode(200)
+                .body(containsString("192.168.42.123"));
+    }
+
+    @Test
+    void xForwardedForUsesLeftmostValueByDefaultOnManagement() {
+        given().header("X-Forwarded-Host", "public-api.com")
+                .header("X-Forwarded-For", "1.1.1.1, 2.2.2.2")
+                .get(remoteAddrRoute).then()
+                .statusCode(200)
+                .body(containsString("1.1.1.1"))
+                .body(not(containsString("2.2.2.2")));
+    }
+
     @Singleton
     static class MyObserver {
 
         public void registerManagementRoutes(@Observes ManagementInterface mi) {
             mi.router().get("/management/my-route").handler(rc -> rc.response().end("test route"));
+            mi.router().get("/management/remote-addr")
+                    .handler(rc -> rc.response().end(rc.request().remoteAddress().toString()));
         }
     }
 }

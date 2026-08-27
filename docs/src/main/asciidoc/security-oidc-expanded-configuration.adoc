@@ -4,7 +4,7 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 [id="security-oidc-expanded-configuration"]
-= Quarkus OpenId Connect (OIDC) Expanded Configuration Reference
+= Quarkus OpenID Connect (OIDC) expanded configuration reference
 include::_attributes.adoc[]
 :diataxis-type: concept
 :topics: security

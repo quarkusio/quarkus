@@ -410,9 +410,12 @@ examples:
 [[categories]]
 === Categories
 
-Guide categories are defined in `docs/src/main/resources/categories.yaml`.
-Add your guide to the appropriate category in that file.
-The build will check that all guides are categorized and inject the category metadata into the generated sources.
+Quarkus documentation categories are maintained in `docs/src/main/resources/categories.yaml`.
+When you add, rename, or remove a guide, update that file so the guide appears in the appropriate category or subcategory on the documentation website.
+
+Do not add or keep `:categories:` attributes in guide headers.
+The docs build injects generated category metadata into copied target sources from `categories.yaml`.
+The build also checks that every guide is listed in `categories.yaml` and that every listed guide exists.
 
 [[document-variables]]
 === Quarkus documentation variables

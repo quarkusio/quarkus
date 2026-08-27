@@ -4,7 +4,7 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 [id="security-openid-connect-providers"]
-= Configuring Well-Known OpenID Connect Providers
+= Configuring well-known OpenID Connect providers
 include::_attributes.adoc[]
 :diataxis-type: concept
 :keywords: oidc github twitter google facebook mastodon microsoft apple spotify twitch linkedin strava

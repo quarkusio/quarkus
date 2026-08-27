@@ -3,7 +3,7 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= Getting Started to Quarkus Messaging with RabbitMQ
+= Getting started with Quarkus Messaging and RabbitMQ
 :extension-status: preview
 include::_attributes.adoc[]
 :topics: messaging,reactive-messaging,rabbitmq

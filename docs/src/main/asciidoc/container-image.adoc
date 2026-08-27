@@ -3,7 +3,7 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= Container Images
+= Container images
 include::_attributes.adoc[]
 :summary: Learn how to build and push container images with Jib, OpenShift, Docker, or Podman as part of the Quarkus build.
 :topics: devops,cloud

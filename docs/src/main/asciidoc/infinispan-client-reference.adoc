@@ -3,7 +3,7 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= Infinispan Client Extension Reference Guide
+= Infinispan Client extension reference guide
 include::_attributes.adoc[]
 :summary: Infinispan is an in memory distributed data store and cache server that offers flexible deployment options and robust capabilities for storing, managing, and processing data.
 :topics: data,infinispan

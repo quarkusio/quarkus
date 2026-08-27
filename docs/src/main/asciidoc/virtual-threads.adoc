@@ -4,7 +4,7 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 [[virtual-threads]]
-= Virtual Thread support reference
+= Virtual thread support reference
 include::_attributes.adoc[]
 :diataxis-type: reference
 :resteasy-reactive-api: https://javadoc.io/doc/io.quarkus.resteasy.reactive/resteasy-reactive/{quarkus-version}

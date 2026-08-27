@@ -217,9 +217,21 @@ public class YamlMetadataGenerator {
         }
         map.put("url", metadata.getUrl());
         map.put("type", metadata.type.id);
+        if (metadata.status != null) {
+            map.put("status", metadata.status.id);
+        }
         String categories = metadata.getCategories();
         if (!categories.isEmpty()) {
             map.put("categories", categories);
+        }
+        if (!metadata.keywords.isEmpty()) {
+            map.put("keywords", metadata.getKeywords());
+        }
+        if (!metadata.topics.isEmpty()) {
+            map.put("topics", new ArrayList<>(metadata.topics));
+        }
+        if (!metadata.extensions.isEmpty()) {
+            map.put("extensions", new ArrayList<>(metadata.extensions));
         }
         return map;
     }

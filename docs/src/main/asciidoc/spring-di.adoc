@@ -3,7 +3,7 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= Quarkus Extension for Spring DI API
+= Quarkus extension for Spring DI API
 include::_attributes.adoc[]
 :summary: While you are encouraged to use CDI annotations for injection, Quarkus provides a compatibility layer for Spring dependency injection in the form of the spring-di extension.
 :topics: spring,cdi,injection,compatibility

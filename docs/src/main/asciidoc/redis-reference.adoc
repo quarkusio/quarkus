@@ -3,7 +3,7 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= Redis Extension Reference Guide
+= Redis extension reference guide
 :extension-status: stable
 include::_attributes.adoc[]
 :numbered:

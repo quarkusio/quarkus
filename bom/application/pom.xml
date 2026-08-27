@@ -141,7 +141,7 @@
         <mutiny.version>2.9.5</mutiny.version>
         <jctools-core.version>4.0.5</jctools-core.version>
         <kafka3.version>4.0.2</kafka3.version>
-        <lz4.version>1.10.1</lz4.version> <!-- dependency of the kafka-clients that could be overridden by other imported BOMs in the platform -->
+        <lz4.version>1.11.1</lz4.version> <!-- dependency of the kafka-clients that could be overridden by other imported BOMs in the platform -->
         <snappy.version>1.1.10.8</snappy.version>
         <strimzi-test-container.version>0.109.2</strimzi-test-container.version>
         <!-- Scala is used by Kafka so we need to choose a compatible version -->
@@ -221,7 +221,7 @@
         <!-- Dev UI -->
         <importmap.version>1.0.11</importmap.version>
         <webauthn4j.version>0.28.0.RELEASE</webauthn4j.version>
-        <jsoup.version>1.23.1</jsoup.version>
+        <jsoup.version>1.23.1</jsoup.version> <!-- JSoup is used by Camel and LangChain4J so be careful when updating -->
     </properties>
 
     <pluginRepositories>

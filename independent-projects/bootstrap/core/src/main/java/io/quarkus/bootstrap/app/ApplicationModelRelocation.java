@@ -39,6 +39,14 @@ import io.quarkus.bootstrap.util.PropertyUtils;
  * Both directions are no-ops when no roots apply, and a model written without the {@value #RELOCATION_ROOTS}
  * entry - by an older version, or with relocation disabled - is read back unchanged, so the format stays
  * compatible in both directions.
+ * <p>
+ * Artifacts contributed by a build included through {@code includeBuild(...)} are deliberately left
+ * absolute. Such a build lies outside the root directory at a location the including build chooses
+ * freely - a sibling directory, or somewhere else entirely - so, unlike {@link #ROOT_DIR_ROOT}, no offset
+ * from the project directory recovers it, and a reader handed nothing but the model's path (what a forked
+ * test or dev JVM gets) could not resolve the root however it were recorded. The cost is that composite
+ * builds keep checkout-dependent models and miss the build cache; the alternative, a token no reader can
+ * resolve, breaks the build outright.
  */
 public class ApplicationModelRelocation {
 
@@ -183,22 +191,6 @@ public class ApplicationModelRelocation {
      * Name of the root standing for the Gradle home, whose dependency cache Gradle resolves to.
      */
     public static final String GRADLE_USER_HOME_ROOT = "quarkus.gradle.user.home";
-
-    /**
-     * Prefix of the names standing for the root directories of builds included in the one a model was
-     * produced for. An included build lies outside the root directory, so it needs a root of its own.
-     * <p>
-     * They are numbered by the order the build declares them, which is stable for a given build and
-     * independent of where any of it is checked out.
-     */
-    public static final String INCLUDED_BUILD_ROOT_PREFIX = "quarkus.included.build.";
-
-    /**
-     * The name of the root standing for the included build at the given index.
-     */
-    public static String includedBuildRoot(int index) {
-        return INCLUDED_BUILD_ROOT_PREFIX + index;
-    }
 
     /**
      * The roots that can be derived from the environment alone, and are therefore available to any

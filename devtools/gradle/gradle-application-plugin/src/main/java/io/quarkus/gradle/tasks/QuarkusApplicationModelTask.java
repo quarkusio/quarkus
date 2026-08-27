@@ -42,7 +42,6 @@ import org.gradle.api.artifacts.result.ResolvedDependencyResult;
 import org.gradle.api.artifacts.type.ArtifactTypeDefinition;
 import org.gradle.api.attributes.Attribute;
 import org.gradle.api.file.ConfigurableFileCollection;
-import org.gradle.api.file.Directory;
 import org.gradle.api.file.DirectoryProperty;
 import org.gradle.api.file.FileCollection;
 import org.gradle.api.file.ProjectLayout;
@@ -171,15 +170,6 @@ public abstract class QuarkusApplicationModelTask extends DefaultTask {
     @Internal
     public abstract DirectoryProperty getRootDirectory();
 
-    /**
-     * The root directories of the builds included in this one, which lie outside
-     * {@link #getRootDirectory()} and whose modules can contribute artifacts to the model.
-     *
-     * @see #getGradleUserHomeDirectory()
-     */
-    @Internal
-    public abstract ListProperty<Directory> getIncludedBuildDirectories();
-
     public QuarkusApplicationModelTask() {
         getProjectBuildFile().set(getProject().getBuildFile());
     }
@@ -216,10 +206,11 @@ public abstract class QuarkusApplicationModelTask extends DefaultTask {
      * inputs built from different checkouts serialize to identical bytes.
      * <p>
      * The environment roots - the local Maven repository and the Gradle home - are derived by any reader
-     * on its own; the build, project and root directories, and the roots of any included builds, are
-     * only known here. The build directory is listed separately from the project directory because it
-     * can be configured to sit outside it, and an included build lies outside the root directory
-     * altogether.
+     * on its own; the build, project and root directories are only known here. The build directory is
+     * listed separately from the project directory because it can be configured to sit outside it.
+     * <p>
+     * Builds included through {@code includeBuild(...)} get no root: their location is not recoverable
+     * by a reader that has only the model's path, so their artifacts stay absolute.
      * <p>
      * Where this knows a root the environment only guesses at - the Gradle home - the value here wins.
      */
@@ -237,11 +228,6 @@ public abstract class QuarkusApplicationModelTask extends DefaultTask {
         if (getRootDirectory().isPresent()) {
             roots.add(new ApplicationModelRelocation.Root(ApplicationModelRelocation.ROOT_DIR_ROOT,
                     getRootDirectory().get().getAsFile().toPath()));
-        }
-        final List<Directory> includedBuilds = getIncludedBuildDirectories().get();
-        for (int i = 0; i < includedBuilds.size(); i++) {
-            roots.add(new ApplicationModelRelocation.Root(
-                    ApplicationModelRelocation.includedBuildRoot(i), includedBuilds.get(i).getAsFile().toPath()));
         }
         return ApplicationModelRelocation.withEnvironmentRoots(roots);
     }

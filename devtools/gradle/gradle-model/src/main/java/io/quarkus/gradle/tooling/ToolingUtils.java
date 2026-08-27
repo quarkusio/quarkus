@@ -177,10 +177,10 @@ public class ToolingUtils {
      * The roots a model serialized for a Gradle build is expressed relative to: the environment roots
      * every reader can derive on its own, plus the directories only the build knows about - the project
      * itself, its build directory and the root of the build, which the modules of a multi-module project
-     * live under, and the root of each included build, which lies outside all of those.
+     * live under.
      * <p>
-     * Included builds are numbered by declaration order, so a model has to be read back against the
-     * same list it was written with.
+     * A build included through {@code includeBuild(...)} gets no root: it sits outside all of these at a
+     * location no reader can derive from the model's path, so its artifacts stay absolute.
      */
     public static List<ApplicationModelRelocation.Root> projectRoots(Project project) {
         final List<ApplicationModelRelocation.Root> roots = new ArrayList<>(
@@ -190,11 +190,6 @@ public class ToolingUtils {
         roots.add(new ApplicationModelRelocation.Root(ApplicationModelRelocation.PROJECT_DIR_ROOT,
                 project.getProjectDir().toPath()));
         roots.add(new ApplicationModelRelocation.Root(ApplicationModelRelocation.ROOT_DIR_ROOT, project.getRootDir().toPath()));
-        int includedBuild = 0;
-        for (IncludedBuild build : project.getGradle().getIncludedBuilds()) {
-            roots.add(new ApplicationModelRelocation.Root(
-                    ApplicationModelRelocation.includedBuildRoot(includedBuild++), build.getProjectDir().toPath()));
-        }
         return roots;
     }
 

@@ -211,8 +211,15 @@ class ApplicationModelRelocationTest {
      * An included build lies outside the root directory of the build including it, so its artifacts
      * need a root of their own or they stay absolute and keep the model checkout-dependent.
      */
+    /**
+     * A build included through {@code includeBuild(...)} sits outside the root directory at a location
+     * the including build chooses freely, so no offset recovers it and a reader holding only the model's
+     * path - a forked test or dev JVM - could not resolve a token for it. Its artifacts are therefore
+     * left absolute: the model stays checkout-dependent and misses the cache, which beats writing a
+     * token that breaks the build for every reader.
+     */
     @Test
-    void includedBuildArtifactsAreRelocated() throws IOException {
+    void includedBuildArtifactsAreLeftAbsolute() throws IOException {
         Path rootDir = tempDir.resolve("main-build");
         Path includedBuild = tempDir.resolve("shared-lib");
         Path jar = includedBuild.resolve("lib/build/libs/lib.jar");
@@ -234,72 +241,18 @@ class ApplicationModelRelocationTest {
                 .build();
 
         List<ApplicationModelRelocation.Root> roots = List.of(
-                new ApplicationModelRelocation.Root(ApplicationModelRelocation.ROOT_DIR_ROOT, rootDir),
-                new ApplicationModelRelocation.Root(ApplicationModelRelocation.includedBuildRoot(0), includedBuild));
+                new ApplicationModelRelocation.Root(ApplicationModelRelocation.ROOT_DIR_ROOT, rootDir));
         ApplicationModelSerializer.serialize(model, file, roots);
 
-        assertThat(Files.readString(file)).doesNotContain(asJson(includedBuild));
+        // written as it is, so a reader that knows nothing of the included build still resolves it
+        assertThat(Files.readString(file)).contains(asJson(jar));
 
-        ApplicationModel deserialized = ApplicationModelSerializer.deserialize(file, roots);
+        // and the path survives a reader with only the model's location to go on, which is the case
+        // that a token for the included build would have broken
+        ApplicationModel deserialized = ApplicationModelSerializer.deserialize(file);
         assertThat(deserialized.getDependencies())
                 .singleElement()
                 .satisfies(d -> assertThat(d.getResolvedPaths().getSinglePath()).isEqualTo(jar));
-    }
-
-    /**
-     * A reader that knows every root except the included builds resolves the rest of the model and
-     * leaves the included build's artifact as a token, which then fails far from its cause - the path
-     * is relative, so it silently picks up the working directory as a prefix.
-     * <p>
-     * Every root the writer uses therefore has to be handed to the reader as well. The tasks that read
-     * a model back get the included builds from the same helper the writing task uses, so the roots
-     * line up by position.
-     */
-    @Test
-    void includedBuildArtifactsNeedTheirRootOnTheReadingSideToo() throws IOException {
-        Path rootDir = tempDir.resolve("main-build");
-        Path includedBuild = tempDir.resolve("shared-lib");
-        Path jar = includedBuild.resolve("lib/build/libs/lib.jar");
-        Path file = tempDir.resolve("included-reader.dat");
-
-        ApplicationModel model = new ApplicationModelBuilder()
-                .setAppArtifact(ResolvedDependencyBuilder.newInstance()
-                        .setGroupId("com.example")
-                        .setArtifactId("app")
-                        .setVersion("1.0.0")
-                        .setResolvedPath(rootDir.resolve("build/classes")))
-                .addDependency(ResolvedDependencyBuilder.newInstance()
-                        .setGroupId("com.example")
-                        .setArtifactId("lib")
-                        .setVersion("1.0.0")
-                        .setResolvedPath(jar)
-                        .setFlags(DependencyFlags.DEPLOYMENT_CP))
-                .setPlatformImports(PlatformImports.fromMap(Collections.emptyMap()))
-                .build();
-
-        ApplicationModelSerializer.serialize(model, file, List.of(
-                new ApplicationModelRelocation.Root(ApplicationModelRelocation.ROOT_DIR_ROOT, rootDir),
-                new ApplicationModelRelocation.Root(ApplicationModelRelocation.includedBuildRoot(0), includedBuild)));
-
-        // the root of the build alone, as a reader that forgot the included builds would have it
-        ApplicationModel withoutIncludedBuild = ApplicationModelSerializer.deserialize(file, List.of(
-                new ApplicationModelRelocation.Root(ApplicationModelRelocation.ROOT_DIR_ROOT, rootDir)));
-        assertThat(withoutIncludedBuild.getDependencies())
-                .singleElement()
-                .satisfies(d -> assertThat(d.getResolvedPaths().getSinglePath().toString())
-                        .as("an unresolved token is what breaks the build, far from here")
-                        .contains(ApplicationModelRelocation.includedBuildRoot(0)));
-
-        // the same roots the writer used resolve it, wherever the included build now sits
-        Path movedRoot = tempDir.resolve("moved-root");
-        Path movedInclude = tempDir.resolve("moved-lib");
-        ApplicationModel relocated = ApplicationModelSerializer.deserialize(file, List.of(
-                new ApplicationModelRelocation.Root(ApplicationModelRelocation.ROOT_DIR_ROOT, movedRoot),
-                new ApplicationModelRelocation.Root(ApplicationModelRelocation.includedBuildRoot(0), movedInclude)));
-        assertThat(relocated.getDependencies())
-                .singleElement()
-                .satisfies(d -> assertThat(d.getResolvedPaths().getSinglePath())
-                        .isEqualTo(movedInclude.resolve("lib/build/libs/lib.jar")));
     }
 
     private String serializeAt(Path checkout) throws IOException {

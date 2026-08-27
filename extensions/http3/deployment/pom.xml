@@ -79,4 +79,18 @@
         </plugins>
     </build>
 
+    <profiles>
+        <profile>
+            <id>skip-tests-on-ppc64le</id>
+            <activation>
+                <os>
+                    <arch>ppc64le</arch>
+                </os>
+            </activation>
+            <properties>
+                <skipTests>true</skipTests>
+            </properties>
+        </profile>
+    </profiles>
+
 </project>

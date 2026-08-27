@@ -102,16 +102,7 @@ public class LocaleProcessor {
         }
     }
 
-    /**
-     * User language for native-image executable.
-     *
-     * @param nativeConfig
-     * @param localesBuildTimeConfig
-     * @return User language set by 'quarkus.default-locale' or effectively LocalesBuildTimeConfig.DEFAULT_LANGUAGE if not set.
-     * @Deprecated
-     */
-    @Deprecated
-    public static String nativeImageUserLanguage(NativeConfig nativeConfig, LocalesBuildTimeConfig localesBuildTimeConfig) {
+    private static String nativeImageUserLanguage(NativeConfig nativeConfig, LocalesBuildTimeConfig localesBuildTimeConfig) {
         String language = System.getProperty("user.language", "en");
         if (localesBuildTimeConfig.defaultLocale().isPresent()) {
             language = localesBuildTimeConfig.defaultLocale().get().getLanguage();
@@ -119,16 +110,7 @@ public class LocaleProcessor {
         return language;
     }
 
-    /**
-     * User country for native-image executable.
-     *
-     * @param nativeConfig
-     * @param localesBuildTimeConfig
-     * @return User country set by 'quarkus.default-locale' or effectively LocalesBuildTimeConfig.DEFAULT_COUNTRY if not set.
-     * @Deprecated
-     */
-    @Deprecated
-    public static String nativeImageUserCountry(NativeConfig nativeConfig, LocalesBuildTimeConfig localesBuildTimeConfig) {
+    private static String nativeImageUserCountry(NativeConfig nativeConfig, LocalesBuildTimeConfig localesBuildTimeConfig) {
         String country = System.getProperty("user.country", "");
         if (localesBuildTimeConfig.defaultLocale().isPresent()) {
             country = localesBuildTimeConfig.defaultLocale().get().getCountry();

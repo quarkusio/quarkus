@@ -51,7 +51,7 @@ public class QuarkusExtensionConfiguration {
     /**
      * @deprecated Use {@code getDisableValidation().set(...)} instead.
      */
-    @Deprecated(forRemoval = true)
+    @Deprecated(since = "4.0", forRemoval = true)
     public void setDisableValidation(boolean disableValidation) {
         getDisableValidation().set(disableValidation);
     }
@@ -63,7 +63,7 @@ public class QuarkusExtensionConfiguration {
     /**
      * @deprecated Use {@link #getDisableValidation()} instead.
      */
-    @Deprecated(forRemoval = true)
+    @Deprecated(since = "4.0", forRemoval = true)
     public Property<Boolean> isValidationDisabled() {
         return getDisableValidation();
     }
@@ -75,7 +75,7 @@ public class QuarkusExtensionConfiguration {
     /**
      * @deprecated Use {@code getDeploymentArtifact().set(...)} instead.
      */
-    @Deprecated(forRemoval = true)
+    @Deprecated(since = "4.0", forRemoval = true)
     public void setDeploymentArtifact(String deploymentArtifact) {
         this.deploymentArtifact.set(deploymentArtifact);
     }
@@ -87,7 +87,7 @@ public class QuarkusExtensionConfiguration {
     /**
      * @deprecated Use {@code getDeploymentModule().set(...)} instead.
      */
-    @Deprecated(forRemoval = true)
+    @Deprecated(since = "4.0", forRemoval = true)
     public void setDeploymentModule(String deploymentModule) {
         this.deploymentModule.set(deploymentModule);
     }
@@ -111,7 +111,7 @@ public class QuarkusExtensionConfiguration {
     /**
      * @deprecated Use {@code getExcludedArtifacts().addAll(...)} instead.
      */
-    @Deprecated(forRemoval = true)
+    @Deprecated(since = "4.0", forRemoval = true)
     public void setExcludedArtifacts(List<String> excludedArtifacts) {
         this.excludedArtifacts.addAll(excludedArtifacts);
     }
@@ -123,7 +123,7 @@ public class QuarkusExtensionConfiguration {
     /**
      * @deprecated Use {@code getParentFirstArtifacts().addAll(...)} instead.
      */
-    @Deprecated(forRemoval = true)
+    @Deprecated(since = "4.0", forRemoval = true)
     public void setParentFirstArtifacts(List<String> parentFirstArtifacts) {
         this.parentFirstArtifacts.addAll(parentFirstArtifacts);
     }
@@ -135,7 +135,7 @@ public class QuarkusExtensionConfiguration {
     /**
      * @deprecated Use {@code getRunnerParentFirstArtifacts().addAll(...)} instead.
      */
-    @Deprecated(forRemoval = true)
+    @Deprecated(since = "4.0", forRemoval = true)
     public void setRunnerParentFirstArtifacts(List<String> runnerParentFirstArtifacts) {
         this.runnerParentFirstArtifacts.addAll(runnerParentFirstArtifacts);
     }
@@ -147,7 +147,7 @@ public class QuarkusExtensionConfiguration {
     /**
      * @deprecated Use {@code getLesserPriorityArtifacts().addAll(...)} instead.
      */
-    @Deprecated(forRemoval = true)
+    @Deprecated(since = "4.0", forRemoval = true)
     public void setLesserPriorityArtifacts(List<String> lesserPriorityArtifacts) {
         this.lesserPriorityArtifacts.addAll(lesserPriorityArtifacts);
     }
@@ -159,7 +159,7 @@ public class QuarkusExtensionConfiguration {
     /**
      * @deprecated Use {@code getConditionalDependencies().addAll(...)} instead.
      */
-    @Deprecated(forRemoval = true)
+    @Deprecated(since = "4.0", forRemoval = true)
     public void setConditionalDependencies(List<String> conditionalDependencies) {
         this.conditionalDependencies.addAll(conditionalDependencies);
     }
@@ -171,7 +171,7 @@ public class QuarkusExtensionConfiguration {
     /**
      * @deprecated Use {@code getConditionalDevDependencies().addAll(...)} instead.
      */
-    @Deprecated(forRemoval = true)
+    @Deprecated(since = "4.0", forRemoval = true)
     public void setConditionalDevDependencies(List<String> conditionalDependencies) {
         this.conditionalDevDependencies.addAll(conditionalDependencies);
     }
@@ -183,7 +183,7 @@ public class QuarkusExtensionConfiguration {
     /**
      * @deprecated Use {@code getDependencyConditions().addAll(...)} instead.
      */
-    @Deprecated(forRemoval = true)
+    @Deprecated(since = "4.0", forRemoval = true)
     public void setDependencyConditions(List<String> dependencyCondition) {
         this.dependencyCondition.addAll(dependencyCondition);
     }

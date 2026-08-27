@@ -163,11 +163,6 @@ public interface Capability {
 
     String KAFKA = QUARKUS_PREFIX + ".kafka";
 
-    @Deprecated
-    /**
-     * @deprecated use {@link #MESSAGING} instead
-     */
-    String SMALLRYE_REACTIVE_MESSAGING = QUARKUS_PREFIX + ".smallrye.reactive.messaging";
     String MESSAGING = QUARKUS_PREFIX + ".messaging";
     String REDIS_CLIENT = QUARKUS_PREFIX + ".redis";
 

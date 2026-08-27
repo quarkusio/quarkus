@@ -6,7 +6,6 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 [id="security-jwt"]
 = Using JWT RBAC
 include::_attributes.adoc[]
-:categories: security
 :summary: This guide explains how your application can use SmallRye JWT to provide secured access to the Jakarta REST endpoints.
 :extension-name: SmallRye JWT
 :mp-jwt: MicroProfile JWT RBAC

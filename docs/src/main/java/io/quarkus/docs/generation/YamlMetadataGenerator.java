@@ -1,6 +1,7 @@
 package io.quarkus.docs.generation;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -10,6 +11,7 @@ import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -70,10 +72,20 @@ public class YamlMetadataGenerator {
                         ? Path.of(args[1])
                         : docsDir().resolve("target"));
 
+        Path categoriesFile = args.length >= 3
+                ? Path.of(args[2])
+                : docsDir().resolve("src/main/resources/categories.yaml");
+
         System.out.println("[INFO] Generating metadata index");
         generator.generateIndex();
         System.out.println("[INFO] Writing metadata index and error files");
         generator.writeYamlFiles();
+
+        if (Files.exists(categoriesFile)) {
+            System.out.println("[INFO] Writing enriched categories to target");
+            generator.writeEnrichedCategories(categoriesFile);
+        }
+
         System.out.println("[INFO] Done");
     }
 
@@ -129,6 +141,87 @@ public class YamlMetadataGenerator {
 
         om.writeValue(targetDir.resolve("errorsByType.yaml").toFile(), messages);
         om.writeValue(targetDir.resolve("errorsByFile.yaml").toFile(), messages.allByFile());
+    }
+
+    @SuppressWarnings("unchecked")
+    public void writeEnrichedCategories(Path categoriesFile) throws IOException {
+        ObjectMapper om = new ObjectMapper(
+                new YAMLFactory()
+                        .enable(YAMLGenerator.Feature.MINIMIZE_QUOTES)
+                        .disable(YAMLGenerator.Feature.SPLIT_LINES));
+
+        Map<String, Object> root;
+        try (InputStream is = Files.newInputStream(categoriesFile)) {
+            root = om.readValue(is, Map.class);
+        }
+
+        Map<String, DocMetadata> metadataByFile = index.metadataByFile();
+
+        List<String> pinned = (List<String>) root.get("pinned");
+        if (pinned != null) {
+            List<Object> enrichedPinned = new ArrayList<>(pinned.size());
+            for (String guide : pinned) {
+                DocMetadata metadata = metadataByFile.get(guide);
+                if (metadata != null) {
+                    enrichedPinned.add(metadataToMap(metadata));
+                } else {
+                    enrichedPinned.add(guide);
+                }
+            }
+            root.put("pinned", enrichedPinned);
+        }
+
+        List<Map<String, Object>> categories = (List<Map<String, Object>>) root.get("categories");
+        if (categories != null) {
+            for (Map<String, Object> category : categories) {
+                enrichGuides(category, metadataByFile);
+            }
+        }
+
+        om.writeValue(targetDir.resolve("categories.yaml").toFile(), root);
+    }
+
+    @SuppressWarnings("unchecked")
+    private void enrichGuides(Map<String, Object> node, Map<String, DocMetadata> metadataByFile) {
+        List<String> guides = (List<String>) node.get("guides");
+        if (guides != null) {
+            List<Object> enriched = new ArrayList<>(guides.size());
+            for (String guide : guides) {
+                DocMetadata metadata = metadataByFile.get(guide);
+                if (metadata != null) {
+                    enriched.add(metadataToMap(metadata));
+                } else {
+                    enriched.add(guide);
+                }
+            }
+            node.put("guides", enriched);
+        }
+
+        List<Map<String, Object>> subcategories = (List<Map<String, Object>>) node.get("subcategories");
+        if (subcategories != null) {
+            for (Map<String, Object> sub : subcategories) {
+                enrichGuides(sub, metadataByFile);
+            }
+        }
+    }
+
+    private Map<String, Object> metadataToMap(DocMetadata metadata) {
+        Map<String, Object> map = new LinkedHashMap<>();
+        map.put("filename", metadata.filename);
+        if (metadata.id != null) {
+            map.put("id", metadata.id);
+        }
+        map.put("title", metadata.title);
+        if (metadata.summary != null && !metadata.summary.isEmpty()) {
+            map.put("summary", metadata.summary);
+        }
+        map.put("url", metadata.getUrl());
+        map.put("type", metadata.type.id);
+        String categories = metadata.getCategories();
+        if (!categories.isEmpty()) {
+            map.put("categories", categories);
+        }
+        return map;
     }
 
     public Index generateIndex() throws IOException {
@@ -280,12 +373,16 @@ public class YamlMetadataGenerator {
         contributing("contributing", "Contributing"),
         core("core", "Core"),
         data("data", "Data"),
+        execution_model("execution-model", "Execution Model"),
         getting_started("getting-started", "Getting Started"),
         integration("integration", "Integration"),
         messaging("messaging", "Messaging"),
         miscellaneous("miscellaneous", "Miscellaneous"),
         native_docs("native", "Native"),
         observability("observability", "Observability"),
+        operations("operations", "Operations"),
+        packaging("packaging", "Packaging"),
+        rule_engine("rule-engine", "Rule Engine"),
         security("security", "Security"),
         serialization("serialization", "Serialization"),
         tooling("tooling", "Tooling"),
@@ -443,7 +540,7 @@ public class YamlMetadataGenerator {
                 case "missing-id":
                     return "Document does not define an id. See https://quarkus.io/guides/doc-reference#document-header";
                 case "missing-categories":
-                    return "Document does not specify associated categories. See https://quarkus.io/guides/doc-reference#categories";
+                    return "Document is not listed in categories.yaml. See https://quarkus.io/guides/doc-reference#categories";
                 case "not-diataxis-type":
                     return "Document type not recognized. It either does not have a diataxis-type attribute or does not follow naming conventions. See https://quarkus.io/guides/doc-reference#document-header";
                 case "toc":

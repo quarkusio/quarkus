@@ -5,7 +5,6 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Re-augment a Quarkus Application
 include::_attributes.adoc[]
-:categories: tooling
 :summary: Use mutable jars to rebuild your application with different build time configurations.
 :topics: mutable-jars,tooling
 

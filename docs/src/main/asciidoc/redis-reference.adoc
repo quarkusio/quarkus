@@ -8,7 +8,6 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::_attributes.adoc[]
 :numbered:
 :sectnums:
-:categories: data
 :topics: data,redis,nosql
 :extensions: io.quarkus:quarkus-redis-client
 

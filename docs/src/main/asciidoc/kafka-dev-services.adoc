@@ -5,7 +5,6 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Dev Services for Kafka
 include::_attributes.adoc[]
-:categories: messaging
 :summary: Start Apache Kafka automatically in dev and test modes.
 :topics: messaging,kafka,dev-services,testing,dev-mode
 :extensions: io.quarkus:quarkus-kafka-client,io.quarkus:quarkus-messaging-kafka

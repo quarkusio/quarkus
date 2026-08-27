@@ -5,7 +5,6 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Using xDS gRPC
 include::_attributes.adoc[]
-:categories: serialization
 :summary: This page explains how to enable xDS gRPC usage in your Quarkus application.
 :topics: grpc,xds
 :extensions: io.quarkus:quarkus-grpc-xds

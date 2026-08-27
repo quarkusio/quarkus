@@ -5,7 +5,6 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Class Loading Reference
 include::_attributes.adoc[]
-:categories: architecture
 :summary: Learn more about Quarkus class loading infrastructure.
 :topics: internals,extensions
 

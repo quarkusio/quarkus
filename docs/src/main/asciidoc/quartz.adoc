@@ -5,7 +5,6 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Scheduling Periodic Tasks with Quartz
 include::_attributes.adoc[]
-:categories: miscellaneous
 :summary: You need clustering support for your scheduled tasks? This guide explains how to use the Quartz extension for that.
 :topics: scheduling,cronjob,quartz
 :extensions: io.quarkus:quarkus-quartz

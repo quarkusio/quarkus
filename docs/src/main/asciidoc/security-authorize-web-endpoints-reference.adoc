@@ -6,7 +6,6 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 = Authorization of web endpoints
 include::_attributes.adoc[]
 :diataxis-type: reference
-:categories: security,web
 :topics: security,authorization,http,rest
 :extensions: io.quarkus:quarkus-vertx-http,io.quarkus:quarkus-rest,io.quarkus:quarkus-resteasy
 

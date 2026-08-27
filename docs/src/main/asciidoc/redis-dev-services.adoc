@@ -6,7 +6,6 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 = Dev Services for Redis
 :extension-status: stable
 include::_attributes.adoc[]
-:categories: data
 :summary: Start Redis automatically in dev and test modes.
 :topics: data,redis,nosql,dev-services,testing,dev-mode
 :extensions: io.quarkus:quarkus-redis-client

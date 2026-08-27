@@ -6,7 +6,6 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 [id="deploy-kubernetes"]
 = Kubernetes extension
 include::_attributes.adoc[]
-:categories: cloud, native
 :summary: This guide covers how to deploy a native application on Kubernetes.
 :topics: devops,kubernetes,cloud,deployment
 :extensions: io.quarkus:quarkus-kubernetes

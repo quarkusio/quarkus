@@ -5,7 +5,6 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Using Apache Kafka Streams
 include::_attributes.adoc[]
-:categories: messaging
 :summary: This guide demonstrates how your Quarkus application can utilize the Apache Kafka Streams API to implement stream processing applications based on Apache Kafka.
 :topics: messaging,kafka,kafka-streams
 :extensions: io.quarkus:quarkus-kafka-streams

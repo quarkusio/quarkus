@@ -6,7 +6,6 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 = Contribute to Quarkus documentation
 include::_attributes.adoc[]
 :diataxis-type: howto
-:categories: contributing
 :fn-diataxis: footnote:diataxis[Procida, D. Diátaxis documentation framework. https://diataxis.fr/]
 :topics: internals,documentation
 
@@ -54,20 +53,22 @@ For example, `telemetry-micrometer.adoc` is a reference, and `telemetry-micromet
 = Secure a Quarkus application with basic authentication <2>
 include::_attributes.adoc[] <3>
 :diataxis-type: howto <4>
-:categories: security,web <5>
-<6>
+<5>
 ----
 <1> Set the `id` value to be the same as the file name but without the extension.
 <2> For information about how to create a good title for each content type, see xref:doc-reference.adoc#titles-and-headings[Titles and headings] on the "Quarkus style and content guidelines" page.
 <3> The `_attributes.adoc` include is required to ensure that attributes get resolved and the table of contents is generated.
 <4> Specify the diataxis type: `concept`, `howto`, `reference`, or `tutorial`.
-<5> Set at least one category to ensure that the content is findable on the link:https://quarkus.io/guides/[Quarkus documentation home page]. For a list of Quarkus categories, see xref:doc-reference.adoc#document-attributes-and-variables[Document attributes and variables] on the "Quarkus style and content guidelines" page.
-<6> Insert a blank line after all document attributes and before the abstract.
+<5> Insert a blank line after all document attributes and before the abstract.
 +
 [IMPORTANT]
 ====
 Ensure there are no blank lines between the document id and title, the attribute include (`include::_attributes.adoc[]`) and the declaration of other document attributes(`:attribute:`).
 ====
+
+. Add the guide file to the appropriate category or subcategory in `docs/src/main/resources/categories.yaml`.
++
+For more information, see xref:doc-reference.adoc#categories[Categories] on the "Quarkus style and content guidelines" page.
 
 . Add an abstract that describes the purpose of the guide.
 +

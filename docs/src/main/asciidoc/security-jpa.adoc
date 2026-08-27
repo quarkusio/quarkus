@@ -7,7 +7,6 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 = Quarkus Security with Jakarta Persistence
 include::_attributes.adoc[]
 :diataxis-type: howto
-:categories: security
 :topics: security,identity-providers,sql,database,jpa,jdbc
 :extensions: io.quarkus:quarkus-security-jpa-reactive
 

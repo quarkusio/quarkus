@@ -5,7 +5,6 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Building a Native Executable
 include::_attributes.adoc[]
-:categories: getting-started, native
 :summary: Build native executables with GraalVM or Mandrel.
 :topics: native,graalvm,mandrel
 

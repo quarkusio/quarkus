@@ -7,7 +7,6 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 = Cross-Origin Resource Sharing (CORS)
 include::_attributes.adoc[]
 :diataxis-type: reference
-:categories: security,web
 :summary: Enable and configure CORS in Quarkus to specify allowed origins, methods, and headers, guiding browsers in handling cross-origin requests safely.
 :keywords: cors,http,configuration, security, headers
 :extensions: io.quarkus:quarkus-vertx-http

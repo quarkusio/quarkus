@@ -5,7 +5,6 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Reactive Messaging AMQP 1.0 Connector Reference Documentation
 include::_attributes.adoc[]
-:categories: messaging
 :extensions: io.quarkus:quarkus-messaging-amqp
 :topics: messaging,amqp
 

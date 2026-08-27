@@ -7,7 +7,6 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 = OpenID Connect authorization code flow mechanism for protecting web applications
 include::_attributes.adoc[]
 :diataxis-type: concept
-:categories: security,web
 :toclevels: 4
 :topics: security,oidc,keycloak,authentication
 :extensions: io.quarkus:quarkus-oidc

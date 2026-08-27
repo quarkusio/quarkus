@@ -5,7 +5,6 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Container Images
 include::_attributes.adoc[]
-:categories: cloud
 :summary: Learn how to build and push container images with Jib, OpenShift, Docker, or Podman as part of the Quarkus build.
 :topics: devops,cloud
 :extensions: io.quarkus:quarkus-container-image-openshift,io.quarkus:quarkus-container-image-jib,io.quarkus:quarkus-container-image-docker,io.quarkus:quarkus-container-image-podman,io.quarkus:quarkus-container-image-buildpack

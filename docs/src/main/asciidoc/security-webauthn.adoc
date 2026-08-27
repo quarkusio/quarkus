@@ -7,7 +7,6 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 = Using Security with WebAuthn
 include::_attributes.adoc[]
 :extension-status: experimental
-:categories: security
 :topics: security,webauthn,authorization
 :extensions: io.quarkus:quarkus-security-webauthn
 :webauthn-api: https://javadoc.io/doc/io.quarkus/quarkus-security-webauthn/{quarkus-version}

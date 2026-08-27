@@ -10,6 +10,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.devtools.testing.codestarts.QuarkusCodestartTest;
 import io.quarkus.maven.dependency.ArtifactKey;
 
+@DisabledOnOs(architectures = "ppc64le", disabledReason = "Containers here don't support the Power architecture")
 public class ReactiveMessagingCodestartIT {
 
     @RegisterExtension

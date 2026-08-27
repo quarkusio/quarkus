@@ -3,7 +3,6 @@ package io.quarkus.bootstrap.app;
 import java.io.Serializable;
 import java.nio.file.Path;
 
-import io.quarkus.bootstrap.model.PathsCollection;
 import io.quarkus.paths.PathCollection;
 import io.quarkus.paths.PathList;
 
@@ -49,15 +48,6 @@ public class AdditionalDependency implements Serializable {
         this.paths = paths;
         this.hotReloadable = hotReloadable;
         this.forceApplicationArchive = forceApplicationArchive;
-    }
-
-    /**
-     * @deprecated in favor of {@link #getResolvedPaths()}
-     * @return archive paths
-     */
-    @Deprecated
-    public PathsCollection getArchivePath() {
-        return PathsCollection.from(paths);
     }
 
     public PathCollection getResolvedPaths() {

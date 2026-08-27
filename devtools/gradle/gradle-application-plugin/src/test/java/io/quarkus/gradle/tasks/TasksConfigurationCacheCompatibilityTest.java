@@ -73,12 +73,12 @@ public class TasksConfigurationCacheCompatibilityTest {
         FileUtils.copyDirectory(new File(url.toURI()), testProjectDir.toFile());
         FileUtils.copyFile(new File("../gradle.properties"), testProjectDir.resolve("gradle.properties").toFile());
 
-        buildResult(":help", "--configuration-cache");
+        buildResult(":help", "--configuration-cache", "-Dorg.gradle.unsafe.isolated-projects=true");
 
-        BuildResult firstBuild = buildResult(taskName, "-Dorg.gradle.unsafe.isolated-projects=true");
+        BuildResult firstBuild = buildResult(taskName, "--configuration-cache", "-Dorg.gradle.unsafe.isolated-projects=true");
         assertTrue(firstBuild.getOutput().contains("Configuration cache entry stored"));
 
-        BuildResult secondBuild = buildResult(taskName, "-Dorg.gradle.unsafe.isolated-projects=true");
+        BuildResult secondBuild = buildResult(taskName, "--configuration-cache", "-Dorg.gradle.unsafe.isolated-projects=true");
         assertTrue(secondBuild.getOutput().contains("Reusing configuration cache."));
     }
 
@@ -151,6 +151,10 @@ public class TasksConfigurationCacheCompatibilityTest {
 
     private BuildResult buildResult(String task, String configurationCacheCommand) {
         return buildResult(task, List.of(configurationCacheCommand));
+    }
+
+    private BuildResult buildResult(String task, String firstExtraArg, String secondExtraArg) {
+        return buildResult(task, List.of(firstExtraArg, secondExtraArg));
     }
 
     private BuildResult buildResult(String task, List<String> extraArgs) {

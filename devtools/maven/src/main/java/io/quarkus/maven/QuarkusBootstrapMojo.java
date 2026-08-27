@@ -22,9 +22,7 @@ import org.apache.maven.plugin.logging.Log;
 import org.apache.maven.plugins.annotations.Component;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.project.MavenProject;
-import org.eclipse.aether.RepositorySystem;
 import org.eclipse.aether.RepositorySystemSession;
-import org.eclipse.aether.impl.RemoteRepositoryManager;
 import org.eclipse.aether.repository.RemoteRepository;
 
 import io.quarkus.bootstrap.app.CuratedApplication;
@@ -254,16 +252,6 @@ public abstract class QuarkusBootstrapMojo extends AbstractMojo {
      */
     protected List<Dependency> forcedDependencies(LaunchMode mode) {
         return List.of();
-    }
-
-    @Deprecated(forRemoval = true)
-    protected RepositorySystem repositorySystem() {
-        return bootstrapProvider.repositorySystem();
-    }
-
-    @Deprecated(forRemoval = true)
-    protected RemoteRepositoryManager remoteRepositoryManager() {
-        return bootstrapProvider.remoteRepositoryManager();
     }
 
     protected RepositorySystemSession repositorySystemSession() {

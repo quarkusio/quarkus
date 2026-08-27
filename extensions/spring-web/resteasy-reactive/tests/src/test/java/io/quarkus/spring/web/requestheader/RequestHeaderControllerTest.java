@@ -1,6 +1,7 @@
 package io.quarkus.spring.web.requestheader;
 
 import static io.restassured.RestAssured.given;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 
 import org.junit.jupiter.api.Test;
@@ -50,4 +51,38 @@ public class RequestHeaderControllerTest {
                 .statusCode(200)
                 .body(is("Header: fallback"));
     }
+
+    @Test
+    public void testGetAllHeaders() {
+        given()
+                .header("X-Test-One", "value1")
+                .header("X-Test-Two", "value2")
+                .when().get("/api/headers/all")
+                .then()
+                .statusCode(200)
+                .body(containsString("X-Test-One=value1"))
+                .body(containsString("X-Test-Two=value2"));
+    }
+
+    @Test
+    public void testNamedByNameHeader() {
+        given()
+                .header("X-Other-Header", "other-value")
+                .when().get("/api/headers/namedByName")
+                .then()
+                .statusCode(200)
+                .body(is("Other-Header: other-value"));
+    }
+
+    @Test
+    public void testMixedParams() {
+        given()
+                .header("X-Token", "secret123")
+                .queryParam("filter", "active")
+                .when().get("/api/headers/mixed/42")
+                .then()
+                .statusCode(200)
+                .body(is("id=42 filter=active token=secret123 hasHeaders=true"));
+    }
+
 }

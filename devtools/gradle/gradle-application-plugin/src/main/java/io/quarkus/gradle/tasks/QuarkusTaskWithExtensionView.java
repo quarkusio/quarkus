@@ -5,9 +5,11 @@ import java.util.List;
 
 import javax.inject.Inject;
 
+import org.gradle.api.file.Directory;
 import org.gradle.api.file.DirectoryProperty;
 import org.gradle.api.file.ProjectLayout;
 import org.gradle.api.java.archives.Attributes;
+import org.gradle.api.provider.ListProperty;
 import org.gradle.api.provider.MapProperty;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.Internal;
@@ -62,6 +64,19 @@ public abstract class QuarkusTaskWithExtensionView extends QuarkusTask {
     public abstract DirectoryProperty getGradleUserHomeDirectory();
 
     /**
+     * The root directories of the builds included in this one, in declaration order, used to resolve
+     * the tokens of the artifacts an included build contributed to the model. An included build lies
+     * outside {@link #getRootDirectory()}, so it is relocated against a root of its own.
+     * <p>
+     * The order has to be the one the model was written with, since the roots are numbered by
+     * position: both ends derive it from {@code Gradle.getIncludedBuilds()}.
+     *
+     * @see #getRootDirectory()
+     */
+    @Internal
+    public abstract ListProperty<Directory> getIncludedBuildDirectories();
+
+    /**
      * The roots to resolve the serialized application model's relocation tokens against: those every
      * reader derives from its environment, plus the directories this build knows.
      */
@@ -78,6 +93,11 @@ public abstract class QuarkusTaskWithExtensionView extends QuarkusTask {
         if (getRootDirectory().isPresent()) {
             roots.add(new ApplicationModelRelocation.Root(ApplicationModelRelocation.ROOT_DIR_ROOT,
                     getRootDirectory().get().getAsFile().toPath()));
+        }
+        final List<Directory> includedBuilds = getIncludedBuildDirectories().get();
+        for (int i = 0; i < includedBuilds.size(); i++) {
+            roots.add(new ApplicationModelRelocation.Root(
+                    ApplicationModelRelocation.includedBuildRoot(i), includedBuilds.get(i).getAsFile().toPath()));
         }
         return ApplicationModelRelocation.withEnvironmentRoots(roots);
     }

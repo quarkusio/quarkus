@@ -664,6 +664,10 @@ public class QuarkusPlugin implements Plugin<Project> {
      * The root directories of the builds included in this one, in declaration order. They lie outside
      * the root directory of this build, so the serialized application model expresses paths under them
      * relative to a root of their own.
+     * <p>
+     * The roots are numbered by position, so the task that writes a model and the tasks that read it
+     * back have to see the same builds in the same order. That is why they all go through this one
+     * helper rather than walking {@code Gradle.getIncludedBuilds()} themselves.
      */
     private static List<Directory> includedBuildDirectories(Project project) {
         final ObjectFactory objects = project.getObjects();
@@ -684,6 +688,7 @@ public class QuarkusPlugin implements Plugin<Project> {
         task.getApplicationModel().set(quarkusGenerateAppModelTask.flatMap(QuarkusApplicationModelTask::getApplicationModel));
         task.getRootDirectory().set(project.getRootDir());
         task.getGradleUserHomeDirectory().set(project.getGradle().getGradleUserHomeDir());
+        task.getIncludedBuildDirectories().set(project.provider(() -> includedBuildDirectories(project)));
         SourceSet mainSourceSet = getSourceSet(project, SourceSet.MAIN_SOURCE_SET_NAME);
         task.getAdditionalForcedProperties().set(serviceProvider);
         task.usesService(serviceProvider);
@@ -718,6 +723,8 @@ public class QuarkusPlugin implements Plugin<Project> {
                 .set(applicationModelTaskTaskProvider.flatMap(QuarkusApplicationModelTask::getApplicationModel));
         task.getRootDirectory().set(task.getProject().getRootDir());
         task.getGradleUserHomeDirectory().set(task.getProject().getGradle().getGradleUserHomeDir());
+        task.getIncludedBuildDirectories()
+                .set(task.getProject().provider(() -> includedBuildDirectories(task.getProject())));
         task.getGeneratedOutputDirectory().set(generatedSources.getJava().getClassesDirectory());
         task.getCachingRelevantInput()
                 .set(quarkusExt.cachingRelevantProperties(quarkusExt.getCachingRelevantProperties().get()));

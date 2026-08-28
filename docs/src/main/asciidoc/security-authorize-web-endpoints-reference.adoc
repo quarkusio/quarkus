@@ -119,8 +119,7 @@ quarkus.http.auth.permission.permit1.policy=permit
 [[custom-http-security-policy]]
 === Custom HttpSecurityPolicy
 
-Sometimes it might be useful to register your own named policy. You can get it done by creating application scoped CDI
-bean that implements the `io.quarkus.vertx.http.runtime.security.HttpSecurityPolicy` interface like in the example below:
+You can register your own named policy by creating an application-scoped CDI bean that implements the `io.quarkus.vertx.http.runtime.security.HttpSecurityPolicy` interface, as shown in the following example:
 
 [source,java]
 ----
@@ -192,7 +191,7 @@ As usual, the method-level annotation has priority over class-level annotation.
 
 [TIP]
 ====
-You can also create global `HttpSecurityPolicy` invoked on every request.
+You can also create a global `HttpSecurityPolicy` invoked on every request.
 Just do not implement the `io.quarkus.vertx.http.runtime.security.HttpSecurityPolicy.name` method and leave the policy nameless.
 ====
 
@@ -200,10 +199,12 @@ Just do not implement the `io.quarkus.vertx.http.runtime.security.HttpSecurityPo
 === Inject `@RequestScoped` beans into `HttpSecurityPolicy`
 
 `@RequestScoped` beans can only be injected when the xref:cdi-reference.adoc#request-context-lifecycle[CDI request context] is active.
-The context can be activated by users, for example with the `@ActivateRequestContext`, however authorization happens before Quarkus prepares some `@RequestScoped` beans.
+Users can activate the context, for example, with the `@ActivateRequestContext` annotation.
+However, authorization happens before Quarkus prepares some `@RequestScoped` beans.
 Let Quarkus activate and prepare CDI request context for you.
 For example, consider a situation where you want to inject a bean from the Jakarta REST context, such as the `jakarta.ws.rs.core.UriInfo` bean.
-In this case, you must apply the `HttpSecurityPolicy` to Jakarta REST endpoints. This can be achieved in one of the following ways:
+In this case, you must apply the `HttpSecurityPolicy` to Jakarta REST endpoints.
+You can use one of the following methods:
 
 * Use the `@AuthorizationPolicy` security annotation.
 * Set the `quarkus.http.auth.permission.custom1.applies-to=jaxrs` configuration property.
@@ -449,8 +450,9 @@ quarkus.http.auth.policy.admin-policy1.roles.admin=Admin1 <1>
 quarkus.http.auth.permission.roles1.paths=/* <2>
 quarkus.http.auth.permission.roles1.policy=admin-policy1
 ----
-<1> Map the `admin` role to `Admin1` role. The `SecurityIdentity` will have both `admin` and `Admin1` roles.
-<2> The `/*` path is secured, only authenticated HTTP requests are granted access.
+<1> Map the `admin` role to the `Admin1` role.
+The `SecurityIdentity` will have both `admin` and `Admin1` roles.
+<2> The `/*` path is secured, and only authenticated HTTP requests are granted access.
 
 If all that you need is to map the `SecurityIdentity` roles to the deployment-specific roles regardless of a path, you can also do this:
 
@@ -458,8 +460,10 @@ If all that you need is to map the `SecurityIdentity` roles to the deployment-sp
 ----
 quarkus.http.auth.roles-mapping.admin=Admin1 <1> <2>
 ----
-<1> Map the `admin` role to `Admin1` role. The `SecurityIdentity` will have both `admin` and `Admin1` roles.
-<2> The `/*` path is not secured. You must secure your endpoints with standard security annotations or define HTTP permissions in addition to this configuration property.
+<1> Map the `admin` role to the `Admin1` role.
+The `SecurityIdentity` will have both `admin` and `Admin1` roles.
+<2> The `/*` path is not secured.
+You must secure your endpoints with standard security annotations or define HTTP permissions in addition to this configuration property.
 
 If you prefer a programmatic configuration, the same mapping can be added with the `io.quarkus.vertx.http.security.HttpSecurity` CDI event:
 
@@ -518,7 +522,8 @@ quarkus.http.auth.permission.roles3.paths=/secured/admin/*
 quarkus.http.auth.permission.roles3.policy=role-policy3
 ----
 <1> Role `root` will be able to access `/secured/user/\*` and `/secured/admin/*` paths.
-<2> The `/secured/*` path can only be accessed by authenticated users. This way, you have secured the `/secured/all` path and so on.
+<2> The `/secured/*` path can only be accessed by authenticated users.
+This way, you have secured the `/secured/all` path and so on.
 <3> Shared permissions are always applied before unshared ones, therefore a `SecurityIdentity` with the `root` role will have the `user` role as well.
 
 [[path-specific-authz-programmatic-set-up]]
@@ -992,10 +997,12 @@ For more information about the path-matching algorithm, see <<matching-multiple-
 <4> You can specify a custom implementation of the `java.security.Permission` class.
 Your custom class must define exactly one constructor that accepts the permission name and optionally some actions, for example, `String` array.
 In this scenario, the permission `list` is added to the `SecurityIdentity` instance as `new CustomPermission("list")`.
-<5> To include a literal colon in the permission name, use `\\:` in the annotation value. In `application.properties`, use `\\\\:` because SmallRye Config consumes one level of backslash escaping. Here, the permission name is `resource:name` and the action is `action`.
+<5> To include a literal colon in the permission name, use `\\:` in the annotation value.
+In `application.properties`, use `\\\\:` because SmallRye Config consumes one level of backslash escaping.
+Here, the permission name is `resource:name` and the action is `action`.
 
 You can also create a custom `java.security.Permission` class with additional constructor parameters.
-These additional parameters names get matched with arguments names of the method annotated with the `@PermissionsAllowed` annotation.
+The names of these additional parameters are matched with the names of the arguments of the method annotated with the `@PermissionsAllowed` annotation.
 Later, Quarkus instantiates your custom permission with actual arguments, with which the method annotated with the `@PermissionsAllowed` has been invoked.
 
 .Example of a custom `java.security.Permission` class that accepts additional arguments
@@ -1148,7 +1155,8 @@ public class MediaLibraryPermission extends LibraryPermission {
 
 }
 ----
-<1> When building a native executable, the permission class must be registered for reflection unless it is also used in at least one `io.quarkus.security.PermissionsAllowed#name` parameter. More details about the `@RegisterForReflection` annotation can be found on the xref:writing-native-applications-tips.adoc#registerForReflection[native application tips] page.
+<1> When building a native executable, the permission class must be registered for reflection unless it is also used in at least one `io.quarkus.security.PermissionsAllowed#permission` attribute.
+More details about the `@RegisterForReflection` annotation can be found on the xref:writing-native-applications-tips.adoc#registerForReflection[native application tips] page.
 <2> Pass the `MediaLibrary` instance to the `LibraryPermission` constructor.
 
 [source,properties]
@@ -1172,8 +1180,6 @@ In the following example, xref:security-customization.adoc#security-identity-cus
 
 [source,java]
 ----
-import java.security.Permission;
-
 import jakarta.enterprise.context.ApplicationScoped;
 
 import io.quarkus.security.identity.AuthenticationRequestContext;
@@ -1199,13 +1205,13 @@ public class PermissionsIdentityAugmentor implements SecurityIdentityAugmentor {
 
     SecurityIdentity build(SecurityIdentity identity) {
         return QuarkusSecurityIdentity.builder(identity)
-                .addPermission(new MediaLibraryPermission("media-library", new String[] { "read", "write", "list"}); <1>
+                .addPermission(new MediaLibraryPermission("media-library", new String[] { "read", "write", "list" })) <1>
                 .build();
     }
 
 }
 ----
-<1> Add a `media-library` permission that can perform `read`, `write`, and `list` actions.
+<1> Add a `media-library` permission with `read`, `write`, and `list` actions.
 Because `MediaLibrary` is the `TvLibrary` class parent, a user with the `admin` role is also permitted to modify `TvLibrary`.
 
 CAUTION: Annotation-based permissions do not work with custom xref:security-customization.adoc#jaxrs-security-context[Jakarta REST SecurityContexts] because there are no permissions in `jakarta.ws.rs.core.SecurityContext`.
@@ -1282,7 +1288,8 @@ public class ProjectPermissionChecker {
 }
 ----
 <1> A CDI bean with the permission checker must be either a normal scoped bean or a `@Singleton` bean.
-<2> The permission checker method must return either `boolean` or `Uni<Boolean>`. Private checker methods are not supported.
+<2> The permission checker method must return either `boolean` or `Uni<Boolean>`.
+Private checker methods are not supported.
 
 TIP: Permission checks run by default on event loops.
 Annotate a permission checker method with the `io.smallrye.common.annotation.Blocking` annotation if you want to run the check on a worker thread.

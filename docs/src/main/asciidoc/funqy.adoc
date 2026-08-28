@@ -19,6 +19,8 @@ to in other remoting abstractions.  A nice side effect though is that Funqy is a
 as small as possible.  This means that because Funqy sacrifices a little on flexibility, you'll
 get a framework that has little to no overhead.
 
+include::{includes}/extension-status.adoc[]
+
 == Funqy Basics
 
 The Funqy API is simple.  Annotate a method with `@Funq`.  This method may only have one optional input parameter

@@ -13,6 +13,8 @@ include::_attributes.adoc[]
 The guide walks through quickstart code to show you how you can deploy Funqy as a
 standalone service and invoke on Funqy functions using HTTP.
 
+include::{includes}/extension-status.adoc[]
+
 WARNING: The Funqy HTTP binding is not a replacement for REST over HTTP.  Because Funqy
 needs to be portable across a lot of different protocols and function providers its HTTP binding
 is very minimalistic and you will lose REST features like linking and the ability to leverage

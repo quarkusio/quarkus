@@ -43,6 +43,14 @@ import io.quarkus.hibernate.orm.runtime.RequestScopedStatelessSessionHolder;
 import io.quarkus.runtime.BlockingOperationControl;
 import io.quarkus.runtime.BlockingOperationNotAllowedException;
 
+/**
+ * A transaction-scoped {@link StatelessSession} proxy that resolves the real session on each method call.
+ * <p>
+ * Note: Unlike {@link TransactionScopedSession}, this class cannot extend a Hibernate-provided lazy
+ * delegator because Hibernate ORM does not yet provide a {@code StatelessSessionLazyDelegator}.
+ * This means the class must implement the full {@link StatelessSession} interface manually and will
+ * need updates whenever Hibernate ORM adds new methods. See issue #47796 for upstream tracking.
+ */
 public class TransactionScopedStatelessSession implements StatelessSession {
 
     protected static final String TRANSACTION_IS_NOT_ACTIVE = "Transaction is not active, consider adding @Transactional to your method to automatically activate one.";
@@ -72,22 +80,19 @@ public class TransactionScopedStatelessSession implements StatelessSession {
         this.requestScopedSessions = requestScopedSessions;
     }
 
-    SessionResult acquireSession() {
-        // TODO: this was copied from TransactionScopedSession, but does it need to be the same???
+    StatelessSession acquireSession() {
         if (isInTransaction()) {
             StatelessSession session = (StatelessSession) transactionSynchronizationRegistry.getResource(sessionKey);
             if (session != null) {
-                return new SessionResult(session, false, true);
+                return session;
             }
             StatelessSession newSession = jtaSessionOpener.openSession();
             // The session has automatically joined the JTA transaction when it was constructed.
             transactionSynchronizationRegistry.putResource(sessionKey, newSession);
-            return new SessionResult(newSession, false, true);
+            return newSession;
         } else if (requestScopedSessionEnabled) {
             if (Arc.container().requestContext().isActive()) {
-                RequestScopedStatelessSessionHolder requestScopedSessions = this.requestScopedSessions.get();
-                return new SessionResult(requestScopedSessions.getOrCreateSession(unitName, sessionFactory),
-                        false, false);
+                return requestScopedSessions.get().getOrCreateSession(unitName, sessionFactory);
             } else {
                 throw new ContextNotActiveException(
                         "Cannot use the StatelessSession because neither a transaction nor a CDI request context is active."
@@ -130,155 +135,119 @@ public class TransactionScopedStatelessSession implements StatelessSession {
     @Override
     public void refresh(Object entity) {
         checkBlocking();
-        try (SessionResult emr = acquireSession()) {
-            if (!emr.allowModification) {
-                throw new TransactionRequiredException(TRANSACTION_IS_NOT_ACTIVE);
-            }
-            emr.statelessSession.refresh(entity);
+        StatelessSession session = acquireSession();
+        if (!isInTransaction()) {
+            throw new TransactionRequiredException(TRANSACTION_IS_NOT_ACTIVE);
         }
+        session.refresh(entity);
     }
 
     @Deprecated
     @Override
     public Query createQuery(String qlString) {
         checkBlocking();
-        //TODO: this needs some thought for how it works outside a tx
-        try (SessionResult emr = acquireSession()) {
-            return emr.statelessSession.createQuery(qlString);
-        }
+        return acquireSession().createQuery(qlString);
     }
 
     @Override
     public <T> Query<T> createQuery(CriteriaQuery<T> criteriaQuery) {
         checkBlocking();
-        try (SessionResult emr = acquireSession()) {
-            return emr.statelessSession.createQuery(criteriaQuery);
-        }
+        return acquireSession().createQuery(criteriaQuery);
     }
 
     @Deprecated
     @Override
     public Query createQuery(CriteriaUpdate updateQuery) {
         checkBlocking();
-        try (SessionResult emr = acquireSession()) {
-            return emr.statelessSession.createQuery(updateQuery);
-        }
+        return acquireSession().createQuery(updateQuery);
     }
 
     @Deprecated
     @Override
     public Query createQuery(CriteriaDelete deleteQuery) {
         checkBlocking();
-        try (SessionResult emr = acquireSession()) {
-            return emr.statelessSession.createQuery(deleteQuery);
-        }
+        return acquireSession().createQuery(deleteQuery);
     }
 
     @Override
     public <T> Query<T> createQuery(String qlString, Class<T> resultClass) {
         checkBlocking();
-        try (SessionResult emr = acquireSession()) {
-            return emr.statelessSession.createQuery(qlString, resultClass);
-        }
+        return acquireSession().createQuery(qlString, resultClass);
     }
 
     @Override
     public <R> Query<R> createQuery(TypedQueryReference<R> typedQueryReference) {
         checkBlocking();
-        try (SessionResult emr = acquireSession()) {
-            return emr.statelessSession.createQuery(typedQueryReference);
-        }
+        return acquireSession().createQuery(typedQueryReference);
     }
 
     @Deprecated
     @Override
     public Query createNamedQuery(String name) {
         checkBlocking();
-        try (SessionResult emr = acquireSession()) {
-            return emr.statelessSession.createNamedQuery(name);
-        }
+        return acquireSession().createNamedQuery(name);
     }
 
     @Override
     public <T> Query<T> createNamedQuery(String name, Class<T> resultClass) {
         checkBlocking();
-        try (SessionResult emr = acquireSession()) {
-            return emr.statelessSession.createNamedQuery(name, resultClass);
-        }
+        return acquireSession().createNamedQuery(name, resultClass);
     }
 
     @Deprecated
     @Override
     public NativeQuery createNativeQuery(String sqlString) {
         checkBlocking();
-        try (SessionResult emr = acquireSession()) {
-            return emr.statelessSession.createNativeQuery(sqlString);
-        }
+        return acquireSession().createNativeQuery(sqlString);
     }
 
     @Deprecated
     @Override
     public NativeQuery createNativeQuery(String sqlString, Class resultClass) {
         checkBlocking();
-        try (SessionResult emr = acquireSession()) {
-            return emr.statelessSession.createNativeQuery(sqlString, resultClass);
-        }
+        return acquireSession().createNativeQuery(sqlString, resultClass);
     }
 
     @Deprecated
     @Override
     public NativeQuery createNativeQuery(String sqlString, String resultSetMapping) {
         checkBlocking();
-        try (SessionResult emr = acquireSession()) {
-            return emr.statelessSession.createNativeQuery(sqlString, resultSetMapping);
-        }
+        return acquireSession().createNativeQuery(sqlString, resultSetMapping);
     }
 
     @Override
     public ProcedureCall createNamedStoredProcedureQuery(String name) {
         checkBlocking();
-        try (SessionResult emr = acquireSession()) {
-            return emr.statelessSession.createNamedStoredProcedureQuery(name);
-        }
+        return acquireSession().createNamedStoredProcedureQuery(name);
     }
 
     @Override
     public ProcedureCall createStoredProcedureQuery(String procedureName) {
         checkBlocking();
-        try (SessionResult emr = acquireSession()) {
-            return emr.statelessSession.createStoredProcedureQuery(procedureName);
-        }
+        return acquireSession().createStoredProcedureQuery(procedureName);
     }
 
     @Override
     public ProcedureCall createStoredProcedureQuery(String procedureName,
             @SuppressWarnings("rawtypes") Class... resultClasses) {
         checkBlocking();
-        try (SessionResult emr = acquireSession()) {
-            return emr.statelessSession.createStoredProcedureQuery(procedureName, resultClasses);
-        }
+        return acquireSession().createStoredProcedureQuery(procedureName, resultClasses);
     }
 
     @Override
     public ProcedureCall createStoredProcedureQuery(String procedureName, String... resultSetMappings) {
         checkBlocking();
-        try (SessionResult emr = acquireSession()) {
-            return emr.statelessSession.createStoredProcedureQuery(procedureName, resultSetMappings);
-        }
+        return acquireSession().createStoredProcedureQuery(procedureName, resultSetMappings);
     }
 
     @Override
     public void joinTransaction() {
-        try (SessionResult emr = acquireSession()) {
-            emr.statelessSession.joinTransaction();
-        }
+        acquireSession().joinTransaction();
     }
 
     @Override
     public boolean isJoinedToTransaction() {
-        try (SessionResult emr = acquireSession()) {
-            return emr.statelessSession.isJoinedToTransaction();
-        }
+        return acquireSession().isJoinedToTransaction();
     }
 
     @Override
@@ -289,25 +258,19 @@ public class TransactionScopedStatelessSession implements StatelessSession {
     @Override
     public Object insert(Object o) {
         checkBlocking();
-        try (SessionResult emr = acquireSession()) {
-            return emr.statelessSession.insert(o);
-        }
+        return acquireSession().insert(o);
     }
 
     @Override
     public Object insert(String s, Object o) {
         checkBlocking();
-        try (SessionResult emr = acquireSession()) {
-            return emr.statelessSession.insert(s, o);
-        }
+        return acquireSession().insert(s, o);
     }
 
     @Override
     public void insertMultiple(List<?> entities) {
         checkBlocking();
-        try (SessionResult emr = acquireSession()) {
-            emr.statelessSession.insertMultiple(entities);
-        }
+        acquireSession().insertMultiple(entities);
     }
 
     @Override
@@ -323,599 +286,439 @@ public class TransactionScopedStatelessSession implements StatelessSession {
     @Override
     public HibernateCriteriaBuilder getCriteriaBuilder() {
         checkBlocking();
-        try (SessionResult emr = acquireSession()) {
-            return emr.statelessSession.getCriteriaBuilder();
-        }
+        return acquireSession().getCriteriaBuilder();
     }
 
     @Deprecated
     @Override
     public void update(Object object) {
         checkBlocking();
-        try (SessionResult emr = acquireSession()) {
-            emr.statelessSession.update(object);
-        }
+        acquireSession().update(object);
     }
 
     @Deprecated
     @Override
     public void update(String entityName, Object object) {
         checkBlocking();
-        try (SessionResult emr = acquireSession()) {
-            emr.statelessSession.update(entityName, object);
-        }
+        acquireSession().update(entityName, object);
     }
 
     @Override
     public void updateMultiple(List<?> entities) {
         checkBlocking();
-        try (SessionResult emr = acquireSession()) {
-            emr.statelessSession.updateMultiple(entities);
-        }
+        acquireSession().updateMultiple(entities);
     }
 
     @Deprecated
     @Override
     public void delete(Object object) {
         checkBlocking();
-        try (SessionResult emr = acquireSession()) {
-            emr.statelessSession.delete(object);
-        }
+        acquireSession().delete(object);
     }
 
     @Deprecated
     @Override
     public void delete(String entityName, Object object) {
         checkBlocking();
-        try (SessionResult emr = acquireSession()) {
-            emr.statelessSession.delete(entityName, object);
-        }
+        acquireSession().delete(entityName, object);
     }
 
     @Override
     public void deleteMultiple(List<?> entities) {
         checkBlocking();
-        try (SessionResult emr = acquireSession()) {
-            emr.statelessSession.deleteMultiple(entities);
-        }
+        acquireSession().deleteMultiple(entities);
     }
 
     @Deprecated
     @Override
     public void refresh(String entityName, Object object) {
         checkBlocking();
-        try (SessionResult emr = acquireSession()) {
-            emr.statelessSession.refresh(entityName, object);
-        }
+        acquireSession().refresh(entityName, object);
     }
 
     @Override
     public void refresh(Object object, LockMode lockMode) {
         checkBlocking();
-        try (SessionResult emr = acquireSession()) {
-            emr.statelessSession.refresh(object, lockMode);
-        }
+        acquireSession().refresh(object, lockMode);
     }
 
     @Override
     public void refresh(String s, Object o, LockMode lockMode) {
         checkBlocking();
-        try (SessionResult emr = acquireSession()) {
-            emr.statelessSession.refresh(s, o, lockMode);
-        }
+        acquireSession().refresh(s, o, lockMode);
     }
 
     @Override
     public void fetch(Object o) {
         checkBlocking();
-        try (SessionResult emr = acquireSession()) {
-            emr.statelessSession.fetch(o);
-        }
+        acquireSession().fetch(o);
     }
 
     @Override
     public Object getIdentifier(Object entity) {
         checkBlocking();
-        try (SessionResult emr = acquireSession()) {
-            return emr.statelessSession.getIdentifier(entity);
-        }
+        return acquireSession().getIdentifier(entity);
     }
 
     @Override
     public <T> T get(Class<T> entityType, Object id) {
         checkBlocking();
-        try (SessionResult emr = acquireSession()) {
-            return emr.statelessSession.get(entityType, id);
-        }
+        return acquireSession().get(entityType, id);
     }
 
     @Override
     public <T> T get(Class<T> entityType, Object id, LockMode lockMode) {
         checkBlocking();
-        try (SessionResult emr = acquireSession()) {
-            return emr.statelessSession.get(entityType, id, lockMode);
-        }
+        return acquireSession().get(entityType, id, lockMode);
     }
 
     @Override
     public Object get(String entityName, Object id) {
         checkBlocking();
-        try (SessionResult emr = acquireSession()) {
-            return emr.statelessSession.get(entityName, id);
-        }
+        return acquireSession().get(entityName, id);
     }
 
     @Override
     public Object get(String entityName, Object id, LockMode lockMode) {
         checkBlocking();
-        try (SessionResult emr = acquireSession()) {
-            return emr.statelessSession.get(entityName, id, lockMode);
-        }
+        return acquireSession().get(entityName, id, lockMode);
     }
 
     @Override
     public <T> T get(EntityGraph<T> graph, Object id) {
         checkBlocking();
-        try (SessionResult emr = acquireSession()) {
-            return emr.statelessSession.get(graph, id);
-        }
+        return acquireSession().get(graph, id);
     }
 
     @Override
     public <T> T get(EntityGraph<T> graph, Object id, LockMode lockMode) {
         checkBlocking();
-        try (SessionResult emr = acquireSession()) {
-            return emr.statelessSession.get(graph, id, lockMode);
-        }
+        return acquireSession().get(graph, id, lockMode);
+    }
+
+    @Override
+    public <T> T get(EntityGraph<T> graph, GraphSemantic graphSemantic, Object id) {
+        checkBlocking();
+        return acquireSession().get(graph, graphSemantic, id);
+    }
+
+    @Override
+    public <T> T get(EntityGraph<T> graph, GraphSemantic graphSemantic, Object id, LockMode lockMode) {
+        checkBlocking();
+        return acquireSession().get(graph, graphSemantic, id, lockMode);
     }
 
     @Override
     public <T> List<T> getMultiple(Class<T> entityClass, List<?> ids) {
         checkBlocking();
-        try (SessionResult emr = acquireSession()) {
-            return emr.statelessSession.getMultiple(entityClass, ids);
-        }
+        return acquireSession().getMultiple(entityClass, ids);
     }
 
     @Override
     public <T> List<T> getMultiple(Class<T> entityClass, List<?> ids, LockMode lockMode) {
         checkBlocking();
-        try (SessionResult emr = acquireSession()) {
-            return emr.statelessSession.getMultiple(entityClass, ids, lockMode);
-        }
+        return acquireSession().getMultiple(entityClass, ids, lockMode);
     }
 
     @Override
     public <T> List<T> getMultiple(EntityGraph<T> entityGraph, List<?> ids) {
         checkBlocking();
-        try (SessionResult emr = acquireSession()) {
-            return emr.statelessSession.getMultiple(entityGraph, ids);
-        }
+        return acquireSession().getMultiple(entityGraph, ids);
     }
 
     @Override
     public <T> List<T> getMultiple(EntityGraph<T> entityGraph, GraphSemantic graphSemantic, List<?> ids) {
         checkBlocking();
-        try (SessionResult emr = acquireSession()) {
-            return emr.statelessSession.getMultiple(entityGraph, graphSemantic, ids);
-        }
+        return acquireSession().getMultiple(entityGraph, graphSemantic, ids);
     }
 
     @Override
     public Filter enableFilter(String filterName) {
         checkBlocking();
-        try (SessionResult emr = acquireSession()) {
-            return emr.statelessSession.enableFilter(filterName);
-        }
+        return acquireSession().enableFilter(filterName);
     }
 
     @Override
     public Filter getEnabledFilter(String filterName) {
         checkBlocking();
-        try (SessionResult emr = acquireSession()) {
-            return emr.statelessSession.getEnabledFilter(filterName);
-        }
+        return acquireSession().getEnabledFilter(filterName);
     }
 
     @Override
     public void disableFilter(String filterName) {
         checkBlocking();
-        try (SessionResult emr = acquireSession()) {
-            emr.statelessSession.disableFilter(filterName);
-        }
+        acquireSession().disableFilter(filterName);
     }
 
     @Override
     public String getTenantIdentifier() {
-        try (SessionResult emr = acquireSession()) {
-            return emr.statelessSession.getTenantIdentifier();
-        }
+        return acquireSession().getTenantIdentifier();
     }
 
     @Override
     public Object getTenantIdentifierValue() {
-        try (SessionResult emr = acquireSession()) {
-            return emr.statelessSession.getTenantIdentifierValue();
-        }
+        return acquireSession().getTenantIdentifierValue();
     }
 
     @Override
     public boolean isConnected() {
         checkBlocking();
-        try (SessionResult emr = acquireSession()) {
-            return emr.statelessSession.isConnected();
-        }
+        return acquireSession().isConnected();
     }
 
     @Override
     public Transaction beginTransaction() {
         checkBlocking();
-        try (SessionResult emr = acquireSession()) {
-            return emr.statelessSession.beginTransaction();
-        }
+        return acquireSession().beginTransaction();
     }
 
     @Deprecated
     @Override
     public Query getNamedQuery(String queryName) {
         checkBlocking();
-        try (SessionResult emr = acquireSession()) {
-            return emr.statelessSession.getNamedQuery(queryName);
-        }
+        return acquireSession().getNamedQuery(queryName);
     }
 
     @Override
     public ProcedureCall getNamedProcedureCall(String name) {
         checkBlocking();
-        try (SessionResult emr = acquireSession()) {
-            return emr.statelessSession.getNamedProcedureCall(name);
-        }
+        return acquireSession().getNamedProcedureCall(name);
     }
 
     @Override
     public ProcedureCall createStoredProcedureCall(String procedureName) {
         checkBlocking();
-        try (SessionResult emr = acquireSession()) {
-            return emr.statelessSession.createStoredProcedureCall(procedureName);
-        }
+        return acquireSession().createStoredProcedureCall(procedureName);
     }
 
     @Override
     public ProcedureCall createStoredProcedureCall(String procedureName, Class... resultClasses) {
         checkBlocking();
-        try (SessionResult emr = acquireSession()) {
-            return emr.statelessSession.createStoredProcedureCall(procedureName, resultClasses);
-        }
+        return acquireSession().createStoredProcedureCall(procedureName, resultClasses);
     }
 
     @Override
     public ProcedureCall createStoredProcedureCall(String procedureName, String... resultSetMappings) {
         checkBlocking();
-        try (SessionResult emr = acquireSession()) {
-            return emr.statelessSession.createStoredProcedureCall(procedureName, resultSetMappings);
-        }
+        return acquireSession().createStoredProcedureCall(procedureName, resultSetMappings);
     }
 
     @Override
     public Integer getJdbcBatchSize() {
-        try (SessionResult emr = acquireSession()) {
-            return emr.statelessSession.getJdbcBatchSize();
-        }
+        return acquireSession().getJdbcBatchSize();
     }
 
     @Override
     public void setJdbcBatchSize(Integer jdbcBatchSize) {
-        try (SessionResult emr = acquireSession()) {
-            emr.statelessSession.setJdbcBatchSize(jdbcBatchSize);
-        }
+        acquireSession().setJdbcBatchSize(jdbcBatchSize);
     }
 
     @Override
     public void doWork(Work work) throws HibernateException {
         checkBlocking();
-        try (SessionResult emr = acquireSession()) {
-            emr.statelessSession.doWork(work);
-        }
+        acquireSession().doWork(work);
     }
 
     @Override
     public <T> T doReturningWork(ReturningWork<T> work) throws HibernateException {
         checkBlocking();
-        try (SessionResult emr = acquireSession()) {
-            return emr.statelessSession.doReturningWork(work);
-        }
+        return acquireSession().doReturningWork(work);
     }
 
     @Deprecated
     @Override
     public NativeQuery getNamedNativeQuery(String name) {
         checkBlocking();
-        try (SessionResult emr = acquireSession()) {
-            return emr.statelessSession.getNamedNativeQuery(name);
-        }
+        return acquireSession().getNamedNativeQuery(name);
     }
 
     @Override
     public <R> NativeQuery<R> createNativeQuery(String sqlString, Class<R> resultClass, String tableAlias) {
         checkBlocking();
-        try (SessionResult emr = acquireSession()) {
-            return emr.statelessSession.createNativeQuery(sqlString, resultClass, tableAlias);
-        }
+        return acquireSession().createNativeQuery(sqlString, resultClass, tableAlias);
     }
 
     @Override
     public <R> NativeQuery<R> createNativeQuery(String sqlString, String resultSetMappingName, Class<R> resultClass) {
         checkBlocking();
-        try (SessionResult emr = acquireSession()) {
-            return emr.statelessSession.createNativeQuery(sqlString, resultSetMappingName, resultClass);
-        }
+        return acquireSession().createNativeQuery(sqlString, resultSetMappingName, resultClass);
     }
 
     @Override
     public SelectionQuery<?> createSelectionQuery(String hqlString) {
         checkBlocking();
-        try (SessionResult emr = acquireSession()) {
-            return emr.statelessSession.createSelectionQuery(hqlString);
-        }
+        return acquireSession().createSelectionQuery(hqlString);
     }
 
     @Override
     public <R> SelectionQuery<R> createSelectionQuery(String hqlString, Class<R> resultType) {
         checkBlocking();
-        try (SessionResult emr = acquireSession()) {
-            return emr.statelessSession.createSelectionQuery(hqlString, resultType);
-        }
+        return acquireSession().createSelectionQuery(hqlString, resultType);
     }
 
     @Override
     public <R> SelectionQuery<R> createSelectionQuery(CriteriaQuery<R> criteria) {
         checkBlocking();
-        try (SessionResult emr = acquireSession()) {
-            return emr.statelessSession.createSelectionQuery(criteria);
-        }
+        return acquireSession().createSelectionQuery(criteria);
     }
 
     @Override
     public <R> SelectionQuery<R> createSelectionQuery(String hqlString, EntityGraph<R> resultGraph) {
         checkBlocking();
-        try (SessionResult emr = acquireSession()) {
-            return emr.statelessSession.createSelectionQuery(hqlString, resultGraph);
-        }
+        return acquireSession().createSelectionQuery(hqlString, resultGraph);
     }
 
     @Override
     public MutationQuery createMutationQuery(String hqlString) {
         checkBlocking();
-        try (SessionResult emr = acquireSession()) {
-            return emr.statelessSession.createMutationQuery(hqlString);
-        }
+        return acquireSession().createMutationQuery(hqlString);
     }
 
     @Override
     public MutationQuery createMutationQuery(CriteriaUpdate updateQuery) {
         checkBlocking();
-        try (SessionResult emr = acquireSession()) {
-            return emr.statelessSession.createMutationQuery(updateQuery);
-        }
+        return acquireSession().createMutationQuery(updateQuery);
     }
 
     @Override
     public MutationQuery createMutationQuery(CriteriaDelete deleteQuery) {
         checkBlocking();
-        try (SessionResult emr = acquireSession()) {
-            return emr.statelessSession.createMutationQuery(deleteQuery);
-        }
+        return acquireSession().createMutationQuery(deleteQuery);
     }
 
     @Override
     public MutationQuery createMutationQuery(JpaCriteriaInsert insert) {
         checkBlocking();
-        try (SessionResult emr = acquireSession()) {
-            return emr.statelessSession.createMutationQuery(insert);
-        }
+        return acquireSession().createMutationQuery(insert);
     }
 
     @Override
     public MutationQuery createNativeMutationQuery(String sqlString) {
         checkBlocking();
-        try (SessionResult emr = acquireSession()) {
-            return emr.statelessSession.createNativeMutationQuery(sqlString);
-        }
+        return acquireSession().createNativeMutationQuery(sqlString);
     }
 
     @Override
     public SelectionQuery<?> createNamedSelectionQuery(String name) {
         checkBlocking();
-        try (SessionResult emr = acquireSession()) {
-            return emr.statelessSession.createNamedSelectionQuery(name);
-        }
+        return acquireSession().createNamedSelectionQuery(name);
     }
 
     @Override
     public <R> SelectionQuery<R> createNamedSelectionQuery(String name, Class<R> resultType) {
         checkBlocking();
-        try (SessionResult emr = acquireSession()) {
-            return emr.statelessSession.createNamedSelectionQuery(name, resultType);
-        }
+        return acquireSession().createNamedSelectionQuery(name, resultType);
     }
 
     @Override
     public MutationQuery createNamedMutationQuery(String name) {
         checkBlocking();
-        try (SessionResult emr = acquireSession()) {
-            return emr.statelessSession.createNamedMutationQuery(name);
-        }
+        return acquireSession().createNamedMutationQuery(name);
     }
 
     @Deprecated
     @Override
     public NativeQuery getNamedNativeQuery(String name, String resultSetMapping) {
         checkBlocking();
-        try (SessionResult emr = acquireSession()) {
-            return emr.statelessSession.getNamedNativeQuery(name, resultSetMapping);
-        }
-    }
-
-    static class SessionResult implements AutoCloseable {
-
-        final StatelessSession statelessSession;
-        final boolean closeOnEnd;
-        final boolean allowModification;
-
-        SessionResult(StatelessSession statelessSession, boolean closeOnEnd, boolean allowModification) {
-            this.statelessSession = statelessSession;
-            this.closeOnEnd = closeOnEnd;
-            this.allowModification = allowModification;
-        }
-
-        @Override
-        public void close() {
-            if (closeOnEnd) {
-                statelessSession.close();
-            }
-        }
+        return acquireSession().getNamedNativeQuery(name, resultSetMapping);
     }
 
     @Override
     public <T> RootGraph<T> createEntityGraph(Class<T> rootType) {
         checkBlocking();
-        try (SessionResult emr = acquireSession()) {
-            return emr.statelessSession.createEntityGraph(rootType);
-        }
+        return acquireSession().createEntityGraph(rootType);
     }
 
     @Override
     public RootGraph<?> createEntityGraph(String graphName) {
         checkBlocking();
-        try (SessionResult emr = acquireSession()) {
-            return emr.statelessSession.createEntityGraph(graphName);
-        }
+        return acquireSession().createEntityGraph(graphName);
     }
 
     @Override
     public <T> RootGraph<T> createEntityGraph(Class<T> rootType, String graphName) {
         checkBlocking();
-        try (SessionResult emr = acquireSession()) {
-            return emr.statelessSession.createEntityGraph(rootType, graphName);
-        }
+        return acquireSession().createEntityGraph(rootType, graphName);
     }
 
     @Override
     public RootGraph<?> getEntityGraph(String graphName) {
         checkBlocking();
-        try (SessionResult emr = acquireSession()) {
-            return emr.statelessSession.getEntityGraph(graphName);
-        }
+        return acquireSession().getEntityGraph(graphName);
     }
 
     @Override
     public <T> List<EntityGraph<? super T>> getEntityGraphs(Class<T> entityClass) {
         checkBlocking();
-        try (SessionResult emr = acquireSession()) {
-            return emr.statelessSession.getEntityGraphs(entityClass);
-        }
+        return acquireSession().getEntityGraphs(entityClass);
     }
 
     @Override
     public SharedSessionBuilder sessionWithOptions() {
         checkBlocking();
-        try (SessionResult emr = acquireSession()) {
-            return emr.statelessSession.sessionWithOptions();
-        }
+        return acquireSession().sessionWithOptions();
     }
 
     @Override
     public SharedStatelessSessionBuilder statelessWithOptions() {
         checkBlocking();
-        try (SessionResult emr = acquireSession()) {
-            return emr.statelessSession.statelessWithOptions();
-        }
+        return acquireSession().statelessWithOptions();
     }
 
     @Override
     public void inTransaction(Consumer<? super Transaction> action) {
         checkBlocking();
-        try (SessionResult emr = acquireSession()) {
-            if (!emr.allowModification) {
-                throw new TransactionRequiredException(TRANSACTION_IS_NOT_ACTIVE);
-            }
-            emr.statelessSession.inTransaction(action);
+        StatelessSession session = acquireSession();
+        if (!isInTransaction()) {
+            throw new TransactionRequiredException(TRANSACTION_IS_NOT_ACTIVE);
         }
+        session.inTransaction(action);
     }
 
     @Override
     public <R> R fromTransaction(Function<? super Transaction, R> action) {
         checkBlocking();
-        try (SessionResult emr = acquireSession()) {
-            if (!emr.allowModification) {
-                throw new TransactionRequiredException(TRANSACTION_IS_NOT_ACTIVE);
-            }
-            return emr.statelessSession.fromTransaction(action);
+        StatelessSession session = acquireSession();
+        if (!isInTransaction()) {
+            throw new TransactionRequiredException(TRANSACTION_IS_NOT_ACTIVE);
         }
+        return session.fromTransaction(action);
     }
 
     @Override
     public SessionFactory getFactory() {
         checkBlocking();
-        try (SessionResult emr = acquireSession()) {
-            return emr.statelessSession.getFactory();
-        }
+        return acquireSession().getFactory();
     }
 
     @Override
     public void upsert(Object entity) {
         checkBlocking();
-        try (SessionResult emr = acquireSession()) {
-            emr.statelessSession.upsert(entity);
-        }
+        acquireSession().upsert(entity);
     }
 
     @Override
     public void upsert(String entityName, Object entity) {
         checkBlocking();
-        try (SessionResult emr = acquireSession()) {
-            emr.statelessSession.upsert(entityName, entity);
-        }
+        acquireSession().upsert(entityName, entity);
     }
 
     @Override
     public void upsertMultiple(List<?> entities) {
         checkBlocking();
-        try (SessionResult emr = acquireSession()) {
-            emr.statelessSession.upsertMultiple(entities);
-        }
-    }
-
-    @Override
-    public <T> T get(EntityGraph<T> graph, GraphSemantic graphSemantic, Object id) {
-        checkBlocking();
-        try (SessionResult emr = acquireSession()) {
-            return emr.statelessSession.get(graph, graphSemantic, id);
-        }
-    }
-
-    @Override
-    public <T> T get(EntityGraph<T> graph, GraphSemantic graphSemantic, Object id, LockMode lockMode) {
-        checkBlocking();
-        try (SessionResult emr = acquireSession()) {
-            return emr.statelessSession.get(graph, graphSemantic, id, lockMode);
-        }
+        acquireSession().upsertMultiple(entities);
     }
 
     @Override
     public CacheMode getCacheMode() {
         checkBlocking();
-        try (SessionResult emr = acquireSession()) {
-            return emr.statelessSession.getCacheMode();
-        }
+        return acquireSession().getCacheMode();
     }
 
     @Override
     public void setCacheMode(CacheMode cacheMode) {
         checkBlocking();
-        try (SessionResult emr = acquireSession()) {
-            emr.statelessSession.setCacheMode(cacheMode);
-        }
+        acquireSession().setCacheMode(cacheMode);
     }
 
     @Override
@@ -924,8 +727,6 @@ public class TransactionScopedStatelessSession implements StatelessSession {
             return (T) this;
         }
         checkBlocking();
-        try (SessionResult emr = acquireSession()) {
-            return emr.statelessSession.unwrap(type);
-        }
+        return acquireSession().unwrap(type);
     }
 }

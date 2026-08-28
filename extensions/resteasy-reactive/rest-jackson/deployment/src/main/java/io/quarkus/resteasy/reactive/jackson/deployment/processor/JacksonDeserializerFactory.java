@@ -235,12 +235,66 @@ public class JacksonDeserializerFactory extends JacksonCodeGenerator {
         return "$quarkusjacksondeserializer";
     }
 
-    protected String[] getInterfacesNames(ClassInfo classInfo) {
-        return new String[0];
+    @Override
+    protected boolean discoverFieldTypes(ClassInfo classInfo, String beanClassName, Map<String, Type> typeBindings) {
+        Optional<MethodInfo> ctorOpt = findConstructor(classInfo);
+        if (ctorOpt.isEmpty()) {
+            return false;
+        }
+
+        if (!isClassFormatShapeArray(classInfo) && isAssignableTo(beanClassName, MAP_NAME)) {
+            return true;
+        }
+
+        MethodInfo ctor = ctorOpt.get();
+        PropertyNamingStrategy namingStrategy = getNamingStrategy(classInfo);
+
+        if (ctor.parametersCount() > 0) {
+            for (MethodParameterInfo paramInfo : ctor.parameters()) {
+                FieldSpecs fieldSpecs = fieldSpecsFromFieldParam(classInfo, paramInfo, namingStrategy);
+                registerTypeToBeGenerated(fieldSpecs.fieldType, fieldSpecs.fieldType.name().toString(), typeBindings);
+            }
+        }
+
+        Set<String> ignoredProperties = discoverIgnoredProperties(classInfo);
+
+        Set<String> processedFields = new HashSet<>();
+        Set<String> boundFieldNames = new HashSet<>();
+
+        for (FieldInfo fieldInfo : classFields(classInfo)) {
+            FieldSpecs fieldSpecs = fieldSpecsFromField(classInfo, ctor, fieldInfo, namingStrategy);
+            if (fieldSpecs != null) {
+                boundFieldNames.add(fieldSpecs.fieldName);
+            }
+            if (fieldSpecs != null && processedFields.add(fieldSpecs.jsonName)) {
+                if (!fieldSpecs.isIgnoredField() && !fieldSpecs.isBackReference()
+                        && !isFieldTypeIgnored(fieldSpecs) && !ignoredProperties.contains(fieldSpecs.jsonName)) {
+                    registerTypeToBeGenerated(fieldSpecs.fieldType, fieldSpecs.fieldType.name().toString(), typeBindings);
+                }
+            }
+        }
+
+        for (MethodInfo methodInfo : classMethods(classInfo)) {
+            FieldSpecs fieldSpecs = fieldSpecsFromMethod(methodInfo, namingStrategy);
+            if (fieldSpecs != null && !boundFieldNames.contains(fieldSpecs.fieldName)
+                    && processedFields.add(fieldSpecs.jsonName)) {
+                if (!fieldSpecs.isIgnoredField() && !fieldSpecs.isBackReference()
+                        && !isFieldTypeIgnored(fieldSpecs) && !ignoredProperties.contains(fieldSpecs.jsonName)) {
+                    registerTypeToBeGenerated(fieldSpecs.fieldType, fieldSpecs.fieldType.name().toString(), typeBindings);
+                }
+            }
+        }
+
+        return true;
     }
 
     @Override
-    protected boolean createSerializationMethod(ClassInfo classInfo, ClassCreator classCreator, String beanClassName) {
+    protected boolean createSerializationMethod(ClassInfo classInfo, ClassCreator classCreator, String beanClassName,
+            Map<String, Type> typeBindings) {
+        if (!discoverFieldTypes(classInfo, beanClassName, typeBindings)) {
+            return false;
+        }
+
         MethodCreator deserialize = classCreator
                 .getMethodCreator("deserialize", Object.class, JsonParser.class, DeserializationContext.class)
                 .setModifiers(ACC_PUBLIC)
@@ -906,7 +960,7 @@ public class JacksonDeserializerFactory extends JacksonCodeGenerator {
             return null;
         }
 
-        FieldKind fieldKind = registerTypeToBeGenerated(fieldType, fieldTypeName);
+        FieldKind fieldKind = classifyFieldType(fieldType, fieldTypeName);
         ResultHandle typeHandle = switch (fieldKind) {
             case TYPE_VARIABLE -> readTypeVariable(classCreator, bytecode, fieldType.asTypeVariable(), typeParametersIndex);
             case LIST, SET, WRAPPER, MAP -> {

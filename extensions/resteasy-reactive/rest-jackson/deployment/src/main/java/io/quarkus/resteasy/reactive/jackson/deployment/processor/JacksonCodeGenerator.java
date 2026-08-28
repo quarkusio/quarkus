@@ -9,6 +9,7 @@ import java.util.Collection;
 import java.util.Deque;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -119,8 +120,14 @@ public abstract class JacksonCodeGenerator {
     protected final BuildProducer<GeneratedClassBuildItem> generatedClassBuildItemBuildProducer;
     protected final IndexView jandexIndex;
 
-    protected final Set<String> generatedClassNames = new HashSet<>();
-    protected final Deque<ClassInfo> toBeGenerated = new ArrayDeque<>();
+    private final Set<String> generatedClassNames = new HashSet<>();
+    private final Deque<TypeEntry> toBeGenerated = new ArrayDeque<>();
+
+    record TypeEntry(ClassInfo classInfo, Map<String, Type> typeBindings) {
+        TypeEntry(ClassInfo classInfo) {
+            this(classInfo, Map.of());
+        }
+    }
 
     protected JacksonCodeGenerator(BuildProducer<GeneratedClassBuildItem> generatedClassBuildItemBuildProducer,
             IndexView jandexIndex) {
@@ -130,17 +137,20 @@ public abstract class JacksonCodeGenerator {
 
     protected abstract String getSuperClassName();
 
-    protected String[] getInterfacesNames(ClassInfo classInfo) {
-        return EMPTY_STRING_ARRAY;
-    }
-
     protected abstract String getClassSuffix();
 
     public Collection<String> create(Collection<ClassInfo> classInfos) {
+        return createFromTypes(classInfos.stream()
+                .map(ci -> org.jboss.jandex.Type.create(ci.name(), Type.Kind.CLASS))
+                .toList());
+    }
+
+    public Collection<String> createFromTypes(Collection<Type> types) {
         Set<String> createdClasses = new HashSet<>();
-        for (ClassInfo classInfo : classInfos) {
-            if (shouldGenerateCodeFor(classInfo)) {
-                toBeGenerated.add(classInfo);
+        for (Type type : types) {
+            ClassInfo classInfo = jandexIndex.getClassByName(type.name());
+            if (classInfo != null && shouldGenerateCodeFor(classInfo)) {
+                toBeGenerated.add(new TypeEntry(classInfo, computeBindings(classInfo, type, Map.of())));
             }
         }
 
@@ -151,7 +161,8 @@ public abstract class JacksonCodeGenerator {
         return createdClasses;
     }
 
-    private Optional<String> create(ClassInfo classInfo) {
+    private Optional<String> create(TypeEntry entry) {
+        ClassInfo classInfo = entry.classInfo();
         String beanClassName = classInfo.name().toString();
         if (vetoedClass(classInfo, beanClassName) || !generatedClassNames.add(beanClassName)) {
             return Optional.empty();
@@ -167,10 +178,10 @@ public abstract class JacksonCodeGenerator {
 
         try (ClassCreator classCreator = new ClassCreator(
                 new GeneratedClassGizmoAdaptor(generatedClassBuildItemBuildProducer, true), generatedClassName, null,
-                getSuperClassName(), getInterfacesNames(classInfo))) {
+                getSuperClassName())) {
 
             createConstructor(classCreator, beanClassName);
-            boolean valid = createSerializationMethod(classInfo, classCreator, beanClassName);
+            boolean valid = createSerializationMethod(classInfo, classCreator, beanClassName, entry.typeBindings());
             return valid ? Optional.of(generatedClassName) : Optional.empty();
         }
     }
@@ -183,7 +194,56 @@ public abstract class JacksonCodeGenerator {
         constructor.returnVoid();
     }
 
-    protected abstract boolean createSerializationMethod(ClassInfo classInfo, ClassCreator classCreator, String beanClassName);
+    protected abstract boolean createSerializationMethod(ClassInfo classInfo, ClassCreator classCreator, String beanClassName,
+            Map<String, Type> typeBindings);
+
+    protected abstract boolean discoverFieldTypes(ClassInfo classInfo, String beanClassName,
+            Map<String, Type> typeBindings);
+
+    protected Set<String> discoverIgnoredProperties(ClassInfo classInfo) {
+        Set<String> ignoredProperties = new HashSet<>(getIgnoredProperties(classInfo));
+        MethodInfo anyGetterMethod = findAnyGetterMethod(classInfo);
+        if (anyGetterMethod != null) {
+            ignoredProperties.add(anyGetterBackingFieldName(anyGetterMethod));
+        } else {
+            FieldInfo anyGetterField = findAnyGetterField(classInfo);
+            if (anyGetterField != null) {
+                ignoredProperties.add(anyGetterField.name());
+            }
+        }
+        return ignoredProperties;
+    }
+
+    Set<String> discoverTypes(ClassInfo rootType) {
+        return discoverTypes(rootType, Map.of());
+    }
+
+    Set<String> discoverTypes(ClassInfo rootType, Map<String, Type> typeBindings) {
+        Set<String> discoveredTypes = new HashSet<>();
+
+        if (shouldGenerateCodeFor(rootType)) {
+            toBeGenerated.add(new TypeEntry(rootType, typeBindings));
+        }
+
+        while (!toBeGenerated.isEmpty()) {
+            TypeEntry entry = toBeGenerated.removeFirst();
+            ClassInfo classInfo = entry.classInfo();
+            String beanClassName = classInfo.name().toString();
+
+            if (vetoedClass(classInfo, beanClassName) || !generatedClassNames.add(beanClassName)) {
+                continue;
+            }
+            if (findUnknownAnnotation(classInfo).isPresent()) {
+                continue;
+            }
+
+            if (discoverFieldTypes(classInfo, beanClassName, entry.typeBindings())) {
+                discoveredTypes.add(beanClassName);
+            }
+        }
+
+        return discoveredTypes;
+    }
 
     protected Collection<FieldInfo> classFields(ClassInfo classInfo) {
         Collection<FieldInfo> fields = new ArrayList<>();
@@ -245,7 +305,7 @@ public abstract class JacksonCodeGenerator {
                 || className.startsWith("tools.jackson.databind.");
     }
 
-    private Optional<String> findUnknownAnnotation(ClassInfo classInfo) {
+    protected Optional<String> findUnknownAnnotation(ClassInfo classInfo) {
         Optional<String> unknown = classInfo.annotations().stream()
                 .map(a -> a.name().toString())
                 .filter(FieldSpecs::isUnknownAnnotation)
@@ -281,35 +341,48 @@ public abstract class JacksonCodeGenerator {
     private static final DotName SET_NAME = DotName.createSimple(Set.class);
     protected static final DotName MAP_NAME = DotName.createSimple(Map.class);
 
-    protected FieldKind registerTypeToBeGenerated(Type fieldType, String typeName) {
+    protected FieldKind classifyFieldType(Type fieldType, String typeName) {
         if (fieldType instanceof TypeVariable) {
             return FieldKind.TYPE_VARIABLE;
         }
-        if (fieldType instanceof ArrayType aType) {
-            registerTypeToBeGenerated(aType.constituent());
+        if (fieldType instanceof ArrayType) {
             return FieldKind.ARRAY;
         }
         if (fieldType instanceof ParameterizedType pType) {
             if (pType.arguments().size() == 1) {
                 if (isAssignableTo(typeName, SET_NAME)) {
-                    registerTypeToBeGenerated(pType.arguments().get(0));
                     return FieldKind.SET;
                 }
                 if (typeName.equals("java.lang.Iterable") || isAssignableTo(typeName, COLLECTION_NAME)) {
-                    registerTypeToBeGenerated(pType.arguments().get(0));
                     return FieldKind.LIST;
                 }
-                registerTypeToBeGenerated(pType.arguments().get(0));
                 return FieldKind.WRAPPER;
             }
             if (pType.arguments().size() == 2 && isAssignableTo(typeName, MAP_NAME)) {
-                registerTypeToBeGenerated(pType.arguments().get(0));
-                registerTypeToBeGenerated(pType.arguments().get(1));
                 return FieldKind.MAP;
             }
         }
-        registerTypeToBeGenerated(typeName);
         return FieldKind.OBJECT;
+    }
+
+    protected void registerTypeToBeGenerated(Type fieldType, String typeName, Map<String, Type> typeBindings) {
+        switch (classifyFieldType(fieldType, typeName)) {
+            case TYPE_VARIABLE -> {
+                Type resolved = typeBindings.get(((TypeVariable) fieldType).identifier());
+                if (resolved != null) {
+                    registerTypeToBeGenerated(resolved, resolved.name().toString(), typeBindings);
+                }
+            }
+            case ARRAY -> registerTypeToBeGenerated(((ArrayType) fieldType).constituent(), typeBindings);
+            case SET, LIST, WRAPPER ->
+                registerTypeToBeGenerated(((ParameterizedType) fieldType).arguments().get(0), typeBindings);
+            case MAP -> {
+                ParameterizedType pType = (ParameterizedType) fieldType;
+                registerTypeToBeGenerated(pType.arguments().get(0), typeBindings);
+                registerTypeToBeGenerated(pType.arguments().get(1), typeBindings);
+            }
+            case OBJECT -> registerTypeToBeGenerated(typeName);
+        }
     }
 
     protected boolean isAssignableTo(String typeName, DotName targetName) {
@@ -333,12 +406,19 @@ public abstract class JacksonCodeGenerator {
         return false;
     }
 
-    private void registerTypeToBeGenerated(Type type) {
+    private void registerTypeToBeGenerated(Type type, Map<String, Type> typeBindings) {
+        if (type instanceof TypeVariable tv) {
+            Type resolved = typeBindings.get(tv.identifier());
+            if (resolved != null) {
+                registerTypeToBeGenerated(resolved, typeBindings);
+            }
+            return;
+        }
         // a type argument can be parameterized itself, like the List<Foo> in a Map<String, List<Foo>>,
         // so recurse to reach the Foo nested in it
         if (type instanceof ParameterizedType pType) {
             for (Type argument : pType.arguments()) {
-                registerTypeToBeGenerated(argument);
+                registerTypeToBeGenerated(argument, typeBindings);
             }
         }
         registerTypeToBeGenerated(type.name().toString());
@@ -358,8 +438,31 @@ public abstract class JacksonCodeGenerator {
             return;
         }
         if (shouldGenerateCodeFor(classInfo)) {
-            toBeGenerated.add(classInfo);
+            toBeGenerated.add(new TypeEntry(classInfo));
         }
+    }
+
+    private Map<String, Type> computeBindings(ClassInfo classInfo, Type type, Map<String, Type> parentBindings) {
+        if (!(type instanceof ParameterizedType pType)) {
+            return Map.of();
+        }
+        List<TypeVariable> typeParams = classInfo.typeParameters();
+        List<Type> typeArgs = pType.arguments();
+        if (typeParams.isEmpty() || typeArgs.isEmpty()) {
+            return Map.of();
+        }
+        Map<String, Type> bindings = new HashMap<>();
+        for (int i = 0; i < typeParams.size() && i < typeArgs.size(); i++) {
+            Type argType = typeArgs.get(i);
+            if (argType instanceof TypeVariable tv) {
+                Type resolved = parentBindings.get(tv.identifier());
+                if (resolved != null) {
+                    argType = resolved;
+                }
+            }
+            bindings.put(typeParams.get(i).identifier(), argType);
+        }
+        return bindings;
     }
 
     private static boolean isRuntimeAccessible(ClassInfo classInfo, String className) {

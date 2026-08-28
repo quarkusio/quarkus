@@ -5,7 +5,6 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = gRPC
 include::_attributes.adoc[]
-:categories: serialization
 :summary: Entry point for everything gRPC.
 :topics: grpc
 :extensions: io.quarkus:quarkus-grpc,io.quarkus:quarkus-grpc-xds

@@ -3,9 +3,8 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= Quarkus Tools in your favorite IDE
+= Quarkus tools in your favorite IDE
 include::_attributes.adoc[]
-:categories: getting-started
 :summary: Learn more about Quarkus integrations in IDEs.
 :topics: ide,tooling
 

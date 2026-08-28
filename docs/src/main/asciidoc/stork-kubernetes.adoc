@@ -6,7 +6,6 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 = Using Stork with Kubernetes
 :extension-status: preview
 include::_attributes.adoc[]
-:categories: cloud
 :topics: service-discovery,load-balancing,stork,kubernetes
 :extensions: io.quarkus:quarkus-kubernetes,io.quarkus:quarkus-smallrye-stork
 

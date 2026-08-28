@@ -3,9 +3,8 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= Quarkus Extension for Spring Cache API
+= Quarkus extension for Spring Cache API
 include::_attributes.adoc[]
-:categories: compatibility
 :summary: While you are encouraged to use the Cache extension for your application-level caching, Quarkus provides a compatibility layer for Spring Cache in the form of the spring-cache extension.
 :topics: spring,cache,compatibility
 :extensions: io.quarkus:quarkus-spring-cache

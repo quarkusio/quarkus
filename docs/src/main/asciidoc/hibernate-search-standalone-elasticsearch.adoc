@@ -5,7 +5,6 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Use Hibernate Search in Standalone mode with Elasticsearch/OpenSearch
 include::_attributes.adoc[]
-:categories: data
 :summary: Hibernate Search Standalone allows you to index your entities in an Elasticsearch/OpenSearch cluster and easily offer full text search in all your applications, even without Hibernate ORM.
 :keywords: elasticsearch opensearch hibernate search
 :topics: data,hibernate-search,elasticsearch,opensearch,search,nosql

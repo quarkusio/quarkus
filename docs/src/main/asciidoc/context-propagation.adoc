@@ -3,9 +3,8 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= Context Propagation in Quarkus
+= Context propagation in Quarkus
 include::_attributes.adoc[]
-:categories: core
 :summary: Learn more about how you can pass contextual information with SmallRye Context Propagation.
 :topics: context-propagation
 

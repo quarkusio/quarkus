@@ -3,10 +3,9 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= Funqy HTTP Binding with Azure Functions
+= Funqy HTTP binding with Azure Functions
 :extension-status: preview
 include::_attributes.adoc[]
-:categories: cloud
 :summary: Use Funqy HTTP binding with Microsoft Azure Functions to deploy your serverless Quarkus applications.
 :topics: azure,serverless,function,cloud,funqy
 :extensions: io.quarkus:quarkus-azure-functions-http

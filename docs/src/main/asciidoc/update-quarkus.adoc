@@ -6,7 +6,6 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 = Update projects to the latest Quarkus version
 include::_attributes.adoc[]
 :diataxis-type: howto
-:categories: core
 :extension-status: "experimental"
 :summary: Learn how to upgrade your projects to the latest version of {project-name}
 :topics: tooling

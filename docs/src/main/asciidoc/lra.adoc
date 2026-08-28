@@ -3,9 +3,8 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= Narayana LRA Participant Support
+= Narayana LRA participant support
 include::_attributes.adoc[]
-:categories: data
 :summary: This guides covers the usage of LRA to coordinate activities across services.
 :topics: data,lra,narayana
 :extensions: io.quarkus:quarkus-narayana-lra

@@ -7,7 +7,6 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 = Quarkus style and content guidelines
 include::_attributes.adoc[]
 :diataxis-type: reference
-:categories: contributing
 :topics: internals,documentation
 
 Guidelines are provided to help you to contribute clear and consistent content that is also sourced in the required diataxis structure and composition of Quarkus documentation.
@@ -150,7 +149,7 @@ Use the Quarkus templates to ensure that your content is consistent with the pre
 === Document header
 
 Each document should define a header for document-scoped attributes.
-Minimally, each document should define and id and a title, and include common attributes (`_attributes.adoc`).
+Minimally, each document should define an id and a title, include common attributes (`_attributes.adoc`), and set the diataxis type.
 
 [source,asciidoc]
 ----
@@ -158,14 +157,12 @@ Minimally, each document should define and id and a title, and include common at
 = Quarkus style and content guidelines // <2>
 \include::_attributes.adoc[] // <3>
 :diataxis-type: {type} // <4>
-:categories: contributing // <5>
 ----
 
 <1> Use the filename as the ID for the document.
 <2> Define the document title following guidance in <<titles-headings>>.
 <3> Include common document attributes.
 <4> Specify the diataxis type: `concept`, `howto`, `reference`, or `tutorial`.
-<5> Specify the relevant <<categories>> (comma separated).
 
 [[doc-header-optional]]
 ==== Other common document header attributes
@@ -413,40 +410,12 @@ examples:
 [[categories]]
 === Categories
 
-Quarkus documentation is grouped into the following categories.
+Quarkus documentation categories are maintained in `docs/src/main/resources/categories.yaml`.
+When you add, rename, or remove a guide, update that file so the guide appears in the appropriate category or subcategory on the documentation website.
 
-.Categories
-[cols="<m,<2",options="header"]
-|===
-|Category | Description
-| alt-languages | Support for other languages, namely Kotlin and Scala
-| architecture | Quarkus runtime and ecosystem architecture
-| business-automation | Business automation integrations
-| cloud | Integrations and support for cloud services
-| command-line | Command Line Applications
-| compatibility | Compatibility with other languages and frameworks
-| contributing | Guidance and references to help you contribute to Quarkus.
-| core | Information about how the Quarkus works
-| data | Topics related to using data sources with Quarkus
-| getting-started | Getting started materials
-| integration | Support for integration extensions (Camel)
-| messaging | Integrations with messaging systems like Kafka, AMQP, or RabbitMQ.
-| miscellaneous | Miscellaneous
-| native | Everything related to native executables
-| observability | Extensions and integrations for runtime and application observability
-| security | Security
-| serialization | Serialization
-| tooling | Tooling
-| web | Web
-| writing-extensions | Writing Extensions
-|===
-
-Tag your content to improve findability by adding at least one category to the categories attribute line in the <<document-header,document header>>. To add multiple categories, use comma-separated values. For example:
-
-[source,asciidoc]
-----
-:categories: contributing, data
-----
+Do not add or keep `:categories:` attributes in guide headers.
+The docs build injects generated category metadata into copied target sources from `categories.yaml`.
+The build also checks that every guide is listed in `categories.yaml` and that every listed guide exists.
 
 [[document-variables]]
 === Quarkus documentation variables

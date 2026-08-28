@@ -3,9 +3,8 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= Quarkus Virtual Thread support with Reactive Messaging
+= Quarkus virtual thread support with Reactive Messaging
 include::_attributes.adoc[]
-:categories: messaging
 :topics: messaging,kafka,reactive-messaging,virtual-threads
 :extensions: io.quarkus:quarkus-messaging-kafka
 :runonvthread: https://javadoc.io/doc/io.smallrye.common/smallrye-common-annotation/latest/io/smallrye/common/annotation/RunOnVirtualThread.html

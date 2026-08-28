@@ -5,7 +5,6 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Use Hibernate Search with Hibernate ORM and Elasticsearch/OpenSearch
 include::_attributes.adoc[]
-:categories: data
 :summary: Hibernate Search with Hibernate ORM allows you to index your entities in an Elasticsearch/OpenSearch cluster and easily offer full text search in all your Hibernate ORM-based applications.
 :keywords: elasticsearch opensearch hibernate orm search
 :topics: data,hibernate-search,elasticsearch,opensearch,search,nosql,hibernate-orm

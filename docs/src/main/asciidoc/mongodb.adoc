@@ -5,7 +5,6 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Using the MongoDB Client
 include::_attributes.adoc[]
-:categories: data
 :summary: This guide covers how to use MongoDB in Quarkus.
 :topics: data,mongodb,nosql
 :extensions: io.quarkus:quarkus-mongodb-client

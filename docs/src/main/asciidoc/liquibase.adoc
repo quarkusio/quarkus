@@ -5,7 +5,6 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Using Liquibase
 include::_attributes.adoc[]
-:categories: data
 :summary: This guide covers how to use the Liquibase extension to manage your schema migrations.
 :change-log: src/main/resources/db/changeLog.xml
 :config-file: application.properties

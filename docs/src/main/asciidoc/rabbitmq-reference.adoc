@@ -3,10 +3,9 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= Reactive Messaging RabbitMQ Connector Reference Documentation
+= Reactive Messaging RabbitMQ Connector reference documentation
 include::_attributes.adoc[]
 :extension-status: preview
-:categories: messaging
 :topics: messaging,reactive-messaging,rabbitmq,dev-services,testing,dev-mode
 :extensions: io.quarkus:quarkus-messaging-rabbitmq
 

@@ -263,10 +263,12 @@ public class MicroProfileConfigProcessor {
     @BuildStep
     void generateConfigProperties(
             List<ConfigPropertiesBuildItem> configProperties,
-            BuildProducer<GeneratedConfigClassBuildItem> configClasses) {
+            BuildProducer<GeneratedConfigClassBuildItem> configClasses,
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClass) {
 
         for (ConfigPropertiesBuildItem properties : configProperties) {
             configClasses.produce(GeneratedConfigClassBuildItem.of(properties.getConfigClass().name()));
+            reflectiveClass.produce(ReflectiveClassBuildItem.builder(properties.getConfigClassName()).methods().build());
         }
     }
 

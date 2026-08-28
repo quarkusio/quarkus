@@ -201,7 +201,7 @@ Just do not implement the `io.quarkus.vertx.http.runtime.security.HttpSecurityPo
 
 `@RequestScoped` beans can only be injected when the xref:cdi-reference.adoc#request-context-lifecycle[CDI request context] is active.
 The context can be activated by users, for example with the `@ActivateRequestContext`, however authorization happens before Quarkus prepares some `@RequestScoped` beans.
-We recommend to let Quarkus activate and prepare CDI request context for you.
+Let Quarkus activate and prepare CDI request context for you.
 For example, consider a situation where you want to inject a bean from the Jakarta REST context, such as the `jakarta.ws.rs.core.UriInfo` bean.
 In this case, you must apply the `HttpSecurityPolicy` to Jakarta REST endpoints. This can be achieved in one of the following ways:
 
@@ -307,7 +307,7 @@ In the following example, paths are ordered from the most specific to the least 
 
 .Request path `/one/two/three/four/five` matches ordered from the most specific to the least specific path
 
-[source, text]
+[source,text]
 ----
 /one/two/three/four/five
 /one/two/three/four/*
@@ -343,11 +343,12 @@ quarkus.http.auth.permission.deny1.policy=deny
 
 [NOTE]
 ====
-The preceding permission set shows that `GET /public/foo` matches the paths of both permission sets.However, it specifically aligns with the explicit method of the `permit1` permission set. Therefore, `permit1` is selected, and the request is accepted.
+The preceding permission set shows that `GET /public/foo` matches the paths of both permission sets.
+However, it specifically aligns with the explicit method of the `permit1` permission set.
+Therefore, `permit1` is selected, and the request is accepted.
 
-
-
-In contrast, `PUT /public/foo` does not match the method permissions of `permit1`. As a result, `deny1` is activated, leading to the rejection of the request.
+In contrast, `PUT /public/foo` does not match the method permissions of `permit1`.
+As a result, `deny1` is activated, leading to the rejection of the request.
 ====
 
 === Matching multiple paths and methods: both win
@@ -797,7 +798,7 @@ public class SubjectExposingResource {
 <1> The `@RolesAllowed` annotation value is set to the value of `Administrator`.
 <2> This `/subject/software-tester` endpoint requires an authenticated user that has been granted the role of "Software-Tester".
 It is possible to use multiple expressions in the role definition.
-<3> This `/subject/user` endpoint requires an authenticated user that has been granted the role "User" through the use of the `@RolesAllowed("${customer:User}")` annotation because we did not set the configuration property `customer`.
+<3> This `/subject/user` endpoint requires an authenticated user that has been granted the role "User" through the use of the `@RolesAllowed("${customer:User}")` annotation because the configuration property `customer` is not set.
 <4> In production, this `/subject/secured` endpoint requires an authenticated user with the `User` role.
 In development mode, it allows any authenticated user.
 <5> Property expression `all-roles` will be treated as a collection type `List`, therefore, the endpoint will be accessible for roles `Administrator`, `Software`, `Tester` and `User`.
@@ -1148,7 +1149,7 @@ public class MediaLibraryPermission extends LibraryPermission {
 }
 ----
 <1> When building a native executable, the permission class must be registered for reflection unless it is also used in at least one `io.quarkus.security.PermissionsAllowed#name` parameter. More details about the `@RegisterForReflection` annotation can be found on the xref:writing-native-applications-tips.adoc#registerForReflection[native application tips] page.
-<2> We want to pass the `MediaLibrary` instance to the `LibraryPermission` constructor.
+<2> Pass the `MediaLibrary` instance to the `LibraryPermission` constructor.
 
 [source,properties]
 ----
@@ -1204,7 +1205,7 @@ public class PermissionsIdentityAugmentor implements SecurityIdentityAugmentor {
 
 }
 ----
-<1> Add a `media-library` permission that was created can perform `read`, `write`, and `list` actions.
+<1> Add a `media-library` permission that can perform `read`, `write`, and `list` actions.
 Because `MediaLibrary` is the `TvLibrary` class parent, a user with the `admin` role is also permitted to modify `TvLibrary`.
 
 CAUTION: Annotation-based permissions do not work with custom xref:security-customization.adoc#jaxrs-security-context[Jakarta REST SecurityContexts] because there are no permissions in `jakarta.ws.rs.core.SecurityContext`.
@@ -1402,7 +1403,7 @@ public class HelloResource {
 Other `BeanParamPermissionChecker#canSayHello` method parameters like `customAuthorizationHeader` and `query` are matched automatically.
 Quarkus identifies the `BeanParamPermissionChecker#canSayHello` method parameters among `beanParam` fields and their public accessors.
 To avoid ambiguous resolution, automatic detection only works for the `beanParam` fields.
-For that reason, we had to specify path to the user principal name explicitly.
+For that reason, the path to the user principal name must be specified explicitly.
 
 Where the `SimpleBeanParam` class is declared like in the example below:
 

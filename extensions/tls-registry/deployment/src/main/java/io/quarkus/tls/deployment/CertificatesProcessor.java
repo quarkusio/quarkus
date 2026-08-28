@@ -9,6 +9,7 @@ import java.util.function.Supplier;
 import jakarta.inject.Singleton;
 
 import org.jboss.jandex.DotName;
+import org.jboss.logging.Logger;
 
 import io.quarkus.arc.deployment.BeanDiscoveryFinishedBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
@@ -19,6 +20,7 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
+import io.quarkus.deployment.pkg.steps.NativeBuild;
 import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.tls.KeyStoreFactory;
 import io.quarkus.tls.KeyStoreProvider;
@@ -35,9 +37,29 @@ import io.smallrye.common.annotation.Identifier;
 
 public class CertificatesProcessor {
 
+    private static final Logger LOG = Logger.getLogger(CertificatesProcessor.class);
+
     static final DotName IDENTIFIER_DOT_NAME = DotName.createSimple(Identifier.class);
     static final DotName KEYSTORE_PROVIDER_DOT_NAME = DotName.createSimple(KeyStoreProvider.class);
     static final DotName TRUSTSTORE_PROVIDER_DOT_NAME = DotName.createSimple(TrustStoreProvider.class);
+
+    /**
+     * The Quarkus Netty and Vert.x GraalVM substitutions hard-code the OpenSSL engine as unavailable.
+     * Warn at native build time when the application nevertheless ships netty-tcnative (for example through
+     * {@code io.smallrye:smallrye-openssl}): {@code quarkus.tls.ssl-engine=openssl} and non-relaxed
+     * {@code quarkus.tls.pqc-enforcement-policy} values will fail at startup of the native executable.
+     * The per-bucket, configuration-aware check happens at runtime init in {@link CertificateRecorder}, because
+     * {@code quarkus.tls} is runtime configuration.
+     */
+    @BuildStep(onlyIf = NativeBuild.class)
+    void warnAboutOpenSslEngineInNativeImage() {
+        if (QuarkusClassLoader.isClassPresentAtRuntime("io.netty.internal.tcnative.SSL")) {
+            LOG.warn("netty-tcnative is present on the classpath, but the OpenSSL SSL engine is not supported in "
+                    + "Quarkus native executables: 'quarkus.tls.ssl-engine=openssl' and "
+                    + "'quarkus.tls.pqc-enforcement-policy=strict|client-negotiated' will fail at startup. "
+                    + "Use the JDK SSL engine in native mode, or run the application in JVM mode.");
+        }
+    }
 
     @BuildStep
     public UnremovableBeanBuildItem unremovableBeans() {

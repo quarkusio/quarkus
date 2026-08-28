@@ -68,7 +68,6 @@ include::{includes}/prerequisites.adoc[]
 * https://stedolan.github.io/jq/[jq tool]
 * https://www.keycloak.org[Keycloak]
 
-
 == Architecture
 
 This example demonstrates a simple microservice setup with two protected endpoints:
@@ -108,7 +107,6 @@ For `/api/users/me`:
 }
 ----
 
-
 For `/api/admin`:
 
 - *Access policy*: Restricted to users with a valid bearer token and the `admin` role.
@@ -123,7 +121,7 @@ Key points include:
 
 == Solution
 
-We recommend that you follow the instructions in the next sections and create the application step by step.
+Follow the instructions in the next sections to create the application step by step.
 However, you can go right to the completed example.
 
 Clone the Git repository: `git clone {quickstarts-clone-url}`, or download an {quickstarts-archive-url}[archive].
@@ -308,7 +306,7 @@ For more information, see the <<keycloak-dev-mode,Running the application in Dev
 
 To start a Keycloak server, use the following Docker command:
 
-[source,bash,subs=attributes+]
+[source,shell,subs=attributes+]
 ----
 docker run --name keycloak \
   -e KC_BOOTSTRAP_ADMIN_USERNAME=admin \
@@ -408,7 +406,7 @@ include::{includes}/devtools/build.adoc[]
 
 Run the application:
 
-[source,bash]
+[source,shell]
 ----
 java -jar target/quarkus-app/quarkus-run.jar
 ----
@@ -428,7 +426,7 @@ include::{includes}/devtools/build-native.adoc[]
 
 After a while, run the native binary:
 
-[source,bash]
+[source,shell]
 ----
 ./target/security-keycloak-authorization-quickstart-1.0.0-SNAPSHOT-runner
 ----
@@ -445,7 +443,7 @@ You can test the application running in JVM or native modes by using `curl`.
 The application uses bearer token authorization.
 To access its resources, first obtain an access token from the Keycloak server:
 
-[source,bash]
+[source,shell]
 ----
 export access_token=$(\
     curl --insecure -X POST https://localhost:8543/realms/quarkus/protocol/openid-connect/token \
@@ -460,7 +458,7 @@ export access_token=$(\
 If the `quarkus.oidc.authentication.user-info-required` property is set to `true`, the application requires that an access token is used to request `UserInfo`.
 In that case, you must add the `scope=openid` query parameter to the token grant request; for example:
 
-[source,bash]
+[source,shell]
 ----
 export access_token=$(\
     curl --insecure -X POST http://localhost:8180/realms/quarkus/protocol/openid-connect/token \
@@ -477,7 +475,7 @@ The preceding example obtains an access token for the user `alice`.
 
 Any user with a valid access token can access the `http://localhost:8080/api/users/me` endpoint, which returns a JSON payload with user details:
 
-[source,bash]
+[source,shell]
 ----
 curl -v -X GET \
   http://localhost:8080/api/users/me \
@@ -489,7 +487,7 @@ curl -v -X GET \
 The `http://localhost:8080/api/admin` endpoint is restricted to users with the `admin` role.
 If you try to access this endpoint with the previously issued access token, the server returns a `403 Forbidden` response:
 
-[source,bash]
+[source,shell]
 ----
 curl -v -X GET \
   http://localhost:8080/api/admin \
@@ -500,7 +498,7 @@ curl -v -X GET \
 
 To access the admin endpoint, get an access token for the `admin` user:
 
-[source,bash]
+[source,shell]
 ----
 export access_token=$(\
     curl --insecure -X POST https://localhost:8543/realms/quarkus/protocol/openid-connect/token \
@@ -531,7 +529,8 @@ Otherwise, no bean is available for injection.
 
 == Mapping protected resources
 
-By default, the extension uses lazy loading to fetch resources from Keycloak on demand. It uses the request URI to identify and map application resources that require protection.
+By default, the extension uses lazy loading to fetch resources from Keycloak on demand.
+It uses the request URI to identify and map application resources that require protection.
 
 To disable lazy loading and instead pre-load all resources at startup, configure the following property:
 
@@ -594,7 +593,7 @@ quarkus.keycloak.policy-enforcer.paths.2.paths=/api/protected/programmatic-way,/
 <1> User must have resource permission `Scope Permission Resource` and scope `read`
 
 The Keycloak Policy Enforcer secures the `/api/protected/standard-way` request path, removing the need for annotations such as `@RolesAllowed`.
-However, in some scenarios, you may need to perform a programmatic check.
+However, in some scenarios, you might need to perform a programmatic check.
 
 You can achieve this by injecting a `SecurityIdentity` instance into your beans, as shown in the following example.
 Or, you can get the same result by annotating the resource method with `@PermissionsAllowed`.
@@ -688,7 +687,6 @@ quarkus.keycloak.service-tenant.policy-enforcer.enforcement-mode=PERMISSIVE
 quarkus.keycloak.service-tenant.policy-enforcer.paths.1.name=Permission Resource Service
 quarkus.keycloak.service-tenant.policy-enforcer.paths.1.paths=/api/permission
 quarkus.keycloak.service-tenant.policy-enforcer.paths.1.claim-information-point.claims.static-claim=static-claim
-
 
 # WebApp Tenant
 

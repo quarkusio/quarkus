@@ -913,7 +913,14 @@ public class CRUDResource {
         return "item-detail-" + id;
     }
 
-    @PermissionsAllowed(value = "list", permission = CustomPermission.class) <4>
+    @PermissionsAllowed("resource\\:name:action") <4>
+    @GET
+    @Path("/resource")
+    public String getResource() {
+        return "resource";
+    }
+
+    @PermissionsAllowed(value = "list", permission = CustomPermission.class) <5>
     @Path("/list")
     @GET
     public Collection<String> list(@QueryParam("query-options") String queryOptions) {
@@ -929,7 +936,7 @@ public class CRUDResource {
 
         @Override
         public boolean implies(Permission permission) {
-            var event = Arc.container().instance(RoutingContext.class).get(); <5>
+            var event = Arc.container().instance(RoutingContext.class).get(); <6>
             var publicContent = "public-content".equals(event.request().params().get("query-options"));
             var hasPermission = getName().equals(permission.getName());
             return hasPermission && publicContent;
@@ -942,9 +949,15 @@ public class CRUDResource {
 You can require all permissions by setting `inclusive=true`.
 Both resource methods `createOrUpdate` have equal authorization requirements.
 <3> Access is granted to `getItem` if `SecurityIdentity` has either `read` permission or `see` permission and one of the `all` or `detail` actions.
-<4> You can use your preferred `java.security.Permission` implementation.
+<4> The colon separates the permission name from the action.
+To include a literal colon in the permission name, prefix it with a backslash (`\\:`).
+Here, the permission name is `resource:name` and the action is `action`.
+The backslash character is only allowed immediately before a colon.
+A value with more than one unescaped colon is rejected because there is no way to determine which colon is the separator.
+A single unescaped colon at the very start or end of the value is treated as part of the name, not as a separator.
+<5> You can use your preferred `java.security.Permission` implementation.
 By default, string-based permission is performed by `io.quarkus.security.StringPermission`.
-<5> Permissions are not beans, therefore the only way to obtain bean instances is programmatically by using `Arc.container()`.
+<6> Permissions are not beans, therefore the only way to obtain bean instances is programmatically by using `Arc.container()`.
 
 CAUTION: If you plan to use the `@PermissionsAllowed` on the IO thread, review the information in xref:security-proactive-authentication.adoc[Proactive Authentication].
 
@@ -965,6 +978,10 @@ quarkus.http.auth.policy.role-policy2.permissions.user=list
 quarkus.http.auth.policy.role-policy2.permission-class=org.acme.crud.CRUDResource$CustomPermission  <4>
 quarkus.http.auth.permission.roles2.paths=/crud/list
 quarkus.http.auth.permission.roles2.policy=role-policy2
+
+quarkus.http.auth.policy.role-policy3.permissions.user=resource\\\\:name:action                      <5>
+quarkus.http.auth.permission.roles3.paths=/crud/resource
+quarkus.http.auth.permission.roles3.policy=role-policy3
 ----
 <1> Add the permission `see` and the action `all` to the `SecurityIdentity` instance of the `user` role.
 Similarly, for the `@PermissionsAllowed` annotation, `io.quarkus.security.StringPermission` is used by default.
@@ -974,6 +991,7 @@ For more information about the path-matching algorithm, see <<matching-multiple-
 <4> You can specify a custom implementation of the `java.security.Permission` class.
 Your custom class must define exactly one constructor that accepts the permission name and optionally some actions, for example, `String` array.
 In this scenario, the permission `list` is added to the `SecurityIdentity` instance as `new CustomPermission("list")`.
+<5> To include a literal colon in the permission name, use `\\:` in the annotation value. In `application.properties`, use `\\\\:` because SmallRye Config consumes one level of backslash escaping. Here, the permission name is `resource:name` and the action is `action`.
 
 You can also create a custom `java.security.Permission` class with additional constructor parameters.
 These additional parameters names get matched with arguments names of the method annotated with the `@PermissionsAllowed` annotation.
@@ -1310,6 +1328,24 @@ public class FileService {
 ----
 <1> The permission checker method `canDeleteAllDirectories` grants access to the `deleteDirectory` because the `delete:all` values are equal.
 <2> There must be exactly two permission checker methods, one for the `delete:service` permission and other for the `delete:file` permission.
+
+When escaped colons are used, the `@PermissionChecker` value must be an exact match of the raw `@PermissionsAllowed` value, including the escape characters:
+
+[source,java]
+----
+@PermissionsAllowed("see\\:detail") <1>
+void matched() { }
+
+@PermissionsAllowed("see:detail") <2>
+void notMatched() { }
+
+@PermissionChecker("see\\:detail")
+boolean canAccess(SecurityIdentity identity) {
+    return identity.hasRole("admin");
+}
+----
+<1> Matched by the permission checker because both raw annotation values are `see\\:detail`.
+<2> Not matched because the raw value `see:detail` differs from the checker value `see\\:detail`.
 
 [[permission-meta-annotation]]
 ==== Create permission meta-annotations

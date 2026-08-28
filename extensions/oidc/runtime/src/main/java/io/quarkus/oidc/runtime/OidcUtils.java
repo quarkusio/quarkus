@@ -17,7 +17,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -409,7 +408,7 @@ public final class OidcUtils {
             if (Roles.Source.accesstoken == config.roles().source().orElse(null)) {
                 setIntrospectionScopes(builder, codeFlowAccessTokenResult.introspectionResult());
                 if (codeTokens != null && codeTokens.getAccessTokenScope() != null) {
-                    builder.addPermissionsAsString(new HashSet<>(Arrays.asList(codeTokens.getAccessTokenScope().split(" "))));
+                    addTokenScopesAsPermissions(builder, Arrays.asList(codeTokens.getAccessTokenScope().split(" ")));
                 }
             }
         }
@@ -433,7 +432,13 @@ public final class OidcUtils {
 
     static void addTokenScopesAsPermissions(Builder builder, Collection<String> scopes) {
         if (scopes != null && !scopes.isEmpty()) {
-            builder.addPermissionsAsString(new HashSet<>(scopes));
+            for (String scope : scopes) {
+                try {
+                    builder.addPermissionAsString(scope);
+                } catch (IllegalArgumentException e) {
+                    LOG.debugf("Token scope '%s' cannot be converted to a permission: %s", scope, e.getMessage());
+                }
+            }
         }
     }
 

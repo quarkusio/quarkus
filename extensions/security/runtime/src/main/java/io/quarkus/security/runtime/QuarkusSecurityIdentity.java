@@ -15,6 +15,7 @@ import java.util.stream.Collectors;
 import io.quarkus.security.StringPermission;
 import io.quarkus.security.credential.Credential;
 import io.quarkus.security.identity.SecurityIdentity;
+import io.quarkus.security.spi.runtime.PermissionToActionUtil;
 import io.smallrye.mutiny.Uni;
 
 public class QuarkusSecurityIdentity implements SecurityIdentity {
@@ -338,14 +339,11 @@ public class QuarkusSecurityIdentity implements SecurityIdentity {
         }
 
         static Permission toPermission(String permissionAsString) {
-            int semicolonIndex = permissionAsString.indexOf(':');
-            if (semicolonIndex > 0 && semicolonIndex < permissionAsString.length() - 1) {
-                return new StringPermission(permissionAsString.substring(0, semicolonIndex),
-                        permissionAsString.substring(semicolonIndex + 1));
-            } else {
-                return new StringPermission(permissionAsString);
+            var parsed = PermissionToActionUtil.parse(permissionAsString);
+            if (parsed.hasAction()) {
+                return new StringPermission(parsed.name(), parsed.action());
             }
-
+            return new StringPermission(parsed.name());
         }
     }
 }

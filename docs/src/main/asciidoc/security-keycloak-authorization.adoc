@@ -654,7 +654,8 @@ public class ProtectedResource {
 }
 ----
 <1> The `/standard-way` sub-path requires both the resource permission and the `read` scope, based on the configuration set in the `application.properties` file.
-<2> The `/programmatic-way` sub-path checks only for the `Scope Permission Resource` permission by default. However, you can enforce additional constraints, such as scope requirements, by using `SecurityIdentity#checkPermission`.
+<2> The `/programmatic-way` sub-path checks only for the `Scope Permission Resource` permission by default.
+However, you can enforce additional constraints, such as scope requirements, by using `SecurityIdentity#checkPermission`.
 <3> The `@PermissionsAllowed` annotation at `/annotation-way` restricts access to requests that have the `Scope Permission Resource` permission along with the `read` scope.
 For more information, see the section xref:security-authorize-web-endpoints-reference.adoc#standard-security-annotations[Authorization using annotations] of the Authorization of web endpoints guide.
 
@@ -769,7 +770,7 @@ include::{generated-dir}/config/quarkus-keycloak-authorization.adoc[opts=optiona
 
 * https://www.keycloak.org/documentation.html[Keycloak documentation]
 * https://www.keycloak.org/docs/latest/authorization_services/index.html[Keycloak Authorization Services]
-* https://openid.net/connect/[OpenID Connect]
-* https://tools.ietf.org/html/rfc7519[JSON Web Token]
+* https://openid.net/developers/how-connect-works/[OpenID Connect]
+* https://datatracker.ietf.org/doc/html/rfc7519[JSON Web Token]
 * xref:security-overview.adoc[Quarkus Security overview]
 * xref:security-keycloak-admin-client.adoc[Quarkus Keycloak Admin Client]

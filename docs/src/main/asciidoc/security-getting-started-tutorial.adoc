@@ -280,7 +280,6 @@ public class User extends PanacheEntity {
         user.persist();
     }
 }
-
 ----
 
 The `quarkus-security-jpa` extension only initializes if a single entity is annotated with `@UserDefinition`.
@@ -291,7 +290,8 @@ The `quarkus-security-jpa` extension only initializes if a single entity is anno
 By default, it uses bcrypt-hashed passwords.
 You can configure it to use plain text or custom passwords.
 <4> Indicates the comma-separated list of roles added to the target principal representation attributes.
-<5> Provides a helper method to add users with bcrypt-hashed passwords. The `BcryptUtil.bcryptHash()` method:
+<5> Provides a helper method to add users with bcrypt-hashed passwords.
+The `BcryptUtil.bcryptHash()` method:
 * Automatically generates a random salt for each password.
 * Hashes the password using bcrypt with 10 iterations (default).
 * Returns the hash in Modular Crypt Format (MCF), which includes the algorithm identifier, cost parameter, salt, and hash.
@@ -311,7 +311,8 @@ You can configure it to use plain text or custom passwords.
 
 [NOTE]
 ====
-Remember to set up the Panache and PostgreSQL JDBC driver. For more information, see xref:hibernate-orm-panache.adoc#setting-up-and-configuring-hibernate-orm-with-panache[Setting up and configuring Hibernate ORM with Panache].
+Remember to set up the Panache and PostgreSQL JDBC driver.
+For more information, see xref:hibernate-orm-panache.adoc#setting-up-and-configuring-hibernate-orm-with-panache[Setting up and configuring Hibernate ORM with Panache].
 ====
 ifndef::no-quarkus-security-jpa-reactive[]
 [NOTE]
@@ -386,7 +387,6 @@ import jakarta.inject.Singleton;
 import jakarta.transaction.Transactional;
 
 import io.quarkus.runtime.StartupEvent;
-
 
 @Singleton
 public class Startup {

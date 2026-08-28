@@ -18,8 +18,10 @@ import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
+import io.quarkus.deployment.annotations.Produce;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
+import io.quarkus.deployment.pkg.builditem.ArtifactResultBuildItem;
 import io.quarkus.deployment.pkg.steps.NativeBuild;
 import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.tls.KeyStoreFactory;
@@ -52,6 +54,7 @@ public class CertificatesProcessor {
      * {@code quarkus.tls} is runtime configuration.
      */
     @BuildStep(onlyIf = NativeBuild.class)
+    @Produce(ArtifactResultBuildItem.class) // log-only step: force execution
     void warnAboutOpenSslEngineInNativeImage() {
         if (QuarkusClassLoader.isClassPresentAtRuntime("io.netty.internal.tcnative.SSL")) {
             LOG.warn("netty-tcnative is present on the classpath, but the OpenSSL SSL engine is not supported in "

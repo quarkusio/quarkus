@@ -23,10 +23,15 @@ import io.netty.handler.ssl.ClientAuth;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslContextBuilder;
 import io.netty.handler.ssl.SslProvider;
+import io.quarkus.netty.runtime.graal.TcnativeAbsent;
 import io.vertx.core.internal.VertxInternal;
 import io.vertx.core.internal.WorkerPool;
 
-@TargetClass(className = "io.vertx.core.net.OpenSSLEngineOptions")
+/**
+ * Hard-code the OpenSSL engine as unavailable, only when netty-tcnative is not on the classpath. When it is, the
+ * original Vert.x code runs and the probe reflects the real state of the native library.
+ */
+@TargetClass(className = "io.vertx.core.net.OpenSSLEngineOptions", onlyWith = TcnativeAbsent.class)
 final class Target_io_vertx_core_net_OpenSSLEngineOptions {
 
     @Substitute
@@ -40,7 +45,11 @@ final class Target_io_vertx_core_net_OpenSSLEngineOptions {
     }
 }
 
-@TargetClass(className = "io.vertx.core.spi.tls.DefaultSslContextFactory")
+/**
+ * Force the JDK provider in the default SslContextFactory, only when netty-tcnative is not on the classpath; with
+ * tcnative present the original implementation picks the provider from the engine options.
+ */
+@TargetClass(className = "io.vertx.core.spi.tls.DefaultSslContextFactory", onlyWith = TcnativeAbsent.class)
 final class Target_DefaultSslContextFactory {
 
     @Alias

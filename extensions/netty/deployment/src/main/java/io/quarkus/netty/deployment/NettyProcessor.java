@@ -37,8 +37,10 @@ import io.quarkus.deployment.builditem.ModuleEnableNativeAccessBuildItem;
 import io.quarkus.deployment.builditem.ModuleOpenBuildItem;
 import io.quarkus.deployment.builditem.PreInitRunnableBuildItem;
 import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.JniRuntimeAccessBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageConfigBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.NativeImageResourcePatternsBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageSystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveFieldBuildItem;
@@ -419,6 +421,120 @@ class NettyProcessor {
     void runtimeInitQuicAndTcnative(BuildProducer<RuntimeInitializedPackageBuildItem> runtimeInitializedPackages) {
         if (QuarkusClassLoader.isClassPresentAtRuntime("io.netty.internal.tcnative.SSL")) {
             runtimeInitializedPackages.produce(new RuntimeInitializedPackageBuildItem("io.netty.internal.tcnative"));
+        }
+    }
+
+    /**
+     * Classes the tcnative C code resolves by name (FindClass) or reaches through GetMethodID/GetFieldID: the JNI
+     * entry points, the callback interfaces the C side invokes, and the task classes it instantiates. Source:
+     * netty-tcnative openssl-dynamic/src/main/c and the openssl-classes module.
+     */
+    static final String[] TCNATIVE_JNI_CLASSES = {
+            "io.netty.internal.tcnative.AsyncSSLPrivateKeyMethod",
+            "io.netty.internal.tcnative.AsyncTask",
+            "io.netty.internal.tcnative.Buffer",
+            "io.netty.internal.tcnative.CertificateCallback",
+            "io.netty.internal.tcnative.CertificateCallbackTask",
+            "io.netty.internal.tcnative.CertificateCompressionAlgo",
+            "io.netty.internal.tcnative.CertificateRequestedCallback",
+            "io.netty.internal.tcnative.CertificateVerifier",
+            "io.netty.internal.tcnative.CertificateVerifierTask",
+            "io.netty.internal.tcnative.KeyLogCallback",
+            "io.netty.internal.tcnative.Library",
+            "io.netty.internal.tcnative.NativeStaticallyReferencedJniMethods",
+            "io.netty.internal.tcnative.ResultCallback",
+            "io.netty.internal.tcnative.SSL",
+            "io.netty.internal.tcnative.SSLContext",
+            "io.netty.internal.tcnative.SSLCredential",
+            "io.netty.internal.tcnative.SSLPrivateKeyMethod",
+            "io.netty.internal.tcnative.SSLPrivateKeyMethodDecryptTask",
+            "io.netty.internal.tcnative.SSLPrivateKeyMethodSignTask",
+            "io.netty.internal.tcnative.SSLPrivateKeyMethodTask",
+            "io.netty.internal.tcnative.SSLSession",
+            "io.netty.internal.tcnative.SSLSessionCache",
+            "io.netty.internal.tcnative.SSLTask",
+            "io.netty.internal.tcnative.SessionTicketKey",
+            "io.netty.internal.tcnative.SniHostNameMatcher",
+    };
+
+    /**
+     * Netty classes whose static initializers, directly or through {@code OpenSsl*} constants, reach into tcnative and
+     * therefore must not run at image build time once the OpenSSL engine is real (the substitutions that hard-code it
+     * as unavailable are disabled when tcnative is present, see {@code TcnativeAbsent}).
+     * <p>
+     * Derived by scanning netty-handler for classes whose {@code <clinit>} references
+     * {@code io.netty.internal.tcnative} or {@code io.netty.handler.ssl.(OpenSsl|ReferenceCountedOpenSsl)*}
+     * ({@code javap -c -p}); re-run that scan on Netty upgrades. {@code ReferenceCountedOpenSslEngine} and
+     * {@code ReferenceCountedOpenSslContext} are already run-time initialized above, and the whole
+     * {@code io.netty.internal.tcnative} package in {@link #runtimeInitQuicAndTcnative}.
+     */
+    static final String[] OPENSSL_RUNTIME_INIT_CLASSES = {
+            "io.netty.handler.ssl.JdkDelegatingPrivateKeyMethod",
+            "io.netty.handler.ssl.OpenSsl",
+            "io.netty.handler.ssl.OpenSslAsyncPrivateKeyMethod",
+            "io.netty.handler.ssl.OpenSslCertificateCompressionConfig$AlgorithmMode",
+            "io.netty.handler.ssl.OpenSslClientSessionCache",
+            "io.netty.handler.ssl.OpenSslContextOption",
+            "io.netty.handler.ssl.OpenSslCredential$CredentialType",
+            "io.netty.handler.ssl.OpenSslEngineMap",
+            "io.netty.handler.ssl.OpenSslKeyMaterialProvider",
+            "io.netty.handler.ssl.OpenSslPrivateKeyMethod",
+            "io.netty.handler.ssl.OpenSslSessionCache",
+            "io.netty.handler.ssl.OpenSslSessionCache$NativeSslSession",
+            "io.netty.handler.ssl.OpenSslSessionId",
+            "io.netty.handler.ssl.OpenSslX509TrustManagerWrapper",
+            "io.netty.handler.ssl.ReferenceCountedOpenSslContext$1",
+            "io.netty.handler.ssl.ReferenceCountedOpenSslContext$3",
+            "io.netty.handler.ssl.ReferenceCountedOpenSslEngine$1",
+            "io.netty.handler.ssl.ReferenceCountedOpenSslEngine$3",
+            "io.netty.handler.ssl.ReferenceCountedOpenSslEngine$HandshakeState",
+            "io.netty.handler.ssl.ReferenceCountedOpenSslServerContext",
+    };
+
+    /**
+     * netty-handler classes that implement the tcnative callback interfaces. The C side resolves their methods on the
+     * concrete object ({@code GetObjectClass} + {@code GetMethodID}, e.g. {@code handle} in
+     * {@code SSLContext.setCertificateCallback}), so they need JNI access as well. Derived by scanning netty-handler
+     * for classes extending/implementing {@code io.netty.internal.tcnative.*} types and their subclasses.
+     */
+    static final String[] NETTY_TCNATIVE_CALLBACK_CLASSES = {
+            "io.netty.handler.ssl.JdkDelegatingPrivateKeyMethod",
+            "io.netty.handler.ssl.OpenSslClientSessionCache",
+            "io.netty.handler.ssl.OpenSslSessionCache",
+            "io.netty.handler.ssl.ReferenceCountedOpenSslClientContext$OpenSslClientCertificateCallback",
+            "io.netty.handler.ssl.ReferenceCountedOpenSslContext$AbstractCertificateVerifier",
+            "io.netty.handler.ssl.ReferenceCountedOpenSslContext$AsyncPrivateKeyMethod",
+            "io.netty.handler.ssl.ReferenceCountedOpenSslContext$CompressionAlgorithm",
+            "io.netty.handler.ssl.ReferenceCountedOpenSslContext$PrivateKeyMethod",
+            "io.netty.handler.ssl.ReferenceCountedOpenSslServerContext$OpenSslServerCertificateCallback",
+            "io.netty.handler.ssl.ReferenceCountedOpenSslServerContext$OpenSslSniHostnameMatcher",
+    };
+
+    /**
+     * When netty-tcnative is on the classpath, register what the OpenSSL engine needs in a native executable:
+     * JNI access for the tcnative classes, the bundled shared library as a resource (Netty's NativeLibraryLoader
+     * extracts it from the classpath and calls System.load()), and run-time initialization of the classes that touch
+     * the library. Applications that don't ship tcnative are unaffected.
+     */
+    @BuildStep
+    void registerTcnativeForNativeImage(
+            BuildProducer<JniRuntimeAccessBuildItem> jni,
+            BuildProducer<ReflectiveClassBuildItem> reflection,
+            BuildProducer<NativeImageResourcePatternsBuildItem> resources,
+            BuildProducer<RuntimeInitializedClassBuildItem> runtimeInit) {
+        if (!QuarkusClassLoader.isClassPresentAtRuntime("io.netty.internal.tcnative.SSL")) {
+            return;
+        }
+        jni.produce(new JniRuntimeAccessBuildItem(true, true, true, TCNATIVE_JNI_CLASSES));
+        jni.produce(new JniRuntimeAccessBuildItem(true, true, true, NETTY_TCNATIVE_CALLBACK_CLASSES));
+        // OpenSsl's static initializer also looks tcnative classes up reflectively
+        reflection.produce(ReflectiveClassBuildItem.builder(TCNATIVE_JNI_CLASSES).methods().build());
+        resources.produce(NativeImageResourcePatternsBuildItem.builder()
+                .includeGlob("META-INF/native/libnetty_tcnative*.so")
+                .includeGlob("META-INF/native/libnetty_tcnative*.jnilib")
+                .build());
+        for (String className : OPENSSL_RUNTIME_INIT_CLASSES) {
+            runtimeInit.produce(new RuntimeInitializedClassBuildItem(className));
         }
     }
 

@@ -12,6 +12,7 @@ import jakarta.enterprise.inject.Default;
 
 import org.jboss.logging.Logger;
 
+import io.netty.handler.ssl.OpenSsl;
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.InstanceHandle;
 import io.quarkus.runtime.ImageMode;
@@ -38,6 +39,7 @@ import io.quarkus.tls.runtime.keystores.PemKeyStores;
 import io.smallrye.common.annotation.Identifier;
 import io.vertx.core.Vertx;
 import io.vertx.core.net.JdkSSLEngineOptions;
+import io.vertx.core.net.OpenSSLEngineOptions;
 
 @Recorder
 public class CertificateRecorder implements TlsConfigurationRegistry {
@@ -117,21 +119,29 @@ public class CertificateRecorder implements TlsConfigurationRegistry {
     }
 
     /**
-     * The OpenSSL engine (netty-tcnative) is disabled by the Quarkus GraalVM substitutions, so a bucket that can only
-     * be satisfied by it is rejected when running as a native executable, with a message that names native mode as
-     * the cause. Without this, Vert.x fails at listen time ({@code SslContextManager.resolveEngineOptions}) with
-     * "OpenSSL is not available" or "PQC enforcement policy ... neither JDK nor OpenSSL support it", neither of which
-     * mentions the mode.
+     * In a native executable the OpenSSL engine (netty-tcnative) is only usable when the application ships tcnative;
+     * otherwise the Quarkus GraalVM substitutions hard-code it as unavailable. A bucket that can only be satisfied by
+     * it is then rejected here, with a message that names native mode as the cause. Without this, Vert.x fails at
+     * listen time ({@code SslContextManager.resolveEngineOptions}) with "OpenSSL is not available" or "PQC enforcement
+     * policy ... neither JDK nor OpenSSL support it", neither of which mentions the mode.
+     * <p>
+     * {@code OpenSsl.isAvailable()} is the same probe Vert.x uses: substituted to {@code false} when tcnative is absent,
+     * the real library check when it is present.
      */
     static void verifySslEngineSupportedInNativeImage(TlsBucketConfig config, String name) {
-        verifySslEngineSupportedInNativeImage(config, name, ImageMode.current().isNativeImage(),
-                JdkSSLEngineOptions.isPqcAvailable());
+        boolean nativeImage = ImageMode.current().isNativeImage();
+        if (!nativeImage) {
+            return;
+        }
+        boolean openSslPqcAvailable = OpenSsl.isAvailable() && OpenSSLEngineOptions.isPqcAvailable();
+        verifySslEngineSupportedInNativeImage(config, name, true,
+                JdkSSLEngineOptions.isPqcAvailable() || openSslPqcAvailable, OpenSsl.isAvailable());
     }
 
     // Visible for testing
     static void verifySslEngineSupportedInNativeImage(TlsBucketConfig config, String name, boolean nativeImage,
-            boolean jdkPqcAvailable) {
-        if (!nativeImage) {
+            boolean pqcAvailable, boolean openSslAvailable) {
+        if (!nativeImage || openSslAvailable) {
             return;
         }
         String prefix = TlsConfig.DEFAULT_NAME.equals(name) ? "quarkus.tls." : "quarkus.tls." + name + ".";
@@ -144,7 +154,7 @@ public class CertificateRecorder implements TlsConfigurationRegistry {
                     Set.of(key));
         }
         PqcEnforcementPolicy policy = config.pqcEnforcementPolicy();
-        if (policy != PqcEnforcementPolicy.RELAXED && !jdkPqcAvailable) {
+        if (policy != PqcEnforcementPolicy.RELAXED && !pqcAvailable) {
             String key = prefix + "pqc-enforcement-policy";
             String value = policy.name().toLowerCase().replace('_', '-');
             throw new ConfigurationException(

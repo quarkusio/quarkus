@@ -457,6 +457,7 @@
                 <module>management-interface</module>
                 <module>management-interface-auth</module>
                 <module>mtls-certificates</module>
+                <module>vertx-http-openssl</module>
                 <module>virtual-threads</module>
                 <module>mutiny-native-jctools</module>
             </modules>

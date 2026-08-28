@@ -30,32 +30,35 @@ class CertificateRecorderNativeImageTest {
     private static final boolean JVM = false;
     private static final boolean JDK_PQC = true;
     private static final boolean NO_JDK_PQC = false;
+    private static final boolean OPENSSL = true;
+    private static final boolean NO_OPENSSL = false;
 
     @Test
     void jvmModeNeverRejects() {
         assertThatCode(() -> CertificateRecorder.verifySslEngineSupportedInNativeImage(
-                bucket(Optional.of(SslEngineType.OPENSSL), PqcEnforcementPolicy.STRICT), "foo", JVM, NO_JDK_PQC))
+                bucket(Optional.of(SslEngineType.OPENSSL), PqcEnforcementPolicy.STRICT), "foo", JVM, NO_JDK_PQC, NO_OPENSSL))
                 .doesNotThrowAnyException();
     }
 
     @Test
     void nativeModeWithJdkEngineAndRelaxedPolicyIsAccepted() {
         assertThatCode(() -> CertificateRecorder.verifySslEngineSupportedInNativeImage(
-                bucket(Optional.of(SslEngineType.JDKSSL), PqcEnforcementPolicy.RELAXED), "foo", NATIVE, NO_JDK_PQC))
+                bucket(Optional.of(SslEngineType.JDKSSL), PqcEnforcementPolicy.RELAXED), "foo", NATIVE, NO_JDK_PQC, NO_OPENSSL))
                 .doesNotThrowAnyException();
     }
 
     @Test
     void nativeModeWithEngineUnsetAndRelaxedPolicyIsAccepted() {
         assertThatCode(() -> CertificateRecorder.verifySslEngineSupportedInNativeImage(
-                bucket(Optional.empty(), PqcEnforcementPolicy.RELAXED), "foo", NATIVE, NO_JDK_PQC))
+                bucket(Optional.empty(), PqcEnforcementPolicy.RELAXED), "foo", NATIVE, NO_JDK_PQC, NO_OPENSSL))
                 .doesNotThrowAnyException();
     }
 
     @Test
     void nativeModeWithOpenSslEngineIsRejectedNamingTheProperty() {
         assertThatThrownBy(() -> CertificateRecorder.verifySslEngineSupportedInNativeImage(
-                bucket(Optional.of(SslEngineType.OPENSSL), PqcEnforcementPolicy.RELAXED), "foo", NATIVE, NO_JDK_PQC))
+                bucket(Optional.of(SslEngineType.OPENSSL), PqcEnforcementPolicy.RELAXED), "foo", NATIVE, NO_JDK_PQC,
+                NO_OPENSSL))
                 .isInstanceOf(ConfigurationException.class)
                 .hasMessageContaining("quarkus.tls.foo.ssl-engine")
                 .hasMessageContaining("native");
@@ -65,7 +68,7 @@ class CertificateRecorderNativeImageTest {
     void nativeModeWithOpenSslEngineOnDefaultBucketNamesTheUnnamedProperty() {
         assertThatThrownBy(() -> CertificateRecorder.verifySslEngineSupportedInNativeImage(
                 bucket(Optional.of(SslEngineType.OPENSSL), PqcEnforcementPolicy.RELAXED), TlsConfig.DEFAULT_NAME,
-                NATIVE, NO_JDK_PQC))
+                NATIVE, NO_JDK_PQC, NO_OPENSSL))
                 .isInstanceOf(ConfigurationException.class)
                 .hasMessageContaining("quarkus.tls.ssl-engine")
                 .satisfies(e -> org.assertj.core.api.Assertions.assertThat(e.getMessage())
@@ -75,7 +78,7 @@ class CertificateRecorderNativeImageTest {
     @Test
     void nativeModeWithStrictPolicyAndNoJdkPqcIsRejectedNamingTheProperty() {
         assertThatThrownBy(() -> CertificateRecorder.verifySslEngineSupportedInNativeImage(
-                bucket(Optional.empty(), PqcEnforcementPolicy.STRICT), "foo", NATIVE, NO_JDK_PQC))
+                bucket(Optional.empty(), PqcEnforcementPolicy.STRICT), "foo", NATIVE, NO_JDK_PQC, NO_OPENSSL))
                 .isInstanceOf(ConfigurationException.class)
                 .hasMessageContaining("quarkus.tls.foo.pqc-enforcement-policy")
                 .hasMessageContaining("strict")
@@ -85,7 +88,7 @@ class CertificateRecorderNativeImageTest {
     @Test
     void nativeModeWithClientNegotiatedPolicyAndNoJdkPqcIsRejected() {
         assertThatThrownBy(() -> CertificateRecorder.verifySslEngineSupportedInNativeImage(
-                bucket(Optional.empty(), PqcEnforcementPolicy.CLIENT_NEGOTIATED), "foo", NATIVE, NO_JDK_PQC))
+                bucket(Optional.empty(), PqcEnforcementPolicy.CLIENT_NEGOTIATED), "foo", NATIVE, NO_JDK_PQC, NO_OPENSSL))
                 .isInstanceOf(ConfigurationException.class)
                 .hasMessageContaining("client-negotiated");
     }
@@ -94,16 +97,32 @@ class CertificateRecorderNativeImageTest {
     void nativeModeWithStrictPolicyIsAcceptedWhenTheJdkEngineSupportsPqc() {
         // Once the JDK in use has JEP 527 and the Vert.x line in use probes for it, PQC works without OpenSSL.
         assertThatCode(() -> CertificateRecorder.verifySslEngineSupportedInNativeImage(
-                bucket(Optional.empty(), PqcEnforcementPolicy.STRICT), "foo", NATIVE, JDK_PQC))
+                bucket(Optional.empty(), PqcEnforcementPolicy.STRICT), "foo", NATIVE, JDK_PQC, NO_OPENSSL))
                 .doesNotThrowAnyException();
     }
 
     @Test
     void nativeModeWithOpenSslEngineIsRejectedEvenWhenTheJdkEngineSupportsPqc() {
         assertThatThrownBy(() -> CertificateRecorder.verifySslEngineSupportedInNativeImage(
-                bucket(Optional.of(SslEngineType.OPENSSL), PqcEnforcementPolicy.STRICT), "foo", NATIVE, JDK_PQC))
+                bucket(Optional.of(SslEngineType.OPENSSL), PqcEnforcementPolicy.STRICT), "foo", NATIVE, JDK_PQC, NO_OPENSSL))
                 .isInstanceOf(ConfigurationException.class)
                 .hasMessageContaining("quarkus.tls.foo.ssl-engine");
+    }
+
+    @Test
+    void nativeModeWithOpenSslEngineIsAcceptedWhenTheOpenSslEngineIsActuallyAvailable() {
+        // tcnative on the classpath: the substitutions are disabled and OpenSsl.isAvailable() reflects reality
+        assertThatCode(() -> CertificateRecorder.verifySslEngineSupportedInNativeImage(
+                bucket(Optional.of(SslEngineType.OPENSSL), PqcEnforcementPolicy.RELAXED), "foo", NATIVE, NO_JDK_PQC,
+                OPENSSL))
+                .doesNotThrowAnyException();
+    }
+
+    @Test
+    void nativeModeWithStrictPolicyIsAcceptedWhenTheOpenSslEngineIsActuallyAvailable() {
+        assertThatCode(() -> CertificateRecorder.verifySslEngineSupportedInNativeImage(
+                bucket(Optional.empty(), PqcEnforcementPolicy.STRICT), "foo", NATIVE, NO_JDK_PQC, OPENSSL))
+                .doesNotThrowAnyException();
     }
 
     private static TlsBucketConfig bucket(Optional<SslEngineType> engine, PqcEnforcementPolicy policy) {

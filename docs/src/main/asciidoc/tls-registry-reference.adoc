@@ -843,10 +843,10 @@ On those platforms, use `relaxed` with JDK 27+ for post-quantum key exchange.
 
 [IMPORTANT]
 ====
-The OpenSSL engine is not available in native executables.
-Quarkus' native-image support disables `netty-tcnative`, so `quarkus.tls.ssl-engine=openssl`, and `quarkus.tls.pqc-enforcement-policy` set to `strict` or `client-negotiated`, are rejected at startup of a native executable with a configuration error that names the property.
-This applies even when `io.smallrye:smallrye-openssl` is on the classpath and OpenSSL 3.5+ is installed.
-Use JVM mode for post-quantum enforcement, or `relaxed` in native mode.
+In a native executable, the OpenSSL engine is available only when the application ships `netty-tcnative`, for example through `io.smallrye:smallrye-openssl` (see above).
+Quarkus then registers the JNI metadata and the bundled native library so the engine can load it at run time; the machine running the executable still needs `libssl.so.3` (3.5+ for post-quantum groups) and `libapr-1`, and a writable temporary directory for the library to be extracted to.
+
+Without `netty-tcnative` on the classpath, Quarkus' native-image support disables the OpenSSL engine entirely, and `quarkus.tls.ssl-engine=openssl`, or `quarkus.tls.pqc-enforcement-policy` set to `strict` or `client-negotiated`, are rejected at startup of the native executable with a configuration error that names the property.
 ====
 
 ===== SSL engine override

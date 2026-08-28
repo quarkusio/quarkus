@@ -81,9 +81,12 @@ final class Target_io_netty_util_internal_logging_InternalLoggerFactory {
 }
 
 // SSL
-// This whole section is mostly about removing static analysis references to openssl/tcnative
+// This whole section is mostly about removing static analysis references to openssl/tcnative.
+// Every substitution that hard-codes "OpenSSL unavailable" is guarded with onlyWith = TcnativeAbsent.class: when
+// netty-tcnative is on the classpath the original Netty code runs, and NettyProcessor registers the JNI, resource and
+// run-time initialization metadata the native library needs.
 
-@TargetClass(className = "io.netty.handler.ssl.SslProvider")
+@TargetClass(className = "io.netty.handler.ssl.SslProvider", onlyWith = TcnativeAbsent.class)
 final class Target_io_netty_handler_ssl_SslProvider {
     @Substitute
     public static boolean isAlpnSupported(final SslProvider provider) {
@@ -108,9 +111,9 @@ final class Target_io_netty_handler_ssl_JdkAlpnApplicationProtocolNegotiator {
 }
 
 /**
- * Hardcode io.netty.handler.ssl.OpenSsl as non-available
+ * Hardcode io.netty.handler.ssl.OpenSsl as non-available (only when netty-tcnative is not on the classpath)
  */
-@TargetClass(className = "io.netty.handler.ssl.OpenSsl")
+@TargetClass(className = "io.netty.handler.ssl.OpenSsl", onlyWith = TcnativeAbsent.class)
 final class Target_io_netty_handler_ssl_OpenSsl {
 
     @Alias
@@ -215,7 +218,7 @@ final class Target_io_netty_handler_ssl_JdkSslClientContext {
     }
 }
 
-@TargetClass(className = "io.netty.handler.ssl.SslHandler$SslEngineType")
+@TargetClass(className = "io.netty.handler.ssl.SslHandler$SslEngineType", onlyWith = TcnativeAbsent.class)
 final class Target_io_netty_handler_ssl_SslHandler$SslEngineType {
 
     @Alias
@@ -256,7 +259,7 @@ final class Target_io_netty_handler_ssl_ResumptionController {
     }
 }
 
-@TargetClass(className = "io.netty.handler.ssl.SslContext")
+@TargetClass(className = "io.netty.handler.ssl.SslContext", onlyWith = TcnativeAbsent.class)
 final class Target_io_netty_handler_ssl_SslContext {
 
     @Substitute

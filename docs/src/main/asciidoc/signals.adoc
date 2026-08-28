@@ -16,6 +16,8 @@ include::_attributes.adoc[]
 Signals allow application components to interact in a loosely coupled fashion, by emitting and receiving _signals_.
 A signal is an object -- optionally augmented with qualifiers and metadata -- that is emitted by one component and delivered to one or more _receivers_.
 
+include::{includes}/extension-status.adoc[]
+
 Resolution:: The extension provides a type-safe resolution model, inspired by the https://jakarta.ee/specifications/cdi/4.1/jakarta-cdi-spec-4.1#events[CDI events].
 Emission Modes:: Inspired by the https://vertx.io/docs/vertx-core/java/#event_bus[Vert.x EventBus], the API supports unicast (point-to-point) and request-reply patterns in addition to the traditional multicast (publish-subscribe) pattern.
 Execution Model:: Receivers are always executed asynchronously and support both blocking and non-blocking logic. The execution model is determined from the method return type and annotations such as `@Blocking`, `@NonBlocking`, and `@RunOnVirtualThread`, following Quarkus conventions.

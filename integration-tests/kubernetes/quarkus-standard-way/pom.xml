@@ -71,8 +71,13 @@
                     <artifactId>jakarta.xml.bind-api</artifactId>
                 </exclusion>
             </exclusions>
-         </dependency>
-         <dependency>
+        </dependency>
+        <dependency>
+            <groupId>io.fabric8</groupId>
+            <artifactId>kubernetes-model-gatewayapi</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
             <groupId>io.fabric8</groupId>
             <artifactId>knative-model</artifactId>
             <scope>test</scope>

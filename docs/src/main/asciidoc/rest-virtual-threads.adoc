@@ -243,6 +243,99 @@ It's essential to understand what happened behind the scene:
 6. The method returns the result. The virtual thread terminates.
 7. The result is captured by Quarkus and written in the HTTP response
 
+== Use virtual threads for every endpoint
+
+Annotating every endpoint with `@RunOnVirtualThread` can be cumbersome when you want your whole application to use virtual threads.
+There are two ways to switch the default execution model for all endpoints at once: a configuration property and an annotated JAX-RS `Application` class.
+
+[WARNING]
+====
+Before switching all endpoints to virtual threads, make sure your application and its dependencies do not suffer from thread pinning or carrier thread monopolization.
+For more information, see the Quarkus xref:virtual-threads.adoc[Virtual thread support reference] guide.
+Thread pinning caused by `synchronized` blocks is resolved in JDK 24 and later, so we recommend running on JDK 24 or later when enabling virtual threads globally.
+You can detect pinning in your tests, as shown in the section below.
+====
+
+=== Use the configuration property
+
+You can enable virtual threads for all endpoints with a single build-time property:
+
+[source, properties]
+----
+quarkus.rest.virtual-threads=true
+----
+
+When enabled, every endpoint that would otherwise be executed on a worker thread is executed on a virtual thread instead.
+The regular execution model rules still apply:
+
+* Endpoints considered non-blocking, for instance because they return `Uni`, `Multi` or `CompletionStage`, keep running on the event loop.
+* Explicit `@Blocking`, `@NonBlocking` and `@RunOnVirtualThread` annotations on the endpoint method or resource class always take precedence.
+  So, if a specific endpoint is not safe to run on a virtual thread, annotate it with `@Blocking` to keep it on a worker thread.
+* An execution model annotation on the JAX-RS `Application` class takes precedence over this property.
+
+=== Annotate the JAX-RS Application class
+
+Alternatively, you can declare the default execution model in code.
+Quarkus does not require a JAX-RS `Application` class, but you can add one and annotate it with `@RunOnVirtualThread`:
+
+[source, java]
+----
+package org.acme;
+
+import jakarta.ws.rs.core.Application;
+
+import io.smallrye.common.annotation.RunOnVirtualThread;
+
+@RunOnVirtualThread
+public class MyApplication extends Application {
+}
+----
+
+Every endpoint without an explicit `@Blocking` annotation is then executed on a virtual thread.
+Unlike the configuration property, this approach also moves endpoints with a non-blocking signature, such as endpoints returning `Uni`, to a virtual thread.
+The same applies to endpoints annotated with `@NonBlocking`; in this case, a warning is logged at startup.
+An application can only have one `Application` class.
+
+=== Choose between the two approaches
+
+The following table summarizes on which thread an endpoint is executed, depending on how it is declared:
+
+.Execution model depending on the endpoint declaration
+[cols="2,1,1,1"]
+|===
+|Endpoint |Default |`quarkus.rest.virtual-threads=true` |`@RunOnVirtualThread` on `Application`
+
+|No annotation, blocking signature (returns `String`, a POJO, ...)
+|Worker thread
+|Virtual thread
+|Virtual thread
+
+|No annotation, non-blocking signature (returns `Uni`, `Multi`, `CompletionStage`, ...)
+|Event loop
+|Event loop
+|Virtual thread
+
+|`@Blocking`
+|Worker thread
+|Worker thread
+|Worker thread
+
+|`@NonBlocking`
+|Event loop
+|Event loop
+|Virtual thread (a warning is logged)
+
+|`@RunOnVirtualThread`
+|Virtual thread
+|Virtual thread
+|Virtual thread
+|===
+
+=== Revert to worker threads without code changes
+
+If you run into problems, you do not need to remove the property or the annotation to compare against the worker thread model.
+Setting `quarkus.virtual-threads.enabled=false` executes all the endpoints marked to run on virtual threads on worker threads instead.
+
 == Verify pinning using tests
 
 In the `pom.xml,` we added an `argLine` argument to the surefire and failsafe plugins:

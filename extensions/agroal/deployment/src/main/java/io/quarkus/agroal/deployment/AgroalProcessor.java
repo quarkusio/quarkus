@@ -1,8 +1,8 @@
 package io.quarkus.agroal.deployment;
 
 import static io.quarkus.agroal.deployment.AgroalDataSourceBuildUtil.qualifiers;
-import static io.quarkus.arc.deployment.OpenTelemetrySdkBuildItem.isOtelSdkEnabled;
 import static io.quarkus.deployment.Capability.OPENTELEMETRY_TRACER;
+import static io.quarkus.deployment.builditem.OpenTelemetrySdkBuildItem.isOtelSdkEnabled;
 
 import java.sql.Driver;
 import java.util.ArrayList;
@@ -39,7 +39,6 @@ import io.quarkus.agroal.spi.JdbcDriverBuildItem;
 import io.quarkus.agroal.spi.JdbcPropertyBuildItem;
 import io.quarkus.arc.BeanDestroyer;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
-import io.quarkus.arc.deployment.OpenTelemetrySdkBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.arc.processor.DotNames;
@@ -59,6 +58,7 @@ import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.ExtensionSslNativeSupportBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.LogCategoryBuildItem;
+import io.quarkus.deployment.builditem.OpenTelemetrySdkBuildItem;
 import io.quarkus.deployment.builditem.SslNativeConfigBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBundleBuildItem;

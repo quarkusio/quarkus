@@ -14,12 +14,14 @@ import org.keycloak.json.StringOrArraySerializer;
 
 import io.quarkus.arc.BeanDestroyer;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
+import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Produce;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.AdditionalApplicationArchiveMarkerBuildItem;
+import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyIgnoreWarningBuildItem;
@@ -28,6 +30,12 @@ import io.quarkus.keycloak.admin.resteasy.client.runtime.KeycloakAdminResteasyCl
 import io.quarkus.tls.deployment.spi.TlsRegistryBuildItem;
 
 public class KeycloakAdminResteasyClientProcessor {
+
+    // Must be executed even if the extension is disabled, see https://github.com/quarkusio/quarkus/pull/26966/
+    @BuildStep
+    FeatureBuildItem featureBuildItem() {
+        return new FeatureBuildItem(Feature.KEYCLOAK_ADMIN_RESTEASY_CLIENT);
+    }
 
     @BuildStep
     ReflectiveHierarchyIgnoreWarningBuildItem marker(BuildProducer<AdditionalApplicationArchiveMarkerBuildItem> prod) {

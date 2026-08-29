@@ -7,6 +7,7 @@ import io.quarkus.datasource.deployment.spi.DevServicesDatasourceProvider.Runnin
 import io.quarkus.deployment.dev.devservices.RunningContainer;
 import io.quarkus.devservices.common.ContainerAddress;
 import io.quarkus.devservices.common.DatasourceServiceConfigurator;
+import io.quarkus.devservices.common.DevServicesHostUtil;
 
 public class MSSQLDatasourceServiceConfigurator implements DatasourceServiceConfigurator {
 
@@ -41,9 +42,8 @@ public class MSSQLDatasourceServiceConfigurator implements DatasourceServiceConf
 
     @Override
     public String getJdbcUrl(ContainerAddress containerAddress, String databaseName) {
-        return String.format("jdbc:%s://%s:%d%s",
-                getJdbcPrefix(),
-                containerAddress.getHost(),
+        return SqlServerDevServicesJdbcUrl.build(
+                DevServicesHostUtil.resolvePublishedPortHost(containerAddress.getId(), containerAddress.getHost()),
                 containerAddress.getPort(),
                 getParameters(containerAddress.getRunningContainer().containerInfo().labels()));
     }

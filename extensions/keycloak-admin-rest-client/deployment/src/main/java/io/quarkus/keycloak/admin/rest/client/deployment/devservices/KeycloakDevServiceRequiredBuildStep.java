@@ -21,8 +21,7 @@ public class KeycloakDevServiceRequiredBuildStep {
 
     @BuildStep
     KeycloakDevServicesRequiredBuildItem requireKeycloakDevService() {
-        // TODO: introduce Keycloak Admin Client feature, I just don't want to do it in this already large PR
-        return KeycloakDevServicesRequiredBuildItem.of(Feature.OIDC,
+        return KeycloakDevServicesRequiredBuildItem.of(Feature.KEYCLOAK_ADMIN_REST_CLIENT,
                 new LazyConfigProperty(SERVER_URL_CONFIG_KEY, ConfigPropertiesContext::authServerInternalBaseUrl),
                 SERVER_URL_CONFIG_KEY);
     }

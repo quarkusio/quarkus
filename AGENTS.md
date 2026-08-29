@@ -120,3 +120,4 @@ Consult the relevant skill when you are about to do that type of work:
 | `pull-requests` | PR title/description conventions, commit hygiene, labels, and contribution rules      |
 | `writing-extension-devui` | Writing a Dev UI for a Quarkus extension                                              |
 | `building-docs` | Building, previewing, or testing documentation changes locally                        |
+| `deprecation-cleanup` | Removing code deprecated for over 12 months, or adding missed `@Deprecated` annotations |

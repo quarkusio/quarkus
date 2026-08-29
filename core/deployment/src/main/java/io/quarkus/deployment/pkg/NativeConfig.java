@@ -163,7 +163,11 @@ public interface NativeConfig {
     /**
      * If a JVM based 'fallback image' should be created if native image fails. This is not recommended, as this is
      * functionally the same as just running the application in a JVM
+     *
+     * @deprecated Fallback images are generally discouraged and are discontinued in GraalVM 25.1
+     *             (https://github.com/oracle/graal/pull/12755)
      */
+    @Deprecated(since = "4.0", forRemoval = true)
     @WithDefault("false")
     boolean enableFallbackImages();
 

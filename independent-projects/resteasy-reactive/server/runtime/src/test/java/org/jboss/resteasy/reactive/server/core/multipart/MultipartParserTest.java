@@ -10,7 +10,8 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 
 import org.jboss.resteasy.reactive.common.util.CaseInsensitiveMap;
-import org.jboss.resteasy.reactive.server.core.multipart.MultipartParser.PartHandler;
+import org.jboss.resteasy.reactive.common.util.MultipartParser;
+import org.jboss.resteasy.reactive.common.util.MultipartParser.PartHandler;
 import org.junit.jupiter.api.Test;
 
 public class MultipartParserTest {

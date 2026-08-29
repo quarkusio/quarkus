@@ -7,18 +7,18 @@ import jakarta.persistence.Id;
 /**
  * Example JPA entity.
  *
- * To use it, get access to a JPA EntityManager via injection.
+ * To use it, get access to a Hibernate ORM Session via injection.
  *
  * {@code
  *     @Inject
- *     EntityManager em;
+ *     Session session;
  *
  *     public void doSomething() {
  *         MyEntity entity1 = new MyEntity();
  *         entity1.field = "field-1";
- *         em.persist(entity1);
+ *         session.persist(entity1);
  *
- *         List<MyEntity> entities = em.createQuery("from MyEntity", MyEntity.class).getResultList();
+ *         List<MyEntity> entities = session.createQuery("from MyEntity", MyEntity.class).getResultList();
  *     }
  * }
  */

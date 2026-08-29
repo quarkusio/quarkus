@@ -46,7 +46,6 @@ Copy `docs/src/main/diataxis/_templates/template-tutorial.adoc` from the Quarkus
 include::_attributes.adoc[] // <3>
 :extension-status: experimental // <4>
 ----
-
 <1> Use the file name as a unique id for the section.
 <2> Add the title as a top-level heading.
 <3> Include additional attributes that help define consistent formatting and provide source portability.
@@ -110,7 +109,6 @@ include::{includes}/prerequisites.adoc[] // <4>
 
 The `curl` command line utility is also used to manually test the endpoint.
 ----
-
 <1> Declare that our hypothetical tutorial will take about 30 minutes to complete.
 <2> Declare that our nonsensical acme extension also requires a container runtime.
 <3> For simplicity in this tutorial, we will avoid GraalVM and Mandrel prerequisites.
@@ -146,7 +144,6 @@ Create a new project with the following command: // <3>
 :create-app-extensions: acme // <5>
 include::{includes}/devtools/create-app.adoc[] // <6>
 ----
-
 <1> Enable section numbering
 <2> Create a second level heading for the first step
 <3> Describe the step briefly
@@ -233,7 +230,6 @@ Create a new source file, `src/main/java/org/acme/MyAcmeApplication.java`, and d
 ----
 \include::{doc-examples}/acme-serve-http-requests-MyAcmeApplication.java[tags=*;!goodbye]
 ----
-
 <1> Specify the CDI lifecycle of this bean.
 An `@ApplicationScoped` bean has a single bean instance that is used for the application.
 <2> The `@Anvil` annotation always implies a simple Http GET request with the uri derived from the method name, `/hello` in this case.
@@ -388,7 +384,6 @@ The two new code listings should be focused on the methods that were omitted bef
 
 Congratulations! You have created a project that uses the acme extension to create fanciful endpoints using the `@Anvil` and `@Toaster` annotations. // <2>
 ----
-
 <1> Turn off section numbering
 <2> Congratulate the user on a job well done!
 

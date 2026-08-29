@@ -22,6 +22,7 @@ import io.quarkus.deployment.builditem.Startable;
 import io.quarkus.deployment.dev.devservices.DevServicesConfig;
 import io.quarkus.devservices.common.ComposeLocator;
 import io.quarkus.devservices.common.ContainerLocator;
+import io.quarkus.devservices.common.DevServicesHostUtil;
 import io.quarkus.narayana.lra.deployment.LRABuildTimeConfiguration;
 import io.quarkus.runtime.configuration.ConfigUtils;
 
@@ -69,7 +70,9 @@ public class DevServicesLRAProcessor {
                 .map(containerAddress -> DevServicesResultBuildItem.discovered()
                         .feature(Feature.NARAYANA_LRA)
                         .containerId(containerAddress.getId())
-                        .config(Map.of(LRA_COORDINATOR_URL_PROPERTY, "http://" + containerAddress.getUrl() + "/lra-coordinator",
+                        .config(Map.of(LRA_COORDINATOR_URL_PROPERTY,
+                                "http://" + DevServicesHostUtil.formatResolvedHostAndPort(containerAddress.getId(),
+                                        containerAddress.getHost(), containerAddress.getPort()) + "/lra-coordinator",
                                 "quarkus.http.host", "0.0.0.0", // Required since the container needs to call the host application
                                 "quarkus.lra.base-uri",
                                 "http://host.containers.internal:"

@@ -16,6 +16,8 @@ import io.quarkus.runtime.annotations.Recorder;
 @Recorder
 public class RedisCacheBuildRecorder {
 
+    public static final String REDIS_CACHE_TYPE = "redis";
+
     private static final Logger LOGGER = Logger.getLogger(RedisCacheBuildRecorder.class);
 
     private final RedisCachesBuildTimeConfig buildConfig;
@@ -34,7 +36,7 @@ public class RedisCacheBuildRecorder {
         return new CacheManagerInfo() {
             @Override
             public boolean supports(Context context) {
-                return context.cacheEnabled() && "redis".equals(context.cacheType()); // TODO: fix constant
+                return context.cacheEnabled() && REDIS_CACHE_TYPE.equals(context.cacheType());
             }
 
             @Override

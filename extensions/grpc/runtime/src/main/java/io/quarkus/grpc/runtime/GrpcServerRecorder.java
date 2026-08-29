@@ -8,7 +8,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Pattern;
 
 import jakarta.enterprise.inject.Any;
@@ -43,7 +42,6 @@ import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.vertx.http.runtime.QuarkusErrorHandler;
 import io.quarkus.vertx.http.runtime.security.HttpAuthenticator;
 import io.quarkus.virtual.threads.VirtualThreadsRecorder;
-import io.smallrye.common.vertx.VertxContext;
 import io.vertx.core.Context;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
@@ -254,12 +252,11 @@ public class GrpcServerRecorder {
 
     private static void routingContextAware(GrpcIoServer server, RoutingContext context) {
         Context currentContext = Vertx.currentContext();
-        var local = currentContext.getLocal(VertxContext.DATA_MAP_LOCAL, ConcurrentHashMap::new);
-        local.put(RoutingContext.class.getName(), context);
+        GrpcContextLocalsProvider.ROUTING_CONTEXT_LOCAL.put(currentContext, context);
         try {
             server.handle(context.request());
         } finally {
-            local.remove(RoutingContext.class.getName());
+            GrpcContextLocalsProvider.ROUTING_CONTEXT_LOCAL.remove(currentContext);
         }
     }
 

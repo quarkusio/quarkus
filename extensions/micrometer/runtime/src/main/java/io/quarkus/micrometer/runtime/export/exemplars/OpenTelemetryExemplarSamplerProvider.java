@@ -6,6 +6,7 @@ import java.util.function.Function;
 import jakarta.enterprise.inject.Produces;
 
 import io.opentelemetry.api.trace.Span;
+import io.opentelemetry.context.Context;
 import io.quarkus.opentelemetry.runtime.QuarkusContextStorage;
 
 public class OpenTelemetryExemplarSamplerProvider {
@@ -34,7 +35,13 @@ public class OpenTelemetryExemplarSamplerProvider {
             }
 
             private <T> T get(Function<io.opentelemetry.api.trace.SpanContext, T> valueExtractor) {
-                return Optional.ofNullable(Span.fromContextOrNull(QuarkusContextStorage.INSTANCE.current()))
+                Context context = QuarkusContextStorage.INSTANCE.current();
+                if (context == null) {
+                    // no active context, e.g. a meter recorded outside any Vert.x context;
+                    // Span.fromContextOrNull() would log an OpenTelemetry API usage complaint for the null parameter
+                    return null;
+                }
+                return Optional.ofNullable(Span.fromContextOrNull(context))
                         .map(Span::getSpanContext)
                         .map(valueExtractor)
                         .orElse(null);

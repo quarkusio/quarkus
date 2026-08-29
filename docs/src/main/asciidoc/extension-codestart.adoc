@@ -585,7 +585,6 @@ The value of `magic.source` can be customized in a platform descriptor like this
     },
 ...
 ----
-
 <1> `project` groups metadata that is relevant for project creation tools
 <2> `codestart-data` is a source of data for various codestarts
 <3> a name of the codestart to which the data nested under it should be passed

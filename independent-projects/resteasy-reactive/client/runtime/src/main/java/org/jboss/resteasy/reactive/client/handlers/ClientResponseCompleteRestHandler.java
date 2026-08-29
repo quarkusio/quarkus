@@ -4,7 +4,6 @@ import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.lang.reflect.ParameterizedType;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -25,6 +24,7 @@ import org.jboss.resteasy.reactive.client.impl.multipart.FileDownloadImpl;
 import org.jboss.resteasy.reactive.client.spi.ClientRestHandler;
 import org.jboss.resteasy.reactive.client.spi.FieldFiller;
 import org.jboss.resteasy.reactive.client.spi.MultipartResponseData;
+import org.jboss.resteasy.reactive.common.core.Serialisers;
 import org.jboss.resteasy.reactive.common.jaxrs.EntityPartImpl;
 import org.jboss.resteasy.reactive.common.jaxrs.ResponseImpl;
 import org.jboss.resteasy.reactive.common.jaxrs.StatusTypeImpl;
@@ -67,10 +67,11 @@ public class ClientResponseCompleteRestHandler implements ClientRestHandler {
             if (context.getResponseMultipartParts() != null) {
                 GenericType<?> responseType = context.getResponseType();
 
-                if (isEntityPartList(responseType)) {
+                if (EntityPartImpl.isEntityPartList(responseType.getType())) {
+                    Serialisers serialisers = context.getRestClient().getClientContext().getSerialisers();
                     List<EntityPart> entityParts = new ArrayList<>();
                     for (InterfaceHttpData httpData : context.getResponseMultipartParts()) {
-                        entityParts.add(nettyPartToEntityPart(httpData));
+                        entityParts.add(nettyPartToEntityPart(httpData, serialisers));
                     }
                     builder.entity(entityParts);
                 } else {
@@ -158,18 +159,7 @@ public class ClientResponseCompleteRestHandler implements ClientRestHandler {
         return builder.build();
     }
 
-    private static boolean isEntityPartList(GenericType<?> responseType) {
-        if (responseType.getRawType() != List.class) {
-            return false;
-        }
-        if (responseType.getType() instanceof ParameterizedType pt) {
-            java.lang.reflect.Type[] args = pt.getActualTypeArguments();
-            return args.length == 1 && args[0] == EntityPart.class;
-        }
-        return false;
-    }
-
-    private static EntityPart nettyPartToEntityPart(InterfaceHttpData httpData) throws IOException {
+    private static EntityPart nettyPartToEntityPart(InterfaceHttpData httpData, Serialisers serialisers) throws IOException {
         String name = httpData.getName();
         String fileName = null;
         InputStream content;
@@ -190,13 +180,9 @@ public class ClientResponseCompleteRestHandler implements ClientRestHandler {
         }
 
         headers.putSingle("Content-Type", mediaType.toString());
-        StringBuilder cd = new StringBuilder("form-data; name=\"").append(name).append("\"");
-        if (fileName != null) {
-            cd.append("; filename=\"").append(fileName).append("\"");
-        }
-        headers.putSingle("Content-Disposition", cd.toString());
+        headers.putSingle("Content-Disposition", EntityPartImpl.buildContentDisposition(name, fileName));
 
-        return new EntityPartImpl(name, fileName, headers, mediaType, content);
+        return new EntityPartImpl(name, fileName, headers, mediaType, content, serialisers);
     }
 
 }

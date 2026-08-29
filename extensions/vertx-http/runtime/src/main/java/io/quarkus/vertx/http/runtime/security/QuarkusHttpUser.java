@@ -9,6 +9,7 @@ import io.smallrye.mutiny.Uni;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.auth.User;
 import io.vertx.ext.web.RoutingContext;
+import io.vertx.ext.web.impl.UserContextInternal;
 
 /**
  * Basic vert.x user representation
@@ -108,14 +109,21 @@ public class QuarkusHttpUser implements User {
         return Uni.createFrom().nullItem();
     }
 
+    /**
+     * Sets the Vert.x {@link User} on the routing context without touching the deferred identity.
+     */
+    public static void setUser(RoutingContext routingContext, User user) {
+        ((UserContextInternal) routingContext.userContext()).setUser(user);
+    }
+
     static Uni<SecurityIdentity> setIdentity(Uni<SecurityIdentity> identityUni, RoutingContext routingContext) {
-        ((io.vertx.ext.web.impl.UserContextInternal) routingContext.userContext()).setUser(null);
+        setUser(routingContext, null);
         routingContext.put(QuarkusHttpUser.DEFERRED_IDENTITY_KEY, identityUni);
         return identityUni;
     }
 
     public static SecurityIdentity setIdentity(SecurityIdentity identity, RoutingContext routingContext) {
-        ((io.vertx.ext.web.impl.UserContextInternal) routingContext.userContext()).setUser(new QuarkusHttpUser(identity));
+        setUser(routingContext, new QuarkusHttpUser(identity));
         routingContext.put(QuarkusHttpUser.DEFERRED_IDENTITY_KEY, Uni.createFrom().item(identity));
         return identity;
     }

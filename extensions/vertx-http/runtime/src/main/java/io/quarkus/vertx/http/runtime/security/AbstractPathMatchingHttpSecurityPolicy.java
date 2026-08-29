@@ -1,7 +1,5 @@
 package io.quarkus.vertx.http.runtime.security;
 
-import static io.quarkus.security.PermissionsAllowed.PERMISSION_TO_ACTION_SEPARATOR;
-
 import java.lang.reflect.InvocationTargetException;
 import java.security.Permission;
 import java.util.ArrayList;
@@ -19,6 +17,7 @@ import io.quarkus.arc.ClientProxy;
 import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.security.StringPermission;
 import io.quarkus.security.identity.SecurityIdentity;
+import io.quarkus.security.spi.runtime.PermissionToActionUtil;
 import io.quarkus.vertx.http.runtime.PolicyConfig;
 import io.quarkus.vertx.http.runtime.PolicyMappingConfig;
 import io.quarkus.vertx.http.runtime.security.HttpSecurityConfiguration.AuthenticationMechanisms;
@@ -345,36 +344,21 @@ public class AbstractPathMatchingHttpSecurityPolicy {
     }
 
     private static void addPermissionToAction(Map<String, PermissionToActions> cache, String role, String permissionToAction) {
-        final String permissionName;
-        final String action;
-        // incoming value is either in format perm1:action1 or perm1 (with or withot action)
-        if (permissionToAction.contains(PERMISSION_TO_ACTION_SEPARATOR)) {
-            // perm1:action1
-            var permToActions = permissionToAction.split(PERMISSION_TO_ACTION_SEPARATOR);
-            if (permToActions.length != 2) {
-                throw new ConfigurationException(
-                        String.format("Invalid permission format '%s', please use exactly one permission to action separator",
-                                permissionToAction));
-            }
-            permissionName = permToActions[0].trim();
-            action = permToActions[1].trim();
-        } else {
-            // perm1
-            permissionName = permissionToAction.trim();
-            action = null;
-        }
-
-        if (permissionName.isEmpty()) {
+        final PermissionToActionUtil.ParsedPermission parsed;
+        try {
+            parsed = PermissionToActionUtil.parse(permissionToAction.trim());
+        } catch (IllegalArgumentException e) {
             throw new ConfigurationException(
-                    String.format("Invalid permission name '%s' for role '%s'", permissionToAction, role));
+                    String.format("Invalid permission format '%s' for role '%s': %s", permissionToAction, role,
+                            e.getMessage()));
         }
 
-        cache.computeIfAbsent(permissionName, new Function<String, PermissionToActions>() {
+        cache.computeIfAbsent(parsed.name(), new Function<String, PermissionToActions>() {
             @Override
             public PermissionToActions apply(String s) {
                 return new PermissionToActions(s);
             }
-        }).addAction(action);
+        }).addAction(parsed.action());
     }
 
     private static Class<?> loadClass(String className) {

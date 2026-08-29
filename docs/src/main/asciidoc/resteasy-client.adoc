@@ -187,7 +187,6 @@ The name of the property needs to follow a certain convention which is best disp
 quarkus.rest-client."org.acme.rest.client.ExtensionsService".url=https://stage.code.quarkus.io/api # // <1>
 quarkus.rest-client."org.acme.rest.client.ExtensionsService".scope=jakarta.inject.Singleton # // <2>
 ----
-
 <1> Having this configuration means that all requests performed using `ExtensionsService` will use `https://stage.code.quarkus.io` as the base URL.
 Using the configuration above, calling the `getById` method of `ExtensionsService` with a value of `io.quarkus:quarkus-resteasy-client` would result in an HTTP GET request being made to `https://stage.code.quarkus.io/api/extensions?id=io.quarkus:quarkus-rest-client`.
 <2> Having this configuration means that the default scope of `ExtensionsService` will be `@Singleton`. Supported scope values are `@Singleton`, `@Dependent`, `@ApplicationScoped` and `@RequestScoped`. The default scope is `@Dependent`.

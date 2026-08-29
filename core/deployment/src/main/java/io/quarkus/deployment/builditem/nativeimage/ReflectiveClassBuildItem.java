@@ -78,14 +78,6 @@ public final class ReflectiveClassBuildItem extends MultiBuildItem {
         return ReflectiveClassBuildItem.builder(classNames).serialization().build();
     }
 
-    @Deprecated(since = "3.14", forRemoval = true)
-    ReflectiveClassBuildItem(boolean constructors, boolean queryConstructors, boolean methods, boolean queryMethods,
-            boolean fields, boolean weak, boolean serialization,
-            boolean unsafeAllocated, String... className) {
-        this(constructors, false, queryConstructors, methods, false, queryMethods, fields, false, weak, serialization,
-                unsafeAllocated, null, className);
-    }
-
     ReflectiveClassBuildItem(boolean constructors, boolean publicConstructors, boolean queryConstructors, boolean methods,
             boolean publicMethods, boolean queryMethods,
             boolean fields, boolean classes, boolean weak, boolean serialization,

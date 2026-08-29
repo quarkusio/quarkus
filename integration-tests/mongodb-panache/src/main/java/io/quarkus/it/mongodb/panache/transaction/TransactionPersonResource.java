@@ -17,6 +17,7 @@ import jakarta.ws.rs.core.Response;
 import com.mongodb.client.MongoClient;
 
 import io.quarkus.mongodb.panache.Panache;
+import io.quarkus.narayana.jta.runtime.TransactionConfiguration;
 import io.quarkus.runtime.StartupEvent;
 
 @Path("/transaction")
@@ -55,6 +56,23 @@ public class TransactionPersonResource {
     public void addPersonTwice(TransactionPerson person) {
         person.persist();
         throw new RuntimeException("You shall not pass");
+    }
+
+    @POST
+    @Path("/timeout")
+    @Transactional
+    @TransactionConfiguration(timeout = 1)
+    public Response addPersonWithTimeout(TransactionPerson person) {
+        person.persist();
+        assertNotNull(Panache.getSession(TransactionPerson.class));
+        try {
+            // the reaper (checkPeriod=500ms) will time out and roll back the transaction
+            // from its own thread while we're still sleeping here
+            Thread.sleep(2000);
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+        return Response.created(URI.create("/transaction/" + person.id.toString())).build();
     }
 
     @PUT

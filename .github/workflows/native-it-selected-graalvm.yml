@@ -4,34 +4,32 @@ permissions:
   contents: read
   packages: read
 
-# CI disabled for Vert.x 5 experimental branch - uncomment the 'on' triggers below to re-enable
-#on:
-#  workflow_dispatch:
-#    inputs:
-#      BRANCH:
-#        description: 'Branch to use'
-#        required: true
-#        default: 'main'
-#        type: string
-#      NATIVE_COMPILER:
-#        description: 'the native compiler to use'
-#        required: true
-#        default: 'mandrel'
-#        type: choice
-#        options:
-#          - mandrel
-#          - graalvm-community
-#          - graalvm
-#          - liberica
-#      NATIVE_COMPILER_VERSION:
-#        description: 'the native compiler version to use'
-#        required: true
-#        default: '25'
-#        type: choice
-#        options:
-#          - '21'
-#          - '25'
-on: [workflow_dispatch]
+on:
+  workflow_dispatch:
+    inputs:
+      BRANCH:
+        description: 'Branch to use'
+        required: true
+        default: 'main'
+        type: string
+      NATIVE_COMPILER:
+        description: 'the native compiler to use'
+        required: true
+        default: 'mandrel'
+        type: choice
+        options:
+          - mandrel
+          - graalvm-community
+          - graalvm
+          - liberica
+      NATIVE_COMPILER_VERSION:
+        description: 'the native compiler version to use'
+        required: true
+        default: '25'
+        type: choice
+        options:
+          - '21'
+          - '25'
 
 env:
   # Workaround testsuite locale issue
@@ -264,7 +262,7 @@ jobs:
           java-version: ${{ needs.initial-build.outputs.base-jdk-version }}
       - name: Setup GraalVM
         id: setup-graalvm
-        uses: graalvm/setup-graalvm@0def53c0fd8534bc13416c9469f5be45265824fd # v1.6.3
+        uses: graalvm/setup-graalvm@5298d94fb55a4f185c602eeac5de1b553882abe2 # v1.6.4
         with:
           java-version: ${{ inputs.NATIVE_COMPILER_VERSION }}
           distribution: ${{ inputs.NATIVE_COMPILER }}
@@ -336,7 +334,7 @@ jobs:
           java-version: ${{ needs.initial-build.outputs.base-jdk-version }}
       - name: Setup GraalVM
         id: setup-graalvm
-        uses: graalvm/setup-graalvm@0def53c0fd8534bc13416c9469f5be45265824fd # v1.6.3
+        uses: graalvm/setup-graalvm@5298d94fb55a4f185c602eeac5de1b553882abe2 # v1.6.4
         with:
           java-version: ${{ inputs.NATIVE_COMPILER_VERSION }}
           distribution: ${{ inputs.NATIVE_COMPILER }}

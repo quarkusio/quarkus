@@ -8,6 +8,7 @@ import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -17,6 +18,8 @@ import java.util.function.Function;
 import jakarta.ws.rs.InternalServerErrorException;
 import jakarta.ws.rs.ProcessingException;
 import jakarta.ws.rs.client.Entity;
+import jakarta.ws.rs.core.EntityPart;
+import jakarta.ws.rs.core.GenericEntity;
 import jakarta.ws.rs.core.HttpHeaders;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.MultivaluedMap;
@@ -39,6 +42,7 @@ import org.jboss.resteasy.reactive.client.impl.multipart.QuarkusMultipartRespons
 import org.jboss.resteasy.reactive.client.spi.ClientRestHandler;
 import org.jboss.resteasy.reactive.client.spi.MultipartResponseData;
 import org.jboss.resteasy.reactive.common.core.Serialisers;
+import org.jboss.resteasy.reactive.common.jaxrs.EntityPartImpl;
 import org.jboss.resteasy.reactive.common.util.MultivaluedTreeMap;
 
 import io.netty.buffer.ByteBufInputStream;
@@ -344,7 +348,9 @@ public class ClientSendRequestHandler implements ClientRestHandler {
                         QuarkusMultipartResponseDecoder multipartDecoder = new QuarkusMultipartResponseDecoder(
                                 clientResponse);
 
-                        java.util.List<io.vertx.core.buffer.Buffer> rawBuffers = new java.util.ArrayList<>();
+                        // Collect raw buffers so we can reconstruct an entity stream for MessageBodyReader usage
+                        // (e.g. Response.readEntity with a custom reader), since the Netty decoder consumes the data
+                        List<Buffer> rawBuffers = new ArrayList<>();
                         clientResponse.handler(buffer -> {
                             rawBuffers.add(buffer.copy());
                             multipartDecoder.offer(buffer);
@@ -358,8 +364,8 @@ public class ClientSendRequestHandler implements ClientRestHandler {
                                 List<InterfaceHttpData> datas = multipartDecoder.getBodyHttpDatas();
                                 requestContext.setResponseMultipartParts(datas);
 
-                                io.vertx.core.buffer.Buffer combined = io.vertx.core.buffer.Buffer.buffer();
-                                for (io.vertx.core.buffer.Buffer b : rawBuffers) {
+                                Buffer combined = Buffer.buffer();
+                                for (Buffer b : rawBuffers) {
                                     combined.appendBuffer(b);
                                 }
                                 if (combined.length() > 0) {
@@ -585,14 +591,16 @@ public class ClientSendRequestHandler implements ClientRestHandler {
             RestClientRequestContext state) throws Exception {
         QuarkusMultipartForm multipartForm;
         Object entityObj = state.getEntity().getEntity();
-        if (entityObj instanceof jakarta.ws.rs.core.GenericEntity<?> ge) {
+        boolean entityPartList = false;
+        if (entityObj instanceof GenericEntity<?> ge) {
+            entityPartList = EntityPartImpl.isEntityPartList(ge.getType());
             entityObj = ge.getEntity();
         }
         if (entityObj instanceof QuarkusMultipartForm) {
             multipartForm = (QuarkusMultipartForm) entityObj;
-        } else if (entityObj instanceof List<?> list && !list.isEmpty()
-                && list.get(0) instanceof jakarta.ws.rs.core.EntityPart) {
-            multipartForm = entityPartsToMultipartForm((List<jakarta.ws.rs.core.EntityPart>) list);
+        } else if (entityObj instanceof List<?> list
+                && (entityPartList || (!list.isEmpty() && list.get(0) instanceof EntityPart))) {
+            multipartForm = entityPartsToMultipartForm((List<EntityPart>) list);
         } else {
             throw new IllegalArgumentException(
                     "Multipart form upload expects an entity of type MultipartForm or List<EntityPart>, got: " + entityObj);
@@ -703,33 +711,38 @@ public class ClientSendRequestHandler implements ClientRestHandler {
         }
     }
 
-    private QuarkusMultipartForm entityPartsToMultipartForm(List<jakarta.ws.rs.core.EntityPart> parts) throws IOException {
+    private QuarkusMultipartForm entityPartsToMultipartForm(List<EntityPart> parts) throws IOException {
         QuarkusMultipartForm form = new QuarkusMultipartForm();
-        for (jakarta.ws.rs.core.EntityPart part : parts) {
-            String name = part.getName();
-            String fileName = part.getFileName().orElse(null);
-            MediaType mediaType = part.getMediaType();
-            String mediaTypeStr = mediaType != null ? mediaType.toString() : MediaType.APPLICATION_OCTET_STREAM;
-            Buffer content = Buffer.buffer(part.getContent().readAllBytes());
-
-            if (fileName != null) {
-                boolean isText = mediaType != null && mediaType.getType().equals("text");
-                if (isText) {
-                    form.textFileUpload(name, fileName, content, mediaTypeStr);
-                } else {
-                    form.binaryFileUpload(name, fileName, content, mediaTypeStr);
-                }
-            } else {
-                boolean isText = mediaType == null || mediaType.equals(MediaType.TEXT_PLAIN_TYPE)
-                        || mediaType.getType().equals("text");
-                if (isText) {
-                    form.attribute(name, content.toString(), null);
-                } else {
-                    form.binaryFileUpload(name, name, content, mediaTypeStr);
-                }
-            }
+        for (EntityPart part : parts) {
+            addEntityPartToForm(form, part);
         }
         return form;
+    }
+
+    public static void addEntityPartToForm(QuarkusMultipartForm form, EntityPart part) throws IOException {
+        String name = part.getName();
+        String fileName = part.getFileName().orElse(null);
+        MediaType mediaType = part.getMediaType();
+        String mediaTypeStr = mediaType != null ? mediaType.toString() : MediaType.APPLICATION_OCTET_STREAM;
+        Buffer content = Buffer.buffer(part.getContent().readAllBytes());
+
+        if (fileName != null) {
+            boolean isText = mediaType != null && mediaType.getType().equals("text");
+            if (isText) {
+                form.textFileUpload(name, fileName, content, mediaTypeStr);
+            } else {
+                form.binaryFileUpload(name, fileName, content, mediaTypeStr);
+            }
+        } else {
+            boolean isText = mediaType == null || mediaType.equals(MediaType.TEXT_PLAIN_TYPE)
+                    || mediaType.getType().equals("text");
+            if (isText) {
+                form.attribute(name, content.toString(), null);
+            } else {
+                // empty fileName tells PausableHttpPostRequestEncoder to omit filename= from Content-Disposition
+                form.binaryFileUpload(name, "", content, mediaTypeStr);
+            }
+        }
     }
 
     private void setEntityRelatedHeaders(MultivaluedMap<String, String> headerMap, Entity<?> entity) {

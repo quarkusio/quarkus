@@ -271,7 +271,7 @@ public class GenerateConfigDocMojo extends AbstractMojo {
         }
     }
 
-    private static List<Path> findTargetDirectories(Path scanDirectory) throws MojoExecutionException {
+    static List<Path> findTargetDirectories(Path scanDirectory) throws MojoExecutionException {
         try {
             List<Path> targets = new ArrayList<>();
 
@@ -288,6 +288,14 @@ public class GenerateConfigDocMojo extends AbstractMojo {
 
                         // a target directory can contain target directories for test projects
                         // so let's make sure we ignore whatever is nested in a target
+                        return FileVisitResult.SKIP_SUBTREE;
+                    }
+
+                    // a directory containing a .git file or directory is the root of a separate checkout
+                    // (e.g. a git worktree for another branch kept inside the project directory); its
+                    // target/ directories belong to a different build and must not be merged into this one.
+                    // this doesn't apply to the scan root itself, which is normally the project's own repo root.
+                    if (!dir.equals(scanDirectory) && Files.exists(dir.resolve(".git"))) {
                         return FileVisitResult.SKIP_SUBTREE;
                     }
 

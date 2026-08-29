@@ -19,13 +19,20 @@ public final class GeneratedResourceBuildItem extends MultiBuildItem {
      *             {@link io.quarkus.vertx.http.deployment.spi.GeneratedStaticResourceBuildItem}
      *             instead.
      */
-    @Deprecated
+    @Deprecated(since = "3.12", forRemoval = true)
     final boolean excludeFromDevCL;
 
     public GeneratedResourceBuildItem(String name, byte[] data) {
         this(name, data, false);
     }
 
+    /**
+     * @deprecated Use {@link GeneratedResourceBuildItem#GeneratedResourceBuildItem(String, byte[])} instead.
+     *             If you want to serve static resources use
+     *             {@link io.quarkus.vertx.http.deployment.spi.GeneratedStaticResourceBuildItem}
+     *             instead.
+     */
+    @Deprecated(since = "4.0", forRemoval = true)
     public GeneratedResourceBuildItem(String name, byte[] data, boolean excludeFromDevCL) {
         this(name, data, excludeFromDevCL, false);
     }
@@ -60,13 +67,11 @@ public final class GeneratedResourceBuildItem extends MultiBuildItem {
     }
 
     /**
-     * @deprecated use {@link GeneratedResourceBuildItem#getData} instead
+     * @deprecated If you want to serve static resources use
+     *             {@link io.quarkus.vertx.http.deployment.spi.GeneratedStaticResourceBuildItem}
+     *             instead.
      */
-    @Deprecated(forRemoval = true)
-    public byte[] getClassData() {
-        return getData();
-    }
-
+    @Deprecated(since = "4.0", forRemoval = true)
     public boolean isExcludeFromDevCL() {
         return excludeFromDevCL;
     }

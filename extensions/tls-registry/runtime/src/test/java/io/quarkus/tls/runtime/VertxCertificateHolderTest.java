@@ -101,12 +101,13 @@ class VertxCertificateHolderTest {
     @Test
     void testKeyExchangeGroups() {
         assertEquals(1, holder.getServerSSLOptions().getKeyExchangeGroups().size());
-        assertTrue(holder.getServerSSLOptions().getKeyExchangeGroups().contains("x25519mlkem768"));
+        assertTrue(holder.getServerSSLOptions().getKeyExchangeGroups().contains("X25519MLKEM768"));
     }
 
     @Test
     void testPqcEnforcementPolicy() {
-        assertEquals(io.vertx.core.net.PqcEnforcementPolicy.STRICT, holder.getServerSSLOptions().getPqcEnforcementPolicy());
+        assertEquals(io.vertx.core.net.PqcEnforcementPolicy.CLIENT_NEGOTIATED,
+                holder.getServerSSLOptions().getPqcEnforcementPolicy());
     }
 
     @Test

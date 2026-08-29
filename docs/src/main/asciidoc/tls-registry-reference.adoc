@@ -802,6 +802,7 @@ Use this when you want post-quantum key exchange where available without breakin
 
 `strict`:: The server only accepts connections that use a post-quantum key exchange group.
 Clients that do not negotiate a post-quantum group are rejected.
+When `key-exchange-groups` is set, only the post-quantum groups in that list are accepted; classical groups in the list are ignored.
 Use this when all clients are known to support post-quantum cryptography.
 
 [IMPORTANT]
@@ -811,7 +812,8 @@ Setting `pqc-enforcement-policy` to `client-negotiated` or `strict` activates th
 With the default `relaxed` policy, Vert.x uses the JDK SSL engine, which ignores any post-quantum key-exchange groups before JDK 27 — meaning that configuring post-quantum groups without also setting the enforcement policy results in no post-quantum key exchange at all.
 On JDK 27+, the JDK natively supports `X25519MLKEM768` and post-quantum key exchange works without changing the enforcement policy.
 
-Quarkus logs a warning at startup if you configure a post-quantum group with `relaxed` policy to help catch this misconfiguration.
+Quarkus logs a warning at startup if you configure key exchange groups with the `relaxed` policy because the policy does not require post-quantum key exchange.
+An explicitly selected engine can still honor the configured groups.
 ====
 
 [NOTE]

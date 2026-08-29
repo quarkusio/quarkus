@@ -620,6 +620,21 @@ jobs:
         run: |
           ss -ln
           sudo service mysql stop || true
+      - name: Enable IPv6 in Docker
+        if: matrix.java.ipv6
+        run: |
+          sudo jq '. + {
+            "ipv6": true,
+            "experimental": true,
+            "ip6tables": true,
+            "fixed-cidr-v6": "fd00:d0ca:1::/64",
+            "default-address-pools": [
+              { "base": "172.17.0.0/16", "size": 24 },
+              { "base": "fd00:d0ca:2::/104", "size": 112 }
+            ]
+          }' /etc/docker/daemon.json | sudo tee /etc/docker/daemon.json.tmp
+          sudo mv /etc/docker/daemon.json.tmp /etc/docker/daemon.json
+          sudo systemctl restart docker
       - name: Support longpaths on Windows
         if: startsWith(matrix.java.os-name, 'windows')
         run: git config --global core.longpaths true

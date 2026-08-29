@@ -9,7 +9,7 @@ import org.jboss.logging.Logger;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.utility.DockerImageName;
 
-import io.quarkus.deployment.IsNormal;
+import io.quarkus.deployment.IsProduction;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.CuratedApplicationShutdownBuildItem;
 import io.quarkus.deployment.builditem.DevServicesResultBuildItem;
@@ -33,7 +33,7 @@ public class OldModelDevServicesProcessor {
         return new FeatureBuildItem(FEATURE);
     }
 
-    @BuildStep(onlyIfNot = IsNormal.class, onlyIf = DevServicesConfig.Enabled.class)
+    @BuildStep(onlyIfNot = IsProduction.class, onlyIf = DevServicesConfig.Enabled.class)
     public DevServicesResultBuildItem createContainer(CuratedApplicationShutdownBuildItem closeBuildItem) {
 
         if (devService != null) {

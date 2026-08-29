@@ -11,7 +11,7 @@ import static io.quarkus.tests.dependentextension.Constants.QUARKUS_UNSATISFIED_
 
 import java.util.Map;
 
-import io.quarkus.deployment.IsNormal;
+import io.quarkus.deployment.IsProduction;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.DevServicesAdditionalConfigBuildItem;
 import io.quarkus.deployment.builditem.DevServicesResultBuildItem;
@@ -27,7 +27,7 @@ public class DependentDevServicesProcessor {
         return new FeatureBuildItem(FEATURE);
     }
 
-    @BuildStep(onlyIfNot = IsNormal.class, onlyIf = DevServicesConfig.Enabled.class)
+    @BuildStep(onlyIfNot = IsProduction.class, onlyIf = DevServicesConfig.Enabled.class)
     DevServicesAdditionalConfigBuildItem detectConfigContamination() {
         return new DevServicesAdditionalConfigBuildItem(devServicesConfig -> {
             boolean hasDependentKey = devServicesConfig.containsKey(QUARKUS_DEPENDENT_EXTENSION_BASE_URL);
@@ -39,7 +39,7 @@ public class DependentDevServicesProcessor {
         });
     }
 
-    @BuildStep(onlyIfNot = IsNormal.class, onlyIf = DevServicesConfig.Enabled.class)
+    @BuildStep(onlyIfNot = IsProduction.class, onlyIf = DevServicesConfig.Enabled.class)
     public DevServicesResultBuildItem createDependentContainer() {
 
         return DevServicesResultBuildItem.owned()
@@ -54,7 +54,7 @@ public class DependentDevServicesProcessor {
 
     }
 
-    @BuildStep(onlyIfNot = IsNormal.class, onlyIf = DevServicesConfig.Enabled.class)
+    @BuildStep(onlyIfNot = IsProduction.class, onlyIf = DevServicesConfig.Enabled.class)
     public DevServicesResultBuildItem createDependentContainerWithUnsatisfiedDependencies() {
 
         return DevServicesResultBuildItem.owned()
@@ -68,7 +68,7 @@ public class DependentDevServicesProcessor {
 
     }
 
-    @BuildStep(onlyIfNot = IsNormal.class, onlyIf = DevServicesConfig.Enabled.class)
+    @BuildStep(onlyIfNot = IsProduction.class, onlyIf = DevServicesConfig.Enabled.class)
     public DevServicesResultBuildItem createDependentContainerWithOptionalDependencies() {
 
         return DevServicesResultBuildItem.owned()
@@ -83,7 +83,7 @@ public class DependentDevServicesProcessor {
 
     }
 
-    @BuildStep(onlyIfNot = IsNormal.class, onlyIf = DevServicesConfig.Enabled.class)
+    @BuildStep(onlyIfNot = IsProduction.class, onlyIf = DevServicesConfig.Enabled.class)
     public DevServicesResultBuildItem createDependentContainerWithUnsatisfiedOptionalDependencies() {
 
         return DevServicesResultBuildItem.owned()

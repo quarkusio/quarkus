@@ -51,6 +51,19 @@
         "modules": "-pl\n!docs\n-Dno-test-modules"
     },
     {
+        "name": "JVM Tests - JDK 21 IPv6",
+        "category": "IPv6",
+        "tag": "jvm-tests-ipv6",
+        "java-version": 21,
+        "java-distribution": "temurin",
+        "maven_args": "$JVM_TEST_MAVEN_ARGS",
+        "maven_opts": "-Xmx3g -XX:MaxMetaspaceSize=1g",
+        "os-name": "ubuntu-latest",
+        "runs-on": true,
+        "ipv6": true,
+        "modules": "-pl\nextensions/jdbc/jdbc-mariadb/deployment"
+    },
+    {
         "name": "JVM Integration Tests - JDK 21",
         "category": "Integration",
         "tag": "jvm-tests-integration",

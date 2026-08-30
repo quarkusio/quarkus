@@ -1,6 +1,5 @@
 package io.quarkus.gradle.tasks;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import javax.inject.Inject;
@@ -62,24 +61,10 @@ public abstract class QuarkusTaskWithExtensionView extends QuarkusTask {
     public abstract DirectoryProperty getGradleUserHomeDirectory();
 
     /**
-     * The roots to resolve the serialized application model's relocation tokens against: those every
-     * reader derives from its environment, plus the directories this build knows.
+     * @see GradleRelocationRoots
      */
     protected List<ApplicationModelRelocation.Root> relocationRoots() {
-        final List<ApplicationModelRelocation.Root> roots = new ArrayList<>();
-        roots.add(new ApplicationModelRelocation.Root(ApplicationModelRelocation.BUILD_DIR_ROOT,
-                getProjectLayout().getBuildDirectory().get().getAsFile().toPath()));
-        roots.add(new ApplicationModelRelocation.Root(ApplicationModelRelocation.PROJECT_DIR_ROOT,
-                getProjectLayout().getProjectDirectory().getAsFile().toPath()));
-        if (getGradleUserHomeDirectory().isPresent()) {
-            roots.add(new ApplicationModelRelocation.Root(ApplicationModelRelocation.GRADLE_USER_HOME_ROOT,
-                    getGradleUserHomeDirectory().get().getAsFile().toPath()));
-        }
-        if (getRootDirectory().isPresent()) {
-            roots.add(new ApplicationModelRelocation.Root(ApplicationModelRelocation.ROOT_DIR_ROOT,
-                    getRootDirectory().get().getAsFile().toPath()));
-        }
-        return ApplicationModelRelocation.withEnvironmentRoots(roots);
+        return GradleRelocationRoots.of(getProjectLayout(), getGradleUserHomeDirectory(), getRootDirectory());
     }
 
     @Inject

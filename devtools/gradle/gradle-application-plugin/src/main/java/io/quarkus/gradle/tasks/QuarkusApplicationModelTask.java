@@ -13,7 +13,6 @@ import java.io.UncheckedIOException;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashSet;
@@ -202,34 +201,10 @@ public abstract class QuarkusApplicationModelTask extends DefaultTask {
     }
 
     /**
-     * The roots the serialized model's absolute paths are expressed relative to, so that identical
-     * inputs built from different checkouts serialize to identical bytes.
-     * <p>
-     * The environment roots - the local Maven repository and the Gradle home - are derived by any reader
-     * on its own; the build, project and root directories are only known here. The build directory is
-     * listed separately from the project directory because it can be configured to sit outside it.
-     * <p>
-     * Builds included through {@code includeBuild(...)} get no root: their location is not recoverable
-     * by a reader that has only the model's path, so their artifacts stay absolute.
-     * <p>
-     * Where this knows a root the environment only guesses at - the Gradle home - the value here wins.
+     * @see GradleRelocationRoots
      */
     private List<ApplicationModelRelocation.Root> relocationRoots() {
-        final List<ApplicationModelRelocation.Root> roots = new ArrayList<>();
-        roots.add(new ApplicationModelRelocation.Root(ApplicationModelRelocation.BUILD_DIR_ROOT,
-                getLayout().getBuildDirectory().get().getAsFile().toPath()));
-        roots.add(new ApplicationModelRelocation.Root(ApplicationModelRelocation.PROJECT_DIR_ROOT,
-                getLayout().getProjectDirectory().getAsFile().toPath()));
-        if (getGradleUserHomeDirectory().isPresent()) {
-            // Gradle's own value, which beats the guess environmentRoots() makes from the environment
-            roots.add(new ApplicationModelRelocation.Root(ApplicationModelRelocation.GRADLE_USER_HOME_ROOT,
-                    getGradleUserHomeDirectory().get().getAsFile().toPath()));
-        }
-        if (getRootDirectory().isPresent()) {
-            roots.add(new ApplicationModelRelocation.Root(ApplicationModelRelocation.ROOT_DIR_ROOT,
-                    getRootDirectory().get().getAsFile().toPath()));
-        }
-        return ApplicationModelRelocation.withEnvironmentRoots(roots);
+        return GradleRelocationRoots.of(getLayout(), getGradleUserHomeDirectory(), getRootDirectory());
     }
 
     private ResolvedDependencyBuilder getProjectArtifact(DefaultProjectDescriptor projectDescriptor) {

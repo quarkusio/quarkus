@@ -341,6 +341,36 @@ public class ApplicationModelRelocation {
         return result;
     }
 
+    /**
+     * Replaces every occurrence of a root's location inside {@code text} with that root's token.
+     * <p>
+     * This is for callers that need a checkout-independent rendering of a value which <em>contains</em>
+     * paths rather than being one - the {@code toString()} of a descriptor used as a build cache key,
+     * for instance. {@link #relocate(Map, Collection)} tokenizes whole values and is what the serialized
+     * model itself uses; this one substitutes anywhere in the text and records nothing, so the result
+     * cannot be resolved back and is only useful as a hash input.
+     *
+     * @param text the text to rewrite
+     * @param roots roots whose locations should be replaced by their tokens, in any order
+     * @return the text with every root location replaced by its token
+     */
+    public static String tokenizeOccurrences(String text, Collection<Root> roots) {
+        if (text == null || roots.isEmpty()) {
+            return text;
+        }
+        // a longer root first, so that a root nested inside another one wins, as in relocate()
+        final List<Root> ordered = new ArrayList<>(roots);
+        ordered.sort((a, b) -> Integer.compare(b.path().toString().length(), a.path().toString().length()));
+        String result = text;
+        for (Root root : ordered) {
+            final String location = root.path().toString();
+            if (!location.isEmpty()) {
+                result = result.replace(location, root.token());
+            }
+        }
+        return result;
+    }
+
     private static String tokenize(String value, List<Root> roots) {
         for (Root root : roots) {
             final String prefix = root.path().toString();

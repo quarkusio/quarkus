@@ -297,6 +297,12 @@ public class CachingTest extends BaseGradleTest {
 
         soft.assertThat(taskResults(result))
                 .describedAs("output: %s", result.getOutput())
+                // the model task itself is cacheable, so the build from the other directory resolves the
+                // entry the first one stored instead of resolving the whole classpath again
+                .containsEntry(":app:quarkusGenerateAppModel", TaskOutcome.FROM_CACHE)
+                // the model task itself is cacheable, so the build from the other directory resolves the
+                // entry the first one stored instead of resolving the whole classpath again
+                .containsEntry(":app:quarkusGenerateAppModel", TaskOutcome.FROM_CACHE)
                 .containsEntry(":app:quarkusGenerateCode", TaskOutcome.FROM_CACHE)
                 .containsEntry(":app:quarkusAppPartsBuild", TaskOutcome.FROM_CACHE);
     }

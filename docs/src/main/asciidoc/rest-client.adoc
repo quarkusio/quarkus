@@ -149,11 +149,13 @@ package org.acme.rest.client;
 
 import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 import org.jboss.resteasy.reactive.RestQuery;
+import org.jboss.resteasy.reactive.Separator;
 
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.MultivaluedMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.Optional;
@@ -177,11 +179,15 @@ public interface ExtensionsService {
     @GET
     Set<Extension> getByFilters(@RestQuery MultivaluedMap<String, String> filters); <3>
 
+    @GET
+    Set<Extension> getByNamesDefiningSeparator(@Separator(",") @RestQuery List<String> names); <4>
+
 }
 ----
 <1> @RestQuery will include parameter with key `name`
 <2> Each `Map` entry represents exactly one query parameter
 <3> `MultivaluedMap` allows you to send array values
+<4> @Separator lets you specify a custom delimiter between the values of a collection-valued parameter
 
 ==== Using @ClientQueryParam
 

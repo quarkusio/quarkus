@@ -1121,7 +1121,8 @@ public class JaxrsClientReactiveProcessor {
                                             methodCreator.getMethodParam(paramIdx),
                                             jandexMethod.parameterType(paramIdx), index, methodCreator.getThis(),
                                             getGenericTypeFromArray(methodCreator, methodGenericParametersField, paramIdx),
-                                            getAnnotationsFromArray(methodCreator, methodParamAnnotationsField, paramIdx)));
+                                            getAnnotationsFromArray(methodCreator, methodParamAnnotationsField, paramIdx),
+                                            param.separator));
                         } else if (param.parameterType == ParameterType.MATRIX) {
                             // matrix params have to be set on a method-level web target (they vary between invocations)
                             methodCreator.assign(methodTarget,
@@ -1785,7 +1786,8 @@ public class JaxrsClientReactiveProcessor {
                                             getGenericTypeFromArray(subMethodCreator, subParamField.genericsParametersField,
                                                     subParamField.paramIndex),
                                             getAnnotationsFromArray(subMethodCreator, subParamField.paramAnnotationsField,
-                                                    subParamField.paramIndex)));
+                                                    subParamField.paramIndex),
+                                            param.separator));
                         } else if (param.parameterType == ParameterType.MATRIX) {
                             // matrix params have to be set on a method-level web target (they vary between invocations)
                             subMethodCreator.assign(methodTarget,
@@ -1943,7 +1945,8 @@ public class JaxrsClientReactiveProcessor {
                                             getGenericTypeFromArray(subMethodCreator, subMethodGenericParametersField,
                                                     paramIdx),
                                             getAnnotationsFromArray(subMethodCreator, subMethodParamAnnotationsField,
-                                                    paramIdx)));
+                                                    paramIdx),
+                                            param.separator));
                         } else if (param.parameterType == ParameterType.MATRIX) {
                             // matrix params have to be set on a method-level web target (they vary between invocations)
                             subMethodCreator.assign(methodTarget,
@@ -3068,7 +3071,7 @@ public class JaxrsClientReactiveProcessor {
                                     queryParam.getValueType(),
                                     index, client,
                                     getGenericTypeFromParameter(creator, beanParamDescriptorField, item.fieldName()),
-                                    getAnnotationsFromParameter(creator, beanParamDescriptorField, item.fieldName())));
+                                    getAnnotationsFromParameter(creator, beanParamDescriptorField, item.fieldName()), null));
                     break;
                 case MATRIX_PARAM:
                     MatrixParamItem matrixParam = (MatrixParamItem) item;
@@ -3208,9 +3211,10 @@ public class JaxrsClientReactiveProcessor {
             // this client or containing client if we're in a subresource
             ResultHandle client,
             ResultHandle genericType,
-            ResultHandle paramAnnotations) {
+            ResultHandle paramAnnotations,
+            String separator) {
         return addWebTargetParam(jandexMethod, methodCreator, webTarget, paramName, queryParamHandle, type, index, client,
-                genericType, paramAnnotations, "queryParam");
+                genericType, paramAnnotations, "queryParam", separator);
     }
 
     // takes a result handle to target as one of the parameters, returns a result handle to a modified target
@@ -3225,7 +3229,7 @@ public class JaxrsClientReactiveProcessor {
             ResultHandle genericType,
             ResultHandle paramAnnotations) {
         return addWebTargetParam(jandexMethod, methodCreator, webTarget, paramName, matrixParamHandle, type, index, client,
-                genericType, paramAnnotations, "matrixParam");
+                genericType, paramAnnotations, "matrixParam", null);
     }
 
     // takes a result handle to target as one of the parameters, returns a result handle to a modified target
@@ -3239,7 +3243,8 @@ public class JaxrsClientReactiveProcessor {
             ResultHandle client,
             ResultHandle genericType,
             ResultHandle paramAnnotations,
-            String webTargetParamMethod) {
+            String webTargetParamMethod,
+            String separator) {
 
         AssignableResultHandle result = methodCreator.createVariable(WebTarget.class);
         BranchResult isParamNull = methodCreator.ifNull(paramHandle);
@@ -3286,7 +3291,7 @@ public class JaxrsClientReactiveProcessor {
             }
             // get the new WebTarget
             addWebTargetParamToWebTarget(loopCreator, key, result, client, genericType, paramAnnotations,
-                    paramArray, componentType, result, webTargetParamMethod);
+                    paramArray, componentType, result, webTargetParamMethod, separator);
         } else {
             ResultHandle paramArray;
             String componentType = null;
@@ -3378,7 +3383,7 @@ public class JaxrsClientReactiveProcessor {
             }
 
             addWebTargetParamToWebTarget(notNullParam, notNullParam.load(paramName), webTarget, client, genericType,
-                    paramAnnotations, paramArray, componentType, result, webTargetParamMethod);
+                    paramAnnotations, paramArray, componentType, result, webTargetParamMethod, separator);
         }
 
         isParamNull.trueBranch().assign(result, webTarget);
@@ -3420,11 +3425,13 @@ public class JaxrsClientReactiveProcessor {
             ResultHandle paramAnnotations, ResultHandle paramArray,
             String componentType,
             AssignableResultHandle resultVariable,
-            String webTargetParamMethod) {
+            String webTargetParamMethod,
+            String separator) {
         ResultHandle convertedParamArray = creator.invokeVirtualMethod(
                 MethodDescriptor.ofMethod(RestClientBase.class, "convertParamArray", Object[].class, Object[].class,
-                        Class.class, java.lang.reflect.Type.class, Annotation[].class),
-                client, paramArray, creator.loadClassFromTCCL(componentType), genericType, paramAnnotations);
+                        Class.class, java.lang.reflect.Type.class, Annotation[].class, String.class),
+                client, paramArray, creator.loadClassFromTCCL(componentType), genericType, paramAnnotations,
+                separator == null ? creator.loadNull() : creator.load(separator));
 
         creator.assign(resultVariable, creator.invokeInterfaceMethod(
                 MethodDescriptor.ofMethod(WebTarget.class, webTargetParamMethod, WebTarget.class,
@@ -3574,9 +3581,9 @@ public class JaxrsClientReactiveProcessor {
                         formParamHandle);
                 ResultHandle convertedParamArray = creator.invokeVirtualMethod(
                         MethodDescriptor.ofMethod(RestClientBase.class, "convertParamArray", Object[].class, Object[].class,
-                                Class.class, java.lang.reflect.Type.class, Annotation[].class),
+                                Class.class, java.lang.reflect.Type.class, Annotation[].class, String.class),
                         client, paramArray, creator.loadClassFromTCCL(componentType), genericType,
-                        creator.newArray(Annotation.class, 0));
+                        creator.newArray(Annotation.class, 0), creator.loadNull());
                 creator.invokeInterfaceMethod(MULTIVALUED_MAP_ADD_ALL, formParams,
                         creator.load(paramName), convertedParamArray);
             } else if (isMap(parameterType, index)) {
@@ -3620,9 +3627,9 @@ public class JaxrsClientReactiveProcessor {
                 }
                 ResultHandle convertedParamArray = loopCreator.invokeVirtualMethod(
                         MethodDescriptor.ofMethod(RestClientBase.class, "convertParamArray", Object[].class, Object[].class,
-                                Class.class, java.lang.reflect.Type.class, Annotation[].class),
+                                Class.class, java.lang.reflect.Type.class, Annotation[].class, String.class),
                         client, paramArray, loopCreator.loadClassFromTCCL(componentType), genericType,
-                        loopCreator.newArray(Annotation.class, 0));
+                        loopCreator.newArray(Annotation.class, 0), loopCreator.loadNull());
                 loopCreator.invokeInterfaceMethod(MULTIVALUED_MAP_ADD_ALL, formParams,
                         key, convertedParamArray);
             } else {

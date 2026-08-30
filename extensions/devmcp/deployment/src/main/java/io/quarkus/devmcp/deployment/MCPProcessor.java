@@ -77,11 +77,6 @@ public class MCPProcessor {
             return;
         }
 
-        routeProducer.produce(nonApplicationRootPathBuildItem.routeBuilder()
-                .orderedRoute(DEVMCP, -2 * SecurityHandlerPriorities.CORS)
-                .handler(recorder.createLocalHostOnlyFilter(devMcpConfig.hosts().orElse(null)))
-                .build());
-
         if (devMcpConfig.cors().enabled()) {
             routeProducer.produce(nonApplicationRootPathBuildItem.routeBuilder()
                     .orderedRoute(DEVMCP, -1 * SecurityHandlerPriorities.CORS)

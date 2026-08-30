@@ -25,10 +25,6 @@ import io.vertx.ext.web.RoutingContext;
 public class DevMcpRecorder {
     private static final Logger LOG = Logger.getLogger(DevMcpRecorder.class);
 
-    public Handler<RoutingContext> createLocalHostOnlyFilter(List<String> hosts) {
-        return new DevMcpLocalHostOnlyFilter(hosts);
-    }
-
     public Handler<RoutingContext> createCorsFilter(List<String> hosts) {
         return new DevMcpCORSFilter(hosts);
     }

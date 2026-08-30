@@ -1,9 +1,8 @@
 package io.quarkus.it.micrometer.security;
 
+import static io.quarkus.test.micrometer.PrometheusMetricsAssert.assertMetrics;
 import static io.restassured.RestAssured.when;
-import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.Matchers.allOf;
-import static org.hamcrest.Matchers.not;
+import static org.assertj.core.api.Assertions.entry;
 
 import org.junit.jupiter.api.Test;
 
@@ -18,15 +17,12 @@ class SecuredResourceTest {
                 .then()
                 .statusCode(403);
 
-        when().get("/q/metrics")
-                .then()
-                .statusCode(200)
-                .body(
-                        allOf(
-                                not(containsString("/secured/foo")),
-                                containsString("/secured/{message}"))
-
-                );
+        assertMetrics(when().get("/q/metrics").then().statusCode(200)
+                .extract().asInputStream())
+                .doesNotHaveMetricWithLabels("http_server_requests_seconds_count",
+                        entry("uri", "/secured/foo"))
+                .hasMetricWithLabels("http_server_requests_seconds_count",
+                        entry("uri", "/secured/{message}"));
     }
 
     @Test
@@ -42,14 +38,14 @@ class SecuredResourceTest {
                 .then()
                 .statusCode(403);
 
-        when().get("/q/metrics")
-                .then()
-                .statusCode(200)
-                .body(
-                        allOf(
-                                not(containsString("/secured/foo")),
-                                containsString("/secured/{message}"),
-                                containsString("/secured/{message}/details")));
+        assertMetrics(when().get("/q/metrics").then().statusCode(200)
+                .extract().asInputStream())
+                .doesNotHaveMetricWithLabels("http_server_requests_seconds_count",
+                        entry("uri", "/secured/foo"))
+                .hasMetricWithLabels("http_server_requests_seconds_count",
+                        entry("uri", "/secured/{message}"))
+                .hasMetricWithLabels("http_server_requests_seconds_count",
+                        entry("uri", "/secured/{message}/details"));
     }
 
 }

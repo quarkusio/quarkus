@@ -24,6 +24,7 @@ import io.quarkus.security.spi.runtime.AuthorizationFailureEvent;
 import io.quarkus.security.spi.runtime.AuthorizationSuccessEvent;
 import io.quarkus.security.spi.runtime.BlockingSecurityExecutor;
 import io.quarkus.security.spi.runtime.SecurityEventHelper;
+import io.quarkus.vertx.http.runtime.security.ManagementInterfaceHttpAuthorizer.ManagementPathMatchingHttpSecurityPolicyWrapper;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.subscription.UniSubscriber;
 import io.smallrye.mutiny.subscription.UniSubscription;
@@ -48,10 +49,43 @@ abstract class AbstractHttpAuthorizer {
             Event<AuthorizationSuccessEvent> authZSuccessEvent, boolean securityEventsEnabled) {
         this.identityProviderManager = identityProviderManager;
         this.controller = controller;
-        this.policies = policies;
+        this.policies = List.copyOf(policies);
         this.context = new HttpSecurityPolicy.DefaultAuthorizationRequestContext(blockingExecutor);
         this.securityEventHelper = new SecurityEventHelper<>(authZSuccessEvent, authZFailureEvent, AUTHORIZATION_SUCCESS,
                 AUTHORIZATION_FAILURE, beanManager, securityEventsEnabled);
+    }
+
+    /**
+     * Applies {@link HttpSecurityPolicy} configured for this route and returns the permission check result.
+     *
+     * @param routingContext {@link RoutingContext}
+     * @return {@link HttpSecurityPolicy.CheckResult} if at least one {@link HttpSecurityPolicy} was applied;
+     *         the check returns null if no {@link HttpSecurityPolicy} was applied or authorization was disabled
+     */
+    public Uni<HttpSecurityPolicy.CheckResult> evaluatePermission(RoutingContext routingContext) {
+        if (!controller.isAuthorizationEnabled() || policies.isEmpty()) {
+            return Uni.createFrom().nullItem();
+        }
+        return doPermissionCheck(routingContext, false)
+                .map(checkResult -> {
+                    if (checkResult == null || !checkResult.isPermitted()) {
+                        // illegal state - this code should be unreachable
+                        return HttpSecurityPolicy.CheckResult.DENY;
+                    }
+
+                    boolean anyCheckRun = permissionCheckPerformed(routingContext, policies.size() - 1);
+                    if (anyCheckRun) {
+                        return checkResult;
+                    }
+                    return null;
+                })
+                .onFailure().recoverWithItem(t -> {
+                    SecurityIdentity augmentedIdentity = null;
+                    if (t instanceof DoDenyException doDenyException) {
+                        augmentedIdentity = doDenyException.augmentedIdentity;
+                    }
+                    return new HttpSecurityPolicy.CheckResult(false, augmentedIdentity);
+                });
     }
 
     /**
@@ -64,7 +98,7 @@ abstract class AbstractHttpAuthorizer {
             return;
         }
 
-        doPermissionCheck(routingContext, QuarkusHttpUser.getSecurityIdentity(routingContext, identityProviderManager), 0, null)
+        doPermissionCheck(routingContext, securityEventHelper.fireEventOnSuccess())
                 .subscribe().with(new Consumer<HttpSecurityPolicy.CheckResult>() {
                     @Override
                     public void accept(HttpSecurityPolicy.CheckResult checkResult) {
@@ -104,8 +138,13 @@ abstract class AbstractHttpAuthorizer {
                 });
     }
 
+    private Uni<HttpSecurityPolicy.CheckResult> doPermissionCheck(RoutingContext routingContext, boolean fireEventOnSuccess) {
+        return doPermissionCheck(routingContext, QuarkusHttpUser.getSecurityIdentity(routingContext, identityProviderManager),
+                0, null, fireEventOnSuccess);
+    }
+
     private Uni<HttpSecurityPolicy.CheckResult> doPermissionCheck(RoutingContext routingContext,
-            Uni<SecurityIdentity> identityUni, int index, SecurityIdentity identity) {
+            Uni<SecurityIdentity> identityUni, int index, SecurityIdentity identity, boolean fireEventOnSuccess) {
         return policies.get(index)
                 .checkPermission(routingContext, identityUni, context)
                 .onItem().transformToUni(checkResult -> {
@@ -135,12 +174,11 @@ abstract class AbstractHttpAuthorizer {
                                 // perform security identity augmentation
                                 setIdentity(augmentedIdentity, routingContext);
                             }
-                            if (securityEventHelper.fireEventOnSuccess()) {
+                            if (fireEventOnSuccess) {
                                 securityEventHelper.fireSuccessEvent(new AuthorizationSuccessEvent(augmentedIdentity,
                                         Map.of(RoutingContext.class.getName(), routingContext)));
                             }
-                        } else if (securityEventHelper.fireEventOnSuccess()
-                                && permissionCheckPerformed(policies, routingContext, index)) {
+                        } else if (fireEventOnSuccess && permissionCheckPerformed(routingContext, index)) {
                             securityEventHelper.fireSuccessEvent(
                                     new AuthorizationSuccessEvent(
                                             currentUser == null ? null : currentUser.getSecurityIdentity(),
@@ -149,7 +187,8 @@ abstract class AbstractHttpAuthorizer {
                         return Uni.createFrom().item(checkResult);
                     } else {
                         // perform the next check
-                        return doPermissionCheck(routingContext, augmentedIdentityUni, index + 1, augmentedIdentity);
+                        return doPermissionCheck(routingContext, augmentedIdentityUni, index + 1, augmentedIdentity,
+                                fireEventOnSuccess);
                     }
                 });
     }
@@ -226,11 +265,11 @@ abstract class AbstractHttpAuthorizer {
         }
     }
 
-    private static boolean permissionCheckPerformed(List<HttpSecurityPolicy> permissionCheckers,
-            RoutingContext routingContext, int index) {
+    private boolean permissionCheckPerformed(RoutingContext routingContext, int index) {
         // the path matching policy is not permission check itself, it selects policy based on
         // configured HTTP permissions, but if there are no path matching HTTP permissions, there is no check
-        if (index == 0 && permissionCheckers.get(0) instanceof AbstractPathMatchingHttpSecurityPolicy) {
+        if (index == 0 && (policies.get(0) instanceof AbstractPathMatchingHttpSecurityPolicy
+                || policies.get(0) instanceof ManagementPathMatchingHttpSecurityPolicyWrapper)) {
             return AbstractPathMatchingHttpSecurityPolicy.policyApplied(routingContext);
         }
         return index > 0;

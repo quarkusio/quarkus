@@ -1,14 +1,13 @@
 package io.quarkus.oidc.runtime;
 
+import static io.quarkus.oidc.runtime.OptionalOidcRouteHandler.OptionalOidcRouteHandlerBuilder.isRouteRequired;
+
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
-
-import jakarta.enterprise.event.Event;
-import jakarta.enterprise.event.Observes;
-import jakarta.inject.Singleton;
 
 import org.eclipse.microprofile.jwt.Claims;
 import org.jboss.logging.Logger;
@@ -20,7 +19,6 @@ import io.quarkus.oidc.OidcTenantConfig;
 import io.quarkus.oidc.SecurityEvent;
 import io.quarkus.oidc.SecurityEvent.Type;
 import io.quarkus.oidc.common.runtime.OidcConstants;
-import io.quarkus.runtime.ShutdownEvent;
 import io.quarkus.security.spi.runtime.SecurityEventHelper;
 import io.quarkus.vertx.http.runtime.security.ImmutablePathMatcher;
 import io.vertx.core.Handler;
@@ -28,21 +26,17 @@ import io.vertx.core.MultiMap;
 import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpHeaders;
 import io.vertx.core.json.JsonObject;
-import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
 
-@Singleton
-public final class BackChannelLogoutHandler implements Handler<RoutingContext> {
+public final class BackChannelLogoutHandler implements OptionalOidcRouteHandler {
     private static final Logger LOG = Logger.getLogger(BackChannelLogoutHandler.class);
-    private final DefaultTenantConfigResolver resolver;
     private volatile ImmutablePathMatcher<Handler<RoutingContext>> pathMatcher;
+    private final Vertx vertx;
+    private final DefaultTenantConfigResolver resolver;
 
-    record NewBackChannelLogoutPath() {
-    }
-
-    BackChannelLogoutHandler(DefaultTenantConfigResolver resolver) {
-        this.resolver = resolver;
-        this.pathMatcher = null;
+    private BackChannelLogoutHandler(Vertx vertx) {
+        this.vertx = vertx;
+        this.resolver = Arc.requireContainer().select(DefaultTenantConfigResolver.class).get();
     }
 
     @Override
@@ -59,18 +53,9 @@ public final class BackChannelLogoutHandler implements Handler<RoutingContext> {
         routingContext.next();
     }
 
-    // hook up to the router because then the tenant config bean is surely ready
-    void createPathMatcher(@Observes Router ignored) {
-        createOrUpdatePathMatcher();
-    }
-
-    synchronized void updatePathMatcher(@Observes NewBackChannelLogoutPath ignored, Vertx vertx) {
+    synchronized void updatePathMatcher() {
         Set<String> currentTenantIds = createOrUpdatePathMatcher();
         clearCache(vertx, currentTenantIds);
-    }
-
-    void clearCacheOnShutdown(@Observes ShutdownEvent event, Vertx vertx) {
-        clearCache(vertx, null);
     }
 
     private void clearCache(Vertx vertx, Set<String> currentTenantIds) {
@@ -139,6 +124,32 @@ public final class BackChannelLogoutHandler implements Handler<RoutingContext> {
 
     private String getTenantLogoutPath(TenantConfigContext tenant) {
         return OidcUtils.getRootPath(resolver.getRootPath()) + tenant.oidcConfig().logout().backchannel().path().orElse(null);
+    }
+
+    @Override
+    public void updateIfPathChanged(OidcTenantConfig oidcConfig, TenantConfigContext tenant,
+            TenantConfigBean tenantConfigBean) {
+        if (tenant == null) {
+            if (oidcConfig.logout().backchannel().path().isPresent()) {
+                updatePathMatcher();
+            }
+        } else if (oidcConfig.logout().backchannel().path().isPresent()) {
+            boolean pathChanged = tenant.oidcConfig() == null || !oidcConfig.logout().backchannel().path().get()
+                    .equals(tenant.oidcConfig().logout().backchannel().path().orElse(null));
+            if (pathChanged) {
+                updatePathMatcher();
+            }
+        }
+    }
+
+    @Override
+    public void initialize() {
+        createOrUpdatePathMatcher();
+    }
+
+    @Override
+    public void close() {
+        clearCache(vertx, null);
     }
 
     private static final class RouteHandler implements Handler<RoutingContext> {
@@ -235,28 +246,15 @@ public final class BackChannelLogoutHandler implements Handler<RoutingContext> {
         }
     }
 
-    public static void fireBackChannelLogoutChangedEvent(OidcTenantConfig oidcConfig, TenantConfigContext tenant) {
-        if (oidcConfig.logout().backchannel().path().isPresent()) {
-            boolean pathChanged = tenant.oidcConfig() == null || !oidcConfig.logout().backchannel().path().get()
-                    .equals(tenant.oidcConfig().logout().backchannel().path().orElse(null));
-            if (pathChanged) {
-                fireBackChannelLogoutEvent();
+    public static final class BackChannelLogoutHandlerBuilder implements OptionalOidcRouteHandlerBuilder {
+
+        @Override
+        public OptionalOidcRouteHandler build(Collection<OidcTenantConfig> staticTenantConfigs, Vertx vertx) {
+            if (isRouteRequired(staticTenantConfigs, tenantConfig -> tenantConfig.logout().backchannel().path().isPresent())) {
+                return new BackChannelLogoutHandler(vertx);
             }
+            return null;
         }
-
-    }
-
-    public static void fireBackChannelLogoutReadyEvent(OidcTenantConfig oidcConfig) {
-        if (oidcConfig.logout().backchannel().path().isPresent()) {
-            fireBackChannelLogoutEvent();
-        }
-
-    }
-
-    private static void fireBackChannelLogoutEvent() {
-        Event<NewBackChannelLogoutPath> event = Arc.container().beanManager().getEvent()
-                .select(NewBackChannelLogoutPath.class);
-        event.fire(new NewBackChannelLogoutPath());
     }
 
 }

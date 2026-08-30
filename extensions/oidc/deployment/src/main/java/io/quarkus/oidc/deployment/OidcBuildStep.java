@@ -4,6 +4,7 @@ import static io.quarkus.arc.processor.BuiltinScope.APPLICATION;
 import static io.quarkus.arc.processor.DotNames.DEFAULT;
 import static io.quarkus.arc.processor.DotNames.EVENT;
 import static io.quarkus.arc.processor.DotNames.NAMED;
+import static io.quarkus.arc.processor.DotNames.SINGLETON;
 import static io.quarkus.oidc.common.runtime.OidcConstants.BEARER_SCHEME;
 import static io.quarkus.oidc.common.runtime.OidcConstants.CODE_FLOW_CODE;
 import static io.quarkus.oidc.runtime.OidcRecorder.ACR_VALUES_TO_MAX_AGE_SEPARATOR;
@@ -17,6 +18,7 @@ import static org.jboss.jandex.AnnotationTarget.Kind.CLASS;
 import static org.jboss.jandex.AnnotationTarget.Kind.METHOD;
 
 import java.util.EnumSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -57,6 +59,7 @@ import io.quarkus.arc.processor.DotNames;
 import io.quarkus.arc.processor.InjectionPointInfo;
 import io.quarkus.arc.processor.InjectionPointsTransformer;
 import io.quarkus.arc.processor.QualifierRegistrar;
+import io.quarkus.builder.item.EmptyBuildItem;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.Feature;
@@ -80,9 +83,7 @@ import io.quarkus.oidc.Oidc;
 import io.quarkus.oidc.Tenant;
 import io.quarkus.oidc.TenantFeature;
 import io.quarkus.oidc.TenantIdentityProvider;
-import io.quarkus.oidc.TokenIntrospectionCache;
 import io.quarkus.oidc.UserInfo;
-import io.quarkus.oidc.UserInfoCache;
 import io.quarkus.oidc.common.OidcRequestFilter;
 import io.quarkus.oidc.common.OidcResponseFilter;
 import io.quarkus.oidc.runtime.BackChannelLogoutHandler;
@@ -100,6 +101,7 @@ import io.quarkus.oidc.runtime.OidcSessionImpl;
 import io.quarkus.oidc.runtime.OidcTenantDefaultIdConfigBuilder;
 import io.quarkus.oidc.runtime.OidcTokenCredentialProducer;
 import io.quarkus.oidc.runtime.OidcUtils;
+import io.quarkus.oidc.runtime.OptionalOidcRouteHandler.OptionalOidcRouteHandlerBuilder;
 import io.quarkus.oidc.runtime.ResourceMetadataHandler;
 import io.quarkus.oidc.runtime.TenantConfigBean;
 import io.quarkus.oidc.runtime.WebSocketIdentityUpdateProvider;
@@ -206,8 +208,7 @@ public class OidcBuildStep {
     }
 
     @BuildStep
-    public void additionalBeans(OidcBuildTimeConfig buildTimeConfig,
-            BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
+    public void additionalBeans(BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
         AdditionalBeanBuildItem.Builder builder = AdditionalBeanBuildItem.builder().setUnremovable();
 
         builder.addBeanClass(OidcAuthenticationMechanism.class)
@@ -220,13 +221,6 @@ public class OidcBuildStep {
                 .addBeanClass(OidcSessionImpl.class)
                 .addBeanClass(AzureAccessTokenCustomizer.class);
         additionalBeans.produce(builder.build());
-
-        if (isRouteAllowed(buildTimeConfig, OidcRoute.BACKCHANNEL_LOGOUT)) {
-            additionalBeans.produce(AdditionalBeanBuildItem.unremovableOf(BackChannelLogoutHandler.class));
-        }
-        if (isRouteAllowed(buildTimeConfig, OidcRoute.RESOURCE_METADATA)) {
-            additionalBeans.produce(AdditionalBeanBuildItem.unremovableOf(ResourceMetadataHandler.class));
-        }
     }
 
     @BuildStep
@@ -236,16 +230,9 @@ public class OidcBuildStep {
     }
 
     @BuildStep(onlyIf = IsCacheEnabled.class)
-    @Record(ExecutionTime.RUNTIME_INIT)
-    public SyntheticBeanBuildItem addDefaultCacheBean(
-            OidcRecorder recorder,
-            CoreVertxBuildItem vertxBuildItem) {
-        return SyntheticBeanBuildItem.configure(DefaultTokenIntrospectionUserInfoCache.class).unremovable()
-                .types(DefaultTokenIntrospectionUserInfoCache.class, TokenIntrospectionCache.class, UserInfoCache.class)
-                .supplier(recorder.setupTokenCache(vertxBuildItem.getVertx()))
-                .scope(Singleton.class)
-                .setRuntimeInit()
-                .done();
+    AdditionalBeanBuildItem addDefaultCacheBean() {
+        return AdditionalBeanBuildItem.builder().addBeanClass(DefaultTokenIntrospectionUserInfoCache.class)
+                .setDefaultScope(SINGLETON).build();
     }
 
     @BuildStep
@@ -348,12 +335,19 @@ public class OidcBuildStep {
         return TENANT_IDENTITY_PROVIDER_NAME.equals(ip.getRequiredType().name());
     }
 
-    @Record(ExecutionTime.STATIC_INIT)
+    @Consume(TenantConfigBeanReadyBuildItem.class)
+    @Record(ExecutionTime.RUNTIME_INIT)
     @BuildStep
-    void detectIfUserInfoRequired(OidcRecorder recorder, BeanRegistrationPhaseBuildItem beanRegistration) {
-        recorder.setUserInfoInjectionPointDetected(detectUserInfoRequired(beanRegistration));
+    List<FilterBuildItem> registerAllowedOidcRoutes(OidcBuildTimeConfig buildTimeConfig, OidcRecorder recorder) {
+        List<FilterBuildItem> filters = new LinkedList<>();
+        for (int i = 0; i < buildTimeConfig.allowedRoutes().size(); i++) {
+            Handler<RoutingContext> handler = recorder.initializeAndGetOidcRouteHandler(i);
+            filters.add(new FilterBuildItem(handler, SecurityHandlerPriorities.AUTHORIZATION - 50));
+        }
+        return filters;
     }
 
+    @Produce(TenantConfigBeanReadyBuildItem.class)
     @Produce(PreRouterFinalizationBuildItem.class)
     @Consume(BeanContainerBuildItem.class)
     @Consume(SyntheticBeansRuntimeInitBuildItem.class)
@@ -368,18 +362,20 @@ public class OidcBuildStep {
     SyntheticBeanBuildItem setup(OidcBuildTimeConfig buildTimeConfig, OidcRecorder recorder,
             CoreVertxBuildItem vertxBuildItem,
             TlsRegistryBuildItem tlsRegistryBuildItem,
-            ProxyRegistryBuildItem proxyRegistryBuildItem) {
+            ProxyRegistryBuildItem proxyRegistryBuildItem,
+            BeanRegistrationPhaseBuildItem beanRegistration) {
         // Here we copy OidcBuildTimeConfig#allowedRoutes() into an EnumSet because it gives us a stable iteration
         // order based on the enum's ordinal. Otherwise, generated bytecode is unstable
         Set<OidcRoute> allowedRoutes = EnumSet.noneOf(OidcRoute.class);
         allowedRoutes.addAll(buildTimeConfig.allowedRoutes());
+        var optionalOidcRouteHandlerBuilders = collectOptionalRouteHandlerBuilders(allowedRoutes);
         return SyntheticBeanBuildItem.configure(TenantConfigBean.class).unremovable().types(TenantConfigBean.class)
                 .addInjectionPoint(ParameterizedType.create(EVENT, ClassType.create(Oidc.class)))
                 .createWith(recorder.createTenantConfigBean(vertxBuildItem.getVertx(), tlsRegistryBuildItem.registry(),
                         proxyRegistryBuildItem.registry(),
-                        allowedRoutes))
+                        allowedRoutes, detectUserInfoRequired(beanRegistration), optionalOidcRouteHandlerBuilders))
                 .destroyer(TenantConfigBean.Destroyer.class)
-                .scope(Singleton.class) // this should have been @ApplicationScoped but fails for some reason
+                .scope(Singleton.class)
                 .setRuntimeInit()
                 .done();
     }
@@ -512,34 +508,12 @@ public class OidcBuildStep {
         }
     }
 
-    @Record(ExecutionTime.STATIC_INIT)
-    @BuildStep
-    FilterBuildItem registerBackChannelLogoutHandler(OidcBuildTimeConfig buildTimeConfig,
-            BeanContainerBuildItem beanContainerBuildItem, OidcRecorder recorder) {
-        if (!isRouteAllowed(buildTimeConfig, OidcRoute.BACKCHANNEL_LOGOUT)) {
-            return null;
-        }
-        Handler<RoutingContext> handler = recorder.getBackChannelLogoutHandler(beanContainerBuildItem.getValue());
-        return new FilterBuildItem(handler, SecurityHandlerPriorities.AUTHORIZATION - 50);
-    }
-
     @BuildStep
     void supportIdentityUpdateForWebSocketConnections(Capabilities capabilities,
             BuildProducer<AdditionalBeanBuildItem> additionalBeanProducer) {
         if (capabilities.isPresent(Capability.WEBSOCKETS_NEXT)) {
             additionalBeanProducer.produce(AdditionalBeanBuildItem.unremovableOf(WebSocketIdentityUpdateProvider.class));
         }
-    }
-
-    @Record(ExecutionTime.STATIC_INIT)
-    @BuildStep
-    FilterBuildItem registerResourceMetadataHandler(OidcBuildTimeConfig buildTimeConfig,
-            BeanContainerBuildItem beanContainerBuildItem, OidcRecorder recorder) {
-        if (!isRouteAllowed(buildTimeConfig, OidcRoute.RESOURCE_METADATA)) {
-            return null;
-        }
-        Handler<RoutingContext> handler = recorder.getResourceMetadataHandler(beanContainerBuildItem.getValue());
-        return new FilterBuildItem(handler, SecurityHandlerPriorities.AUTHORIZATION - 50);
     }
 
     private static boolean areEagerSecInterceptorsSupported(Capabilities capabilities,
@@ -573,8 +547,11 @@ public class OidcBuildStep {
                 && !injectionPointTargetInfo.startsWith(SMALLRYE_JWT_PACKAGE);
     }
 
-    private static boolean isRouteAllowed(OidcBuildTimeConfig config, OidcRoute route) {
-        return config.allowedRoutes().contains(route);
+    private static List<OptionalOidcRouteHandlerBuilder> collectOptionalRouteHandlerBuilders(Set<OidcRoute> allowedRoutes) {
+        return allowedRoutes.stream().map(allowedRoute -> switch (allowedRoute) {
+            case RESOURCE_METADATA -> new ResourceMetadataHandler.ResourceMetadataHandlerBuilder();
+            case BACKCHANNEL_LOGOUT -> new BackChannelLogoutHandler.BackChannelLogoutHandlerBuilder();
+        }).toList();
     }
 
     public static class IsEnabled implements BooleanSupplier {
@@ -591,5 +568,9 @@ public class OidcBuildStep {
         public boolean getAsBoolean() {
             return config.enabled() && config.defaultTokenCacheEnabled();
         }
+    }
+
+    private static final class TenantConfigBeanReadyBuildItem extends EmptyBuildItem {
+
     }
 }

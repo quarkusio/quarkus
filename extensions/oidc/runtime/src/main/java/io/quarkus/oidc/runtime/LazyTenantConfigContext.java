@@ -3,6 +3,7 @@ package io.quarkus.oidc.runtime;
 import java.security.Key;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 import javax.crypto.SecretKey;
@@ -20,11 +21,14 @@ final class LazyTenantConfigContext implements TenantConfigContext {
     private static final Logger LOG = Logger.getLogger(LazyTenantConfigContext.class);
 
     private final Supplier<Uni<TenantConfigContext>> staticTenantCreator;
+    private final Consumer<OidcTenantConfig> updateOptionalOidcRouteHandler;
     private volatile TenantConfigContext delegate;
 
-    LazyTenantConfigContext(TenantConfigContext delegate, Supplier<Uni<TenantConfigContext>> staticTenantCreator) {
+    LazyTenantConfigContext(TenantConfigContext delegate, Supplier<Uni<TenantConfigContext>> staticTenantCreator,
+            Consumer<OidcTenantConfig> updateOptionalOidcRouteHandler) {
         this.staticTenantCreator = staticTenantCreator;
         this.delegate = delegate;
+        this.updateOptionalOidcRouteHandler = updateOptionalOidcRouteHandler;
     }
 
     @Override
@@ -35,8 +39,7 @@ final class LazyTenantConfigContext implements TenantConfigContext {
             return staticTenantCreator.get().invoke(ctx -> {
                 LazyTenantConfigContext.this.delegate = ctx;
                 if (ctx.ready()) {
-                    BackChannelLogoutHandler.fireBackChannelLogoutReadyEvent(ctx.oidcConfig());
-                    ResourceMetadataHandler.fireResourceMetadataReadyEvent(ctx.oidcConfig());
+                    updateOptionalOidcRouteHandler.accept(ctx.oidcConfig());
                 }
             });
         }

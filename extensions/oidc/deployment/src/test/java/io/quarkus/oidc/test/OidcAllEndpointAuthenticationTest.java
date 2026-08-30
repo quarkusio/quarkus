@@ -21,6 +21,7 @@ import jakarta.ws.rs.core.Response;
 
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.hamcrest.Matchers;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
@@ -31,6 +32,9 @@ import io.quarkus.oidc.OidcRequestContext;
 import io.quarkus.oidc.OidcTenantConfig;
 import io.quarkus.oidc.TenantConfigResolver;
 import io.quarkus.oidc.common.runtime.config.OidcClientCommonConfig;
+import io.quarkus.oidc.runtime.BackChannelLogoutHandler;
+import io.quarkus.oidc.runtime.OidcRecorder;
+import io.quarkus.oidc.runtime.ResourceMetadataHandler;
 import io.quarkus.security.Authenticated;
 import io.quarkus.test.QuarkusExtensionTest;
 import io.smallrye.mutiny.Uni;
@@ -109,6 +113,30 @@ class OidcAllEndpointAuthenticationTest {
                 .then()
                 .statusCode(500)
                 .body(Matchers.containsString("Client credentials cannot be sent to all OIDC endpoints"));
+    }
+
+    @Test
+    void testBackChannelLogoutHandlerAvailable() {
+        var allOptionalOidcRouteHandlers = OidcRecorder.getOptionalOidcRouteHandlers();
+        if (allOptionalOidcRouteHandlers == null
+                || allOptionalOidcRouteHandlers.stream().noneMatch(h -> h instanceof BackChannelLogoutHandler)) {
+            Assertions.fail("""
+                    Back-channel logout handler should be available, because dynamic tenants that requires it
+                    can be created by the 'IncompatibleMethodTenantConfigResolver' CDI bean
+                    """);
+        }
+    }
+
+    @Test
+    void testResourceMetadataHandlerAvailable() {
+        var allOptionalOidcRouteHandlers = OidcRecorder.getOptionalOidcRouteHandlers();
+        if (allOptionalOidcRouteHandlers == null
+                || allOptionalOidcRouteHandlers.stream().noneMatch(h -> h instanceof ResourceMetadataHandler)) {
+            Assertions.fail("""
+                    Resource metadata handler should be available, because dynamic tenants that requires it
+                    can be created by the 'IncompatibleMethodTenantConfigResolver' CDI bean
+                    """);
+        }
     }
 
     private static void testAuth(String tenant) {

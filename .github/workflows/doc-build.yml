@@ -12,6 +12,7 @@ on:
     paths:
       - 'core/processor/**'
       - 'devtools/config-doc-maven-plugin/**'
+      - 'devtools/gradle/gradle-app-plugin/src/test/resources/documentation/standalone-application-plugin/**'
       - 'docs/**'
       - 'extensions/**/pom.xml'
       - 'extensions/**/*Config*.java'
@@ -27,6 +28,7 @@ on:
     paths:
       - 'core/processor/**'
       - 'devtools/config-doc-maven-plugin/**'
+      - 'devtools/gradle/gradle-app-plugin/src/test/resources/documentation/standalone-application-plugin/**'
       - 'docs/**'
       - 'extensions/**/pom.xml'
       - 'extensions/**/*Config*.java'

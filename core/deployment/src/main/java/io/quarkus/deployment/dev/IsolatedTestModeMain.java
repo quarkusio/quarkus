@@ -45,17 +45,22 @@ public class IsolatedTestModeMain extends IsolatedDevModeMain {
             throws Exception {
         System.setProperty("quarkus.test.display-test-output", "true");
         if (!context.getAllModules().isEmpty()) {
-            ServiceLoader<CompilationProvider> serviceLoader = ServiceLoader.load(CompilationProvider.class);
+            boolean externalBuild = context.getBuildUpdateSource() == DevModeContext.BuildUpdateSource.EXTERNAL_BUILD_TOOL;
             List<CompilationProvider> compilationProviders = new ArrayList<>();
-            for (CompilationProvider provider : serviceLoader) {
-                compilationProviders.add(provider);
-                context.getAllModules().forEach(moduleInfo -> moduleInfo.addSourcePaths(provider.handledSourcePaths()));
+            if (!externalBuild) {
+                ServiceLoader<CompilationProvider> serviceLoader = ServiceLoader.load(CompilationProvider.class);
+                for (CompilationProvider provider : serviceLoader) {
+                    compilationProviders.add(provider);
+                    context.getAllModules().forEach(moduleInfo -> moduleInfo.addSourcePaths(provider.handledSourcePaths()));
+                }
             }
-            QuarkusCompiler compiler;
-            try {
-                compiler = new QuarkusCompiler(curatedApplication, compilationProviders, context);
-            } catch (Exception e) {
-                throw new RuntimeException("Failed to create compiler", e);
+            QuarkusCompiler compiler = null;
+            if (!externalBuild) {
+                try {
+                    compiler = new QuarkusCompiler(curatedApplication, compilationProviders, context);
+                } catch (Exception e) {
+                    throw new RuntimeException("Failed to create compiler", e);
+                }
             }
             TestSupport testSupport = new TestSupport(curatedApplication, compilationProviders, context, DevModeType.TEST_ONLY);
             RuntimeUpdatesProcessor processor = new RuntimeUpdatesProcessor(applicationRoot, context, compiler,
@@ -128,7 +133,8 @@ public class IsolatedTestModeMain extends IsolatedDevModeMain {
             augmentAction = new AugmentActionImpl(curatedApplication);
             RuntimeUpdatesProcessor.INSTANCE = setupRuntimeCompilation(context, (Path) params.get(APP_ROOT));
 
-            if (RuntimeUpdatesProcessor.INSTANCE != null) {
+            if (RuntimeUpdatesProcessor.INSTANCE != null
+                    && context.getBuildUpdateSource() != DevModeContext.BuildUpdateSource.EXTERNAL_BUILD_TOOL) {
                 RuntimeUpdatesProcessor.INSTANCE.checkForFileChange();
                 RuntimeUpdatesProcessor.INSTANCE.checkForChangedClasses(true);
             }
@@ -141,6 +147,10 @@ public class IsolatedTestModeMain extends IsolatedDevModeMain {
                 System.err.println("Failed to start quarkus test mode");
                 t.printStackTrace();
                 System.exit(1);
+            } finally {
+                if (RuntimeUpdatesProcessor.INSTANCE != null) {
+                    RuntimeUpdatesProcessor.INSTANCE.externalBuildOutputReady();
+                }
             }
 
             Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {

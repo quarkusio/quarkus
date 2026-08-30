@@ -5,6 +5,7 @@ import static io.quarkus.runtime.util.HashUtil.sha256;
 import java.io.ByteArrayOutputStream;
 import java.io.Closeable;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.ObjectOutputStream;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
@@ -100,9 +101,8 @@ public class HttpRemoteDevClient implements RemoteDevClient {
         }
 
         private void sendData(Map.Entry<String, byte[]> entry, String session) throws IOException {
-            HttpURLConnection connection;
             log.info("Sending " + entry.getKey());
-            connection = (HttpURLConnection) new URL(url + "/" + entry.getKey()).openConnection();
+            HttpURLConnection connection = (HttpURLConnection) new URL(url + "/" + entry.getKey()).openConnection();
             connection.setRequestMethod("PUT");
             connection.setDoOutput(true);
             connection.setRequestProperty(HttpHeaders.ACCEPT.toString(), DEFAULT_ACCEPT);
@@ -113,9 +113,7 @@ public class HttpRemoteDevClient implements RemoteDevClient {
                     sha256(sha256(entry.getValue()) + session + currentSessionCounter + password));
             currentSessionCounter++;
             connection.addRequestProperty(RemoteSyncHandler.QUARKUS_SESSION, session);
-            connection.getOutputStream().write(entry.getValue());
-            connection.getOutputStream().close();
-            IoUtil.readBytes(connection.getInputStream());
+            exchange(connection, entry.getValue(), "send a remote file");
         }
 
         private String doConnect(RemoteDevState initialState, Function<Set<String>, Map<String, byte[]>> initialConnectFunction)
@@ -141,18 +139,13 @@ public class HttpRemoteDevClient implements RemoteDevClient {
             connection.addRequestProperty(RemoteSyncHandler.QUARKUS_PASSWORD, sha256(dataHash + password));
             connection.setDoOutput(true);
 
-            connection.getOutputStream().write(initialData);
-            connection.getOutputStream().close();
-            String session = connection.getHeaderField(RemoteSyncHandler.QUARKUS_SESSION);
-            String error = connection.getHeaderField(RemoteSyncHandler.QUARKUS_ERROR);
-            if (error != null) {
-                throw createIOException("Server did not start a remote dev session: " + error);
-            }
+            Response response = exchange(connection, initialData, "start a remote dev session");
+            String session = response.session();
             if (session == null) {
                 throw createIOException(
                         "Server did not start a remote dev session. Make sure the environment variable 'QUARKUS_LAUNCH_DEVMODE' is set to 'true' when launching the server");
             }
-            String result = new String(IoUtil.readBytes(connection.getInputStream()), StandardCharsets.UTF_8);
+            String result = new String(response.body(), StandardCharsets.UTF_8);
             Set<String> changed = new HashSet<>();
             changed.addAll(Arrays.asList(result.split(";")));
             Map<String, byte[]> data = new LinkedHashMap<>(initialConnectFunction.apply(changed));
@@ -217,10 +210,8 @@ public class HttpRemoteDevClient implements RemoteDevClient {
                     currentSessionCounter++;
                     connection.addRequestProperty(RemoteSyncHandler.QUARKUS_SESSION, sessionId);
                     connection.setDoOutput(true);
-                    connection.getOutputStream().write(baos.toByteArray());
-
-                    IoUtil.readBytes(connection.getInputStream());
-                    int status = connection.getResponseCode();
+                    Response response = exchange(connection, baos.toByteArray(), "poll for remote changes");
+                    int status = response.status();
                     if (status == 200) {
                         SyncResult sync = changeRequestFunction.get();
                         problem = sync.getProblem();
@@ -247,14 +238,25 @@ public class HttpRemoteDevClient implements RemoteDevClient {
                                     sha256(sha256("/" + file) + sessionId + currentSessionCounter + password));
                             currentSessionCounter++;
                             connection.addRequestProperty(RemoteSyncHandler.QUARKUS_SESSION, sessionId);
-                            connection.getOutputStream().close();
-                            IoUtil.readBytes(connection.getInputStream());
+                            exchange(connection, null, "delete a remote file");
                         }
                     } else if (status == 203) {
                         //need a new session
                         sessionId = doConnect(initialState, initialConnectFunction);
                     }
                     errorCount = 0;
+                } catch (RemoteDevResponseException e) {
+                    if (e.permanent()) {
+                        log.error("Remote dev request cannot be completed", e);
+                        return;
+                    }
+                    errorCount++;
+                    log.error("Remote dev request failed", e);
+                    if (errorCount == retryMaxAttempts) {
+                        log.errorf("Connection failed after %d retries, exiting", errorCount);
+                        return;
+                    }
+                    sleepBeforeRetry(e.retryAfterMillis());
                 } catch (Throwable e) {
                     errorCount++;
                     log.error("Remote dev request failed", e);
@@ -262,18 +264,14 @@ public class HttpRemoteDevClient implements RemoteDevClient {
                         log.errorf("Connection failed after %d retries, exiting", errorCount);
                         return;
                     }
-                    try {
-                        Thread.sleep(retryIntervalMillis);
-                    } catch (InterruptedException ex) {
-
-                    }
+                    sleepBeforeRetry(retryIntervalMillis);
                 }
             }
 
         }
 
         private String waitForRestart(RemoteDevState initialState,
-                Function<Set<String>, Map<String, byte[]>> initialConnectFunction) {
+                Function<Set<String>, Map<String, byte[]>> initialConnectFunction) throws IOException {
 
             long timeout = System.currentTimeMillis() + reconnectTimeoutMillis;
             try {
@@ -281,19 +279,105 @@ public class HttpRemoteDevClient implements RemoteDevClient {
             } catch (InterruptedException e) {
 
             }
-            while (System.currentTimeMillis() < timeout) {
+            while (!closed && System.currentTimeMillis() < timeout) {
                 try {
                     HttpURLConnection connection = (HttpURLConnection) probeUrl.openConnection();
                     connection.setRequestProperty(HttpHeaders.ACCEPT.toString(), DEFAULT_ACCEPT);
                     connection.setRequestMethod("POST");
                     connection.addRequestProperty(HttpHeaders.CONTENT_TYPE.toString(), RemoteSyncHandler.APPLICATION_QUARKUS);
-                    IoUtil.readBytes(connection.getInputStream());
+                    exchange(connection, null, "probe the remote server");
                     return doConnect(initialState, initialConnectFunction);
+                } catch (RemoteDevResponseException e) {
+                    if (e.permanent()) {
+                        throw e;
+                    }
+                    sleepBeforeRetry(e.retryAfterMillis());
                 } catch (IOException e) {
-
+                    sleepBeforeRetry(retryIntervalMillis);
                 }
             }
-            throw new RuntimeException("Could not connect to remote side after restart");
+            throw createIOException(closed
+                    ? "Remote dev session closed while waiting for the remote side to restart"
+                    : "Could not connect to remote side after restart");
+        }
+
+        private Response exchange(HttpURLConnection connection, byte[] body, String operation) throws IOException {
+            try {
+                if (body != null) {
+                    connection.setFixedLengthStreamingMode(body.length);
+                    try (var output = connection.getOutputStream()) {
+                        output.write(body);
+                    }
+                }
+                int status = connection.getResponseCode();
+                byte[] responseBody;
+                InputStream input = status >= 400 ? connection.getErrorStream() : connection.getInputStream();
+                if (input == null) {
+                    responseBody = new byte[0];
+                } else {
+                    try (input) {
+                        responseBody = IoUtil.readBytes(input);
+                    }
+                }
+                String error = connection.getHeaderField(RemoteSyncHandler.QUARKUS_ERROR);
+                if (status >= 400) {
+                    String detail = error == null || error.isBlank() ? "HTTP " + status : error;
+                    boolean permanent = status == 413 || status == 415;
+                    long retryAfter = status == 503 ? retryAfterMillis(connection) : retryIntervalMillis;
+                    throw new RemoteDevResponseException(
+                            "Server could not " + operation + ": " + detail, permanent, retryAfter);
+                }
+                return new Response(status, responseBody,
+                        connection.getHeaderField(RemoteSyncHandler.QUARKUS_SESSION));
+            } finally {
+                connection.disconnect();
+            }
+        }
+
+        private long retryAfterMillis(HttpURLConnection connection) {
+            String value = connection.getHeaderField("Retry-After");
+            if (value == null) {
+                return retryIntervalMillis;
+            }
+            try {
+                long millis = Math.multiplyExact(Long.parseLong(value), 1000);
+                long maximum = reconnectTimeoutMillis > 0 ? reconnectTimeoutMillis : retryIntervalMillis;
+                return Math.min(Math.max(millis, retryIntervalMillis), maximum);
+            } catch (ArithmeticException | NumberFormatException ignored) {
+                return retryIntervalMillis;
+            }
+        }
+
+        private void sleepBeforeRetry(long delay) {
+            try {
+                Thread.sleep(delay);
+            } catch (InterruptedException ignored) {
+                Thread.currentThread().interrupt();
+            }
+        }
+
+        private record Response(int status, byte[] body, String session) {
+        }
+
+        private final class RemoteDevResponseException extends IOException {
+
+            private final boolean permanent;
+            private final long retryAfterMillis;
+
+            private RemoteDevResponseException(String message, boolean permanent, long retryAfterMillis) {
+                super(message);
+                this.permanent = permanent;
+                this.retryAfterMillis = retryAfterMillis;
+                setStackTrace(new StackTraceElement[] {});
+            }
+
+            private boolean permanent() {
+                return permanent;
+            }
+
+            private long retryAfterMillis() {
+                return retryAfterMillis;
+            }
         }
 
     }

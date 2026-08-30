@@ -19,12 +19,21 @@ import java.util.ServiceLoader;
 
 import io.quarkus.deployment.dev.testing.TestConfig;
 import io.quarkus.deployment.images.ContainerImages;
+import io.quarkus.deployment.pkg.builditem.JvmStartupOptimizerArchiveType;
 import io.quarkus.deployment.util.FileUtil;
 import io.quarkus.test.common.DefaultDockerContainerLauncher;
 import io.quarkus.test.common.DockerContainerArtifactLauncher;
+import io.quarkus.test.common.JvmStartupArchiveTraining;
+import io.quarkus.test.common.JvmStartupArchiveTraining.ExecutionTarget;
 import io.quarkus.test.common.TestConfigUtil;
 import io.smallrye.config.Config;
 
+/**
+ * Creates container-image launchers from Quarkus artifact metadata.
+ * <p>
+ * Explicit startup-archive metadata is accepted only for base-image training, and its container output directory must
+ * be contained by the base-image working directory.
+ */
 public class DockerContainerLauncherProvider implements ArtifactLauncherProvider {
 
     @Override
@@ -93,6 +102,15 @@ public class DockerContainerLauncherProvider implements ArtifactLauncherProvider
             List<String> programArgs,
             String outputTargetDirectory) {
         TestConfig testConfig = config.getConfigMapping(TestConfig.class);
+        Optional<JvmStartupArchiveTraining> startupArchiveTraining = JvmStartupArchiveTraining
+                .fromMetadata(context.quarkusArtifactProperties());
+        startupArchiveTraining
+                .ifPresent(training -> validateStartupArchiveTraining(training, containerWorkingDirectory));
+        boolean legacyGenerateAotFile = config.getOptionalValue("quarkus.package.jar.aot.enabled", Boolean.class)
+                .or(() -> config.getOptionalValue("quarkus.package.jar.appcds.use-aot", Boolean.class))
+                .orElse(Boolean.FALSE)
+                // only record AOT file for the default profile
+                && (context.profile() == null);
         launcher.init(new DefaultDockerInitContext(
                 config.getValue("quarkus.http.test-port", OptionalInt.class).orElse(DEFAULT_PORT),
                 config.getValue("quarkus.http.test-ssl-port", OptionalInt.class).orElse(DEFAULT_HTTPS_PORT),
@@ -107,17 +125,39 @@ public class DockerContainerLauncherProvider implements ArtifactLauncherProvider
                 additionalExposedPorts(config),
                 labels(config),
                 volumeMounts,
-                config.getOptionalValue("quarkus.package.jar.aot.enabled", Boolean.class)
-                        .or(() -> config.getOptionalValue("quarkus.package.jar.appcds.use-aot", Boolean.class))
-                        .orElse(Boolean.FALSE)
-                        // only record AOT file for the default profile
-                        && (context.profile() == null),
+                startupArchiveTraining
+                        .map(training -> training.type() == JvmStartupOptimizerArchiveType.AOT)
+                        .orElse(legacyGenerateAotFile),
                 config.getOptionalValues("quarkus.package.jar.aot.additional-recording-args", String.class)
                         .orElse(List.of()),
                 entryPoint,
                 containerWorkingDirectory,
                 programArgs,
-                outputTargetDirectory));
+                outputTargetDirectory,
+                startupArchiveTraining));
+    }
+
+    static void validateStartupArchiveTraining(JvmStartupArchiveTraining training,
+            Optional<String> containerWorkingDirectory) {
+        if (training.executionTarget() != ExecutionTarget.BASE_IMAGE) {
+            throw new IllegalArgumentException("A container launcher requires BASE_IMAGE startup-archive training, not "
+                    + training.executionTarget());
+        }
+        String workingDirectory = containerWorkingDirectory
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "Base-image startup-archive training requires the base image working directory"));
+        String normalizedWorkingDirectory = workingDirectory.endsWith("/") && workingDirectory.length() > 1
+                ? workingDirectory.substring(0, workingDirectory.length() - 1)
+                : workingDirectory;
+        String trainingDirectory = training.containerDirectory().orElseThrow();
+        boolean withinWorkingDirectory = normalizedWorkingDirectory.equals("/")
+                ? trainingDirectory.startsWith("/")
+                : trainingDirectory.equals(normalizedWorkingDirectory)
+                        || trainingDirectory.startsWith(normalizedWorkingDirectory + "/");
+        if (!withinWorkingDirectory) {
+            throw new IllegalArgumentException("The startup-archive container directory '" + trainingDirectory
+                    + "' must be within the base image working directory '" + workingDirectory + "'");
+        }
     }
 
     private void addNativeAgentProgramArgs(List<String> programArgs, CreateContext context) {
@@ -180,6 +220,7 @@ public class DockerContainerLauncherProvider implements ArtifactLauncherProvider
         private final Map<String, String> labels;
         private final Map<String, String> volumeMounts;
         private final String outputTargetDirectory;
+        private final Optional<JvmStartupArchiveTraining> startupArchiveTraining;
 
         public DefaultDockerInitContext(int httpPort, int httpsPort, Duration waitTime, Duration shutdownTimeout,
                 String testProfile,
@@ -193,7 +234,8 @@ public class DockerContainerLauncherProvider implements ArtifactLauncherProvider
                 List<String> additionalRecordingArgs,
                 Optional<String> entryPoint,
                 Optional<String> containerWorkingDirectory,
-                List<String> programArgs, String outputTargetDirectory) {
+                List<String> programArgs, String outputTargetDirectory,
+                Optional<JvmStartupArchiveTraining> startupArchiveTraining) {
             super(httpPort, httpsPort, waitTime, shutdownTimeout, testProfile, argLine, env, devServicesLaunchResult);
             this.containerImage = containerImage;
             this.pullRequired = pullRequired;
@@ -206,6 +248,7 @@ public class DockerContainerLauncherProvider implements ArtifactLauncherProvider
             this.entryPoint = entryPoint;
             this.programArgs = programArgs;
             this.outputTargetDirectory = outputTargetDirectory;
+            this.startupArchiveTraining = startupArchiveTraining;
         }
 
         @Override
@@ -261,6 +304,11 @@ public class DockerContainerLauncherProvider implements ArtifactLauncherProvider
         @Override
         public String outputTargetDirectory() {
             return outputTargetDirectory;
+        }
+
+        @Override
+        public Optional<JvmStartupArchiveTraining> startupArchiveTraining() {
+            return startupArchiveTraining;
         }
     }
 }

@@ -42,6 +42,7 @@ import java.util.TimerTask;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Lock;
@@ -140,6 +141,18 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
     private volatile Boolean instrumentationEnabled;
     private volatile boolean configuredInstrumentationEnabled;
     private volatile boolean liveReloadEnabled = true;
+    /*
+     * External batches reuse the ordinary scanLock -> codeGenLock order. Sequence
+     * admission, live-reload state, failure publication, restart, and continuous
+     * testing are processed within that ordering boundary. Transport state
+     * notifications are published only after scanLock is released, and close()
+     * releases the startup latch before closing the connection so a receiver
+     * waiting for initial readiness cannot remain blocked.
+     */
+    private long liveReloadStateGeneration;
+    private long lastProcessedBuildOutputSequence = -1;
+    private final BuildOutputChangesConnection buildOutputChangesConnection;
+    private final CountDownLatch externalBuildOutputReady;
 
     private WatchServiceFileSystemWatcher testClassChangeWatcher;
     private Timer testClassChangeTimer;
@@ -158,7 +171,7 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
         this.copyResourceNotification = copyResourceNotification;
         this.classTransformers = classTransformers;
         this.testSupport = testSupport;
-        if (testSupport != null) {
+        if (testSupport != null && !usesExternalBuildOutputs()) {
             testSupport.addListener(new TestListener() {
                 @Override
                 public void testsEnabled() {
@@ -189,6 +202,19 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
             });
         }
         this.deploymentProblem = deploymentProblem;
+        externalBuildOutputReady = new CountDownLatch(hasExternalBuildOutputTransport() ? 1 : 0);
+        this.buildOutputChangesConnection = connectToBuildOutputChanges();
+        publishLiveReloadState(new BuildOutputLiveReloadState(0, liveReloadEnabled));
+    }
+
+    private BuildOutputChangesConnection connectToBuildOutputChanges() {
+        try {
+            return BuildOutputChangesTransports.connect(
+                    context == null ? null : context.getExternalBuildOutputTransport(),
+                    this::processBuildOutputChanges);
+        } catch (IOException e) {
+            throw new UncheckedIOException("Failed to connect external build output transport", e);
+        }
     }
 
     public TestSupport getTestSupport() {
@@ -200,7 +226,7 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
         final List<ModuleInfo> allModules = context.getAllModules();
         final List<Path> paths = new ArrayList<>(allModules.size());
         for (DevModeContext.ModuleInfo i : allModules) {
-            paths.add(Path.of(i.getMain().getClassesPath()));
+            paths.addAll(i.getMain().getClassesPaths());
         }
         return paths;
     }
@@ -450,6 +476,7 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
         Path resolve = resolveApplicationPath(file);
         try {
             Files.deleteIfExists(resolve);
+            DevModeMediator.cancelDelete(resolve);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -536,133 +563,322 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
                 }
             }
 
+            if (context != null && context.getBuildUpdateSource() == DevModeContext.BuildUpdateSource.EXTERNAL_BUILD_TOOL) {
+                // External build output handling is driven exclusively by
+                // processBuildOutputChanges(...), including test outputs.
+                return false;
+            }
+
             ClassScanResult changedClassResults = checkForChangedClasses(compiler, DevModeContext.ModuleInfo::getMain, false,
                     main, false);
             Set<String> filesChanged = checkForFileChange(DevModeContext.ModuleInfo::getMain, main);
 
-            boolean fileRestartNeeded = forceRestart || filesChanged.stream().anyMatch(main::isRestartNeeded);
-            boolean instrumentationChange = false;
-
-            List<Path> changedFilesForRestart = new ArrayList<>();
-            if (fileRestartNeeded) {
-                filesChanged.stream().filter(main::isRestartNeeded).map(Paths::get)
-                        .forEach(changedFilesForRestart::add);
-            }
-            changedFilesForRestart.addAll(changedClassResults.getChangedClasses());
-            changedFilesForRestart.addAll(changedClassResults.getAddedClasses());
-            changedFilesForRestart.addAll(changedClassResults.getDeletedClasses());
-
-            if (ClassChangeAgent.getInstrumentation() != null && lastStartIndex != null && !fileRestartNeeded
-                    && devModeType != DevModeType.REMOTE_LOCAL_SIDE && instrumentationEnabled()) {
-                //attempt to do an instrumentation based reload
-                //if only code has changed and not the class structure, then we can do a reload
-                //using the JDK instrumentation API (assuming we were started with the javaagent)
-                if (changedClassResults.deletedClasses.isEmpty()
-                        && changedClassResults.addedClasses.isEmpty()
-                        && !changedClassResults.changedClasses.isEmpty()) {
-                    try {
-                        Indexer indexer = new Indexer();
-                        //attempt to use the instrumentation API
-                        ClassDefinition[] defs = new ClassDefinition[changedClassResults.changedClasses.size()];
-                        int index = 0;
-                        for (Path i : changedClassResults.changedClasses) {
-                            byte[] bytes = Files.readAllBytes(i);
-                            String name = indexer.indexWithSummary(new ByteArrayInputStream(bytes)).name().toString();
-                            defs[index++] = new ClassDefinition(
-                                    Thread.currentThread().getContextClassLoader().loadClass(name),
-                                    classTransformers.apply(name, bytes));
-                        }
-                        Index current = indexer.complete();
-                        boolean ok = !disableInstrumentationForIndexPredicate.test(current);
-                        if (ok) {
-                            for (ClassInfo clazz : current.getKnownClasses()) {
-                                ClassInfo old = lastStartIndex.getClassByName(clazz.name());
-                                if (!ClassComparisonUtil.isSameStructure(clazz, old)
-                                        || disableInstrumentationForClassPredicate.test(clazz)) {
-                                    ok = false;
-                                    break;
-                                }
-                            }
-                        }
-
-                        if (ok) {
-                            log.info("Application restart not required, replacing classes via instrumentation");
-                            ClassChangeAgent.getInstrumentation().redefineClasses(defs);
-                            instrumentationChange = true;
-                        }
-                    } catch (Exception e) {
-                        log.error("Failed to replace classes via instrumentation", e);
-                        instrumentationChange = false;
-                    }
-                }
-            }
-            if (compileProblem != null) {
-                return false;
-            }
-
-            //if there is a deployment problem we always restart on scan
-            //this is because we can't set up the config file watches
-            //in an ideal world we would just check every resource file for changes, however as everything is already
-            //all broken we just assume the reason that they have refreshed is because they have fixed something
-            //trying to watch all resource files is complex and this is likely a good enough solution for what is already an edge case
-            boolean restartNeeded = !instrumentationChange && (changedClassResults.isChanged()
-                    || (deploymentProblem.get() != null && userInitiated) || fileRestartNeeded);
-            if (restartNeeded) {
-                String changeString = changedFilesForRestart.stream().map(Path::getFileName).map(Object::toString)
-                        .collect(Collectors.joining(", "));
-                if (!changeString.isEmpty()) {
-                    log.infof("Restarting quarkus due to changes in %s.", changeString);
-                } else if (forceRestart && userInitiated) {
-                    log.info("Restarting as requested by the user.");
-                }
-                for (Runnable step : preRestartSteps) {
-                    try {
-                        step.run();
-                    } catch (Throwable t) {
-                        log.error("Pre Restart step failed", t);
-                    }
-                }
-                restartCallback.accept(filesChanged, changedClassResults);
-                long timeNanoSeconds = System.nanoTime() - startNanoseconds;
-                log.infof("Live reload total time: %ss ", Timing.convertToSecondsString(timeNanoSeconds));
-                for (Runnable step : postRestartSteps) {
-                    try {
-                        step.run();
-                    } catch (Throwable t) {
-                        log.error("Post Restart step failed", t);
-                    }
-                }
-                if (TimeUnit.SECONDS.convert(timeNanoSeconds, TimeUnit.NANOSECONDS) >= 4 && !instrumentationEnabled()) {
-                    if (!instrumentationLogPrinted) {
-                        instrumentationLogPrinted = true;
-                        log.info(
-                                "Live reload took more than 4 seconds, you may want to enable instrumentation based reload (quarkus.live-reload.instrumentation=true). This allows small changes to take effect without restarting Quarkus.");
-                    }
-                }
-
-                return true;
-            } else if (!filesChanged.isEmpty()) {
-                try {
-                    notifyExtensions(filesChanged);
-                    hotReloadProblem = null;
-                    getCompileOutput().setMessage(null);
-                } catch (Throwable t) {
-                    hotReloadProblem = t;
-                    getCompileOutput().setMessage(t.getMessage());
-                }
-
-                log.infof("Files changed but restart not needed - notified extensions in: %ss ",
-                        Timing.convertToSecondsString(System.nanoTime() - startNanoseconds));
-            } else if (instrumentationChange) {
-                log.infof("Live reload performed via instrumentation, no restart needed, total time: %ss ",
-                        Timing.convertToSecondsString(System.nanoTime() - startNanoseconds));
-            }
-            return false;
+            return processApplicationChanges(userInitiated, forceRestart, startNanoseconds, changedClassResults, filesChanged);
 
         } finally {
             scanLock.unlock();
             codeGenLock.unlock();
         }
+    }
+
+    BuildOutputChangesApplyStatus processBuildOutputChanges(BuildOutputChanges changes) {
+        requireNonNull(changes, "changes");
+        if (changes.status() == BuildOutputChangeStatus.BUILD_SUCCEEDED && requiresLiveReload(changes)) {
+            try {
+                // The first external batch must not enter the scanner until startup
+                // has installed the initial application state. close() also releases
+                // this latch so transport shutdown cannot strand the receiver.
+                externalBuildOutputReady.await();
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                return BuildOutputChangesApplyStatus.NOT_APPLIED;
+            }
+        }
+        scanLock.lock();
+        codeGenLock.lock();
+
+        try {
+            if (changes.sequence() <= lastProcessedBuildOutputSequence) {
+                return BuildOutputChangesApplyStatus.REJECTED;
+            }
+            if (!hasKnownOutputRoots(changes)) {
+                lastProcessedBuildOutputSequence = changes.sequence();
+                return BuildOutputChangesApplyStatus.REJECTED;
+            }
+            if (changes.status() != BuildOutputChangeStatus.BUILD_SUCCEEDED) {
+                lastProcessedBuildOutputSequence = changes.sequence();
+                processExternalBuildStatus(changes);
+                return BuildOutputChangesApplyStatus.APPLIED;
+            }
+            if (!liveReloadEnabled && requiresLiveReload(changes)) {
+                return BuildOutputChangesApplyStatus.LIVE_RELOAD_DISABLED;
+            }
+            if (changes.deliveryKind() == BuildOutputChangesDeliveryKind.REBASELINE) {
+                return processBuildOutputRebaseline(changes);
+            }
+            lastProcessedBuildOutputSequence = changes.sequence();
+
+            setRemoteProblem(null);
+            if (testSupport != null) {
+                testSupport.testCompileSucceeded();
+            }
+
+            ClassScanResult mainClassChanges = toClassScanResult(changes.mainClassChanges());
+            Set<String> mainResourceChanges = toChangedFileSet(changes.mainResourceChanges());
+            processApplicationChanges(changes.userInitiated(), changes.forceRestart(), System.nanoTime(),
+                    mainClassChanges, mainResourceChanges);
+
+            if (testSupport != null && testSupport.isStarted()) {
+                ClassScanResult testClassChanges = toClassScanResult(changes.testClassChanges());
+                ClassScanResult allClassChanges = ClassScanResult.merge(testClassChanges, mainClassChanges);
+                if (!changes.mainResourceChanges().isEmpty() || !changes.testResourceChanges().isEmpty()) {
+                    testSupport.runTests(null);
+                } else if (allClassChanges.isChanged()) {
+                    testSupport.runTests(allClassChanges);
+                }
+            }
+            return BuildOutputChangesApplyStatus.APPLIED;
+        } finally {
+            scanLock.unlock();
+            codeGenLock.unlock();
+        }
+    }
+
+    private BuildOutputChangesApplyStatus processBuildOutputRebaseline(BuildOutputChanges changes) {
+        setRemoteProblem(null);
+        if (testSupport != null) {
+            testSupport.testCompileSucceeded();
+        }
+        log.info("Rebaselining Quarkus dev mode from the current external build outputs.");
+        processApplicationChanges(changes.userInitiated(), true, System.nanoTime(), new ClassScanResult(), Set.of());
+        if (testSupport != null && testSupport.isStarted()) {
+            testSupport.runTests(null);
+        }
+        lastProcessedBuildOutputSequence = changes.sequence();
+        return BuildOutputChangesApplyStatus.APPLIED;
+    }
+
+    private static boolean requiresLiveReload(BuildOutputChanges changes) {
+        return changes.deliveryKind() == BuildOutputChangesDeliveryKind.REBASELINE
+                || changes.forceRestart()
+                || !changes.mainClassChanges().isEmpty()
+                || !changes.mainResourceChanges().isEmpty()
+                || !changes.testClassChanges().isEmpty()
+                || !changes.testResourceChanges().isEmpty();
+    }
+
+    private void processExternalBuildStatus(BuildOutputChanges changes) {
+        if (changes.status() != BuildOutputChangeStatus.BUILD_FAILED) {
+            return;
+        }
+        ExternalBuildException failure = new ExternalBuildException(changes.failureSummary());
+        if (changes.failureKind() == BuildOutputFailureKind.TEST) {
+            if (testSupport != null) {
+                testSupport.testCompileFailed(failure);
+            }
+            return;
+        }
+        setRemoteProblem(failure);
+        if (testSupport != null) {
+            testSupport.testCompileFailed(failure);
+        }
+    }
+
+    private boolean hasKnownOutputRoots(BuildOutputChanges changes) {
+        if (context == null || context.getApplicationRoot() == null) {
+            return true;
+        }
+        Set<Path> mainClassRoots = new HashSet<>();
+        Set<Path> mainResourceRoots = new HashSet<>();
+        Set<Path> testClassRoots = new HashSet<>();
+        Set<Path> testResourceRoots = new HashSet<>();
+        for (ModuleInfo module : context.getAllModules()) {
+            addNormalized(mainClassRoots, module.getMain().getClassesPaths());
+            addNormalized(mainResourceRoots, module.getMain().getResourcesOutputPath());
+            module.getTest().ifPresent(testUnit -> {
+                addNormalized(testClassRoots, testUnit.getClassesPaths());
+                addNormalized(testResourceRoots, testUnit.getResourcesOutputPath());
+            });
+        }
+        return haveKnownRoots(changes.mainClassChanges(), mainClassRoots)
+                && haveKnownRoots(changes.mainResourceChanges(), mainResourceRoots)
+                && haveKnownRoots(changes.testClassChanges(), testClassRoots)
+                && haveKnownRoots(changes.testResourceChanges(), testResourceRoots);
+    }
+
+    private static boolean haveKnownRoots(List<BuildOutputPathChange> changes, Set<Path> knownRoots) {
+        for (BuildOutputPathChange change : changes) {
+            if (!knownRoots.contains(change.outputRoot().toAbsolutePath().normalize())) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private static void addNormalized(Set<Path> roots, Collection<Path> paths) {
+        for (Path path : paths) {
+            roots.add(path.toAbsolutePath().normalize());
+        }
+    }
+
+    private static void addNormalized(Set<Path> roots, String path) {
+        if (path != null && !path.isBlank()) {
+            roots.add(Path.of(path).toAbsolutePath().normalize());
+        }
+    }
+
+    private boolean usesExternalBuildOutputs() {
+        return context != null && context.getBuildUpdateSource() == DevModeContext.BuildUpdateSource.EXTERNAL_BUILD_TOOL;
+    }
+
+    private boolean hasExternalBuildOutputTransport() {
+        return context != null && context.getExternalBuildOutputTransport() != null
+                && context.getExternalBuildOutputTransport().isEnabled();
+    }
+
+    private static ClassScanResult toClassScanResult(List<BuildOutputPathChange> changes) {
+        ClassScanResult result = new ClassScanResult();
+        for (BuildOutputPathChange change : changes) {
+            if (!change.changedPath().toString().endsWith(CLASS_EXTENSION)) {
+                continue;
+            }
+            switch (change.kind()) {
+                case ADDED -> result.addAddedClass(change.outputRoot(), change.changedPath());
+                case MODIFIED -> result.addChangedClass(change.outputRoot(), change.changedPath());
+                case DELETED -> result.addDeletedClass(change.outputRoot(), change.changedPath());
+            }
+        }
+        return result;
+    }
+
+    private static Set<String> toChangedFileSet(List<BuildOutputPathChange> changes) {
+        Set<String> result = new HashSet<>();
+        for (BuildOutputPathChange change : changes) {
+            result.add(toOSAgnosticPathStr(change.outputRoot().relativize(change.changedPath()).toString()));
+        }
+        return result;
+    }
+
+    private boolean processApplicationChanges(boolean userInitiated, boolean forceRestart, long startNanoseconds,
+            ClassScanResult changedClassResults, Set<String> filesChanged) {
+        boolean fileRestartNeeded = forceRestart || filesChanged.stream().anyMatch(main::isRestartNeeded);
+        boolean instrumentationChange = false;
+
+        List<Path> changedFilesForRestart = new ArrayList<>();
+        if (fileRestartNeeded) {
+            filesChanged.stream().filter(main::isRestartNeeded).map(Paths::get)
+                    .forEach(changedFilesForRestart::add);
+        }
+        changedFilesForRestart.addAll(changedClassResults.getChangedClasses());
+        changedFilesForRestart.addAll(changedClassResults.getAddedClasses());
+        changedFilesForRestart.addAll(changedClassResults.getDeletedClasses());
+
+        if (ClassChangeAgent.getInstrumentation() != null && lastStartIndex != null && !fileRestartNeeded
+                && devModeType != DevModeType.REMOTE_LOCAL_SIDE && instrumentationEnabled()) {
+            //attempt to do an instrumentation based reload
+            //if only code has changed and not the class structure, then we can do a reload
+            //using the JDK instrumentation API (assuming we were started with the javaagent)
+            if (changedClassResults.deletedClasses.isEmpty()
+                    && changedClassResults.addedClasses.isEmpty()
+                    && !changedClassResults.changedClasses.isEmpty()) {
+                try {
+                    Indexer indexer = new Indexer();
+                    //attempt to use the instrumentation API
+                    ClassDefinition[] defs = new ClassDefinition[changedClassResults.changedClasses.size()];
+                    int index = 0;
+                    for (Path i : changedClassResults.changedClasses) {
+                        byte[] bytes = Files.readAllBytes(i);
+                        String name = indexer.indexWithSummary(new ByteArrayInputStream(bytes)).name().toString();
+                        defs[index++] = new ClassDefinition(
+                                Thread.currentThread().getContextClassLoader().loadClass(name),
+                                classTransformers.apply(name, bytes));
+                    }
+                    Index current = indexer.complete();
+                    boolean ok = !disableInstrumentationForIndexPredicate.test(current);
+                    if (ok) {
+                        for (ClassInfo clazz : current.getKnownClasses()) {
+                            ClassInfo old = lastStartIndex.getClassByName(clazz.name());
+                            if (!ClassComparisonUtil.isSameStructure(clazz, old)
+                                    || disableInstrumentationForClassPredicate.test(clazz)) {
+                                ok = false;
+                                break;
+                            }
+                        }
+                    }
+
+                    if (ok) {
+                        log.info("Application restart not required, replacing classes via instrumentation");
+                        ClassChangeAgent.getInstrumentation().redefineClasses(defs);
+                        instrumentationChange = true;
+                    }
+                } catch (Exception e) {
+                    log.error("Failed to replace classes via instrumentation", e);
+                    instrumentationChange = false;
+                }
+            }
+        }
+        if (compileProblem != null) {
+            return false;
+        }
+
+        //if there is a deployment problem we always restart on scan
+        //this is because we can't set up the config file watches
+        //in an ideal world we would just check every resource file for changes, however as everything is already
+        //all broken we just assume the reason that they have refreshed is because they have fixed something
+        //trying to watch all resource files is complex and this is likely a good enough solution for what is already an edge case
+        boolean restartNeeded = !instrumentationChange && (changedClassResults.isChanged()
+                || (deploymentProblem.get() != null && userInitiated) || fileRestartNeeded);
+        if (restartNeeded) {
+            String changeString = changedFilesForRestart.stream().map(Path::getFileName).map(Object::toString)
+                    .collect(Collectors.joining(", "));
+            if (!changeString.isEmpty()) {
+                log.infof("Restarting quarkus due to changes in %s.", changeString);
+            } else if (forceRestart && userInitiated) {
+                log.info("Restarting as requested by the user.");
+            }
+            for (Runnable step : preRestartSteps) {
+                try {
+                    step.run();
+                } catch (Throwable t) {
+                    log.error("Pre Restart step failed", t);
+                }
+            }
+            restartCallback.accept(filesChanged, changedClassResults);
+            long timeNanoSeconds = System.nanoTime() - startNanoseconds;
+            log.infof("Live reload total time: %ss ", Timing.convertToSecondsString(timeNanoSeconds));
+            for (Runnable step : postRestartSteps) {
+                try {
+                    step.run();
+                } catch (Throwable t) {
+                    log.error("Post Restart step failed", t);
+                }
+            }
+            if (TimeUnit.SECONDS.convert(timeNanoSeconds, TimeUnit.NANOSECONDS) >= 4 && !instrumentationEnabled()) {
+                if (!instrumentationLogPrinted) {
+                    instrumentationLogPrinted = true;
+                    log.info(
+                            "Live reload took more than 4 seconds, you may want to enable instrumentation based reload (quarkus.live-reload.instrumentation=true). This allows small changes to take effect without restarting Quarkus.");
+                }
+            }
+
+            return true;
+        } else if (!filesChanged.isEmpty()) {
+            try {
+                notifyExtensions(filesChanged);
+                hotReloadProblem = null;
+                getCompileOutput().setMessage(null);
+            } catch (Throwable t) {
+                hotReloadProblem = t;
+                getCompileOutput().setMessage(t.getMessage());
+            }
+
+            log.infof("Files changed but restart not needed - notified extensions in: %ss ",
+                    Timing.convertToSecondsString(System.nanoTime() - startNanoseconds));
+        } else if (instrumentationChange) {
+            log.infof("Live reload performed via instrumentation, no restart needed, total time: %ss ",
+                    Timing.convertToSecondsString(System.nanoTime() - startNanoseconds));
+        }
+        return false;
     }
 
     /**
@@ -697,8 +913,24 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
     }
 
     public RuntimeUpdatesProcessor setLiveReloadEnabled(boolean liveReloadEnabled) {
-        this.liveReloadEnabled = liveReloadEnabled;
+        BuildOutputLiveReloadState state = null;
+        scanLock.lock();
+        try {
+            if (this.liveReloadEnabled != liveReloadEnabled) {
+                long nextGeneration = Math.incrementExact(liveReloadStateGeneration);
+                this.liveReloadEnabled = liveReloadEnabled;
+                liveReloadStateGeneration = nextGeneration;
+                state = new BuildOutputLiveReloadState(nextGeneration, liveReloadEnabled);
+            }
+        } finally {
+            scanLock.unlock();
+        }
+        publishLiveReloadState(state);
         return this;
+    }
+
+    void externalBuildOutputReady() {
+        externalBuildOutputReady.countDown();
     }
 
     public RuntimeUpdatesProcessor setConfiguredInstrumentationEnabled(boolean configuredInstrumentationEnabled) {
@@ -1516,13 +1748,41 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
 
     @Override
     public void close() throws IOException {
-        compiler.close();
+        externalBuildOutputReady.countDown();
+        IOException failure = null;
+        try {
+            buildOutputChangesConnection.close();
+        } catch (Exception e) {
+            failure = (e instanceof IOException ioe) ? ioe : new IOException(e);
+        }
+        if (compiler != null) {
+            try {
+                compiler.close();
+            } catch (IOException e) {
+                failure = addSuppressed(failure, e);
+            }
+        }
         if (testClassChangeWatcher != null) {
-            testClassChangeWatcher.close();
+            try {
+                testClassChangeWatcher.close();
+            } catch (IOException e) {
+                failure = addSuppressed(failure, e);
+            }
         }
         if (testClassChangeTimer != null) {
             testClassChangeTimer.cancel();
         }
+        if (failure != null) {
+            throw failure;
+        }
+    }
+
+    private static IOException addSuppressed(IOException failure, IOException suppressed) {
+        if (failure == null) {
+            return suppressed;
+        }
+        failure.addSuppressed(suppressed);
+        return failure;
     }
 
     public boolean toggleInstrumentation() {
@@ -1536,17 +1796,40 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
     }
 
     public boolean toggleLiveReloadEnabled() {
-        liveReloadEnabled = !liveReloadEnabled;
-        if (liveReloadEnabled) {
+        boolean enabled;
+        BuildOutputLiveReloadState state;
+        scanLock.lock();
+        try {
+            long nextGeneration = Math.incrementExact(liveReloadStateGeneration);
+            enabled = !liveReloadEnabled;
+            liveReloadEnabled = enabled;
+            liveReloadStateGeneration = nextGeneration;
+            state = new BuildOutputLiveReloadState(nextGeneration, enabled);
+        } finally {
+            scanLock.unlock();
+        }
+        publishLiveReloadState(state);
+        if (enabled) {
             log.info("Live reload enabled");
         } else {
             log.info("Live reload disabled");
         }
-        return liveReloadEnabled;
+        return enabled;
     }
 
     public boolean isLiveReloadEnabled() {
         return liveReloadEnabled;
+    }
+
+    private void publishLiveReloadState(BuildOutputLiveReloadState state) {
+        if (state == null) {
+            return;
+        }
+        try {
+            buildOutputChangesConnection.liveReloadStateChanged(state);
+        } catch (RuntimeException e) {
+            log.warn("Failed to publish external build output live-reload state", e);
+        }
     }
 
     static class TimestampSet {

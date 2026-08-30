@@ -1,0 +1,701 @@
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
+////
+[id="gradle-application-plugin-migration"]
+= Migrate to the io.quarkus.application Gradle plugin
+include::_attributes.adoc[]
+:diataxis-type: howto
+:categories: tooling, native
+:extension-status: preview
+:summary: Migrate a Quarkus 3 Gradle application from io.quarkus to the preview Quarkus 4 application plugin.
+:topics: gradle,tooling,migration
+
+The preview `io.quarkus.application` Gradle plugin replaces the application-build responsibilities of the legacy `io.quarkus` plugin with explicit named builds and Gradle-native ownership boundaries.
+This guide describes two migration shapes:
+
+* a _direct migration_, which removes `io.quarkus` and moves its responsibilities in one change; and
+* a _legacy-first staged migration_, which temporarily applies both plugins, moves responsibilities in stages, and removes `io.quarkus` when those stages are complete.
+
+The two shapes are described neutrally.
+They converge on the same standalone-only build when a staged migration is completed, but have different ownership and compatibility boundaries while both plugins are applied.
+
+This guide starts from an existing Quarkus 3 application that uses the xref:gradle-tooling.adoc[`io.quarkus` plugin].
+For the complete target DSL and task reference, see xref:gradle-application-plugin.adoc[The `io.quarkus.application` Gradle plugin].
+
+include::{includes}/extension-status.adoc[]
+
+[NOTE]
+====
+Project names, coordinates, output names, paths, image references, URLs, ports, JVM arguments, configuration values, and credentials in this guide are examples.
+Unless a value is explicitly identified as a requirement or default, replace it with a value appropriate for your application and environment.
+====
+
+[[gradle-application-plugin-migration-prerequisites]]
+== Update the target prerequisites
+
+The Quarkus 4 target requires Java 21 and Gradle 9.6 or later.
+Update the JDK that runs Gradle and the Gradle wrapper before diagnosing plugin-migration failures.
+
+The following command updates the wrapper to the version used to verify this documentation:
+
+[source,shell,subs=attributes+]
+----
+./gradlew wrapper --gradle-version {gradle-version}
+----
+
+Commit the generated wrapper files with the migration.
+Update `quarkusPluginVersion` and `quarkusPlatformVersion` wherever the build declares them, commonly in `gradle.properties`, to the selected Quarkus 4 release.
+If plugin or platform versions are declared inline or through a version catalog, update those declarations instead.
+The plugin IDs used during migration must resolve from the same Quarkus 4 distribution; coexistence does not combine a Quarkus 3 legacy plugin with a Quarkus 4 standalone plugin.
+These target requirements do not describe the Java and Gradle versions supported by every Quarkus 3 release.
+
+[[gradle-application-plugin-migration-compare]]
+== Compare the migration shapes
+
+[cols="2,3,3"]
+|===
+|Concern |Direct migration |Legacy-first staged migration
+
+|Applied plugins
+|Only `io.quarkus.application`
+|`io.quarkus` first, then `io.quarkus.application`
+
+|Legacy tasks
+|Removed with `io.quarkus`
+|Remain available until `io.quarkus` is removed
+
+|Standalone named tasks and package variants
+|Available
+|Available within the coexistence restrictions described in <<gradle-application-plugin-migration-staged>>
+
+|Gradle `Test` ownership
+|Standalone selection and JVM Test Suite model
+|Legacy instrumentation
+
+|Tooling-model ownership
+|Standalone provider and sidecar
+|Legacy provider
+
+|Code generation
+|Standalone task family and output roots
+|Both task families can feed compilation; separate output roots do not prevent duplicate generated classes
+
+|`quarkusDev` dependency configuration
+|Created by the standalone plugin
+|The existing legacy-owned configuration is reused
+
+|Standalone continuous testing
+|Available
+|Rejected while the legacy plugin owns testing; standalone dev mode remains available with continuous testing disabled
+
+|Named native tests
+|Generated for each named native executable
+|Suppressed; use the legacy native-test surface until the legacy plugin is removed
+
+|Package-backed JVM integration tests
+|Available for named JAR and native-executable builds
+|May target a standalone named JAR; a standalone native-executable target is rejected
+
+|Configuration Cache and Isolated Projects
+|Finite standalone graphs are designed for both
+|Standalone guarantees do not extend to legacy configuration or tasks; compatibility remains specific to the selected graph and build logic
+|===
+
+Only legacy-first plugin application is supported during coexistence.
+Applying `io.quarkus.application` first and `io.quarkus` afterward is rejected.
+Coexistence is a migration-only contract, not a combined long-term feature mode or a statement that the legacy plugin is deprecated on a particular schedule.
+
+[[gradle-application-plugin-migration-inventory]]
+== Inventory the existing build
+
+Before changing the plugin declaration, identify which legacy responsibilities the build uses:
+
+* `io.quarkus`, the `quarkus` extension, and any convention plugins that configure them;
+* `quarkusBuild`, `quarkusRun`, `assemble`, package type, final name, output path, manifest, native arguments, or ignored JAR entries;
+* `quarkusDev`, `quarkusTest`, `quarkusRemoteDev`, and development-only dependencies declared in the `quarkusDev` configuration;
+* standard or custom finite `Test` tasks, the `integrationTest` source set, `quarkusIntTest`, `native-test`, `testNative`, or `buildNative`;
+* code-generation providers and inputs, effective-configuration diagnostics, offline preparation, and application-model consumers;
+* project properties, system properties, environment variables, and `cachingRelevantProperties` patterns that supply build configuration;
+* image build or push, deployment, AOT/startup-archive work, and external prerequisites for those operations;
+* package consumers and publications that locate the legacy output directly; and
+* extension discovery or mutation, project information, and project-update tasks.
+
+Also search convention plugins for live-project helpers exposed by the legacy `quarkus` extension, such as application-model, resolver, source-output, or application-JAR accessors.
+The standalone plugin does not expose those helpers as a compatibility API.
+
+[[gradle-application-plugin-migration-direct]]
+== Perform a direct migration
+
+An existing build can register the legacy plugin version in plugin management:
+
+[role="primary asciidoc-tabs-sync-groovy"]
+.Groovy DSL
+****
+[source,groovy]
+----
+include::{generated-dir}/examples/gradle-application-plugin-migration-direct-settings-3.gradle[tag=direct-legacy-plugin-management]
+----
+****
+
+[role="secondary asciidoc-tabs-sync-kotlin"]
+.Kotlin DSL
+****
+[source,kotlin]
+----
+include::{generated-dir}/examples/gradle-application-plugin-migration-direct-settings-3.gradle.kts[tag=direct-legacy-plugin-management]
+----
+****
+
+After updating `quarkusPluginVersion` to the Quarkus 4 target, replace that registration with the standalone plugin ID:
+
+[role="primary asciidoc-tabs-sync-groovy"]
+.Groovy DSL
+****
+[source,groovy]
+----
+include::{generated-dir}/examples/gradle-application-plugin-migration-direct-settings-4.gradle[tag=direct-standalone-plugin-management]
+----
+****
+
+[role="secondary asciidoc-tabs-sync-kotlin"]
+.Kotlin DSL
+****
+[source,kotlin]
+----
+include::{generated-dir}/examples/gradle-application-plugin-migration-direct-settings-4.gradle.kts[tag=direct-standalone-plugin-management]
+----
+****
+
+The following representative Quarkus 3 build applies the legacy plugin, customizes one package and its manifest, supplies explicit configuration and fork settings, and declares finite and integration tests.
+
+[role="primary asciidoc-tabs-sync-groovy"]
+.Groovy DSL
+****
+[source,groovy]
+----
+include::{generated-dir}/examples/gradle-application-plugin-migration-direct-3.gradle[tag=direct-legacy-build]
+----
+****
+
+[role="secondary asciidoc-tabs-sync-kotlin"]
+.Kotlin DSL
+****
+[source,kotlin]
+----
+include::{generated-dir}/examples/gradle-application-plugin-migration-direct-3.gradle.kts[tag=direct-legacy-build]
+----
+****
+
+Replace the plugin declaration with `io.quarkus.application`:
+
+[role="primary asciidoc-tabs-sync-groovy"]
+.Groovy DSL
+****
+[source,groovy]
+----
+include::{generated-dir}/examples/gradle-application-plugin-migration-direct-4.gradle[tag=direct-standalone-plugins]
+----
+****
+
+[role="secondary asciidoc-tabs-sync-kotlin"]
+.Kotlin DSL
+****
+[source,kotlin]
+----
+include::{generated-dir}/examples/gradle-application-plugin-migration-direct-4.gradle.kts[tag=direct-standalone-plugins]
+----
+****
+
+The standalone plugin does not create a package output implicitly.
+Declare each output that the build needs and move output and manifest settings to that named build:
+
+[role="primary asciidoc-tabs-sync-groovy"]
+.Groovy DSL
+****
+[source,groovy]
+----
+include::{generated-dir}/examples/gradle-application-plugin-migration-direct-4.gradle[tag=direct-named-builds]
+----
+****
+
+[role="secondary asciidoc-tabs-sync-kotlin"]
+.Kotlin DSL
+****
+[source,kotlin]
+----
+include::{generated-dir}/examples/gradle-application-plugin-migration-direct-4.gradle.kts[tag=direct-named-builds]
+----
+****
+
+This example opts only the `service` output into `assemble`.
+The `ignoredEntries` and `native` outputs remain available through their generated tasks, but `assemble` does not build them.
+There is no universal standalone `quarkusBuild` alias and no automatic lifecycle edge for a newly declared build.
+Map a legacy JAR package type to the corresponding `fastJar`, `aotJar`, `legacyJar`, `mutableJar`, or `uberJar` registration.
+Use `nativeExecutable` for a runnable native image and `nativeSources` for native-image sources only.
+An AOT JAR additionally selects an `AOT`, `SCC`, or `APP_CDS` startup-archive type; that archive type is separate from the package build type.
+See xref:gradle-application-plugin.adoc#gradle-application-plugin-named-builds[named application builds], xref:gradle-application-plugin.adoc#gradle-application-plugin-assemble[`assemble` integration], and xref:gradle-application-plugin.adoc#gradle-application-plugin-package-output[package output configuration].
+
+Move finite and package-backed test ownership to the standalone test model:
+
+[role="primary asciidoc-tabs-sync-groovy"]
+.Groovy DSL
+****
+[source,groovy]
+----
+include::{generated-dir}/examples/gradle-application-plugin-migration-direct-4.gradle[tag=direct-tests]
+----
+****
+
+[role="secondary asciidoc-tabs-sync-kotlin"]
+.Kotlin DSL
+****
+[source,kotlin]
+----
+include::{generated-dir}/examples/gradle-application-plugin-migration-direct-4.gradle.kts[tag=direct-tests]
+----
+****
+
+The standard `test` task receives standalone Quarkus finite-test setup.
+Select additional `Test` tasks or suites explicitly.
+A package-backed integration suite consumes the selected named build rather than a global `quarkusBuild` output.
+See xref:gradle-application-plugin.adoc#gradle-application-plugin-testing[Test applications].
+
+Move stable build-owned values into `quarkusBuildProperties`, declare selected ambient inputs, and copy supported fork values explicitly:
+
+[role="primary asciidoc-tabs-sync-groovy"]
+.Groovy DSL
+****
+[source,groovy]
+----
+include::{generated-dir}/examples/gradle-application-plugin-migration-direct-4.gradle[tag=direct-config-and-forks]
+----
+****
+
+[role="secondary asciidoc-tabs-sync-kotlin"]
+.Kotlin DSL
+****
+[source,kotlin]
+----
+include::{generated-dir}/examples/gradle-application-plugin-migration-direct-4.gradle.kts[tag=direct-config-and-forks]
+----
+****
+
+The standalone fork models intentionally expose a bounded set of modeled inputs.
+The build and code-generation models support JVM arguments, string system properties and environment entries, heap sizes, assertions, debugging, and default character encoding.
+The dev and remote-dev models expose JVM arguments and system properties.
+Custom uses of the broader legacy `JavaForkOptions` contract do not transfer implicitly.
+See xref:gradle-application-plugin.adoc#gradle-application-plugin-config-inputs[Declare configuration inputs] and xref:gradle-application-plugin.adoc#gradle-application-plugin-workers[Configure build workers].
+
+After updating custom task references, use generated names such as:
+
+[source,shell]
+----
+./gradlew quarkusServiceBuild
+./gradlew quarkusServiceRun
+./gradlew quarkusIgnoredEntriesBuild
+----
+
+Run `./gradlew tasks --group "quarkus application"` or consult the xref:gradle-application-plugin.adoc#gradle-application-plugin-task-reference[task-name reference] for the tasks created by the names in your build.
+
+[[gradle-application-plugin-migration-staged]]
+== Perform a legacy-first staged migration
+
+After updating `quarkusPluginVersion` to the Quarkus 4 target, register both plugin IDs from that same version:
+
+[role="primary asciidoc-tabs-sync-groovy"]
+.Groovy DSL
+****
+[source,groovy]
+----
+include::{generated-dir}/examples/gradle-application-plugin-migration-coexistence-settings.gradle[tag=legacy-first-plugin-management]
+----
+****
+
+[role="secondary asciidoc-tabs-sync-kotlin"]
+.Kotlin DSL
+****
+[source,kotlin]
+----
+include::{generated-dir}/examples/gradle-application-plugin-migration-coexistence-settings.gradle.kts[tag=legacy-first-plugin-management]
+----
+****
+
+Keep the legacy plugin first and apply the standalone plugin second:
+
+[role="primary asciidoc-tabs-sync-groovy"]
+.Groovy DSL
+****
+[source,groovy]
+----
+include::{generated-dir}/examples/gradle-application-plugin-migration-coexistence.gradle[tag=legacy-first-coexistence]
+----
+****
+
+[role="secondary asciidoc-tabs-sync-kotlin"]
+.Kotlin DSL
+****
+[source,kotlin]
+----
+include::{generated-dir}/examples/gradle-application-plugin-migration-coexistence.gradle.kts[tag=legacy-first-coexistence]
+----
+****
+
+The build logs a migration-mode warning describing the required order and ownership split.
+During this stage:
+
+* legacy task names and the `quarkus` extension remain available;
+* standalone named builds, applicable run tasks, variants, images, deployments, offline preparation, and diagnostics remain available under their standalone names;
+* the legacy plugin owns finite test instrumentation and the Tooling API application-model provider;
+* the standalone plugin reuses the existing legacy-owned `quarkusDev` dependency configuration without changing its roles;
+* a package-backed JVM integration suite can consume a standalone named JAR, with legacy supplying test instrumentation;
+* standalone generated native-test suites are suppressed, and targeting a standalone native executable from a user-owned integration suite is rejected;
+* `quarkusApplicationContinuousTest` and `quarkusApplicationDev` with continuous testing enabled are rejected; `quarkusApplicationDev` remains available when continuous testing is disabled; and
+* both code-generation families can feed compilation from different output roots.
+
+The plugins do not arbitrate duplicate generated classes.
+If both generators produce the same fully qualified source, separate output directories do not make the resulting compilation valid.
+
+The legacy plugin adds its global `quarkusBuild` task to `assemble`.
+Each standalone named build still uses its own `participatesInAssemble` flag.
+Consequently, opting a standalone build into `assemble` during coexistence intentionally selects both the legacy package and that standalone package.
+
+Development-only dependencies stay in the same public `quarkusDev` configuration shown in the coexistence example.
+This name is a dependency configuration, not the legacy task of the same name.
+The standalone dev and continuous-test runtime classpaths extend from the legacy-owned configuration during coexistence.
+
+Do not reverse the plugin order.
+The unsupported shape is shown here only to make the failure recognizable:
+
+[role="primary asciidoc-tabs-sync-groovy"]
+.Groovy DSL
+****
+[source,groovy]
+----
+include::{generated-dir}/examples/gradle-application-plugin-migration-standalone-first.gradle[tag=standalone-first-rejected]
+----
+****
+
+[role="secondary asciidoc-tabs-sync-kotlin"]
+.Kotlin DSL
+****
+[source,kotlin]
+----
+include::{generated-dir}/examples/gradle-application-plugin-migration-standalone-first.gradle.kts[tag=standalone-first-rejected]
+----
+****
+
+After no build logic relies on the legacy extension, tasks, source-set conventions, test ownership, or tooling provider, remove `io.quarkus` and its remaining configuration:
+
+[role="primary asciidoc-tabs-sync-groovy"]
+.Groovy DSL
+****
+[source,groovy]
+----
+include::{generated-dir}/examples/gradle-application-plugin-migration-standalone-only.gradle[tag=standalone-only-final]
+----
+****
+
+[role="secondary asciidoc-tabs-sync-kotlin"]
+.Kotlin DSL
+****
+[source,kotlin]
+----
+include::{generated-dir}/examples/gradle-application-plugin-migration-standalone-only.gradle.kts[tag=standalone-only-final]
+----
+****
+
+Removing the legacy plugin is the ownership transition.
+The standalone plugin then owns finite and continuous testing, creates the `quarkusDev` configuration, registers named native-test suites, and supplies its tooling model and sidecar.
+There is no coexistence DSL switch that transfers these responsibilities while `io.quarkus` remains applied.
+
+[[gradle-application-plugin-migration-outcomes]]
+== Map legacy outcomes to standalone outcomes
+
+The following tables cover the user-facing outcomes of the legacy application plugin.
+They describe outcomes rather than promising aliases for legacy task or extension names.
+
+=== Build, lifecycle, output, and development dependencies
+
+[cols="2,3,3"]
+|===
+|Legacy surface |Standalone action |Difference to account for
+
+|`io.quarkus`
+|Apply `io.quarkus.application`
+|No implicit package output; coexistence supports legacy-first order only.
+
+|`quarkus` extension
+|Use `quarkusApplication` concern blocks and named builds
+|Global concerns are split by responsibility and output.
+
+|`quarkusBuild`
+|Declare a build and run `quarkus<Name>Build`
+|There is no universal package-task alias.
+
+|Automatic `assemble -> quarkusBuild`
+|Set `participatesInAssemble=true` on each selected build
+|Participation is per build and opt-in.
+
+|`quarkusRun`
+|Run a JAR build's `quarkus<Name>Run`
+|The task consumes an explicit named package receipt.
+
+|`quarkusDev` dependency configuration
+|Keep declaring development-only dependencies in `quarkusDev`
+|Standalone creates it alone and reuses the legacy owner during coexistence.
+
+|Global manifest DSL
+|Configure `manifest.attributes` and named `sections` on each named JAR build
+|The string-map model is per output, is not Gradle's `Manifest`, and is absent from native builds.
+
+|Global final name and output
+|Configure each build's `outputDirectory`, `outputName`, archive components, and runner suffix
+|The default is `build/quarkus-builds/<name>/package`; `project.version=unspecified` requires an explicit version or output name.
+
+|Ambient build configuration and `cachingRelevantProperties`
+|Use root/concern/build properties and `configInputs` prefixes or exact names
+|Selectors are finite, and there is no general regex conversion. Temporary ambient capture disables safe reuse for affected tasks.
+|===
+
+See xref:gradle-application-plugin.adoc#gradle-application-plugin-package-output[Configure package output], xref:gradle-application-plugin.adoc#gradle-application-plugin-dependencies-codegen[Manage dependencies and generated sources], and xref:gradle-application-plugin.adoc#gradle-application-plugin-config-inputs[Declare configuration inputs].
+
+=== Development and testing
+
+[cols="2,3,3"]
+|===
+|Legacy surface |Standalone action |Difference to account for
+
+|`quarkusDev` task
+|Run `quarkusApplicationDev --continuous --no-configuration-cache`
+|Gradle owns compilation, output delivery, stdin, and cancellation; browser Dev UI controls remain available.
+
+|`quarkusRemoteDev`
+|Declare a mutable build, configure `remoteDev`, and run `quarkusApplicationRemoteDev --continuous --no-configuration-cache`
+|The session synchronizes an explicit mutable package; endpoint and password are invocation/DSL inputs.
+
+|`quarkusTest`
+|Run `quarkusApplicationContinuousTest --continuous --no-configuration-cache`, or enable testing in standalone dev mode
+|Console stdin controls are not inherited; browser controls are available through Dev UI when dev mode supplies it.
+
+|Implicit instrumentation of Gradle `Test` tasks
+|Use the standard `test` task and select additional tasks or suites through the standalone test DSL
+|Additional test ownership is explicit; legacy keeps ownership during coexistence.
+
+|`quarkusIntTest` and `integrationTest`
+|Declare a JVM Test Suite and call `forQuarkusIntegrationTests(namedBuild)`
+|No one-to-one source-set or task recreation; the suite consumes one runnable package.
+
+|`testNative` and `native-test`
+|Declare `nativeExecutable(name)` and use `quarkus<Name>NativeTest`; share tests with `includeTestsFrom`
+|One generated suite per native build; unavailable during coexistence and requires a native toolchain to execute.
+
+|Deprecated `buildNative`
+|Run `quarkus<Name>Build` for a named native executable
+|No deprecated/global alias; native prerequisites still apply.
+|===
+
+See xref:gradle-application-plugin.adoc#gradle-application-plugin-dev-mode[Develop with Gradle continuous build], xref:gradle-application-plugin.adoc#gradle-application-plugin-continuous-testing[Run dedicated continuous testing], xref:gradle-application-plugin.adoc#gradle-application-plugin-remote-dev[Use remote development], and xref:gradle-application-plugin.adoc#gradle-application-plugin-testing[Test applications].
+
+When migrating scripts or IDE run configurations, retain the invocation options that apply to the corresponding standalone task.
+The standalone task reference records which task accepts options such as `--jvm-args`, `--quarkus-args`, `--modules`, `--compiler-args`, and `--tests`, in addition to Gradle's `--continuous` option for long-lived task families.
+
+=== Offline work, diagnostics, generated sources, and tooling
+
+[cols="2,3,3"]
+|===
+|Legacy surface |Standalone action |Difference to account for
+
+|`quarkusGoOffline`
+|Run `quarkusApplicationPrepareOffline`; set `prepareForOffline=true` on selected named builds
+|Preparation includes finite model/codegen/dev/test inputs and recursive selected, parent, and imported-BOM POM closure.
+
+|`quarkusShowEffectiveConfig`
+|Run `quarkus<Name>ShowEffectiveConfig`; use the fixed model-report tasks separately
+|`--show-values` writes values to logs; the effective-config task does not persist a properties report.
+
+|`quarkusGenerateCode`
+|Use standalone main code generation wired to compilation
+|Generated helper task names are implementation details.
+
+|`quarkusGenerateCodeDev`
+|Use automatic standalone dev model and code-generation wiring
+|There is no compatibility alias; both codegen families can run during coexistence.
+
+|`quarkusGenerateCodeTests`
+|Use standalone test code generation wired to selected tests
+|Custom suites opt into Quarkus behavior separately.
+
+|Application-model tasks and Tooling API model
+|Use standalone model tasks and tooling provider
+|Legacy owns the Tooling API provider during coexistence; actual IDE/tool adoption is a separate consumer concern.
+|===
+
+See xref:gradle-application-plugin.adoc#gradle-application-plugin-dependencies-codegen[Manage dependencies and generated sources], xref:gradle-application-plugin.adoc#gradle-application-plugin-offline[Prepare dependencies for offline work], and xref:gradle-application-plugin.adoc#gradle-application-plugin-diagnostics[Inspect effective configuration and models].
+
+=== Images, deployment, and startup archives
+
+[cols="2,3,3"]
+|===
+|Legacy surface |Standalone action |Difference to account for
+
+|`imageBuild`
+|Configure a named build's image and run `quarkus<Name>ImageBuild`
+|The package and image receipt are output-specific; a provider and its environment are still required.
+
+|`imagePush`
+|Run `quarkus<Name>ImagePush`
+|The external registry mutation always executes and requires registry access and credentials.
+
+|`deploy`
+|Declare a named deployment and run `quarkus<Name>DeployTo<Deployment>`
+|The target and image source are explicit; deployment service access is still required.
+
+|`buildAotEnhancedImage`
+|Declare an AOT JAR, an explicit startup-archive source or training suite, and optional optimized-image work
+|Package, archive, base-image, and optimized-image stages are separate and have JVM/container-specific prerequisites.
+|===
+
+See xref:gradle-application-plugin.adoc#gradle-application-plugin-images-deployments[Build images and deploy] and xref:gradle-application-plugin.adoc#gradle-application-plugin-startup-archives[Optimize JVM startup].
+
+=== Project and platform management
+
+[cols="2,3,3"]
+|===
+|Legacy surface |Migration action |Difference to account for
+
+|`listExtensions`, `listCategories`, `listPlatforms`
+|Use the xref:cli-tooling.adoc[Quarkus CLI] or other project tooling
+|Discovery is deliberately outside the standalone application build plugin.
+
+|`addExtension`, `removeExtension`
+|Use the Quarkus CLI or other project tooling
+|Project mutation is deliberately outside the standalone application build plugin.
+
+|`quarkusInfo`, `quarkusUpdate`
+|Use the Quarkus CLI or other project tooling
+|Project and platform management are deliberately outside the standalone application build plugin.
+|===
+
+[[gradle-application-plugin-migration-dsl-details]]
+== Account for detailed DSL changes
+
+=== Native arguments and ignored JAR entries
+
+The legacy `quarkusBuild.nativeArgs` helper converted camel-case names to hyphenated `quarkus.native.*` keys.
+The standalone named-native-build map uses complete Quarkus configuration keys.
+For example, the source-backed direct-migration example changes the legacy container-build entry to the complete `quarkus.native.container-build` key in the selected `native` output's `nativeArguments` map.
+
+The standalone task family does not provide the legacy repeatable `quarkusBuild --ignored-entry` option.
+For a selected uber-JAR output, put the comma-delimited entry names in that build's `quarkus.package.jar.user-configured-ignored-entries` build property.
+
+=== Output consumers and publications
+
+Each named JAR publishes a complete-package directory variant and a launcher-JAR variant.
+A fast-, AOT-, legacy-, or mutable-JAR launcher can require sibling files, so consuming only that launcher does not create a portable distribution.
+An uber JAR is independently runnable.
+
+Consuming either variant as a task input carries the producing named-build task dependency, including when the consumer is a different project or an included build in the same Gradle build tree.
+No additional `dependsOn` is needed for that task input.
+Resolving a configuration eagerly or from arbitrary configuration-time logic does not itself execute the producing task.
+
+Use ordinary Gradle `Zip`, Zip64-enabled `Zip`, or `Tar` tasks when a package directory needs an archive, and attach the chosen archive to a Maven publication when required.
+The standalone plugin does not select an archive format.
+See xref:gradle-application-plugin.adoc#gradle-application-plugin-package-variants[Consume, archive, and publish packages] for configuration-name and attribute-based selection examples.
+
+=== Legacy extension helpers and cache controls
+
+There is no direct standalone equivalent for legacy extension helpers that expose a live application model, resolver, source outputs, or application JAR/classes.
+Move convention-plugin consumers to declared model tasks, Gradle Tooling API models, package variants, task outputs, or providers according to the value they actually consume.
+
+The legacy `cleanupBuildOutput` switch has no direct equivalent because named builds own separate output directories.
+The legacy `cacheLargeArtifacts` switch also has no direct equivalent: finite standalone tasks support up-to-date checks but are not currently reusable through Gradle's build cache.
+Up-to-date checks, Configuration Cache reuse, and the build cache are separate mechanisms.
+
+[[gradle-application-plugin-migration-validation]]
+== Validate the migrated build
+
+For a direct migration or the final standalone-only state, run the finite graph twice with Configuration Cache and Isolated Projects:
+
+[source,shell]
+----
+./gradlew assemble test --configuration-cache -Dorg.gradle.unsafe.isolated-projects=true
+./gradlew assemble test --configuration-cache -Dorg.gradle.unsafe.isolated-projects=true
+----
+
+The second invocation should reuse the configuration cache.
+Tasks with unchanged declared inputs and outputs can be up to date.
+This does not prove that their outputs are reusable through Gradle's build cache.
+
+During coexistence, apply those flags only to a selected finite graph after checking the legacy build logic used by that graph.
+Applying the standalone plugin does not make legacy configuration, tasks, or user build logic compatible with Configuration Cache or Isolated Projects.
+
+Launch the standalone long-lived task families with Gradle continuous build and without Configuration Cache:
+
+[source,shell]
+----
+./gradlew quarkusApplicationDev --continuous --no-configuration-cache
+./gradlew quarkusApplicationContinuousTest --continuous --no-configuration-cache
+./gradlew quarkusApplicationRemoteDev --continuous --no-configuration-cache
+----
+
+Native builds and tests require a supported native-image toolchain or container environment.
+Image, registry, and deployment checks require the selected extension/provider, daemon or service, credentials, and target access.
+Startup archive and optimized-image checks additionally depend on the selected archive technology, JVM, and training environment.
+Registration or a Gradle dry run proves only the task graph, not these external operations.
+
+[[gradle-application-plugin-migration-troubleshooting]]
+== Troubleshoot migration failures
+
+[cols="2,4"]
+|===
+|Symptom |Check
+
+|The legacy plugin fails when both plugins are applied
+|Apply `io.quarkus` first and `io.quarkus.application` second. The reverse order is unsupported.
+
+|No standalone package task exists
+|Declare a named build. The standalone plugin creates no package output implicitly.
+
+|A legacy task name is missing after direct migration
+|Use the named task or concern-specific standalone task; the plugin does not register general compatibility aliases.
+
+|`assemble` does not build a named output
+|Set `participatesInAssemble=true` on that named build.
+
+|`assemble` builds two packages during coexistence
+|The legacy package always participates, and the standalone named build was opted in. Run the named standalone task directly or change its lifecycle opt-in when only one package is intended.
+
+|A package fails because the version is `unspecified`
+|Set `project.version`, `archiveVersion`, or an explicit `outputName`.
+
+|Standalone continuous testing fails during coexistence
+|The legacy plugin owns testing. Use the legacy continuous-test surface until removing it, or run standalone dev mode with continuous testing disabled.
+
+|A named native-test task is missing during coexistence
+|Legacy owns native testing in this mode. Named standalone native-test suites appear after the legacy plugin is removed.
+
+|A named native integration suite is rejected during coexistence
+|Target a standalone JAR for package-backed JVM integration testing, use the legacy native-test surface, or complete removal of the legacy plugin.
+
+|Compilation reports duplicate generated classes during coexistence
+|Both code-generation task families can feed compilation. Identify the duplicate provider/output and complete the relevant ownership transition; separate generated directories do not deduplicate classes.
+
+|A configuration value no longer reaches a finite task
+|Declare its exact name or prefix under `configInputs`, or move a build-owned value into `quarkusBuildProperties`. Use ambient capture only as a temporary migration bridge.
+
+|A custom task or provider prevents Configuration Cache or Isolated Projects reuse
+|Use provider-backed paths such as `layout.buildDirectory` and `gradle.settingsDirectory`; do not capture `project`, `rootProject`, or another project's live model in task actions or providers.
+
+|Dev, continuous test, or remote dev rejects the invocation
+|Add Gradle's `--continuous --no-configuration-cache` options.
+
+|A copied layout launcher does not start
+|Consume or archive the complete package-directory variant. Only an uber-JAR launcher is portable by itself.
+
+|Native, image, push, deployment, or startup-archive work cannot execute
+|Check the toolchain, provider extension, container/registry/platform access, credentials, JVM, and operation-specific prerequisites.
+|===
+
+For complete task names, options, DSL defaults, public configurations, variants, compatibility boundaries, and environment requirements, continue with the xref:gradle-application-plugin.adoc#gradle-application-plugin-reference[standalone plugin reference].

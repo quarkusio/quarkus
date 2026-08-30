@@ -1,0 +1,76 @@
+// Source: {{source}}
+
+plugins {
+    id 'io.quarkus.application'
+}
+
+version = '1.0.0'
+
+def quarkusVersion = providers.gradleProperty('quarkusPluginVersion').get()
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation enforcedPlatform(
+        "io.quarkus.platform:quarkus-bom:${quarkusVersion}"
+    )
+    implementation 'io.quarkus:quarkus-rest'
+}
+
+// tag::standard-and-custom-tests[]
+def smokeTest = tasks.register('smokeTest', Test) {
+    testClassesDirs = sourceSets.test.output.classesDirs
+    classpath = sourceSets.test.runtimeClasspath
+}
+
+quarkusApplication {
+    tests {
+        task(smokeTest)
+    }
+}
+// end::standard-and-custom-tests[]
+
+// tag::package-backed-tests[]
+quarkusApplication {
+    builds {
+        fastJar('integration')
+    }
+}
+
+testing {
+    suites {
+        integrationTest(org.gradle.api.plugins.jvm.JvmTestSuite) {
+            forQuarkusIntegrationTests 'integration'
+        }
+    }
+}
+// end::package-backed-tests[]
+
+// tag::native-tests[]
+def defaultTests = testing.suites.named(
+    'test',
+    org.gradle.api.plugins.jvm.JvmTestSuite
+)
+
+quarkusApplication {
+    builds {
+        nativeExecutable('native')
+    }
+}
+
+testing.suites.named(
+    'quarkusNativeNativeTest',
+    org.gradle.api.plugins.jvm.JvmTestSuite
+) {
+    includeTestsFrom defaultTests
+}
+// end::native-tests[]
+
+assert tasks.names.containsAll([
+    'test',
+    'smokeTest',
+    'integrationTest',
+    'quarkusNativeNativeTest'
+])

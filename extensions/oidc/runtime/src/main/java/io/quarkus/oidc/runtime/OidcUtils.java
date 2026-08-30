@@ -5,6 +5,7 @@ import static io.quarkus.oidc.common.runtime.OidcCommonUtils.decodeAsJsonObject;
 import static io.quarkus.oidc.common.runtime.OidcConstants.TOKEN_SCOPE;
 import static io.quarkus.vertx.http.runtime.security.HttpSecurityUtils.getRoutingContextAttribute;
 
+import java.net.URI;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.security.Key;
@@ -1141,5 +1142,22 @@ public final class OidcUtils {
             return parConfig.enabled().get();
         }
         return metadata.isRequirePushedAuthorizationRequests();
+    }
+
+    public static String resolveRedirectUriForClientIdMetadata(OidcTenantConfig oidcConfig) {
+        String redirectPath = oidcConfig.authentication().redirectPath().get();
+        if (URI.create(redirectPath).isAbsolute()) {
+            return redirectPath;
+        }
+        URI clientIdUri = URI.create(oidcConfig.clientId().get());
+        String authority = getUriAuthority(clientIdUri);
+        if (!redirectPath.startsWith("/")) {
+            redirectPath = "/" + redirectPath;
+        }
+        return authority + redirectPath;
+    }
+
+    public static String getUriAuthority(URI uri) {
+        return uri.getScheme() + "://" + uri.getAuthority();
     }
 }

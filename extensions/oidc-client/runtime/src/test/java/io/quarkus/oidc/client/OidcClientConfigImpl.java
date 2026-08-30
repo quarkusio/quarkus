@@ -264,6 +264,16 @@ final class OidcClientConfigImpl implements OidcClientConfig {
                     }
 
                     @Override
+                    public Optional<String> publicKey() {
+                        return Optional.empty();
+                    }
+
+                    @Override
+                    public Optional<String> publicKeyFile() {
+                        return Optional.empty();
+                    }
+
+                    @Override
                     public Optional<String> audience() {
                         invocationsRecorder.put(ConfigMappingMethods.CREDENTIALS_JWT_AUDIENCE, true);
                         return Optional.empty();

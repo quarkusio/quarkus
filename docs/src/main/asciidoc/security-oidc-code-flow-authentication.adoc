@@ -2619,6 +2619,7 @@ For more complex setup involving multiple tenants, see the xref:security-openid-
 
 == References
 
+* xref:security-oidc-client-id-metadata-document.adoc[OAuth Client ID Metadata Document]
 * xref:security-oidc-configuration-properties-reference.adoc[OIDC configuration properties]
 * xref:security-oidc-expanded-configuration.adoc[Expanded OIDC Configuration Reference]
 * xref:security-openid-connect-providers.adoc[Configuring well-known OpenID Connect providers]

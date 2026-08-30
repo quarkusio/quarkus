@@ -364,7 +364,11 @@ public class BootstrapMavenContext {
                             throw new BootstrapMavenException("Settings problem encountered at " + problem.getLocation(),
                                     problem.getException());
                         default:
-                            log.warn("Settings problem encountered at " + problem.getLocation(), problem.getException());
+                            // WARNING-severity problems are typically emitted by DefaultSettingsBuilder
+                            // when strict XML parsing fails and the lenient fallback succeeds
+                            // (e.g. Maven 4 settings.xml containing elements unknown to the Maven 3 parser).
+                            // Since parsing recovered successfully, these are not actionable and are logged at DEBUG.
+                            log.debug("Settings problem encountered at " + problem.getLocation(), problem.getException());
                     }
                 }
             }
@@ -742,6 +746,7 @@ public class BootstrapMavenContext {
         final List<RemoteRepository> rawRepos = new ArrayList<>();
         readMavenReposFromEnv(rawRepos, System.getenv());
         addReposFromProfiles(rawRepos);
+        addTopLevelSettingsRepos(rawRepos, false);
 
         final boolean centralConfiguredInSettings = includesDefaultRepo(rawRepos);
         if (!centralConfiguredInSettings) {
@@ -770,6 +775,7 @@ public class BootstrapMavenContext {
     private List<RemoteRepository> resolveRemotePluginRepos() throws BootstrapMavenException {
         final List<RemoteRepository> rawRepos = new ArrayList<>();
         addReposFromProfiles(rawRepos);
+        addTopLevelSettingsRepos(rawRepos, true);
         // central must be there
         if (!includesDefaultRepo(rawRepos)) {
             rawRepos.add(newDefaultRepository());
@@ -937,6 +943,29 @@ public class BootstrapMavenContext {
 
     private static boolean isEmpty(final CharSequence cs) {
         return cs == null || cs.length() == 0;
+    }
+
+    /**
+     * Extracts top-level {@code <repositories>} or {@code <pluginRepositories>}
+     * from settings.xml files using Maven 4's {@code SettingsStaxReader}.
+     *
+     * <p>
+     * Maven 4's SETTINGS/2.0.0 schema supports these elements at the top level
+     * (outside of {@code <profiles>}). The Maven 3 settings parser silently
+     * ignores them. When Maven 4's reader is available on the classpath, this
+     * method delegates to {@link Maven4SettingsSupport}; otherwise it is a no-op.
+     *
+     * @param repos the list to add discovered repositories to
+     * @param pluginRepos if {@code true}, extract plugin repositories;
+     *        otherwise extract regular repositories
+     */
+    private void addTopLevelSettingsRepos(List<RemoteRepository> repos, boolean pluginRepos) {
+        try {
+            Maven4SettingsSupport.addTopLevelRepos(repos, getGlobalSettings(), pluginRepos);
+            Maven4SettingsSupport.addTopLevelRepos(repos, getUserSettings(), pluginRepos);
+        } catch (NoClassDefFoundError e) {
+            // Maven 4 API classes not available (running under Maven 3) — skip
+        }
     }
 
     private void initRepoSystemAndManager() {

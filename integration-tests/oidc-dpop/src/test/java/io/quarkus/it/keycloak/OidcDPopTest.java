@@ -70,6 +70,11 @@ public class OidcDPopTest {
         assertInvalidDPoPProof("login-jwt-wrong-dpop-token-hash");
     }
 
+    @Test
+    void testDPopProofMissingJti() throws Exception {
+        assertInvalidDPoPProof("login-jwt-missing-jti");
+    }
+
     private void assertInvalidDPoPProof(String loginPath) throws Exception {
         try (final WebClient webClient = createWebClient()) {
             resetDPoPAuthFailureObserver();

@@ -69,6 +69,11 @@ public class ReceiverExtractorTest {
         assertEquals("items", extract("items.size > 10 && items.<caret>"));
     }
 
+    @Test
+    void testNamespace() {
+        assertEquals("uri:Todos", extract("uri:Todos.<caret>"));
+    }
+
     private String extract(String exprWithCaret) {
         int caret = exprWithCaret.indexOf("<caret>");
         assertTrue(caret >= 0, "Missing <caret> marker in test expression");

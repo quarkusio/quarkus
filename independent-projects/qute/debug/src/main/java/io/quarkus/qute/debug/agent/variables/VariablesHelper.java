@@ -18,6 +18,8 @@ import io.quarkus.qute.debug.agent.resolvers.ReflectionValueResolverCollector;
  */
 public class VariablesHelper {
 
+    public static final Object EXPANDABLE_VARIABLE = new Object();
+
     /**
      * Determines whether a value should be expanded in the debugger UI.
      * <p>
@@ -30,7 +32,7 @@ public class VariablesHelper {
      * @return true if the value should be expanded, false otherwise
      */
     public static boolean shouldBeExpanded(Object value, RemoteStackFrame frame) {
-        if (value instanceof Iterable<?> || (value != null && value.getClass().isArray())) {
+        if (value == EXPANDABLE_VARIABLE || value instanceof Iterable<?> || (value != null && value.getClass().isArray())) {
             return true;
         }
         return value != null

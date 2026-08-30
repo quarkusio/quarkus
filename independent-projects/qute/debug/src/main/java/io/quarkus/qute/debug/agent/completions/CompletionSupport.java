@@ -10,13 +10,14 @@ import org.eclipse.lsp4j.debug.CompletionsResponse;
 import io.quarkus.qute.debug.agent.DebuggeeAgent;
 import io.quarkus.qute.debug.agent.frames.RemoteStackFrame;
 import io.quarkus.qute.debug.agent.resolvers.ValueResolverRegistry;
+import io.quarkus.qute.debug.agent.variables.NamespaceVariable;
 
 /**
  * Provides support for code completions within the Qute template debugger.
  * <p>
- * This class is responsible for generating completion items for expressions at a given
- * caret position inside a template, taking into account the current stack frame and
- * the available variables, properties, and resolvers.
+ * This class is responsible for generating completion items for expressions at
+ * a given caret position inside a template, taking into account the current
+ * stack frame and the available variables, properties, and resolvers.
  * </p>
  */
 public class CompletionSupport {
@@ -35,7 +36,8 @@ public class CompletionSupport {
      * Computes code completions for a given template expression and caret position.
      *
      * @param args the completion arguments containing frameId, text, column
-     * @return a CompletableFuture resolving to a {@link CompletionsResponse} containing possible completions
+     * @return a CompletableFuture resolving to a {@link CompletionsResponse}
+     *         containing possible completions
      */
     public CompletableFuture<CompletionsResponse> completions(CompletionsArguments args) {
         if (agent.isEnabled()) {
@@ -71,19 +73,37 @@ public class CompletionSupport {
     }
 
     /**
-     * Generates completions for the root scope (variables in all accessible scopes).
+     * Generates completions for the root scope (variables in all accessible
+     * scopes).
      *
      * @param stackFrame the current stack frame
-     * @return a {@link CompletionsResponse} containing variable names as completion items
+     * @return a {@link CompletionsResponse} containing variable names as completion
+     *         items
      */
     private CompletionsResponse getRootCompletions(RemoteStackFrame stackFrame) {
         CompletionContext context = new CompletionContext(null, stackFrame);
         for (var scope : stackFrame.getScopes()) {
             for (var variable : scope.getVariables()) {
-                CompletionItem item = new CompletionItem();
-                item.setLabel(variable.getName());
-                item.setType(CompletionItemType.REFERENCE);
-                context.add(item);
+                if (variable instanceof NamespaceVariable namespaceVariable) {
+                    var supportedMethods = namespaceVariable.getVariables();
+                    if (supportedMethods.isEmpty()) {
+                        CompletionItem item = new CompletionItem();
+                        item.setLabel(namespaceVariable.getName() + ":");
+                        item.setType(CompletionItemType.FUNCTION);
+                        context.add(item);
+                    } else {
+                        for (var supportedMethod : supportedMethods) {
+                            CompletionItem item = context
+                                    .addMethod(namespaceVariable.getName() + ":" + supportedMethod.getName());
+                            item.setType(CompletionItemType.FUNCTION);
+                        }
+                    }
+                } else {
+                    CompletionItem item = new CompletionItem();
+                    item.setLabel(variable.getName());
+                    item.setType(CompletionItemType.REFERENCE);
+                    context.add(item);
+                }
             }
         }
         return context.toResponse();
@@ -95,7 +115,8 @@ public class CompletionSupport {
      * @param text the full template expression
      * @param column the caret column position (0-based)
      * @param stackFrame the current stack frame
-     * @return a CompletableFuture containing the evaluated base object, or null if none
+     * @return a CompletableFuture containing the evaluated base object, or null if
+     *         none
      */
     private CompletableFuture<Object> getBaseObject(String text, int column, RemoteStackFrame stackFrame) {
         if (text == null || text.isBlank() || column < 0 || column > text.length()) {
@@ -109,7 +130,8 @@ public class CompletionSupport {
     }
 
     /**
-     * Extracts the receiver expression before the caret for code completion purposes.
+     * Extracts the receiver expression before the caret for code completion
+     * purposes.
      * <p>
      * Examples:
      * <ul>
@@ -146,7 +168,7 @@ public class CompletionSupport {
                         endOffset = i;
                     }
                 } else if (!inString) {
-                    if (c == '.') {
+                    if (c == '.' || c == ':') {
                         if (lastPart) {
                             lastPart = false;
                             endOffset = i;

@@ -1,0 +1,46 @@
+name: Check dependency updates
+on:
+  pull_request:
+    types: [opened, synchronize]
+    paths:
+      - '**/pom.xml'
+      - '!**/src/**/pom.xml'
+  workflow_dispatch:
+    inputs:
+      base_sha:
+        description: 'Base ref sha'
+        type: string
+        required: true
+      head_sha:
+        description: 'Head ref sha'
+        type: string
+        required: true
+
+concurrency:
+  group: "workflow = ${{ github.workflow }}, ref = ${{ github.event.ref }}, pr = ${{ github.event.pull_request.id }}"
+  cancel-in-progress: ${{ github.event_name == 'pull_request' || github.repository != 'quarkusio/quarkus' }}
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  check-dependencies:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+      - name: Checkout base ref
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.base_sha || github.event.pull_request.base.sha }}
+          path: quarkus-base
+      - name: Checkout head ref
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.head_sha || github.event.pull_request.head.sha }}
+          path: quarkus-head
+

@@ -85,6 +85,8 @@ import io.quarkus.oidc.UserInfo;
 import io.quarkus.oidc.UserInfoCache;
 import io.quarkus.oidc.common.OidcRequestFilter;
 import io.quarkus.oidc.common.OidcResponseFilter;
+import io.quarkus.oidc.runtime.AttestationJwksHandler;
+import io.quarkus.oidc.runtime.AttestationKeyRegistry;
 import io.quarkus.oidc.runtime.BackChannelLogoutHandler;
 import io.quarkus.oidc.runtime.DefaultTenantConfigResolver;
 import io.quarkus.oidc.runtime.DefaultTokenIntrospectionUserInfoCache;
@@ -218,7 +220,8 @@ public class OidcBuildStep {
                 .addBeanClass(DefaultTenantConfigResolver.class)
                 .addBeanClass(DefaultTokenStateManager.class)
                 .addBeanClass(OidcSessionImpl.class)
-                .addBeanClass(AzureAccessTokenCustomizer.class);
+                .addBeanClass(AzureAccessTokenCustomizer.class)
+                .addBeanClass(AttestationKeyRegistry.class);
         additionalBeans.produce(builder.build());
 
         if (isRouteAllowed(buildTimeConfig, OidcRoute.BACKCHANNEL_LOGOUT)) {
@@ -226,6 +229,9 @@ public class OidcBuildStep {
         }
         if (isRouteAllowed(buildTimeConfig, OidcRoute.RESOURCE_METADATA)) {
             additionalBeans.produce(AdditionalBeanBuildItem.unremovableOf(ResourceMetadataHandler.class));
+        }
+        if (isRouteAllowed(buildTimeConfig, OidcRoute.CLIENT_ATTESTATION)) {
+            additionalBeans.produce(AdditionalBeanBuildItem.unremovableOf(AttestationJwksHandler.class));
         }
     }
 
@@ -539,6 +545,17 @@ public class OidcBuildStep {
             return null;
         }
         Handler<RoutingContext> handler = recorder.getResourceMetadataHandler(beanContainerBuildItem.getValue());
+        return new FilterBuildItem(handler, SecurityHandlerPriorities.AUTHORIZATION - 50);
+    }
+
+    @Record(ExecutionTime.STATIC_INIT)
+    @BuildStep
+    FilterBuildItem registerAttestationJwksHandler(OidcBuildTimeConfig buildTimeConfig,
+            BeanContainerBuildItem beanContainerBuildItem, OidcRecorder recorder) {
+        if (!isRouteAllowed(buildTimeConfig, OidcRoute.CLIENT_ATTESTATION)) {
+            return null;
+        }
+        Handler<RoutingContext> handler = recorder.getAttestationJwksHandler(beanContainerBuildItem.getValue());
         return new FilterBuildItem(handler, SecurityHandlerPriorities.AUTHORIZATION - 50);
     }
 

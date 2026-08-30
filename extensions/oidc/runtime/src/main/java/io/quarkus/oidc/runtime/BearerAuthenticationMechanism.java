@@ -12,12 +12,14 @@ import java.util.function.Function;
 
 import javax.net.ssl.SSLPeerUnverifiedException;
 
+import org.eclipse.microprofile.jwt.Claims;
 import org.jboss.logging.Logger;
 
 import io.netty.handler.codec.http.HttpHeaderNames;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.quarkus.oidc.AccessTokenCredential;
 import io.quarkus.oidc.DPoPNonceProvider;
+import io.quarkus.oidc.DPoPNonceProvider.DPoPNonceContext;
 import io.quarkus.oidc.OidcTenantConfig;
 import io.quarkus.oidc.common.runtime.OidcCommonUtils;
 import io.quarkus.oidc.common.runtime.OidcConstants;
@@ -89,6 +91,7 @@ public class BearerAuthenticationMechanism extends AbstractOidcAuthenticationMec
             // Initial proof check:
             JsonObject proofJwtHeaders = OidcUtils.decodeJwtHeaders(proof);
             JsonObject proofJwtClaims = OidcCommonUtils.decodeJwtContent(proof);
+            context.put(OidcUtils.DPOP_PROOF_JWT_CLAIMS, proofJwtClaims);
 
             if (!OidcConstants.DPOP_TOKEN_TYPE.equals(proofJwtHeaders.getString(OidcConstants.TOKEN_TYPE_HEADER))) {
                 LOG.warn("Invalid DPoP proof token type ('typ') header");
@@ -127,6 +130,12 @@ public class BearerAuthenticationMechanism extends AbstractOidcAuthenticationMec
                 throw new AuthenticationFailedException(invalidDPoPProofMap(token));
             }
 
+            String proofJti = proofJwtClaims.getString(Claims.jti.name());
+            if (proofJti == null) {
+                LOG.debug("DPoP proof jti claim is missing");
+                throw new AuthenticationFailedException(invalidDPoPProofMap(token));
+            }
+
             if (dPoPNonceProvider != null) {
                 String proofNonce = proofJwtClaims.getString(OidcConstants.NONCE);
                 if (proofNonce == null) {
@@ -139,21 +148,10 @@ public class BearerAuthenticationMechanism extends AbstractOidcAuthenticationMec
                             OidcConstants.ACCESS_TOKEN_VALUE, token,
                             OidcConstants.USE_DPOP_NONCE, Boolean.TRUE));
                 }
-                if (!dPoPNonceProvider.isValid(proofNonce)) {
-                    /*
-                     * This same error code is used when supplying a new nonce value when there was a nonce mismatch.
-                     * See https://www.rfc-editor.org/rfc/rfc9449.html#section-9
-                     */
-                    LOG.tracef("DPoP proof nonce claim '%s' is invalid", proofNonce);
-                    throw new AuthenticationFailedException(Map.of(
-                            OidcConstants.ACCESS_TOKEN_VALUE, token,
-                            OidcConstants.USE_DPOP_NONCE, Boolean.TRUE));
-                }
             }
 
             context.put(OidcUtils.DPOP_PROOF, proof);
             context.put(OidcUtils.DPOP_PROOF_JWT_HEADERS, proofJwtHeaders);
-            context.put(OidcUtils.DPOP_PROOF_JWT_CLAIMS, proofJwtClaims);
         }
     }
 
@@ -186,12 +184,22 @@ public class BearerAuthenticationMechanism extends AbstractOidcAuthenticationMec
                 } else {
                     wwwAuthHeaderValue = tenantContext.oidcConfig().token().authorizationScheme();
                     if (isMissingOrMismatchedDpopNonce(context)) {
-                        wwwAuthHeaderValue += " error=\"%s\"".formatted(OidcConstants.USE_DPOP_NONCE);
-                        return Uni.createFrom().item(new ChallengeData(HttpResponseStatus.UNAUTHORIZED.code(),
-                                Map.of(
-                                        HttpHeaderNames.WWW_AUTHENTICATE, wwwAuthHeaderValue,
-                                        OidcConstants.DPOP_NONCE, dPoPNonceProvider.getNonce(),
-                                        HttpHeaders.CACHE_CONTROL, NO_STORE)));
+
+                        JsonObject proofClaims = context.get(OidcUtils.DPOP_PROOF_JWT_CLAIMS);
+                        if (proofClaims != null) {
+                            String proofNonce = proofClaims.getString(OidcConstants.NONCE);
+                            String proofJti = proofClaims.getString(Claims.jti.name());
+                            final String newNonce = dPoPNonceProvider.getNonce(new DPoPNonceContext(
+                                    proofJti, context, tenantContext.oidcConfig(), proofNonce));
+                            if (newNonce != null) {
+                                wwwAuthHeaderValue += " error=\"%s\"".formatted(OidcConstants.USE_DPOP_NONCE);
+                                return Uni.createFrom().item(new ChallengeData(HttpResponseStatus.UNAUTHORIZED.code(),
+                                        Map.of(
+                                                HttpHeaderNames.WWW_AUTHENTICATE, wwwAuthHeaderValue,
+                                                OidcConstants.DPOP_NONCE, newNonce,
+                                                HttpHeaders.CACHE_CONTROL, NO_STORE)));
+                            }
+                        }
                     } else if (tenantContext.oidcConfig().resourceMetadata().enabled()) {
                         wwwAuthHeaderValue += ResourceMetadataHandler.resourceMetadataAuthenticateParameter(context, resolver,
                                 tenantContext.oidcConfig());

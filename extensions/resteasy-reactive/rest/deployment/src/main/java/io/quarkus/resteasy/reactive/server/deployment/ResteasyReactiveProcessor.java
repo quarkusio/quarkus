@@ -545,12 +545,13 @@ public class ResteasyReactiveProcessor {
                     resourceInterceptorsBuildItem.getResourceInterceptors());
 
             boolean defaultRunOnVirtualThread = false;
-            if (serverConfig.virtualThreads()) {
+            if (serverConfig.defaultBlockingExecutionMode().isVirtualThread()) {
                 if (appResult.getBlockingDefault() == BlockingDefault.AUTOMATIC) {
                     defaultRunOnVirtualThread = true;
                 } else {
-                    log.warnf("The 'quarkus.rest.virtual-threads' property is ignored because an annotation on the"
-                            + " 'Application' class already set the execution model to '%s'",
+                    log.warnf(
+                            "The 'quarkus.rest.default-blocking-execution-mode' property is ignored because an annotation on the"
+                                    + " 'Application' class already set the execution model to '%s'",
                             appResult.getBlockingDefault());
                 }
             }

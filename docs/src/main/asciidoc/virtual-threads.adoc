@@ -301,7 +301,7 @@ Note that all three models can be used in a single application.
 ==== Use virtual threads by default
 
 Instead of annotating every endpoint, you can make virtual threads the default execution model for all your REST endpoints.
-Either set the build-time property `quarkus.rest.virtual-threads=true`, or create a JAX-RS `Application` class annotated with `@RunOnVirtualThread`:
+Either set the build-time property `quarkus.rest.default-blocking-execution-mode=virtual-thread`, or create a JAX-RS `Application` class annotated with `@RunOnVirtualThread`:
 
 [source,java]
 ----

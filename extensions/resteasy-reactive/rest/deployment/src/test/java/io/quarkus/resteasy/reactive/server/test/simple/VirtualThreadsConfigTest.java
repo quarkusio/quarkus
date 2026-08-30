@@ -32,7 +32,7 @@ public class VirtualThreadsConfigTest {
             .addBuildChainCustomizer(buildChainBuilder -> buildChainBuilder.addBuildStep(context -> {
                 context.produce(new TargetJavaVersionBuildItem(new DummyTargetJavaVersion()));
             }).produces(TargetJavaVersionBuildItem.class).build())
-            .overrideConfigKey("quarkus.rest.virtual-threads", "true")
+            .overrideConfigKey("quarkus.rest.default-blocking-execution-mode", "virtual-thread")
             .setLogRecordPredicate(record -> record.getLevel().equals(Level.SEVERE)
                     && record.getLoggerName()
                             .equals("org.jboss.resteasy.reactive.server.core.startup.RuntimeResourceDeployment"))

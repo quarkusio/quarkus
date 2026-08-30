@@ -262,7 +262,7 @@ You can enable virtual threads for all endpoints with a single build-time proper
 
 [source, properties]
 ----
-quarkus.rest.virtual-threads=true
+quarkus.rest.default-blocking-execution-mode=virtual-thread
 ----
 
 When enabled, every endpoint that would otherwise be executed on a worker thread is executed on a virtual thread instead.
@@ -303,7 +303,7 @@ The following table summarizes on which thread an endpoint is executed, dependin
 .Execution model depending on the endpoint declaration
 [cols="2,1,1,1"]
 |===
-|Endpoint |Default |`quarkus.rest.virtual-threads=true` |`@RunOnVirtualThread` on `Application`
+|Endpoint |Default |`quarkus.rest.default-blocking-execution-mode=virtual-thread` |`@RunOnVirtualThread` on `Application`
 
 |No annotation, blocking signature (returns `String`, a POJO, ...)
 |Worker thread

@@ -20,7 +20,7 @@ public class VirtualThreadsConfigWithApplicationAnnotationTest {
 
     @RegisterExtension
     static QuarkusExtensionTest test = new QuarkusExtensionTest()
-            .overrideConfigKey("quarkus.rest.virtual-threads", "true")
+            .overrideConfigKey("quarkus.rest.default-blocking-execution-mode", "virtual-thread")
             .setArchiveProducer(new Supplier<>() {
                 @Override
                 public JavaArchive get() {

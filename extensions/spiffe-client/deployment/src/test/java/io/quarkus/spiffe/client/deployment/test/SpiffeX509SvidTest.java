@@ -29,7 +29,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.spiffe.client.SpiffeAuthorizationException;
 import io.quarkus.spiffe.client.SpiffeClient;
 import io.quarkus.spiffe.client.SpiffeConnectionException;
-import io.quarkus.spiffe.client.WorkloadCertificateDocument;
+import io.quarkus.spiffe.svid.x509.WorkloadCertificateDocument;
 import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.vertx.core.Vertx;

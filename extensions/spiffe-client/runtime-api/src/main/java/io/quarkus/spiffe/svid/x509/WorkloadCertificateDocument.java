@@ -1,4 +1,4 @@
-package io.quarkus.spiffe.client;
+package io.quarkus.spiffe.svid.x509;
 
 import io.smallrye.common.annotation.Experimental;
 

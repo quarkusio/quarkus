@@ -187,6 +187,27 @@ This dependency must be added to the project:
 </dependency>
 ----
 
+=== Traces in the Dev UI
+
+In dev mode, when the OpenTelemetry extension is present, an *Observability* section
+appears in the Dev UI (`/q/dev-ui`) menu with a *Traces* view. It captures finished
+spans into a small in-memory ring buffer and renders them grouped by trace as a
+live waterfall — no containers or Dev Services required.
+
+The capture is dev-mode only and does not affect production or native builds.
+
+[cols="1,1,2",options="header"]
+|===
+|Property |Default |Description
+|`quarkus.dev-ui.observability.traces.enabled` |`true` |Enable/disable the Dev UI traces capture (dev mode only).
+|`quarkus.dev-ui.observability.traces.capacity` |`1000` |Maximum number of spans kept in the ring buffer; oldest are evicted first.
+|===
+
+NOTE: Dev mode defaults ratio-based samplers to 100%, so all spans are captured.
+Only sampled spans are recorded; a custom sampler that drops spans will limit what
+appears here. When the buffer is full, the oldest spans are evicted, which can leave
+the oldest trace partially shown.
+
 == Run the application
 
 === Start the application

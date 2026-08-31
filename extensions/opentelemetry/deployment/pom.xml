@@ -65,6 +65,14 @@
             <groupId>io.opentelemetry.instrumentation</groupId>
             <artifactId>opentelemetry-runtime-telemetry</artifactId>
         </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-devui-deployment-spi</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-devjsonrpc-deployment-spi</artifactId>
+        </dependency>
 
         <!-- Test Dependencies -->
         <dependency>
@@ -116,6 +124,11 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-resteasy-deployment</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-resteasy-mutiny-deployment</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>

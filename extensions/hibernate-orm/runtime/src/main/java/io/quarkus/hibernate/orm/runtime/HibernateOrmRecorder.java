@@ -21,6 +21,7 @@ import org.hibernate.SessionFactory;
 import org.hibernate.StatelessSession;
 import org.hibernate.boot.archive.scan.spi.Scanner;
 import org.hibernate.engine.spi.SessionLazyDelegator;
+import org.hibernate.engine.spi.StatelessSessionLazyDelegator;
 import org.hibernate.integrator.spi.Integrator;
 import org.hibernate.relational.SchemaManager;
 import org.jboss.logging.Logger;
@@ -192,12 +193,12 @@ public class HibernateOrmRecorder {
             @Override
             public StatelessSession apply(SyntheticCreationalContext<StatelessSession> context) {
                 TransactionSessions transactionSessions = context.getInjectedReference(TransactionSessions.class);
-                return new StatelessSessionLazyDelegator(new Supplier<StatelessSession>() {
+                return new StatelessSessionLazyDelegator() {
                     @Override
-                    public StatelessSession get() {
+                    public StatelessSession delegate() {
                         return transactionSessions.getStatelessSession(persistenceUnitName);
                     }
-                });
+                };
             }
         };
     }

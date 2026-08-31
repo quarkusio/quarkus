@@ -110,6 +110,36 @@ public class CustomTenantConfigResolver implements TenantConfigResolver {
                     config.setIntrospectionPath(authServerUri + "/introspect");
                     config.setAllowTokenIntrospectionCache(false);
                     return config;
+                } else if ("tenant-introspection-cache-one".equals(tenantId)) {
+                    String uri = context.request().absoluteURI();
+                    String authServerUri = uri.replace("/tenant-opaque/tenant-introspection-cache-one",
+                            "/oidc");
+                    return OidcTenantConfig
+                            .authServerUrl(authServerUri)
+                            .tenantId("tenant-introspection-cache-one")
+                            .discoveryEnabled(false)
+                            .clientId("client-introspection-cache-one")
+                            .introspectionPath(authServerUri + "/introspect")
+                            .userInfoPath(authServerUri + "/userinfo-tenant-introspection-cache-one")
+                            .authentication().userInfoRequired().end()
+                            .allowTokenIntrospectionCache(true)
+                            .allowUserInfoCache(true)
+                            .build();
+                } else if ("tenant-introspection-cache-two".equals(tenantId)) {
+                    String uri = context.request().absoluteURI();
+                    String authServerUri = uri.replace("/tenant-opaque/tenant-introspection-cache-two",
+                            "/oidc");
+                    return OidcTenantConfig
+                            .authServerUrl(authServerUri)
+                            .tenantId("tenant-introspection-cache-two")
+                            .discoveryEnabled(false)
+                            .clientId("client-introspection-cache-two")
+                            .introspectionPath(authServerUri + "/introspect")
+                            .userInfoPath(authServerUri + "/userinfo-tenant-introspection-cache-two")
+                            .authentication().userInfoRequired().end()
+                            .allowTokenIntrospectionCache(true)
+                            .allowUserInfoCache(true)
+                            .build();
                 } else if ("tenant-oidc-no-discovery".equals(tenantId)) {
                     OidcTenantConfig config = new OidcTenantConfig();
                     config.setTenantId("tenant-oidc-no-discovery");

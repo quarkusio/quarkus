@@ -29,17 +29,36 @@ public class NativeImageBuildStepFailureMessageTest {
     }
 
     @Test
-    void outOfMemoryCodesSuggestXmx() {
-        assertThat(NativeImageBuildStep.describeFailure(137, false)).contains("out of memory")
-                .contains("quarkus.native.native-image-xmx");
+    void javaHeapOomSuggestsRaisingXmx() {
+        // Exit code 3 is an in-process Java-heap OOM: raising the builder heap is the correct fix.
         assertThat(NativeImageBuildStep.describeFailure(3, false)).contains("Java heap")
+                .contains("Increase the maximum heap size")
                 .contains("quarkus.native.native-image-xmx");
     }
 
     @Test
+    void oomKillDoesNotAdviseRaisingXmx() {
+        // Exit code 137 is an OOM *kill* (SIGKILL): memory was exhausted, so making more memory available is the
+        // fix and raising the builder heap would make a kill more likely. It must not be confused with a Java-heap OOM.
+        String msg = NativeImageBuildStep.describeFailure(137, false);
+        assertThat(msg).contains("out of memory")
+                .contains("Free up memory")
+                .contains("more likely to be killed")
+                .doesNotContain("Java heap");
+    }
+
+    @Test
+    void oomKillGuidanceIsShownForNonContainerBuilds() {
+        // Regression guard: a plain (non-container) build killed by the kernel OOM-killer must still get the
+        // "free up memory" guidance, not only container builds.
+        assertThat(NativeImageBuildStep.describeFailure(137, false)).contains("Free up memory");
+    }
+
+    @Test
     void containerHintsOnlyForContainerBuilds() {
-        assertThat(NativeImageBuildStep.describeFailure(137, false)).doesNotContain("cgroup")
-                .doesNotContain("container runtime");
+        // The shared guidance never mentions containers; only a container build gets the extra hint.
+        assertThat(NativeImageBuildStep.describeFailure(137, false)).doesNotContain("container");
+        assertThat(NativeImageBuildStep.describeFailure(137, true)).contains("container");
     }
 
     @Test

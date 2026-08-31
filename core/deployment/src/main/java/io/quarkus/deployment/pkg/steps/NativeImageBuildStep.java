@@ -658,21 +658,26 @@ public class NativeImageBuildStep {
         }
     }
 
+    /**
+     * Guidance for an out-of-memory <em>kill</em> (exit code 137). Unlike an in-process Java-heap OOM (exit code 3),
+     * the builder here was killed from the outside because system or container memory was exhausted, so the fix is to
+     * make more memory available rather than to raise the builder heap - raising it actually makes a kill more likely.
+     * The advice is the same for every build; only a container build needs an extra hint about where the memory limit
+     * lives, and that hint differs between a Linux host (the container/cgroup limit) and a non-Linux host (the
+     * container runtime's Linux VM).
+     */
     private static String oomGuidance(boolean isContainerBuild) {
-        StringBuilder sb = new StringBuilder();
-        if (isContainerBuild && !OS.LINUX.isCurrent()) {
-            sb.append("The most likely cause is the container runtime not being given enough memory "
-                    + "(Docker Desktop: Settings > Resources; Podman: 'podman machine set --memory 8192'), "
-                    + "or a low vm.max_map_count inside its Linux VM. ");
+        String containerHint = "";
+        if (isContainerBuild) {
+            containerHint = OS.LINUX.isCurrent()
+                    ? "Raise the container/cgroup memory limit, and check vm.max_map_count and memory overcommit "
+                            + "settings (the kernel records the real reason in dmesg / 'journalctl -k'). "
+                    : "Give the container runtime more memory (Docker Desktop: Settings > Resources; "
+                            + "Podman: 'podman machine set --memory 8192') or raise vm.max_map_count inside its Linux VM. ";
         }
-        sb.append("Consider increasing the Xmx value for native image generation by setting the \"")
-                .append(QUARKUS_XMX_PROPERTY).append("\" property");
-        if (isContainerBuild && OS.LINUX.isCurrent()) {
-            sb.append(", and if the machine has free memory the cause may instead be a container/cgroup memory limit, "
-                    + "a low vm.max_map_count, memory overcommit settings, or a ulimit "
-                    + "(the kernel records the real reason in dmesg / journalctl -k)");
-        }
-        return sb.append(".").toString();
+        return containerHint + "Free up memory on the machine, or give it more RAM or swap. "
+                + "Raising the \"" + QUARKUS_XMX_PROPERTY + "\" property makes the process more likely to be killed, "
+                + "so if it is set high relative to the available memory, lowering it may help instead.";
     }
 
     private void checkGraalVMVersion(GraalVM.Version version) {

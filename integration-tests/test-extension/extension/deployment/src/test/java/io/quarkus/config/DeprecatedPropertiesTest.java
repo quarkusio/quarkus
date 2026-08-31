@@ -18,12 +18,14 @@ public class DeprecatedPropertiesTest {
             .setLogRecordPredicate(record -> record.getLevel().intValue() >= Level.WARNING.intValue())
             .assertLogRecords(logRecords -> {
                 List<LogRecord> deprecatedProperties = logRecords.stream()
-                        .filter(l -> l.getMessage().contains("config property is deprecated"))
+                        .filter(l -> l.getMessage().contains("Deprecated configuration property"))
                         .toList();
 
                 assertEquals(2, deprecatedProperties.size());
-                assertTrue(deprecatedProperties.get(0).getParameters()[0].toString().contains("quarkus.mapping.bt.deprecated"));
-                assertTrue(deprecatedProperties.get(1).getParameters()[0].toString().contains("quarkus.mapping.rt.deprecated"));
+                assertEquals("quarkus.mapping.bt.deprecated", deprecatedProperties.get(0).getParameters()[0]);
+                assertTrue(deprecatedProperties.get(0).getParameters()[1].toString().contains("application.properties"));
+                assertEquals("quarkus.mapping.rt.deprecated", deprecatedProperties.get(1).getParameters()[0]);
+                assertTrue(deprecatedProperties.get(0).getParameters()[1].toString().contains("application.properties"));
             });
 
     @Test

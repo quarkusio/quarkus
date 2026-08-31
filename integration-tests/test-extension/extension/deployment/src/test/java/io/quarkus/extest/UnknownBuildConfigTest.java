@@ -1,12 +1,8 @@
 package io.quarkus.extest;
 
-import static java.util.stream.Collectors.toSet;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
-import java.util.Optional;
-import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.LogRecord;
 
@@ -32,15 +28,13 @@ public class UnknownBuildConfigTest {
 
         // These are the expected unknown properties in the test extension. This could probably be improved, because
         // these are generated with the rename test. If there is a change we know that something happened.
-        Set<Object> unrecognized = logRecords.stream()
-                .filter(logRecord -> logRecord.getMessage().startsWith("Unrecognized configuration key"))
-                .map(logRecord -> Optional.ofNullable(logRecord.getParameters())
-                        .map(parameters -> parameters[0])
-                        .orElse(new Object[0]))
-                .collect(toSet());
+        List<LogRecord> unrecognized = logRecords.stream()
+                .filter(logRecord -> logRecord.getMessage().startsWith("Unrecognized configuration property"))
+                .toList();
 
         assertEquals(2, unrecognized.size());
-        assertTrue(unrecognized.contains("quarkus.unknown.prop"));
-        assertTrue(unrecognized.contains("quarkus.build-time.unknown.prop"));
+        assertEquals("quarkus.build-time.unknown.prop", unrecognized.get(0).getParameters()[0]);
+        assertEquals("UnknownBuildPropertyConfigSource", unrecognized.get(0).getParameters()[1]);
+        assertEquals("quarkus.unknown.prop", unrecognized.get(1).getParameters()[0]);
     }
 }

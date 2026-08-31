@@ -10,14 +10,16 @@ import org.eclipse.microprofile.config.spi.ConfigSource;
 import io.smallrye.config.ConfigSourceContext;
 import io.smallrye.config.ConfigSourceFactory;
 import io.smallrye.config.ConfigValue;
-import io.smallrye.config.PropertiesConfigSource;
+import io.smallrye.config.common.MapBackedConfigSource;
 
 public class UnknownBuildPropertyConfigSourceFactory implements ConfigSourceFactory {
     @Override
     public Iterable<ConfigSource> getConfigSources(final ConfigSourceContext context) {
         ConfigValue value = context.getValue("skip.build.sources");
         if (value.getValue() == null || value.getValue().equals("false")) {
-            return List.of(new PropertiesConfigSource(Map.of("quarkus.build-time.unknown.prop", "value"), "", 100));
+            return List.of(new MapBackedConfigSource("UnknownBuildPropertyConfigSource",
+                    Map.of("quarkus.build-time.unknown.prop", "value")) {
+            });
         } else {
             return emptyList();
         }

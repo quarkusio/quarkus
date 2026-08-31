@@ -38,7 +38,7 @@ public class OpenShiftConfigFallbackTest {
     void configFallback() throws Exception {
         List<LogRecord> logRecords = prodModeTestResults.getRetainedBuildLogRecords();
         Set<Object> unrecognized = logRecords.stream()
-                .filter(logRecord -> logRecord.getMessage().startsWith("Unrecognized configuration key"))
+                .filter(logRecord -> logRecord.getMessage().startsWith("Unrecognized configuration property"))
                 .map(logRecord -> Optional.ofNullable(logRecord.getParameters())
                         .map(parameters -> parameters[0])
                         .orElse(new Object[0]))

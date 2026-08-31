@@ -24,7 +24,7 @@ public class UnknownConfigTest {
             .setLogRecordPredicate(record -> record.getLevel().intValue() >= Level.WARNING.intValue())
             .assertLogRecords(logRecords -> assertFalse(logRecords.stream()
                     .map(LogRecord::getMessage)
-                    .anyMatch(message -> message.startsWith("Unrecognized configuration key"))));
+                    .anyMatch(message -> message.startsWith("Unrecognized configuration property"))));
 
     @Inject
     RestClientsConfig restClientsConfig;

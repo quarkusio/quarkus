@@ -34,7 +34,10 @@ public @interface MethodProperties {
     /**
      * List of the security roles permitted to access this operation.
      * <p>
-     * Default: ""
+     * When left empty, the roles declared with {@link ResourceProperties#rolesAllowed()} on the resource are inherited
+     * by this operation. Set this attribute to override the resource-level roles for this operation only.
+     * <p>
+     * Default: "" (the resource-level roles are inherited)
      */
     String[] rolesAllowed() default {};
 }

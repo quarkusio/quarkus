@@ -48,17 +48,6 @@ public final class MemorySize implements Comparable<MemorySize> {
     }
 
     /**
-     * Construct a new instance from a {@link BigInteger}.
-     *
-     * @param value the value (must not be {@code null})
-     * @deprecated Use one of the {@code of(*)} methods instead.
-     */
-    @Deprecated(forRemoval = true)
-    public MemorySize(BigInteger value) {
-        this(value.shiftRight(64).longValueExact(), value.longValue());
-    }
-
-    /**
      * {@return the memory size, in bytes}
      */
     public long asLongValue() {

@@ -2,11 +2,14 @@ package io.quarkus.it.hibernate.orm.cache;
 
 import com.github.benmanes.caffeine.cache.Weigher;
 
+import io.quarkus.hibernate.orm.PersistenceUnitExtension;
+
 /**
  * Weigher that assigns weight based on estimated memory footprint.
  * Hibernate wraps entities in internal cache entry objects, so
  * the value is not the entity directly.
  */
+@PersistenceUnitExtension
 public class DataBlobWeigher implements Weigher<Object, Object> {
 
     @Override

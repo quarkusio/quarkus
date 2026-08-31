@@ -73,6 +73,7 @@ public final class ClassNames {
     public static final DotName XML_FORMAT = createConstant("io.quarkus.hibernate.orm.XmlFormat");
     public static final DotName FUNCTION_CONTRIBUTOR = createConstant("org.hibernate.boot.model.FunctionContributor");
     public static final DotName TYPE_CONTRIBUTOR = createConstant("org.hibernate.boot.model.TypeContributor");
+    public static final DotName WEIGHER = createConstant("com.github.benmanes.caffeine.cache.Weigher");
 
     public static final List<DotName> GENERATORS = List.of(
             createConstant("org.hibernate.generator.Assigned"),

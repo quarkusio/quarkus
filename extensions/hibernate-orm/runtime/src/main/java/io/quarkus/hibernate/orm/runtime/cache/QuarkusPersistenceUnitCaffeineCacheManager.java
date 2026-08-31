@@ -18,6 +18,9 @@ import javax.cache.spi.CachingProvider;
 import com.github.benmanes.caffeine.cache.Weigher;
 import com.github.benmanes.caffeine.jcache.configuration.CaffeineConfiguration;
 
+import io.quarkus.arc.InjectableInstance;
+import io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil;
+
 /**
  * A JCache CacheManager that delegates to the Caffeine implementation,
  * but ensures all returned caches are configured with Quarkus settings.
@@ -26,12 +29,14 @@ import com.github.benmanes.caffeine.jcache.configuration.CaffeineConfiguration;
  * into Caffeine {@link CaffeineConfiguration} instances and pre-creates caches at build time.
  */
 public class QuarkusPersistenceUnitCaffeineCacheManager implements CacheManager {
+    private final String persistenceUnitName;
     private final QuarkusPersistenceUnitCacheConfiguration configuration;
     private final CacheManager delegate;
     private final Map<String, Cache<?, ?>> caches = new ConcurrentHashMap<>();
 
     public QuarkusPersistenceUnitCaffeineCacheManager(String persistenceUnitName, boolean reactive,
             QuarkusPersistenceUnitCacheConfiguration configuration) {
+        this.persistenceUnitName = persistenceUnitName;
         this.configuration = configuration;
         CachingProvider cachingProvider = Caching.getCachingProvider(
                 "com.github.benmanes.caffeine.jcache.spi.CaffeineCachingProvider");
@@ -93,10 +98,8 @@ public class QuarkusPersistenceUnitCaffeineCacheManager implements CacheManager 
         if (quarkusConfig.hasMaximumWeight()) {
             // Weight-based eviction
             caffeineConfig.setMaximumWeight(OptionalLong.of(quarkusConfig.maximumWeight()));
-            if (quarkusConfig.hasWeigherClass()) {
-                Weigher<K, V> weigher = instantiateWeigher(quarkusConfig.weigherClassName());
-                caffeineConfig.setWeigherFactory(Optional.of(() -> weigher));
-            }
+            Weigher<K, V> weigher = resolveWeigher();
+            caffeineConfig.setWeigherFactory(Optional.of(() -> weigher));
         } else {
             // Count-based eviction (default)
             caffeineConfig.setMaximumSize(OptionalLong.of(quarkusConfig.maxSize()));
@@ -106,20 +109,14 @@ public class QuarkusPersistenceUnitCaffeineCacheManager implements CacheManager 
         return delegate.createCache(cacheName, caffeineConfig);
     }
 
-    @SuppressWarnings("unchecked")
-    private <K, V> Weigher<K, V> instantiateWeigher(String className) {
-        try {
-            Class<?> weigherClass = Thread.currentThread().getContextClassLoader().loadClass(className);
-            if (!Weigher.class.isAssignableFrom(weigherClass)) {
-                throw new IllegalStateException(
-                        "Weigher class '" + className + "' must implement com.github.benmanes.caffeine.cache.Weigher");
-            }
-            return (Weigher<K, V>) weigherClass.getConstructor().newInstance();
-        } catch (IllegalStateException e) {
-            throw e;
-        } catch (Exception e) {
-            throw new IllegalStateException("Unable to instantiate weigher class: " + className, e);
+    @SuppressWarnings({ "rawtypes", "unchecked" })
+    private <K, V> Weigher<K, V> resolveWeigher() {
+        InjectableInstance<Weigher> instance = PersistenceUnitUtil.singleExtensionInstanceForPersistenceUnit(
+                Weigher.class, persistenceUnitName);
+        if (instance.isUnsatisfied()) {
+            return (Weigher<K, V>) DehydratedEntityWeigher.INSTANCE;
         }
+        return instance.get();
     }
 
     @Override

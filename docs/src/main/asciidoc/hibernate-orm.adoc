@@ -575,6 +575,8 @@ See <<programmatically-resolving-tenants-connections>>.
 See <<custom-functions-and-types>>.
 `org.hibernate.boot.model.TypeContributor`::
 See <<custom-functions-and-types>>.
+`com.github.benmanes.caffeine.cache.Weigher`::
+See <<weight-based-eviction>>.
 
 [[persistence-unit-active]]
 === Activate/deactivate persistence units
@@ -1080,6 +1082,7 @@ quarkus.hibernate-orm.cache."org.acme.MyEntity".memory.object-count=1000
 ----
 ====
 
+[[weight-based-eviction]]
 ==== Weight-based eviction
 
 For entities with highly variable sizes (e.g., storing JSON data that ranges from a few bytes to
@@ -1089,28 +1092,47 @@ eviction instead:
 [source,properties]
 ----
 quarkus.hibernate-orm.cache."org.acme.MyEntity".memory.maximum-weight=104857600
-quarkus.hibernate-orm.cache."org.acme.MyEntity".memory.weigher-class=org.acme.MyEntityWeigher
 ----
 
-The `maximum-weight` property sets the total weight limit for the cache region. The `weigher-class`
-property specifies a `com.github.benmanes.caffeine.cache.Weigher` implementation that assigns a
-weight to each cache entry:
+The `maximum-weight` property sets the total weight limit for the cache region.
+Weight units come from the active weigher: they are *relative eviction accounting units*,
+not a measurement of JVM heap bytes. Exact object sizes depend on the runtime
+(compressed oops, object headers, alignment, JVM vendor) and are intentionally not modeled.
+
+By default Quarkus uses a built-in weigher that walks Hibernate's dehydrated second-level
+cache state (`CacheEntry` / `CollectionCacheEntry`), not live entity instances:
+
+* each entry starts with a small base weight
+* `String` / `char[]` contribute roughly `length * 2`
+* `byte[]` contribute roughly `length`
+* common scalars (numbers, booleans, enums, temporals, UUID, …) contribute a flat weight
+* unrecognized values contribute a fixed unknown-type weight
+
+Those heuristics are good enough to prefer eviction of large string/blob payloads over tiny
+entries, but they can diverge from true heap usage for custom `Serializable` graphs, nested
+structures beyond shallow arrays, unknown types, and JVM header/reference costs.
+If that matters for your region, provide a custom weigher.
+
+To customize weighing, provide a `com.github.benmanes.caffeine.cache.Weigher` CDI bean annotated with
+`@PersistenceUnitExtension`:
 
 [source,java]
 ----
 import com.github.benmanes.caffeine.cache.Weigher;
+import io.quarkus.hibernate.orm.PersistenceUnitExtension;
 
+@PersistenceUnitExtension
 public class MyEntityWeigher implements Weigher<Object, Object> {
     @Override
     public int weigh(Object key, Object value) {
-        // Estimate memory based on entity data size
-        return 100; // default weight
+        // Hibernate 2LC stores dehydrated CacheEntry state, not live entity instances.
+        // Return relative weight units consistent with your maximum-weight setting.
+        return 100;
     }
 }
 ----
 
 NOTE: `object-count` and `maximum-weight` are mutually exclusive per cache region.
-If `maximum-weight` is set without `weigher-class`, each entry has a default weight of 1.
 
 include::{includes}/duration-format-note.adoc[]
 

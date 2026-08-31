@@ -157,7 +157,7 @@ The generated manifest can be applied to the cluster from the project root using
 kubectl apply -f target/kubernetes/kubernetes.json
 ----
 
-An important thing to note about the `Deployment` (or `StatefulSet`) is that is uses `yourDockerUsername/test-quarkus-app:1.0.0-SNAPSHOT` as the container image of the `Pod`.
+An important thing to note about the `Deployment` (or `StatefulSet`) is that it uses `yourDockerUsername/test-quarkus-app:1.0.0-SNAPSHOT` as the container image of the `Pod`.
 The name of the image is controlled by the Jib extension and can be customized using the usual `application.properties`.
 
 For example with a configuration like:
@@ -250,7 +250,7 @@ quarkus.kubernetes.deployment-kind=CronJob
 quarkus.kubernetes.cron-job.schedule=0 * * * *
 ----
 
-IMPORTANT: CronJob resources require the https://en.wikipedia.org/wiki/Cron[Cron] expression to specify when to launch the job via the property `quarkus.kubernetes.cron-job.schedule`. If not provide, the build will fail.
+IMPORTANT: CronJob resources require the https://en.wikipedia.org/wiki/Cron[Cron] expression to specify when to launch the job via the property `quarkus.kubernetes.cron-job.schedule`. If not provided, the build will fail.
 
 You can configure the rest of the Kubernetes CronJob configuration using the properties under `quarkus.kubernetes.cron-job.xxx` (see xref:deploying-to-kubernetes.adoc#quarkus-kubernetes_quarkus-kubernetes-cron-job-parallelism[link]).
 
@@ -391,7 +391,7 @@ Out of the box, the generated resources will be annotated with version control r
 
 ==== Custom Annotations
 
-Custom annotations can be added in a way similar to labels.For example to add the annotation `foo=bar` and `app.quarkus/id=42` just apply the following configuration:
+Custom annotations can be added in a way similar to labels. For example to add the annotation `foo=bar` and `app.quarkus/id=42` just apply the following configuration:
 
 [source,properties]
 ----
@@ -610,7 +610,7 @@ When you need to use a secret or a config map for the purpose of application con
 - mount the volume
 - create an environment variable for `SMALLRYE_CONFIG_LOCATIONS`
 
-To simplify things, quarkus provides single step alternative:
+To simplify things, Quarkus provides a single-step alternative:
 
 [source,properties]
 ----

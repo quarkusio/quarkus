@@ -307,6 +307,7 @@
                 <module>amazon-lambda-http-resteasy-reactive</module>
                 <module>container-image</module>
                 <module>kubernetes</module>
+                <module>kubernetes-cluster-integration-test</module>
                 <module>kubernetes-client</module>
                 <module>kubernetes-client-devservices</module>
                 <module>kubernetes-service-binding-jdbc</module>

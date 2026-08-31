@@ -170,6 +170,11 @@ public class URITemplate implements Dumpable, Comparable<URITemplate> {
         if (nameAggregator != null) {
             if (!this.prefixMatch) {
                 regexAggregator.append("$");
+            } else {
+                // For prefix paths (class-level @Path), we need a boundary so lazy quantifiers
+                // like [^/]+? don't stop at a single character. (?=/|$) forces them to consume
+                // until the next '/' or end of string.
+                regexAggregator.append("(?=/|$)");
             }
             components.add(new TemplateComponent(Type.CUSTOM_REGEX, null, null, Pattern.compile(regexAggregator.toString()),
                     nameAggregator.toArray(new String[0]), groupAggregator.toArray(new String[0])));

@@ -72,6 +72,7 @@ public class CycloneDxProcessor {
             if (manifestConfig == null) {
                 continue;
             }
+            manifestConfig.setProductAttribution(cdxSbomConfig.productAttribution());
             List<SbomContribution> contributions = collectContributions(manifestConfig.toSbomContribution(), sbomContributions);
             for (SbomResult sbom : CycloneDxSbomGenerator.newInstance()
                     .setOutputDirectory(outputTargetBuildItem.getOutputDirectory())
@@ -171,7 +172,8 @@ public class CycloneDxProcessor {
 
         CoreSbomContributionConfig config = new CoreSbomContributionConfig()
                 .setApplicationModel(curateOutcomeBuildItem.getApplicationModel())
-                .setPedigrees(pedigrees);
+                .setPedigrees(pedigrees)
+                .setProductAttribution(cdxConfig.productAttribution());
         SbomContribution coreContribution = config.toSbomContribution();
 
         var depInfoProvider = getDependencyInfoProvider(appModelProviderBuildItem);

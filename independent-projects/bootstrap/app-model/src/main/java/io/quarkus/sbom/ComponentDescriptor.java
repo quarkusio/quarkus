@@ -29,6 +29,7 @@ public class ComponentDescriptor {
 
     public static final String SCOPE_RUNTIME = "runtime";
     public static final String SCOPE_DEVELOPMENT = "development";
+    public static final String SCOPE_EXCLUDED = "excluded";
 
     /**
      * Creates a new builder for constructing a ComponentDescriptor.
@@ -110,6 +111,53 @@ public class ComponentDescriptor {
          */
         public Builder setDescription(String description) {
             this.description = description;
+            return this;
+        }
+
+        /**
+         * Sets the CPE (Common Platform Enumeration) identifier for this component.
+         *
+         * @param cpe the CPE string, or null
+         * @return this builder
+         */
+        public Builder setCpe(String cpe) {
+            this.cpe = cpe;
+            return this;
+        }
+
+        /**
+         * Overrides the SBOM component type (e.g. "framework"). When null, the
+         * generator derives the type from the PURL / file classification.
+         *
+         * @param componentType the component type override, or null
+         * @return this builder
+         */
+        public Builder setComponentType(String componentType) {
+            this.componentType = componentType;
+            return this;
+        }
+
+        /**
+         * Overrides the display name. When null, {@link #getName()} falls back to
+         * the PURL name.
+         *
+         * @param name the display name override, or null
+         * @return this builder
+         */
+        public Builder setName(String name) {
+            this.nameOverride = name;
+            return this;
+        }
+
+        /**
+         * Overrides the display version. When null, {@link #getVersion()} falls
+         * back to the PURL version.
+         *
+         * @param version the display version override, or null
+         * @return this builder
+         */
+        public Builder setVersion(String version) {
+            this.versionOverride = version;
             return this;
         }
 
@@ -258,6 +306,10 @@ public class ComponentDescriptor {
     protected boolean topLevel;
     protected List<LicenseInfo> licenses = List.of();
     protected List<ComponentDescriptor> components = List.of();
+    protected String cpe;
+    protected String componentType;
+    protected String nameOverride;
+    protected String versionOverride;
 
     private ComponentDescriptor() {
     }
@@ -274,6 +326,10 @@ public class ComponentDescriptor {
         this.topLevel = builder.topLevel;
         this.licenses = List.copyOf(builder.licenses);
         this.components = List.copyOf(builder.components);
+        this.cpe = builder.cpe;
+        this.componentType = builder.componentType;
+        this.nameOverride = builder.nameOverride;
+        this.versionOverride = builder.versionOverride;
     }
 
     /**
@@ -324,7 +380,7 @@ public class ComponentDescriptor {
      * @return the package name
      */
     public String getName() {
-        return purl.getName();
+        return nameOverride != null ? nameOverride : purl.getName();
     }
 
     /**
@@ -333,7 +389,7 @@ public class ComponentDescriptor {
      * @return the package version, or null if not resolved
      */
     public String getVersion() {
-        return purl.getVersion();
+        return versionOverride != null ? versionOverride : purl.getVersion();
     }
 
     /**
@@ -354,6 +410,24 @@ public class ComponentDescriptor {
      */
     public String getDescription() {
         return description;
+    }
+
+    /**
+     * Gets the CPE (Common Platform Enumeration) identifier for this component.
+     *
+     * @return the CPE string, or null
+     */
+    public String getCpe() {
+        return cpe;
+    }
+
+    /**
+     * Gets the SBOM component type override (e.g. "framework").
+     *
+     * @return the component type override, or null
+     */
+    public String getComponentType() {
+        return componentType;
     }
 
     /**

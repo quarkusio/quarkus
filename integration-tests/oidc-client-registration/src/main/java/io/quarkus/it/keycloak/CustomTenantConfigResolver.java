@@ -16,7 +16,6 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import io.quarkus.oidc.OidcRequestContext;
 import io.quarkus.oidc.OidcTenantConfig;
-import io.quarkus.oidc.OidcTenantConfig.ApplicationType;
 import io.quarkus.oidc.TenantConfigResolver;
 import io.quarkus.oidc.client.registration.ClientMetadata;
 import io.quarkus.oidc.client.registration.OidcClientRegistration;
@@ -176,16 +175,16 @@ public class CustomTenantConfigResolver implements TenantConfigResolver {
     }
 
     private OidcTenantConfig createTenantConfig(String tenantId, ClientMetadata metadata) {
-        OidcTenantConfig oidcConfig = new OidcTenantConfig();
-        oidcConfig.setTenantId(tenantId);
-        oidcConfig.setAuthServerUrl(authServerUrl);
-        oidcConfig.setApplicationType(ApplicationType.WEB_APP);
-        oidcConfig.setClientName(metadata.getClientName());
-        oidcConfig.setClientId(metadata.getClientId());
-        oidcConfig.getCredentials().setSecret(metadata.getClientSecret());
         String redirectUri = metadata.getRedirectUris().get(0);
-        oidcConfig.getAuthentication().setRedirectPath(URI.create(redirectUri).getPath());
-        return oidcConfig;
+        return OidcTenantConfig.builder()
+                .tenantId(tenantId)
+                .authServerUrl(authServerUrl)
+                .applicationType(WEB_APP)
+                .clientName(metadata.getClientName())
+                .clientId(metadata.getClientId())
+                .credentials().secret(metadata.getClientSecret()).end()
+                .authentication().redirectPath(URI.create(redirectUri).getPath()).end()
+                .build();
     }
 
     protected static ClientMetadata createMetadata(String redirectUri, String clientName) {

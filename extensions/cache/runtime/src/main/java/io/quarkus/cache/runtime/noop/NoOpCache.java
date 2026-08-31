@@ -36,6 +36,16 @@ public class NoOpCache extends AbstractCache {
     }
 
     @Override
+    public <K, V> V getSynchronous(K key, Function<K, V> valueLoader) {
+        return valueLoader.apply(key);
+    }
+
+    @Override
+    public <K, V> V getSynchronous(K key, Function<K, V> valueLoader, long lockTimeoutMillis) {
+        return valueLoader.apply(key);
+    }
+
+    @Override
     public Uni<Void> invalidate(Object key) {
         return Uni.createFrom().voidItem();
     }

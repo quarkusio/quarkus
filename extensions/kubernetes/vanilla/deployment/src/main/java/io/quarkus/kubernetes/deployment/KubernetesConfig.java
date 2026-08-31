@@ -53,6 +53,11 @@ public interface KubernetesConfig extends PlatformConfiguration, ReplicasAware {
     IngressConfig ingress();
 
     /**
+     * Kubernetes Gateway API configuration (HTTPRoute / optional Gateway).
+     */
+    GatewayConfig gateway();
+
+    /**
      * Optionally set directory generated Kubernetes resources will be written to. Default is `target/kubernetes`.
      */
     Optional<String> outputDirectory();

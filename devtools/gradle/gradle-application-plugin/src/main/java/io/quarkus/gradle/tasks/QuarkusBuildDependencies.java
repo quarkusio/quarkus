@@ -174,7 +174,7 @@ public abstract class QuarkusBuildDependencies extends QuarkusBuildTask {
         appModel.getRuntimeDependencies().stream()
                 .filter(appDep -> {
                     // copied from io.quarkus.deployment.pkg.steps.JarResultBuildStep.includeAppDep
-                    if (!appDep.isJar()) {
+                    if (!appDep.isJarOrZip()) {
                         return false;
                     }
                     if (filterOptionalDependencies && appDep.isOptional()) {

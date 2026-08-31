@@ -302,7 +302,7 @@ Default is `false`.
 
 * `exposed` - does not expose a particular HTTP verb when set to `false`. Default is `true`.
 * `path` - operation path (this is appended to the resource base path). Default is an empty string.
-* `rolesAllowed` - List of the security roles permitted to access this operation. It needs a Quarkus Security extension to be present, otherwise it will be ignored. Default is empty.
+* `rolesAllowed` - List of the security roles permitted to access this operation. It needs a Quarkus Security extension to be present, otherwise it will be ignored. When left empty, the operation inherits the `rolesAllowed` declared on the `@ResourceProperties` of the resource; set it to override the resource-level roles for this operation only. Default is empty.
 
 == Adding additional methods to the generated resource
 
@@ -343,6 +343,8 @@ public interface PeopleResource extends PanacheEntityResource<Person, Long> {
 
 Additionally, if you are only interested in specifying the roles that are allowed to use the resources, the `@ResourceProperties` and `@MethodProperties` annotations have the field `rolesAllowed` to list the security roles permitted to access the resource or operation.
 
+An operation that is customized with `@MethodProperties` but does not set its own `rolesAllowed` still inherits the `rolesAllowed` declared on the resource's `@ResourceProperties`. If you instead want a single operation of an otherwise-secured resource to be publicly accessible, annotate that operation with `jakarta.annotation.security.PermitAll` (or with `@Authenticated` if you only want to require an authenticated user); a security annotation declared directly on the operation always takes precedence over the resource-level `rolesAllowed`.
+
 === Using @Authenticated
 
 Additionally, REST Data with Panache can be used in conjunction with `io.quarkus.security.Authenticated`, by either:
@@ -359,6 +361,8 @@ public interface PeopleResource extends PanacheEntityResource<Person, Long> {
     boolean delete(Long id);
 }
 ----
+
+As with `rolesAllowed`, a security annotation placed directly on an operation takes precedence over `@ResourceProperties(authenticated=true)`: the operation is governed by its own annotation only. For example, annotating a single operation with `jakarta.annotation.security.PermitAll` makes that operation publicly accessible while every other operation of the resource still requires an authenticated user.
 
 === Securing endpoints using @PermissionsAllowed annotation
 

@@ -60,6 +60,9 @@ public @interface ResourceProperties {
 
     /**
      * List of the security roles permitted to access the resources.
+     * Individual operations can override this setting by using the {@link MethodProperties#rolesAllowed()} annotation.
+     * An operation that is customized with {@link MethodProperties} but does not set its own {@code rolesAllowed}
+     * still inherits the roles declared here.
      * <p>
      * Default: ""
      */
@@ -67,6 +70,9 @@ public @interface ResourceProperties {
 
     /**
      * Whether the generated of the resource require an authenticated user
+     * <p>
+     * An operation that carries its own security annotation, such as {@link jakarta.annotation.security.PermitAll},
+     * is governed by that annotation instead and does not additionally require authentication.
      */
     boolean authenticated() default false;
 }

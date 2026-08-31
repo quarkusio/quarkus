@@ -66,6 +66,7 @@ import io.quarkus.tls.deployment.spi.TlsRegistryBuildItem;
 import io.quarkus.vertx.core.deployment.CoreVertxBuildItem;
 import io.quarkus.vertx.core.deployment.EventLoopCountBuildItem;
 import io.quarkus.vertx.http.HttpServerConfigCustomizer;
+import io.quarkus.vertx.http.XForwardedForSelector;
 import io.quarkus.vertx.http.deployment.HttpSecurityProcessor.HttpSecurityConfigSetupCompleteBuildItem;
 import io.quarkus.vertx.http.deployment.devmode.NotFoundPageDisplayableEndpointBuildItem;
 import io.quarkus.vertx.http.deployment.spi.FrameworkEndpointsBuildItem;
@@ -189,6 +190,11 @@ class VertxHttpProcessor {
     @BuildStep
     UnremovableBeanBuildItem shouldNotRemoveHttpServerConfigCustomizers() {
         return UnremovableBeanBuildItem.beanTypes(HttpServerConfigCustomizer.class);
+    }
+
+    @BuildStep
+    UnremovableBeanBuildItem shouldNotRemoveXForwardedForSelector() {
+        return UnremovableBeanBuildItem.beanTypes(XForwardedForSelector.class);
     }
 
     @BuildStep

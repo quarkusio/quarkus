@@ -11,6 +11,7 @@ import java.util.function.Consumer;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.annotations.Recorder;
+import io.quarkus.vertx.http.runtime.handlers.ClasspathStaticResourcesHandler;
 import io.vertx.core.Handler;
 import io.vertx.core.http.HttpMethod;
 import io.vertx.ext.web.Route;
@@ -82,22 +83,14 @@ public class StaticResourcesRecorder {
         }
         if (!knownPaths.isEmpty()) {
             ClassLoader currentCl = Thread.currentThread().getContextClassLoader();
-            StaticHandler staticHandler = StaticHandler.create(META_INF_RESOURCES)
-                    .setDefaultContentEncoding("UTF-8")
-                    .setCachingEnabled(config.cachingEnabled())
-                    .setIndexPage(config.indexPage())
-                    .setIncludeHidden(config.includeHidden())
-                    .setEnableRangeSupport(config.enableRangeSupport())
-                    .setMaxCacheSize(config.maxCacheSize())
-                    .setCacheEntryTimeout(config.cacheEntryTimeout().toMillis())
-                    .setMaxAgeSeconds(config.maxAge().toSeconds())
-                    .setDirectoryListing(config.directoryListing())
-                    .setSendVaryHeader(config.sendVaryHeader());
             // normalize index page like StaticHandler because its not expose
             // TODO: create a converter to normalize filename in config.indexPage?
             final String indexPage = (config.indexPage().charAt(0) == '/')
                     ? config.indexPage().substring(1)
                     : config.indexPage();
+            Handler<RoutingContext> handler = new ClasspathStaticResourcesHandler(knownPaths, indexPage, config,
+                    httpBuildTimeConfig,
+                    compressMediaTypes, currentCl);
             handlers.add(new Handler<>() {
                 @Override
                 public void handle(RoutingContext ctx) {
@@ -106,14 +99,12 @@ public class StaticResourcesRecorder {
                         ctx.fail(HttpResponseStatus.BAD_REQUEST.code());
                         return;
                     }
-                    // check effective path, otherwise the index page when path ends with '/'
-                    if (knownPaths.contains(rel) || (rel.endsWith("/") && knownPaths.contains(rel.concat(indexPage)))) {
-                        compressIfNeeded(httpBuildTimeConfig, compressMediaTypes, ctx, rel);
-                        staticHandler.handle(ctx);
-                    } else {
-                        // make sure we don't lose the correct TCCL to Vert.x...
+                    // Delegate to dedicated handler (no Vert.x StaticHandler) while preserving the old known-path fast path.
+                    // Ensure we don't lose the correct TCCL to Vert.x when we fall through.
+                    try {
+                        handler.handle(ctx);
+                    } finally {
                         Thread.currentThread().setContextClassLoader(currentCl);
-                        ctx.next();
                     }
                 }
             });

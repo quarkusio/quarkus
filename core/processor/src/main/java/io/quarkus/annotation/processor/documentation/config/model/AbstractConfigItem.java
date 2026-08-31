@@ -43,12 +43,6 @@ public sealed abstract class AbstractConfigItem implements Comparable<AbstractCo
         return path;
     }
 
-    @Deprecated
-    @JsonIgnore
-    public String getPath$$bridge() {
-        return path.property();
-    }
-
     public String getType() {
         return type;
     }

@@ -161,7 +161,7 @@ public class WebSocketConnectorImpl<CLIENT> extends WebSocketConnectorBase<WebSo
                     () -> {
                         connectionManager.remove(clientEndpoint.generatedEndpointClass, connection);
                         client.get().close();
-                    }, true, true, telemetrySupport);
+                    }, true, true, telemetrySupport, config.maxPendingMessages());
 
             return connection;
         });

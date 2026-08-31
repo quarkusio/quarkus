@@ -6,7 +6,10 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
@@ -14,6 +17,10 @@ import java.util.zip.ZipOutputStream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+import io.quarkus.bootstrap.BootstrapConstants;
+import io.quarkus.bootstrap.model.ApplicationModel;
+import io.quarkus.bootstrap.model.ApplicationModelBuilder;
+import io.quarkus.bootstrap.model.PlatformImports;
 import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.maven.dependency.ResolvedDependency;
 import io.quarkus.maven.dependency.ResolvedDependencyBuilder;
@@ -218,5 +225,214 @@ class CoreSbomContributionConfigTest {
                 .setDependencies(dependencies)
                 .setRuntimeCp()
                 .build();
+    }
+
+    @Test
+    void memberProductComponentAttributesUsedRuntimeExtensions() {
+        // Used runtime extension belonging to the Camel member, plus its attributed dep.
+        ArtifactCoords camelRt = ArtifactCoords.jar("org.acme.camel", "camel-quarkus-core", "3.20.0");
+        ArtifactCoords camelDep = ArtifactCoords.jar("org.acme.camel", "camel-support", "3.20.0");
+        // An unrelated runtime extension not covered by the member.
+        ArtifactCoords otherRt = ArtifactCoords.jar("io.quarkus", "quarkus-rest", "3.20.0");
+
+        // By convention the deployment closure contains the runtime artifact, so the key appears in its value.
+        String cpeArtifacts = CpeArtifactsEncoder.encode(Map.of(camelRt, List.of(camelRt, camelDep)));
+
+        Map<String, String> props = new HashMap<>();
+        String prefix = "platform.com.redhat.quarkus.platform.quarkus-camel-bom.";
+        props.put(prefix + "cpe", "cpe:2.3:a:redhat:camel_quarkus:3.20:*:*:*:*:*:*:*");
+        props.put(prefix + "product-name", "Camel Extensions for Quarkus");
+        props.put(prefix + "product-version", "3.20");
+        props.put(prefix + "product-type", "framework");
+        props.put(prefix + "cpe-artifacts", cpeArtifacts);
+
+        ApplicationModel model = buildModel(
+                props,
+                List.of("com.redhat.quarkus.platform:quarkus-camel-bom::pom:3.20.0"),
+                camelRt, camelDep, otherRt);
+
+        SbomContribution contribution = new CoreSbomContributionConfig()
+                .setApplicationModel(model)
+                .toSbomContribution();
+
+        // Product component present, framework type carried via componentType, excluded scope, topLevel.
+        ComponentDescriptor product = contribution.components().stream()
+                .filter(c -> "Camel Extensions for Quarkus".equals(c.getName()))
+                .findFirst().orElseThrow();
+        assertThat(product.getCpe()).isEqualTo("cpe:2.3:a:redhat:camel_quarkus:3.20:*:*:*:*:*:*:*");
+        assertThat(product.getComponentType()).isEqualTo("framework");
+        assertThat(product.getScope()).isEqualTo(ComponentDescriptor.SCOPE_EXCLUDED);
+        assertThat(product.isTopLevel()).isTrue();
+
+        // Product dependsOn the used runtime extension and its attributed dep (both present as components),
+        // but not the unrelated extension.
+        String productRef = product.getBomRef();
+        Collection<String> productDependsOn = contribution.dependencies().stream()
+                .filter(d -> productRef.equals(d.getBomRef()))
+                .findFirst().orElseThrow()
+                .getDependsOn();
+        assertThat(productDependsOn).contains(
+                Purl.maven("org.acme.camel", "camel-quarkus-core", "3.20.0", "jar", null).toString(),
+                Purl.maven("org.acme.camel", "camel-support", "3.20.0", "jar", null).toString());
+        assertThat(productDependsOn).doesNotContain(
+                Purl.maven("io.quarkus", "quarkus-rest", "3.20.0", "jar", null).toString());
+    }
+
+    @Test
+    void productComponentEmittedWhenCpePresentButCpeArtifactsAbsent() {
+        ArtifactCoords camelRt = ArtifactCoords.jar("org.acme.camel", "camel-quarkus-core", "3.20.0");
+
+        Map<String, String> props = new HashMap<>();
+        String prefix = "platform.com.redhat.quarkus.platform.quarkus-camel-bom.";
+        props.put(prefix + "cpe", "cpe:2.3:a:redhat:camel_quarkus:3.20:*:*:*:*:*:*:*");
+        props.put(prefix + "product-name", "Camel Extensions for Quarkus");
+
+        ApplicationModel model = buildModel(
+                props,
+                List.of("com.redhat.quarkus.platform:quarkus-camel-bom::pom:3.20.0"),
+                camelRt);
+
+        SbomContribution contribution = new CoreSbomContributionConfig()
+                .setApplicationModel(model)
+                .toSbomContribution();
+
+        assertThat(contribution.components())
+                .anyMatch(c -> "Camel Extensions for Quarkus".equals(c.getName()));
+    }
+
+    @Test
+    void productAttributionDisabledEmitsNoProductComponent() {
+        ArtifactCoords camelRt = ArtifactCoords.jar("org.acme.camel", "camel-quarkus-core", "3.20.0");
+        Map<String, String> props = new HashMap<>();
+        String prefix = "platform.com.redhat.quarkus.platform.quarkus-camel-bom.";
+        props.put(prefix + "cpe", "cpe:2.3:a:redhat:camel_quarkus:3.20:*:*:*:*:*:*:*");
+        props.put(prefix + "product-name", "Camel Extensions for Quarkus");
+
+        ApplicationModel model = buildModel(
+                props,
+                List.of("com.redhat.quarkus.platform:quarkus-camel-bom::pom:3.20.0"),
+                camelRt);
+
+        SbomContribution contribution = new CoreSbomContributionConfig()
+                .setApplicationModel(model)
+                .setProductAttribution(false)
+                .toSbomContribution();
+
+        assertThat(contribution.components())
+                .noneMatch(c -> "Camel Extensions for Quarkus".equals(c.getName()));
+    }
+
+    @Test
+    void membersSharingPurlAndCpeAreMergedIntoSingleProduct() {
+        // Two members map to the same product (same product-purl and CPE) but contribute different extensions.
+        ArtifactCoords rt1 = ArtifactCoords.jar("org.acme.camel", "camel-quarkus-core", "3.20.0");
+        ArtifactCoords dep1 = ArtifactCoords.jar("org.acme.camel", "camel-core-support", "3.20.0");
+        ArtifactCoords rt2 = ArtifactCoords.jar("org.acme.camel", "camel-quarkus-http", "3.20.0");
+        ArtifactCoords dep2 = ArtifactCoords.jar("org.acme.camel", "camel-http-support", "3.20.0");
+
+        String cpe = "cpe:2.3:a:redhat:camel_quarkus:3.20:*:*:*:*:*:*:*";
+        String productPurl = Purl.maven("com.redhat", "camel-quarkus-product", "3.20", "pom", null).toString();
+
+        Map<String, String> props = new HashMap<>();
+        String prefix1 = "platform.com.redhat.quarkus.platform.quarkus-camel-bom.";
+        String prefix2 = "platform.com.redhat.quarkus.platform.quarkus-camel-extra-bom.";
+        for (String prefix : List.of(prefix1, prefix2)) {
+            props.put(prefix + "cpe", cpe);
+            props.put(prefix + "product-purl", productPurl);
+            props.put(prefix + "product-name", "Camel Extensions for Quarkus");
+        }
+        props.put(prefix1 + "cpe-artifacts", CpeArtifactsEncoder.encode(Map.of(rt1, List.of(rt1, dep1))));
+        props.put(prefix2 + "cpe-artifacts", CpeArtifactsEncoder.encode(Map.of(rt2, List.of(rt2, dep2))));
+
+        ApplicationModel model = buildModel(
+                props,
+                List.of("com.redhat.quarkus.platform:quarkus-camel-bom::pom:3.20.0",
+                        "com.redhat.quarkus.platform:quarkus-camel-extra-bom::pom:3.20.0"),
+                rt1, dep1, rt2, dep2);
+
+        SbomContribution contribution = new CoreSbomContributionConfig()
+                .setApplicationModel(model)
+                .toSbomContribution();
+
+        List<ComponentDescriptor> products = contribution.components().stream()
+                .filter(c -> cpe.equals(c.getCpe()))
+                .toList();
+        assertThat(products).hasSize(1);
+
+        ComponentDescriptor product = products.get(0);
+        String productRef = product.getBomRef();
+        Collection<String> productDependsOn = contribution.dependencies().stream()
+                .filter(d -> productRef.equals(d.getBomRef()))
+                .findFirst().orElseThrow()
+                .getDependsOn();
+        assertThat(productDependsOn).contains(
+                Purl.maven("org.acme.camel", "camel-quarkus-core", "3.20.0", "jar", null).toString(),
+                Purl.maven("org.acme.camel", "camel-core-support", "3.20.0", "jar", null).toString(),
+                Purl.maven("org.acme.camel", "camel-quarkus-http", "3.20.0", "jar", null).toString(),
+                Purl.maven("org.acme.camel", "camel-http-support", "3.20.0", "jar", null).toString());
+    }
+
+    @Test
+    void membersSharingCpeButDifferentPurlStaySeparate() {
+        ArtifactCoords rt1 = ArtifactCoords.jar("org.acme.camel", "camel-quarkus-core", "3.20.0");
+        ArtifactCoords rt2 = ArtifactCoords.jar("org.acme.camel", "camel-quarkus-http", "3.20.0");
+
+        String cpe = "cpe:2.3:a:redhat:camel_quarkus:3.20:*:*:*:*:*:*:*";
+
+        Map<String, String> props = new HashMap<>();
+        String prefix1 = "platform.com.redhat.quarkus.platform.quarkus-camel-bom.";
+        String prefix2 = "platform.com.redhat.quarkus.platform.quarkus-camel-extra-bom.";
+        // Same CPE, but no product-purl so each derives a distinct PURL from its own member BOM coordinates.
+        props.put(prefix1 + "cpe", cpe);
+        props.put(prefix1 + "product-name", "Camel Core");
+        props.put(prefix1 + "cpe-artifacts", CpeArtifactsEncoder.encode(Map.of(rt1, List.of(rt1))));
+        props.put(prefix2 + "cpe", cpe);
+        props.put(prefix2 + "product-name", "Camel HTTP");
+        props.put(prefix2 + "cpe-artifacts", CpeArtifactsEncoder.encode(Map.of(rt2, List.of(rt2))));
+
+        ApplicationModel model = buildModel(
+                props,
+                List.of("com.redhat.quarkus.platform:quarkus-camel-bom::pom:3.20.0",
+                        "com.redhat.quarkus.platform:quarkus-camel-extra-bom::pom:3.20.0"),
+                rt1, rt2);
+
+        SbomContribution contribution = new CoreSbomContributionConfig()
+                .setApplicationModel(model)
+                .toSbomContribution();
+
+        List<ComponentDescriptor> products = contribution.components().stream()
+                .filter(c -> cpe.equals(c.getCpe()))
+                .toList();
+        assertThat(products).hasSize(2);
+        assertThat(products).extracting(c -> c.getPurl().toString()).doesNotHaveDuplicates();
+    }
+
+    private static ApplicationModel buildModel(Map<String, String> platformProps,
+            List<String> importedBomGactvs, ArtifactCoords... runtimeExtensions) {
+        Map<String, Object> platformMap = new HashMap<>();
+        platformMap.put(BootstrapConstants.MAPPABLE_PLATFORM_PROPS, platformProps);
+        platformMap.put(BootstrapConstants.MAPPABLE_IMPORTED_BOMS, importedBomGactvs);
+        PlatformImports imports = PlatformImports.fromMap(platformMap);
+
+        ApplicationModelBuilder builder = new ApplicationModelBuilder()
+                .setAppArtifact(ResolvedDependencyBuilder.newInstance()
+                        .setGroupId("org.acme")
+                        .setArtifactId("acme-app")
+                        .setVersion("1.0.0")
+                        .setResolvedPaths(PathList.of())
+                        .setRuntimeCp());
+        builder.setPlatformImports(imports);
+        for (ArtifactCoords rt : runtimeExtensions) {
+            builder.addDependency(ResolvedDependencyBuilder.newInstance()
+                    .setGroupId(rt.getGroupId())
+                    .setArtifactId(rt.getArtifactId())
+                    .setVersion(rt.getVersion())
+                    .setResolvedPaths(PathList.of())
+                    .setDependencies(List.of())
+                    .setRuntimeCp()
+                    .setDeploymentCp()
+                    .setRuntimeExtensionArtifact());
+        }
+        return builder.build();
     }
 }

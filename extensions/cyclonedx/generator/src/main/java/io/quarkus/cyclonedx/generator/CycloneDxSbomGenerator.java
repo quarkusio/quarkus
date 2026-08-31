@@ -18,6 +18,7 @@ import java.util.Date;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
@@ -42,6 +43,7 @@ import org.cyclonedx.model.Metadata;
 import org.cyclonedx.model.Pedigree;
 import org.cyclonedx.model.Property;
 import org.cyclonedx.model.Tool;
+import org.cyclonedx.model.component.evidence.Identity;
 import org.cyclonedx.model.component.evidence.Occurrence;
 import org.cyclonedx.model.metadata.ToolInformation;
 import org.cyclonedx.util.BomUtils;
@@ -410,8 +412,8 @@ public class CycloneDxSbomGenerator {
         return ArtifactCoords.of(
                 purl.getNamespace(),
                 purl.getName(),
-                purl.getQualifiers().getOrDefault("classifier", ""),
-                purl.getQualifiers().getOrDefault("type", "jar"),
+                purl.getQualifiers().getOrDefault("classifier", ArtifactCoords.DEFAULT_CLASSIFIER),
+                purl.getQualifiers().getOrDefault("type", ArtifactCoords.TYPE_JAR),
                 purl.getVersion());
     }
 
@@ -540,6 +542,15 @@ public class CycloneDxSbomGenerator {
         return renderComponentCore(descriptor, false);
     }
 
+    private static Component.Type toComponentType(String componentType) {
+        return switch (componentType.toLowerCase(Locale.ROOT)) {
+            case "framework" -> Component.Type.FRAMEWORK;
+            case "application" -> Component.Type.APPLICATION;
+            case "file" -> Component.Type.FILE;
+            default -> Component.Type.LIBRARY;
+        };
+    }
+
     private Component renderComponentCore(ComponentDescriptor descriptor, boolean bundled) {
         Component c = new Component();
 
@@ -548,14 +559,16 @@ public class CycloneDxSbomGenerator {
         PackageURL cdxPurl = toCycloneDxPurl(purl);
         c.setPurl(cdxPurl);
         c.setBomRef(descriptor.getBomRef());
-        c.setName(purl.getName());
-        c.setVersion(purl.getVersion());
+        c.setName(descriptor.getName());
+        c.setVersion(descriptor.getVersion());
         if (purl.getNamespace() != null) {
             c.setGroup(purl.getNamespace());
         }
 
-        // Component type
-        if (isFileComponent(descriptor)) {
+        // Component type: explicit override wins, else file/library classification
+        if (descriptor.getComponentType() != null) {
+            c.setType(toComponentType(descriptor.getComponentType()));
+        } else if (isFileComponent(descriptor)) {
             c.setType(Component.Type.FILE);
         } else {
             c.setType(Component.Type.LIBRARY);
@@ -563,13 +576,45 @@ public class CycloneDxSbomGenerator {
 
         // Scope
         List<Property> props = new ArrayList<>(2);
-        String scope = descriptor.getScope() != null ? descriptor.getScope()
-                : ComponentDescriptor.SCOPE_RUNTIME;
+        String scope = descriptor.getScope() != null ? descriptor.getScope() : ComponentDescriptor.SCOPE_RUNTIME;
         if (includeQuarkusComponentScope) {
             addProperty(props, QUARKUS_COMPONENT_SCOPE, scope);
         }
-        if (ComponentDescriptor.SCOPE_DEVELOPMENT.equals(scope)) {
+        if (ComponentDescriptor.SCOPE_DEVELOPMENT.equals(scope)
+                || ComponentDescriptor.SCOPE_EXCLUDED.equals(scope)) {
             c.setScope(Component.Scope.EXCLUDED);
+        }
+
+        // CPE identity (Common Platform Enumeration)
+        if (descriptor.getCpe() != null) {
+            c.setCpe(descriptor.getCpe());
+            // evidence.identities[].field=cpe is a CycloneDX 1.6 construct
+            if (getSchemaVersion().getVersion() >= 1.6) {
+                Identity identity = new Identity();
+                identity.setField(Identity.Field.CPE);
+                identity.setConcludedValue(descriptor.getCpe());
+                Evidence evidence = c.getEvidence();
+                if (evidence == null) {
+                    evidence = new Evidence();
+                    c.setEvidence(evidence);
+                }
+                List<Identity> identities = evidence.getIdentities();
+                if (identities == null) {
+                    identities = new ArrayList<>(1);
+                }
+                identities.add(identity);
+                evidence.setIdentities(identities);
+            }
+        }
+
+        // Explicit descriptor metadata (description, licenses) takes precedence over POM-derived
+        // metadata, so set it before resolving the POM; the POM values are only used as a fallback
+        // when the descriptor provides none (see extractComponentMetadata).
+        if (descriptor.getDescription() != null) {
+            c.setDescription(descriptor.getDescription());
+        }
+        if (!descriptor.getLicenses().isEmpty()) {
+            c.setLicenses(resolveDescriptorLicenses(descriptor.getLicenses()));
         }
 
         // POM metadata for Maven components
@@ -582,7 +627,10 @@ public class CycloneDxSbomGenerator {
             if (getSchemaVersion().getVersion() >= 1.5) {
                 Occurrence occurrence = new Occurrence();
                 occurrence.setLocation(descriptor.getDistributionPath());
-                var evidence = new Evidence();
+                Evidence evidence = c.getEvidence();
+                if (evidence == null) {
+                    evidence = new Evidence();
+                }
                 evidence.setOccurrences(List.of(occurrence));
                 c.setEvidence(evidence);
             } else {
@@ -612,15 +660,6 @@ public class CycloneDxSbomGenerator {
             if (hash != null && (c.getHashes() == null || c.getHashes().isEmpty())) {
                 c.setHashes(List.of(hash));
             }
-        }
-
-        // Description from descriptor (only if POM metadata didn't set one)
-        if (descriptor.getDescription() != null && c.getDescription() == null) {
-            c.setDescription(descriptor.getDescription());
-        }
-
-        if (!descriptor.getLicenses().isEmpty()) {
-            c.setLicenses(resolveDescriptorLicenses(descriptor.getLicenses()));
         }
 
         // Nested (bundled) components

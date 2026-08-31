@@ -512,15 +512,12 @@ public final class FastBootHibernatePersistenceProvider implements PersistencePr
         }
 
         runtimeSettingsBuilder.put(AvailableSettings.JAKARTA_HBM2DDL_DATABASE_ACTION,
-                getString(persistenceUnitConfig.database().generation().generation()
-                        .orElse(generationStrategy)));
+                getString(generationStrategy));
 
         runtimeSettingsBuilder.put(AvailableSettings.JAKARTA_HBM2DDL_CREATE_SCHEMAS,
-                String.valueOf(persistenceUnitConfig.database().generation().createSchemas()
-                        .orElse(persistenceUnitConfig.schemaManagement().createSchemas())));
+                String.valueOf(persistenceUnitConfig.schemaManagement().createSchemas()));
 
-        if (persistenceUnitConfig.database().generation().haltOnError()
-                .orElse(persistenceUnitConfig.schemaManagement().haltOnError())) {
+        if (persistenceUnitConfig.schemaManagement().haltOnError()) {
             runtimeSettingsBuilder.put(AvailableSettings.HBM2DDL_HALT_ON_ERROR, "true");
         }
 

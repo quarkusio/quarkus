@@ -32,24 +32,8 @@ final class OidcTenantConfigImpl implements OidcTenantConfig {
         MAX_POOL_SIZE,
         FOLLOW_REDIRECTS,
         PROXY,
-        PROXY_HOST,
-        PROXY_PORT,
-        PROXY_USERNAME,
-        PROXY_PASSWORD,
         TLS,
         TLS_CONFIGURATION,
-        TLS_VERIFICATION,
-        TLS_KEYSTORE_FILE,
-        TLS_KEYSTORE_FILE_TYPE,
-        TLS_KEYSTORE_PROVIDER,
-        TLS_KEYSTORE_PASSWORD,
-        TLS_KEYSTORE_KEY_ALIAS,
-        TLS_KEYSTORE_KEY_PASSWORD,
-        TLS_TRUSTSTORE_PASSWORD,
-        TLS_TRUSTSTORE_FILE,
-        TLS_TRUSTSTORE_CERT_ALIAS,
-        TLS_TRUSTSTORE_FILE_TYPE,
-        TLS_TRUSTSTORE_PROVIDER,
         TOKEN_PATH,
         REVOKE_PATH,
         CLIENT_ID,
@@ -153,7 +137,6 @@ final class OidcTenantConfigImpl implements OidcTenantConfig {
         AUTHENTICATION_ID_TOKEN_REQUIRED,
         AUTHENTICATION_INTERNAL_ID_TOKEN_LIFESPAN,
         AUTHENTICATION_PKCE_REQUIRED,
-        AUTHENTICATION_PKCE_SECRET,
         AUTHENTICATION_STATE_SECRET,
         CERTIFICATION_CHAIN_LEAF_CERTIFICATE_NAME,
         CERTIFICATION_CHAIN_TRUST_STORE_FILE,
@@ -855,12 +838,6 @@ final class OidcTenantConfigImpl implements OidcTenantConfig {
             }
 
             @Override
-            public Optional<String> pkceSecret() {
-                invocationsRecorder.put(ConfigMappingMethods.AUTHENTICATION_PKCE_SECRET, true);
-                return Optional.empty();
-            }
-
-            @Override
             public Optional<String> stateSecret() {
                 invocationsRecorder.put(ConfigMappingMethods.AUTHENTICATION_STATE_SECRET, true);
                 return Optional.empty();
@@ -1318,30 +1295,6 @@ final class OidcTenantConfigImpl implements OidcTenantConfig {
                 invocationsRecorder.put(ConfigMappingMethods.PROXY_CONFIGURATION_NAME, true);
                 return Optional.empty();
             }
-
-            @Override
-            public Optional<String> host() {
-                invocationsRecorder.put(ConfigMappingMethods.PROXY_HOST, true);
-                return Optional.empty();
-            }
-
-            @Override
-            public int port() {
-                invocationsRecorder.put(ConfigMappingMethods.PROXY_PORT, true);
-                return 0;
-            }
-
-            @Override
-            public Optional<String> username() {
-                invocationsRecorder.put(ConfigMappingMethods.PROXY_USERNAME, true);
-                return Optional.empty();
-            }
-
-            @Override
-            public Optional<String> password() {
-                invocationsRecorder.put(ConfigMappingMethods.PROXY_PASSWORD, true);
-                return Optional.empty();
-            }
         };
     }
 
@@ -1352,78 +1305,6 @@ final class OidcTenantConfigImpl implements OidcTenantConfig {
             @Override
             public Optional<String> tlsConfigurationName() {
                 invocationsRecorder.put(ConfigMappingMethods.TLS_CONFIGURATION, true);
-                return Optional.empty();
-            }
-
-            @Override
-            public Optional<Verification> verification() {
-                invocationsRecorder.put(ConfigMappingMethods.TLS_VERIFICATION, true);
-                return Optional.empty();
-            }
-
-            @Override
-            public Optional<Path> keyStoreFile() {
-                invocationsRecorder.put(ConfigMappingMethods.TLS_KEYSTORE_FILE, true);
-                return Optional.empty();
-            }
-
-            @Override
-            public Optional<String> keyStoreFileType() {
-                invocationsRecorder.put(ConfigMappingMethods.TLS_KEYSTORE_FILE_TYPE, true);
-                return Optional.empty();
-            }
-
-            @Override
-            public Optional<String> keyStoreProvider() {
-                invocationsRecorder.put(ConfigMappingMethods.TLS_KEYSTORE_PROVIDER, true);
-                return Optional.empty();
-            }
-
-            @Override
-            public Optional<String> keyStorePassword() {
-                invocationsRecorder.put(ConfigMappingMethods.TLS_KEYSTORE_PASSWORD, true);
-                return Optional.empty();
-            }
-
-            @Override
-            public Optional<String> keyStoreKeyAlias() {
-                invocationsRecorder.put(ConfigMappingMethods.TLS_KEYSTORE_KEY_ALIAS, true);
-                return Optional.empty();
-            }
-
-            @Override
-            public Optional<String> keyStoreKeyPassword() {
-                invocationsRecorder.put(ConfigMappingMethods.TLS_KEYSTORE_KEY_PASSWORD, true);
-                return Optional.empty();
-            }
-
-            @Override
-            public Optional<Path> trustStoreFile() {
-                invocationsRecorder.put(ConfigMappingMethods.TLS_TRUSTSTORE_FILE, true);
-                return Optional.empty();
-            }
-
-            @Override
-            public Optional<String> trustStorePassword() {
-                invocationsRecorder.put(ConfigMappingMethods.TLS_TRUSTSTORE_PASSWORD, true);
-                return Optional.empty();
-            }
-
-            @Override
-            public Optional<String> trustStoreCertAlias() {
-                invocationsRecorder.put(ConfigMappingMethods.TLS_TRUSTSTORE_CERT_ALIAS, true);
-                return Optional.empty();
-            }
-
-            @Override
-            public Optional<String> trustStoreFileType() {
-                invocationsRecorder.put(ConfigMappingMethods.TLS_TRUSTSTORE_FILE_TYPE, true);
-                return Optional.empty();
-            }
-
-            @Override
-            public Optional<String> trustStoreProvider() {
-                invocationsRecorder.put(ConfigMappingMethods.TLS_TRUSTSTORE_PROVIDER, true);
                 return Optional.empty();
             }
         };

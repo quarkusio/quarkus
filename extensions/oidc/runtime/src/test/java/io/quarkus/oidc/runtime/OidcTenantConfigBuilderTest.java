@@ -160,7 +160,6 @@ public class OidcTenantConfigBuilderTest {
         assertTrue(authentication.idTokenRequired().isEmpty());
         assertTrue(authentication.internalIdTokenLifespan().isEmpty());
         assertTrue(authentication.pkceRequired().isEmpty());
-        assertTrue(authentication.pkceSecret().isEmpty());
         assertTrue(authentication.stateSecret().isEmpty());
         assertTrue(authentication.par().enabled().isEmpty());
         assertTrue(authentication.par().path().isEmpty());
@@ -239,24 +238,8 @@ public class OidcTenantConfigBuilderTest {
         assertTrue(config.maxPoolSize().isEmpty());
         assertTrue(config.followRedirects());
         assertNotNull(config.proxy());
-        assertTrue(config.proxy().host().isEmpty());
-        assertEquals(80, config.proxy().port());
-        assertTrue(config.proxy().username().isEmpty());
-        assertTrue(config.proxy().password().isEmpty());
         assertNotNull(config.tls());
         assertTrue(config.tls().tlsConfigurationName().isEmpty());
-        assertTrue(config.tls().verification().isEmpty());
-        assertTrue(config.tls().keyStoreFile().isEmpty());
-        assertTrue(config.tls().keyStoreFileType().isEmpty());
-        assertTrue(config.tls().keyStoreProvider().isEmpty());
-        assertTrue(config.tls().keyStorePassword().isEmpty());
-        assertTrue(config.tls().keyStoreKeyAlias().isEmpty());
-        assertTrue(config.tls().keyStoreKeyPassword().isEmpty());
-        assertTrue(config.tls().trustStoreFile().isEmpty());
-        assertTrue(config.tls().trustStorePassword().isEmpty());
-        assertTrue(config.tls().trustStoreCertAlias().isEmpty());
-        assertTrue(config.tls().trustStoreFileType().isEmpty());
-        assertTrue(config.tls().trustStoreProvider().isEmpty());
     }
 
     @Test
@@ -428,7 +411,6 @@ public class OidcTenantConfigBuilderTest {
                 .useBlockingDnsLookup(true)
                 .maxPoolSize(376)
                 .followRedirects(false)
-                .proxy("need", 55, "no", "education")
                 .tlsConfigurationName("Teacher!")
                 .proxyConfigurationName("Kreacher!")
                 .build();
@@ -566,7 +548,6 @@ public class OidcTenantConfigBuilderTest {
         assertFalse(authentication.idTokenRequired().orElseThrow());
         assertEquals(357, authentication.internalIdTokenLifespan().orElseThrow().toMinutes());
         assertTrue(authentication.pkceRequired().orElseThrow());
-        assertTrue(authentication.pkceSecret().isEmpty());
         assertEquals("state-secret-auth-whatever", authentication.stateSecret().orElse(null));
         var par = authentication.par();
         assertTrue(par.enabled().orElse(false));
@@ -666,43 +647,22 @@ public class OidcTenantConfigBuilderTest {
         assertEquals(376, config.maxPoolSize().orElse(0));
         assertFalse(config.followRedirects());
         assertNotNull(config.proxy());
-        assertEquals("need", config.proxy().host().orElse(null));
-        assertEquals(55, config.proxy().port());
-        assertEquals("no", config.proxy().username().orElse(null));
-        assertEquals("education", config.proxy().password().orElse(null));
         assertNotNull(config.tls());
         assertEquals("Teacher!", config.tls().tlsConfigurationName().orElse(null));
         assertEquals("Kreacher!", config.proxy().proxyConfigurationName().orElse(null));
-        assertTrue(config.tls().verification().isEmpty());
-        assertTrue(config.tls().keyStoreFile().isEmpty());
-        assertTrue(config.tls().keyStoreFileType().isEmpty());
-        assertTrue(config.tls().keyStoreProvider().isEmpty());
-        assertTrue(config.tls().keyStorePassword().isEmpty());
-        assertTrue(config.tls().keyStoreKeyAlias().isEmpty());
-        assertTrue(config.tls().keyStoreKeyPassword().isEmpty());
-        assertTrue(config.tls().trustStoreFile().isEmpty());
-        assertTrue(config.tls().trustStorePassword().isEmpty());
-        assertTrue(config.tls().trustStoreCertAlias().isEmpty());
-        assertTrue(config.tls().trustStoreFileType().isEmpty());
-        assertTrue(config.tls().trustStoreProvider().isEmpty());
     }
 
     @Test
     public void testCopyProxyProperties() {
         var previousConfig = OidcTenantConfig.builder()
                 .tenantId("copy-proxy-properties-test")
-                .proxy("need", 55, "no", "education")
                 .build();
         var newConfig = OidcTenantConfig.builder(previousConfig)
-                .proxy("fast-car", 22)
                 .build();
 
         assertNotNull(previousConfig.proxy());
         assertEquals("copy-proxy-properties-test", newConfig.tenantId().orElse(null));
-        assertEquals("fast-car", newConfig.proxy().host().orElse(null));
-        assertEquals(22, newConfig.proxy().port());
-        assertEquals("no", newConfig.proxy().username().orElse(null));
-        assertEquals("education", newConfig.proxy().password().orElse(null));
+        assertNotNull(newConfig.proxy());
     }
 
     @Test
@@ -951,7 +911,6 @@ public class OidcTenantConfigBuilderTest {
                 .useBlockingDnsLookup(true)
                 .maxPoolSize(376)
                 .followRedirects(false)
-                .proxy("need", 55, "no", "education")
                 .tlsConfigurationName("Teacher!")
                 .proxyConfigurationName("Kreacher!")
                 .build();
@@ -960,7 +919,6 @@ public class OidcTenantConfigBuilderTest {
                 .connectionDelay(Duration.ofSeconds(753))
                 .connectionTimeout(Duration.ofSeconds(357))
                 .maxPoolSize(1988)
-                .proxy("cross", 44, "the", "boarder")
                 .build();
 
         assertEquals("common-props-test", newConfig.tenantId().orElse(null));
@@ -974,25 +932,9 @@ public class OidcTenantConfigBuilderTest {
         assertEquals(1988, newConfig.maxPoolSize().orElse(0));
         assertFalse(newConfig.followRedirects());
         assertNotNull(newConfig.proxy());
-        assertEquals("cross", newConfig.proxy().host().orElse(null));
-        assertEquals(44, newConfig.proxy().port());
-        assertEquals("the", newConfig.proxy().username().orElse(null));
-        assertEquals("boarder", newConfig.proxy().password().orElse(null));
         assertNotNull(newConfig.tls());
         assertEquals("Teacher!", newConfig.tls().tlsConfigurationName().orElse(null));
         assertEquals("Kreacher!", newConfig.proxy().proxyConfigurationName().orElse(null));
-        assertTrue(newConfig.tls().verification().isEmpty());
-        assertTrue(newConfig.tls().keyStoreFile().isEmpty());
-        assertTrue(newConfig.tls().keyStoreFileType().isEmpty());
-        assertTrue(newConfig.tls().keyStoreProvider().isEmpty());
-        assertTrue(newConfig.tls().keyStorePassword().isEmpty());
-        assertTrue(newConfig.tls().keyStoreKeyAlias().isEmpty());
-        assertTrue(newConfig.tls().keyStoreKeyPassword().isEmpty());
-        assertTrue(newConfig.tls().trustStoreFile().isEmpty());
-        assertTrue(newConfig.tls().trustStorePassword().isEmpty());
-        assertTrue(newConfig.tls().trustStoreCertAlias().isEmpty());
-        assertTrue(newConfig.tls().trustStoreFileType().isEmpty());
-        assertTrue(newConfig.tls().trustStoreProvider().isEmpty());
     }
 
     @Test

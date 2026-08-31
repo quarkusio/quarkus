@@ -203,28 +203,20 @@ public class SmallRyeGraphQLClientRecorder {
                     transformed.setUsesSni(Boolean.valueOf(tlsConfiguration.usesSni()));
                 });
 
-        if (quarkusConfig.proxyHost().isPresent()) {
-            // use the deprecated proxy settings if they are set
-            quarkusConfig.proxyHost().ifPresent(transformed::setProxyHost);
-            quarkusConfig.proxyPort().ifPresent(transformed::setProxyPort);
-            quarkusConfig.proxyUsername().ifPresent(transformed::setProxyUsername);
-            quarkusConfig.proxyPassword().ifPresent(transformed::setProxyPassword);
-        } else {
-            // use the proxy configuration registry
-            resolveProxyConfiguration(quarkusConfig)
-                    .ifPresent(proxyConfiguration -> {
-                        transformed.setProxyHost(proxyConfiguration.host());
-                        transformed.setProxyPort(proxyConfiguration.port());
-                        proxyConfiguration.username().ifPresent(transformed::setProxyUsername);
-                        proxyConfiguration.password().ifPresent(transformed::setProxyPassword);
-                        proxyConfiguration.nonProxyHosts().ifPresent(transformed::setNonProxyHosts);
-                        transformed.setProxyType(switch (proxyConfiguration.type()) {
-                            case HTTP -> HTTP;
-                            case SOCKS4 -> SOCKS4;
-                            case SOCKS5 -> SOCKS5;
-                        });
+        // use the proxy configuration registry
+        resolveProxyConfiguration(quarkusConfig)
+                .ifPresent(proxyConfiguration -> {
+                    transformed.setProxyHost(proxyConfiguration.host());
+                    transformed.setProxyPort(proxyConfiguration.port());
+                    proxyConfiguration.username().ifPresent(transformed::setProxyUsername);
+                    proxyConfiguration.password().ifPresent(transformed::setProxyPassword);
+                    proxyConfiguration.nonProxyHosts().ifPresent(transformed::setNonProxyHosts);
+                    transformed.setProxyType(switch (proxyConfiguration.type()) {
+                        case HTTP -> HTTP;
+                        case SOCKS4 -> SOCKS4;
+                        case SOCKS5 -> SOCKS5;
                     });
-        }
+                });
 
         quarkusConfig.maxRedirects().ifPresent(transformed::setMaxRedirects);
         quarkusConfig.executeSingleResultOperationsOverWebsocket()

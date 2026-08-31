@@ -24,10 +24,9 @@ public class VertxWithHttpEnabledTest {
             .overrideConfigKey("quarkus.micrometer.binder-enabled-default", "false")
             .overrideConfigKey("quarkus.micrometer.binder.http-client.enabled", "true")
             .overrideConfigKey("quarkus.micrometer.binder.http-server.enabled", "true")
-            .overrideConfigKey("quarkus.micrometer.binder.http-server.ignore-patterns", "/http")
+            .overrideConfigKey("quarkus.micrometer.binder.http-server.ignore-patterns", "/http,/two")
             .overrideConfigKey("quarkus.micrometer.binder.vertx.enabled", "true")
-            .overrideConfigKey("quarkus.micrometer.binder.vertx.match-patterns", "/one=/two")
-            .overrideConfigKey("quarkus.micrometer.binder.vertx.ignore-patterns", "/two")
+            .overrideConfigKey("quarkus.micrometer.binder.http-server.match-patterns", "/one=/two")
             .overrideConfigKey("pingpong/mp-rest/url", "${test.url}")
             .overrideConfigKey("quarkus.redis.devservices.enabled", "false")
             .withApplicationRoot((jar) -> jar
@@ -44,12 +43,12 @@ public class VertxWithHttpEnabledTest {
         Assertions.assertTrue(httpBinderConfiguration.isClientEnabled());
         Assertions.assertTrue(httpBinderConfiguration.isServerEnabled());
 
-        // http-server.ignore-patterns: add 1 due to default ignore ^/q/.*
-        Assertions.assertEquals(2, httpBinderConfiguration.getServerIgnorePatterns().size());
+        // http-server.ignore-patterns: /http, /two + 1 default ignore ^/q/.*
+        Assertions.assertEquals(3, httpBinderConfiguration.getServerIgnorePatterns().size());
         Pattern p = httpBinderConfiguration.getServerIgnorePatterns().get(0);
         Assertions.assertTrue(p.matcher("/http").matches());
 
-        // Use vertx.match-patterns (http-server version is missing)
+        // http-server.match-patterns
         Assertions.assertEquals(1, httpBinderConfiguration.getServerMatchPatterns().size());
         Map.Entry<Pattern, String> entry = httpBinderConfiguration.getServerMatchPatterns().entrySet().iterator().next();
         Assertions.assertTrue(entry.getKey().matcher("/one").matches());

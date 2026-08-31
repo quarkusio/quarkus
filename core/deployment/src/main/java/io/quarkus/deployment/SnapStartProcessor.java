@@ -32,7 +32,7 @@ public class SnapStartProcessor {
             SnapStartRecorder recorder,
             SnapStartConfig config,
             Optional<SnapStartDefaultValueBuildItem> defaultVal) {
-        Optional<Boolean> snapstartEnabled = config.enable().isPresent() ? config.enable() : config.enabled();
+        Optional<Boolean> snapstartEnabled = config.enabled();
 
         if (snapstartEnabled.isPresent()) {
             if (!snapstartEnabled.get().booleanValue()) {
@@ -56,7 +56,7 @@ public class SnapStartProcessor {
             TransformedClassesBuildItem transformedClasses,
             ApplicationArchivesBuildItem applicationArchivesBuildItem,
             List<GeneratedClassBuildItem> generatedClasses) {
-        Optional<Boolean> snapstartEnabled = config.enable().isPresent() ? config.enable() : config.enabled();
+        Optional<Boolean> snapstartEnabled = config.enabled();
 
         if (snapstartEnabled.isPresent()) {
             if (!snapstartEnabled.get().booleanValue()) {

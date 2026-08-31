@@ -125,7 +125,7 @@ public interface HibernateOrmConfig {
         // Do NOT include persistenceXml in here.
         return defaultPersistenceUnit().isAnyPropertySet() ||
                 !namedPersistenceUnits().isEmpty() ||
-                log().isAnyPropertySet() ||
+                log().bindParameters() ||
                 statistics().isPresent() ||
                 logSessionMetrics().isPresent() ||
                 metrics().isAnyPropertySet();
@@ -145,16 +145,6 @@ public interface HibernateOrmConfig {
 
     @ConfigGroup
     interface HibernateOrmConfigLog {
-
-        /**
-         * Logs SQL bind parameter.
-         * <p>
-         * Setting it to true is obviously not recommended in production.
-         */
-        @Deprecated
-        @WithDefault("false")
-        boolean bindParam();
-
         /**
          * Logs SQL bind parameters.
          * <p>
@@ -162,10 +152,6 @@ public interface HibernateOrmConfig {
          */
         @WithDefault("false")
         boolean bindParameters();
-
-        default boolean isAnyPropertySet() {
-            return bindParam() || bindParameters();
-        }
     }
 
     @ConfigGroup

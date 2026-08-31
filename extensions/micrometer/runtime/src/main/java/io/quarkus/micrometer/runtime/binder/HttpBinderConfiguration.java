@@ -15,7 +15,6 @@ import org.jboss.logging.Logger;
 import io.quarkus.micrometer.runtime.MicrometerRecorder;
 import io.quarkus.micrometer.runtime.config.runtime.HttpClientConfig;
 import io.quarkus.micrometer.runtime.config.runtime.HttpServerConfig;
-import io.quarkus.micrometer.runtime.config.runtime.VertxConfig;
 import io.quarkus.runtime.LaunchMode;
 
 /**
@@ -44,9 +43,8 @@ public class HttpBinderConfiguration {
     private HttpBinderConfiguration() {
     }
 
-    @SuppressWarnings("deprecation")
     public HttpBinderConfiguration(boolean httpServerMetrics, boolean httpClientMetrics,
-            HttpServerConfig serverConfig, HttpClientConfig clientConfig, VertxConfig vertxConfig) {
+            HttpServerConfig serverConfig, HttpClientConfig clientConfig) {
 
         serverEnabled = httpServerMetrics;
         clientEnabled = httpClientMetrics;
@@ -70,13 +68,8 @@ public class HttpBinderConfiguration {
                 defaultMatch = devRoot + "/.*=" + devRoot;
             }
 
-            // Handle deprecated/previous vertx properties as well
-            serverIgnorePatterns = getIgnorePatterns(
-                    serverConfig.ignorePatterns().isPresent() ? serverConfig.ignorePatterns() : vertxConfig.ignorePatterns(),
-                    defaultIgnore);
-            serverMatchPatterns = getMatchPatterns(
-                    serverConfig.matchPatterns().isPresent() ? serverConfig.matchPatterns() : vertxConfig.matchPatterns(),
-                    defaultMatch);
+            serverIgnorePatterns = getIgnorePatterns(serverConfig.ignorePatterns(), defaultIgnore);
+            serverMatchPatterns = getMatchPatterns(serverConfig.matchPatterns(), defaultMatch);
         }
 
         if (clientEnabled) {

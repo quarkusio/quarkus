@@ -23,7 +23,6 @@ public class DialectSpecificSettingsMariaDBIgnoredTest {
                     .addAsResource("application-start-offline-mariadb-dialect.properties", "application.properties"))
             .setLogRecordPredicate(record -> HibernateProcessorUtil.class.getName().equals(record.getLoggerName()))
             .overrideConfigKey("quarkus.datasource.db-kind", "") // This will override to default which is H2
-            .overrideConfigKey("quarkus.hibernate-orm.dialect.storage-engine", "")
             .overrideConfigKey("quarkus.hibernate-orm.dialect.mariadb.bytes-per-character", "8") // This will be ignored
             .overrideConfigKey("quarkus.hibernate-orm.dialect.mariadb.no-backslash-escapes", "true") // This will be ignored
             .setLogRecordPredicate(record -> HibernateProcessorUtil.class.getName().equals(record.getLoggerName()))

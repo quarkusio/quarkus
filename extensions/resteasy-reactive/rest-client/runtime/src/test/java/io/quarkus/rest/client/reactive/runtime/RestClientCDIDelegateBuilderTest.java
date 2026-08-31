@@ -25,7 +25,6 @@ import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.cert.CertificateException;
-import java.time.Duration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -131,11 +130,6 @@ class RestClientCDIDelegateBuilderTest {
         verify(restClientBuilderMock).property(QuarkusRestClientProperties.NAME, "my-client");
         verify(restClientBuilderMock).property(MULTIPART_ENCODER_MODE, HTML5);
 
-        verify(restClientBuilderMock).proxyAddress("host1", 123);
-        verify(restClientBuilderMock).proxyUser("proxyUser1");
-        verify(restClientBuilderMock).proxyPassword("proxyPassword1");
-        verify(restClientBuilderMock).nonProxyHosts("nonProxyHosts1");
-        verify(restClientBuilderMock).proxyConnectTimeout(Duration.ofSeconds(20));
         verify(restClientBuilderMock).connectTimeout(100, MILLISECONDS);
         verify(restClientBuilderMock).readTimeout(101, MILLISECONDS);
         verify(restClientBuilderMock).userAgent("agent1");
@@ -186,11 +180,6 @@ class RestClientCDIDelegateBuilderTest {
         verify(restClientBuilderMock).property(MULTIPART_ENCODER_MODE, HTML5);
         verify(restClientBuilderMock).property(DISABLE_CONTEXTUAL_ERROR_MESSAGES, true);
 
-        verify(restClientBuilderMock).proxyAddress("host2", 123);
-        verify(restClientBuilderMock).proxyUser("proxyUser2");
-        verify(restClientBuilderMock).proxyPassword("proxyPassword2");
-        verify(restClientBuilderMock).nonProxyHosts("nonProxyHosts2");
-        verify(restClientBuilderMock).proxyConnectTimeout(Duration.ofSeconds(30));
         verify(restClientBuilderMock).connectTimeout(200, MILLISECONDS);
         verify(restClientBuilderMock).readTimeout(201, MILLISECONDS);
         verify(restClientBuilderMock).userAgent("agent2");
@@ -214,11 +203,7 @@ class RestClientCDIDelegateBuilderTest {
         rootConfig.put("quarkus.rest-client.multipart-post-encoder-mode", "HTML5");
         rootConfig.put("quarkus.rest-client.disable-contextual-error-messages", "true");
         // global defaults for client specific properties:
-        rootConfig.put("quarkus.rest-client.proxy-address", "host2:123");
-        rootConfig.put("quarkus.rest-client.proxy-user", "proxyUser2");
-        rootConfig.put("quarkus.rest-client.proxy-password", "proxyPassword2");
-        rootConfig.put("quarkus.rest-client.non-proxy-hosts", "nonProxyHosts2");
-        rootConfig.put("quarkus.rest-client.proxy-connect-timeout", "30s");
+        rootConfig.put("quarkus.rest-client.proxy-configuration-name", "none");
         rootConfig.put("quarkus.rest-client.connect-timeout", "200");
         rootConfig.put("quarkus.rest-client.read-timeout", "201");
         rootConfig.put("quarkus.rest-client.user-agent", "agent2");
@@ -250,11 +235,6 @@ class RestClientCDIDelegateBuilderTest {
         clientConfig.put("quarkus.rest-client." + restClientName + ".shared", "true");
         clientConfig.put("quarkus.rest-client." + restClientName + ".name", "my-client");
         // properties that override configRoot counterparts
-        clientConfig.put("quarkus.rest-client." + restClientName + ".proxy-address", "host1:123");
-        clientConfig.put("quarkus.rest-client." + restClientName + ".proxy-user", "proxyUser1");
-        clientConfig.put("quarkus.rest-client." + restClientName + ".proxy-password", "proxyPassword1");
-        clientConfig.put("quarkus.rest-client." + restClientName + ".non-proxy-hosts", "nonProxyHosts1");
-        clientConfig.put("quarkus.rest-client." + restClientName + ".proxy-connect-timeout", "20s");
         clientConfig.put("quarkus.rest-client." + restClientName + ".connect-timeout", "100");
         clientConfig.put("quarkus.rest-client." + restClientName + ".read-timeout", "101");
         clientConfig.put("quarkus.rest-client." + restClientName + ".user-agent", "agent1");

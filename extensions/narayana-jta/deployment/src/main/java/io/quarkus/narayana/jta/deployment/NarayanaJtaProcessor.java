@@ -50,7 +50,6 @@ import io.quarkus.arc.deployment.SyntheticBeansRuntimeInitBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
 import io.quarkus.deployment.Capabilities;
-import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.IsTest;
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -66,14 +65,10 @@ import io.quarkus.deployment.builditem.nativeimage.NativeImageSystemPropertyBuil
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
 import io.quarkus.deployment.logging.LogCleanupFilterBuildItem;
-import io.quarkus.deployment.pkg.steps.NativeOrNativeSourcesBuild;
 import io.quarkus.gizmo2.Gizmo;
 import io.quarkus.narayana.jta.runtime.NarayanaJtaProducers;
 import io.quarkus.narayana.jta.runtime.NarayanaJtaRecorder;
-import io.quarkus.narayana.jta.runtime.TransactionManagerBuildTimeConfig;
-import io.quarkus.narayana.jta.runtime.TransactionManagerBuildTimeConfig.UnsafeMultipleLastResourcesMode;
 import io.quarkus.narayana.jta.runtime.context.TransactionContext;
-import io.quarkus.narayana.jta.runtime.graal.DisableLoggingFeature;
 import io.quarkus.narayana.jta.runtime.interceptor.TestTransactionInterceptor;
 import io.quarkus.narayana.jta.runtime.interceptor.TransactionalInterceptorMandatory;
 import io.quarkus.narayana.jta.runtime.interceptor.TransactionalInterceptorNever;
@@ -103,7 +98,6 @@ class NarayanaJtaProcessor {
             BuildProducer<FeatureBuildItem> feature,
             BuildProducer<LogCleanupFilterBuildItem> logCleanupFilters,
             BuildProducer<NativeImageFeatureBuildItem> nativeImageFeatures,
-            TransactionManagerBuildTimeConfig transactionManagerBuildTimeConfig,
             ShutdownContextBuildItem shutdownContextBuildItem,
             Capabilities capabilities) {
         recorder.handleShutdown(shutdownContextBuildItem);
@@ -152,12 +146,6 @@ class NarayanaJtaProcessor {
         builder.addBeanClass(TransactionalInterceptorNotSupported.class);
         additionalBeans.produce(builder.build());
 
-        transactionManagerBuildTimeConfig.unsafeMultipleLastResources().ifPresent(mode -> {
-            if (!mode.equals(UnsafeMultipleLastResourcesMode.FAIL)) {
-                recorder.logUnsafeMultipleLastResourcesOnStartup(mode);
-            }
-        });
-
         //we want to force Arjuna to init at static init time
         Properties defaultProperties = PropertiesFactory.getDefaultProperties();
         //we don't want to store the system properties here
@@ -169,23 +157,10 @@ class NarayanaJtaProcessor {
         recorder.setDefaultProperties(defaultProperties);
         // This must be done before setNodeName as the code in setNodeName will create a TSM based on the value of this property
         recorder.disableTransactionStatusManager();
-        allowUnsafeMultipleLastResources(recorder, transactionManagerBuildTimeConfig, capabilities, logCleanupFilters,
-                nativeImageFeatures);
         recorder.setNodeName();
         recorder.setDefaultTimeout();
         recorder.setReaperConfig();
         recorder.setConfig();
-    }
-
-    @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
-    public void nativeImageFeature(TransactionManagerBuildTimeConfig transactionManagerBuildTimeConfig,
-            BuildProducer<NativeImageFeatureBuildItem> nativeImageFeatures) {
-        switch (transactionManagerBuildTimeConfig.unsafeMultipleLastResources()
-                .orElse(UnsafeMultipleLastResourcesMode.DEFAULT)) {
-            case ALLOW, WARN_FIRST, WARN_EACH -> {
-                nativeImageFeatures.produce(new NativeImageFeatureBuildItem(DisableLoggingFeature.class));
-            }
-        }
     }
 
     @BuildStep
@@ -266,34 +241,4 @@ class NarayanaJtaProcessor {
         logCleanupFilters.produce(new LogCleanupFilterBuildItem("com.arjuna.ats.jbossatx", "ARJUNA032010:", "ARJUNA032013:"));
     }
 
-    private void allowUnsafeMultipleLastResources(NarayanaJtaRecorder recorder,
-            TransactionManagerBuildTimeConfig transactionManagerBuildTimeConfig,
-            Capabilities capabilities, BuildProducer<LogCleanupFilterBuildItem> logCleanupFilters,
-            BuildProducer<NativeImageFeatureBuildItem> nativeImageFeatures) {
-        switch (transactionManagerBuildTimeConfig.unsafeMultipleLastResources()
-                .orElse(UnsafeMultipleLastResourcesMode.DEFAULT)) {
-            case ALLOW -> {
-                recorder.allowUnsafeMultipleLastResources(capabilities.isPresent(Capability.AGROAL), true);
-                // we will handle the warnings ourselves at runtime init when the option is set explicitly
-                logCleanupFilters.produce(
-                        new LogCleanupFilterBuildItem("com.arjuna.ats.arjuna", "ARJUNA012139", "ARJUNA012141", "ARJUNA012142"));
-            }
-            case WARN_FIRST -> {
-                recorder.allowUnsafeMultipleLastResources(capabilities.isPresent(Capability.AGROAL), true);
-                // we will handle the warnings ourselves at runtime init when the option is set explicitly
-                // but we still want Narayana to produce a warning on the first offending transaction
-                logCleanupFilters.produce(
-                        new LogCleanupFilterBuildItem("com.arjuna.ats.arjuna", "ARJUNA012139", "ARJUNA012142"));
-            }
-            case WARN_EACH -> {
-                recorder.allowUnsafeMultipleLastResources(capabilities.isPresent(Capability.AGROAL), false);
-                // we will handle the warnings ourselves at runtime init when the option is set explicitly
-                // but we still want Narayana to produce one warning per offending transaction
-                logCleanupFilters.produce(
-                        new LogCleanupFilterBuildItem("com.arjuna.ats.arjuna", "ARJUNA012139", "ARJUNA012142"));
-            }
-            case FAIL -> { // No need to do anything, this is the default behavior of Narayana
-            }
-        }
-    }
 }

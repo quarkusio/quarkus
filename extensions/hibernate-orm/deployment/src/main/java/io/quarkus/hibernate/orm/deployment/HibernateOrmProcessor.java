@@ -475,7 +475,6 @@ public final class HibernateOrmProcessor {
                                                     .getProperties().getProperty("hibernate.multiTenancy"))), //FIXME this property is meaningless in Hibernate ORM 6
                                     hibernateOrmConfig.database().ormCompatibilityVersion(),
                                     Collections.emptyMap()),
-                            null,
                             jpaModel.getXmlMappings(persistenceXmlDescriptorBuildItem.getDescriptor().getName()),
                             true, isHibernateValidatorPresent(capabilities)));
         }
@@ -579,7 +578,6 @@ public final class HibernateOrmProcessor {
                                 multiTenancyStrategy,
                                 hibernateOrmConfig.database().ormCompatibilityVersion(),
                                 Collections.emptyMap()),
-                        null,
                         jpaModel.getXmlMappings(persistenceUnitName),
                         false,
                         isHibernateValidatorPresent(capabilities)));
@@ -993,18 +991,6 @@ public final class HibernateOrmProcessor {
                 case DATABASE, SCHEMA -> {
                     multitenancyEnabled = true;
 
-                    String multiTenancySchemaDataSource = persistenceUnitDescriptor.getMultiTenancySchemaDataSource();
-                    Optional<String> datasource;
-                    if (multitenancyStrategy == MultiTenancyStrategy.SCHEMA && multiTenancySchemaDataSource != null) {
-                        LOG.warnf("Configuration property '%1$s' is deprecated. Use '%2$s' instead.",
-                                HibernateOrmRuntimeConfig.puPropertyKey(persistenceUnitConfigName,
-                                        "multitenant-schema-datasource"),
-                                HibernateOrmRuntimeConfig.puPropertyKey(persistenceUnitConfigName, "datasource"));
-                        datasource = Optional.of(multiTenancySchemaDataSource);
-                    } else {
-                        datasource = persistenceUnitDescriptor.getConfig().getDataSource();
-                    }
-
                     ExtendedBeanConfigurator configurator = SyntheticBeanBuildItem
                             .configure(DataSourceTenantConnectionResolver.class)
                             .scope(ApplicationScoped.class)
@@ -1014,7 +1000,7 @@ public final class HibernateOrmProcessor {
                             .unremovable()
                             .supplier(recorder.dataSourceTenantConnectionResolver(
                                     persistenceUnitDescriptor.getPersistenceUnitName(),
-                                    datasource,
+                                    persistenceUnitDescriptor.getConfig().getDataSource(),
                                     persistenceUnitDescriptor.getConfig().getMultiTenancyStrategy()));
 
                     if (PersistenceUnitUtil.isDefaultPersistenceUnit(persistenceUnitDescriptor.getPersistenceUnitName())) {
@@ -1041,7 +1027,7 @@ public final class HibernateOrmProcessor {
     @BuildStep
     public void produceLoggingCategories(HibernateOrmConfig hibernateOrmConfig,
             BuildProducer<LogCategoryBuildItem> categories) {
-        if (hibernateOrmConfig.log().bindParam() || hibernateOrmConfig.log().bindParameters()) {
+        if (hibernateOrmConfig.log().bindParameters()) {
             categories.produce(new LogCategoryBuildItem("org.hibernate.orm.jdbc.bind", Level.TRACE, true));
         }
     }
@@ -1352,7 +1338,6 @@ public final class HibernateOrmProcessor {
                                 multiTenancyStrategy,
                                 hibernateOrmConfig.database().ormCompatibilityVersion(),
                                 persistenceUnitConfig.unsupportedProperties()),
-                        persistenceUnitConfig.multitenantSchemaDatasource().orElse(null),
                         model.xmlMappings(),
                         false,
                         isHibernateValidatorPresent(capabilities)));

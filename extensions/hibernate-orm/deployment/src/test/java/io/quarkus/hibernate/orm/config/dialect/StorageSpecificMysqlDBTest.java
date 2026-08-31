@@ -35,7 +35,6 @@ public class StorageSpecificMysqlDBTest {
             .setForcedDependencies(List.of(
                     Dependency.of("io.quarkus", "quarkus-jdbc-mariadb-deployment", Version.getVersion())))
             .setLogRecordPredicate(record -> HibernateProcessorUtil.class.getName().equals(record.getLoggerName()))
-            .overrideConfigKey("quarkus.hibernate-orm.dialect.storage-engine", "")
             .overrideConfigKey("quarkus.hibernate-orm.dialect.mysql.storage-engine", "innodb");
 
     @Test

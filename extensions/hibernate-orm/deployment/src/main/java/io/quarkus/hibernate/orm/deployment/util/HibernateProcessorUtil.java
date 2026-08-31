@@ -23,11 +23,9 @@ import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 
 import jakarta.persistence.SharedCacheMode;
-import jakarta.persistence.ValidationMode;
 
 import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.id.SequenceMismatchStrategy;
-import org.hibernate.jpa.boot.spi.JpaSettings;
 import org.hibernate.jpa.boot.spi.PersistenceUnitDescriptor;
 import org.jboss.logging.Logger;
 
@@ -188,20 +186,8 @@ public final class HibernateProcessorUtil {
             HibernateOrmConfigPersistenceUnit.HibernateOrmConfigPersistenceUnitDialect dialectConfig,
             BiConsumer<String, String> puPropertiesCollector) {
 
-        final String topLevelStorageEngine = dialectConfig.storageEngine().orElse(null);
-
-        if (topLevelStorageEngine != null) {
-            // NOTE: this top-level storage-engine setting is deprecated - log a warning
-            LOG.warnf(
-                    "The storage engine set through configuration property '%1$s' is deprecated; "
-                            + "use '%2$s' or '%3$s' instead, depending on the database.",
-                    HibernateOrmRuntimeConfig.puPropertyKey(persistenceUnitName, "dialect.storage-engine"),
-                    HibernateOrmRuntimeConfig.puPropertyKey(persistenceUnitName, "dialect.mariadb.storage-engine"),
-                    HibernateOrmRuntimeConfig.puPropertyKey(persistenceUnitName, "dialect.mysql.storage-engine"));
-        }
-
-        final String mariaDbStorageEngine = dialectConfig.mariadb().storageEngine().orElse(topLevelStorageEngine);
-        final String mysqlDbStorageEngine = dialectConfig.mysql().storageEngine().orElse(topLevelStorageEngine);
+        final String mariaDbStorageEngine = dialectConfig.mariadb().storageEngine().orElse(null);
+        final String mysqlDbStorageEngine = dialectConfig.mysql().storageEngine().orElse(null);
         if (supportedDatabaseKind.isPresent()
                 && (supportedDatabaseKind.get() == SupportedDatabaseKind.MARIADB ||
                         supportedDatabaseKind.get() == SupportedDatabaseKind.MYSQL)) {
@@ -213,17 +199,14 @@ public final class HibernateProcessorUtil {
         } else {
             final String storageEngine;
             final String storageEngineSource;
-            if (topLevelStorageEngine != null) {
-                storageEngine = topLevelStorageEngine;
-                storageEngineSource = HibernateOrmRuntimeConfig.puPropertyKey(persistenceUnitName, "dialect.storage-engine");
-            } else if (mariaDbStorageEngine != null) {
+            if (mariaDbStorageEngine != null) {
                 storageEngine = mariaDbStorageEngine;
                 storageEngineSource = HibernateOrmRuntimeConfig.puPropertyKey(persistenceUnitName,
-                        "dialect.storage-engine");
+                        "dialect.mariadb.storage-engine");
             } else if (mysqlDbStorageEngine != null) {
                 storageEngine = mysqlDbStorageEngine;
                 storageEngineSource = HibernateOrmRuntimeConfig.puPropertyKey(persistenceUnitName,
-                        "dialect.storage-engine");
+                        "dialect.mysql.storage-engine");
             } else {
                 storageEngine = null;
                 storageEngineSource = null;
@@ -289,10 +272,6 @@ public final class HibernateProcessorUtil {
         config.implicitNamingStrategy().ifPresent(namingStrategy -> desc.getProperties()
                 .setProperty(AvailableSettings.IMPLICIT_NAMING_STRATEGY, namingStrategy));
 
-        // Metadata builder contributor
-        config.metadataBuilderContributor().ifPresent(className -> desc.getProperties()
-                .setProperty(JpaSettings.METADATA_BUILDER_CONTRIBUTOR, className));
-
         // Mapping
         if (config.mapping().timezone().timeZoneDefaultStorage().isPresent()) {
             desc.getProperties().setProperty(AvailableSettings.TIMEZONE_DEFAULT_STORAGE,
@@ -329,7 +308,7 @@ public final class HibernateProcessorUtil {
                 .setProperty(AvailableSettings.HBM2DDL_CHARSET_NAME, config.database().charset().name());
 
         // Query
-        int batchSize = firstPresent(config.fetch().batchSize(), config.batchFetchSize()).orElse(defaultBatchSize(reactive));
+        int batchSize = config.fetch().batchSize().orElse(defaultBatchSize(reactive));
         if (batchSize > 0) {
             desc.getProperties().setProperty(AvailableSettings.DEFAULT_BATCH_FETCH_SIZE, Integer.toString(batchSize));
         }
@@ -337,8 +316,6 @@ public final class HibernateProcessorUtil {
         // Fetch
         if (config.fetch().maxDepth().isPresent()) {
             setMaxFetchDepth(desc, config.fetch().maxDepth());
-        } else if (config.maxFetchDepth().isPresent()) {
-            setMaxFetchDepth(desc, config.maxFetchDepth());
         }
 
         desc.getProperties().setProperty(AvailableSettings.QUERY_PLAN_CACHE_MAX_SIZE, Integer.toString(
@@ -480,16 +457,12 @@ public final class HibernateProcessorUtil {
 
     private static void configureValidation(QuarkusPersistenceUnitDescriptor descriptor,
             HibernateOrmConfigPersistenceUnit config) {
-        if (!config.validation().enabled()) {
-            descriptor.getProperties().setProperty(AvailableSettings.JAKARTA_VALIDATION_MODE, ValidationMode.NONE.name());
-        } else {
-            descriptor.getProperties().setProperty(
-                    AvailableSettings.JAKARTA_VALIDATION_MODE,
-                    config.validation().mode()
-                            .stream()
-                            .map(Enum::name)
-                            .collect(Collectors.joining(",")));
-        }
+        descriptor.getProperties().setProperty(
+                AvailableSettings.JAKARTA_VALIDATION_MODE,
+                config.validation().mode()
+                        .stream()
+                        .map(Enum::name)
+                        .collect(Collectors.joining(",")));
     }
 
     private static void configureQuoting(QuarkusPersistenceUnitDescriptor desc,
@@ -497,8 +470,7 @@ public final class HibernateProcessorUtil {
         if (persistenceUnitConfig.quoteIdentifiers()
                 .strategy() == HibernateOrmConfigPersistenceUnit.IdentifierQuotingStrategy.ALL
                 || persistenceUnitConfig.quoteIdentifiers()
-                        .strategy() == HibernateOrmConfigPersistenceUnit.IdentifierQuotingStrategy.ALL_EXCEPT_COLUMN_DEFINITIONS
-                || persistenceUnitConfig.database().globallyQuotedIdentifiers()) {
+                        .strategy() == HibernateOrmConfigPersistenceUnit.IdentifierQuotingStrategy.ALL_EXCEPT_COLUMN_DEFINITIONS) {
             desc.getProperties().setProperty(AvailableSettings.GLOBALLY_QUOTED_IDENTIFIERS, "true");
         }
         if (persistenceUnitConfig.quoteIdentifiers()
@@ -559,9 +531,5 @@ public final class HibernateProcessorUtil {
 
         //Disable implicit loading of the default import script (import.sql)
         descriptor.getProperties().setProperty(AvailableSettings.HBM2DDL_SKIP_DEFAULT_IMPORT_FILE, "true");
-    }
-
-    private static OptionalInt firstPresent(OptionalInt first, OptionalInt second) {
-        return first.isPresent() ? first : second;
     }
 }

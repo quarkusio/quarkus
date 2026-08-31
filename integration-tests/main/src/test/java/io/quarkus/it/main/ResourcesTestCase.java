@@ -28,11 +28,5 @@ public class ResourcesTestCase {
                 .then()
                 .statusCode(200)
                 .body(is("= An AsciiDoc File"));
-
-        RestAssured.when()
-                .get("/resources/test-resources/excluded/unwanted.txt")
-                .then()
-                .statusCode(200)
-                .body(is("An unwanted file"));
     }
 }

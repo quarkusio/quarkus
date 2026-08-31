@@ -43,13 +43,4 @@ public interface DebugConfig {
      * A ZIG file is a textual representation of the generated code that is referenced in the stacktraces.
      */
     Optional<String> generatedSourcesDir();
-
-    /**
-     * If set to true then dump the build metrics to a JSON file in the build directory.
-     *
-     * @deprecated Use {@link io.quarkus.runtime.BuilderConfig#Metrics()} instead.
-     */
-    @Deprecated(forRemoval = true, since = "3.31")
-    @WithDefault("false")
-    boolean dumpBuildMetrics();
 }

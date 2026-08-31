@@ -50,11 +50,8 @@ public class HibernateOrmDevServicesProcessor {
             if (!managedSources.contains(dataSourceName.orElse(DataSourceUtil.DEFAULT_DATASOURCE_NAME))) {
                 List<String> schemaManagementStrategyPropertyKeys = HibernateOrmRuntimeConfig.puPropertyKeys(entry.getKey(),
                         "schema-management.strategy");
-                List<String> legacyDatabaseGenerationPropertyKeys = HibernateOrmRuntimeConfig.puPropertyKeys(entry.getKey(),
-                        "database.generation");
                 if (!ConfigUtils.isAnyPropertyPresent(propertyKeysIndicatingDataSourceConfigured)
-                        && !ConfigUtils.isAnyPropertyPresent(schemaManagementStrategyPropertyKeys)
-                        && !ConfigUtils.isAnyPropertyPresent(legacyDatabaseGenerationPropertyKeys)) {
+                        && !ConfigUtils.isAnyPropertyPresent(schemaManagementStrategyPropertyKeys)) {
                     devServicesAdditionalConfigProducer
                             .produce(new DevServicesAdditionalConfigBuildItem(devServicesConfig -> {
                                 // Only force DB generation if the datasource is configured through dev services

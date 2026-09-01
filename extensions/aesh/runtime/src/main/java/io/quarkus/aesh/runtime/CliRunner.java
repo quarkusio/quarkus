@@ -1,9 +1,11 @@
 package io.quarkus.aesh.runtime;
 
-import java.io.File;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.function.Consumer;
 
 import jakarta.enterprise.context.Dependent;
 import jakarta.enterprise.inject.Instance;
@@ -117,8 +119,62 @@ public class CliRunner implements QuarkusApplication {
     }
 
     /**
-     * Join command-line arguments into a single command string,
-     * quoting arguments that contain spaces.
+     * Wire test connection and command execution listener on the runner.
+     * <p>
+     * When running under the test framework, {@link AeshTestConnectionHolder}
+     * provides piped streams and a signal queue. This method wires them onto
+     * the runner and composes the test signal with the optional user-provided
+     * listener. Errors are propagated through the signal queue via the 4-arg
+     * {@link CommandExecutionListener#onCommandComplete} method.
+     *
+     * @param runner the console runner to configure
+     * @param userListener the user-provided listener, or null if none
+     */
+    private static void wireTestConnection(AeshConsoleRunner runner, CommandExecutionListener userListener) {
+        InputStream testInput = AeshTestConnectionHolder.getInput();
+        OutputStream testOutput = AeshTestConnectionHolder.getOutput();
+        LinkedBlockingQueue<Object> signalQueue = AeshTestConnectionHolder.getSignalQueue();
+
+        if (testInput == null || testOutput == null) {
+            // Not in test mode — just wire the user listener if present
+            if (userListener != null) {
+                runner.commandExecutionListener(userListener);
+            }
+            return;
+        }
+
+        LOG.debug("Test mode: using stream-based connection");
+        runner.connection(new AeshStreamConnection(testInput, testOutput));
+
+        if (signalQueue != null) {
+            // Create a listener that composes user listener (if any) with
+            // test signal. Passes exit code and error through the signal
+            // queue as Object[] to cross the classloader boundary safely.
+            runner.commandExecutionListener(new CommandExecutionListener() {
+                @Override
+                public void onCommandComplete(String commandLine, CommandResult result, long durationMs) {
+                    if (userListener != null) {
+                        userListener.onCommandComplete(commandLine, result, durationMs);
+                    }
+                }
+
+                @Override
+                public void onCommandComplete(String commandLine, CommandResult result,
+                        long durationMs, Throwable error) {
+                    if (userListener != null) {
+                        userListener.onCommandComplete(commandLine, result, durationMs, error);
+                    }
+                    signalQueue.offer(new Object[] { result.getExitCode(), error });
+                }
+            });
+        } else if (userListener != null) {
+            runner.commandExecutionListener(userListener);
+        }
+    }
+
+    /**
+     * Join command-line arguments into a properly quoted command string.
+     * Arguments containing spaces, quotes, or special characters are quoted.
      */
     private static String joinArgs(String[] args) {
         StringBuilder sb = new StringBuilder();
@@ -126,10 +182,18 @@ public class CliRunner implements QuarkusApplication {
             if (i > 0) {
                 sb.append(' ');
             }
-            if (args[i].contains(" ")) {
-                sb.append('"').append(args[i]).append('"');
+            String arg = args[i];
+            boolean needsQuoting = arg.isEmpty() || arg.contains(" ") || arg.contains("\n")
+                    || arg.contains("\"") || arg.contains("{")
+                    || arg.contains("}") || arg.contains("|");
+            if (!needsQuoting) {
+                sb.append(arg);
+            } else if (arg.contains("\"") && !arg.contains("'")) {
+                sb.append("'").append(arg).append("'");
             } else {
-                sb.append(args[i]);
+                sb.append('"').append(arg.replace("\\", "\\\\")
+                        .replace("\"", "\\\"")
+                        .replace("\n", "\\n")).append('"');
             }
         }
         return sb.toString();
@@ -156,68 +220,59 @@ public class CliRunner implements QuarkusApplication {
                     .build();
 
             var settingsBuilder = CliSettingsHelper.createBaseSettings(configuration, customizers)
-                    .persistHistory(configuration.persistHistory())
-                    .historySize(configuration.historySize())
                     .subCommandModeSettings(subCommandModeSettings);
-
-            if (configuration.historyFile().isPresent()) {
-                settingsBuilder.historyFile(new File(configuration.historyFile().get()));
-            }
 
             if (commandNotFoundHandler.isResolvable()) {
                 settingsBuilder.commandNotFoundHandler(commandNotFoundHandler.get());
             }
 
+            // Wire command output capture for the test framework.
+            // When set, ShellOutputTee tees command output (from invocation.println())
+            // to this stream, separate from readline prompt/chrome output.
+            OutputStream commandOutputCapture = AeshTestConnectionHolder.getCommandOutputCapture();
+            if (commandOutputCapture != null) {
+                Consumer<String> outputHandler = s -> {
+                    try {
+                        commandOutputCapture.write(s.getBytes(StandardCharsets.UTF_8));
+                    } catch (IOException e) {
+                        // ignore
+                    }
+                };
+                settingsBuilder.commandOutputHandler(outputHandler);
+            }
+
             var settings = settingsBuilder.build();
+
+            // Wire input line queue for interactive command testing.
+            // The shared queue is populated per-command by AeshLauncherImpl
+            // and consumed by invocation.inputLine() in ShellImpl.readLine().
+            java.util.Queue<String> inputLineQueue = AeshTestConnectionHolder.getInputLineQueue();
+            if (inputLineQueue != null) {
+                settings.setInputLineResponses(inputLineQueue);
+            }
 
             AeshConsoleRunner runner = AeshConsoleRunner.builder()
                     .commandRegistryBuilder((AeshCommandRegistryBuilder) registryBuilder)
                     .settings(settings)
                     .prompt(configuration.prompt());
 
-            // Wire user-provided CommandExecutionListener
-            if (executionListener.isResolvable()) {
-                CommandExecutionListener userListener = executionListener.get();
-
-                // Wire test connection and listener if set by the test framework
-                InputStream testInput = AeshTestConnectionHolder.getInput();
-                OutputStream testOutput = AeshTestConnectionHolder.getOutput();
-                LinkedBlockingQueue<Object> signalQueue = AeshTestConnectionHolder.getSignalQueue();
-
-                if (testInput != null && testOutput != null) {
-                    LOG.debug("Test mode: using stream-based connection");
-                    runner.connection(new AeshStreamConnection(testInput, testOutput));
-
-                    if (signalQueue != null) {
-                        // Compose user listener with test signal
-                        runner.commandExecutionListener((commandLine, result, executionTime) -> {
-                            userListener.onCommandComplete(commandLine, result, executionTime);
-                            signalQueue.offer("done");
-                        });
-                    } else {
-                        runner.commandExecutionListener(userListener);
-                    }
-                } else {
-                    runner.commandExecutionListener(userListener);
-                }
-            } else {
-                // No user listener -- only wire test connection if present
-                InputStream testInput = AeshTestConnectionHolder.getInput();
-                OutputStream testOutput = AeshTestConnectionHolder.getOutput();
-                LinkedBlockingQueue<Object> signalQueue = AeshTestConnectionHolder.getSignalQueue();
-
-                if (testInput != null && testOutput != null) {
-                    LOG.debug("Test mode: using stream-based connection");
-                    runner.connection(new AeshStreamConnection(testInput, testOutput));
-
-                    if (signalQueue != null) {
-                        runner.onCommandComplete(result -> signalQueue.offer("done"));
-                    }
-                }
-            }
+            // Wire test connection and user-provided CommandExecutionListener
+            CommandExecutionListener userListener = executionListener.isResolvable()
+                    ? executionListener.get()
+                    : null;
+            wireTestConnection(runner, userListener);
 
             if (configuration.addExitCommand()) {
                 runner.addExitCommand();
+            }
+
+            // Signal the test framework when readline is armed and ready
+            // for input. The onReady callback fires after readline is armed
+            // but before openBlocking(), so execute() can safely send
+            // command bytes immediately after launch() returns.
+            LinkedBlockingQueue<Object> readySignalQueue = AeshTestConnectionHolder.getSignalQueue();
+            if (readySignalQueue != null) {
+                runner.onReady(() -> readySignalQueue.offer("ready"));
             }
 
             runner.start();

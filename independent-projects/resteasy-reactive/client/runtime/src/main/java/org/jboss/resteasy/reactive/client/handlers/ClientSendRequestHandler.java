@@ -184,6 +184,7 @@ public class ClientSendRequestHandler implements ClientRestHandler {
 
                                             MultivaluedMap<String, String> headerMap = requestContext.getRequestHeadersAsMap();
                                             updateRequestHeadersFromConfig(requestContext, headerMap);
+                                            setEntityRelatedHeaders(headerMap, requestContext.getEntity());
 
                                             // set the Vertx headers after we've run the interceptors because they can modify them
                                             setVertxHeaders(httpClientRequest, headerMap);
@@ -195,6 +196,7 @@ public class ClientSendRequestHandler implements ClientRestHandler {
                 } else if (requestContext.isInputStreamUpload() && !hasWriterInterceptors(requestContext)) {
                     MultivaluedMap<String, String> headerMap = requestContext.getRequestHeadersAsMap();
                     updateRequestHeadersFromConfig(requestContext, headerMap);
+                    setEntityRelatedHeaders(headerMap, requestContext.getEntity());
                     setVertxHeaders(httpClientRequest, headerMap);
                     Future<HttpClientResponse> sent = httpClientRequest.send(
                             new InputStreamReadStream(

@@ -257,7 +257,7 @@ public class IsolatedRemoteDevModeMain implements BiConsumer<CuratedApplication,
                         Map<String, byte[]> ret = new HashMap<>();
                         for (String filename : fileNames) {
                             try {
-                                Path resolvedPath = appRoot.resolve(filename);
+                                Path resolvedPath = appRoot.resolve(filename).normalize();
                                 // Ensure that path stays inside appRoot
                                 if (!resolvedPath.startsWith(appRoot)) {
                                     log.errorf("Attempted to access %s outside of %s", resolvedPath, appRoot);

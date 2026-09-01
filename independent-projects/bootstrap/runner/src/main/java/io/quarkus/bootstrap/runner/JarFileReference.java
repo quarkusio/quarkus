@@ -1,7 +1,5 @@
 package io.quarkus.bootstrap.runner;
 
-import static io.quarkus.bootstrap.runner.VirtualThreadSupport.isVirtualThread;
-
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.concurrent.CompletableFuture;
@@ -142,7 +140,7 @@ public class JarFileReference {
 
         // Platform threads can load the jarfile asynchronously and eventually blocking till not ready
         // to avoid loading the same jarfile multiple times in parallel
-        if (!isVirtualThread()) {
+        if (!Thread.currentThread().isVirtual()) {
             // It's ok to eventually block on a join() here since we're sure this is used only by platform thread
             return consumeSharedJarFile(asyncLoadAcquiredJarFile(jarResource), jarResource, resource, fileConsumer);
         }

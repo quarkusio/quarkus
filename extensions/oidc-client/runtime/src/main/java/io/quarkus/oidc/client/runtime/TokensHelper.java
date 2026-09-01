@@ -49,8 +49,7 @@ public class TokensHelper {
                 }
                 //rerun the CAS loop
             } else if (currentState.tokenUni != null) {
-                // Serve the previous token (still valid) whilst a new token is refreshed in the background
-                // to avoid waiting for the refresh to complete
+                // Serve the previous token whilst a new token is refreshed in the background
                 final Tokens previousTokens = currentState.previousToken;
                 if (previousTokens != null && !previousTokens.isAccessTokenExpired()) {
                     return Uni.createFrom().item(previousTokens);

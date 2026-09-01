@@ -141,6 +141,7 @@ public class LoggingJsonRecorder {
             formatter.setTracePrefix("projects/" + applicationConfig.getValue().name().orElse("") + "/traces/");
         }
         formatter.setFlatMdc(config.mdcFlatFields());
+        formatter.setStructuredAccessLog(config.structuredAccessLog());
         formatter.setExcludedKeys(overridableJsonConfig.excludedKeys());
         formatter.setAdditionalFields(overridableJsonConfig.additionalFields());
         formatter.setDiscoveredProviders(providers);

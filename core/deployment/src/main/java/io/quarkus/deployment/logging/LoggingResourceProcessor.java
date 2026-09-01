@@ -21,6 +21,7 @@ import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.logging.ConsoleHandler;
+import java.util.logging.ErrorManager;
 import java.util.logging.Filter;
 import java.util.logging.Formatter;
 import java.util.logging.Handler;
@@ -47,6 +48,7 @@ import org.jboss.logging.Logger;
 import org.jboss.logmanager.ExtLogRecord;
 import org.jboss.logmanager.LogContextInitializer;
 import org.jboss.logmanager.LogManager;
+import org.jboss.logmanager.errormanager.OnlyOnceErrorManager;
 
 import com.oracle.svm.core.annotate.Alias;
 import com.oracle.svm.core.annotate.Substitute;
@@ -56,9 +58,11 @@ import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.bootstrap.logging.InitialConfigurator;
 import io.quarkus.bootstrap.model.ApplicationModel;
 import io.quarkus.bootstrap.workspace.WorkspaceModule;
+import io.quarkus.core.deployment.action.ActionBuilder;
 import io.quarkus.deployment.ApplicationArchive;
 import io.quarkus.deployment.GeneratedClassGizmo2Adaptor;
 import io.quarkus.deployment.IsProduction;
+import io.quarkus.deployment.Phase;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Consume;
@@ -83,10 +87,8 @@ import io.quarkus.deployment.builditem.LogHandlerBuildItem;
 import io.quarkus.deployment.builditem.LogNamedHandlerFormatBuildItem;
 import io.quarkus.deployment.builditem.LogSocketFormatBuildItem;
 import io.quarkus.deployment.builditem.LogSyslogFormatBuildItem;
-import io.quarkus.deployment.builditem.NamedLogHandlersBuildItem;
 import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
-import io.quarkus.deployment.builditem.ShutdownListenerBuildItem;
 import io.quarkus.deployment.builditem.StreamingLogHandlerBuildItem;
 import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageSystemPropertyBuildItem;
@@ -104,7 +106,6 @@ import io.quarkus.deployment.metrics.MetricsFactoryConsumerBuildItem;
 import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
 import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
 import io.quarkus.deployment.pkg.steps.NativeOrNativeSourcesBuild;
-import io.quarkus.deployment.recording.RecorderContext;
 import io.quarkus.deployment.util.JandexUtil;
 import io.quarkus.dev.console.CurrentAppExceptionHighlighter;
 import io.quarkus.dev.spi.DevModeType;
@@ -129,10 +130,14 @@ import io.quarkus.runtime.logging.DiscoveredLogComponents;
 import io.quarkus.runtime.logging.InheritableLevel;
 import io.quarkus.runtime.logging.LogBuildTimeConfig;
 import io.quarkus.runtime.logging.LogBuildTimeConfig.CategoryBuildTimeConfig;
+import io.quarkus.runtime.logging.LogCleanupFilter;
 import io.quarkus.runtime.logging.LogCleanupFilterElement;
 import io.quarkus.runtime.logging.LogFilterFactory;
 import io.quarkus.runtime.logging.LogMetricsHandlerRecorder;
 import io.quarkus.runtime.logging.LogRuntimeConfig;
+import io.quarkus.runtime.logging.LoggingCompatBridge;
+import io.quarkus.runtime.logging.LoggingCompatRecorder;
+import io.quarkus.runtime.logging.LoggingSetup;
 import io.quarkus.runtime.logging.LoggingSetupRecorder;
 import io.quarkus.runtime.logging.NamedHandlerType;
 import io.smallrye.config.SmallRyeConfig;
@@ -247,13 +252,12 @@ public final class LoggingResourceProcessor {
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
     LoggingSetupBuildItem setupLoggingRuntimeInit(
-            final RecorderContext context,
-            final LoggingSetupRecorder recorder,
+            final LoggingCompatRecorder compat,
+            final ActionBuilder action,
             final CombinedIndexBuildItem combinedIndexBuildItem,
             final LogCategoryMinLevelDefaultsBuildItem categoryMinLevelDefaults,
             final Optional<StreamingLogHandlerBuildItem> streamingLogStreamHandlerBuildItem,
             final List<LogHandlerBuildItem> handlerBuildItems,
-            final List<NamedLogHandlersBuildItem> namedHandlerBuildItems,
             final List<LogConsoleFormatBuildItem> consoleFormatItems,
             final List<LogFileFormatBuildItem> fileFormatItems,
             final List<LogSyslogFormatBuildItem> syslogFormatItems,
@@ -261,55 +265,24 @@ public final class LoggingResourceProcessor {
             final List<LogNamedHandlerFormatBuildItem> namedHandlerFormatItems,
             final Optional<ConsoleFormatterBannerBuildItem> possibleBannerBuildItem,
             final List<LogStreamBuildItem> logStreamBuildItems,
-            final BuildProducer<ShutdownListenerBuildItem> shutdownListenerBuildItemBuildProducer,
             final LaunchModeBuildItem launchModeBuildItem,
             final List<LogCleanupFilterBuildItem> logCleanupFilters,
             final BuildProducer<ReflectiveClassBuildItem> reflectiveClassBuildItemBuildProducer,
             final BuildProducer<ServiceProviderBuildItem> serviceProviderBuildItemBuildProducer) {
         if (!launchModeBuildItem.isAuxiliaryApplication()
                 || launchModeBuildItem.getAuxiliaryDevModeType().orElse(null) == DevModeType.TEST_ONLY) {
-            final List<RuntimeValue<Optional<Handler>>> handlers = handlerBuildItems.stream()
-                    .map(LogHandlerBuildItem::getHandlerValue)
-                    .collect(Collectors.toList());
-            final List<RuntimeValue<Map<String, Handler>>> namedHandlers = namedHandlerBuildItems.stream()
-                    .map(NamedLogHandlersBuildItem::getNamedHandlersMap).collect(Collectors.toList());
 
-            ConsoleFormatterBannerBuildItem bannerBuildItem = null;
-            RuntimeValue<Optional<Supplier<String>>> possibleSupplier = null;
-            if (possibleBannerBuildItem.isPresent()) {
-                bannerBuildItem = possibleBannerBuildItem.get();
-            }
-            if (bannerBuildItem != null) {
-                possibleSupplier = bannerBuildItem.getBannerSupplier();
-            }
+            final LaunchMode launchMode = launchModeBuildItem.getLaunchMode();
+            final boolean includeFilters = true;
+            final boolean alwaysEnableLogStream = !logStreamBuildItems.isEmpty();
+            // Captured by the finalizer service. BUILD_AND_RUN_TIME_FIXED config mappings are capturable, and
+            // InheritableLevel is Constable, so the min-level defaults map can be captured directly once copied
+            // into an immutable map.
+            final LogBuildTimeConfig buildTimeConfig = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class)
+                    .getConfigMapping(LogBuildTimeConfig.class);
+            final Map<String, InheritableLevel> categoryDefaultMinLevels = Map.copyOf(categoryMinLevelDefaults.content);
 
-            // New Dev UI Log Stream
-            RuntimeValue<Optional<Handler>> streamingDevUiLogHandler = null;
-            if (streamingLogStreamHandlerBuildItem.isPresent()) {
-                streamingDevUiLogHandler = streamingLogStreamHandlerBuildItem.get().getHandlerValue();
-            }
-
-            boolean alwaysEnableLogStream = false;
-            if (!logStreamBuildItems.isEmpty()) {
-                alwaysEnableLogStream = true;
-            }
-
-            List<RuntimeValue<Optional<Formatter>>> possibleConsoleFormatters = consoleFormatItems.stream()
-                    .map(LogConsoleFormatBuildItem::getFormatterValue).collect(Collectors.toList());
-            List<RuntimeValue<Optional<Formatter>>> possibleFileFormatters = fileFormatItems.stream()
-                    .map(LogFileFormatBuildItem::getFormatterValue).collect(Collectors.toList());
-            List<RuntimeValue<Optional<Formatter>>> possibleSyslogFormatters = syslogFormatItems.stream()
-                    .map(LogSyslogFormatBuildItem::getFormatterValue).collect(Collectors.toList());
-            List<RuntimeValue<Optional<Formatter>>> possibleSocketFormatters = socketFormatItems.stream()
-                    .map(LogSocketFormatBuildItem::getFormatterValue).collect(Collectors.toList());
-
-            List<RuntimeValue<Map<NamedHandlerType, Map<String, Optional<Formatter>>>>> namedHandlerFormatters = namedHandlerFormatItems
-                    .stream()
-                    .map(LogNamedHandlerFormatBuildItem::getNamedFormattersValue).collect(Collectors.toList());
-
-            context.registerSubstitution(InheritableLevel.ActualLevel.class, String.class, InheritableLevel.Substitution.class);
-            context.registerSubstitution(InheritableLevel.Inherited.class, String.class, InheritableLevel.Substitution.class);
-
+            // ── @LoggingFilter named-filter services ──
             DiscoveredLogComponents discoveredLogComponents = discoverLogComponents(combinedIndexBuildItem.getIndex());
             if (!discoveredLogComponents.getNameToFilterClass().isEmpty()) {
                 reflectiveClassBuildItemBuildProducer.produce(
@@ -317,16 +290,165 @@ public final class LoggingResourceProcessor {
                                 EMPTY_STRING_ARRAY)).reason(getClass().getName()).build());
                 serviceProviderBuildItemBuildProducer
                         .produce(ServiceProviderBuildItem.allProvidersFromClassPath(LogFilterFactory.class.getName()));
+                discoveredLogComponents.getNameToFilterClass().forEach((name, className) -> action
+                        .forService(Filter.class, name)
+                        .atPhase(Phase.LOGGING)
+                        .action(ctx -> {
+                            try {
+                                return LogFilterFactory.load().create(className);
+                            } catch (Exception e) {
+                                throw new RuntimeException("Unable to create instance of Logging Filter '" + className + "'",
+                                        e);
+                            }
+                        }));
             }
 
-            shutdownListenerBuildItemBuildProducer.produce(new ShutdownListenerBuildItem(
-                    recorder.initializeLogging(discoveredLogComponents,
-                            categoryMinLevelDefaults.content, alwaysEnableLogStream,
-                            streamingDevUiLogHandler, handlers, namedHandlers,
-                            possibleConsoleFormatters, possibleFileFormatters, possibleSyslogFormatters,
-                            possibleSocketFormatters, namedHandlerFormatters,
-                            possibleSupplier, launchModeBuildItem.getLaunchMode(), true)));
+            // ── shutdown notifier + shared cleanup filter ──
+            action.forService(LoggingSetup.ShutdownNotifier.class)
+                    .atPhase(Phase.LOGGING)
+                    .action(ctx -> {
+                        LoggingSetup.ShutdownNotifier notifier = new LoggingSetup.ShutdownNotifier();
+                        ctx.onStop(notifier::markShutdown);
+                        return notifier;
+                    });
+            action.forService(LogCleanupFilter.class)
+                    .atPhase(Phase.LOGGING)
+                    .require(LoggingSetup.ShutdownNotifier.class)
+                    .require(LogRuntimeConfig.class)
+                    .action((ctx, notifier, config) -> LoggingSetup.buildCleanupFilter(config, notifier));
 
+            // ── RECORDER COMPAT: bridge extension formatter build items to Formatter services ──
+            if (!consoleFormatItems.isEmpty()) {
+                action.aliasRecorderValue(Formatter.class, "console", compat.resolveFormatter(consoleFormatItems.stream()
+                        .map(LogConsoleFormatBuildItem::getFormatterValue).collect(Collectors.toList())), Phase.LOGGING);
+            }
+            if (!fileFormatItems.isEmpty()) {
+                action.aliasRecorderValue(Formatter.class, "file", compat.resolveFormatter(fileFormatItems.stream()
+                        .map(LogFileFormatBuildItem::getFormatterValue).collect(Collectors.toList())), Phase.LOGGING);
+            }
+            if (!syslogFormatItems.isEmpty()) {
+                action.aliasRecorderValue(Formatter.class, "syslog", compat.resolveFormatter(syslogFormatItems.stream()
+                        .map(LogSyslogFormatBuildItem::getFormatterValue).collect(Collectors.toList())), Phase.LOGGING);
+            }
+            if (!socketFormatItems.isEmpty()) {
+                action.aliasRecorderValue(Formatter.class, "socket", compat.resolveFormatter(socketFormatItems.stream()
+                        .map(LogSocketFormatBuildItem::getFormatterValue).collect(Collectors.toList())), Phase.LOGGING);
+            }
+
+            // ── RECORDER COMPAT: bundle remaining extension contributions into a single bridge holder ──
+            RuntimeValue<Optional<Handler>> streamingRv = streamingLogStreamHandlerBuildItem
+                    .map(StreamingLogHandlerBuildItem::getHandlerValue).orElse(null);
+            RuntimeValue<Optional<Supplier<String>>> bannerRv = possibleBannerBuildItem
+                    .map(ConsoleFormatterBannerBuildItem::getBannerSupplier).orElse(null);
+            List<RuntimeValue<Map<NamedHandlerType, Map<String, Optional<Formatter>>>>> namedFormatterValues = namedHandlerFormatItems
+                    .stream().map(LogNamedHandlerFormatBuildItem::getNamedFormattersValue).collect(Collectors.toList());
+            List<RuntimeValue<Optional<Handler>>> additionalHandlerValues = handlerBuildItems.stream()
+                    .map(LogHandlerBuildItem::getHandlerValue).collect(Collectors.toList());
+            action.aliasRecorderValue(LoggingCompatBridge.class,
+                    compat.buildBridge(streamingRv, bannerRv, namedFormatterValues, additionalHandlerValues), Phase.LOGGING);
+
+            // ── console: raw build (exposes the local error manager), shared error manager, wrapped handler ──
+            action.forService(LoggingSetup.ConsoleHandlerResult.class)
+                    .atPhase(Phase.LOGGING)
+                    .require(LogRuntimeConfig.class)
+                    .require(ConsoleRuntimeConfig.class)
+                    .require(LogCleanupFilter.class)
+                    .require(LoggingCompatBridge.class)
+                    .consumeAll(Filter.class)
+                    .request(Formatter.class, "console")
+                    .optional()
+                    .action((ctx, config, consoleRt, cleanup, bridge, namedFilters, consoleFmt) -> {
+                        if (!config.console().enabled()) {
+                            return Optional.empty();
+                        }
+                        Supplier<String> bannerSupplier = bridge.banner() == null ? null : bridge.banner().supplier();
+                        return Optional.of(LoggingSetup.buildConsoleHandler(config.console(), consoleRt,
+                                new OnlyOnceErrorManager(), cleanup, namedFilters, consoleFmt.orElse(null), bannerSupplier,
+                                includeFilters));
+                    });
+            action.forService(ErrorManager.class)
+                    .atPhase(Phase.LOGGING)
+                    .request(LoggingSetup.ConsoleHandlerResult.class)
+                    .action((ctx, consoleResult) -> consoleResult
+                            .map(result -> result.handler().getLocalErrorManager())
+                            .orElseGet(LoggingSetup::discardingErrorManager));
+            action.forService(Handler.class, "console")
+                    .atPhase(Phase.LOGGING)
+                    .require(LogRuntimeConfig.class)
+                    .request(LoggingSetup.ConsoleHandlerResult.class)
+                    .optional()
+                    .action((ctx, config, consoleResult) -> consoleResult
+                            .map(result -> LoggingSetup.wrapConsoleHandler(result, config.console(), launchMode)));
+
+            // ── file / syslog / socket root handler services ──
+            action.forService(Handler.class, "file")
+                    .atPhase(Phase.LOGGING)
+                    .require(LogRuntimeConfig.class)
+                    .require(ErrorManager.class)
+                    .require(LogCleanupFilter.class)
+                    .consumeAll(Filter.class)
+                    .request(Formatter.class, "file")
+                    .optional()
+                    .action((ctx, config, errorManager, cleanup, namedFilters, fmt) -> config.file().enabled()
+                            ? Optional.ofNullable(LoggingSetup.configureFileHandler(config.file(), errorManager, cleanup,
+                                    namedFilters, fmt.orElse(null), includeFilters))
+                            : Optional.empty());
+            action.forService(Handler.class, "syslog")
+                    .atPhase(Phase.LOGGING)
+                    .require(LogRuntimeConfig.class)
+                    .require(ErrorManager.class)
+                    .require(LogCleanupFilter.class)
+                    .consumeAll(Filter.class)
+                    .request(Formatter.class, "syslog")
+                    .optional()
+                    .action((ctx, config, errorManager, cleanup, namedFilters, fmt) -> config.syslog().enabled()
+                            ? Optional.ofNullable(LoggingSetup.configureSyslogHandler(config.syslog(), errorManager, cleanup,
+                                    namedFilters, fmt.orElse(null), includeFilters))
+                            : Optional.empty());
+            action.forService(Handler.class, "socket")
+                    .atPhase(Phase.LOGGING)
+                    .require(LogRuntimeConfig.class)
+                    .require(ErrorManager.class)
+                    .require(LogCleanupFilter.class)
+                    .consumeAll(Filter.class)
+                    .request(Formatter.class, "socket")
+                    .optional()
+                    .action((ctx, config, errorManager, cleanup, namedFilters, fmt) -> config.socket().enabled()
+                            ? Optional.ofNullable(LoggingSetup.configureSocketHandler(config.socket(), errorManager, cleanup,
+                                    namedFilters, fmt.orElse(null), includeFilters))
+                            : Optional.empty());
+
+            // ── dev/test exception-reporting handler ──
+            if (launchMode.isDevOrTest()) {
+                action.forService(Handler.class, "dev-exception-reporting")
+                        .atPhase(Phase.LOGGING)
+                        .action(ctx -> LoggingSetup.createExceptionReportingHandler());
+            }
+
+            // ── finalizer: whole-application logging configuration ──
+            action.forService("io.quarkus.logging.configuration")
+                    .atPhase(Phase.LOGGING)
+                    .consumeAll(Handler.class)
+                    .consumeAll(Filter.class)
+                    .request(Formatter.class, "console")
+                    .request(Formatter.class, "file")
+                    .request(Formatter.class, "syslog")
+                    .request(Formatter.class, "socket")
+                    .require(LoggingCompatBridge.class)
+                    .require(LoggingSetup.ShutdownNotifier.class)
+                    .require(LogCleanupFilter.class)
+                    .require(ErrorManager.class)
+                    .require(LogRuntimeConfig.class)
+                    .require(ConsoleRuntimeConfig.class)
+                    .action((ctx, handlers, namedFilters, consoleFmt, fileFmt, syslogFmt, socketFmt, bridge, notifier,
+                            cleanup, errorManager, config, consoleRt) -> LoggingSetup.configureRuntimeLogging(buildTimeConfig,
+                                    config, consoleRt, categoryDefaultMinLevels, notifier, cleanup, errorManager, namedFilters,
+                                    handlers.values(), bridge.additionalHandlers(), bridge.streaming(),
+                                    consoleFmt.orElse(null), fileFmt.orElse(null), syslogFmt.orElse(null),
+                                    socketFmt.orElse(null), bridge.namedHandlerFormatters(), bridge.banner(), launchMode,
+                                    alwaysEnableLogStream, includeFilters));
+
+            // ── build-time logging (runs now, during the deployment build) ──
             List<LogCleanupFilterElement> additionalLogCleanupFilters = new ArrayList<>(logCleanupFilters.size());
             for (LogCleanupFilterBuildItem i : logCleanupFilters) {
                 LogCleanupFilterElement filterElement = i.getFilterElement();
@@ -336,12 +458,10 @@ public final class LoggingResourceProcessor {
                                 : filterElement.getTargetLevel(),
                         filterElement.getMessageStarts()));
             }
-
             SmallRyeConfig config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
             LogBuildTimeConfig logBuildTimeConfig = config.getConfigMapping(LogBuildTimeConfig.class);
             LogRuntimeConfig logRuntimeConfigInBuild = config.getConfigMapping(LogRuntimeConfig.class);
             ConsoleRuntimeConfig consoleRuntimeConfig = config.getConfigMapping(ConsoleRuntimeConfig.class);
-
             initializeBuildTimeLogging(logRuntimeConfigInBuild, logBuildTimeConfig, consoleRuntimeConfig,
                     categoryMinLevelDefaults.content, additionalLogCleanupFilters, launchModeBuildItem.getLaunchMode());
             // Build time logging is terminated before the application is started, after dev services are started.
@@ -580,7 +700,7 @@ public final class LoggingResourceProcessor {
         Set<String> allConfiguredCategoryNames = new LinkedHashSet<>(categories.keySet());
         allConfiguredCategoryNames.addAll(categoryMinLevelDefaults.keySet());
         for (String categoryName : allConfiguredCategoryNames) {
-            InheritableLevel categoryMinLevel = LoggingSetupRecorder.getLogLevelNoInheritance(categoryName, categories,
+            InheritableLevel categoryMinLevel = LoggingSetup.getLogLevelNoInheritance(categoryName, categories,
                     CategoryBuildTimeConfig::minLevel, categoryMinLevelDefaults);
             if (!categoryMinLevel.isInherited() && categoryMinLevel.getLevel().intValue() < rootMinLogLevel) {
                 return false;
@@ -604,7 +724,7 @@ public final class LoggingResourceProcessor {
                 mc.body(b0 -> {
                     for (Map.Entry<String, CategoryBuildTimeConfig> entry : categories.entrySet()) {
                         final String category = entry.getKey();
-                        final int categoryLevelIntValue = LoggingSetupRecorder
+                        final int categoryLevelIntValue = LoggingSetup
                                 .getLogLevel(category, categories, CategoryBuildTimeConfig::minLevel,
                                         categoryMinLevelDefaults,
                                         rootMinLevel)

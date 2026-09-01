@@ -15,10 +15,10 @@ public class LogCleanupFilter implements Filter {
     final Map<String, LogCleanupFilterElement> filterElements = new HashMap<>();
     public static final String SHUTDOWN_MESSAGE = " [Error Occurred After Shutdown]";
 
-    private final LoggingSetupRecorder.ShutdownNotifier shutdownNotifier;
+    private final LoggingSetup.ShutdownNotifier shutdownNotifier;
 
     public LogCleanupFilter(Collection<LogCleanupFilterElement> filterElements,
-            LoggingSetupRecorder.ShutdownNotifier shutdownNotifier) {
+            LoggingSetup.ShutdownNotifier shutdownNotifier) {
         this.shutdownNotifier = shutdownNotifier;
         for (LogCleanupFilterElement element : filterElements) {
             this.filterElements.put(element.getLoggerName(), element);

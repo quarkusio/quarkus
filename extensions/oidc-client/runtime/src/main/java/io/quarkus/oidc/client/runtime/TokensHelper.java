@@ -77,7 +77,8 @@ public class TokensHelper {
                     newState = new TokenRequestState(prepareUni(
                             refreshTokenValid
                                     ? oidcClient.refreshTokens(tokens.getRefreshToken(), additionalParameters)
-                                    : oidcClient.getTokens(additionalParameters)), tokens);
+                                    : oidcClient.getTokens(additionalParameters)),
+                            tokens);
                     if (tokenRequestStateUpdater.compareAndSet(this, currentState, newState)) {
                         return newState.tokenUni;
                     }

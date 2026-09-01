@@ -8,6 +8,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.arc.Arc;
+import io.quarkus.data.hibernate.managed.blocking.BlockingManagedRepositoryBase;
+import io.quarkus.data.hibernate.stateless.blocking.BlockingRecordRepositoryBase;
 import io.quarkus.test.QuarkusExtensionTest;
 
 public class FirstTest {
@@ -163,6 +165,26 @@ public class FirstTest {
                 Arc.container().select(MyEntity.FindOnlyRepo.class).getHandle().getBean().getScope());
     }
 
+    @Transactional
+    void repositorySwitching() {
+        MyEntity entity = new MyEntity();
+        entity.foo = "switch-test";
+        entity.id = 42L;
+        entity.statelessBlocking().insert();
+
+        var managedRepo = MyEntity_.managedBlocking();
+        Assertions.assertInstanceOf(BlockingManagedRepositoryBase.class, managedRepo);
+        Assertions.assertEquals(1, managedRepo.count());
+
+        var statelessRepo = managedRepo.statelessBlocking();
+        Assertions.assertInstanceOf(BlockingRecordRepositoryBase.class, statelessRepo);
+        Assertions.assertEquals(1, statelessRepo.count());
+
+        var managedAgain = statelessRepo.managedBlocking();
+        Assertions.assertInstanceOf(BlockingManagedRepositoryBase.class, managedAgain);
+        Assertions.assertEquals(1, managedAgain.count());
+    }
+
     @Test
     void testRepositories() {
         clear();
@@ -179,6 +201,8 @@ public class FirstTest {
         upsertExisting();
         upsertCheck();
         runQueries();
+        clear();
+        repositorySwitching();
     }
 
 }

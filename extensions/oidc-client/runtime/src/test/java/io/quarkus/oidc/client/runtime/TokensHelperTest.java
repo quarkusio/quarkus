@@ -49,7 +49,9 @@ class TokensHelperTest {
 
         // Triggers the refresh, which then blocks.
         Uni<Tokens> refreshing = helper.getTokens(client, Map.of(), false);
-        refreshing.subscribe().with(t -> {}, t -> {});
+        refreshing.subscribe().with(t -> {
+        }, t -> {
+        });
 
         // Wait until the refresh is genuinely in flight, rather than assuming it is by now.
         client.awaitInFlight();
@@ -79,7 +81,9 @@ class TokensHelperTest {
         TokensHelper helper = new TokensHelper();
         helper.initTokens(new ImmediateOidcClient(current), Map.of());
 
-        helper.getTokens(client, Map.of(), false).subscribe().with(t -> {}, t -> {});
+        helper.getTokens(client, Map.of(), false).subscribe().with(t -> {
+        }, t -> {
+        });
         client.awaitInFlight();
 
         // Release the refresh so the waiting caller can complete, then confirm it waited for the
@@ -109,7 +113,9 @@ class TokensHelperTest {
         TokensHelper helper = new TokensHelper();
         helper.initTokens(new ImmediateOidcClient(current), Map.of());
 
-        helper.getTokens(client, Map.of(), false).subscribe().with(t -> {}, t -> {});
+        helper.getTokens(client, Map.of(), false).subscribe().with(t -> {
+        }, t -> {
+        });
         client.awaitInFlight();
 
         Tokens served = helper.getTokens(client, Map.of(), false).await().atMost(Duration.ofSeconds(2));
@@ -186,7 +192,6 @@ class TokensHelperTest {
             // no-op in the tests
         }
     }
-
 
     /** An OidcClient that returns a fixed set of tokens without blocking. */
     private record ImmediateOidcClient(Tokens tokens) implements OidcClient {

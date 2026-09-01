@@ -2,6 +2,7 @@ package io.quarkus.it.keycloak;
 
 import static org.awaitility.Awaitility.await;
 import static org.hamcrest.Matchers.equalTo;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
@@ -116,8 +117,22 @@ public abstract class AbstractBearerTokenAuthorizationTest {
     }
 
     @Test
-    public void testAccessAdminResourceWithRefreshToken() {
-        RestAssured.given().auth().oauth2(client.getRefreshToken("admin"))
+    public void testAccessAdminResourceWithAccessAndRefreshToken() {
+        // A real access token issued by Keycloak in a JWT format has a `typ` claim set to `Bearer`.
+        // It must be accepted on the bearer token verification path.
+        String accessToken = getAccessToken("admin");
+        assertEquals("Bearer", OidcUtils.decodeJwtContent(accessToken).getString("typ"));
+        RestAssured.given().auth().oauth2(accessToken)
+                .when().get("/api/admin")
+                .then()
+                .statusCode(200)
+                .body(Matchers.containsString("granted:admin"));
+
+        // A real refresh token issued by Keycloak in a JWT format has a `typ` claim set to `Refresh`.
+        // It must be rejected on the bearer token verification path
+        String refreshToken = client.getRefreshToken("admin");
+        assertEquals("Refresh", OidcUtils.decodeJwtContent(refreshToken).getString("typ"));
+        RestAssured.given().auth().oauth2(refreshToken)
                 .when().get("/api/admin")
                 .then()
                 .statusCode(401);

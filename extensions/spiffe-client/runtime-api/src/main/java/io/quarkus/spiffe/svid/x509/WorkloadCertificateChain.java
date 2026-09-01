@@ -1,4 +1,4 @@
-package io.quarkus.spiffe.client;
+package io.quarkus.spiffe.svid.x509;
 
 import java.security.PrivateKey;
 import java.security.cert.X509Certificate;

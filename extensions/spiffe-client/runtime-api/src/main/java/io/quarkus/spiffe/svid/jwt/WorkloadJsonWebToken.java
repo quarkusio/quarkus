@@ -1,4 +1,4 @@
-package io.quarkus.spiffe.client;
+package io.quarkus.spiffe.svid.jwt;
 
 import java.time.Instant;
 import java.util.Set;

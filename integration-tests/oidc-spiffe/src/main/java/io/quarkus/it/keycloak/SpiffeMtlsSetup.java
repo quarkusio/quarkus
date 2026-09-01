@@ -5,7 +5,7 @@ import jakarta.enterprise.event.Observes;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import io.quarkus.spiffe.client.SpiffeClient;
-import io.quarkus.spiffe.client.WorkloadCertificateDocument;
+import io.quarkus.spiffe.svid.x509.WorkloadCertificateDocument;
 import io.quarkus.tls.BaseTlsConfiguration;
 import io.quarkus.tls.TlsConfiguration;
 import io.quarkus.vertx.http.security.HttpSecurity;

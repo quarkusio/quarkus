@@ -12,7 +12,8 @@ import jakarta.ws.rs.WebApplicationException;
 import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.spiffe.client.SpiffeClient;
-import io.quarkus.spiffe.client.WorkloadCertificateDocument;
+import io.quarkus.spiffe.svid.x509.WorkloadCertificateDocument;
+import io.quarkus.spiffe.svid.x509.X509SvidClient;
 import io.quarkus.tls.BaseTlsConfiguration;
 import io.quarkus.tls.TlsConfiguration;
 import io.quarkus.tls.TlsConfigurationRegistry;
@@ -39,6 +40,9 @@ public class SpiffeMtlsResource {
 
     @Inject
     SpiffeClient spiffeClient;
+
+    @Inject
+    X509SvidClient x509SvidClient;
 
     @Inject
     Vertx vertx;
@@ -95,7 +99,7 @@ public class SpiffeMtlsResource {
     @GET
     @Path("/client/rest/authenticated")
     public MtlsResult restAuthenticated(@QueryParam("port") int port) {
-        var cert = spiffeClient.getWorkloadCertificate().await().indefinitely();
+        var cert = x509SvidClient.getWorkloadCertificate().await().indefinitely();
         String expectedPrincipal = cert.certificateChain().chain().get(0)
                 .getSubjectX500Principal().getName();
         TlsConfiguration tlsConfiguration = new SpiffeTlsConfiguration(toKeyCertOptions(cert), toTrustOptions(cert));

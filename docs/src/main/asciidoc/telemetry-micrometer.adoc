@@ -892,6 +892,34 @@ The Prometheus metrics will be available from `http://0.0.0.0:9000/q/metrics/pro
 
 Refer to the xref:./management-interface-reference.adoc[management interface reference] for more information.
 
+[[dev-ui-metrics]]
+== Metrics in the Dev UI
+
+In dev mode, when a metrics backend is present, an Observability *Metrics* section
+appears in the Dev UI. It shows live time-series charts of your application metrics
+— one chart per metric name, one line per tag combination. Pick which metrics to
+chart from the grouped catalog; only selected metrics are captured, to save
+resources. Monotonic series (counters, timers) are rendered as a per-interval rate.
+
+The view is active automatically whenever a metrics backend and the Dev UI are
+present; it is dev-mode only and adds nothing to production or native builds. You can
+tune the capture with:
+
+[source,properties]
+----
+quarkus.dev-ui.observability.metrics.sample-interval=5s <1>
+quarkus.dev-ui.observability.metrics.retention=10m      <2>
+quarkus.dev-ui.observability.metrics.max-points-per-series=720 <3>
+----
+<1> How often meters are sampled.
+<2> Rolling time window kept per series.
+<3> Hard cap on points retained per series.
+
+This view works with the Prometheus registry, the Micrometer OpenTelemetry bridge,
+and native OpenTelemetry metrics. When the bridge forwards Micrometer meters into the
+OpenTelemetry SDK, the metrics are captured once (from OpenTelemetry), avoiding
+duplicates.
+
 == Configuration Reference
 
 include::{generated-dir}/config/quarkus-micrometer.adoc[opts=optional, leveloffset=+1]

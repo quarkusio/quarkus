@@ -35,6 +35,11 @@
             <artifactId>quarkus-vertx-http</artifactId>
         </dependency>
 
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-devui-observability-store</artifactId>
+        </dependency>
+
         <!-- Needed for the JSON meter registry -->
         <dependency>
             <groupId>io.quarkus</groupId>

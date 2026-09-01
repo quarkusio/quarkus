@@ -209,6 +209,13 @@ Some metrics might be missing from the output if they contain no data.
 
 == See the output
 
+=== Metrics in the Dev UI
+In dev mode, the Observability *Metrics* view in the Dev UI charts your live metrics.
+With the bridge active, Micrometer meters forwarded into the OpenTelemetry SDK, as well
+as native OpenTelemetry metrics, are captured once (from OpenTelemetry) — so there are no
+duplicate series. See xref:telemetry-micrometer.adoc#dev-ui-metrics[Metrics in the Dev UI]
+for details.
+
 === Grafana-OTel-LGTM Dev Service
 You can use the xref:observability-devservices-lgtm.adoc[Grafana-OTel-LGTM] Dev Service.
 

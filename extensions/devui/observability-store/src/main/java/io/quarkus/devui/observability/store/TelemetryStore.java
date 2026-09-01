@@ -16,6 +16,7 @@ import io.smallrye.mutiny.operators.multi.processors.SerializedProcessor;
  * absent Dev UI socket can never apply backpressure to the calling (often request)
  * thread.
  */
+// FIXME traces store
 public final class TelemetryStore<T> {
 
     private final TelemetryRingBuffer<T> buffer;

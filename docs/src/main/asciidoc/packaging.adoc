@@ -1,0 +1,338 @@
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
+////
+[id="packaging"]
+= Packaging overview
+include::_attributes.adoc[]
+:diataxis-type: concept
+:summary: An overview of the different ways to package a Quarkus application (JARs, uber-JARs, AOT caching, jlink images, native executables, and container images) with guidance on choosing the right option for your workload.
+:topics: packaging,jar,uber-jar,native,aot,jlink,container
+
+Quarkus supports several packaging options, each offering a different balance of startup speed, peak throughput, memory footprint, build complexity, and deployment convenience.
+This guide presents every option, highlights its trade-offs, and points you to the detailed guides for each.
+
+== Choosing a packaging option
+
+The right packaging depends on your deployment target and the constraints that matter most.
+The table below summarizes every option at a glance.
+
+[cols="1,1,1,1,1,2",options="header"]
+|===
+| Packaging | Startup | Memory | Build cost | Deployment artifact | Best for
+
+| <<fast-jar,Fast JAR>> (default)
+| Fast (~0.4-3 s)
+| Moderate
+| Low
+| Directory (`quarkus-app/`)
+| General-purpose services; simplest workflow
+
+| <<uber-jar,Uber-JAR>>
+| Fast (~0.4-3 s, slower than Fast JAR)
+| Moderate
+| Low
+| Single JAR
+| Environments that require a single file (legacy deployment scripts, simple `java -jar`)
+
+| <<aot,AOT caching>>
+| Very fast (~80-900 ms)
+| Lower than JVM
+| Medium (build + training run)
+| Directory + AOT cache file
+| Cold-start-sensitive JVM workloads; keeps full JVM tooling (debuggers, profilers, JFR)
+
+| <<jlink,jlink image>> (experimental)
+| Fast (~0.4-3 s)
+| Lower (trimmed JDK)
+| Medium
+| Self-contained runtime image
+| Environments where you want a smaller footprint without going native
+
+| <<native,Native executable>>
+| Fastest (~20-300 ms)
+| Lowest
+| High (3-10 min, 4-8 GB RAM)
+| Single binary
+| Serverless/scale-to-zero, CLI tools, edge devices, memory-constrained containers
+|===
+
+[TIP]
+====
+Start with the default fast JAR.
+Move to a more specialized packaging when you have a concrete need. The same Quarkus code runs in all modes.
+====
+
+[NOTE]
+====
+Startup numbers are indicative and represent a range from small to large applications.
+====
+
+[NOTE]
+====
+All of these packaging options can be wrapped in a <<container-image,container image>> for cloud and Kubernetes deployments.
+====
+
+[[fast-jar]]
+== Fast JAR (default)
+
+The fast JAR is the default packaging type produced by `./mvnw package` or `./gradlew build`.
+It generates a `quarkus-app/` directory under your build output that contains the application JAR, an index of dependencies, and the dependency JARs themselves.
+
+Run the application with:
+
+[source,bash]
+----
+java -jar target/quarkus-app/quarkus-run.jar
+----
+
+[WARNING]
+====
+You must deploy the entire `quarkus-app/` directory.
+If any file is missing, the application will not start or might not function correctly.
+====
+
+=== How it works
+
+Unlike a traditional flat classpath JAR, the fast JAR uses an index that maps classes to their containing dependency JAR.
+This avoids scanning every JAR on the classpath when loading a class, which results in faster startup compared to a legacy classpath JAR.
+
+=== When to use it
+
+The fast JAR is the right default for most applications:
+
+* Simplest build workflow. No extra flags, extensions, or JDK requirements.
+* Full JVM capabilities. JIT compilation delivers the best peak throughput for long-running services.
+* Standard debugging and profiling. All JVM tooling works out of the box.
+
+The main limitation is that the output is a directory, not a single file.
+If your deployment pipeline requires a single artifact, consider the <<uber-jar,uber-JAR>> instead.
+
+=== Reducing JAR size
+
+You can enable experimental tree-shaking to remove unreachable classes from runtime dependencies.
+See xref:jar-tree-shaking.adoc[Tree-shaking JAR dependencies] for details.
+
+[[uber-jar]]
+== Uber-JAR
+
+An uber-JAR bundles the application and all its dependencies into a single JAR file.
+Enable it by setting the following property in `application.properties`:
+
+[source,properties]
+----
+quarkus.package.jar.type=uber-jar
+----
+
+The resulting JAR is placed in the build output directory with a `-runner` suffix by default.
+Run it with:
+
+[source,bash]
+----
+java -jar target/my-application-runner.jar
+----
+
+=== When to use it
+
+An uber-JAR is convenient when:
+
+* Your deployment target expects a single file (for example, a legacy application server, a simple deployment script, or a `java -jar` invocation with no additional classpath setup).
+* You want to copy a single artifact to a remote server without worrying about directory structure.
+
+The trade-offs compared to the fast JAR are:
+
+* No indexed class lookup. The uber-JAR does not benefit from the fast JAR's class index, so class loading is slightly less efficient.
+* No container image layering. With the fast JAR, container image builders like Jib can cache dependency JARs in a separate layer so that only the thin application layer changes on rebuild. An uber-JAR is a single file, so the entire image layer must be rebuilt and pushed on every change.
+
+=== Customizing the uber-JAR
+
+You can configure the uber-JAR output with the following properties:
+
+* `quarkus.package.jar.runner-suffix`: changes the file name suffix (default: `-runner`).
+* `quarkus.package.jar.add-runner-suffix`: set to `false` to omit the suffix entirely.
+* `quarkus.package.ignored-entries`: a comma-separated list of entries to exclude from the JAR.
+
+Signature files from dependencies are excluded by default.
+
+For full details, see the xref:maven-tooling.adoc#uber-jar-maven[uber-JAR section] of the Maven tooling guide or the xref:gradle-tooling.adoc[Gradle tooling guide].
+
+[[aot]]
+== Ahead-of-time (AOT) caching
+
+Starting with JDK 24, link:https://openjdk.org/projects/leyden/[Project Leyden] introduces AOT caching capabilities that can dramatically reduce startup time while keeping the full JVM runtime.
+
+Quarkus provides a specialized `aot-jar` packaging type and build integration for generating AOT caches.
+Build an AOT-optimized application with:
+
+[source,bash]
+----
+./mvnw verify -Dquarkus.package.jar.aot.enabled=true -DskipITs=false
+----
+
+Then run it with:
+
+[source,bash]
+----
+cd target/quarkus-app
+java -XX:AOTCache=app.aot -jar quarkus-run.jar
+----
+
+=== When to use it
+
+AOT caching is a good fit when:
+
+* Cold start matters but you are not ready to adopt native images.
+* You want to keep full JVM tooling: debuggers, profilers, JFR, and JMX all work normally.
+* You can run a training step as part of your build pipeline to generate the AOT cache.
+
+The trade-offs are:
+
+* Larger deployment artifact. The AOT cache file adds approximately 40 MB for a small application, and more for a large application.
+* Slight throughput reduction. This was observed at the time of writing, but ongoing JDK improvements are expected to close the gap.
+* Additional build step. A training run exercises the application to populate the cache. But the Quarkus infrastructure provides an automated training step based on integration tests.
+
+[NOTE]
+====
+This feature requires JDK 24 or newer.
+Given this feature is new and evolves a lot, it is recommended to use the latest JDK.
+====
+
+For detailed setup and configuration, see the xref:aot.adoc[AOT caching guide].
+
+[[jlink]]
+== jlink custom runtime image
+
+The `jlink` extension produces a custom Java runtime image that contains only the JDK modules your application needs.
+The result is a self-contained directory with its own `java` launcher, so no separate JDK installation is required on the target machine.
+
+Add the extension to your project:
+
+[source,bash,subs=attributes+]
+----
+./mvnw quarkus:add-extension -Dextensions="quarkus-jlink"
+----
+
+Then build normally:
+
+[source,bash]
+----
+./mvnw package
+----
+
+The image is written to `target/jlink-output/image` and can be run via its `bin/` launcher script.
+
+[WARNING]
+====
+The `jlink` extension is experimental and requires Java 25 or later.
+====
+
+=== When to use it
+
+A jlink image is useful when:
+
+* You want a smaller JDK footprint without going fully native.
+* You control the target OS and architecture and can produce an image that matches it.
+
+The trade-offs are:
+
+* Experimental status. The extension and its output format may change.
+* Platform-specific. The image runs only on the OS/architecture it was built for (unless you cross-compile).
+
+[NOTE]
+====
+This feature requires JDK 25 or newer.
+====
+
+For full details, see the xref:jlink.adoc[jlink packaging guide] and the xref:modularity.adoc[modularity guide].
+
+[[native]]
+== Native executable
+
+Quarkus applications can be compiled to native executables using GraalVM or Mandrel.
+Native executables start in milliseconds, use a fraction of the memory of a JVM process, and produce the smallest possible container images.
+
+Build a native executable with:
+
+[source,bash]
+----
+./mvnw package -Dnative
+----
+
+The resulting binary is placed in the build output directory and can be run directly:
+
+[source,bash]
+----
+./target/my-application-runner
+----
+
+=== When to use it
+
+Native executables are the best choice when:
+
+* Startup time is critical: serverless / FaaS, CLI tools, or scale-to-zero environments.
+* Memory is constrained: dense container deployments or edge devices.
+* You want the smallest container images. Native images can be under 50 MB.
+
+The trade-offs are:
+
+* Lower peak throughput. Without the JVM's JIT compiler, long-running workloads typically see lower throughput.
+* Long build times. Native compilation takes 3 to 10 minutes and requires 4 to 8 GB of RAM.
+* Limited JVM tooling. Standard debuggers, profilers, and JFR are not available (though GraalVM provides alternatives).
+* Reflection and dynamic class loading require explicit configuration.
+
+For a detailed comparison of JVM, AOT, and native performance characteristics, see the xref:building-native-image.adoc#comparing-jvm-aot-native[comparison table] in the native executable guide.
+
+=== Getting started
+
+* xref:building-native-image.adoc[Building a native executable]: step-by-step guide to compile, test, and containerize a native executable.
+* xref:native-reference.adoc[Native reference guide]: advanced topics including memory management, the tracing agent, debugging, and CI/CD.
+* xref:writing-native-applications-tips.adoc[Tips for writing native applications]: common pitfalls and how to solve them.
+
+[[container-image]]
+== Container images
+
+Quarkus can build OCI container images as part of the normal build, wrapping any of the packaging options above.
+Container images are the standard deployment unit for Kubernetes, OpenShift, and most cloud platforms.
+
+Quarkus supports several container image builders:
+
+* Jib: builds images without a local Docker daemon. Best for CI/CD pipelines.
+* Docker: uses the local Docker daemon.
+* Podman: uses the local Podman daemon.
+* OpenShift: builds images using OpenShift's build system.
+* Buildpack: uses Cloud Native Buildpacks.
+
+Add the extension for your preferred builder (for example, Jib):
+
+[source,bash,subs=attributes+]
+----
+./mvnw quarkus:add-extension -Dextensions="quarkus-container-image-jib"
+----
+
+Then build an image:
+
+[source,bash]
+----
+./mvnw package -Dquarkus.container-image.build=true
+----
+
+=== When to use it
+
+Container images are the right choice when:
+
+* You deploy to Kubernetes, OpenShift, or any container orchestrator.
+* You want a reproducible, immutable deployment artifact.
+* You want to combine any of the above packaging options with a container build in a single step.
+
+For details on configuring image names, registries, and builder-specific options, see the xref:container-image.adoc[Container images guide].
+
+=== Deploying to specific platforms
+
+Once you have a container image, see the platform-specific deployment guides:
+
+* xref:deploying-to-kubernetes.adoc[Deploying to Kubernetes]
+* xref:deploying-to-openshift.adoc[Deploying to OpenShift]
+* xref:deploying-to-google-cloud.adoc[Deploying to Google Cloud]
+* xref:deploying-to-azure-cloud.adoc[Deploying to Azure Cloud]
+* xref:deploying-to-heroku.adoc[Deploying to Heroku]

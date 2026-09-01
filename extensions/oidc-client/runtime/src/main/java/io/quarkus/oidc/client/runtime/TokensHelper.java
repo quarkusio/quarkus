@@ -49,19 +49,9 @@ public class TokensHelper {
                 }
                 //rerun the CAS loop
             } else if (currentState.tokenUni != null) {
-                // A token request is already in flight. If it is a proactive refresh, the tokens
-                // it is replacing are usually still valid, because `refresh-token-time-skew`
-                // starts the refresh before they expire. Serving those avoids making this caller
-                // wait for a refresh it did not trigger; without it, every request arriving during
-                // a refresh blocks on it even though a perfectly usable token is in hand.
-                //
-                // Unexpired tokens are served here on exactly the terms they are served below,
-                // when no refresh is running: an unexpired access token is usable, an expired one
-                // is not and its holder waits for a new one. The only difference is what is waited
-                // on -- the refresh already in flight, rather than one this caller starts. There is
-                // no additional margin, because that would make a token which is good enough to
-                // send when nothing is being refreshed not good enough while something is.
-                final Tokens previousTokens = currentState.previousTokens;
+                // Serve the previous token (still valid) whilst a new token is refreshed in the background
+                // to avoid waiting for the refresh to complete
+                final Tokens previousTokens = currentState.previousToken;
                 if (previousTokens != null && !previousTokens.isAccessTokenExpired()) {
                     return Uni.createFrom().item(previousTokens);
                 }
@@ -84,11 +74,10 @@ public class TokensHelper {
                         LOG.debugf("Refresh token is not available or has expired, "
                                 + "acquiring new tokens instead for client %s", tokens.getClientId());
                     }
-                    newState = new TokenRequestState(
-                            prepareUni(refreshTokenValid
+                    newState = new TokenRequestState(prepareUni(
+                            refreshTokenValid
                                     ? oidcClient.refreshTokens(tokens.getRefreshToken(), additionalParameters)
-                                    : oidcClient.getTokens(additionalParameters)),
-                            tokens);
+                                    : oidcClient.getTokens(additionalParameters)), tokens);
                     if (tokenRequestStateUpdater.compareAndSet(this, currentState, newState)) {
                         return newState.tokenUni;
                     }
@@ -125,22 +114,22 @@ public class TokensHelper {
          * keep being served while the refresh is in progress. May be null when no tokens have been
          * acquired yet, or when the ones being replaced had already expired.
          */
-        final Tokens previousTokens;
+        final Tokens previousToken;
 
         TokenRequestState(Tokens tokens) {
             this.tokens = tokens;
             this.tokenUni = null;
-            this.previousTokens = null;
+            this.previousToken = null;
         }
 
         TokenRequestState(Uni<Tokens> tokensUni) {
             this(tokensUni, null);
         }
 
-        TokenRequestState(Uni<Tokens> tokensUni, Tokens previousTokens) {
+        TokenRequestState(Uni<Tokens> tokensUni, Tokens previousToken) {
             this.tokens = null;
             this.tokenUni = tokensUni;
-            this.previousTokens = previousTokens;
+            this.previousToken = previousToken;
         }
     }
 }

@@ -223,7 +223,7 @@ class TokensHelperTest {
 
         @Override
         public void close() {
-            //            no-op in the test
+            // no-op in the test
         }
     }
 }

@@ -1,6 +1,8 @@
 package io.quarkus.rest.data.panache.deployment.methods;
 
 import java.util.Collection;
+import java.util.Map;
+import java.util.Set;
 
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.DELETE;
@@ -163,8 +165,14 @@ public abstract class StandardMethodImplementor implements MethodImplementor {
         element.addAnnotation(Context.class);
     }
 
-    protected void addSortQueryParamValidatorAnnotation(AnnotatedElement element) {
-        element.addAnnotation(SortQueryParamValidator.class);
+    protected void addSortQueryParamValidatorAnnotation(AnnotatedElement element, Set<String> allowedFields,
+            Map<String, String> secureFields) {
+        String[] secureFieldSpecs = secureFields.entrySet().stream()
+                .map(e -> e.getKey() + ":" + e.getValue())
+                .toArray(String[]::new);
+        element.addAnnotation(SortQueryParamValidator.class)
+                .add("allowedFields", allowedFields.toArray(new String[0]))
+                .add("secureFields", secureFieldSpecs);
     }
 
     protected void addMethodAnnotations(AnnotatedElement element, Collection<AnnotationInstance> methodAnnotations) {

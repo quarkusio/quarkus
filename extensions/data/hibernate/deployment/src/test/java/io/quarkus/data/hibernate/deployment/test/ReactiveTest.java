@@ -7,6 +7,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.arc.Arc;
+import io.quarkus.data.hibernate.managed.reactive.ReactiveManagedRepositoryBase;
+import io.quarkus.data.hibernate.stateless.reactive.ReactiveRecordRepositoryBase;
 import io.quarkus.hibernate.reactive.panache.common.WithTransaction;
 import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.vertx.RunOnVertxContext;
@@ -20,7 +22,10 @@ public class ReactiveTest {
             .withApplicationRoot((jar) -> jar
                     .addAsResource("application-test.properties", "application.properties")
                     .addClasses(MyReactiveEntity.class, MyReactiveEntity_.class,
-                            MyReactiveEntity_.ManagedReactiveQueries_.class));
+                            MyReactiveEntity_.ManagedReactiveQueries_.class,
+                            MyReactiveEntity_.PanacheManagedBlockingRepository_.class,
+                            MyReactiveEntity_.PanacheStatelessBlockingRepository_.class,
+                            MyReactiveEntity_.PanacheStatelessReactiveRepository_.class));
 
     @WithTransaction
     Uni<Void> createOne() {
@@ -193,6 +198,41 @@ public class ReactiveTest {
                 .replaceWithVoid();
     }
 
+    @WithTransaction
+    Uni<Void> repositorySwitchingFromManaged() {
+        MyReactiveEntity entity = new MyReactiveEntity();
+        entity.foo = "switch-test";
+        return entity.persist()
+                .flatMap(v -> {
+                    var managedRepo = MyReactiveEntity_.managedReactive();
+                    Assertions.assertInstanceOf(ReactiveManagedRepositoryBase.class, managedRepo);
+                    var statelessRepo = managedRepo.statelessReactive();
+                    Assertions.assertInstanceOf(ReactiveRecordRepositoryBase.class, statelessRepo);
+                    var managedAgain = statelessRepo.managedReactive();
+                    Assertions.assertInstanceOf(ReactiveManagedRepositoryBase.class, managedAgain);
+                    return managedAgain.count();
+                })
+                .onItem().invoke(count -> Assertions.assertEquals(1L, count))
+                .replaceWithVoid();
+    }
+
+    @WithTransaction(stateless = true)
+    Uni<Void> repositorySwitchingFromStateless() {
+        return MyReactiveEntity_.statelessReactive().count()
+                .flatMap(count -> {
+                    Assertions.assertEquals(1L, count);
+                    var statelessRepo = MyReactiveEntity_.statelessReactive();
+                    Assertions.assertInstanceOf(ReactiveRecordRepositoryBase.class, statelessRepo);
+                    var managedRepo = statelessRepo.managedReactive();
+                    Assertions.assertInstanceOf(ReactiveManagedRepositoryBase.class, managedRepo);
+                    var statelessAgain = managedRepo.statelessReactive();
+                    Assertions.assertInstanceOf(ReactiveRecordRepositoryBase.class, statelessAgain);
+                    return statelessAgain.count();
+                })
+                .onItem().invoke(count -> Assertions.assertEquals(1L, count))
+                .replaceWithVoid();
+    }
+
     @Test
     void testRepositoryScopeIsApplicationScoped() {
         Assertions.assertEquals(ApplicationScoped.class,
@@ -216,6 +256,10 @@ public class ReactiveTest {
         asserter.execute(() -> upsertExisting());
         asserter.execute(() -> upsertCheck());
         asserter.execute(() -> runQueries());
+        asserter.execute(() -> clear());
+        asserter.execute(() -> repositorySwitchingFromManaged());
+        asserter.execute(() -> repositorySwitchingFromStateless());
+        asserter.execute(() -> clear());
     }
 
 }

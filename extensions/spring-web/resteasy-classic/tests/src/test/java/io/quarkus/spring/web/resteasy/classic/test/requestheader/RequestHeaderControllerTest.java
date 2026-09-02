@@ -50,4 +50,26 @@ public class RequestHeaderControllerTest {
                 .statusCode(200)
                 .body(is("Header: fallback"));
     }
+
+    @Test
+    public void testNamedByNameHeader() {
+        given()
+                .header("X-Other-Header", "other-value")
+                .when().get("/api/headers/namedByName")
+                .then()
+                .statusCode(200)
+                .body(is("Other-Header: other-value"));
+    }
+
+    @Test
+    public void testMixedParams() {
+        given()
+                .header("X-Token", "secret123")
+                .queryParam("filter", "active")
+                .when().get("/api/headers/mixed/42")
+                .then()
+                .statusCode(200)
+                .body(is("id=42 filter=active token=secret123"));
+    }
+
 }

@@ -52,6 +52,7 @@ import io.quarkus.resteasy.reactive.spi.ExceptionMapperBuildItem;
 import io.quarkus.resteasy.server.common.spi.AdditionalJaxRsResourceMethodParamAnnotations;
 import io.quarkus.spring.web.resteasy.reactive.runtime.ResponseEntityHandler;
 import io.quarkus.spring.web.resteasy.reactive.runtime.ResponseStatusHandler;
+import io.quarkus.spring.web.resteasy.reactive.runtime.SpringHeaderMapParamExtractor;
 import io.quarkus.spring.web.resteasy.reactive.runtime.SpringMapParamExtractor;
 import io.quarkus.spring.web.resteasy.reactive.runtime.SpringMultiValueListParamExtractor;
 import io.quarkus.spring.web.resteasy.reactive.runtime.SpringMultiValueMapParamExtractor;
@@ -468,6 +469,11 @@ public class SpringWebResteasyReactiveProcessor {
                     }
                     if (paramType.name().equals(JAVA_UTIL_MAP)) {
                         return new SpringMapParamExtractor();
+                    }
+                }
+                if (annotations.containsKey(REQUEST_HEADER)) {
+                    if (paramType.name().equals(JAVA_UTIL_MAP)) {
+                        return new SpringHeaderMapParamExtractor();
                     }
                 }
                 return null;

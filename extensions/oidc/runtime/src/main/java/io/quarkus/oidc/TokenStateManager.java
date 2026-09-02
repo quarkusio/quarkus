@@ -29,13 +29,18 @@ public interface TokenStateManager {
 
     /**
      * Convert the token state into the authorization code flow tokens.
+     * <p>
+     * The token state may no longer be available, for example, when the tokens were kept in an external
+     * storage which has since evicted or removed them. In this case the implementation must either return
+     * a null value or fail with {@link io.quarkus.security.AuthenticationFailedException}: both are treated
+     * the same way and force the user to re-authenticate with the OIDC provider.
      *
      * @param routingContext the request context
      * @param oidcConfig the tenant configuration
      * @param tokenState the token state
      * @param requestContext the request context
      *
-     * @return the authorization code flow tokens
+     * @return the authorization code flow tokens, may be null if the token state is no longer available
      */
     Uni<AuthorizationCodeTokens> getTokens(RoutingContext routingContext, OidcTenantConfig oidcConfig,
             String tokenState, OidcRequestContext<AuthorizationCodeTokens> requestContext);

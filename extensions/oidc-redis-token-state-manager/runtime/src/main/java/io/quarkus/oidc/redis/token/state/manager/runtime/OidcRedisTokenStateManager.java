@@ -12,7 +12,6 @@ import io.quarkus.oidc.OidcTenantConfig;
 import io.quarkus.oidc.TokenStateManager;
 import io.quarkus.redis.datasource.ReactiveRedisDataSource;
 import io.quarkus.redis.datasource.value.SetArgs;
-import io.quarkus.security.AuthenticationCompletionException;
 import io.quarkus.security.AuthenticationFailedException;
 import io.smallrye.mutiny.Uni;
 import io.vertx.ext.web.RoutingContext;
@@ -20,6 +19,8 @@ import io.vertx.ext.web.RoutingContext;
 final class OidcRedisTokenStateManager implements TokenStateManager {
 
     private static final String REDIS_KEY_PREFIX = "oidc:token:";
+    private static final String FAILED_TO_ACQUIRE_TOKENS = "Failed to acquire authorization code tokens";
+    private static final String TOKENS_NOT_AVAILABLE = "Authorization code tokens are not available in Redis";
     private final ReactiveRedisDataSource dataSource;
 
     OidcRedisTokenStateManager(ReactiveRedisDataSource dataSource) {
@@ -37,8 +38,9 @@ final class OidcRedisTokenStateManager implements TokenStateManager {
     public Uni<AuthorizationCodeTokens> getTokens(RoutingContext routingContext, OidcTenantConfig oidcConfig, String tokenState,
             OidcRequestContext<AuthorizationCodeTokens> requestContext) {
         return dataSource.value(AuthorizationCodeTokensRecord.class).get(toTokenKey(tokenState))
-                .onItem().ifNotNull().transform(AuthorizationCodeTokensRecord::toTokens)
-                .onFailure().transform(AuthenticationCompletionException::new);
+                .onFailure().transform(t -> new AuthenticationFailedException(FAILED_TO_ACQUIRE_TOKENS, t))
+                .onItem().ifNull().failWith(() -> new AuthenticationFailedException(TOKENS_NOT_AVAILABLE))
+                .onItem().ifNotNull().transform(AuthorizationCodeTokensRecord::toTokens);
     }
 
     @Override

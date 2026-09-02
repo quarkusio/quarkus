@@ -1741,7 +1741,7 @@ To do this you can return/produce a `WorkspaceActionBuildItem` in your processor
 <3> Here the code that will execute if the user selects this action. You will receive some input (see the `Input` section below)
 <4> How the result should be displayed (see the `Display` section below)
 <5> What the result type would be (see the `DisplayType` section below)
-<6> Optional filter if this action only applies to certain items. Takes a regex as input, and some predefined regexes exisits in the the `Patterns` class
+<6> Optional filter if this action only applies to certain items. Takes a regex as input, and some predefined regexes exists in the the `Patterns` class
 
 ==== Input
 

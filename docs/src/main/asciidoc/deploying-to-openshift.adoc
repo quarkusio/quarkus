@@ -442,7 +442,7 @@ quarkus.openshift.env.fields.foo=metadata.name
 
 ==== Changing the generated deployment resource
 
-Beside generating a `Deployment` resource, you can also choose to get either a `DeploymentConfig`, `StatefulSet`, `Job`, or a `CronJob` resource instead by using `application.properties`:
+Besides generating a `Deployment` resource, you can also choose to get either a `DeploymentConfig`, `StatefulSet`, `Job`, or a `CronJob` resource instead by using `application.properties`:
 
 [source,properties]
 ----

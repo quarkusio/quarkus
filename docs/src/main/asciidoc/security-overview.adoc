@@ -97,7 +97,6 @@ For more information, see the Quarkus xref:config.adoc#secrets-in-environment-pr
 If your Quarkus Security architecture includes Quarkus REST (formerly RESTEasy Reactive) and Jackson, Quarkus can limit the fields included in JSON serialization based on the configured security.
 For more information, see the xref:rest.adoc#secure-serialization[JSON serialization] section of the Quarkus “Writing REST services with Quarkus REST (formerly RESTEasy Reactive)” guide.
 
-
 [[rest-data-panache]]
 === Secure auto-generated resources by REST Data with Panache
 

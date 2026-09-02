@@ -332,8 +332,13 @@ public class BootstrapAppModelResolver implements AppModelResolver {
             managedDeps = DependencyUtils.toMap(appArtifactDescr.getManagedDependencies());
         }
 
-        directMvnDeps = DependencyUtils.mergeDependencies(directMvnDeps, appArtifactDescr.getDependencies(), managedDeps,
-                Set.of());
+        if (managingProject != null) {
+            directMvnDeps = DependencyUtils.enforceManagedDependencies(directMvnDeps, appArtifactDescr.getDependencies(),
+                    managedDeps, Set.of());
+        } else {
+            directMvnDeps = DependencyUtils.mergeDependencies(directMvnDeps, appArtifactDescr.getDependencies(), managedDeps,
+                    Set.of());
+        }
         aggregatedRepos = mvn.aggregateRepositories(aggregatedRepos,
                 mvn.newResolutionRepositories(appArtifactDescr.getRepositories()));
 

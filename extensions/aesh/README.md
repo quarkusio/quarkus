@@ -373,3 +373,39 @@ Force a specific mode:
 quarkus.aesh.mode=console  # or 'runtime' or 'auto'
 ```
 
+## Testing
+
+Console mode commands can be tested with `AeshLauncher` from `quarkus-test-aesh`:
+
+```xml
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-test-aesh</artifactId>
+    <scope>test</scope>
+</dependency>
+```
+
+```java
+@QuarkusMainTest
+public class ReplTest {
+
+    @Test
+    void testGreet(AeshLauncher launcher) {
+        launcher.execute("greet --name=Alice");
+        assertThat(launcher.getCommandOutput()).isEqualTo("Hello Alice!\n");
+    }
+
+    @Test
+    void testFailure(AeshLauncher launcher) {
+        launcher.execute("bad-command", CommandResult.FAILURE);
+        assertThat(launcher.getLastError()).isNotNull();
+    }
+}
+```
+
+The REPL auto-launches on the first `execute()` call and auto-closes after each test. `getCommandOutput()` returns clean output without prompt or echo. `execute()` asserts `CommandResult.SUCCESS` by default — pass a different `CommandResult` for expected failures. For custom timeouts or pre-canned input, use `ExecuteOptions`:
+
+```java
+launcher.execute("slow-cmd", ExecuteOptions.defaults().timeout(Duration.ofMinutes(2)));
+```
+

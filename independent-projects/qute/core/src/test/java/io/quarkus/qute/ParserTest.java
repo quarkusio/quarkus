@@ -576,7 +576,7 @@ public class ParserTest {
     }
 
     static void assertParserError(String template, ErrorCode code, String message, int line) {
-        Engine engine = Engine.builder().addDefaultSectionHelpers().build();
+        Engine engine = Engine.builder().addDefaultSectionHelpers().addSectionHelper(new EvalSectionHelper.Factory()).build();
         try {
             engine.parse(template);
             fail("No parser error found");

@@ -100,6 +100,10 @@ class ExtensionPhaseRegistration extends ExtensionPhaseBase {
                 if (Types.containsTypeVariable(typeArg)) {
                     throw new DefinitionException("Type variable in @Registration.types on " + method);
                 }
+                if (Types.containsWildcard(typeArg, null, false)) {
+                    throw new DefinitionException("Wildcard in @Registration.types on " + method
+                            + " (this makes no sense for beans and is unspecified for observers)");
+                }
                 result.add(typeArg);
             } else {
                 result.add(type);

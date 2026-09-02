@@ -474,7 +474,21 @@ public class VertxResteasyReactiveRequestContext extends ResteasyReactiveRequest
 
     @Override
     public ServerHttpResponse setChunked(boolean chunked) {
-        response.setChunked(chunked);
+        if (!response.headWritten()) {
+            try {
+                response.setChunked(chunked);
+            } catch (IllegalStateException e) {
+                // TOCTOU: head was concurrently written between our check and setChunked();
+                // verify the already-sent value matches what we wanted to set
+                if (response.isChunked() != chunked) {
+                    throw e;
+                }
+            }
+        } else if (response.isChunked() != chunked) {
+            throw new IllegalStateException(
+                    "Response head already sent with chunked=" + response.isChunked()
+                            + ", cannot change to chunked=" + chunked);
+        }
         return this;
     }
 

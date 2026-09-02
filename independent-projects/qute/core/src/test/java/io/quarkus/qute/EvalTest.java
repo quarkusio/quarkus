@@ -3,6 +3,8 @@ package io.quarkus.qute;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import java.util.List;
+
 import org.junit.jupiter.api.Test;
 
 public class EvalTest {
@@ -43,6 +45,24 @@ public class EvalTest {
     }
 
     @Test
+    public void testVariantPropagated() {
+        Engine engine = Engine.builder()
+                .addDefaults()
+                .addResultMapper(new HtmlEscaper(List.of("text/html")))
+                .build();
+        // The variant of the parent template should be propagated to the evaluated template
+        // so that the HtmlEscaper is applied to the result
+        assertEquals("&lt;p&gt;",
+                engine.parse("{#eval '{foo}' /}", Variant.forContentType(Variant.TEXT_HTML)).data("foo", "<p>").render());
+        assertEquals("&lt;p&gt;",
+                engine.parse("{#eval foo /}", Variant.forContentType(Variant.TEXT_HTML)).data("foo", "{bar}", "bar", "<p>")
+                        .render());
+        // No variant - no escaping
+        assertEquals("<p>",
+                engine.parse("{#eval '{foo}' /}").data("foo", "<p>").render());
+    }
+
+    @Test
     public void testStrEvalNamespace() {
         Engine engine = Engine.builder()
                 .addDefaults()
@@ -54,8 +74,19 @@ public class EvalTest {
                 engine.parse("{str:eval('Hello {name}!')}").data("name", "world").render());
         assertEquals("Hello world!",
                 engine.parse("{str:eval(t1)}").data("t1", "Hello {name}!", "name", "world").render());
+        // The variant of the parent template should be propagated to the evaluated template
+        // so that the HtmlEscaper is applied to the result
+        // Literal template
         assertEquals("&lt;p&gt;",
                 engine.parse("{str:eval('{foo}')}", Variant.forContentType(Variant.TEXT_HTML)).data("foo", "<p>").render());
+        // Non-literal template
+        assertEquals("&lt;p&gt;",
+                engine.parse("{str:eval(t1)}", Variant.forContentType(Variant.TEXT_HTML)).data("t1", "{foo}", "foo", "<p>")
+                        .render());
+        // No variant - no escaping
+        // Note that the same literal is used as above but with a different variant, i.e. the variant must be a part of the cache key
+        assertEquals("<p>",
+                engine.parse("{str:eval('{foo}')}").data("foo", "<p>").render());
     }
 
 }

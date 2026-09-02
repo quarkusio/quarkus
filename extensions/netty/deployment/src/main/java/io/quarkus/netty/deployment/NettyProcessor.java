@@ -2,10 +2,13 @@ package io.quarkus.netty.deployment;
 
 import java.lang.invoke.MethodHandle;
 import java.lang.reflect.Modifier;
+import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.OptionalInt;
+import java.util.Set;
+import java.util.SplittableRandom;
 import java.util.function.BiFunction;
 import java.util.function.Supplier;
 
@@ -15,7 +18,16 @@ import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.IndexView;
 import org.jboss.logging.Logger;
 import org.jboss.logmanager.Level;
+import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
+import org.objectweb.asm.MethodVisitor;
+import org.objectweb.asm.Opcodes;
+import org.objectweb.asm.tree.AbstractInsnNode;
+import org.objectweb.asm.tree.FieldInsnNode;
+import org.objectweb.asm.tree.IntInsnNode;
+import org.objectweb.asm.tree.JumpInsnNode;
+import org.objectweb.asm.tree.MethodInsnNode;
+import org.objectweb.asm.tree.MethodNode;
 
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.DefaultChannelId;
@@ -543,62 +555,64 @@ class NettyProcessor {
     }
 
     /**
-     * Rewrites {@code PlatformDependent0} to avoid the {@code MethodHandle} lookup used by Netty for virtual thread
-     * detection (which has a noticeable impact on startup). Since we target Java 21+, {@code Thread.isVirtual()} is
-     * always available and can be called directly.
+     * Rewrites {@code PlatformDependent0} to eliminate expensive {@code MethodHandle} lookups
+     * from its static initializer and replace {@code MethodHandle.invokeExact} dispatch with
+     * direct method calls. Since we target Java 17+, the following APIs are always available:
+     * <ul>
+     * <li>{@code Thread.isVirtual()} (Java 21+, but Quarkus minimum is 21)</li>
+     * <li>{@code ByteBuffer.alignedSlice(int)} (Java 9+)</li>
+     * <li>{@code ByteBuffer.slice(int, int)} (Java 13+)</li>
+     * <li>{@code ByteBuffer.put(int, ByteBuffer, int, int)} (Java 16+)</li>
+     * <li>{@code ByteBuffer.put(int, byte[], int, int)} (Java 13+)</li>
+     * <li>{@code SplittableRandom.nextBytes(byte[])} (Java 17+)</li>
+     * </ul>
      * <p>
-     * The upstream Netty 4.2.x code initializes a {@code MethodHandle} at class load time:
-     *
-     * <pre>{@code
-     * static final MethodHandle IS_VIRTUAL_THREAD_METHOD_HANDLE = getIsVirtualThreadMethodHandle();
-     *
-     * private static MethodHandle getIsVirtualThreadMethodHandle() {
-     *     try {
-     *         MethodHandle methodHandle = MethodHandles.publicLookup().findVirtual(Thread.class, "isVirtual",
-     *                 methodType(boolean.class));
-     *         boolean isVirtual = (boolean) methodHandle.invokeExact(Thread.currentThread());
-     *         return methodHandle;
-     *     } catch (Throwable e) {
-     *         ...
-     *         return null;
-     *     }
-     * }
-     * }</pre>
-     *
-     * and then uses it in:
-     *
-     * <pre>{@code
-     * static boolean isVirtualThread(Thread thread) {
-     *     if (thread == null || IS_VIRTUAL_THREAD_METHOD_HANDLE == null) {
-     *         return false;
-     *     }
-     *     try {
-     *         return (boolean) IS_VIRTUAL_THREAD_METHOD_HANDLE.invokeExact(thread);
-     *     } catch (Throwable t) {
-     *         ...
-     *     }
-     * }
-     * }</pre>
-     *
-     * We replace {@code getIsVirtualThreadMethodHandle()} to return {@code null} (skipping the lookup)
-     * and {@code isVirtualThread(Thread)} with a direct call:
-     *
-     * <pre>{@code
-     * static boolean isVirtualThread(Thread thread) {
-     *     return thread != null && thread.isVirtual();
-     * }
-     * }</pre>
+     * For each field, we apply three atomic changes:
+     * <ol>
+     * <li>Patch the static initializer (via ASM tree API) to skip the
+     * {@code AccessController.doPrivileged} + {@code MethodHandles.publicLookup().findVirtual()}
+     * lookup, forcing the field to {@code null}.</li>
+     * <li>Replace the {@code has*Method()} guard to return {@code true} unconditionally.</li>
+     * <li>Replace the accessor method to call the target method directly instead of going
+     * through {@code MethodHandle.invokeExact}.</li>
+     * </ol>
      */
     @BuildStep
-    void transformPlatformDependent0(BuildProducer<BytecodeTransformerBuildItem> producer) {
+    void transformPlatformDependent0(CompiledJavaVersionBuildItem compiledJavaVersion,
+            BuildProducer<BytecodeTransformerBuildItem> producer) {
         String className = "io.netty.util.internal.PlatformDependent0";
+
+        boolean isJava25OrHigher = compiledJavaVersion.getJavaVersion()
+                .isJava25OrHigher() == CompiledJavaVersionBuildItem.JavaVersion.Status.TRUE;
+
+        Set<String> fieldsToSkip;
+        Set<String> knownUnhandledFields;
+        if (isJava25OrHigher) {
+            fieldsToSkip = Set.of(
+                    "ALIGN_SLICE", "OFFSET_SLICE", "ABSOLUTE_PUT_BUFFER",
+                    "ABSOLUTE_PUT_ARRAY", "SPLITTABLE_RANDOM_NEXT_BYTES",
+                    "MEMORY_SEGMENT_ADDRESS_OF_BUFFER");
+            knownUnhandledFields = Set.of(
+                    "DIRECT_BUFFER_CONSTRUCTOR", "ALLOCATE_ARRAY_METHOD");
+        } else {
+            fieldsToSkip = Set.of(
+                    "ALIGN_SLICE", "OFFSET_SLICE", "ABSOLUTE_PUT_BUFFER",
+                    "ABSOLUTE_PUT_ARRAY", "SPLITTABLE_RANDOM_NEXT_BYTES");
+            knownUnhandledFields = Set.of(
+                    "DIRECT_BUFFER_CONSTRUCTOR", "ALLOCATE_ARRAY_METHOD",
+                    "MEMORY_SEGMENT_ADDRESS_OF_BUFFER");
+        }
+
         producer.produce(new BytecodeTransformerBuildItem.Builder().setClassToTransform(className)
-                .setCacheable(true).setVisitorFunction(
+                .setCacheable(true)
+                .setClassReaderOptions(ClassReader.EXPAND_FRAMES)
+                .setVisitorFunction(
                         new BiFunction<>() {
                             @Override
                             public ClassVisitor apply(String s, ClassVisitor classVisitor) {
                                 ClassTransformer transformer = new ClassTransformer(className);
 
+                                // --- getIsVirtualThreadMethodHandle -> return null ---
                                 {
                                     MethodDescriptor methodDescriptor = MethodDescriptor.ofMethod(className,
                                             "getIsVirtualThreadMethodHandle",
@@ -609,6 +623,7 @@ class NettyProcessor {
                                     method.returnValue(method.loadNull());
                                 }
 
+                                // --- isVirtualThread(Thread) -> thread != null && thread.isVirtual() ---
                                 {
                                     MethodDescriptor methodDescriptor = MethodDescriptor.ofMethod(className, "isVirtualThread",
                                             boolean.class, Thread.class);
@@ -617,16 +632,12 @@ class NettyProcessor {
                                     MethodCreator isVirtualThreadMethod = transformer.addMethod(methodDescriptor)
                                             .setModifiers(Modifier.STATIC);
 
-                                    // Get the thread parameter
                                     ResultHandle threadParam = isVirtualThreadMethod.getMethodParam(0);
 
-                                    // Check if thread is null
                                     BranchResult nullCheck = isVirtualThreadMethod.ifNull(threadParam);
 
-                                    // If null, return false
                                     nullCheck.trueBranch().returnValue(nullCheck.trueBranch().load(false));
 
-                                    // If not null, call thread.isVirtual()
                                     MethodDescriptor isVirtualMethod = MethodDescriptor.ofMethod(
                                             Thread.class,
                                             "isVirtual",
@@ -635,11 +646,106 @@ class NettyProcessor {
                                             isVirtualMethod,
                                             threadParam);
 
-                                    // Return the result
                                     nullCheck.falseBranch().returnValue(isVirtualResult);
                                 }
 
-                                return transformer.applyTo(classVisitor);
+                                // --- has* methods -> return true ---
+                                replaceWithReturnTrue(transformer, className, "hasAlignSliceMethod");
+                                replaceWithReturnTrue(transformer, className, "hasOffsetSliceMethod");
+                                replaceWithReturnTrue(transformer, className, "hasAbsolutePutBufferMethod");
+                                replaceWithReturnTrue(transformer, className, "hasAbsolutePutArrayMethod");
+
+                                // --- alignSlice(ByteBuffer, int) -> buffer.alignedSlice(alignment) ---
+                                {
+                                    MethodDescriptor md = MethodDescriptor.ofMethod(className, "alignSlice",
+                                            ByteBuffer.class, ByteBuffer.class, int.class);
+                                    transformer.removeMethod(md);
+                                    MethodCreator m = transformer.addMethod(md).setModifiers(Modifier.STATIC);
+                                    ResultHandle result = m.invokeVirtualMethod(
+                                            MethodDescriptor.ofMethod(ByteBuffer.class, "alignedSlice",
+                                                    ByteBuffer.class, int.class),
+                                            m.getMethodParam(0), m.getMethodParam(1));
+                                    m.returnValue(result);
+                                }
+
+                                // --- offsetSlice(ByteBuffer, int, int) -> buffer.slice(index, length) ---
+                                {
+                                    MethodDescriptor md = MethodDescriptor.ofMethod(className, "offsetSlice",
+                                            ByteBuffer.class, ByteBuffer.class, int.class, int.class);
+                                    transformer.removeMethod(md);
+                                    MethodCreator m = transformer.addMethod(md).setModifiers(Modifier.STATIC);
+                                    ResultHandle result = m.invokeVirtualMethod(
+                                            MethodDescriptor.ofMethod(ByteBuffer.class, "slice",
+                                                    ByteBuffer.class, int.class, int.class),
+                                            m.getMethodParam(0), m.getMethodParam(1), m.getMethodParam(2));
+                                    m.returnValue(result);
+                                }
+
+                                // --- absolutePut(ByteBuffer, int, ByteBuffer, int, int) -> dst.put(...) ---
+                                {
+                                    MethodDescriptor md = MethodDescriptor.ofMethod(className, "absolutePut",
+                                            ByteBuffer.class, ByteBuffer.class, int.class,
+                                            ByteBuffer.class, int.class, int.class);
+                                    transformer.removeMethod(md);
+                                    MethodCreator m = transformer.addMethod(md).setModifiers(Modifier.STATIC);
+                                    ResultHandle result = m.invokeVirtualMethod(
+                                            MethodDescriptor.ofMethod(ByteBuffer.class, "put",
+                                                    ByteBuffer.class, int.class, ByteBuffer.class, int.class, int.class),
+                                            m.getMethodParam(0), m.getMethodParam(1), m.getMethodParam(2),
+                                            m.getMethodParam(3), m.getMethodParam(4));
+                                    m.returnValue(result);
+                                }
+
+                                // --- absolutePut(ByteBuffer, int, byte[], int, int) -> dst.put(...) ---
+                                {
+                                    MethodDescriptor md = MethodDescriptor.ofMethod(className, "absolutePut",
+                                            ByteBuffer.class, ByteBuffer.class, int.class,
+                                            byte[].class, int.class, int.class);
+                                    transformer.removeMethod(md);
+                                    MethodCreator m = transformer.addMethod(md).setModifiers(Modifier.STATIC);
+                                    ResultHandle result = m.invokeVirtualMethod(
+                                            MethodDescriptor.ofMethod(ByteBuffer.class, "put",
+                                                    ByteBuffer.class, int.class, byte[].class, int.class, int.class),
+                                            m.getMethodParam(0), m.getMethodParam(1), m.getMethodParam(2),
+                                            m.getMethodParam(3), m.getMethodParam(4));
+                                    m.returnValue(result);
+                                }
+
+                                // --- splittableRandomNextBytes(SplittableRandom, byte[]) -> rng.nextBytes(data) ---
+                                {
+                                    MethodDescriptor md = MethodDescriptor.ofMethod(className,
+                                            "splittableRandomNextBytes",
+                                            void.class, SplittableRandom.class, byte[].class);
+                                    transformer.removeMethod(md);
+                                    MethodCreator m = transformer.addMethod(md).setModifiers(Modifier.STATIC);
+                                    m.invokeVirtualMethod(
+                                            MethodDescriptor.ofMethod(SplittableRandom.class, "nextBytes",
+                                                    void.class, byte[].class),
+                                            m.getMethodParam(0), m.getMethodParam(1));
+                                    m.returnVoid();
+                                }
+
+                                // --- Java 25+ specific transforms ---
+                                if (isJava25OrHigher) {
+                                    replaceWithReturnTrue(transformer, className, "hasMemorySegmentAddressOfBuffer");
+                                    generateDirectBufferAddress(transformer, className);
+                                }
+
+                                ClassVisitor downstream = classVisitor;
+                                if (isJava25OrHigher) {
+                                    downstream = new ClassVisitor(Gizmo.ASM_API_VERSION, downstream) {
+                                        @Override
+                                        public void visit(int version, int access, String name, String signature,
+                                                String superName, String[] interfaces) {
+                                            super.visit(Math.max(version, 69), access, name, signature,
+                                                    superName, interfaces);
+                                        }
+                                    };
+                                }
+
+                                ClassVisitor gizmoVisitor = transformer.applyTo(downstream);
+                                return createClinitPatcher(gizmoVisitor, fieldsToSkip,
+                                        knownUnhandledFields);
                             }
                         })
                 .build());
@@ -1565,6 +1671,195 @@ class NettyProcessor {
                     }
                 }).build());
 
+    }
+
+    private static void replaceWithReturnTrue(ClassTransformer transformer, String className, String methodName) {
+        MethodDescriptor md = MethodDescriptor.ofMethod(className, methodName, boolean.class);
+        transformer.removeMethod(md);
+        MethodCreator m = transformer.addMethod(md).setModifiers(Modifier.STATIC);
+        m.returnValue(m.load(true));
+    }
+
+    /**
+     * Creates an ASM {@link ClassVisitor} that intercepts the {@code <clinit>} method and patches
+     * version-gated MethodHandle lookup blocks. For each block matching the pattern:
+     *
+     * <pre>
+     * invokestatic javaVersion()I
+     * bipush/sipush N
+     * if_icmplt/if_icmple ELSE_LABEL
+     * ... MethodHandle lookup via AccessController.doPrivileged ...
+     * putstatic FIELD
+     * goto END_LABEL
+     * ELSE_LABEL:
+     * aconst_null
+     * putstatic FIELD
+     * </pre>
+     *
+     * If {@code FIELD} is in {@code fieldsToSkip}, the version check is replaced with a
+     * {@code GOTO ELSE_LABEL}, forcing the null assignment and skipping the expensive
+     * MethodHandle lookup.
+     */
+    private static void generateDirectBufferAddress(ClassTransformer transformer, String className) {
+        MethodDescriptor md = MethodDescriptor.ofMethod(className, "directBufferAddress",
+                long.class, ByteBuffer.class);
+        transformer.removeMethod(md);
+        MethodCreator m = transformer.addMethod(md).setModifiers(Modifier.STATIC);
+
+        ResultHandle buffer = m.getMethodParam(0);
+
+        // if (hasUnsafe()) return getLong(buffer, ADDRESS_FIELD_OFFSET);
+        ResultHandle hasUnsafe = m.invokeStaticMethod(
+                MethodDescriptor.ofMethod(className, "hasUnsafe", boolean.class));
+        BranchResult unsafeCheck = m.ifNonZero(hasUnsafe);
+
+        BytecodeCreator unsafeBranch = unsafeCheck.trueBranch();
+        ResultHandle addressFieldOffset = unsafeBranch.readStaticField(
+                FieldDescriptor.of(className, "ADDRESS_FIELD_OFFSET", long.class));
+        ResultHandle addr = unsafeBranch.invokeStaticMethod(
+                MethodDescriptor.ofMethod(className, "getLong",
+                        long.class, Object.class, long.class),
+                buffer, addressFieldOffset);
+        unsafeBranch.returnValue(addr);
+
+        // return MemorySegment.ofBuffer((Buffer) buffer).address() - buffer.position();
+        ResultHandle segment = m.invokeStaticInterfaceMethod(
+                MethodDescriptor.ofMethod("java.lang.foreign.MemorySegment", "ofBuffer",
+                        "java.lang.foreign.MemorySegment",
+                        "java.nio.Buffer"),
+                buffer);
+        ResultHandle segAddr = m.invokeInterfaceMethod(
+                MethodDescriptor.ofMethod("java.lang.foreign.MemorySegment", "address",
+                        long.class),
+                segment);
+        ResultHandle position = m.invokeVirtualMethod(
+                MethodDescriptor.ofMethod(ByteBuffer.class, "position", int.class),
+                buffer);
+        ResultHandle positionLong = m.convertPrimitive(position, long.class);
+        ResultHandle result = m.subtract(segAddr, positionLong);
+        m.returnValue(result);
+    }
+
+    private static ClassVisitor createClinitPatcher(ClassVisitor downstream, Set<String> fieldsToSkip,
+            Set<String> knownUnhandledFields) {
+        return new ClassVisitor(Gizmo.ASM_API_VERSION, downstream) {
+            @Override
+            public MethodVisitor visitMethod(int access, String name, String descriptor,
+                    String signature, String[] exceptions) {
+                MethodVisitor mv = super.visitMethod(access, name, descriptor, signature, exceptions);
+                if ("<clinit>".equals(name)) {
+                    MethodVisitor target = mv;
+                    return new MethodNode(Gizmo.ASM_API_VERSION, access, name, descriptor,
+                            signature, exceptions) {
+                        @Override
+                        public void visitEnd() {
+                            super.visitEnd();
+                            patchClinitVersionChecks(this.instructions, fieldsToSkip,
+                                    knownUnhandledFields);
+                            this.accept(target);
+                        }
+                    };
+                }
+                return mv;
+            }
+        };
+    }
+
+    private static void patchClinitVersionChecks(
+            org.objectweb.asm.tree.InsnList instructions, Set<String> fieldsToSkip,
+            Set<String> knownUnhandledFields) {
+        Set<String> patchedFields = new java.util.HashSet<>();
+        AbstractInsnNode node = instructions.getFirst();
+        while (node != null) {
+            if (node instanceof MethodInsnNode methodInsn
+                    && methodInsn.getOpcode() == Opcodes.INVOKESTATIC
+                    && "javaVersion".equals(methodInsn.name)
+                    && "io/netty/util/internal/PlatformDependent0".equals(methodInsn.owner)) {
+
+                AbstractInsnNode pushNode = nextRealInsn(methodInsn);
+                if (pushNode == null || !(pushNode instanceof IntInsnNode)) {
+                    node = node.getNext();
+                    continue;
+                }
+
+                AbstractInsnNode jumpNode = nextRealInsn(pushNode);
+                if (jumpNode == null || !(jumpNode instanceof JumpInsnNode jumpInsn)) {
+                    node = node.getNext();
+                    continue;
+                }
+
+                int opcode = jumpInsn.getOpcode();
+                if (opcode != Opcodes.IF_ICMPLT && opcode != Opcodes.IF_ICMPLE) {
+                    node = node.getNext();
+                    continue;
+                }
+
+                // Walk from the jump target to find the null-assignment and identify the field
+                AbstractInsnNode nullInsn = nextRealInsn(jumpInsn.label);
+                if (nullInsn == null || nullInsn.getOpcode() != Opcodes.ACONST_NULL) {
+                    node = node.getNext();
+                    continue;
+                }
+
+                AbstractInsnNode putStaticInsn = nextRealInsn(nullInsn);
+                if (!(putStaticInsn instanceof FieldInsnNode fieldInsn)
+                        || fieldInsn.getOpcode() != Opcodes.PUTSTATIC) {
+                    node = node.getNext();
+                    continue;
+                }
+
+                String fieldName = fieldInsn.name;
+
+                if (!fieldsToSkip.contains(fieldName)) {
+                    if (!knownUnhandledFields.contains(fieldName)) {
+                        throw new IllegalStateException(
+                                "PlatformDependent0.<clinit> contains an unhandled version-gated MethodHandle "
+                                        + "lookup block for field '" + fieldName + "'. "
+                                        + "This likely means Netty added a new version-gated block. "
+                                        + "Either add it to fieldsToSkip (and replace the accessor method) "
+                                        + "or add it to KNOWN_UNHANDLED_CLINIT_FIELDS.");
+                    }
+                    node = node.getNext();
+                    continue;
+                }
+
+                // Advance past the nodes we're about to remove BEFORE removing them
+                AbstractInsnNode nextNode = jumpInsn.getNext();
+
+                // Patch: remove invokestatic + push constant, change conditional to GOTO
+                instructions.remove(methodInsn);
+                instructions.remove(pushNode);
+                jumpInsn.setOpcode(Opcodes.GOTO);
+                patchedFields.add(fieldName);
+
+                node = nextNode;
+                continue;
+            }
+            node = node.getNext();
+        }
+
+        // Verify that all expected fields were found and patched
+        if (!patchedFields.equals(fieldsToSkip)) {
+            Set<String> missing = new java.util.HashSet<>(fieldsToSkip);
+            missing.removeAll(patchedFields);
+            throw new IllegalStateException(
+                    "Failed to patch all expected version-gated MethodHandle lookup blocks in "
+                            + "PlatformDependent0.<clinit>. Missing fields: " + missing + ". "
+                            + "The bytecode pattern may have changed in a Netty update.");
+        }
+    }
+
+    private static AbstractInsnNode nextRealInsn(AbstractInsnNode node) {
+        node = node.getNext();
+        while (node != null) {
+            int type = node.getType();
+            if (type != AbstractInsnNode.LABEL && type != AbstractInsnNode.FRAME
+                    && type != AbstractInsnNode.LINE) {
+                return node;
+            }
+            node = node.getNext();
+        }
+        return null;
     }
 
     private static class AddSharableVisitorFunction implements BiFunction<String, ClassVisitor, ClassVisitor> {

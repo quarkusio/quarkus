@@ -100,7 +100,10 @@ public class UserTagTest {
 
     @Test
     public void testEval() {
-        Engine engine = Engine.builder().addDefaults().addValueResolver(new ReflectionValueResolver())
+        Engine engine = Engine.builder()
+                .addDefaults()
+                .addSectionHelper(new EvalSectionHelper.Factory())
+                .addValueResolver(new ReflectionValueResolver())
                 .addSectionHelper(new UserTagSectionHelper.Factory("itemDetail", "my-tag-id"))
                 .build();
 

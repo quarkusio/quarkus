@@ -11,6 +11,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.jupiter.api.Test;
 
@@ -122,6 +123,47 @@ class TokensHelperTest {
         assertSame(current, served, "short-lived tokens with life left should still be served");
 
         client.release.countDown();
+    }
+
+    /**
+     * A caller which forces the acquisition of new tokens does so because the tokens it was given
+     * were rejected, typically after a 401 when 'refresh-on-unauthorized' is enabled. Handing it
+     * the tokens being replaced would just fail again, so it waits for the refresh instead, even
+     * though those tokens are still valid and would be served to any other caller.
+     */
+    @Test
+    void testForcedAcquisitionNotServedPreviousTokensWhileRefreshIsInFlight() throws Exception {
+        // Still valid, so this is served to ordinary callers: only the forcing is what differs.
+        Tokens current = tokens("current", 8);
+        assertFalse(current.isAccessTokenExpired());
+        assertTrue(current.isAccessTokenWithinRefreshInterval());
+
+        BlockingOidcClient client = new BlockingOidcClient(tokens("refreshed", 300));
+        TokensHelper helper = new TokensHelper();
+        helper.initTokens(new ImmediateOidcClient(current), Map.of());
+
+        helper.getTokens(client, Map.of(), false).subscribe().with(t -> {
+        }, t -> {
+        });
+        client.awaitInFlight();
+
+        final AtomicReference<Tokens> forced = new AtomicReference<>();
+        final CountDownLatch forcedCompleted = new CountDownLatch(1);
+        helper.getTokens(client, Map.of(), true).subscribe().with(t -> {
+            forced.set(t);
+            forcedCompleted.countDown();
+        }, t -> forcedCompleted.countDown());
+
+        // The refresh is still held, so the forcing caller must not have been given anything yet.
+        // Without this the test would also pass while the rejected tokens are handed back, since
+        // both paths eventually produce a value.
+        assertFalse(forcedCompleted.await(1, TimeUnit.SECONDS),
+                "tokens which have been rejected must not be served to a caller forcing new ones");
+
+        client.release.countDown();
+        assertTrue(forcedCompleted.await(10, TimeUnit.SECONDS), "the forcing caller should have completed");
+        assertEquals("refreshed", forced.get().getAccessToken(),
+                "the forcing caller should have waited for the refreshed tokens");
     }
 
     /**

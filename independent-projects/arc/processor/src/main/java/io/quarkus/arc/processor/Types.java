@@ -599,12 +599,11 @@ public final class Types {
     }
 
     /**
-     * Detects wildcard for given type.
-     * In case the annotation target is a producer and the boolean parameter is true, throws a {@link DefinitionException}
-     * based on the boolean parameter.
-     * Returns true if a wildcard is detected, false otherwise.
+     * Returns whether given {@code type} contains wildcard type arguments.
+     * When the type does contain wildcard type arguments, the given {@code producerFieldOrMethod} is not {@code null}
+     * and {@code throwIfDetected} is set, throws a {@link DefinitionException}.
      */
-    static boolean containsWildcard(Type type, AnnotationTarget producerFieldOrMethod, boolean throwIfDetected) {
+    public static boolean containsWildcard(Type type, AnnotationTarget producerFieldOrMethod, boolean throwIfDetected) {
         if (type.kind().equals(Kind.WILDCARD_TYPE)) {
             if (throwIfDetected && producerFieldOrMethod != null) {
                 // a producer method that has wildcard directly in its return type

@@ -4,16 +4,6 @@
 # Only MAVEN_OPTS is exported; other variables are set in the caller's
 # shell context when sourced.
 
-if command -v podman &>/dev/null; then CONTAINER_CMD="podman"
-elif command -v docker &>/dev/null; then CONTAINER_CMD="docker"
-else echo "ERROR: neither podman nor docker found" && return 1 2>/dev/null || exit 1; fi
-
-if command -v getenforce &>/dev/null && [ "$(getenforce 2>/dev/null)" != "Disabled" ]; then
-  VOL_FLAG=":z"
-else
-  VOL_FLAG=""
-fi
-
 if command -v nproc &>/dev/null; then
   CORES=$(nproc)
 elif command -v sysctl &>/dev/null; then
@@ -58,8 +48,6 @@ elif command -v xdg-open &>/dev/null; then BROWSER_CMD="xdg-open"
 elif command -v open &>/dev/null; then BROWSER_CMD="open"
 else BROWSER_CMD=""; fi
 
-echo "Container:  $CONTAINER_CMD"
-echo "SELinux:    ${VOL_FLAG:-none}"
 echo "Cores:      $CORES"
 echo "RAM:        $((TOTAL_MEM_MB / 1024))GB total → heap ${HEAP_MB}MB, threads: ${MVN_THREADS:-single-threaded}"
 echo "MAVEN_OPTS: $MAVEN_OPTS"

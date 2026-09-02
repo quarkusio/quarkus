@@ -13,12 +13,12 @@ done
 find "${TMPDIR:-/tmp}" -maxdepth 1 -name 'quarkus-docs-build-*' -type d -mtime +7 -exec rm -rf {} + 2>/dev/null || true
 LOGDIR=$(mktemp -d "${TMPDIR:-/tmp}/quarkus-docs-build-XXXXXX") || exit 1
 
-# Primary: build from the upstream jekyll-container/ Dockerfile (in the website checkout).
-# Fallback: use pre-built images if the Dockerfile is not available (first run before sync).
-CONTAINER_NAME="quarkus-docs-preview"
-JEKYLL_LOCAL_IMAGE="quarkus-docs-jekyll:local"
-JEKYLL_IMAGE_FALLBACK="docker.io/bretfisher/jekyll-serve@sha256:db11b70736935b1a777b2ff2ae10f9ad191ee9fca6560eade1d5ad98b74e5f66"
-JEKYLL_IMAGE_FALLBACK2="docker.io/jekyll/jekyll@sha256:bb45414c3fefa80a75c5001f30baf1dff48ae31dc961b8b51003b93b60675334"
+# The website (quarkusio.github.io) is a Quarkus Roq site. Preview is served
+# by its own `serve-only-latest-guides.sh`, which runs `mvnw quarkus:dev` —
+# no container runtime is required.
+DOCS_PREVIEW_PORT="${QUARKUS_HTTP_PORT:-8042}"
+SERVER_PID_FILE="$SCRIPTDIR/docs/.docs-preview-server.pid"
+BASE_URL="http://127.0.0.1:${DOCS_PREVIEW_PORT}"
 
 PREVIEW_REF="$SCRIPTDIR/docs/.docs-preview-last-run"
 ROOT_BUILD_REF="$SCRIPTDIR/docs/.docs-preview-root-build-last-run"
@@ -79,7 +79,7 @@ estimate_step() {
     docs)      awk -v c="$CORES" 'BEGIN {t=int(75+(22-c)*1.7);  if(t<30)t=30; printf "%d",t}' ;;
     sync_full) echo 200 ;;
     sync_fast) echo 1 ;;
-    jekyll)    awk -v c="$CORES" 'BEGIN {t=int(100+(22-c)*4.1);  if(t<60)t=60; printf "%d",t}' ;;
+    serve)     awk -v c="$CORES" 'BEGIN {t=int(60+(22-c)*2.5);  if(t<20)t=20; printf "%d",t}' ;;
     *)         echo 120 ;;
   esac
 }
@@ -169,14 +169,17 @@ root_build_needed() {
   return 1
 }
 
-# --- Container reuse ---
+# --- Server reuse ---
 
-container_running() {
-  [ "$($CONTAINER_CMD inspect -f '{{.State.Running}}' "$CONTAINER_NAME" 2>/dev/null)" = "true" ]
+server_running() {
+  [ -f "$SERVER_PID_FILE" ] || return 1
+  local pid
+  pid=$(cat "$SERVER_PID_FILE" 2>/dev/null)
+  [ -n "$pid" ] && kill -0 "$pid" 2>/dev/null
 }
 
 preview_ready() {
-  [ "$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:4000 2>/dev/null)" = "200" ]
+  [ "$(curl -s -o /dev/null -w '%{http_code}' "$BASE_URL" 2>/dev/null)" = "200" ]
 }
 
 # --- Step 0: Environment ---
@@ -196,17 +199,17 @@ fi
 
 EST_ROOT=$(estimate_step root)
 EST_DOCS=$(estimate_step docs)
-EST_JEKYLL=$(estimate_step jekyll)
+EST_SERVE=$(estimate_step serve)
 
 PREVIEW_ALREADY_RUNNING=false
-if container_running && preview_ready; then
+if server_running && preview_ready; then
   PREVIEW_ALREADY_RUNNING=true
 fi
 
 echo ""
 if [ "$RUN_ROOT_BUILD" = "true" ]; then
   EST_SYNC=$(estimate_step sync_full)
-  EST_TOTAL=$((EST_ROOT + EST_DOCS + EST_SYNC + EST_JEKYLL))
+  EST_TOTAL=$((EST_ROOT + EST_DOCS + EST_SYNC + EST_SERVE))
   echo "Full root build needed."
   echo "Estimated time: ~$((EST_TOTAL / 60)) minutes on this machine."
   echo "After this completes, later docs updates take about 1 minute."
@@ -218,7 +221,7 @@ fi
 echo "Logs: $LOGDIR"
 echo ""
 
-# Pre-flight: port check (skip if reusing container)
+# Pre-flight: port check (skip if reusing the running dev server)
 port_in_use() {
   if command -v lsof >/dev/null 2>&1; then
     lsof -nP -iTCP:"$1" -sTCP:LISTEN >/dev/null 2>&1
@@ -232,32 +235,24 @@ port_in_use() {
 }
 
 if [ "$PREVIEW_ALREADY_RUNNING" != "true" ]; then
-  if port_in_use 4000 || port_in_use 35729; then
-    if container_running; then
-      echo "  Stale preview container detected. Removing..."
-      $CONTAINER_CMD rm -f "$CONTAINER_NAME" 2>/dev/null || true
-      sleep 1
-      if port_in_use 4000 || port_in_use 35729; then
-        echo "Port 4000 or 35729 is still in use after removing stale container."
-        echo "Free the port and try again."
-        exit 1
-      fi
-    else
-      echo "Port 4000 or 35729 is already in use by another process."
-      echo "Free the port and try again."
-      exit 1
-    fi
+  if [ -f "$SERVER_PID_FILE" ]; then
+    echo "  Stale preview server detected. Stopping it..."
+    STALE_PID=$(cat "$SERVER_PID_FILE" 2>/dev/null)
+    [ -n "$STALE_PID" ] && kill "$STALE_PID" 2>/dev/null
+    rm -f "$SERVER_PID_FILE"
+    sleep 1
+  fi
+  if port_in_use "$DOCS_PREVIEW_PORT"; then
+    echo "Port $DOCS_PREVIEW_PORT is already in use by another process."
+    echo "Free the port, or set QUARKUS_HTTP_PORT to a different one, and try again."
+    exit 1
   fi
 fi
 
 START_TOTAL=$(date +%s)
 
 # Non-fatal cache cleanup
-if [ "$CONTAINER_CMD" = "podman" ]; then
-  podman unshare rm -rf docs/.cache/ 2>/dev/null || rm -rf docs/.cache/ 2>/dev/null || true
-else
-  rm -rf docs/.cache/ 2>/dev/null || true
-fi
+rm -rf docs/.cache/ 2>/dev/null || true
 
 # --- Step 1: Root Build ---
 
@@ -367,16 +362,38 @@ echo "=== Step 3: Sync ==="
 STEP3_START=$(date +%s)
 
 run_fast_sync() {
+  local target_guides=target/web-site/content/versions/main/guides
   rsync -rt --delete \
       --exclude='**/*.html' --exclude='**/index.adoc' \
       --exclude='**/_attributes-local.adoc' --exclude='**/guides.md' \
       --exclude='**/_templates' \
-      target/asciidoc/sources/ target/web-site/_versions/main/guides || return 1
+      target/asciidoc/sources/ "$target_guides" || return 1
+
+  # Mirror sync-web-site.sh's Roq post-processing so the fast path stays
+  # equivalent to a full sync.
+  for ext in py sh zip jar tar.gz; do
+    find "$target_guides" -maxdepth 1 -name "*.$ext" -exec bash -c '
+      mkdir -p "$(dirname "$1")/assets"
+      mv "$1" "$(dirname "$1")/assets/"
+    ' _ {} \; || return 1
+    find "$target_guides" -maxdepth 1 -name "*.adoc" \
+      -exec sed -i "s|link:\([a-zA-Z0-9_-]*\.$ext\)|link:../assets/\1|g" {} \; || return 1
+  done
+  for subdir in images javascript assets; do
+    local dir="$target_guides/$subdir"
+    if [ -d "$dir" ] && [ ! -f "$dir/index.html" ]; then
+      local rel_path
+      rel_path=$(echo "$dir" | sed 's|target/web-site/content/||')
+      printf '%s\n' '---' "link: /${rel_path}/" '---' '<html><body></body></html>' > "$dir/index.html" || return 1
+    fi
+  done
+  find "$target_guides" -name "*qute-reference.adoc" -exec sed -i 's/|}/|\\}/g; s/{|/\\{|/g' {} \; || return 1
+
   if [ -d target/quarkus-generated-doc/ ]; then
     rsync -rt --delete \
         --exclude='**/*.html' --exclude='**/index.adoc' \
         --exclude='**/_attributes.adoc' \
-        target/quarkus-generated-doc/ target/web-site/_generated-doc/main || return 1
+        target/quarkus-generated-doc/ target/web-site/content/_generated-doc/main || return 1
   fi
   if [ -f target/indexByType.yaml ]; then
     mkdir -p target/web-site/_data/versioned/main/index || return 1
@@ -396,11 +413,11 @@ run_full_sync() {
 }
 
 SYNC_TYPE="full"
-if [ -d target/web-site/_versions ]; then
+if [ -d target/web-site/content/versions ]; then
   SYNC_OK=true
-  [ ! -d target/web-site/_versions/main/guides ] && SYNC_OK=false
-  [ ! -f target/web-site/_config.yml ] && SYNC_OK=false
-  [ ! -f target/web-site/_only_latest_guides_config.yml ] && SYNC_OK=false
+  [ ! -d target/web-site/content/versions/main/guides ] && SYNC_OK=false
+  [ ! -f target/web-site/config/application.properties ] && SYNC_OK=false
+  [ ! -f target/web-site/config/application-only-latest-guides.properties ] && SYNC_OK=false
 
   if [ "$SYNC_OK" = "true" ]; then
     SYNC_TYPE="fast"
@@ -436,7 +453,8 @@ if [ "$SYNC_TYPE" = "fast" ]; then
   save_step_time "sync_fast" "$STEP3_TIME" || true
 else
   save_step_time "sync_full" "$STEP3_TIME" || true
-  # Full sync recreated the mount directory — container must restart
+  # Full sync recreated the checkout — the dev server must restart to pick
+  # up the (re-)cloned site sources.
   PREVIEW_ALREADY_RUNNING=false
 fi
 
@@ -446,7 +464,7 @@ echo ""
 echo "=== Step 4: Preview server ==="
 
 if [ "$PREVIEW_ALREADY_RUNNING" = "true" ]; then
-  if container_running && preview_ready; then
+  if server_running && preview_ready; then
     echo "  Preview server is already running. Reusing it."
   else
     echo "  Previously running preview server is no longer ready. Restarting."
@@ -455,119 +473,55 @@ if [ "$PREVIEW_ALREADY_RUNNING" = "true" ]; then
 fi
 
 if [ "$PREVIEW_ALREADY_RUNNING" != "true" ]; then
-  $CONTAINER_CMD rm -f "$CONTAINER_NAME" 2>/dev/null || true
+  if [ -f "$SERVER_PID_FILE" ]; then
+    OLD_PID=$(cat "$SERVER_PID_FILE" 2>/dev/null)
+    [ -n "$OLD_PID" ] && kill "$OLD_PID" 2>/dev/null
+    rm -f "$SERVER_PID_FILE"
+  fi
   cd target/web-site || exit 1
   STEP4_START=$(date +%s)
 
-  start_jekyll() {
-    local image="$1" mount="$2" run_log="$3"
-    if ! $CONTAINER_CMD run -d --name "$CONTAINER_NAME" \
-      -p 127.0.0.1:4000:4000 -p 127.0.0.1:35729:35729 \
-      -v "$(pwd):${mount}${VOL_FLAG}" \
-      -v quarkus-jekyll-bundles:/usr/local/bundle \
-      "$image" \
-      bundle exec jekyll serve --host 0.0.0.0 \
-      --livereload --incremental \
-      --config _config.yml,_config_dev.yml,_only_latest_guides_config.yml \
-      > "$run_log" 2>&1; then
-      return 1
-    fi
-    local _i
-    for _i in $(seq 1 10); do
-      if [ "$($CONTAINER_CMD inspect -f '{{.State.Running}}' "$CONTAINER_NAME" 2>/dev/null)" = "true" ]; then
-        return 0
-      fi
-      sleep 1
-    done
-    $CONTAINER_CMD logs "$CONTAINER_NAME" >> "$run_log" 2>&1
-    return 1
-  }
+  # Roq's own serve-only-latest-guides.sh runs `mvnw quarkus:dev` with the
+  # only-latest-guides profile — no container image, no port for a separate
+  # livereload channel (Quarkus dev mode reloads over the same HTTP port).
+  QUARKUS_HTTP_PORT="$DOCS_PREVIEW_PORT" \
+    nohup ./serve-only-latest-guides.sh > "$LOGDIR/step4-serve.log" 2>&1 &
+  SERVER_PID=$!
+  disown "$SERVER_PID" 2>/dev/null || true
+  echo "$SERVER_PID" > "$SERVER_PID_FILE"
 
-  # Primary: build from the upstream jekyll-container/ Dockerfile
-  STARTED=false
-  if [ -d "jekyll-container" ] && [ -f "jekyll-container/Dockerfile" ]; then
-    echo "  Checking Jekyll image (build cache)..."
-    if ! $CONTAINER_CMD build -t "$JEKYLL_LOCAL_IMAGE" jekyll-container/ > "$LOGDIR/step4-build.log" 2>&1; then
-      echo "  Image build failed. Falling back to pre-built image..."
-    fi
-    if $CONTAINER_CMD image inspect "$JEKYLL_LOCAL_IMAGE" > /dev/null 2>&1; then
-      if start_jekyll "$JEKYLL_LOCAL_IMAGE" "/site" "$LOGDIR/step4-primary.log"; then
-        STARTED=true
-      else
-        echo "  Local image failed to start. Trying fallback..."
-        $CONTAINER_CMD rm -f "$CONTAINER_NAME" >/dev/null 2>&1 || true
-      fi
-    fi
-  fi
-
-  # Fallback 1: bretfisher/jekyll-serve (pinned by digest)
-  if [ "$STARTED" != "true" ]; then
-    PULL_OK=true
-    if ! $CONTAINER_CMD image inspect "$JEKYLL_IMAGE_FALLBACK" > /dev/null 2>&1; then
-      echo "  Pulling fallback Jekyll image (first time only)..."
-      $CONTAINER_CMD pull "$JEKYLL_IMAGE_FALLBACK" > "$LOGDIR/step4-fallback-pull.log" 2>&1 || PULL_OK=false
-    fi
-    if [ "$PULL_OK" = "true" ]; then
-      if start_jekyll "$JEKYLL_IMAGE_FALLBACK" "/site" "$LOGDIR/step4-fallback.log"; then
-        STARTED=true
-      else
-        $CONTAINER_CMD rm -f "$CONTAINER_NAME" >/dev/null 2>&1 || true
-      fi
-    fi
-  fi
-
-  # Fallback 2: jekyll/jekyll (pinned by digest)
-  if [ "$STARTED" != "true" ]; then
-    PULL_OK2=true
-    if ! $CONTAINER_CMD image inspect "$JEKYLL_IMAGE_FALLBACK2" > /dev/null 2>&1; then
-      echo "  Pulling second fallback image..."
-      $CONTAINER_CMD pull "$JEKYLL_IMAGE_FALLBACK2" > "$LOGDIR/step4-fallback2-pull.log" 2>&1 || PULL_OK2=false
-    fi
-    if [ "$PULL_OK2" = "true" ]; then
-      if start_jekyll "$JEKYLL_IMAGE_FALLBACK2" "/srv/jekyll" "$LOGDIR/step4-fallback2.log"; then
-        STARTED=true
-      else
-        $CONTAINER_CMD rm -f "$CONTAINER_NAME" >/dev/null 2>&1 || true
-      fi
-    fi
-  fi
-
-  if [ "$STARTED" != "true" ]; then
-    echo "  All images failed. Check $LOGDIR/step4*.log"
-    $CONTAINER_CMD rm -f "$CONTAINER_NAME" >/dev/null 2>&1 || true
-    exit 1
-  fi
-
-  echo "  Waiting for Jekyll to generate the site..."
+  echo "  Waiting for the Roq dev server to start..."
   for i in $(seq 1 150); do
-    if [ "$($CONTAINER_CMD inspect -f '{{.State.Running}}' "$CONTAINER_NAME" 2>/dev/null)" != "true" ]; then
-      echo "  Container exited during startup."
-      $CONTAINER_CMD logs "$CONTAINER_NAME" 2>&1 | tail -50 | tee "$LOGDIR/step4-crash.log"
-      $CONTAINER_CMD rm -f "$CONTAINER_NAME" >/dev/null 2>&1 || true
+    if ! kill -0 "$SERVER_PID" 2>/dev/null; then
+      echo "  Server process exited during startup."
+      tail -50 "$LOGDIR/step4-serve.log" | tee "$LOGDIR/step4-crash.log"
+      rm -f "$SERVER_PID_FILE"
       exit 1
     fi
-    if [ "$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:4000 2>/dev/null)" = "200" ]; then
+    if preview_ready; then
       STEP4_TIME=$(( $(date +%s) - STEP4_START ))
       printf '  Preview server ✓ %ds\n' "$STEP4_TIME"
-      save_step_time "jekyll" "$STEP4_TIME" || true
+      save_step_time "serve" "$STEP4_TIME" || true
       break
     fi
     if [ "$i" -eq 150 ]; then
       echo "  Timeout after 300s."
-      $CONTAINER_CMD logs "$CONTAINER_NAME" 2>&1 | tail -50 | tee "$LOGDIR/step4-timeout.log"
-      $CONTAINER_CMD rm -f "$CONTAINER_NAME" >/dev/null 2>&1 || true
+      tail -50 "$LOGDIR/step4-serve.log" | tee "$LOGDIR/step4-timeout.log"
+      kill "$SERVER_PID" 2>/dev/null
+      rm -f "$SERVER_PID_FILE"
       exit 1
     fi
     local_elapsed=$(( $(date +%s) - STEP4_START ))
-    local_pct=$(( local_elapsed * 100 / (EST_JEKYLL > 0 ? EST_JEKYLL : 120) ))
+    local_pct=$(( local_elapsed * 100 / (EST_SERVE > 0 ? EST_SERVE : 60) ))
     [ "$local_pct" -gt 99 ] && local_pct=99
     if [ -t 1 ]; then
-      printf '\r  Jekyll [%3d%%] %ds / ~%ds ' "$local_pct" "$local_elapsed" "$EST_JEKYLL"
+      printf '\r  Roq dev server [%3d%%] %ds / ~%ds ' "$local_pct" "$local_elapsed" "$EST_SERVE"
     else
-      printf '  Jekyll: %ds / ~%ds\n' "$local_elapsed" "$EST_JEKYLL"
+      printf '  Roq dev server: %ds / ~%ds\n' "$local_elapsed" "$EST_SERVE"
     fi
     sleep 2
   done
+  cd "$SCRIPTDIR/docs" || exit 1
 fi
 
 # --- Step 5: Detect and open ---
@@ -607,13 +561,13 @@ PREVIEW_URLS=()
 RECENT_POST=""
 
 if [ -f "$PREVIEW_REF" ]; then
-  RECENT_POST=$(newest_adoc_after "$SCRIPTDIR/docs/target/web-site/_posts" "$PREVIEW_REF")
+  RECENT_POST=$(newest_adoc_after "$SCRIPTDIR/docs/target/web-site/content/posts" "$PREVIEW_REF")
   GUIDE_COUNT=$(all_adoc_after "$SCRIPTDIR/docs/src/main/asciidoc" "$PREVIEW_REF" | awk 'END { print NR }')
 fi
 
 if [ -n "$RECENT_POST" ]; then
   SLUG=$(basename "$RECENT_POST" .adoc | sed 's/^[0-9]\{4\}-[0-9]\{2\}-[0-9]\{2\}-//')
-  PREVIEW_URLS=("http://127.0.0.1:4000/blog/${SLUG}/")
+  PREVIEW_URLS=("${BASE_URL}/blog/${SLUG}/")
   if awk '/^---$/{c++; next} c==1' "$RECENT_POST" | grep -q 'user-story'; then
     echo "Detected: user story ($(basename "$RECENT_POST"))"
   else
@@ -622,20 +576,20 @@ if [ -n "$RECENT_POST" ]; then
 elif [ "${GUIDE_COUNT:-0}" -eq 1 ]; then
   GUIDE_FILE=$(all_adoc_after "$SCRIPTDIR/docs/src/main/asciidoc" "$PREVIEW_REF" | head -1)
   GUIDE_SLUG=$(basename "$GUIDE_FILE" .adoc)
-  PREVIEW_URLS=("http://127.0.0.1:4000/version/main/guides/${GUIDE_SLUG}.html")
+  PREVIEW_URLS=("${BASE_URL}/version/main/guides/${GUIDE_SLUG}/")
   echo "Detected: guide ($GUIDE_SLUG.adoc)"
 elif [ "${GUIDE_COUNT:-0}" -ge 2 ] && [ "${GUIDE_COUNT:-0}" -le 4 ]; then
   echo "Detected: $GUIDE_COUNT guides modified"
   while IFS= read -r gf; do
     GS=$(basename "$gf" .adoc)
-    PREVIEW_URLS+=("http://127.0.0.1:4000/version/main/guides/${GS}.html")
+    PREVIEW_URLS+=("${BASE_URL}/version/main/guides/${GS}/")
     echo "  - $GS.adoc"
   done < <(all_adoc_after "$SCRIPTDIR/docs/src/main/asciidoc" "$PREVIEW_REF")
 elif [ "${GUIDE_COUNT:-0}" -ge 5 ]; then
-  PREVIEW_URLS=("http://127.0.0.1:4000/version/main/guides/")
+  PREVIEW_URLS=("${BASE_URL}/version/main/guides/")
   echo "Detected: $GUIDE_COUNT guides modified. Opening listing."
 else
-  PREVIEW_URLS=("http://127.0.0.1:4000")
+  PREVIEW_URLS=("${BASE_URL}")
   echo "No recent changes detected. Opening homepage."
 fi
 
@@ -656,6 +610,6 @@ else
 fi
 echo ""
 echo "Preview is ready."
-echo "Container: $CONTAINER_NAME"
-echo "Stop:      $CONTAINER_CMD rm -f $CONTAINER_NAME"
-echo "Logs:      $LOGDIR"
+echo "Server PID: $(cat "$SERVER_PID_FILE" 2>/dev/null || echo unknown)"
+echo "Stop:       kill \$(cat $SERVER_PID_FILE)"
+echo "Logs:       $LOGDIR"

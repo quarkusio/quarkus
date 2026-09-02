@@ -139,8 +139,6 @@ Configure a URL redirect by adding an alias to the updated file:
 aliases:
 - /guides/<original_asciidoc_filename> // <1>
 ---
- +
-Where:
 <1> The name of the original AsciiDoc source file that you are retiring, without the `.adoc` file extension.
 
 [[anchors-howto]]

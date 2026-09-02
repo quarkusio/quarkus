@@ -35,6 +35,8 @@ import io.quarkus.redis.datasource.transactions.ReactiveTransactionalRedisDataSo
 import io.quarkus.redis.datasource.transactions.TransactionResult;
 import io.quarkus.redis.datasource.value.ReactiveValueCommands;
 import io.smallrye.mutiny.Uni;
+import io.smallrye.mutiny.subscription.Cancellable;
+import io.smallrye.mutiny.subscription.UniEmitter;
 import io.vertx.mutiny.core.Vertx;
 import io.vertx.mutiny.redis.client.Redis;
 import io.vertx.mutiny.redis.client.RedisAPI;
@@ -243,12 +245,68 @@ public class ReactiveRedisDataSourceImpl implements ReactiveRedisDataSource, Red
             // We are already on a connection, keep this one
             return function.apply(this);
         }
-        return redis.connect()
-                .onItem().transformToUni(connection -> {
-                    ReactiveRedisDataSourceImpl singleConnectionDS = new ReactiveRedisDataSourceImpl(vertx, redis, connection);
-                    return function.apply(singleConnectionDS)
-                            .onTermination().call(connection::close);
-                });
+        return Uni.createFrom().emitter(emitter -> {
+            ConnectionExecution<Void> execution = new ConnectionExecution<>(emitter,
+                    connection -> {
+                        ReactiveRedisDataSourceImpl singleConnectionDS = new ReactiveRedisDataSourceImpl(vertx, redis,
+                                connection);
+                        return function.apply(singleConnectionDS);
+                    });
+            emitter.onTermination(execution::cancel);
+            redis.connect().subscribe().with(emitter.context(), execution::connected, execution::fail);
+        });
+    }
+
+    private static final class ConnectionExecution<T> {
+
+        private final UniEmitter<? super T> emitter;
+        private final Function<RedisConnection, Uni<T>> function;
+        private boolean terminated;
+        private Cancellable action;
+
+        private ConnectionExecution(UniEmitter<? super T> emitter, Function<RedisConnection, Uni<T>> function) {
+            this.emitter = emitter;
+            this.function = function;
+        }
+
+        private synchronized void connected(RedisConnection connection) {
+            if (terminated) {
+                connection.closeAndForget();
+                return;
+            }
+
+            Uni<T> result;
+            try {
+                result = nonNull(function.apply(connection), "The function must not return null");
+            } catch (Throwable failure) {
+                result = Uni.createFrom().failure(failure);
+            }
+            action = result.onTermination().call(connection::close)
+                    .subscribe().with(emitter.context(), this::complete, this::fail);
+        }
+
+        private synchronized void complete(T result) {
+            if (!terminated) {
+                terminated = true;
+                emitter.complete(result);
+            }
+        }
+
+        private synchronized void fail(Throwable failure) {
+            if (!terminated) {
+                terminated = true;
+                emitter.fail(failure);
+            }
+        }
+
+        private synchronized void cancel() {
+            if (!terminated) {
+                terminated = true;
+                if (action != null) {
+                    action.cancel();
+                }
+            }
+        }
     }
 
     @Override

@@ -47,6 +47,14 @@ public class ResponseHandler implements ServerRestHandler {
     public void handle(ResteasyReactiveRequestContext requestContext) throws Exception {
         Object result = requestContext.getResult();
         if (result instanceof Response existing) {
+            if (existing instanceof ResponseImpl responseImpl && responseImpl.isClientResponse()) {
+                throw new IllegalStateException(
+                        "A REST Client Response object was returned from a server endpoint. "
+                                + "This is not supported because it carries connection-specific headers "
+                                + "that are not suitable for forwarding. "
+                                + "Please create a new Response using Response.fromResponse() or "
+                                + "by extracting the status, entity and headers you need.");
+            }
             boolean mediaTypeAlreadyExists = false;
             //we already have a response
             //set it explicitly
@@ -92,6 +100,13 @@ public class ResponseHandler implements ServerRestHandler {
                 requestContext.setResponse(new LazyResponse.Existing(responseBuilder.build()));
             }
         } else if (result instanceof RestResponse<?> existing) {
+            if (existing instanceof RestResponseImpl<?> restResponseImpl && restResponseImpl.isClientResponse()) {
+                throw new IllegalStateException(
+                        "A REST Client RestResponse object was returned from a server endpoint. "
+                                + "This is not supported because it carries connection-specific headers "
+                                + "that are not suitable for forwarding. "
+                                + "Please create a new RestResponse by extracting the status, entity and headers you need.");
+            }
             boolean mediaTypeAlreadyExists = false;
             //we already have a response
             //set it explicitly

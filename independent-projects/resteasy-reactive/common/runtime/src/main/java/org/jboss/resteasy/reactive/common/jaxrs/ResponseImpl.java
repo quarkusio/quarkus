@@ -309,4 +309,8 @@ public class ResponseImpl extends Response {
         return entityAnnotations;
     }
 
+    public boolean isClientResponse() {
+        return false;
+    }
+
 }

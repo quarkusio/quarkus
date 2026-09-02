@@ -224,7 +224,7 @@
         <!-- Dev UI -->
         <importmap.version>2.0.0</importmap.version>
         <webauthn4j.version>0.30.3.RELEASE</webauthn4j.version>
-        <jsoup.version>1.23.1</jsoup.version> <!-- JSoup is used by Camel and LangChain4J so be careful when updating -->
+        <jsoup.version>1.23.2</jsoup.version> <!-- JSoup is used by Camel and LangChain4J so be careful when updating -->
     </properties>
 
     <pluginRepositories>

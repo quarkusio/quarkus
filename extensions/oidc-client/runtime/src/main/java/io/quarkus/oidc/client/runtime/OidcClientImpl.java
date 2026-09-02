@@ -373,7 +373,7 @@ public class OidcClientImpl implements OidcClient {
 
                         final String refreshToken = json.getString(oidcConfig.grant().refreshTokenProperty());
                         final Long refreshTokenExpiresAt = getExpiresAtValue(refreshToken,
-                                json.getValue(oidcConfig.grant().refreshExpiresInProperty()));
+                                json.getValue(oidcConfig.grant().refreshExpiresInProperty()), false);
 
                         var tokens = new Tokens(accessToken, accessTokenExpiresAt,
                                 oidcConfig.refreshTokenTimeSkew().orElse(null), refreshToken,
@@ -391,7 +391,7 @@ public class OidcClientImpl implements OidcClient {
     }
 
     private Long getAccessTokenExpiresAtValue(String token, Object expiresInValue) {
-        Long expiresAt = getExpiresAtValue(token, expiresInValue);
+        Long expiresAt = getExpiresAtValue(token, expiresInValue, true);
         if (expiresAt == null && oidcConfig.accessTokenExpiresIn().isPresent()) {
             final long now = System.currentTimeMillis() / 1000;
             expiresAt = now + oidcConfig.accessTokenExpiresIn().get().toSeconds();
@@ -402,19 +402,29 @@ public class OidcClientImpl implements OidcClient {
         return expiresAt;
     }
 
-    private Long getExpiresAtValue(String token, Object expiresInValue) {
+    private Long getExpiresAtValue(String token, Object expiresInValue, boolean accessToken) {
         if (expiresInValue != null) {
             long tokenExpiresIn = expiresInValue instanceof Number ? ((Number) expiresInValue).longValue()
                     : Long.parseLong(expiresInValue.toString());
             return oidcConfig.absoluteExpiresIn() ? tokenExpiresIn
                     : Instant.now().getEpochSecond() + tokenExpiresIn;
-        } else {
-            return token != null ? getExpiresJwtClaim(token) : null;
         }
+        if (token == null) {
+            return null;
+        }
+        Long expiresAt = getExpiresJwtClaim(token, accessToken);
+        if (expiresAt == null) {
+            LOG.debugf("%s OidcClient could not determine %s token expiry: '%s' property was not found in the" +
+                    " token response, and the expiry could not be extracted from the token itself",
+                    oidcConfig.id().get(),
+                    accessToken ? "access" : "refresh",
+                    accessToken ? oidcConfig.grant().expiresInProperty() : oidcConfig.grant().refreshExpiresInProperty());
+        }
+        return expiresAt;
     }
 
-    private static Long getExpiresJwtClaim(String token) {
-        JsonObject claims = decodeJwtToken(token);
+    private static Long getExpiresJwtClaim(String token, boolean accessToken) {
+        JsonObject claims = decodeJwtToken(token, accessToken);
         if (claims != null) {
             try {
                 return claims.getLong(Claims.exp.name());
@@ -425,8 +435,8 @@ public class OidcClientImpl implements OidcClient {
         return null;
     }
 
-    private static JsonObject decodeJwtToken(String accessToken) {
-        String[] parts = accessToken.split("\\.");
+    private static JsonObject decodeJwtToken(String token, boolean accessToken) {
+        String[] parts = token.split("\\.");
         if (parts.length == 3) {
             try {
                 return new JsonObject(new String(Base64.getUrlDecoder().decode(parts[1]), StandardCharsets.UTF_8));
@@ -436,7 +446,7 @@ public class OidcClientImpl implements OidcClient {
                 LOG.debug("JWT token can not be decoded");
             }
         } else {
-            LOG.debug("Access token is not formatted as the encoded JWT token");
+            LOG.debugf("%s token is not formatted as the encoded JWT token", accessToken ? "Access" : "Refresh");
         }
         return null;
     }

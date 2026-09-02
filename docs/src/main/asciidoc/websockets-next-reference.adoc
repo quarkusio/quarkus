@@ -536,7 +536,7 @@ Item find(Item item) {
         //....
 }
 ----
-1. Specify the codec to use for both the deserialization and serialization of the message
+<1> Specify the codec to use for both the deserialization and serialization of the message
 
 When the serialization and deserialization must use a different codec, you can specify the codec to use for the serialization and deserialization separately:
 
@@ -549,8 +549,8 @@ Item find(Item item) {
         //....
 }
 ----
-1. Specify the codec to use for the deserialization of the incoming message
-2. Specify the codec to use for the serialization of the outgoing message
+<1> Specify the codec to use for the deserialization of the incoming message
+<2> Specify the codec to use for the serialization of the outgoing message
 
 === Ping/Pong messages
 

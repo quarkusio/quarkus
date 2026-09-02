@@ -5,7 +5,6 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 [id=opentelemetry-logging]
 = Using OpenTelemetry Logging
-:extension-status: stable
 include::_attributes.adoc[]
 :diataxis-type: reference
 :summary: This guide explains how your Quarkus application can utilize OpenTelemetry Logging to provide centralised logging for interactive web applications.

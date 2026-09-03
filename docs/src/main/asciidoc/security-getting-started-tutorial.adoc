@@ -281,9 +281,6 @@ public class User extends PanacheEntity {
     }
 }
 ----
-
-The `quarkus-security-jpa` extension only initializes if a single entity is annotated with `@UserDefinition`.
-
 <1> The `@UserDefinition` annotation must be present on a single entity, either a regular Hibernate ORM entity or a Hibernate ORM with Panache entity.
 <2> Indicates the field used for the username.
 <3> Indicates the field used for the password.
@@ -295,6 +292,8 @@ The `BcryptUtil.bcryptHash()` method:
 * Automatically generates a random salt for each password.
 * Hashes the password using bcrypt with 10 iterations (default).
 * Returns the hash in Modular Crypt Format (MCF), which includes the algorithm identifier, cost parameter, salt, and hash.
+
+The `quarkus-security-jpa` extension only initializes if a single entity is annotated with `@UserDefinition`.
 
 [TIP]
 ====

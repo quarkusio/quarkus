@@ -19,6 +19,7 @@ import javax.imageio.ImageIO;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
+import io.quarkus.test.common.TestLog;
 import io.quarkus.test.junit.QuarkusTest;
 
 /**
@@ -33,6 +34,9 @@ public class ImageEncodersTest {
      * 0 means no difference is tolerated.
      */
     private static final int[] PIXEL_DIFFERENCE_THRESHOLD_RGBA_VEC = new int[] { 2, 2, 2, 0 };
+
+    // Injected automatically
+    protected TestLog testLog;
 
     /**
      * //@formatter:off
@@ -98,6 +102,6 @@ public class ImageEncodersTest {
         }
         Assertions.assertTrue(errors.isEmpty(),
                 "There were errors verifying image data, see:\n" + String.join("\n", errors) + "\n");
-        checkLog(null, "Encoders");
+        checkLog(null, "Encoders", testLog.getLogFilePath());
     }
 }

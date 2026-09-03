@@ -7,13 +7,17 @@ import io.quarkus.test.common.TestResourceManager;
 
 public class IntegrationTestExtensionState extends QuarkusTestExtensionState {
 
-    public IntegrationTestExtensionState(TestResourceManager testResourceManager, Closeable resource, Runnable clearCallbacks) {
+    public IntegrationTestExtensionState(TestResourceManager testResourceManager,
+            Closeable resource,
+            Runnable clearCallbacks) {
         super(testResourceManager, resource, clearCallbacks);
     }
 
     @Override
     protected void doClose() throws IOException {
-        testResourceManager.close();
+        if (testResourceManager != null) {
+            testResourceManager.close();
+        }
         resource.close();
     }
 }

@@ -1,6 +1,7 @@
 package io.quarkus.test.common;
 
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalInt;
@@ -18,7 +19,7 @@ public class TestHostLauncher implements ArtifactLauncher {
     private String previousHost;
 
     @Override
-    public ListeningAddresses start() throws IOException {
+    public ListeningResults start() throws IOException {
         Config config = ConfigProvider.getConfig();
         // set 'quarkus.http.host' to ensure that RestAssured targets the proper host
         previousHost = System.setProperty("quarkus.http.host", config.getValue("quarkus.http.test-host", String.class));
@@ -27,6 +28,9 @@ public class TestHostLauncher implements ArtifactLauncher {
         boolean testSslEnabled = config.getOptionalValue("quarkus.http.test-ssl-enabled", boolean.class).orElse(false);
         int port;
         String protocol;
+        Path logPath = config.getOptionalValue("quarkus.test.log.file.path", Path.class)
+                .or(() -> config.getOptionalValue("quarkus.log.file.path", Path.class))
+                .orElse(null);
         if (testSslEnabled) {
             port = config.getValue("quarkus.http.test-ssl-port", OptionalInt.class).orElse(8444);
             protocol = "https";
@@ -34,7 +38,8 @@ public class TestHostLauncher implements ArtifactLauncher {
             port = config.getValue("quarkus.http.test-port", OptionalInt.class).orElse(8081);
             protocol = "http";
         }
-        return new ListeningAddresses(Optional.of(new ListeningAddress(port, protocol)), Optional.empty());
+        return new ListeningResults(Optional.of(new ListeningResult(new ListeningAddress(port, protocol), logPath)),
+                Optional.empty());
     }
 
     @Override

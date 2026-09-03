@@ -19,6 +19,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
+import io.quarkus.test.common.TestLog;
 import io.quarkus.test.junit.QuarkusTest;
 
 /**
@@ -52,6 +53,9 @@ public class ImageGeometryFontsTest {
      * Hence, the tolerance below is higher than 0:
      */
     private static final int[] PIXEL_DIFFERENCE_THRESHOLD_RGBA_VEC = new int[] { 25, 25, 40, 0 };
+
+    // Injected automatically
+    protected TestLog testLog;
 
     @ParameterizedTest
     // @formatter:off
@@ -92,7 +96,7 @@ public class ImageGeometryFontsTest {
                             expected[0], expected[1], expected[2], expected[3],
                             actual[0], actual[1], actual[2], actual[3]));
         }
-        checkLog(null, "Geometry and Fonts");
+        checkLog(null, "Geometry and Fonts", testLog.getLogFilePath());
     }
 
     /**

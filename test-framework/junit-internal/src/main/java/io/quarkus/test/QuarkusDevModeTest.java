@@ -71,11 +71,13 @@ import io.quarkus.runtime.ValueRegistryImpl;
 import io.quarkus.runtime.configuration.ConfigUtils;
 import io.quarkus.test.common.GroovyClassValue;
 import io.quarkus.test.common.ListeningAddress;
-import io.quarkus.test.common.ListeningAddresses;
+import io.quarkus.test.common.ListeningResult;
+import io.quarkus.test.common.ListeningResults;
 import io.quarkus.test.common.PathTestHelper;
 import io.quarkus.test.common.PropertyTestUtil;
 import io.quarkus.test.common.RestAssuredStateManager;
 import io.quarkus.test.common.TestConfigUtil;
+import io.quarkus.test.common.TestLog;
 import io.quarkus.test.common.TestResourceManager;
 import io.quarkus.test.common.http.TestHTTPResourceManager;
 import io.quarkus.test.config.ConfigInjector;
@@ -313,9 +315,11 @@ public class QuarkusDevModeTest
             ConfigInjector.set(context, newConfig);
 
             // Capture the listening port if available and register it in ValueRegistry
-            ListeningAddresses listeningAddresses = listeningAddresses(startupLogHandler.getRecords());
-            listeningAddresses.address().ifPresent(address -> address.register(valueRegistry, newConfig));
-            listeningAddresses.managementAddress().ifPresent(address -> address.registerManagement(valueRegistry, newConfig));
+            TestLog testLog = TestLog.INFO.get(valueRegistry);
+            Path logPath = testLog.getLogFilePath();
+            ListeningResults listeningResults = listeningResults(startupLogHandler.getRecords(), logPath);
+            listeningResults.server().ifPresent(r -> r.register(valueRegistry, newConfig));
+            listeningResults.management().ifPresent(r -> r.registerManagement(valueRegistry, newConfig));
 
             // Inject ValueRegistry and Config
             ValueRegistryInjector.inject(testInstance, valueRegistry);
@@ -339,21 +343,23 @@ public class QuarkusDevModeTest
     private static final Pattern listeningRegex = Pattern.compile(
             "Listening on:\\s+(https?)://[^:]*:(\\d+)(?:.*Management interface listening on (https?)://[^:]*:(\\d+))?");
 
-    private static ListeningAddresses listeningAddresses(List<LogRecord> records) {
+    private static ListeningResults listeningResults(List<LogRecord> records, Path logPath) {
         if (records.size() == 1) {
             LogRecord logRecord = records.get(0);
             Matcher regexMatcher = listeningRegex.matcher((String) logRecord.getParameters()[4]);
             if (regexMatcher.find()) {
-                Optional<ListeningAddress> address = Optional.of(
-                        new ListeningAddress(Integer.parseInt(regexMatcher.group(2)), regexMatcher.group(1)));
-                Optional<ListeningAddress> managementAddress = regexMatcher.group(3) != null
-                        ? Optional.of(new ListeningAddress(Integer.parseInt(regexMatcher.group(4)),
-                                regexMatcher.group(3)))
+                Optional<ListeningResult> server = Optional.of(
+                        new ListeningResult(
+                                new ListeningAddress(Integer.parseInt(regexMatcher.group(2)), regexMatcher.group(1)),
+                                logPath));
+                Optional<ListeningResult> management = regexMatcher.group(3) != null
+                        ? Optional.of(new ListeningResult(new ListeningAddress(Integer.parseInt(regexMatcher.group(4)),
+                                regexMatcher.group(3)), logPath))
                         : Optional.empty();
-                return new ListeningAddresses(address, managementAddress);
+                return new ListeningResults(server, management);
             }
         }
-        return ListeningAddresses.EMPTY;
+        return ListeningResults.EMPTY;
     }
 
     @Override

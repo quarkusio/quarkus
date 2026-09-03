@@ -10,7 +10,6 @@ import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 
@@ -19,6 +18,7 @@ import org.jboss.logging.Logger;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
+import io.quarkus.test.common.TestLog;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.restassured.RestAssured;
 
@@ -28,6 +28,9 @@ public class GraphicsIT {
     private static final Logger LOG = Logger.getLogger(GraphicsIT.class);
 
     public static Pattern AWT_EXTENSION_HINT_PATTERN = Pattern.compile(".*" + AWT_EXTENSION_HINT + ".*");
+
+    // Injected automatically
+    protected TestLog testLog;
 
     @ParameterizedTest
     @ValueSource(strings = {
@@ -57,8 +60,8 @@ public class GraphicsIT {
      *
      * @param lineMatchRegexp pattern
      */
-    static void checkLog(final Pattern lineMatchRegexp) {
-        final Path logFilePath = Paths.get(".", "target", "quarkus.log").toAbsolutePath();
+    private void checkLog(final Pattern lineMatchRegexp) {
+        final Path logFilePath = getLogPath();
         org.awaitility.Awaitility.given().pollInterval(100, TimeUnit.MILLISECONDS)
                 .atMost(3, TimeUnit.SECONDS)
                 .untilAsserted(() -> {
@@ -82,4 +85,7 @@ public class GraphicsIT {
                 });
     }
 
+    private Path getLogPath() {
+        return testLog.getLogFilePath();
+    }
 }

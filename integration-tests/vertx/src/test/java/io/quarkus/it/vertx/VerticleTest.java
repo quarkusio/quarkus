@@ -8,7 +8,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
@@ -16,10 +15,14 @@ import org.awaitility.Awaitility;
 import org.awaitility.core.ThrowingRunnable;
 import org.junit.jupiter.api.Test;
 
+import io.quarkus.test.common.TestLog;
 import io.quarkus.test.junit.QuarkusTest;
 
 @QuarkusTest
 public class VerticleTest {
+
+    // Injected automatically
+    protected TestLog testLog;
 
     @Test
     public void testBareVerticle() {
@@ -35,7 +38,7 @@ public class VerticleTest {
 
     @Test
     public void testMdcVerticle() {
-        Path logDirectory = Paths.get(".", "target");
+        Path logFilePath = testLog.getLogFilePath();
         String value = UUID.randomUUID().toString();
         given().queryParam("value", value)
                 .get("/vertx-test/verticles/mdc")
@@ -46,7 +49,6 @@ public class VerticleTest {
                 .untilAsserted(new ThrowingRunnable() {
                     @Override
                     public void run() throws Throwable {
-                        final Path logFilePath = logDirectory.resolve("quarkus.log");
                         assertTrue(Files.exists(logFilePath),
                                 "quarkus log file " + logFilePath + " is missing");
                         String data = Files.readString(logFilePath);

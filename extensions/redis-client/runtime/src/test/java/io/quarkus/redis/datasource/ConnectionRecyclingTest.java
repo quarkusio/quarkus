@@ -10,7 +10,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
+import io.quarkus.redis.datasource.pubsub.ReactivePubSubCommands;
 import io.quarkus.redis.runtime.datasource.BlockingRedisDataSourceImpl;
+import io.quarkus.redis.runtime.datasource.ReactivePubSubCommandsImpl;
 import io.quarkus.redis.runtime.datasource.ReactiveRedisDataSourceImpl;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.subscription.Cancellable;
@@ -197,6 +199,55 @@ public class ConnectionRecyclingTest extends DatasourceTestBase {
                     .await().atMost(Duration.ofSeconds(5));
             recycledConnection.closeAndAwait();
             assertThat(preTxInvoked).isFalse();
+        } finally {
+            limitedRedis.closeAndAwait();
+        }
+    }
+
+    @Test
+    void verifyThatConnectionIsClosedWhenSubscribeAcquisitionIsCancelled() {
+        Redis limitedRedis = createLimitedRedis();
+        RedisConnection occupiedConnection = limitedRedis.connect().await().indefinitely();
+
+        try {
+            ReactiveRedisDataSourceImpl limitedDataSource = new ReactiveRedisDataSourceImpl(vertx, limitedRedis,
+                    RedisAPI.api(limitedRedis));
+            ReactivePubSubCommandsImpl<String> pubsub = new ReactivePubSubCommandsImpl<>(limitedDataSource, String.class);
+            Cancellable cancellable = pubsub.subscribe("channel", message -> {
+            }).subscribe().with(ignored -> {
+            });
+
+            // cancel before closing the `occupiedConnection`, so the queued acquisition can only complete
+            // afterwards and always observes the cancellation
+            cancellable.cancel();
+
+            occupiedConnection.closeAndAwait();
+
+            RedisConnection recycledConnection = limitedRedis.connect()
+                    .await().atMost(Duration.ofSeconds(5));
+            recycledConnection.closeAndAwait();
+        } finally {
+            limitedRedis.closeAndAwait();
+        }
+    }
+
+    @Test
+    void verifyThatSubscriptionConnectionIsKeptOpenAndReleasedOnUnsubscribe() {
+        Redis limitedRedis = createLimitedRedis();
+
+        try {
+            ReactiveRedisDataSourceImpl limitedDataSource = new ReactiveRedisDataSourceImpl(vertx, limitedRedis,
+                    RedisAPI.api(limitedRedis));
+            ReactivePubSubCommandsImpl<String> pubsub = new ReactivePubSubCommandsImpl<>(limitedDataSource, String.class);
+
+            ReactivePubSubCommands.ReactiveRedisSubscriber subscriber = pubsub.subscribe("channel", message -> {
+            }).await().atMost(Duration.ofSeconds(10));
+
+            subscriber.unsubscribe().await().atMost(Duration.ofSeconds(10));
+
+            RedisConnection recycledConnection = limitedRedis.connect()
+                    .await().atMost(Duration.ofSeconds(5));
+            recycledConnection.closeAndAwait();
         } finally {
             limitedRedis.closeAndAwait();
         }

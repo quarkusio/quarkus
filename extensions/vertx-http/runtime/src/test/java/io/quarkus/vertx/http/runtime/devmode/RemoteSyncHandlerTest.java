@@ -2,6 +2,7 @@ package io.quarkus.vertx.http.runtime.devmode;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
@@ -23,6 +24,8 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -30,11 +33,15 @@ import org.junit.jupiter.api.Test;
 import io.quarkus.dev.spi.HotReplacementContext;
 import io.quarkus.dev.spi.RemoteDevState;
 import io.quarkus.runtime.util.HashUtil;
+import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.MultiMap;
 import io.vertx.core.buffer.Buffer;
+import io.vertx.core.http.HttpConnection;
+import io.vertx.core.http.HttpHeaders;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.http.HttpServerResponse;
+import io.vertx.core.http.HttpVersion;
 
 class RemoteSyncHandlerTest {
 
@@ -122,6 +129,7 @@ class RemoteSyncHandlerTest {
 
         verify(request.response()).setStatusCode(500);
         verify(request.response()).end();
+        assertThat(RemoteSyncHandler.sessionState.acceptedCounter()).isEqualTo(1);
     }
 
     @Test
@@ -380,6 +388,92 @@ class RemoteSyncHandlerTest {
         assertThat(RemoteSyncHandler.sessionState).isEqualTo(RemoteSyncHandler.SessionState.inactive());
     }
 
+    @Test
+    void exactLimitPutIsAccepted() throws Exception {
+        byte[] data = "12345".getBytes(StandardCharsets.UTF_8);
+        var context = mock(HotReplacementContext.class);
+        var handler = handler(context, new RemoteDevBodyLimits(data.length, data.length * 2L, 4));
+
+        invokeHandlePut(handler, request("/root/app/classes/com/acme/Foo.class", data));
+
+        verify(context).updateFile("/app/classes/com/acme/Foo.class", data);
+    }
+
+    @Test
+    void observedLimitOverflowIsRejectedBeforeAuthenticationOrMutation() throws Exception {
+        byte[] data = "123456".getBytes(StandardCharsets.UTF_8);
+        var context = mock(HotReplacementContext.class);
+        var handler = handler(context, new RemoteDevBodyLimits(data.length - 1L, data.length * 2L, 4));
+        long timeout = System.currentTimeMillis() + TimeUnit.MINUTES.toMillis(1);
+        RemoteSyncHandler.SessionState expected = new RemoteSyncHandler.SessionState(SESSION, 0, timeout);
+        RemoteSyncHandler.sessionState = expected;
+        HttpServerRequest request = request("/root/app/classes/com/acme/Foo.class", data,
+                SESSION, 1, authenticator(data, SESSION, 1));
+
+        invokeHandlePut(handler, request);
+
+        verify(request.response()).setStatusCode(413);
+        verify(context, never()).updateFile(any(), any());
+        assertThat(RemoteSyncHandler.sessionState).isEqualTo(expected);
+    }
+
+    @Test
+    void declaredLimitOverflowIsRejectedBeforeBodyCollection() throws Exception {
+        byte[] data = "12345".getBytes(StandardCharsets.UTF_8);
+        var context = mock(HotReplacementContext.class);
+        var handler = handler(context, new RemoteDevBodyLimits(data.length, data.length * 2L, 4));
+        HttpServerRequest request = request("/root/app/classes/com/acme/Foo.class", data);
+        request.headers().set(HttpHeaders.CONTENT_LENGTH, Integer.toString(data.length + 1));
+
+        invokeHandlePut(handler, request);
+
+        verify(request.response()).setStatusCode(413);
+        verify(context, never()).updateFile(any(), any());
+    }
+
+    @Test
+    void encodedBodyIsRejected() throws Exception {
+        byte[] data = "content".getBytes(StandardCharsets.UTF_8);
+        var context = mock(HotReplacementContext.class);
+        var handler = handler(context);
+        HttpServerRequest request = request("/root/app/classes/com/acme/Foo.class", data);
+        request.headers().set(HttpHeaders.CONTENT_ENCODING, "gzip");
+
+        invokeHandlePut(handler, request);
+
+        verify(request.response()).setStatusCode(415);
+        verify(context, never()).updateFile(any(), any());
+    }
+
+    @Test
+    void malformedConnectBodyDoesNotReplaceAnExistingSession() throws Exception {
+        var context = mock(HotReplacementContext.class);
+        var handler = handler(context);
+        long timeout = System.currentTimeMillis() + TimeUnit.MINUTES.toMillis(1);
+        RemoteSyncHandler.SessionState expected = new RemoteSyncHandler.SessionState(SESSION, 7, timeout);
+        RemoteSyncHandler.sessionState = expected;
+        byte[] body = "not serialized".getBytes(StandardCharsets.UTF_8);
+        HttpServerRequest request = connectRequest(body);
+
+        invoke(handler, "handleConnect", request);
+
+        verify(request.response()).setStatusCode(400);
+        assertThat(RemoteSyncHandler.sessionState).isEqualTo(expected);
+    }
+
+    @Test
+    void rejectionDoesNotCloseAMultiplexedConnection() {
+        HttpServerRequest request = request("/root/app/classes/com/acme/Foo.class",
+                "content".getBytes(StandardCharsets.UTF_8));
+        when(request.version()).thenReturn(HttpVersion.HTTP_2);
+        var handler = handler(mock(HotReplacementContext.class));
+
+        handler.rejectBody(request, 413, "too large");
+
+        verify(request.response()).setStatusCode(413);
+        verify(request.connection(), never()).close();
+    }
+
     private HttpServerRequest request(String path, byte[] body) {
         RemoteSyncHandler.sessionState = new RemoteSyncHandler.SessionState(
                 SESSION, 0, System.currentTimeMillis() + TimeUnit.MINUTES.toMillis(1));
@@ -388,16 +482,18 @@ class RemoteSyncHandlerTest {
     }
 
     private RemoteSyncHandler handler(HotReplacementContext context) {
+        return handler(context, RemoteDevBodyLimits.from(java.util.Optional.empty()));
+    }
+
+    private RemoteSyncHandler handler(HotReplacementContext context, RemoteDevBodyLimits limits) {
         return new RemoteSyncHandler(PASSWORD, ignored -> {
-        }, context, "/root") {
+        }, context, "/root", limits) {
             @Override
-            void executeBlocking(Callable<Void> action) {
+            <T> Future<T> executeBlocking(Callable<T> action) {
                 try {
-                    action.call();
-                } catch (RuntimeException e) {
-                    throw e;
+                    return Future.succeededFuture(action.call());
                 } catch (Exception e) {
-                    throw new IllegalStateException(e);
+                    return Future.failedFuture(e);
                 }
             }
         };
@@ -412,10 +508,13 @@ class RemoteSyncHandlerTest {
         var response = mock(HttpServerResponse.class);
         when(request.path()).thenReturn(path);
         when(request.response()).thenReturn(response);
-        when(response.setStatusCode(400)).thenReturn(response);
-        when(response.setStatusCode(401)).thenReturn(response);
-        when(response.setStatusCode(203)).thenReturn(response);
-        when(response.setStatusCode(500)).thenReturn(response);
+        when(request.version()).thenReturn(HttpVersion.HTTP_1_1);
+        when(request.connection()).thenReturn(mock(HttpConnection.class));
+        when(request.pause()).thenReturn(request);
+        when(response.setStatusCode(anyInt())).thenReturn(response);
+        when(response.putHeader(any(CharSequence.class), any(CharSequence.class))).thenReturn(response);
+        when(response.closeHandler(any())).thenReturn(response);
+        when(response.end()).thenReturn(Future.succeededFuture());
         MultiMap headers = MultiMap.caseInsensitiveMultiMap()
                 .add(RemoteSyncHandler.QUARKUS_SESSION, session);
         if (sessionCounter != null) {
@@ -425,13 +524,12 @@ class RemoteSyncHandlerTest {
             headers.add(RemoteSyncHandler.QUARKUS_PASSWORD, password);
         }
         when(request.headers()).thenReturn(headers);
-        when(request.bodyHandler(any())).thenAnswer(invocation -> {
-            Handler<Buffer> bodyHandler = invocation.getArgument(0);
-            bodyHandler.handle(Buffer.buffer(body));
-            return request;
+        when(request.getHeader(any(CharSequence.class))).thenAnswer(invocation -> {
+            CharSequence name = invocation.getArgument(0);
+            return headers.get(name.toString());
         });
-        when(request.exceptionHandler(any())).thenReturn(request);
-        when(request.resume()).thenReturn(request);
+        when(response.putHeader(any(String.class), any(String.class))).thenReturn(response);
+        configureBody(request, body);
         return request;
     }
 
@@ -439,19 +537,49 @@ class RemoteSyncHandlerTest {
         var request = mock(HttpServerRequest.class);
         var response = mock(HttpServerResponse.class);
         when(request.response()).thenReturn(response);
-        when(response.setStatusCode(500)).thenReturn(response);
+        when(request.version()).thenReturn(HttpVersion.HTTP_1_1);
+        when(request.connection()).thenReturn(mock(HttpConnection.class));
+        when(request.pause()).thenReturn(request);
+        when(response.setStatusCode(anyInt())).thenReturn(response);
+        when(response.putHeader(any(CharSequence.class), any(CharSequence.class))).thenReturn(response);
+        when(response.closeHandler(any())).thenReturn(response);
+        when(response.end()).thenReturn(Future.succeededFuture());
         when(response.headers()).thenReturn(MultiMap.caseInsensitiveMultiMap());
         when(request.headers()).thenReturn(MultiMap.caseInsensitiveMultiMap()
                 .add(RemoteSyncHandler.QUARKUS_PASSWORD,
                         HashUtil.sha256(HashUtil.sha256(body) + PASSWORD)));
-        when(request.bodyHandler(any())).thenAnswer(invocation -> {
-            Handler<Buffer> bodyHandler = invocation.getArgument(0);
-            bodyHandler.handle(Buffer.buffer(body));
+        when(request.getHeader(any(CharSequence.class)))
+                .thenAnswer(invocation -> {
+                    CharSequence name = invocation.getArgument(0);
+                    return request.headers().get(name.toString());
+                });
+        when(response.putHeader(any(String.class), any(String.class))).thenReturn(response);
+        configureBody(request, body);
+        return request;
+    }
+
+    private void configureBody(HttpServerRequest request, byte[] body) {
+        AtomicReference<Handler<Buffer>> bodyHandler = new AtomicReference<>();
+        AtomicReference<Handler<Void>> endHandler = new AtomicReference<>();
+        AtomicBoolean delivered = new AtomicBoolean();
+        when(request.handler(any())).thenAnswer(invocation -> {
+            bodyHandler.set(invocation.getArgument(0));
+            return request;
+        });
+        when(request.endHandler(any())).thenAnswer(invocation -> {
+            endHandler.set(invocation.getArgument(0));
             return request;
         });
         when(request.exceptionHandler(any())).thenReturn(request);
-        when(request.resume()).thenReturn(request);
-        return request;
+        when(request.resume()).thenAnswer(invocation -> {
+            Handler<Buffer> data = bodyHandler.get();
+            Handler<Void> end = endHandler.get();
+            if (body != null && data != null && end != null && delivered.compareAndSet(false, true)) {
+                data.handle(Buffer.buffer(body));
+                end.handle(null);
+            }
+            return request;
+        });
     }
 
     private String authenticator(byte[] body, String session, int sessionCounter) {

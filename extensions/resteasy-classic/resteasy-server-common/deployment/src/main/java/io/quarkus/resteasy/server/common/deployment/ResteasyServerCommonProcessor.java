@@ -65,10 +65,13 @@ import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.arc.processor.DotNames;
 import io.quarkus.arc.processor.Transformation;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
+import io.quarkus.deployment.Capabilities;
+import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
+import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageProxyDefinitionBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBundleBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
@@ -197,6 +200,7 @@ public class ResteasyServerCommonProcessor {
             BuildProducer<ResteasyDeploymentBuildItem> resteasyDeployment,
             BuildProducer<UnremovableBeanBuildItem> unremovableBeans,
             BuildProducer<AnnotationsTransformerBuildItem> annotationsTransformer,
+            BuildProducer<RunTimeConfigurationDefaultBuildItem> runTimeConfigurationDefault,
             List<BuildTimeConditionBuildItem> buildTimeConditions,
             List<AutoInjectAnnotationBuildItem> autoInjectAnnotations,
             List<AdditionalJaxRsResourceDefiningAnnotationBuildItem> additionalJaxRsResourceDefiningAnnotations,
@@ -208,7 +212,8 @@ public class ResteasyServerCommonProcessor {
             CombinedIndexBuildItem combinedIndexBuildItem,
             BeanArchiveIndexBuildItem beanArchiveIndexBuildItem,
             Optional<ResteasyServletMappingBuildItem> resteasyServletMappingBuildItem,
-            CustomScopeAnnotationsBuildItem scopes) throws Exception {
+            CustomScopeAnnotationsBuildItem scopes,
+            Capabilities capabilities) throws Exception {
         IndexView index = combinedIndexBuildItem.getIndex();
 
         final AnnotationInstance applicationPath;
@@ -418,6 +423,11 @@ public class ResteasyServerCommonProcessor {
         if (commonConfig.gzip().enabled()) {
             resteasyInitParameters.put(ResteasyContextParameters.RESTEASY_GZIP_MAX_INPUT,
                     commonConfig.gzip().maxInput().toString(MemorySize.Scale.B));
+        }
+        if (capabilities.isCapabilityWithPrefixPresent(Capability.RESTEASY_JSON_JACKSON)) {
+            resteasyInitParameters.put(ResteasyContextParameters.RESTEASY_PREFER_JACKSON_OVER_JSONB, "true");
+            runTimeConfigurationDefault.produce(new RunTimeConfigurationDefaultBuildItem(
+                    ResteasyContextParameters.RESTEASY_PREFER_JACKSON_OVER_JSONB, "true"));
         }
         resteasyInitParameters.put(ResteasyContextParameters.RESTEASY_UNWRAPPED_EXCEPTIONS,
                 ArcUndeclaredThrowableException.class.getName());

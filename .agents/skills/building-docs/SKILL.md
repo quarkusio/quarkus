@@ -2,7 +2,7 @@
 name: building-docs
 description: >
   How to build, preview, and verify Quarkus documentation locally:
-  root Maven build, docs rebuild, Jekyll preview via Podman/Docker.
+  root Maven build, docs rebuild, Roq dev server preview.
 ---
 
 # Building Documentation
@@ -11,6 +11,8 @@ description: >
 
 This workflow is supported on Linux, macOS, and Windows through WSL2.
 Native Windows shells (PowerShell, CMD, Git Bash) are not supported.
+Java 21+ is required. The repository includes a `./mvnw` wrapper — no
+separate Maven install is needed.
 
 ## Quick Start
 
@@ -44,15 +46,15 @@ code that affects generated documentation, force a root build manually:
 
 ## Step 0 — Environment Setup
 
-Source `detect-env.sh` to set `$CONTAINER_CMD`, `$VOL_FLAG`,
-`$MVN_THREADS`, `$MAVEN_OPTS`, and `$BROWSER_CMD`:
+Source `detect-env.sh` to set `$MVN_THREADS`, `$MAVEN_OPTS`, and
+`$BROWSER_CMD`:
 
 ```bash
 . docs/detect-env.sh
 ```
 
-The script computes Maven heap, thread count, container runtime,
-and browser automatically based on your machine.
+The script computes Maven heap, thread count, and browser automatically
+based on your machine.
 
 ## Step 1 — Root Build (from repo root)
 
@@ -91,86 +93,44 @@ or attribute warnings that are harmless for local preview).
 
 First time: `./sync-web-site.sh`
 
-Subsequent iterations — fast re-sync (<1 second). This duplicates the
-rsync portion of `sync-web-site.sh` to skip its `rm -rf` + `git clone`
-(~4 min). If `sync-web-site.sh` gains a `--no-clone` flag, prefer that.
+Subsequent iterations — fast re-sync (<1 second). The script invokes
+`sync-web-site.sh` with the existing website checkout as the target
+directory, skipping the `rm -rf` + `git clone` (~4 min) but running
+all post-processing (asset moves, link rewrites, `index.html` creation,
+and Qute escaping) through the same code path as a full sync.
+
+To re-sync manually while the Roq dev server is still running (e.g.
+after `just docs-preview` is done and you are iterating), run from
+the `docs/` directory:
 
 ```bash
-rsync -rt --delete \
-    --exclude='**/*.html' --exclude='**/index.adoc' \
-    --exclude='**/_attributes-local.adoc' --exclude='**/guides.md' \
-    --exclude='**/_templates' \
-    target/asciidoc/sources/ target/web-site/_versions/main/guides
-
-[ -d target/quarkus-generated-doc/ ] && rsync -rt --delete \
-    --exclude='**/*.html' --exclude='**/index.adoc' \
-    --exclude='**/_attributes.adoc' \
-    target/quarkus-generated-doc/ target/web-site/_generated-doc/main
-
-if [ -f target/indexByType.yaml ]; then
-    mkdir -p target/web-site/_data/versioned/main/index
-    { echo "# Generated file. Do not edit"; cat target/indexByType.yaml
-    } > target/web-site/_data/versioned/main/index/quarkus.yaml
-fi
-
-if [ -f target/relations.yaml ]; then
-    mkdir -p target/web-site/_data/versioned/main/index
-    { echo "# Generated file. Do not edit"; cat target/relations.yaml
-    } > target/web-site/_data/versioned/main/index/relations.yaml
-fi
+cd docs
+./sync-web-site.sh main "$(pwd)/target/web-site"
 ```
+
+Do not re-run `docs-preview.sh` while the server is still up — the
+port check will reject it. Use the command above instead.
 
 ## Step 4 — Serve (from `docs/target/web-site`)
 
-The `--config` flag chain loads `_only_latest_guides_config.yml` (excludes
-old version directories) and `_config_dev.yml` (uses staging search
-cluster). These files come from the `quarkusio.github.io` repository,
-cloned into `target/web-site/` by `sync-web-site.sh`.
-
-**Primary** — build from the upstream `jekyll-container/` Dockerfile
-(available after sync). This matches what `quarkusio.github.io` uses in
-production and eliminates external image dependencies:
+The site is built with [Quarkus Roq](https://docs.quarkiverse.io/quarkus-roq/dev/index.html),
+a Quarkus-based static site generator. `./mvnw quarkus:dev` starts a
+live-reload dev server — edits to content files are picked up
+automatically without a server restart.
 
 ```bash
 cd target/web-site
-$CONTAINER_CMD build -t quarkus-docs-jekyll:local jekyll-container/
-
-$CONTAINER_CMD run -d --name quarkus-docs-preview \
-  -p 127.0.0.1:4000:4000 -p 127.0.0.1:35729:35729 \
-  -v "$(pwd):/site${VOL_FLAG}" \
-  -v quarkus-jekyll-bundles:/usr/local/bundle \
-  quarkus-docs-jekyll:local \
-  bundle exec jekyll serve --host 0.0.0.0 \
-  --livereload --incremental \
-  --config _config.yml,_config_dev.yml,_only_latest_guides_config.yml
+./mvnw quarkus:dev -DskipTests
 ```
 
-Stop: `$CONTAINER_CMD rm -f quarkus-docs-preview`
-
-**Fallback** — pre-built images (pinned by digest) if the local build
-is not available (e.g., first run before sync completes):
+The server starts on port 8042 by default (set in `config/application.properties`). To use a different port:
 
 ```bash
-# Fallback 1: bretfisher/jekyll-serve
-$CONTAINER_CMD run -d --name quarkus-docs-preview \
-  -p 127.0.0.1:4000:4000 -p 127.0.0.1:35729:35729 \
-  -v "$(pwd):/site${VOL_FLAG}" \
-  -v quarkus-jekyll-bundles:/usr/local/bundle \
-  docker.io/bretfisher/jekyll-serve@sha256:db11b70736935b1a777b2ff2ae10f9ad191ee9fca6560eade1d5ad98b74e5f66 \
-  bundle exec jekyll serve --host 0.0.0.0 \
-  --livereload --incremental \
-  --config _config.yml,_config_dev.yml,_only_latest_guides_config.yml
-
-# Fallback 2: jekyll/jekyll (mount at /srv/jekyll)
-$CONTAINER_CMD run -d --name quarkus-docs-preview \
-  -p 127.0.0.1:4000:4000 -p 127.0.0.1:35729:35729 \
-  --volume="$(pwd):/srv/jekyll${VOL_FLAG}" \
-  -v quarkus-jekyll-bundles:/usr/local/bundle \
-  docker.io/jekyll/jekyll@sha256:bb45414c3fefa80a75c5001f30baf1dff48ae31dc961b8b51003b93b60675334 \
-  bundle exec jekyll serve --host 0.0.0.0 \
-  --livereload --incremental \
-  --config _config.yml,_config_dev.yml,_only_latest_guides_config.yml
+QUARKUS_HTTP_PORT=8081 ./mvnw quarkus:dev -DskipTests
 ```
+
+Stop: `Ctrl-C` in the terminal running the dev server, or kill the background
+process printed at the end of `just docs-preview`.
 
 ## Step 5 — Verify
 
@@ -181,8 +141,7 @@ The script auto-detects what you were working on and opens the right page:
 | 1 guide | Recently modified `.adoc` in `docs/src/main/asciidoc/` | `/version/main/guides/<name>.html` (direct) |
 | 2-4 guides | Multiple `.adoc` files modified | Opens a tab for each guide |
 | 5+ guides | Many files modified | `/version/main/guides/` (listing) |
-| Blog post | Recently modified `_posts/*.adoc`, no `user-story` tag | `/blog/<slug>/` (deep-link) |
-| User story | Recently modified `_posts/*.adoc`, has `user-story` tag | `/blog/<slug>/` (deep-link) |
+| Blog post | Recently modified `.adoc` in `content/posts/` | `/blog/<slug>/` (deep-link) |
 | No changes | No recent `.adoc` changes found | `/` (homepage) |
 
 ## Iteration Loop
@@ -191,8 +150,9 @@ The script auto-detects what you were working on and opens the right page:
 Edit .adoc → save → Step 2 (~1 min) → Step 3 re-sync (<1s) → browser auto-refreshes
 ```
 
-Container stays running. Escalate to Step 1 when Step 2 fails or after
-significant upstream changes.
+Roq dev mode watches for file changes and triggers an incremental rebuild
+automatically. Escalate to Step 1 when Step 2 fails or after significant
+upstream changes.
 
 ## When to escalate to a root build
 
@@ -206,24 +166,48 @@ significant upstream changes.
 
 ## Troubleshooting
 
-**`Failed to delete docs/.cache/formatter-maven-cache.properties`** —
-Rootless Podman UID mapping. Fix: `podman unshare rm -rf docs/.cache/`.
-With Docker: `rm -rf docs/.cache/`.
+**Port 8042 already in use** — Another process is using port 8042 (`docs-preview.sh` uses this via `serve-only-latest-guides.sh`, which reads `config/application.properties`).
+First, check whether it is a leftover preview from a previous run
+(e.g. a `java` process launched by `mvnw`). If so, kill it and retry.
+**Always tell the user before using a different port** — do not
+silently switch ports without informing them. If the conflict cannot
+be resolved, ask the user which port to use, then set the environment
+variable:
 
-**Volume mount errors on macOS/Ubuntu** — SELinux `:z` flag applied on
-a system without SELinux. Source `detect-env.sh` to set `$VOL_FLAG`
-correctly.
+```bash
+QUARKUS_HTTP_PORT=8081 bash docs/docs-preview.sh
+```
 
-**Container image pull fails** — The script first tries to build from the
-upstream `jekyll-container/` Dockerfile, then falls back to pre-built images
-pinned by digest. To force a rebuild of the local image:
-`$CONTAINER_CMD rmi quarkus-docs-jekyll:local`
+**Server process exited unexpectedly** — Maven started but then died.
+Scroll up in the terminal to find the build error, or check the log
+printed at the end of the run. Common causes: corrupted local Maven
+repository, a missing or broken dependency, or a compile error.
 
-**Preview shows partial or stale content** — Jekyll's `--incremental`
-mode can sometimes miss dependency changes. Restart the container
-(`$CONTAINER_CMD rm -f quarkus-docs-preview`) and run `just docs-preview`
-again. If that doesn't help, delete `docs/target/web-site/.jekyll-cache`
-before re-running.
+**Changes not appearing** — Roq dev mode watches source files. If a
+change is not picked up, stop and restart the dev server.
+
+**Preview shows stale content after full sync** — Delete
+`docs/target/web-site` and re-run `just docs-preview` to force a fresh
+clone and sync.
+
+**`./mvnw` not executable** — The Maven wrapper exists in the website
+checkout but lacks the execute bit:
+
+```bash
+chmod +x docs/target/web-site/mvnw
+```
+
+Do not install Maven system-wide as a workaround. The repository-provided
+wrapper pins the correct Maven version.
+
+**`./mvnw` missing** — The website checkout inside `docs/target/web-site`
+is incomplete or corrupted. Delete it and re-run to force a fresh clone:
+
+```bash
+rm -rf docs/target/web-site
+just docs-preview
+```
 
 **Force a full root build** — Set `QUARKUS_DOCS_PREVIEW_FULL=1` before
 running: `QUARKUS_DOCS_PREVIEW_FULL=1 just docs-preview`
+

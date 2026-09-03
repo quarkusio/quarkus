@@ -15,7 +15,7 @@ build-fast:
 build-docs:
     {{mvncmd}} -e -DskipTests -DskipITs -Dinvoker.skip -DskipExtensionValidation -Dskip.gradle.tests -Dtruststore.skip -Dno-test-modules -Dasciidoctor.fail-if=DEBUG clean install
 
-# build docs, sync to website, serve with Jekyll, and open browser
+# build docs, sync to website, serve with Roq, and open browser
 docs-preview:
     bash docs/docs-preview.sh
 

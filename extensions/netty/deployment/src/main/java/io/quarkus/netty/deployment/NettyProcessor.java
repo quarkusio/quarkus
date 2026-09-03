@@ -752,6 +752,151 @@ class NettyProcessor {
     }
 
     /**
+     * Rewrites {@code PlatformDependent#estimateMaxDirectMemory()} to replace the
+     * reflection-based VM argument lookup with direct calls. The original code uses
+     * {@code Class.forName} + {@code MethodHandles.publicLookup().findStatic/findVirtual}
+     * to call {@code ManagementFactory.getRuntimeMXBean().getInputArguments()} because
+     * "Android doesn't have these classes". Since we target JDK 17+, these are always available.
+     * <p>
+     * Using ASM's tree API, we surgically replace the instruction sequence that performs
+     * the reflection with a direct invocation, preserving all surrounding code (the loop,
+     * the regex matching, the switch, the logging).
+     */
+    @BuildStep
+    void transformPlatformDependentEstimateMaxDirectMemory(BuildProducer<BytecodeTransformerBuildItem> producer) {
+        String className = PlatformDependent.class.getName();
+
+        producer.produce(new BytecodeTransformerBuildItem.Builder()
+                .setClassToTransform(className)
+                .setCacheable(true)
+                .setClassReaderOptions(ClassReader.EXPAND_FRAMES)
+                .setVisitorFunction(new BiFunction<>() {
+                    @Override
+                    public ClassVisitor apply(String s, ClassVisitor classVisitor) {
+                        return new ClassVisitor(Gizmo.ASM_API_VERSION, classVisitor) {
+                            @Override
+                            public MethodVisitor visitMethod(int access, String name, String descriptor,
+                                    String signature, String[] exceptions) {
+                                MethodVisitor mv = super.visitMethod(access, name, descriptor,
+                                        signature, exceptions);
+                                if ("estimateMaxDirectMemory".equals(name) && "()J".equals(descriptor)) {
+                                    MethodVisitor target = mv;
+                                    return new MethodNode(Gizmo.ASM_API_VERSION, access, name, descriptor,
+                                            signature, exceptions) {
+                                        @Override
+                                        public void visitEnd() {
+                                            super.visitEnd();
+                                            patchEstimateMaxDirectMemory(this.instructions);
+                                            this.accept(target);
+                                        }
+                                    };
+                                }
+                                return mv;
+                            }
+                        };
+                    }
+                })
+                .build());
+    }
+
+    /**
+     * Replaces the reflection-based sequence in {@code estimateMaxDirectMemory} with direct calls.
+     * <p>
+     * Finds and replaces:
+     *
+     * <pre>
+     * invokestatic getSystemClassLoader -> astore X
+     * ldc "java.lang.management.ManagementFactory"
+     * ... Class.forName ...
+     * ... Class.forName ...
+     * ... MethodHandles.publicLookup ...
+     * ... lookup.findStatic ...
+     * ... lookup.findVirtual ...
+     * ... getInputArguments.invoke(getRuntime.invoke()) ...
+     * checkcast List -> astore Y (vmArgs)
+     * </pre>
+     *
+     * with:
+     *
+     * <pre>
+     * invokestatic ManagementFactory.getRuntimeMXBean()
+     * invokeinterface RuntimeMXBean.getInputArguments()
+     * astore Y (vmArgs)
+     * </pre>
+     *
+     * The approach: find the {@code invokestatic getSystemClassLoader} that starts the block
+     * and the {@code checkcast java/util/List} that ends it, remove everything in between,
+     * and insert the direct calls before the checkcast (which becomes a no-op but is harmless).
+     */
+    private static void patchEstimateMaxDirectMemory(org.objectweb.asm.tree.InsnList instructions) {
+        // Find the invokestatic getSystemClassLoader call that starts the reflection block
+        AbstractInsnNode startNode = null;
+        for (AbstractInsnNode node = instructions.getFirst(); node != null; node = node.getNext()) {
+            if (node instanceof MethodInsnNode methodInsn
+                    && methodInsn.getOpcode() == Opcodes.INVOKESTATIC
+                    && "getSystemClassLoader".equals(methodInsn.name)) {
+                startNode = node;
+                break;
+            }
+        }
+        if (startNode == null) {
+            throw new IllegalStateException(
+                    "Could not find getSystemClassLoader call in PlatformDependent.estimateMaxDirectMemory. "
+                            + "The bytecode pattern may have changed in a Netty update.");
+        }
+
+        // Find the last MethodHandle.invoke call that ends the reflection block.
+        // The sequence ends with: invokevirtual MethodHandle.invoke -> astore (vmArgs).
+        // We keep the astore and replace everything before it.
+        AbstractInsnNode lastInvoke = null;
+        for (AbstractInsnNode node = startNode.getNext(); node != null; node = node.getNext()) {
+            if (node instanceof MethodInsnNode methodInsn
+                    && "invoke".equals(methodInsn.name)
+                    && "java/lang/invoke/MethodHandle".equals(methodInsn.owner)) {
+                lastInvoke = node;
+            }
+            // Stop scanning once we pass the reflection block (next invokestatic is
+            // getMaxDirectMemorySizeArgPattern)
+            if (node instanceof MethodInsnNode methodInsn
+                    && "getMaxDirectMemorySizeArgPattern".equals(methodInsn.name)) {
+                break;
+            }
+        }
+        if (lastInvoke == null) {
+            throw new IllegalStateException(
+                    "Could not find MethodHandle.invoke in PlatformDependent.estimateMaxDirectMemory. "
+                            + "The bytecode pattern may have changed in a Netty update.");
+        }
+
+        // The astore after the last invoke stores vmArgs - we keep it
+        AbstractInsnNode astoreNode = nextRealInsn(lastInvoke);
+
+        // Remove everything from startNode through lastInvoke (inclusive)
+        AbstractInsnNode current = startNode;
+        while (current != astoreNode) {
+            AbstractInsnNode next = current.getNext();
+            instructions.remove(current);
+            current = next;
+        }
+
+        // Insert direct calls before the astore:
+        // invokestatic ManagementFactory.getRuntimeMXBean() -> RuntimeMXBean
+        // invokeinterface RuntimeMXBean.getInputArguments() -> List
+        instructions.insertBefore(astoreNode, new MethodInsnNode(
+                Opcodes.INVOKESTATIC,
+                "java/lang/management/ManagementFactory",
+                "getRuntimeMXBean",
+                "()Ljava/lang/management/RuntimeMXBean;",
+                false));
+        instructions.insertBefore(astoreNode, new MethodInsnNode(
+                Opcodes.INVOKEINTERFACE,
+                "java/lang/management/RuntimeMXBean",
+                "getInputArguments",
+                "()Ljava/util/List;",
+                true));
+    }
+
+    /**
      * Rewrites {@code DefaultChannelId#processHandlePid(ClassLoader)} to avoid reflection as we target Java 21+.
      * <p>
      * The upstream Netty 4.2.x code uses reflection:

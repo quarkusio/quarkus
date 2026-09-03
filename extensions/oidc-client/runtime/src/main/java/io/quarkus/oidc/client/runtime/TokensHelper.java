@@ -49,11 +49,11 @@ public class TokensHelper {
                 }
                 //rerun the CAS loop
             } else if (currentState.tokenUni != null) {
-                // Serve the previous token whilst a new token is refreshed in the background.
-                // Unless callers asked for a refresh due to refreshOnUnauthorized
-                final Tokens previousTokens = currentState.previousToken;
-                if (!forceNewTokens && previousTokens != null && !previousTokens.isAccessTokenExpired()) {
-                    return Uni.createFrom().item(previousTokens);
+                // Serve token getting refreshed if it has enough lifespan left
+                final Tokens tokensBeingRefreshed = currentState.tokensBeingRefreshed;
+                if (!forceNewTokens && tokensBeingRefreshed != null
+                        && tokensBeingRefreshed.hasMinRemainingAccessTokenLifespan()) {
+                    return Uni.createFrom().item(tokensBeingRefreshed);
                 }
                 return currentState.tokenUni;
             } else if (forceNewTokens) {
@@ -65,20 +65,23 @@ public class TokensHelper {
                 }
                 //rerun the CAS loop
             } else {
-                Tokens tokens = currentState.tokens;
+                final Tokens tokens = currentState.tokens;
 
-                if (tokens.isAccessTokenExpired() || tokens.isAccessTokenWithinRefreshInterval()) {
+                final boolean accessTokenExpired = tokens.isAccessTokenExpired();
+
+                if (accessTokenExpired || tokens.isAccessTokenWithinRefreshInterval()) {
                     LOG.debugf("Starting refreshing the tokens for client %s", tokens.getClientId());
                     final boolean refreshTokenValid = tokens.getRefreshToken() != null && !tokens.isRefreshTokenExpired();
                     if (!refreshTokenValid) {
                         LOG.debugf("Refresh token is not available or has expired, "
                                 + "acquiring new tokens instead for client %s", tokens.getClientId());
                     }
-                    newState = new TokenRequestState(prepareUni(
-                            refreshTokenValid
+                    final Tokens tokensBeingRefreshed = accessTokenExpired ? null : tokens;
+                    newState = new TokenRequestState(
+                            prepareUni(refreshTokenValid
                                     ? oidcClient.refreshTokens(tokens.getRefreshToken(), additionalParameters)
                                     : oidcClient.getTokens(additionalParameters)),
-                            tokens);
+                            tokensBeingRefreshed);
                     if (tokenRequestStateUpdater.compareAndSet(this, currentState, newState)) {
                         return newState.tokenUni;
                     }
@@ -111,26 +114,26 @@ public class TokensHelper {
         final Tokens tokens;
         final Uni<Tokens> tokenUni;
         /**
-         * Tokens which were current when {@link #tokenUni} was started, retained so that they can
-         * keep being served while the refresh is in progress. May be null when no tokens have been
-         * acquired yet, or when the ones being replaced had already expired.
+         * Tokens being refreshed which were still valid when {@link #tokenUni} was started due to the
+         * refresh token time skew, retained so that they can keep being served while the refresh is in
+         * progress. May be null when no tokens have been acquired yet, or when the ones being replaced had already expired.
          */
-        final Tokens previousToken;
+        final Tokens tokensBeingRefreshed;
 
         TokenRequestState(Tokens tokens) {
             this.tokens = tokens;
             this.tokenUni = null;
-            this.previousToken = null;
+            this.tokensBeingRefreshed = null;
         }
 
         TokenRequestState(Uni<Tokens> tokensUni) {
             this(tokensUni, null);
         }
 
-        TokenRequestState(Uni<Tokens> tokensUni, Tokens previousToken) {
+        TokenRequestState(Uni<Tokens> tokensUni, Tokens tokensBeingRefreshed) {
             this.tokens = null;
             this.tokenUni = tokensUni;
-            this.previousToken = previousToken;
+            this.tokensBeingRefreshed = tokensBeingRefreshed;
         }
     }
 }

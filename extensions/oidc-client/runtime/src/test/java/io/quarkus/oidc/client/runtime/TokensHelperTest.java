@@ -26,7 +26,13 @@ class TokensHelperTest {
 
     private static Tokens tokens(String accessToken, long expiresInSecs) {
         final long nowSecs = System.currentTimeMillis() / 1000;
-        return new Tokens(accessToken, nowSecs + expiresInSecs, TIME_SKEW, null, null, new JsonObject(), "client");
+        return new Tokens(accessToken, nowSecs + expiresInSecs, TIME_SKEW, null, null, new JsonObject(), "client", null);
+    }
+
+    private static Tokens tokens(String accessToken, long expiresInSecs, Duration skew, Duration minRemaining) {
+        final long nowSecs = System.currentTimeMillis() / 1000;
+        return new Tokens(accessToken, nowSecs + expiresInSecs, skew, null, null, new JsonObject(), "client",
+                minRemaining);
     }
 
     /**
@@ -106,7 +112,7 @@ class TokensHelperTest {
         // both triggers the refresh and leaves the tokens usable while it runs.
         final long nowSecs = System.currentTimeMillis() / 1000;
         Tokens current = new Tokens("current", nowSecs + 2, Duration.ofSeconds(3), null, null,
-                new JsonObject(), "client");
+                new JsonObject(), "client", null);
         assertFalse(current.isAccessTokenExpired());
         assertTrue(current.isAccessTokenWithinRefreshInterval());
 
@@ -164,6 +170,104 @@ class TokensHelperTest {
         assertTrue(forcedCompleted.await(10, TimeUnit.SECONDS), "the forcing caller should have completed");
         assertEquals("refreshed", forced.get().getAccessToken(),
                 "the forcing caller should have waited for the refreshed tokens");
+    }
+
+    /**
+     * Tokens which are still valid but too close to expiry are not served while a refresh is in
+     * flight: they could expire in transit, or while the target service handles the request. Such a
+     * caller waits for the refreshed tokens instead.
+     */
+    @Test
+    void testTokensBelowMinRemainingLifespanNotServedWhileRefreshIsInFlight() throws Exception {
+        // 30s skew so the refresh starts early, but only 5s of life left against a 10s minimum:
+        // still valid, yet not worth sending.
+        Tokens current = tokens("current", 5, Duration.ofSeconds(30), Duration.ofSeconds(10));
+        assertFalse(current.isAccessTokenExpired());
+        assertTrue(current.isAccessTokenWithinRefreshInterval());
+        assertFalse(current.hasMinRemainingAccessTokenLifespan());
+
+        BlockingOidcClient client = new BlockingOidcClient(tokens("refreshed", 300));
+        TokensHelper helper = new TokensHelper();
+        helper.initTokens(new ImmediateOidcClient(current), Map.of());
+
+        helper.getTokens(client, Map.of(), false).subscribe().with(t -> {
+        }, t -> {
+        });
+        client.awaitInFlight();
+
+        final AtomicReference<Tokens> served = new AtomicReference<>();
+        final CountDownLatch completed = new CountDownLatch(1);
+        helper.getTokens(client, Map.of(), false).subscribe().with(t -> {
+            served.set(t);
+            completed.countDown();
+        }, t -> completed.countDown());
+
+        // The refresh is still held, so a caller which must not be served the nearly expired tokens
+        // has nothing to receive yet.
+        assertFalse(completed.await(1, TimeUnit.SECONDS),
+                "tokens below the minimum remaining lifespan must not be served");
+
+        client.release.countDown();
+        assertTrue(completed.await(10, TimeUnit.SECONDS), "the caller should have completed");
+        assertEquals("refreshed", served.get().getAccessToken(),
+                "the caller should have waited for the refreshed tokens");
+    }
+
+    /**
+     * Tokens with more than the minimum remaining lifespan left are served, so the margin only
+     * excludes the tokens it is meant to.
+     */
+    @Test
+    void testTokensAboveMinRemainingLifespanServedWhileRefreshIsInFlight() throws Exception {
+        // 20s left against a 10s minimum, inside a 30s skew.
+        Tokens current = tokens("current", 20, Duration.ofSeconds(30), Duration.ofSeconds(10));
+        assertTrue(current.isAccessTokenWithinRefreshInterval());
+        assertTrue(current.hasMinRemainingAccessTokenLifespan());
+
+        BlockingOidcClient client = new BlockingOidcClient(tokens("refreshed", 300));
+        TokensHelper helper = new TokensHelper();
+        helper.initTokens(new ImmediateOidcClient(current), Map.of());
+
+        helper.getTokens(client, Map.of(), false).subscribe().with(t -> {
+        }, t -> {
+        });
+        client.awaitInFlight();
+
+        Tokens served = helper.getTokens(client, Map.of(), false).await().atMost(Duration.ofSeconds(2));
+        assertSame(current, served, "tokens above the minimum remaining lifespan should be served");
+
+        client.release.countDown();
+    }
+
+    /**
+     * A refresh only starts once the remaining lifespan has dropped below the refresh token time
+     * skew, so a minimum larger than the skew would stop the tokens from ever being reused and
+     * would silently disable the optimisation for deployments with a small skew. The required
+     * margin is therefore capped at the skew.
+     */
+    @Test
+    void testMinRemainingLifespanCappedAtRefreshTokenTimeSkew() throws Exception {
+        // A 3s skew with the 10s default minimum: without the cap nothing would ever be served,
+        // because a refresh cannot start while more than 3s remain.
+        Tokens current = tokens("current", 2, Duration.ofSeconds(3), Duration.ofSeconds(10));
+        assertFalse(current.isAccessTokenExpired());
+        assertTrue(current.isAccessTokenWithinRefreshInterval());
+        assertTrue(current.hasMinRemainingAccessTokenLifespan(),
+                "the minimum should be capped at the skew rather than disabling reuse");
+
+        BlockingOidcClient client = new BlockingOidcClient(tokens("refreshed", 300));
+        TokensHelper helper = new TokensHelper();
+        helper.initTokens(new ImmediateOidcClient(current), Map.of());
+
+        helper.getTokens(client, Map.of(), false).subscribe().with(t -> {
+        }, t -> {
+        });
+        client.awaitInFlight();
+
+        Tokens served = helper.getTokens(client, Map.of(), false).await().atMost(Duration.ofSeconds(2));
+        assertSame(current, served, "tokens should still be served when the skew is below the minimum");
+
+        client.release.countDown();
     }
 
     /**

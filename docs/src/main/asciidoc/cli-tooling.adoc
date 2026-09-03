@@ -74,6 +74,23 @@ If you have built Quarkus locally, you can use that version:
 jbang app install --force --name qss ~/.m2/repository/io/quarkus/quarkus-cli/999-SNAPSHOT/quarkus-cli-999-SNAPSHOT-runner.jar
 ----
 
+If the CLI or a CLI plugin needs artifacts that are not on Maven Central,
+point JBang at those repositories with `run.repos`. Put this in
+`.jbang/jbang.properties` in the project root (used only when the CLI runs in
+that project) or in `~/.jbang/jbang.properties` for a global default:
+
+[source,properties]
+----
+run.repos=central,https://maven.repository.redhat.com/ga/
+----
+
+If JBang is already installed, the same setting can be written globally with:
+
+[source,bash]
+----
+jbang config set run.repos central,https://maven.repository.redhat.com/ga/
+----
+
 Once installed `quarkus` will be in your `$PATH` and if you run `quarkus --version` it will print the installed version:
 
 [source,shell,subs=attributes+]

@@ -973,10 +973,10 @@ Additionally, you can use the `quarkus.oidc-client.refresh-token-time-skew` prop
 
 For example, if this property is set to `3S` and the access token will expire in less than 3 seconds, the token is refreshed automatically.
 
-While such a preemptive refresh is in progress, the access token which is being refreshed has not expired yet, so it keeps being returned to the requests arriving in the meantime instead of making them wait for the token endpoint to reply.
+While such a preemptive refresh is in progress, the access token which is being refreshed has not expired yet, so it can keep being returned to the requests arriving in the meantime instead of making them wait for the token endpoint to reply.
 
-It is only returned for as long as enough of its lifespan is left for it to be usable by the target service, which is controlled by the `quarkus.oidc-client.min-remaining-access-token-lifespan` property, `10S` by default.
-Requests arriving after that point wait for the refreshed token, as they did before, so that the token does not expire in transit or while the target service is processing the request.
+This is opt-in: it only happens when the `quarkus.oidc-client.min-remaining-access-token-lifespan` property is configured, which sets how much of the access token lifespan must be left for it to still be returned.
+Requests arriving once less than that is left wait for the refreshed token, as they do when this property is not configured, so that the token does not expire in transit or while the target service is processing the request.
 
 Because a preemptive refresh only starts once the remaining lifespan has dropped below `quarkus.oidc-client.refresh-token-time-skew`, a minimum remaining lifespan greater than or equal to the skew would stop the token from ever being reused.
 The effective value is therefore capped just below the configured skew, so that lowering the skew does not silently disable this optimization.

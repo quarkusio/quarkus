@@ -30,7 +30,7 @@ public final class OidcClientConfigBuilder extends OidcClientCommonConfigBuilder
         private final Optional<Duration> accessTokenExpiresIn;
         private final Optional<Duration> accessTokenExpirySkew;
         private final Optional<Duration> refreshTokenTimeSkew;
-        private final Duration minRemainingAccessTokenLifespan;
+        private final Optional<Duration> minRemainingAccessTokenLifespan;
         private final Optional<List<String>> scopes;
         private final Optional<List<String>> audience;
         private final boolean clientEnabled;
@@ -81,7 +81,7 @@ public final class OidcClientConfigBuilder extends OidcClientCommonConfigBuilder
         }
 
         @Override
-        public Duration minRemainingAccessTokenLifespan() {
+        public Optional<Duration> minRemainingAccessTokenLifespan() {
             return minRemainingAccessTokenLifespan;
         }
 
@@ -143,7 +143,7 @@ public final class OidcClientConfigBuilder extends OidcClientCommonConfigBuilder
     private Optional<Duration> accessTokenExpiresIn;
     private Optional<Duration> accessTokenExpirySkew;
     private Optional<Duration> refreshTokenTimeSkew;
-    private Duration minRemainingAccessTokenLifespan;
+    private Optional<Duration> minRemainingAccessTokenLifespan;
     private boolean clientEnabled;
     private Optional<String> id;
     private Optional<Duration> refreshInterval;
@@ -296,7 +296,7 @@ public final class OidcClientConfigBuilder extends OidcClientCommonConfigBuilder
      * @return this builder
      */
     public OidcClientConfigBuilder minRemainingAccessTokenLifespan(Duration minRemainingAccessTokenLifespan) {
-        this.minRemainingAccessTokenLifespan = minRemainingAccessTokenLifespan;
+        this.minRemainingAccessTokenLifespan = Optional.ofNullable(minRemainingAccessTokenLifespan);
         return this;
     }
 

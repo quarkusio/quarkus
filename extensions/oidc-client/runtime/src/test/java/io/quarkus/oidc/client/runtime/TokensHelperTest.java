@@ -23,10 +23,11 @@ import io.vertx.core.json.JsonObject;
 class TokensHelperTest {
 
     private static final Duration TIME_SKEW = Duration.ofSeconds(10);
+    /** Reusing the tokens being refreshed is opt-in, so the tests which exercise it configure a minimum. */
+    private static final Duration MIN_REMAINING_LIFESPAN = Duration.ofSeconds(2);
 
     private static Tokens tokens(String accessToken, long expiresInSecs) {
-        final long nowSecs = System.currentTimeMillis() / 1000;
-        return new Tokens(accessToken, nowSecs + expiresInSecs, TIME_SKEW, null, null, new JsonObject(), "client", null);
+        return tokens(accessToken, expiresInSecs, TIME_SKEW, MIN_REMAINING_LIFESPAN);
     }
 
     private static Tokens tokens(String accessToken, long expiresInSecs, Duration skew, Duration minRemaining) {
@@ -112,7 +113,7 @@ class TokensHelperTest {
         // both triggers the refresh and leaves the tokens usable while it runs.
         final long nowSecs = System.currentTimeMillis() / 1000;
         Tokens current = new Tokens("current", nowSecs + 2, Duration.ofSeconds(3), null, null,
-                new JsonObject(), "client", null);
+                new JsonObject(), "client", MIN_REMAINING_LIFESPAN);
         assertFalse(current.isAccessTokenExpired());
         assertTrue(current.isAccessTokenWithinRefreshInterval());
 
@@ -268,6 +269,44 @@ class TokensHelperTest {
         assertSame(current, served, "tokens should still be served when the skew is below the minimum");
 
         client.release.countDown();
+    }
+
+    /**
+     * Reusing the tokens being refreshed is opt-in: when no minimum remaining lifespan is configured
+     * the callers wait for the refresh, which is the behaviour of an OIDC client that has not enabled
+     * this. Without it, upgrading would change how every existing deployment behaves.
+     */
+    @Test
+    void testTokensNotReusedWhenMinRemainingLifespanNotConfigured() throws Exception {
+        // Still valid and inside the skew, so the only reason not to serve it is the absent minimum.
+        Tokens current = tokens("current", 8, TIME_SKEW, null);
+        assertFalse(current.isAccessTokenExpired());
+        assertTrue(current.isAccessTokenWithinRefreshInterval());
+        assertFalse(current.hasMinRemainingAccessTokenLifespan());
+
+        BlockingOidcClient client = new BlockingOidcClient(tokens("refreshed", 300));
+        TokensHelper helper = new TokensHelper();
+        helper.initTokens(new ImmediateOidcClient(current), Map.of());
+
+        helper.getTokens(client, Map.of(), false).subscribe().with(t -> {
+        }, t -> {
+        });
+        client.awaitInFlight();
+
+        final AtomicReference<Tokens> served = new AtomicReference<>();
+        final CountDownLatch completed = new CountDownLatch(1);
+        helper.getTokens(client, Map.of(), false).subscribe().with(t -> {
+            served.set(t);
+            completed.countDown();
+        }, t -> completed.countDown());
+
+        assertFalse(completed.await(1, TimeUnit.SECONDS),
+                "tokens must not be reused when no minimum remaining lifespan is configured");
+
+        client.release.countDown();
+        assertTrue(completed.await(10, TimeUnit.SECONDS), "the caller should have completed");
+        assertEquals("refreshed", served.get().getAccessToken(),
+                "the caller should have waited for the refreshed tokens");
     }
 
     /**

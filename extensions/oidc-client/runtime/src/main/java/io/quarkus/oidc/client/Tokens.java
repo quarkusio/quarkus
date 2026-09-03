@@ -68,17 +68,21 @@ public class Tokens {
      * being refreshed, so that it does not expire in transit or while the target service is processing
      * the request.
      * <p>
+     * Returns false when no minimum remaining lifespan is configured: reusing the token which is being
+     * refreshed is opt-in, so the callers wait for the refresh unless the minimum has been set.
+     * <p>
      * A refresh only starts once the remaining lifespan has dropped below the refresh token time skew,
      * so requiring the skew itself, or more, would stop the token from ever being reused. The required
      * margin is capped just below the skew for that reason.
      */
     public boolean hasMinRemainingAccessTokenLifespan() {
+        if (minRemainingAccessTokenLifespan == null) {
+            // Not configured: reusing the token being refreshed is opt-in, so the caller waits.
+            return false;
+        }
         if (accessTokenExpiresAt == null) {
             // Without an expiry there is nothing to run out; the token is reusable.
             return true;
-        }
-        if (minRemainingAccessTokenLifespan == null) {
-            return !isAccessTokenExpired();
         }
         // Capped below the skew, since a refresh only starts once less than the skew is left in the token expiration.
         final long requiredLifespan = refreshTokenTimeSkew == null

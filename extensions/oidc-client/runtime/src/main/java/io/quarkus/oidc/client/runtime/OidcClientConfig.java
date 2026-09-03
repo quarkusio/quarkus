@@ -46,7 +46,7 @@ public interface OidcClientConfig extends OidcClientCommonConfig {
     Optional<Duration> refreshTokenTimeSkew();
 
     /**
-     * Minimum remaining lifespan required to reuse the access token currently being refreshed in the background
+     * Minimum remaining lifespan required to reuse the access token currently being refreshed in the background.
      * <p>
      * When {@link #refreshTokenTimeSkew()} is configured, the refresh starts before the current access
      * token expires, and that token remains usable until the refresh is completed. This avoids having to wait
@@ -54,12 +54,15 @@ public interface OidcClientConfig extends OidcClientCommonConfig {
      * for it to still be worth sending, so that it does not expire in transit or while the target service
      * is processing the request.
      * <p>
+     * Reusing the access token which is being refreshed is only enabled when this property is configured.
+     * If it is not configured then that token is never reused and the callers arriving while the refresh is
+     * in progress wait for it to complete.
+     * <p>
      * The refresh only starts once the remaining lifespan has dropped below {@link #refreshTokenTimeSkew()},
      * so a value greater than or equal to the skew would prevent the token from ever being returned.
      * Therefore the effective value is capped just below the configured skew.
      */
-    @WithDefault("10S")
-    Duration minRemainingAccessTokenLifespan();
+    Optional<Duration> minRemainingAccessTokenLifespan();
 
     /**
      * Access token expiration period relative to the current time.

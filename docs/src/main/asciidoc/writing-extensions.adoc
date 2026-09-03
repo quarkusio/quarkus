@@ -1143,6 +1143,11 @@ public class LoggingProcessor {
     LogConfiguration config; // <3>
 }
 ----
+<1> The `@ConfigMapping` annotation indicates that the interface is a configuration mapping, in this case one which
+corresponds to a `quarkus.log` segment.
+<2> The `@ConfigRoot` annotation indicated to which Config phase, the configuration applies to.
+<3> Here the `LoggingProcessor` injects a `LogConfiguration` instance automatically by detecting the `@ConfigRoot`
+annotation.
 
 A configuration property name can be split into segments. For example, a property name like
 `quarkus.log.file.enabled` can be split into the following segments:
@@ -1151,12 +1156,6 @@ A configuration property name can be split into segments. For example, a propert
 * `log` - a name segment which corresponds to the prefix set in the interface annotated with `@ConfigMapping`,
 * `file` - a name segment which corresponds to the `file` field in this class,
 * `enabled` - a name segment which corresponds to `enabled` field in `FileConfig`.
-
-<1> The `@ConfigMapping` annotation indicates that the interface is a configuration mapping, in this case one which
-corresponds to a `quarkus.log` segment.
-<2> The `@ConfigRoot` annotation indicated to which Config phase, the configuration applies to.
-<3> Here the `LoggingProcessor` injects a `LogConfiguration` instance automatically by detecting the `@ConfigRoot`
-annotation.
 
 A corresponding `application.properties` for the above example could be:
 

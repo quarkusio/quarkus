@@ -725,6 +725,9 @@ class NettyProcessor {
                                     m.returnVoid();
                                 }
 
+                                // --- readBitsMaxDirectMemory() -> reads Bits.MAX_MEMORY via reflection ---
+                                generateReadBitsMaxDirectMemory(transformer, className);
+
                                 // --- Java 25+ specific transforms ---
                                 if (isJava25OrHigher) {
                                     replaceWithReturnTrue(transformer, className, "hasMemorySegmentAddressOfBuffer");
@@ -1826,25 +1829,56 @@ class NettyProcessor {
     }
 
     /**
-     * Creates an ASM {@link ClassVisitor} that intercepts the {@code <clinit>} method and patches
-     * version-gated MethodHandle lookup blocks. For each block matching the pattern:
-     *
-     * <pre>
-     * invokestatic javaVersion()I
-     * bipush/sipush N
-     * if_icmplt/if_icmple ELSE_LABEL
-     * ... MethodHandle lookup via AccessController.doPrivileged ...
-     * putstatic FIELD
-     * goto END_LABEL
-     * ELSE_LABEL:
-     * aconst_null
-     * putstatic FIELD
-     * </pre>
-     *
-     * If {@code FIELD} is in {@code fieldsToSkip}, the version check is replaced with a
-     * {@code GOTO ELSE_LABEL}, forcing the null assignment and skipping the expensive
-     * MethodHandle lookup.
+     * Generates a private static helper method {@code readBitsMaxDirectMemory()} that reads
+     * {@code java.nio.Bits.MAX_MEMORY} via reflection. This is used by the clinit patcher to
+     * replace the {@code BITS_MAX_DIRECT_MEMORY = -1} assignment in the {@code unsafe == null}
+     * branch, so that the value is available even without Unsafe. This avoids the expensive
+     * {@code ManagementFactory.getRuntimeMXBean()} fallback in
+     * {@code PlatformDependent.estimateMaxDirectMemory()}.
      */
+    private static void generateReadBitsMaxDirectMemory(ClassTransformer transformer, String className) {
+        MethodDescriptor md = MethodDescriptor.ofMethod(className, "readBitsMaxDirectMemory", long.class);
+        MethodCreator m = transformer.addMethod(md).setModifiers(Modifier.STATIC | Modifier.PRIVATE);
+
+        AssignableResultHandle result = m.createVariable(long.class);
+        m.assign(result, m.load(-1L));
+
+        TryBlock tryBlock = m.tryBlock();
+
+        ResultHandle bitsClass = tryBlock.invokeStaticMethod(
+                MethodDescriptor.ofMethod(Class.class, "forName", Class.class,
+                        String.class, boolean.class, ClassLoader.class),
+                tryBlock.load("java.nio.Bits"),
+                tryBlock.load(false),
+                tryBlock.invokeStaticMethod(
+                        MethodDescriptor.ofMethod(ClassLoader.class, "getSystemClassLoader", ClassLoader.class)));
+
+        ResultHandle field = tryBlock.invokeVirtualMethod(
+                MethodDescriptor.ofMethod(Class.class, "getDeclaredField",
+                        java.lang.reflect.Field.class, String.class),
+                bitsClass, tryBlock.load("MAX_MEMORY"));
+
+        tryBlock.invokeVirtualMethod(
+                MethodDescriptor.ofMethod(java.lang.reflect.Field.class, "setAccessible",
+                        void.class, boolean.class),
+                field, tryBlock.load(true));
+
+        ResultHandle value = tryBlock.invokeVirtualMethod(
+                MethodDescriptor.ofMethod(java.lang.reflect.Field.class, "get",
+                        Object.class, Object.class),
+                field, tryBlock.loadNull());
+
+        ResultHandle longValue = tryBlock.invokeVirtualMethod(
+                MethodDescriptor.ofMethod(Long.class, "longValue", long.class),
+                value);
+
+        tryBlock.assign(result, longValue);
+
+        tryBlock.addCatch(Throwable.class);
+
+        m.returnValue(result);
+    }
+
     private static void generateDirectBufferAddress(ClassTransformer transformer, String className) {
         MethodDescriptor md = MethodDescriptor.ofMethod(className, "directBufferAddress",
                 long.class, ByteBuffer.class);
@@ -1885,6 +1919,29 @@ class NettyProcessor {
         m.returnValue(result);
     }
 
+    /**
+     * Creates an ASM {@link ClassVisitor} that intercepts the {@code <clinit>} method and patches
+     * version-gated MethodHandle lookup blocks. For each block matching the pattern:
+     *
+     * <pre>
+     * invokestatic javaVersion()I
+     * bipush/sipush N
+     * if_icmplt/if_icmple ELSE_LABEL
+     * ... MethodHandle lookup via AccessController.doPrivileged ...
+     * putstatic FIELD
+     * goto END_LABEL
+     * ELSE_LABEL:
+     * aconst_null
+     * putstatic FIELD
+     * </pre>
+     *
+     * If {@code FIELD} is in {@code fieldsToSkip}, the version check is replaced with a
+     * {@code GOTO ELSE_LABEL}, forcing the null assignment and skipping the expensive
+     * MethodHandle lookup.
+     * <p>
+     * Also patches the {@code BITS_MAX_DIRECT_MEMORY = -1} assignment in the {@code unsafe == null}
+     * branch to call {@code readBitsMaxDirectMemory()} instead, reading the value via reflection.
+     */
     private static ClassVisitor createClinitPatcher(ClassVisitor downstream, Set<String> fieldsToSkip,
             Set<String> knownUnhandledFields) {
         return new ClassVisitor(Gizmo.ASM_API_VERSION, downstream) {
@@ -1990,6 +2047,39 @@ class NettyProcessor {
             throw new IllegalStateException(
                     "Failed to patch all expected version-gated MethodHandle lookup blocks in "
                             + "PlatformDependent0.<clinit>. Missing fields: " + missing + ". "
+                            + "The bytecode pattern may have changed in a Netty update.");
+        }
+
+        // Patch the BITS_MAX_DIRECT_MEMORY = -1 assignment in the unsafe == null branch.
+        // Replace: ldc2_w -1L; putstatic BITS_MAX_DIRECT_MEMORY
+        // With:    invokestatic readBitsMaxDirectMemory(); putstatic BITS_MAX_DIRECT_MEMORY
+        // This reads java.nio.Bits.MAX_MEMORY via reflection so the value is available
+        // even without Unsafe, avoiding the expensive ManagementFactory fallback in
+        // PlatformDependent.estimateMaxDirectMemory().
+        boolean patchedBitsMaxDirectMemory = false;
+        for (AbstractInsnNode n = instructions.getFirst(); n != null; n = n.getNext()) {
+            if (n instanceof org.objectweb.asm.tree.LdcInsnNode ldcInsn
+                    && ldcInsn.cst instanceof Long longVal
+                    && longVal == -1L) {
+                AbstractInsnNode nextInsn = nextRealInsn(n);
+                if (nextInsn instanceof FieldInsnNode fieldInsn
+                        && fieldInsn.getOpcode() == Opcodes.PUTSTATIC
+                        && "BITS_MAX_DIRECT_MEMORY".equals(fieldInsn.name)) {
+                    instructions.set(n, new MethodInsnNode(
+                            Opcodes.INVOKESTATIC,
+                            "io/netty/util/internal/PlatformDependent0",
+                            "readBitsMaxDirectMemory",
+                            "()J",
+                            false));
+                    patchedBitsMaxDirectMemory = true;
+                    break;
+                }
+            }
+        }
+        if (!patchedBitsMaxDirectMemory) {
+            throw new IllegalStateException(
+                    "Could not find BITS_MAX_DIRECT_MEMORY = -1 assignment in "
+                            + "PlatformDependent0.<clinit>. "
                             + "The bytecode pattern may have changed in a Netty update.");
         }
     }

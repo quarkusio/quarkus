@@ -17,6 +17,7 @@ public class QuarkusExtensionConfiguration {
     private Property<Boolean> disableValidation;
     private Property<String> deploymentArtifact;
     private Property<String> deploymentModule;
+    private Property<String> requiresQuarkusCore;
     private ListProperty<String> excludedArtifacts;
     private ListProperty<String> parentFirstArtifacts;
     private ListProperty<String> runnerParentFirstArtifacts;
@@ -36,6 +37,7 @@ public class QuarkusExtensionConfiguration {
         deploymentArtifact = project.getObjects().property(String.class);
         deploymentModule = project.getObjects().property(String.class);
         deploymentModule.convention("deployment");
+        requiresQuarkusCore = project.getObjects().property(String.class);
 
         excludedArtifacts = project.getObjects().listProperty(String.class);
         parentFirstArtifacts = project.getObjects().listProperty(String.class);
@@ -68,6 +70,18 @@ public class QuarkusExtensionConfiguration {
 
     public void setDeploymentModule(String deploymentModule) {
         this.deploymentModule.set(deploymentModule);
+    }
+
+    /**
+     * The Quarkus version range this extension requires, e.g. {@code [3.38,3.40)}. If not set, an open-ended
+     * range derived from the Quarkus core version found on the classpath is used.
+     */
+    public Property<String> getRequiresQuarkusCore() {
+        return requiresQuarkusCore;
+    }
+
+    public void setRequiresQuarkusCore(String requiresQuarkusCore) {
+        this.requiresQuarkusCore.set(requiresQuarkusCore);
     }
 
     public ListProperty<String> getExcludedArtifacts() {

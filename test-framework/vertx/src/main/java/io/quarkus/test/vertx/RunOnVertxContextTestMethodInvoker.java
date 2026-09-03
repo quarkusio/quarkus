@@ -14,6 +14,7 @@ import io.quarkus.test.TestReactiveTransaction;
 import io.quarkus.vertx.core.runtime.VertxCoreRecorder;
 import io.quarkus.vertx.core.runtime.context.VertxContextSafetyToggle;
 import io.smallrye.common.vertx.VertxContext;
+import io.smallrye.mutiny.Uni;
 import io.vertx.core.Context;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
@@ -45,8 +46,35 @@ public class RunOnVertxContextTestMethodInvoker implements TestMethodInvoker {
 
     @Override
     public boolean supportsMethod(Class<?> originalTestClass, Method originalTestMethod) {
-        return hasSupportedAnnotation(originalTestClass, originalTestMethod)
-                && hasSupportedParams(originalTestMethod);
+        if (hasSupportedAnnotation(originalTestClass, originalTestMethod)
+                && hasSupportedParams(originalTestMethod)) {
+            return true;
+        }
+        return isReactiveTestTransaction(originalTestClass, originalTestMethod);
+    }
+
+    private static final String REACTIVE_TEST_SUFFIX = "$quarkusRxTest";
+
+    /**
+     * Detects reactive test transaction methods via two paths:
+     * <ul>
+     * <li>{@code supportsMethod()} passes the synthetic stub whose name ends with the suffix
+     * — a direct match.</li>
+     * <li>{@code invoke()} receives the <em>real</em> method (suffix stripped by
+     * {@code AbstractQuarkusExtensionTest.runExtensionMethod()}), so we fall back to checking
+     * {@code @TestTransaction} + {@code Uni} return type on the original method and its class.</li>
+     * </ul>
+     */
+    private boolean isReactiveTestTransaction(Class<?> testClass, Method testMethod) {
+        if (testMethod.getName().endsWith(REACTIVE_TEST_SUFFIX)) {
+            return true;
+        }
+        if (testMethod.getReturnType().getName().equals(Uni.class.getName())
+                && (hasAnnotation("io.quarkus.test.TestTransaction", testMethod.getAnnotations())
+                        || hasAnnotation("io.quarkus.test.TestTransaction", testClass.getAnnotations()))) {
+            return true;
+        }
+        return false;
     }
 
     private boolean hasSupportedParams(Method originalTestMethod) {
@@ -117,15 +145,18 @@ public class RunOnVertxContextTestMethodInvoker implements TestMethodInvoker {
             runOnVertxContext = c.getAnnotation(RunOnVertxContext.class);
         }
         if (runOnVertxContext == null) {
-            // Use duplicated context if @TestReactiveTransaction is present
-            return m.isAnnotationPresent(TestReactiveTransaction.class)
-                    || m.getDeclaringClass().isAnnotationPresent(TestReactiveTransaction.class);
+            return hasAnnotation(TestReactiveTransaction.class, m.getAnnotations())
+                    || hasAnnotation(TestReactiveTransaction.class, m.getDeclaringClass().getAnnotations())
+                    || isReactiveTestTransaction(c, m);
         } else {
             return runOnVertxContext.duplicateContext();
         }
     }
 
     private boolean shouldRunOnEventLoop(Class<?> c, Method m) {
+        if (isReactiveTestTransaction(c, m)) {
+            return true;
+        }
         RunOnVertxContext runOnVertxContext = m.getAnnotation(RunOnVertxContext.class);
         if (runOnVertxContext == null) {
             runOnVertxContext = c.getAnnotation(RunOnVertxContext.class);
@@ -192,6 +223,20 @@ public class RunOnVertxContextTestMethodInvoker implements TestMethodInvoker {
                             promise.fail(t);
                         }
                     });
+                } else if (testMethodResult instanceof Uni<?> uni) {
+                    uni.subscribe().with(new Consumer<Object>() {
+                        @Override
+                        public void accept(Object o) {
+                            onTerminate.run();
+                            promise.complete(o);
+                        }
+                    }, new Consumer<Throwable>() {
+                        @Override
+                        public void accept(Throwable t) {
+                            onTerminate.run();
+                            promise.fail(t);
+                        }
+                    });
                 } else {
                     onTerminate.run();
                     promise.complete(testMethodResult);
@@ -240,6 +285,8 @@ public class RunOnVertxContextTestMethodInvoker implements TestMethodInvoker {
                 Object testMethodResult = targetMethod.invoke(testInstance, methodArgs.toArray(new Object[0]));
                 if (uniAsserter != null) {
                     uniAsserter.asUni().await().atMost(Duration.ofSeconds(30));
+                } else if (testMethodResult instanceof Uni<?> uni) {
+                    uni.await().atMost(Duration.ofSeconds(30));
                 }
                 onTerminate.run();
                 return testMethodResult;

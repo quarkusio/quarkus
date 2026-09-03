@@ -29,6 +29,11 @@ public class TestTransactionInterceptor {
 
     @AroundInvoke
     public Object intercept(InvocationContext context) throws Exception {
+        // Uni-returning methods are handled by ReactiveTestTransactionInterceptor (hibernate-reactive)
+        if (context.getMethod().getReturnType().getName().equals("io.smallrye.mutiny.Uni")) {
+            return context.proceed();
+        }
+
         // do nothing in case there is already a transaction (e.g. self-intercepted non-private non-test method in test class)
         // w/o this check userTransaction.begin() would fail because there is already a tx associated with the current thread
         if (userTransaction.getStatus() != Status.STATUS_NO_TRANSACTION) {

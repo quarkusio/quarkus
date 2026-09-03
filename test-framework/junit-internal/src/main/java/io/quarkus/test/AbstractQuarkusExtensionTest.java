@@ -82,6 +82,7 @@ import io.quarkus.test.common.TestConfigUtil;
 import io.quarkus.test.common.TestResourceManager;
 import io.quarkus.test.common.http.TestHTTPResourceManager;
 import io.quarkus.test.junit.common.ClearCache;
+import io.quarkus.test.junit.common.ReactiveTestMethodTransformer;
 import io.quarkus.value.registry.ValueRegistry;
 import io.smallrye.common.process.ProcessBuilder;
 import io.smallrye.common.process.ProcessUtil;
@@ -489,7 +490,8 @@ public abstract class AbstractQuarkusExtensionTest<S extends AbstractQuarkusExte
         while ((c != Object.class) && newMethod == null) {
             Method[] declaredMethods = c.getDeclaredMethods();
             for (Method declaredMethod : declaredMethods) {
-                if (!declaredMethod.getName().equals(invocationContext.getExecutable().getName())) {
+                if (!declaredMethod.getName().equals(ReactiveTestMethodTransformer
+                        .stripReactiveTestSuffix(invocationContext.getExecutable().getName()))) {
                     continue;
                 }
                 boolean parametersMatch = true;

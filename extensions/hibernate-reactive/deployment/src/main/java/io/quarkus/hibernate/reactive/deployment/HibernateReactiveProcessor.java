@@ -16,32 +16,45 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.Set;
+import java.util.function.BiFunction;
 import java.util.logging.Level;
 
+import jakarta.annotation.Priority;
+import jakarta.interceptor.Interceptor;
 import jakarta.persistence.PersistenceUnitTransactionType;
 
 import org.hibernate.reactive.provider.impl.ReactiveIntegrator;
+import org.jboss.jandex.AnnotationInstance;
+import org.jboss.jandex.AnnotationTarget;
+import org.jboss.jandex.DotName;
+import org.jboss.jandex.MethodInfo;
 import org.jboss.logging.Logger;
 
 import io.quarkus.agroal.spi.JdbcDataSourceBuildItem;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
+import io.quarkus.arc.deployment.GeneratedBeanBuildItem;
+import io.quarkus.arc.deployment.GeneratedBeanGizmoAdaptor;
 import io.quarkus.arc.deployment.RecorderBeanInitializedBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
 import io.quarkus.datasource.common.runtime.DatabaseKind;
 import io.quarkus.deployment.Capabilities;
+import io.quarkus.deployment.IsTest;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.BuildSteps;
 import io.quarkus.deployment.annotations.Consume;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
+import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
+import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.HotDeploymentWatchedFileBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.LogCategoryBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
+import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.hibernate.orm.deployment.HibernateDataSourceUtil;
 import io.quarkus.hibernate.orm.deployment.HibernateOrmConfig;
 import io.quarkus.hibernate.orm.deployment.HibernateOrmConfigPersistenceUnit;
@@ -59,11 +72,13 @@ import io.quarkus.hibernate.orm.runtime.recording.RecordedConfig;
 import io.quarkus.hibernate.reactive.runtime.FastBootHibernateReactivePersistenceProvider;
 import io.quarkus.hibernate.reactive.runtime.HibernateReactivePersistenceUnitProviderHelper;
 import io.quarkus.hibernate.reactive.runtime.HibernateReactiveRecorder;
+import io.quarkus.hibernate.reactive.runtime.ReactiveTestTransactionInterceptor;
 import io.quarkus.hibernate.reactive.runtime.transaction.HibernateActionsStrategy;
 import io.quarkus.reactive.datasource.deployment.ReactiveDataSourceBuildItem;
 import io.quarkus.reactive.datasource.deployment.VertxPoolBuildItem;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.configuration.ConfigurationException;
+import io.quarkus.test.junit.common.ReactiveTestMethodTransformer;
 
 @BuildSteps(onlyIf = HibernateReactiveEnabled.class)
 public final class HibernateReactiveProcessor {
@@ -292,6 +307,80 @@ public final class HibernateReactiveProcessor {
     @BuildStep
     void silenceLogging(BuildProducer<LogCategoryBuildItem> logCategories) {
         logCategories.produce(new LogCategoryBuildItem(ReactiveIntegrator.class.getName(), Level.WARNING));
+    }
+
+    private static final String TEST_TRANSACTION = "io.quarkus.test.TestTransaction";
+
+    @BuildStep(onlyIf = IsTest.class)
+    void reactiveTestTx(BuildProducer<GeneratedBeanBuildItem> generatedBeanBuildItemBuildProducer,
+            BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
+        if (!testTransactionOnClassPath()) {
+            return;
+        }
+
+        try (ClassCreator c = ClassCreator.builder()
+                .classOutput(new GeneratedBeanGizmoAdaptor(generatedBeanBuildItemBuildProducer)).className(
+                        ReactiveTestTransactionInterceptor.class.getName() + "Generated")
+                .superClass(ReactiveTestTransactionInterceptor.class).build()) {
+            c.addAnnotation(TEST_TRANSACTION);
+            c.addAnnotation(Interceptor.class.getName());
+            c.addAnnotation(Priority.class).addValue("value", Interceptor.Priority.PLATFORM_BEFORE + 201);
+        }
+        additionalBeans.produce(AdditionalBeanBuildItem.builder().addBeanClass(ReactiveTestTransactionInterceptor.class)
+                .addBeanClass(TEST_TRANSACTION).build());
+    }
+
+    private static boolean testTransactionOnClassPath() {
+        try {
+            Class.forName(TEST_TRANSACTION, false, Thread.currentThread().getContextClassLoader());
+            return true;
+        } catch (ClassNotFoundException ignored) {
+            return false;
+        }
+    }
+
+    private static final DotName TEST_ANNOTATION = DotName.createSimple("org.junit.jupiter.api.Test");
+    private static final DotName TEST_TRANSACTION_ANNOTATION = DotName.createSimple(TEST_TRANSACTION);
+    private static final DotName UNI_DOTNAME = DotName.createSimple("io.smallrye.mutiny.Uni");
+
+    @BuildStep(onlyIf = IsTest.class)
+    void transformReactiveTestMethods(CombinedIndexBuildItem combinedIndex,
+            BuildProducer<BytecodeTransformerBuildItem> bytecodeTransformers) {
+        if (!testTransactionOnClassPath()) {
+            return;
+        }
+
+        Set<String> classNames = new HashSet<>();
+        for (AnnotationInstance ann : combinedIndex.getIndex().getAnnotations(TEST_TRANSACTION_ANNOTATION)) {
+            if (ann.target().kind() == AnnotationTarget.Kind.METHOD) {
+                MethodInfo method = ann.target().asMethod();
+                if (method.returnType().name().equals(UNI_DOTNAME)
+                        && method.hasAnnotation(TEST_ANNOTATION)) {
+                    classNames.add(method.declaringClass().name().toString());
+                }
+            } else if (ann.target().kind() == AnnotationTarget.Kind.CLASS) {
+                for (MethodInfo method : ann.target().asClass().methods()) {
+                    if (method.returnType().name().equals(UNI_DOTNAME)
+                            && method.hasAnnotation(TEST_ANNOTATION)) {
+                        classNames.add(method.declaringClass().name().toString());
+                        break;
+                    }
+                }
+            }
+        }
+
+        BiFunction<String, byte[], byte[]> inputTransformer = (name, bytes) -> {
+            byte[] result = ReactiveTestMethodTransformer.transformIfNeeded(bytes,
+                    Thread.currentThread().getContextClassLoader());
+            return result != null ? result : bytes;
+        };
+
+        for (String className : classNames) {
+            bytecodeTransformers.produce(new BytecodeTransformerBuildItem.Builder()
+                    .setClassToTransform(className)
+                    .setInputTransformer(inputTransformer)
+                    .build());
+        }
     }
 
     record QuarkusPersistenceUnitDescriptorWithSupportedDBKind(QuarkusPersistenceUnitDescriptor descriptor,

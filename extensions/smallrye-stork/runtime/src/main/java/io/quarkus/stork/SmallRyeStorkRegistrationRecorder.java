@@ -3,7 +3,6 @@ package io.quarkus.stork;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CountDownLatch;
 
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
@@ -30,12 +29,13 @@ public class SmallRyeStorkRegistrationRecorder {
     }
 
     public void registerServiceInstance() {
-        List<ServiceConfig> serviceConfigs = StorkConfigUtil.toStorkServiceConfig(runtimeConfig.getValue());
+        StorkConfiguration configuration = runtimeConfig.getValue();
+        List<ServiceConfig> serviceConfigs = StorkConfigUtil.toStorkServiceConfig(configuration);
         Config quarkusConfig = ConfigProvider.getConfig();
         for (ServiceConfig serviceConfig : serviceConfigs) {
             String serviceName = serviceConfig.serviceName();
-            if (runtimeConfig.getValue().serviceConfiguration().get(serviceName).serviceRegistrar().isPresent()) {
-                StorkServiceRegistrarConfiguration storkServiceRegistrarConfiguration = runtimeConfig.getValue()
+            if (configuration.serviceConfiguration().get(serviceName).serviceRegistrar().isPresent()) {
+                StorkServiceRegistrarConfiguration storkServiceRegistrarConfiguration = configuration
                         .serviceConfiguration()
                         .get(serviceName).serviceRegistrar().get();
                 if (!storkServiceRegistrarConfiguration.enabled()) {
@@ -96,26 +96,25 @@ public class SmallRyeStorkRegistrationRecorder {
     }
 
     private void deregisterServiceInstance() {
-        List<ServiceConfig> serviceConfigs = StorkConfigUtil.toStorkServiceConfig(runtimeConfig.getValue());
+        StorkConfiguration configuration = runtimeConfig.getValue();
+        List<ServiceConfig> serviceConfigs = StorkConfigUtil.toStorkServiceConfig(configuration);
         Config quarkusConfig = ConfigProvider.getConfig();
         for (ServiceConfig serviceConfig : serviceConfigs) {
             String serviceName = serviceConfig.serviceName();
-            if (runtimeConfig.getValue().serviceConfiguration().get(serviceName).serviceRegistrar().isEmpty()) {
+            if (configuration.serviceConfiguration().get(serviceName).serviceRegistrar().isEmpty()) {
                 continue;
             }
-            StorkServiceRegistrarConfiguration storkServiceRegistrarConfiguration = runtimeConfig.getValue()
+            StorkServiceRegistrarConfiguration storkServiceRegistrarConfiguration = configuration
                     .serviceConfiguration()
                     .get(serviceName).serviceRegistrar().get();
             if (!storkServiceRegistrarConfiguration.enabled()) {
                 continue;
             }
-            CountDownLatch registrationLatch = new CountDownLatch(1);
             Uni<Void> deregistration;
             if (storkServiceRegistrarConfiguration.instanceName().isPresent()) {
                 deregistration = Stork.getInstance()
                         .getService(serviceName)
                         .deregisterNamedInstance(storkServiceRegistrarConfiguration.instanceName().get());
-                awaitOrSubscribe(deregistration, serviceName, "deregistration");
             } else {
                 Map<String, String> parameters = serviceConfig.serviceRegistrar().parameters();
                 String host = StorkConfigUtil.getOrDefaultHost(parameters, quarkusConfig);
@@ -123,16 +122,8 @@ public class SmallRyeStorkRegistrationRecorder {
                 deregistration = Stork.getInstance()
                         .getService(serviceName)
                         .deregisterServiceInstance(host, port);
-                awaitOrSubscribe(deregistration, serviceName, "deregistration");
             }
-            deregistration
-                    .subscribe()
-                    .with(
-                            success -> registrationLatch.countDown(),
-                            failure -> {
-                                LOGGER.warnf("Failed to deregister service '%s': %s", serviceName, failure.getMessage());
-                                registrationLatch.countDown();
-                            });
+            awaitOrSubscribe(deregistration, serviceName, "deregistration");
         }
     }
 }

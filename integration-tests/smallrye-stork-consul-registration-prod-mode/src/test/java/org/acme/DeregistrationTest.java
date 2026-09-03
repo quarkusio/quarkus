@@ -2,9 +2,7 @@ package org.acme;
 
 import static org.awaitility.Awaitility.await;
 import static org.hamcrest.CoreMatchers.containsString;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import org.junit.jupiter.api.Test;
@@ -37,10 +35,9 @@ public class DeregistrationTest {
 
     @Test
     public void testDeregistrationAfterShutdown() throws Exception {
-        String serviceId = findServiceId("consul-deregistration-test");
-        assertNotNull(serviceId, "Service 'consul-deregistration-test' should be registered in Consul");
+        String serviceUrl = ConsulTestUtils.serviceUrl("consul-deregistration-test");
 
-        RestAssured.get("http://localhost:8500/v1/agent/service/" + serviceId)
+        RestAssured.get(serviceUrl)
                 .then()
                 .statusCode(200)
                 .body(containsString("\"Service\": \"consul-deregistration-test\""));
@@ -51,22 +48,9 @@ public class DeregistrationTest {
                 .atMost(20, TimeUnit.SECONDS)
                 .pollInterval(100, TimeUnit.MILLISECONDS)
                 .untilAsserted(() -> RestAssured
-                        .get("http://localhost:8500/v1/agent/service/" + serviceId)
+                        .get(serviceUrl)
                         .then()
                         .statusCode(404));
-    }
-
-    private String findServiceId(String serviceName) {
-        Map<String, ?> services = RestAssured.get("http://localhost:8500/v1/agent/services")
-                .then()
-                .statusCode(200)
-                .extract()
-                .jsonPath()
-                .getMap(".");
-        return services.keySet().stream()
-                .filter(id -> id.startsWith(serviceName))
-                .findFirst()
-                .orElse(null);
     }
 
 }

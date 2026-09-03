@@ -3,7 +3,6 @@ package io.quarkus.stork;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CountDownLatch;
 
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
@@ -109,13 +108,11 @@ public class SmallRyeStorkRegistrationRecorder {
             if (!storkServiceRegistrarConfiguration.enabled()) {
                 continue;
             }
-            CountDownLatch registrationLatch = new CountDownLatch(1);
             Uni<Void> deregistration;
             if (storkServiceRegistrarConfiguration.instanceName().isPresent()) {
                 deregistration = Stork.getInstance()
                         .getService(serviceName)
                         .deregisterNamedInstance(storkServiceRegistrarConfiguration.instanceName().get());
-                awaitOrSubscribe(deregistration, serviceName, "deregistration");
             } else {
                 Map<String, String> parameters = serviceConfig.serviceRegistrar().parameters();
                 String host = StorkConfigUtil.getOrDefaultHost(parameters, quarkusConfig);
@@ -123,16 +120,8 @@ public class SmallRyeStorkRegistrationRecorder {
                 deregistration = Stork.getInstance()
                         .getService(serviceName)
                         .deregisterServiceInstance(host, port);
-                awaitOrSubscribe(deregistration, serviceName, "deregistration");
             }
-            deregistration
-                    .subscribe()
-                    .with(
-                            success -> registrationLatch.countDown(),
-                            failure -> {
-                                LOGGER.warnf("Failed to deregister service '%s': %s", serviceName, failure.getMessage());
-                                registrationLatch.countDown();
-                            });
+            awaitOrSubscribe(deregistration, serviceName, "deregistration");
         }
     }
 }

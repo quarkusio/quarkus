@@ -317,8 +317,13 @@ public class VertxInputStream extends InputStream {
         }
 
         public int readBytesAvailable() {
-            if (input1 != null) {
-                return ((BufferInternal) input1).getByteBuf().readableBytes();
+            lock.lock();
+            try {
+                if (input1 != null) {
+                    return ((BufferInternal) input1).getByteBuf().readableBytes();
+                }
+            } finally {
+                lock.unlock();
             }
 
             String length = request.getHeader(HttpHeaders.CONTENT_LENGTH);

@@ -66,9 +66,7 @@ public class TokensHelper {
                 //rerun the CAS loop
             } else {
                 final Tokens tokens = currentState.tokens;
-
                 final boolean accessTokenExpired = tokens.isAccessTokenExpired();
-
                 if (accessTokenExpired || tokens.isAccessTokenWithinRefreshInterval()) {
                     LOG.debugf("Starting refreshing the tokens for client %s", tokens.getClientId());
                     final boolean refreshTokenValid = tokens.getRefreshToken() != null && !tokens.isRefreshTokenExpired();

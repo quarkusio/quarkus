@@ -25,7 +25,7 @@ public class VertxBlockingOutput implements VertxOutput {
     protected boolean drainHandlerRegistered;
     protected final HttpServerRequest request;
     protected boolean first = true;
-    protected Throwable throwable;
+    protected volatile Throwable throwable;
     private final ReentrantLock lock = new ReentrantLock();
     private final Condition drainAvailable = lock.newCondition();
 
@@ -167,13 +167,13 @@ public class VertxBlockingOutput implements VertxOutput {
                 Handler<Void> handler = new Handler<Void>() {
                     @Override
                     public void handle(Void event) {
-                        if (waitingForDrain) {
-                            lock.lock();
-                            try {
+                        lock.lock();
+                        try {
+                            if (waitingForDrain) {
                                 drainAvailable.signalAll();
-                            } finally {
-                                lock.unlock();
                             }
+                        } finally {
+                            lock.unlock();
                         }
                     }
                 };

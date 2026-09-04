@@ -157,7 +157,7 @@ The generated manifest can be applied to the cluster from the project root using
 kubectl apply -f target/kubernetes/kubernetes.json
 ----
 
-An important thing to note about the `Deployment` (or `StatefulSet`) is that is uses `yourDockerUsername/test-quarkus-app:1.0.0-SNAPSHOT` as the container image of the `Pod`.
+An important thing to note about the `Deployment` (or `StatefulSet`) is that it uses `yourDockerUsername/test-quarkus-app:1.0.0-SNAPSHOT` as the container image of the `Pod`.
 The name of the image is controlled by the Jib extension and can be customized using the usual `application.properties`.
 
 For example with a configuration like:
@@ -250,7 +250,7 @@ quarkus.kubernetes.deployment-kind=CronJob
 quarkus.kubernetes.cron-job.schedule=0 * * * *
 ----
 
-IMPORTANT: CronJob resources require the https://en.wikipedia.org/wiki/Cron[Cron] expression to specify when to launch the job via the property `quarkus.kubernetes.cron-job.schedule`. If not provide, the build will fail.
+IMPORTANT: CronJob resources require the https://en.wikipedia.org/wiki/Cron[Cron] expression to specify when to launch the job via the property `quarkus.kubernetes.cron-job.schedule`. If not provided, the build will fail.
 
 You can configure the rest of the Kubernetes CronJob configuration using the properties under `quarkus.kubernetes.cron-job.xxx` (see xref:deploying-to-kubernetes.adoc#quarkus-kubernetes_quarkus-kubernetes-cron-job-parallelism[link]).
 
@@ -391,7 +391,7 @@ Out of the box, the generated resources will be annotated with version control r
 
 ==== Custom Annotations
 
-Custom annotations can be added in a way similar to labels.For example to add the annotation `foo=bar` and `app.quarkus/id=42` just apply the following configuration:
+Custom annotations can be added in a way similar to labels. For example to add the annotation `foo=bar` and `app.quarkus/id=42` just apply the following configuration:
 
 [source,properties]
 ----
@@ -610,7 +610,7 @@ When you need to use a secret or a config map for the purpose of application con
 - mount the volume
 - create an environment variable for `SMALLRYE_CONFIG_LOCATIONS`
 
-To simplify things, quarkus provides single step alternative:
+To simplify things, Quarkus provides a single-step alternative:
 
 [source,properties]
 ----
@@ -951,7 +951,6 @@ quarkus.kubernetes.rbac.roles.my-role.policy-rules.0.api-groups=extensions,apps
 quarkus.kubernetes.rbac.roles.my-role.policy-rules.0.resources=deployments
 quarkus.kubernetes.rbac.roles.my-role.policy-rules.0.verbs=list
 ----
-
 <1> In this example, the role "my-role" will be generated with a policy rule to get the list of deployments.
 
 By default, if one role is configured, a RoleBinding resource will be generated as well to link this role with the ServiceAccount resource.
@@ -973,7 +972,6 @@ quarkus.kubernetes.rbac.role-bindings.my-role-binding.subjects.my-service-accoun
 quarkus.kubernetes.rbac.role-bindings.my-role-binding.subjects.my-service-account.namespace=my_namespace
 quarkus.kubernetes.rbac.role-bindings.my-role-binding.role-name=my-role
 ----
-
 <1> In this example, the role "my-role" will be generated with the specified policy rules.
 <2> Also, the service account "my-service-account" will be generated.
 <3> And we can configure the generated RoleBinding resource by selecting the role to be used and the subject.
@@ -992,7 +990,6 @@ quarkus.kubernetes.rbac.cluster-role-bindings.my-cluster-role-binding.subjects.m
 quarkus.kubernetes.rbac.cluster-role-bindings.my-cluster-role-binding.subjects.manager.api-group=rbac.authorization.k8s.io
 quarkus.kubernetes.rbac.cluster-role-bindings.my-cluster-role-binding.role-name=my-cluster-role <2>
 ----
-
 <1> In this example, the cluster role "my-cluster-role" will be generated with the specified policy rules.
 <2> The name of the ClusterRole resource to use. Role resources are namespace-based and hence not allowed in ClusterRoleBinding resources.
 

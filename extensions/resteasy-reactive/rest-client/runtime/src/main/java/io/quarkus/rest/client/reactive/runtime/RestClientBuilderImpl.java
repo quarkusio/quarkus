@@ -54,7 +54,6 @@ import io.quarkus.arc.ArcContainer;
 import io.quarkus.arc.InstanceHandle;
 import io.quarkus.proxy.ProxyConfiguration;
 import io.quarkus.proxy.ProxyConfigurationRegistry;
-import io.quarkus.rest.client.reactive.runtime.ProxyAddressUtil.HostAndPort;
 import io.quarkus.rest.client.reactive.runtime.context.HttpClientOptionsContextResolver;
 import io.quarkus.restclient.config.RestClientsConfig;
 import io.quarkus.tls.TlsConfiguration;
@@ -620,8 +619,6 @@ public class RestClientBuilderImpl implements RestClientBuilder, VertxRequestCus
             clientBuilder.maxChunkSize(maxChunkSize);
         } else if (restClients.maxChunkSize().isPresent()) {
             clientBuilder.maxChunkSize(restClients.maxChunkSize().get().asIntValue());
-        } else if (restClients.multipart().maxChunkSize().isPresent()) {
-            clientBuilder.maxChunkSize(restClients.multipart().maxChunkSize().getAsInt());
         } else {
             clientBuilder.maxChunkSize(DEFAULT_MAX_CHUNK_SIZE);
         }
@@ -673,16 +670,6 @@ public class RestClientBuilderImpl implements RestClientBuilder, VertxRequestCus
 
         if (proxyHost != null) {
             configureProxy(proxyHost, proxyPort, proxyUser, proxyPassword, nonProxyHosts, proxyConnectTimeout, proxyType);
-        } else if (restClients.proxyAddress().isPresent()) {
-            HostAndPort globalProxy = ProxyAddressUtil.parseAddress(restClients.proxyAddress().get());
-            configureProxy(
-                    globalProxy.host,
-                    globalProxy.port,
-                    restClients.proxyUser().orElse(null),
-                    restClients.proxyPassword().orElse(null),
-                    restClients.nonProxyHosts().orElse(null),
-                    restClients.proxyConnectTimeout().orElse(null),
-                    null);
         } else {
             /* Check the named proxy configuration on the rest-client extension level or fallback to global proxy settings */
             final ProxyConfigurationRegistry registry = Arc.container().select(ProxyConfigurationRegistry.class).get();

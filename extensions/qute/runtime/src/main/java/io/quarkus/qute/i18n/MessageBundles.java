@@ -46,16 +46,55 @@ public final class MessageBundles {
                     "Message bundle interface must be annotated either with @MessageBundle or with @Localized: "
                             + bundleInterface.getName());
         }
-        InstanceHandle<T> handle = localized != null ? Arc.container().instance(bundleInterface, localized)
-                : Arc.container().instance(bundleInterface);
+        ArcContainer container = Arc.requireContainer();
+        InstanceHandle<T> handle = localized != null ? container.instance(bundleInterface, localized)
+                : container.instance(bundleInterface);
         if (handle.isAvailable()) {
             return handle.get();
         }
         throw new IllegalStateException(Qute.fmt(
-                "Unable to obtain a message bundle for interface [{iface.name}]{#if loc} and locale [{loc.value}]{/if}")
-                .data("iface", bundleInterface)
+                "Unable to obtain a message bundle for interface [{ifacename}]{#if loc} and locale [{loc.value}]{/if}")
+                .data("ifacename", bundleInterface.getName())
                 .data("loc", localized)
                 .render());
+    }
+
+    /**
+     * Obtains a message bundle for the specified interface and the current locale.
+     * <p>
+     * The current locale is obtained from a {@link CurrentLocaleProvider} bean. The appropriate localized variant is
+     * selected by an exact language tag match first, then by a language-only match. If no provider is available, or the
+     * current locale cannot be determined, or no matching localized variant exists, then the bundle for the default
+     * locale is returned.
+     * <p>
+     * This method backs the beans injected with the {@link LocaleAware} qualifier.
+     *
+     * @param <T>
+     * @param bundleInterface
+     * @return the message bundle for the current locale, never {@code null}
+     * @see LocaleAware
+     * @see CurrentLocaleProvider
+     */
+    public static <T> T getForCurrentLocale(Class<T> bundleInterface) {
+        ArcContainer container = Arc.container();
+        Locale locale = null;
+        InstanceHandle<CurrentLocaleProvider> provider = container.instance(CurrentLocaleProvider.class);
+        if (provider.isAvailable()) {
+            locale = provider.get().currentLocale();
+        }
+        if (locale != null) {
+            // First try the exact language tag match
+            InstanceHandle<T> handle = container.instance(bundleInterface, Localized.Literal.of(locale.toLanguageTag()));
+            if (!handle.isAvailable()) {
+                // Next try the language-only match
+                handle = container.instance(bundleInterface, Localized.Literal.of(locale.getLanguage()));
+            }
+            if (handle.isAvailable()) {
+                return handle.get();
+            }
+        }
+        // Fall back to the default locale
+        return get(bundleInterface);
     }
 
     static void setupNamespaceResolvers(@Observes EngineBuilder builder, Instance<BundleContext> context) {

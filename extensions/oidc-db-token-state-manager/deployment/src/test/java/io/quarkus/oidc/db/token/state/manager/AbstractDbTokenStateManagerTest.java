@@ -89,6 +89,46 @@ public abstract class AbstractDbTokenStateManagerTest {
         }
     }
 
+    @Test
+    public void testTokenStateIsNoLongerAvailable() throws IOException {
+
+        try (final WebClient webClient = createWebClient()) {
+
+            HtmlPage page = webClient.getPage(url.toString() + "protected");
+
+            assertEquals("Sign in to quarkus", page.getTitleText());
+
+            HtmlForm loginForm = page.getForms().get(0);
+
+            loginForm.getInputByName("username").setValueAttribute("alice");
+            loginForm.getInputByName("password").setValueAttribute("alice");
+
+            loginForm.getButtonByName("login").click();
+
+            assertTokenStateCount(1);
+
+            // the token state may have expired and been removed from the database,
+            // in which case the user must be redirected to re-authenticate
+            deleteTokenStates();
+
+            webClient.getOptions().setRedirectEnabled(false);
+            WebResponse webResponse = webClient
+                    .loadWebResponse(new WebRequest(URI.create(url.toString() + "protected").toURL()));
+            assertEquals(302, webResponse.getStatusCode());
+            assertNull(webClient.getCookieManager().getCookie("q_session"));
+
+            webClient.getCookieManager().clearCookies();
+        }
+    }
+
+    protected static void deleteTokenStates() {
+        RestAssured
+                .given()
+                .get("public/delete-db-state-manager-table-content")
+                .then()
+                .statusCode(204);
+    }
+
     protected static void assertTokenStateCount(Integer tokenStateCount) {
         RestAssured
                 .given()

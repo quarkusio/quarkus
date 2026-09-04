@@ -2,8 +2,8 @@ package io.quarkus.redis.runtime.client.config;
 
 import java.net.URI;
 import java.time.Duration;
+import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 
 import io.quarkus.redis.client.RedisClientName;
 import io.quarkus.runtime.annotations.ConfigDocDefault;
@@ -35,7 +35,7 @@ public interface RedisClientConfig {
      *
      * @see <a href="https://www.iana.org/assignments/uri-schemes/prov/redis">Redis scheme on www.iana.org</a>
      */
-    Optional<Set<URI>> hosts();
+    Optional<List<URI>> hosts();
 
     /**
      * The hosts provider bean name.
@@ -159,20 +159,6 @@ public interface RedisClientConfig {
      * <p>
      * This setting is only meaningful in case of a clustered Redis client and a sentinel
      * Redis client and has no effect otherwise.
-     *
-     * @deprecated use {@code quarkus.redis.topology-cache-ttl}
-     */
-    @Deprecated(forRemoval = true, since = "3.30")
-    @WithDefault("1s")
-    Duration hashSlotCacheTtl();
-
-    /**
-     * The TTL of the topology cache. A topology cache is used by a clustered Redis client
-     * and a sentinel Redis client to prevent constantly sending topology discovery commands
-     * ({@code CLUSTER SLOTS} or {@code SENTINEL ...}).
-     * <p>
-     * This setting is only meaningful in case of a clustered Redis client and a sentinel
-     * Redis client and has no effect otherwise.
      */
     @WithDefault("1s")
     Optional<Duration> topologyCacheTtl();
@@ -271,32 +257,4 @@ public interface RedisClientConfig {
      * The default TLS configuration is <strong>not</strong> used by default.
      */
     Optional<String> tlsConfigurationName();
-
-    default String toDebugString() {
-        return "RedisClientConfig{" +
-                "hosts=" + hosts() +
-                ", hostsProviderName=" + hostsProviderName() +
-                ", timeout=" + timeout() +
-                ", clientType=" + clientType() +
-                ", masterName=" + masterName() +
-                ", role=" + role() +
-                ", replicas=" + replicas() +
-                ", password=" + password() +
-                ", maxPoolSize=" + maxPoolSize() +
-                ", maxPoolWaiting=" + maxPoolWaiting() +
-                ", poolCleanerInterval=" + poolCleanerInterval() +
-                ", poolRecycleTimeout=" + poolRecycleTimeout() +
-                ", maxWaitingHandlers=" + maxWaitingHandlers() +
-                ", maxNestedArrays=" + maxNestedArrays() +
-                ", reconnectAttempts=" + reconnectAttempts() +
-                ", reconnectInterval=" + reconnectInterval() +
-                ", protocolNegotiation=" + protocolNegotiation() +
-                ", preferredProtocolVersion=" + preferredProtocolVersion() +
-                ", hashSlotCacheTtl=" + hashSlotCacheTtl() +
-                ", tcp=" + tcp() +
-                ", tls=" + tls() +
-                ", clientName=" + clientName() +
-                ", configureClientName=" + configureClientName() +
-                '}';
-    }
 }

@@ -15,15 +15,6 @@ import io.smallrye.config.WithParentName;
 public interface InfinispanClientBuildTimeConfig {
 
     /**
-     * Sets the bounded entry count for near cache. If this value is 0 or less near cache is disabled.
-     *
-     * @deprecated use per cache configuration for near cache max entries
-     */
-    @Deprecated
-    @WithDefault("0")
-    int nearCacheMaxEntries();
-
-    /**
      * Sets the marshallerClass. Default is ProtoStreamMarshaller
      */
     Optional<String> marshallerClass();

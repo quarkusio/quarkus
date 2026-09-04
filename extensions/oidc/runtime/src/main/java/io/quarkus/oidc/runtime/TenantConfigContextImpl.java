@@ -127,14 +127,8 @@ final class TenantConfigContextImpl implements TenantConfigContext {
     private static SecretKey createStateSecretKey(OidcTenantConfig config, String possiblePkceSecret) {
         if (config.authentication().pkceRequired().orElse(false) || config.authentication().nonceRequired()) {
             String stateSecret = null;
-            if (config.authentication().pkceSecret().isPresent() && config.authentication().stateSecret().isPresent()) {
-                throw new ConfigurationException(
-                        "Both 'quarkus.oidc.authentication.state-secret' and 'quarkus.oidc.authentication.pkce-secret' are configured");
-            }
             if (config.authentication().stateSecret().isPresent()) {
                 stateSecret = config.authentication().stateSecret().get();
-            } else if (config.authentication().pkceSecret().isPresent()) {
-                stateSecret = config.authentication().pkceSecret().get();
             }
 
             if (stateSecret == null) {

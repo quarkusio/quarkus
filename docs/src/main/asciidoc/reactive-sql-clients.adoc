@@ -293,7 +293,6 @@ To retrieve all the data, we will use the `query` method again:
         return new Fruit(row.getLong("id"), row.getString("name"));
     }
 ----
-
 <1> Transform the `io.vertx.mutiny.sqlclient.RowSet` to a `Multi<Row>`.
 <2> Convert each `io.vertx.mutiny.sqlclient.Row` to a `Fruit`.
 

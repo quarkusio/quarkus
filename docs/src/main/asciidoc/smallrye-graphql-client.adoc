@@ -332,7 +332,6 @@ public List<Film> getAllFilmsUsingDynamicClient() throws Exception {
     return response.getObject(FilmConnection.class, "allFilms").getFilms();  <4>
 }
 ----
-
 <1> Qualifies the injection point so that we know which named client needs to be injected here.
 
 <2> Here we build a document representing the GraphQL query, using the provided DSL language.

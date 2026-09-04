@@ -9,7 +9,7 @@
         "maven_args": "$JVM_TEST_MAVEN_ARGS",
         "maven_opts": "-Xmx3g -XX:MaxMetaspaceSize=1g",
         "os-name": "ubuntu-latest",
-        "runs-on": false,
+        "runs-on": true,
         "modules": "-pl\n!docs\n-Dno-test-modules"
     },
     {
@@ -47,7 +47,7 @@
         "maven_args": "$JVM_TEST_MAVEN_ARGS",
         "maven_opts": "-Xmx3g -XX:MaxMetaspaceSize=1g",
         "os-name": "ubuntu-latest",
-        "runs-on": false,
+        "runs-on": true,
         "modules": "-pl\n!docs\n-Dno-test-modules"
     },
     {
@@ -94,7 +94,7 @@
         "java-distribution": "semeru",
         "maven_args": "$JVM_TEST_MAVEN_ARGS",
         "maven_opts": "-Xmx3g -XX:MaxMetaspaceSize=1g",
-        "runs-on": false,
+        "runs-on": true,
         "os-name": "ubuntu-latest",
         "modules": "-f\nintegration-tests\n-pl\n!gradle\n-pl\n!maven\n-pl\n!devmode\n-pl\n!devtools"
     }

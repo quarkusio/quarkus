@@ -2,6 +2,8 @@ package io.quarkus.aesh.runtime;
 
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
 /**
@@ -50,6 +52,25 @@ public final class AeshTestConnectionHolder {
         return (LinkedBlockingQueue<Object>) getFieldFromThread("signalQueue");
     }
 
+    /**
+     * Retrieve the command output capture stream from the current thread.
+     * This stream receives only command output (from invocation.println()),
+     * not readline prompt or ANSI chrome.
+     */
+    static OutputStream getCommandOutputCapture() {
+        return (OutputStream) getFieldFromThread("commandOutputCapture");
+    }
+
+    /**
+     * Retrieve the input line response queue from the current thread.
+     * Pre-canned responses are consumed by {@code invocation.inputLine()}
+     * for interactive command testing.
+     */
+    @SuppressWarnings("unchecked")
+    static Queue<String> getInputLineQueue() {
+        return (Queue<String>) getFieldFromThread("inputLineQueue");
+    }
+
     private static Object getFieldFromThread(String fieldName) {
         Thread t = Thread.currentThread();
         if (!TEST_THREAD_NAME.equals(t.getName())) {
@@ -74,16 +95,22 @@ public final class AeshTestConnectionHolder {
         final InputStream testInput;
         final OutputStream testOutput;
         final LinkedBlockingQueue<Object> signalQueue;
+        final OutputStream commandOutputCapture;
+        final ConcurrentLinkedQueue<String> inputLineQueue;
 
         public AeshTestThread(Runnable target, String name, ClassLoader contextClassLoader,
                 InputStream testInput, OutputStream testOutput,
-                LinkedBlockingQueue<Object> signalQueue) {
+                LinkedBlockingQueue<Object> signalQueue,
+                OutputStream commandOutputCapture,
+                ConcurrentLinkedQueue<String> inputLineQueue) {
             super(target, name);
             setContextClassLoader(contextClassLoader);
             setDaemon(true);
             this.testInput = testInput;
             this.testOutput = testOutput;
             this.signalQueue = signalQueue;
+            this.commandOutputCapture = commandOutputCapture;
+            this.inputLineQueue = inputLineQueue;
         }
     }
 }

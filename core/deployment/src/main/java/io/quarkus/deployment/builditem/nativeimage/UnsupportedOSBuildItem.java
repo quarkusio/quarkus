@@ -10,96 +10,9 @@ import io.smallrye.common.os.OS;
  */
 public final class UnsupportedOSBuildItem extends MultiBuildItem {
 
-    @Deprecated(forRemoval = true, since = "3.26.0")
-    public static String ARCH = System.getProperty("os.arch");
-
-    /**
-     * @deprecated Use {@link OS} instead
-     */
-    @Deprecated(forRemoval = true, since = "3.26.0")
-    public enum Os {
-        WINDOWS(OS.WINDOWS.isCurrent()),
-        MAC(OS.MAC.isCurrent()),
-        LINUX(OS.LINUX.isCurrent()),
-        NONE(false);
-
-        public final boolean active;
-
-        Os(boolean active) {
-            this.active = active;
-        }
-    }
-
-    /**
-     * @deprecated Use {@link CPU} instead
-     */
-    @Deprecated(forRemoval = true, since = "3.26.0")
-    public enum Arch {
-        AMD64("amd64".equalsIgnoreCase(ARCH)),
-        AARCH64("aarch64".equalsIgnoreCase(ARCH)),
-        NONE(false);
-
-        public final boolean active;
-
-        Arch(boolean active) {
-            this.active = active;
-        }
-    }
-
     private final OS os;
     private final CPU cpu;
     private final String error;
-
-    /**
-     * @deprecated Use {@link UnsupportedOSBuildItem#UnsupportedOSBuildItem(io.smallrye.common.os.OS, java.lang.String)} instead
-     */
-    @Deprecated(forRemoval = true, since = "3.26.0")
-    public UnsupportedOSBuildItem(Os os, String error) {
-        this.os = switch (os) {
-            case WINDOWS -> OS.WINDOWS;
-            case MAC -> OS.MAC;
-            case LINUX -> OS.LINUX;
-            case NONE -> null;
-        };
-        this.cpu = null;
-        this.error = error;
-    }
-
-    /**
-     * @deprecated Use {@link UnsupportedOSBuildItem#UnsupportedOSBuildItem(io.smallrye.common.cpu.CPU, java.lang.String)}
-     *             instead
-     */
-    @Deprecated(forRemoval = true, since = "3.26.0")
-    public UnsupportedOSBuildItem(Arch arch, String error) {
-        this.os = null;
-        this.cpu = switch (arch) {
-            case AMD64 -> CPU.x64;
-            case AARCH64 -> CPU.aarch64;
-            case NONE -> null;
-        };
-        this.error = error;
-    }
-
-    /**
-     * @deprecated Use
-     *             {@link UnsupportedOSBuildItem#UnsupportedOSBuildItem(io.smallrye.common.os.OS, io.smallrye.common.cpu.CPU, java.lang.String)}
-     *             instead
-     */
-    @Deprecated(forRemoval = true, since = "3.26.0")
-    public UnsupportedOSBuildItem(Os os, Arch arch, String error) {
-        this.os = switch (os) {
-            case WINDOWS -> OS.WINDOWS;
-            case MAC -> OS.MAC;
-            case LINUX -> OS.LINUX;
-            case NONE -> null;
-        };
-        this.cpu = switch (arch) {
-            case AMD64 -> CPU.x64;
-            case AARCH64 -> CPU.aarch64;
-            case NONE -> null;
-        };
-        this.error = error;
-    }
 
     public UnsupportedOSBuildItem(OS os, String error) {
         this(os, null, error);

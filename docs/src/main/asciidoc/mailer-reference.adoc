@@ -470,22 +470,6 @@ quarkus.mailer.tls-configuration-name=my-mailer # Reference the named configurat
 quarkus.tls.my-mailer.trust-all=true
 ----
 
-Alternatively, you can use the _deprecated_ `quarkus.mailer.trust-store.paths`  and `quarkus.mailer.trust-all` properties:
-
-[source, properties]
-----
-quarkus.mailer.tls=false
-quarkus.mailer.start-tls=REQUIRED
-quarkus.mailer.truststore.paths=target/certs/mailpit-ca.crt
-----
-
-[source, properties]
-----
-quarkus.mailer.tls=false
-quarkus.mailer.start-tls=REQUIRED
-quarkus.mailer.trust-all=true
-----
-
 IMPORTANT: To use `START_TLS`, make sure you set `tls` to `false` and `start-tls` to `REQUIRED` or `OPTIONAL`.
 
 === Configuring SSL/TLS
@@ -511,8 +495,6 @@ If your SMTP server uses a valid (trusted) certificate, and thus do not require 
 quarkus.mailer.tls=true
 ----
 
-
-
 [IMPORTANT]
 ====
 When `quarkus.tls.trust-all` is set to `true`, the trust store configuration is ignored. This is not recommended for production.
@@ -523,8 +505,6 @@ Also, we recommend avoiding using `quarkus.tls.trust-all`, and use a named confi
 quarkus.tls.my-mailer.trust-all=true
 quarkus.mailer.tls-configuration-name=my-mailer # Reference the named configuration
 ----
-
-You can also use the deprecated `quarkus.mailer.trust-all=true` property.
 ====
 
 == Multiple mailer configurations

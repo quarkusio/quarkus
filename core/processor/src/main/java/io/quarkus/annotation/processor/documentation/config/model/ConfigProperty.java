@@ -4,7 +4,6 @@ import java.time.Duration;
 import java.util.Collections;
 import java.util.List;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import io.quarkus.annotation.processor.documentation.config.util.Types;
@@ -67,12 +66,6 @@ public final class ConfigProperty extends AbstractConfigItem {
 
     public List<PropertyPath> getAdditionalPaths() {
         return additionalPaths;
-    }
-
-    @Deprecated
-    @JsonIgnore
-    public String getEnvironmentVariable() {
-        return getPath().environmentVariable();
     }
 
     public String getTypeDescription() {

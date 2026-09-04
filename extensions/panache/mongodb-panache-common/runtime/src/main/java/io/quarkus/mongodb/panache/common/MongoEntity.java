@@ -17,8 +17,8 @@ public @interface MongoEntity {
     String collection() default "";
 
     /**
-     * The name of the database (if not set the default from the property
-     * <code>quarkus.mongodb.database</code> will be used).
+     * The name of the database (if not set, the database from the configuration property or the connection string will be
+     * used).
      */
     String database() default "";
 

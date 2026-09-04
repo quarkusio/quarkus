@@ -12,7 +12,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.spiffe.client.SpiffeClient;
-import io.quarkus.spiffe.client.WorkloadJsonWebToken;
+import io.quarkus.spiffe.svid.jwt.WorkloadJsonWebToken;
 import io.quarkus.test.QuarkusExtensionTest;
 
 class SpiffeClientConfiguredAudiencesTest {

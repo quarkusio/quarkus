@@ -7,7 +7,6 @@ import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-import io.quarkus.deployment.configuration.ConfigCompatibility;
 import io.quarkus.deployment.pkg.NativeConfig;
 import io.quarkus.deployment.pkg.PackageConfig;
 import io.quarkus.gradle.dsl.Manifest;
@@ -50,7 +49,7 @@ final class BaseConfig {
                 .withSources(new PropertiesConfigSource(configValues, "valueSourceConfig", 400))
                 .withMapping(PackageConfig.class)
                 .withMapping(NativeConfig.class)
-                .withInterceptors(ConfigCompatibility.FrontEnd.nonLoggingInstance(), ConfigCompatibility.BackEnd.instance())
+                .withDefaultValue("quarkus.package.output-directory", "quarkus-app")
                 .build();
 
         manifest = new Manifest();

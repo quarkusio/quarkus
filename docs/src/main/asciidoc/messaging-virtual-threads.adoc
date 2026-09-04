@@ -121,7 +121,6 @@ public class PriceConsumer {
 
 }
 ----
-
 <1> `@RunOnVirtualThread` annotation on the `@Incoming` method ensures that the method will be called on a virtual thread.
 <2> the REST client stub is injected with the `@RestClient` annotation.
 <3> `alert` method blocks the virtual thread until the REST call returns.
@@ -135,7 +134,7 @@ using `@RunOnVirtualThread` enforces concurrent message processing without prese
 
 === Methods signatures eligible to @RunOnVirtualThread
 
-Only method can be annotated with `@Blocking` can use `@RunOnVirtualThreads`.
+Only a method that can be annotated with `@Blocking` can use `@RunOnVirtualThread`.
 The eligible method signatures are:
 
 -  `@Outgoing("channel-out") O generator()`

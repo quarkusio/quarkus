@@ -80,8 +80,8 @@ public class QuarkusAugmentor {
         this.additionalApplicationArchives = new ArrayList<>(builder.additionalApplicationArchives);
         this.excludedFromIndexing = builder.excludedFromIndexing;
         this.liveReloadBuildItem = builder.liveReloadState;
-        this.buildSystemProperties = builder.buildSystemProperties;
-        this.runtimeProperties = builder.runtimeProperties;
+        this.buildSystemProperties = builder.buildSystemProperties != null ? builder.buildSystemProperties : new Properties();
+        this.runtimeProperties = builder.runtimeProperties != null ? builder.runtimeProperties : new Properties();
         this.targetDir = builder.targetDir;
         this.effectiveModel = builder.effectiveModel;
         this.baseName = builder.baseName;
@@ -93,6 +93,9 @@ public class QuarkusAugmentor {
         this.auxiliaryDevModeType = Optional.ofNullable(builder.auxiliaryDevModeType);
         this.test = builder.test;
         this.depInfoProvider = builder.depInfoProvider;
+        if (this.baseName != null) {
+            this.buildSystemProperties.put("quarkus.build.base-name", baseName);
+        }
     }
 
     public BuildResult run() throws Exception {
@@ -103,18 +106,14 @@ public class QuarkusAugmentor {
         log.debug("Beginning Quarkus augmentation");
         runtimeInitializeForAugmentation();
         ClassLoader originalClassLoader = Thread.currentThread().getContextClassLoader();
-        QuarkusBuildCloseablesBuildItem buildCloseables = new QuarkusBuildCloseablesBuildItem();
-        try {
+        try (QuarkusBuildCloseablesBuildItem buildCloseables = new QuarkusBuildCloseablesBuildItem()) {
             Thread.currentThread().setContextClassLoader(deploymentClassLoader);
 
-            final BuildChainBuilder chainBuilder = BuildChain.builder();
+            BuildChainBuilder chainBuilder = BuildChain.builder();
             chainBuilder.setClassLoader(deploymentClassLoader);
 
-            ExtensionLoader.loadStepsFrom(deploymentClassLoader,
-                    buildSystemProperties == null ? new Properties() : buildSystemProperties,
-                    runtimeProperties == null ? new Properties() : runtimeProperties,
-                    effectiveModel, launchMode, devModeType)
-                    .accept(chainBuilder);
+            ExtensionLoader.loadStepsFrom(deploymentClassLoader, buildSystemProperties, runtimeProperties, effectiveModel,
+                    launchMode, devModeType).accept(chainBuilder);
 
             Thread.currentThread().setContextClassLoader(classLoader);
             chainBuilder.loadProviders(classLoader);
@@ -203,7 +202,6 @@ public class QuarkusAugmentor {
 
             }
             Thread.currentThread().setContextClassLoader(originalClassLoader);
-            buildCloseables.close();
         }
     }
 

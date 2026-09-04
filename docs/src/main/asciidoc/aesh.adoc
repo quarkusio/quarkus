@@ -640,6 +640,56 @@ public class MyCliSettings implements CliSettings {
 
 Multiple `CliSettings` beans can be registered. They are applied in arbitrary order, so avoid conflicting settings across implementations.
 
+=== Custom CommandInvocation
+
+You can use `CliSettings` to register a custom `CommandInvocationProvider` that wraps the default `CommandInvocation` with application-specific context.
+This is useful when commands need shared state or services that are not available through CDI injection:
+
+[source,java]
+----
+package com.acme.aesh;
+
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
+
+import org.aesh.command.invocation.CommandInvocation;
+import org.aesh.command.invocation.CommandInvocationProvider;
+import org.aesh.command.settings.SettingsBuilder;
+
+import io.quarkus.aesh.runtime.CliSettings;
+
+@ApplicationScoped
+public class MyCliSettings implements CliSettings {
+
+    @Inject
+    MyAppContext appContext;
+
+    @Override
+    public void customize(SettingsBuilder<?> builder) {
+        builder.commandInvocationProvider(new MyInvocationProvider(appContext));
+    }
+}
+----
+
+Commands can then declare the custom invocation type and access the additional context:
+
+[source,java]
+----
+@CommandDefinition(name = "status", description = "Show status")
+public class StatusCommand implements Command<MyCommandInvocation> {
+
+    @Override
+    public CommandResult execute(MyCommandInvocation invocation) {
+        invocation.println("Context: " + invocation.getAppContext().getName());
+        return CommandResult.SUCCESS;
+    }
+}
+----
+
+The custom `CommandInvocationProvider` is applied in all execution modes: console REPL, console single-command execution (with arguments), and runtime mode.
+
+Similarly, you can register custom `ConverterInvocationProvider` and `ValidatorInvocationProvider` implementations to pass additional context to converters and validators.
+
 == Command execution listener
 
 Implement `CommandExecutionListener` as a CDI bean to receive a callback after each command completes.
@@ -807,7 +857,7 @@ quarkus.aesh.ssh.password=mysecret
 # Path to the host key file (default: hostkey.ser)
 quarkus.aesh.ssh.host-key-file=hostkey.ser
 
-# Enable or disable the SSH server (default: true)
+# Enable or disable the SSH server at build time (default: true)
 quarkus.aesh.ssh.enabled=true
 ----
 
@@ -1038,7 +1088,7 @@ public class CliTest {
 === Testing console mode commands (REPL)
 
 Console mode commands run in an interactive shell.
-Use `AeshLauncher` to start a REPL session, send commands, and assert on their output:
+Use `AeshLauncher` to send commands and assert on their output:
 
 [source,xml]
 ----
@@ -1056,26 +1106,130 @@ public class ReplTest {
 
     @Test
     void testInteractiveSession(AeshLauncher launcher) {
-        launcher.launch();
+        launcher.execute("greet --name=Alice");
+        assertThat(launcher.getCommandOutput()).isEqualTo("Hello Alice!\n");
 
-        String output = launcher.executeCommand("greet --name=Alice");
-        assertThat(output).contains("Hello Alice!");
-
-        output = launcher.executeCommand("calc -a 5 -b 3");
-        assertThat(output).contains("Result: 8");
-
-        launcher.exit();
+        launcher.execute("calc -a 5 -b 3");
+        assertThat(launcher.getCommandOutput()).isEqualTo("Result: 8\n");
     }
 }
 ----
 
-`AeshLauncher` provides:
+The REPL is auto-launched on the first `execute()` call and auto-closed after each
+test method. No explicit `launch()` or `exit()` calls are needed for typical tests.
 
-* `launch(String... args)` -- starts the REPL on a background thread
-* `executeCommand(String command)` -- sends a command and blocks until it completes (10 second default timeout)
-* `executeCommand(String command, Duration timeout)` -- same with a custom timeout
-* `getErrorOutput()` -- returns any error output from the session
-* `exit()` -- sends the exit command and waits for clean shutdown
+==== Clean command output
+
+`getCommandOutput()` returns only what the command wrote via `invocation.println()` --
+no prompt, no command echo, no ANSI sequences. This enables exact assertions with `isEqualTo()`
+instead of fuzzy `contains()` matching.
+
+`getOutput()` accumulates command output across multiple `execute()` calls within a test.
+Use `resetOutput()` to clear the accumulator between test phases:
+
+[source,java]
+----
+@Test
+void testAccumulatedOutput(AeshLauncher launcher) {
+    launcher.execute("add-item apple");
+    launcher.execute("add-item banana");
+
+    assertThat(launcher.getOutput()).isEqualTo("Added: apple\nAdded: banana\n");
+
+    launcher.resetOutput();
+    launcher.execute("list-items");
+    assertThat(launcher.getCommandOutput()).contains("apple", "banana");
+}
+----
+
+==== Exit code assertions
+
+`execute()` asserts that the command returns `CommandResult.SUCCESS` (exit code 0) by default.
+If a command is expected to fail, pass the expected `CommandResult`:
+
+[source,java]
+----
+@Test
+void testFailingCommand(AeshLauncher launcher) {
+    // Passes — expected to fail
+    launcher.execute("invalid-command --bad", CommandResult.FAILURE);
+    assertThat(launcher.getLastExitCode()).isEqualTo(1);
+    assertThat(launcher.getLastError()).isNotNull();
+}
+----
+
+For more control (custom timeout, pre-canned input), use `ExecuteOptions`:
+
+[source,java]
+----
+// Custom timeout
+launcher.execute("slow-command", ExecuteOptions.defaults().timeout(Duration.ofMinutes(2)));
+
+// Expected failure with custom timeout
+launcher.execute("risky-command",
+        ExecuteOptions.expecting(CommandResult.FAILURE).timeout(Duration.ofSeconds(5)));
+----
+
+==== Error capture
+
+When a command throws an exception, it is captured and available via `getLastError()`:
+
+[source,java]
+----
+@Test
+void testErrorCapture(AeshLauncher launcher) {
+    launcher.execute("fail --message=boom", CommandResult.FAILURE);
+    assertThat(launcher.getLastError().getMessage()).contains("boom");
+    assertThat(launcher.getErrorOutput()).contains("boom");
+}
+----
+
+Errors are cleared between commands -- a successful command after a failing one
+resets `getLastError()` to `null`.
+
+==== Quoting arguments
+
+Arguments containing spaces or special characters should be quoted the same way
+as in a terminal:
+
+[source,java]
+----
+launcher.execute("echo --text 'hello world'");
+assertThat(launcher.getCommandOutput()).isEqualTo("hello world\n");
+----
+
+==== Interactive input
+
+For commands that prompt for input during execution (e.g., confirmation prompts),
+use `ExecuteOptions.input()` to provide pre-canned responses:
+
+[source,java]
+----
+// Command calls invocation.inputLine() — response is provided automatically
+launcher.execute("confirm --action=deploy", ExecuteOptions.defaults().input("y"));
+assertThat(launcher.getCommandOutput()).contains("Confirmed: deploy");
+
+// Multiple prompts
+launcher.execute("setup", ExecuteOptions.defaults().input("admin", "password123", "y"));
+----
+
+For more complex interactive scenarios, `sendInput()` provides low-level
+access to the REPL's stdin:
+
+==== AeshLauncher API summary
+
+* `execute(String command)` -- executes and asserts `SUCCESS`
+* `execute(String command, CommandResult expected)` -- executes and asserts the given result
+* `execute(String command, ExecuteOptions options)` -- full control (timeout, expected result, input)
+* `sendInput(String input)` -- send raw input for interactive commands
+* `getCommandOutput()` -- clean output from the last command
+* `getOutput()` / `resetOutput()` -- accumulated command output
+* `getLastExitCode()` -- exit code from the last command
+* `getLastError()` / `getErrorOutput()` -- exception from the last failed command
+* `isRunning()` / `waitForExit(Duration)` -- REPL lifecycle state
+* `getLaunchResult()` -- launch result after REPL exits
+* `launch(String... args)` -- explicit launch with initial arguments (optional)
+* `exit()` -- explicit shutdown (optional, auto-closed after each test)
 
 NOTE: The exit command must be enabled for `AeshLauncher` to shut down cleanly.
 Set `quarkus.aesh.add-exit-command=true` in `application.properties` (or `src/test/resources/application.properties`).

@@ -213,6 +213,32 @@ val namesButEmmanuels = persons
 
 NOTE: The `stream` methods require a transaction to work.
 
+=== Projecting with data classes and value classes
+
+`project()` works with Kotlin data classes, including ones that expose their properties as
+`@JvmInline` value classes:
+
+[source,kotlin]
+----
+@RegisterForReflection // <1>
+@JvmInline
+value class GreetingId(val value: Long)
+
+@RegisterForReflection // <2>
+data class GreetingValueClassDto(val id: GreetingId? = null, val name: String)
+
+val greetings = personRepository.find("status", Status.Alive).project(GreetingValueClassDto::class.java)
+----
+<1> The value class is instantiated by Hibernate ORM when it builds the projection, so it needs its own
+reflection metadata to work in native mode.
+<2> As in the Java version, the projection DTO itself must be registered for reflection.
+
+Kotlin generates synthetic constructors for data classes that use value classes or default parameter
+values. Panache skips those and selects the constructor matching the declared properties, so no extra
+annotation is required. If your DTO declares several constructors and you want to pick one explicitly,
+annotate it with `@ProjectedConstructor` as described in the
+xref:hibernate-orm-panache.adoc#query-projection[Java version].
+
 For more examples, please consult the xref:hibernate-orm-panache.adoc[Java version] for complete details.  Both APIs
 are the same and work identically except for some Kotlin-specific tweaks to make things feel more natural to
 Kotlin developers.  These tweaks include things like better use of nullability and the lack of `Optional` on API

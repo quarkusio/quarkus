@@ -30,7 +30,6 @@ public class NativeImageResourceConfigStep {
 
         JsonObjectBuilder resourcesJs = Json.object();
         JsonArrayBuilder includes = Json.array();
-        JsonArrayBuilder excludes = Json.array();
 
         for (NativeImageResourceBuildItem i : resources) {
             for (String path : i.getResources()) {
@@ -46,10 +45,8 @@ public class NativeImageResourceConfigStep {
 
         for (NativeImageResourcePatternsBuildItem resourcePatternsItem : resourcePatterns) {
             addListToJsonArray(includes, resourcePatternsItem.getIncludePatterns());
-            addListToJsonArray(excludes, resourcePatternsItem.getExcludePatterns());
         }
         resourcesJs.put("includes", includes);
-        resourcesJs.put("excludes", excludes);
         root.put("resources", resourcesJs);
 
         JsonArrayBuilder bundles = Json.array();

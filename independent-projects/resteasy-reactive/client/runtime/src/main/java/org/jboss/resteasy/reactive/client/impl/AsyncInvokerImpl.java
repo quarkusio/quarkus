@@ -20,6 +20,7 @@ import jakarta.ws.rs.core.Response;
 
 import org.jboss.resteasy.reactive.RestResponse;
 import org.jboss.resteasy.reactive.common.jaxrs.ConfigurationImpl;
+import org.jboss.resteasy.reactive.common.jaxrs.RestResponseImpl;
 import org.jboss.resteasy.reactive.common.util.types.Types;
 import org.jboss.resteasy.reactive.spi.ThreadSetupAction;
 
@@ -308,8 +309,13 @@ public class AsyncInvokerImpl implements AsyncInvoker, CompletionStageRxInvoker 
             return res.thenApply(new Function<>() {
                 @Override
                 public T apply(Response response) {
-                    return (T) RestResponse.ResponseBuilder.create(response.getStatusInfo(), response.getEntity())
+                    RestResponse<?> restResponse = RestResponse.ResponseBuilder
+                            .create(response.getStatusInfo(), response.getEntity())
                             .replaceAll(response.getHeaders()).build();
+                    if (restResponse instanceof RestResponseImpl<?> restResponseImpl) {
+                        restResponseImpl.setClientResponse(true);
+                    }
+                    return (T) restResponse;
                 }
             });
         } else {

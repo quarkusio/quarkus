@@ -87,7 +87,6 @@ metadata:
   config: <10>
   - "quarkus.rest."
 ----
-
 <1> Extension name displayed to users
 <2> Extension runtime artifact expression that will be replaced with the actual coordinates during the build, this field could be omitted
 <3> Short name that could be used to quickly locate an extension in the catalog of extensions provided by the dev tools to the users

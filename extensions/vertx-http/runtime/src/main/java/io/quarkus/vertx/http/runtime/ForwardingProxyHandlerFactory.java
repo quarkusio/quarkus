@@ -64,7 +64,7 @@ public record ForwardingProxyHandlerFactory(ProxyConfig proxyConfig, ClientAuth 
     public Handler<HttpServerRequest> createHandler() {
         validateTrustedProxyConfig();
 
-        ForwardingProxyOptions options = ForwardingProxyOptions.from(proxyConfig);
+        ForwardingProxyOptions options = ForwardingProxyOptions.from(proxyConfig, configPrefix);
         if (hasHostTrustCheck) {
             return new ForwardedProxyHandler(builder(proxyConfig.trustedProxies().get()), vertx, root, options);
         } else if (hasClientAuthTrustCheck) {

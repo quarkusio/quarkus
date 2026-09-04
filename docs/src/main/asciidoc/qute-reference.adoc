@@ -1469,6 +1469,8 @@ The template is executed with the <<current_context_object>>, i.e. can reference
 NOTE: The evaluated template is parsed and evaluated every time the section is executed.
 In other words, it is not possible to cache the parsed value to conserve resources and optimize performance.
 
+IMPORTANT: The `{#eval}` section helper is not registered automatically. It can be registered manually using `engine.addSectionHelper(new EvalSectionHelper.Factory())`. See <<engine-customization>> for more details.
+
 ==== Cached Section
 
 Sometimes it's practical to cache parts of the template that rarely change.
@@ -3161,6 +3163,34 @@ public class MyBean {
 }
 ----
 <1> The annotation value is a locale tag string (IETF).
+
+===== Locale Aware Message Bundles
+
+An injected message bundle interface is by default bound to the default locale.
+If you need the localized variant to be selected dynamically based on the current locale, e.g. the locale negotiated from the `Accept-Language` header of the current HTTP request, then use the `@LocaleAware` qualifier instead.
+
+.Injected Current-Locale-Aware Message Bundle Example
+[source,java]
+----
+import io.quarkus.qute.i18n.LocaleAware;
+
+@Singleton
+public class MyBean {
+
+    @LocaleAware <1>
+    AppMessages msg;
+
+    String render() {
+       return msg.hello_name("Jachym"); <2>
+    }
+}
+----
+<1> Each message method invocation selects the appropriate localized variant based on the current locale.
+<2> If the current locale is not available, or no matching localized variant exists, then the default locale is used as a fallback.
+
+The current locale is obtained from a `io.quarkus.qute.i18n.CurrentLocaleProvider` bean.
+If the `quarkus-vertx-http` extension is present (e.g. when using `quarkus-rest-qute`) then a default provider that resolves the locale from the `Accept-Language` header of the current HTTP request is used.
+You can supply a custom provider by declaring a CDI bean that implements `CurrentLocaleProvider`; it takes precedence over the default one.
 
 ===== Enums
 

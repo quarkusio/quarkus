@@ -87,4 +87,9 @@ public class ClientResponseImpl extends ResponseImpl {
     public StackTraceElement[] getCallerStackTrace() {
         return restClientRequestContext.getCallerStackTrace();
     }
+
+    @Override
+    public boolean isClientResponse() {
+        return true;
+    }
 }

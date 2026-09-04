@@ -31,8 +31,9 @@ import org.junit.jupiter.api.Test;
 import io.quarkus.spiffe.client.SpiffeAuthorizationException;
 import io.quarkus.spiffe.client.SpiffeClient;
 import io.quarkus.spiffe.client.SpiffeConnectionException;
-import io.quarkus.spiffe.client.WorkloadJsonWebToken;
 import io.quarkus.spiffe.client.deployment.SpiffeDevServicesProcessor.ServerMode;
+import io.quarkus.spiffe.svid.jwt.JwtSvidClient;
+import io.quarkus.spiffe.svid.jwt.WorkloadJsonWebToken;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpMethod;
@@ -50,6 +51,9 @@ abstract class AbstractSpiffeClientTest {
 
     @Inject
     SpiffeClient spiffeClient;
+
+    @Inject
+    JwtSvidClient jwtSvidClient;
 
     @ConfigProperty(name = BASE_URL_CONFIG_KEY)
     String devServerBaseUrl;
@@ -132,7 +136,7 @@ abstract class AbstractSpiffeClientTest {
         String[] parts = svid.token().split("\\.");
         JsonObject payload = new JsonObject(new String(Base64.getUrlDecoder().decode(parts[1])));
         assertThat(payload.getString("sub")).isEqualTo(svid.subject());
-        assertThat(payload.getJsonArray("aud")).contains(RESOURCE_SERVER_AUD);
+        assertThat(payload.getString("aud")).isEqualTo(RESOURCE_SERVER_AUD);
         assertThat(payload.getLong("exp")).isEqualTo(svid.expiry().getEpochSecond());
     }
 
@@ -189,7 +193,7 @@ abstract class AbstractSpiffeClientTest {
     }
 
     private WorkloadJsonWebToken fetchSvid(String audience) {
-        return spiffeClient.getWorkloadJsonWebToken(audience).await().atMost(TIMEOUT);
+        return jwtSvidClient.getWorkloadJsonWebToken(audience).await().atMost(TIMEOUT);
     }
 
     private void setServerMode(ServerMode mode) {

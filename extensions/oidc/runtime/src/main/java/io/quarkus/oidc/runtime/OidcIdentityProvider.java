@@ -801,6 +801,7 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
         try {
             TokenVerificationResult result = resolvedContext.provider().verifyJwtToken(request.getToken().getToken(),
                     resolvedContext.oidcConfig().token().subjectRequired(), false, null);
+            OidcUtils.validatePrimaryJwtTokenType(resolvedContext.oidcConfig().token(), result.localVerificationResult());
             StepUpAuthenticationPolicy stepUpAuthPolicy = StepUpAuthenticationPolicy.getFromRequest(request);
             if (stepUpAuthPolicy != null) {
                 stepUpAuthPolicy.accept(result);

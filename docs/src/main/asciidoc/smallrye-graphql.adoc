@@ -249,7 +249,6 @@ public class FilmResource {
     }
 }
 ----
-
 <1> `@GraphQLApi` annotation indicates that the CDI bean will be a GraphQL endpoint
 <2> `@Query` annotation defines that this method will be queryable with the name `allFilms`
 <3> Documentation of the queryable method
@@ -412,7 +411,6 @@ Add the following to our `FilmResource` class:
         return service.getHeroesByFilm(film);
     }
 ----
-
 <1> Enable `List<Hero>` data to be added to queries that respond with `Film`
 
 By adding this method we have effectively changed the schema of the GraphQL API.
@@ -453,7 +451,6 @@ the heroes:
         // Here fetch all hero lists
     }
 ----
-
 <1> Here receive the films as a batch, allowing you to fetch the corresponding heroes.
 
 === Non blocking
@@ -636,7 +633,6 @@ public interface Character {
     String getSurname();
 }
 ----
-
 <1> Getters defined in an interface will define the GraphQL fields that it contains
 
 Now, update our `Hero` and `Ally` entities to implement this interface.
@@ -671,7 +667,6 @@ public class Ally implements Character {
     }
 }
 ----
-
 <1> Because interfaces can't define fields, we have to implement the getters
 
 By adding an interface and updating existing entities to implement it, we have effectively changed the schema.
@@ -699,7 +694,6 @@ type Hero implements Character {
     # ...
 }
 ----
-
 <1> The `Character` interface was defined with the getters as fields
 <2> The `Ally` type was added and it implements `Character`
 <3> The `Hero` type was updated to implement `Character`
@@ -762,7 +756,6 @@ public interface SearchResult {
 
 }
 ----
-
 <1> `@Union` is required to indicate this Java interface represents a GraphQL union, not a GraphQL interface
 
 TIP: The Java interface representing the GraphQL union does not have to be empty,
@@ -930,7 +923,6 @@ Example: We want to know when new Heroes are being created:
     }
 
 ----
-
 <1> The `Multi` processor that will broadcast any new ``Hero``es
 <2> When adding a new `Hero`, also broadcast it
 <3> Make the stream available in the schema and as a WebSocket during runtime
@@ -1335,7 +1327,6 @@ When `SomeBusinessException` occurs, the error output will contain the Error cod
     }
 }
 ----
-
 <1> The error code
 
 == JavaScript Client

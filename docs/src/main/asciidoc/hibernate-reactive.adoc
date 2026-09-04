@@ -141,7 +141,6 @@ public class SantaClausService {
     }
 }
 ----
-
 <1> Inject the reactive session directly
 <2> Use `@Transactional` for write operations such as `persist()`
 
@@ -226,7 +225,6 @@ public class FruitResource {
 
 }
 ----
-
 <1> Inject the reactive session directly
 <2> Use `@Transactional` for persist operations - creates new entities in the database
 <3> Use `@Transactional` for update operations - modifies existing entities
@@ -245,6 +243,39 @@ There are some limitations when using `@Transactional` with Hibernate Reactive, 
 
 See <<hr-limitations>> for more information.
 ====
+
+[[hr-stateless-session]]
+=== Using `Mutiny.StatelessSession`
+
+In addition to `Mutiny.Session`, Quarkus supports injecting Hibernate Reactive's link:{hibernate-orm-docs-url}#stateless-sessions[`Mutiny.StatelessSession`].
+
+Like its blocking counterpart, a stateless session does not maintain a first-level cache and does not perform automatic dirty checking.
+Entity changes are not persisted automatically: you must call `insert()`, `update()`, or `delete()` explicitly`.
+
+Inject a `Mutiny.StatelessSession` and use it in methods annotated with `@Transactional`:
+
+[source,java]
+----
+@ApplicationScoped
+public class GiftService {
+
+    @Inject
+    Mutiny.StatelessSession session;
+
+    @Transactional
+    public Uni<Gift> updateName(Long id, String newName) {
+        return session.get(Gift.class, id)
+                .map(gift -> {
+                    gift.setName(newName);
+                    return gift;
+                })
+                .call(gift -> session.update(gift));
+    }
+}
+----
+
+For the blocking variant, see xref:hibernate-orm.adoc#stateless-session[Using `StatelessSession` with Hibernate ORM].
+For more details on stateless sessions with Panache, see xref:quarkus-data-hibernate.adoc#reactive-and-stateless[Quarkus Data Hibernate].
 
 [[hr-configuration-properties]]
 === Hibernate Reactive configuration properties

@@ -6,6 +6,7 @@ import java.io.PipedInputStream;
 import java.io.PipedOutputStream;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
@@ -25,10 +26,17 @@ public class AeshLauncherImpl implements AeshLauncher {
 
     private PipedOutputStream stdinWriter;
     private ByteArrayOutputStream stdoutCapture;
+    private ByteArrayOutputStream commandOutputCapture;
     private LinkedBlockingQueue<Object> signalQueue;
+    private ConcurrentLinkedQueue<String> inputLineQueue;
 
     private Thread replThread;
+    private volatile boolean launched;
     private volatile LaunchResult launchResult;
+    private volatile int lastExitCode;
+    private volatile Throwable lastError;
+    private volatile String lastCommandOutput;
+    private final StringBuilder accumulatedOutput = new StringBuilder();
 
     public AeshLauncherImpl(QuarkusMainLauncher mainLauncher) {
         this.mainLauncher = mainLauncher;
@@ -36,12 +44,18 @@ public class AeshLauncherImpl implements AeshLauncher {
 
     @Override
     public void launch(String... args) {
+        if (launched) {
+            return;
+        }
+        launched = true;
         PipedInputStream stdinReader;
         try {
             stdinWriter = new PipedOutputStream();
             stdinReader = new PipedInputStream(stdinWriter, 4096);
             stdoutCapture = new ByteArrayOutputStream();
+            commandOutputCapture = new ByteArrayOutputStream();
             signalQueue = new LinkedBlockingQueue<>();
+            inputLineQueue = new ConcurrentLinkedQueue<>();
         } catch (IOException e) {
             throw new RuntimeException("Failed to set up test pipes", e);
         }
@@ -53,22 +67,40 @@ public class AeshLauncherImpl implements AeshLauncher {
                 },
                 AeshTestConnectionHolder.TEST_THREAD_NAME,
                 testCl,
-                stdinReader, stdoutCapture, signalQueue);
+                stdinReader, stdoutCapture, signalQueue,
+                commandOutputCapture, inputLineQueue);
         replThread.start();
 
-        waitForPrompt(System.currentTimeMillis() + DEFAULT_TIMEOUT.toMillis());
+        // Wait for the REPL thread to signal that it is about to start.
+        // CliRunner offers a "ready" signal just before runner.start()
+        // blocks. Command bytes written after this point are buffered in
+        // the PipedInputStream until readline arms and reads them.
+        try {
+            Object signal = signalQueue.poll(DEFAULT_TIMEOUT.toMillis(), TimeUnit.MILLISECONDS);
+            if (signal == null) {
+                throw new RuntimeException("REPL did not start within " + DEFAULT_TIMEOUT);
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
     }
 
     @Override
-    public String executeCommand(String command) {
-        return executeCommand(command, DEFAULT_TIMEOUT);
-    }
-
-    @Override
-    public String executeCommand(String command, Duration timeout) {
-        // Clear the output buffer and signal queue
+    public String execute(String command, ExecuteOptions options) {
+        if (!launched) {
+            launch();
+        }
+        // Clear the output buffers, signal queue, and last result
         stdoutCapture.reset();
+        commandOutputCapture.reset();
         signalQueue.clear();
+        lastExitCode = 0;
+        lastError = null;
+        lastCommandOutput = null;
+
+        // Load pre-canned input responses into the queue for invocation.inputLine()
+        inputLineQueue.clear();
+        inputLineQueue.addAll(options.input());
 
         // Send the command
         try {
@@ -78,34 +110,109 @@ public class AeshLauncherImpl implements AeshLauncher {
             throw new RuntimeException("Failed to write command to REPL stdin", e);
         }
 
-        long deadline = System.currentTimeMillis() + timeout.toMillis();
-
         try {
-            Object signal = signalQueue.poll(timeout.toMillis(), TimeUnit.MILLISECONDS);
+            Object signal = signalQueue.poll(options.timeout().toMillis(), TimeUnit.MILLISECONDS);
             if (signal == null) {
                 throw new RuntimeException(
-                        "Command '" + command + "' did not complete within " + timeout);
+                        "Command '" + command + "' did not complete within " + options.timeout());
+            }
+            // Extract exit code and error from the signal.
+            // The signal is Object[] { exitCode, error } from CliRunner.
+            if (signal instanceof Object[] arr) {
+                lastExitCode = (int) arr[0];
+                if (arr[1] instanceof Throwable t) {
+                    lastError = t;
+                }
             }
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new RuntimeException("Interrupted while waiting for command: " + command, e);
         }
 
-        String result = stripAnsi(stdoutCapture.toString(StandardCharsets.UTF_8));
+        // Capture clean command output (no prompt, no echo).
+        // Normalize CRLF to LF so assertions work on all platforms.
+        lastCommandOutput = commandOutputCapture.toString(StandardCharsets.UTF_8)
+                .replace("\r\n", "\n");
+        accumulatedOutput.append(lastCommandOutput);
 
-        // Wait for the prompt before returning so the REPL is ready
-        // to accept the next command. Without this, a subsequent
-        // executeCommand() can send input before readline is armed,
-        // causing a hang.
-        waitForPrompt(deadline);
+        // Assert the exit code matches the expected result
+        if (lastExitCode != options.expectedResult().getExitCode()) {
+            String msg = "Command '" + command + "' returned exit code " + lastExitCode
+                    + " but expected " + options.expectedResult().getExitCode();
+            if (lastError != null) {
+                msg += ": " + lastError.getMessage();
+            }
+            throw new AssertionError(msg);
+        }
 
-        return result;
+        return stripAnsi(stdoutCapture.toString(StandardCharsets.UTF_8));
+    }
+
+    @Override
+    public void sendInput(String input) {
+        if (!launched) {
+            launch();
+        }
+        try {
+            stdinWriter.write((input + "\n").getBytes(StandardCharsets.UTF_8));
+            stdinWriter.flush();
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to write input to REPL stdin", e);
+        }
+    }
+
+    @Override
+    public int getLastExitCode() {
+        return lastExitCode;
+    }
+
+    @Override
+    public String getCommandOutput() {
+        return lastCommandOutput != null ? lastCommandOutput : "";
+    }
+
+    @Override
+    public String getOutput() {
+        return accumulatedOutput.toString();
+    }
+
+    @Override
+    public void resetOutput() {
+        accumulatedOutput.setLength(0);
     }
 
     @Override
     public String getErrorOutput() {
-        // Errors go to the same output stream in this implementation
-        return "";
+        Throwable err = lastError;
+        return err != null ? err.getMessage() : "";
+    }
+
+    @Override
+    public Throwable getLastError() {
+        return lastError;
+    }
+
+    @Override
+    public LaunchResult getLaunchResult() {
+        return launchResult;
+    }
+
+    @Override
+    public boolean isRunning() {
+        return replThread != null && replThread.isAlive();
+    }
+
+    @Override
+    public boolean waitForExit(Duration timeout) {
+        if (replThread == null) {
+            return true;
+        }
+        try {
+            replThread.join(timeout.toMillis());
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+        return !replThread.isAlive();
     }
 
     @Override
@@ -124,29 +231,12 @@ public class AeshLauncherImpl implements AeshLauncher {
         if (replThread != null) {
             try {
                 replThread.join(10_000);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-            }
-        }
-    }
-
-    /**
-     * Poll the output buffer until the prompt marker ({@code "$ "}) appears,
-     * indicating the REPL is ready to accept the next command.
-     */
-    private void waitForPrompt(long deadlineMillis) {
-        while (System.currentTimeMillis() < deadlineMillis) {
-            if (stdoutCapture.size() > 0) {
-                String output = stripAnsi(stdoutCapture.toString(StandardCharsets.UTF_8));
-                if (output.contains("$ ")) {
-                    return;
+                if (replThread.isAlive()) {
+                    replThread.interrupt();
+                    replThread.join(2_000);
                 }
-            }
-            try {
-                Thread.sleep(50);
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
-                return;
             }
         }
     }

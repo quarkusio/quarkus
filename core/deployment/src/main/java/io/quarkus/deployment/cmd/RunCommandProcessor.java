@@ -1,6 +1,5 @@
 package io.quarkus.deployment.cmd;
 
-import static io.quarkus.deployment.pkg.jar.FastJarFormat.DEFAULT_FAST_JAR_DIRECTORY_NAME;
 import static io.quarkus.deployment.pkg.jar.FastJarFormat.QUARKUS_RUN_JAR;
 
 import java.io.File;
@@ -26,19 +25,19 @@ public class RunCommandProcessor {
 
     @SuppressWarnings("deprecation") // legacy jar
     @BuildStep
-    public void defaultJavaCommand(PackageConfig packageConfig,
+    public void defaultJavaCommand(
+            PackageConfig packageConfig,
             OutputTargetBuildItem jar,
             BuildProducer<RunCommandActionBuildItem> cmds,
             BuildSystemTargetBuildItem buildSystemTarget) {
 
         Path jarPath = switch (packageConfig.jar().type()) {
-            case UBER_JAR -> jar.getOutputDirectory()
+            case UBER_JAR -> jar.getPackageOutputDirectory()
                     .resolve(jar.getBaseName() + packageConfig.computedRunnerSuffix() + ".jar");
             // todo: legacy JAR should be using runnerSuffix()
-            case LEGACY_JAR -> jar.getOutputDirectory()
+            case LEGACY_JAR -> jar.getPackageOutputDirectory()
                     .resolve(jar.getBaseName() + packageConfig.computedRunnerSuffix() + ".jar");
-            case FAST_JAR, MUTABLE_JAR, AOT_JAR -> jar.getOutputDirectory()
-                    .resolve(DEFAULT_FAST_JAR_DIRECTORY_NAME).resolve(QUARKUS_RUN_JAR);
+            case FAST_JAR, MUTABLE_JAR, AOT_JAR -> jar.getPackageOutputDirectory().resolve(QUARKUS_RUN_JAR);
         };
 
         List<String> args = new ArrayList<>();

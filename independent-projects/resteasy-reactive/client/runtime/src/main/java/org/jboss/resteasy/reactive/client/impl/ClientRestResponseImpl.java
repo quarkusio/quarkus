@@ -67,4 +67,5 @@ public class ClientRestResponseImpl<T> extends RestResponseImpl<T> {
             throw new ProcessingException(e);
         }
     }
+
 }

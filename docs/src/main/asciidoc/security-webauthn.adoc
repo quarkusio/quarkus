@@ -870,7 +870,6 @@ webAuthn.login({ username: username }) <1>
     // login failed
   });
 ----
-
 <1> The username is optional, in the case of https://www.w3.org/TR/webauthn-3/#discoverable-credential[Discoverable Credentials] (with PassKeys)
 
 === Only invoke the registration challenge and authenticator
@@ -920,7 +919,6 @@ webAuthn.loginClientSteps({ username: username }) <1>
     // login failed
   });
 ----
-
 <1> The username is optional, in the case of https://www.w3.org/TR/webauthn-3/#discoverable-credential[Discoverable Credentials] (with PassKeys)
 
 == Handling login and registration endpoints yourself
@@ -1396,8 +1394,8 @@ public class TestUserProvider extends MyWebAuthnSetup {
 == Configuration Reference
 
 The security encryption key can be set with the
-link:all-config#quarkus-vertx-http_quarkus.http.auth.session.encryption-key[`quarkus.http.auth.session.encryption-key`]
-configuration option, as described in the link:security-authentication-mechanisms#form-auth[security guide].
+xref:all-config.adoc#quarkus-vertx-http_quarkus-http-auth-session-encryption-key[`quarkus.http.auth.session.encryption-key`]
+configuration option, as described in the xref:security-authentication-mechanisms.adoc#form-auth[security guide].
 
 include::{generated-dir}/config/quarkus-security-webauthn.adoc[opts=optional, leveloffset=+1]
 

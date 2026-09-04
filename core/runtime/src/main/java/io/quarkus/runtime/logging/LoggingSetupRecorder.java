@@ -187,7 +187,7 @@ public class LoggingSetupRecorder {
         ArrayList<Handler> handlers = new ArrayList<>(
                 3 + additionalHandlers.size() + (config.handlers().isPresent() ? config.handlers().get().size() : 0));
 
-        if (config.console().enable().orElse(config.console().enabled())) {
+        if (config.console().enabled()) {
             Handler consoleHandler = configureConsoleHandler(config.console(), consoleRuntimeConfig.getValue(), errorManager,
                     cleanupFiler,
                     namedFilters, possibleConsoleFormatters, possibleBannerSupplier, launchMode, includeFilters);
@@ -213,12 +213,12 @@ public class LoggingSetupRecorder {
             });
         }
 
-        if (config.file().enable().orElse(config.file().enabled())) {
+        if (config.file().enabled()) {
             handlers.add(configureFileHandler(config.file(), errorManager, cleanupFiler, namedFilters, possibleFileFormatters,
                     includeFilters));
         }
 
-        if (config.syslog().enable().orElse(config.syslog().enabled())) {
+        if (config.syslog().enabled()) {
             Handler syslogHandler = configureSyslogHandler(config.syslog(), errorManager, cleanupFiler, namedFilters,
                     possibleSyslogFormatters, includeFilters);
             if (syslogHandler != null) {
@@ -226,7 +226,7 @@ public class LoggingSetupRecorder {
             }
         }
 
-        if (config.socket().enable().orElse(config.socket().enabled())) {
+        if (config.socket().enabled()) {
             final Handler socketHandler = configureSocketHandler(config.socket(), errorManager, cleanupFiler,
                     namedFilters, possibleSocketFormatters, includeFilters);
             if (socketHandler != null) {
@@ -348,7 +348,7 @@ public class LoggingSetupRecorder {
         LogCleanupFilter logCleanupFilter = new LogCleanupFilter(filterElements, dummy);
 
         ArrayList<Handler> handlers = new ArrayList<>(3);
-        if (config.console().enable().orElse(config.console().enabled())) {
+        if (config.console().enabled()) {
             Handler consoleHandler = configureConsoleHandler(config.console(), consoleConfig, errorManager, logCleanupFilter,
                     emptyMap(), emptyList(), new RuntimeValue<>(Optional.empty()), launchMode, false);
             errorManager = consoleHandler.getErrorManager();
@@ -465,7 +465,7 @@ public class LoggingSetupRecorder {
         Map<String, Handler> namedHandlers = new HashMap<>();
         for (Entry<String, ConsoleConfig> consoleConfigEntry : config.consoleHandlers().entrySet()) {
             ConsoleConfig namedConsoleConfig = consoleConfigEntry.getValue();
-            if (!namedConsoleConfig.enable().orElse(namedConsoleConfig.enabled())) {
+            if (!namedConsoleConfig.enabled()) {
                 continue;
             }
             final Handler consoleHandler = configureConsoleHandler(namedConsoleConfig, consoleRuntimeConfig,
@@ -476,7 +476,7 @@ public class LoggingSetupRecorder {
         }
         for (Entry<String, FileConfig> fileConfigEntry : config.fileHandlers().entrySet()) {
             FileConfig namedFileConfig = fileConfigEntry.getValue();
-            if (!namedFileConfig.enable().orElse(namedFileConfig.enabled())) {
+            if (!namedFileConfig.enabled()) {
                 continue;
             }
             final Handler fileHandler = configureFileHandler(namedFileConfig, errorManager, cleanupFilter, namedFilters,
@@ -485,7 +485,7 @@ public class LoggingSetupRecorder {
         }
         for (Entry<String, LogRuntimeConfig.SyslogConfig> sysLogConfigEntry : config.syslogHandlers().entrySet()) {
             LogRuntimeConfig.SyslogConfig namedSyslogConfig = sysLogConfigEntry.getValue();
-            if (!namedSyslogConfig.enable().orElse(namedSyslogConfig.enabled())) {
+            if (!namedSyslogConfig.enabled()) {
                 continue;
             }
             final Handler syslogHandler = configureSyslogHandler(namedSyslogConfig, errorManager, cleanupFilter,
@@ -498,7 +498,7 @@ public class LoggingSetupRecorder {
         }
         for (Entry<String, SocketConfig> socketConfigEntry : config.socketHandlers().entrySet()) {
             SocketConfig namedSocketConfig = socketConfigEntry.getValue();
-            if (!namedSocketConfig.enable().orElse(namedSocketConfig.enabled())) {
+            if (!namedSocketConfig.enabled()) {
                 continue;
             }
             final Handler socketHandler = configureSocketHandler(namedSocketConfig, errorManager, cleanupFilter,
@@ -674,7 +674,7 @@ public class LoggingSetupRecorder {
         consoleHandler.setErrorManager(defaultErrorManager);
         applyFilter(includeFilters, defaultErrorManager, cleanupFilter, config.filter(), namedFilters, consoleHandler);
 
-        boolean asyncEnabled = config.async().legacyEnable().orElse(config.async().enable().orElse(config.async().enabled()));
+        boolean asyncEnabled = config.async().enabled();
 
         Handler handler = asyncEnabled
                 ? createAsyncHandler(config.async(), config.level(), consoleHandler)
@@ -772,7 +772,7 @@ public class LoggingSetupRecorder {
             handler.getErrorManager().error("Multiple file formatters were activated", null, ErrorManager.GENERIC_FAILURE);
         }
 
-        if (config.async().legacyEnable().orElse(config.async().enable().orElse(config.async().enabled()))) {
+        if (config.async().enabled()) {
             return createAsyncHandler(config.async(), config.level(), handler);
         }
         return handler;
@@ -859,7 +859,7 @@ public class LoggingSetupRecorder {
                         ErrorManager.GENERIC_FAILURE);
             }
 
-            if (config.async().legacyEnable().orElse(config.async().enable().orElse(config.async().enabled()))) {
+            if (config.async().enabled()) {
                 return createAsyncHandler(config.async(), config.level(), handler);
             }
             return handler;
@@ -906,7 +906,7 @@ public class LoggingSetupRecorder {
                         ErrorManager.GENERIC_FAILURE);
             }
 
-            if (config.async().legacyEnable().orElse(config.async().enable().orElse(config.async().enabled()))) {
+            if (config.async().enabled()) {
                 return createAsyncHandler(config.async(), config.level(), handler);
             }
             return handler;

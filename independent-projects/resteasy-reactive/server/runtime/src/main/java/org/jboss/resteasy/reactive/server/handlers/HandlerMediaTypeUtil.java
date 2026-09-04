@@ -5,6 +5,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
+import jakarta.ws.rs.BadRequestException;
 import jakarta.ws.rs.NotAcceptableException;
 import jakarta.ws.rs.NotSupportedException;
 import jakarta.ws.rs.core.HttpHeaders;
@@ -19,6 +20,7 @@ import org.jboss.resteasy.reactive.server.mapping.RuntimeResource;
 class HandlerMediaTypeUtil {
 
     private static final String INVALID_ACCEPT_HEADER_MESSAGE = "The accept header value did not match the value in @Produces";
+    private static final String MALFORMED_ACCEPT_HEADER_MESSAGE = "The accept header value did not correspond to a valid media type";
 
     // according to the spec we need to return HTTP 415 when content-type header doesn't match what is specified in @Consumes
     // HttpMethod being null means this is a sub resource locator method. The handler chain of the sub resource has to match the content-type header
@@ -40,7 +42,8 @@ class HandlerMediaTypeUtil {
         }
     }
 
-    // according to the spec we need to return HTTP 406 when Accept header doesn't match what is specified in @Produces
+    // according to the spec we need to return HTTP 406 when Accept header doesn't match what is specified in @Produces.
+    // A fully unparseable Accept header is a client syntax error and returns HTTP 400 instead.
     // HttpMethod being null means this is a sub resource locator method. The handler chain of the sub resource has to match the accept header
     static void validateProduces(RequestMapper.RequestMatch<RuntimeResource> target,
             ResteasyReactiveRequestContext requestContext) {
@@ -50,18 +53,23 @@ class HandlerMediaTypeUtil {
             List<String> accepts = (List<String>) requestContext.getHeader(HttpHeaders.ACCEPT, false);
             if (!accepts.isEmpty()) {
                 boolean hasAtLeastOneMatch = false;
+                boolean sawParseableAccept = false;
                 for (int i = 0; i < accepts.size(); i++) {
                     try {
                         boolean matches = acceptHeaderMatches(target, accepts.get(i));
+                        sawParseableAccept = true;
                         if (matches) {
                             hasAtLeastOneMatch = true;
                             break;
                         }
                     } catch (IllegalArgumentException ignored) {
-                        // the provided header was not valid
+                        // the provided header contained no parseable media type tokens
                     }
                 }
                 if (!hasAtLeastOneMatch) {
+                    if (!sawParseableAccept) {
+                        throw new BadRequestException(MALFORMED_ACCEPT_HEADER_MESSAGE);
+                    }
                     throw new NotAcceptableException(INVALID_ACCEPT_HEADER_MESSAGE);
                 }
             }
@@ -72,7 +80,7 @@ class HandlerMediaTypeUtil {
 
     /**
      * @return {@code true} if the provided string matches one of the {@code @Produces} values of the resource method
-     * @throws IllegalArgumentException if the provided string cannot be parsed into a {@link MediaType}
+     * @throws IllegalArgumentException if the provided string contains no parseable media type tokens
      */
     private static boolean acceptHeaderMatches(RequestMapper.RequestMatch<RuntimeResource> target, String accepts) {
         if ((accepts != null) && !accepts.equals(MediaType.WILDCARD)) {
@@ -88,6 +96,7 @@ class HandlerMediaTypeUtil {
                 // we do that by manually splitting the accepts header and immediately checking
                 // if the value is compatible with the produces media type
                 boolean compatible = false;
+                boolean sawParseable = false;
                 int begin = 0;
 
                 do {
@@ -97,10 +106,17 @@ class HandlerMediaTypeUtil {
                     } else {
                         acceptPart = accepts.substring(begin, commaIndex);
                     }
-                    if (producesMediaTypes[0].isCompatible(toMediaType(acceptPart.trim()))) {
-                        compatible = true;
-                        break;
-                    } else if (commaIndex == -1) { // we have reached the end and not found any compatible media types
+                    try {
+                        MediaType accepted = toMediaType(acceptPart.trim());
+                        sawParseable = true;
+                        if (producesMediaTypes[0].isCompatible(accepted)) {
+                            compatible = true;
+                            break;
+                        }
+                    } catch (IllegalArgumentException ignored) {
+                        // skip unparseable tokens and keep evaluating the rest of the header
+                    }
+                    if (commaIndex == -1) { // we have reached the end and not found any compatible media types
                         break;
                     }
                     begin = commaIndex + 1; // the next part will start at the character after the comma
@@ -110,19 +126,27 @@ class HandlerMediaTypeUtil {
                     commaIndex = accepts.indexOf(',', begin);
                 } while (true);
 
+                if (!sawParseable) {
+                    throw new IllegalArgumentException(MALFORMED_ACCEPT_HEADER_MESSAGE);
+                }
                 return compatible;
             } else {
                 // don't use any of the JAX-RS stuff from the various MediaType helper as we want to be as performant as possible
-                List<MediaType> acceptsMediaTypes;
+                List<MediaType> acceptsMediaTypes = new ArrayList<>();
                 if (accepts.contains(",")) {
                     String[] parts = accepts.split(",");
-                    acceptsMediaTypes = new ArrayList<>(parts.length);
                     for (int i = 0; i < parts.length; i++) {
-                        String part = parts[i];
-                        acceptsMediaTypes.add(toMediaType(part.trim()));
+                        try {
+                            acceptsMediaTypes.add(toMediaType(parts[i].trim()));
+                        } catch (IllegalArgumentException ignored) {
+                            // skip unparseable tokens and keep evaluating the rest of the header
+                        }
                     }
                 } else {
-                    acceptsMediaTypes = Collections.singletonList(toMediaType(accepts));
+                    acceptsMediaTypes.add(toMediaType(accepts));
+                }
+                if (acceptsMediaTypes.isEmpty()) {
+                    throw new IllegalArgumentException(MALFORMED_ACCEPT_HEADER_MESSAGE);
                 }
                 return MediaTypeHelper.getFirstMatch(Arrays.asList(producesMediaTypes),
                         acceptsMediaTypes) != null;

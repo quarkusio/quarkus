@@ -1278,7 +1278,6 @@ class MyProducer {
     }
 }
 ----
-
 <1> Declares an injection point of type `InterceptionProxy<MyClass>`.
     This means that at build time, a subclass of `MyClass` is generated that does the interception and forwarding.
     Note that the type argument must be identical to the return type of the producer method.
@@ -1314,7 +1313,6 @@ class MyProducer {
     }
 }
 ----
-
 <1> A class that mirrors the `MyClass` structure and contains interceptor bindings.
 <2> The `@BindingsSource` annotation says that interceptor bindings for `MyClass` should be read from `MyClassBindings`.
 
@@ -1352,7 +1350,6 @@ class MyClassBindings {
     }
 }
 ----
-
 <1> The method body does not matter.
 
 Note that for generic classes, the type variable names must also be identical.
@@ -1409,7 +1406,6 @@ public void register(RegistrationContext context) {
             .done();
 }
 ----
-
 <1> Once again, this means that at build time, a subclass of `MyClass` is generated that does the interception and forwarding.
 
 Second, you have to obtain the `InterceptionProxy` from the `SyntheticCreationalContext` in the `BeanCreator` and use it:
@@ -1421,7 +1417,6 @@ public MyClass create(SyntheticCreationalContext<MyClass> context) {
     return proxy.create(new MyClass());
 }
 ----
-
 <1> Obtains the `InterceptionProxy` for `MyClass`, as declared above.
     It would also be possible to use the `getInjectedReference()` method, passing a `TypeLiteral`, but `getInterceptionProxy()` is easier.
 
@@ -1438,7 +1433,6 @@ public void register(RegistrationContext context) {
             .done();
 }
 ----
-
 <1> The argument is the bindings source class.
 
 === `Instance.Handle.close()` Behavior

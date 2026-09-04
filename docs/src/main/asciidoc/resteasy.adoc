@@ -717,7 +717,6 @@ Quarkus comes with GZip support (even though it is not enabled by default). The 
 quarkus.resteasy.gzip.enabled=true // <1>
 quarkus.resteasy.gzip.max-input=10M // <2>
 ----
-
 <1> Enable Gzip support.
 <2> Configure the upper limit on the deflated request body.
 This is useful to mitigate potential attacks by limiting their reach. The default value is `10M`.

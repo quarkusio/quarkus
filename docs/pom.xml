@@ -26,7 +26,7 @@
         <asciidoctor-maven-plugin.version>3.2.0</asciidoctor-maven-plugin.version>
         <asciidoctorj-pdf.version>2.3.23</asciidoctorj-pdf.version>
         <asciidoctor.fail-if>WARN</asciidoctor.fail-if>
-        <roaster-jdt.version>2.26.0.Final</roaster-jdt.version>
+        <javaparser.version>3.28.2</javaparser.version>
         <maven-model-helper.version>41</maven-model-helper.version>
         <eclipse-collections.version>13.0.0</eclipse-collections.version>
 
@@ -49,9 +49,9 @@
             <artifactId>jackson-dataformat-yaml</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.jboss.forge.roaster</groupId>
-            <artifactId>roaster-jdt</artifactId>
-            <version>${roaster-jdt.version}</version>
+            <groupId>com.github.javaparser</groupId>
+            <artifactId>javaparser-core</artifactId>
+            <version>${javaparser.version}</version>
         </dependency>
         <dependency>
             <groupId>io.fabric8</groupId>
@@ -342,6 +342,19 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-cache-deployment</artifactId>
+            <version>${project.version}</version>
+            <type>pom</type>
+            <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>*</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-cache-kotlin-deployment</artifactId>
             <version>${project.version}</version>
             <type>pom</type>
             <scope>test</scope>

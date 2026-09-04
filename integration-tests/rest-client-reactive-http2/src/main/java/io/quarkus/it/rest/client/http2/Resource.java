@@ -34,7 +34,7 @@ public class Resource {
     public Response client() {
         Response response = client.ping();
         if (((ClientResponseImpl) response).getHttpVersion().equals("HTTP_2")) {
-            return response;
+            return Response.ok(response.readEntity(String.class)).build();
         }
 
         return Response.noContent().build();
@@ -45,7 +45,7 @@ public class Resource {
     public Response client2() {
         Response response = client2.ping();
         if (((ClientResponseImpl) response).getHttpVersion().equals("HTTP_2")) {
-            return response;
+            return Response.ok(response.readEntity(String.class)).build();
         }
 
         return Response.noContent().build();

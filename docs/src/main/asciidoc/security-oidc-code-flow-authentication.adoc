@@ -261,6 +261,8 @@ When no `quarkus.oidc.credentials.jwt.token-path` is set but the xref:security-s
 
 Tokens are cached and refreshed automatically before they expire.
 
+TIP: For development and testing with Keycloak, see xref:security-spiffe-client.adoc#keycloak-dev-svc-integration[SPIFFE integration with Dev Services for Keycloak].
+
 [source,properties]
 ----
 quarkus.oidc.auth-server-url=http://localhost:8180/realms/quarkus/
@@ -1298,6 +1300,10 @@ public class CustomTokenStateManager implements TokenStateManager {
     }
 }
 ----
+
+If the tokens are kept in an external storage, this storage might no longer have them, for example, because they have expired and were evicted or removed.
+In this case, the custom `TokenStateManager#getTokens` method must either return a `null` value or fail with `io.quarkus.security.AuthenticationFailedException`.
+Both options are treated the same way: the session cookie is removed and the user is redirected to the OIDC provider to re-authenticate.
 
 For information about the default `TokenStateManager` storing tokens in an encrypted session cookie, see <<token-state-manager>>.
 

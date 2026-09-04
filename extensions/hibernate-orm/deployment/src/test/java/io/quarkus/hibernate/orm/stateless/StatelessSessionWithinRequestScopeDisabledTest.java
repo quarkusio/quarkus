@@ -23,7 +23,8 @@ public class StatelessSessionWithinRequestScopeDisabledTest {
             .withApplicationRoot((jar) -> jar
                     .addClasses(MyEntity.class, PrefixPhysicalNamingStrategy.class)
                     .addAsResource(EmptyAsset.INSTANCE, "import.sql"))
-            .overrideConfigKey("quarkus.hibernate-orm.request-scoped.enabled", "false");
+            .overrideConfigKey("quarkus.hibernate-orm.request-scoped.enabled", "false")
+            .overrideConfigKey("quarkus.hibernate-orm.request-scoped.stateless-session.allow-write", "true");
 
     @Inject
     StatelessSession statelessSession;

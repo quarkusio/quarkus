@@ -520,6 +520,26 @@ NOTE: The Signals resolution model deviates from CDI observer resolution in two 
 * Use *CDI events* for simple publish/subscribe notifications between components, especially when you need synchronous delivery, transactional observers, or ordering of observers, or when you need to stay with the standard Jakarta EE API.
 * Use the *Vert.x EventBus* when you need to interact with the underlying Vert.x runtime directly or integrate with existing Vert.x components.
 
+== OpenTelemetry Tracing
+
+If the xref:opentelemetry.adoc[OpenTelemetry extension] is present, the active trace context is automatically propagated from the signal emission to the receiver invocations.
+
+Because receivers are executed asynchronously on a separate context, the trace context captured on the emitting thread would otherwise be lost.
+To bridge this gap, when the signal is emitted the active context is captured into the signal metadata under the `quarkus.tracing` key -- as a map of https://www.w3.org/TR/trace-context/[W3C Trace Context] headers (e.g. `traceparent`) -- and restored when a receiver is invoked.
+A new span is created for each receiver invocation as a child of the emitter's span, so a `publish` emission that reaches multiple receivers results in one child span per receiver.
+Each span is named `signal receive` and carries the `signals.signal.type` and `signals.emission.type` attributes.
+
+If the signal is emitted outside of an active trace, no span is created.
+
+NOTE: If the signal metadata already contains a `quarkus.tracing` entry it is left untouched.
+
+This integration is enabled by default and can be disabled with the following configuration property:
+
+[source,properties]
+----
+quarkus.signals.telemetry.traces.enabled=false
+----
+
 == SPI
 
 The `io.quarkus.signals.spi` package provides extension points for integrators.

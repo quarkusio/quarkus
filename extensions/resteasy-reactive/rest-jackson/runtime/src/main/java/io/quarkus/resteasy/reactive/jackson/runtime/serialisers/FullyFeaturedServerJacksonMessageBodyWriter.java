@@ -38,12 +38,16 @@ import io.quarkus.resteasy.reactive.jackson.runtime.mappers.JacksonMapperUtil;
 
 public class FullyFeaturedServerJacksonMessageBodyWriter extends ServerMessageBodyWriter.AllWriteableMessageBodyWriter {
 
+    // when a resource method uses a wildcard @Produces, the response media type is whatever the client sent in Accept,
+    // so we need to bound the size of the cache in order to avoid a client filling it with unbounded values
+    private static final int MAX_CONTEXT_RESOLVER_CACHE_SIZE = 128;
+
     private final Instance<ObjectMapper> originalMapper;
     private final Providers providers;
     private final LazyValue<ObjectWriter> defaultWriter;
     private final ConcurrentMap<String, ObjectWriter> perMethodWriter = new ConcurrentHashMap<>();
     private final ConcurrentMap<String, ObjectWriter> perTypeWriter = new ConcurrentHashMap<>();
-    private final ConcurrentMap<Class<?>, ObjectMapper> contextResolverMap = new ConcurrentHashMap<>();
+    private final ConcurrentMap<String, ObjectMapper> contextResolverMap = new ConcurrentHashMap<>();
     private final ConcurrentMap<ObjectMapper, ObjectWriter> objectWriterMap = new ConcurrentHashMap<>();
 
     // used by Arc
@@ -154,20 +158,30 @@ public class FullyFeaturedServerJacksonMessageBodyWriter extends ServerMessageBo
      */
     private ObjectMapper getEffectiveMapper(Object o, ServerRequestContext context) {
         ObjectMapper effectiveMapper = originalMapper.get();
+        MediaType responseMediaType = context.getResponseMediaType();
         ContextResolver<ObjectMapper> contextResolver = providers.getContextResolver(ObjectMapper.class,
-                context.getResponseMediaType());
+                responseMediaType);
         if (contextResolver == null) {
             // TODO: not sure if this is correct, but Jackson does this as well...
             contextResolver = providers.getContextResolver(ObjectMapper.class, null);
         }
         if (contextResolver != null) {
             var cr = contextResolver;
-            ObjectMapper mapperFromContextResolver = contextResolverMap.computeIfAbsent(o.getClass(), new Function<>() {
-                @Override
-                public ObjectMapper apply(Class<?> aClass) {
-                    return cr.getContext(o.getClass());
-                }
-            });
+            StringBuilder key = new StringBuilder(o.getClass().getCanonicalName());
+            if (responseMediaType != null) {
+                key.append("-").append(responseMediaType.getType()).append("/").append(responseMediaType.getSubtype());
+            }
+            if (contextResolverMap.size() >= MAX_CONTEXT_RESOLVER_CACHE_SIZE) {
+                // avoid an ever-growing cache size
+                contextResolverMap.clear();
+            }
+            ObjectMapper mapperFromContextResolver = contextResolverMap
+                    .computeIfAbsent(key.toString(), new Function<>() {
+                        @Override
+                        public ObjectMapper apply(String key) {
+                            return cr.getContext(o.getClass());
+                        }
+                    });
             if (mapperFromContextResolver != null) {
                 effectiveMapper = mapperFromContextResolver;
             }

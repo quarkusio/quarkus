@@ -17,6 +17,23 @@
             <groupId>io.quarkus.security</groupId>
             <artifactId>quarkus-security</artifactId>
         </dependency>
+        <!--
+          This is required to ensure that the extension processor is built.
+          If we move the extension processor to a separate project, this can be removed.
+        -->
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-extension-processor</artifactId>
+            <version>${project.version}</version>
+            <type>pom</type>
+            <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>*</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
     </dependencies>
 
     <build>

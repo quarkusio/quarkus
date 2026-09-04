@@ -14,13 +14,34 @@ import io.quarkus.runtime.RuntimeValue;
  */
 public final class IgnoredContextLocalDataKeysBuildItem extends MultiBuildItem {
 
-    private final RuntimeValue<List<String>> ignoredKeysSupplier;
+    private final List<String> ignoredKeys;
 
-    public IgnoredContextLocalDataKeysBuildItem(RuntimeValue<List<String>> ignoredKeysSupplier) {
-        this.ignoredKeysSupplier = Objects.requireNonNull(ignoredKeysSupplier);
+    /**
+     * Construct a new instance with a plain list of ignored keys.
+     *
+     * @param ignoredKeys the list of context local data keys to ignore (must not be {@code null})
+     */
+    public IgnoredContextLocalDataKeysBuildItem(List<String> ignoredKeys) {
+        this.ignoredKeys = List.copyOf(Objects.requireNonNull(ignoredKeys));
     }
 
-    RuntimeValue<List<String>> getIgnoredKeysSupplier() {
-        return ignoredKeysSupplier;
+    /**
+     * Construct a new instance from a {@link RuntimeValue} containing the ignored keys.
+     *
+     * @param ignoredKeysSupplier a runtime value wrapping the list of keys (must not be {@code null})
+     * @deprecated Use {@link #IgnoredContextLocalDataKeysBuildItem(List)} instead.
+     */
+    @Deprecated(forRemoval = true)
+    public IgnoredContextLocalDataKeysBuildItem(RuntimeValue<List<String>> ignoredKeysSupplier) {
+        this(Objects.requireNonNull(ignoredKeysSupplier).getValue());
+    }
+
+    /**
+     * Get the list of context local data keys that should not be propagated.
+     *
+     * @return the ignored keys (not {@code null})
+     */
+    public List<String> ignoredKeys() {
+        return ignoredKeys;
     }
 }

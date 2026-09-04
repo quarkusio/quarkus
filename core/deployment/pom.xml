@@ -63,6 +63,10 @@
             <artifactId>smallrye-common-process</artifactId>
         </dependency>
         <dependency>
+            <groupId>io.smallrye.serial</groupId>
+            <artifactId>smallrye-serial</artifactId>
+        </dependency>
+        <dependency>
             <groupId>org.ow2.asm</groupId>
             <artifactId>asm</artifactId>
         </dependency>
@@ -77,6 +81,10 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-class-change-agent</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.smallrye.classfile</groupId>
+            <artifactId>jdk-classfile-backport</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
@@ -234,6 +242,51 @@
                                     </excludes>
                                 </bannedDependencies>
                             </rules>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <dependencies>
+                    <dependency>
+                        <groupId>${project.groupId}</groupId>
+                        <artifactId>quarkus-action-maker</artifactId>
+                        <version>${project.version}</version>
+                    </dependency>
+                </dependencies>
+                <executions>
+                    <execution>
+                        <id>generation-action-sources</id>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>java</goal>
+                        </goals>
+                        <configuration>
+                            <includePluginDependencies>true</includePluginDependencies>
+                            <mainClass>io.quarkus.core.actionmaker.MakeServiceTypes</mainClass>
+                            <arguments>
+                                <argument>${project.build.directory}/generated-sources/jdeparser</argument>
+                            </arguments>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>build-helper-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>add-jdeparser-sources</id>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>add-source</goal>
+                        </goals>
+                        <configuration>
+                            <sources>
+                                <source>${project.build.directory}/generated-sources/jdeparser</source>
+                            </sources>
                         </configuration>
                     </execution>
                 </executions>

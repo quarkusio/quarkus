@@ -97,7 +97,7 @@ public class OidcClientCredentialsJwtSecretTestCase {
                     public void execute(BuildContext context) {
                         BytecodeRecorderImpl bytecodeRecorder = new BytecodeRecorderImpl(false,
                                 TestRecorder.class.getSimpleName(), "createRuntimeSecretProvider",
-                                "" + TestRecorder.class.hashCode(), true);
+                                "" + TestRecorder.class.hashCode(), context.getStepId(), true);
                         context.produce(new MainBytecodeRecorderBuildItem(bytecodeRecorder));
 
                         // We need to use reflection due to some class loading problems

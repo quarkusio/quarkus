@@ -4,28 +4,29 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.StringJoiner;
-import java.util.function.Supplier;
 
 import io.quarkus.credentials.CredentialsProvider;
 import io.quarkus.credentials.runtime.CredentialsProviderFinder;
 import io.quarkus.proxy.ProxyConfiguration;
 import io.quarkus.proxy.ProxyConfigurationRegistry;
 import io.quarkus.proxy.runtime.config.ProxyConfig;
-import io.quarkus.runtime.RuntimeValue;
-import io.quarkus.runtime.annotations.Recorder;
 
-@Recorder
+/**
+ * Factory for creating a {@link ProxyConfigurationRegistry} from runtime configuration.
+ */
 public class ProxyConfigurationRecorder {
-    private final RuntimeValue<ProxyConfig> runtimeConfig;
 
-    public ProxyConfigurationRecorder(RuntimeValue<ProxyConfig> runtimeConfig) {
-        this.runtimeConfig = runtimeConfig;
+    private ProxyConfigurationRecorder() {
     }
 
-    public Supplier<ProxyConfigurationRegistry> init() {
-        ProxyConfig proxyConfig = runtimeConfig.getValue();
-
-        Optional<ProxyConfiguration> defaultConfig = build("quarkus.proxy.", proxyConfig.defaultProxyConfig());
+    /**
+     * Create a {@link ProxyConfigurationRegistry} from the given configuration.
+     *
+     * @param proxyConfig the proxy configuration (must not be {@code null})
+     * @return the registry (never {@code null})
+     */
+    public static ProxyConfigurationRegistry createRegistry(ProxyConfig proxyConfig) {
+        Optional<ProxyConfiguration> defaultConfig = buildConfig("quarkus.proxy.", proxyConfig.defaultProxyConfig());
 
         Map<String, ProxyConfiguration> namedConfigs = new HashMap<>();
         for (Map.Entry<String, ProxyConfig.NamedProxyConfig> entry : proxyConfig.namedProxyConfigs().entrySet()) {
@@ -36,24 +37,17 @@ public class ProxyConfigurationRecorder {
                         + " from your configuration.");
             }
 
-            Optional<ProxyConfiguration> namedConfig = build("quarkus.proxy.\"" + name + "\".", entry.getValue());
+            Optional<ProxyConfiguration> namedConfig = buildConfig("quarkus.proxy.\"" + name + "\".", entry.getValue());
             if (namedConfig.isPresent()) {
                 namedConfigs.put(name, namedConfig.get());
             }
         }
 
-        ProxyConfigurationRegistry registry = new ProxyConfigurationRegistryImpl(namedConfigs, defaultConfig);
-
-        return new Supplier<ProxyConfigurationRegistry>() {
-            @Override
-            public ProxyConfigurationRegistry get() {
-                return registry;
-            }
-        };
+        return new ProxyConfigurationRegistryImpl(namedConfigs, defaultConfig);
     }
 
     // `prefix` is only used in error messages
-    private Optional<ProxyConfiguration> build(String prefix, ProxyConfig.NamedProxyConfig config) {
+    private static Optional<ProxyConfiguration> buildConfig(String prefix, ProxyConfig.NamedProxyConfig config) {
         if (config.host().isEmpty()) {
             StringJoiner badValues = new StringJoiner(", ");
             if (config.port().isPresent()) {

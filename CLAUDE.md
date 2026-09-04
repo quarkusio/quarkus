@@ -28,3 +28,5 @@ guidance before starting work:
 - **Deprecation cleanup** — Read `.agents/skills/deprecation-cleanup/SKILL.md`
   when removing code that has been deprecated for over 12 months, or adding
   `@Deprecated` annotations that were missed on companions of a deprecated element.
+- **Converting recorders to services** — Read `.agents/skills/converting-recorders-to-services/SKILL.md`
+  when converting extensions from `@Record`/`@Recorder` to `ActionBuilder` services.

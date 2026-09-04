@@ -6,27 +6,35 @@ import java.util.function.Supplier;
 
 import io.quarkus.runtime.PreventFurtherStepsException;
 import io.quarkus.runtime.Quarkus;
-import io.quarkus.runtime.RuntimeValue;
-import io.quarkus.runtime.annotations.Recorder;
 
 /**
- * A {@link Recorder} that is used to check if the application should exit once all initialization tasks are completed.
+ * Utility for checking if the application should exit once all initialization tasks are completed.
  */
-@Recorder
 public class InitializationTaskRecorder {
-    private final RuntimeValue<InitRuntimeConfig> initRuntimeConfig;
 
-    public InitializationTaskRecorder(RuntimeValue<InitRuntimeConfig> initRuntimeConfig) {
-        this.initRuntimeConfig = initRuntimeConfig;
+    private InitializationTaskRecorder() {
     }
 
-    public void exitIfNeeded() {
-        if (initRuntimeConfig.getValue().initAndExit()) {
+    /**
+     * Exit the application if init-and-exit mode is enabled.
+     *
+     * @param config the init runtime configuration
+     */
+    public static void exitIfNeeded(InitRuntimeConfig config) {
+        if (config.initAndExit()) {
             preventFurtherRecorderSteps(5, "Error attempting to gracefully shutdown after initialization",
                     () -> new PreventFurtherStepsException("Gracefully exiting after initialization.", 0));
         }
     }
 
+    /**
+     * Initiate a graceful shutdown and throw a {@link PreventFurtherStepsException} to halt
+     * remaining recorder steps.
+     *
+     * @param waitSeconds the maximum time to wait for shutdown
+     * @param waitErrorMessage the message to log if interrupted
+     * @param supplier the exception supplier
+     */
     public static void preventFurtherRecorderSteps(int waitSeconds, String waitErrorMessage,
             Supplier<PreventFurtherStepsException> supplier) {
         CountDownLatch latch = new CountDownLatch(1);

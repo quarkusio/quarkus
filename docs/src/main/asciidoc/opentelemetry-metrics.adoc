@@ -704,6 +704,29 @@ The native image assessment above was performed using GraalVM 23.0.2.
 The Micrometer to OpenTelemetry bridge unifies all telemetry in Quarkus. It generates Micrometer's metrics but sends
 them along the OpenTelemetry telemetry output. For more details please visit the xref:telemetry-micrometer-to-opentelemetry.adoc[Micrometer and OpenTelemetry extension].
 
+[[redundant-metrics-warning]]
+=== Avoiding redundant metrics collection
+
+Collecting metrics with both a Micrometer registry (such as `quarkus-micrometer-registry-prometheus`) and OpenTelemetry metrics at the same time is redundant: the measurements are gathered and exported by two independent pipelines, adding memory and runtime overhead.
+
+To help detect this, Quarkus logs a build-time warning when a Micrometer metrics registry is present together with OpenTelemetry metrics, unless you are using the `quarkus-micrometer-opentelemetry` extension:
+
+[source,text]
+----
+Redundant metrics collection detected: both Micrometer (registries: PrometheusMeterRegistry) and OpenTelemetry are active. Consider using the quarkus-micrometer-opentelemetry extension or disabling one system (e.g., setting quarkus.otel.metrics.enabled=false).
+----
+
+To resolve the warning, choose one of the following:
+
+- Use the xref:telemetry-micrometer-to-opentelemetry.adoc[`quarkus-micrometer-opentelemetry`] extension, which lets Micrometer metrics flow through the OpenTelemetry SDK with a single pipeline.
+- Keep OpenTelemetry metrics and remove the Micrometer registry.
+- Keep the Micrometer registry (for example, when OpenTelemetry is used only for tracing) and disable OpenTelemetry metrics:
++
+[source,properties]
+----
+quarkus.otel.metrics.enabled=false
+----
+
 == Exporters
 See the main xref:opentelemetry.adoc#exporters[OpenTelemetry Guide exporters] section.
 

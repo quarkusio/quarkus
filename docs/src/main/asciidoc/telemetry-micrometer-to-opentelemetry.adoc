@@ -41,6 +41,12 @@ The output telemetry data is handled by the OpenTelemetry SDK and sent by the `q
 
 This reduces the overhead of having an independent Micrometer registry plus the OpenTelemetry SDK in memory for the same application when both `quarkus-micrometer` and `quarkus-opentelemetry` extensions are used independently.
 
+[NOTE]
+====
+Using a Micrometer registry (such as `quarkus-micrometer-registry-prometheus`) together with OpenTelemetry metrics collects the same measurements twice. Quarkus logs a build-time warning in that case.
+See xref:opentelemetry-metrics.adoc#redundant-metrics-warning[Avoiding redundant metrics collection] for the available options, including this extension.
+====
+
 *The OpenTelemetry SDK will handle all metrics.* Either Micrometer metrics (manual or automatic) and OpenTelemetry Metrics can be used. All are available with this single extension.
 
 All the configurations from the OpenTelemetry and Micrometer extensions are available with `quarkus-micrometer-opentelemetry`.

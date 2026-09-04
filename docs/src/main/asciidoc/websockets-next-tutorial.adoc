@@ -129,11 +129,11 @@ public class ChatWebSocket {
 
 }
 ----
-<1> Declares the web socket endpoint and configure the path. Note that the path can contain a path parameter: `username`.
-<2> A _session scoped bean_ that represents the connection to the client. It allows sending messages programmatically and retrieve the path parameters.
+<1> Declares the web socket endpoint and configures the path. Note that the path can contain a path parameter: `username`.
+<2> A _session scoped bean_ that represents the connection to the client. It allows sending messages programmatically and retrieving the path parameters.
 <3> This method is called when a new client connects. The `broadcast = true` attribute indicates that the returned message should be sent to all connected clients.
 <4> This method is called when a client disconnects. The method uses the `WebSocketConnection` to broadcast a message to all remaining connected clients.
-<5> This method is called when a client sends a message. The `broadcast = true` attribute indicates that the returned message should be sent to all connected clients. Here, we just returns the received (text) message.
+<5> This method is called when a client sends a message. The `broadcast = true` attribute indicates that the returned message should be sent to all connected clients. Here, we just return the received (text) message.
 
 As you can see, Quarkus handles the web socket lifecycle and message handling using annotations.
 It also serializes and deserializes messages using JSON automatically.

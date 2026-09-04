@@ -1842,7 +1842,7 @@ In a similar fashion if the received server multipart request is known and looks
 
 [source, java]
 ----
-public class Request { // <1>
+public class Request {
 
   @RestForm("files")
   @PartType(MediaType.APPLICATION_OCTET_STREAM)

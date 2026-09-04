@@ -685,7 +685,7 @@ mode: if you don't, a dev service will be provided for you):
 ----
 quarkus.datasource.username = quarkus_test
 quarkus.datasource.password = quarkus_test
-quarkus.datasource.reactive.url = vertx-reactive:postgresql://localhost/quarkus_test <1>
+quarkus.datasource.reactive.url = vertx-reactive:postgresql://localhost/quarkus_test
 ----
 
 Now, in your code, the only differences with a regular managed session entity are:

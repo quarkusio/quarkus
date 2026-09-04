@@ -66,6 +66,10 @@ public class CoreSbomContributionConfig {
         ResolvedDependency dep;
         String pedigree;
         Collection<ArtifactCoords> explicitDependencies;
+        // When true, this component's collected relationships are emitted as CycloneDX "provides"
+        // (the component provides/implements them) rather than "dependsOn". Used for platform
+        // member product components attributing their artifacts.
+        boolean providesRelationships;
 
         ComponentHolder(ComponentDescriptor component) {
             this.component = component;
@@ -627,6 +631,9 @@ public class CoreSbomContributionConfig {
         setIfPresent(props, product.prefix + "product-description", builder::setDescription);
 
         ComponentHolder holder = new ComponentHolder(builder.build());
+        // The product component provides/implements its attributed artifacts rather than
+        // depending on them (CycloneDX 1.6 "provides").
+        holder.providesRelationships = true;
         if (!product.attributed.isEmpty()) {
             // sort for a deterministic dependency order in the generated SBOM
             product.attributed.sort(Comparator.comparing(c -> mavenPurl(c).toString()));
@@ -655,6 +662,8 @@ public class CoreSbomContributionConfig {
         }
 
         Map<String, List<String>> depMap = new HashMap<>();
+        // bom-refs whose collected relationships must be emitted as "provides" rather than "dependsOn"
+        Set<String> providesBomRefs = new HashSet<>();
 
         for (ComponentHolder holder : compList) {
             if (holder == main) {
@@ -670,6 +679,9 @@ public class CoreSbomContributionConfig {
             }
             sb.addComponent(holder.component.ensureImmutable());
             collectDependencies(holder, depMap);
+            if (holder.providesRelationships) {
+                providesBomRefs.add(holder.component.getBomRef());
+            }
         }
 
         if (distDir != null) {
@@ -680,11 +692,18 @@ public class CoreSbomContributionConfig {
         sb.setMainComponentBomRef(mainComponent.getBomRef());
         sb.addComponent(mainComponent);
         collectDependencies(main, depMap);
+        if (main.providesRelationships) {
+            providesBomRefs.add(mainComponent.getBomRef());
+        }
 
         applyExtraFileDependencies(compPaths, depMap);
 
         for (var entry : depMap.entrySet()) {
-            sb.addDependency(ComponentDependencies.of(entry.getKey(), entry.getValue()));
+            if (providesBomRefs.contains(entry.getKey())) {
+                sb.addDependency(ComponentDependencies.provides(entry.getKey(), entry.getValue()));
+            } else {
+                sb.addDependency(ComponentDependencies.of(entry.getKey(), entry.getValue()));
+            }
         }
 
         return sb.build();

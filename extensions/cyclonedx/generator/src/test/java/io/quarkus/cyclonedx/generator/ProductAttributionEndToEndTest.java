@@ -8,9 +8,11 @@ import java.util.Map;
 
 import org.cyclonedx.model.Bom;
 import org.cyclonedx.model.Component;
-import org.cyclonedx.model.Dependency;
 import org.cyclonedx.parsers.JsonParser;
 import org.junit.jupiter.api.Test;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import io.quarkus.bootstrap.BootstrapConstants;
 import io.quarkus.bootstrap.model.ApplicationModel;
@@ -30,7 +32,7 @@ class ProductAttributionEndToEndTest {
     void appRootDependsOnProductWhichDependsOnAttributedArtifacts() throws Exception {
         ArtifactCoords camelRt = ArtifactCoords.jar("org.acme.camel", "camel-quarkus-core", "3.20.0");
         ArtifactCoords camelDep = ArtifactCoords.jar("org.acme.camel", "camel-support", "3.20.0");
-        String cpeArtifacts = CpeArtifactsEncoder.encode(Map.of(camelRt, List.of(camelDep)));
+        String cpeArtifacts = CpeArtifactsEncoder.encode(Map.of(camelRt, List.of(camelRt, camelDep)));
 
         Map<String, String> props = new HashMap<>();
         String prefix = "platform.com.redhat.quarkus.platform.quarkus-camel-bom.";
@@ -70,7 +72,8 @@ class ProductAttributionEndToEndTest {
                 .setContributions(List.of(contribution))
                 .generateText();
 
-        Bom bom = new JsonParser().parse(result.get(0).getBytes(java.nio.charset.StandardCharsets.UTF_8));
+        String json = result.get(0);
+        Bom bom = new JsonParser().parse(json.getBytes(java.nio.charset.StandardCharsets.UTF_8));
 
         // product component
         Component product = bom.getComponents().stream()
@@ -87,16 +90,17 @@ class ProductAttributionEndToEndTest {
         String camelDepRef = Purl.maven("org.acme.camel", "camel-support", "3.20.0", "jar", null).toString();
 
         // app root dependsOn product
-        assertThat(dependsOn(bom, mainRef)).contains(productRef);
-        // product dependsOn attributed artifacts
-        assertThat(dependsOn(bom, productRef)).contains(camelRtRef, camelDepRef);
+        assertThat(dependsOn(json, mainRef)).contains(productRef);
+        // product provides attributed artifacts (CycloneDX 1.6 "provides"), not dependsOn
+        assertThat(provides(json, productRef)).contains(camelRtRef, camelDepRef);
+        assertThat(dependsOn(json, productRef)).isEmpty();
     }
 
     @Test
     void customProductNameAndVersion() throws Exception {
         ArtifactCoords camelRt = ArtifactCoords.jar("org.acme.camel", "camel-quarkus-core", "3.20.0");
         ArtifactCoords camelDep = ArtifactCoords.jar("org.acme.camel", "camel-support", "3.20.0");
-        String cpeArtifacts = CpeArtifactsEncoder.encode(Map.of(camelRt, List.of(camelDep)));
+        String cpeArtifacts = CpeArtifactsEncoder.encode(Map.of(camelRt, List.of(camelRt, camelDep)));
 
         Map<String, String> props = new HashMap<>();
         String prefix = "platform.com.redhat.quarkus.platform.quarkus-camel-bom.";
@@ -135,7 +139,8 @@ class ProductAttributionEndToEndTest {
                 .setContributions(List.of(contribution))
                 .generateText();
 
-        Bom bom = new JsonParser().parse(result.get(0).getBytes(java.nio.charset.StandardCharsets.UTF_8));
+        String json = result.get(0);
+        Bom bom = new JsonParser().parse(json.getBytes(java.nio.charset.StandardCharsets.UTF_8));
 
         // product component
         Component product = bom.getComponents().stream()
@@ -152,16 +157,42 @@ class ProductAttributionEndToEndTest {
         String camelDepRef = Purl.maven("org.acme.camel", "camel-support", "3.20.0", "jar", null).toString();
 
         // app root dependsOn product
-        assertThat(dependsOn(bom, mainRef)).contains(productRef);
-        // product dependsOn attributed artifacts
-        assertThat(dependsOn(bom, productRef)).contains(camelRtRef, camelDepRef);
+        assertThat(dependsOn(json, mainRef)).contains(productRef);
+        // product provides attributed artifacts (CycloneDX 1.6 "provides"), not dependsOn
+        assertThat(provides(json, productRef)).contains(camelRtRef, camelDepRef);
+        assertThat(dependsOn(json, productRef)).isEmpty();
     }
 
-    private static List<String> dependsOn(Bom bom, String ref) {
-        Dependency d = bom.getDependencies().stream()
-                .filter(x -> ref.equals(x.getRef()))
-                .findFirst().orElseThrow(() -> new AssertionError("no dependency entry for " + ref));
-        return d.getDependencies() == null ? List.of()
-                : d.getDependencies().stream().map(Dependency::getRef).toList();
+    private static List<String> dependsOn(String json, String ref) {
+        return refArray(json, ref, "dependsOn");
+    }
+
+    private static List<String> provides(String json, String ref) {
+        return refArray(json, ref, "provides");
+    }
+
+    /**
+     * Reads the {@code dependsOn}/{@code provides} bom-refs for a dependency node directly from the
+     * serialized JSON. The cyclonedx {@code JsonParser} model has no notion of {@code provides} and
+     * silently drops it, so relationships are inspected on the raw JSON tree instead.
+     */
+    private static List<String> refArray(String json, String ref, String field) {
+        try {
+            JsonNode dependencies = new ObjectMapper().readTree(json).get("dependencies");
+            for (JsonNode dep : dependencies) {
+                if (ref.equals(dep.path("ref").asText())) {
+                    JsonNode array = dep.get(field);
+                    if (array == null) {
+                        return List.of();
+                    }
+                    List<String> refs = new java.util.ArrayList<>(array.size());
+                    array.forEach(n -> refs.add(n.asText()));
+                    return refs;
+                }
+            }
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to parse SBOM JSON", e);
+        }
+        throw new AssertionError("no dependency entry for " + ref);
     }
 }

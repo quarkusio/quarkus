@@ -12,6 +12,7 @@ import java.nio.file.Path;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Base64;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
@@ -292,17 +293,23 @@ public class CycloneDxSbomGenerator {
         applyProjectLicenseToFiles(bom);
 
         // Record dependency relationships
+        final boolean providesSupported = getSchemaVersion().getVersion() >= 1.6;
         final Map<String, Dependency> dependencyMap = new LinkedHashMap<>();
         for (ComponentDependencies dep : allDependencies) {
-            Dependency d = new Dependency(dep.getBomRef());
-            List<String> sortedDeps = new ArrayList<>(dep.getDependsOn());
-            Collections.sort(sortedDeps);
-            for (String depRef : sortedDeps) {
-                if (!excludedBomRefs.contains(depRef)) {
-                    d.addDependency(new Dependency(depRef));
-                }
+            // "provides" is a CycloneDX 1.6 construct; on older schema versions the provided refs
+            // are represented as plain dependsOn relationships instead.
+            boolean provides = providesSupported && !dep.getProvides().isEmpty();
+            if (provides) {
+                ProvidesDependency d = new ProvidesDependency(dep.getBomRef());
+                addDependsOn(d, dep.getDependsOn(), excludedBomRefs);
+                addProvides(d, dep.getProvides(), excludedBomRefs);
+                dependencyMap.put(dep.getBomRef(), d);
+            } else {
+                Dependency d = new Dependency(dep.getBomRef());
+                addDependsOn(d, dep.getDependsOn(), excludedBomRefs);
+                addDependsOn(d, dep.getProvides(), excludedBomRefs);
+                dependencyMap.put(dep.getBomRef(), d);
             }
-            dependencyMap.put(dep.getBomRef(), d);
         }
 
         // Link top-level extension components to the main component
@@ -316,12 +323,52 @@ public class CycloneDxSbomGenerator {
         }
 
         for (Dependency d : dependencyMap.values()) {
+            // sort the merged relationships so refs accumulated from multiple sources
+            // (e.g. the main component's dependsOn) end up in a stable, sorted order
+            if (d.getDependencies() != null) {
+                d.getDependencies().sort(Comparator.comparing(Dependency::getRef));
+            }
+            if (d instanceof ProvidesDependency pd) {
+                pd.getProvides().sort(Comparator.naturalOrder());
+            }
             bom.addDependency(d);
         }
 
         bom.setSerialNumber(generateSerialNumber(bom));
 
         return bom;
+    }
+
+    /**
+     * Adds the given bom-refs to a dependency node as {@code dependsOn} relationships,
+     * skipping excluded refs. The refs are sorted later, once merged, by the caller.
+     *
+     * @param d the dependency node to populate
+     * @param refs the bom-refs to add
+     * @param excludedBomRefs refs that must not appear in the output
+     */
+    private static void addDependsOn(Dependency d, Collection<String> refs, Set<String> excludedBomRefs) {
+        for (String ref : refs) {
+            if (!excludedBomRefs.contains(ref)) {
+                d.addDependency(new Dependency(ref));
+            }
+        }
+    }
+
+    /**
+     * Adds the given bom-refs to a dependency node as {@code provides} relationships,
+     * skipping excluded refs. The refs are sorted later, once merged, by the caller.
+     *
+     * @param d the dependency node to populate
+     * @param refs the bom-refs to add
+     * @param excludedBomRefs refs that must not appear in the output
+     */
+    private static void addProvides(ProvidesDependency d, Collection<String> refs, Set<String> excludedBomRefs) {
+        for (String ref : refs) {
+            if (!excludedBomRefs.contains(ref)) {
+                d.addProvides(ref);
+            }
+        }
     }
 
     private void resolveContributionMetadata() {
@@ -362,7 +409,8 @@ public class CycloneDxSbomGenerator {
     }
 
     /**
-     * Collects bom-refs of all top-level components, sorted for deterministic output.
+     * Collects bom-refs of all top-level components. The refs are sorted later, once merged
+     * into the main component's dependency node.
      */
     private static List<String> collectTopLevelBomRefs(List<ComponentDescriptor> descriptors) {
         List<String> refs = new ArrayList<>();
@@ -371,7 +419,6 @@ public class CycloneDxSbomGenerator {
                 refs.add(d.getBomRef());
             }
         }
-        Collections.sort(refs);
         return refs;
     }
 
@@ -438,7 +485,7 @@ public class CycloneDxSbomGenerator {
     private String generateSerialNumber(Bom bom) {
         final String content;
         try {
-            content = BomGeneratorFactory.createJson(getSchemaVersion(), bom).toJsonString(false);
+            content = new ProvidesAwareBomJsonGenerator(bom, getSchemaVersion()).toJsonString(false);
         } catch (Throwable e) {
             throw new RuntimeException("Failed to serialize the SBOM to compute its serial number", e);
         }
@@ -913,7 +960,7 @@ public class CycloneDxSbomGenerator {
         final String sbomContent;
         if (format.equalsIgnoreCase("json")) {
             try {
-                sbomContent = BomGeneratorFactory.createJson(specVersion, bom).toJsonString(prettyPrint);
+                sbomContent = new ProvidesAwareBomJsonGenerator(bom, specVersion).toJsonString(prettyPrint);
             } catch (Throwable e) {
                 throw new RuntimeException("Failed to generate an SBOM in JSON format", e);
             }

@@ -264,17 +264,17 @@ class CoreSbomContributionConfigTest {
         assertThat(product.getScope()).isEqualTo(ComponentDescriptor.SCOPE_EXCLUDED);
         assertThat(product.isTopLevel()).isTrue();
 
-        // Product dependsOn the used runtime extension and its attributed dep (both present as components),
+        // Product provides the used runtime extension and its attributed dep (both present as components),
         // but not the unrelated extension.
         String productRef = product.getBomRef();
-        Collection<String> productDependsOn = contribution.dependencies().stream()
+        Collection<String> productProvides = contribution.dependencies().stream()
                 .filter(d -> productRef.equals(d.getBomRef()))
                 .findFirst().orElseThrow()
-                .getDependsOn();
-        assertThat(productDependsOn).contains(
+                .getProvides();
+        assertThat(productProvides).contains(
                 Purl.maven("org.acme.camel", "camel-quarkus-core", "3.20.0", "jar", null).toString(),
                 Purl.maven("org.acme.camel", "camel-support", "3.20.0", "jar", null).toString());
-        assertThat(productDependsOn).doesNotContain(
+        assertThat(productProvides).doesNotContain(
                 Purl.maven("io.quarkus", "quarkus-rest", "3.20.0", "jar", null).toString());
     }
 
@@ -361,11 +361,11 @@ class CoreSbomContributionConfigTest {
 
         ComponentDescriptor product = products.get(0);
         String productRef = product.getBomRef();
-        Collection<String> productDependsOn = contribution.dependencies().stream()
+        Collection<String> productProvides = contribution.dependencies().stream()
                 .filter(d -> productRef.equals(d.getBomRef()))
                 .findFirst().orElseThrow()
-                .getDependsOn();
-        assertThat(productDependsOn).contains(
+                .getProvides();
+        assertThat(productProvides).contains(
                 Purl.maven("org.acme.camel", "camel-quarkus-core", "3.20.0", "jar", null).toString(),
                 Purl.maven("org.acme.camel", "camel-core-support", "3.20.0", "jar", null).toString(),
                 Purl.maven("org.acme.camel", "camel-quarkus-http", "3.20.0", "jar", null).toString(),

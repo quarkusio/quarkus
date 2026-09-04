@@ -1,0 +1,110 @@
+syntax = "proto3";
+
+package transcoding;
+
+import "google/api/annotations.proto";
+
+option java_multiple_files = true;
+option java_package = "io.quarkus.grpc.transcoding";
+
+message SinglePathRequest {
+    string item_id = 1;
+}
+
+message MultiPathRequest {
+    string user_id = 1;
+    string item_id = 2;
+}
+
+message PathQueryRequest {
+    string item_id = 1;
+    int32 revision = 2;
+}
+
+message MultiPathQueryRequest {
+    string user_id = 1;
+    string item_id = 2;
+    string color = 3;
+    string size = 4;
+}
+
+message ItemData {
+    string name = 1;
+    string description = 2;
+}
+
+message PathBodyRequest {
+    string item_id = 1;
+    ItemData item = 2;
+}
+
+message PathQueryBodyRequest {
+    string user_id = 1;
+    string item_id = 2;
+    string filter = 3;
+    ItemData item = 4;
+}
+
+message PathStarBodyRequest {
+    string item_id = 1;
+    string name = 2;
+    string description = 3;
+}
+
+message EchoResponse {
+    string item_id = 1;
+    string user_id = 2;
+    int32 revision = 3;
+    string color = 4;
+    string size = 5;
+    string name = 6;
+    string description = 7;
+    string filter = 8;
+}
+
+service TranscodingService {
+    rpc GetSinglePath(SinglePathRequest) returns (EchoResponse) {
+        option (google.api.http) = {
+            get: "/v1/items/{item_id}"
+        };
+    }
+
+    rpc GetMultiPath(MultiPathRequest) returns (EchoResponse) {
+        option (google.api.http) = {
+            get: "/v1/users/{user_id}/items/{item_id}"
+        };
+    }
+
+    rpc GetPathQuery(PathQueryRequest) returns (EchoResponse) {
+        option (google.api.http) = {
+            get: "/v1/items/{item_id}/revision"
+        };
+    }
+
+    rpc GetMultiPathQuery(MultiPathQueryRequest) returns (EchoResponse) {
+        option (google.api.http) = {
+            get: "/v1/users/{user_id}/items/{item_id}/filter"
+        };
+    }
+
+    rpc PostPathBody(PathBodyRequest) returns (EchoResponse) {
+        option (google.api.http) = {
+            post: "/v1/items/{item_id}"
+            body: "item"
+        };
+    }
+
+    rpc PostPathQueryBody(PathQueryBodyRequest) returns (EchoResponse) {
+        option (google.api.http) = {
+            post: "/v1/users/{user_id}/items/{item_id}"
+            body: "item"
+        };
+    }
+
+    rpc PutPathStarBody(PathStarBodyRequest) returns (EchoResponse) {
+        option (google.api.http) = {
+            put: "/v1/items/{item_id}/replace"
+            body: "*"
+        };
+    }
+}

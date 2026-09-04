@@ -450,6 +450,7 @@
                 <module>grpc-proto3</module>
                 <module>grpc-proto4</module>
                 <module>grpc-encoding</module>
+                <module>grpc-transcoding</module>
                 <module>grpc-domain-socket</module>
                 <module>google-cloud-functions-http</module>
                 <module>google-cloud-functions</module>

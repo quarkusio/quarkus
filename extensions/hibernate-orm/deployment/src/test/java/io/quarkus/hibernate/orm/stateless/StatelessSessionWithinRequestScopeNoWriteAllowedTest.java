@@ -1,6 +1,6 @@
 package io.quarkus.hibernate.orm.stateless;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import jakarta.inject.Inject;
 
@@ -16,14 +16,15 @@ import io.quarkus.hibernate.orm.MyEntity;
 import io.quarkus.hibernate.orm.naming.PrefixPhysicalNamingStrategy;
 import io.quarkus.test.QuarkusExtensionTest;
 
-public class StatelessSessionWithinRequestScopeTest {
+// Similar to StatelessSessionWithinRequestScopeTest except that now no write operations
+// are allowed without active transaction (therefore only the write test is executed here)
+public class StatelessSessionWithinRequestScopeNoWriteAllowedTest {
 
     @RegisterExtension
     static QuarkusExtensionTest runner = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(MyEntity.class, PrefixPhysicalNamingStrategy.class)
-                    .addAsResource(EmptyAsset.INSTANCE, "import.sql"))
-            .overrideConfigKey("quarkus.hibernate-orm.request-scoped.stateless-session.allow-write", "true");
+                    .addAsResource(EmptyAsset.INSTANCE, "import.sql"));
 
     @Inject
     StatelessSession statelessSession;
@@ -34,21 +35,9 @@ public class StatelessSessionWithinRequestScopeTest {
     }
 
     @Test
-    public void read() {
-        assertEquals(0L, statelessSession
-                .createSelectionQuery("SELECT entity FROM MyEntity entity WHERE name IS NULL", MyEntity.class)
-                .getResultCount());
-    }
-
-    @Test
     public void write() {
-        assertEquals(0L, statelessSession
-                .createSelectionQuery("SELECT entity FROM MyEntity entity", MyEntity.class)
-                .getResultCount());
-        statelessSession.insert(new MyEntity("john"));
-        assertEquals(1L, statelessSession
-                .createSelectionQuery("SELECT entity FROM MyEntity entity", MyEntity.class)
-                .getResultCount());
+        assertThatThrownBy(() -> statelessSession.insert(new MyEntity("john")))
+                .hasMessageContaining("Transaction is not active");
     }
 
     @AfterEach

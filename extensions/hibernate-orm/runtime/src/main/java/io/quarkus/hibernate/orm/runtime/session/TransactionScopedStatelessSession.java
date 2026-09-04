@@ -40,6 +40,7 @@ public class TransactionScopedStatelessSession extends StatelessSessionLazyDeleg
     private final String unitName;
     private final String sessionKey;
     private final boolean requestScopedSessionEnabled;
+    private final boolean requestScopedStatelessSessionAllowWrite;
     private final Instance<RequestScopedStatelessSessionHolder> requestScopedSessions;
 
     public TransactionScopedStatelessSession(
@@ -48,6 +49,7 @@ public class TransactionScopedStatelessSession extends StatelessSessionLazyDeleg
             SessionFactory sessionFactory,
             String unitName,
             boolean requestScopedSessionEnabled,
+            boolean requestScopedStatelessSessionAllowWrite,
             Instance<RequestScopedStatelessSessionHolder> requestScopedSessions) {
         this.transactionManager = transactionManager;
         this.transactionSynchronizationRegistry = transactionSynchronizationRegistry;
@@ -56,6 +58,7 @@ public class TransactionScopedStatelessSession extends StatelessSessionLazyDeleg
         this.unitName = unitName;
         this.sessionKey = TransactionScopedStatelessSession.class.getSimpleName() + "-" + unitName;
         this.requestScopedSessionEnabled = requestScopedSessionEnabled;
+        this.requestScopedStatelessSessionAllowWrite = requestScopedStatelessSessionAllowWrite;
         this.requestScopedSessions = requestScopedSessions;
     }
 
@@ -65,10 +68,10 @@ public class TransactionScopedStatelessSession extends StatelessSessionLazyDeleg
     }
 
     public StatelessSession getDelegateForMutation() {
-        if (!isInTransaction()) {
-            throw new TransactionRequiredException(TRANSACTION_IS_NOT_ACTIVE);
+        if (isInTransaction() || requestScopedStatelessSessionAllowWrite) {
+            return delegate();
         }
-        return delegate();
+        throw new TransactionRequiredException(TRANSACTION_IS_NOT_ACTIVE);
     }
 
     StatelessSession acquireSession() {

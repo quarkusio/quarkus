@@ -2053,7 +2053,7 @@ public class RecordsResource {
     @Path("/search/{text}")
     @RestLink(rel = "search records by free text")
     @InjectRestLinks
-    public List<Record> search(@PathParam("text") String text) { <4>
+    public List<Record> search(@PathParam("text") String text) {
         // ...
     }
 

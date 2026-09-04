@@ -298,7 +298,9 @@ public class RuntimeResourceDeployment {
             }
         }
         if (checkWithFormReadRequestFilters && hasWithFormReadRequestFilters) {
-            // we need to remove the corresponding filters from the handlers list and add them to its end in the same order
+            // we need to remove the corresponding filters from the handlers list and add them to its end in the same order.
+            // the list is walked backwards because we remove by index as we go, so the matches come out reversed and
+            // have to be flipped back before they are appended
             List<ServerRestHandler> readBodyRequestFilters = new ArrayList<>(1);
             for (int i = handlers.size() - 2; i >= 0; i--) {
                 var serverRestHandler = handlers.get(i);
@@ -308,6 +310,7 @@ public class RuntimeResourceDeployment {
                     }
                 }
             }
+            Collections.reverse(readBodyRequestFilters);
             handlers.addAll(readBodyRequestFilters);
         }
 

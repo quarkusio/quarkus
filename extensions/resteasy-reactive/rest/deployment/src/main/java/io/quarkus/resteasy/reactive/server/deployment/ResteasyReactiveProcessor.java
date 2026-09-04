@@ -87,6 +87,7 @@ import org.jboss.resteasy.reactive.common.model.ResourceWriter;
 import org.jboss.resteasy.reactive.common.processor.AdditionalReaderWriter;
 import org.jboss.resteasy.reactive.common.processor.AdditionalReaders;
 import org.jboss.resteasy.reactive.common.processor.AdditionalWriters;
+import org.jboss.resteasy.reactive.common.processor.BlockingDefault;
 import org.jboss.resteasy.reactive.common.processor.DefaultProducesHandler;
 import org.jboss.resteasy.reactive.common.processor.EndpointIndexer;
 import org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames;
@@ -464,6 +465,7 @@ public class ResteasyReactiveProcessor {
             BeanArchiveIndexBuildItem beanArchiveIndexBuildItem,
             BeanContainerBuildItem beanContainerBuildItem,
             ResteasyReactiveConfig config,
+            ResteasyReactiveServerConfig serverConfig,
             Optional<ResourceScanningResultBuildItem> resourceScanningResultBuildItem,
             BuildProducer<GeneratedClassBuildItem> generatedClassBuildItemBuildProducer,
             BuildProducer<BytecodeTransformerBuildItem> bytecodeTransformerBuildItemBuildProducer,
@@ -542,6 +544,18 @@ public class ResteasyReactiveProcessor {
             final boolean filtersAccessResourceMethod = filtersAccessResourceMethod(
                     resourceInterceptorsBuildItem.getResourceInterceptors());
 
+            boolean defaultRunOnVirtualThread = false;
+            if (serverConfig.defaultBlockingExecutionMode().isVirtualThread()) {
+                if (appResult.getBlockingDefault() == BlockingDefault.AUTOMATIC) {
+                    defaultRunOnVirtualThread = true;
+                } else {
+                    log.warnf(
+                            "The 'quarkus.rest.default-blocking-execution-mode' property is ignored because an annotation on the"
+                                    + " 'Application' class already set the execution model to '%s'",
+                            appResult.getBlockingDefault());
+                }
+            }
+
             BiConsumer<String, BiFunction<String, ClassVisitor, ClassVisitor>> transformationConsumer = (name,
                     function) -> bytecodeTransformerBuildItemBuildProducer
                             .produce(new BytecodeTransformerBuildItem(name, function));
@@ -566,6 +580,7 @@ public class ResteasyReactiveProcessor {
                     .setInjectableBeans(injectableBeans)
                     .setAdditionalWriters(additionalWriters)
                     .setDefaultBlocking(appResult.getBlockingDefault())
+                    .setDefaultRunOnVirtualThread(defaultRunOnVirtualThread)
                     .setRemovesTrailingSlash(config.removesTrailingSlash())
                     .setApplicationScanningResult(appResult)
                     .setMultipartReturnTypeIndexerExtension(

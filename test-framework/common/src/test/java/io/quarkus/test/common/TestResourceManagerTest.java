@@ -10,9 +10,11 @@ import java.lang.annotation.Target;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
@@ -49,6 +51,39 @@ public class TestResourceManagerTest {
         Map<String, String> props = manager.start();
         Assertions.assertEquals("value1", props.get("key1"));
         Assertions.assertEquals("value2", props.get("key2"));
+    }
+
+    @Test
+    void arrayBasedMetaAnnotationDoesNotCauseReload() {
+        TestResourceManager manager1 = new TestResourceManager(ArrayTest1.class);
+        TestResourceManager manager2 = new TestResourceManager(ArrayTest2.class);
+
+        Set<TestResourceManager.TestResourceComparisonInfo> info1 = manager1.testResourceComparisonInfo();
+        Set<TestResourceManager.TestResourceComparisonInfo> info2 = manager2.testResourceComparisonInfo();
+
+        Assertions.assertFalse(TestResourceManager.testResourcesRequireReload(info1, info2));
+    }
+
+    @Test
+    void primitiveArrayBasedMetaAnnotationDoesNotCauseReload() {
+        TestResourceManager manager1 = new TestResourceManager(PrimitiveArrayTest1.class);
+        TestResourceManager manager2 = new TestResourceManager(PrimitiveArrayTest2.class);
+
+        Set<TestResourceManager.TestResourceComparisonInfo> info1 = manager1.testResourceComparisonInfo();
+        Set<TestResourceManager.TestResourceComparisonInfo> info2 = manager2.testResourceComparisonInfo();
+
+        Assertions.assertFalse(TestResourceManager.testResourcesRequireReload(info1, info2));
+    }
+
+    @Test
+    void arrayBasedMetaAnnotationWithDifferentValuesDoReload() {
+        TestResourceManager manager1 = new TestResourceManager(ArrayTest1.class);
+        TestResourceManager manager2 = new TestResourceManager(DiffereringArrayTest.class);
+
+        Set<TestResourceManager.TestResourceComparisonInfo> info1 = manager1.testResourceComparisonInfo();
+        Set<TestResourceManager.TestResourceComparisonInfo> info2 = manager2.testResourceComparisonInfo();
+
+        Assertions.assertTrue(TestResourceManager.testResourcesRequireReload(info1, info2));
     }
 
     @WithTestResource(value = FirstLifecycleManager.class, scope = TestResourceScope.GLOBAL)
@@ -297,5 +332,39 @@ public class TestResourceManagerTest {
     @WithAnnotationBasedTestResource2(key = "annotationkey1")
     @WithAnnotationBasedTestResource2(key = "annotationkey2")
     public static class RepeatableAnnotationBasedTestResourcesTest2 {
+    }
+
+    @QuarkusTestResource(AnnotationBasedQuarkusTestResource.class)
+    @Retention(RetentionPolicy.RUNTIME)
+    @Target(ElementType.TYPE)
+    public @interface WithArrayBasedTestResource {
+        String[] args();
+    }
+
+    @WithArrayBasedTestResource(args = { "arg1", "arg2" })
+    public static class ArrayTest1 {
+    }
+
+    @WithArrayBasedTestResource(args = { "arg1", "arg2" })
+    public static class ArrayTest2 {
+    }
+
+    @WithArrayBasedTestResource(args = { "arg1", "arg3" })
+    public static class DiffereringArrayTest {
+    }
+
+    @QuarkusTestResource(AnnotationBasedQuarkusTestResource.class)
+    @Retention(RetentionPolicy.RUNTIME)
+    @Target(ElementType.TYPE)
+    public @interface WithPrimitiveArrayBasedTestResource {
+        int[] args();
+    }
+
+    @WithPrimitiveArrayBasedTestResource(args = { 1, 2 })
+    public static class PrimitiveArrayTest1 {
+    }
+
+    @WithPrimitiveArrayBasedTestResource(args = { 1, 2 })
+    public static class PrimitiveArrayTest2 {
     }
 }

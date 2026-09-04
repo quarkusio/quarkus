@@ -94,7 +94,7 @@ package org.acme.websockets;
 import io.quarkus.websockets.next.WebSocket;
 import jakarta.inject.Inject;
 
-@WebSocket(path = "/chat/{username}") <1>
+@WebSocket(path = "/chat/{username}")
 public class ChatWebSocket {
 
 }
@@ -118,7 +118,7 @@ package org.acme.websockets;
 import io.quarkus.websockets.next.WebSocketClient;
 import jakarta.inject.Inject;
 
-@WebSocketClient(path = "/chat/{username}") <1>
+@WebSocketClient(path = "/chat/{username}")
 public class ChatWebSocket {
 
 }

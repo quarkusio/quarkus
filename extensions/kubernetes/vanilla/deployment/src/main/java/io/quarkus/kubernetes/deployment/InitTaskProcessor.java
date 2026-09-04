@@ -19,6 +19,8 @@ import io.quarkus.kubernetes.spi.KubernetesRoleBindingBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesRoleBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesServiceAccountBuildItem;
 import io.quarkus.kubernetes.spi.PolicyRule;
+import io.quarkus.kubernetes.spi.RoleRef;
+import io.quarkus.kubernetes.spi.Subject;
 
 public class InitTaskProcessor {
 
@@ -77,13 +79,25 @@ public class InitTaskProcessor {
         }
 
         if (generateRoleForJobs) {
-            roles.produce(new KubernetesRoleBuildItem("view-jobs", Collections.singletonList(
-                    new PolicyRule(
-                            Collections.singletonList("batch"),
-                            Collections.singletonList("jobs"),
-                            List.of("get"))),
-                    target));
-            roleBindings.produce(new KubernetesRoleBindingBuildItem(null, "view-jobs", false, target));
+            InitTaskConfig.InitTaskRbacConfig rbac = initTaskDefaults.rbac();
+            // Dynamic default: {application-name}-view-jobs. When set, use the exact name.
+            String roleName = rbac.name().orElse(name + "-view-jobs");
+
+            if (rbac.generate()) {
+                roles.produce(new KubernetesRoleBuildItem(roleName, Collections.singletonList(
+                        new PolicyRule(
+                                Collections.singletonList("batch"),
+                                Collections.singletonList("jobs"),
+                                List.of("get"))),
+                        target));
+            }
+
+            // Set the binding name explicitly so it stays in sync with the Role name (and so the
+            // default {app}-view-jobs Role is not double-prefixed as {app}-{app}-view-jobs).
+            roleBindings.produce(new KubernetesRoleBindingBuildItem(
+                    roleName, null, target, Collections.emptyMap(),
+                    new RoleRef(roleName, false),
+                    new Subject("", "ServiceAccount", null, null)));
             serviceAccount.produce(new KubernetesServiceAccountBuildItem(true));
         }
     }

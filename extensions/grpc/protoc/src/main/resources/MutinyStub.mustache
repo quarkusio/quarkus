@@ -131,6 +131,33 @@ public final class {{className}} implements io.quarkus.grpc.MutinyGrpc {
     private static final int METHODID_{{methodNameUpperUnderscore}} = {{methodNumber}};
     {{/methods}}
 
+    {{#transcodingMethods}}
+    private static final io.vertx.grpc.transcoding.MethodTranscodingOptions {{methodName}}_OPTIONS = new io.vertx.grpc.transcoding.MethodTranscodingOptions()
+            .setSelector("{{transcodingContext.selector}}")
+            .setHttpMethod(io.vertx.core.http.HttpMethod.valueOf("{{transcodingContext.method}}"))
+            .setPath("{{{transcodingContext.path}}}")
+            .setBody("{{{transcodingContext.body}}}")
+            .setResponseBody("{{{transcodingContext.responseBody}}}")
+            {{#transcodingContext.additionalBindings}}
+            .addAdditionalBinding(new io.vertx.grpc.transcoding.MethodTranscodingOptions()
+                    .setSelector("{{selector}}")
+                    .setHttpMethod(io.vertx.core.http.HttpMethod.valueOf("{{method}}"))
+                    .setPath("{{{path}}}")
+                    .setBody("{{{body}}}")
+                    .setResponseBody("{{{responseBody}}}"))
+            {{/transcodingContext.additionalBindings}}
+            ;
+    {{/transcodingMethods}}
+    {{#transcodingMethods}}
+    public static final io.vertx.grpc.transcoding.TranscodingServiceMethod<{{inputType}}, {{outputType}}> {{methodName}} = io.vertx.grpc.transcoding.TranscodingServiceMethod.server(
+            io.vertx.grpc.common.ServiceName.create({{packageName}}.{{serviceName}}Grpc.SERVICE_NAME),
+            "{{methodNamePascalCase}}",
+            io.vertx.grpc.common.MethodCardinality.{{cardinality}},
+            io.vertx.grpc.common.GrpcMessageEncoder.encoder(),
+            io.vertx.grpc.common.GrpcMessageDecoder.decoder({{inputType}}.newBuilder()),
+            {{methodName}}_OPTIONS);
+
+    {{/transcodingMethods}}
     private static final class MethodHandlers<Req, Resp> implements
             io.grpc.stub.ServerCalls.UnaryMethod<Req, Resp>,
             io.grpc.stub.ServerCalls.ServerStreamingMethod<Req, Resp>,

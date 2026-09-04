@@ -40,7 +40,7 @@
 
         <compiler.plugin.version>3.15.0</compiler.plugin.version>
         <enforcer.plugin.version>3.2.1</enforcer.plugin.version>
-        <surefire.plugin.version>3.5.4</surefire.plugin.version>
+        <surefire.plugin.version>3.6.0</surefire.plugin.version>
         <jandex.version>3.6.0</jandex.version>
         <smallrye-common.version>2.20.0</smallrye-common.version>
 

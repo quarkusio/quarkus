@@ -850,6 +850,7 @@ See the main xref:opentelemetry.adoc#exporters[OpenTelemetry Guide exporters] se
 * https://quarkus.io/guides/resteasy[`quarkus-resteasy`]
 * https://quarkus.io/guides/resteasy-client[`quarkus-resteasy-client`]
 * https://quarkus.io/guides/scheduler[`quarkus-scheduler`]
+* https://quarkus.io/guides/signals[`quarkus-signals`]
 * https://quarkus.io/guides/smallrye-graphql[`quarkus-smallrye-graphql`]
 * https://quarkus.io/extensions/io.quarkus/quarkus-mongodb-client[`quarkus-mongodb-client`]
 * https://quarkus.io/extensions/io.quarkus/quarkus-messaging[`quarkus-messaging`]

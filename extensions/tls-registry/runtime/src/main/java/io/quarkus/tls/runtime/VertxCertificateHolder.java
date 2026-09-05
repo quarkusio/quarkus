@@ -38,6 +38,8 @@ import io.vertx.core.net.TrustOptions;
 public class VertxCertificateHolder implements TlsConfiguration {
 
     private static final Logger LOGGER = Logger.getLogger(VertxCertificateHolder.class.getName());
+    private static final List<String> PQC_KEY_EXCHANGE_GROUPS = List.of("X25519MLKEM768", "SecP256r1MLKEM768",
+            "SecP384r1MLKEM1024");
 
     private final TlsBucketConfig config;
     private final List<Buffer> crls;
@@ -129,16 +131,33 @@ public class VertxCertificateHolder implements TlsConfiguration {
         options.setKeyCertOptions(getKeyStoreOptions());
         options.setTrustOptions(getTrustStoreOptions());
         options.setUseAlpn(config().alpn());
+        io.vertx.core.net.PqcEnforcementPolicy pqcEnforcementPolicy = toVertxPqcPolicy(config().pqcEnforcementPolicy());
         if (config().keyExchangeGroups().isPresent()) {
-            options.setKeyExchangeGroups(config().keyExchangeGroups().get());
+            List<String> keyExchangeGroups = config().keyExchangeGroups().get();
+            if (config().pqcEnforcementPolicy() == PqcEnforcementPolicy.STRICT) {
+                List<String> configuredPqcGroups = new ArrayList<>();
+                for (String keyExchangeGroup : keyExchangeGroups) {
+                    String pqcKeyExchangeGroup = canonicalPqcKeyExchangeGroup(keyExchangeGroup);
+                    if (pqcKeyExchangeGroup != null) {
+                        configuredPqcGroups.add(pqcKeyExchangeGroup);
+                    }
+                }
+                if (!configuredPqcGroups.isEmpty()) {
+                    // Vert.x expands STRICT to all supported PQC groups. CLIENT_NEGOTIATED preserves the explicit list;
+                    // limiting that list to PQC groups provides the requested strict behavior.
+                    keyExchangeGroups = configuredPqcGroups;
+                    pqcEnforcementPolicy = io.vertx.core.net.PqcEnforcementPolicy.CLIENT_NEGOTIATED;
+                }
+            }
+            options.setKeyExchangeGroups(keyExchangeGroups);
         }
-        options.setPqcEnforcementPolicy(toVertxPqcPolicy(config().pqcEnforcementPolicy()));
+        options.setPqcEnforcementPolicy(pqcEnforcementPolicy);
 
         if (config().keyExchangeGroups().isPresent()
                 && config().pqcEnforcementPolicy() == PqcEnforcementPolicy.RELAXED) {
             LOGGER.warnf("TLS bucket '%s' configures post-quantum key exchange groups with a 'relaxed' enforcement policy. "
-                    + "The post-quantum groups will be ignored because 'relaxed' does not enforce post-quantum key exchange. "
-                    + "Use 'strict' or 'client-negotiated' to enable post-quantum cryptography.", name);
+                    + "The configured SSL engine might use the groups, but 'relaxed' does not require post-quantum key exchange. "
+                    + "Use 'strict' to require post-quantum cryptography.", name);
         }
         options.setSslHandshakeTimeoutUnit(TimeUnit.SECONDS);
         options.setSslHandshakeTimeout(config().handshakeTimeout().toSeconds());
@@ -153,6 +172,15 @@ public class VertxCertificateHolder implements TlsConfiguration {
         for (String cipher : config().cipherSuites().orElse(Collections.emptyList())) {
             options.addEnabledCipherSuite(cipher);
         }
+    }
+
+    private static String canonicalPqcKeyExchangeGroup(String group) {
+        for (String pqcGroup : PQC_KEY_EXCHANGE_GROUPS) {
+            if (pqcGroup.equalsIgnoreCase(group)) {
+                return pqcGroup;
+            }
+        }
+        return null;
     }
 
     @Override

@@ -44,7 +44,7 @@ public class FormBodyHandler implements GenericRuntimeConfigurableServerRestHand
     public void configure(RuntimeConfiguration configuration) {
         formParserFactory = FormParserFactory.builder(false, executorSupplier)
                 .addParser(new MultiPartParserDefinition(executorSupplier)
-                        .setFileSizeThreshold(0)
+                        .setFileSizeThreshold(configuration.body().multiPart().fileSizeThreshold())
                         .setMaxAttributeSize(configuration.limits().maxFormAttributeSize())
                         .setMaxEntitySize(configuration.limits().maxBodySize().orElse(-1L))
                         .setMaxParameters(configuration.limits().maxParameters())

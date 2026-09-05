@@ -12,6 +12,7 @@ import '@vaadin/text-field';
 import '@vaadin/dialog';
 import '@vaadin/progress-bar';
 import { msg, updateWhenLocaleChanges } from 'localization';
+import { isProdUI } from 'ui-context';
 
 /**
  * This component shows the scheduled methods.
@@ -123,7 +124,10 @@ export class QwcSchedulerScheduledMethods extends observeState(LitElement) {
 
     _renderScheduledMethods(){
         let schedulerButton;
-        if (this._schedulerRunning) {
+        if (isProdUI) {
+            // Prod UI is read-only: no pause/resume of the scheduler
+            schedulerButton = html``;
+        } else if (this._schedulerRunning) {
             schedulerButton = html`
                 <vaadin-button
                     class="scheduler"
@@ -199,7 +203,7 @@ export class QwcSchedulerScheduledMethods extends observeState(LitElement) {
     
     _trigger(scheduledMethod, schedule) {
         let trigger;
-        if (schedule.identity) {
+        if (schedule.identity && !isProdUI) {
             if (schedule.running) {
                 trigger = html`
                     <vaadin-button
@@ -359,13 +363,17 @@ export class QwcSchedulerScheduledMethods extends observeState(LitElement) {
     }
 
     _methodRenderer(scheduledMethod) {
+      const executeButton = isProdUI
+        ? html``
+        : html`
+            <vaadin-button
+                theme="small"
+                @click=${() => this._executeMethod(scheduledMethod.methodDescription)}>
+                <vaadin-icon icon="font-awesome-solid:bolt"></vaadin-icon>
+                ${msg('Execute', { id: 'quarkus-scheduler-execute' })}
+            </vaadin-button>`;
       return html`
-        <vaadin-button
-            theme="small"
-            @click=${() => this._executeMethod(scheduledMethod.methodDescription)}>
-            <vaadin-icon icon="font-awesome-solid:bolt"></vaadin-icon>
-            ${msg('Execute', { id: 'quarkus-scheduler-execute' })}
-        </vaadin-button>
+        ${executeButton}
         <code>${scheduledMethod.declaringClassName}.${scheduledMethod.methodName}()</code>
     `;
     }

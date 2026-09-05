@@ -19,6 +19,8 @@ import io.quarkus.devui.spi.page.Page;
 import io.quarkus.flyway.runtime.FlywayBuildTimeConfig;
 import io.quarkus.flyway.runtime.dev.ui.FlywayDevUIRecorder;
 import io.quarkus.flyway.runtime.dev.ui.FlywayJsonRpcService;
+import io.quarkus.flyway.runtime.produi.FlywayProdUIService;
+import io.quarkus.produi.spi.page.ProdUIPageBuildItem;
 
 public class FlywayDevUIProcessor {
 
@@ -55,5 +57,20 @@ public class FlywayDevUIProcessor {
     @BuildStep(onlyIf = IsLocalDevelopment.class)
     JsonRPCProvidersBuildItem registerJsonRpcBackend() {
         return new JsonRPCProvidersBuildItem(FlywayJsonRpcService.class);
+    }
+
+    @BuildStep
+    JsonRPCProvidersBuildItem createProdUIJsonRPCService() {
+        return new JsonRPCProvidersBuildItem(FlywayProdUIService.class);
+    }
+
+    @BuildStep
+    ProdUIPageBuildItem createProdUI() {
+        ProdUIPageBuildItem page = new ProdUIPageBuildItem();
+        page.addPage(Page.webComponentPageBuilder()
+                .title("Migrations")
+                .icon("font-awesome-solid:database")
+                .componentLink("pwc-flyway-migrations.js"));
+        return page;
     }
 }

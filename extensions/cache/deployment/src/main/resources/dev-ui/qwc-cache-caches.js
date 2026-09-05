@@ -1,5 +1,6 @@
 import { LitElement, html, css} from 'lit';
 import { JsonRpc } from 'jsonrpc';
+import { isProdUI } from 'ui-context';
 import '@vaadin/icon';
 import '@vaadin/button';
 import '@vaadin/text-field';
@@ -111,10 +112,12 @@ export class QwcCacheCaches extends LitElement {
 
     _actionRenderer(cache) {
         return html`
-            <vaadin-button theme="small" @click=${() => this._clear(cache.name)} class="button">
-                <vaadin-icon class="clearIcon" icon="font-awesome-solid:broom"></vaadin-icon> ${msg('Clear', { id: 'quarkus-cache-clear' })}
-            </vaadin-button>
-            &nbsp;|&nbsp;
+            ${isProdUI ? '' : html`
+                <vaadin-button theme="small" @click=${() => this._clear(cache.name)} class="button">
+                    <vaadin-icon class="clearIcon" icon="font-awesome-solid:broom"></vaadin-icon> ${msg('Clear', { id: 'quarkus-cache-clear' })}
+                </vaadin-button>
+                &nbsp;|&nbsp;
+            `}
             <vaadin-button theme="small" @click=${() => this._showCacheKeys(cache)} class="button">
                 <vaadin-icon class="keysIcon" icon="font-awesome-solid:key"></vaadin-icon> ${msg('Keys', { id: 'quarkus-cache-keys-button' })}
             </vaadin-button>`;

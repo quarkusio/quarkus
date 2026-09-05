@@ -20,16 +20,52 @@ export class QwcSmallryeHealthUi extends QwcHotReloadElement {
 
     static styles = css`
         :host {
+            display: block;
+            padding: 0 20px 20px;
+        }
+        .summary {
             display: flex;
-            justify-content: space-between;
-            padding-left: 20px;
-            padding-right: 20px;
+            align-items: center;
+            gap: 16px;
+            padding: 14px 10px 4px;
+        }
+        .statusPill {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 600;
+            font-size: var(--lumo-font-size-m);
+            padding: 4px 12px;
+            border-radius: var(--lumo-border-radius-l);
+        }
+        .statusPill .dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: currentColor;
+        }
+        .statusPill.up {
+            color: var(--lumo-success-text-color);
+            background: var(--lumo-success-color-10pct);
+        }
+        .statusPill.down {
+            color: var(--lumo-error-text-color);
+            background: var(--lumo-error-color-10pct);
+        }
+        .counts {
+            flex: 1;
+            font-size: var(--lumo-font-size-s);
+            color: var(--lumo-secondary-text-color);
+        }
+        .counts .downcount {
+            color: var(--lumo-error-text-color);
+            font-weight: 600;
         }
         .cards {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
             gap: 15px;
-            padding: 10px;
+            padding: 10px 0;
             align-items: start;
         }
         .cards qui-card {
@@ -100,9 +136,9 @@ export class QwcSmallryeHealthUi extends QwcHotReloadElement {
             color: var(--lumo-error-text-color);
         }
         #configureIcon {
-            margin-top: 10px;
-            margin-right: 10px;
+            flex-shrink: 0;
             cursor: pointer;
+            color: var(--lumo-secondary-text-color);
         }
 
     `;
@@ -154,20 +190,49 @@ export class QwcSmallryeHealthUi extends QwcHotReloadElement {
 
     render() {
         if(this._health && this._health.payload){
-            return html`<div class="cards">${this._health.payload.checks.map((check) =>
+            const checks = this._sortedChecks(this._health.payload.checks);
+            const summary = this._summarise(checks);
+            const down = summary.down > 0;
+            return html`
+            <div class="summary">
+                <span class="statusPill ${down ? 'down' : 'up'}">
+                    <span class="dot"></span>${down ? 'DOWN' : 'UP'}
+                </span>
+                <span class="counts">
+                    ${down ? html`<span class="downcount">${summary.down} down</span> · ` : ''}${summary.up} up · ${summary.total} total
+                </span>
+                <vaadin-icon id="configureIcon" icon="font-awesome-solid:gear" title=${msg('Configure health status updates', { id: 'quarkus-smallrye-health-configure' })}></vaadin-icon>
+                <vaadin-popover
+                    for="configureIcon"
+                    .position="start-bottom"
+                    ${popoverRenderer(this._configurePopoverRenderer)}
+                ></vaadin-popover>
+            </div>
+            <div class="cards">${checks.map((check) =>
                 html`${this._renderCard(check)}`
             )}</div>
-            <vaadin-icon id="configureIcon" icon="font-awesome-solid:gear" title=${msg('Configure health status updates', { id: 'quarkus-smallrye-health-configure' })}></vaadin-icon>
-            <vaadin-popover
-                for="configureIcon"
-                .position="start-bottom"
-                ${popoverRenderer(this._configurePopoverRenderer)}
-            ></vaadin-popover>
-
             `;
         }else {
             return html`<vaadin-progress-bar indeterminate></vaadin-progress-bar>`;
         }
+    }
+
+    _isUp(check){
+        return check.status && check.status.string === "UP";
+    }
+
+    // Surface problems first: DOWN checks float to the top, otherwise the reported order is kept.
+    _sortedChecks(checks){
+        return [...checks].sort((a, b) => {
+            if(this._isUp(a) === this._isUp(b)) return 0;
+            return this._isUp(a) ? 1 : -1;
+        });
+    }
+
+    _summarise(checks){
+        const total = checks.length;
+        const down = checks.filter(c => !this._isUp(c)).length;
+        return { total, down, up: total - down };
     }
 
     _configurePopoverRenderer(){

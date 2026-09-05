@@ -4,7 +4,8 @@ import java.util.EnumSet;
 
 public enum Usage {
     DEV_UI,
-    DEV_MCP;
+    DEV_MCP,
+    PROD_UI;
 
     public static EnumSet<Usage> onlyDevUI() {
         return EnumSet.of(Usage.DEV_UI);
@@ -16,5 +17,17 @@ public enum Usage {
 
     public static EnumSet<Usage> devUIandDevMCP() {
         return EnumSet.of(Usage.DEV_UI, Usage.DEV_MCP);
+    }
+
+    public static EnumSet<Usage> onlyProdUI() {
+        return EnumSet.of(Usage.PROD_UI);
+    }
+
+    public static EnumSet<Usage> devUIandProdUI() {
+        return EnumSet.of(Usage.DEV_UI, Usage.PROD_UI);
+    }
+
+    public static EnumSet<Usage> all() {
+        return EnumSet.allOf(Usage.class);
     }
 }

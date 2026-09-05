@@ -16,6 +16,8 @@ This guide covers:
 * How to configure named proxies
 * How to integrate with a Credentials Provider
 
+include::{includes}/extension-status.adoc[]
+
 == Introduction
 
 A proxy acts as an intermediary between an application and external services.

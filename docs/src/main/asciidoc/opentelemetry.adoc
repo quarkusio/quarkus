@@ -5,7 +5,6 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 [id=opentelemetry]
 = Using OpenTelemetry
-:extension-status: stable
 include::_attributes.adoc[]
 :diataxis-type: reference
 :summary: This guide explains how your Quarkus application can utilize OpenTelemetry to provide observability for interactive web applications.
@@ -16,6 +15,8 @@ This guide explains how your Quarkus application can utilize https://opentelemet
 Observability for interactive web applications.
 
 On this page we show the signal independent features of the extension.
+
+include::{includes}/extension-status.adoc[]
 
 include::{includes}/observability-include.adoc[]
 

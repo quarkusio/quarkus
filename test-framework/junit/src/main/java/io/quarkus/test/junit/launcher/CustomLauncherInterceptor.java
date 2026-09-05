@@ -97,6 +97,11 @@ public class CustomLauncherInterceptor
         if (!isProductionModeTests()) {
             initializeFacadeClassLoader();
             adjustContextClassLoader();
+            // Test classes get loaded (and Quarkus applications built for them) during discovery, before JUnit applies these filters;
+            // let the facade classloader know about them so it does not build applications for classes JUnit is going to drop anyway
+            if (facadeLoader != null) {
+                facadeLoader.setPostDiscoveryFilters(request.getPostDiscoveryFilters());
+            }
 
             // we need to ensure that the Fork-Join pool will use our thread factory, otherwise the TCCL
             // of the threads could be wrong

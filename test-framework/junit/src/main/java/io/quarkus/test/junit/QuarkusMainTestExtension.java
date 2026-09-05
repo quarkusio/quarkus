@@ -64,6 +64,12 @@ public class QuarkusMainTestExtension extends AbstractJvmQuarkusTestExtension
      */
     LaunchResult result;
 
+    /**
+     * The AeshLauncher created for the current test method (if any).
+     * Stored so it can be auto-closed in {@link #afterEach}.
+     */
+    AutoCloseable aeshLauncher;
+
     @Override
     public void beforeEach(ExtensionContext context) throws Exception {
         if (isIntegrationTest(context.getRequiredTestClass())) {
@@ -163,6 +169,14 @@ public class QuarkusMainTestExtension extends AbstractJvmQuarkusTestExtension
     @Override
     public void afterEach(ExtensionContext context) throws Exception {
         result = null;
+        if (aeshLauncher != null) {
+            try {
+                aeshLauncher.close();
+            } catch (Exception e) {
+                // ignore cleanup errors
+            }
+            aeshLauncher = null;
+        }
     }
 
     private static Handler ORIGINAL_QUARKUS_CONSOLE_HANDLER = null;
@@ -337,7 +351,10 @@ public class QuarkusMainTestExtension extends AbstractJvmQuarkusTestExtension
             QuarkusMainLauncher mainLauncher = createMainLauncher(extensionContext);
             Class<?> implClass = Thread.currentThread().getContextClassLoader()
                     .loadClass("io.quarkus.test.aesh.AeshLauncherImpl");
-            return implClass.getDeclaredConstructor(QuarkusMainLauncher.class).newInstance(mainLauncher);
+            Object instance = implClass.getDeclaredConstructor(QuarkusMainLauncher.class).newInstance(mainLauncher);
+            // Store for auto-close in afterEach()
+            aeshLauncher = (AutoCloseable) instance;
+            return instance;
         } catch (ClassNotFoundException e) {
             throw new ParameterResolutionException(
                     "AeshLauncher requested but quarkus-test-aesh is not on the classpath. "

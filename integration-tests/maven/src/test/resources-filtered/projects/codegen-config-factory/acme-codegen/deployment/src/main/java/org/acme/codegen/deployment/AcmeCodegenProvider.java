@@ -22,8 +22,8 @@ public class AcmeCodegenProvider implements CodeGenProvider {
 	}
 
 	@Override
-	public String inputExtension() {
-		return ACME;
+	public String[] inputExtensions() {
+		return new String[] { ACME };
 	}
 
 	@Override

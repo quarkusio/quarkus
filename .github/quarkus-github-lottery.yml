@@ -323,3 +323,18 @@ participants:
           maxIssues: 5
       stale:
         maxIssues: 5
+  - username: "xstefank"
+    timezone: "Europe/Prague"
+    maintenance:
+      labels: ["area/health", "area/smallrye", "area/kubernetes", "area/logging", "area/lra"]
+      days: [ "MONDAY" ]
+      created:
+        maxIssues: 3
+      feedback:
+        needed:
+          maxIssues: 5
+        provided:
+          maxIssues: 5
+      stale:
+        maxIssues: 5
+

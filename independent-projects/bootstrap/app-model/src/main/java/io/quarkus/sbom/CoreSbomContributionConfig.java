@@ -451,6 +451,11 @@ public class CoreSbomContributionConfig {
         Set<String> directDepPurls = collectDirectDependencyPurls(main);
         SbomContribution.Builder sb = SbomContribution.builder();
         sb.setRunnerPath(runnerPath);
+        ArtifactCoords appArtifact = mainArtifact != null ? mainArtifact
+                : applicationModel != null ? applicationModel.getAppArtifact() : null;
+        if (appArtifact != null) {
+            sb.setAppArtifact(appArtifact);
+        }
 
         Map<String, List<String>> depMap = new HashMap<>();
 

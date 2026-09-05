@@ -1,7 +1,6 @@
 package io.quarkus.vertx.http.runtime.options;
 
 import static io.quarkus.vertx.http.runtime.options.HttpServerOptionsUtils.getFileContent;
-import static io.quarkus.vertx.http.runtime.options.HttpServerOptionsUtils.or;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -48,7 +47,7 @@ public class TlsUtils {
                     keyStorePassword,
                     type,
                     certificates.keyStoreProvider(),
-                    or(certificates.keyStoreAlias(), certificates.keyStoreKeyAlias()),
+                    certificates.keyStoreAlias(),
                     keyStoreAliasPassword);
         }
         return null;

@@ -90,7 +90,11 @@ public class ClientAndServerSharingResponseTest {
         @Produces(MediaType.APPLICATION_JSON)
         @Blocking
         public Response testCase4() {
-            return headersService.dumpHeaders();
+            try (Response clientResponse = headersService.dumpHeaders()) {
+                return Response.status(clientResponse.getStatus())
+                        .entity(clientResponse.readEntity(String.class))
+                        .build();
+            }
         }
     }
 }

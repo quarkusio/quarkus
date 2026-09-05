@@ -164,30 +164,12 @@ public class InfinispanClientProducer {
         if (infinispanClientRuntimeConfig.uri().isPresent()) {
             properties.put(ConfigurationProperties.URI, infinispanClientRuntimeConfig.uri().get());
         } else {
-            if (infinispanClientRuntimeConfig.serverList().isPresent()) {
-                log.warn(
-                        "Use 'quarkus.infinispan-client.hosts' instead of the deprecated 'quarkus.infinispan-client.server-list'");
-                properties.put(ConfigurationProperties.SERVER_LIST, infinispanClientRuntimeConfig.serverList().get());
-            }
-
             if (infinispanClientRuntimeConfig.hosts().isPresent()) {
                 properties.put(ConfigurationProperties.SERVER_LIST, infinispanClientRuntimeConfig.hosts().get());
             }
 
-            if (infinispanClientRuntimeConfig.authUsername().isPresent()) {
-                log.warn(
-                        "Use 'quarkus.infinispan-client.username' instead of the deprecated 'quarkus.infinispan-client.auth-username'");
-                properties.put(ConfigurationProperties.AUTH_USERNAME, infinispanClientRuntimeConfig.authUsername().get());
-            }
-
             if (infinispanClientRuntimeConfig.username().isPresent()) {
                 properties.put(ConfigurationProperties.AUTH_USERNAME, infinispanClientRuntimeConfig.username().get());
-            }
-
-            if (infinispanClientRuntimeConfig.authPassword().isPresent()) {
-                log.warn(
-                        "Use 'quarkus.infinispan-client.password' instead of the deprecated 'quarkus.infinispan-client.auth-password'");
-                properties.put(ConfigurationProperties.AUTH_PASSWORD, infinispanClientRuntimeConfig.authPassword().get());
             }
 
             if (infinispanClientRuntimeConfig.password().isPresent()) {

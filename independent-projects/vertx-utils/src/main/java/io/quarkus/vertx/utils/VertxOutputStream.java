@@ -4,6 +4,9 @@ import java.io.IOException;
 import java.io.InterruptedIOException;
 import java.io.OutputStream;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.ReentrantLock;
 
 import org.jboss.logging.Logger;
 
@@ -31,7 +34,8 @@ public class VertxOutputStream extends OutputStream {
     private final HttpServerResponse response;
     // Per-stream lock for drain wait/notify. Using request.connection() would cause a thundering
     // herd on HTTP/2 where all streams share one connection and one notifyAll() wakes every thread.
-    private final Object lock = new Object();
+    private final ReentrantLock lock = new ReentrantLock();
+    private final Condition drainCondition = lock.newCondition();
 
     private boolean committed;
     private boolean closed;
@@ -51,10 +55,13 @@ public class VertxOutputStream extends OutputStream {
                 throwable = event;
                 log.debugf(event, "IO Exception ");
                 request.connection().close();
-                synchronized (lock) {
+                lock.lock();
+                try {
                     if (waitingForDrain) {
-                        lock.notifyAll();
+                        drainCondition.signalAll();
                     }
+                } finally {
+                    lock.unlock();
                 }
             }
         });
@@ -65,10 +72,13 @@ public class VertxOutputStream extends OutputStream {
         context.getRoutingContext().addEndHandler(new Handler<>() {
             @Override
             public void handle(AsyncResult<Void> event) {
-                synchronized (lock) {
+                lock.lock();
+                try {
                     if (waitingForDrain) {
-                        lock.notifyAll();
+                        drainCondition.signalAll();
                     }
+                } finally {
+                    lock.unlock();
                 }
             }
         });
@@ -83,22 +93,23 @@ public class VertxOutputStream extends OutputStream {
             response.end();
             return;
         }
-        synchronized (lock) {
-            try {
-                awaitWriteable();
-                if (last) {
-                    if (!response.ended()) { // can happen when an exception occurs during JSON serialization with Jackson
-                        response.end(createBuffer(data));
-                    }
-                } else {
-                    response.write(createBuffer(data));
+        lock.lock();
+        try {
+            awaitWriteable();
+            if (last) {
+                if (!response.ended()) { // can happen when an exception occurs during JSON serialization with Jackson
+                    response.end(createBuffer(data));
                 }
-            } catch (Exception e) {
-                if (data != null && data.refCnt() > 0) {
-                    data.release();
-                }
-                throw new IOException("Failed to write", e);
+            } else {
+                response.write(createBuffer(data));
             }
+        } catch (Exception e) {
+            if (data != null && data.refCnt() > 0) {
+                data.release();
+            }
+            throw new IOException("Failed to write", e);
+        } finally {
+            lock.unlock();
         }
     }
 
@@ -108,7 +119,7 @@ public class VertxOutputStream extends OutputStream {
             // NEVER block the event loop!
             return;
         }
-        assert Thread.holdsLock(lock);
+        assert lock.isHeldByCurrentThread();
         while (response.writeQueueFull()) {
             if (throwable != null) {
                 throw new IOException(throwable);
@@ -119,7 +130,7 @@ public class VertxOutputStream extends OutputStream {
             try {
                 waitingForDrain = true;
                 // To make sure we don't get stuck waiting, we time out periodically
-                lock.wait(1000);
+                drainCondition.await(1, TimeUnit.SECONDS);
                 // Check for timeout / closed connection
                 if (request.response().ended() || request.response().closed()) {
                     if (throwable != null) {
@@ -242,10 +253,13 @@ public class VertxOutputStream extends OutputStream {
 
         @Override
         public void handle(Void event) {
-            synchronized (out.lock) {
+            out.lock.lock();
+            try {
                 if (out.waitingForDrain) {
-                    out.lock.notifyAll();
+                    out.drainCondition.signalAll();
                 }
+            } finally {
+                out.lock.unlock();
             }
         }
     }

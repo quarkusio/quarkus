@@ -16,7 +16,6 @@ import io.quarkus.runtime.logging.LogRuntimeConfig;
 import io.smallrye.config.ConfigMapping;
 import io.smallrye.config.WithDefault;
 import io.smallrye.config.WithName;
-import io.smallrye.config.WithParentName;
 
 /**
  * Configuration for JSON log formatting.
@@ -129,17 +128,11 @@ public interface JsonLogConfig extends LogRuntimeConfig {
     @ConfigGroup
     interface JsonConfig {
         /**
-         * Determine whether to enable the JSON console formatting extension, which disables "normal" console formatting.
+         * Determine whether to enable the JSON console formatting extension, which disables "normal" console
+         * formatting.
+         * <p>
+         * Optional so named handlers can distinguish "not set" (skip) from "explicitly set" (apply).
          */
-        @WithParentName
-        @WithDefault("true")
-        @Deprecated(forRemoval = true, since = "3.19")
-        boolean enable();
-
-        /**
-         * Determine whether to enable the JSON console formatting extension, which disables "normal" console formatting.
-         */
-        // TODO make it non-optional with default true as soon as we drop the other config
         Optional<Boolean> enabled();
 
         /**

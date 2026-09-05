@@ -989,16 +989,6 @@ public interface OidcTenantConfig extends OidcClientCommonConfig {
         Optional<Boolean> pkceRequired();
 
         /**
-         * Secret used to encrypt a Proof Key for Code Exchange (PKCE) code verifier in the code flow state.
-         * This secret should be at least 32 characters long.
-         *
-         * @deprecated This field is deprecated. Use {@link #stateSecret} instead.
-         *
-         */
-        @Deprecated(forRemoval = true)
-        Optional<String> pkceSecret();
-
-        /**
          * Secret used to encrypt Proof Key for Code Exchange (PKCE) code verifier and/or nonce in the code flow
          * state.
          * This secret should be at least 32 characters long.

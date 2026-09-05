@@ -38,9 +38,6 @@ This means you can use your favorite logging API with Quarkus, provided you add 
 
 | link:https://logging.apache.org/log4j/2.x/[Apache Log4j 2]
 | <<logging-adapters-log4j2,Log4j 2 adapter>>
-
-| link:https://logging.apache.org/log4j/1.2/[Apache Log4j 1]
-| <<logging-adapters-log4j,Log4j 1 adapter>>
 |===
 
 [[jboss-logging]]
@@ -499,10 +496,10 @@ This is useful when a log aggregator (such as OpenSearch or Elasticsearch) needs
 +
 The option is available for all handler types:
 +
-** `quarkus.log.console.json.mdc.flat-fields`
-** `quarkus.log.file.json.mdc.flat-fields`
-** `quarkus.log.syslog.json.mdc.flat-fields`
-** `quarkus.log.socket.json.mdc.flat-fields`
+** console: `quarkus.log.console.json.mdc.flat-fields`
+** file: `quarkus.log.file.json.mdc.flat-fields`
+** syslog: `quarkus.log.syslog.json.mdc.flat-fields`
+** socket: `quarkus.log.socket.json.mdc.flat-fields`
 ** Named handlers, such as `quarkus.log.handler.console.<name>.json.mdc.flat-fields`
 * *ecs*: Uses the link:https://www.elastic.co/docs/reference/ecs/ecs-field-reference[Elastic Common Schema (ECS)] format.
 This format modifies some default field names and adds other fields to align with ECS.
@@ -988,11 +985,6 @@ implementation("org.jboss.logmanager:log4j2-jboss-logmanager")
 Do not include any Log4j dependencies, as the `log4j2-jboss-logmanager` library contains everything needed to use Log4j as a logging implementation.
 ====
 
-[[logging-adapters-log4j]]
-==== Log4j
-
-Log4j 1.x is no longer supported by Quarkus.
-
 === Use MDC to add contextual log information
 
 Quarkus overrides the logging Mapped Diagnostic Context (MDC) to improve compatibility with its reactive core.
@@ -1049,7 +1041,6 @@ The resulting message contains the MDC data:
 
 Based on your logging API, use one of the following MDC classes:
 
-* Log4j 1 - `org.apache.log4j.MDC.put(key, value)`
 * Log4j 2 - `org.apache.logging.log4j.ThreadContext.put(key, value)`
 * SLF4J - `org.slf4j.MDC.put(key, value)`
 

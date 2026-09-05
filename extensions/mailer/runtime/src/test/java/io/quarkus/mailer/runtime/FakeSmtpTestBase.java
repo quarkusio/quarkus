@@ -183,17 +183,7 @@ public class FakeSmtpTestBase {
         }
 
         @Override
-        public boolean ssl() {
-            return false;
-        }
-
-        @Override
         public Optional<Boolean> tls() {
-            return Optional.empty();
-        }
-
-        @Override
-        public Optional<Boolean> trustAll() {
             return Optional.empty();
         }
 
@@ -235,37 +225,6 @@ public class FakeSmtpTestBase {
         @Override
         public Optional<String> authMethods() {
             return Optional.empty();
-        }
-
-        @Override
-        public Optional<String> keyStore() {
-            return Optional.empty();
-        }
-
-        @Override
-        public Optional<String> keyStorePassword() {
-            return Optional.empty();
-        }
-
-        @Override
-        public TrustStoreConfig truststore() {
-            return new TrustStoreConfig() {
-
-                @Override
-                public Optional<String> type() {
-                    return Optional.empty();
-                }
-
-                @Override
-                public Optional<List<String>> paths() {
-                    return Optional.empty();
-                }
-
-                @Override
-                public Optional<String> password() {
-                    return Optional.empty();
-                }
-            };
         }
 
         @Override

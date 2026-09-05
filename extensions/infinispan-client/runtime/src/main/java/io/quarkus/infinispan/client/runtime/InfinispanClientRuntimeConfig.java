@@ -37,15 +37,6 @@ public interface InfinispanClientRuntimeConfig {
 
     // @formatter:off
     /**
-     * Sets the host name/port to connect to. Each one is separated by a semicolon (eg. host1:11222;host2:11222).
-     * @deprecated {@link #hosts} should be used to configure the list or uri for an uri connection string.
-     */
-    // @formatter:on
-    @Deprecated
-    Optional<String> serverList();
-
-    // @formatter:off
-    /**
      * Sets client intelligence used by authentication
      * Available values:
      * * `BASIC` - Means that the client doesn't handle server topology changes and therefore will only use the list
@@ -74,25 +65,9 @@ public interface InfinispanClientRuntimeConfig {
     Optional<String> username();
 
     /**
-     * Sets username used by authentication.
-     *
-     * @deprecated {@link #username} should be used to configure the credentials username.
-     */
-    @Deprecated
-    Optional<String> authUsername();
-
-    /**
      * Sets password used by authentication.
      */
     Optional<String> password();
-
-    /**
-     * Sets password used by authentication
-     *
-     * @deprecated {@link #password} should be used to configure the credentials password.
-     */
-    @Deprecated
-    Optional<String> authPassword();
 
     /**
      * Sets realm used by authentication

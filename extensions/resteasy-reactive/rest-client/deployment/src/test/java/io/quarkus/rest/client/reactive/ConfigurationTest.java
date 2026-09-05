@@ -59,8 +59,6 @@ class ConfigurationTest {
 
         clientConfig = restClientsConfig.getClient(ConfigKeyClient.class);
         verifyClientConfig(clientConfig, true);
-        assertThat(clientConfig.proxyAddress().isPresent()).isTrue();
-        assertThat(clientConfig.proxyAddress().get()).isEqualTo("localhost:8080");
         assertThat(clientConfig.headers()).containsOnly(entry("user-agent", "MP REST Client"), entry("foo", "bar"));
 
         clientConfig = restClientsConfig.getClient(QuotedConfigKeyClient.class);

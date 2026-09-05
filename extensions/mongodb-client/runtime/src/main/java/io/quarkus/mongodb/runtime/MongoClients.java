@@ -259,16 +259,23 @@ public class MongoClients {
 
         @Override
         public void apply(SslSettings.Builder builder) {
-            builder.enabled(!disableSslSupport).invalidHostNameAllowed(config.tlsInsecure());
+            builder.enabled(!disableSslSupport);
             if (!disableSslSupport) {
                 Optional<TlsConfiguration> tlsConfig = TlsConfiguration.from(tlsConfigurationRegistry,
                         config.tlsConfigurationName());
                 if (tlsConfig.isPresent()) {
+                    // Honor the hostname verification configured at the TLS registry level.
+                    // "NONE" disables hostname verification, which maps to allowing invalid host names.
+                    boolean insecure = tlsConfig.get().getHostnameVerificationAlgorithm()
+                            .map("NONE"::equals).orElse(false);
+                    builder.invalidHostNameAllowed(insecure);
                     try {
                         builder.context(tlsConfig.get().createSSLContext());
                     } catch (Exception e) {
                         throw new MongoConfigurationException("Could not configure MongoDB client with TLS registry", e);
                     }
+                } else {
+                    builder.invalidHostNameAllowed(false);
                 }
             }
         }

@@ -1,18 +1,16 @@
-import io.quarkus.deployment.util.ExecUtil
-
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
 
 try {
-    ExecUtil.execWithSystemLogging("docker", "version", "--format", "'{{.Server.Version}}'")
+    execWithSystemLogging("docker", "version", "--format", "'{{.Server.Version}}'")
 } catch (Exception ignored) {
     println "Docker not found"
     return
 }
 
-assert ExecUtil.execWithSystemLogging("docker", "images", "container-build-jib")
-assert ExecUtil.execWithSystemLogging("docker", "rmi", "container-build-jib:0.1-SNAPSHOT")
+assert execWithSystemLogging("docker", "images", "container-build-jib")
+assert execWithSystemLogging("docker", "rmi", "container-build-jib:0.1-SNAPSHOT")
 
 
 Path pathInIT = Paths.get("target", "it", "container-build-jib", "target")
@@ -40,3 +38,8 @@ assert properties."metadata.container-image" == "container-build-jib:0.1-SNAPSHO
 
 assert Files.exists(target.resolve("jib-image.digest"))
 assert Files.exists(target.resolve("jib-image.id"))
+
+boolean execWithSystemLogging(String... command) {
+    def process = new ProcessBuilder(command).inheritIO().start()
+    return process.waitFor() == 0
+}

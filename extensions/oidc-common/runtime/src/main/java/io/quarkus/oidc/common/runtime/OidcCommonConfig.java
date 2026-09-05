@@ -1,6 +1,5 @@
 package io.quarkus.oidc.common.runtime;
 
-import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Optional;
 import java.util.OptionalInt;
@@ -212,244 +211,12 @@ public abstract class OidcCommonConfig implements io.quarkus.oidc.common.runtime
 
         private void addConfigMappingValues(io.quarkus.oidc.common.runtime.config.OidcCommonConfig.Tls mapping) {
             this.tlsConfigurationName = mapping.tlsConfigurationName();
-            this.verification = mapping.verification().map(Enum::toString).map(Verification::valueOf);
-            this.keyStoreFile = mapping.keyStoreFile();
-            this.keyStoreFileType = mapping.keyStoreFileType();
-            this.keyStoreProvider = mapping.keyStoreProvider();
-            this.keyStorePassword = mapping.keyStorePassword();
-            this.keyStoreKeyAlias = mapping.keyStoreKeyAlias();
-            this.keyStoreKeyPassword = mapping.keyStoreKeyPassword();
-            this.trustStoreFile = mapping.trustStoreFile();
-            this.trustStorePassword = mapping.trustStorePassword();
-            this.trustStoreCertAlias = mapping.trustStoreCertAlias();
-            this.trustStoreFileType = mapping.trustStoreFileType();
-            this.trustStoreProvider = mapping.trustStoreProvider();
         }
 
         @Override
         public Optional<String> tlsConfigurationName() {
             return tlsConfigurationName;
         }
-
-        @Override
-        public Optional<io.quarkus.oidc.common.runtime.config.OidcCommonConfig.Tls.Verification> verification() {
-            return verification.map(Enum::toString)
-                    .map(io.quarkus.oidc.common.runtime.config.OidcCommonConfig.Tls.Verification::valueOf);
-        }
-
-        @Override
-        public Optional<Path> keyStoreFile() {
-            return keyStoreFile;
-        }
-
-        @Override
-        public Optional<String> keyStoreFileType() {
-            return keyStoreFileType;
-        }
-
-        @Override
-        public Optional<String> keyStoreProvider() {
-            return keyStoreProvider;
-        }
-
-        @Override
-        public Optional<String> keyStorePassword() {
-            return keyStorePassword;
-        }
-
-        @Override
-        public Optional<String> keyStoreKeyAlias() {
-            return keyStoreKeyAlias;
-        }
-
-        @Override
-        public Optional<String> keyStoreKeyPassword() {
-            return keyStoreKeyPassword;
-        }
-
-        @Override
-        public Optional<Path> trustStoreFile() {
-            return trustStoreFile;
-        }
-
-        @Override
-        public Optional<String> trustStorePassword() {
-            return trustStorePassword;
-        }
-
-        @Override
-        public Optional<String> trustStoreCertAlias() {
-            return trustStoreCertAlias;
-        }
-
-        @Override
-        public Optional<String> trustStoreFileType() {
-            return trustStoreFileType;
-        }
-
-        @Override
-        public Optional<String> trustStoreProvider() {
-            return trustStoreProvider;
-        }
-
-        public enum Verification {
-            /**
-             * Certificates are validated and hostname verification is enabled. This is the default value.
-             */
-            REQUIRED,
-
-            /**
-             * Certificates are validated but hostname verification is disabled.
-             */
-            CERTIFICATE_VALIDATION,
-
-            /**
-             * All certificates are trusted and hostname verification is disabled.
-             */
-            NONE
-        }
-
-        /**
-         * Certificate validation and hostname verification, which can be one of the following {@link Verification}
-         * values.
-         * Default is `required`.
-         *
-         * @deprecated Use the TLS registry instead.
-         */
-        public Optional<Verification> verification = Optional.empty();
-
-        /**
-         * An optional keystore that holds the certificate information instead of specifying separate files.
-         *
-         * @deprecated Use the TLS registry instead.
-         */
-        public Optional<Path> keyStoreFile = Optional.empty();
-
-        /**
-         * The type of the keystore file. If not given, the type is automatically detected based on the file name.
-         *
-         * @deprecated Use the TLS registry instead.
-         */
-        public Optional<String> keyStoreFileType = Optional.empty();
-
-        /**
-         * The provider of the keystore file. If not given, the provider is automatically detected based on the
-         * keystore file type.
-         *
-         * @deprecated Use the TLS registry instead.
-         */
-        public Optional<String> keyStoreProvider;
-
-        /**
-         * The password of the keystore file. If not given, the default value, `password`, is used.
-         *
-         * @deprecated Use the TLS registry instead.
-         */
-        public Optional<String> keyStorePassword;
-
-        /**
-         * The alias of a specific key in the keystore.
-         * When SNI is disabled, if the keystore contains multiple
-         * keys and no alias is specified, the behavior is undefined.
-         *
-         * @deprecated Use the TLS registry instead.
-         */
-        public Optional<String> keyStoreKeyAlias = Optional.empty();
-
-        /**
-         * The password of the key, if it is different from the {@link #keyStorePassword}.
-         *
-         * @deprecated Use the TLS registry instead.
-         */
-        public Optional<String> keyStoreKeyPassword = Optional.empty();
-
-        /**
-         * The truststore that holds the certificate information of the certificates to trust.
-         *
-         * @deprecated Use the TLS registry instead.
-         */
-        public Optional<Path> trustStoreFile = Optional.empty();
-
-        /**
-         * The password of the truststore file.
-         *
-         * @deprecated Use the TLS registry instead.
-         */
-        public Optional<String> trustStorePassword = Optional.empty();
-
-        /**
-         * The alias of the truststore certificate.
-         *
-         * @deprecated Use the TLS registry instead.
-         */
-        public Optional<String> trustStoreCertAlias = Optional.empty();
-
-        /**
-         * The type of the truststore file.
-         * If not given, the type is automatically detected
-         * based on the file name.
-         *
-         * @deprecated Use the TLS registry instead.
-         */
-        public Optional<String> trustStoreFileType = Optional.empty();
-
-        /**
-         * The provider of the truststore file.
-         * If not given, the provider is automatically detected
-         * based on the truststore file type.
-         *
-         * @deprecated Use the TLS registry instead.
-         */
-        public Optional<String> trustStoreProvider;
-
-        public Optional<Verification> getVerification() {
-            return verification;
-        }
-
-        public void setVerification(Verification verification) {
-            this.verification = Optional.of(verification);
-        }
-
-        public Optional<Path> getTrustStoreFile() {
-            return trustStoreFile;
-        }
-
-        public void setTrustStoreFile(Path trustStoreFile) {
-            this.trustStoreFile = Optional.of(trustStoreFile);
-        }
-
-        public Optional<String> getTrustStorePassword() {
-            return trustStorePassword;
-        }
-
-        public void setTrustStorePassword(String trustStorePassword) {
-            this.trustStorePassword = Optional.of(trustStorePassword);
-        }
-
-        public Optional<String> getTrustStoreCertAlias() {
-            return trustStoreCertAlias;
-        }
-
-        public void setTrustStoreCertAlias(String trustStoreCertAlias) {
-            this.trustStoreCertAlias = Optional.of(trustStoreCertAlias);
-        }
-
-        public Optional<String> getKeyStoreProvider() {
-            return keyStoreProvider;
-        }
-
-        public void setKeyStoreProvider(String keyStoreProvider) {
-            this.keyStoreProvider = Optional.of(keyStoreProvider);
-        }
-
-        public Optional<String> getTrustStoreProvider() {
-            return trustStoreProvider;
-        }
-
-        public void setTrustStoreProvider(String trustStoreProvider) {
-            this.trustStoreProvider = Optional.of(trustStoreProvider);
-        }
-
     }
 
     /**
@@ -458,61 +225,15 @@ public abstract class OidcCommonConfig implements io.quarkus.oidc.common.runtime
     @Deprecated(since = "3.18", forRemoval = true)
     public static class Proxy implements io.quarkus.oidc.common.runtime.config.OidcCommonConfig.Proxy {
 
-        /**
-         * The host name or IP address of the Proxy.<br/>
-         * Note: If the OIDC adapter requires a Proxy to talk with the OIDC server (Provider),
-         * set this value to enable the usage of a Proxy.
-         */
-        public Optional<String> host = Optional.empty();
-
-        /**
-         * The port number of the Proxy. The default value is `80`.
-         */
-        public int port = 80;
-
-        /**
-         * The username, if the Proxy needs authentication.
-         */
-        public Optional<String> username = Optional.empty();
-
-        /**
-         * The password, if the Proxy needs authentication.
-         */
-        public Optional<String> password = Optional.empty();
-
         private Optional<String> proxyConfigurationName = Optional.empty();
 
         private void addConfigMappingValues(io.quarkus.oidc.common.runtime.config.OidcCommonConfig.Proxy mapping) {
-            this.host = mapping.host();
-            this.port = mapping.port();
-            this.username = mapping.username();
-            this.password = mapping.password();
             this.proxyConfigurationName = mapping.proxyConfigurationName();
         }
 
         @Override
         public Optional<String> proxyConfigurationName() {
             return proxyConfigurationName;
-        }
-
-        @Override
-        public Optional<String> host() {
-            return host;
-        }
-
-        @Override
-        public int port() {
-            return port;
-        }
-
-        @Override
-        public Optional<String> username() {
-            return username;
-        }
-
-        @Override
-        public Optional<String> password() {
-            return password;
         }
     }
 

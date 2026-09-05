@@ -144,6 +144,7 @@ categories:
         guides:
           - hibernate-orm.adoc
           - quarkus-data-hibernate.adoc
+          - quarkus-data-hibernate-getting-started.adoc
           - hibernate-orm-panache.adoc
           - hibernate-orm-panache-kotlin.adoc
           - hibernate-reactive.adoc

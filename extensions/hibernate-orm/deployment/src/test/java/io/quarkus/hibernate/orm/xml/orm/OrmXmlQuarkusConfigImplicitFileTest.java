@@ -15,7 +15,7 @@ import io.quarkus.hibernate.orm.SmokeTestUtils;
 import io.quarkus.test.QuarkusExtensionTest;
 
 /**
- * Test that the implicit mapping file META-INF/orm.xml is ignored
+ * Test that the implicit mapping file META-INF/orm.xml is taken into account
  * for persistence units configured through Quarkus' application.properties.
  */
 public class OrmXmlQuarkusConfigImplicitFileTest {

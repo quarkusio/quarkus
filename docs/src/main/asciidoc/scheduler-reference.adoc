@@ -644,6 +644,33 @@ In this case, the method is invoked on a virtual thread.
 The method must return `void` and your Java runtime must provide support for virtual threads.
 Read xref:./virtual-threads.adoc[the virtual thread guide] for more details.
 
+=== Use virtual threads for every scheduled method
+
+Instead of annotating every scheduled method, you can enable virtual threads for all of them with a single build-time property:
+
+[source, properties]
+----
+quarkus.scheduler.virtual-threads=true
+----
+
+When enabled, every scheduled method that would otherwise be executed on a worker thread is executed on a virtual thread instead.
+The regular execution model rules still apply:
+
+* Scheduled methods considered non-blocking, because they return `CompletionStage<Void>` or `Uni<Void>`, or are Kotlin suspend functions, keep running on the event loop.
+* Explicit `@Blocking`, `@NonBlocking` and `@RunOnVirtualThread` annotations on the scheduled method always take precedence.
+  So, if a specific scheduled method is not safe to run on a virtual thread, annotate it with `@Blocking` to keep it on a worker thread.
+
+[WARNING]
+====
+Before enabling this property, make sure your application and its dependencies do not suffer from thread pinning or carrier thread monopolization.
+For more information, see the Quarkus xref:./virtual-threads.adoc[Virtual thread support reference] guide.
+====
+
+[NOTE]
+====
+When the xref:./quartz.adoc[Quartz extension] is used with `quarkus.quartz.run-blocking-scheduled-method-on-quartz-thread=true`, scheduled methods marked to run on virtual threads are executed on a Quartz thread instead.
+====
+
 == Assign a user and roles to a scheduled task
 
 You can use the `@RunAsUser` annotation on methods annotated with the `@Scheduled` annotation to configure the `SecurityIdentity` for the task execution.

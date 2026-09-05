@@ -286,9 +286,6 @@ Let's have a look at the deployment's `./greeting-extension/deployment/pom.xml`.
 
 </project>
 ----
-
-The key points are:
-
 <1> By convention, the deployment module has the `-deployment` suffix (`greeting-extension-deployment`).
 <2> The deployment module depends on the `quarkus-arc-deployment` artifact.
 We will see later which dependencies are convenient to add.
@@ -386,9 +383,6 @@ Finally `./greeting-extension/runtime/pom.xml`.
     </build>
 </project>
 ----
-
-The key points are:
-
 <1> By convention, the runtime module has no suffix (`greeting-extension`) as it is the artifact exposed to the end user.
 <2> The runtime module depends on the `quarkus-arc` artifact.
 <3> We add  the `quarkus-extension-maven-plugin` to generate the Quarkus extension descriptor included into the runtime artifact, which links it with the corresponding deployment artifact.

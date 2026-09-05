@@ -1075,7 +1075,7 @@ public final class ModularitySteps {
      * @return the artifact key (group, artifact, and classifier only) (not {@code null})
      */
     private static ArtifactKey keyOf(final ArtifactCoords dependency) {
-        return ArtifactKey.gac(dependency.getGroupId(), dependency.getArtifactId(), dependency.getClassifier());
+        return ArtifactKey.of(dependency.getGroupId(), dependency.getArtifactId(), dependency.getClassifier(), null);
     }
 
     /**

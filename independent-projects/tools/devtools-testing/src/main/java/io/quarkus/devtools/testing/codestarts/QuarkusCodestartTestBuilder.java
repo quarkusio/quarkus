@@ -259,24 +259,6 @@ public class QuarkusCodestartTestBuilder {
         return urls;
     }
 
-    /**
-     * Use withQuarkusBom instead
-     */
-    @Deprecated(forRemoval = true)
-    public QuarkusCodestartTestBuilder standaloneExtensionCatalog(String quarkusBomGroupId, String quarkusBomVersion) {
-        this.quarkusBomGroupId = quarkusBomGroupId;
-        this.quarkusBomVersion = quarkusBomVersion;
-        return this;
-    }
-
-    /**
-     * Use setupStandaloneExtensionTest instead
-     */
-    @Deprecated
-    public QuarkusCodestartTestBuilder standaloneExtensionCatalog() {
-        return this.setupStandaloneExtensionTest();
-    }
-
     public QuarkusCodestartTest build() {
         return new QuarkusCodestartTest(this);
     }

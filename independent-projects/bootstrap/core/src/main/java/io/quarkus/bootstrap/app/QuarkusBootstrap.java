@@ -231,11 +231,6 @@ public class QuarkusBootstrap implements Serializable {
         return new Builder();
     }
 
-    @Deprecated
-    public static Builder builder(Path applicationRoot) {
-        return new Builder().setApplicationRoot(PathList.of(applicationRoot));
-    }
-
     public String getBaseName() {
         return baseName;
     }

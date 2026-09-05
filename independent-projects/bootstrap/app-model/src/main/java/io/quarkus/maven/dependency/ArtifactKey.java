@@ -34,37 +34,6 @@ public interface ArtifactKey extends Comparable<ArtifactKey> {
         return new GACT(groupId, artifactId);
     }
 
-    /**
-     * @deprecated
-     *
-     *             Creates an artifact key that consists of groupId:artifactId:classifer and a {@code null} type.
-     *
-     * @param groupId artifact groupId
-     * @param artifactId artifact id
-     * @param classifier artifact classifier
-     * @return artifact key
-     */
-    @Deprecated(forRemoval = true)
-    static ArtifactKey gac(String groupId, String artifactId, String classifier) {
-        return new GACT(groupId, artifactId, classifier);
-    }
-
-    /**
-     * @deprecated in favor of {@link ArtifactKey#of(String, String, String, String)}
-     *
-     *             Creates an artifact key for a given groupId:artifactId:classifier:type
-     *
-     * @param groupId artifact groupId
-     * @param artifactId artifact id
-     * @param classifier artifact classifier
-     * @param type artifact type
-     * @return artifact key
-     */
-    @Deprecated(forRemoval = true)
-    static ArtifactKey gact(String groupId, String artifactId, String classifier, String type) {
-        return new GACT(groupId, artifactId, classifier, type);
-    }
-
     String getGroupId();
 
     String getArtifactId();

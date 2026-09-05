@@ -171,16 +171,6 @@ public class QuarkusBootstrapProvider implements Closeable {
         return bootstrapId == null ? moduleKey.toGacString() : moduleKey.toGacString() + "-" + bootstrapId;
     }
 
-    @Deprecated(forRemoval = true)
-    public RepositorySystem repositorySystem() {
-        return workspaceProvider.getRepositorySystem();
-    }
-
-    @Deprecated(forRemoval = true)
-    public RemoteRepositoryManager remoteRepositoryManager() {
-        return remoteRepoManager;
-    }
-
     public QuarkusMavenAppBootstrap bootstrapper(QuarkusBootstrapMojo mojo) {
         try {
             return appBootstrapProviders.get(getBootstrapProviderId(mojo.projectId(), mojo.bootstrapId()),

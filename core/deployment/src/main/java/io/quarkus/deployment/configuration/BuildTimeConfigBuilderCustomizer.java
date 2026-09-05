@@ -1,13 +1,29 @@
 package io.quarkus.deployment.configuration;
 
+import static io.quarkus.deployment.pkg.PackageConfig.JarConfig.JarType.AOT_JAR;
+import static io.quarkus.deployment.pkg.PackageConfig.JarConfig.JarType.FAST_JAR;
+import static io.quarkus.deployment.pkg.PackageConfig.JarConfig.JarType.MUTABLE_JAR;
+
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
+import org.eclipse.microprofile.config.spi.ConfigSource;
+import org.eclipse.microprofile.config.spi.Converter;
+
+import io.quarkus.deployment.pkg.PackageConfig.JarConfig.JarType;
+import io.quarkus.deployment.pkg.jar.FastJarFormat;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.console.ConsoleRuntimeConfig;
 import io.quarkus.runtime.logging.LogBuildTimeConfig;
 import io.quarkus.runtime.logging.LogRuntimeConfig;
 import io.quarkus.runtime.logging.LoggingSetupRecorder;
+import io.smallrye.config.ConfigSourceContext;
+import io.smallrye.config.ConfigSourceFactory;
+import io.smallrye.config.ConfigValue;
+import io.smallrye.config.Converters;
+import io.smallrye.config.DefaultValuesConfigSource;
+import io.smallrye.config.PropertiesConfigSource;
 import io.smallrye.config.SmallRyeConfigBuilder;
 import io.smallrye.config.SmallRyeConfigBuilderCustomizer;
 
@@ -29,5 +45,31 @@ public class BuildTimeConfigBuilderCustomizer implements SmallRyeConfigBuilderCu
         builder.withMapping(LogBuildTimeConfig.class)
                 .withMapping(LogRuntimeConfig.class)
                 .withMapping(ConsoleRuntimeConfig.class);
+
+        builder.withSources(new ConfigSourceFactory() {
+            @Override
+            public Iterable<ConfigSource> getConfigSources(ConfigSourceContext context) {
+                ConfigValue outputDirectory = context.getValue("quarkus.package.output-directory");
+                if (outputDirectory.getValue() != null) {
+                    return Collections.emptyList();
+                }
+
+                ConfigValue jarType = context.getValue("quarkus.package.jar.type");
+                if (jarType.getValue() == null) {
+                    return Collections.emptyList();
+                }
+
+                Converter<JarType> jarTypeConverter = Converters.getImplicitConverter(JarType.class);
+                JarType type = jarTypeConverter.convert(jarType.getValue());
+                if (type.equals(FAST_JAR) || type.equals(MUTABLE_JAR) || type.equals(AOT_JAR)) {
+                    Map<String, String> map = Map.of("quarkus.package.output-directory",
+                            FastJarFormat.DEFAULT_FAST_JAR_DIRECTORY_NAME);
+                    return Collections.singletonList(new PropertiesConfigSource(map, "BuildTimeConfigSource",
+                            DefaultValuesConfigSource.ORDINAL + 1));
+                }
+
+                return Collections.emptyList();
+            }
+        });
     }
 }

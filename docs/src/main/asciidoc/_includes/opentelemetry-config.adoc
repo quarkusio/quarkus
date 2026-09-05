@@ -12,7 +12,6 @@ quarkus.log.console.format=%d{HH:mm:ss} %-5p traceId=%X{traceId}, parentId=%X{pa
 # Alternative to the console log
 quarkus.http.access-log.pattern="...traceId=%{X,traceId} spanId=%{X,spanId}" // <5>
 ----
-
 <1> All telemetry created from the application will include an OpenTelemetry `Resource` attribute indicating the telemetry was created by the `myservice` application. If not set, it will default to the artifact id.
 <2> OTLP endpoint to send the telemetry. If not set, it will default to `http://localhost:4318`.
 <3> Optional headers commonly used for authentication

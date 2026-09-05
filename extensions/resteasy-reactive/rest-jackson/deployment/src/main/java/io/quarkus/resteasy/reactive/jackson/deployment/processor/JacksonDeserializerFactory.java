@@ -235,12 +235,66 @@ public class JacksonDeserializerFactory extends JacksonCodeGenerator {
         return "$quarkusjacksondeserializer";
     }
 
-    protected String[] getInterfacesNames(ClassInfo classInfo) {
-        return new String[0];
+    @Override
+    protected boolean discoverFieldTypes(ClassInfo classInfo, String beanClassName, Map<String, Type> typeBindings) {
+        Optional<MethodInfo> ctorOpt = findConstructor(classInfo);
+        if (ctorOpt.isEmpty()) {
+            return false;
+        }
+
+        if (!isClassFormatShapeArray(classInfo) && isAssignableTo(beanClassName, MAP_NAME)) {
+            return true;
+        }
+
+        MethodInfo ctor = ctorOpt.get();
+        PropertyNamingStrategy namingStrategy = getNamingStrategy(classInfo);
+
+        if (ctor.parametersCount() > 0) {
+            for (MethodParameterInfo paramInfo : ctor.parameters()) {
+                FieldSpecs fieldSpecs = fieldSpecsFromFieldParam(classInfo, paramInfo, namingStrategy);
+                registerTypeToBeGenerated(fieldSpecs.fieldType, fieldSpecs.fieldType.name().toString(), typeBindings);
+            }
+        }
+
+        Set<String> ignoredProperties = discoverIgnoredProperties(classInfo);
+
+        Set<String> processedFields = new HashSet<>();
+        Set<String> boundFieldNames = new HashSet<>();
+
+        for (FieldInfo fieldInfo : classFields(classInfo)) {
+            FieldSpecs fieldSpecs = fieldSpecsFromField(classInfo, ctor, fieldInfo, namingStrategy);
+            if (fieldSpecs != null) {
+                boundFieldNames.add(fieldSpecs.fieldName);
+            }
+            if (fieldSpecs != null && processedFields.add(fieldSpecs.jsonName)) {
+                if (!fieldSpecs.isIgnoredField() && !fieldSpecs.isBackReference()
+                        && !isFieldTypeIgnored(fieldSpecs) && !ignoredProperties.contains(fieldSpecs.jsonName)) {
+                    registerTypeToBeGenerated(fieldSpecs.fieldType, fieldSpecs.fieldType.name().toString(), typeBindings);
+                }
+            }
+        }
+
+        for (MethodInfo methodInfo : classMethods(classInfo)) {
+            FieldSpecs fieldSpecs = fieldSpecsFromMethod(methodInfo, namingStrategy);
+            if (fieldSpecs != null && !boundFieldNames.contains(fieldSpecs.fieldName)
+                    && processedFields.add(fieldSpecs.jsonName)) {
+                if (!fieldSpecs.isIgnoredField() && !fieldSpecs.isBackReference()
+                        && !isFieldTypeIgnored(fieldSpecs) && !ignoredProperties.contains(fieldSpecs.jsonName)) {
+                    registerTypeToBeGenerated(fieldSpecs.fieldType, fieldSpecs.fieldType.name().toString(), typeBindings);
+                }
+            }
+        }
+
+        return true;
     }
 
     @Override
-    protected boolean createSerializationMethod(ClassInfo classInfo, ClassCreator classCreator, String beanClassName) {
+    protected boolean createSerializationMethod(ClassInfo classInfo, ClassCreator classCreator, String beanClassName,
+            Map<String, Type> typeBindings) {
+        if (!discoverFieldTypes(classInfo, beanClassName, typeBindings)) {
+            return false;
+        }
+
         MethodCreator deserialize = classCreator
                 .getMethodCreator("deserialize", Object.class, JsonParser.class, DeserializationContext.class)
                 .setModifiers(ACC_PUBLIC)
@@ -279,6 +333,8 @@ public class JacksonDeserializerFactory extends JacksonCodeGenerator {
         boolean valid;
         if (isClassFormatShapeArray(classInfo)) {
             valid = deserializeArrayFields(deserData, deserializedHandle);
+        } else if (isAssignableTo(beanClassName, MAP_NAME)) {
+            valid = deserializeMapEntries(deserData, deserializedHandle);
         } else {
             valid = deserializeObjectFields(deserData, deserializedHandle);
         }
@@ -458,6 +514,52 @@ public class JacksonDeserializerFactory extends JacksonCodeGenerator {
             }
         }
         return valid;
+    }
+
+    /**
+     * Generates deserialization code for classes that extend {@code Map}. Instead of routing JSON fields
+     * through a per-property string switch, every key/value pair is put directly into the map instance.
+     * This matches standard Jackson's behavior where a {@code Map} subclass is treated as a map, not a bean.
+     *
+     * <p>
+     * For example, for a class extending {@code HashMap<String, Object>}, this generates:
+     *
+     * <pre>{@code
+     * Iterator fields = jsonNode.properties().iterator();
+     * while (fields.hasNext()) {
+     *     Map.Entry entry = (Map.Entry) fields.next();
+     *     JsonNode value = (JsonNode) entry.getValue();
+     *     String key = (String) entry.getKey();
+     *     bean.put(key, context.readTreeAsValue(value, Object.class));
+     * }
+     * }</pre>
+     */
+    private boolean deserializeMapEntries(DeserializationData deserData, ResultHandle objHandle) {
+        ResultHandle deserializationContext = deserData.methodCreator().getMethodParam(1);
+
+        ResultHandle propertiesSet = deserData.methodCreator()
+                .invokeVirtualMethod(ofMethod(JsonNode.class, "properties", Set.class), deserData.jsonNode());
+        ResultHandle fieldsIterator = deserData.methodCreator()
+                .invokeInterfaceMethod(ofMethod(Set.class, "iterator", Iterator.class), propertiesSet);
+        BytecodeCreator loopCreator = deserData.methodCreator().whileLoop(c -> iteratorHasNext(c, fieldsIterator)).block();
+        ResultHandle nextField = loopCreator
+                .invokeInterfaceMethod(ofMethod(Iterator.class, "next", Object.class), fieldsIterator);
+        ResultHandle mapEntry = loopCreator.checkCast(nextField, Map.Entry.class);
+        ResultHandle fieldValue = loopCreator.checkCast(loopCreator
+                .invokeInterfaceMethod(ofMethod(Map.Entry.class, "getValue", Object.class), mapEntry), JsonNode.class);
+        ResultHandle fieldName = loopCreator
+                .invokeInterfaceMethod(ofMethod(Map.Entry.class, "getKey", Object.class), mapEntry);
+
+        ResultHandle deserializedValue = loopCreator.invokeVirtualMethod(
+                ofMethod(DeserializationContext.class, "readTreeAsValue", Object.class, JsonNode.class, Class.class),
+                deserializationContext, fieldValue, loopCreator.loadClass(Object.class));
+
+        ResultHandle castedFieldName = loopCreator.checkCast(fieldName, String.class);
+        loopCreator.invokeInterfaceMethod(
+                ofMethod(Map.class, "put", Object.class, Object.class, Object.class),
+                objHandle, castedFieldName, deserializedValue);
+
+        return true;
     }
 
     private List<FieldSpecs> collectOrderedFieldSpecs(DeserializationData deserData) {
@@ -858,7 +960,7 @@ public class JacksonDeserializerFactory extends JacksonCodeGenerator {
             return null;
         }
 
-        FieldKind fieldKind = registerTypeToBeGenerated(fieldType, fieldTypeName);
+        FieldKind fieldKind = classifyFieldType(fieldType, fieldTypeName);
         ResultHandle typeHandle = switch (fieldKind) {
             case TYPE_VARIABLE -> readTypeVariable(classCreator, bytecode, fieldType.asTypeVariable(), typeParametersIndex);
             case LIST, SET, WRAPPER, MAP -> {

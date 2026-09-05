@@ -695,6 +695,24 @@ public class GeneratedAnnotationResource {
         return bean;
     }
 
+    // --- MapSubclassBean: HashMap subclass with declared bean properties ---
+
+    @POST
+    @Path("/map-subclass")
+    @Consumes(MediaType.APPLICATION_JSON)
+    public MapSubclassBean echoMapSubclass(MapSubclassBean bean) {
+        return bean;
+    }
+
+    @GET
+    @Path("/map-subclass")
+    public MapSubclassBean getMapSubclass() {
+        MapSubclassBean bean = new MapSubclassBean();
+        bean.put("declared", "d");
+        bean.put("extra", 1);
+        return bean;
+    }
+
     // --- UnwrappedWithPrefixBean: @JsonUnwrapped with prefix ---
 
     @GET

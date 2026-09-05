@@ -36,7 +36,7 @@ public class InvalidAcceptTest {
         given().config(config().encoderConfig(encoderConfig().encodeContentTypeAs("invalid", ContentType.TEXT))).body("dummy")
                 .accept("invalid").get("/hello")
                 .then()
-                .statusCode(406);
+                .statusCode(400);
     }
 
     @Test
@@ -44,7 +44,7 @@ public class InvalidAcceptTest {
         given().config(config().encoderConfig(encoderConfig().encodeContentTypeAs("invalid", ContentType.TEXT))).body("dummy")
                 .accept("invalid").get("/hello/sub")
                 .then()
-                .statusCode(406);
+                .statusCode(400);
     }
 
     @Path("hello")

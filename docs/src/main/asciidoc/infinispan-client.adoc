@@ -147,7 +147,7 @@ is explicitly added.
 [source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
 .build.gradle
 ----
-annotationProcessor 'org.infinispan.protostream:protostream-processor:{infinispan-protostream-version}' <1>
+annotationProcessor 'org.infinispan.protostream:protostream-processor:{infinispan-protostream-version}'
 ----
 ====
 

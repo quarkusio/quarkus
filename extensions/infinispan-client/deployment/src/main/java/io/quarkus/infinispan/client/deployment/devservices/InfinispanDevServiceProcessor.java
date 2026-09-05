@@ -34,6 +34,7 @@ import io.quarkus.deployment.dev.devservices.RunningContainer;
 import io.quarkus.devservices.common.ComposeLocator;
 import io.quarkus.devservices.common.ConfigureUtil;
 import io.quarkus.devservices.common.ContainerLocator;
+import io.quarkus.devservices.common.DevServicesHostUtil;
 import io.quarkus.infinispan.client.runtime.InfinispanClientBuildTimeConfig;
 import io.quarkus.infinispan.client.runtime.InfinispanClientUtil;
 import io.quarkus.infinispan.client.runtime.InfinispanClientsBuildTimeConfig;
@@ -115,11 +116,10 @@ public class InfinispanDevServiceProcessor {
 
             String configPrefix = getConfigPrefix(clientName);
 
-            boolean needToStart = !ConfigUtils.isPropertyNonEmpty(configPrefix + "hosts")
-                    && !ConfigUtils.isPropertyNonEmpty(configPrefix + "server-list");
+            boolean needToStart = !ConfigUtils.isPropertyNonEmpty(configPrefix + "hosts");
 
             if (!needToStart) {
-                log.debug("Not starting Dev Services for Infinispan as 'hosts', 'uri' or 'server-list' have been provided");
+                log.debug("Not starting Dev Services for Infinispan as 'hosts' or 'uri' have been provided");
                 return null;
             }
 
@@ -145,13 +145,15 @@ public class InfinispanDevServiceProcessor {
                         String password = container != null ? container.tryGetEnv("PASS").orElse(DEFAULT_PASSWORD)
                                 : DEFAULT_PASSWORD;
 
-                        log.infof("The infinispan server is ready to accept connections on %s", containerAddress.getUrl());
+                        String hosts = DevServicesHostUtil.formatResolvedHostAndPort(containerAddress.getId(),
+                                containerAddress.getHost(), containerAddress.getPort());
+                        log.infof("The infinispan server is ready to accept connections on %s", hosts);
 
                         return DevServicesResultBuildItem.discovered()
                                 .feature(Feature.INFINISPAN_CLIENT)
                                 .containerId(containerAddress.getId())
                                 .config(Map.of(
-                                        configPrefix + "hosts", containerAddress.getUrl(),
+                                        configPrefix + "hosts", hosts,
                                         configPrefix + "username", username,
                                         configPrefix + "password", password))
                                 .build();
@@ -229,21 +231,6 @@ public class InfinispanDevServiceProcessor {
                 return " -c " + userConfigFile;
             }).collect(Collectors.joining())).orElse("");
 
-            if (config.tracing().orElse(false)) {
-                log.warn(
-                        "Starting with Infinispan 15.0, Infinispan support for instrumentation of the server via OpenTelemetry has evolved. Enabling tracing by setting `quarkus.infinispan-client.devservices.tracing.enabled=true` doesn't work anymore.\n"
-                                +
-                                "You need to use the `quarkus.infinispan-client.devservices.config-files` property and provide a JSON, XML or YAML file as follows. Check https://quarkus.io/guides/infinispan-dev-services for more information");
-                log.warn("infinispan:\n" +
-                        "        cacheContainer:\n" +
-                        "                tracing:\n" +
-                        "                        collector-endpoint: \"http://jaeger:4318\"\n" +
-                        "                        enabled: true\n" +
-                        "                        exporter-protocol: \"OTLP\"\n" +
-                        "                        service-name: \"infinispan-server\"\n" +
-                        "                        security: false");
-            }
-
             if (config.mcastPort().isPresent()) {
                 command = command + " -Djgroups.mcast_port=" + config.mcastPort().getAsInt();
             }
@@ -288,7 +275,9 @@ public class InfinispanDevServiceProcessor {
 
         @Override
         public String getConnectionInfo() {
-            return getHost() + ":" + getPort();
+            return DevServicesHostUtil.formatHostAndPort(
+                    DevServicesHostUtil.publishedPortHost(getContainerId(), useSharedNetwork, hostName, super.getHost()),
+                    getPort());
         }
 
         @Override

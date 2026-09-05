@@ -59,14 +59,6 @@
                     <artifactId>jackson-databind</artifactId>
                 </exclusion>
                 <exclusion>
-                    <groupId>com.fasterxml.jackson.datatype</groupId>
-                    <artifactId>jackson-datatype-jdk8</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>com.fasterxml.jackson.datatype</groupId>
-                    <artifactId>jackson-datatype-jsr310</artifactId>
-                </exclusion>
-                <exclusion>
                     <groupId>com.fasterxml.jackson.jakarta.rs</groupId>
                     <artifactId>jackson-jakarta-rs-yaml-provider</artifactId>
                 </exclusion>

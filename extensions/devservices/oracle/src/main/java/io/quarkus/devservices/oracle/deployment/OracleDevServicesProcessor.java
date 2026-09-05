@@ -25,6 +25,7 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.DevServicesComposeProjectBuildItem;
 import io.quarkus.devservices.common.ComposeLocator;
 import io.quarkus.devservices.common.ConfigureUtil;
+import io.quarkus.devservices.common.DevServicesHostUtil;
 import io.quarkus.devservices.common.JBossLoggingConsumer;
 import io.quarkus.devservices.common.Labels;
 import io.quarkus.devservices.common.Volumes;
@@ -150,6 +151,16 @@ public class OracleDevServicesProcessor {
             }
         }
 
+        // this is always reachable from the host JVM, so that testcontainers can determine the status of the
+        // container (which it does by trying to acquire a connection)
+        @Override
+        public String getJdbcUrl() {
+            String host = DevServicesHostUtil.resolvePublishedPortHost(getContainerId(), getHost());
+            String authority = DevServicesHostUtil.formatHostAndPort(host, getMappedPort(PORT));
+            // Single @ service-name form — works for JDBC and Vert.x reactive (IPv6 via bracketed host).
+            return "jdbc:oracle:thin:@" + authority + "/" + getDatabaseName();
+        }
+
         // this is meant to be called by Quarkus code and is needed in order to not disrupt testcontainers
         // from being able to determine the status of the container (which it does by trying to acquire a connection)
         public String getEffectiveJdbcUrl() {
@@ -157,10 +168,10 @@ public class OracleDevServicesProcessor {
                 // in this case we expose the URL using the network alias we created in 'configure'
                 // and the container port since the application communicating with this container
                 // won't be doing port mapping
-                return "jdbc:oracle:thin:" + "@" + hostName + ":" + PORT + "/" + getDatabaseName();
-            } else {
-                return super.getJdbcUrl();
+                String authority = DevServicesHostUtil.formatHostAndPort(hostName, PORT);
+                return "jdbc:oracle:thin:@" + authority + "/" + getDatabaseName();
             }
+            return getJdbcUrl();
         }
 
         public String getReactiveUrl() {

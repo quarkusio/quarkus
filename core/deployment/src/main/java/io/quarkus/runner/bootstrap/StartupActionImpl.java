@@ -507,7 +507,7 @@ public class StartupActionImpl implements StartupAction {
         String debugSourcesDir = BootstrapDebug.debugSourcesDir();
         for (GeneratedClassBuildItem i : buildResult.consumeMulti(GeneratedClassBuildItem.class)) {
             if (i.isApplicationClass() == applicationClasses) {
-                data.put(fromClassNameToResourceName(i.getName()), i.getClassData());
+                data.put(fromClassNameToResourceName(i.internalName()), i.getClassData());
                 if (debugClassesDir != null) {
                     try {
                         File debugPath = new File(debugClassesDir);

@@ -47,6 +47,8 @@ import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.arc.deployment.ValidationPhaseBuildItem.ValidationErrorBuildItem;
 import io.quarkus.arc.processor.BeanInfo;
+import io.quarkus.arc.processor.KotlinUtils;
+import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.cache.CacheManager;
 import io.quarkus.cache.deployment.exception.ClassTargetException;
 import io.quarkus.cache.deployment.exception.KeyGeneratorConstructorException;
@@ -202,6 +204,16 @@ class CacheProcessor {
                         LOGGER.warnf("@CacheResult is not currently supported on a method returning %s [class=%s, method=%s]",
                                 MULTI, methodInfo.declaringClass().name(), methodInfo.name());
                     }
+                    if (KotlinUtils.isKotlinSuspendMethod(methodInfo) && !isCacheKotlinSuspendSupportPresent()) {
+                        throwables.add(new DeploymentException(String.format(
+                                "@CacheResult is used on a Kotlin suspend function but the Kotlin support of the Quarkus "
+                                        + "cache extension is missing from the classpath, please add the "
+                                        + "io.quarkus:quarkus-kotlin extension to your application [class=%s, method=%s]",
+                                methodInfo.declaringClass().name(), methodInfo.name())));
+                    }
+                } else if (KotlinUtils.isKotlinSuspendMethod(methodInfo)) {
+                    LOGGER.warnf("%s is not currently supported on a Kotlin suspend function [class=%s, method=%s]",
+                            binding.name(), methodInfo.declaringClass().name(), methodInfo.name());
                 }
                 break;
             default:
@@ -209,6 +221,11 @@ class CacheProcessor {
                 throw new DeploymentException("Unexpected cache interceptor binding target: " + target.kind());
         }
         return throwables;
+    }
+
+    private static boolean isCacheKotlinSuspendSupportPresent() {
+        return QuarkusClassLoader
+                .isClassPresentAtRuntime("io.quarkus.cache.kotlin.runtime.CacheKotlinSuspendMethodHandler");
     }
 
     private Optional<DotName> findCacheKeyGenerator(AnnotationInstance binding, AnnotationTarget target) {

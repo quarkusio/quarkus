@@ -67,7 +67,7 @@ public class SpringDataJPAProcessor {
     private static final String SPRING_DATASOURCE_DATA = "spring.datasource.data";
     public static final String QUARKUS_HIBERNATE_ORM_DIALECT = "quarkus.hibernate-orm.dialect";
     public static final String QUARKUS_HIBERNATE_ORM_LOG_SQL = "quarkus.hibernate-orm.log.sql";
-    public static final String QUARKUS_HIBERNATE_ORM_DIALECT_STORAGE_ENGINE = "quarkus.hibernate-orm.dialect.storage-engine";
+    public static final String QUARKUS_HIBERNATE_ORM_DIALECT_STORAGE_ENGINE = "quarkus.hibernate-orm.dialect.mysql.storage-engine or quarkus.hibernate-orm.dialect.mariadb.storage-engine";
     public static final String QUARKUS_HIBERNATE_ORM_SCHEMA_MANAGEMENT_STRATEGY = "quarkus.hibernate-orm.schema-management.strategy";
     public static final String QUARKUS_HIBERNATE_ORM_PHYSICAL_NAMING_STRATEGY = "quarkus.hibernate-orm.physical-naming-strategy";
     public static final String QUARKUS_HIBERNATE_ORM_IMPLICIT_NAMING_STRATEGY = "quarkus.hibernate-orm.implicit-naming-strategy";

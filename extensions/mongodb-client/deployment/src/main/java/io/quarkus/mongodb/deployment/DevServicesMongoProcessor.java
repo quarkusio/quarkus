@@ -35,6 +35,7 @@ import io.quarkus.deployment.dev.devservices.DevServicesConfig;
 import io.quarkus.devservices.common.ComposeLocator;
 import io.quarkus.devservices.common.ConfigureUtil;
 import io.quarkus.devservices.common.ContainerLocator;
+import io.quarkus.devservices.common.DevServicesHostUtil;
 import io.quarkus.devservices.common.Labels;
 import io.quarkus.mongodb.deployment.spi.MongoClientBuildItem;
 import io.quarkus.mongodb.deployment.spi.MongoClientsBuildItem;
@@ -140,8 +141,10 @@ public class DevServicesMongoProcessor {
                 .or(() -> ComposeLocator.locateContainer(composeProjectBuildItem,
                         List.of(captured.imageName, "mongo"), MONGO_EXPOSED_PORT, launchMode, useSharedNetwork))
                 .map(containerAddress -> {
-                    String effectiveUrl = getEffectiveUrl(configPrefix, containerAddress.getHost(),
-                            containerAddress.getPort(), captured);
+                    String effectiveUrl = getEffectiveUrl(configPrefix,
+                            DevServicesHostUtil.formatResolvedHostAndPort(containerAddress.getId(),
+                                    containerAddress.getHost(), containerAddress.getPort()),
+                            captured);
                     return DevServicesResultBuildItem.discovered()
                             .feature(Feature.MONGODB_CLIENT)
                             .containerId(containerAddress.getId())
@@ -172,14 +175,21 @@ public class DevServicesMongoProcessor {
 
     private String getEffectiveUrl(String configPrefix, QuarkusMongoDBContainer container,
             CapturedProperties captured) {
-        return getEffectiveUrl(configPrefix, container.getEffectiveHost(), container.getEffectivePort(), captured);
+        String authority;
+        if (container.useSharedNetwork) {
+            authority = DevServicesHostUtil.formatHostAndPort(container.hostName, container.getEffectivePort());
+        } else {
+            authority = DevServicesHostUtil.formatResolvedHostAndPort(container.getContainerId(),
+                    container.getEffectiveHost(), container.getEffectivePort());
+        }
+        return getEffectiveUrl(configPrefix, authority, captured);
     }
 
-    private String getEffectiveUrl(String configPrefix, String host, int port, CapturedProperties capturedProperties) {
+    private String getEffectiveUrl(String configPrefix, String hostAndPort, CapturedProperties capturedProperties) {
         final String databaseName = ConfigProvider.getConfig()
                 .getOptionalValue(configPrefix + "database", String.class)
                 .orElse("test");
-        String effectiveUrl = String.format("%s%s:%d/%s", MONGO_SCHEME, host, port, databaseName);
+        String effectiveUrl = MONGO_SCHEME + hostAndPort + "/" + databaseName;
         if ((capturedProperties.connectionProperties != null) && !capturedProperties.connectionProperties.isEmpty()) {
             effectiveUrl = effectiveUrl + "?"
                     + URLEncodedUtils.format(
@@ -264,18 +274,17 @@ public class DevServicesMongoProcessor {
 
         @Override
         public String getReplicaSetUrl(String databaseName) {
-            if (useSharedNetwork) {
-                if (!isRunning()) { // done by the super method
-                    throw new IllegalStateException("MongoDBContainer should be started first");
-                }
-                return String.format(
-                        "mongodb://%s:%d/%s",
-                        hostName,
-                        MONGODB_INTERNAL_PORT,
-                        databaseName);
-            } else {
-                return super.getReplicaSetUrl(databaseName);
+            if (!isRunning()) {
+                throw new IllegalStateException("MongoDBContainer should be started first");
             }
+            String authority;
+            if (useSharedNetwork) {
+                authority = DevServicesHostUtil.formatHostAndPort(hostName, MONGODB_INTERNAL_PORT);
+            } else {
+                authority = DevServicesHostUtil.formatResolvedHostAndPort(getContainerId(), getHost(),
+                        getMappedPort(MONGO_EXPOSED_PORT));
+            }
+            return "mongodb://" + authority + "/" + databaseName;
         }
 
         public String getEffectiveHost() {
@@ -288,7 +297,10 @@ public class DevServicesMongoProcessor {
 
         @Override
         public String getConnectionInfo() {
-            return getEffectiveHost() + ":" + getEffectivePort();
+            if (useSharedNetwork) {
+                return DevServicesHostUtil.formatHostAndPort(hostName, getEffectivePort());
+            }
+            return DevServicesHostUtil.formatResolvedHostAndPort(getContainerId(), getEffectiveHost(), getEffectivePort());
         }
 
         @Override

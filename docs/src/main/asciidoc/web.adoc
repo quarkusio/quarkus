@@ -74,7 +74,6 @@ Here is a simple example of a Qute template:
 </body>
 </html>
 ----
-
 <1> With the https://docs.quarkiverse.io/quarkus-web-bundler/dev/[Web Bundler extension], this expression will be replaced by the bundled scripts and styles.
 <2> You can directly use the HTTP parameters in your templates.
 <3> This expression is validated. Try to change the expression to `cdi:Product.notHere` and the build will fail.

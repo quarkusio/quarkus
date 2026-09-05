@@ -18,13 +18,16 @@ import io.quarkus.arc.Arc;
 public class DefaultAeshRuntimeRunnerFactory implements AeshRuntimeRunnerFactory {
 
     private final Instance<DefaultValueProvider> defaultValueProvider;
+    private final Instance<CliSettings> customizers;
     private final CliConfig configuration;
     private final AeshContext aeshContext;
 
     public DefaultAeshRuntimeRunnerFactory(Instance<DefaultValueProvider> defaultValueProvider,
+            Instance<CliSettings> customizers,
             CliConfig configuration,
             AeshContext aeshContext) {
         this.defaultValueProvider = defaultValueProvider;
+        this.customizers = customizers;
         this.configuration = configuration;
         this.aeshContext = aeshContext;
     }
@@ -34,9 +37,23 @@ public class DefaultAeshRuntimeRunnerFactory implements AeshRuntimeRunnerFactory
     public AeshRuntimeRunner create() {
         Command<?> commandInstance = resolveTopCommand();
         if (commandInstance != null) {
+            // Build settings with customizers applied so that custom providers
+            // (e.g. CommandInvocationProvider) are available for runtime execution.
+            var settings = CliSettingsHelper.createBaseSettings(configuration, customizers).build();
+
             AeshRuntimeRunner runner = AeshRuntimeRunner.builder()
                     .containerBuilder(new AeshCdiCommandContainerBuilder<>())
                     .command(commandInstance);
+            if (settings.commandInvocationProvider() != null) {
+                runner.commandInvocationProvider(
+                        (org.aesh.command.invocation.CommandInvocationProvider<?>) settings.commandInvocationProvider());
+            }
+            if (settings.converterInvocationProvider() != null) {
+                runner.converterInvocationProvider(settings.converterInvocationProvider());
+            }
+            if (settings.validatorInvocationProvider() != null) {
+                runner.validatorInvocationProvider(settings.validatorInvocationProvider());
+            }
             if (defaultValueProvider.isResolvable()) {
                 runner.defaultValueProvider(defaultValueProvider.get());
             }

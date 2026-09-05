@@ -149,11 +149,13 @@ package org.acme.rest.client;
 
 import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 import org.jboss.resteasy.reactive.RestQuery;
+import org.jboss.resteasy.reactive.Separator;
 
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.MultivaluedMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.Optional;
@@ -177,11 +179,15 @@ public interface ExtensionsService {
     @GET
     Set<Extension> getByFilters(@RestQuery MultivaluedMap<String, String> filters); <3>
 
+    @GET
+    Set<Extension> getByNamesDefiningSeparator(@Separator(",") @RestQuery List<String> names); <4>
+
 }
 ----
 <1> @RestQuery will include parameter with key `name`
 <2> Each `Map` entry represents exactly one query parameter
 <3> `MultivaluedMap` allows you to send array values
+<4> @Separator lets you specify a custom delimiter between the values of a collection-valued parameter
 
 ==== Using @ClientQueryParam
 
@@ -213,7 +219,6 @@ public interface Client {
     }
 }
 ----
-
 <1> By placing `@ClientQueryParam` on the interface, we ensure that `my-param` will be added to all requests of the client.
 Because we used the `${...}` syntax, the actual value of the parameter will be obtained using the `my.property-value` configuration property.
 <2> When `getWithOtherParam` is called, in addition to the `my-param` query parameter, `some-other-param` with the value of `other` will also be added.
@@ -484,9 +489,6 @@ public class ExtensionsResource {
     }
 }
 ----
-
-There are two interesting parts in this listing:
-
 <1> the client stub is injected with the `@RestClient` annotation instead of the usual CDI `@Inject`
 <2> `org.jboss.resteasy.reactive.RestResponse` used as effective way of getting response properties via RestResponse directly from RestClient, 
 as described in <<Using RestResponse>>
@@ -501,7 +503,6 @@ The name of the property needs to follow a certain convention which is best disp
 # Your configuration properties
 quarkus.rest-client."org.acme.rest.client.ExtensionsService".url=https://stage.code.quarkus.io/api // <1>
 ----
-
 <1> Having this configuration means that all requests performed using `org.acme.rest.client.ExtensionsService` will use `https://stage.code.quarkus.io/api` as the base URL.
 Using the configuration above, calling the `getById` method of `ExtensionsService` with a value of `io.quarkus:quarkus-rest-client` would result in an HTTP GET request being made to `https://stage.code.quarkus.io/api/extensions?id=io.quarkus:quarkus-rest-client`.
 
@@ -755,7 +756,6 @@ public class ExtensionsResource {
     // ...
 }
 ----
-
 <1> the client will use the registered HTTP Client options over the HTTP Client options provided via CDI if any.
 
 [[redirection]]
@@ -842,7 +842,6 @@ public class ExtensionsResource {
     // ...
 }
 ----
-
 <1> the client will use the registered redirect handler over the redirect handler provided via CDI if any.
 
 == Update the test
@@ -1241,7 +1240,6 @@ public interface ExtensionsService {
     Set<Extension> getById(@QueryParam("id") String id, @HeaderParam("jaxrs-style-header") String headerValue, @NotBody String token); // <6>
 }
 ----
-
 <1> There can be only one `ClientHeadersFactory` per class. With it, you can not only add custom headers, but you can also transform existing ones. See the `RequestUUIDHeaderFactory` class below for an example of the factory.
 <2> `@ClientHeaderParam` can be used on the client interface and on methods. It can specify a constant header value...
 <3> ... and a name of a method that should compute the value of the header. It can either be a static method or a default method in this interface. The method can take either no parameters, a single String parameter or a single `io.quarkus.rest.client.reactive.ComputedParamContext` parameter (which is very useful for code that needs to compute headers based on method parameters and naturally complements `@io.quarkus.rest.client.reactive.NotBody`).
@@ -1507,7 +1505,6 @@ public interface ExtensionsService {
     }
 }
 ----
-
 <1> The method must be annotated with `@ClientObjectMapper`.
 <2> It's must be a static method. Also, the parameter `defaultObjectMapper` will be resolved via CDI. If not found, it will throw an exception at runtime.
 <3> In this example, we're creating a copy of the default object mapper. You should *NEVER* modify the default object mapper, but create a copy instead.
@@ -1659,7 +1656,6 @@ public class MyResponseExceptionMapper implements ResponseExceptionMapper<Runtim
     }
 }
 ----
-
 <1> With the `@Blocking` annotation, the MyResponseExceptionMapper exception mapper will be executed in the worker thread pool.
 <2> Reading the entity is now allowed because we're executing the mapper on the worker thread pool.
 
@@ -1832,7 +1828,6 @@ public ClientMultipartForm buildClientMultipartForm(MultipartFormDataInput input
   return multiPartForm;
 }
 ----
-
 <1> `MultipartFormDataInput` is a Quarkus REST (Server) type representing a received multipart request.
 <2> A `ClientMultipartForm` is created.
 <3> `FileItem` attribute is created for the request attribute that represented an in memory file attribute
@@ -1844,7 +1839,7 @@ In a similar fashion if the received server multipart request is known and looks
 
 [source, java]
 ----
-public class Request { // <1>
+public class Request {
 
   @RestForm("files")
   @PartType(MediaType.APPLICATION_OCTET_STREAM)
@@ -1869,7 +1864,6 @@ public ClientMultipartForm buildClientMultipartForm(Request request) { // <1>
   return multiPartForm;
 }
 ----
-
 <1> `Request` representing the request the server parts accepts
 <2> A `jsonPayload` attribute is added directly to `ClientMultipartForm`
 <3> A `fileUpload` is created from the request's `FileUpload`
@@ -1941,9 +1935,6 @@ public interface CRMService {
     }
 }
 ----
-
-The code uses the following pieces:
-
 <1>  `@ClientHeaderParam(name = "Content-Type", value = "{calculateContentType}")` which ensures that the `Content-Type` header is created by calling the interface's `calculateContentType` default method.
 <2> The aforementioned parameter needs to be annotated with `@NotBody` because it is only used to aid the construction of HTTP headers.
 <3> `context.methodParameters().get(1).value()` which allows the `calculateContentType` method to obtain the proper method parameter passed to the REST Client method.
@@ -2022,7 +2013,6 @@ quarkus.proxy.credentials-provider.bean-name=credentialBean
 quarkus.proxy.credentials-provider.username-key=userKey
 quarkus.proxy.credentials-provider.password-key=passwordKey
 ----
-
 <1> Define a named proxy configuration `baby-proxy` without username and password.
 <2> Configure the Credentials Provider to obtain the username and password for the proxy.
 
@@ -2280,7 +2270,6 @@ public class QuarkusMockTest {
     }
 }
 ----
-
 <1> here we use a manually created implementation of the client interface to replace the actual Client
 <2> note that `RestClient.LITERAL` has to be passed as the last argument of the `installMockForType` method
 
@@ -2367,7 +2356,6 @@ public class WireMockExtensions implements QuarkusTestResourceLifecycleManager {
     }
 }
 ----
-
 <1> Statically importing the methods in the Wiremock package makes it easier to read the test.
 <2> The `start` method is invoked by Quarkus before any test is run and returns a `Map` of configuration properties that apply during the test execution.
 <3> Launch Wiremock.

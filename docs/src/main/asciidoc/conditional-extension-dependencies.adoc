@@ -59,7 +59,6 @@ The condition which triggers activation of an extension is configured in the ext
 
   <!-- SKIPPED CONTENT -->
 ----
-
 <1> runtime Quarkus extension artifact ID;
 <2> the goal that generates the extension descriptor which every Quarkus runtime extension project should be configured with;
 <3> configuration of the dependency condition which will have to be satisfied for this extension to be added to a Quarkus application expressed as a list of artifacts that must be present among the application dependencies;
@@ -100,7 +99,6 @@ If an extension includes a dependency condition in its descriptor, other extensi
 
   <!-- SKIPPED CONTENT -->
 ----
-
 <1> the runtime extension artifact `quarkus-extension-a`
 <2> declares an optional Maven dependency on the runtime extension artifact `quarkus-extension-b`
 
@@ -129,7 +127,6 @@ IMPORTANT: In general, for every runtime extension artifact dependency on anothe
 
   <!-- SKIPPED CONTENT -->
 ----
-
 <1> the deployment extension artifact `quarkus-extension-a-deployment`
 <2> declares an optional Maven dependency on the deployment extension artifact `quarkus-extension-b-deployment`
 

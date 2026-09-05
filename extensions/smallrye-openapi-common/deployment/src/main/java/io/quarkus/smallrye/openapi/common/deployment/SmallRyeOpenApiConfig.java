@@ -1,6 +1,8 @@
 package io.quarkus.smallrye.openapi.common.deployment;
 
+import java.nio.file.Path;
 import java.util.Map;
+import java.util.Optional;
 
 import io.quarkus.runtime.annotations.ConfigDocMapKey;
 import io.quarkus.runtime.annotations.ConfigRoot;
@@ -43,6 +45,17 @@ public interface SmallRyeOpenApiConfig {
      */
     @WithName("js-client")
     SmallRyeOpenApiJsClientConfig jsClient();
+
+    /**
+     * If set, the generated OpenAPI schema documents of every configured OpenAPI document will be stored in this
+     * directory on build, without having to configure a {@code store-schema-directory} for each document
+     * individually. Both the json and yaml variants of each document will be stored here.
+     * <p>
+     * A {@code store-schema-directory} configured for an individual document takes precedence over this directory
+     * for that document.
+     */
+    @WithName("store-schemas-directory")
+    Optional<Path> storeSchemasDirectory();
 
     /**
      * OpenAPI documents

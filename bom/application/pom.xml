@@ -19,7 +19,7 @@
         <bouncycastle.version>1.85.2</bouncycastle.version>
         <bouncycastle.fips.version>2.1.3</bouncycastle.fips.version>
         <bouncycastle.tls.fips.version>2.1.24</bouncycastle.tls.fips.version>
-        <cyclonedx.version>13.1.0</cyclonedx.version>
+        <cyclonedx.version>13.2.0</cyclonedx.version>
         <expressly.version>6.0.0</expressly.version>
         <findbugs.version>3.0.2</findbugs.version>
         <jandex.version>3.6.0</jandex.version>
@@ -28,11 +28,11 @@
         <parsson.version>1.1.9</parsson.version>
         <resteasy-microprofile.version>3.0.1.Final</resteasy-microprofile.version>
         <resteasy-spring-web.version>3.2.0.Final</resteasy-spring-web.version>
-        <resteasy.version>7.0.2.Final</resteasy.version>
+        <resteasy.version>7.0.4.Final</resteasy.version>
         <opentelemetry-instrumentation.version>2.28.1-alpha</opentelemetry-instrumentation.version> <!-- OTel SDk 1.62.0-->
         <opentelemetry-semconv.version>1.40.0-alpha</opentelemetry-semconv.version>
         <quarkus-http.version>6.0.0.Alpha4</quarkus-http.version>
-        <micrometer.version>1.17.0</micrometer.version><!-- keep in sync with hdrhistogram: https://central.sonatype.com/artifact/io.micrometer/micrometer-core -->
+        <micrometer.version>1.17.1</micrometer.version><!-- keep in sync with hdrhistogram: https://central.sonatype.com/artifact/io.micrometer/micrometer-core -->
         <hdrhistogram.version>2.2.2</hdrhistogram.version><!-- keep in sync with micrometer -->
         <latencyutils.version>2.0.3</latencyutils.version><!-- keep in sync with micrometer -->
         <google-auth.version>0.22.0</google-auth.version>
@@ -47,11 +47,11 @@
         <microprofile-lra.version>2.0.2</microprofile-lra.version>
         <microprofile-openapi.version>4.1.1</microprofile-openapi.version>
         <smallrye-common.version>2.20.0</smallrye-common.version>
-        <smallrye-config.version>3.18.1</smallrye-config.version> <!-- keep in sync with microprofile-config-api -->
+        <smallrye-config.version>3.18.2</smallrye-config.version> <!-- keep in sync with microprofile-config-api -->
         <smallrye-health.version>4.3.0</smallrye-health.version>
         <smallrye-modules.version>1.0.beta1</smallrye-modules.version>
         <smallrye-open-api.version>4.3.5</smallrye-open-api.version>
-        <smallrye-graphql.version>3.0.0.Beta6</smallrye-graphql.version>
+        <smallrye-graphql.version>3.0.0.Beta7</smallrye-graphql.version>
         <smallrye-fault-tolerance.version>6.11.2</smallrye-fault-tolerance.version>
         <smallrye-jwt.version>4.6.3</smallrye-jwt.version>
         <smallrye-context-propagation.version>2.3.0</smallrye-context-propagation.version>
@@ -91,7 +91,8 @@
         <graal-sdk.version>23.1.2</graal-sdk.version>
         <gizmo.version>1.10.1</gizmo.version>
         <gizmo2.version>2.1.1</gizmo2.version>
-        <jackson-bom.version>2.22.1</jackson-bom.version>
+        <jackson-bom.version>3.1.4</jackson-bom.version>
+        <jackson2-bom.version>2.22.2</jackson2-bom.version>
         <commons-logging-jboss-logging.version>2.0.0.Final</commons-logging-jboss-logging.version>
         <commons-lang3.version>3.20.0</commons-lang3.version>
         <commons-codec.version>1.22.1</commons-codec.version>
@@ -113,8 +114,8 @@
         <wildfly-elytron.version>2.9.2.Final</wildfly-elytron.version>
         <jboss-marshalling.version>2.3.0</jboss-marshalling.version>
         <jboss-threads.version>3.9.2</jboss-threads.version>
-        <vertx.version>5.1.6</vertx.version>
-        <httpclient5.version>5.6.1</httpclient5.version>
+        <vertx.version>5.1.7</vertx.version>
+        <httpclient5.version>5.6.3</httpclient5.version>
         <httpcore5.version>5.4.3</httpcore5.version>
         <httpclient.version>4.5.14</httpclient.version>
         <httpcore.version>4.4.16</httpcore.version>
@@ -128,7 +129,7 @@
         <mysql-jdbc.version>26.7.0</mysql-jdbc.version>
         <mssql-jdbc.version>13.4.0.jre11</mssql-jdbc.version>
         <adal4j.version>1.6.7</adal4j.version>
-        <oracle-jdbc.version>23.26.2.0.0</oracle-jdbc.version> <!-- Keep in synch. with Oracle Test Pilot CI workflow: ci-actions-incremental.yml -->
+        <oracle-jdbc.version>23.26.3.0.0</oracle-jdbc.version> <!-- Keep in synch. with Oracle Test Pilot CI workflow: ci-actions-incremental.yml -->
         <db2-jdbc.version>12.1.5.0</db2-jdbc.version>
         <shrinkwrap.version>1.2.6</shrinkwrap.version>
         <hamcrest.version>2.2</hamcrest.version><!-- The version needs to be compatible with both REST Assured and Awaitility -->
@@ -204,26 +205,27 @@
         <!-- Check the compatibility matrix (https://github.com/opensearch-project/opensearch-testcontainers) before upgrading: -->
         <opensearch-testcontainers.version>2.1.3</opensearch-testcontainers.version>
         <com.dajudge.kindcontainer>2.0.0</com.dajudge.kindcontainer>
-        <aesh.version>3.16.8</aesh.version>
-        <aesh-readline.version>3.16.4</aesh-readline.version>
+        <aesh.version>3.17.5</aesh.version>
+        <aesh-readline.version>3.17.2</aesh-readline.version>
         <jline.version>4.2.1</jline.version> <!-- Keep in sync with dekorate -->
         <!-- these two artifacts needs to be compatible together -->
         <strimzi-oauth.version>0.16.1</strimzi-oauth.version>
         <strimzi-oauth.nimbus.version>10.9.1</strimzi-oauth.nimbus.version>
         <jose4j.version>0.9.6</jose4j.version>
-        <java-buildpack-client.version>0.0.14</java-buildpack-client.version>
+        <java-buildpack-client.version>0.0.17</java-buildpack-client.version>
         <crac.version>1.5.0</crac.version>
         <sshd-common.version>2.19.0</sshd-common.version>
         <mime4j.version>0.8.12</mime4j.version>
         <mutiny-zero.version>1.3.0</mutiny-zero.version>
         <pulsar-client.version>4.2.1</pulsar-client.version>
-        <async-http-client.version>2.15.0</async-http-client.version>
+        <async-http-client.version>2.16.0</async-http-client.version>
         <!-- keep in-sync, if possible, with Micrometer registry Prometheus -->
         <prometheus.version>0.16.0</prometheus.version>
         <!-- Dev UI -->
         <importmap.version>2.0.0</importmap.version>
         <webauthn4j.version>0.30.3.RELEASE</webauthn4j.version>
-        <jsoup.version>1.23.1</jsoup.version> <!-- JSoup is used by Camel and LangChain4J so be careful when updating -->
+        <jsoup.version>1.23.2</jsoup.version> <!-- JSoup is used by Camel and LangChain4J so be careful when updating -->
+        <reactor.version>3.8.7</reactor.version>
     </properties>
 
     <pluginRepositories>
@@ -385,11 +387,19 @@
             </dependency>
 
             <!-- Jackson dependencies, imported as a BOM -->
-            <!-- TODO: remove -->
+            <dependency>
+                <groupId>tools.jackson</groupId>
+                <artifactId>jackson-bom</artifactId>
+                <version>${jackson-bom.version}</version>
+                <scope>import</scope>
+                <type>pom</type>
+            </dependency>
+
+            <!-- Jackson 2.x dependencies, imported as a BOM, still enforced while some components have not yet migrated to Jackson 3.x -->
             <dependency>
                 <groupId>com.fasterxml.jackson</groupId>
                 <artifactId>jackson-bom</artifactId>
-                <version>${jackson-bom.version}</version>
+                <version>${jackson2-bom.version}</version>
                 <scope>import</scope>
                 <type>pom</type>
             </dependency>
@@ -3533,6 +3543,16 @@
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-cache-deployment-spi</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-cache-kotlin</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-cache-kotlin-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
@@ -6712,6 +6732,11 @@
                 <groupId>org.jsoup</groupId>
                 <artifactId>jsoup</artifactId>
                 <version>${jsoup.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.projectreactor</groupId>
+                <artifactId>reactor-core</artifactId>
+                <version>${reactor.version}</version>
             </dependency>
 
             <!-- Apache SSHD Netty transport (sshd-core and sshd-common already managed) -->

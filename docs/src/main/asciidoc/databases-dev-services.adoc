@@ -188,7 +188,6 @@ quarkus.datasource.devservices.volumes."/path/from"=/container/to <1>
 # Using a classpath volume:
 quarkus.datasource.devservices.volumes."classpath\:./file"=/container/to <2>
 ----
-
 <1> The file or folder "/path/from" from the local machine will be accessible at "/container/to" in the container.
 <2> When using classpath volumes, the location has to start with "classpath:". The file or folder "./file" from the project's classpath will be accessible at "/container/to" in the container.
 
@@ -214,7 +213,7 @@ quarkus.datasource.db-kind=mysql
 quarkus.datasource.devservices.volumes."/local/test/data"=/var/lib/mysql
 ----
 
-When starting Dev Services (for example, in tests or in dev mode), you will see that the folder "/local/test/data" will be created at your file sytem and that will contain all the database data. When rerunning again the same Dev Services, this data will contain all the data you might have created beforehand.
+When starting Dev Services (for example, in tests or in dev mode), you will see that the folder "/local/test/data" will be created at your file system and that will contain all the database data. When rerunning again the same Dev Services, this data will contain all the data you might have created beforehand.
 
 [IMPORTANT]
 ====

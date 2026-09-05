@@ -76,6 +76,11 @@ public abstract class AbstractTokensProducer {
                     + " but the initTokens() method is called.");
         }
         if (earlyTokenAcquisition) {
+            // Skip early token acquisition for deferred clients - they will recover on first request
+            if (oidcClient instanceof DeferredOidcClient) {
+                LOG.debug("Skipping early token acquisition for deferred OIDC client");
+                return;
+            }
             tokensHelper.initTokens(oidcClient, additionalParameters());
         }
     }

@@ -96,9 +96,7 @@ public class JBangAugmentorImpl implements BiConsumer<CuratedApplication, Map<St
             builder.addFinal(GeneratedServiceProviderBuildItem.class);
             builder.addFinal(TransformedClassesBuildItem.class);
             builder.addFinal(DeploymentResultBuildItem.class);
-            // note: quarkus.package.type is deprecated
-            boolean nativeRequested = "native".equals(System.getProperty("quarkus.package.type"))
-                    || "true".equals(System.getProperty("quarkus.native.enabled"));
+            boolean nativeRequested = "true".equals(System.getProperty("quarkus.native.enabled"));
             boolean containerBuildRequested = Boolean.getBoolean("quarkus.container-image.build");
             if (nativeRequested) {
                 builder.addFinal(NativeImageBuildItem.class);
@@ -116,7 +114,7 @@ public class JBangAugmentorImpl implements BiConsumer<CuratedApplication, Map<St
                 BuildResult buildResult = builder.build().run();
                 Map<String, byte[]> result = new HashMap<>();
                 for (GeneratedClassBuildItem i : buildResult.consumeMulti(GeneratedClassBuildItem.class)) {
-                    result.put(i.getName().replace(".", "/") + ".class", i.getClassData());
+                    result.put(i.internalName() + ".class", i.getClassData());
                 }
                 for (GeneratedResourceBuildItem i : buildResult.consumeMulti(GeneratedResourceBuildItem.class)) {
                     result.put(i.getName(), i.getData());

@@ -78,6 +78,9 @@ public class MediaTypeMapper implements ServerRestHandler {
             MediaType produces;
             try {
                 produces = selectMediaType(requestContext, selectedHolder);
+            } catch (IllegalArgumentException e) {
+                // Accept contained no parseable media type tokens
+                throw new WebApplicationException(Response.status(Response.Status.BAD_REQUEST).build());
             } catch (Exception e) {
                 // there is TCK testing this, but some of the legacy RESTEasy tests do expect the result to be 400
                 throw new WebApplicationException(Response.status(Response.Status.BAD_REQUEST).build());
@@ -118,12 +121,22 @@ public class MediaTypeMapper implements ServerRestHandler {
     public MediaType selectMediaType(ResteasyReactiveRequestContext requestContext, Holder holder) {
         MediaType selected = null;
         List<String> accepts = requestContext.getHttpHeaders().getRequestHeader(HttpHeaders.ACCEPT);
-        for (String accept : accepts) {
-            Map.Entry<MediaType, MediaType> entry = holder.serverMediaType
-                    .negotiateProduces(accept, null);
-            if (entry.getValue() != null) {
-                selected = entry.getValue();
-                break;
+        if (!accepts.isEmpty()) {
+            boolean sawParseableAccept = false;
+            for (String accept : accepts) {
+                // MediaTypeHelper.parseHeader skips unparseable tokens; an empty result means the header was malformed
+                if (!MediaTypeHelper.parseHeader(accept).isEmpty()) {
+                    sawParseableAccept = true;
+                }
+                Map.Entry<MediaType, MediaType> entry = holder.serverMediaType
+                        .negotiateProduces(accept, null);
+                if (entry.getValue() != null) {
+                    selected = entry.getValue();
+                    break;
+                }
+            }
+            if (!sawParseableAccept) {
+                throw new IllegalArgumentException("The accept header value did not correspond to a valid media type");
             }
         }
         if (selected == null) {

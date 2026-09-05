@@ -239,6 +239,8 @@ public class MyCliSettings implements CliSettings {
 }
 ```
 
+`CliSettings` also supports registering custom `commandInvocationProvider`, `converterInvocationProvider`, and `validatorInvocationProvider` implementations to wrap the default invocations with application-specific context. These providers are applied in all execution modes (console REPL, console single-command, and runtime mode).
+
 ## Remote Terminal Access
 
 The extension supports remote terminal access via WebSocket and SSH, allowing users to interact with a running console-mode application from a browser or SSH client.
@@ -277,7 +279,7 @@ Connect with `ssh -p 2222 localhost`. Configure with:
 quarkus.aesh.ssh.port=2222
 quarkus.aesh.ssh.host=localhost
 quarkus.aesh.ssh.password=mysecret
-quarkus.aesh.ssh.enabled=true
+quarkus.aesh.ssh.enabled=true  # build-time property
 ```
 
 > **Note:** These features are intended for development. Secure them appropriately in production.
@@ -369,5 +371,41 @@ Force a specific mode:
 
 ```properties
 quarkus.aesh.mode=console  # or 'runtime' or 'auto'
+```
+
+## Testing
+
+Console mode commands can be tested with `AeshLauncher` from `quarkus-test-aesh`:
+
+```xml
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-test-aesh</artifactId>
+    <scope>test</scope>
+</dependency>
+```
+
+```java
+@QuarkusMainTest
+public class ReplTest {
+
+    @Test
+    void testGreet(AeshLauncher launcher) {
+        launcher.execute("greet --name=Alice");
+        assertThat(launcher.getCommandOutput()).isEqualTo("Hello Alice!\n");
+    }
+
+    @Test
+    void testFailure(AeshLauncher launcher) {
+        launcher.execute("bad-command", CommandResult.FAILURE);
+        assertThat(launcher.getLastError()).isNotNull();
+    }
+}
+```
+
+The REPL auto-launches on the first `execute()` call and auto-closes after each test. `getCommandOutput()` returns clean output without prompt or echo. `execute()` asserts `CommandResult.SUCCESS` by default — pass a different `CommandResult` for expected failures. For custom timeouts or pre-canned input, use `ExecuteOptions`:
+
+```java
+launcher.execute("slow-cmd", ExecuteOptions.defaults().timeout(Duration.ofMinutes(2)));
 ```
 

@@ -118,17 +118,19 @@ public class FullyFeaturedServerJacksonMessageBodyWriter extends ServerMessageBo
                     new MethodObjectWriterFunction(customSerializationValue, type, mapper));
         }
 
-        // Otherwise, check `@CustomSerialization` annotated in class. In this case, we use the effective type for caching up
-        // the object.
-        customSerializationValue = ResteasyReactiveServerJacksonRecorder
-                .customSerializationForClass(resourceInfo.getResourceClass());
+        // Otherwise, check `@CustomSerialization` annotated in class. In this case, we use the resource class along with the
+        // effective type for caching up the object.
+        // The resource class needs to be part of the key because different resource classes can return the same type
+        // while using different `@CustomSerialization` values
+        Class<?> resourceClass = resourceInfo.getResourceClass();
+        customSerializationValue = ResteasyReactiveServerJacksonRecorder.customSerializationForClass(resourceClass);
         if (customSerializationValue != null) {
             Type effectiveType = type;
             if (type instanceof ParameterizedType) {
                 effectiveType = ((ParameterizedType) type).getActualTypeArguments()[0];
             }
 
-            return perTypeWriter.computeIfAbsent(effectiveType.getTypeName(),
+            return perTypeWriter.computeIfAbsent(resourceClass.getName() + "-" + effectiveType.getTypeName(),
                     new MethodObjectWriterFunction(customSerializationValue, type, mapper));
         }
 

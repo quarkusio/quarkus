@@ -288,8 +288,7 @@ public class HibernateOrmRecorder {
         HibernateOrmRuntimeConfigPersistenceUnit hibernateOrmRuntimeConfigPersistenceUnit = runtimeConfig.getValue()
                 .persistenceUnits().get(puName);
         HibernateOrmRuntimeConfigPersistenceUnit.HibernateGenerationStrategy schemaManagementStrategy = hibernateOrmRuntimeConfigPersistenceUnit
-                .database().generation().generation()
-                .orElse(hibernateOrmRuntimeConfigPersistenceUnit.schemaManagement().strategy());
+                .schemaManagement().strategy();
 
         boolean startsOffline = hibernateOrmRuntimeConfigPersistenceUnit.database().startOffline();
 

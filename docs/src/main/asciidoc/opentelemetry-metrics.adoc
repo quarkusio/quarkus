@@ -120,13 +120,12 @@ public class MetricResource {
     }
 }
 ----
-
-Quarkus is not currently producing metrics out of the box.
-Here we are creating a counter for the number of invocations of the `hello()` method.
-
 <1> Constructor injection of the `Meter` instance.
 <2> Create a `LongCounter` named `hello-metrics` with a description and unit.
 <3> Increment the counter by one for each invocation of the `hello()` method.
+
+Quarkus is not currently producing metrics out of the box.
+Here we are creating a counter for the number of invocations of the `hello()` method.
 
 === Create the configuration
 
@@ -145,7 +144,6 @@ quarkus.otel.metrics.enabled=true // <2>
 quarkus.otel.exporter.otlp.metrics.endpoint=http://localhost:4318 // <3>
 quarkus.otel.exporter.otlp.metrics.headers=authorization=Bearer my_secret // <4>
 ----
-
 <1> All metrics created from the application will include an OpenTelemetry `Resource` indicating the metrics was created by the `myservice` application.
 If not set, it will default to the artifact id.
 <2> Enable the OpenTelemetry metrics.
@@ -183,7 +181,6 @@ You can output all metrics to the console by setting the exporter to `logging` i
 quarkus.otel.metrics.exporter=logging <1>
 quarkus.otel.metric.export.interval=10000ms <2>
 ----
-
 <1> Set the exporter to `logging`.
 Normally you don't need to set this.
 The default is `cdi`.
@@ -358,7 +355,6 @@ LongCounter counter = meter.counterBuilder("hello-metrics") // <1>
 counter.add(1, // <2>
         Attributes.of(AttributeKey.stringKey("attribute.name"), "attribute value")); // optional <3>
 ----
-
 <1> Create a `LongCounter` named `hello-metrics` with a description and unit.
 <2> Increment the counter by one.
 <3> Add an attribute to the counter.

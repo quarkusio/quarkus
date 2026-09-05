@@ -1,6 +1,5 @@
 package io.quarkus.kubernetes.deployment;
 
-import static io.quarkus.deployment.pkg.jar.FastJarFormat.DEFAULT_FAST_JAR_DIRECTORY_NAME;
 import static io.quarkus.deployment.pkg.jar.FastJarFormat.QUARKUS_RUN_JAR;
 import static io.quarkus.kubernetes.deployment.Constants.KUBERNETES;
 import static io.quarkus.kubernetes.spi.KubernetesDeploymentTargetBuildItem.mergeList;
@@ -268,20 +267,11 @@ class KubernetesProcessor {
             PackageConfig packageConfig) {
         PackageConfig.JarConfig.JarType jarType = packageConfig.jar().type();
         return switch (jarType) {
-            case LEGACY_JAR, UBER_JAR -> outputTarget.getOutputDirectory()
-                    .resolve(outputTarget.getBaseName() + packageConfig.computedRunnerSuffix() + ".jar");
-            case FAST_JAR, MUTABLE_JAR, AOT_JAR -> {
-                //thin JAR
-                Path buildDir;
-
-                if (packageConfig.outputDirectory().isPresent()) {
-                    buildDir = outputTarget.getOutputDirectory();
-                } else {
-                    buildDir = outputTarget.getOutputDirectory().resolve(DEFAULT_FAST_JAR_DIRECTORY_NAME);
-                }
-
-                yield buildDir.resolve(QUARKUS_RUN_JAR);
-            }
+            case LEGACY_JAR, UBER_JAR ->
+                outputTarget.getPackageOutputDirectory()
+                        .resolve(outputTarget.getBaseName() + packageConfig.computedRunnerSuffix() + ".jar");
+            case FAST_JAR, MUTABLE_JAR, AOT_JAR -> //thin JAR
+                outputTarget.getPackageOutputDirectory().resolve(QUARKUS_RUN_JAR);
         };
     }
 

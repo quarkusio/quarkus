@@ -137,6 +137,7 @@ import io.quarkus.arc.deployment.GeneratedBeanBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.arc.processor.KotlinUtils;
 import io.quarkus.arc.runtime.BeanContainer;
+import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.Feature;
@@ -1271,15 +1272,16 @@ public class ResteasyReactiveProcessor {
     }
 
     private void discoverServiceProviders(String serviceFile, Consumer<String> producer) {
-        try {
-            Set<String> classNames = new HashSet<>(ServiceUtil.classNamesNamedIn(
-                    Thread.currentThread().getContextClassLoader(), serviceFile));
-            for (String className : classNames) {
-                producer.accept(className);
+        QuarkusClassLoader.visitRuntimeResources(serviceFile, visit -> {
+            try {
+                Set<String> classNames = ServiceUtil.classNamesNamedIn(visit.getPath());
+                for (String className : classNames) {
+                    producer.accept(className);
+                }
+            } catch (IOException e) {
+                log.warn("Unable to properly detect and parse the contents of '" + serviceFile + "'", e);
             }
-        } catch (IOException e) {
-            log.warn("Unable to properly detect and parse the contents of '" + serviceFile + "'", e);
-        }
+        });
     }
 
     private static String determineHandledGenericTypeOfProviderInterface(Class<?> providerClass,

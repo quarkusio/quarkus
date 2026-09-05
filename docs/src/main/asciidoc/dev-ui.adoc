@@ -696,7 +696,6 @@ export class QwcJokesList extends LitElement { // <3>
 }
 customElements.define('qwc-jokes-list', QwcJokesList); // <12>
 ----
-
 <1> You can import Classes and/or functions from other libraries.
 In this case, we use the `LitElement` class and `html` & `css` functions from `Lit`
 <2> Build time data as defined in the Build step and can be imported using the key and always from `build-time-data`. All keys added in your Build step will be available.
@@ -1623,7 +1622,6 @@ connectedCallback() {
     });
 }
 ----
-
 <1> Note the method `getJoke` corresponds to the method in your Java Service. This method returns a https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise[Promise] with the JsonRPC result.
 <2> In this case, the result is an object, so we just add it to our list of jokes. This could also be an array if the server returned some collection.
 
@@ -1741,7 +1739,7 @@ To do this you can return/produce a `WorkspaceActionBuildItem` in your processor
 <3> Here the code that will execute if the user selects this action. You will receive some input (see the `Input` section below)
 <4> How the result should be displayed (see the `Display` section below)
 <5> What the result type would be (see the `DisplayType` section below)
-<6> Optional filter if this action only applies to certain items. Takes a regex as input, and some predefined regexes exisits in the the `Patterns` class
+<6> Optional filter if this action only applies to certain items. Takes a regex as input, and some predefined regexes exists in the the `Patterns` class
 
 ==== Input
 

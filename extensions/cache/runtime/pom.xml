@@ -57,6 +57,14 @@
                     <capabilities>
                         <provides>io.quarkus.cache</provides>
                     </capabilities>
+                    <!--
+                        The Kotlin coroutines support is a conditional extension activated when the quarkus-kotlin
+                        extension is present. It is declared here instead of using an optional Maven dependency
+                        because quarkus-cache-kotlin depends on this module.
+                    -->
+                    <conditionalDependencies>
+                        <artifact>${project.groupId}:quarkus-cache-kotlin:${project.version}</artifact>
+                    </conditionalDependencies>
                     <conditionalDevDependencies>
                         <artifact>${project.groupId}:${project.artifactId}-dev:${project.version}</artifact>
                     </conditionalDevDependencies>

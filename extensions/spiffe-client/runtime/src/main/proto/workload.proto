@@ -1,10 +1,12 @@
-// SPIFFE Workload API (JWT-SVID subset) — from https://github.com/spiffe/spiffe/blob/main/standards/workloadapi.proto
+// SPIFFE Workload API — from https://github.com/spiffe/spiffe/blob/main/standards/workloadapi.proto
 syntax = "proto3";
 
 package spiffe.workload;
 
 option java_package = "io.quarkus.spiffe.client.runtime.internal.proto";
 option java_multiple_files = true;
+
+// JWT-SVID messages
 
 message JWTSVIDRequest {
     repeated string audience = 1;
@@ -19,4 +21,22 @@ message JWTSVID {
     string spiffe_id = 1;
     string svid = 2;
     string hint = 3;
+}
+
+// X.509-SVID messages
+
+message X509SVIDRequest { }
+
+message X509SVIDResponse {
+    repeated X509SVID svids = 1;
+    repeated bytes crl = 2;
+    map<string, bytes> federated_bundles = 3;
+}
+
+message X509SVID {
+    string spiffe_id = 1;
+    bytes x509_svid = 2;
+    bytes x509_svid_key = 3;
+    bytes bundle = 4;
+    string hint = 5;
 }

@@ -17,6 +17,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.function.BiFunction;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.regex.Pattern;
 
 import org.eclipse.microprofile.jwt.Claims;
@@ -365,6 +366,15 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
         context.put(TenantConfigContext.class.getName(), configContext);
         return resolver.getTokenStateManager().getTokens(context, configContext.oidcConfig(),
                 sessionCookie, getTokenStateRequestContext)
+                // TokenStateManager implementations are allowed to report the missing token state
+                // by returning a null value instead of failing with AuthenticationFailedException
+                .onItem().ifNull().failWith(new Supplier<Throwable>() {
+                    @Override
+                    public Throwable get() {
+                        LOG.debug("Session token state is not available, reauthentication is required");
+                        return new AuthenticationFailedException("Authorization code flow tokens are not available");
+                    }
+                })
                 .onFailure(Throwable.class)
                 .recoverWithUni(
                         new Function<Throwable, Uni<? extends AuthorizationCodeTokens>>() {

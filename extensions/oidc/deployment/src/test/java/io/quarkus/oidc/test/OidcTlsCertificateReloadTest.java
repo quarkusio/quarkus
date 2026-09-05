@@ -21,6 +21,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.security.Authenticated;
+import io.quarkus.security.PermissionsAllowed;
 import io.quarkus.test.QuarkusExtensionTest;
 import io.restassured.RestAssured;
 import io.restassured.response.ValidatableResponse;
@@ -86,6 +87,9 @@ class OidcTlsCertificateReloadTest {
     void certReloadUpdatesOidcWebClientSslOptions() throws IOException {
         callProtectedEndpoint().statusCode(200);
 
+        // scope is not added as a permission since it is invalid format
+        callProtectedEndpointWithAction().statusCode(403);
+
         Files.copy(new File("target/certs/oidc-reload-B-truststore.p12").toPath(),
                 new File(certs, "truststore.p12").toPath(), StandardCopyOption.REPLACE_EXISTING);
 
@@ -101,12 +105,26 @@ class OidcTlsCertificateReloadTest {
                 .then();
     }
 
+    private static ValidatableResponse callProtectedEndpointWithAction() {
+        return RestAssured.given()
+                .auth().oauth2("any-token")
+                .get("/protected/with-action")
+                .then();
+    }
+
     @Path("/protected")
     @Authenticated
     public static class ProtectedEndpoint {
 
         @GET
         public String get() {
+            return "OK";
+        }
+
+        @Path("/with-action")
+        @PermissionsAllowed({ "a:b\\:c", "a\\:b\\:c", "a\\:b:c" })
+        @GET
+        public String getWhichRequiresAction() {
             return "OK";
         }
     }
@@ -118,7 +136,7 @@ class OidcTlsCertificateReloadTest {
         @Consumes(MediaType.APPLICATION_FORM_URLENCODED)
         @Produces(MediaType.APPLICATION_JSON)
         public String introspect() {
-            return "{\"active\":true,\"sub\":\"test-user\",\"username\":\"test-user\"}";
+            return "{\"active\":true,\"sub\":\"test-user\",\"username\":\"test-user\", \"scope\":\"a:b:c\"}";
         }
     }
 }

@@ -465,6 +465,61 @@ ShipmentConfirmation confirmation = placeOrder.request(
         new PlaceOrder("ORD-1", "Widget", 3), ShipmentConfirmation.class);
 ----
 
+== Comparison with CDI Events and Vert.x EventBus
+
+Signals address the same broad goal - loosely coupled, in-process communication between application components - as two other mechanisms commonly used in Quarkus applications: https://jakarta.ee/specifications/cdi/4.1/jakarta-cdi-spec-4.1#events[CDI events] and the https://vertx.io/docs/vertx-core/java/#event_bus[Vert.x EventBus].
+The Signals resolution model is inspired by CDI events, while the emission modes are inspired by the Vert.x EventBus.
+
+The following table summarizes the main differences.
+
+[cols="1,1,1,1",options="header"]
+|===
+| | CDI Events | Vert.x EventBus | Signals
+
+| Type safety
+| Type-safe (event type and qualifiers)
+| Not type-safe (string-based addresses)
+| Type-safe (signal type and qualifiers)
+
+| Emission modes
+| Publish/subscribe
+| Publish/subscribe, point-to-point, request-response
+| Publish/subscribe, point-to-point, request-response
+
+| Execution model
+| Synchronous by default; a separate API (`@ObservesAsync`) is required for asynchronous delivery
+| Always asynchronous; consumers are notified on the event loop
+| Always asynchronous; blocking, non-blocking, and virtual-thread execution is derived from the receiver method following Quarkus conventions
+
+| Declarative receivers
+| Yes (`@Observes` / `@ObservesAsync`)
+| Yes, in Quarkus (`@io.quarkus.vertx.ConsumeEvent`)
+| Yes (`@Receives`)
+
+| Programmatic receivers
+| No
+| Yes
+| Yes
+
+| Transactional delivery
+| Yes (transactional observers)
+| No
+| No
+
+| Ordering of receivers
+| Yes (`@Priority`)
+| No
+| No
+|===
+
+NOTE: The Signals resolution model deviates from CDI observer resolution in two ways. First, in CDI the event type is the _runtime class of the event object_, whereas the signal type is an _explicit type_ (`Signal<X>` or `Signal.create(X.class)`). Second, a CDI observer that declares no qualifier has _no_ qualifiers and therefore matches any event of the given type, whereas a Signals receiver that declares no qualifier has exactly one qualifier -- `@Default`. See <<receiver-resolution>> for details.
+
+=== When to Use What
+
+* Reach for *Signals* as the default choice for loosely coupled, in-process asynchronous communication: they combine the compile-time type safety of CDI events with the flexible emission modes of the Vert.x EventBus, and add a Quarkus-idiomatic execution model on top. Signals are a particularly good fit when you need more than plain publish/subscribe (unicast or request-reply), want receivers that integrate naturally with reactive pipelines and virtual threads, or benefit from having both a declarative (`@Receives`) and a programmatic receiver API.
+* Use *CDI events* for simple publish/subscribe notifications between components, especially when you need synchronous delivery, transactional observers, or ordering of observers, or when you need to stay with the standard Jakarta EE API.
+* Use the *Vert.x EventBus* when you need to interact with the underlying Vert.x runtime directly or integrate with existing Vert.x components.
+
 == SPI
 
 The `io.quarkus.signals.spi` package provides extension points for integrators.

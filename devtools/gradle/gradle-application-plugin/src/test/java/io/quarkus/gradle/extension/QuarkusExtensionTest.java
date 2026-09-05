@@ -27,6 +27,7 @@ public class QuarkusExtensionTest {
 
         extension.set("test.args", "value");
 
-        assertThat(extension.getQuarkusBuildProperties().get()).containsExactly(entry("quarkus.test.args", "value"));
+        assertThat(extension.getQuarkusBuildProperties().get()).contains(entry("quarkus.test.args", "value"));
+        assertThat(extension.getQuarkusBuildProperties().get()).containsKey("quarkus.build.base-name");
     }
 }

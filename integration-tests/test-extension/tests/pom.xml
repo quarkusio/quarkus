@@ -29,6 +29,13 @@
       <artifactId>quarkus-junit</artifactId>
       <scope>test</scope>
     </dependency>
+    <!-- Ships a @QuarkusTest meta-annotation in a separate, Jandex-indexed jar -->
+    <dependency>
+      <groupId>io.quarkus</groupId>
+      <artifactId>quarkus-integration-test-test-extension-meta-annotation</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
+    </dependency>
     <dependency>
       <groupId>io.quarkus</groupId>
       <artifactId>quarkus-junit-internal</artifactId>

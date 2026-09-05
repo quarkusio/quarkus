@@ -1000,11 +1000,20 @@ public class NativeImageBuildStep {
                 }
 
                 if (nativeConfig.enableFallbackImages()) {
-                    nativeImageArgs.add("--auto-fallback");
+                    if (graalVMVersion.compareTo(io.quarkus.runtime.graal.GraalVM.Version.VERSION_25_1_0) < 0) {
+                        nativeImageArgs.add("--auto-fallback");
+                    } else {
+                        log.warn("Option deprecated in GraalVM 25.1 and is a no-op,"
+                                + " fallback images are not supported in GraalVM 25.1 and later."
+                                + " Avoid using it to prevent warnings.");
+                    }
                 } else {
-                    //Default: be strict as those fallback images aren't very useful
-                    //and tend to cover up real problems.
-                    nativeImageArgs.add("--no-fallback");
+                    // Option Deprecated in GraalVM 25.1 and is a no-op, avoid using it to prevent warnings
+                    if (graalVMVersion.compareTo(io.quarkus.runtime.graal.GraalVM.Version.VERSION_25_1_0) < 0) {
+                        //Default: be strict as those fallback images aren't very useful
+                        //and tend to cover up real problems.
+                        nativeImageArgs.add("--no-fallback");
+                    }
                 }
 
                 if (!classpathIsBroken) {
@@ -1071,9 +1080,6 @@ public class NativeImageBuildStep {
 
                 if (!nativeConfig.enableIsolates()) {
                     addExperimentalVMOption(nativeImageArgs, "-H:-SpawnIsolates");
-                }
-                if (nativeConfig.enableVmInspection()) {
-                    addExperimentalVMOption(nativeImageArgs, "-H:+AllowVMInspection");
                 }
                 if (nativeConfig.march().isPresent()) {
                     nativeImageArgs.add("-march=" + nativeConfig.march().get());

@@ -31,12 +31,6 @@ jobs:
           repository: quarkusio/quarkus
           path: quarkus-main
 
-      - name: Install git-restore-time
-        run: sudo apt-get install -y git-restore-mtime
-
-      - name: Restore mtime
-        run: git restore-mtime
-
       - name: Download PR Artifact
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
@@ -64,41 +58,42 @@ jobs:
           ./documentation-temp/docs/sync-web-site.sh main ../../
           rm -rf documentation-temp
           rm -rf quarkus-main
-      - name: Set up ruby
-        uses: ruby/setup-ruby@95ef2b042f9d7a56d8268cba8559e2842e2ad01b # v1.321.0
+
+      - name: Set up JDK
+        uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
         with:
-          ruby-version: 3.2.3
-      - name: Cache Ruby gems
+          java-version: '25'
+          distribution: 'temurin'
+          cache: 'maven'
+
+      - name: Cache npm packages
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
-          path: vendor/bundle
-          key: ${{ runner.os }}-gems-${{ hashFiles('**/Gemfile.lock') }}
-          restore-keys: ${{ runner.os }}-gems-
-      - name: Install dependencies
-        run: |
-          bundle config path vendor/bundle
-          bundle install --jobs 4 --retry 3
-      - name: Build Jekyll site
-        run: bundle exec jekyll build --config _config.yml,_only_latest_guides_config.yml
+          path: ~/.npm
+          key: ${{ runner.os }}-npm-${{ hashFiles('package-lock.json') }}
+          restore-keys: ${{ runner.os }}-npm-
+
+      - name: Build with Maven
+        run: QUARKUS_ROQ_GENERATOR_BATCH=true QUARKUS_PROFILE=only-latest-guides mvn -B package quarkus:run -DskipTests
 
       - name: Reduce the size of the website to be compatible with surge
         run: |
-          rm -rf _site/assets/images/posts/
-          rm -rf _site/assets/images/books/
-          rm -rf _site/assets/images/events/
-          rm -rf _site/assets/images/quarkus2/
-          rm -rf _site/assets/images/quarkus3/
-          rm -rf _site/assets/images/worldtour/
-          rm -rf _site/assets/stickers
-          rm -rf _site/assets/images/desktopwallpapers
-          rm -rf _site/assets/images/stickers
-          rm -rf _site/newsletter/
+          rm -rf target/roq/assets/images/posts/
+          rm -rf target/roq/assets/images/books/
+          rm -rf target/roq/assets/images/events/
+          rm -rf target/roq/assets/images/quarkus2/
+          rm -rf target/roq/assets/images/quarkus3/
+          rm -rf target/roq/assets/images/worldtour/
+          rm -rf target/roq/assets/stickers
+          rm -rf target/roq/assets/images/desktopwallpapers
+          rm -rf target/roq/assets/images/stickers
+          rm -rf target/roq/newsletter
           # we only need the images from the main version
-          rm -rf _site/guides/images/
-          rm -rf _site/blog/
+          rm -rf target/roq/guides/images/
+          rm -rf target/roq/blog/
       - name: Publishing to surge for preview
         id: deploy
-        run: npx surge@0.23.1 ./_site --domain https://quarkus-pr-main-${PR_ID}-preview.surge.sh --token ${{ secrets.SURGE_TOKEN }}
+        run: npx surge@0.23.1 ./target/roq --domain https://quarkus-pr-main-${PR_ID}-preview.surge.sh --token ${{ secrets.SURGE_TOKEN }}
         env:
           PR_ID: ${{ steps.pr.outputs.id }}
 

@@ -240,7 +240,6 @@ compileTestKotlin {
     kotlinOptions.jvmTarget = JavaVersion.VERSION_21
 }
 ----
-
 <1> The Kotlin plugin version needs to be specified.
 <2> The all-open configuration required, as per Maven guide above
 
@@ -308,7 +307,6 @@ kotlin {
 }
 
 ----
-
 <1> The Kotlin plugin version needs to be specified.
 <2> The all-open configuration required, as per Maven guide above
 

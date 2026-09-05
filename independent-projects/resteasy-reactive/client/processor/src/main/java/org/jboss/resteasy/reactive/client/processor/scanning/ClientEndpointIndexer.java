@@ -162,11 +162,12 @@ public class ClientEndpointIndexer
         DeclaredTypes declaredTypes = getDeclaredTypes(paramType, currentClassInfo, actualEndpointInfo);
         String mimePart = getPartMime(parameterResult.getAnns());
         String partFileName = getPartFileName(parameterResult.getAnns());
+        String separator = getSeparator(parameterResult.getAnns());
         return new MethodParameter(name,
                 elementType, declaredTypes.getDeclaredType(), declaredTypes.getDeclaredUnresolvedType(), signature, type,
                 single,
                 defaultValue, parameterResult.isObtainedAsCollection(), parameterResult.isOptional(), encoded,
-                mimePart, partFileName, null);
+                mimePart, partFileName, separator);
     }
 
     private String getPartFileName(Map<DotName, AnnotationInstance> annotations) {

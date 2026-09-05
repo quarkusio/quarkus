@@ -83,6 +83,11 @@ class SecurityConfigFilterTest {
         }
 
         @Override
+        public Optional<Path> storeSchemasDirectory() {
+            return Optional.empty();
+        }
+
+        @Override
         public Map<String, OpenApiDocumentConfig> documents() {
             return Map.of(SmallRyeOpenApiConfig.DEFAULT_DOCUMENT_NAME, dummySmallRyeOpenApiConfigConfig);
         }

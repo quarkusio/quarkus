@@ -26,7 +26,7 @@ include::{includes}/prerequisites.adoc[]
 
 This tutorial gives detailed steps for creating an application with endpoints that illustrate various authorization policies:
 
-[cols="20%,40% ",options="header"]
+[cols="20%,40%",options="header"]
 |===
 |Endpoint | Description
 |`/api/public`| Accessible without authentication, this endpoint allows anonymous access.
@@ -40,7 +40,7 @@ It returns the caller's username as a string.
 ====
 To examine the completed example, download the {quickstarts-archive-url}[archive] or clone the Git repository:
 
-[source,bash,subs=attributes+]
+[source,shell,subs=attributes+]
 ----
 git clone {quickstarts-clone-url}
 ----
@@ -71,7 +71,6 @@ endif::no-quarkus-security-jpa-reactive[]
 You must also add your preferred database connector library.
 The instructions in this example tutorial use a PostgreSQL database for the identity store.
 ====
-
 
 === Create the Maven project
 
@@ -281,21 +280,20 @@ public class User extends PanacheEntity {
         user.persist();
     }
 }
-
 ----
-
-The `quarkus-security-jpa` extension only initializes if a single entity is annotated with `@UserDefinition`.
-
 <1> The `@UserDefinition` annotation must be present on a single entity, either a regular Hibernate ORM entity or a Hibernate ORM with Panache entity.
 <2> Indicates the field used for the username.
 <3> Indicates the field used for the password.
 By default, it uses bcrypt-hashed passwords.
 You can configure it to use plain text or custom passwords.
 <4> Indicates the comma-separated list of roles added to the target principal representation attributes.
-<5> Provides a helper method to add users with properly hashed passwords. The `BcryptUtil.bcryptHash()` method:
+<5> Provides a helper method to add users with bcrypt-hashed passwords.
+The `BcryptUtil.bcryptHash()` method:
 * Automatically generates a random salt for each password.
 * Hashes the password using bcrypt with 10 iterations (default).
 * Returns the hash in Modular Crypt Format (MCF), which includes the algorithm identifier, cost parameter, salt, and hash.
+
+The `quarkus-security-jpa` extension only initializes if a single entity is annotated with `@UserDefinition`.
 
 [TIP]
 ====
@@ -312,7 +310,8 @@ You can configure it to use plain text or custom passwords.
 
 [NOTE]
 ====
-Remember to set up the Panache and PostgreSQL JDBC driver. For more information, see xref:hibernate-orm-panache.adoc#setting-up-and-configuring-hibernate-orm-with-panache[Setting up and configuring Hibernate ORM with Panache].
+Remember to set up the Panache and PostgreSQL JDBC driver.
+For more information, see xref:hibernate-orm-panache.adoc#setting-up-and-configuring-hibernate-orm-with-panache[Setting up and configuring Hibernate ORM with Panache].
 ====
 ifndef::no-quarkus-security-jpa-reactive[]
 [NOTE]
@@ -372,7 +371,7 @@ configuration property and not the `quarkus.datasource.jdbc.url` configuration p
 +
 * In this tutorial, a PostgreSQL database is used for the identity store.
 link:https://hibernate.org/orm/[Hibernate ORM] automatically creates the database schema on startup.
-This approach is suitable for development but is not recommended for production.
+This approach is suitable for development but not for production.
 Therefore, adjustments are needed in a production environment.
 ====
 endif::no-quarkus-security-jpa-reactive[]
@@ -387,7 +386,6 @@ import jakarta.inject.Singleton;
 import jakarta.transaction.Transactional;
 
 import io.quarkus.runtime.StartupEvent;
-
 
 @Singleton
 public class Startup {
@@ -434,7 +432,6 @@ testImplementation("io.rest-assured:rest-assured")
 To run your application in dev mode:
 
 include::{includes}/devtools/dev.adoc[]
-
 
 In this scenario, `Dev Services for PostgreSQL` launches and configures a `PostgreSQL` test container.
 Make sure that either `Podman` or `Docker` is installed on your computer.
@@ -521,19 +518,19 @@ Dev Services for PostgreSQL supports testing while you develop by providing a se
 
 Alternatively, you can run these tests using Maven:
 
-[source,bash,subs=attributes+]
+[source,shell,subs=attributes+]
 ----
 ./mvnw test
 ----
 
 == Test your application in production mode by using Curl or browser
 
-To test your application using Curl or a browser start a PostgreSQL server first.
+To test your application using Curl or a browser, start a PostgreSQL server first.
 Then, compile and run your application in either JVM or native mode.
 
 === Start the PostgreSQL server
 
-[source,bash,subs=attributes+]
+[source,shell,subs=attributes+]
 ----
 docker run --rm=true --name security-getting-started -e POSTGRES_USER=quarkus \
            -e POSTGRES_PASSWORD=quarkus -e POSTGRES_DB=quarkus \
@@ -552,7 +549,7 @@ include::{includes}/devtools/build.adoc[]
 . Run the application:
 +
 ====
-[source,bash]
+[source,shell]
 ----
 java -jar target/quarkus-app/quarkus-run.jar
 ----
@@ -568,7 +565,7 @@ include::{includes}/devtools/build-native.adoc[]
 . Run the application:
 +
 ====
-[source,bash]
+[source,shell]
 ----
 ./target/security-jpa-quickstart-1.0.0-SNAPSHOT-runner
 ----

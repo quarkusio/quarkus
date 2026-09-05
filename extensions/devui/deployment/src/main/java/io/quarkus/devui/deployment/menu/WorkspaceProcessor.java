@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.URI;
 import java.nio.file.AccessDeniedException;
+import java.nio.file.FileSystemNotFoundException;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -224,7 +225,13 @@ public class WorkspaceProcessor {
                     .function((Map<String, String> t) -> {
                         String actionId = t.get("actionId");
                         if (actionId != null) {
-                            Path path = Path.of(URI.create(t.get("path")));
+                            Path path;
+                            try {
+                                path = resolveWorkspacePath(workspaceBuildItem.get().getRootPath(), t.get("path"));
+                            } catch (SecurityException e) {
+                                LOG.warn(e.getMessage());
+                                return null;
+                            }
                             Action actionToExecute = actionMap.get(actionId);
                             Path convertedPath = (Path) actionToExecute.getPathConverter().apply(path);
 
@@ -256,8 +263,14 @@ public class WorkspaceProcessor {
                     .parameter("path", "The path, as a URI in String format, to the workspace item that content is requested")
                     .function((Map<String, String> params) -> {
                         if (params.containsKey("path")) {
-                            Path path = Paths.get(URI.create(params.get("path")));
-                            return readContents(path);
+                            try {
+                                Path path = resolveWorkspacePath(workspaceBuildItem.get().getRootPath(),
+                                        params.get("path"));
+                                return readContents(path);
+                            } catch (SecurityException e) {
+                                LOG.warn(e.getMessage());
+                                return new WorkspaceContent("text", "Error: " + e.getMessage(), false);
+                            }
                         }
                         return null;
                     })
@@ -273,10 +286,16 @@ public class WorkspaceProcessor {
                     .function((Map<String, String> params) -> {
                         if (params.containsKey("content")) {
                             String content = params.get("content");
-                            Path path = Paths.get(URI.create(params.get("path")));
-                            writeContent(path, content);
-                            return new SavedResult(workspaceBuildItem.get().getRootPath().relativize(path).toString(), true,
-                                    null);
+                            try {
+                                Path path = resolveWorkspacePath(workspaceBuildItem.get().getRootPath(),
+                                        params.get("path"));
+                                writeContent(path, content);
+                                return new SavedResult(workspaceBuildItem.get().getRootPath().relativize(path).toString(),
+                                        true, null);
+                            } catch (SecurityException e) {
+                                LOG.warn(e.getMessage());
+                                return new SavedResult(null, false, e.getMessage());
+                            }
                         }
                         return new SavedResult(null, false, "Invalid input");
                     })
@@ -322,6 +341,53 @@ public class WorkspaceProcessor {
 
     private boolean isFileInRoot(String name) {
         return !name.contains("/");
+    }
+
+    /**
+     * Resolve a client supplied path URI and make sure it stays confined to the project root.
+     * The workspace operations are only meant to act on files inside the user's project, so any
+     * path (including ones using {@code ..} or symlinks) that resolves outside the root is rejected.
+     */
+    private static Path resolveWorkspacePath(Path rootPath, String uriString) {
+        if (uriString == null) {
+            throw new SecurityException("No workspace path provided");
+        }
+
+        Path root;
+        Path resolved;
+        try {
+            root = toCanonicalPath(rootPath);
+            resolved = toCanonicalPath(Paths.get(URI.create(uriString)));
+        } catch (IllegalArgumentException | FileSystemNotFoundException | IOException e) {
+            // Malformed URI, a non-file scheme or a path we cannot safely canonicalize: reject it.
+            throw new SecurityException("Invalid workspace path: " + uriString);
+        }
+
+        if (!resolved.startsWith(root)) {
+            throw new SecurityException("Path is outside the project root: " + resolved);
+        }
+        return resolved;
+    }
+
+    /**
+     * Normalize a path to an absolute form with symlinks resolved. The file itself may not exist
+     * yet (e.g. when creating a new workspace item), so symlinks are only resolved on the nearest
+     * existing ancestor to prevent a symlinked directory from escaping the root. If the real path
+     * cannot be determined the {@link IOException} is propagated so the caller can fail closed
+     * rather than fall back to an unresolved (potentially escaping) path.
+     */
+    private static Path toCanonicalPath(Path path) throws IOException {
+        Path absolute = path.toAbsolutePath().normalize();
+        Path existing = absolute;
+        while (existing != null && !Files.exists(existing)) {
+            existing = existing.getParent();
+        }
+        if (existing == null) {
+            return absolute;
+        }
+        Path realExisting = existing.toRealPath();
+        Path remainder = existing.relativize(absolute);
+        return realExisting.resolve(remainder).normalize();
     }
 
     private String writeContent(Path path, String contents) {

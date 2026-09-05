@@ -150,6 +150,10 @@ public abstract class AbstractLambdaPollLoop {
                                     }
                                 }
                             } catch (Exception e) {
+                                if (!running.get()) {
+                                    // shutdown disconnected the request while we were processing it
+                                    return;
+                                }
                                 if (abortGracefully(e)) {
                                     return;
                                 }
@@ -163,6 +167,11 @@ public abstract class AbstractLambdaPollLoop {
                             }
 
                         } catch (Exception e) {
+                            if (!running.get()) {
+                                // shutdown task set running=false and disconnected the long-poll;
+                                // SocketException here is expected (e.g. with Lambda extension layers)
+                                return;
+                            }
                             if (!abortGracefully(e))
                                 log.error("Error running lambda (" + launchMode + ")", e);
                             Application app = Application.currentApplication();

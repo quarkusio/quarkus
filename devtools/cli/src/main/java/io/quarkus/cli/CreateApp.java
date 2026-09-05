@@ -39,6 +39,10 @@ public class CreateApp extends BaseCreateCommand {
             "--class-name" }, description = "Name of the Jakarta REST Resource.")
     String className;
 
+    @CommandLine.Option(order = 2, paramLabel = "PATH", names = {
+            "--path" }, description = "The REST path of the generated Jakarta REST Resource.")
+    String path;
+
     @CommandLine.Option(order = 3, paramLabel = "DESCRIPTION", names = {
             "--description" }, description = "Description of the project.")
     String description;
@@ -80,6 +84,7 @@ public class CreateApp extends BaseCreateCommand {
             setCodegenOptions(codeGeneration);
             setValue(CreateProjectKey.PROJECT_NAME, name);
             setValue(CreateProjectKey.RESOURCE_CLASS_NAME, className);
+            setValue(CreateProjectKey.RESOURCE_PATH, normalizePath(path));
             setValue(CreateProjectKey.PROJECT_DESCRIPTION, description);
             setValue(CreateProjectKey.DATA, dataOptions.data);
 
@@ -110,6 +115,14 @@ public class CreateApp extends BaseCreateCommand {
         }
     }
 
+    private static String normalizePath(String path) {
+        if (path != null) {
+            return path.startsWith("/") ? path : "/" + path;
+        } else {
+            return null;
+        }
+    }
+
     @Override
     public String toString() {
         return "CreateApp{"
@@ -121,6 +134,7 @@ public class CreateApp extends BaseCreateCommand {
                 + ", extensions=" + extensions
                 + ", name=" + name
                 + ", className=" + className
+                + ", path=" + path
                 + ", description=" + description
                 + ", project=" + super.toString()
                 + ", data=" + dataOptions.data

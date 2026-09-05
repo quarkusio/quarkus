@@ -1028,18 +1028,20 @@ public class SmallRyeOpenApiProcessor {
                     documentFiltersBuildItem.filterNamesFor(documentName, OpenApiFilter.RunStage.RUNTIME_STARTUP),
                     documentConfig);
 
-            // Store schema if configured
-            documentConfig.storeSchemaDirectory().ifPresent(storageDir -> {
-                try {
-                    String documentStoreFileName = documentConfig.storeSchemaFileName();
-                    storeGeneratedSchema(storageDir, documentStoreFileName, outputTargetBuildItem,
-                            storedOpenAPI.toJSON(), "json");
-                    storeGeneratedSchema(storageDir, documentStoreFileName, outputTargetBuildItem,
-                            storedOpenAPI.toYAML(), "yaml");
-                } catch (IOException e) {
-                    throw new UncheckedIOException(e);
-                }
-            });
+            // Store schema if configured, either for this document or for all documents at once
+            documentConfig.storeSchemaDirectory()
+                    .or(smallRyeOpenApiConfig::storeSchemasDirectory)
+                    .ifPresent(storageDir -> {
+                        try {
+                            String documentStoreFileName = documentConfig.storeSchemaFileName();
+                            storeGeneratedSchema(storageDir, documentStoreFileName, outputTargetBuildItem,
+                                    storedOpenAPI.toJSON(), "json");
+                            storeGeneratedSchema(storageDir, documentStoreFileName, outputTargetBuildItem,
+                                    storedOpenAPI.toYAML(), "yaml");
+                        } catch (IOException e) {
+                            throw new UncheckedIOException(e);
+                        }
+                    });
 
             openApiDocumentProducer
                     .produce(new OpenApiDocumentBuildItem(storedOpenAPI, documentName));

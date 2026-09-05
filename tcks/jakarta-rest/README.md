@@ -22,80 +22,18 @@ mvn verify -pl tcks/jakarta-rest -Drun-jakarta-rest-tck
   that were already excluded in the old forked TCK runner (resteasy-reactive-testsuite).
   The `DisableReason` enum mirrors the old `QuarkusRest.java` classification.
 
-## Current status (2026-07-24)
+## Current status (2026-07-31)
 
 | Metric   | Count |
 |----------|-------|
 | Total    | 2755  |
-| Pass     | 2470  |
-| Error    | 6     |
-| Failure  | 4     |
-| Skipped  | 275   |
+| Pass     | 2477  |
+| Error    | 0     |
+| Failure  | 0     |
+| Skipped  | 278   |
 
-**275 skipped** = old TCK exclusions carried forward via `ExecutionCondition` +
+**278 skipped** = old TCK exclusions carried forward via `ExecutionCondition` +
 `@Tag("se_bootstrap")`/`@Tag("servlet")` excluded via `excludedGroups` + signature test.
-
-**10 remaining failures** across 5 test classes, with 5 distinct root causes:
-
-### SSE 503 + Retry-After reconnection — missing feature (2 tests)
-
-`jaxrs21.ee.sse.sseeventsource.JAXRSClientIT`:
-- `wait2Seconds`
-- `defaultWaiting1s`
-
-These are **not** flaky timing tests. `SseEventSourceImpl.connect()` does not
-implement HTTP 503 + `Retry-After` automatic reconnection at all. When the server
-returns 503, the client treats it as a generic non-successful response, fires the
-error handler, and calls `notifyCompletion()` — it never reads `Retry-After` or
-schedules a reconnect.
-
-The tests set up a `ServiceUnavailableResource` that returns 503 with
-`Retry-After: N` on the first request and sends an SSE event on the retry.
-Since Quarkus never retries, the message is never received.
-
-**Fix location**: `SseEventSourceImpl.connect()` in
-`independent-projects/resteasy-reactive/client/runtime/…/client/impl/SseEventSourceImpl.java`
-(lines ~100-110). Needs to check for status 503, parse the `Retry-After` header,
-and schedule a one-time reconnect with that delay.
-
-### Multipart return type restriction (1 error — build-time)
-
-`jaxrs31.ee.multipart.MultipartSupportIT`:
-
-Quarkus augmentation rejects the TCK's `Response`-returning multipart endpoint:
-*"Endpoints that produce a Multipart result cannot return
-`jakarta.ws.rs.core.Response` — consider returning `RestResponse` instead."*
-The TCK uses the standard JAX-RS `Response` type, which Quarkus does not allow.
-
-### Feature/DynamicFeature registration reporting (2 failures)
-
-`jaxrs31.spec.extensions.JAXRSClientIT`:
-- `featureIsRegisteredTest`
-- `dynamicFeatureIsRegisteredTest`
-
-`Configuration.isRegistered()` returns `false` for Feature/DynamicFeature
-instances that are actually registered. The features work, but the registration
-query does not report them.
-
-### Provider visibility — no no-arg constructor (4 errors)
-
-`spec.provider.visibility.JAXRSClientIT`:
-- `bodyWriterTest`
-- `bodyReaderTest`
-- `contextResolverTest`
-- `exceptionMapperTest`
-
-TCK provider classes (`DummyWriter`, `StringReader`, `HolderResolver`,
-`VisibilityExceptionMapper`) have only `@Context`-parameter constructors.
-ArC's `BeanFactory` requires a no-arg constructor and fails with
-`NoSuchMethodException`.
-
-### Resource constructor visibility (1 error)
-
-`spec.resourceconstructor.JAXRSClientIT#visibleTest`:
-
-`GET /resource/mostAttributes` returns HTTP 406 instead of 200. Quarkus ignores
-non-public resource methods, so the expected constructor/method is not selected.
 
 ## Files
 

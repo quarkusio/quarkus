@@ -53,7 +53,6 @@ Because Quarkus Security is customizable, you can, for example, add authorizatio
 Registered instances of `SecurityIdentityAugmentor` are invoked during the final stage of the security authentication process.
 For more information, see the xref:security-customization.adoc#security-identity-customization[Security Identity Customization] section of the "Security Tips and Tricks" guide.
 
-
 == Supported authentication mechanisms
 
 The Quarkus Security framework supports multiple authentication mechanisms, which can also be combined.

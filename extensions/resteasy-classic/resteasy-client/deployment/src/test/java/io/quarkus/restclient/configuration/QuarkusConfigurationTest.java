@@ -68,8 +68,6 @@ public class QuarkusConfigurationTest {
         assertThat(clientConfig.readTimeout().get()).isEqualTo(6000);
         assertTrue(clientConfig.followRedirects().isPresent());
         assertThat(clientConfig.followRedirects().get()).isEqualTo(true);
-        assertTrue(clientConfig.proxyAddress().isPresent());
-        assertThat(clientConfig.proxyAddress().get()).isEqualTo("localhost:8080");
         assertTrue(clientConfig.queryParamStyle().isPresent());
         assertThat(clientConfig.queryParamStyle().get()).isEqualTo(QueryParamStyle.COMMA_SEPARATED);
         assertTrue(clientConfig.hostnameVerifier().isPresent());

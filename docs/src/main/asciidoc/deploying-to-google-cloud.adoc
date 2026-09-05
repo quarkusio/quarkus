@@ -187,8 +187,8 @@ To deploy a native application:
 - Copy the native Dockerfile to the root directory of your project: `cp src/main/docker/Dockerfile.native Dockerfile`.
 - Build your application as a native executable using `mvn clean package -Dnative`.
 
-Then, create a `.gcloudignore` file to tell gcloud which files should be not be uploaded for Cloud Build,
-without it, it defaults to `.gitignore` that usually exclude the target directory where you packaged application has been created.
+Then, create a `.gcloudignore` file to tell gcloud which files should not be uploaded for Cloud Build,
+without it, it defaults to `.gitignore` that usually exclude the target directory where your packaged application has been created.
 
 In this example, I only exclude the `src` directory:
 

@@ -22,6 +22,7 @@ import jakarta.ws.rs.ext.RuntimeDelegate;
 import org.jboss.resteasy.reactive.RestResponse;
 import org.jboss.resteasy.reactive.RestResponse.ResponseBuilder;
 import org.jboss.resteasy.reactive.common.core.ResponseBuilderFactory;
+import org.jboss.resteasy.reactive.common.core.Serialisers;
 import org.jboss.resteasy.reactive.common.headers.CacheControlDelegate;
 import org.jboss.resteasy.reactive.common.headers.CookieHeaderDelegate;
 import org.jboss.resteasy.reactive.common.headers.DateDelegate;
@@ -50,6 +51,11 @@ public class RuntimeDelegateImpl extends RuntimeDelegate {
 
             @Override
             public <T> ResponseBuilder<T> createRestResponse() {
+                throw new RuntimeException("Quarkus REST server side components are not installed.");
+            }
+
+            @Override
+            public Serialisers getSerialisers() {
                 throw new RuntimeException("Quarkus REST server side components are not installed.");
             }
         };
@@ -144,6 +150,10 @@ public class RuntimeDelegateImpl extends RuntimeDelegate {
 
     @Override
     public EntityPart.Builder createEntityPartBuilder(String s) throws IllegalArgumentException {
-        return new EntityPartBuilderImpl(s);
+        return new EntityPartBuilderImpl(s, factory.getSerialisers());
+    }
+
+    public Serialisers getSerialisers() {
+        return factory.getSerialisers();
     }
 }

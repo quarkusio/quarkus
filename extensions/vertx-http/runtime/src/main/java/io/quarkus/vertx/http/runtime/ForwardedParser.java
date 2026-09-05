@@ -19,8 +19,11 @@
 
 package io.quarkus.vertx.http.runtime;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.regex.Matcher;
@@ -29,7 +32,9 @@ import java.util.regex.Pattern;
 import org.jboss.logging.Logger;
 
 import io.netty.util.AsciiString;
+import io.quarkus.vertx.http.XForwardedForSelector;
 import io.smallrye.common.vertx.ContextLocals;
+import io.vertx.core.MultiMap;
 import io.vertx.core.internal.http.HttpServerRequestInternal;
 import io.vertx.core.net.HostAndPort;
 import io.vertx.core.net.SocketAddress;
@@ -319,16 +324,57 @@ class ForwardedParser {
             xForwardedValues.setPort(port);
         }
 
-        String forHeader = delegate.getHeader(X_FORWARDED_FOR);
-        if (forHeader != null) {
-            remoteAddress = parseFor(getFirstElement(forHeader), remoteAddress != null ? remoteAddress.port() : port);
-            xForwardedValues.setRemoteHost(remoteAddress.host());
-            xForwardedValues.setRemotePort(remoteAddress.port());
-            log.debugf("Using X-Forwarded-For to set for host to %s and for port to %d", remoteAddress.host(),
-                    remoteAddress.port());
+        XForwardedForSelector selector = forwardingProxyOptions.xForwardedForSelector;
+        if (selector != null) {
+            List<String> forValues = mergeXForwardedFor();
+            if (!forValues.isEmpty()) {
+                final String selected;
+                try {
+                    selected = selector.select(new SelectorContext(forValues));
+                } catch (RuntimeException e) {
+                    log.errorf(e, "Rejecting request: the X-Forwarded-For selector threw an exception");
+                    rejected = true;
+                    return null;
+                }
+                if (selected == null || selected.isBlank()) {
+                    log.debug("Rejecting request: the X-Forwarded-For selector returned null or a blank value");
+                    rejected = true;
+                    return null;
+                }
+                setForwardedFor(selected.strip(), xForwardedValues);
+            }
+        } else {
+            String forHeader = delegate.getHeader(X_FORWARDED_FOR);
+            if (forHeader != null) {
+                setForwardedFor(getFirstElement(forHeader), xForwardedValues);
+            }
         }
 
         return xForwardedValues;
+    }
+
+    private void setForwardedFor(String forToken, Forwarded xForwardedValues) {
+        remoteAddress = parseFor(forToken, remoteAddress != null ? remoteAddress.port() : port);
+        xForwardedValues.setRemoteHost(remoteAddress.host());
+        xForwardedValues.setRemotePort(remoteAddress.port());
+        log.debugf("Using X-Forwarded-For to set for host to %s and for port to %d", remoteAddress.host(),
+                remoteAddress.port());
+    }
+
+    private List<String> mergeXForwardedFor() {
+        List<String> values = null;
+        for (String headerLine : delegate.headers().getAll(X_FORWARDED_FOR)) {
+            for (String token : headerLine.split(",")) {
+                String trimmed = token.trim();
+                if (!trimmed.isEmpty()) {
+                    if (values == null) {
+                        values = new ArrayList<>();
+                    }
+                    values.add(trimmed);
+                }
+            }
+        }
+        return values == null ? List.of() : Collections.unmodifiableList(values);
     }
 
     private static boolean isSchemeInvalid(String scheme) {
@@ -439,6 +485,30 @@ class ForwardedParser {
         }
 
         return result;
+    }
+
+    private final class SelectorContext implements XForwardedForSelector.Context {
+
+        private final List<String> values;
+
+        private SelectorContext(List<String> values) {
+            this.values = values;
+        }
+
+        @Override
+        public List<String> xForwardedForValues() {
+            return values;
+        }
+
+        @Override
+        public SocketAddress connectionPeer() {
+            return delegate.remoteAddress();
+        }
+
+        @Override
+        public MultiMap headers() {
+            return delegate.headers().copy();
+        }
     }
 
     static class Forwarded implements ForwardedInfo {

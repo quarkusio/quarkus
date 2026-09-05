@@ -4,6 +4,7 @@ import jakarta.inject.Inject;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
+import jakarta.ws.rs.PathParam;
 
 @Path("cache")
 public class CacheResource {
@@ -22,5 +23,12 @@ public class CacheResource {
     @Path("size")
     public int size() {
         return tokenCache.getCacheSize();
+    }
+
+    @GET
+    @Path("contains-key/{tenantId}/{token}")
+    public boolean containsKey(@PathParam("tenantId") String tenantId,
+            @PathParam("token") String token) {
+        return tokenCache.containsCacheKey(tenantId, token);
     }
 }

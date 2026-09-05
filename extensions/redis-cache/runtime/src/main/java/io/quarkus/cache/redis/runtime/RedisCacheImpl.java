@@ -24,6 +24,7 @@ import io.quarkus.cache.CompositeCacheKey;
 import io.quarkus.cache.runtime.AbstractCache;
 import io.quarkus.redis.client.RedisClientName;
 import io.quarkus.redis.runtime.datasource.Marshaller;
+import io.quarkus.redis.runtime.datasource.RedisConnections;
 import io.quarkus.runtime.BlockingOperationControl;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.subscription.UniEmitter;
@@ -458,20 +459,16 @@ public class RedisCacheImpl extends AbstractCache implements RedisCache {
     }
 
     private <X> Uni<X> withConnection(Function<RedisConnection, Uni<X>> function) {
-        return redis.connect()
-                .chain(new Function<RedisConnection, Uni<? extends X>>() {
-                    @Override
-                    public Uni<X> apply(RedisConnection con) {
-                        Uni<X> res;
-                        try {
-                            res = function.apply(con);
-                        } catch (Exception e) {
-                            res = Uni.createFrom().failure(new CacheException(e));
-                        }
-                        return res
-                                .onTermination().call(con::close);
-                    }
-                });
+        return RedisConnections.withNewConnection(redis, new Function<RedisConnection, Uni<X>>() {
+            @Override
+            public Uni<X> apply(RedisConnection con) {
+                try {
+                    return function.apply(con);
+                } catch (Exception e) {
+                    return Uni.createFrom().failure(new CacheException(e));
+                }
+            }
+        });
     }
 
     private Uni<Void> watch(RedisConnection connection, byte[] keyToWatch) {

@@ -223,7 +223,6 @@ You can output all metrics to the console by setting the exporter to `logging` i
 quarkus.otel.metrics.exporter=logging <1>
 quarkus.otel.metric.export.interval=10000ms <2>
 ----
-
 <1> Set the exporter to `logging`.
 Normally you don't need to set this.
 The default is `cdi`.

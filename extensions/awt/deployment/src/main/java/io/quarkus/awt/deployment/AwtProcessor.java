@@ -399,16 +399,16 @@ class AwtProcessor {
         if (v.compareTo(GraalVM.Version.VERSION_25_0_0) >= 0) {
             // Downcalls
             // malloc
-            downcalls.produce(new FfmDowncallBuildItem(ADDRESS, LONG));
+            downcalls.produce(FfmDowncallBuildItem.builder(ADDRESS, LONG).build());
             // HBCreateFace
-            downcalls.produce(new FfmDowncallBuildItem(ADDRESS, ADDRESS));
+            downcalls.produce(FfmDowncallBuildItem.builder(ADDRESS, ADDRESS).build());
             // HBDisposeFace
-            downcalls.produce(new FfmDowncallBuildItem(VOID, ADDRESS));
+            downcalls.produce(FfmDowncallBuildItem.builder(VOID, ADDRESS).build());
             // jdk_hb_shape
-            downcalls.produce(new FfmDowncallBuildItem(VOID, FLOAT, ADDRESS, ADDRESS, ADDRESS, INT, INT, INT, INT, INT, FLOAT,
-                    FLOAT, INT, INT, ADDRESS, ADDRESS));
+            downcalls.produce(FfmDowncallBuildItem.builder(VOID, FLOAT, ADDRESS, ADDRESS, ADDRESS, INT, INT, INT, INT, INT,
+                    FLOAT, FLOAT, INT, INT, ADDRESS, ADDRESS).build());
             // HBCreateFontFuncs
-            downcalls.produce(new FfmDowncallBuildItem(ADDRESS, ADDRESS, ADDRESS, ADDRESS, ADDRESS, ADDRESS));
+            downcalls.produce(FfmDowncallBuildItem.builder(ADDRESS, ADDRESS, ADDRESS, ADDRESS, ADDRESS, ADDRESS).build());
 
             // Upcalls
             // getFontTableData

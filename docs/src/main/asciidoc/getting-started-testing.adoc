@@ -1795,7 +1795,7 @@ For instance, you can bundle it with the `@Tag` annotation to automatically mark
 
 [source,java]
 ----
-org.acme.test
+package org.acme.test;
 
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
@@ -1817,6 +1817,13 @@ public @interface QuarkusSecurityTest {   <1>
 }
 ----
 <1> The `@QuarkusSecurityTest` annotation can be used instead of the `@QuarkusTest` annotation.
+
+[NOTE]
+====
+If the meta-annotation is shipped in a separate dependency, that dependency must be part of the
+application index (a Jandex index, a `META-INF/beans.xml`, or `quarkus.index-dependency`) — otherwise
+the test class is not registered as a CDI bean.
+====
 
 == Testing Components
 

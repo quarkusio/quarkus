@@ -86,7 +86,6 @@ The platform descriptor will normally be generated using a Maven plugin, e.g.
   </configuration>
 </plugin>
 ----
-
 <1> the version of the `quarkus-platform-descriptor-json-plugin`
 <2> `generate-extensions-json` is the goal generating the platform descriptor
 <3> the `groupId` of the platform BOM

@@ -34,8 +34,13 @@ public class ContainerAddress {
         return port;
     }
 
+    /**
+     * Returns {@code host:port} with RFC 2732 bracketing for IPv6. Does not resolve the host via
+     * {@code docker inspect}; callers that need IPv4 gateway resolution must use
+     * {@link DevServicesHostUtil#formatResolvedHostAndPort(String, String, int)} explicitly.
+     */
     public String getUrl() {
-        return String.format("%s:%d", host, port);
+        return DevServicesHostUtil.formatHostAndPort(host, port);
     }
 
     public RunningContainer getRunningContainer() {

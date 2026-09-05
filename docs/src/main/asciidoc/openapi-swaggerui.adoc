@@ -618,6 +618,21 @@ Operations are filtered into documents based on their profiles:
 * If neither is configured: all operations are *included*.
 
 
+=== Storing the schema documents of all configured documents
+
+The generated OpenAPI schema documents are stored on build when `quarkus.smallrye-openapi.store-schema-directory` is configured, and each named OpenAPI document can configure its own `quarkus.smallrye-openapi.<document-name>.store-schema-directory`.
+Instead of configuring the directory for every document individually, the schema documents of all configured OpenAPI documents can be stored in one go:
+
+[source,properties]
+----
+quarkus.smallrye-openapi.store-schemas-directory=target/openapi
+----
+
+With the `user` and `order` documents from the example above, this stores the default schema document (`openapi.json` and `openapi.yaml`) as well as `openapi-user.json`, `openapi-user.yaml`, `openapi-order.json` and `openapi-order.yaml`.
+
+A `store-schema-directory` configured for an individual document takes precedence over `store-schemas-directory` for that document.
+
+
 === Cleanup
 
 The generated OpenAPI documents by default include every schema, even those referenced by operations which are excluded.

@@ -52,15 +52,6 @@ public interface VertxConfiguration {
     Duration warningExceptionTime();
 
     /**
-     * The size of the worker pool size.
-     *
-     * @deprecated use {@code quarkus.thread-pool.max-threads} instead
-     */
-    @WithDefault("${quarkus.thread-pool.max-threads:20}")
-    @Deprecated
-    int workerPoolSize();
-
-    /**
      * The maximum amount of time the worker thread can be blocked.
      */
     @WithDefault("60")

@@ -1,10 +1,11 @@
 package io.quarkus.vertx.core.runtime.context;
 
-import java.util.concurrent.ConcurrentHashMap;
-
 import io.smallrye.common.vertx.VertxContext;
 import io.vertx.core.Context;
 import io.vertx.core.Vertx;
+import io.vertx.core.internal.VertxBootstrap;
+import io.vertx.core.spi.VertxServiceProvider;
+import io.vertx.core.spi.context.storage.ContextLocal;
 
 /**
  * This is meant for other extensions to integrate with, to help
@@ -39,9 +40,9 @@ import io.vertx.core.Vertx;
  * can't flag the context explicitly, but bear in mind that this will
  * have a global impact and possibly let other uses go unnoticed as well.
  */
-public final class VertxContextSafetyToggle {
+public final class VertxContextSafetyToggle implements VertxServiceProvider {
 
-    private static final String ACCESS_TOGGLE_KEY = "___QUARKUS_CONTEXT_ACCESS_TOGGLE____";
+    static final ContextLocal<Boolean> ACCESS_TOGGLE = ContextLocal.registerLocal(Boolean.class);
     public static final String UNRESTRICTED_BY_DEFAULT_PROPERTY = "io.quarkus.vertx.core.runtime.context.VertxContextSafetyToggle.UNRESTRICTED_BY_DEFAULT";
 
     /**
@@ -51,6 +52,11 @@ public final class VertxContextSafetyToggle {
     public static final String FULLY_DISABLE_PROPERTY = "io.quarkus.vertx.core.runtime.context.VertxContextSafetyToggle.I_HAVE_CHECKED_EVERYTHING";
     private static final boolean UNRESTRICTED_BY_DEFAULT = Boolean.getBoolean(UNRESTRICTED_BY_DEFAULT_PROPERTY);
     private static final boolean FULLY_DISABLED = Boolean.getBoolean(FULLY_DISABLE_PROPERTY);
+
+    @Override
+    public void init(VertxBootstrap builder) {
+        // ContextLocal registration happens via the static field above.
+    }
 
     /**
      * Verifies if the current Vert.x context was flagged as safe
@@ -76,7 +82,7 @@ public final class VertxContextSafetyToggle {
     }
 
     private static Boolean getToggleFlag(final Context context) {
-        return (Boolean) context.getLocal(VertxContext.DATA_MAP_LOCAL, ConcurrentHashMap::new).get(ACCESS_TOGGLE_KEY);
+        return ACCESS_TOGGLE.get(context);
     }
 
     private static void checkIsSafe(final Context context, final String errorMessageOnVeto, final String errorMessageOnDoubt) {
@@ -125,12 +131,11 @@ public final class VertxContextSafetyToggle {
                     "Can't set the context safety flag: the current context is not a duplicated context");
         } else {
             // save storm of true -> true transitions by shielding it
-            ConcurrentHashMap<String, Object> map = context.getLocal(VertxContext.DATA_MAP_LOCAL, ConcurrentHashMap::new);
-            Boolean maybe = (Boolean) map.get(ACCESS_TOGGLE_KEY);
+            Boolean maybe = ACCESS_TOGGLE.get(context);
             if (safe && maybe == Boolean.TRUE) {
                 return;
             }
-            map.put(ACCESS_TOGGLE_KEY, safe);
+            ACCESS_TOGGLE.put(context, safe);
         }
     }
 

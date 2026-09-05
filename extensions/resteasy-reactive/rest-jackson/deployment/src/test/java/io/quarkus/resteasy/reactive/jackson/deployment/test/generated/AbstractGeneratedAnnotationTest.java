@@ -1124,6 +1124,32 @@ public abstract class AbstractGeneratedAnnotationTest {
                 .body("billing_zip", Matchers.is("00100"));
     }
 
+    // --- HashMap subclass with declared bean properties ---
+
+    @Test
+    public void testMapSubclassRoundTrip() {
+        given()
+                .contentType("application/json")
+                .body("{\"declared\":\"d\",\"extra\":1}")
+                .when()
+                .post("/generated/map-subclass")
+                .then()
+                .statusCode(200)
+                .contentType("application/json")
+                .body("declared", Matchers.is("d"))
+                .body("extra", Matchers.is(1));
+    }
+
+    @Test
+    public void testMapSubclassSerialization() {
+        RestAssured.get("/generated/map-subclass")
+                .then()
+                .statusCode(200)
+                .contentType("application/json")
+                .body("declared", Matchers.is("d"))
+                .body("extra", Matchers.is(1));
+    }
+
     // --- @JsonRawValue ---
 
     @Test

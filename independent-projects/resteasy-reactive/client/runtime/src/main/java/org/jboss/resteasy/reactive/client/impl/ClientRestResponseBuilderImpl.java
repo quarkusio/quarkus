@@ -34,6 +34,7 @@ public class ClientRestResponseBuilderImpl<T> extends AbstractRestResponseBuilde
         populateResponse(response);
         response.restClientRequestContext = restClientRequestContext;
         response.setEntityStream(entityStream);
+        response.setClientResponse(true);
         return response;
     }
 

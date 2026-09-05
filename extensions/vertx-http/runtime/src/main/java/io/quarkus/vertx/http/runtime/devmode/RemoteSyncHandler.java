@@ -5,12 +5,13 @@ import java.io.IOException;
 import java.io.ObjectInputFilter;
 import java.io.ObjectInputStream;
 import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.security.SecureRandom;
 import java.util.Base64;
-import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.locks.ReentrantLock;
 
 import org.jboss.logging.Logger;
 
@@ -37,6 +38,9 @@ public class RemoteSyncHandler implements Handler<HttpServerRequest> {
     public static final String DEV = "/dev";
     public static final String PROBE = "/probe"; //used to check that the server is back up after restart
 
+    private static final long SESSION_TIMEOUT_MILLIS = 60000;
+    private static final ReentrantLock SESSION_OPERATION_LOCK = new ReentrantLock(true);
+
     final String password;
     final Handler<HttpServerRequest> next;
     final HotReplacementContext hotReplacementContext;
@@ -44,10 +48,7 @@ public class RemoteSyncHandler implements Handler<HttpServerRequest> {
 
     //all these are static to allow the handler to be recreated on hot reload
     //which makes lifecycle management a lot easier
-    static volatile String currentSession;
-    //incrementing counter to prevent replay attacks
-    static volatile int currentSessionCounter;
-    static volatile long currentSessionTimeout;
+    static volatile SessionState sessionState = SessionState.inactive();
     static volatile Throwable remoteProblem;
     static volatile boolean checkForChanges;
 
@@ -60,7 +61,8 @@ public class RemoteSyncHandler implements Handler<HttpServerRequest> {
     }
 
     public static void doPreScan() {
-        if (currentSession == null) {
+        SessionState state = sessionState;
+        if (!state.isActive(System.currentTimeMillis())) {
             return;
         }
         synchronized (RemoteSyncHandler.class) {
@@ -77,21 +79,15 @@ public class RemoteSyncHandler implements Handler<HttpServerRequest> {
 
     @Override
     public void handle(HttpServerRequest event) {
-        long time = System.currentTimeMillis();
-        if (time > currentSessionTimeout) {
-            currentSession = null;
-            currentSessionCounter = 0;
-        }
         final String type = event.headers().get(HttpHeaderNames.CONTENT_TYPE);
         if (APPLICATION_QUARKUS.equals(type)) {
-            currentSessionTimeout = time + 60000;
-            VertxCoreRecorder.getVertx().get().executeBlocking(new Callable<Void>() {
+            executeBlocking(new Callable<Void>() {
                 @Override
                 public Void call() {
                     handleRequest(event);
                     return null;
                 }
-            }, false);
+            });
             return;
         }
         next.handle(event);
@@ -125,35 +121,37 @@ public class RemoteSyncHandler implements Handler<HttpServerRequest> {
         event.bodyHandler(new Handler<Buffer>() {
             @Override
             public void handle(Buffer b) {
-                if (checkSession(event, b.getBytes())) {
-                    return;
-                }
-                VertxCoreRecorder.getVertx().get().executeBlocking(new Callable<Void>() {
+                executeBlocking(new Callable<Void>() {
                     @Override
                     public Void call() {
                         try {
-                            Throwable problem = (Throwable) createFilteredObjectInputStream(b.getBytes())
-                                    .readObject();
-                            //update the problem if it has changed
-                            if (problem != null || remoteProblem != null) {
-                                remoteProblem = problem;
-                                hotReplacementContext.setRemoteProblem(problem);
-                            }
-                            synchronized (RemoteSyncHandler.class) {
-                                RemoteSyncHandler.class.notifyAll();
-                                try {
-                                    RemoteSyncHandler.class.wait(10000);
-                                } catch (InterruptedException e) {
-                                    log.debug("interrupted", e);
+                            withAuthenticatedSession(event, b.getBytes(), () -> {
+                                Throwable problem;
+                                try (ObjectInputStream input = createFilteredObjectInputStream(b.getBytes())) {
+                                    problem = (Throwable) input.readObject();
                                 }
-                                if (checkForChanges) {
-                                    checkForChanges = false;
-                                    event.response().setStatusCode(200);
-                                } else {
-                                    event.response().setStatusCode(204);
+                                //update the problem if it has changed
+                                if (problem != null || remoteProblem != null) {
+                                    remoteProblem = problem;
+                                    hotReplacementContext.setRemoteProblem(problem);
                                 }
-                                event.response().end();
-                            }
+                                synchronized (RemoteSyncHandler.class) {
+                                    RemoteSyncHandler.class.notifyAll();
+                                    try {
+                                        RemoteSyncHandler.class.wait(10000);
+                                    } catch (InterruptedException e) {
+                                        Thread.currentThread().interrupt();
+                                        log.debug("interrupted", e);
+                                    }
+                                    if (checkForChanges) {
+                                        checkForChanges = false;
+                                        event.response().setStatusCode(200);
+                                    } else {
+                                        event.response().setStatusCode(204);
+                                    }
+                                    event.response().end();
+                                }
+                            });
                         } catch (RejectedExecutionException e) {
                             //everything is shut down
                             //likely in the middle of a restart
@@ -164,7 +162,7 @@ public class RemoteSyncHandler implements Handler<HttpServerRequest> {
                         }
                         return null;
                     }
-                }, false);
+                });
             }
         }).exceptionHandler(new Handler<Throwable>() {
             @Override
@@ -179,36 +177,10 @@ public class RemoteSyncHandler implements Handler<HttpServerRequest> {
         event.bodyHandler(new Handler<Buffer>() {
             @Override
             public void handle(Buffer b) {
-                try {
-
-                    String rp = event.headers().get(QUARKUS_PASSWORD);
-                    String bodyHash = HashUtil.sha256(b.getBytes());
-                    String compare = HashUtil.sha256(bodyHash + password);
-                    if (!compare.equals(rp)) {
-                        log.error("Incorrect password");
-                        event.response().putHeader(QUARKUS_ERROR, "Incorrect password").setStatusCode(401).end();
-                        return;
-                    }
-                    SecureRandom r = new SecureRandom();
-                    byte[] sessionId = new byte[40];
-                    r.nextBytes(sessionId);
-                    currentSession = Base64.getEncoder().encodeToString(sessionId);
-                    currentSessionCounter = 0;
-                    RemoteDevState state = (RemoteDevState) createFilteredObjectInputStream(b.getBytes())
-                            .readObject();
-                    remoteProblem = state.getAugmentProblem();
-                    if (state.getAugmentProblem() != null) {
-                        hotReplacementContext.setRemoteProblem(state.getAugmentProblem());
-                    }
-                    Set<String> files = hotReplacementContext.syncState(state.getFileHashes());
-                    event.response().headers().set(QUARKUS_SESSION, currentSession);
-                    event.response().end(String.join(";", files));
-
-                } catch (Exception e) {
-                    log.error("Connect failed", e);
-                    event.response().setStatusCode(500).end();
-                }
-
+                executeBlocking(() -> {
+                    processConnect(event, b);
+                    return null;
+                });
             }
         }).exceptionHandler(new Handler<Throwable>() {
             @Override
@@ -219,26 +191,52 @@ public class RemoteSyncHandler implements Handler<HttpServerRequest> {
         }).resume();
     }
 
+    private void processConnect(HttpServerRequest event, Buffer body) {
+        try {
+            String rp = event.headers().get(QUARKUS_PASSWORD);
+            String bodyHash = HashUtil.sha256(body.getBytes());
+            String compare = HashUtil.sha256(bodyHash + password);
+            if (!constantTimeEquals(compare, rp)) {
+                log.error("Incorrect password");
+                event.response().putHeader(QUARKUS_ERROR, "Incorrect password").setStatusCode(401).end();
+                return;
+            }
+            SESSION_OPERATION_LOCK.lock();
+            try {
+                RemoteDevState state;
+                try (ObjectInputStream input = createFilteredObjectInputStream(body.getBytes())) {
+                    state = (RemoteDevState) input.readObject();
+                }
+                Set<String> files = hotReplacementContext.syncState(state.getFileHashes());
+                if (state.getAugmentProblem() != null) {
+                    hotReplacementContext.setRemoteProblem(state.getAugmentProblem());
+                }
+                SecureRandom r = new SecureRandom();
+                byte[] sessionId = new byte[40];
+                r.nextBytes(sessionId);
+                String session = Base64.getEncoder().encodeToString(sessionId);
+                sessionState = new SessionState(session, 0,
+                        System.currentTimeMillis() + SESSION_TIMEOUT_MILLIS);
+                remoteProblem = state.getAugmentProblem();
+                event.response().headers().set(QUARKUS_SESSION, session);
+                event.response().end(String.join(";", files));
+            } finally {
+                SESSION_OPERATION_LOCK.unlock();
+            }
+        } catch (Exception e) {
+            log.error("Connect failed", e);
+            event.response().setStatusCode(500).end();
+        }
+    }
+
     private void handlePut(HttpServerRequest event) {
         event.bodyHandler(new Handler<Buffer>() {
             @Override
             public void handle(Buffer buffer) {
-                if (checkSession(event, buffer.getBytes())) {
-                    return;
-                }
-                try {
-                    String path = stripRootPath(event.path());
-                    hotReplacementContext.updateFile(path, buffer.getBytes());
-                } catch (IllegalArgumentException e) {
-                    log.warn("Rejected remote-dev file update", e);
-                    event.response().setStatusCode(400).end();
-                    return;
-                } catch (Exception e) {
-                    log.error("Failed to update file", e);
-                    event.response().setStatusCode(500).end();
-                    return;
-                }
-                event.response().end();
+                executeBlocking(() -> {
+                    processPut(event, buffer);
+                    return null;
+                });
             }
         }).exceptionHandler(new Handler<Throwable>() {
             @Override
@@ -250,6 +248,24 @@ public class RemoteSyncHandler implements Handler<HttpServerRequest> {
         }).resume();
     }
 
+    private void processPut(HttpServerRequest event, Buffer buffer) {
+        try {
+            if (withAuthenticatedSession(event, buffer.getBytes(),
+                    () -> hotReplacementContext.updateFile(stripRootPath(event.path()), buffer.getBytes()))) {
+                return;
+            }
+        } catch (IllegalArgumentException e) {
+            log.warn("Rejected remote-dev file update", e);
+            event.response().setStatusCode(400).end();
+            return;
+        } catch (Exception e) {
+            log.error("Failed to update file", e);
+            event.response().setStatusCode(500).end();
+            return;
+        }
+        event.response().end();
+    }
+
     private String stripRootPath(String path) {
         return path.startsWith(rootPath)
                 ? path.substring(rootPath.length())
@@ -257,10 +273,11 @@ public class RemoteSyncHandler implements Handler<HttpServerRequest> {
     }
 
     private void handleDelete(HttpServerRequest event) {
-        if (checkSession(event, event.path().getBytes(StandardCharsets.UTF_8)))
-            return;
         try {
-            hotReplacementContext.deleteFile(stripRootPath(event.path()));
+            if (withAuthenticatedSession(event, event.path().getBytes(StandardCharsets.UTF_8),
+                    () -> hotReplacementContext.deleteFile(stripRootPath(event.path())))) {
+                return;
+            }
             event.response().end();
         } catch (IllegalArgumentException e) {
             log.warn("Rejected remote-dev file deletion", e);
@@ -271,7 +288,8 @@ public class RemoteSyncHandler implements Handler<HttpServerRequest> {
         }
     }
 
-    private boolean checkSession(HttpServerRequest event, byte[] data) {
+    private boolean withAuthenticatedSession(HttpServerRequest event, byte[] data, CheckedOperation operation)
+            throws Exception {
         String ses = event.headers().get(QUARKUS_SESSION);
         String sessionCount = event.headers().get(QUARKUS_SESSION_COUNT);
         if (sessionCount == null) {
@@ -281,16 +299,19 @@ public class RemoteSyncHandler implements Handler<HttpServerRequest> {
             event.response().setStatusCode(203).end();
             return true;
         }
-        int sc = Integer.parseInt(sessionCount);
-        if (!Objects.equals(ses, currentSession) ||
-                sc <= currentSessionCounter) {
-            log.error("Invalid session");
-            //not really sure what status code makes sense here
-            //Non-Authoritative Information seems as good as any
+        final int sc;
+        try {
+            sc = Integer.parseInt(sessionCount);
+        } catch (NumberFormatException e) {
+            log.error("Invalid session count");
             event.response().setStatusCode(203).end();
             return true;
         }
-        currentSessionCounter = sc;
+        if (sc <= 0) {
+            log.error("Invalid session count");
+            event.response().setStatusCode(203).end();
+            return true;
+        }
 
         String dataHash = "";
         if (data != null) {
@@ -298,12 +319,70 @@ public class RemoteSyncHandler implements Handler<HttpServerRequest> {
         }
         String rp = event.headers().get(QUARKUS_PASSWORD);
         String compare = HashUtil.sha256(dataHash + ses + sc + password);
-        if (!compare.equals(rp)) {
+        if (!constantTimeEquals(compare, rp)) {
             log.error("Incorrect password");
             event.response().setStatusCode(401).end();
             return true;
         }
-        return false;
+        SESSION_OPERATION_LOCK.lock();
+        try {
+            long now = System.currentTimeMillis();
+            SessionState current = sessionState;
+            if (!current.isActive(now)) {
+                sessionState = SessionState.inactive();
+                log.error("Invalid session");
+                event.response().setStatusCode(203).end();
+                return true;
+            }
+            if (!current.id().equals(ses) || sc <= current.acceptedCounter()) {
+                log.error("Invalid session");
+                //not really sure what status code makes sense here
+                //Non-Authoritative Information seems as good as any
+                event.response().setStatusCode(203).end();
+                return true;
+            }
+            sessionState = new SessionState(current.id(), sc, now + SESSION_TIMEOUT_MILLIS);
+            operation.run();
+            return false;
+        } finally {
+            SESSION_OPERATION_LOCK.unlock();
+        }
+    }
+
+    private static boolean constantTimeEquals(String expected, String actual) {
+        byte[] expectedBytes = expected.getBytes(StandardCharsets.US_ASCII);
+        byte[] actualBytes = new byte[expectedBytes.length];
+        boolean valid = actual != null && actual.length() == expectedBytes.length;
+        if (valid) {
+            for (int i = 0; i < actual.length(); i++) {
+                char value = actual.charAt(i);
+                if (Character.digit(value, 16) == -1) {
+                    valid = false;
+                }
+                actualBytes[i] = (byte) value;
+            }
+        }
+        return MessageDigest.isEqual(expectedBytes, actualBytes) & valid;
+    }
+
+    void executeBlocking(Callable<Void> action) {
+        VertxCoreRecorder.getVertx().get().executeBlocking(action, false);
+    }
+
+    @FunctionalInterface
+    private interface CheckedOperation {
+        void run() throws Exception;
+    }
+
+    record SessionState(String id, int acceptedCounter, long expiresAt) {
+
+        static SessionState inactive() {
+            return new SessionState(null, 0, 0);
+        }
+
+        boolean isActive(long now) {
+            return id != null && now <= expiresAt;
+        }
     }
 
     /**

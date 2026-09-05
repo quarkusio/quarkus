@@ -103,7 +103,6 @@ public class SantaClausService {
     }
 }
 ----
-
 <1> Inject the `EntityManager`
 <2> Inject the `CriteriaBuilderFactory`
 <3> Inject the `EntityViewManager`

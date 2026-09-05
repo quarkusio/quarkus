@@ -1,7 +1,6 @@
 package io.quarkus.websockets.next.runtime;
 
 import java.util.Objects;
-import java.util.concurrent.ConcurrentHashMap;
 
 import org.jboss.logging.Logger;
 
@@ -10,6 +9,9 @@ import io.quarkus.arc.ManagedContext;
 import io.quarkus.vertx.core.runtime.context.VertxContextSafetyToggle;
 import io.smallrye.common.vertx.VertxContext;
 import io.vertx.core.Context;
+import io.vertx.core.internal.VertxBootstrap;
+import io.vertx.core.spi.VertxServiceProvider;
+import io.vertx.core.spi.context.storage.ContextLocal;
 
 /**
  * Per-endpoint CDI context support.
@@ -17,8 +19,6 @@ import io.vertx.core.Context;
 public class ContextSupport {
 
     private static final Logger LOG = Logger.getLogger(ContextSupport.class);
-
-    static final String WEB_SOCKET_CONN_KEY = WebSocketConnectionBase.class.getName();
 
     private final WebSocketConnectionBase connection;
     private final ContextState sessionContextState;
@@ -86,10 +86,20 @@ public class ContextSupport {
         VertxContextSafetyToggle.setContextSafe(duplicated, true);
         // We need to store the connection in the duplicated context
         // It's used to initialize the synthetic bean later on
-        duplicated.getLocal(VertxContext.DATA_MAP_LOCAL, ConcurrentHashMap::new)
-                .put(ContextSupport.WEB_SOCKET_CONN_KEY, connection);
+        WebSocketContextLocalsProvider.WEB_SOCKET_CONN_LOCAL.put(duplicated, connection);
         LOG.debugf("New vertx duplicated context [%s] created: %s", duplicated, connection);
         return duplicated;
+    }
+
+    public static class WebSocketContextLocalsProvider implements VertxServiceProvider {
+
+        static final ContextLocal<WebSocketConnectionBase> WEB_SOCKET_CONN_LOCAL = ContextLocal
+                .registerLocal(WebSocketConnectionBase.class);
+
+        @Override
+        public void init(VertxBootstrap builder) {
+            // ContextLocal registration happens via the static field above.
+        }
     }
 
 }

@@ -30,6 +30,7 @@ import io.quarkus.deployment.dev.devservices.DevServicesConfig;
 import io.quarkus.devservices.common.ComposeLocator;
 import io.quarkus.devservices.common.ConfigureUtil;
 import io.quarkus.devservices.common.ContainerLocator;
+import io.quarkus.devservices.common.DevServicesHostUtil;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.configuration.ConfigUtils;
 
@@ -116,7 +117,9 @@ public class DevServicesApicurioRegistryProcessor {
                         .feature(Feature.APICURIO_REGISTRY_AVRO)
                         .containerId(address.getId())
                         // address does not have the URL Scheme - just the host:port, so prepend http://
-                        .config(getRegistryUrlConfigs("http://" + address.getUrl()))
+                        .config(getRegistryUrlConfigs("http://"
+                                + DevServicesHostUtil.formatResolvedHostAndPort(address.getId(), address.getHost(),
+                                        address.getPort())))
                         .build())
                 .orElseGet(() -> DevServicesResultBuildItem.owned()
                         .feature(Feature.APICURIO_REGISTRY_AVRO)
@@ -211,11 +214,11 @@ public class DevServicesApicurioRegistryProcessor {
         }
 
         public String getUrl() {
-            return String.format("http://%s:%s", getHostToUse(), getPortToUse());
+            return DevServicesHostUtil.formatPrefixedAuthority("http", getHostToUse(), getPortToUse());
         }
 
         private String getHostToUse() {
-            return useSharedNetwork ? hostName : getHost();
+            return DevServicesHostUtil.publishedPortHost(getContainerId(), useSharedNetwork, hostName, getHost());
         }
 
         private int getPortToUse() {

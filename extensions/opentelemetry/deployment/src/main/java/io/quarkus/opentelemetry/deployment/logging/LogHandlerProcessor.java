@@ -1,5 +1,8 @@
 package io.quarkus.opentelemetry.deployment.logging;
 
+import java.util.Optional;
+import java.util.logging.Handler;
+
 import org.jboss.jandex.DotName;
 
 import io.opentelemetry.sdk.autoconfigure.spi.logs.ConfigurableLogRecordExporterProvider;
@@ -18,6 +21,7 @@ import io.quarkus.deployment.builditem.OpenTelemetrySdkBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.opentelemetry.runtime.logs.OpenTelemetryLogRecorder;
 import io.quarkus.opentelemetry.runtime.logs.spi.LogsExporterCDIProvider;
+import io.quarkus.runtime.RuntimeValue;
 
 @BuildSteps(onlyIf = LogsEnabled.class)
 class LogHandlerProcessor {
@@ -38,11 +42,30 @@ class LogHandlerProcessor {
                         LogsExporterCDIProvider.class.getName()));
     }
 
+    /**
+     * The handler is created without waiting for the OpenTelemetry SDK (or the CDI container
+     * it requires), so that runtime logging setup — which consumes all {@link LogHandlerBuildItem}s —
+     * is not delayed until the SDK is ready. Delaying logging setup leaves every logger at the
+     * initial all-enabling level while CDI startup and eagerly started services run, which
+     * triggers debug/trace-only code paths, see
+     * <a href="https://github.com/quarkusio/quarkus/issues/55889">GitHub issue #55889</a>.
+     */
+    @BuildStep
+    @Record(ExecutionTime.RUNTIME_INIT)
+    void build(OpenTelemetryLogRecorder recorder,
+            BuildProducer<LogHandlerBuildItem> logHandlerProducer,
+            BuildProducer<OpenTelemetryLogHandlerBuildItem> otelLogHandlerProducer) {
+        RuntimeValue<Optional<Handler>> handler = recorder.initializeHandler();
+        logHandlerProducer.produce(new LogHandlerBuildItem(handler));
+        otelLogHandlerProducer.produce(new OpenTelemetryLogHandlerBuildItem(handler));
+    }
+
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
     @Consume(OpenTelemetrySdkBuildItem.class)
-    LogHandlerBuildItem build(OpenTelemetryLogRecorder recorder,
+    void activate(OpenTelemetryLogRecorder recorder,
+            OpenTelemetryLogHandlerBuildItem logHandler,
             BeanContainerBuildItem beanContainerBuildItem) {
-        return new LogHandlerBuildItem(recorder.initializeHandler(beanContainerBuildItem.getValue()));
+        recorder.activateHandler(logHandler.getHandler(), beanContainerBuildItem.getValue());
     }
 }

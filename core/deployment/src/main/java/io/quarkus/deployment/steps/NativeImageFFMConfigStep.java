@@ -40,6 +40,21 @@ public class NativeImageFFMConfigStep {
                 final JsonArrayBuilder paramsArray = Json.array();
                 paramsArray.addAll(downcall.getParameterTypes());
                 dcb.put("parameterTypes", paramsArray);
+                if (downcall.hasOptions()) {
+                    final JsonObjectBuilder options = Json.object();
+                    if (downcall.isCaptureCallState()) {
+                        options.put("captureCallState", true);
+                    }
+                    if (downcall.getFirstVariadicArg() >= 0) {
+                        options.put("firstVariadicArg", downcall.getFirstVariadicArg());
+                    }
+                    if (downcall.getCritical() != null) {
+                        final JsonObjectBuilder criticalObj = Json.object();
+                        criticalObj.put("allowHeapAccess", downcall.getCritical().allowHeapAccess());
+                        options.put("critical", criticalObj);
+                    }
+                    dcb.put("options", options);
+                }
                 downcallsArray.add(dcb);
             });
             foreignJson.put("downcalls", downcallsArray);

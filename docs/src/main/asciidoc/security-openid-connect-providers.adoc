@@ -681,7 +681,6 @@ public interface GoogleCalendarClient {
     }
 }
 ----
-
 <1> The `@AccessToken` annotation enables an access token propagation to the target service.
 
 Finally,  you need to configure the Google Calendar address and request  the Google Calendar scope for an access token, as outlined in the following example:

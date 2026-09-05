@@ -25,6 +25,7 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.DevServicesComposeProjectBuildItem;
 import io.quarkus.devservices.common.ComposeLocator;
 import io.quarkus.devservices.common.ConfigureUtil;
+import io.quarkus.devservices.common.DevServicesHostUtil;
 import io.quarkus.devservices.common.JBossLoggingConsumer;
 import io.quarkus.devservices.common.Labels;
 import io.quarkus.devservices.common.Volumes;
@@ -133,6 +134,16 @@ public class MySQLDevServicesProcessor {
             }
         }
 
+        // this is always reachable from the host JVM, so that testcontainers can determine the status of the
+        // container (which it does by trying to acquire a connection)
+        @Override
+        public String getJdbcUrl() {
+            String host = DevServicesHostUtil.resolvePublishedPortHost(getContainerId(), getHost());
+            String authority = DevServicesHostUtil.formatHostAndPort(host, getMappedPort(MYSQL_PORT));
+            String additionalUrlParams = constructUrlParameters("?", "&");
+            return "jdbc:mysql://" + authority + "/" + getDatabaseName() + additionalUrlParams;
+        }
+
         // this is meant to be called by Quarkus code and is needed in order to not disrupt testcontainers
         // from being able to determine the status of the container (which it does by trying to acquire a connection)
         public String getEffectiveJdbcUrl() {
@@ -140,11 +151,11 @@ public class MySQLDevServicesProcessor {
                 // in this case we expose the URL using the network alias we created in 'configure'
                 // and the container port since the application communicating with this container
                 // won't be doing port mapping
+                String authority = DevServicesHostUtil.formatHostAndPort(hostName, MYSQL_PORT);
                 String additionalUrlParams = constructUrlParameters("?", "&");
-                return "jdbc:mysql://" + hostName + ":" + MYSQL_PORT + "/" + getDatabaseName() + additionalUrlParams;
-            } else {
-                return super.getJdbcUrl();
+                return "jdbc:mysql://" + authority + "/" + getDatabaseName() + additionalUrlParams;
             }
+            return getJdbcUrl();
         }
 
         public String getReactiveUrl() {

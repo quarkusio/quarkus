@@ -407,39 +407,44 @@ public class ResteasyReactiveJacksonProcessor {
             additionalUnwrapTypes.add(item.getWrapperType());
         }
 
-        Map<String, ClassInfo> serializedClasses = new HashMap<>();
-        Map<String, ClassInfo> deserializedClasses = new HashMap<>();
+        Map<String, Type> serializedTypes = new HashMap<>();
+        Map<String, Type> deserializedTypes = new HashMap<>();
 
         for (ResteasyReactiveResourceMethodEntriesBuildItem.Entry entry : resourceMethodEntries.getEntries()) {
             MethodInfo methodInfo = entry.getMethodInfo();
-            ClassInfo effectiveReturnClassInfo = getEffectiveClassInfo(methodInfo.returnType(), indexView,
-                    additionalUnwrapTypes);
-            if (effectiveReturnClassInfo != null && !effectiveReturnClassInfo.isEnum()) {
-                serializedClasses.put(effectiveReturnClassInfo.name().toString(), effectiveReturnClassInfo);
+            Type effectiveReturnType = getEffectiveType(methodInfo.returnType(), additionalUnwrapTypes);
+            if (effectiveReturnType != null) {
+                ClassInfo classInfo = indexView.getClassByName(effectiveReturnType.name());
+                if (classInfo != null && !classInfo.isEnum()) {
+                    serializedTypes.put(classInfo.name().toString(), effectiveReturnType);
+                }
             }
 
             if (methodInfo.hasAnnotation(POST.class) || methodInfo.hasAnnotation(PUT.class)
                     || methodInfo.hasAnnotation(PATCH.class)) {
                 for (Type paramType : methodInfo.parameterTypes()) {
-                    ClassInfo effectiveParamClassInfo = getEffectiveClassInfo(paramType, indexView, additionalUnwrapTypes);
-                    if (effectiveParamClassInfo != null) {
-                        deserializedClasses.put(effectiveParamClassInfo.name().toString(), effectiveParamClassInfo);
+                    Type effectiveParamType = getEffectiveType(paramType, additionalUnwrapTypes);
+                    if (effectiveParamType != null) {
+                        ClassInfo classInfo = indexView.getClassByName(effectiveParamType.name());
+                        if (classInfo != null) {
+                            deserializedTypes.put(classInfo.name().toString(), effectiveParamType);
+                        }
                     }
                 }
             }
         }
 
-        if (!serializedClasses.isEmpty()) {
+        if (!serializedTypes.isEmpty()) {
             JacksonSerializerFactory factory = new JacksonSerializerFactory(generatedClassBuildItemBuildProducer,
                     index.getComputingIndex());
-            factory.create(serializedClasses.values())
+            factory.createFromTypes(serializedTypes.values())
                     .forEach(recorder::recordGeneratedSerializer);
         }
 
-        if (!deserializedClasses.isEmpty()) {
+        if (!deserializedTypes.isEmpty()) {
             JacksonDeserializerFactory factory = new JacksonDeserializerFactory(generatedClassBuildItemBuildProducer,
                     index.getComputingIndex());
-            factory.create(deserializedClasses.values())
+            factory.createFromTypes(deserializedTypes.values())
                     .forEach(recorder::recordGeneratedDeserializer);
         }
     }

@@ -6,6 +6,8 @@ import java.util.function.Predicate;
 
 import org.eclipse.microprofile.config.ConfigProvider;
 
+import com.mongodb.ConnectionString;
+
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.InjectableBean;
 import io.quarkus.arc.InjectableInstance;
@@ -49,21 +51,30 @@ public final class BeanUtils {
         if (mongoClientConfig.database().isPresent()) {
             return mongoClientConfig.database().get();
         }
-        mongoClientConfig = mongoConfig.clients().get(MongoConfig.DEFAULT_CLIENT_NAME);
-        if (mongoClientConfig.database().isPresent()) {
-            return mongoClientConfig.database().get();
+        MongoClientConfig defaultMongoClientConfig = mongoConfig.clients().get(MongoConfig.DEFAULT_CLIENT_NAME);
+        if (defaultMongoClientConfig.database().isPresent()) {
+            return defaultMongoClientConfig.database().get();
+        }
+        if (mongoClientConfig.connectionString().isPresent()) {
+            String database = new ConnectionString(mongoClientConfig.connectionString().get()).getDatabase();
+            if (database != null) {
+                return database;
+            }
         }
 
         if (mongoEntity == null) {
             throw new IllegalArgumentException(
-                    "The database property was not configured for the default Mongo Client (via 'quarkus.mongodb.database'");
+                    "The database was not configured for the default Mongo Client via 'quarkus.mongodb.database' "
+                            + "or the connection string");
         }
         if (mongoEntity.clientName().isEmpty()) {
             throw new IllegalArgumentException("The database attribute was not set for the @MongoEntity annotation "
-                    + "and neither was the database property configured for the default Mongo Client (via 'quarkus.mongodb.database')");
+                    + "and the database was not configured for the default Mongo Client via 'quarkus.mongodb.database' "
+                    + "or the connection string");
         }
         throw new IllegalArgumentException(String.format(
-                "The database attribute was not set for the @MongoEntity annotation neither was the database property configured for the named Mongo Client (via 'quarkus.mongodb.%s.database')",
+                "The database attribute was not set for the @MongoEntity annotation and the database was not configured "
+                        + "for the named Mongo Client via 'quarkus.mongodb.%s.database' or the connection string",
                 mongoEntity.clientName()));
     }
 

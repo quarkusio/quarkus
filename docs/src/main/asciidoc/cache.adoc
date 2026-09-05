@@ -308,6 +308,11 @@ Quarkus is able to also cache `null` values unlike the underlying Caffeine provi
 See <<negative-cache,more on this topic below>>.
 ====
 
+[NOTE]
+====
+`@CacheResult` can be used on a Kotlin `suspend` function if the `io.quarkus:quarkus-kotlin` extension is part of the application.
+====
+
 === @CacheInvalidate
 
 Removes an entry from the cache.

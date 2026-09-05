@@ -21,6 +21,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import jakarta.ws.rs.RuntimeType;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.client.Entity;
+import jakarta.ws.rs.core.EntityPart;
 import jakarta.ws.rs.core.GenericEntity;
 import jakarta.ws.rs.core.GenericType;
 import jakarta.ws.rs.core.MediaType;
@@ -40,6 +41,7 @@ import org.jboss.resteasy.reactive.client.spi.ResteasyReactiveClientRequestConte
 import org.jboss.resteasy.reactive.common.core.AbstractResteasyReactiveContext;
 import org.jboss.resteasy.reactive.common.core.Serialisers;
 import org.jboss.resteasy.reactive.common.jaxrs.ConfigurationImpl;
+import org.jboss.resteasy.reactive.common.jaxrs.EntityPartImpl;
 import org.jboss.resteasy.reactive.common.jaxrs.ResponseImpl;
 import org.jboss.resteasy.reactive.common.util.CaseInsensitiveMap;
 import org.jboss.resteasy.reactive.spi.ThreadSetupAction;
@@ -564,14 +566,16 @@ public class RestClientRequestContext extends AbstractResteasyReactiveContext<Re
             return false;
         }
         Object entityObj = entity.getEntity();
+        boolean entityPartList = false;
         if (entityObj instanceof GenericEntity<?> ge) {
+            entityPartList = EntityPartImpl.isEntityPartList(ge.getType());
             entityObj = ge.getEntity();
         }
         if (entityObj instanceof QuarkusMultipartForm) {
             return true;
         }
-        if (entityObj instanceof java.util.List<?> list && !list.isEmpty()
-                && list.get(0) instanceof jakarta.ws.rs.core.EntityPart) {
+        if (entityObj instanceof List<?> list
+                && (entityPartList || (!list.isEmpty() && list.get(0) instanceof EntityPart))) {
             return true;
         }
         return false;

@@ -65,6 +65,7 @@ public abstract class AbstractQuarkusExtension {
         this.classpath = dependencyClasspath(mainSourceSet);
         this.codeGenForkOptions = new ArrayList<>();
         this.buildForkOptions = new ArrayList<>();
+        this.quarkusBuildProperties.put("quarkus.build.base-name", finalName);
     }
 
     private BaseConfig buildBaseConfig() {

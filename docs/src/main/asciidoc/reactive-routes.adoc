@@ -697,7 +697,6 @@ public class MyFilters {
     }
 }
 ----
-
 <1> The `RouteFilter#value()` defines the priority used to sort the filters - filters with higher priority are called first.
 <2> The filter is likely required to call the `next()` method to continue the chain.
 

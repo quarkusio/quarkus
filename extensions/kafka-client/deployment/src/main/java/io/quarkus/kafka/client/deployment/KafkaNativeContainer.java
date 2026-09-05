@@ -14,6 +14,7 @@ import com.github.dockerjava.api.command.InspectContainerResponse;
 
 import io.quarkus.deployment.builditem.Startable;
 import io.quarkus.devservices.common.ConfigureUtil;
+import io.quarkus.devservices.common.DevServicesHostUtil;
 import io.quarkus.runtime.LaunchMode;
 
 public class KafkaNativeContainer extends GenericContainer<KafkaNativeContainer> implements Startable {
@@ -76,11 +77,12 @@ public class KafkaNativeContainer extends GenericContainer<KafkaNativeContainer>
     private String getKafkaAdvertisedListeners() {
         List<String> addresses = new ArrayList<>();
         if (useSharedNetwork) {
-            addresses.add(String.format("BROKER://%s:9093", hostName));
+            addresses.add(DevServicesHostUtil.formatPrefixedAuthority("BROKER", hostName, 9093));
         }
         // See https://github.com/quarkusio/quarkus/issues/21819
         // Kafka is always exposed to the Docker host network
-        addresses.add(String.format("PLAINTEXT://%s:%d", getHost(), getExposedKafkaPort()));
+        addresses.add(DevServicesHostUtil.formatPrefixedAuthority("PLAINTEXT",
+                DevServicesHostUtil.publishedPortHost(getContainerId(), getHost()), getExposedKafkaPort()));
         return String.join(",", addresses);
     }
 

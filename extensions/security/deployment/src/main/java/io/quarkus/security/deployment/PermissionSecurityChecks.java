@@ -64,6 +64,7 @@ import io.quarkus.security.runtime.SecurityCheckRecorder;
 import io.quarkus.security.runtime.interceptor.PermissionsAllowedInterceptor;
 import io.quarkus.security.spi.PermissionsAllowedMetaAnnotationBuildItem;
 import io.quarkus.security.spi.SecurityTransformer;
+import io.quarkus.security.spi.runtime.PermissionToActionUtil;
 import io.quarkus.security.spi.runtime.SecurityCheck;
 import io.smallrye.common.annotation.Blocking;
 
@@ -602,32 +603,30 @@ interface PermissionSecurityChecks {
                     if (!permissionToActions.containsKey(permissionNameKey)) {
                         permissionToActions.put(permissionNameKey, Collections.emptySet());
                     }
-                } else if (permissionValExpression.contains(PERMISSION_TO_ACTION_SEPARATOR)) {
-
-                    // expected format: permission:action
-                    final String[] permissionToActionArr = permissionValExpression.split(PERMISSION_TO_ACTION_SEPARATOR);
-                    if (permissionToActionArr.length != 2) {
-                        throw new RuntimeException(String.format(
-                                "PermissionsAllowed value '%s' contains more than one separator '%2$s', expected format is 'permissionName%2$saction'",
-                                permissionValExpression, PERMISSION_TO_ACTION_SEPARATOR));
-                    }
-                    final PermissionNameAndChecker permissionNameKey = new PermissionNameAndChecker(permissionToActionArr[0],
-                            null);
-                    final String action = permissionToActionArr[1];
-                    if (permissionToActions.containsKey(permissionNameKey)) {
-                        permissionToActions.get(permissionNameKey).add(action);
-                    } else {
-                        final Set<String> actions = new HashSet<>();
-                        actions.add(action);
-                        permissionToActions.put(permissionNameKey, actions);
-                    }
                 } else {
-
-                    // expected format: permission
-                    final PermissionNameAndChecker permissionNameKey = new PermissionNameAndChecker(permissionValExpression,
+                    final PermissionToActionUtil.ParsedPermission parsed;
+                    try {
+                        parsed = PermissionToActionUtil.parse(permissionValExpression);
+                    } catch (IllegalArgumentException e) {
+                        throw new RuntimeException(String.format(
+                                "Invalid @PermissionsAllowed value '%s': %s",
+                                permissionValExpression, e.getMessage()));
+                    }
+                    final PermissionNameAndChecker permissionNameKey = new PermissionNameAndChecker(parsed.name(),
                             null);
-                    if (!permissionToActions.containsKey(permissionNameKey)) {
-                        permissionToActions.put(permissionNameKey, new HashSet<>());
+                    if (parsed.hasAction()) {
+                        final String action = parsed.action();
+                        if (permissionToActions.containsKey(permissionNameKey)) {
+                            permissionToActions.get(permissionNameKey).add(action);
+                        } else {
+                            final Set<String> actions = new HashSet<>();
+                            actions.add(action);
+                            permissionToActions.put(permissionNameKey, actions);
+                        }
+                    } else {
+                        if (!permissionToActions.containsKey(permissionNameKey)) {
+                            permissionToActions.put(permissionNameKey, new HashSet<>());
+                        }
                     }
                 }
             }
@@ -658,11 +657,7 @@ interface PermissionSecurityChecks {
                 List<PermissionNameAndChecker> checkerPermissions = permissionToActions.keySet().stream()
                         .filter(k -> k.checker != null).toList();
                 for (PermissionNameAndChecker checkerPermission : checkerPermissions) {
-                    // read -> read
-                    // read:all -> read
-                    String permissionName = checkerPermission.permissionName.contains(PERMISSION_TO_ACTION_SEPARATOR)
-                            ? checkerPermission.permissionName.split(PERMISSION_TO_ACTION_SEPARATOR)[0]
-                            : checkerPermission.permissionName;
+                    String permissionName = PermissionToActionUtil.parse(checkerPermission.permissionName).name();
                     for (var e : permissionToActions.entrySet()) {
                         PermissionNameAndChecker permissionNameKey = e.getKey();
                         // look for permission names that match our permission checker value (before action-to-perm separator)

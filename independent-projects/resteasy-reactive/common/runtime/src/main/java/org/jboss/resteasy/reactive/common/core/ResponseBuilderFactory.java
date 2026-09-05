@@ -12,4 +12,5 @@ public interface ResponseBuilderFactory {
 
     <T> RestResponse.ResponseBuilder<T> createRestResponse();
 
+    Serialisers getSerialisers();
 }

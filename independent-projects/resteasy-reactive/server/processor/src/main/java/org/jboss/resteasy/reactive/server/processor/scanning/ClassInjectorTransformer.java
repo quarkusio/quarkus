@@ -14,6 +14,7 @@ import java.util.function.BiFunction;
 import jakarta.ws.rs.BadRequestException;
 import jakarta.ws.rs.NotFoundException;
 import jakarta.ws.rs.WebApplicationException;
+import jakarta.ws.rs.core.EntityPart;
 import jakarta.ws.rs.core.MediaType;
 
 import org.jboss.jandex.AnnotationInstance;
@@ -615,6 +616,10 @@ public class ClassInjectorTransformer implements BiFunction<String, ClassVisitor
             case Path:
                 value = loadMultipartPath(method, requestCtx, paramName, param.isSingle());
                 break;
+            case EntityPart:
+                value = invokeMultipartSupport(method, requestCtx, paramName, param.isSingle(),
+                        "getEntityPart", EntityPart.class);
+                break;
             case PartType:
                 value = loadMultipartPartType(method, className, fieldInfo, param, requestCtx, paramName);
                 break;
@@ -761,6 +766,8 @@ public class ClassInjectorTransformer implements BiFunction<String, ClassVisitor
             return MultipartFormParamExtractor.Type.String;
         } else if (param.getElementType().equals(InputStream.class.getName())) {
             return MultipartFormParamExtractor.Type.InputStream;
+        } else if (param.getElementType().equals(EntityPart.class.getName())) {
+            return MultipartFormParamExtractor.Type.EntityPart;
         } else if (param.getParamType().kind() == Kind.ARRAY
                 && param.getParamType().asArrayType().constituent().kind() == Kind.PRIMITIVE
                 && param.getParamType().asArrayType().constituent().asPrimitiveType().primitive() == Primitive.BYTE) {

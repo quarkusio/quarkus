@@ -147,17 +147,17 @@ public abstract class AbstractQuarkusExtensionTest<S extends AbstractQuarkusExte
 
     private boolean allowTestClassOutsideDeployment;
     private boolean flatClassPath;
-    private List<ClassLoaderEventListener> classLoadListeners = new ArrayList<>();
+    private final List<ClassLoaderEventListener> classLoadListeners = new ArrayList<>();
 
     private List<Object> testMethodInvokers;
 
-    private List<Consumer<QuarkusBootstrap.Builder>> bootstrapCustomizers = new ArrayList<>();
+    private final List<Consumer<QuarkusBootstrap.Builder>> bootstrapCustomizers = new ArrayList<>();
 
     private boolean debugBytecode = false;
     private boolean reproducibilityCheckActive = false;
-    private List<String> traceCategories = new ArrayList<>();
-    private Map<String, String> systemPropertiesToRestore = new HashMap<>();
-    private Map<String, java.util.logging.Level> loggerLevelsToRestore = new HashMap<>();
+    private final List<String> traceCategories = new ArrayList<>();
+    private final Map<String, String> systemPropertiesToRestore = new HashMap<>();
+    private final Map<String, java.util.logging.Level> loggerLevelsToRestore = new HashMap<>();
 
     public S setExpectedException(Class<? extends Throwable> expectedException) {
         return setExpectedException(expectedException, false);

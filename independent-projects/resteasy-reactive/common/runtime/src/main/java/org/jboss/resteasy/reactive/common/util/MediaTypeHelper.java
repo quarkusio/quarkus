@@ -218,7 +218,11 @@ public class MediaTypeHelper {
         ArrayList<MediaType> types = new ArrayList<>();
         String[] medias = header.split(",");
         for (String media : medias) {
-            types.add(valueOf(media.trim()));
+            try {
+                types.add(valueOf(media.trim()));
+            } catch (IllegalArgumentException ignored) {
+                // skip unparseable Accept tokens instead of failing the whole header
+            }
         }
         return types;
     }

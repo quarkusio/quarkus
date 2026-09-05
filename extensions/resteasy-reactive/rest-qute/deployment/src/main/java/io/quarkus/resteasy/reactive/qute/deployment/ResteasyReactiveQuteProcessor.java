@@ -18,7 +18,6 @@ import org.jboss.resteasy.reactive.server.model.HandlerChainCustomizer;
 import org.jboss.resteasy.reactive.server.processor.scanning.MethodScanner;
 
 import io.quarkus.deployment.Feature;
-import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyIgnoreWarningBuildItem;
@@ -26,7 +25,6 @@ import io.quarkus.qute.TemplateInstance;
 import io.quarkus.resteasy.reactive.qute.runtime.TemplateResponseFilter;
 import io.quarkus.resteasy.reactive.qute.runtime.TemplateResponseUniHandler;
 import io.quarkus.resteasy.reactive.server.spi.MethodScannerBuildItem;
-import io.quarkus.resteasy.reactive.server.spi.NonBlockingReturnTypeBuildItem;
 import io.quarkus.resteasy.reactive.spi.CustomContainerResponseFilterBuildItem;
 
 public class ResteasyReactiveQuteProcessor {
@@ -47,13 +45,6 @@ public class ResteasyReactiveQuteProcessor {
     ReflectiveHierarchyIgnoreWarningBuildItem ignoreReflectiveWarning() {
         return new ReflectiveHierarchyIgnoreWarningBuildItem(
                 new ReflectiveHierarchyIgnoreWarningBuildItem.DotNameExclusion(TEMPLATE_INSTANCE));
-    }
-
-    @BuildStep
-    void nonBlockingTemplateInstance(RestQuteConfig config, BuildProducer<NonBlockingReturnTypeBuildItem> nonBlockingType) {
-        if (config.templateInstanceNonBlockingType()) {
-            nonBlockingType.produce(new NonBlockingReturnTypeBuildItem(TEMPLATE_INSTANCE));
-        }
     }
 
     @BuildStep

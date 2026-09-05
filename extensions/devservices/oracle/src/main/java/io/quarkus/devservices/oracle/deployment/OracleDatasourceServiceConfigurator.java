@@ -9,6 +9,7 @@ import io.quarkus.datasource.deployment.spi.DevServicesDatasourceProvider.Runnin
 import io.quarkus.deployment.dev.devservices.RunningContainer;
 import io.quarkus.devservices.common.ContainerAddress;
 import io.quarkus.devservices.common.DatasourceServiceConfigurator;
+import io.quarkus.devservices.common.DevServicesHostUtil;
 
 public class OracleDatasourceServiceConfigurator implements DatasourceServiceConfigurator {
 
@@ -35,10 +36,10 @@ public class OracleDatasourceServiceConfigurator implements DatasourceServiceCon
     }
 
     public String getJdbcUrl(ContainerAddress containerAddress, String databaseName) {
-        return "jdbc:%s:@%s:%d/%s%s".formatted(
+        return "jdbc:%s:@%s/%s%s".formatted(
                 getJdbcPrefix(),
-                containerAddress.getHost(),
-                containerAddress.getPort(),
+                DevServicesHostUtil.formatResolvedHostAndPort(containerAddress.getId(), containerAddress.getHost(),
+                        containerAddress.getPort()),
                 databaseName,
                 getParameters(containerAddress.getRunningContainer().containerInfo().labels()));
     }

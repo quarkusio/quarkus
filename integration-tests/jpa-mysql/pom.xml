@@ -156,22 +156,6 @@
                 </plugins>
             </build>
         </profile>
-
-        <!-- Disabled pending fix of #33105 -->
-        <profile>
-            <id>podman</id>
-            <activation>
-                <property>
-                    <name>env.IS_PODMAN</name>
-                    <value>true</value>
-                </property>
-            </activation>
-            <properties>
-                <skipTests>true</skipTests>
-                <skipITs>true</skipITs>
-                <enforcer.skip>true</enforcer.skip>
-            </properties>
-        </profile>
     </profiles>
 
 </project>

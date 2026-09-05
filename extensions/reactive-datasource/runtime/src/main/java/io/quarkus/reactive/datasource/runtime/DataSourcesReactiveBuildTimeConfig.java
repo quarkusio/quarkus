@@ -23,7 +23,7 @@ public interface DataSourcesReactiveBuildTimeConfig {
     @ConfigDocMapKey("datasource-name")
     @WithParentName
     @WithDefaults
-    @WithUnnamedKey(DataSourceUtil.DEFAULT_DATASOURCE_NAME)
+    @WithUnnamedKey(value = DataSourceUtil.DEFAULT_DATASOURCE_NAME, eager = false)
     Map<String, DataSourceReactiveOuterNamedBuildTimeConfig> dataSources();
 
     /**

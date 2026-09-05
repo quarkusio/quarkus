@@ -147,13 +147,7 @@ public class RestClientCDIDelegateBuilder<T> {
 
         Optional<Integer> maxChunkSize = oneOf(
                 restClientConfig.maxChunkSize().map(MemorySize::asIntValue),
-                restClientConfig.multipart().maxChunkSize().isPresent()
-                        ? Optional.of(restClientConfig.multipart().maxChunkSize().getAsInt())
-                        : Optional.empty(),
-                configRoot.maxChunkSize().map(MemorySize::asIntValue),
-                configRoot.multipart().maxChunkSize().isPresent()
-                        ? Optional.of(restClientConfig.multipart().maxChunkSize().getAsInt())
-                        : Optional.empty());
+                configRoot.maxChunkSize().map(MemorySize::asIntValue));
         builder.property(QuarkusRestClientProperties.MAX_CHUNK_SIZE, maxChunkSize.orElse(DEFAULT_MAX_CHUNK_SIZE));
 
         Optional<Boolean> enableCompressions = oneOf(restClientConfig.enableResponseDecompression(),
@@ -187,44 +181,30 @@ public class RestClientCDIDelegateBuilder<T> {
     }
 
     private void configureProxy(QuarkusRestClientBuilder builder) {
-
-        final Optional<String> legacyProxy = oneOf(restClientConfig.proxyAddress(), configRoot.proxyAddress());
-        if (legacyProxy.isPresent()) {
-            String proxyAddress = legacyProxy.get();
-            if (proxyAddress.equals("none")) {
-                builder.proxyAddress("none", 0);
-            } else {
-                ProxyAddressUtil.HostAndPort hostAndPort = ProxyAddressUtil.parseAddress(proxyAddress);
-                builder.proxyAddress(hostAndPort.host, hostAndPort.port);
-
-                oneOf(restClientConfig.proxyUser(), configRoot.proxyUser()).ifPresent(builder::proxyUser);
-                oneOf(restClientConfig.proxyPassword(), configRoot.proxyPassword()).ifPresent(builder::proxyPassword);
-                oneOf(restClientConfig.nonProxyHosts(), configRoot.nonProxyHosts()).ifPresent(builder::nonProxyHosts);
-                oneOf(restClientConfig.proxyConnectTimeout(), configRoot.proxyConnectTimeout())
-                        .ifPresent(builder::proxyConnectTimeout);
-            }
-        } else {
-            /* Check the named proxy configurations */
-            final ProxyConfigurationRegistry registry = Arc.container().select(ProxyConfigurationRegistry.class).get();
-            final Optional<String> proxyConfigurationName = restClientConfig.proxyConfigurationName()
-                    .or(() -> configRoot.proxyConfigurationName());
-            registry.get(proxyConfigurationName)
-                    .map(ProxyConfiguration::assertHttpType)
-                    .ifPresent(proxyConfig -> {
-                        builder.proxyAddress(proxyConfig.host(), proxyConfig.port());
-                        if (proxyConfig.username().isPresent() && proxyConfig.password().isPresent()) {
-                            builder.proxyUser(proxyConfig.username().get());
-                            builder.proxyPassword(proxyConfig.password().get());
-                        }
-                        proxyConfig.nonProxyHosts().ifPresent(nonProxyHosts -> {
-                            if (!nonProxyHosts.isEmpty()) {
-                                builder.nonProxyHosts(String.join(",", nonProxyHosts));
-                            }
-                        });
-                        proxyConfig.proxyConnectTimeout().ifPresent(builder::proxyConnectTimeout);
-                    });
+        Optional<String> proxyConfigurationName = restClientConfig.proxyConfigurationName()
+                .or(() -> configRoot.proxyConfigurationName());
+        if (proxyConfigurationName.isPresent() && proxyConfigurationName.get().equals(NONE)) {
+            builder.proxyAddress("none", 0);
+            return;
         }
 
+        /* Check the named proxy configurations */
+        ProxyConfigurationRegistry registry = Arc.container().select(ProxyConfigurationRegistry.class).get();
+        registry.get(proxyConfigurationName)
+                .map(ProxyConfiguration::assertHttpType)
+                .ifPresent(proxyConfig -> {
+                    builder.proxyAddress(proxyConfig.host(), proxyConfig.port());
+                    if (proxyConfig.username().isPresent() && proxyConfig.password().isPresent()) {
+                        builder.proxyUser(proxyConfig.username().get());
+                        builder.proxyPassword(proxyConfig.password().get());
+                    }
+                    proxyConfig.nonProxyHosts().ifPresent(nonProxyHosts -> {
+                        if (!nonProxyHosts.isEmpty()) {
+                            builder.nonProxyHosts(String.join(",", nonProxyHosts));
+                        }
+                    });
+                    proxyConfig.proxyConnectTimeout().ifPresent(builder::proxyConnectTimeout);
+                });
     }
 
     private void configureQueryParamStyle(QuarkusRestClientBuilder builder) {

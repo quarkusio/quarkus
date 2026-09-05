@@ -40,11 +40,7 @@ class AdditionalPersistenceUnitExternalEntityTest {
     static QuarkusExtensionTest runner = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .add(new ByteArrayAsset(generateEntityBytecode()), EXTERNAL_INTERNAL_NAME + ".class"))
-            .addBuildChainCustomizer(buildCustomizer())
-            .withConfiguration("""
-                    quarkus.datasource.vector.db-kind=h2
-                    quarkus.hibernate-orm."external".schema-management.strategy=drop-and-create
-                    """);
+            .addBuildChainCustomizer(buildCustomizer());
 
     @Inject
     @PersistenceUnit(PERSISTENCE_UNIT_NAME)

@@ -1,5 +1,9 @@
 package io.quarkus.devui.testrunner.params;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
+import java.util.ArrayList;
+import java.util.List;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -14,6 +18,7 @@ import io.quarkus.devui.tests.DevUIJsonRPCTest;
 import io.quarkus.test.ContinuousTestingTestUtils;
 import io.quarkus.test.ContinuousTestingTestUtils.TestStatus;
 import io.quarkus.test.QuarkusDevModeTest;
+import tools.jackson.databind.JsonNode;
 
 public class TestParameterizedTestCase extends DevUIJsonRPCTest {
 
@@ -46,6 +51,23 @@ public class TestParameterizedTestCase extends DevUIJsonRPCTest {
         Assertions.assertEquals(1L, ts.getTestsFailed());
         Assertions.assertEquals(4L, ts.getTestsPassed());
         Assertions.assertEquals(0L, ts.getTestsSkipped());
+
+        JsonNode testClassResults = super.executeJsonRPCMethod("getResults").get("results").get(ParamET.class.getName());
+        List<String> displayNames = new ArrayList<>();
+        for (String resultType : List.of("passing", "failing")) {
+            for (JsonNode testResult : testClassResults.get(resultType)) {
+                if (testResult.get("test").asBoolean()) {
+                    displayNames.add(testResult.get("displayName").asText());
+                }
+            }
+        }
+        assertThat(displayNames)
+                .filteredOn(name -> name.contains("shouldValidateOddNumbers"))
+                .containsExactlyInAnyOrder(
+                        "ParamET#shouldValidateOddNumbers(int) [1] x = 1",
+                        "ParamET#shouldValidateOddNumbers(int) [2] x = 4",
+                        "ParamET#shouldValidateOddNumbers(int) [3] x = 11",
+                        "ParamET#shouldValidateOddNumbers(int) [4] x = 17");
 
         super.executeJsonRPCMethod("runFailed");
 

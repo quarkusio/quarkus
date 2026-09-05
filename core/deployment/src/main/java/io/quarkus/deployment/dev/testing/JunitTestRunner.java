@@ -103,6 +103,8 @@ public class JunitTestRunner {
     private static final String ARCHUNIT_FIELDSOURCE_FQCN = "com.tngtech.archunit.junit.FieldSource";
     private static final String FACADE_CLASS_LOADER_NAME = "io.quarkus.test.junit.classloading.FacadeClassLoader";
     private static final String TEST_DISCOVERY_PROPERTY = "quarkus.continuous-tests-discovery";
+    // Matches TestTemplateInvocationTestDescriptor.SEGMENT_TYPE from JUnit Jupiter Engine
+    private static final String TEST_TEMPLATE_INVOCATION_SEGMENT_TYPE = "test-template-invocation";
 
     private final long runId;
     private final DevModeContext.ModuleInfo moduleInfo;
@@ -476,10 +478,16 @@ public class JunitTestRunner {
     private String getDisplayNameFromIdentifier(TestIdentifier testIdentifier, String testClassName) {
         if (testIdentifier.getSource().isPresent() && testClassName != null) {
             var testSource = testIdentifier.getSource().get();
-            if (testSource instanceof ClassSource) {
+            if (testSource instanceof MethodSource methodSource) {
+                if (testIdentifier.getUniqueIdObject().getLastSegment().getType()
+                        .equals(TEST_TEMPLATE_INVOCATION_SEGMENT_TYPE)) {
+                    return getSimpleClassName(testClassName) + "#" + methodSource.getMethodName() + "("
+                            + methodSource.getMethodParameterTypes() + ") " + testIdentifier.getDisplayName();
+                }
+                return getSimpleClassName(testClassName) + "#" + testIdentifier.getDisplayName();
+            } else if (testSource instanceof ClassSource) {
                 return testIdentifier.getDisplayName();
-            } else if (testSource instanceof MethodSource
-                    || testSource.getClass().getName().equals(ARCHUNIT_FIELDSOURCE_FQCN)) {
+            } else if (testSource.getClass().getName().equals(ARCHUNIT_FIELDSOURCE_FQCN)) {
                 return getSimpleClassName(testClassName) + "#" + testIdentifier.getDisplayName();
             }
         }

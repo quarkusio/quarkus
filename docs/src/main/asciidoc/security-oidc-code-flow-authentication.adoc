@@ -1301,6 +1301,10 @@ public class CustomTokenStateManager implements TokenStateManager {
 }
 ----
 
+If the tokens are kept in an external storage, this storage might no longer have them, for example, because they have expired and were evicted or removed.
+In this case, the custom `TokenStateManager#getTokens` method must either return a `null` value or fail with `io.quarkus.security.AuthenticationFailedException`.
+Both options are treated the same way: the session cookie is removed and the user is redirected to the OIDC provider to re-authenticate.
+
 For information about the default `TokenStateManager` storing tokens in an encrypted session cookie, see <<token-state-manager>>.
 
 ifndef::no-quarkus-oidc-db-token-state-manager[]

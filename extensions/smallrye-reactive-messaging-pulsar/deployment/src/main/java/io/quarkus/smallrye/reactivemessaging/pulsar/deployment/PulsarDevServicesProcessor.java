@@ -25,6 +25,7 @@ import io.quarkus.deployment.dev.devservices.DevServicesConfig;
 import io.quarkus.deployment.dev.devservices.RunningContainer;
 import io.quarkus.devservices.common.ComposeLocator;
 import io.quarkus.devservices.common.ContainerLocator;
+import io.quarkus.devservices.common.DevServicesHostUtil;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.configuration.ConfigUtils;
 
@@ -73,8 +74,10 @@ public class PulsarDevServicesProcessor {
                             .locatePublicPort(config.serviceName(), config.shared(),
                                     launchMode.getLaunchMode(), PulsarContainer.BROKER_HTTP_PORT)
                             .orElse(8080);
-                    String pulsarUrl = String.format("pulsar://%s:%d", containerAddress.getHost(), containerAddress.getPort());
-                    String httpUrl = String.format("http://%s:%d", containerAddress.getHost(), httpPort);
+                    String pulsarUrl = DevServicesHostUtil.formatResolvedPrefixedAuthority("pulsar",
+                            containerAddress.getId(), containerAddress.getHost(), containerAddress.getPort());
+                    String httpUrl = DevServicesHostUtil.formatResolvedPrefixedAuthority("http", containerAddress.getId(),
+                            containerAddress.getHost(), httpPort);
                     return DevServicesResultBuildItem.discovered()
                             .feature(Feature.MESSAGING_PULSAR)
                             .containerId(containerAddress.getId())
@@ -92,9 +95,10 @@ public class PulsarDevServicesProcessor {
                                 return null;
                             }
                             int httpPort = container.getPortMapping(PulsarContainer.BROKER_HTTP_PORT).orElse(8080);
-                            String pulsarUrl = String.format("pulsar://%s:%d", containerAddress.getHost(),
-                                    containerAddress.getPort());
-                            String httpUrl = String.format("http://%s:%d", containerAddress.getHost(), httpPort);
+                            String pulsarUrl = DevServicesHostUtil.formatResolvedPrefixedAuthority("pulsar",
+                                    containerAddress.getId(), containerAddress.getHost(), containerAddress.getPort());
+                            String httpUrl = DevServicesHostUtil.formatResolvedPrefixedAuthority("http",
+                                    containerAddress.getId(), containerAddress.getHost(), httpPort);
                             return DevServicesResultBuildItem.discovered()
                                     .feature(Feature.MESSAGING_PULSAR)
                                     .containerId(containerAddress.getId())

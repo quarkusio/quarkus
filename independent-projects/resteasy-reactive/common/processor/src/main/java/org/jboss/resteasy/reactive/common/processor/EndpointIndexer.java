@@ -1308,7 +1308,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
             builder.setType(ParameterType.PATH);
             convertible = true;
         } else if (restPathParam != null) {
-            builder.setName(valueOrDefault(restPathParam.value(), sourceName));
+            builder.setName(parameterNameOrFail(restPathParam.value(), sourceName, "RestPath", builder.getErrorLocation()));
             builder.setType(ParameterType.PATH);
             convertible = true;
         } else if (queryParam != null) {
@@ -1317,7 +1317,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
             builder.setSeparator(getSeparator(anns));
             convertible = true;
         } else if (restQueryParam != null) {
-            builder.setName(valueOrDefault(restQueryParam.value(), sourceName));
+            builder.setName(parameterNameOrFail(restQueryParam.value(), sourceName, "RestQuery", builder.getErrorLocation()));
             builder.setType(ParameterType.QUERY);
             builder.setSeparator(getSeparator(anns));
             convertible = true;
@@ -1326,7 +1326,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
             builder.setType(ParameterType.COOKIE);
             convertible = true;
         } else if (restCookieParam != null) {
-            builder.setName(valueOrDefault(restCookieParam.value(), sourceName));
+            builder.setName(parameterNameOrFail(restCookieParam.value(), sourceName, "RestCookie", builder.getErrorLocation()));
             builder.setType(ParameterType.COOKIE);
             convertible = true;
         } else if (headerParam != null) {
@@ -1335,7 +1335,8 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
             convertible = true;
         } else if (restHeaderParam != null) {
             if (restHeaderParam.value() == null || restHeaderParam.value().asString().isEmpty()) {
-                builder.setName(StringUtil.hyphenateWithCapitalFirstLetter(sourceName));
+                builder.setName(StringUtil.hyphenateWithCapitalFirstLetter(
+                        parameterNameOrFail(null, sourceName, "RestHeader", builder.getErrorLocation())));
             } else {
                 builder.setName(restHeaderParam.value().asString());
             }
@@ -1346,7 +1347,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
             builder.setType(ParameterType.FORM);
             convertible = isFormParamConvertible(paramType);
         } else if (restFormParam != null) {
-            builder.setName(valueOrDefault(restFormParam.value(), sourceName));
+            builder.setName(parameterNameOrFail(restFormParam.value(), sourceName, "RestForm", builder.getErrorLocation()));
             builder.setType(ParameterType.FORM);
             convertible = isFormParamConvertible(paramType);
         } else if (matrixParam != null) {
@@ -1354,7 +1355,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
             builder.setType(ParameterType.MATRIX);
             convertible = true;
         } else if (restMatrixParam != null) {
-            builder.setName(valueOrDefault(restMatrixParam.value(), sourceName));
+            builder.setName(parameterNameOrFail(restMatrixParam.value(), sourceName, "RestMatrix", builder.getErrorLocation()));
             builder.setType(ParameterType.MATRIX);
             convertible = true;
         } else if (contextParam != null) {
@@ -1626,6 +1627,27 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
             return defaultValue;
         String val = annotation.asString();
         return val != null && !val.isEmpty() ? val : defaultValue;
+    }
+
+    /**
+     * Resolves the name of a parameter whose annotation falls back to the name of the parameter itself.
+     * <p>
+     * The parameter name is only present in the bytecode when the class was compiled with {@code -parameters},
+     * so it can be {@code null}. Failing here names the cause, instead of letting the missing name travel until
+     * something dereferences it. See <a href="https://github.com/quarkusio/quarkus/issues/56004">issue #56004</a>.
+     */
+    private String parameterNameOrFail(AnnotationValue annotation, String sourceName, String annotationName,
+            String errorLocation) {
+        String name = valueOrDefault(annotation, sourceName);
+        if (name == null) {
+            throw new DeploymentException("Unable to determine the name of the @" + annotationName + " parameter of "
+                    + errorLocation
+                    + " because parameter names are not available in the compiled class."
+                    + " Either give the name explicitly, as in @" + annotationName + "(\"some-name\"),"
+                    + " or compile the class with the -parameters option of javac"
+                    + " (maven.compiler.parameters=true for Maven, options.compilerArgs.add(\"-parameters\") for Gradle).");
+        }
+        return name;
     }
 
     public Set<String> nameBindingNames(ClassInfo selectedAppClass) {

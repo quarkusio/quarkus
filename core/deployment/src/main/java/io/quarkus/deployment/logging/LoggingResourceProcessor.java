@@ -99,10 +99,8 @@ import io.quarkus.deployment.console.SetCompleter;
 import io.quarkus.deployment.dev.ExceptionNotificationBuildItem;
 import io.quarkus.deployment.dev.testing.MessageFormat;
 import io.quarkus.deployment.dev.testing.TestSetupBuildItem;
-import io.quarkus.deployment.ide.EffectiveIdeBuildItem;
 import io.quarkus.deployment.metrics.MetricsCapabilityBuildItem;
 import io.quarkus.deployment.metrics.MetricsFactoryConsumerBuildItem;
-import io.quarkus.deployment.pkg.builditem.BuildSystemTargetBuildItem;
 import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
 import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
 import io.quarkus.deployment.pkg.steps.NativeOrNativeSourcesBuild;
@@ -402,12 +400,12 @@ public final class LoggingResourceProcessor {
     @Produce(TestSetupBuildItem.class)
     @Produce(LogConsoleFormatBuildItem.class)
     @Consume(ConsoleInstalledBuildItem.class)
-    void setupStackTraceFormatter(ApplicationArchivesBuildItem item, EffectiveIdeBuildItem ideSupport,
-            BuildSystemTargetBuildItem buildSystemTargetBuildItem,
+    void setupStackTraceFormatter(
+            ApplicationArchivesBuildItem item,
             List<ExceptionNotificationBuildItem> exceptionNotificationBuildItems,
             CuratedApplicationShutdownBuildItem curatedApplicationShutdownBuildItem,
             CurateOutcomeBuildItem curateOutcomeBuildItem,
-            OutputTargetBuildItem outputTargetBuildItem,
+            Optional<OutputTargetBuildItem> outputTargetBuildItem,
             LaunchModeBuildItem launchMode,
             LogBuildTimeConfig logBuildTimeConfig,
             BuildProducer<LoggingDecorateBuildItem> loggingDecorateProducer) {
@@ -418,7 +416,7 @@ public final class LoggingResourceProcessor {
             }
         }
         Path srcMainJava = getSourceRoot(curateOutcomeBuildItem.getApplicationModel(),
-                outputTargetBuildItem.getOutputDirectory());
+                outputTargetBuildItem.map(OutputTargetBuildItem::getOutputDirectory).orElse(null));
 
         CompositeIndex index = CompositeIndex.create(indexList);
 

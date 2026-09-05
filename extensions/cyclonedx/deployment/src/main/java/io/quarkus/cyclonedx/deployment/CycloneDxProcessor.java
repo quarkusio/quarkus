@@ -83,7 +83,7 @@ public class CycloneDxProcessor {
                     .setLibrariesOnly(cdxSbomConfig.librariesOnly())
                     .setRuntimeOnly(cdxSbomConfig.runtimeOnly())
                     .setIncludeQuarkusComponentScope(cdxSbomConfig.includeQuarkusComponentScope())
-                    .setOutputTimestamp(packageConfig.outputTimestamp().orElse(null))
+                    .setOutputTimestamp(packageConfig.outputTimestamp())
                     .setContributions(contributions)
                     .generate()) {
                 sbomProducer.produce(new SbomBuildItem(sbom));
@@ -152,7 +152,7 @@ public class CycloneDxProcessor {
         }
 
         byte[] sbomBytes = generateEmbeddedSbomBytes(cdxConfig, curateOutcomeBuildItem, appModelProviderBuildItem,
-                computePedigrees(treeShakeResult), sbomContributions, packageConfig.outputTimestamp().orElse(null));
+                computePedigrees(treeShakeResult), sbomContributions, packageConfig.outputTimestamp());
         String effectiveResourceName = effectiveResourceName(cdxConfig.embedded());
         if (cdxConfig.embedded().compress()) {
             sbomBytes = gzip(sbomBytes);

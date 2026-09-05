@@ -1055,7 +1055,6 @@ Configuration for the Kafka connector outgoing channels is similar to that of in
 mp.messaging.outgoing.prices-out.connector=smallrye-kafka <2>
 mp.messaging.outgoing.prices-out.topic=prices <3>
 ----
-
 <1> Configure the broker location for the production profile. You can configure it globally or per channel using `mp.messaging.outgoing.$channel.bootstrap.servers` property.
 In dev mode and when running tests, <<kafka-dev-services>> automatically starts a Kafka broker.
 When not provided, this property defaults to `localhost:9092`.
@@ -1926,7 +1925,6 @@ public class KafkaExactlyOnceProcessor {
 
 }
 ----
-
 <1> It is recommended to use exactly-once processing along with the batch consumption mode.
 While it is possible to use it with a single Kafka message, it'll have a significant performance impact.
 <2> The consumed message is passed to the `KafkaTransactions#withTransactionAndAck` in order to handle the offset commits and message acks.
@@ -2806,7 +2804,6 @@ public class OrderProcessorTest {
     }
 }
 ----
-
 <1> `@InjectKafkaCompanion` injects the `KafkaCompanion` instance, configured to access the Kafka broker created for tests.
 <2> Use `KafkaCompanion` to create producer task which writes 10 records to 'orders' topic.
 <3> Create consumer task which subscribes to 'orders-processed' topic and consumes 10 records.
@@ -3559,7 +3556,6 @@ public class FruitProducer {
     }
 }
 ----
-
 <1> Inject the Hibernate Reactive `SessionFactory`.
 <2> Begin a Hibernate Reactive transaction.
 <3> Begin a Kafka transaction.
@@ -3599,7 +3595,6 @@ public class FruitProducer {
     }
 }
 ----
-
 <1> Start a Hibernate Reactive transaction and commit it when the method returns.
 <2> Begin a Kafka transaction.
 <3> Persist the payload and send the entity to Kafka.
@@ -3644,7 +3639,6 @@ public class FruitProducer {
     }
 }
 ----
-
 <1> Start a Hibernate ORM transaction. The transaction is committed when the method returns.
 <2> Begin a Kafka transaction.
 <3> Persist the payload.

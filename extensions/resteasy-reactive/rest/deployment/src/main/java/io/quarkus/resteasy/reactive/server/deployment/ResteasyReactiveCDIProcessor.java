@@ -2,8 +2,10 @@ package io.quarkus.resteasy.reactive.server.deployment;
 
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.APPLICATION_PATH;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.CONTEXT;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.OBJECT;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.PATH;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.PROVIDER;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.SINGLETON;
 
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
@@ -235,6 +237,31 @@ public class ResteasyReactiveCDIProcessor {
             additionalBeanBuildItemBuildProducer
                     .produce(AdditionalBeanBuildItem.builder().setUnremovable().addBeanClasses(impls.toArray(new String[0]))
                             .build());
+        }
+    }
+
+    @BuildStep
+    void registerAbstractResourceChildrenWithoutPath(Optional<ResourceScanningResultBuildItem> resourceScanningResultBuildItem,
+            BuildProducer<AdditionalBeanBuildItem> additionalBeanBuildItemBuildProducer) {
+        if (resourceScanningResultBuildItem.isEmpty()) {
+            return;
+        }
+        ResourceScanningResult resourceScanningResult = resourceScanningResultBuildItem.get().getResult();
+        List<String> additionalBeansToRegister = null;
+        for (ClassInfo resource : resourceScanningResult.getScannedResources().values()) {
+            if (!resource.isAbstract() && !resource.hasAnnotation(PATH) && !OBJECT.equals(resource.superName())) {
+                ClassInfo parentClass = resourceScanningResult.getIndex().getClassByName(resource.superName());
+                if (parentClass != null && parentClass.isAbstract() && parentClass.hasAnnotation(PATH)) {
+                    if (additionalBeansToRegister == null) {
+                        additionalBeansToRegister = new ArrayList<>();
+                    }
+                    additionalBeansToRegister.add(resource.name().toString());
+                }
+            }
+        }
+        if (additionalBeansToRegister != null) {
+            additionalBeanBuildItemBuildProducer.produce(AdditionalBeanBuildItem.builder().setUnremovable()
+                    .addBeanClasses(additionalBeansToRegister).setDefaultScope(SINGLETON).build());
         }
     }
 

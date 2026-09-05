@@ -102,6 +102,7 @@ This happens when any of the following conditions is met:
 
 * JPA entities are detected in the application (the default persistence unit is created automatically).
 * Hibernate ORM configuration properties are set (e.g. `quarkus.hibernate-orm.schema-management.strategy`).
+* A Hibernate ORM bean is injected (e.g. `EntityManager`, `Session`, `SessionFactory`).
 
 Similarly, the datasource that the persistence unit points to is created automatically when it is referenced.
 See xref:datasource.adoc#datasource-detection[Datasource detection] for details.

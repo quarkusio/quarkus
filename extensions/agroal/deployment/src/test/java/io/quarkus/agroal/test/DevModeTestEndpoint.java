@@ -6,6 +6,7 @@ import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 
 import jakarta.enterprise.inject.spi.CDI;
+import jakarta.inject.Inject;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
@@ -15,6 +16,17 @@ import io.quarkus.agroal.DataSource;
 
 @Path("/test")
 public class DevModeTestEndpoint {
+
+    @Inject
+    AgroalDataSource defaultDs;
+
+    @Inject
+    @DataSource("users")
+    AgroalDataSource usersDs;
+
+    @Inject
+    @DataSource("inventory")
+    AgroalDataSource inventoryDs;
 
     @GET
     @Path("/{dataSourceName}/{jdbcUrl}/{username}/{maxSize}")

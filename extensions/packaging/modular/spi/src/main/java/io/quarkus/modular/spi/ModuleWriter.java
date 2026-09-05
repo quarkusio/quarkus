@@ -14,6 +14,7 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.nio.file.attribute.FileAttribute;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -76,6 +77,23 @@ public final class ModuleWriter {
      */
     public static Path writeModule(ModuleInfo moduleInfo, Path outputDirectory, Manifest manifest, final boolean bootModule)
             throws IOException {
+        return writeModule(moduleInfo, outputDirectory, manifest, bootModule, null);
+    }
+
+    /**
+     * Write a patched module to the given output directory, optionally filtering out unreachable classes.
+     *
+     * @param moduleInfo the module information (must not be {@code null})
+     * @param outputDirectory the output directory (must not be {@code null})
+     * @param manifest the JAR manifest (must not be {@code null})
+     * @param bootModule {@code true} if this module is a boot module (and thus requires a {@code module-info.class})
+     * @param reachableClassNames dot-separated names of reachable classes, or {@code null} to include all classes
+     * @return the path of the written module
+     * @throws IOException if writing fails for some reason
+     */
+    public static Path writeModule(ModuleInfo moduleInfo, Path outputDirectory, Manifest manifest, final boolean bootModule,
+            Set<String> reachableClassNames)
+            throws IOException {
         Assert.checkNotNullParam("moduleInfo", moduleInfo);
         Assert.checkNotNullParam("outputDirectory", outputDirectory);
         Assert.checkNotNullParam("manifest", manifest);
@@ -111,10 +129,18 @@ public final class ModuleWriter {
             try (OutputStream os = ab.addEntry("META-INF/MANIFEST.MF", Set.of(ZipOption.STORED), defaultAttrs)) {
                 manifest.write(os);
             }
+            // when class filtering is active, compute the set of packages with surviving
+            // classes and use it to adjust both the descriptor and the content walk
+            final Set<String> survivingPackages = reachableClassNames != null && !reachableClassNames.isEmpty()
+                    ? computeSurvivingPackages(moduleInfo, reachableClassNames)
+                    : Set.of();
+            ModuleInfo descriptorInfo = !survivingPackages.isEmpty()
+                    ? adjustDescriptorForFiltering(moduleInfo, survivingPackages)
+                    : moduleInfo;
             // next, write module descriptor
             if (bootModule) {
                 // descriptor for "normal" module
-                ab.addEntry("module-info.class", getModuleInfoClass(moduleInfo), Set.of(ZipOption.STORED), defaultAttrs);
+                ab.addEntry("module-info.class", getModuleInfoClass(descriptorInfo), Set.of(ZipOption.STORED), defaultAttrs);
             } else {
                 // write XML for automatic module
                 try (Writer w = ab.addEntry("module.xml", StandardCharsets.UTF_8)) {
@@ -122,7 +148,7 @@ public final class ModuleWriter {
                     xmlOutputFactory.setProperty(XMLOutputFactory.IS_REPAIRING_NAMESPACES, Boolean.TRUE);
                     XMLStreamWriter xml = xmlOutputFactory.createXMLStreamWriter(w);
                     try (XmlCloser ignored = xml::close) {
-                        writeModuleXml(new FormattingXMLStreamWriter(xml), moduleInfo);
+                        writeModuleXml(new FormattingXMLStreamWriter(xml), descriptorInfo);
                     }
                 } catch (XMLStreamException e) {
                     throw new IOException(e);
@@ -170,10 +196,19 @@ public final class ModuleWriter {
                         }
                     }
                 } else {
-                    if (rp.equals("META-INF/MANIFEST.MF") || rp.equals("module-info.class")
-                            || rp.endsWith("/module-info.class")) {
+                    if (rp.equals("META-INF/MANIFEST.MF") || ClassPathUtils.isModuleInfoEntry(rp)) {
                         // skip
                         return;
+                    }
+                    if (reachableClassNames != null) {
+                        if (ClassPathUtils.isClassEntry(rp)) {
+                            String className = ClassPathUtils.resourcePathToClassName(rp);
+                            if (!reachableClassNames.contains(className)) {
+                                return;
+                            }
+                        } else if (isResourceInDeadPackage(rp, moduleInfo.packages(), survivingPackages)) {
+                            return;
+                        }
                     }
                     int idx = rp.lastIndexOf('/');
                     if (idx != -1) {
@@ -546,6 +581,130 @@ public final class ModuleWriter {
             }
             xml.writeEndElement(); // dependency
         }
+    }
+
+    /**
+     * Create a ModuleInfo whose packages map exactly matches the classes that
+     * will survive filtering. Packages with no surviving classes are removed,
+     * and packages with surviving classes that were not in the original
+     * descriptor are added as PRIVATE. This keeps the module descriptor
+     * consistent with the actual JAR content, preventing jlink validation
+     * errors in both directions.
+     *
+     * @param moduleInfo the original module information (must not be {@code null})
+     * @param survivingPackages the set of package names that have at least one surviving class
+     * @return a new {@link ModuleInfo} with adjusted packages, or the original if no change is needed
+     */
+    private static ModuleInfo adjustDescriptorForFiltering(ModuleInfo moduleInfo, Set<String> survivingPackages) {
+        Map<String, PackageInfo> original = moduleInfo.packages();
+        if (survivingPackages.equals(original.keySet())) {
+            return moduleInfo;
+        }
+        Map<String, PackageInfo> adjusted = new HashMap<>(survivingPackages.size());
+        for (String pkg : survivingPackages) {
+            PackageInfo info = original.get(pkg);
+            adjusted.put(pkg, info != null ? info : PackageInfo.PRIVATE);
+        }
+        logPackageAdjustments(moduleInfo, survivingPackages);
+        return moduleInfo.withPackages(adjusted);
+    }
+
+    /**
+     * Log which packages were dropped and which were added for debugging.
+     *
+     * @param moduleInfo the module being adjusted (must not be {@code null})
+     * @param surviving the set of package names that survived filtering
+     */
+    private static void logPackageAdjustments(ModuleInfo moduleInfo, Set<String> surviving) {
+        if (!log.isDebugEnabled()) {
+            return;
+        }
+        Map<String, PackageInfo> packages = moduleInfo.packages();
+        List<String> dropped = null;
+        for (String pkg : packages.keySet()) {
+            if (!surviving.contains(pkg)) {
+                if (dropped == null) {
+                    dropped = new ArrayList<>();
+                }
+                dropped.add(pkg);
+            }
+        }
+        List<String> added = null;
+        for (String pkg : surviving) {
+            if (!packages.containsKey(pkg)) {
+                if (added == null) {
+                    added = new ArrayList<>();
+                }
+                added.add(pkg);
+            }
+        }
+        String moduleName = moduleInfo.name();
+        if (dropped != null) {
+            log.debugf("Module %s: dropping packages with no surviving classes: %s", moduleName, dropped);
+        }
+        if (added != null) {
+            log.debugf("Module %s: adding undeclared packages with surviving classes: %s", moduleName, added);
+        }
+    }
+
+    /**
+     * Scan the module's content tree and generated resources to determine which
+     * Java packages have at least one reachable class after filtering.
+     *
+     * @param moduleInfo the module whose content to scan (must not be {@code null})
+     * @param reachableClassNames dot-separated names of reachable classes (must not be {@code null})
+     * @return the set of package names that contain at least one reachable class
+     */
+    private static Set<String> computeSurvivingPackages(ModuleInfo moduleInfo, Set<String> reachableClassNames) {
+        Set<String> packages = new HashSet<>();
+        for (Resource resource : moduleInfo.generated()) {
+            collectPackageIfReachable(resource.pathName(), reachableClassNames, packages);
+        }
+        moduleInfo.resolvedArtifact().getContentTree()
+                .walk(visited -> collectPackageIfReachable(visited.getResourceName(), reachableClassNames, packages));
+        return packages;
+    }
+
+    /**
+     * If the resource path is a reachable class file (excluding module-info.class),
+     * add its package to the set.
+     *
+     * @param resourcePath the resource path within the JAR
+     * @param reachableClassNames dot-separated names of reachable classes
+     * @param packages the set to add the package name to if the class is reachable
+     */
+    private static void collectPackageIfReachable(String resourcePath, Set<String> reachableClassNames,
+            Set<String> packages) {
+        if (!ClassPathUtils.isClassEntry(resourcePath)) {
+            return;
+        }
+        String className = ClassPathUtils.resourcePathToClassName(resourcePath);
+        if (reachableClassNames.contains(className)) {
+            int dot = className.lastIndexOf('.');
+            if (dot > 0) {
+                packages.add(className.substring(0, dot));
+            }
+        }
+    }
+
+    /**
+     * Check whether a non-class resource belongs to a declared package whose
+     * classes have all been filtered out. Resources in dead packages are filtered
+     * to keep the JAR content consistent with the module descriptor.
+     *
+     * @param resourcePath the resource path within the JAR
+     * @param declaredPackages the module's declared packages map
+     * @param survivingPackages the set of package names that survived class filtering
+     * @return {@code true} if the resource belongs to a declared package with no surviving classes
+     */
+    private static boolean isResourceInDeadPackage(String resourcePath, Map<String, PackageInfo> declaredPackages,
+            Set<String> survivingPackages) {
+        int slash = resourcePath.lastIndexOf('/');
+        if (slash <= 0) {
+            return false;
+        }
+        String pkg = resourcePath.substring(0, slash).replace('/', '.');
+        return declaredPackages.containsKey(pkg) && !survivingPackages.contains(pkg);
     }
 
     @SuppressWarnings("unchecked")

@@ -48,6 +48,29 @@ This guide assumes you already have the completed application from the `getting-
 If you have started from the Getting Started example you should already have a completed test, including the correct
 tooling setup.
 
+For Maven projects, make sure the Quarkus Maven plugin runs the `generate-code-tests` goal:
+
+[source,xml,subs=attributes+]
+----
+<plugin>
+    <groupId>${quarkus.platform.group-id}</groupId>
+    <artifactId>quarkus-maven-plugin</artifactId>
+    <version>${quarkus.platform.version}</version>
+    <extensions>true</extensions>
+    <executions>
+        <execution>
+            <goals>
+                <goal>generate-code-tests</goal>
+            </goals>
+        </execution>
+    </executions>
+</plugin>
+----
+
+The goal prepares the application model used by `@QuarkusTest`.
+This is particularly important when a Maven core extension provides the project model, for example when the project uses a non-XML POM.
+Without the goal, the test process has to reconstruct the Maven workspace without access to the core extension.
+
 In your build file you should see 2 test dependencies:
 [role="primary asciidoc-tabs-sync-maven"]
 .Maven

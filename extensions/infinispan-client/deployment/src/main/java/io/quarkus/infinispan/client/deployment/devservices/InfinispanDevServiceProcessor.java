@@ -116,11 +116,10 @@ public class InfinispanDevServiceProcessor {
 
             String configPrefix = getConfigPrefix(clientName);
 
-            boolean needToStart = !ConfigUtils.isPropertyNonEmpty(configPrefix + "hosts")
-                    && !ConfigUtils.isPropertyNonEmpty(configPrefix + "server-list");
+            boolean needToStart = !ConfigUtils.isPropertyNonEmpty(configPrefix + "hosts");
 
             if (!needToStart) {
-                log.debug("Not starting Dev Services for Infinispan as 'hosts', 'uri' or 'server-list' have been provided");
+                log.debug("Not starting Dev Services for Infinispan as 'hosts' or 'uri' have been provided");
                 return null;
             }
 
@@ -231,21 +230,6 @@ public class InfinispanDevServiceProcessor {
                 withClasspathResourceMapping(file, userConfigFile, BindMode.READ_ONLY);
                 return " -c " + userConfigFile;
             }).collect(Collectors.joining())).orElse("");
-
-            if (config.tracing().orElse(false)) {
-                log.warn(
-                        "Starting with Infinispan 15.0, Infinispan support for instrumentation of the server via OpenTelemetry has evolved. Enabling tracing by setting `quarkus.infinispan-client.devservices.tracing.enabled=true` doesn't work anymore.\n"
-                                +
-                                "You need to use the `quarkus.infinispan-client.devservices.config-files` property and provide a JSON, XML or YAML file as follows. Check https://quarkus.io/guides/infinispan-dev-services for more information");
-                log.warn("infinispan:\n" +
-                        "        cacheContainer:\n" +
-                        "                tracing:\n" +
-                        "                        collector-endpoint: \"http://jaeger:4318\"\n" +
-                        "                        enabled: true\n" +
-                        "                        exporter-protocol: \"OTLP\"\n" +
-                        "                        service-name: \"infinispan-server\"\n" +
-                        "                        security: false");
-            }
 
             if (config.mcastPort().isPresent()) {
                 command = command + " -Djgroups.mcast_port=" + config.mcastPort().getAsInt();

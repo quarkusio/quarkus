@@ -147,7 +147,6 @@ class RestClientConfigTest {
         assertThat(clientConfig.readTimeout().get()).isEqualTo(6000);
         assertTrue(clientConfig.followRedirects().isPresent());
         assertThat(clientConfig.followRedirects().get()).isEqualTo(true);
-        assertTrue(clientConfig.proxyAddress().isPresent());
         assertTrue(clientConfig.queryParamStyle().isPresent());
         assertThat(clientConfig.queryParamStyle().get()).isEqualTo(QueryParamStyle.COMMA_SEPARATED);
         assertThat(clientConfig.disableDefaultMapper()).isTrue();
@@ -189,7 +188,6 @@ class RestClientConfigTest {
         assertThat(clientConfig.readTimeout().get()).isEqualTo(6000);
         assertTrue(clientConfig.followRedirects().isPresent());
         assertThat(clientConfig.followRedirects().get()).isEqualTo(true);
-        assertTrue(clientConfig.proxyAddress().isPresent());
         assertTrue(clientConfig.queryParamStyle().isPresent());
         assertThat(clientConfig.queryParamStyle().get()).isEqualTo(QueryParamStyle.COMMA_SEPARATED);
     }
@@ -350,7 +348,6 @@ class RestClientConfigTest {
         assertThat(config.readTimeout().get()).isEqualTo(6000);
         assertTrue(config.followRedirects().isPresent());
         assertThat(config.followRedirects().get()).isEqualTo(true);
-        assertTrue(config.proxyAddress().isPresent());
         assertTrue(config.queryParamStyle().isPresent());
         assertThat(config.queryParamStyle().get()).isEqualTo(QueryParamStyle.COMMA_SEPARATED);
         assertTrue(config.hostnameVerifier().isPresent());

@@ -32,7 +32,16 @@ public interface TestMappingRunTime {
     @WithDefault("from-default")
     String recordDefault();
 
+    /**
+     * Secret
+     */
     String recordSecret();
+
+    /**
+     * Override default with RunTimeConfigurationDefaultBuildItem
+     */
+    @WithDefault("from-default")
+    String overrideBuildItem();
 
     /**
      * A expression value

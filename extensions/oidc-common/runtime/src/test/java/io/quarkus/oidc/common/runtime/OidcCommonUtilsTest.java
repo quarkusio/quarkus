@@ -5,7 +5,6 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.security.KeyPairGenerator;
 import java.security.PrivateKey;
@@ -18,7 +17,6 @@ import org.junit.jupiter.api.Test;
 import io.quarkus.runtime.configuration.ConfigurationException;
 import io.vertx.core.MultiMap;
 import io.vertx.core.json.JsonObject;
-import io.vertx.core.net.ProxyOptions;
 
 public class OidcCommonUtilsTest {
 
@@ -126,38 +124,6 @@ public class OidcCommonUtilsTest {
         assertEquals("rt", json.getString("refresh_token"));
         assertEquals("id", json.getString("id_token"));
 
-    }
-
-    @Test
-    public void testProxyOptionsWithHostWithoutScheme() throws Exception {
-        OidcCommonConfig.Proxy config = new OidcCommonConfig.Proxy();
-        config.host = Optional.of("localhost");
-        config.port = 8080;
-        config.username = Optional.of("user");
-        config.password = Optional.of("password");
-
-        ProxyOptions options = OidcCommonUtils.toProxyOptions(config, null).get();
-        assertEquals("localhost", options.getHost());
-        assertEquals(8080, options.getPort());
-        assertEquals("user", options.getUsername());
-        assertEquals("password", options.getPassword());
-    }
-
-    @Test
-    public void testProxyOptionsWithHostWithScheme() throws Exception {
-        OidcCommonConfig.Proxy config = new OidcCommonConfig.Proxy();
-        config.host = Optional.of("http://localhost");
-        config.port = 8080;
-        config.username = Optional.of("user");
-        config.password = Optional.of("password");
-
-        assertEquals("http", URI.create(config.host.get()).getScheme());
-
-        ProxyOptions options = OidcCommonUtils.toProxyOptions(config, null).get();
-        assertEquals("localhost", options.getHost());
-        assertEquals(8080, options.getPort());
-        assertEquals("user", options.getUsername());
-        assertEquals("password", options.getPassword());
     }
 
     @Test

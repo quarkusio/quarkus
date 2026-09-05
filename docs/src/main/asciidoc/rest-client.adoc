@@ -489,9 +489,6 @@ public class ExtensionsResource {
     }
 }
 ----
-
-There are two interesting parts in this listing:
-
 <1> the client stub is injected with the `@RestClient` annotation instead of the usual CDI `@Inject`
 <2> `org.jboss.resteasy.reactive.RestResponse` used as effective way of getting response properties via RestResponse directly from RestClient, 
 as described in <<Using RestResponse>>
@@ -1842,7 +1839,7 @@ In a similar fashion if the received server multipart request is known and looks
 
 [source, java]
 ----
-public class Request { // <1>
+public class Request {
 
   @RestForm("files")
   @PartType(MediaType.APPLICATION_OCTET_STREAM)
@@ -1938,9 +1935,6 @@ public interface CRMService {
     }
 }
 ----
-
-The code uses the following pieces:
-
 <1>  `@ClientHeaderParam(name = "Content-Type", value = "{calculateContentType}")` which ensures that the `Content-Type` header is created by calling the interface's `calculateContentType` default method.
 <2> The aforementioned parameter needs to be annotated with `@NotBody` because it is only used to aid the construction of HTTP headers.
 <3> `context.methodParameters().get(1).value()` which allows the `calculateContentType` method to obtain the proper method parameter passed to the REST Client method.

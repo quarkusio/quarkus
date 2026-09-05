@@ -1,26 +1,18 @@
 package io.quarkus.oidc.common.runtime.config;
 
-import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Optional;
 import java.util.OptionalInt;
 
 public abstract class OidcCommonConfigBuilder<T> {
 
-    private record TlsImpl(Optional<String> tlsConfigurationName, Optional<Verification> verification,
-            Optional<Path> keyStoreFile, Optional<String> keyStoreFileType, Optional<String> keyStoreProvider,
-            Optional<String> keyStorePassword, Optional<String> keyStoreKeyAlias, Optional<String> keyStoreKeyPassword,
-            Optional<Path> trustStoreFile, Optional<String> trustStorePassword, Optional<String> trustStoreCertAlias,
-            Optional<String> trustStoreFileType, Optional<String> trustStoreProvider) implements OidcCommonConfig.Tls {
+    private record TlsImpl(Optional<String> tlsConfigurationName) implements OidcCommonConfig.Tls {
         private TlsImpl(String tlsConfigurationName) {
-            this(Optional.ofNullable(tlsConfigurationName), Optional.empty(), Optional.empty(), Optional.empty(),
-                    Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(),
-                    Optional.empty(), Optional.empty(), Optional.empty());
+            this(Optional.ofNullable(tlsConfigurationName));
         }
     }
 
-    private record ProxyImpl(Optional<String> host, int port, Optional<String> username,
-            Optional<String> password, Optional<String> proxyConfigurationName) implements OidcCommonConfig.Proxy {
+    private record ProxyImpl(Optional<String> proxyConfigurationName) implements OidcCommonConfig.Proxy {
     }
 
     protected static class OidcCommonConfigImpl implements OidcCommonConfig {
@@ -49,8 +41,7 @@ public abstract class OidcCommonConfigBuilder<T> {
             this.useBlockingDnsLookup = builder.useBlockingDnsLookup;
             this.maxPoolSize = builder.maxPoolSize;
             this.followRedirects = builder.followRedirects;
-            this.proxy = new ProxyImpl(builder.proxyHost, builder.proxyPort, builder.proxyUsername, builder.proxyPassword,
-                    builder.proxyConfigurationName);
+            this.proxy = new ProxyImpl(builder.proxyConfigurationName);
             this.tls = builder.tls;
         }
 
@@ -125,10 +116,6 @@ public abstract class OidcCommonConfigBuilder<T> {
     private boolean useBlockingDnsLookup;
     private OptionalInt maxPoolSize;
     private boolean followRedirects;
-    private Optional<String> proxyHost;
-    private int proxyPort;
-    private Optional<String> proxyUsername;
-    private Optional<String> proxyPassword;
     private Optional<String> proxyConfigurationName;
     private OidcCommonConfig.Tls tls;
 
@@ -143,10 +130,6 @@ public abstract class OidcCommonConfigBuilder<T> {
         this.useBlockingDnsLookup = oidcCommonConfig.useBlockingDnsLookup();
         this.maxPoolSize = oidcCommonConfig.maxPoolSize();
         this.followRedirects = oidcCommonConfig.followRedirects();
-        this.proxyHost = oidcCommonConfig.proxy().host();
-        this.proxyPort = oidcCommonConfig.proxy().port();
-        this.proxyUsername = oidcCommonConfig.proxy().username();
-        this.proxyPassword = oidcCommonConfig.proxy().password();
         this.proxyConfigurationName = oidcCommonConfig.proxy().proxyConfigurationName();
         this.tls = oidcCommonConfig.tls();
     }
@@ -240,32 +223,6 @@ public abstract class OidcCommonConfigBuilder<T> {
      */
     public T followRedirects(boolean followRedirects) {
         this.followRedirects = followRedirects;
-        return getBuilder();
-    }
-
-    /**
-     * @param host {@link OidcCommonConfig.Proxy#host()}
-     * @param port {@link OidcCommonConfig.Proxy#port()}
-     * @return T builder
-     */
-    public T proxy(String host, int port) {
-        this.proxyHost = Optional.ofNullable(host);
-        this.proxyPort = port;
-        return getBuilder();
-    }
-
-    /**
-     * @param host {@link OidcCommonConfig.Proxy#host()}
-     * @param port {@link OidcCommonConfig.Proxy#port()}
-     * @param username {@link OidcCommonConfig.Proxy#username()}
-     * @param password {@link OidcCommonConfig.Proxy#password()}
-     * @return T builder
-     */
-    public T proxy(String host, int port, String username, String password) {
-        this.proxyHost = Optional.ofNullable(host);
-        this.proxyPort = port;
-        this.proxyUsername = Optional.ofNullable(username);
-        this.proxyPassword = Optional.ofNullable(password);
         return getBuilder();
     }
 

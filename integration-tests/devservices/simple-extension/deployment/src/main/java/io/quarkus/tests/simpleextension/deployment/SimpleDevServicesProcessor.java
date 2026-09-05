@@ -35,6 +35,9 @@ public class SimpleDevServicesProcessor {
                 .feature("quarkus-Basic")
                 .serviceName(FEATURE)
                 .startable(() -> new SimpleContainer(fixedPort))
+                // serviceConfig distinguishes compatible from incompatible successors on profile change
+                .serviceConfig(Map.of(QUARKUS_SIMPLE_EXTENSION_DEVSERVICES_PORT,
+                        fixedPort.map(String::valueOf).orElse("")))
                 .config(Map.of(QUARKUS_SIMPLE_EXTENSION_STATIC_THING, "some value"))
                 .configProvider(Map.of(QUARKUS_SIMPLE_EXTENSION_BASE_URL,
                         c -> c.getConnectionInfo(), SIMPLE_EXTENSION_CLASSLOADER_ON_SERVICE_START,

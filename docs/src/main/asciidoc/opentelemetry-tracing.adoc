@@ -609,6 +609,11 @@ Multi.createFrom().items("Alice", "Bob", "Charlie")
 ----
 Instead of `transformToMultiAndConcatenate` you can use `transformToMultiAndMerge` if you don't care about the order of the items.
 
+The `wrapWithSpan` utility method propagates the whole parent `Context` into the wrapped pipeline, not just the new span.
+Any `Baggage` present in the parent `Context` therefore remains available through `Baggage.current()`
+inside the pipeline. Passing `Optional.empty()` only detaches the trace parent to create a root span; a baggage already
+active in the surrounding context is still propagated.
+
 === Quarkus Messaging - Kafka
 
 When using the Quarkus Messaging extension for Kafka,

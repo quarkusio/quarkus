@@ -9,8 +9,6 @@ import java.util.OptionalInt;
 import java.util.OptionalLong;
 import java.util.Set;
 
-import org.hibernate.annotations.TimeZoneColumn;
-import org.hibernate.dialect.Dialect;
 import org.hibernate.id.enhanced.StandardOptimizerDescriptor;
 
 import io.quarkus.runtime.annotations.ConfigDocDefault;
@@ -24,6 +22,7 @@ import io.smallrye.config.WithDefault;
 import io.smallrye.config.WithName;
 import io.smallrye.config.WithParentName;
 
+//@deprecated Use {@code TypeContributor}, {@code FunctionContributor}, or {@code AdditionalMappingContributor} instead.
 @ConfigGroup
 public interface HibernateOrmConfigPersistenceUnit {
 
@@ -87,29 +86,6 @@ public interface HibernateOrmConfigPersistenceUnit {
     Optional<List<@WithConverter(TrimmedStringConverter.class) String>> sqlLoadScript();
 
     /**
-     * The size of the batches used when loading entities and collections.
-     *
-     * `-1` means batch loading is disabled.
-     *
-     * @deprecated Use {@code quarkus.hibernate-orm.fetch.batch-size} to configure the batch fetch size.
-     * @asciidoclet
-     */
-    @ConfigDocDefault("16")
-    @Deprecated
-    OptionalInt batchFetchSize();
-
-    /**
-     * The maximum depth of outer join fetch tree for single-ended associations (one-to-one, many-to-one).
-     *
-     * A `0` disables default outer join fetching.
-     *
-     * @deprecated Use {@code quarkus.hibernate-orm.fetch.max-depth} to configure the maximum fetch depth.
-     * @asciidoclet
-     */
-    @Deprecated
-    OptionalInt maxFetchDepth();
-
-    /**
      * Pluggable strategy contract for applying physical naming rules for database object names.
      *
      * Class name of the Hibernate PhysicalNamingStrategy implementation
@@ -122,27 +98,6 @@ public interface HibernateOrmConfigPersistenceUnit {
      * Class name of the Hibernate ImplicitNamingStrategy implementation
      */
     Optional<@WithConverter(TrimmedStringConverter.class) String> implicitNamingStrategy();
-
-    /**
-     * Class name of a custom
-     * https://docs.hibernate.org/stable/orm/javadocs/org/hibernate/boot/spi/MetadataBuilderContributor.html[`org.hibernate.boot.spi.MetadataBuilderContributor`]
-     * implementation.
-     *
-     * [NOTE]
-     * ====
-     * Not all customization options exposed by
-     * https://docs.hibernate.org/stable/orm/javadocs/org/hibernate/boot/MetadataBuilder.html[`org.hibernate.boot.MetadataBuilder`]
-     * will work correctly. Stay clear of options related to classpath scanning in particular.
-     *
-     * This setting is exposed mainly to allow registration of types, converters and SQL functions.
-     * ====
-     *
-     * @deprecated Use {@code TypeContributor}, {@code FunctionContributor}, or {@code AdditionalMappingContributor} instead.
-     *
-     * @asciidoclet
-     */
-    @Deprecated
-    Optional<@WithConverter(TrimmedStringConverter.class) String> metadataBuilderContributor();
 
     /**
      * XML files to configure the entity mapping, e.g. {@code META-INF/my-orm.xml}.
@@ -233,15 +188,6 @@ public interface HibernateOrmConfigPersistenceUnit {
     Optional<@WithConverter(TrimmedStringConverter.class) String> multitenant();
 
     /**
-     * Defines the name of the datasource to use in case of SCHEMA approach. The datasource of the persistence unit will be used
-     * if not set.
-     *
-     * @deprecated Use {@code quarkus.hibernate-orm.datasource} to configure the datasource for the persistence unit.
-     */
-    @Deprecated
-    Optional<@WithConverter(TrimmedStringConverter.class) String> multitenantSchemaDatasource();
-
-    /**
      * If hibernate is not auto generating the schema, and Quarkus is running in development mode
      * then Quarkus will attempt to validate the database after startup and print a log message if
      * there are any problems.
@@ -252,31 +198,6 @@ public interface HibernateOrmConfigPersistenceUnit {
     @ConfigDocIgnore
     @ConfigDocMapKey("full-property-key")
     Map<String, String> unsupportedProperties();
-
-    default boolean isAnyPropertySet() {
-        return datasource().isPresent() ||
-                packages().isPresent() ||
-                dialect().isAnyPropertySet() ||
-                sqlLoadScript().isPresent() ||
-                batchFetchSize().isPresent() ||
-                maxFetchDepth().isPresent() ||
-                physicalNamingStrategy().isPresent() ||
-                implicitNamingStrategy().isPresent() ||
-                metadataBuilderContributor().isPresent() ||
-                mapping().isAnyPropertySet() ||
-                query().isAnyPropertySet() ||
-                database().isAnyPropertySet() ||
-                jdbc().isAnyPropertySet() ||
-                reactive().isAnyPropertySet() ||
-                !cache().isEmpty() ||
-                !secondLevelCachingEnabled() ||
-                multitenant().isPresent() ||
-                multitenantSchemaDatasource().isPresent() ||
-                fetch().isAnyPropertySet() ||
-                discriminator().isAnyPropertySet() ||
-                quoteIdentifiers().isAnyPropertySet() ||
-                !unsupportedProperties().isEmpty();
-    }
 
     @ConfigGroup
     interface HibernateOrmConfigPersistenceUnitDialect {
@@ -311,20 +232,6 @@ public interface HibernateOrmConfigPersistenceUnit {
         Optional<@WithConverter(TrimmedStringConverter.class) String> dialect();
 
         /**
-         * The storage engine to use when the dialect supports multiple storage engines.
-         *
-         * E.g. `MyISAM` or `InnoDB` for MySQL.
-         *
-         * @deprecated Use {@code quarkus.hibernate-orm.dialect.mysql.storage-engine}
-         *             or {@code quarkus.hibernate-orm.dialect.mariadb.storage-engine} instead.
-         *
-         * @asciidoclet
-         */
-        @WithConverter(TrimmedStringConverter.class)
-        @Deprecated
-        Optional<String> storageEngine();
-
-        /**
          * Configuration specific to Hibernate's Dialect for MariaDB
          */
         MySQLDialectConfig mariadb();
@@ -343,14 +250,6 @@ public interface HibernateOrmConfigPersistenceUnit {
          * Configuration specific to Hibernate's Dialect for Microsoft SQLServer
          */
         SqlServerDialectConfig mssql();
-
-        default boolean isAnyPropertySet() {
-            return dialect().isPresent() || storageEngine().isPresent()
-                    || mysql().isAnyPropertySet()
-                    || oracle().isAnyPropertySet()
-                    || mssql().isAnyPropertySet()
-                    || mariadb().isAnyPropertySet();
-        }
     }
 
     /**
@@ -478,15 +377,6 @@ public interface HibernateOrmConfigPersistenceUnit {
             @WithName("preferred-jdbc-type")
             @ConfigDocDefault("INTERVAL_SECOND")
             Optional<@WithConverter(TrimmedStringConverter.class) String> durationPreferredJdbcType();
-        }
-
-        default boolean isAnyPropertySet() {
-            return timezone().timeZoneDefaultStorage().isPresent() ||
-                    id().optimizer().idOptimizerDefault().isPresent() ||
-                    duration().durationPreferredJdbcType().isPresent() ||
-                    instantPreferredJdbcType().isPresent() ||
-                    booleanPreferredJdbcType().isPresent() ||
-                    UUIDPreferredJdbcType().isPresent();
         }
 
     }
@@ -646,11 +536,6 @@ public interface HibernateOrmConfigPersistenceUnit {
         @WithDefault("false")
         boolean failOnPaginationOverCollectionFetch();
 
-        default boolean isAnyPropertySet() {
-            return queryPlanCacheMaxSize() != DEFAULT_QUERY_PLAN_CACHE_MAX_SIZE
-                    || defaultNullOrdering() != NullOrdering.NONE
-                    || !inClauseParameterPadding();
-        }
     }
 
     @ConfigGroup
@@ -666,19 +551,6 @@ public interface HibernateOrmConfigPersistenceUnit {
         @WithDefault(DEFAULT_CHARSET)
         Charset charset();
 
-        /**
-         * Whether Hibernate should quote all identifiers.
-         *
-         * @deprecated Use {@code quarkus.hibernate-orm.quote-identifiers.strategy} to configure the quoting strategy.
-         */
-        @Deprecated
-        @WithDefault("false")
-        boolean globallyQuotedIdentifiers();
-
-        default boolean isAnyPropertySet() {
-            return !DEFAULT_CHARSET.equals(charset().name())
-                    || globallyQuotedIdentifiers();
-        }
     }
 
     @ConfigGroup
@@ -715,10 +587,6 @@ public interface HibernateOrmConfigPersistenceUnit {
          */
         OptionalInt statementBatchSize();
 
-        default boolean isAnyPropertySet() {
-            return enabled().isPresent() || timezone().isPresent() || statementFetchSize().isPresent()
-                    || statementBatchSize().isPresent();
-        }
     }
 
     @ConfigGroup
@@ -736,9 +604,6 @@ public interface HibernateOrmConfigPersistenceUnit {
          */
         Optional<Boolean> enabled();
 
-        default boolean isAnyPropertySet() {
-            return enabled().isPresent();
-        }
     }
 
     @ConfigGroup
@@ -814,10 +679,6 @@ public interface HibernateOrmConfigPersistenceUnit {
          */
         OptionalInt maxDepth();
 
-        default boolean isAnyPropertySet() {
-            return batchSize().isPresent() || maxDepth().isPresent();
-        }
-
     }
 
     @ConfigGroup
@@ -836,9 +697,6 @@ public interface HibernateOrmConfigPersistenceUnit {
         @WithDefault("none")
         IdentifierQuotingStrategy strategy();
 
-        default boolean isAnyPropertySet() {
-            return strategy() != IdentifierQuotingStrategy.NONE;
-        }
     }
 
     /**
@@ -856,9 +714,6 @@ public interface HibernateOrmConfigPersistenceUnit {
         @WithDefault("false")
         boolean ignoreExplicitForJoined();
 
-        default boolean isAnyPropertySet() {
-            return ignoreExplicitForJoined();
-        }
     }
 
     enum IdentifierQuotingStrategy {
@@ -890,15 +745,6 @@ public interface HibernateOrmConfigPersistenceUnit {
 
     @ConfigGroup
     interface HibernateOrmConfigPersistenceValidation {
-
-        /**
-         * Enables the Bean Validation integration.
-         *
-         * @deprecated Use {@code quarkus.hibernate-orm.validation.mode} instead.
-         */
-        @Deprecated(since = "3.19", forRemoval = true)
-        @WithDefault("true")
-        boolean enabled();
 
         /**
          * Defines how the Bean Validation integration behaves.

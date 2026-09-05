@@ -22,9 +22,6 @@ public interface UserInfoCache {
      * Get the cached {@link UserInfo}.
      *
      * @param token the token which will be used to get new {@link UserInfo} if no {@link UserInfo} is cached.
-     *        Effectively this token is a cache key which has to be stored when
-     *        {@link #addUserInfo(String, UserInfo, OidcTenantConfig, AddUserInfoRequestContext)}
-     *        is called.
      * @param oidcConfig the tenant configuration
      * @param requestContext the request context which can be used to run the blocking tasks
      */

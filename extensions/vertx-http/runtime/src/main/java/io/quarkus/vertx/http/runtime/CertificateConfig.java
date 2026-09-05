@@ -89,16 +89,6 @@ public interface CertificateConfig {
      * An optional parameter to select a specific key in the keystore.
      * When SNI is disabled, and the keystore contains multiple
      * keys and no alias is specified; the behavior is undefined.
-     *
-     * @deprecated Use {@link #keyStoreAlias} instead.
-     */
-    @Deprecated
-    Optional<String> keyStoreKeyAlias();
-
-    /**
-     * An optional parameter to select a specific key in the keystore.
-     * When SNI is disabled, and the keystore contains multiple
-     * keys and no alias is specified; the behavior is undefined.
      */
     Optional<String> keyStoreAlias();
 
@@ -108,29 +98,8 @@ public interface CertificateConfig {
      * If not given, it might be retrieved from {@linkplain CredentialsProvider}.
      *
      * @see CertificateConfig#credentialsProvider()
-     * @deprecated Use {@link #keyStoreAliasPassword} instead.
-     */
-    @Deprecated
-    Optional<String> keyStoreKeyPassword();
-
-    /**
-     * An optional parameter to define the password for the key,
-     * in case it is different from {@link #keyStorePassword}
-     * If not given, it might be retrieved from {@linkplain CredentialsProvider}.
-     *
-     * @see CertificateConfig#credentialsProvider()
      */
     Optional<String> keyStoreAliasPassword();
-
-    /**
-     * A parameter to specify a {@linkplain CredentialsProvider} property key,
-     * which can be used to get the password for the alias from {@linkplain CredentialsProvider}.
-     *
-     * @see CertificateConfig#credentialsProvider()
-     * @deprecated Use {@link #keyStoreAliasPasswordKey} instead.
-     */
-    @Deprecated
-    Optional<String> keyStoreKeyPasswordKey();
 
     /**
      * A parameter to specify a {@linkplain CredentialsProvider} property key,

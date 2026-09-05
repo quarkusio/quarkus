@@ -18,7 +18,6 @@ public class StartOfflineEmbeddedDbTest {
             .withApplicationRoot((jar) -> jar
                     .addClass(MyEntity.class))
             .withConfigurationResource("application.properties")
-            .overrideConfigKey("quarkus.datasource.db-kind", "h2")
             // Do NOT set db-version explicitly - let it default
             // H2 is embedded, so no warning should be issued
             .overrideConfigKey("quarkus.hibernate-orm.database.start-offline", "true")

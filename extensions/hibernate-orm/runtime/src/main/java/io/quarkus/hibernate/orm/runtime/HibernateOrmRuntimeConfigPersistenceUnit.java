@@ -90,14 +90,6 @@ public interface HibernateOrmRuntimeConfigPersistenceUnit {
     interface HibernateOrmConfigPersistenceUnitDatabase {
 
         /**
-         * Schema generation configuration.
-         *
-         * @deprecated Use {@code quarkus.hibernate-orm.schema-management} instead.
-         */
-        @Deprecated(forRemoval = true, since = "3.22")
-        HibernateOrmConfigPersistenceUnitDatabaseGeneration generation();
-
-        /**
          * The default catalog to use for the database objects.
          */
         Optional<@WithConverter(TrimmedStringConverter.class) String> defaultCatalog();
@@ -243,46 +235,6 @@ public interface HibernateOrmRuntimeConfigPersistenceUnit {
         public String toString() {
             return schemaGenerationString;
         }
-    }
-
-    /**
-     * @deprecated Use {@code quarkus.hibernate-orm.schema-management} instead.
-     */
-    @ConfigGroup
-    @Deprecated(forRemoval = true, since = "3.22")
-    interface HibernateOrmConfigPersistenceUnitDatabaseGeneration {
-
-        /**
-         * Select whether the database schema is generated or not.
-         *
-         * `drop-and-create` is awesome in development mode.
-         *
-         * This defaults to 'none', however if Dev Services is in use and no other extensions that manage the schema are present
-         * this will default to 'drop-and-create'.
-         *
-         * Accepted values: `none`, `create`, `drop-and-create`, `drop`, `update`, `validate`.
-         *
-         * @deprecated Use {@code quarkus.hibernate-orm.schema-management.strategy} instead.
-         */
-        @WithParentName
-        @Deprecated(forRemoval = true, since = "3.22")
-        Optional<HibernateGenerationStrategy> generation();
-
-        /**
-         * If Hibernate ORM should create the schemas automatically (for databases supporting them).
-         *
-         * @deprecated Use {@code quarkus.hibernate-orm.schema-management.create-schemas} instead.
-         */
-        @Deprecated(forRemoval = true, since = "3.22")
-        Optional<Boolean> createSchemas();
-
-        /**
-         * Whether we should stop on the first error when applying the schema.
-         *
-         * @deprecated Use {@code quarkus.hibernate-orm.schema-management.halt-on-error} instead.
-         */
-        @Deprecated(forRemoval = true, since = "3.22")
-        Optional<Boolean> haltOnError();
     }
 
     @ConfigGroup

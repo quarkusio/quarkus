@@ -25,7 +25,7 @@ public interface LiquibaseBuildTimeConfig {
     @ConfigDocMapKey("datasource-name")
     @ConfigDocSection
     @WithParentName
-    @WithUnnamedKey(DataSourceUtil.DEFAULT_DATASOURCE_NAME)
+    @WithUnnamedKey(value = DataSourceUtil.DEFAULT_DATASOURCE_NAME, eager = false)
     @WithDefaults
     public Map<String, LiquibaseDataSourceBuildTimeConfig> datasources();
 }

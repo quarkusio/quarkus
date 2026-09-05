@@ -4,7 +4,7 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 [id="tls-registry-reference"]
-= {quarkus-tls-registry-reference-guide}
+= TLS registry reference
 include::_attributes.adoc[]
 :summary: TLS registry configuration and usage
 :numbered:
@@ -837,6 +837,7 @@ For full enforcement, OpenSSL 3.5+ via the native SSL engine is required.
 ====
 Post-quantum enforcement (`client-negotiated` and `strict`) relies on a native OpenSSL 3.5+ library.
 Quarkus bundles this library only for **Linux x86_64** and **Linux aarch64**.
+In addition, `libapr-1` must be installed on the host OS (see link:https://netty.io/wiki/forked-tomcat-native.html[netty-tcnative prerequisites]).
 Other operating systems and architectures (macOS, Windows, Alpine Linux, Linux on RISC-V, etc.) are *not supported*: attempting to use `client-negotiated` or `strict` on an unsupported platform will fail at runtime because the native OpenSSL engine is unavailable.
 On those platforms, use `relaxed` with JDK 27+ for post-quantum key exchange.
 ====
@@ -857,6 +858,64 @@ quarkus.tls.ssl-engine=openssl
 
 The supported values are `openssl` (requires netty-tcnative on the classpath) and `jdkssl` (the standard JDK SSL engine).
 This property is useful for testing or when you need explicit control over the engine — for example, forcing `jdkssl` on JDK 27+ where the JDK natively supports post-quantum groups.
+
+===== PQC and native mode
+In native mode, quantum-safe TLS is not available using OpenSSL. Thus, the only way to leverage PQC-compliant key exchange groups is to use a JDK SSL engine that supports them. This are not yet available in GraalVM/Mandrel, but should be available in the near future.
+
+===== PQC in containerized environments
+
+When running in a container with a UBI image as the base, `libapr-1` isn't installed by default. 
+So you need to install it explicitly.
+Without it, netty-tcnative cannot load the native OpenSSL engine at runtime, and PQC enforcement will fail even if OpenSSL 3.5+ is present.
+
+Install `apr` explicitly in your `Containerfile`:
+
+[source,dockerfile]
+----
+FROM registry.access.redhat.com/ubi9/openjdk-21-runtime
+# Explicitly add the `apr` package. Refer to your base image documentation to install the apr package
+RUN microdnf install -y apr && microdnf clean all
+----
+
+Below is an example of a complete `Containerfile`:
+
+[source,dockerfile]
+----
+FROM registry.access.redhat.com/ubi10/openjdk-25-runtime:latest
+
+ENV LANGUAGE='en_US:en'
+
+USER root
+RUN microdnf install -y apr && microdnf clean all
+USER 185
+
+# We make four distinct layers so if there are application changes the library layers can be re-used
+COPY --chown=185 target/quarkus-app/lib/ /deployments/lib/
+COPY --chown=185 target/quarkus-app/*.jar /deployments/
+COPY --chown=185 target/quarkus-app/app/ /deployments/app/
+COPY --chown=185 target/quarkus-app/quarkus/ /deployments/quarkus/
+
+EXPOSE 8080 8443
+USER 185
+ENV JAVA_OPTS_APPEND="-Dquarkus.http.host=0.0.0.0 -Djava.util.logging.manager=org.jboss.logmanager.LogManager"
+ENV JAVA_APP_JAR="/deployments/quarkus-run.jar"
+
+ENTRYPOINT [ "/opt/jboss/container/java/run/run-java.sh" ]
+----
+
+===== PQC availability summary
+
+[cols="1,1,1,1,1,2", options="header"]
+|===
+| Mode   | Java Runtime | SSL Engine               | PQC support | PQC enforcement available | Prerequisites
+
+| JVM    | Any          | OpenSSL (netty-tcnative) | Yes         | Yes                       | OpenSSL 3.5+; `libapr-1` (`microdnf install apr` on UBI)
+| JVM    | < 27 (25*)         | JDK SSL                  | No          | No                        | —
+| JVM    | 27+ (25+*)   | JDK SSL                  | Yes         | Yes                       | JDK 27+ (or 25+ after backport)
+| Native | Any          | OpenSSL (netty-tcnative) | —           | No                        | Engine unavailable in native mode
+|===
+
+_{asterisk} JDK 25 support pending backport (expected October 2026)._
 
 ==== Certificate Revocation List (CRL)
 

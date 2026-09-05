@@ -368,9 +368,3 @@ java -XX:SharedArchiveFile=app-cds.jsa -jar quarkus-run.jar
 * The JDK version must be **exactly** the same
 * AppCDS only caches class metadata, not method profiles or verification results
 * Training during integration tests is not supported for AppCDS (only build-time generation)
-
-[TIP]
-====
-The legacy `quarkus.package.jar.appcds.enabled` configuration is still supported but deprecated.
-Use `quarkus.package.jar.aot.enabled=true` with `quarkus.package.jar.aot.type=app-cds` instead.
-====

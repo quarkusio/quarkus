@@ -1,4 +1,4 @@
-package io.quarkus.flyway.runtime.graal;
+package io.quarkus.flyway.common.graal;
 
 import java.util.HashMap;
 import java.util.function.BooleanSupplier;

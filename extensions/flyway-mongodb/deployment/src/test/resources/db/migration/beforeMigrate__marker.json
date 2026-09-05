@@ -1,0 +1,6 @@
+{
+  "insert": "callback_log",
+  "documents": [
+    { "event": "beforeMigrate" }
+  ]
+}

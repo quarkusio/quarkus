@@ -1,4 +1,4 @@
-package io.quarkus.flyway.runtime.graal;
+package io.quarkus.flyway.common.graal;
 
 import org.flywaydb.core.internal.scanner.classpath.JarFileClassPathLocationScanner;
 

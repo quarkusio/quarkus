@@ -1,0 +1,12 @@
+name: flyway-mongodb-codestart
+ref: flyway-mongodb
+tags: extension-codestart
+type: code
+metadata:
+  title: Flyway MongoDB
+  description: Apply Flyway schema migrations to MongoDB
+  related-guide-section: https://quarkus.io/guides/flyway-mongodb
+language:
+  base:
+    dependencies:
+      - io.quarkus:quarkus-flyway-mongodb

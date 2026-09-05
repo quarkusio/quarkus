@@ -85,6 +85,7 @@ import io.quarkus.deployment.builditem.LogSocketFormatBuildItem;
 import io.quarkus.deployment.builditem.LogSyslogFormatBuildItem;
 import io.quarkus.deployment.builditem.NamedLogHandlersBuildItem;
 import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
+import io.quarkus.deployment.builditem.ServiceLoaderToOptimizeBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.builditem.ShutdownListenerBuildItem;
 import io.quarkus.deployment.builditem.StreamingLogHandlerBuildItem;
@@ -164,6 +165,12 @@ public final class LoggingResourceProcessor {
     void setProperties(BuildProducer<SystemPropertyBuildItem> producer) {
         producer.produce(new SystemPropertyBuildItem("java.util.logging.manager", "org.jboss.logmanager.LogManager"));
         producer.produce(new SystemPropertyBuildItem("org.jboss.logging.provider", "jboss"));
+    }
+
+    @BuildStep
+    void optimizeServiceLoaderInLogManager(BuildProducer<ServiceLoaderToOptimizeBuildItem> producer) {
+        producer.produce(new ServiceLoaderToOptimizeBuildItem("org.jboss.logmanager.LogManager"));
+        producer.produce(new ServiceLoaderToOptimizeBuildItem("org.jboss.logmanager.LogContext"));
     }
 
     // ensures that InitialConfigurator uses the build time configured minimum log level

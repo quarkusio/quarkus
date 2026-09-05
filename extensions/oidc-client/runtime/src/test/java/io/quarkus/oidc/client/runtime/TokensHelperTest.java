@@ -241,20 +241,20 @@ class TokensHelperTest {
     }
 
     /**
-     * A refresh only starts once the remaining lifespan has dropped below the refresh token time
-     * skew, so a minimum larger than the skew would stop the tokens from ever being reused and
-     * would silently disable the optimisation for deployments with a small skew. The required
-     * margin is therefore capped at the skew.
+     * A refresh only starts once the remaining lifespan has dropped below the refresh token time skew, so a
+     * minimum which is not less than the skew can never be satisfied. That combination is rejected when the
+     * OIDC client is created, rather than adjusted here, so a {@link Tokens} built directly with it simply
+     * never reuses the token being refreshed instead of silently applying a different minimum.
      */
     @Test
-    void testMinRemainingLifespanCappedAtRefreshTokenTimeSkew() throws Exception {
-        // A 3s skew with the 10s default minimum: without the cap nothing would ever be served,
-        // because a refresh cannot start while more than 3s remain.
+    void testTokensNotReusedWhenMinRemainingLifespanNotLessThanSkew() throws Exception {
+        // A 3s skew with a 10s minimum: a refresh cannot start while more than 3s remain, so the minimum
+        // is unreachable.
         Tokens current = tokens("current", 2, Duration.ofSeconds(3), Duration.ofSeconds(10));
         assertFalse(current.isAccessTokenExpired());
         assertTrue(current.isAccessTokenWithinRefreshInterval());
-        assertTrue(current.hasMinRemainingAccessTokenLifespan(),
-                "the minimum should be capped at the skew rather than disabling reuse");
+        assertFalse(current.hasMinRemainingAccessTokenLifespan(),
+                "a minimum which is not less than the skew can never be satisfied");
 
         BlockingOidcClient client = new BlockingOidcClient(tokens("refreshed", 300));
         TokensHelper helper = new TokensHelper();
@@ -265,10 +265,20 @@ class TokensHelperTest {
         });
         client.awaitInFlight();
 
-        Tokens served = helper.getTokens(client, Map.of(), false).await().atMost(Duration.ofSeconds(2));
-        assertSame(current, served, "tokens should still be served when the skew is below the minimum");
+        final AtomicReference<Tokens> served = new AtomicReference<>();
+        final CountDownLatch completed = new CountDownLatch(1);
+        helper.getTokens(client, Map.of(), false).subscribe().with(t -> {
+            served.set(t);
+            completed.countDown();
+        }, t -> completed.countDown());
+
+        assertFalse(completed.await(1, TimeUnit.SECONDS),
+                "tokens must not be reused when the minimum can never be satisfied");
 
         client.release.countDown();
+        assertTrue(completed.await(10, TimeUnit.SECONDS), "the caller should have completed");
+        assertEquals("refreshed", served.get().getAccessToken(),
+                "the caller should have waited for the refreshed tokens");
     }
 
     /**

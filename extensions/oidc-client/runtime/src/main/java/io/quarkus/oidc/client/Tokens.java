@@ -67,35 +67,22 @@ public class Tokens {
      * Whether this access token has enough of its lifespan left to still be worth sending while it is
      * being refreshed, so that it does not expire in transit or while the target service is processing
      * the request.
-     * <p>
-     * Returns false when no minimum remaining lifespan is configured: reusing the token which is being
-     * refreshed is opt-in, so the callers wait for the refresh unless the minimum has been set.
-     * <p>
-     * A refresh only starts once the remaining lifespan has dropped below the refresh token time skew,
-     * so requiring the skew itself, or more, would stop the token from ever being reused. The required
-     * margin is capped just below the skew for that reason.
      */
     public boolean hasMinRemainingAccessTokenLifespan() {
         if (minRemainingAccessTokenLifespan == null) {
-            // Not configured: reusing the token being refreshed is opt-in, so the caller waits.
             return false;
         }
         if (accessTokenExpiresAt == null) {
-            // Without an expiry there is nothing to run out; the token is reusable.
             return true;
         }
-        // Capped below the skew, since a refresh only starts once less than the skew is left in the token expiration.
-        final long requiredLifespan = refreshTokenTimeSkew == null
-                ? minRemainingAccessTokenLifespan
-                : Math.min(minRemainingAccessTokenLifespan, refreshTokenTimeSkew - 1);
         final long nowSecs = System.currentTimeMillis() / 1000;
         final long remaining = accessTokenExpiresAt - nowSecs;
-        final boolean reusable = remaining >= requiredLifespan;
+        final boolean reusable = remaining >= minRemainingAccessTokenLifespan;
 
         if (!reusable) {
             LOG.debugf("Access token being refreshed for client %s will not be reused because it expires in about"
                     + " %d seconds which is less than the minimum remaining access token lifespan %d",
-                    clientId, remaining, requiredLifespan);
+                    clientId, remaining, minRemainingAccessTokenLifespan);
         }
 
         return reusable;

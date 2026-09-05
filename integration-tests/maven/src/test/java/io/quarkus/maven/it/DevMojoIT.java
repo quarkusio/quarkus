@@ -13,7 +13,10 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.StringWriter;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -26,6 +29,9 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.IntStream;
@@ -332,6 +338,71 @@ public class DevMojoIT extends LaunchMojoTestBase {
                 .pollDelay(100, TimeUnit.MILLISECONDS)
                 .atMost(TestUtils.getDefaultTimeout(), TimeUnit.MINUTES)
                 .until(() -> devModeClient.getHttpResponse("/app/hello").contains("carambar"));
+    }
+
+    @Test
+    public void testRequestsDuringARestartTriggeredOutsideHttp() throws Exception {
+        testDir = initProject("projects/dev-mode-external-restart", "projects/project-dev-mode-external-restart");
+        run(true);
+        assertThat(devModeClient.getHttpResponse("/greeting")).isEqualTo("hello 0");
+
+        File source = new File(testDir, "src/main/java/org/acme/Greeting.java");
+        String url = "http://localhost:" + getPort() + "/greeting";
+        ExecutorService executor = Executors.newFixedThreadPool(8);
+        try {
+            for (int round = 1; round <= 3; round++) {
+                String expected = "hello " + round;
+                // a request first: for the next two seconds the hot replacement handler lets requests through
+                // without scanning, which is when a restart it did not trigger must still be noticed
+                devModeClient.getHttpResponse("/greeting");
+                filter(source, Collections.singletonMap("hello " + (round - 1), expected));
+
+                // the message makes the messaging extension scan and restart from its own thread
+                devModeClient.getHttpResponse("/trigger");
+
+                List<Future<List<String>>> workers = new ArrayList<>();
+                for (int i = 0; i < 8; i++) {
+                    workers.add(executor.submit(() -> {
+                        List<String> responses = new ArrayList<>();
+                        long end = System.currentTimeMillis() + 4000;
+                        while (System.currentTimeMillis() < end) {
+                            responses.add(get(url));
+                        }
+                        return responses;
+                    }));
+                }
+
+                List<String> failures = new ArrayList<>();
+                for (Future<List<String>> worker : workers) {
+                    for (String response : worker.get()) {
+                        if (!response.equals("200 " + expected) && !response.equals("200 hello " + (round - 1))) {
+                            failures.add(response);
+                        }
+                    }
+                }
+                assertThat(failures).as("responses served during the restart of round " + round).isEmpty();
+                assertThat(devModeClient.getHttpResponse("/greeting")).isEqualTo(expected);
+            }
+        } finally {
+            executor.shutdownNow();
+        }
+    }
+
+    private static String get(String url) {
+        try {
+            HttpURLConnection connection = (HttpURLConnection) new URL(url).openConnection();
+            connection.setReadTimeout(30_000);
+            try {
+                int status = connection.getResponseCode();
+                InputStream stream = status < 400 ? connection.getInputStream() : connection.getErrorStream();
+                String body = stream == null ? "" : new String(stream.readAllBytes(), StandardCharsets.UTF_8).strip();
+                return status + " " + (status < 400 ? body : body.lines().findFirst().orElse(""));
+            } finally {
+                connection.disconnect();
+            }
+        } catch (IOException e) {
+            return "error " + e.getMessage();
+        }
     }
 
     @Test

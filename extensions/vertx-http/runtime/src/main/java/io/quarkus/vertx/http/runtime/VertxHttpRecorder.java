@@ -405,14 +405,16 @@ public class VertxHttpRecorder {
                         auxiliaryApplication);
                 if (launchMode != LaunchMode.DEVELOPMENT) {
                     shutdown.addShutdownTask(closeTask);
-                } else {
-                    shutdown.addShutdownTask(new Runnable() {
-                        @Override
-                        public void run() {
-                            VertxHttpHotReplacementSetup.handleDevModeRestart();
-                        }
-                    });
                 }
+            }
+            if (launchMode == LaunchMode.DEVELOPMENT) {
+                // the server is kept across restarts, but each application instance must be told when it is stopped
+                shutdown.addShutdownTask(new Runnable() {
+                    @Override
+                    public void run() {
+                        VertxHttpHotReplacementSetup.handleDevModeRestart();
+                    }
+                });
             }
         }
     }

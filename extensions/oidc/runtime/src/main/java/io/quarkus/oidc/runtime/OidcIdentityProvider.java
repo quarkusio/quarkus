@@ -19,8 +19,10 @@ import org.jose4j.jws.JsonWebSignature;
 import org.jose4j.lang.JoseException;
 import org.jose4j.lang.UnresolvableKeyException;
 
+import io.quarkus.arc.InjectableInstance;
 import io.quarkus.oidc.AccessTokenCredential;
 import io.quarkus.oidc.AuthorizationCodeTokens;
+import io.quarkus.oidc.DPoPNonceProvider;
 import io.quarkus.oidc.IdTokenCredential;
 import io.quarkus.oidc.OIDCException;
 import io.quarkus.oidc.OidcTenantConfig;
@@ -57,12 +59,15 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
     private final BlockingTaskRunner<Void> uniVoidOidcContext;
     private final BlockingTaskRunner<TokenIntrospection> getIntrospectionRequestContext;
     private final BlockingTaskRunner<UserInfo> getUserInfoRequestContext;
+    private final DPoPNonceProvider dPoPNonceProvider;
 
-    OidcIdentityProvider(DefaultTenantConfigResolver tenantResolver, BlockingSecurityExecutor blockingExecutor) {
+    OidcIdentityProvider(DefaultTenantConfigResolver tenantResolver, BlockingSecurityExecutor blockingExecutor,
+            InjectableInstance<DPoPNonceProvider> dPoPNonceProvider) {
         this.tenantResolver = tenantResolver;
         this.uniVoidOidcContext = new BlockingTaskRunner<>(blockingExecutor);
         this.getIntrospectionRequestContext = new BlockingTaskRunner<>(blockingExecutor);
         this.getUserInfoRequestContext = new BlockingTaskRunner<>(blockingExecutor);
+        this.dPoPNonceProvider = dPoPNonceProvider.orNull();
     }
 
     @Override
@@ -323,6 +328,25 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
                             if (!accessTokenProof.equals(accessTokenHash)) {
                                 LOG.warn("DPoP access token hash does not match the DPoP proof access token hash");
                                 throw new AuthenticationFailedException(invalidDPoPProofMap(request.getToken()));
+                            }
+
+                            if (dPoPNonceProvider != null) {
+                                String proofNonce = proofClaims.getString(OidcConstants.NONCE);
+                                DPoPNonceProvider.DPoPNonceContext proofContext = new DPoPNonceProvider.DPoPNonceContext(
+                                        proofClaims.getString(Claims.jti.name()),
+                                        getRoutingContextAttribute(request),
+                                        resolvedContext.oidcConfig(), proofNonce);
+                                if (!dPoPNonceProvider.isValid(proofContext)) {
+                                    /*
+                                     * This same error code is used when supplying a new nonce value when there was a nonce
+                                     * mismatch.
+                                     * See https://www.rfc-editor.org/rfc/rfc9449.html#section-9
+                                     */
+                                    LOG.tracef("DPoP proof nonce claim '%s' is invalid", proofNonce);
+                                    throw new AuthenticationFailedException(Map.of(
+                                            OidcConstants.ACCESS_TOKEN_VALUE, request.getToken().getToken(),
+                                            OidcConstants.USE_DPOP_NONCE, Boolean.TRUE));
+                                }
                             }
 
                             return t;

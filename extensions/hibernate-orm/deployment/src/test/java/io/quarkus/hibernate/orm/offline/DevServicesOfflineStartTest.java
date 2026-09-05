@@ -21,7 +21,7 @@ public class DevServicesOfflineStartTest {
             .assertLogRecords(records -> {
                 assertThat(records) // Configuration keys mispelled
                         .extracting(LogRecord::getMessage)
-                        .noneMatch(msg -> msg.contains("Unrecognized configuration key"));
+                        .noneMatch(msg -> msg.contains("Unrecognized configuration property"));
             });
 
     @Test

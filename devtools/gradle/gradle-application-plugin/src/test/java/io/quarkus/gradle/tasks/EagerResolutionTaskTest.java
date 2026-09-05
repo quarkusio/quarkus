@@ -2,8 +2,9 @@ package io.quarkus.gradle.tasks;
 
 import static io.quarkus.gradle.QuarkusPlugin.QUARKUS_BUILD_TASK_NAME;
 import static io.quarkus.gradle.QuarkusPlugin.QUARKUS_GENERATE_CODE_TASK_NAME;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.gradle.testkit.runner.TaskOutcome.FROM_CACHE;
 import static org.gradle.testkit.runner.TaskOutcome.SUCCESS;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.io.File;
 import java.io.IOException;
@@ -65,6 +66,8 @@ public class EagerResolutionTaskTest extends BaseGradleTest {
         }
 
         BuildResult firstBuild = buildResult(Map.of(), taskName);
-        assertEquals(SUCCESS, firstBuild.task(":quarkusGenerateCode").getOutcome());
+        // the build cache is enabled for these builds, so an unchanged project can legitimately serve
+        // the task from the cache instead of executing it; either outcome means it did not fail
+        assertThat(firstBuild.task(":quarkusGenerateCode").getOutcome()).isIn(SUCCESS, FROM_CACHE);
     }
 }

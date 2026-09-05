@@ -5,6 +5,8 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayDeque;
 import java.util.Deque;
+import java.util.LinkedHashSet;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -17,6 +19,17 @@ import java.util.regex.Pattern;
 public final class ErrorReplacingProcessReader {
 
     private static final String LINE_START = "Call path from entry point to ";
+
+    /**
+     * Printed by native-image when the C compiler it needs to link the executable is not installed, for example
+     * {@code Error: Default native-compiler executable 'gcc' not found via environment variable PATH}. The exit code
+     * does not tell this apart from other failures, but the output does.
+     */
+    private static final String MISSING_C_COMPILER = "native-compiler executable";
+    private static final String MISSING_C_COMPILER_HINT = "the native-image build could not find a C compiler. Install the "
+            + "platform C toolchain: the Microsoft Visual C++ Build Tools on Windows, gcc with the glibc and zlib headers "
+            + "on Linux, or the Xcode Command Line Tools on macOS.";
+
     private final BufferedReader reader;
     private final File reportdir;
 
@@ -29,8 +42,13 @@ public final class ErrorReplacingProcessReader {
 
     public void run() throws IOException {
         Deque<String> fullBuffer = new ArrayDeque<>();
+        Set<String> hints = new LinkedHashSet<>();
         boolean buffering = false;
         for (String line = reader.readLine(); line != null; line = reader.readLine()) {
+            String hint = hintForLine(line);
+            if (hint != null) {
+                hints.add(hint);
+            }
             if (line.startsWith(LINE_START)) {
                 buffering = true;
             }
@@ -66,6 +84,16 @@ public final class ErrorReplacingProcessReader {
                 }
             }
         }
+        for (String hint : hints) {
+            System.err.println("Hint: " + hint);
+        }
+    }
+
+    /**
+     * Returns the hint for a native-image output line matching a known signature, or {@code null} if none matches.
+     */
+    static String hintForLine(String line) {
+        return line.contains(MISSING_C_COMPILER) ? MISSING_C_COMPILER_HINT : null;
     }
 
     private void handleErrorState(File report, String firstLine, Deque<String> queue) {

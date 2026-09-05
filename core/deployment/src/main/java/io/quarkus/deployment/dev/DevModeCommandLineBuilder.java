@@ -444,6 +444,7 @@ public class DevModeCommandLineBuilder {
 
             manifest.getMainAttributes().put(Attributes.Name.CLASS_PATH, classPathManifest.toString());
             manifest.getMainAttributes().put(Attributes.Name.MAIN_CLASS, DevModeMain.class.getName());
+            manifest.getMainAttributes().put(new Attributes.Name("Enable-Native-Access"), "ALL-UNNAMED");
             out.putNextEntry(new ZipEntry("META-INF/MANIFEST.MF"));
             manifest.write(out);
 

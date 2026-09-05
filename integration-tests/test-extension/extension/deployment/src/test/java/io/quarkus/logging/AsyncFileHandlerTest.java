@@ -21,8 +21,7 @@ public class AsyncFileHandlerTest {
             .withConfigurationResource("application-async-file-log.properties")
             .withApplicationRoot((jar) -> jar
                     .addClass(LoggingTestsHelper.class)
-                    .addAsManifestResource("application.properties", "microprofile-config.properties"))
-            .setLogFileName("AsyncFileHandlerTest.log");
+                    .addAsManifestResource("application.properties", "microprofile-config.properties"));
 
     @Test
     public void asyncFileHandlerConfigurationTest() {

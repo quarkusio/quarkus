@@ -76,7 +76,6 @@ import io.quarkus.runner.bootstrap.StartupActionImpl;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.test.common.GroovyClassValue;
 import io.quarkus.test.common.PathTestHelper;
-import io.quarkus.test.common.PropertyTestUtil;
 import io.quarkus.test.common.RestAssuredStateManager;
 import io.quarkus.test.common.TestConfigUtil;
 import io.quarkus.test.common.TestResourceManager;
@@ -274,12 +273,6 @@ public abstract class AbstractQuarkusExtensionTest<S extends AbstractQuarkusExte
 
     public S addClassLoaderEventListener(ClassLoaderEventListener listener) {
         this.classLoadListeners.add(listener);
-        return (S) this;
-    }
-
-    @Deprecated(forRemoval = true)
-    public S setLogFileName(String logFileName) {
-        PropertyTestUtil.setLogFileProperty(logFileName);
         return (S) this;
     }
 

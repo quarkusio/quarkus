@@ -11,7 +11,6 @@ import java.util.function.Function;
 
 import org.eclipse.microprofile.config.ConfigProvider;
 
-import io.quarkus.bootstrap.app.RunningQuarkusApplication;
 import io.quarkus.runtime.test.TestHttpEndpointProvider;
 import io.quarkus.test.common.ListeningAddress;
 import io.quarkus.value.registry.ValueRegistry;
@@ -19,48 +18,6 @@ import io.smallrye.config.Config;
 import io.smallrye.config.SmallRyeConfig;
 
 public class TestHTTPResourceManager {
-
-    @Deprecated(forRemoval = true, since = "3.31")
-    public static String getUri() {
-        try {
-            return ConfigProvider.getConfig().getValue("test.url", String.class);
-        } catch (IllegalStateException e) {
-            // massive hack for dev mode tests, dev mode has not started yet
-            // so we don't have any way to load this correctly from config
-            return "http://localhost:8080";
-        }
-    }
-
-    @Deprecated(forRemoval = true, since = "3.31")
-    public static String getManagementUri() {
-        try {
-            return ConfigProvider.getConfig().getValue("test.management.url", String.class);
-        } catch (IllegalStateException e) {
-            // massive hack for dev mode tests, dev mode has not started yet
-            // so we don't have any way to load this correctly from config
-            return "http://localhost:9000";
-        }
-    }
-
-    @Deprecated(forRemoval = true, since = "3.31")
-    public static String getSslUri() {
-        return ConfigProvider.getConfig().getValue("test.url.ssl", String.class);
-    }
-
-    @Deprecated(forRemoval = true, since = "3.31")
-    public static String getManagementSslUri() {
-        return ConfigProvider.getConfig().getValue("test.management.url.ssl", String.class);
-    }
-
-    @Deprecated(forRemoval = true, since = "3.31")
-    public static String getUri(RunningQuarkusApplication application) {
-        return application.getConfigValue("test.url", String.class).get();
-    }
-
-    @Deprecated(forRemoval = true, since = "3.31")
-    public static String getSslUri(RunningQuarkusApplication application) {
-        return application.getConfigValue("test.url.ssl", String.class).get();
-    }
 
     public static void inject(Object testCase, ValueRegistry valueRegistry) {
         inject(testCase, valueRegistry, Config.get(), TestHttpEndpointProvider.load());

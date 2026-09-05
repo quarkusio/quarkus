@@ -25,6 +25,7 @@ public interface ArtifactCoords {
     String TYPE_JAR = "jar";
     String TYPE_TEST_JAR = "test-jar";
     String TYPE_POM = "pom";
+    String TYPE_ZIP = "zip";
     String DEFAULT_CLASSIFIER = "";
 
     String getGroupId();
@@ -42,6 +43,10 @@ public interface ArtifactCoords {
     default boolean isJar() {
         final String type = getType();
         return TYPE_JAR.equals(type) || TYPE_TEST_JAR.equals(type);
+    }
+
+    default boolean isJarOrZip() {
+        return isJar() || TYPE_ZIP.equals(getType());
     }
 
     default boolean isSnapshot() {

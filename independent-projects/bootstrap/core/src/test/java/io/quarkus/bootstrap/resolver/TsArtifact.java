@@ -25,6 +25,7 @@ public class TsArtifact {
     public static final String DEFAULT_VERSION = "1";
 
     public static final String TYPE_JAR = "jar";
+    public static final String TYPE_ZIP = "zip";
     public static final String TYPE_POM = "pom";
     public static final String TYPE_TXT = "txt";
 
@@ -50,6 +51,14 @@ public class TsArtifact {
 
     public static TsArtifact jar(String groupId, String artifactId, String version) {
         return new TsArtifact(groupId, artifactId, EMPTY, TYPE_JAR, version);
+    }
+
+    public static TsArtifact zip(String artifactId) {
+        return zip(artifactId, DEFAULT_VERSION);
+    }
+
+    public static TsArtifact zip(String artifactId, String version) {
+        return new TsArtifact(DEFAULT_GROUP_ID, artifactId, EMPTY, TYPE_ZIP, version);
     }
 
     public static TsArtifact pom(String artifactId) {

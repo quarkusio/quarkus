@@ -413,6 +413,7 @@ categories:
           - jfr.adoc
           - observability-devservices.adoc
           - observability-devservices-lgtm.adoc
+          - telemetry-micrometer-observation.adoc
       - id: operations-resilience
         title: Resilience
         guides:

@@ -22,7 +22,7 @@ public abstract class NativeImageBuildContainerRunner extends NativeImageBuildRu
     final NativeConfig nativeConfig;
     protected final ContainerRuntimeUtil.ContainerRuntime containerRuntime;
     String[] baseContainerRuntimeArgs;
-    private final String containerName;
+    protected final String containerName;
     private final AtomicBoolean setupInvoked = new AtomicBoolean();
 
     protected NativeImageBuildContainerRunner(NativeConfig nativeConfig) {

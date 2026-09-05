@@ -11,7 +11,7 @@ import java.util.Optional;
 
 import org.eclipse.microprofile.config.ConfigProvider;
 
-import io.quarkus.deployment.IsNormal;
+import io.quarkus.deployment.IsProduction;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.DevServicesResultBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
@@ -26,7 +26,7 @@ public class SimpleDevServicesProcessor {
         return new FeatureBuildItem(FEATURE);
     }
 
-    @BuildStep(onlyIfNot = IsNormal.class, onlyIf = DevServicesConfig.Enabled.class)
+    @BuildStep(onlyIfNot = IsProduction.class, onlyIf = DevServicesConfig.Enabled.class)
     public DevServicesResultBuildItem createContainer() {
         Optional<Integer> fixedPort = ConfigProvider.getConfig()
                 .getOptionalValue(QUARKUS_SIMPLE_EXTENSION_DEVSERVICES_PORT, Integer.class);

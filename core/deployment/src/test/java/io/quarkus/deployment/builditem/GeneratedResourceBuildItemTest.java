@@ -16,14 +16,6 @@ class GeneratedResourceBuildItemTest {
     }
 
     @Test
-    void throwsForServiceProviderPathWithDeprecatedConstructor() {
-        assertThatThrownBy(
-                () -> new GeneratedResourceBuildItem("META-INF/services/com.example.Foo", new byte[0], false))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("META-INF/services/com.example.Foo");
-    }
-
-    @Test
     void acceptsNormalPath() {
         assertDoesNotThrow(
                 () -> new GeneratedResourceBuildItem("META-INF/native-image/resource-config.json", new byte[0]));

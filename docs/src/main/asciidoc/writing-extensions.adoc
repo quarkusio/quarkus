@@ -1159,6 +1159,9 @@ public interface LogConfiguration {
     }
 }
 ----
+<1> The `@ConfigMapping` annotation indicates that the interface is a configuration mapping, in this case one which
+corresponds to a `quarkus.log` segment.
+<2> The `@ConfigRoot` annotation indicated to which Config phase, the configuration applies to.
 
 [source%nowrap,java]
 ----
@@ -1168,13 +1171,10 @@ public class LoggingProcessor {
     /*
      * Logging configuration.
      */
-    LogConfiguration config; // <3>
+    LogConfiguration config; // <1>
 }
 ----
-<1> The `@ConfigMapping` annotation indicates that the interface is a configuration mapping, in this case one which
-corresponds to a `quarkus.log` segment.
-<2> The `@ConfigRoot` annotation indicated to which Config phase, the configuration applies to.
-<3> Here the `LoggingProcessor` injects a `LogConfiguration` instance automatically by detecting the `@ConfigRoot`
+<1> Here the `LoggingProcessor` injects a `LogConfiguration` instance automatically by detecting the `@ConfigRoot`
 annotation.
 
 A configuration property name can be split into segments. For example, a property name like

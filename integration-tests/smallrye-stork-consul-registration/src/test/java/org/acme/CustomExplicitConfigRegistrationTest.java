@@ -42,12 +42,13 @@ public class CustomExplicitConfigRegistrationTest {
 
     @Test
     public void test() {
-        RestAssured.get("http://localhost:8500/v1/catalog/service/my-service")
+        RestAssured.get(ConsulTestUtils.serviceUrl("my-service"))
                 .then()
                 .statusCode(200)
-                .body(containsString("\"ServiceID\": \"my-service::145.123.145.145::9090\""),
+                .body(containsString("\"ID\": \"my-service::145.123.145.145::9090\""),
+                        containsString("\"Service\": \"my-service\""),
                         containsString("\"Port\": 9090"),
-                        containsString("\"ServiceAddress\": \"145.123.145.145\""));
+                        containsString("\"Address\": \"145.123.145.145\""));
 
     }
 

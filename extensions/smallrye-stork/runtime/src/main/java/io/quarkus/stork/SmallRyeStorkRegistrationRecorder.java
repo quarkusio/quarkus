@@ -45,9 +45,15 @@ public class SmallRyeStorkRegistrationRecorder {
                 String host = StorkConfigUtil.getOrDefaultHost(parameters,
                         quarkusConfig);
                 int port = StorkConfigUtil.getOrDefaultPort(parameters, quarkusConfig);
-                Uni<Void> registration = Stork.getInstance().getService(serviceName)
-                        .registerInstance(serviceName, host, port);
-                awaitOrSubscribe(registration, serviceName, "registration");
+                if (storkServiceRegistrarConfiguration.instanceName().isPresent()) {
+                    Uni<Void> registration = Stork.getInstance().getService(serviceName)
+                            .registerNamedInstance(storkServiceRegistrarConfiguration.instanceName().get(), host, port);
+                    awaitOrSubscribe(registration, serviceName, "registration");
+                } else {
+                    Uni<Void> registration = Stork.getInstance().getService(serviceName)
+                            .registerInstance(host, port);
+                    awaitOrSubscribe(registration, serviceName, "registration");
+                }
             }
 
         }
@@ -57,7 +63,7 @@ public class SmallRyeStorkRegistrationRecorder {
         shutdown.addLastShutdownTask(new Runnable() {
             @Override
             public void run() {
-                deregisterServiceInstance(runtimeConfig.getValue());
+                deregisterServiceInstance();
             }
         });
     }
@@ -88,21 +94,34 @@ public class SmallRyeStorkRegistrationRecorder {
         }
     }
 
-    private void deregisterServiceInstance(StorkConfiguration configuration) {
-        List<ServiceConfig> serviceConfigs = StorkConfigUtil.toStorkServiceConfig(configuration);
+    private void deregisterServiceInstance() {
+        List<ServiceConfig> serviceConfigs = StorkConfigUtil.toStorkServiceConfig(runtimeConfig.getValue());
+        Config quarkusConfig = ConfigProvider.getConfig();
         for (ServiceConfig serviceConfig : serviceConfigs) {
             String serviceName = serviceConfig.serviceName();
-            if (configuration.serviceConfiguration().get(serviceName).serviceRegistrar().isPresent()) {
-                StorkServiceRegistrarConfiguration storkServiceRegistrarConfiguration = configuration.serviceConfiguration()
-                        .get(serviceName).serviceRegistrar().get();
-                if (!storkServiceRegistrarConfiguration.enabled()) {
-                    continue;
-                }
-                Uni<Void> deregistration = Stork.getInstance()
-                        .getService(serviceName)
-                        .deregisterServiceInstance(serviceName);
-                awaitOrSubscribe(deregistration, serviceName, "deregistration");
+            if (runtimeConfig.getValue().serviceConfiguration().get(serviceName).serviceRegistrar().isEmpty()) {
+                continue;
             }
+            StorkServiceRegistrarConfiguration storkServiceRegistrarConfiguration = runtimeConfig.getValue()
+                    .serviceConfiguration()
+                    .get(serviceName).serviceRegistrar().get();
+            if (!storkServiceRegistrarConfiguration.enabled()) {
+                continue;
+            }
+            Uni<Void> deregistration;
+            if (storkServiceRegistrarConfiguration.instanceName().isPresent()) {
+                deregistration = Stork.getInstance()
+                        .getService(serviceName)
+                        .deregisterNamedInstance(storkServiceRegistrarConfiguration.instanceName().get());
+            } else {
+                Map<String, String> parameters = serviceConfig.serviceRegistrar().parameters();
+                String host = StorkConfigUtil.getOrDefaultHost(parameters, quarkusConfig);
+                int port = StorkConfigUtil.getOrDefaultPort(parameters, quarkusConfig);
+                deregistration = Stork.getInstance()
+                        .getService(serviceName)
+                        .deregisterServiceInstance(host, port);
+            }
+            awaitOrSubscribe(deregistration, serviceName, "deregistration");
         }
     }
 }

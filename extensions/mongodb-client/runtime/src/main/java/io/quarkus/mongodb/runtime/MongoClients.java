@@ -14,6 +14,8 @@ import static org.bson.codecs.configuration.CodecRegistries.fromProviders;
 import static org.bson.codecs.configuration.CodecRegistries.fromRegistries;
 
 import java.lang.annotation.Annotation;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -338,7 +340,7 @@ public class MongoClients {
             reactiveContextProviders.stream().findAny().ifPresent(settings::contextProvider);
         }
 
-        ConnectionString connectionString;
+        ConnectionString connectionString = null;
         Optional<String> maybeConnectionString = config.connectionString();
         if (maybeConnectionString.isPresent()) {
             connectionString = new ConnectionString(maybeConnectionString.get());
@@ -356,7 +358,7 @@ public class MongoClients {
         config.applicationName().ifPresent(settings::applicationName);
 
         if (config.credentials() != null) {
-            MongoCredential credential = createMongoCredential(config);
+            MongoCredential credential = createMongoCredential(config, connectionString);
             if (credential != null) {
                 settings.credential(credential);
             }
@@ -516,11 +518,11 @@ public class MongoClients {
         }
     }
 
-    private MongoCredential createMongoCredential(MongoClientConfig config) {
+    private MongoCredential createMongoCredential(MongoClientConfig config, ConnectionString connectionString) {
 
-        // get the authsource, or the database from the config, or 'admin' as it is the default auth source in mongo
-        // and null is not allowed
-        String authSource = config.credentials().authSource().orElse(config.database().orElse("admin"));
+        // Get the auth source, or a configured database, or 'admin' as it is the default auth source in MongoDB
+        // and null is not allowed.
+        String authSource = getAuthSource(config, connectionString);
         // AuthMechanism
         AuthenticationMechanism mechanism = null;
         Optional<String> maybeMechanism = config.credentials().authMechanism();
@@ -565,6 +567,45 @@ public class MongoClients {
         }
 
         return credential;
+    }
+
+    static String getAuthSource(MongoClientConfig config, ConnectionString connectionString) {
+        String authSource = config.credentials().authSource().orElse(null);
+        if (authSource != null) {
+            return authSource;
+        }
+        if (connectionString != null) {
+            authSource = getAuthSource(connectionString);
+            if (authSource != null) {
+                return authSource;
+            }
+        }
+        String database = config.database().orElse(null);
+        if (database != null) {
+            return database;
+        }
+        if (connectionString != null) {
+            database = connectionString.getDatabase();
+            if (database != null) {
+                return database;
+            }
+        }
+        return "admin";
+    }
+
+    private static String getAuthSource(ConnectionString connectionString) {
+        String value = null;
+        int optionsStart = connectionString.getConnectionString().indexOf('?');
+        if (optionsStart == -1) {
+            return null;
+        }
+        for (String option : connectionString.getConnectionString().substring(optionsStart + 1).split("&")) {
+            int valueStart = option.indexOf('=');
+            if (valueStart != -1 && option.substring(0, valueStart).equalsIgnoreCase("authSource")) {
+                value = URLDecoder.decode(option.substring(valueStart + 1), StandardCharsets.UTF_8);
+            }
+        }
+        return value;
     }
 
     private UsernamePassword determineUserNamePassword(CredentialConfig config) {

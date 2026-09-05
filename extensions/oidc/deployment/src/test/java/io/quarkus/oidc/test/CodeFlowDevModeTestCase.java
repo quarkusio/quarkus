@@ -15,11 +15,11 @@ import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.awaitility.core.ThrowingRunnable;
+import org.eclipse.microprofile.config.ConfigProvider;
 import org.eclipse.microprofile.config.spi.ConfigSource;
 import org.htmlunit.FailingHttpStatusCodeException;
 import org.htmlunit.SilentCssErrorHandler;
@@ -35,9 +35,11 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.quarkus.runtime.logging.LogRuntimeConfig;
 import io.quarkus.test.QuarkusDevModeTest;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.keycloak.server.KeycloakTestResourceLifecycleManager;
+import io.smallrye.config.SmallRyeConfig;
 
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 @QuarkusTestResource(KeycloakTestResourceLifecycleManager.class)
@@ -196,6 +198,12 @@ public class CodeFlowDevModeTestCase {
         return webClient;
     }
 
+    protected static Path getLogPath() {
+        SmallRyeConfig config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
+        LogRuntimeConfig logRuntimeConfig = config.getConfigMapping(LogRuntimeConfig.class);
+        return logRuntimeConfig.file().path().toPath();
+    }
+
     protected static void checkPkceSecretGenerated() {
         AtomicBoolean checkPassed = new AtomicBoolean();
         given().pollInterval(100, TimeUnit.MILLISECONDS)
@@ -203,13 +211,8 @@ public class CodeFlowDevModeTestCase {
                 .untilAsserted(new ThrowingRunnable() {
                     @Override
                     public void run() throws Throwable {
-                        final Path logDirectory = Paths.get(".", "target");
-                        Path accessLogFilePath = logDirectory.resolve("quarkus.log");
+                        Path accessLogFilePath = getLogPath();
                         boolean fileExists = Files.exists(accessLogFilePath);
-                        if (!fileExists) {
-                            accessLogFilePath = logDirectory.resolve("target/quarkus.log");
-                            fileExists = Files.exists(accessLogFilePath);
-                        }
                         assertTrue(fileExists, "quarkus log is missing");
 
                         try (BufferedReader reader = new BufferedReader(

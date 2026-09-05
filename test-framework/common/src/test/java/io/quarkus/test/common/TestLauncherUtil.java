@@ -127,12 +127,13 @@ public class TestLauncherUtil {
                         "sleep 10")
                 .start();
         try {
-            ListeningAddresses result = LauncherUtil.waitForCapturedListeningData(proc, logFile, 10);
+            ListeningResults result = LauncherUtil.waitForCapturedListeningData(proc, logFile, 10);
 
-            soft.assertThat(result.address()).isPresent();
-            soft.assertThat(result.address().get().port()).isEqualTo(8080);
-            soft.assertThat(result.address().get().protocol()).isEqualTo("http");
-            soft.assertThat(result.managementAddress()).isEmpty();
+            soft.assertThat(result.server()).isPresent();
+            soft.assertThat(result.server().get().address().port()).isEqualTo(8080);
+            soft.assertThat(result.server().get().address().protocol()).isEqualTo("http");
+            soft.assertThat(result.server().get().logPath()).isEqualTo(logFile);
+            soft.assertThat(result.management()).isEmpty();
         } finally {
             proc.destroyForcibly();
         }
@@ -148,10 +149,10 @@ public class TestLauncherUtil {
                         "sleep 10")
                 .start();
         try {
-            ListeningAddresses result = LauncherUtil.waitForCapturedListeningData(proc, logFile, 10);
+            ListeningResults result = LauncherUtil.waitForCapturedListeningData(proc, logFile, 10);
 
-            soft.assertThat(result.address()).contains(new ListeningAddress(8080, "http"));
-            soft.assertThat(result.managementAddress()).contains(new ListeningAddress(9000, "http"));
+            soft.assertThat(result.server()).contains(new ListeningResult(new ListeningAddress(8080, "http"), logFile));
+            soft.assertThat(result.management()).contains(new ListeningResult(new ListeningAddress(9000, "http"), logFile));
         } finally {
             proc.destroyForcibly();
         }
@@ -167,14 +168,15 @@ public class TestLauncherUtil {
                         "sleep 10")
                 .start();
         try {
-            ListeningAddresses result = LauncherUtil.waitForCapturedListeningData(proc, logFile, 10);
+            ListeningResults result = LauncherUtil.waitForCapturedListeningData(proc, logFile, 10);
 
-            soft.assertThat(result.address()).isPresent();
-            soft.assertThat(result.address().get().port()).isEqualTo(8443);
-            soft.assertThat(result.address().get().protocol()).isEqualTo("https");
-            soft.assertThat(result.managementAddress()).isPresent();
-            soft.assertThat(result.managementAddress().get().port()).isEqualTo(9443);
-            soft.assertThat(result.managementAddress().get().protocol()).isEqualTo("https");
+            soft.assertThat(result.server()).isPresent();
+            soft.assertThat(result.server().get().address().port()).isEqualTo(8443);
+            soft.assertThat(result.server().get().address().protocol()).isEqualTo("https");
+            soft.assertThat(result.server().get().logPath()).isEqualTo(logFile);
+            soft.assertThat(result.management()).isPresent();
+            soft.assertThat(result.management().get().address().port()).isEqualTo(9443);
+            soft.assertThat(result.management().get().address().protocol()).isEqualTo("https");
         } finally {
             proc.destroyForcibly();
         }
@@ -188,10 +190,10 @@ public class TestLauncherUtil {
                         "sleep 10")
                 .start();
         try {
-            ListeningAddresses result = LauncherUtil.waitForCapturedListeningData(proc, logFile, 10);
+            ListeningResults result = LauncherUtil.waitForCapturedListeningData(proc, logFile, 10);
 
-            soft.assertThat(result.address()).isEmpty();
-            soft.assertThat(result.managementAddress()).isEmpty();
+            soft.assertThat(result.server()).isEmpty();
+            soft.assertThat(result.management()).isEmpty();
         } finally {
             proc.destroyForcibly();
         }

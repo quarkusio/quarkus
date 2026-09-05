@@ -22,6 +22,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.runtime.util.ClassPathUtils;
+import io.quarkus.test.common.TestLog;
 import io.quarkus.test.common.http.TestHTTPResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.vertx.core.Vertx;
@@ -35,6 +36,9 @@ import io.vertx.mutiny.ext.web.client.WebClient;
 public class BouncyCastleFipsJsseTestCase {
 
     static final Logger LOG = Logger.getLogger(BouncyCastleFipsJsseTestCase.class);
+
+    // Injected automatically
+    protected TestLog testLog;
 
     @TestHTTPResource(tls = true)
     URL url;
@@ -83,18 +87,13 @@ public class BouncyCastleFipsJsseTestCase {
     }
 
     protected void checkLog(boolean serverOnly) {
-        final Path logDirectory = Paths.get(".", "target");
         given().pollInterval(100, TimeUnit.MILLISECONDS)
                 .atMost(10, TimeUnit.SECONDS)
                 .untilAsserted(new ThrowingRunnable() {
                     @Override
                     public void run() throws Throwable {
-                        Path accessLogFilePath = logDirectory.resolve("quarkus.log");
+                        Path accessLogFilePath = testLog.getLogFilePath();
                         boolean fileExists = Files.exists(accessLogFilePath);
-                        if (!fileExists) {
-                            accessLogFilePath = logDirectory.resolve("target/quarkus.log");
-                            fileExists = Files.exists(accessLogFilePath);
-                        }
                         Assertions.assertTrue(fileExists, "access log file " + accessLogFilePath + " is missing");
 
                         boolean checkClientPassed = serverOnly;

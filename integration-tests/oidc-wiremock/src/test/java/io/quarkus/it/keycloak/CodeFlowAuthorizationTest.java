@@ -27,7 +27,6 @@ import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.security.PrivateKey;
 import java.time.Instant;
 import java.util.Date;
@@ -63,6 +62,7 @@ import io.quarkus.oidc.common.runtime.OidcCommonUtils;
 import io.quarkus.oidc.common.runtime.OidcConstants;
 import io.quarkus.oidc.runtime.OidcUtils;
 import io.quarkus.test.common.QuarkusTestResource;
+import io.quarkus.test.common.TestLog;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.oidc.server.OidcWireMock;
 import io.quarkus.test.oidc.server.OidcWiremockTestResource;
@@ -79,6 +79,9 @@ import io.vertx.core.json.JsonObject;
 @QuarkusTest
 @QuarkusTestResource(CustomOidcWiremockTestResource.class)
 public class CodeFlowAuthorizationTest {
+
+    // Injected automatically
+    protected TestLog testLog;
 
     @OidcWireMock
     WireMockServer wireMockServer;
@@ -532,19 +535,14 @@ public class CodeFlowAuthorizationTest {
     }
 
     private void checkSignedUserInfoRecordInLog() {
-        final Path logDirectory = Paths.get(".", "target");
         given().await().pollInterval(100, TimeUnit.MILLISECONDS)
                 .atMost(10, TimeUnit.SECONDS)
                 .untilAsserted(new ThrowingRunnable() {
                     @Override
                     public void run() throws Throwable {
-                        Path accessLogFilePath = logDirectory.resolve("quarkus.log");
+                        Path accessLogFilePath = testLog.getLogFilePath();
                         boolean fileExists = Files.exists(accessLogFilePath);
-                        if (!fileExists) {
-                            accessLogFilePath = logDirectory.resolve("target/quarkus.log");
-                            fileExists = Files.exists(accessLogFilePath);
-                        }
-                        Assertions.assertTrue(Files.exists(accessLogFilePath),
+                        Assertions.assertTrue(fileExists,
                                 "quarkus log file " + accessLogFilePath + " is missing");
 
                         boolean lineConfirmingVerificationDetected = false;

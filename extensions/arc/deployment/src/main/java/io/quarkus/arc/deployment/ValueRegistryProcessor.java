@@ -2,7 +2,7 @@ package io.quarkus.arc.deployment;
 
 import java.util.Comparator;
 import java.util.HashSet;
-import java.util.ServiceLoader;
+import java.util.List;
 import java.util.Set;
 
 import jakarta.enterprise.context.ApplicationScoped;
@@ -13,6 +13,7 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
+import io.quarkus.deployment.builditem.ValueRegistryRuntimeInfoProviderBuildItem;
 import io.quarkus.value.registry.RuntimeInfoProvider;
 import io.quarkus.value.registry.RuntimeInfoProvider.RuntimeSource;
 import io.quarkus.value.registry.ValueRegistry;
@@ -41,9 +42,11 @@ class ValueRegistryProcessor {
     @Record(ExecutionTime.RUNTIME_INIT)
     void runtimeInfo(
             ValueRegistryRecorder recorder,
+            List<ValueRegistryRuntimeInfoProviderBuildItem> runtimeInfoProviders,
             BuildProducer<SyntheticBeanBuildItem> syntheticBeans) {
 
-        for (Class<?> runtimeInfo : getRuntimeInfoClasses().stream().sorted(Comparator.comparing(Class::getName)).toList()) {
+        for (Class<?> runtimeInfo : getRuntimeInfoClasses(runtimeInfoProviders).stream()
+                .sorted(Comparator.comparing(Class::getName)).toList()) {
             SyntheticBeanBuildItem.ExtendedBeanConfigurator configurator = SyntheticBeanBuildItem
                     .configure(runtimeInfo)
                     .startup()
@@ -57,7 +60,8 @@ class ValueRegistryProcessor {
         }
     }
 
-    private static Set<Class<?>> getRuntimeInfoClasses() {
+    private static Set<Class<?>> getRuntimeInfoClasses(
+            List<ValueRegistryRuntimeInfoProviderBuildItem> runtimeInfoProviders) {
         Set<Class<?>> runtimeInfos = new HashSet<>();
         ValueRegistry valueRegistry = new ValueRegistry() {
             @Override
@@ -95,15 +99,20 @@ class ValueRegistryProcessor {
             }
         };
 
-        // To collect RuntimeInfo implementations and register them as CDI Beans
-        ServiceLoader<RuntimeInfoProvider> infoProviders = ServiceLoader.load(RuntimeInfoProvider.class);
-        for (RuntimeInfoProvider runtimeInfoProvider : infoProviders) {
-            runtimeInfoProvider.register(valueRegistry, new RuntimeSource() {
-                @Override
-                public <T> T get(RuntimeKey<T> key) {
-                    return null;
-                }
-            });
+        // To collect RuntimeInfo implementations and register them as CDI Beans.
+        for (ValueRegistryRuntimeInfoProviderBuildItem runtimeInfoProviderItem : runtimeInfoProviders) {
+            try {
+                RuntimeInfoProvider runtimeInfoProvider = runtimeInfoProviderItem.getRuntimeInfoProvider()
+                        .getDeclaredConstructor().newInstance();
+                runtimeInfoProvider.register(valueRegistry, new RuntimeSource() {
+                    @Override
+                    public <T> T get(RuntimeKey<T> key) {
+                        return null;
+                    }
+                });
+            } catch (ReflectiveOperationException e) {
+                throw new RuntimeException(e);
+            }
         }
         return runtimeInfos;
     }

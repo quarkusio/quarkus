@@ -10,6 +10,8 @@ import org.junit.jupiter.api.extension.LifecycleMethodExecutionExceptionHandler;
 import org.junit.jupiter.api.extension.TestExecutionExceptionHandler;
 import org.junit.jupiter.api.extension.TestWatcher;
 
+import io.quarkus.test.config.ConfigInjector;
+import io.quarkus.test.config.ValueRegistryInjector;
 import io.quarkus.value.registry.ValueRegistry;
 import io.smallrye.config.Config;
 
@@ -85,7 +87,11 @@ public abstract class AbstractQuarkusTestWithContextExtension extends AbstractTe
                     // ignoring exceptions when closing state.
 
                 } finally {
-                    getStoreFromContext(context).remove(QuarkusTestExtensionState.class.getName());
+                    store.remove(QuarkusTestExtensionState.class.getName());
+                    store.remove(ValueRegistry.class.getName());
+                    store.remove(Config.class.getName());
+                    ValueRegistryInjector.clear(context);
+                    ConfigInjector.clear(context);
                 }
 
                 return null;

@@ -4,6 +4,8 @@ import java.io.IOException;
 import java.io.InterruptedIOException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.ReentrantLock;
 
 import org.jboss.logging.Logger;
 
@@ -14,7 +16,6 @@ import io.vertx.core.AsyncResult;
 import io.vertx.core.Context;
 import io.vertx.core.Handler;
 import io.vertx.core.buffer.Buffer;
-import io.vertx.core.http.HttpConnection;
 import io.vertx.core.http.HttpServerRequest;
 
 public class VertxBlockingOutput implements VertxOutput {
@@ -24,7 +25,9 @@ public class VertxBlockingOutput implements VertxOutput {
     protected boolean drainHandlerRegistered;
     protected final HttpServerRequest request;
     protected boolean first = true;
-    protected Throwable throwable;
+    protected volatile Throwable throwable;
+    private final ReentrantLock lock = new ReentrantLock();
+    private final Condition drainAvailable = lock.newCondition();
 
     public VertxBlockingOutput(HttpServerRequest request) {
         this.request = request;
@@ -36,10 +39,13 @@ public class VertxBlockingOutput implements VertxOutput {
                 //TODO: do we need this?
                 terminateResponse();
                 request.connection().close();
-                synchronized (request.connection()) {
+                lock.lock();
+                try {
                     if (waitingForDrain) {
-                        request.connection().notify();
+                        drainAvailable.signal();
                     }
+                } finally {
+                    lock.unlock();
                 }
             }
         });
@@ -47,10 +53,13 @@ public class VertxBlockingOutput implements VertxOutput {
         request.response().endHandler(new Handler<Void>() {
             @Override
             public void handle(Void event) {
-                synchronized (request.connection()) {
+                lock.lock();
+                try {
                     if (waitingForDrain) {
-                        request.connection().notify();
+                        drainAvailable.signal();
                     }
+                } finally {
+                    lock.unlock();
                 }
                 terminateResponse();
             }
@@ -84,20 +93,21 @@ public class VertxBlockingOutput implements VertxOutput {
         }
         try {
             //do all this in the same lock
-            synchronized (request.connection()) {
-                try {
-                    awaitWriteable();
-                    if (last) {
-                        request.response().end(createBuffer(data));
-                    } else {
-                        request.response().write(createBuffer(data));
-                    }
-                } catch (Exception e) {
-                    if (data != null && data.refCnt() > 0) {
-                        data.release();
-                    }
-                    throw new IOException("Failed to write", e);
+            lock.lock();
+            try {
+                awaitWriteable();
+                if (last) {
+                    request.response().end(createBuffer(data));
+                } else {
+                    request.response().write(createBuffer(data));
                 }
+            } catch (Exception e) {
+                if (data != null && data.refCnt() > 0) {
+                    data.release();
+                }
+                throw new IOException("Failed to write", e);
+            } finally {
+                lock.unlock();
             }
         } finally {
             if (last) {
@@ -141,7 +151,7 @@ public class VertxBlockingOutput implements VertxOutput {
             first = false;
             return;
         }
-        assert Thread.holdsLock(request.connection());
+        assert lock.isHeldByCurrentThread();
         while (request.response().writeQueueFull()) {
             if (throwable != null) {
                 throw new IOException(throwable);
@@ -157,11 +167,13 @@ public class VertxBlockingOutput implements VertxOutput {
                 Handler<Void> handler = new Handler<Void>() {
                     @Override
                     public void handle(Void event) {
-                        if (waitingForDrain) {
-                            HttpConnection connection = request.connection();
-                            synchronized (connection) {
-                                connection.notifyAll();
+                        lock.lock();
+                        try {
+                            if (waitingForDrain) {
+                                drainAvailable.signalAll();
                             }
+                        } finally {
+                            lock.unlock();
                         }
                     }
                 };
@@ -170,7 +182,7 @@ public class VertxBlockingOutput implements VertxOutput {
             }
             try {
                 waitingForDrain = true;
-                request.connection().wait();
+                drainAvailable.await();
             } catch (InterruptedException e) {
                 throw new InterruptedIOException(e.getMessage());
             } finally {

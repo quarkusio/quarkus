@@ -46,6 +46,8 @@ Release note: RESTEasy Reactive now supports multipart file uploads with
 progress tracking via the new `@PartProgress` annotation.
 ```
 
+*Only* do this for noteworthy features, not small enhancements or bug fixes
+
 ### Breaking changes
 
 If the change is breaking, explain in the description:

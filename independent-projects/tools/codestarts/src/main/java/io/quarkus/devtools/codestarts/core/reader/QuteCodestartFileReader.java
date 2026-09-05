@@ -17,6 +17,7 @@ import io.quarkus.devtools.codestarts.CodestartResource.Source;
 import io.quarkus.qute.CompletedStage;
 import io.quarkus.qute.Engine;
 import io.quarkus.qute.EvalContext;
+import io.quarkus.qute.EvalSectionHelper;
 import io.quarkus.qute.Expression;
 import io.quarkus.qute.ResultMapper;
 import io.quarkus.qute.Results;
@@ -81,6 +82,7 @@ final class QuteCodestartFileReader implements CodestartFileReader {
                         id -> findIncludeTemplate(projectResource, languageName, id)
                                 .map(IncludeTemplateLocation::new))
                 .addLocator(id -> Optional.of(new FallbackTemplateLocation()))
+                .addSectionHelper(new EvalSectionHelper.Factory())
                 .build();
         try {
             return engine.parse(content, null, templateId).render(data);

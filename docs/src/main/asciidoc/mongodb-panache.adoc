@@ -103,16 +103,17 @@ Then add the relevant configuration properties in `{config-file}`.
 ----
 # configure the MongoDB client for a replica set of two nodes
 quarkus.mongodb.connection-string = mongodb://mongo1:27017,mongo2:27017
-# mandatory if you don't specify the name of the database using @MongoEntity
+# optional if the connection string or @MongoEntity specifies the database
 quarkus.mongodb.database = person
 ----
 
 The `quarkus.mongodb.database` property will be used by MongoDB with Panache to determine the name of the database where your entities will be persisted (if not overridden by `@MongoEntity`).
+If this property is not set, MongoDB with Panache uses the database from the connection string if any.
 
 The `@MongoEntity` annotation allows configuring:
 
 * the name of the client for multitenant application, see xref:mongodb.adoc#multiple-mongodb-clients[Multiple MongoDB Clients]. Otherwise, the default client will be used.
-* the name of the database, otherwise the `quarkus.mongodb.database` property or a link:{mongodb-doc-root-url}#multitenancy[`MongoDatabaseResolver`] implementation will be used.
+* the name of the database, otherwise a link:{mongodb-doc-root-url}#multitenancy[`MongoDatabaseResolver`] implementation, the `quarkus.mongodb.database` property, or the database from the connection string will be used.
 * the name of the collection, otherwise the simple name of the class will be used.
 
 For advanced configuration of the MongoDB client, you can follow the xref:mongodb.adoc#configuring-the-mongodb-database[Configuring the MongoDB database guide].
@@ -1273,8 +1274,8 @@ public class CustomMongoDatabaseResolver implements MongoDatabaseResolver {
 
 [IMPORTANT]
 ====
-The database selection priority order is as follow: `@MongoEntity(database="mizain")`, `MongoDatabaseResolver`,
-and then `quarkus.mongodb.database` property.
+The database selection priority order is as follows: `@MongoEntity(database="mizain")`, `MongoDatabaseResolver`,
+the `quarkus.mongodb.database` property, and then the database from the connection string.
 ====
 
 [NOTE]

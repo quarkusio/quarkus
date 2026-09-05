@@ -1,0 +1,69 @@
+package io.quarkus.agroal.deployment;
+
+import java.util.Optional;
+
+import io.quarkus.agroal.runtime.DataSourceJdbcBuildTimeConfig;
+import io.quarkus.builder.item.MultiBuildItem;
+import io.quarkus.datasource.common.runtime.DataSourceUtil;
+import io.quarkus.datasource.runtime.DataSourceBuildTimeConfig;
+
+/**
+ * The first build item created after the decision was taken to define a datasource.
+ * <p>
+ * It holds build-time configuration and various datasource-related information that is resolved early.
+ */
+public final class JdbcDataSourceDefinitionBuildItem extends MultiBuildItem {
+
+    private final String name;
+
+    private final DataSourceBuildTimeConfig dataSourceConfig;
+
+    private final DataSourceJdbcBuildTimeConfig jdbcConfig;
+
+    private final String dbKind;
+
+    private final String resolvedDriverClass;
+
+    private final Optional<String> dbVersion;
+
+    public JdbcDataSourceDefinitionBuildItem(String name, DataSourceBuildTimeConfig dataSourceConfig,
+            DataSourceJdbcBuildTimeConfig jdbcConfig,
+            String dbKind,
+            String resolvedDriverClass,
+            Optional<String> dbVersion) {
+        this.name = name;
+        this.dataSourceConfig = dataSourceConfig;
+        this.jdbcConfig = jdbcConfig;
+        this.dbKind = dbKind;
+        this.resolvedDriverClass = resolvedDriverClass;
+        this.dbVersion = dbVersion;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public DataSourceBuildTimeConfig getDataSourceConfig() {
+        return dataSourceConfig;
+    }
+
+    public DataSourceJdbcBuildTimeConfig getJdbcConfig() {
+        return jdbcConfig;
+    }
+
+    public boolean isDefault() {
+        return DataSourceUtil.isDefault(name);
+    }
+
+    public String getDbKind() {
+        return dbKind;
+    }
+
+    public String getResolvedDriverClass() {
+        return resolvedDriverClass;
+    }
+
+    public Optional<String> getDbVersion() {
+        return dbVersion;
+    }
+}

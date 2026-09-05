@@ -13,7 +13,9 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 
 import org.jboss.logging.Logger;
+import org.jboss.resteasy.reactive.common.jaxrs.ResponseImpl;
 import org.jboss.resteasy.reactive.common.providers.serialisers.FileBodyHandler;
+import org.jboss.resteasy.reactive.server.core.LazyResponse;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 import org.jboss.resteasy.reactive.server.spi.ResteasyReactiveResourceInfo;
 import org.jboss.resteasy.reactive.server.spi.ServerMessageBodyWriter;
@@ -53,14 +55,26 @@ public class ServerFileBodyHandler extends FileBodyHandler implements ServerMess
             if ((fileRange.getStart() >= 0) && (fileRange.getStart() <= fileRange.getEnd())) {
                 String contentRange = "bytes " + fileRange.getStart() + "-" + fileRange.getEnd() + "/" + fileLength;
                 long length = fileRange.getEnd() - fileRange.getStart() + 1;
+                setPartialContentStatus(ctx);
                 context.serverResponse()
-                        .setStatusCode(Response.Status.PARTIAL_CONTENT.getStatusCode())
                         .setResponseHeader("Content-Range", contentRange)
                         .sendFile(file.getAbsolutePath(), fileRange.getStart(), length);
                 return;
             }
         }
         context.serverResponse().sendFile(file.getAbsolutePath(), 0, fileLength);
+    }
+
+    private static void setPartialContentStatus(ResteasyReactiveRequestContext ctx) {
+        int partialContent = Response.Status.PARTIAL_CONTENT.getStatusCode();
+        ctx.serverResponse().setStatusCode(partialContent);
+        // when the JAX-RS response has been materialized (the resource method returned a Response, or a response
+        // filter accessed it), its status is applied to the underlying response right before it is committed,
+        // which would override the status set above
+        LazyResponse lazyResponse = ctx.getResponse();
+        if (lazyResponse.isCreated() && lazyResponse.get() instanceof ResponseImpl response) {
+            response.setStatus(partialContent);
+        }
     }
 
     /**

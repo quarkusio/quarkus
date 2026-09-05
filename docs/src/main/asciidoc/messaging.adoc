@@ -397,16 +397,16 @@ public class PausableController {
     public void resume() {
         // Wait for the application to be ready
         // Retrieve the pausable channel
-        PausableChannel pausable = registry.getPausable("my-channel");
-        // Pause the processing of the messages
-        pausable.resume();
+        PausableChannel channel = registry.getPausable("my-channel");
+        // Resume the processing of the messages
+        channel.resume();
     }
 
     public void pause() {
         // Retrieve the pausable channel
-        PausableChannel pausable = registry.getPausable("my-channel");
+        PausableChannel channel = registry.getPausable("my-channel");
         // Pause the processing of the messages
-        pausable.pause();
+        channel.pause();
     }
 
     @Incoming("my-channel")

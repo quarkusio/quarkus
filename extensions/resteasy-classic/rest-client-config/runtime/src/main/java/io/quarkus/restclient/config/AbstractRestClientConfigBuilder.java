@@ -268,7 +268,6 @@ public abstract class AbstractRestClientConfigBuilder implements ConfigBuilder {
         MICROPROFILE_NAMES.put("connect-timeout", "connectTimeout");
         MICROPROFILE_NAMES.put("read-timeout", "readTimeout");
         MICROPROFILE_NAMES.put("follow-redirects", "followRedirects");
-        MICROPROFILE_NAMES.put("proxy-address", "proxyAddress");
         MICROPROFILE_NAMES.put("query-param-style", "queryParamStyle");
         MICROPROFILE_NAMES.put("hostname-verifier", "hostnameVerifier");
         MICROPROFILE_NAMES.put("verify-host", "verifyHost");
@@ -282,7 +281,6 @@ public abstract class AbstractRestClientConfigBuilder implements ConfigBuilder {
         MICROPROFILE_NAMES.put("connectTimeout", "connect-timeout");
         MICROPROFILE_NAMES.put("readTimeout", "read-timeout");
         MICROPROFILE_NAMES.put("followRedirects", "follow-redirects");
-        MICROPROFILE_NAMES.put("proxyAddress", "proxy-address");
         MICROPROFILE_NAMES.put("queryParamStyle", "query-param-style");
         MICROPROFILE_NAMES.put("hostnameVerifier", "hostname-verifier");
         MICROPROFILE_NAMES.put("verifyHost", "verify-host");

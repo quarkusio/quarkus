@@ -54,10 +54,6 @@ public class GlobalConfigurationTest {
         assertThat(configRoot.disableContextualErrorMessages()).isTrue();
 
         // global defaults for client specific properties:
-        assertThat(configRoot.proxyAddress().get()).isEqualTo("host:123");
-        assertThat(configRoot.proxyUser().get()).isEqualTo("proxyUser");
-        assertThat(configRoot.proxyPassword().get()).isEqualTo("proxyPassword");
-        assertThat(configRoot.nonProxyHosts().get()).isEqualTo("nonProxyHosts");
         assertThat(configRoot.connectTimeout()).isEqualTo(2000);
         assertThat(configRoot.readTimeout()).isEqualTo(2001);
         assertThat(configRoot.userAgent().get()).isEqualTo("agent");

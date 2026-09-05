@@ -444,6 +444,7 @@ List<Cat> byNameThenBirth = repo.findAll()
         .list();
 ----
 
+[[about-entity-identifiers]]
 == About entity identifiers
 
 In the example above, we extended the `ManagedEntity` type, and did not define any database identifier, that's
@@ -638,6 +639,7 @@ But that's mostly it. Everything else stays the same, in particular for queries 
 
 TIP: If you're using stateless sessions, you can also use the <<Jakarta Data>> type of repositories.
 
+[[lets-get-reactive]]
 == Let's get reactive
 
 You want to start using your entities in a reactive application? Let's start by importing Hibernate Reactive in your
@@ -683,7 +685,7 @@ mode: if you don't, a dev service will be provided for you):
 ----
 quarkus.datasource.username = quarkus_test
 quarkus.datasource.password = quarkus_test
-quarkus.datasource.reactive.url = vertx-reactive:postgresql://localhost/quarkus_test <1>
+quarkus.datasource.reactive.url = vertx-reactive:postgresql://localhost/quarkus_test
 ----
 
 Now, in your code, the only differences with a regular managed session entity are:

@@ -68,7 +68,6 @@ include::{includes}/prerequisites.adoc[]
 * https://stedolan.github.io/jq/[jq tool]
 * https://www.keycloak.org[Keycloak]
 
-
 == Architecture
 
 This example demonstrates a simple microservice setup with two protected endpoints:
@@ -108,7 +107,6 @@ For `/api/users/me`:
 }
 ----
 
-
 For `/api/admin`:
 
 - *Access policy*: Restricted to users with a valid bearer token and the `admin` role.
@@ -123,7 +121,7 @@ Key points include:
 
 == Solution
 
-We recommend that you follow the instructions in the next sections and create the application step by step.
+Follow the instructions in the next sections to create the application step by step.
 However, you can go right to the completed example.
 
 Clone the Git repository: `git clone {quickstarts-clone-url}`, or download an {quickstarts-archive-url}[archive].
@@ -266,21 +264,19 @@ For example:
 %prod.quarkus.oidc.auth-server-url=https://localhost:8543/realms/quarkus <1>
 quarkus.oidc.client-id=backend-service <2>
 quarkus.oidc.credentials.secret=secret <3>
-quarkus.oidc.tls.verification=none <4>
 
 # Enable Policy Enforcement
-quarkus.keycloak.policy-enforcer.enabled=true <5>
+quarkus.keycloak.policy-enforcer.enabled=true <4>
 
 # Import the realm file with Dev Services for Keycloak
 # Note: This property is effective only in dev mode, not in JVM or native modes
-quarkus.keycloak.devservices.realm-path=quarkus-realm.json <6>
+quarkus.keycloak.devservices.realm-path=quarkus-realm.json <5>
 ----
 <1> Specifies the URL of the Keycloak server and the realm used for authentication.
 <2> Identifies the client application within the Keycloak realm.
 <3> Defines the client secret for authentication with the Keycloak server.
-<4> Disables TLS verification for development purposes, not recommended for production.
-<5> Enables the Keycloak policy enforcer to manage access control based on defined permissions.
-<6> Configures Dev Services to import a specified realm file, effective only in dev mode and not in JVM or native modes.
+<4> Enables the Keycloak policy enforcer to manage access control based on defined permissions.
+<5> Configures Dev Services to import a specified realm file, effective only in dev mode and not in JVM or native modes.
 
 [NOTE]
 ====
@@ -308,7 +304,7 @@ For more information, see the <<keycloak-dev-mode,Running the application in Dev
 
 To start a Keycloak server, use the following Docker command:
 
-[source,bash,subs=attributes+]
+[source,shell,subs=attributes+]
 ----
 docker run --name keycloak \
   -e KC_BOOTSTRAP_ADMIN_USERNAME=admin \
@@ -408,7 +404,7 @@ include::{includes}/devtools/build.adoc[]
 
 Run the application:
 
-[source,bash]
+[source,shell]
 ----
 java -jar target/quarkus-app/quarkus-run.jar
 ----
@@ -428,7 +424,7 @@ include::{includes}/devtools/build-native.adoc[]
 
 After a while, run the native binary:
 
-[source,bash]
+[source,shell]
 ----
 ./target/security-keycloak-authorization-quickstart-1.0.0-SNAPSHOT-runner
 ----
@@ -445,7 +441,7 @@ You can test the application running in JVM or native modes by using `curl`.
 The application uses bearer token authorization.
 To access its resources, first obtain an access token from the Keycloak server:
 
-[source,bash]
+[source,shell]
 ----
 export access_token=$(\
     curl --insecure -X POST https://localhost:8543/realms/quarkus/protocol/openid-connect/token \
@@ -460,7 +456,7 @@ export access_token=$(\
 If the `quarkus.oidc.authentication.user-info-required` property is set to `true`, the application requires that an access token is used to request `UserInfo`.
 In that case, you must add the `scope=openid` query parameter to the token grant request; for example:
 
-[source,bash]
+[source,shell]
 ----
 export access_token=$(\
     curl --insecure -X POST http://localhost:8180/realms/quarkus/protocol/openid-connect/token \
@@ -477,7 +473,7 @@ The preceding example obtains an access token for the user `alice`.
 
 Any user with a valid access token can access the `http://localhost:8080/api/users/me` endpoint, which returns a JSON payload with user details:
 
-[source,bash]
+[source,shell]
 ----
 curl -v -X GET \
   http://localhost:8080/api/users/me \
@@ -489,7 +485,7 @@ curl -v -X GET \
 The `http://localhost:8080/api/admin` endpoint is restricted to users with the `admin` role.
 If you try to access this endpoint with the previously issued access token, the server returns a `403 Forbidden` response:
 
-[source,bash]
+[source,shell]
 ----
 curl -v -X GET \
   http://localhost:8080/api/admin \
@@ -500,7 +496,7 @@ curl -v -X GET \
 
 To access the admin endpoint, get an access token for the `admin` user:
 
-[source,bash]
+[source,shell]
 ----
 export access_token=$(\
     curl --insecure -X POST https://localhost:8543/realms/quarkus/protocol/openid-connect/token \
@@ -531,7 +527,8 @@ Otherwise, no bean is available for injection.
 
 == Mapping protected resources
 
-By default, the extension uses lazy loading to fetch resources from Keycloak on demand. It uses the request URI to identify and map application resources that require protection.
+By default, the extension uses lazy loading to fetch resources from Keycloak on demand.
+It uses the request URI to identify and map application resources that require protection.
 
 To disable lazy loading and instead pre-load all resources at startup, configure the following property:
 
@@ -594,7 +591,7 @@ quarkus.keycloak.policy-enforcer.paths.2.paths=/api/protected/programmatic-way,/
 <1> User must have resource permission `Scope Permission Resource` and scope `read`
 
 The Keycloak Policy Enforcer secures the `/api/protected/standard-way` request path, removing the need for annotations such as `@RolesAllowed`.
-However, in some scenarios, you may need to perform a programmatic check.
+However, in some scenarios, you might need to perform a programmatic check.
 
 You can achieve this by injecting a `SecurityIdentity` instance into your beans, as shown in the following example.
 Or, you can get the same result by annotating the resource method with `@PermissionsAllowed`.
@@ -655,7 +652,8 @@ public class ProtectedResource {
 }
 ----
 <1> The `/standard-way` sub-path requires both the resource permission and the `read` scope, based on the configuration set in the `application.properties` file.
-<2> The `/programmatic-way` sub-path checks only for the `Scope Permission Resource` permission by default. However, you can enforce additional constraints, such as scope requirements, by using `SecurityIdentity#checkPermission`.
+<2> The `/programmatic-way` sub-path checks only for the `Scope Permission Resource` permission by default.
+However, you can enforce additional constraints, such as scope requirements, by using `SecurityIdentity#checkPermission`.
 <3> The `@PermissionsAllowed` annotation at `/annotation-way` restricts access to requests that have the `Scope Permission Resource` permission along with the `read` scope.
 For more information, see the section xref:security-authorize-web-endpoints-reference.adoc#standard-security-annotations[Authorization using annotations] of the Authorization of web endpoints guide.
 
@@ -688,7 +686,6 @@ quarkus.keycloak.service-tenant.policy-enforcer.enforcement-mode=PERMISSIVE
 quarkus.keycloak.service-tenant.policy-enforcer.paths.1.name=Permission Resource Service
 quarkus.keycloak.service-tenant.policy-enforcer.paths.1.paths=/api/permission
 quarkus.keycloak.service-tenant.policy-enforcer.paths.1.claim-information-point.claims.static-claim=static-claim
-
 
 # WebApp Tenant
 
@@ -771,7 +768,7 @@ include::{generated-dir}/config/quarkus-keycloak-authorization.adoc[opts=optiona
 
 * https://www.keycloak.org/documentation.html[Keycloak documentation]
 * https://www.keycloak.org/docs/latest/authorization_services/index.html[Keycloak Authorization Services]
-* https://openid.net/connect/[OpenID Connect]
-* https://tools.ietf.org/html/rfc7519[JSON Web Token]
+* https://openid.net/developers/how-connect-works/[OpenID Connect]
+* https://datatracker.ietf.org/doc/html/rfc7519[JSON Web Token]
 * xref:security-overview.adoc[Quarkus Security overview]
 * xref:security-keycloak-admin-client.adoc[Quarkus Keycloak Admin Client]

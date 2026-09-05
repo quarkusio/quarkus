@@ -592,6 +592,132 @@ class CycloneDxSbomGeneratorTest {
         assertThat(npmRtDependsOn).doesNotContain(npmDev.getBomRef());
     }
 
+    @Test
+    void fileComponentsInheritProjectLicense() {
+        ResolvedDependency mainArtifact = resolvedDep("org.acme", "acme-app", "1.0.0", List.of());
+
+        SbomContribution coreContribution = new CoreSbomContributionConfig()
+                .setMainArtifact(mainArtifact)
+                .setMainPurl(Purl.generic("quarkus-run.jar", "1.0.0"))
+                .addComponent(ComponentDescriptor.builder()
+                        .setPurl(Purl.generic("appmodel.dat", "1.0.0"))
+                        .setDistributionPath("lib/deployment/appmodel.dat")
+                        .setDevelopmentScope())
+                .toSbomContribution();
+
+        // Model resolver returns a POM with Apache-2.0 license for the app artifact
+        EffectiveModelResolver resolver = (coords, repos) -> {
+            if ("acme-app".equals(coords.getArtifactId())) {
+                return pomWithLicense("org.acme", "acme-app", "1.0.0", "Apache-2.0");
+            }
+            return null;
+        };
+
+        Bom bom = parseBom(CycloneDxSbomGenerator.newInstance()
+                .setFormat("json")
+                .setEffectiveModelResolver(resolver)
+                .setContributions(List.of(coreContribution))
+                .generateText().get(0));
+
+        Component fileComp = findComponent(bom, "appmodel.dat");
+        assertThat(fileComp.getType()).isEqualTo(Component.Type.FILE);
+        assertThat(fileComp.getLicenses()).isNotNull();
+        assertThat(fileComp.getLicenses().getLicenses())
+                .anyMatch(l -> "Apache-2.0".equals(l.getId()));
+    }
+
+    @Test
+    void fileComponentsKeepOwnLicenseWhenPresent() {
+        ResolvedDependency mainArtifact = resolvedDep("org.acme", "acme-app", "1.0.0", List.of());
+
+        SbomContribution coreContribution = new CoreSbomContributionConfig()
+                .setMainArtifact(mainArtifact)
+                .setMainPurl(Purl.generic("quarkus-run.jar", "1.0.0"))
+                .addComponent(ComponentDescriptor.builder()
+                        .setPurl(Purl.generic("third-party.dat", "1.0.0"))
+                        .setDistributionPath("data/third-party.dat")
+                        .addLicense(new LicenseInfo("MIT")))
+                .toSbomContribution();
+
+        EffectiveModelResolver resolver = (coords, repos) -> {
+            if ("acme-app".equals(coords.getArtifactId())) {
+                return pomWithLicense("org.acme", "acme-app", "1.0.0", "Apache-2.0");
+            }
+            return null;
+        };
+
+        Bom bom = parseBom(CycloneDxSbomGenerator.newInstance()
+                .setFormat("json")
+                .setEffectiveModelResolver(resolver)
+                .setContributions(List.of(coreContribution))
+                .generateText().get(0));
+
+        Component fileComp = findComponent(bom, "third-party.dat");
+        assertThat(fileComp.getLicenses().getLicenses())
+                .hasSize(1)
+                .anyMatch(l -> "MIT".equals(l.getId()) || "MIT".equals(l.getName()));
+    }
+
+    @Test
+    void mainGenericComponentInheritsProjectLicense() {
+        ResolvedDependency mainArtifact = resolvedDep("org.acme", "acme-app", "1.0.0", List.of());
+
+        SbomContribution coreContribution = new CoreSbomContributionConfig()
+                .setMainArtifact(mainArtifact)
+                .setMainPurl(Purl.generic("quarkus-run.jar", "1.0.0"))
+                .toSbomContribution();
+
+        EffectiveModelResolver resolver = (coords, repos) -> {
+            if ("acme-app".equals(coords.getArtifactId())) {
+                return pomWithLicense("org.acme", "acme-app", "1.0.0", "Apache-2.0");
+            }
+            return null;
+        };
+
+        Bom bom = parseBom(CycloneDxSbomGenerator.newInstance()
+                .setFormat("json")
+                .setEffectiveModelResolver(resolver)
+                .setContributions(List.of(coreContribution))
+                .generateText().get(0));
+
+        Component main = bom.getMetadata().getComponent();
+        assertThat(main.getType()).isEqualTo(Component.Type.APPLICATION);
+        assertThat(main.getLicenses()).isNotNull();
+        assertThat(main.getLicenses().getLicenses())
+                .anyMatch(l -> "Apache-2.0".equals(l.getId()));
+    }
+
+    @Test
+    void noProjectLicenseDoesNotFail() {
+        ComponentDescriptor fileComponent = ComponentDescriptor.builder()
+                .setPurl(Purl.generic("data.dat", "1.0.0"))
+                .setDistributionPath("data.dat")
+                .build();
+
+        SbomContribution contribution = SbomContribution.ofComponents(List.of(fileComponent));
+
+        Bom bom = parseBom(CycloneDxSbomGenerator.newInstance()
+                .setFormat("json")
+                .setContributions(List.of(contribution))
+                .generateText().get(0));
+
+        Component fileComp = findComponent(bom, "data.dat");
+        assertThat(fileComp.getType()).isEqualTo(Component.Type.FILE);
+        assertThat(fileComp.getLicenses()).isNull();
+    }
+
+    private static org.apache.maven.model.Model pomWithLicense(String groupId, String artifactId,
+            String version, String licenseName) {
+        org.apache.maven.model.Model model = new org.apache.maven.model.Model();
+        model.setGroupId(groupId);
+        model.setArtifactId(artifactId);
+        model.setVersion(version);
+        org.apache.maven.model.License license = new org.apache.maven.model.License();
+        license.setName(licenseName);
+        model.addLicense(license);
+        return model;
+    }
+
     private static Bom parseBom(String json) {
         try {
             return new JsonParser().parse(json.getBytes());

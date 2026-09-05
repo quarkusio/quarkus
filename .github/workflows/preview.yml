@@ -73,9 +73,6 @@ jobs:
           key: ${{ runner.os }}-npm-${{ hashFiles('package-lock.json') }}
           restore-keys: ${{ runner.os }}-npm-
 
-      - name: Build TOC plugin
-        run: ./roq-plugin-toc/build.sh
-
       - name: Build with Maven
         run: QUARKUS_ROQ_GENERATOR_BATCH=true QUARKUS_PROFILE=only-latest-guides mvn -B package quarkus:run -DskipTests
 

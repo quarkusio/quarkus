@@ -1469,6 +1469,8 @@ The template is executed with the <<current_context_object>>, i.e. can reference
 NOTE: The evaluated template is parsed and evaluated every time the section is executed.
 In other words, it is not possible to cache the parsed value to conserve resources and optimize performance.
 
+IMPORTANT: The `{#eval}` section helper is not registered automatically. It can be registered manually using `engine.addSectionHelper(new EvalSectionHelper.Factory())`. See <<engine-customization>> for more details.
+
 ==== Cached Section
 
 Sometimes it's practical to cache parts of the template that rarely change.
@@ -1789,7 +1791,7 @@ This can be done by setting a special attribute via `TemplateInstance.setVariant
 class MyService {
 
     @Inject
-    Template items; <1>
+    Template items;
 
     @Inject
     ItemManager manager;

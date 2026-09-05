@@ -4,12 +4,10 @@ import static io.quarkus.reactive.datasource.deployment.ReactiveDataSourceBuildU
 import static io.quarkus.reactive.datasource.deployment.ReactiveDataSourceBuildUtil.qualifiers;
 import static io.quarkus.reactive.datasource.deployment.ReactiveDataSourceDotNames.INJECT_INSTANCE;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.function.Predicate;
@@ -32,10 +30,6 @@ import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.arc.deployment.ValidationPhaseBuildItem;
 import io.quarkus.arc.deployment.devui.Name;
 import io.quarkus.arc.processor.BeanInfo;
-import io.quarkus.datasource.common.runtime.DataSourceUtil;
-import io.quarkus.datasource.deployment.spi.DefaultDataSourceDbKindBuildItem;
-import io.quarkus.datasource.deployment.spi.DefaultDataSourceDbVersionBuildItem;
-import io.quarkus.datasource.runtime.DataSourceBuildTimeConfig;
 import io.quarkus.datasource.runtime.DataSourcesBuildTimeConfig;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
@@ -43,15 +37,11 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
-import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
 import io.quarkus.reactive.datasource.PoolCreator;
 import io.quarkus.reactive.datasource.ReactiveDataSource;
-import io.quarkus.reactive.datasource.runtime.DataSourceReactiveBuildTimeConfig;
-import io.quarkus.reactive.datasource.runtime.DataSourcesReactiveBuildTimeConfig;
 import io.quarkus.reactive.datasource.runtime.ReactivePoolRecorder;
 import io.quarkus.reactive.datasource.runtime.ReactivePoolsHealthConfig;
 import io.quarkus.reactive.datasource.spi.ReactivePoolBuildItem;
-import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.smallrye.health.deployment.spi.HealthBuildItem;
 import io.vertx.sqlclient.Pool;
 
@@ -71,92 +61,20 @@ class ReactiveDataSourceProcessor {
     }
 
     @BuildStep
-    void build(
-            DataSourcesBuildTimeConfig dataSourcesBuildTimeConfig,
-            DataSourcesReactiveBuildTimeConfig dataSourcesReactiveBuildTimeConfig,
-            List<DefaultDataSourceDbKindBuildItem> defaultDbKinds,
-            List<DefaultDataSourceDbVersionBuildItem> defaultDbVersions,
-            BuildProducer<AggregatedDataSourceBuildTimeConfigBuildItem> aggregatedConfig,
-            CurateOutcomeBuildItem curateOutcomeBuildItem) throws Exception {
-        if (dataSourcesBuildTimeConfig.driver().isPresent() || dataSourcesBuildTimeConfig.url().isPresent()) {
-            throw new ConfigurationException(
-                    "quarkus.datasource.url and quarkus.datasource.driver have been deprecated in Quarkus 1.3 and removed in 1.9. "
-                            + "Please use the new datasource configuration as explained in https://quarkus.io/guides/datasource.");
-        }
-
-        List<AggregatedDataSourceBuildTimeConfigBuildItem> aggregatedDataSourceBuildTimeConfigs = getAggregatedConfigBuildItems(
-                dataSourcesBuildTimeConfig,
-                dataSourcesReactiveBuildTimeConfig, curateOutcomeBuildItem,
-                defaultDbKinds, defaultDbVersions);
-
-        if (aggregatedDataSourceBuildTimeConfigs.isEmpty()) {
-            log.warn("The Datasource Reactive dependency is present but no Reactive datasources have been defined.");
-            return;
-        }
-
-        for (AggregatedDataSourceBuildTimeConfigBuildItem aggregatedDataSourceBuildTimeConfig : aggregatedDataSourceBuildTimeConfigs) {
-            aggregatedConfig.produce(aggregatedDataSourceBuildTimeConfig);
-        }
-
-    }
-
-    private List<AggregatedDataSourceBuildTimeConfigBuildItem> getAggregatedConfigBuildItems(
-            DataSourcesBuildTimeConfig dataSourcesBuildTimeConfig,
-            DataSourcesReactiveBuildTimeConfig dataSourcesReactiveBuildTimeConfig,
-            CurateOutcomeBuildItem curateOutcomeBuildItem,
-            List<DefaultDataSourceDbKindBuildItem> defaultDbKinds,
-            List<DefaultDataSourceDbVersionBuildItem> defaultDbVersions) {
-        List<AggregatedDataSourceBuildTimeConfigBuildItem> dataSources = new ArrayList<>();
-
-        for (Map.Entry<String, DataSourceBuildTimeConfig> entry : dataSourcesBuildTimeConfig.dataSources().entrySet()) {
-            DataSourceReactiveBuildTimeConfig reactiveBuildTimeConfig = dataSourcesReactiveBuildTimeConfig
-                    .dataSources().get(entry.getKey()).reactive();
-            if (!reactiveBuildTimeConfig.enabled()) {
-                continue;
-            }
-
-            boolean enableImplicitResolution = DataSourceUtil.isDefault(entry.getKey())
-                    ? entry.getValue().devservices().enabled().orElse(!dataSourcesBuildTimeConfig.hasNamedDataSources())
-                    : true;
-
-            Optional<String> effectiveDbKindOptional = DefaultDataSourceDbKindBuildItem
-                    .resolve(entry.getValue().dbKind(), defaultDbKinds,
-                            enableImplicitResolution,
-                            curateOutcomeBuildItem);
-
-            if (effectiveDbKindOptional.isEmpty()) {
-                continue;
-            }
-            var effectiveDbKind = effectiveDbKindOptional.get();
-
-            dataSources.add(new AggregatedDataSourceBuildTimeConfigBuildItem(entry.getKey(),
-                    entry.getValue(),
-                    reactiveBuildTimeConfig,
-                    effectiveDbKind,
-                    entry.getValue().dbVersion()
-                            .or(() -> DefaultDataSourceDbVersionBuildItem.resolveDefaultDbVersion(effectiveDbKind,
-                                    defaultDbVersions, dataSourcesBuildTimeConfig.dbVersionDefaults()))));
-        }
-
-        return dataSources;
-    }
-
-    @BuildStep
     void produceReactiveDataSourceBuildItem(
-            List<AggregatedDataSourceBuildTimeConfigBuildItem> aggregatedBuildTimeConfigBuildItems,
+            List<ReactiveDataSourceDefinitionBuildItem> dataSourceDefinitions,
             BuildProducer<io.quarkus.reactive.datasource.spi.ReactiveDataSourceBuildItem> dataSource) {
-        if (aggregatedBuildTimeConfigBuildItems.isEmpty()) {
-            // No datasource has been configured so bail out
+        if (dataSourceDefinitions.isEmpty()) {
             return;
         }
 
-        for (AggregatedDataSourceBuildTimeConfigBuildItem aggregatedBuildTimeConfigBuildItem : aggregatedBuildTimeConfigBuildItems) {
+        for (ReactiveDataSourceDefinitionBuildItem dsDefinition : dataSourceDefinitions) {
             dataSource.produce(new io.quarkus.reactive.datasource.spi.ReactiveDataSourceBuildItem(
-                    aggregatedBuildTimeConfigBuildItem.getName(),
-                    aggregatedBuildTimeConfigBuildItem.getDbKind(),
-                    aggregatedBuildTimeConfigBuildItem.isDefault(),
-                    aggregatedBuildTimeConfigBuildItem.getDbVersion(),
-                    aggregatedBuildTimeConfigBuildItem.getDataSourceConfig().dbVersion().isPresent()));
+                    dsDefinition.getName(),
+                    dsDefinition.getDbKind(),
+                    dsDefinition.isDefault(),
+                    dsDefinition.getDbVersion(),
+                    dsDefinition.getDataSourceConfig().dbVersion().isPresent()));
         }
     }
 
@@ -244,19 +162,19 @@ class ReactiveDataSourceProcessor {
     /**
      * The health check needs to be produced in a separate method to avoid a circular dependency
      * (the Vert.x instance creation consumes the AdditionalBeanBuildItems).
-     * We use AggregatedDataSourceBuildTimeConfigBuildItem (build-time) instead of ReactivePoolBuildItem (runtime)
+     * We use ReactiveDataSourceDefinitionBuildItem (build-time) instead of ReactivePoolBuildItem (runtime)
      * to avoid introducing a cycle.
      */
     @BuildStep
     void addHealthCheck(
             Capabilities capabilities,
             BuildProducer<HealthBuildItem> healthChecks,
-            List<AggregatedDataSourceBuildTimeConfigBuildItem> aggregatedBuildTimeConfigBuildItems,
+            List<ReactiveDataSourceDefinitionBuildItem> dataSourceDefinitions,
             DataSourcesBuildTimeConfig dataSourcesBuildTimeConfig) {
         if (!capabilities.isPresent(Capability.SMALLRYE_HEALTH)) {
             return;
         }
-        if (aggregatedBuildTimeConfigBuildItems.isEmpty()) {
+        if (dataSourceDefinitions.isEmpty()) {
             return;
         }
         healthChecks.produce(new HealthBuildItem(

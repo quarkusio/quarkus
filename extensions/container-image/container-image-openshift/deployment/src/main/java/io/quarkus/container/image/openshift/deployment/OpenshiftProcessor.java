@@ -17,7 +17,6 @@ import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -288,17 +287,19 @@ public class OpenshiftProcessor {
                     config.buildStrategy());
             KubernetesClientBuilder clientBuilder = newClientBuilderWithoutHttp2(kubernetesClient.getConfiguration(),
                     kubernetesClientBuilder.getHttpClientFactory());
+            Optional<String> builtContainerImage;
             if (jarType.usesFastJarLayout()) {
-                createContainerImage(clientBuilder, openshiftYml.get(), config, contextRoot, jar.getPath().getParent(),
-                        jar.getPath().getParent());
+                builtContainerImage = createContainerImageAndGetObservedReference(clientBuilder, openshiftYml.get(), config,
+                        contextRoot, jar.getPath().getParent(), jar.getPath().getParent());
             } else if (jar.getLibraryDir() != null) { //When using uber-jar the libraryDir is going to be null, potentially causing NPE.
-                createContainerImage(clientBuilder, openshiftYml.get(), config, contextRoot, jar.getPath().getParent(),
-                        jar.getPath(), jar.getLibraryDir());
+                builtContainerImage = createContainerImageAndGetObservedReference(clientBuilder, openshiftYml.get(), config,
+                        contextRoot, jar.getPath().getParent(), jar.getPath(), jar.getLibraryDir());
             } else {
-                createContainerImage(clientBuilder, openshiftYml.get(), config, contextRoot, jar.getPath().getParent(),
-                        jar.getPath());
+                builtContainerImage = createContainerImageAndGetObservedReference(clientBuilder, openshiftYml.get(), config,
+                        contextRoot, jar.getPath().getParent(), jar.getPath());
             }
-            artifactResultProducer.produce(new ArtifactResultBuildItem(null, "jar-container", Collections.emptyMap()));
+            artifactResultProducer.produce(containerArtifactResult("jar-container",
+                    artifactImageReference(builtContainerImage, containerImage.getImage())));
             containerImageBuilder.produce(new ContainerImageBuilderBuildItem(OPENSHIFT));
         }
     }
@@ -354,13 +355,27 @@ public class OpenshiftProcessor {
             //For docker kind of builds where we use instructions like: `COPY target/*.jar /deployments` it using '/target' is a requirement.
             //For s2i kind of builds where jars are expected directly in the '/' we have to use null.
             String contextRoot = config.buildStrategy() == BuildStrategy.DOCKER ? "target" : null;
-            createContainerImage(
+            Optional<String> builtContainerImage = createContainerImageAndGetObservedReference(
                     newClientBuilderWithoutHttp2(kubernetesClient.getConfiguration(),
                             kubernetesClientBuilder.getHttpClientFactory()),
                     openshiftYml.get(), config, contextRoot, out.getOutputDirectory(), nativeImage.getPath());
-            artifactResultProducer.produce(new ArtifactResultBuildItem(null, "native-container", Collections.emptyMap()));
+            artifactResultProducer.produce(containerArtifactResult("native-container",
+                    artifactImageReference(builtContainerImage, containerImage.getImage())));
             containerImageBuilder.produce(new ContainerImageBuilderBuildItem(OPENSHIFT));
         }
+    }
+
+    static ArtifactResultBuildItem containerArtifactResult(String type, String containerImage) {
+        return new ArtifactResultBuildItem(null, type, Map.of("container-image", containerImage));
+    }
+
+    static String artifactImageReference(Optional<String> observedImage, String configuredImage) {
+        if (observedImage.isPresent()) {
+            return observedImage.get();
+        }
+        LOG.warn("The completed OpenShift build did not report an output image reference; using the configured image "
+                + configuredImage + " in the build result");
+        return configuredImage;
     }
 
     public static void createContainerImage(KubernetesClientBuilder kubernetesClientBuilder,
@@ -369,7 +384,17 @@ public class OpenshiftProcessor {
             String base,
             Path output,
             Path... additional) {
+        createContainerImageAndGetObservedReference(kubernetesClientBuilder, openshiftManifests, openshiftConfig, base,
+                output, additional);
+    }
 
+    private static Optional<String> createContainerImageAndGetObservedReference(
+            KubernetesClientBuilder kubernetesClientBuilder,
+            GeneratedFileSystemResourceBuildItem openshiftManifests,
+            ContainerImageOpenshiftConfig openshiftConfig,
+            String base,
+            Path output,
+            Path... additional) {
         File tar;
         try {
             File original = Packaging.packageFile(output, base, additional);
@@ -390,7 +415,7 @@ public class OpenshiftProcessor {
                     .collect(Collectors.toList());
 
             applyOpenshiftResources(openShiftClient, buildResources);
-            openshiftBuild(buildResources, tar, openshiftConfig, kubernetesClientBuilder);
+            return openshiftBuild(buildResources, tar, openshiftConfig, kubernetesClientBuilder);
         } finally {
             try {
                 tar.delete();
@@ -434,13 +459,28 @@ public class OpenshiftProcessor {
         }
     }
 
-    private static void openshiftBuild(List<HasMetadata> buildResources, File binaryFile,
+    private static Optional<String> openshiftBuild(List<HasMetadata> buildResources, File binaryFile,
             ContainerImageOpenshiftConfig openshiftConfig, KubernetesClientBuilder kubernetesClientBuilder) {
-        distinct(buildResources).stream().filter(i -> i instanceof BuildConfig).map(i -> (BuildConfig) i)
-                .forEach(bc -> {
-                    Build build = startOpenshiftBuild(bc, binaryFile, openshiftConfig, kubernetesClientBuilder);
-                    waitForOpenshiftBuild(build, openshiftConfig, kubernetesClientBuilder);
-                });
+        Optional<String> observedImage = Optional.empty();
+        for (HasMetadata resource : distinct(buildResources)) {
+            if (resource instanceof BuildConfig buildConfig) {
+                Build build = startOpenshiftBuild(buildConfig, binaryFile, openshiftConfig, kubernetesClientBuilder);
+                Optional<String> currentImage = observedImageReference(
+                        waitForOpenshiftBuild(build, openshiftConfig, kubernetesClientBuilder));
+                observedImage = selectObservedImageReference(observedImage, currentImage);
+            }
+        }
+        return observedImage;
+    }
+
+    static Optional<String> selectObservedImageReference(Optional<String> selected, Optional<String> candidate) {
+        if (selected.isEmpty()) {
+            return candidate;
+        }
+        if (candidate.isPresent() && !selected.equals(candidate)) {
+            LOG.warn("OpenShift builds reported multiple output image references; using " + selected.get());
+        }
+        return selected;
     }
 
     /**
@@ -474,7 +514,7 @@ public class OpenshiftProcessor {
         }
     }
 
-    private static void waitForOpenshiftBuild(Build build, ContainerImageOpenshiftConfig openshiftConfig,
+    static Build waitForOpenshiftBuild(Build build, ContainerImageOpenshiftConfig openshiftConfig,
             KubernetesClientBuilder kubernetesClientBuilder) {
 
         while (isNew(build) || isPending(build) || isRunning(build)) {
@@ -503,7 +543,7 @@ public class OpenshiftProcessor {
                         }
                     }
                 } else if (isComplete(updated)) {
-                    return;
+                    return updated;
                 } else if (isCancelled(updated)) {
                     throw new IllegalStateException("Build:" + buildName + " cancelled!");
                 } else if (isFailed(updated)) {
@@ -515,6 +555,15 @@ public class OpenshiftProcessor {
                 }
             }
         }
+        return build;
+    }
+
+    static Optional<String> observedImageReference(Build build) {
+        if (build == null || build.getStatus() == null) {
+            return Optional.empty();
+        }
+        return Optional.ofNullable(build.getStatus().getOutputDockerImageReference())
+                .filter(image -> !image.isBlank());
     }
 
     public static Predicate<HasMetadata> distinctByResourceKey() {

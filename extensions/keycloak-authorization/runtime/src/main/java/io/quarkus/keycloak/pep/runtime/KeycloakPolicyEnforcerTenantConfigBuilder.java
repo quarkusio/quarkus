@@ -384,9 +384,6 @@ public final class KeycloakPolicyEnforcerTenantConfigBuilder {
                 this.methods.putAll(pathConfig.methods());
                 this.claimInformationPointConfig = pathConfig.claimInformationPoint();
                 this.paths.addAll(pathConfig.paths().orElse(List.of()));
-                if (pathConfig.path().isPresent()) {
-                    this.paths.add(pathConfig.path().get());
-                }
                 this.enforcementMode = pathConfig.enforcementMode();
             }
         }

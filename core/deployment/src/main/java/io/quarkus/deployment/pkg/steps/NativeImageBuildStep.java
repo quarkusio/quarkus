@@ -1144,9 +1144,6 @@ public class NativeImageBuildStep {
                 if (!nativeConfig.enableIsolates()) {
                     addExperimentalVMOption(nativeImageArgs, "-H:-SpawnIsolates");
                 }
-                if (nativeConfig.enableVmInspection()) {
-                    addExperimentalVMOption(nativeImageArgs, "-H:+AllowVMInspection");
-                }
                 if (nativeConfig.march().isPresent()) {
                     nativeImageArgs.add("-march=" + nativeConfig.march().get());
                 }

@@ -26,7 +26,6 @@ public class ORMReactiveCompatibilityDefaultOnlyReactiveDisabledBlockingSessionU
             .overrideConfigKey("quarkus.hibernate-orm.schema-management.strategy", SCHEMA_MANAGEMENT_STRATEGY)
             .overrideConfigKey("quarkus.hibernate-orm.blocking", "false")
             .overrideConfigKey("quarkus.datasource.reactive", "true")
-            .overrideConfigKey("quarkus.datasource.db-kind", POSTGRES_KIND)
             .overrideConfigKey("quarkus.datasource.username", USERNAME_PWD)
             .overrideConfigKey("quarkus.datasource.password", USERNAME_PWD);
 

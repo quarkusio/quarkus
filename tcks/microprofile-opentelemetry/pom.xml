@@ -78,7 +78,7 @@
                                 <quarkus.otel.metrics.enabled>true</quarkus.otel.metrics.enabled>
                                 <quarkus.otel.metrics.exporter>logging</quarkus.otel.metrics.exporter>
                                 <quarkus.otel.metric.export.interval>PT1S</quarkus.otel.metric.export.interval>
-                                <quarkus.log.file.enable>true</quarkus.log.file.enable>
+                                <quarkus.log.file.enabled>true</quarkus.log.file.enabled>
                                 <quarkus.log.file.path>${project.build.directory}/out.log</quarkus.log.file.path>
                                 <mptelemetry.tck.log.file.path>${project.build.directory}/out.log</mptelemetry.tck.log.file.path>
                             </systemPropertyVariables>
@@ -107,7 +107,7 @@
                                 <!--  No point on using quarkus file logging. The logging logs exporter uses sys out -->
                                 <!--  Please check: io.quarkus.tck.opentelemetry.TestApplication.LogHandlerService -->
                                 <quarkus.otel.blrp.schedule.delay>100</quarkus.otel.blrp.schedule.delay>
-                                <!--  <quarkus.log.file.enable>true</quarkus.log.file.enable>-->
+                                <!--  <quarkus.log.file.enabled>true</quarkus.log.file.enabled>-->
                                 <quarkus.log.file.path>${project.build.directory}/out.log</quarkus.log.file.path>
                                 <mptelemetry.tck.log.file.path>${project.build.directory}/out.log
                                 </mptelemetry.tck.log.file.path>

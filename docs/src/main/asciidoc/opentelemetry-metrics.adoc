@@ -120,13 +120,12 @@ public class MetricResource {
     }
 }
 ----
-
-Quarkus is not currently producing metrics out of the box.
-Here we are creating a counter for the number of invocations of the `hello()` method.
-
 <1> Constructor injection of the `Meter` instance.
 <2> Create a `LongCounter` named `hello-metrics` with a description and unit.
 <3> Increment the counter by one for each invocation of the `hello()` method.
+
+Quarkus is not currently producing metrics out of the box.
+Here we are creating a counter for the number of invocations of the `hello()` method.
 
 === Create the configuration
 

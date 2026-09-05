@@ -1,7 +1,5 @@
 package io.quarkus.kubernetes.deployment;
 
-import java.util.Optional;
-
 import io.dekorate.kubernetes.annotation.ImagePullPolicy;
 import io.smallrye.config.WithDefault;
 
@@ -11,14 +9,6 @@ public interface InitTaskConfig {
      */
     @WithDefault("true")
     boolean enabled();
-
-    /**
-     * The init task image to use by the init container.
-     *
-     * @deprecated use waitForContainer.image instead.
-     */
-    @Deprecated(forRemoval = true, since = "3.5")
-    Optional<String> image();
 
     /**
      * The configuration of the `wait for` container.

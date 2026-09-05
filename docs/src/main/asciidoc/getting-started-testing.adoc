@@ -1397,6 +1397,7 @@ This is a black box test that supports the same set features and has the same li
 ====
 As a test annotated with `@QuarkusIntegrationTest` tests the result of the build, it should be run as part of the integration test suite - i.e. by setting `-DskipITs=false` if using Maven or the `quarkusIntTest` task if using Gradle.
 These tests will **not** work if run in the same phase as `@QuarkusTest` as Quarkus has not yet created the final artifact.
+Gradle integration tests belong in `src/integrationTest/java` (or `src/integrationTest/kotlin`). The Quarkus Gradle plugin creates that source set and wires it to `quarkusIntTest`.
 ====
 
 The `pom.xml` file contains:
@@ -1595,6 +1596,13 @@ An example use of this could be the following Maven command, that forces `@Quark
 ./mvnw verify -Dquarkus.http.test-host=1.2.3.4 -Dquarkus.http.test-port=4321
 ----
 
+The Gradle equivalent is:
+
+[source,bash]
+----
+./gradlew quarkusIntTest -Dquarkus.http.test-host=1.2.3.4 -Dquarkus.http.test-port=4321
+----
+
 To test against a running instance that only accepts SSL/TLS connection (example: `https://1.2.3.4:4321`) set the system property `quarkus.http.test-ssl-enabled` to `true` and `quarkus.http.test-ssl-port` to the target HTTPS port.
 
 == Mixing `@QuarkusTest` with other type of tests
@@ -1648,7 +1656,7 @@ Currently `@QuarkusTest` and `@QuarkusIntegrationTest` should not be run in the 
 
 For Maven, this means that the former should be run by the surefire plugin while the latter should be run by the failsafe plugin.
 
-For Gradle, this means the two types of tests should belong to different source sets.
+For Gradle, `@QuarkusTest` stays in the `test` source set while `@QuarkusIntegrationTest` belongs in `src/integrationTest`. The Quarkus Gradle plugin creates that source set and the `quarkusIntTest` task by default. Custom extra source sets are only needed when you want additional suites beyond that.
 
 .Source set configuration example
 [%collapsible]

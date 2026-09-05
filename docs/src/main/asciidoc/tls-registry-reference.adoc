@@ -842,6 +842,26 @@ Other operating systems and architectures (macOS, Windows, Alpine Linux, Linux o
 On those platforms, use `relaxed` with JDK 27+ for post-quantum key exchange.
 ====
 
+[IMPORTANT]
+====
+The OpenSSL engine is not available in native executables.
+Quarkus' native-image support disables `netty-tcnative`, so `quarkus.tls.ssl-engine=openssl` is rejected at startup of a native executable with a configuration error that names the property.
+This applies even when `io.smallrye:smallrye-openssl` is on the classpath and OpenSSL 3.5+ is installed.
+Post-quantum enforcement (`strict` or `client-negotiated`) in native mode therefore needs a JDK SSL engine with post-quantum support.
+If that is not possible, use JVM mode for post-quantum enforcement, as OpenSSL cannot provide it in native mode.
+
+|===
+|SSL engine |JDK PQC support |Mode |PQC enforcement available
+
+|JDK SSL |No |Native |No
+|JDK SSL |Yes |Native |Yes
+|JDK SSL |No |JVM |No
+|JDK SSL |Yes |JVM |Yes
+|OpenSSL (netty-tcnative) |- |Native |No (engine unavailable)
+|OpenSSL (netty-tcnative) |- |JVM |Yes
+|===
+====
+
 ===== SSL engine override
 
 By default, Vert.x selects the SSL engine automatically based on the enforcement policy:

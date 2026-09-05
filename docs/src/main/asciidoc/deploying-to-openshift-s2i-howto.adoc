@@ -89,7 +89,7 @@ oc import-image {name-image-ubi10-open-jdk-25-short} --from={name-image-ubi10-op
 
 * If you are pulling images across other {openshift} projects or from secured registries, additional configuration steps might be required.
 +
-For more information, see the link:https://docs.openshift.com/container-platform/[Red Hat Openshift Container Platform] documentation.
+For more information, see the link:https://docs.openshift.com/container-platform/[Red Hat OpenShift Container Platform] documentation.
 
 * If you are deploying on IBM Z infrastructure, enter `oc import-image {name-image-ubi10-open-jdk-21-short} --from=registry.redhat.io/{name-image-ubi10-open-jdk-21-short} --confirm` instead.
 For information about this image, see link:https://catalog.redhat.com/en/software/containers/ubi10/openjdk-21-runtime/690ca3b700d71ac7397b98c6[OpenJDK 21 runtime image on UBI 10].

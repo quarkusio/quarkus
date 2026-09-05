@@ -1,12 +1,15 @@
 package io.quarkus.arc.impl;
 
 import static io.quarkus.arc.impl.TypeCachePollutionUtils.asParameterizedType;
+import static io.quarkus.arc.impl.TypeCachePollutionUtils.asWildcardType;
 import static io.quarkus.arc.impl.TypeCachePollutionUtils.isParameterizedType;
+import static io.quarkus.arc.impl.TypeCachePollutionUtils.isWildcardType;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Member;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
+import java.lang.reflect.WildcardType;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
@@ -19,6 +22,7 @@ import java.util.function.Supplier;
 import jakarta.enterprise.context.ContextNotActiveException;
 import jakarta.enterprise.context.Dependent;
 import jakarta.enterprise.inject.AmbiguousResolutionException;
+import jakarta.enterprise.inject.Default;
 import jakarta.enterprise.inject.Instance;
 import jakarta.enterprise.inject.UnsatisfiedResolutionException;
 import jakarta.enterprise.inject.spi.InjectionPoint;
@@ -264,6 +268,10 @@ public class InstanceImpl<T> implements InjectableInstance<T> {
             public H get() {
                 InjectionPoint prev = null;
                 if (resetCurrentInjectionPoint) {
+                    Set<Annotation> requiredQualifiers = InstanceImpl.this.requiredQualifiers;
+                    if (requiredQualifiers.isEmpty()) {
+                        requiredQualifiers = Set.of(Default.Literal.INSTANCE);
+                    }
                     prev = InjectionPointProvider.setCurrent(context, new InjectionPointImpl(injectionPointType, requiredType,
                             requiredQualifiers, targetBean, annotations, javaMember, position, isTransient));
                 }
@@ -317,6 +325,10 @@ public class InstanceImpl<T> implements InjectableInstance<T> {
         CreationalContextImpl<T> ctx = creationalContext.child(bean);
         InjectionPoint prev = null;
         if (resetCurrentInjectionPoint) {
+            Set<Annotation> requiredQualifiers = this.requiredQualifiers;
+            if (requiredQualifiers.isEmpty()) {
+                requiredQualifiers = Set.of(Default.Literal.INSTANCE);
+            }
             prev = InjectionPointProvider.setCurrent(ctx, new InjectionPointImpl(injectionPointType, requiredType,
                     requiredQualifiers, targetBean, annotations, javaMember, position, isTransient));
         }
@@ -390,10 +402,20 @@ public class InstanceImpl<T> implements InjectableInstance<T> {
         if (isParameterizedType(type)) {
             final ParameterizedType parameterizedType = asParameterizedType(type);
             if (Provider.class.isAssignableFrom(Types.getRawType(parameterizedType.getRawType()))) {
-                return parameterizedType.getActualTypeArguments()[0];
+                Type typeArg = parameterizedType.getActualTypeArguments()[0];
+                if (isWildcardType(typeArg)) {
+                    WildcardType wt = asWildcardType(typeArg);
+                    Type[] lowerBounds = wt.getLowerBounds();
+                    if (lowerBounds.length != 0) {
+                        throw new IllegalArgumentException(
+                                "Wildcard with lower bound is an invalid required type: " + type);
+                    }
+                    return wt.getUpperBounds()[0];
+                }
+                return typeArg;
             }
         }
-        throw new IllegalArgumentException("Not a valid type: " + type);
+        throw new IllegalArgumentException("Invalid required type: " + type);
     }
 
     private boolean isGetCached(Set<Annotation> annotations) {

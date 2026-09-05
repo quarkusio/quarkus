@@ -187,6 +187,16 @@ public class ComponentsProviderGenerator extends AbstractGenerator {
                             bc.setOf(orderedClasses(beanDeployment.getInterceptorBindings()),
                                     binding -> Const.of(binding.name().toString())));
 
+                    // Interceptor binding non-binding members
+                    LocalVar interceptorBindingNonbindingMembers = bc.localVar("interceptorBindingNonbindingMembers",
+                            bc.mapOf(beanDeployment.getInterceptorNonbindingMembers()
+                                    .entrySet()
+                                    .stream()
+                                    .sorted(Map.Entry.comparingByKey())
+                                    .toList(),
+                                    key -> Const.of(key.toString()),
+                                    value -> bc.setOf(value.stream().sorted().toList(), Const::of)));
+
                     // Transitive interceptor bindings
                     // Map<Class, Set<Annotation>>
                     LocalVar transitiveBindings = bc.localVar("transitiveBindings", bc.new_(HashMap.class));
@@ -240,15 +250,14 @@ public class ComponentsProviderGenerator extends AbstractGenerator {
                     }
 
                     // Qualifier non-binding members
-                    LocalVar qualifiersNonbindingMembers = bc.localVar("qualifiersNonbindingMembers", bc.new_(HashMap.class));
-                    beanDeployment.getQualifierNonbindingMembers().entrySet().stream()
-                            .sorted(Map.Entry.comparingByKey())
-                            .forEach(entry -> {
-                                LocalVar nonbindingMembersSet = bc.localVar("nonbindingMembers",
-                                        bc.setOf(entry.getValue().stream().sorted().toList(), Const::of));
-                                bc.withMap(qualifiersNonbindingMembers).put(Const.of(entry.getKey().toString()),
-                                        nonbindingMembersSet);
-                            });
+                    LocalVar qualifierNonbindingMembers = bc.localVar("qualifierNonbindingMembers",
+                            bc.mapOf(beanDeployment.getQualifierNonbindingMembers()
+                                    .entrySet()
+                                    .stream()
+                                    .sorted(Map.Entry.comparingByKey())
+                                    .toList(),
+                                    key -> Const.of(key.toString()),
+                                    value -> bc.setOf(value.stream().sorted().toList(), Const::of)));
 
                     // context instances
                     LocalVar contextInstances;
@@ -267,10 +276,27 @@ public class ComponentsProviderGenerator extends AbstractGenerator {
                         contextInstances = contextInstancesFinal;
                     }
 
-                    bc.return_(bc.new_(ConstructorDesc.of(Components.class, Collection.class, Collection.class,
-                            Collection.class, Set.class, Map.class, Supplier.class, Map.class, Set.class, Map.class),
-                            beans, observers, contexts, interceptorBindings, transitiveBindings,
-                            removedBeansSupplier, qualifiersNonbindingMembers, qualifiers, contextInstances));
+                    bc.return_(bc.new_(ConstructorDesc.of(Components.class,
+                            Collection.class,
+                            Collection.class,
+                            Collection.class,
+                            Set.class,
+                            Map.class,
+                            Map.class,
+                            Supplier.class,
+                            Set.class,
+                            Map.class,
+                            Map.class),
+                            beans,
+                            observers,
+                            contexts,
+                            interceptorBindings,
+                            interceptorBindingNonbindingMembers,
+                            transitiveBindings,
+                            removedBeansSupplier,
+                            qualifiers,
+                            qualifierNonbindingMembers,
+                            contextInstances));
                 });
             });
         });

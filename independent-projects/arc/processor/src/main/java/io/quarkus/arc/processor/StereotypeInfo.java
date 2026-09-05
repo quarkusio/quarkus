@@ -11,8 +11,11 @@ public class StereotypeInfo {
     private final ScopeInfo defaultScope;
     private final List<AnnotationInstance> interceptorBindings;
     private final boolean alternative;
-    private final Integer alternativePriority;
+    private final boolean reserve;
+    private final Integer priority;
     private final boolean isNamed;
+    private final boolean isEager;
+    private final boolean isAutoClose;
     private final boolean isInherited;
     private final List<AnnotationInstance> parentStereotypes;
     private final ClassInfo target;
@@ -20,13 +23,16 @@ public class StereotypeInfo {
     private final boolean isAdditionalStereotype;
 
     public StereotypeInfo(ScopeInfo defaultScope, List<AnnotationInstance> interceptorBindings, boolean alternative,
-            Integer alternativePriority, boolean isNamed, boolean isAdditionalStereotype, ClassInfo target, boolean isInherited,
-            List<AnnotationInstance> parentStereotypes) {
+            boolean reserve, Integer priority, boolean isNamed, boolean isEager, boolean isAutoClose,
+            boolean isAdditionalStereotype, ClassInfo target, boolean isInherited, List<AnnotationInstance> parentStereotypes) {
         this.defaultScope = defaultScope;
         this.interceptorBindings = interceptorBindings;
         this.alternative = alternative;
-        this.alternativePriority = alternativePriority;
+        this.reserve = reserve;
+        this.priority = priority;
         this.isNamed = isNamed;
+        this.isEager = isEager;
+        this.isAutoClose = isAutoClose;
         this.isInherited = isInherited;
         this.parentStereotypes = parentStereotypes;
         this.target = target;
@@ -34,10 +40,10 @@ public class StereotypeInfo {
     }
 
     public StereotypeInfo(ScopeInfo defaultScope, List<AnnotationInstance> interceptorBindings, boolean alternative,
-            Integer alternativePriority, boolean isNamed, ClassInfo target, boolean isInherited,
-            List<AnnotationInstance> parentStereotype) {
-        this(defaultScope, interceptorBindings, alternative, alternativePriority, isNamed, false, target, isInherited,
-                parentStereotype);
+            boolean reserve, Integer priority, boolean isNamed, boolean isEager, boolean isAutoClose, ClassInfo target,
+            boolean isInherited, List<AnnotationInstance> parentStereotype) {
+        this(defaultScope, interceptorBindings, alternative, reserve, priority, isNamed, isEager, isAutoClose,
+                false, target, isInherited, parentStereotype);
     }
 
     public ScopeInfo getDefaultScope() {
@@ -52,16 +58,36 @@ public class StereotypeInfo {
         return alternative;
     }
 
+    public boolean isReserve() {
+        return reserve;
+    }
+
     public boolean isInherited() {
         return isInherited;
     }
 
+    public Integer getPriority() {
+        return priority;
+    }
+
+    /**
+     * @deprecated use {@link #getPriority()}
+     */
+    @Deprecated(forRemoval = true, since = "4.0")
     public Integer getAlternativePriority() {
-        return alternativePriority;
+        return priority;
     }
 
     public boolean isNamed() {
         return isNamed;
+    }
+
+    public boolean isEager() {
+        return isEager;
+    }
+
+    public boolean isAutoClose() {
+        return isAutoClose;
     }
 
     public ClassInfo getTarget() {

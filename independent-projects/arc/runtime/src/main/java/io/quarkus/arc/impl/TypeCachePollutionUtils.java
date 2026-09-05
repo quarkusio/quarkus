@@ -1,6 +1,7 @@
 package io.quarkus.arc.impl;
 
 import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.WildcardType;
 
 final class TypeCachePollutionUtils {
 
@@ -22,5 +23,19 @@ final class TypeCachePollutionUtils {
             return (ParameterizedTypeImpl) o;
         }
         return (ParameterizedType) o;
+    }
+
+    static boolean isWildcardType(Object o) {
+        if (o instanceof WildcardTypeImpl) {
+            return true;
+        }
+        return o instanceof WildcardType;
+    }
+
+    static WildcardType asWildcardType(Object o) {
+        if (o instanceof WildcardTypeImpl) {
+            return (WildcardTypeImpl) o;
+        }
+        return (WildcardType) o;
     }
 }

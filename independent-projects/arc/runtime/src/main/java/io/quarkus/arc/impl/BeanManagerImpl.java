@@ -10,8 +10,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
-import jakarta.el.ELResolver;
-import jakarta.el.ExpressionFactory;
 import jakarta.enterprise.context.ContextNotActiveException;
 import jakarta.enterprise.context.spi.Context;
 import jakarta.enterprise.context.spi.Contextual;
@@ -44,6 +42,7 @@ import jakarta.inject.Qualifier;
 import jakarta.interceptor.InterceptorBinding;
 
 import io.quarkus.arc.Arc;
+import io.quarkus.arc.ClientProxy;
 import io.quarkus.arc.InjectableBean;
 
 /**
@@ -237,16 +236,6 @@ public class BeanManagerImpl implements BeanManager {
     }
 
     @Override
-    public ELResolver getELResolver() {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public ExpressionFactory wrapExpressionFactory(ExpressionFactory expressionFactory) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
     public <T> AnnotatedType<T> createAnnotatedType(Class<T> type) {
         throw new UnsupportedOperationException();
     }
@@ -377,6 +366,11 @@ public class BeanManagerImpl implements BeanManager {
             return false;
         }
         return ArcContainerImpl.instance().registeredQualifiers.isSubset(observedEventQualifiers, eventQualifiers);
+    }
+
+    @Override
+    public <T> T unwrapClientProxy(T reference) {
+        return ClientProxy.unwrap(reference);
     }
 
     private static void illegalNull(Object obj, String name) {

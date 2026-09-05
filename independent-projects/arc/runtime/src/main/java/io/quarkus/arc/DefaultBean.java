@@ -45,7 +45,13 @@ import java.lang.annotation.Target;
  * Default beans can optionally declare {@link jakarta.annotation.Priority}.
  * In case there is no priority defined, {@code @Priority(0)} is assumed.
  * Priority value is used for bean ordering and during typesafe resolution to disambiguate multiple matching default beans.
+ *
+ * @deprecated Use {@link jakarta.enterprise.inject.Reserve}
+ *             and don't forget to add a {@link jakarta.annotation.Priority}.
+ *             Reserve beans without priority are not registered. In essence,
+ *             {@code @DefaultBean} is equivalent to {@code @Reserve @Priority(0)}.
  */
+@Deprecated(forRemoval = true, since = "4.0")
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ ElementType.METHOD, ElementType.TYPE, ElementType.FIELD })
 public @interface DefaultBean {

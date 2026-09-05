@@ -90,7 +90,7 @@
         <!-- GraalVM sdk 23.1.2 has a minimum JDK requirement of 17+ at runtime -->
         <graal-sdk.version>23.1.2</graal-sdk.version>
         <gizmo.version>1.10.1</gizmo.version>
-        <gizmo2.version>2.1.1</gizmo2.version>
+        <gizmo2.version>2.3.0-SNAPSHOT</gizmo2.version>
         <jackson-bom.version>3.1.4</jackson-bom.version>
         <jackson2-bom.version>2.22.2</jackson2-bom.version>
         <commons-logging-jboss-logging.version>2.0.0.Final</commons-logging-jboss-logging.version>

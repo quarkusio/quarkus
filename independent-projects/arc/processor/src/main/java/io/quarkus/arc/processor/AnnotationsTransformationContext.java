@@ -18,7 +18,6 @@ abstract class AnnotationsTransformationContext<C extends Collection<AnnotationI
 
     protected final BuildContext buildContext;
     protected final AnnotationTarget target;
-    protected final AnnotationTarget methodParameterTarget;
     private C annotations;
 
     /**
@@ -28,13 +27,9 @@ abstract class AnnotationsTransformationContext<C extends Collection<AnnotationI
      * @param annotations Mutable collection of annotations
      */
     public AnnotationsTransformationContext(BuildContext buildContext, AnnotationTarget target,
-            AnnotationTarget methodParameterTarget,
             C annotations) {
         this.buildContext = buildContext;
         this.target = target;
-        // once we remove #getTarget(), 'target' field should contain method parameter AnnotationTarget for method parameter injection
-        // can be null for field injection as well as synth injection point
-        this.methodParameterTarget = methodParameterTarget;
         this.annotations = annotations;
     }
 
@@ -48,12 +43,8 @@ abstract class AnnotationsTransformationContext<C extends Collection<AnnotationI
         return buildContext.put(key, value);
     }
 
-    public AnnotationTarget getTarget() {
-        return target;
-    }
-
     public AnnotationTarget getAnnotationTarget() {
-        return methodParameterTarget == null ? target : methodParameterTarget;
+        return target;
     }
 
     public C getAnnotations() {
@@ -66,11 +57,11 @@ abstract class AnnotationsTransformationContext<C extends Collection<AnnotationI
     }
 
     public Collection<AnnotationInstance> getAllAnnotations() {
-        return getAllAnnotationForTarget(getTarget());
+        return getAllAnnotationForTarget(target);
     }
 
     public Collection<AnnotationInstance> getAllTargetAnnotations() {
-        return getAllAnnotationForTarget(getAnnotationTarget());
+        return getAllAnnotationForTarget(target);
     }
 
     private Collection<AnnotationInstance> getAllAnnotationForTarget(AnnotationTarget target) {

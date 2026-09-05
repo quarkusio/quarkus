@@ -9,8 +9,6 @@ import jakarta.enterprise.lang.model.types.Type;
 
 import org.jboss.jandex.DotName;
 
-import io.quarkus.arc.processor.Types;
-
 class SyntheticComponentsImpl implements SyntheticComponents {
     final List<SyntheticBeanBuilderImpl<?>> syntheticBeans;
     final List<SyntheticObserverBuilderImpl<?>> syntheticObservers;
@@ -32,7 +30,7 @@ class SyntheticComponentsImpl implements SyntheticComponents {
 
     @Override
     public <T> SyntheticObserverBuilder<T> addObserver(Class<T> eventType) {
-        org.jboss.jandex.Type jandexType = Types.jandexType(eventType);
+        org.jboss.jandex.Type jandexType = org.jboss.jandex.Type.create(eventType);
         SyntheticObserverBuilderImpl<T> builder = new SyntheticObserverBuilderImpl<>(extensionClass, jandexType);
         syntheticObservers.add(builder);
         return builder;

@@ -45,8 +45,8 @@ public final class ClientProxies {
                 InjectableContext context = contexts.get(i);
                 if (result != null) {
                     if (context.isActive()) {
-                        throw new IllegalArgumentException(
-                                "More than one context object for the given scope: " + selectedContext + " " + context);
+                        throw new IllegalStateException("More than one active context object for scope @"
+                                + bean.getScope().getSimpleName() + ": " + selectedContext + " and " + context);
                     }
                 } else {
                     result = context.getIfActive(bean, ClientProxies::newCreationalContext);

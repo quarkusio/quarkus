@@ -2,6 +2,7 @@ package io.quarkus.arc.test.instance;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -15,6 +16,7 @@ import java.util.function.Supplier;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import jakarta.enterprise.context.Dependent;
+import jakarta.enterprise.inject.Default;
 import jakarta.enterprise.inject.spi.BeanManager;
 import jakarta.enterprise.inject.spi.InjectionPoint;
 import jakarta.enterprise.util.TypeLiteral;
@@ -77,9 +79,9 @@ public class ArcContainerSelectTest {
         @PostConstruct
         void init() {
             assertNotNull(injectionPoint);
-            assertEquals(0, injectionPoint.getQualifiers().size());
+            assertEquals(Set.of(Default.Literal.INSTANCE), injectionPoint.getQualifiers());
             Type requiredType = injectionPoint.getType();
-            assertTrue(requiredType instanceof ParameterizedType);
+            assertInstanceOf(ParameterizedType.class, requiredType);
             assertEquals(Supplier.class, ((ParameterizedType) requiredType).getRawType());
             INIT.set(true);
         }

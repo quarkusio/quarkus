@@ -34,18 +34,21 @@ public class ComputedAlternativePriorityTest {
     public void testComputedPriority() {
         InstanceHandle<MyInterface> myInterface = Arc.container().instance(MyInterface.class);
         assertTrue(myInterface.isAvailable());
+        assertEquals(100, myInterface.getBean().getPriority());
         assertEquals(Foo.class.getSimpleName(), myInterface.get().ping());
 
         InstanceHandle<String> bravo = Arc.container().instance(String.class);
         assertTrue(bravo.isAvailable());
+        assertEquals(10, bravo.getBean().getPriority());
         assertEquals("bravo", bravo.get());
 
         InstanceHandle<Integer> charlie = Arc.container().instance(Integer.class);
         assertTrue(charlie.isAvailable());
+        assertEquals(10, charlie.getBean().getPriority());
         assertEquals(10, charlie.get());
     }
 
-    static interface MyInterface {
+    interface MyInterface {
         String ping();
     }
 

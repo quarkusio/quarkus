@@ -218,6 +218,20 @@ public interface ArcConfig {
     ArcContextPropagationConfig contextPropagation();
 
     /**
+     * Configuration of {@link jakarta.enterprise.invoke.AsyncHandler AsyncHandler}s when multiple async handlers
+     * for the same async type exist. Can also be used to override a built-in async handler for the built-in async types.
+     * <p>
+     * The key is a fully qualified name of the async type, and the value is a fully qualified name of the async handler.
+     * For example:
+     *
+     * <pre>
+     * quarkus.arc.async-handler."java.util.concurrent.CompletionStage"=com.example.MyCompletionStageAsyncHandler
+     * </pre>
+     */
+    @ConfigDocMapKey("async-type")
+    Map<String, String> asyncHandler();
+
+    /**
      * If set to {@code true}, the container should try to optimize the contexts for some of the scopes. If set to {@code auto}
      * then optimize the contexts if there's less than 1000 beans in the application. If set to {@code false} do not optimize
      * the contexts.

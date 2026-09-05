@@ -25,6 +25,7 @@ import io.quarkus.devtools.commands.UpdateProject;
 import io.quarkus.devtools.commands.data.QuarkusCommandException;
 import io.quarkus.devtools.commands.data.QuarkusCommandInvocation;
 import io.quarkus.devtools.commands.data.QuarkusCommandOutcome;
+import io.quarkus.devtools.commands.handlers.CreateProjectCodestartDataConverter.PlatformPropertiesKey;
 import io.quarkus.devtools.messagewriter.MessageFormatter;
 import io.quarkus.devtools.messagewriter.MessageIcons;
 import io.quarkus.devtools.messagewriter.MessageWriter;
@@ -96,12 +97,18 @@ public class UpdateProjectCommandHandler implements QuarkusCommandHandler {
             final BuildTool buildTool = quarkusProject.getExtensionManager().getBuildTool();
             // TODO targetCatalog shouldn't be used here, since it might not be the recommended one according to the calculated recommended state
             String kotlinVersion = getMetadata(targetCatalog, "project", "properties", "kotlin-version");
+            String compilerPluginVersion = getMetadata(targetCatalog, "project", "properties",
+                    PlatformPropertiesKey.MAVEN_COMPILER_PLUGIN_VERSION);
+            String surefirePluginVersion = getMetadata(targetCatalog, "project", "properties",
+                    PlatformPropertiesKey.MAVEN_SUREFIRE_PLUGIN_VERSION);
             final Optional<Integer> updateJavaVersion = resolveUpdateJavaVersion(extensionsUpdateInfo, projectJavaVersion);
             QuarkusUpdates.ProjectUpdateRequest request = new QuarkusUpdates.ProjectUpdateRequest(
                     buildTool,
                     currentQuarkusPlatformBom.getVersion(),
                     recommendedQuarkusPlatformBom.getVersion(),
                     kotlinVersion,
+                    compilerPluginVersion,
+                    surefirePluginVersion,
                     updateJavaVersion,
                     extensionsUpdateInfo);
             Path recipe = null;

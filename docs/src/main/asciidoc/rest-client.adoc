@@ -408,6 +408,35 @@ Furthermore, the client can also send arbitrarily large files if one of the foll
 * `File`
 * `Path`
 
+=== Receiving large payloads
+
+Symmetrically, the REST Client can receive arbitrarily large HTTP bodies without buffering the contents in memory, if the method returns one of the following types:
+
+* `InputStream`, read on a worker thread
+* `Multi<byte[]>`, each item being a chunk of the body as it is received
+
+[source,java]
+----
+package org.acme.rest.client;
+
+import io.smallrye.mutiny.Multi;
+import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
+
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+
+@Path("/files")
+@RegisterRestClient
+public interface FilesService {
+
+    @GET
+    @Path("/large")
+    Multi<byte[]> download();
+}
+----
+
+The body is read according to the demand of the subscriber of the `Multi`: a subscriber that consumes the chunks slowly, for example by writing them to disk one at a time, slows down the reading of the response instead of causing its remaining content to accumulate in memory.
+
 === Getting other response properties
 
 ==== Using RestResponse

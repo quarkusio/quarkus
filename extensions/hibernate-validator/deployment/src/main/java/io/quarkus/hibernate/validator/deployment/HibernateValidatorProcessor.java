@@ -464,6 +464,7 @@ class HibernateValidatorProcessor {
             BuildProducer<ReflectiveMethodBuildItem> reflectiveMethods,
             BuildProducer<AnnotationsTransformerBuildItem> annotationsTransformers,
             BuildProducer<SyntheticBeanBuildItem> syntheticBeans,
+            BuildProducer<io.quarkus.hibernate.validator.deployment.produi.ValidatedClassNamesBuildItem> validatedClassNames,
             BeanArchiveIndexBuildItem beanArchiveIndexBuildItem,
             CombinedIndexBuildItem combinedIndexBuildItem,
             Optional<AdditionalConstrainedClassesIndexBuildItem> additionalConstrainedClassesIndexBuildItem,
@@ -557,6 +558,14 @@ class HibernateValidatorProcessor {
                 }
             }
         }
+
+        // Expose the discovered constrained class names so the Prod UI can introspect their constraint metadata
+        Set<String> validatedClassNameStrings = new TreeSet<>();
+        for (DotName className : classNamesToBeValidated) {
+            validatedClassNameStrings.add(className.toString());
+        }
+        validatedClassNames.produce(
+                new io.quarkus.hibernate.validator.deployment.produi.ValidatedClassNamesBuildItem(validatedClassNameStrings));
 
         // JAX-RS methods are handled differently by the transformer so those need to be gathered here.
         // Note: The focus only on methods is basically an incomplete solution, since there could also be

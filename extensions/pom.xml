@@ -42,6 +42,7 @@
         <module>devjsonrpc</module>
         <module>devmcp</module>
         <module>devui</module>
+        <module>produi</module>
         <module>undertow</module>
         <module>websockets</module>
         <module>websockets-next</module>

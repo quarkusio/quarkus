@@ -16,6 +16,27 @@ import io.quarkus.test.vertx.UniAsserter;
 
 public abstract class CompatibilityUnitTestBase {
 
+    static {
+        System.setProperty("user.timezone", "UTC");
+    }
+
+    public enum PersistenceMode {
+        BLOCKING,
+        REACTIVE,
+        BOTH
+    }
+
+    public void executeCompatibilityTest(PersistenceMode mode, UniAsserter asserter) {
+        switch (mode) {
+            case BLOCKING -> testBlockingWorks();
+            case REACTIVE -> testReactiveWorks(asserter);
+            case BOTH -> {
+                testBlockingWorks();
+                testReactiveWorks(asserter);
+            }
+        }
+    }
+
     public static final String POSTGRES_KIND = "postgresql";
     public static final String USERNAME_PWD = "hibernate_orm_test";
     public static final String SCHEMA_MANAGEMENT_STRATEGY = "drop-and-create";
@@ -48,6 +69,20 @@ public abstract class CompatibilityUnitTestBase {
 
         assertThat(entities).isNotEmpty();
         assertThat(entities).hasSize(4);
+    }
+
+    public void testBlockingHeroExists(String heroName) {
+        SessionFactory sessionFactory = Arc.container().instance(SessionFactory.class).get();
+        assertThat(sessionFactory).isNotNull();
+
+        EntityManager entityManager = sessionFactory.createEntityManager();
+
+        List<Hero> entities = entityManager
+                .createQuery("select e from Hero e where e.name = :name", Hero.class)
+                .setParameter("name", heroName)
+                .getResultList();
+
+        assertThat(entities).extracting("name").containsExactly(heroName);
     }
 
     public void testReactiveDisabled() {

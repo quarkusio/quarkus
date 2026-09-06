@@ -13,6 +13,9 @@ import io.quarkus.maven.dependency.Dependency;
 import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.vertx.RunOnVertxContext;
 import io.quarkus.test.vertx.UniAsserter;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 public class ORMReactiveCompatibilityDefaultBothUnitTest extends CompatibilityUnitTestBase {
 
@@ -37,14 +40,15 @@ public class ORMReactiveCompatibilityDefaultBothUnitTest extends CompatibilityUn
                     assertThat(records.stream().map(l -> l.getMessage()))
                             .containsOnlyOnce("create sequence hero_SEQ start with 1 increment by 50"));
 
+    @ParameterizedTest
+    @ValueSource(strings = {"Galadriel", "Chewbacca", "Bill Harken", "Angel Salvadore"})
+    public void testBlockingHeroQueries(String heroName) {
+        testBlockingHeroExists(heroName);
+    }
+
     @Test
     @RunOnVertxContext
     public void testReactive(UniAsserter asserter) {
         testReactiveWorks(asserter);
-    }
-
-    @Test
-    public void testBlocking() {
-        testBlockingWorks();
     }
 }

@@ -16,7 +16,6 @@ import java.util.concurrent.TimeUnit;
 
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.DockerClientFactory;
 
@@ -120,7 +119,6 @@ class DevServicesContainerNoReuseTest extends MojoTestBase {
     /*
      * This is a stronger version of testContainerEventuallyStoppedAfterQuarkusTest, which does not rely on Ryuk.
      */
-    @Disabled("Not yet working, see https://github.com/quarkusio/quarkus/issues/55605")
     @Test
     void testContainerStoppedImmediatelyAfterQuarkusTest() throws Exception {
         List<String> goals = List.of("clean", "test", "-Dquarkus.analytics.disabled=true");

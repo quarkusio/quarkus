@@ -44,6 +44,10 @@ Instead, extensions provide a `Startable` to a service builder, so that Quarkus 
 Services can be re-used between test profiles and across live reload restarts, or a fresh service can be created each time.
 The extension implementation controls how much reuse there is by setting a `serviceConfig(Object)` with a uniqueness key each build.
 
+Containers can additionally be configured for Testcontainers-level reuse with `withReuse(true)`, which lets a container outlive the JVM that created it so that a later, separate run can pick it up.
+A `Startable` wrapping such a container must declare it by overriding `isReusable()`, otherwise Quarkus stops the container when the application shuts down.
+Reuse-configured services are still stopped when their configuration is no longer compatible with the application being started, such as on an incompatible profile change.
+
 == Creating a Dev Service
 
 === Dependencies
@@ -89,6 +93,15 @@ implementation("io.quarkus:quarkus-devservices")
 Provide an implementation of `io.quarkus.deployment.builditem.Startable` which knows how to start and stop the service.
 For container-based services, extending `GenericContainer` and implementing `Startable` is the recommended pattern.
 In that case, `GenericContainer` already provides a `start()` method, so the only method that needs to be implemented is `close()` (which can delegate to the superclass).
+A container configured with `withReuse(true)` must also override `isReusable()`, so that Quarkus knows not to stop it on shutdown:
+
+[source,java]
+----
+@Override
+public boolean isReusable() {
+    return TestcontainersConfiguration.getInstance().environmentSupportsReuse() && isShouldBeReused();
+}
+----
 
 For example, a minimal `Startable` implementation might look something like this:
 [source,java]

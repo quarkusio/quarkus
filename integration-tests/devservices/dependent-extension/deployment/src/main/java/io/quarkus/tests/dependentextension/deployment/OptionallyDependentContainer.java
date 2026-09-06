@@ -2,6 +2,7 @@ package io.quarkus.tests.dependentextension.deployment;
 
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.utility.DockerImageName;
+import org.testcontainers.utility.TestcontainersConfiguration;
 
 import io.quarkus.deployment.builditem.Startable;
 
@@ -44,5 +45,10 @@ public class OptionallyDependentContainer extends GenericContainer<OptionallyDep
 
     public boolean isDependencyAvailable() {
         return otherConfig != null;
+    }
+
+    @Override
+    public boolean isReusable() {
+        return TestcontainersConfiguration.getInstance().environmentSupportsReuse() && isShouldBeReused();
     }
 }

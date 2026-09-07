@@ -11,6 +11,7 @@ import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.configuration.TrimmedStringConverter;
 import io.smallrye.config.WithConverter;
 import io.smallrye.config.WithDefault;
+import io.smallrye.config.WithName;
 
 @ConfigGroup
 public interface DevServicesBuildTimeConfig {
@@ -114,7 +115,26 @@ public interface DevServicesBuildTimeConfig {
     Optional<List<@WithConverter(TrimmedStringConverter.class) String>> initPrivilegedScriptPath();
 
     /**
-     * The volumes to be mapped to the container.
+     * The volumes to be mapped to the container, keyed by an arbitrary name identifying the volume.
+     *
+     * Each volume is described by its `type`, `source`, `target` and `read-only` properties:
+     *
+     * [source,properties]
+     * ----
+     * quarkus.datasource.devservices.volumes."data".source=/path/from
+     * quarkus.datasource.devservices.volumes."data".target=/container/to
+     * ----
+     *
+     * This has no effect if the provider is not a container-based database, such as H2 or Derby.
+     *
+     * @asciidoclet
+     */
+    @WithName("volumes")
+    @ConfigDocMapKey("volume-name")
+    Map<String, Volume> namedVolumes();
+
+    /**
+     * The volumes to be mapped to the container, in the legacy `host-path=container-path` form.
      * <p>
      * The map key corresponds to the host location; the map value is the container location.
      * If the host location starts with "classpath:",
@@ -124,7 +144,12 @@ public interface DevServicesBuildTimeConfig {
      * potentially leading to data loss or modification in your file system.
      * <p>
      * This has no effect if the provider is not a container-based database, such as H2 or Derby.
+     *
+     * @deprecated Use the named form of {@code volumes} instead:
+     *             it does not encode the host location in the configuration key,
+     *             making it usable through environment variables, and allows selecting the access mode explicitly.
      */
+    @Deprecated
     @ConfigDocMapKey("host-path")
     Map<String, String> volumes();
 
@@ -160,5 +185,59 @@ public interface DevServicesBuildTimeConfig {
      */
     @WithDefault("false")
     boolean showLogs();
+
+    /**
+     * A volume to be mapped to the container.
+     */
+    @ConfigGroup
+    interface Volume {
+
+        /**
+         * The type of the volume.
+         *
+         * @asciidoclet
+         */
+        @WithDefault("bind")
+        Type type();
+
+        /**
+         * The source of the volume:
+         * a host file system path for `bind` volumes,
+         * or a resource path for `classpath` volumes.
+         *
+         * @asciidoclet
+         */
+        String source();
+
+        /**
+         * The container location the source is mounted to.
+         *
+         * @asciidoclet
+         */
+        String target();
+
+        /**
+         * Whether the volume is read-only.
+         *
+         * Defaults to `true` for `classpath` volumes and to `false` for `bind` volumes.
+         * Note that read-only `classpath` volumes are copied into the container,
+         * so changes to the source are not reflected in the container.
+         *
+         * @asciidoclet
+         */
+        @ConfigDocDefault("`true` for `classpath` volumes, `false` for `bind` volumes")
+        Optional<Boolean> readOnly();
+
+        enum Type {
+            /**
+             * Bind mount of a host file system path.
+             */
+            BIND,
+            /**
+             * Mount of a resource resolved from the application classpath.
+             */
+            CLASSPATH
+        }
+    }
 
 }

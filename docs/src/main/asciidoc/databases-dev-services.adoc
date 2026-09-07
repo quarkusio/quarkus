@@ -179,7 +179,35 @@ Mapping volumes from the Docker host's filesystem to the containers is handy to 
 Mapping volumes will only work in Dev Services with a container-based database like PostgreSQL.
 ====
 
-Dev Services volumes can be mapped to the filesystem or the classpath:
+Each volume is identified by a name of your choice, and is described by its `source`, `target`, `type` and `read-only` properties, modeled after the long syntax of Docker Compose volumes:
+
+[source,properties]
+----
+# Using a filesystem (bind) volume:
+quarkus.datasource.devservices.volumes."data".source=/path/from <1>
+quarkus.datasource.devservices.volumes."data".target=/container/to
+# Using a classpath volume:
+quarkus.datasource.devservices.volumes."init-script".type=classpath <2>
+quarkus.datasource.devservices.volumes."init-script".source=/file
+quarkus.datasource.devservices.volumes."init-script".target=/container/to
+# Using a read-only filesystem volume:
+quarkus.datasource.devservices.volumes."config".source=/path/to/config <3>
+quarkus.datasource.devservices.volumes."config".target=/container/config
+quarkus.datasource.devservices.volumes."config".read-only=true
+----
+
+<1> The volume type defaults to `bind`, mapping the file or folder "/path/from" from the local machine to "/container/to" in the container, with read and write permission.
+<2> The `classpath` type resolves the source from the project's classpath instead of the filesystem. Classpath volumes are read-only by default: the file or folder is copied into the container.
+<3> Set `read-only` to `true` on a `bind` volume to prevent the container from modifying the source.
+
+Because the volume name is the only thing encoded in the configuration key,
+the properties can also be provided as environment variables,
+for example `QUARKUS_DATASOURCE_DEVSERVICES_VOLUMES_DATA_SOURCE`.
+
+[NOTE]
+.Deprecated: mapping volumes by host location
+====
+Volumes can also be declared with the host location as the configuration key, with the container location as the value:
 
 [source,properties]
 ----
@@ -188,12 +216,15 @@ quarkus.datasource.devservices.volumes."/path/from"=/container/to <1>
 # Using a classpath volume:
 quarkus.datasource.devservices.volumes."classpath\:./file"=/container/to <2>
 ----
-<1> The file or folder "/path/from" from the local machine will be accessible at "/container/to" in the container.
-<2> When using classpath volumes, the location has to start with "classpath:". The file or folder "./file" from the project's classpath will be accessible at "/container/to" in the container.
 
-CAUTION: The colon character `:` needs to be escaped in `.properties` files as `\:`, or it will be interpreted as a key/value separator.
+<1> The file or folder "/path/from" from the local machine will be accessible at "/container/to" in the container, with read and write permission.
+<2> When using classpath volumes, the location has to start with "classpath:". The file or folder "./file" from the project's classpath will be accessible at "/container/to" in the container, with read permission only.
 
-IMPORTANT: when using a classpath volume, the container will only be granted read permission. On the other hand, when using a filesystem volume, the container will be granted read and write permission.
+This form is deprecated: the colon character `:` needs to be escaped in `.properties` files as `\:`, or it will be interpreted as a key/value separator,
+the access mode cannot be chosen,
+and characters like `.` or `:` in the key cannot be represented in an environment variable name.
+Both forms can be used together.
+====
 
 === Example of mapping volumes to persist the database data
 
@@ -202,7 +233,8 @@ Let's see an example using PostgreSQL where we'll map a file system volume to ke
 [source,properties]
 ----
 quarkus.datasource.db-kind=postgresql
-quarkus.datasource.devservices.volumes."/local/test/data"=/var/lib/postgresql/data
+quarkus.datasource.devservices.volumes."data".source=/local/test/data
+quarkus.datasource.devservices.volumes."data".target=/var/lib/postgresql/data
 ----
 
 The appropriate in-container location varies depending on the database vendor. For PostgreSQL is "/var/lib/postgresql/data", but for MySQL, you would need this configuration instead:
@@ -210,7 +242,8 @@ The appropriate in-container location varies depending on the database vendor. F
 [source,properties]
 ----
 quarkus.datasource.db-kind=mysql
-quarkus.datasource.devservices.volumes."/local/test/data"=/var/lib/mysql
+quarkus.datasource.devservices.volumes."data".source=/local/test/data
+quarkus.datasource.devservices.volumes."data".target=/var/lib/mysql
 ----
 
 When starting Dev Services (for example, in tests or in dev mode), you will see that the folder "/local/test/data" will be created at your file system and that will contain all the database data. When rerunning again the same Dev Services, this data will contain all the data you might have created beforehand.

@@ -557,7 +557,7 @@ public class RestClientRequestContext extends AbstractResteasyReactiveContext<Re
     }
 
     public boolean isMultiBufferUpload() {
-        // we don't check the generic because Multi<Buffer> is checked at build time
+        // we don't check the generic because the Multi item type is checked at build time
         return entity != null && entity.getEntity() instanceof Multi;
     }
 

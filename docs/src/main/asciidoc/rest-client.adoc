@@ -401,7 +401,11 @@ When the `url` parameter is non-null, it will override the base URL that is conf
 The REST Client is capable of sending arbitrarily large HTTP bodies without buffering the contents in memory, if one of the following types is used:
 
 * `InputStream`
-* `Multi<io.vertx.mutiny.core.buffer.Buffer>`
+* `Multi<byte[]>`
+* `Multi<io.vertx.core.buffer.Buffer>`
+
+The `Multi` variants are consumed lazily, so a large body can be streamed from another source without buffering it in memory.
+For example, a `Multi<byte[]>` returned by another REST Client method can be passed directly as the request body.
 
 Furthermore, the client can also send arbitrarily large files if one of the following types is used:
 

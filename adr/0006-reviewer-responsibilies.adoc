@@ -1,0 +1,74 @@
+= Reviewer and committer responsibilities
+
+* Status: proposed
+* Date: 2024-10-25
+
+== Context and Problem Statement
+
+Today, we give different roles, responsibilities and resource access across Quarkus contributors. 
+It is not well known nor written down what the review and push responsibilities are and how they ares structured to achieve Quarkus goals of high code quality and velocity.
+
+This leads to different interpretations and some unknown on how contributors can best help.
+At the same time, some contributions remain unreviewed for a long time because of uncertainty or because of bottleneck.
+
+== Decision Drivers
+
+* Increase clarity and awareness on contributor’s responsibility on reviews and code push
+* Describe the intent and not the current exact state (as tooling is preventing us from having the best solution)
+* Being a perfect solution is _not_ a goal, _better_ than today is.
+* Define ways to measure and improve the time to review.
+
+== Scenarios (optional)
+
+List of scenarios, each described using 2-3 sentences, to capture where the ADR has an impact.
+
+== Considered options
+
+The main alternative is the status quo which roughly is: Guillaume knowing what we are intending to do and some persons talking with Guillaume regularly being sufficiently aware.
+
+== Decision
+
+There are three levels of reviewing.
+
+. Any one can review a Pull Request (PR) and give constructive feedback on different areas (code, documentation, feature experience, security, etc.).
+  This is an optional but recommended step.
+  More eyes means higher quality.
+. A PR is reviewed by a _binding reviewer_ who is fluent in the area being touched: this person is responsible for signing with blood of the usefulness, quality of the code and soundness of the solution.
+  That’s the review of the expert and the most critical one for quality.
+  This review is mandatory.
+.. Unfortunately, we do not always have (designed or effective) experts in all areas so it’s a constant work in progress and might make this step optional in some situations.
+. A PR is reviewed by a committer (push rights) whose responsibilities are:
+.. Do a general review (often from a non expert eye).
+.. Ensure consistency and quality across Quarkus’s codebase (code, concepts, API consistency, documentation).
+.. Detect potential security concerns with an attacker mindset (though not being an actual security professional).
+.. Ensure consistency at the platform level (duplicated or overlapping features, usage integration issues across features etc).
+.. Effectively push the code to the main branch.
+
+=== TODO Open questions to resolve before closing
+
+How is a person moving from casual reviewer to binding reviewer?
+People will tend to request review from binding reviewers leading to a progression problem where casual reviewers will never have the knowledge to be “promoted”.
+We have a few people with no specific area of ownership, that’s specifically acute there.
+
+How can a non binding review see the value of its work considering someone else has to go behind them anyways.
+Feels like double work where the team is very busy.
+
+How can we define SLO for the PR review to help with the _flow_, satisfy contributors while keeping quality high.
+And how to use it as a mechanism to improve and know where to get help?
+The faster the flow, the high an organisation measure in effectiveness, happiness etc.
+
+==== Proposition 1
+
+Define and measure (GitHub APIs) SLO for the time to push or drop / withdraw.
+This is not a perfect proxy as some PRs do demand multi weeks conversations but measuring and dashboarding is our first step to know in which area we have a problem.
+
+We could define a team intended SLO (say 3 weeks to start but that’s already quite long) and know which areas chronically fall behind.
+
+We can introduce the notion of binding reviewer leutenants (like in the Linux kernel) where a binding reviewer whose area is not meeting the SLO would train other peoples (actively delegating the PR work as a first phase before its own review, mentoring, answering questions, etc).
+After a while that lieutenant can become a binding reviewer allowing us to increase throughput.
+
+== Consequences
+
+Every Quarkus user and contributor can see the expected review responsibilities.
+The SLO and backpressure (training more persons) mechanism will help get a better understanding of our contribution health.
+Make Quarkus governance more transparent in the context of the Commonhaus move.

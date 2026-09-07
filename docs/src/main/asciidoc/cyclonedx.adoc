@@ -112,13 +112,6 @@ quarkus.cyclonedx.embedded.resource-name=META-INF/custom-sbom.json
 
 The format is determined by the resource name extension: `.json` for JSON, `.xml` for XML.
 
-By default, the embedded SBOM is compressed with GZIP to reduce the application size. The classpath resource name will have a `.gz` extension appended (e.g., `META-INF/sbom/dependency.cdx.json.gz`). If the SBOM is exposed through the <<sbom-endpoint,REST endpoint>>, it will be served with `Content-Encoding: gzip`, so HTTP clients will decompress it transparently. Compression can be disabled with:
-
-[source,properties]
-----
-quarkus.cyclonedx.embedded.compress=false
-----
-
 [NOTE]
 ====
 Embedded dependency SBOMs are also available when running in dev mode (`quarkus dev`).
@@ -135,10 +128,17 @@ quarkus.cyclonedx.endpoint.enabled=true
 ----
 
 The embedded SBOM will be served at `/.well-known/sbom` with the `application/vnd.cyclonedx+json` content type (or `application/vnd.cyclonedx+xml` for XML SBOMs).
-Since the embedded SBOM is compressed by default, the response will include `Content-Encoding: gzip`, which HTTP clients handle transparently.
 The path can be customized using the `quarkus.cyclonedx.endpoint.path` property.
 
 Enabling the endpoint will automatically trigger SBOM embedding, even if `quarkus.cyclonedx.embedded.enabled` is not explicitly set to `true`.
+
+The `quarkus.cyclonedx.embedded.compress` option controls whether the response is GZIP-compressed:
+
+* if set to `true`, the SBOM is always served with `Content-Encoding: gzip`;
+* if set to `false`, the SBOM is always served uncompressed;
+* if not set (the default), compression is negotiated from the request's `Accept-Encoding` header, so the SBOM is served with `Content-Encoding: gzip` only when the client accepts `gzip`.
+
+HTTP clients handle the compressed response transparently.
 
 [NOTE]
 ====
@@ -330,7 +330,7 @@ When <<embedded-dependency-sboms,SBOM embedding>> is enabled, the SBOM is also e
 podman run --rm -v $(pwd):/tmp:z anchore/syft scan myapp -o cyclonedx-json
 ----
 
-NOTE: The SBOM is always GZIP-compressed before being embedded as a global symbol, regardless of the `quarkus.cyclonedx.embedded.compress` setting. If the classpath resource is not already compressed, Quarkus will compress it at native image build time.
+NOTE: The SBOM is always GZIP-compressed before being embedded as a global symbol, as required by the GraalVM SBOM specification and regardless of the `quarkus.cyclonedx.embedded.compress` setting. Since the classpath resource is always stored uncompressed, Quarkus compresses it at native image build time.
 
 === Mutable JAR
 

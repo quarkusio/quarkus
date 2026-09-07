@@ -5,7 +5,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
 import java.io.File;
-import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
@@ -125,10 +124,11 @@ public class CycloneDxIT extends MojoTestBase {
                 Map.of(), p);
         assertThat(result.getProcess().waitFor()).isEqualTo(0);
 
-        // the embedded SBOM should be in generated-bytecode.jar, compressed by default
+        // the embedded SBOM should be in generated-bytecode.jar, always stored uncompressed
         final Path generatedJar = testDir.toPath()
                 .resolve("target/quarkus-app/quarkus/generated-bytecode.jar");
-        final Bom bom = parseCompressedEmbeddedSbom(generatedJar, "META-INF/sbom/dependency.cdx.json.gz");
+        assertNoEmbeddedResource(generatedJar, "META-INF/sbom/dependency.cdx.json.gz");
+        final Bom bom = parseEmbeddedSbom(generatedJar, "META-INF/sbom/dependency.cdx.json");
 
         assertEmbeddedSbomComponents(bom);
     }
@@ -147,10 +147,11 @@ public class CycloneDxIT extends MojoTestBase {
                 Map.of(), p);
         assertThat(result.getProcess().waitFor()).isEqualTo(0);
 
-        // for uber-jar, the resource is embedded directly in the runner jar, compressed by default
+        // for uber-jar, the resource is embedded directly in the runner jar, always stored uncompressed
         final Path uberJar = testDir.toPath()
                 .resolve("target/acme-app-1.0-SNAPSHOT-runner.jar");
-        final Bom bom = parseCompressedEmbeddedSbom(uberJar, "META-INF/sbom/dependency.cdx.json.gz");
+        assertNoEmbeddedResource(uberJar, "META-INF/sbom/dependency.cdx.json.gz");
+        final Bom bom = parseEmbeddedSbom(uberJar, "META-INF/sbom/dependency.cdx.json");
 
         assertEmbeddedSbomComponents(bom);
     }
@@ -177,8 +178,9 @@ public class CycloneDxIT extends MojoTestBase {
         assertNoEmbeddedResource(generatedJar, "META-INF/sbom/dependency.cdx.json");
         assertNoEmbeddedResource(generatedJar, "META-INF/sbom/dependency.cdx.json.gz");
 
-        // the custom resource name should be compressed by default
-        final Bom bom = parseCompressedEmbeddedSbom(generatedJar, customResourceName + ".gz");
+        // the custom resource name should be stored uncompressed under its exact name
+        assertNoEmbeddedResource(generatedJar, customResourceName + ".gz");
+        final Bom bom = parseEmbeddedSbom(generatedJar, customResourceName);
         assertEmbeddedSbomComponents(bom);
     }
 
@@ -236,10 +238,11 @@ public class CycloneDxIT extends MojoTestBase {
                 Map.of(), p);
         assertThat(result.getProcess().waitFor()).isEqualTo(0);
 
-        // enabling the endpoint should trigger SBOM embedding via the SPI, compressed by default
+        // enabling the endpoint should trigger SBOM embedding via the SPI, always stored uncompressed
         final Path generatedJar = testDir.toPath()
                 .resolve("target/quarkus-app/quarkus/generated-bytecode.jar");
-        final Bom bom = parseCompressedEmbeddedSbom(generatedJar, "META-INF/sbom/dependency.cdx.json.gz");
+        assertNoEmbeddedResource(generatedJar, "META-INF/sbom/dependency.cdx.json.gz");
+        final Bom bom = parseEmbeddedSbom(generatedJar, "META-INF/sbom/dependency.cdx.json");
         assertEmbeddedSbomComponents(bom);
     }
 
@@ -250,7 +253,10 @@ public class CycloneDxIT extends MojoTestBase {
 
         Process process = launchApplication(testDir);
         try {
-            assertEmbeddedSbomComponents(fetchSbomFromEndpoint());
+            awaitEndpoint();
+            // compress is unset by default, so the endpoint negotiates based on Accept-Encoding
+            assertEmbeddedSbomComponents(fetchSbomFromEndpoint("gzip", true));
+            assertEmbeddedSbomComponents(fetchSbomFromEndpoint("identity", false));
         } finally {
             process.destroy();
         }
@@ -267,7 +273,8 @@ public class CycloneDxIT extends MojoTestBase {
                         "-Dquarkus.analytics.disabled=true"),
                 Map.of());
         try {
-            assertEmbeddedSbomComponents(fetchSbomFromEndpoint());
+            awaitEndpoint();
+            assertEmbeddedSbomComponents(fetchSbomFromEndpoint("gzip", true));
         } finally {
             running.stop();
         }
@@ -302,27 +309,25 @@ public class CycloneDxIT extends MojoTestBase {
         return pb.start();
     }
 
-    private static Bom fetchSbomFromEndpoint() throws Exception {
+    private static void awaitEndpoint() {
         DevModeClient client = new DevModeClient();
         await().pollDelay(1, TimeUnit.SECONDS)
                 .atMost(TestUtils.getDefaultTimeout(), TimeUnit.MINUTES)
                 .until(() -> client.getHttpResponse("/.well-known/sbom", 200));
+    }
 
+    private static Bom fetchSbomFromEndpoint(String acceptEncoding, boolean expectGzip) throws Exception {
         HttpURLConnection conn = (HttpURLConnection) new URL("http://localhost:8080/.well-known/sbom").openConnection();
+        conn.setRequestProperty("Accept-Encoding", acceptEncoding);
         try {
-            try (InputStream is = getInputStream(conn)) {
+            final boolean gzipped = "gzip".equals(conn.getContentEncoding());
+            assertThat(gzipped).isEqualTo(expectGzip);
+            try (InputStream is = gzipped ? new GZIPInputStream(conn.getInputStream()) : conn.getInputStream()) {
                 return new JsonParser().parse(is);
             }
         } finally {
             conn.disconnect();
         }
-    }
-
-    private static InputStream getInputStream(HttpURLConnection conn) throws IOException {
-        final InputStream raw = conn.getInputStream();
-        return "gzip".equals(conn.getContentEncoding())
-                ? new GZIPInputStream(raw)
-                : raw;
     }
 
     /**

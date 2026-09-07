@@ -19,6 +19,8 @@ public class KafkaResource implements QuarkusTestResourceLifecycleManager, DevSe
         Map<String, String> devServicesProperties = context.devServicesProperties();
         String bootstrapServers = devServicesProperties.get("kafka.bootstrap.servers");
         if (bootstrapServers != null) {
+            // Trust the Avro-generated classes in the test JVM (the Quarkus recorder only runs in the app JVM)
+            System.setProperty("org.apache.avro.SERIALIZABLE_PACKAGES", "io.quarkus.it.kafka.avro");
             String apicurioUrl = devServicesProperties.get("mp.messaging.connector.smallrye-kafka.apicurio.registry.url");
             String confluentUrl = devServicesProperties.get("mp.messaging.connector.smallrye-kafka.schema.registry.url");
             Properties commonProperties = new Properties();

@@ -1248,7 +1248,7 @@ public class JaxrsClientReactiveProcessor {
                                     getGenericTypeFromArray(methodCreator, methodGenericParametersField, paramIdx),
                                     getAnnotationsFromArray(methodCreator, methodParamAnnotationsField, paramIdx),
                                     multipart,
-                                    param.mimeType, param.partFileName,
+                                    param.mimeType, param.partFileName, param.separator,
                                     jandexMethod.declaringClass().name() + "." + jandexMethod.name());
                         }
                     }
@@ -3118,7 +3118,7 @@ public class JaxrsClientReactiveProcessor {
                             formParams,
                             getGenericTypeFromParameter(creator, beanParamDescriptorField, item.fieldName()),
                             getAnnotationsFromParameter(creator, beanParamDescriptorField, item.fieldName()),
-                            multipart, formParam.getMimeType(), formParam.getFileName(),
+                            multipart, formParam.getMimeType(), formParam.getFileName(), null,
                             beanParamClass + "." + formParam.getSourceName());
                     break;
                 default:
@@ -3556,7 +3556,7 @@ public class JaxrsClientReactiveProcessor {
             String restClientInterfaceClassName, ResultHandle client, AssignableResultHandle formParams,
             ResultHandle genericType,
             ResultHandle parameterAnnotations, boolean multipart,
-            String mimeType, String partFilename, String errorLocation) {
+            String mimeType, String partFilename, String separator, String errorLocation) {
         if (multipart) {
             handleMultipartField(index, paramName, mimeType, partFilename, parameterType, parameterSignature,
                     formParamHandle,
@@ -3583,7 +3583,8 @@ public class JaxrsClientReactiveProcessor {
                         MethodDescriptor.ofMethod(RestClientBase.class, "convertParamArray", Object[].class, Object[].class,
                                 Class.class, java.lang.reflect.Type.class, Annotation[].class, String.class),
                         client, paramArray, creator.loadClassFromTCCL(componentType), genericType,
-                        creator.newArray(Annotation.class, 0), creator.loadNull());
+                        creator.newArray(Annotation.class, 0),
+                        separator == null ? creator.loadNull() : creator.load(separator));
                 creator.invokeInterfaceMethod(MULTIVALUED_MAP_ADD_ALL, formParams,
                         creator.load(paramName), convertedParamArray);
             } else if (isMap(parameterType, index)) {

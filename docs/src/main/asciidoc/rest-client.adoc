@@ -242,12 +242,14 @@ package org.acme.rest.client;
 
 import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 import org.jboss.resteasy.reactive.RestForm;
+import org.jboss.resteasy.reactive.Separator;
 
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.FormParam;
 import jakarta.ws.rs.core.MultivaluedMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -271,8 +273,14 @@ public interface ExtensionsService {
     @Consumes(MediaType.APPLICATION_FORM_URLENCODED)
     Set<Extension> postFilters(@RestForm MultivaluedMap<String, String> filters);
 
+    @POST
+    @Consumes(MediaType.APPLICATION_FORM_URLENCODED)
+    Set<Extension> postNames(@RestForm @Separator(",") List<String> names); <1>
+
 }
 ----
+<1> Just like for query parameters, `@Separator` lets you specify a custom delimiter between the values of a collection-valued form parameter.
+In this example, the request body will be `names=first,second` instead of `names=first&names=second`.
 
 ==== Using @ClientFormParam
 

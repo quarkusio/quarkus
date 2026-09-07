@@ -2,6 +2,7 @@ package io.quarkus.deployment.pkg.steps;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.nio.file.Path;
 import java.util.Collections;
 
 import org.junit.jupiter.api.Test;
@@ -61,6 +62,16 @@ class NativeImageBuildContainerRunnerTest {
             }
         }
         assertThat(found).isTrue();
+    }
+
+    @DisabledIfSystemProperty(named = "avoid-containers", matches = "true")
+    @Test
+    void buildContainerRunsWithoutRmSoTheOomFlagCanBeInspected() {
+        NativeImageBuildLocalContainerRunner runner = new NativeImageBuildLocalContainerRunner(new TestNativeConfig("mandrel"));
+        // The build container is NOT run with --rm: Quarkus removes it itself, after inspecting State.OOMKilled.
+        assertThat(runner.getBuildCommand(Path.of("target"), Collections.emptyList())).doesNotContain("--rm");
+        // The short-lived version container is still auto-removed.
+        assertThat(runner.getGraalVMVersionCommand(Collections.singletonList("--version"))).contains("--rm");
     }
 
 }

@@ -200,6 +200,12 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
             startupAction.applyModuleConfigurationToClassloader(curatedApplication.getAugmentClassLoader());
             startupAction.applyModuleConfigurationToClassloader(curatedApplication.getBaseRuntimeClassLoader());
 
+            // Install per-logger log cleanup filters declared by extensions before the application
+            // starts. This ensures that noisy library messages (e.g. from Hibernate) are suppressed
+            // during the augmentation phase, before the Quarkus recorder installs the handler-level
+            // LogCleanupFilter through the normal initializeLogging() path.
+            installBootstrapLogFilters(curatedApplication.getAugmentClassLoader());
+
             Path testClassLocation = getTestClassesLocation(requiredTestClass, curatedApplication);
             TestProfileAndProperties testProfileAndProperties = TestProfileAndProperties.ofNullable(profileClass, NORMAL);
             Optional<QuarkusTestProfile> profileInstance = testProfileAndProperties.testProfile();
@@ -302,6 +308,69 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
             throw effectiveException;
         }
 
+    }
+
+    /**
+     * Uses the {@link java.util.ServiceLoader} mechanism to discover {@code QuarkusBootstrapLogFilters}
+     * providers in the given {@code classLoader} (typically the augmentation classloader) and installs
+     * a per-logger {@link java.util.logging.Filter} for each declared cleanup filter element.
+     *
+     * <p>
+     * Installing these filters directly on the JBoss LogManager loggers guarantees that the
+     * suppression is in effect before {@link StartupAction#run} triggers library initialization
+     * (e.g., Hibernate ORM), regardless of whether the handler-level {@code LogCleanupFilter}
+     * has been configured yet.
+     */
+    @SuppressWarnings({ "rawtypes", "unchecked" })
+    private static void installBootstrapLogFilters(ClassLoader classLoader) {
+        try {
+            // Load the interface class from the augment classloader. quarkus-core-runtime is
+            // parent-first in all child classloaders, so this is the same Class object that the
+            // provider implementations were compiled against.
+            Class filterInterface = classLoader.loadClass("io.quarkus.runtime.logging.QuarkusBootstrapLogFilters");
+            Method getFiltersMethod = filterInterface.getMethod("getLogCleanupFilters");
+            for (Object provider : ServiceLoader.load(filterInterface, classLoader)) {
+                List<?> elements = (List<?>) getFiltersMethod.invoke(provider);
+                for (Object element : elements) {
+                    String loggerName = (String) element.getClass().getMethod("getLoggerName").invoke(element);
+                    List<String> messageStarts = (List<String>) element.getClass().getMethod("getMessageStarts")
+                            .invoke(element);
+                    if (loggerName != null && messageStarts != null && !messageStarts.isEmpty()) {
+                        installBootstrapLogFilter(loggerName, List.copyOf(messageStarts));
+                    }
+                }
+            }
+        } catch (Exception e) {
+            log.warn("Failed to install bootstrap log cleanup filters from service providers", e);
+        }
+    }
+
+    /**
+     * Installs a per-logger {@link java.util.logging.Filter} on the JBoss LogManager logger
+     * identified by {@code loggerName}. Any log record whose message starts with one of
+     * {@code messageStartPrefixes} and whose level is {@code WARNING} or below is downgraded to
+     * {@code DEBUG}; since {@code DEBUG} is typically below the effective minimum level the record
+     * is then suppressed.
+     */
+    private static void installBootstrapLogFilter(String loggerName, List<String> messageStartPrefixes) {
+        org.jboss.logmanager.Logger logger = org.jboss.logmanager.LogContext.getLogContext().getLogger(loggerName);
+        java.util.logging.Filter existing = logger.getFilter();
+        logger.setFilter(record -> {
+            if (existing != null && !existing.isLoggable(record)) {
+                return false;
+            }
+            // Only apply prefix-based downgrading for WARNING level and below (same contract as LogCleanupFilter)
+            if (record.getLevel().intValue() <= java.util.logging.Level.WARNING.intValue()) {
+                for (String prefix : messageStartPrefixes) {
+                    if (record.getMessage() != null && record.getMessage().startsWith(prefix)) {
+                        record.setLevel(org.jboss.logmanager.Level.DEBUG);
+                        return org.jboss.logmanager.LogContext.getLogContext().getLogger(record.getLoggerName())
+                                .isLoggable(org.jboss.logmanager.Level.DEBUG);
+                    }
+                }
+            }
+            return true;
+        });
     }
 
     private static QuarkusClassLoader getClassLoaderFromTestClass(Class<?> requiredTestClass) {

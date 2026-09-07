@@ -194,6 +194,39 @@ class TranscodingCodegenTest {
     }
 
     @Test
+    void stubContainsAdditionalBindings() throws GeneratorException {
+        DescriptorProtos.MethodOptions options = DescriptorProtos.MethodOptions.newBuilder()
+                .setExtension(AnnotationsProto.http, HttpRule.newBuilder()
+                        .setGet("/v1/items/{item_id}")
+                        .addAdditionalBindings(HttpRule.newBuilder()
+                                .setPost("/v1/items")
+                                .setBody("*")
+                                .build())
+                        .build())
+                .build();
+
+        PluginProtos.CodeGeneratorRequest request = requestWith(
+                DescriptorProtos.ServiceDescriptorProto.newBuilder()
+                        .setName("TestService")
+                        .addMethod(DescriptorProtos.MethodDescriptorProto.newBuilder()
+                                .setName("GetItem")
+                                .setInputType(".test.TestRequest")
+                                .setOutputType(".test.TestResponse")
+                                .setOptions(options)
+                                .build())
+                        .build());
+
+        String content = stub(request);
+        assertThat(content).contains("getItem_OPTIONS");
+        assertThat(content).contains("HttpMethod.valueOf(\"GET\")");
+        assertThat(content).contains("\"/v1/items/{item_id}\"");
+        assertThat(content).contains("addAdditionalBinding");
+        assertThat(content).contains("HttpMethod.valueOf(\"POST\")");
+        assertThat(content).contains("\"/v1/items\"");
+        assertThat(content).contains(".setBody(\"*\")");
+    }
+
+    @Test
     void transcodingContextWithAdditionalBindings() {
         DescriptorProtos.MethodOptions options = DescriptorProtos.MethodOptions.newBuilder()
                 .setExtension(AnnotationsProto.http, HttpRule.newBuilder()

@@ -1696,7 +1696,7 @@ public class VertxHttpRecorder {
                                     options.getMaxFormAttributeSize(),
                                     options.getMaxFormFields(),
                                     options.getMaxFormBufferedBytes(),
-                                    new QueryParamDecoderConfig(),
+                                    createQueryParamDecoderConfig(),
                                     options.getHttp1Config() != null ? options.getHttp1Config() : new Http1ServerConfig(),
                                     options.isRegisterWebSocketWriteHandlers(),
                                     options.getWebSocketConfig() != null ? options.getWebSocketConfig()
@@ -1720,6 +1720,16 @@ public class VertxHttpRecorder {
                                 .getOptionalValue("quarkus.http.limits.max-header-size", MemorySize.class);
                         if (maybeMaxHeadersSize.isPresent()) {
                             result.setMaxHeaderSize(maybeMaxHeadersSize.get().asIntValue());
+                        }
+                        return result;
+                    }
+
+                    private static QueryParamDecoderConfig createQueryParamDecoderConfig() {
+                        var result = new QueryParamDecoderConfig();
+                        Optional<Integer> maybeMaxQueryParameters = ConfigProvider.getConfig()
+                                .getOptionalValue("quarkus.http.limits.max-query-parameters", Integer.class);
+                        if (maybeMaxQueryParameters.isPresent()) {
+                            result.setMaxSize(maybeMaxQueryParameters.get());
                         }
                         return result;
                     }

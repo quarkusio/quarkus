@@ -99,7 +99,8 @@ public class GrpcServerRecorder {
             ShutdownContext shutdown,
             Map<String, List<String>> blockingMethodsPerService,
             Map<String, List<String>> virtualMethodsPerService,
-            LaunchMode launchMode, boolean securityPresent, Map<Integer, Handler<RoutingContext>> securityHandlers) {
+            LaunchMode launchMode, boolean securityPresent, Map<Integer, Handler<RoutingContext>> securityHandlers,
+            Set<String> transcodingClasses) {
         if (hasNoBindableServiceBeans && LaunchMode.current() != LaunchMode.DEVELOPMENT) {
             LOGGER.error("Unable to find beans exposing the `BindableService` interface - not starting the gRPC server");
             return;
@@ -109,7 +110,8 @@ public class GrpcServerRecorder {
         GrpcServerConfiguration configuration = runtimeConfig.getValue().server();
 
         buildGrpcServer(vertx, configuration, routerSupplier, shutdown, blockingMethodsPerService, virtualMethodsPerService,
-                beanContainer.beanInstance(GrpcContainer.class), launchMode, securityPresent, securityHandlers);
+                beanContainer.beanInstance(GrpcContainer.class), launchMode, securityPresent, securityHandlers,
+                transcodingClasses);
     }
 
     // TODO -- handle XDS
@@ -117,7 +119,7 @@ public class GrpcServerRecorder {
             ShutdownContext shutdown, Map<String, List<String>> blockingMethodsPerService,
             Map<String, List<String>> virtualMethodsPerService,
             GrpcContainer grpcContainer, LaunchMode launchMode, boolean securityPresent,
-            Map<Integer, Handler<RoutingContext>> securityHandlers) {
+            Map<Integer, Handler<RoutingContext>> securityHandlers, Set<String> transcodingClasses) {
 
         GrpcServerOptions options = new GrpcServerOptions();
 

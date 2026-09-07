@@ -191,9 +191,16 @@ public class JacksonSerializerFactory extends JacksonCodeGenerator {
 
     @Override
     public Collection<String> create(Collection<ClassInfo> classInfos) {
-        Collection<String> createdClasses = super.create(classInfos);
+        Collection<String> result = super.create(classInfos);
         createFieldNamesClass();
-        return createdClasses;
+        return result;
+    }
+
+    @Override
+    public Collection<String> createFromTypes(Collection<Type> types) {
+        Collection<String> result = super.createFromTypes(types);
+        createFieldNamesClass();
+        return result;
     }
 
     private void createFieldNamesClass() {
@@ -235,12 +242,46 @@ public class JacksonSerializerFactory extends JacksonCodeGenerator {
     }
 
     @Override
-    protected boolean createSerializationMethod(ClassInfo classInfo, ClassCreator classCreator, String beanClassName) {
+    protected boolean discoverFieldTypes(ClassInfo classInfo, String beanClassName, Map<String, Type> typeBindings) {
         var jsonValueFieldSpecs = jsonValueFieldSpecs(classInfo);
-        if (jsonValueFieldSpecs == null) {
+        if (jsonValueFieldSpecs.isEmpty() && classInfo.hasAnnotation(JsonValue.class)) {
+            return false;
+        }
+        if (jsonValueFieldSpecs.isPresent()) {
+            return true;
+        }
+        boolean isArrayShape = isClassFormatShapeArray(classInfo);
+        if (!isArrayShape && isAssignableTo(beanClassName, MAP_NAME)) {
+            return true;
+        }
+
+        Set<String> ignoredProperties = discoverIgnoredProperties(classInfo);
+
+        PropertyNamingStrategy namingStrategy = getNamingStrategy(classInfo);
+        List<FieldSpecs> allFieldSpecs = collectAllFieldSpecs(classInfo, namingStrategy);
+        Set<String> serializedFields = new HashSet<>();
+
+        for (FieldSpecs fieldSpecs : allFieldSpecs) {
+            if (serializedFields.add(fieldSpecs.jsonName)) {
+                if (fieldSpecs.isIgnoredField() || ignoredProperties.contains(fieldSpecs.jsonName)
+                        || fieldSpecs.isBackReference() || isFieldTypeIgnored(fieldSpecs)) {
+                    continue;
+                }
+                registerTypeToBeGenerated(fieldSpecs.fieldType, fieldSpecs.fieldType.name().toString(), typeBindings);
+            }
+        }
+
+        return true;
+    }
+
+    @Override
+    protected boolean createSerializationMethod(ClassInfo classInfo, ClassCreator classCreator, String beanClassName,
+            Map<String, Type> typeBindings) {
+        if (!discoverFieldTypes(classInfo, beanClassName, typeBindings)) {
             return false;
         }
 
+        var jsonValueFieldSpecs = jsonValueFieldSpecs(classInfo);
         boolean isJsonValue = jsonValueFieldSpecs.isPresent();
         boolean isArrayShape = !isJsonValue && isClassFormatShapeArray(classInfo);
         boolean isMapSubclass = !isJsonValue && !isArrayShape && isAssignableTo(beanClassName, MAP_NAME);
@@ -347,13 +388,7 @@ public class JacksonSerializerFactory extends JacksonCodeGenerator {
                 .findFirst().map(FieldSpecs::new);
 
         if (jsonValueFieldFieldSpecs.isPresent()) {
-            return jsonValueMethodFieldSpecs.isPresent() ? null : jsonValueFieldFieldSpecs;
-        }
-        //  If none valid reflection-free JsonValue annotated target has been found,but
-        //  a non-public element annotated is present, just use standard Jackson
-        //  serializer
-        if (jsonValueMethodFieldSpecs.isEmpty() && jsonValueAnnotationFound) {
-            return null;
+            return jsonValueMethodFieldSpecs.isPresent() ? Optional.empty() : jsonValueFieldFieldSpecs;
         }
         return jsonValueMethodFieldSpecs;
     }
@@ -609,8 +644,6 @@ public class JacksonSerializerFactory extends JacksonCodeGenerator {
         bytecode = checkInclude(bytecode, ctx, arg, fieldSpecs, classInclude);
 
         if (fieldSpecs.isUnwrapped()) {
-            String typeName = fieldSpecs.fieldType.name().toString();
-            registerTypeToBeGenerated(fieldSpecs.fieldType, typeName);
             MethodDescriptor serializeUnwrapped = MethodDescriptor.ofMethod(JacksonMapperUtil.class.getName(),
                     "serializeUnwrapped", void.class, Object.class, JsonGenerator.class,
                     SerializerProvider.class, Set.class, String.class, String.class);
@@ -809,7 +842,7 @@ public class JacksonSerializerFactory extends JacksonCodeGenerator {
         } else {
             FieldKind fieldKind = null;
             if (pkgName != null) {
-                fieldKind = registerTypeToBeGenerated(fieldSpecs.fieldType, typeName);
+                fieldKind = classifyFieldType(fieldSpecs.fieldType, typeName);
                 writeFieldName(fieldSpecs, bytecode, ctx, pkgName);
             }
 

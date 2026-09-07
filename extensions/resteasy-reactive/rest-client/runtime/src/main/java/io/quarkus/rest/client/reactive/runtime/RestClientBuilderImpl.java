@@ -46,6 +46,7 @@ import org.jboss.resteasy.reactive.client.impl.VertxRequestCustomizingClientBuil
 import org.jboss.resteasy.reactive.client.impl.WebTargetImpl;
 import org.jboss.resteasy.reactive.client.impl.multipart.PausableHttpPostRequestEncoder;
 import org.jboss.resteasy.reactive.common.jaxrs.ConfigurationImpl;
+import org.jboss.resteasy.reactive.common.jaxrs.MultiFormParamMode;
 import org.jboss.resteasy.reactive.common.jaxrs.MultiQueryParamMode;
 import org.jboss.resteasy.reactive.common.util.CaseInsensitiveMap;
 
@@ -54,6 +55,7 @@ import io.quarkus.arc.ArcContainer;
 import io.quarkus.arc.InstanceHandle;
 import io.quarkus.proxy.ProxyConfiguration;
 import io.quarkus.proxy.ProxyConfigurationRegistry;
+import io.quarkus.rest.client.reactive.ParamStyle;
 import io.quarkus.rest.client.reactive.runtime.context.HttpClientOptionsContextResolver;
 import io.quarkus.restclient.config.RestClientsConfig;
 import io.quarkus.tls.TlsConfiguration;
@@ -82,7 +84,8 @@ public class RestClientBuilderImpl implements RestClientBuilder, VertxRequestCus
 
     private URI uri;
     private Boolean followRedirects;
-    private QueryParamStyle queryParamStyle;
+    private ParamStyle queryParamStyle;
+    private ParamStyle formParamStyle;
     private MultivaluedMap<String, Object> headers = new CaseInsensitiveMap<>();
 
     private String multipartPostEncoderMode;
@@ -484,7 +487,17 @@ public class RestClientBuilderImpl implements RestClientBuilder, VertxRequestCus
 
     @Override
     public RestClientBuilderImpl queryParamStyle(final QueryParamStyle style) {
+        queryParamStyle = ParamStyle.from(style);
+        return this;
+    }
+
+    public RestClientBuilderImpl queryParamStyle(final ParamStyle style) {
         queryParamStyle = style;
+        return this;
+    }
+
+    public RestClientBuilderImpl formParamStyle(final ParamStyle style) {
+        formParamStyle = style;
         return this;
     }
 
@@ -576,6 +589,7 @@ public class RestClientBuilderImpl implements RestClientBuilder, VertxRequestCus
         }
 
         clientBuilder.multiQueryParamMode(toMultiQueryParamMode(queryParamStyle));
+        clientBuilder.multiFormParamMode(toMultiFormParamMode(formParamStyle));
         clientBuilder.register(new DefaultClientHeadersRequestFilter(headers));
 
         Boolean effectiveTrustAll = trustAll;
@@ -737,7 +751,7 @@ public class RestClientBuilderImpl implements RestClientBuilder, VertxRequestCus
         }
     }
 
-    private MultiQueryParamMode toMultiQueryParamMode(QueryParamStyle queryParamStyle) {
+    private MultiQueryParamMode toMultiQueryParamMode(ParamStyle queryParamStyle) {
         if (queryParamStyle == null) {
             return null;
         }
@@ -750,6 +764,17 @@ public class RestClientBuilderImpl implements RestClientBuilder, VertxRequestCus
                 return MultiQueryParamMode.ARRAY_PAIRS;
         }
         return null;
+    }
+
+    private MultiFormParamMode toMultiFormParamMode(ParamStyle formParamStyle) {
+        if (formParamStyle == null) {
+            return null;
+        }
+        return switch (formParamStyle) {
+            case MULTI_PAIRS -> MultiFormParamMode.MULTI_PAIRS;
+            case COMMA_SEPARATED -> MultiFormParamMode.COMMA_SEPARATED;
+            case ARRAY_PAIRS -> MultiFormParamMode.ARRAY_PAIRS;
+        };
     }
 
 }

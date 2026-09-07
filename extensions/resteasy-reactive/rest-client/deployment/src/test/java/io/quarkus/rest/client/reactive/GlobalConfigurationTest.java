@@ -66,6 +66,7 @@ public class GlobalConfigurationTest {
         assertThat(configRoot.providers().get())
                 .isEqualTo("io.quarkus.rest.client.reactive.HelloClientWithBaseUri$MyResponseFilter");
         assertThat(configRoot.queryParamStyle().get()).isEqualTo(QueryParamStyle.MULTI_PAIRS);
+        assertThat(configRoot.formParamStyle().get()).isEqualTo(QueryParamStyle.COMMA_SEPARATED);
 
         assertThat(configRoot.trustStore().get()).isEqualTo("/path");
         assertThat(configRoot.trustStorePassword().get()).isEqualTo("password");

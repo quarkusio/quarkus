@@ -40,6 +40,7 @@ import org.jboss.resteasy.reactive.client.handlers.AdvancedRedirectHandler;
 import org.jboss.resteasy.reactive.client.handlers.RedirectHandler;
 import org.jboss.resteasy.reactive.client.spi.ClientContext;
 import org.jboss.resteasy.reactive.common.jaxrs.ConfigurationImpl;
+import org.jboss.resteasy.reactive.common.jaxrs.MultiFormParamMode;
 import org.jboss.resteasy.reactive.common.jaxrs.MultiQueryParamMode;
 import org.jboss.resteasy.reactive.common.jaxrs.UriBuilderImpl;
 
@@ -102,6 +103,7 @@ public class ClientImpl implements Client {
     final HandlerChain handlerChain;
     final Vertx vertx;
     private final MultiQueryParamMode multiQueryParamMode;
+    private final MultiFormParamMode multiFormParamMode;
     private final String userAgent;
     private final String tlsConfigName;
 
@@ -109,6 +111,7 @@ public class ClientImpl implements Client {
             HostnameVerifier hostnameVerifier,
             SSLContext sslContext, boolean followRedirects,
             MultiQueryParamMode multiQueryParamMode,
+            MultiFormParamMode multiFormParamMode,
             LoggingScope loggingScope,
             ClientLogger clientLogger, String userAgent,
             String tlsConfigName,
@@ -123,6 +126,7 @@ public class ClientImpl implements Client {
         this.hostnameVerifier = hostnameVerifier;
         this.sslContext = sslContext;
         this.multiQueryParamMode = multiQueryParamMode;
+        this.multiFormParamMode = multiFormParamMode;
         Supplier<Vertx> vertx = clientContext.getVertx();
         if (vertx != null) {
             this.vertx = vertx.get();
@@ -280,6 +284,10 @@ public class ClientImpl implements Client {
 
     public String getTlsConfigName() {
         return tlsConfigName;
+    }
+
+    public MultiFormParamMode getMultiFormParamMode() {
+        return multiFormParamMode;
     }
 
     @Override

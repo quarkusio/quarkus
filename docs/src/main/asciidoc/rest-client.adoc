@@ -282,6 +282,10 @@ public interface ExtensionsService {
 <1> Just like for query parameters, `@Separator` lets you specify a custom delimiter between the values of a collection-valued form parameter.
 In this example, the request body will be `names=first,second` instead of `names=first&names=second`.
 
+By default, multiple values of the same form parameter are sent as repeated `name=value` pairs.
+This can be changed for all the form parameters of a client using the `quarkus.rest-client.form-param-style` configuration property
+(or `quarkus.rest-client."config-key".form-param-style` for a specific client).
+
 ==== Using @ClientFormParam
 
 Form parameters can also be specified using `@ClientFormParam`, similar to `@ClientQueryParam`:

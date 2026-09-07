@@ -33,6 +33,7 @@ import org.jboss.resteasy.reactive.client.impl.multipart.PausableHttpPostRequest
 import io.quarkus.arc.Arc;
 import io.quarkus.proxy.ProxyConfiguration;
 import io.quarkus.proxy.ProxyConfigurationRegistry;
+import io.quarkus.rest.client.reactive.ParamStyle;
 import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
 import io.quarkus.restclient.config.RestClientsConfig;
 import io.quarkus.restclient.config.RestClientsConfig.RestClientConfig;
@@ -85,6 +86,7 @@ public class RestClientCDIDelegateBuilder<T> {
         configureTLS(builder);
         configureRedirects(builder);
         configureQueryParamStyle(builder);
+        configureFormParamStyle(builder);
         configureProxy(builder);
         configureShared(builder);
         configureLogging(builder);
@@ -213,6 +215,14 @@ public class RestClientCDIDelegateBuilder<T> {
         if (maybeQueryParamStyle.isPresent()) {
             QueryParamStyle queryParamStyle = maybeQueryParamStyle.get();
             builder.queryParamStyle(queryParamStyle);
+        }
+    }
+
+    private void configureFormParamStyle(QuarkusRestClientBuilder builder) {
+        Optional<QueryParamStyle> maybeFormParamStyle = oneOf(restClientConfig.formParamStyle(),
+                configRoot.formParamStyle());
+        if (maybeFormParamStyle.isPresent()) {
+            builder.formParamStyle(ParamStyle.from(maybeFormParamStyle.get()));
         }
     }
 

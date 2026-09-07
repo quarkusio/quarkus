@@ -91,6 +91,8 @@ class ConfigurationTest {
         assertThat(clientConfig.queryParamStyle().get()).isEqualTo(QueryParamStyle.COMMA_SEPARATED);
 
         if (checkExtraProperties) {
+            assertTrue(clientConfig.formParamStyle().isPresent());
+            assertThat(clientConfig.formParamStyle().get()).isEqualTo(QueryParamStyle.ARRAY_PAIRS);
             assertTrue(clientConfig.connectionTTL().isPresent());
             assertThat(clientConfig.connectionTTL().getAsInt()).isEqualTo(30000);
             assertTrue(clientConfig.connectionPoolSize().isPresent());

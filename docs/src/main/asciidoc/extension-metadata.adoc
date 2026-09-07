@@ -89,54 +89,6 @@ The meaning of support scopes, such as `supported` and `tech-preview`, would be 
 
 Offerings and support scopes may be used by Quarkus dev tools, such as Quarkus CLI and code.quarkus, to display and/or filter extensions by the relevant support-related information.
 
-
-
-[source,yaml,subs=attributes+]
-----
-name: "Quarkus REST (formerly RESTEasy Reactive)"
-artifact: "io.quarkus:quarkus-rest:999-SNAPSHOT"
-description: "A Jakarta REST implementation utilizing build time processing and Vert.x.\
-  \ This extension is not compatible with the quarkus-resteasy extension, or any of\
-  \ the extensions that depend on it." <1>
-metadata:
-  short-name: "rest"
-  keywords:
-  - "jaxrs"
-  - "web"
-  - "rest"
-  categories:
-  - "web"
-  - "reactive"
-  status: "stable"
-  guide: "https://quarkus.io/guides/rest"
-  codestart:
-    name: "rest"
-    languages:
-    - "java"
-    - "kotlin"
-    artifact: "io.quarkus:quarkus-project-core-extension-codestarts::jar:999-SNAPSHOT"
-  config:
-  - "quarkus.rest."
-  built-with-quarkus-core: "3.8.5" <2>
-  requires-quarkus-core: "[3.8,)" <3>
-  minimum-java-version: "17" <4>
-  capabilities: <5>
-    provides:
-    - "io.quarkus.rest"
-    - "io.quarkus.resteasy.reactive"
-  extension-dependencies: <6>
-  - "io.quarkus:quarkus-rest-common"
-  - "io.quarkus:quarkus-mutiny"
-  - "io.quarkus:quarkus-smallrye-context-propagation"
-  - "io.quarkus:quarkus-vertx"
-  - "io.quarkus:quarkus-arc"
-  - "io.quarkus:quarkus-netty"
-  - "io.quarkus:quarkus-vertx-http"
-  - "io.quarkus:quarkus-core"
-  - "io.quarkus:quarkus-jsonp"
-scm-url: "https://github.com/quarkusio/quarkus" <7>
-----
-
 [[quarkus-extension-json]]
 == META-INF/quarkus-extension.json
 

@@ -32,7 +32,6 @@ import io.smallrye.common.constraint.Assert;
 import io.smallrye.config.ConfigMapping;
 import io.smallrye.config.ConfigMappings.ConfigClass;
 import io.smallrye.config.ConfigValue;
-import io.smallrye.config.DefaultValuesConfigSource;
 import io.smallrye.config.EnvConfigSource;
 import io.smallrye.config.ProfileConfigSourceInterceptor;
 import io.smallrye.config.PropertiesConfigSource;
@@ -43,6 +42,7 @@ import io.smallrye.config.SmallRyeConfigBuilder;
 import io.smallrye.config.SmallRyeConfigBuilderCustomizer;
 import io.smallrye.config.SysPropConfigSource;
 import io.smallrye.config.common.AbstractConfigSource;
+import io.smallrye.config.common.MapBackedConfigSource;
 
 /**
  * A configuration reader.
@@ -185,10 +185,9 @@ public final class BuildTimeConfigurationReader {
                 .withSources(new PropertiesConfigSource(runtimeProperties, "Runtime Properties"));
 
         if (!platformProperties.isEmpty()) {
-            // Our default value configuration source is using an ordinal of Integer.MIN_VALUE
-            // (see io.quarkus.deployment.configuration.DefaultValuesConfigurationSource)
-            builder.withSources(
-                    new DefaultValuesConfigSource(platformProperties, "Quarkus platform", Integer.MIN_VALUE + 1000));
+            // a bit higher than defaults
+            builder.withSources(new MapBackedConfigSource("Quarkus platform", platformProperties, Integer.MIN_VALUE + 1000) {
+            });
         }
 
         for (ConfigClass mapping : buildTimeVisibleMappings) {

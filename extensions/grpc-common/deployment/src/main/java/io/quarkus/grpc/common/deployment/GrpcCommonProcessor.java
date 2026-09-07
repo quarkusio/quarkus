@@ -1,6 +1,7 @@
 package io.quarkus.grpc.common.deployment;
 
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.Set;
 
 import org.jboss.jandex.ClassInfo;
@@ -9,6 +10,7 @@ import org.jboss.jandex.DotName;
 import io.grpc.internal.DnsNameResolverProvider;
 import io.grpc.internal.PickFirstLoadBalancerProvider;
 import io.grpc.netty.NettyChannelProvider;
+import io.quarkus.avro.spi.AvroTrustedClassBuildItem;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
@@ -105,6 +107,24 @@ public class GrpcCommonProcessor {
         Set<DotName> members = classByName.memberClasses();
         for (DotName memberClassName : members) {
             reflectiveClasses(reflectiveClass, combinedIndex, memberClassName);
+        }
+    }
+
+    @BuildStep
+    void trustProtobufMessagesForAvro(CombinedIndexBuildItem combinedIndex,
+            BuildProducer<AvroTrustedClassBuildItem> trustedClasses) {
+        // Protobuf-generated messages may be deserialized through Avro (e.g. with Pulsar). Since Avro 1.12.2 validates
+        // classes against a security validator, mark them as trusted so the quarkus-avro extension (if present) allows
+        // them. This has no effect if quarkus-avro is not on the classpath.
+        Set<String> messages = new HashSet<>();
+        for (ClassInfo message : combinedIndex.getIndex().getAllKnownSubclasses(GrpcDotNames.GENERATED_MESSAGE_V3)) {
+            messages.add(message.name().toString());
+        }
+        for (ClassInfo message : combinedIndex.getIndex().getAllKnownSubclasses(GrpcDotNames.GENERATED_MESSAGE)) {
+            messages.add(message.name().toString());
+        }
+        if (!messages.isEmpty()) {
+            trustedClasses.produce(new AvroTrustedClassBuildItem(messages));
         }
     }
 

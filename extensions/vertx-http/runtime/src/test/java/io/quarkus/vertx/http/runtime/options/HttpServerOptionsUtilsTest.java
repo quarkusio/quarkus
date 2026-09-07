@@ -350,6 +350,7 @@ class HttpServerOptionsUtilsTest {
         when(limits.maxFormFields()).thenReturn(256);
         when(limits.maxFormBufferedBytes()).thenReturn(MemorySize.of("1k"));
         when(limits.maxInitialLineLength()).thenReturn(4096);
+        when(limits.maxQueryParameters()).thenReturn(1024);
         when(limits.headerTableSize()).thenReturn(OptionalLong.empty());
         when(limits.maxConcurrentStreams()).thenReturn(128L);
         when(limits.maxFrameSize()).thenReturn(OptionalInt.empty());

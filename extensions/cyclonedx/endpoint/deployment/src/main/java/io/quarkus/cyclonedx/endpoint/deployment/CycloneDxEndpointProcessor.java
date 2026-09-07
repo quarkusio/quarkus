@@ -6,6 +6,7 @@ import java.util.Optional;
 import io.quarkus.cyclonedx.deployment.spi.EmbeddedSbomMetadataBuildItem;
 import io.quarkus.cyclonedx.deployment.spi.EmbeddedSbomRequestBuildItem;
 import io.quarkus.cyclonedx.endpoint.runtime.CycloneDxEndpointRecorder;
+import io.quarkus.cyclonedx.endpoint.runtime.SbomCompressionMode;
 import io.quarkus.deployment.IsProduction;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -77,11 +78,8 @@ public class CycloneDxEndpointProcessor {
         final EmbeddedSbomMetadataBuildItem metadata = embeddedSbomMetadata.get();
         String resourceName = metadata.getResourceName();
         String path = endpointConfig.path();
-        // derive content type from the base resource name (without .gz suffix)
-        String baseName = resourceName.endsWith(".gz")
-                ? resourceName.substring(0, resourceName.length() - 3)
-                : resourceName;
-        String contentType = baseName.endsWith(".xml")
+        // the SBOM resource is always stored uncompressed, so its name carries the real extension
+        String contentType = resourceName.endsWith(".xml")
                 ? "application/vnd.cyclonedx+xml"
                 : "application/vnd.cyclonedx+json";
 
@@ -90,9 +88,15 @@ public class CycloneDxEndpointProcessor {
                 : RouteBuildItem.newAbsoluteRoute(path);
         return builder
                 .withRoutePathConfigKey("quarkus.cyclonedx.endpoint.path")
-                .withRequestHandler(recorder.handler(resourceName, contentType, metadata.isCompressed()))
+                .withRequestHandler(recorder.handler(resourceName, contentType, compressionMode(metadata)))
                 .displayOnNotFoundPage("CycloneDX SBOM")
                 .build();
+    }
+
+    private static SbomCompressionMode compressionMode(EmbeddedSbomMetadataBuildItem metadata) {
+        return metadata.getServeCompressed()
+                .map(compress -> compress ? SbomCompressionMode.ALWAYS : SbomCompressionMode.NEVER)
+                .orElse(SbomCompressionMode.NEGOTIATE);
     }
 
     /**

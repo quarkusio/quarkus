@@ -113,7 +113,6 @@ public class SbomNativeImageFeatureStep {
 
         EmbeddedSbomMetadataBuildItem metadata = embeddedSbomMetadata.get();
         String resourceName = metadata.getResourceName();
-        boolean isCompressed = metadata.isCompressed();
 
         jpmsExports.produce(new JPMSExportBuildItem("org.graalvm.nativeimage.builder", "com.oracle.svm.hosted.c"));
         // GraalVM <= 25.0
@@ -156,17 +155,14 @@ public class SbomNativeImageFeatureStep {
                                     tb.invokeVirtual(READ_ALL_BYTES, is));
                             tb.invokeVirtual(CLOSE_INPUT_STREAM, is);
 
-                            LocalVar sbomBytes;
-                            if (isCompressed) {
-                                sbomBytes = tb.localVar("sbomBytes", resourceBytes);
-                            } else {
-                                LocalVar bout = tb.localVar("bout", tb.new_(ByteArrayOutputStream.class));
-                                LocalVar gout = tb.localVar("gout", tb.new_(GZIP_OUTPUT_STREAM_CTOR, bout));
-                                tb.invokeVirtual(GZIP_WRITE, gout, resourceBytes);
-                                tb.invokeVirtual(GZIP_CLOSE, gout);
-                                sbomBytes = tb.localVar("sbomBytes", tb.invokeVirtual(BAOS_TO_BYTE_ARRAY, bout));
-                                tb.invokeVirtual(BAOS_CLOSE, bout);
-                            }
+                            // the embedded SBOM resource is always stored uncompressed, but the GraalVM SBOM spec
+                            // requires the sbom global symbol to be GZIP-compressed, so compress it here
+                            LocalVar bout = tb.localVar("bout", tb.new_(ByteArrayOutputStream.class));
+                            LocalVar gout = tb.localVar("gout", tb.new_(GZIP_OUTPUT_STREAM_CTOR, bout));
+                            tb.invokeVirtual(GZIP_WRITE, gout, resourceBytes);
+                            tb.invokeVirtual(GZIP_CLOSE, gout);
+                            LocalVar sbomBytes = tb.localVar("sbomBytes", tb.invokeVirtual(BAOS_TO_BYTE_ARRAY, bout));
+                            tb.invokeVirtual(BAOS_CLOSE, bout);
 
                             LocalVar supplier = tb.localVar("supplier", tb.lambda(Supplier.class, lc -> {
                                 var capturedBytes = lc.capture(sbomBytes);

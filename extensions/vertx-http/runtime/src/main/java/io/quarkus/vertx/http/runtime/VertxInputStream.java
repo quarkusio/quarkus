@@ -240,11 +240,11 @@ public class VertxInputStream extends InputStream {
         }
 
         protected ByteBuf readBlocking() throws IOException {
-            long expire = System.currentTimeMillis() + timeout;
+            long expire = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(timeout);
             lock.lock();
             try {
                 while (input1 == null && !eof && readException == null) {
-                    long rem = expire - System.currentTimeMillis();
+                    long rem = expire - System.nanoTime();
                     if (rem <= 0) {
                         //everything is broken, if read has timed out we can assume that the underling connection
                         //is wrecked, so just close it
@@ -259,7 +259,7 @@ public class VertxInputStream extends InputStream {
                             throw new BlockingOperationNotAllowedException("Attempting a blocking read on io thread");
                         }
                         waiting = true;
-                        dataAvailable.await(rem, TimeUnit.MILLISECONDS);
+                        dataAvailable.await(rem, TimeUnit.NANOSECONDS);
                     } catch (InterruptedException e) {
                         throw new InterruptedIOException(e.getMessage());
                     } finally {

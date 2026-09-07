@@ -39,10 +39,11 @@ public class VertxBlockingOutput implements VertxOutput {
                 //TODO: do we need this?
                 terminateResponse();
                 request.connection().close();
+                // Lock to signal blocked writers from the event loop: connection error, all must unblock to propagate it.
                 lock.lock();
                 try {
                     if (waitingForDrain) {
-                        drainAvailable.signal();
+                        drainAvailable.signalAll(); // Error received; wake all blocked writers.
                     }
                 } finally {
                     lock.unlock();
@@ -53,10 +54,11 @@ public class VertxBlockingOutput implements VertxOutput {
         request.response().endHandler(new Handler<Void>() {
             @Override
             public void handle(Void event) {
+                // Lock to signal blocked writers from the event loop: response ended, all must unblock.
                 lock.lock();
                 try {
                     if (waitingForDrain) {
-                        drainAvailable.signal();
+                        drainAvailable.signalAll(); // Response ended; wake all blocked writers.
                     }
                 } finally {
                     lock.unlock();
@@ -92,7 +94,7 @@ public class VertxBlockingOutput implements VertxOutput {
             throw new IOException(throwable);
         }
         try {
-            //do all this in the same lock
+            // Lock across wait and write: prevents interleaved writes from concurrent callers.
             lock.lock();
             try {
                 awaitWriteable();
@@ -167,9 +169,11 @@ public class VertxBlockingOutput implements VertxOutput {
                 Handler<Void> handler = new Handler<Void>() {
                     @Override
                     public void handle(Void event) {
+                        // Lock to signal blocked writers from the event loop: drain or close event.
                         lock.lock();
                         try {
                             if (waitingForDrain) {
+                                // signalAll: drain fires at the low-water mark, leaving room for multiple writers to proceed.
                                 drainAvailable.signalAll();
                             }
                         } finally {
@@ -182,7 +186,7 @@ public class VertxBlockingOutput implements VertxOutput {
             }
             try {
                 waitingForDrain = true;
-                drainAvailable.await();
+                drainAvailable.await(); // Park and release lock; resumes when the write queue drains, or connection ends/errors.
             } catch (InterruptedException e) {
                 throw new InterruptedIOException(e.getMessage());
             } finally {

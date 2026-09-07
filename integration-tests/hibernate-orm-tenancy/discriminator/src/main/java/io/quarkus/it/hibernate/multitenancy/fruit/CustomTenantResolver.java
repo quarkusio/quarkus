@@ -11,7 +11,7 @@ import io.vertx.ext.web.RoutingContext;
 
 @PersistenceUnitExtension
 @RequestScoped
-public class CustomTenantResolver implements TenantResolver {
+public class CustomTenantResolver implements TenantResolver<String> {
 
     private static final Logger LOG = Logger.getLogger(CustomTenantResolver.class);
 

@@ -4,5 +4,14 @@
         <packages>
             <package name="org.eclipse.microprofile.config.tck.*"/>
         </packages>
+
+        <!-- https://github.com/microprofile/microprofile-config/pull/814 -->
+        <classes>
+            <class name="org.eclipse.microprofile.config.tck.PropertyExpressionsTest">
+                <methods>
+                    <exclude name="arrayEscapes"/>
+                </methods>
+            </class>
+        </classes>
     </test>
 </suite>

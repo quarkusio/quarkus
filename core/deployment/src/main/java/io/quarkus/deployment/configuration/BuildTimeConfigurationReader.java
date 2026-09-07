@@ -19,6 +19,7 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.function.Consumer;
 
+import io.smallrye.config.common.MapBackedConfigSource;
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.spi.ConfigSource;
 
@@ -185,10 +186,8 @@ public final class BuildTimeConfigurationReader {
                 .withSources(new PropertiesConfigSource(runtimeProperties, "Runtime Properties"));
 
         if (!platformProperties.isEmpty()) {
-            // Our default value configuration source is using an ordinal of Integer.MIN_VALUE
-            // (see io.quarkus.deployment.configuration.DefaultValuesConfigurationSource)
-            builder.withSources(
-                    new DefaultValuesConfigSource(platformProperties, "Quarkus platform", Integer.MIN_VALUE + 1000));
+            // a bit higher than defaults
+            builder.withSources(new MapBackedConfigSource("Quarkus platform", platformProperties, Integer.MIN_VALUE + 1000) {});
         }
 
         for (ConfigClass mapping : buildTimeVisibleMappings) {

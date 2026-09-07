@@ -171,7 +171,7 @@ public class MultipartParser {
                     if (b == LF) {
                         subState = 0;
                         state = 1;//preamble is done
-                        headers = new CaseInsensitiveMap<String>();
+                        headers = new CaseInsensitiveMap<>();
                         partHeaderBytesRead = 0;
                         headerCount = 0;
                         return;
@@ -196,7 +196,7 @@ public class MultipartParser {
                     if (currentString == null || subState != 0) {
                         throw new MalformedMessageException();
                     } else {
-                        currentHeaderName = new String(currentString.toByteArray(), requestCharset);
+                        currentHeaderName = currentString.toString(requestCharset);
                         currentString.reset();
                         subState = 0;
                         state = 2;
@@ -249,7 +249,7 @@ public class MultipartParser {
                 if (subState == 2) {
                     if (b == CR) { //end of headers section
                         headers.put(currentHeaderName.trim(),
-                                Collections.singletonList(new String(currentString.toByteArray(), requestCharset).trim()));
+                                Collections.singletonList(currentString.toString(requestCharset).trim()));
                         if (++headerCount > maxHeaderCount) {
                             throw new HeaderTooLargeException();
                         }
@@ -266,7 +266,7 @@ public class MultipartParser {
                         subState = 0;
                     } else { //next header name
                         headers.put(currentHeaderName.trim(),
-                                Collections.singletonList(new String(currentString.toByteArray(), requestCharset).trim()));
+                                Collections.singletonList(currentString.toString(requestCharset).trim()));
                         if (++headerCount > maxHeaderCount) {
                             throw new HeaderTooLargeException();
                         }

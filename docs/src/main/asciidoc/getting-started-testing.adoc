@@ -1642,6 +1642,9 @@ You can use this tag to isolate the `@QuarkusTest` test in a specific execution 
 </plugin>
 ----
 
+When tags exclude every test of a `@QuarkusTest` class from an execution run, as in the `default-test` execution above,
+Quarkus does not build an application for that class: no Dev Services are started and no container runtime is needed for that run.
+
 [NOTE]
 =====
 Currently `@QuarkusTest` and `@QuarkusIntegrationTest` should not be run in the same test run.

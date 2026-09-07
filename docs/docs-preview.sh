@@ -15,7 +15,7 @@ LOGDIR=$(mktemp -d "${TMPDIR:-/tmp}/quarkus-docs-build-XXXXXX") || exit 1
 
 # The website uses Roq (a Quarkus-based static site generator).
 # Step 4 serves via ./mvnw quarkus:dev — no container runtime required.
-ROQ_PORT="${QUARKUS_HTTP_PORT:-8080}"
+ROQ_PORT="${QUARKUS_HTTP_PORT:-8042}"
 
 # Validate explicitly supplied port
 if [ -n "${QUARKUS_HTTP_PORT:-}" ]; then

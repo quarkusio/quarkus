@@ -166,7 +166,7 @@ upstream changes.
 
 ## Troubleshooting
 
-**Port 8042 already in use** — Another process is using port 8042 (`docs-preview.sh` uses this via `serve-only-latest-guides.sh`, which reads `config/application.properties`).
+**Port 8042 already in use** — Another process is using port 8042.
 First, check whether it is a leftover preview from a previous run
 (e.g. a `java` process launched by `mvnw`). If so, kill it and retry.
 **Always tell the user before using a different port** — do not

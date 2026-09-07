@@ -378,8 +378,9 @@ public class VertxHttpRecorder {
             System.setProperty(DISABLE_WEBSOCKETS_PROP_NAME, "true");
         }
 
+        VertxHttpConfig httpConfiguration = this.httpConfig.getValue();
         if (startVirtual) {
-            initializeVirtual(vertx.get());
+            initializeVirtual(vertx.get(), httpConfiguration.limits());
             shutdown.addShutdownTask(() -> {
                 try {
                     virtualBootstrapChannel.channel().close().sync();
@@ -391,7 +392,6 @@ public class VertxHttpRecorder {
                 }
             });
         }
-        VertxHttpConfig httpConfiguration = this.httpConfig.getValue();
         ManagementConfig managementConfig = this.managementConfig == null ? null : this.managementConfig.getValue();
         if (startSocket && (httpConfiguration.hostEnabled() || httpConfiguration.domainSocketEnabled()
                 || (managementConfig != null && managementConfig.hostEnabled())
@@ -1656,7 +1656,7 @@ public class VertxHttpRecorder {
     protected static ChannelFuture virtualBootstrapChannel;
     public static VirtualAddress VIRTUAL_HTTP = new VirtualAddress("netty-virtual-http");
 
-    private static void initializeVirtual(Vertx vertxRuntime) {
+    private static void initializeVirtual(Vertx vertxRuntime, ServerLimitsConfig limits) {
         if (virtualBootstrap != null) {
             return;
         }
@@ -1696,7 +1696,7 @@ public class VertxHttpRecorder {
                                     options.getMaxFormAttributeSize(),
                                     options.getMaxFormFields(),
                                     options.getMaxFormBufferedBytes(),
-                                    new QueryParamDecoderConfig(),
+                                    new QueryParamDecoderConfig().setMaxSize(limits.maxQueryParameters()),
                                     options.getHttp1Config() != null ? options.getHttp1Config() : new Http1ServerConfig(),
                                     options.isRegisterWebSocketWriteHandlers(),
                                     options.getWebSocketConfig() != null ? options.getWebSocketConfig()

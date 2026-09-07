@@ -61,6 +61,14 @@ public interface ServerLimitsConfig {
     int maxParameters();
 
     /**
+     * The maximum number of query parameters decoded from the request URI.
+     * <p>
+     * Query parameters beyond this limit are ignored.
+     */
+    @WithDefault("1024")
+    int maxQueryParameters();
+
+    /**
      * The maximum size of the headers section within a single MIME part of a {@code multipart/form-data} request.
      * This limits the combined size of all header names and values for each individual part (e.g., the
      * Content-Disposition and Content-Type headers), not the HTTP request headers.

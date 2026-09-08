@@ -130,33 +130,16 @@ For more information about these attributes, inspect the content of the `docs/sr
 As content evolves, you might want to restructure an existing piece of Quarkus content into one or more content types and retire the existing AsciiDoc source file.
 
 If you are retiring or renaming a published Quarkus AsciiDoc source file, ensure that the restructure does not break existing bookmarks and links to the original content.
-Configure a URL redirect in the link:https://github.com/quarkusio/quarkusio.github.io/[Quarkus.io Website] GitHub repository by using the following steps:
+Configure a URL redirect by adding an alias to the updated file:
 
-. Switch to the link:https://github.com/quarkusio/quarkusio.github.io/tree/develop/_redirects/guides[`quarkusio/quarkusio.github.io`] repository, and open the `_redirects/guides` folder.
-. Create a redirection file in Markdown format with a filename that matches the original AsciiDoc source filename that you want to retire.
-. Add the following contents to the Markdown redirection file:
-+
-[source,markdown]
+. Add an `aliases` entry to the file's frontmatter that lists the old URL:
+ +
+[source,yaml]
 ---
-permalink: /guides/<original_asciidoc_filename>/index.html // <1>
-newUrl: /guides/<new_asciidoc_filename> // <2>
+aliases:
+- /guides/<original_asciidoc_filename> // <1>
 ---
-+
-Where:
 <1> The name of the original AsciiDoc source file that you are retiring, without the `.adoc` file extension.
-<2> The name of the AsciiDoc source file that you want to redirect to, without the `.adoc` file extension.
-
-.Example
-
-|===
-|Name of original AsciiDoc source file |Name of target file to redirect to| Redirection file| Example pull request
-
-|`security-getting-started`
-|`security-overview-concept`
-|link:https://github.com/quarkusio/quarkusio.github.io/blob/develop/_redirects/guides/security-getting-started.md[`security-getting-started.md`]
-|link:https://github.com/quarkusio/quarkusio.github.io/pull/1579[PR #1579]
-
-|===
 
 [[anchors-howto]]
 == Use anchors to cross-reference in-file and cross-file content

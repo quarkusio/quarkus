@@ -42,4 +42,15 @@ public interface CycloneDxConfig {
      */
     @WithDefault("false")
     boolean includeLicenseText();
+
+    /**
+     * When Quarkus platform members include product information (a CPE and the extensions/artifacts bound to
+     * an offering) and this option is enabled, each product is represented in the SBOM as a top-level component
+     * of type {@code framework} that {@code provides} the artifacts attributed to it (CycloneDX 1.6
+     * {@code dependency.provides}; recorded as {@code dependsOn} on older schema versions).
+     *
+     * @return whether to perform platform-member product attribution
+     */
+    @WithDefault("true")
+    boolean productAttribution();
 }

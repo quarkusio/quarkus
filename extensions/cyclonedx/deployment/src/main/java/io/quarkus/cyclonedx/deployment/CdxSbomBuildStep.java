@@ -4,9 +4,11 @@ import io.quarkus.cyclonedx.generator.CycloneDxSbomGenerator;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.AppModelProviderBuildItem;
+import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
 import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
 import io.quarkus.deployment.sbom.ApplicationManifestsBuildItem;
 import io.quarkus.deployment.sbom.SbomBuildItem;
+import io.quarkus.sbom.ProductAttribution;
 
 /**
  * Generates SBOMs for packaged applications if the corresponding config is enabled.
@@ -27,6 +29,7 @@ public class CdxSbomBuildStep {
     public void generate(ApplicationManifestsBuildItem applicationManifestsBuildItem,
             OutputTargetBuildItem outputTargetBuildItem,
             AppModelProviderBuildItem appModelProviderBuildItem,
+            CurateOutcomeBuildItem curateOutcomeBuildItem,
             CycloneDxConfig cdxSbomConfig,
             BuildProducer<SbomBuildItem> sbomProducer) {
         if (cdxSbomConfig.skip() || applicationManifestsBuildItem.getManifests().isEmpty()) {
@@ -34,7 +37,10 @@ public class CdxSbomBuildStep {
             return;
         }
         var depInfoProvider = appModelProviderBuildItem.getDependencyInfoProvider().get();
-        for (var manifest : applicationManifestsBuildItem.getManifests()) {
+        for (var original : applicationManifestsBuildItem.getManifests()) {
+            var manifest = cdxSbomConfig.productAttribution()
+                    ? ProductAttribution.augment(original, curateOutcomeBuildItem.getApplicationModel())
+                    : original;
             for (var sbom : CycloneDxSbomGenerator.newInstance()
                     .setManifest(manifest)
                     .setOutputDirectory(outputTargetBuildItem.getOutputDirectory())

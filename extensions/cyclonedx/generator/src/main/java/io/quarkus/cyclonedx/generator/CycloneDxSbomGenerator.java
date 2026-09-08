@@ -93,6 +93,7 @@ public class CycloneDxSbomGenerator {
     private boolean includeLicenseText;
 
     private Version effectiveSchemaVersion;
+    private boolean providesEmitted;
 
     private CycloneDxSbomGenerator() {
     }
@@ -176,14 +177,41 @@ public class CycloneDxSbomGenerator {
         recordDependencies(bom, component, c);
     }
 
-    private static void recordDependencies(Bom bom, ApplicationComponent component, Component c) {
-        if (!component.getDependencies().isEmpty()) {
-            final Dependency d = new Dependency(c.getBomRef());
-            for (var depCoords : sortAlphabetically(component.getDependencies())) {
-                d.addDependency(new Dependency(getPurl(depCoords).toString()));
-            }
-            bom.addDependency(d);
+    private void recordDependencies(Bom bom, ApplicationComponent component, Component c) {
+        Collection<ArtifactCoords> dependsOn = component.getDependencies();
+        final Collection<ArtifactCoords> provides = component.getProvides();
+        final boolean hasProvides = provides != null && !provides.isEmpty();
+        if (dependsOn.isEmpty() && !hasProvides) {
+            return;
         }
+        final Dependency d;
+        if (hasProvides && getSchemaVersion().getVersion() >= 1.6) {
+            // CycloneDX 1.6 "provides" relationship
+            final ProvidesDependency pd = new ProvidesDependency(c.getBomRef());
+            for (var coords : sortAlphabetically(provides)) {
+                pd.addProvides(getPurl(coords).toString());
+            }
+            d = pd;
+            providesEmitted = true;
+        } else {
+            d = new Dependency(c.getBomRef());
+            // "provides" is a CycloneDX 1.6 construct; on older schema versions the provided
+            // refs are represented as plain dependsOn relationships instead
+            if (hasProvides) {
+                if (dependsOn.isEmpty()) {
+                    dependsOn = provides;
+                } else {
+                    final Collection<ArtifactCoords> tmp = new ArrayList<>(dependsOn.size() + provides.size());
+                    tmp.addAll(dependsOn);
+                    tmp.addAll(provides);
+                    dependsOn = tmp;
+                }
+            }
+        }
+        for (var depCoords : sortAlphabetically(dependsOn)) {
+            d.addDependency(new Dependency(getPurl(depCoords).toString()));
+        }
+        bom.addDependency(d);
     }
 
     private void addApplicationComponent(Bom bom, ApplicationComponent component) {
@@ -194,15 +222,33 @@ public class CycloneDxSbomGenerator {
         recordDependencies(bom, component, c);
     }
 
-    private org.cyclonedx.model.Component getComponent(ApplicationComponent component) {
-        final org.cyclonedx.model.Component c = new org.cyclonedx.model.Component();
+    private Component getComponent(ApplicationComponent component) {
+        final Component c = new Component();
         var dep = component.getResolvedDependency();
         if (dep != null) {
             initMavenComponent(dep, c);
+        } else if (component.getCoordinates() != null) {
+            // synthetic Maven component (e.g. a product component); its POM metadata is intentionally
+            // not resolved, product metadata comes from the platform properties instead
+            setMavenCoordinates(component.getCoordinates(), c);
         } else if (component.getDistributionPath() != null || component.getPath() != null) {
             initGenericComponent(component, c);
         } else {
             throw new RuntimeException("Component is not associated with any file system path");
+        }
+
+        // optional overrides carried by synthetic components (e.g. platform-member product components)
+        if (component.getName() != null) {
+            c.setName(component.getName());
+        }
+        if (component.getDescription() != null) {
+            c.setDescription(component.getDescription());
+        }
+        if (component.getType() != null) {
+            c.setType(mapComponentType(component.getType()));
+        }
+        if (component.getCpe() != null) {
+            c.setCpe(component.getCpe());
         }
 
         final List<Property> props = new ArrayList<>(2);
@@ -211,7 +257,12 @@ public class CycloneDxSbomGenerator {
             quarkusScope = dep == null || dep.isRuntimeCp() ? ApplicationComponent.SCOPE_RUNTIME
                     : ApplicationComponent.SCOPE_DEVELOPMENT;
         }
-        addProperty(props, QUARKUS_COMPONENT_SCOPE, quarkusScope);
+        if (ApplicationComponent.SCOPE_EXCLUDED.equals(quarkusScope)) {
+            // emit a real CycloneDX scope for excluded components (e.g. product components)
+            c.setScope(Component.Scope.EXCLUDED);
+        } else {
+            addProperty(props, QUARKUS_COMPONENT_SCOPE, quarkusScope);
+        }
         if (component.getDistributionPath() != null) {
             if (getSchemaVersion().getVersion() >= 1.5) {
                 var occurence = new Occurrence();
@@ -252,6 +303,14 @@ public class CycloneDxSbomGenerator {
 
     private void initMavenComponent(ArtifactCoords coords, Component c) {
         addPomMetadata(coords, c);
+        setMavenCoordinates(coords, c);
+    }
+
+    /**
+     * Sets the Maven coordinate-derived fields (group, name, version, PURL, bom-ref) and the default
+     * {@code library} type. Product components override the type in {@link #getComponent}.
+     */
+    private static void setMavenCoordinates(ArtifactCoords coords, Component c) {
         c.setGroup(coords.getGroupId());
         c.setName(coords.getArtifactId());
         c.setVersion(coords.getVersion());
@@ -259,6 +318,15 @@ public class CycloneDxSbomGenerator {
         c.setPurl(purl);
         c.setBomRef(purl.toString());
         c.setType(Component.Type.LIBRARY);
+    }
+
+    private static Component.Type mapComponentType(String type) {
+        for (var t : Component.Type.values()) {
+            if (t.getTypeName().equalsIgnoreCase(type)) {
+                return t;
+            }
+        }
+        return Component.Type.FRAMEWORK;
     }
 
     private void addPomMetadata(ArtifactCoords dep, org.cyclonedx.model.Component component) {
@@ -446,7 +514,12 @@ public class CycloneDxSbomGenerator {
         final String sbomContent;
         if (format.equalsIgnoreCase("json")) {
             try {
-                sbomContent = BomGeneratorFactory.createJson(specVersion, bom).toJsonString();
+                if (providesEmitted && specVersion.getVersion() >= 1.6) {
+                    // the stock generator has no notion of the CycloneDX 1.6 "provides" relationship
+                    sbomContent = new ProvidesAwareBomJsonGenerator(bom, specVersion).toJsonString();
+                } else {
+                    sbomContent = BomGeneratorFactory.createJson(specVersion, bom).toJsonString();
+                }
             } catch (Throwable e) {
                 throw new RuntimeException("Failed to generate an SBOM in JSON format", e);
             }

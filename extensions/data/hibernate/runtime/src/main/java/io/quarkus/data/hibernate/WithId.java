@@ -56,4 +56,16 @@ public abstract class WithId<Identifier> {
         }
     }
 
+    @MappedSuperclass
+    public abstract static class AutoUUIDv7 {
+        @Id
+        @UuidGenerator(style = UuidGenerator.Style.VERSION_7)
+        public UUID id;
+
+        @Override
+        public String toString() {
+            return this.getClass().getSimpleName() + "<" + id + ">";
+        }
+    }
+
 }

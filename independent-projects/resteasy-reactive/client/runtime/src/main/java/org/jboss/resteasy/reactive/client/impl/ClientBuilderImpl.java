@@ -40,6 +40,7 @@ import org.jboss.resteasy.reactive.client.api.LoggingScope;
 import org.jboss.resteasy.reactive.client.logging.DefaultClientLogger;
 import org.jboss.resteasy.reactive.client.spi.ClientContextResolver;
 import org.jboss.resteasy.reactive.common.jaxrs.ConfigurationImpl;
+import org.jboss.resteasy.reactive.common.jaxrs.MultiFormParamMode;
 import org.jboss.resteasy.reactive.common.jaxrs.MultiQueryParamMode;
 
 import io.vertx.core.buffer.Buffer;
@@ -91,6 +92,7 @@ public class ClientBuilderImpl extends ClientBuilder {
 
     private int maxChunkSize = 8096;
     private MultiQueryParamMode multiQueryParamMode;
+    private MultiFormParamMode multiFormParamMode;
 
     private String userAgent = RestClientRequestContext.DEFAULT_USER_AGENT_VALUE;
     private String domainSocketPath;
@@ -210,6 +212,11 @@ public class ClientBuilderImpl extends ClientBuilder {
 
     public ClientBuilder multiQueryParamMode(MultiQueryParamMode multiQueryParamMode) {
         this.multiQueryParamMode = multiQueryParamMode;
+        return this;
+    }
+
+    public ClientBuilder multiFormParamMode(MultiFormParamMode multiFormParamMode) {
+        this.multiFormParamMode = multiFormParamMode;
         return this;
     }
 
@@ -363,6 +370,7 @@ public class ClientBuilderImpl extends ClientBuilder {
                 null,
                 followRedirects,
                 multiQueryParamMode,
+                multiFormParamMode,
                 loggingScope,
                 clientLogger, userAgent, tlsConfig != null ? tlsConfig.getName().orElse(null) : null,
                 clientRequestCustomizers,

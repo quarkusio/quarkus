@@ -177,6 +177,17 @@ public interface RestClientsConfig {
     Optional<QueryParamStyle> queryParamStyle();
 
     /**
+     * An enumerated type string value with possible values of "MULTI_PAIRS" (default), "COMMA_SEPARATED",
+     * or "ARRAY_PAIRS" that specifies the format in which multiple values for the same
+     * {@code application/x-www-form-urlencoded} form parameter is used.
+     * <p>
+     * Can be overwritten by client-specific settings.
+     * <p>
+     * This property is not applicable to the RESTEasy Client.
+     */
+    Optional<QueryParamStyle> formParamStyle();
+
+    /**
      * Set whether hostname verification is enabled. Default is enabled.
      * This setting should not be disabled in production as it makes the client vulnerable to MITM attacks.
      * <p>
@@ -459,6 +470,15 @@ public interface RestClientsConfig {
          * or "ARRAY_PAIRS" that specifies the format in which multiple values for the same query parameter is used.
          */
         Optional<QueryParamStyle> queryParamStyle();
+
+        /**
+         * An enumerated type string value with possible values of "MULTI_PAIRS" (default), "COMMA_SEPARATED",
+         * or "ARRAY_PAIRS" that specifies the format in which multiple values for the same
+         * {@code application/x-www-form-urlencoded} form parameter is used.
+         * <p>
+         * Quarkus RESTEasy client (provided by the quarkus-resteasy-client dependency) does not support this property.
+         */
+        Optional<QueryParamStyle> formParamStyle();
 
         /**
          * Set whether hostname verification is enabled. Default is enabled.

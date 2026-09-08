@@ -9,10 +9,12 @@ import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.net.URI;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.StringJoiner;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Executor;
@@ -22,9 +24,11 @@ import jakarta.ws.rs.RuntimeType;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.client.Entity;
 import jakarta.ws.rs.core.EntityPart;
+import jakarta.ws.rs.core.Form;
 import jakarta.ws.rs.core.GenericEntity;
 import jakarta.ws.rs.core.GenericType;
 import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.MultivaluedHashMap;
 import jakarta.ws.rs.core.MultivaluedMap;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.ext.MessageBodyWriter;
@@ -42,6 +46,7 @@ import org.jboss.resteasy.reactive.common.core.AbstractResteasyReactiveContext;
 import org.jboss.resteasy.reactive.common.core.Serialisers;
 import org.jboss.resteasy.reactive.common.jaxrs.ConfigurationImpl;
 import org.jboss.resteasy.reactive.common.jaxrs.EntityPartImpl;
+import org.jboss.resteasy.reactive.common.jaxrs.MultiFormParamMode;
 import org.jboss.resteasy.reactive.common.jaxrs.ResponseImpl;
 import org.jboss.resteasy.reactive.common.util.CaseInsensitiveMap;
 import org.jboss.resteasy.reactive.spi.ThreadSetupAction;
@@ -301,6 +306,7 @@ public class RestClientRequestContext extends AbstractResteasyReactiveContext<Re
         } else {
             entityType = entityClass = entityObject.getClass();
         }
+        entityObject = applyMultiFormParamMode(entityObject, entity.getMediaType());
         List<MessageBodyWriter<?>> writers = restClient.getClientContext().getSerialisers().findWriters(configuration,
                 entityClass, entity.getMediaType(),
                 RuntimeType.CLIENT);
@@ -313,6 +319,48 @@ public class RestClientRequestContext extends AbstractResteasyReactiveContext<Re
         }
         // FIXME: exception?
         return null;
+    }
+
+    /**
+     * Applies the {@link MultiFormParamMode} configured on the client to {@code application/x-www-form-urlencoded}
+     * entities. Form parameters that have a single value are always left untouched.
+     */
+    @SuppressWarnings({ "rawtypes", "unchecked" })
+    private Object applyMultiFormParamMode(Object entityObject, MediaType mediaType) {
+        MultiFormParamMode mode = restClient.getMultiFormParamMode();
+        if (mode == null || mode == MultiFormParamMode.MULTI_PAIRS || mediaType == null
+                || !MediaType.APPLICATION_FORM_URLENCODED_TYPE.getType().equalsIgnoreCase(mediaType.getType())
+                || !MediaType.APPLICATION_FORM_URLENCODED_TYPE.getSubtype().equalsIgnoreCase(mediaType.getSubtype())) {
+            return entityObject;
+        }
+        if (entityObject instanceof Form form) {
+            return new Form(applyMultiFormParamMode(form.asMap(), mode));
+        }
+        if (entityObject instanceof MultivaluedMap map) {
+            return applyMultiFormParamMode(map, mode);
+        }
+        return entityObject;
+    }
+
+    private static MultivaluedMap<String, String> applyMultiFormParamMode(MultivaluedMap<String, String> formParams,
+            MultiFormParamMode mode) {
+        MultivaluedMap<String, String> result = new MultivaluedHashMap<>();
+        for (Map.Entry<?, List<String>> entry : formParams.entrySet()) {
+            String name = String.valueOf(entry.getKey());
+            List<String> values = entry.getValue();
+            if (values.size() < 2) {
+                result.put(name, new ArrayList<>(values));
+            } else if (mode == MultiFormParamMode.COMMA_SEPARATED) {
+                StringJoiner joiner = new StringJoiner(",");
+                for (String value : values) {
+                    joiner.add(String.valueOf(value));
+                }
+                result.add(name, joiner.toString());
+            } else { // ARRAY_PAIRS
+                result.put(name + "[]", new ArrayList<>(values));
+            }
+        }
+        return result;
     }
 
     public void setEntity(Object entity, Annotation[] annotations, MediaType mediaType) {

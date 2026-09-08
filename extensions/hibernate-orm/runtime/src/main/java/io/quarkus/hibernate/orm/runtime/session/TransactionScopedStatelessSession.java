@@ -31,7 +31,11 @@ import io.quarkus.runtime.BlockingOperationNotAllowedException;
  */
 public class TransactionScopedStatelessSession extends StatelessSessionLazyDelegator {
 
-    protected static final String TRANSACTION_IS_NOT_ACTIVE = "Transaction is not active, consider adding @Transactional to your method to automatically activate one.";
+    protected static final String TRANSACTION_IS_NOT_ACTIVE = "Transaction is not active. Consider adding @Transactional to your method to automatically activate one."
+            + " Alternatively, set '"
+            + HibernateOrmRuntimeConfig.extensionPropertyKey("request-scoped.stateless-session.allow-write")
+            + "' to 'true' to allow writes outside of transactions like in earlier Quarkus versions."
+            + "' This setting will be removed in a future Quarkus version.";
 
     private final TransactionManager transactionManager;
     private final TransactionSynchronizationRegistry transactionSynchronizationRegistry;
@@ -40,6 +44,7 @@ public class TransactionScopedStatelessSession extends StatelessSessionLazyDeleg
     private final String unitName;
     private final String sessionKey;
     private final boolean requestScopedSessionEnabled;
+    private final boolean requestScopedStatelessSessionAllowWrite;
     private final Instance<RequestScopedStatelessSessionHolder> requestScopedSessions;
 
     public TransactionScopedStatelessSession(
@@ -48,6 +53,7 @@ public class TransactionScopedStatelessSession extends StatelessSessionLazyDeleg
             SessionFactory sessionFactory,
             String unitName,
             boolean requestScopedSessionEnabled,
+            boolean requestScopedStatelessSessionAllowWrite,
             Instance<RequestScopedStatelessSessionHolder> requestScopedSessions) {
         this.transactionManager = transactionManager;
         this.transactionSynchronizationRegistry = transactionSynchronizationRegistry;
@@ -56,6 +62,7 @@ public class TransactionScopedStatelessSession extends StatelessSessionLazyDeleg
         this.unitName = unitName;
         this.sessionKey = TransactionScopedStatelessSession.class.getSimpleName() + "-" + unitName;
         this.requestScopedSessionEnabled = requestScopedSessionEnabled;
+        this.requestScopedStatelessSessionAllowWrite = requestScopedStatelessSessionAllowWrite;
         this.requestScopedSessions = requestScopedSessions;
     }
 
@@ -65,10 +72,11 @@ public class TransactionScopedStatelessSession extends StatelessSessionLazyDeleg
     }
 
     public StatelessSession getDelegateForMutation() {
-        if (!isInTransaction()) {
-            throw new TransactionRequiredException(TRANSACTION_IS_NOT_ACTIVE);
+        var session = acquireSession();
+        if (isInTransaction() || (requestScopedSessionEnabled && requestScopedStatelessSessionAllowWrite)) {
+            return session;
         }
-        return delegate();
+        throw new TransactionRequiredException(TRANSACTION_IS_NOT_ACTIVE);
     }
 
     StatelessSession acquireSession() {

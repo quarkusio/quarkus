@@ -30,6 +30,7 @@ public class JPAConfig {
     private final Map<PersistenceUnitKey, LazyPersistenceUnit> persistenceUnits = new HashMap<>();
     private final Set<String> deactivatedPersistenceUnitNames = new HashSet<>();
     private final boolean requestScopedSessionEnabled;
+    private final boolean requestScopedStatelessSessionAllowWrite;
 
     @Inject
     public JPAConfig(HibernateOrmRuntimeConfig hibernateOrmRuntimeConfig) {
@@ -44,6 +45,7 @@ public class JPAConfig {
             }
         }
         this.requestScopedSessionEnabled = hibernateOrmRuntimeConfig.requestScopedSessionEnabled();
+        this.requestScopedStatelessSessionAllowWrite = hibernateOrmRuntimeConfig.requestScopedStatelessSessionAllowWrite();
     }
 
     void startAll() {
@@ -132,10 +134,17 @@ public class JPAConfig {
     }
 
     /**
-     * Returns boolean value for enabling request scoped sessions
+     * Returns the boolean value for enabling request scoped sessions
      */
     public boolean getRequestScopedSessionEnabled() {
         return this.requestScopedSessionEnabled;
+    }
+
+    /**
+     * Returns the boolean value for enabling write operations outside of transactions in request scoped stateless sessions
+     */
+    public boolean getRequestScopedStatelessSessionAllowWrite() {
+        return requestScopedStatelessSessionAllowWrite;
     }
 
     void shutdown() {

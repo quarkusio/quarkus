@@ -20,10 +20,6 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-devui-observability-store</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.quarkus</groupId>
             <artifactId>quarkus-tls-registry</artifactId>
         </dependency>
         <dependency>
@@ -251,6 +247,7 @@
                     </capabilities>
                     <conditionalDevDependencies>
                         <artifact>${project.groupId}:quarkus-observability-devservices-lgtm:${project.version}</artifact>
+                        <artifact>${project.groupId}:${project.artifactId}-dev:${project.version}</artifact>
                     </conditionalDevDependencies>
                 </configuration>
             </plugin>

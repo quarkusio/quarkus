@@ -313,15 +313,43 @@ public class DefaultDockerContainerLauncher implements DockerContainerArtifactLa
                 .redirectOutput(ProcessBuilder.Redirect.appendTo(logPath.toFile()))
                 .start();
 
-        if (startedFunction != null) {
-            waitForStartedFunction(startedFunction, containerProcess, waitTimeSeconds, logPath);
-            return ListeningAddresses.EMPTY;
-        } else {
-            log.info("Wait for server to start by capturing listening data...");
-            ListeningAddresses result = waitForCapturedListeningData(containerProcess, logPath, waitTimeSeconds);
-            result.address().ifPresent(listeningAddress -> log.infof("Server started on port %s", listeningAddress.port()));
-            return result;
+        try {
+            if (startedFunction != null) {
+                waitForStartedFunction(startedFunction, containerProcess, waitTimeSeconds, logPath);
+                return ListeningAddresses.EMPTY;
+            } else {
+                log.info("Wait for server to start by capturing listening data...");
+                ListeningAddresses result = waitForCapturedListeningData(containerProcess, logPath, waitTimeSeconds);
+                result.address()
+                        .ifPresent(listeningAddress -> log.infof("Server started on port %s", listeningAddress.port()));
+                return result;
+            }
+        } catch (RuntimeException e) {
+            String hint = devServicesNetworkHint(devServicesLaunchResult);
+            if (hint == null) {
+                throw e;
+            }
+            throw new IllegalStateException(e.getMessage() + " " + hint, e);
         }
+    }
+
+    /**
+     * When the application container could not start, explain the most likely cause if the test framework had to
+     * generate a network for it: Dev Services provided configuration for the application, but no build step reported the
+     * network their containers were joined to, so the application container cannot resolve their hostnames.
+     * <p>
+     * {@code null} when this does not apply.
+     */
+    static String devServicesNetworkHint(ArtifactLauncher.InitContext.DevServicesLaunchResult devServicesLaunchResult) {
+        if (!devServicesLaunchResult.manageNetwork() || devServicesLaunchResult.properties().isEmpty()) {
+            return null;
+        }
+        return "The application container was started on the network '" + devServicesLaunchResult.networkId()
+                + "', which was created by the test framework because no Dev Services network id was reported by the build,"
+                + " while Dev Services configured " + String.join(", ", devServicesLaunchResult.properties().keySet())
+                + ". Dev Service containers that are not on that network cannot be reached from the application container."
+                + " The network id is reported when the extension providing the Dev Service depends on"
+                + " io.quarkus:quarkus-devservices-deployment; report this to the maintainers of that extension.";
     }
 
     private void handleAotFileArgs(List<String> args, ContainerRuntime containerRuntime) throws IOException {

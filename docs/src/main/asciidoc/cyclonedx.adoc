@@ -205,6 +205,15 @@ quarkus.cyclonedx.embedded.resource-name=META-INF/custom-sbom.json
 
 The embedded SBOM manifests the application dependencies (the input to the build) rather than the final distribution layout. When <<product-attribution,product attribution>> is enabled (the default), the embedded SBOM also includes the platform-member product components.
 
+=== Native image
+
+When building a native executable, in addition to the classpath resource, the embedded SBOM is also baked into the native binary as the `sbom` and `sbom_length` global symbols, following the https://www.graalvm.org/jdk24/security-guide/native-image/sbom/[GraalVM SBOM specification]. The `sbom` symbol references a GZIP-compressed copy of the SBOM (as required by the specification), which allows tools such as `syft` to extract the SBOM directly from the executable:
+
+[source,bash]
+----
+syft scan ./my-native-app -o cyclonedx-json
+----
+
 [[product-attribution]]
 == Product Attribution
 

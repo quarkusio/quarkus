@@ -8,7 +8,6 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
-import java.util.zip.GZIPInputStream;
 
 import org.cyclonedx.model.Bom;
 import org.cyclonedx.model.Component;
@@ -82,22 +81,6 @@ final class CycloneDxTestUtils {
                     .as("Expected resource %s in %s", resourceName, jarFile.getFileName())
                     .isNotNull();
             try (InputStream is = jar.getInputStream(entry)) {
-                return new JsonParser().parse(is);
-            }
-        }
-    }
-
-    /**
-     * Parses a GZIP-compressed CycloneDX JSON SBOM embedded as a resource inside a JAR file.
-     */
-    static Bom parseCompressedEmbeddedSbom(Path jarFile, String resourceName) throws Exception {
-        assertThat(jarFile.toFile()).exists();
-        try (JarFile jar = new JarFile(jarFile.toFile())) {
-            JarEntry entry = jar.getJarEntry(resourceName);
-            assertThat(entry)
-                    .as("Expected resource %s in %s", resourceName, jarFile.getFileName())
-                    .isNotNull();
-            try (InputStream is = new GZIPInputStream(jar.getInputStream(entry))) {
                 return new JsonParser().parse(is);
             }
         }

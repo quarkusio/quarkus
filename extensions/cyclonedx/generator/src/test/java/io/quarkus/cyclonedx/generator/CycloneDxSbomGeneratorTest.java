@@ -11,6 +11,7 @@ import org.cyclonedx.model.Bom;
 import org.cyclonedx.model.Component;
 import org.cyclonedx.model.Dependency;
 import org.cyclonedx.model.Property;
+import org.cyclonedx.model.component.evidence.Identity;
 import org.cyclonedx.parsers.JsonParser;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -715,6 +716,165 @@ class CycloneDxSbomGeneratorTest {
         org.apache.maven.model.License license = new org.apache.maven.model.License();
         license.setName(licenseName);
         model.addLicense(license);
+        return model;
+    }
+
+    @Test
+    void productComponentRendersFrameworkTypeCpeAndExcludedScope() {
+        ComponentDescriptor product = ComponentDescriptor.builder()
+                .setPurl(Purl.maven("com.redhat.quarkus.platform", "quarkus-camel-bom", "3.20.0", "pom", null))
+                .setCpe("cpe:2.3:a:redhat:camel_quarkus:3.20:*:*:*:*:*:*:*")
+                .setComponentType("framework")
+                .setName("Camel Extensions for Quarkus")
+                .setVersion("3.20")
+                .setScope(ComponentDescriptor.SCOPE_EXCLUDED)
+                .build();
+
+        SbomContribution contribution = SbomContribution.ofComponents(List.of(product));
+
+        List<String> result = CycloneDxSbomGenerator.newInstance()
+                .setSchemaVersion("1.6")
+                .setContributions(List.of(contribution))
+                .generateText();
+
+        Bom bom = parseBom(result.get(0));
+        Component c = bom.getComponents().stream()
+                .filter(x -> product.getBomRef().equals(x.getBomRef()))
+                .findFirst().orElseThrow();
+
+        assertThat(c.getType()).isEqualTo(Component.Type.FRAMEWORK);
+        assertThat(c.getName()).isEqualTo("Camel Extensions for Quarkus");
+        assertThat(c.getVersion()).isEqualTo("3.20");
+        assertThat(c.getCpe()).isEqualTo("cpe:2.3:a:redhat:camel_quarkus:3.20:*:*:*:*:*:*:*");
+        assertThat(c.getScope()).isEqualTo(Component.Scope.EXCLUDED);
+        assertThat(c.getEvidence()).isNotNull();
+        assertThat(c.getEvidence().getIdentities()).isNotNull();
+        assertThat(c.getEvidence().getIdentities())
+                .anyMatch(id -> id.getField() == Identity.Field.CPE
+                        && "cpe:2.3:a:redhat:camel_quarkus:3.20:*:*:*:*:*:*:*".equals(id.getConcludedValue()));
+    }
+
+    @Test
+    void explicitDescriptionOverridesPomDescription() {
+        // A product component uses a Maven (type=pom) PURL, so its effective POM would be resolved.
+        // The explicitly configured description (e.g. platform product-description) must win over the
+        // description declared in the BOM POM.
+        ComponentDescriptor product = ComponentDescriptor.builder()
+                .setPurl(Purl.maven("com.redhat.quarkus.platform", "quarkus-bom", "3.33.3.SP1-redhat-00001", "pom", null))
+                .setComponentType("framework")
+                .setDescription("Red Hat Build of Quarkus")
+                .build();
+
+        EffectiveModelResolver resolver = (coords, repos) -> {
+            if ("quarkus-bom".equals(coords.getArtifactId())) {
+                return pomWithDescription("com.redhat.quarkus.platform", "quarkus-bom",
+                        "3.33.3.SP1-redhat-00001", "Quarkus Universe platform aggregates extensions");
+            }
+            return null;
+        };
+
+        Bom bom = parseBom(CycloneDxSbomGenerator.newInstance()
+                .setFormat("json")
+                .setEffectiveModelResolver(resolver)
+                .setContributions(List.of(SbomContribution.ofComponents(List.of(product))))
+                .generateText().get(0));
+
+        Component c = bom.getComponents().stream()
+                .filter(x -> product.getBomRef().equals(x.getBomRef()))
+                .findFirst().orElseThrow();
+        assertThat(c.getDescription()).isEqualTo("Red Hat Build of Quarkus");
+    }
+
+    @Test
+    void pomDescriptionUsedWhenDescriptorHasNone() {
+        // Without an explicit description, the BOM POM description remains the fallback.
+        ComponentDescriptor mavenComp = ComponentDescriptor.builder()
+                .setPurl(Purl.maven("org.acme", "acme-lib", "1.0.0", "jar", null))
+                .build();
+
+        EffectiveModelResolver resolver = (coords, repos) -> {
+            if ("acme-lib".equals(coords.getArtifactId())) {
+                return pomWithDescription("org.acme", "acme-lib", "1.0.0", "A handy library");
+            }
+            return null;
+        };
+
+        Bom bom = parseBom(CycloneDxSbomGenerator.newInstance()
+                .setFormat("json")
+                .setEffectiveModelResolver(resolver)
+                .setContributions(List.of(SbomContribution.ofComponents(List.of(mavenComp))))
+                .generateText().get(0));
+
+        Component c = bom.getComponents().stream()
+                .filter(x -> mavenComp.getBomRef().equals(x.getBomRef()))
+                .findFirst().orElseThrow();
+        assertThat(c.getDescription()).isEqualTo("A handy library");
+    }
+
+    @Test
+    void explicitLicenseOverridesPomLicense() {
+        // The explicitly configured license on a Maven component must win over the license declared
+        // in the resolved POM, mirroring the description precedence.
+        ComponentDescriptor mavenComp = ComponentDescriptor.builder()
+                .setPurl(Purl.maven("org.acme", "acme-lib", "1.0.0", "jar", null))
+                .addLicense(new LicenseInfo("MIT"))
+                .build();
+
+        EffectiveModelResolver resolver = (coords, repos) -> {
+            if ("acme-lib".equals(coords.getArtifactId())) {
+                return pomWithLicense("org.acme", "acme-lib", "1.0.0", "Apache-2.0");
+            }
+            return null;
+        };
+
+        Bom bom = parseBom(CycloneDxSbomGenerator.newInstance()
+                .setFormat("json")
+                .setEffectiveModelResolver(resolver)
+                .setContributions(List.of(SbomContribution.ofComponents(List.of(mavenComp))))
+                .generateText().get(0));
+
+        Component c = bom.getComponents().stream()
+                .filter(x -> mavenComp.getBomRef().equals(x.getBomRef()))
+                .findFirst().orElseThrow();
+        assertThat(c.getLicenses().getLicenses())
+                .anyMatch(l -> "MIT".equals(l.getId()) || "MIT".equals(l.getName()))
+                .noneMatch(l -> "Apache-2.0".equals(l.getId()) || "Apache-2.0".equals(l.getName()));
+    }
+
+    @Test
+    void pomLicenseUsedWhenDescriptorHasNone() {
+        // Without an explicit license, the POM license remains the fallback.
+        ComponentDescriptor mavenComp = ComponentDescriptor.builder()
+                .setPurl(Purl.maven("org.acme", "acme-lib", "1.0.0", "jar", null))
+                .build();
+
+        EffectiveModelResolver resolver = (coords, repos) -> {
+            if ("acme-lib".equals(coords.getArtifactId())) {
+                return pomWithLicense("org.acme", "acme-lib", "1.0.0", "Apache-2.0");
+            }
+            return null;
+        };
+
+        Bom bom = parseBom(CycloneDxSbomGenerator.newInstance()
+                .setFormat("json")
+                .setEffectiveModelResolver(resolver)
+                .setContributions(List.of(SbomContribution.ofComponents(List.of(mavenComp))))
+                .generateText().get(0));
+
+        Component c = bom.getComponents().stream()
+                .filter(x -> mavenComp.getBomRef().equals(x.getBomRef()))
+                .findFirst().orElseThrow();
+        assertThat(c.getLicenses().getLicenses())
+                .anyMatch(l -> "Apache-2.0".equals(l.getId()) || "Apache-2.0".equals(l.getName()));
+    }
+
+    private static org.apache.maven.model.Model pomWithDescription(String groupId, String artifactId,
+            String version, String description) {
+        org.apache.maven.model.Model model = new org.apache.maven.model.Model();
+        model.setGroupId(groupId);
+        model.setArtifactId(artifactId);
+        model.setVersion(version);
+        model.setDescription(description);
         return model;
     }
 

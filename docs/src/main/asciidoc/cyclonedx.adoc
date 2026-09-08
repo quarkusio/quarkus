@@ -21,6 +21,7 @@ This guide covers:
 * <<distribution-sboms,Distribution SBOMs>> — generating SBOMs that manifest the final application distribution after a build
 * <<vulnerability-scanning,Vulnerability scanning>> — using generated SBOMs with tools such as Grype to identify known vulnerabilities
 * <<serial-number,Serial number>> — how the SBOM serial number is generated and how to make it reproducible
+* <<product-attribution,Product attribution>> — representing platform-member products (offerings) as SBOM components
 * <<extension-sbom-contributions,Extension SBOM contributions>> — contributing additional components to the application SBOM from Quarkus extensions
 
 All SBOM generation in this guide follows the https://cyclonedx.org/[CycloneDX] specification.
@@ -111,13 +112,6 @@ quarkus.cyclonedx.embedded.resource-name=META-INF/custom-sbom.json
 
 The format is determined by the resource name extension: `.json` for JSON, `.xml` for XML.
 
-By default, the embedded SBOM is compressed with GZIP to reduce the application size. The classpath resource name will have a `.gz` extension appended (e.g., `META-INF/sbom/dependency.cdx.json.gz`). If the SBOM is exposed through the <<sbom-endpoint,REST endpoint>>, it will be served with `Content-Encoding: gzip`, so HTTP clients will decompress it transparently. Compression can be disabled with:
-
-[source,properties]
-----
-quarkus.cyclonedx.embedded.compress=false
-----
-
 [NOTE]
 ====
 Embedded dependency SBOMs are also available when running in dev mode (`quarkus dev`).
@@ -134,10 +128,17 @@ quarkus.cyclonedx.endpoint.enabled=true
 ----
 
 The embedded SBOM will be served at `/.well-known/sbom` with the `application/vnd.cyclonedx+json` content type (or `application/vnd.cyclonedx+xml` for XML SBOMs).
-Since the embedded SBOM is compressed by default, the response will include `Content-Encoding: gzip`, which HTTP clients handle transparently.
 The path can be customized using the `quarkus.cyclonedx.endpoint.path` property.
 
 Enabling the endpoint will automatically trigger SBOM embedding, even if `quarkus.cyclonedx.embedded.enabled` is not explicitly set to `true`.
+
+The `quarkus.cyclonedx.embedded.compress` option controls whether the response is GZIP-compressed:
+
+* if set to `true`, the SBOM is always served with `Content-Encoding: gzip`;
+* if set to `false`, the SBOM is always served uncompressed;
+* if not set (the default), compression is negotiated from the request's `Accept-Encoding` header, so the SBOM is served with `Content-Encoding: gzip` only when the client accepts `gzip`.
+
+HTTP clients handle the compressed response transparently.
 
 [NOTE]
 ====
@@ -329,7 +330,7 @@ When <<embedded-dependency-sboms,SBOM embedding>> is enabled, the SBOM is also e
 podman run --rm -v $(pwd):/tmp:z anchore/syft scan myapp -o cyclonedx-json
 ----
 
-NOTE: The SBOM is always GZIP-compressed before being embedded as a global symbol, regardless of the `quarkus.cyclonedx.embedded.compress` setting. If the classpath resource is not already compressed, Quarkus will compress it at native image build time.
+NOTE: The SBOM is always GZIP-compressed before being embedded as a global symbol, as required by the GraalVM SBOM specification and regardless of the `quarkus.cyclonedx.embedded.compress` setting. Since the classpath resource is always stored uncompressed, Quarkus compresses it at native image build time.
 
 === Mutable JAR
 
@@ -501,6 +502,35 @@ This approach is useful for scanning applications that are already deployed, for
 Every generated SBOM includes a `serialNumber` field in `urn:uuid:` format, as defined by the CycloneDX specification. The serial number is derived from the BOM's content hash, which covers metadata, components, dependency relationships, and other structural fields.
 
 When `project.build.outputTimestamp` is configured in the Maven project (the standard property for https://maven.apache.org/guides/mini/guide-reproducible-builds.html[reproducible builds]), the SBOM metadata timestamp is set to that value, making the entire BOM — including its serial number — fully deterministic across identical builds. Without a reproducible timestamp, the metadata timestamp defaults to the current time, meaning the serial number will vary between builds even if the dependencies have not changed.
+
+[[product-attribution]]
+== Product Attribution
+
+Quarkus platforms (such as the Quarkus platform BOM or vendor-provided platforms) may aggregate extensions that belong to commercially supported products, also referred to as _offerings_. When an application is built on such a platform, product attribution represents each supported product as a dedicated component in the generated SBOM and links the application artifacts that belong to that product to it. This lets downstream tools see which parts of an application are covered by a given product and match them against product-level vulnerability and support information, for example by https://nvd.nist.gov/products/cpe[CPE].
+
+Product attribution is enabled by default and applies to every SBOM that includes the core application contribution (dependency, embedded, and distribution SBOMs). It can be disabled with:
+
+[source,properties]
+----
+quarkus.cyclonedx.product-attribution=false
+----
+
+=== How it works
+
+Attribution is driven entirely by metadata the platform provides; an application does not configure products directly. Each imported platform member that declares a product identity (at minimum a CPE) yields, in the generated SBOM, a single product component that:
+
+* has the type `framework` (unless the platform specifies a different type), carries the product's CPE, and has its CycloneDX `scope` set to `excluded`, since the product itself is not a shipped artifact;
+* is marked top-level, so it appears as a direct dependency of the main application component;
+* _provides_ the artifacts attributed to it — the application's runtime extension artifacts that belong to the product, together with their dependencies. These are recorded as CycloneDX 1.6 `dependency.provides` relationships (the product provides/implements those artifacts). On schema versions older than 1.6, where `provides` is not available, the same artifacts are recorded as `dependsOn` relationships instead.
+
+Platform members that declare the *same* product PURL and CPE are merged into a single product component whose attributed artifacts are the union of the members' contributions. Members with different product PURLs remain separate components even if they share a CPE.
+
+Only artifacts that are actually present in the application and match the coordinates the platform attributed to the product are linked. If the application overrides the version of an attributed dependency, that dependency is not attributed to the product.
+
+[NOTE]
+====
+A product component is emitted whenever a platform member declares a CPE, even if none of its attributed artifacts end up present in the application.
+====
 
 == SBOM Component Properties
 

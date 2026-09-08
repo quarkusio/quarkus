@@ -353,8 +353,8 @@ public final class HibernateProcessorSupport {
             // TODO Luca LOG_SESSION_METRICS is no more in 8.0
             //            desc.getProperties().setProperty(AvailableSettings.LOG_SESSION_METRICS,
             //
-            desc.getProperties().setProperty(AvailableSettings.LOG_SESSION_METRICS,
-                    String.valueOf(hibernateOrmConfig.logSessionMetrics().orElse(false)));
+            //            desc.getProperties().setProperty(AvailableSettings.LOG_SESSION_METRICS,
+            //                    String.valueOf(hibernateOrmConfig.logSessionMetrics().orElse(false)));
         }
 
         // Caching

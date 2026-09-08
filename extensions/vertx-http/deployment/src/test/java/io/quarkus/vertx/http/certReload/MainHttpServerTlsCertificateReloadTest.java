@@ -1,5 +1,8 @@
 package io.quarkus.vertx.http.certReload;
 
+import static io.quarkus.vertx.http.certReload.CertReloadTestHelper.assertTlsFails;
+import static io.quarkus.vertx.http.certReload.CertReloadTestHelper.httpsGet;
+import static java.nio.file.StandardCopyOption.*;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -53,7 +56,7 @@ public class MainHttpServerTlsCertificateReloadTest {
 
     @RegisterExtension
     static final QuarkusExtensionTest config = new QuarkusExtensionTest()
-            .withApplicationRoot((jar) -> jar.addClasses(MyBean.class))
+            .withApplicationRoot((jar) -> jar.addClasses(MyBean.class, CertReloadTestHelper.class))
             .overrideConfigKey("quarkus.http.ssl.insecure-requests", "redirect")
             .overrideConfigKey("quarkus.http.ssl.certificate.reload-period", "30s")
             .overrideConfigKey("quarkus.http.ssl.certificate.files", temp.getAbsolutePath() + "/tls.crt")
@@ -107,9 +110,9 @@ public class MainHttpServerTlsCertificateReloadTest {
 
         // Update certs
         Files.copy(new File("target/certificates/reload-B.crt").toPath(),
-                new File(certs, "/tls.crt").toPath(), java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+                new File(certs, "/tls.crt").toPath(), REPLACE_EXISTING);
         Files.copy(new File("target/certificates/reload-B.key").toPath(),
-                new File(certs, "/tls.key").toPath(), java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+                new File(certs, "/tls.key").toPath(), REPLACE_EXISTING);
 
         // Trigger the reload
         TlsCertificateReloader.reload().toCompletableFuture().get(10, TimeUnit.SECONDS);
@@ -145,6 +148,20 @@ public class MainHttpServerTlsCertificateReloadTest {
                 .toCompletionStage().toCompletableFuture().join();
 
         assertThat(response2).isEqualTo(response3);
+
+        // Restore the original certificate (A -> B -> A)
+        Files.copy(new File("target/certificates/reload-A.crt").toPath(),
+                new File(certs, "/tls.crt").toPath(), REPLACE_EXISTING);
+        Files.copy(new File("target/certificates/reload-A.key").toPath(),
+                new File(certs, "/tls.key").toPath(), REPLACE_EXISTING);
+
+        // Trigger the reload
+        TlsCertificateReloader.reload().toCompletableFuture().get(10, TimeUnit.SECONDS);
+
+        // The server should now present certificate A again
+        assertTlsFails(vertx, options2, "/hello");
+        String response4 = httpsGet(vertx, options, "/hello");
+        assertThat(response4).isEqualTo(response1);
     }
 
     public static class MyBean {

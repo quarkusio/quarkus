@@ -1461,7 +1461,7 @@ public final class HibernateOrmProcessor {
             for (String persistenceUnitName : persistenceUnitNames) {
                 var model = modelPerPersistenceUnit.computeIfAbsent(persistenceUnitName,
                         ignored -> new JpaPersistenceUnitModel());
-                model.allModelClassNames().add(modelPackageName);
+                model.modelPackageNames().add(modelPackageName);
             }
         }
 

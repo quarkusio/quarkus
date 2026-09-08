@@ -41,6 +41,7 @@ public class ResteasyReactiveRuntimeRecorder {
         RuntimeConfiguration runtimeConfiguration = new DefaultRuntimeConfiguration(httpRuntimeConfig.readTimeout(),
                 httpRuntimeConfig.body().deleteUploadedFilesOnEnd(), httpRuntimeConfig.body().uploadsDirectory(),
                 httpRuntimeConfig.body().multipart().fileContentTypes().orElse(null),
+                httpRuntimeConfig.body().multipart().fileSizeThreshold().asLongValue(),
                 runtimeConfig.multipart().inputPart().defaultCharset(), maxBodySize,
                 httpRuntimeConfig.limits().maxFormAttributeSize().asLongValue(),
                 httpRuntimeConfig.limits().maxParameters(),

@@ -15,7 +15,9 @@ public interface FileItem {
     boolean isInMemory();
 
     /**
-     * Gives access to the file stored on the file system. This should only be used when {@code isInMemory} is {@code false}
+     * Gives access to the file stored on the file system. When {@code isInMemory} is {@code true}, the content is
+     * written to a temporary file on the first call and {@code isInMemory} returns {@code false} from then on, so this
+     * should only be used when a file is actually needed
      */
     Path getFile();
 

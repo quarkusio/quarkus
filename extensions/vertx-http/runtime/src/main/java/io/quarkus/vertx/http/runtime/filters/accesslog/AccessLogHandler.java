@@ -155,7 +155,7 @@ public class AccessLogHandler implements Handler<RoutingContext> {
         QuarkusRequestWrapper.get(rc.request()).addRequestDoneHandler(new Handler<Void>() {
             @Override
             public void handle(Void event) {
-                accessLogReceiver.logMessage(tokens.readAttribute(rc));
+                accessLogReceiver.logMessage(tokens.readAttribute(rc), rc);
             }
         });
         if (consolidateReroutedRequests) {

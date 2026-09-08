@@ -40,6 +40,7 @@ public class StorageSpecificMariaDBTest {
     @Test
     public void applicationStarts() {
         Dialect dialect = entityManagerFactory.unwrap(SessionFactoryImpl.class).getJdbcServices().getDialect();
-        assertThat(dialect.getTableTypeString().toLowerCase(Locale.ROOT)).contains("innodb");
+        assertThat(dialect.getTableCreationSupport().tableCreationOptions().toLowerCase(Locale.ROOT))
+                .contains("innodb");
     }
 }

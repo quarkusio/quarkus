@@ -21,12 +21,11 @@ categories:
   - id: packaging
     title: Packaging
     description: Application packaging, containers, native images, and build optimization
-    # we probably need some intro explaining the various packaging options
     subcategories:
       - id: packaging-jars
         title: JARs
         guides:
-          # TODO: we need a guide for basic jar building and providing an overview
+          - packaging.adoc
           - aot.adoc
           - jar-tree-shaking.adoc
           - jlink.adoc

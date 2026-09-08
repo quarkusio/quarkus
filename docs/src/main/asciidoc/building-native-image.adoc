@@ -31,6 +31,7 @@ JVM mode is typically better when:
 
 TIP: Start with JVM mode. Move to native when you have a concrete need. Both modes use the same code and the same Quarkus optimizations: native just changes how the binary is produced.
 
+[[comparing-jvm-aot-native]]
 === Comparing JVM, Leyden AOT, and native modes
 
 Native is one of three runtime options Quarkus supports.

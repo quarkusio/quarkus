@@ -21,8 +21,7 @@ public class PeriodicRotatingLoggingTest {
             .withConfigurationResource("application-periodic-file-log-rotating.properties")
             .withApplicationRoot((jar) -> jar
                     .addClass(LoggingTestsHelper.class)
-                    .addAsManifestResource("application.properties", "microprofile-config.properties"))
-            .setLogFileName("PeriodicRotatingLoggingTest.log");
+                    .addAsManifestResource("application.properties", "microprofile-config.properties"));
 
     @Test
     public void periodicRotatingConfigurationTest() {

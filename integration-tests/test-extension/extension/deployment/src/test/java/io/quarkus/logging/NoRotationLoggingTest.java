@@ -21,8 +21,7 @@ public class NoRotationLoggingTest {
             .withConfigurationResource("application-no-log-rotation.properties")
             .withApplicationRoot((jar) -> jar
                     .addClass(LoggingTestsHelper.class)
-                    .addAsManifestResource("application.properties", "microprofile-config.properties"))
-            .setLogFileName("NoRotationLoggingTest.log");
+                    .addAsManifestResource("application.properties", "microprofile-config.properties"));
 
     @Test
     public void sizeRotatingConfigurationTest() {

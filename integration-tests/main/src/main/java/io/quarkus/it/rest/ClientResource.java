@@ -1,6 +1,5 @@
 package io.quarkus.it.rest;
 
-import java.net.URL;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -14,16 +13,18 @@ import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.client.Client;
 import jakarta.ws.rs.core.MediaType;
 
-import org.eclipse.microprofile.config.ConfigProvider;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.eclipse.microprofile.rest.client.RestClientBuilder;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
 
 import io.quarkus.arc.Arc;
+import io.quarkus.vertx.http.HttpServer;
 import io.smallrye.mutiny.Multi;
 
 @Path("/client")
 public class ClientResource {
+    @Inject
+    HttpServer httpServer;
 
     @Inject
     @RestClient
@@ -68,7 +69,7 @@ public class ClientResource {
     @Path("/manual")
     public String manual() throws Exception {
         ProgrammaticRestInterface iface = RestClientBuilder.newBuilder()
-                .baseUrl(new URL(ConfigProvider.getConfig().getValue("test.url", String.class)))
+                .baseUri(httpServer.getLocalBaseUri())
                 .build(ProgrammaticRestInterface.class);
         return iface.get();
     }
@@ -90,7 +91,7 @@ public class ClientResource {
     @Produces("application/json")
     public TestResource.MyData getDataManual() throws Exception {
         ProgrammaticRestInterface iface = RestClientBuilder.newBuilder()
-                .baseUrl(new URL(ConfigProvider.getConfig().getValue("test.url", String.class)))
+                .baseUri(httpServer.getLocalBaseUri())
                 .build(ProgrammaticRestInterface.class);
         return iface.getData();
     }
@@ -121,7 +122,7 @@ public class ClientResource {
     @Produces("application/json")
     public List<ComponentType> complexManual() throws Exception {
         ProgrammaticRestInterface iface = RestClientBuilder.newBuilder()
-                .baseUrl(new URL(ConfigProvider.getConfig().getValue("test.url", String.class)))
+                .baseUri(httpServer.getLocalBaseUri())
                 .build(ProgrammaticRestInterface.class);
         System.out.println(iface.complex());
         return iface.complex();
@@ -139,7 +140,7 @@ public class ClientResource {
     @Produces("application/json")
     public Map<String, String> getAllHeaders(String headerValue) throws Exception {
         ProgrammaticRestInterface client = RestClientBuilder.newBuilder()
-                .baseUrl(new URL(ConfigProvider.getConfig().getValue("test.url", String.class)))
+                .baseUri(httpServer.getLocalBaseUri())
                 .build(ProgrammaticRestInterface.class);
         return client.getAllHeaders();
     }

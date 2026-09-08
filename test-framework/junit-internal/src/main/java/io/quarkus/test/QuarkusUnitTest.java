@@ -102,11 +102,6 @@ public class QuarkusUnitTest extends AbstractQuarkusExtensionTest<QuarkusUnitTes
     }
 
     @Override
-    public QuarkusUnitTest setLogFileName(String logFileName) {
-        return super.setLogFileName(logFileName);
-    }
-
-    @Override
     public QuarkusUnitTest setBeforeAllCustomizer(Runnable beforeAllCustomizer) {
         return super.setBeforeAllCustomizer(beforeAllCustomizer);
     }

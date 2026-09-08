@@ -1,21 +1,21 @@
 package io.quarkus.it.rest.client.main;
 
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 
-import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
 
+import io.quarkus.vertx.http.HttpServer;
 import io.quarkus.vertx.web.Route;
 import io.smallrye.common.annotation.Blocking;
 import io.vertx.ext.web.RoutingContext;
 
 @ApplicationScoped
 public class RedirectResource {
+    @Inject
+    HttpServer httpServer;
     @RestClient
     RedirectResourceClient redirectResourceClient;
-
-    @ConfigProperty(name = "test.url")
-    String testUrl;
 
     @Blocking
     @Route(path = "/redirect", methods = Route.HttpMethod.GET)
@@ -26,7 +26,7 @@ public class RedirectResource {
     @Route(path = "/redirect/response", methods = Route.HttpMethod.POST)
     void redirectResponse(RoutingContext rc) {
         rc.response()
-                .putHeader("Location", "%s/redirect/other".formatted(testUrl))
+                .putHeader("Location", "%s/redirect/other".formatted(httpServer.getLocalBaseUri()))
                 .setStatusCode(302)
                 .end();
     }

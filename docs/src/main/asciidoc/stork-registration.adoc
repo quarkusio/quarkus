@@ -103,7 +103,20 @@ quarkus.stork.my-service.service-registrar.parameters.health-check-interval=10s
 quarkus.stork.my-service.service-registrar.parameters.health-check-deregister-after=1m
 ----
 
-=== Case 6: static IP and port
+=== Case 6: custom instance name
+
+By default, Stork generates an instance identifier using the pattern `serviceName::ip::port`.
+If you need a fixed, predictable instance ID (e.g., for blue/green deployments or to match an external naming convention), set the `instance-name` property:
+
+[source,properties]
+----
+quarkus.stork.my-service.service-registrar.instance-name=my-fixed-instance-id
+----
+
+When set, Stork registers and deregisters the service using this exact ID instead of the auto-generated one.
+The instance name must be unique within the service in the registry.
+
+=== Case 7: static IP and port
 
 Useful when behind a proxy or in production with known IPs:
 

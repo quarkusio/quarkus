@@ -1,8 +1,6 @@
 package org.acme;
 
 import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.Matchers.hasItem;
-import static org.hamcrest.Matchers.matchesPattern;
 
 import java.util.Map;
 
@@ -46,19 +44,19 @@ public class MultipleRegistrarsConfigRegistrationTest {
 
     @Test
     public void test() {
-        RestAssured.get("http://localhost:8500/v1/catalog/service/red-service")
+        RestAssured.get(ConsulTestUtils.serviceUrl("red-service"))
                 .then()
                 .statusCode(200)
-                .body(containsString("\"ServiceName\": \"red-service\""),
-                        containsString("\"ServiceAddress\": \"145.123.145.145\""))
-                .body("ServiceID", hasItem(matchesPattern("^red-service::145.123.145.145::8080")));
+                .body(containsString("\"Service\": \"red-service\""),
+                        containsString("\"Address\": \"145.123.145.145\""),
+                        containsString("\"ID\": \"red-service::145.123.145.145::8080\""));
 
-        RestAssured.get("http://localhost:8500/v1/catalog/service/blue-service")
+        RestAssured.get(ConsulTestUtils.serviceUrl("blue-service"))
                 .then()
                 .statusCode(200)
-                .body(containsString("\"ServiceName\": \"blue-service\""),
-                        containsString("\"ServiceAddress\": \"145.123.145.157\""),
-                        containsString("\"ServiceID\": \"blue-service::145.123.145.157::8080\""));
+                .body(containsString("\"Service\": \"blue-service\""),
+                        containsString("\"Address\": \"145.123.145.157\""),
+                        containsString("\"ID\": \"blue-service::145.123.145.157::8080\""));
 
     }
 

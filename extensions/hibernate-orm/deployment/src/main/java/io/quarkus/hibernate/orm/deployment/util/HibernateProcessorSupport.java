@@ -37,6 +37,7 @@ import io.quarkus.deployment.builditem.HotDeploymentWatchedFileBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.hibernate.orm.deployment.HibernateOrmConfig;
 import io.quarkus.hibernate.orm.deployment.HibernateOrmConfigPersistenceUnit;
+import io.quarkus.hibernate.orm.deployment.HibernateOrmConfigPersistenceUnit.HibernateOrmConfigPersistenceValidation.ValidationMode;
 import io.quarkus.hibernate.orm.deployment.spi.DatabaseKindDialectBuildItem;
 import io.quarkus.hibernate.orm.deployment.spi.SqlLoadScriptDefaultBuildItem;
 import io.quarkus.hibernate.orm.runtime.HibernateOrmRuntimeConfig;
@@ -453,6 +454,11 @@ public final class HibernateProcessorSupport {
                         .stream()
                         .map(Enum::name)
                         .collect(Collectors.joining(",")));
+        // ORM 8 controls validation-derived DDL independently of lifecycle validation.
+        if (!config.validation().mode().contains(ValidationMode.AUTO)
+                && !config.validation().mode().contains(ValidationMode.DDL)) {
+            descriptor.getProperties().setProperty(AvailableSettings.APPLY_VALIDATION_CONSTRAINTS, "disabled");
+        }
     }
 
     private static void configureQuoting(QuarkusPersistenceUnitDescriptor desc,

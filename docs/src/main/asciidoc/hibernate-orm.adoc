@@ -2057,6 +2057,8 @@ and as `none` otherwise.
 - `ddl` -- Hibernate Validator constraints will be considered for the <<dev-mode,DDL operations>>
 - `none` -- Hibernate Validator integration will be disabled.
 
+With `none` or `callback` alone, validation constraints do not affect the generated DDL.
+
 While all constraints with corresponding Jakarta Validation rules will apply during the `callback` validation,
 in the `ddl` mode, only a subset of constraints is used to influence the DDL.
 In the Hibernate Validator documentation, you can find link:{hibernate-validator-docs-url}#section-builtin-constraints[the list of available constraints] and their impact on the DDL generation.

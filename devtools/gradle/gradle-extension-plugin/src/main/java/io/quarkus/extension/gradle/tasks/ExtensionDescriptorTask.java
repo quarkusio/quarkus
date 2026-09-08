@@ -27,6 +27,7 @@ import org.gradle.api.file.FileCollection;
 import org.gradle.api.tasks.Classpath;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputFiles;
+import org.gradle.api.tasks.Optional;
 import org.gradle.api.tasks.OutputFile;
 import org.gradle.api.tasks.PathSensitive;
 import org.gradle.api.tasks.PathSensitivity;
@@ -133,6 +134,12 @@ public class ExtensionDescriptorTask extends DefaultTask {
     @Input
     public Map<String, String> getProjectInfo() {
         return projectInfo;
+    }
+
+    @Input
+    @Optional
+    public String getRequiresQuarkusCore() {
+        return quarkusExtensionConfiguration.getRequiresQuarkusCore().getOrNull();
     }
 
     @Input
@@ -304,6 +311,11 @@ public class ExtensionDescriptorTask extends DefaultTask {
             }
         }
 
+        final String requiresQuarkusVersion = getRequiresQuarkusVersionRange();
+        if (requiresQuarkusVersion != null) {
+            props.setProperty(BootstrapConstants.PROP_REQUIRES_QUARKUS_VERSION, requiresQuarkusVersion);
+        }
+
         try {
             Files.createDirectories(metaInfDir);
             try (BufferedWriter writer = Files
@@ -465,6 +477,27 @@ public class ExtensionDescriptorTask extends DefaultTask {
             ObjectNode metadata = getMetadataNode(extObject);
             metadata.put("built-with-quarkus-core", coreVersion);
         }
+        String versionRange = getRequiresQuarkusVersionRange();
+        if (versionRange != null) {
+            ObjectNode metadata = getMetadataNode(extObject);
+            if (!metadata.has("requires-quarkus-core")) {
+                metadata.put("requires-quarkus-core", versionRange);
+            }
+        }
+    }
+
+    private String getRequiresQuarkusVersionRange() {
+        final String explicitRange = getRequiresQuarkusCore();
+        return explicitRange != null ? explicitRange : toVersionRange(getQuarkusCoreVersionOrNull());
+    }
+
+    private static String toVersionRange(String version) {
+        if (version == null) {
+            return null;
+        }
+        String[] versionItems = version.split("-");
+        versionItems = versionItems[0].split("\\.");
+        return "[" + versionItems[0] + "." + (versionItems.length > 1 ? versionItems[1] : "0") + ",)";
     }
 
     private static void appendCapability(Capability capability, StringBuilder buf) {

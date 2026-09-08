@@ -17,7 +17,6 @@ public class HibernateOrmDevControllerFailingDDLGenerationTestCase {
             .withApplicationRoot((jar) -> jar
                     .addClasses(MyEntityWithFailingDDLGeneration.class,
                             TypeWithUnsupportedSqlCode.class,
-                            H2CustomDialect.class,
                             HibernateOrmDevInfoServiceTestResource.class)
                     .addAsResource("application-generation-none-customh2.properties", "application.properties")
                     .addAsResource("import-custom-table-name.sql", "import.sql"));

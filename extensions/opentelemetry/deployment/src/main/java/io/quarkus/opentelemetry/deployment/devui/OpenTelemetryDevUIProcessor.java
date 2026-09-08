@@ -13,6 +13,7 @@ import io.quarkus.opentelemetry.runtime.config.build.TracesDevUiBuildTimeConfig;
 import io.quarkus.opentelemetry.runtime.devui.DevUiTracesSpanProcessor;
 import io.quarkus.opentelemetry.runtime.devui.DevUiTracesStoreProducer;
 import io.quarkus.opentelemetry.runtime.devui.OpenTelemetryDevUIJsonRPCService;
+
 // FIXME OTel must be enabled
 public class OpenTelemetryDevUIProcessor {
 

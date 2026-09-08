@@ -7,15 +7,15 @@ import io.quarkus.devui.observability.store.TelemetryStore;
  * Dev-mode holder that keeps the captured traces store alive across live reloads.
  *
  * On a dev-mode live reload Quarkus recreates the application's runtime classloader
- * (and with it the ArC container and all beans), but the OpenTelemetry runtime jar is
- * an immutable dependency loaded by the base runtime classloader, which is reused
+ * (and with it the ArC container and all beans), but {@code quarkus-opentelemetry-dev}
+ * is an immutable dependency loaded by the base runtime classloader, which is reused
  * across app-code reloads. Keeping the store in a static field here therefore lets the
  * captured spans survive a reload, even though {@link DevUiTracesStoreProducer} runs
  * again and produces a fresh bean each time. The state is discarded only on a full dev
  * restart (e.g. a dependency or build-time config change) or JVM exit.
  *
- * This class is only ever touched in dev mode (the producer that calls it is registered
- * exclusively by the dev-only build step), so it adds no production footprint.
+ * This class only ever exists in dev mode: it ships in {@code quarkus-opentelemetry-dev},
+ * a conditional dev dependency, so it adds no production footprint.
  */
 public final class DevUiTracesStoreHolder {
 

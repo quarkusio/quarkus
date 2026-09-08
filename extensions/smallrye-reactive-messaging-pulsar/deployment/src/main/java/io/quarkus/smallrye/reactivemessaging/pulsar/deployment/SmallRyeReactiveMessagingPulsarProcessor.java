@@ -1,6 +1,8 @@
 package io.quarkus.smallrye.reactivemessaging.pulsar.deployment;
 
 import java.util.Collection;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.logging.Level;
 
@@ -15,6 +17,7 @@ import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
+import io.quarkus.avro.spi.AvroTrustedClassBuildItem;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -56,6 +59,21 @@ public class SmallRyeReactiveMessagingPulsarProcessor {
     @BuildStep
     void logging(BuildProducer<LogCategoryBuildItem> log) {
         log.produce(new LogCategoryBuildItem("org.apache.pulsar.common.util.netty.DnsResolverUtil", Level.OFF));
+    }
+
+    @BuildStep
+    void trustProtobufMessagesForAvro(CombinedIndexBuildItem combinedIndex,
+            BuildProducer<AvroTrustedClassBuildItem> trustedClasses) {
+        // Protobuf-generated messages used as Pulsar payloads may be deserialized through Avro. Since Avro 1.12.2
+        // validates classes against a security validator, mark them as trusted so the quarkus-avro extension (if
+        // present) allows them. This has no effect if quarkus-avro is not on the classpath.
+        Set<String> messages = new HashSet<>();
+        for (ClassInfo message : combinedIndex.getIndex().getAllKnownSubclasses(DotNames.PROTOBUF_GENERATED)) {
+            messages.add(message.name().toString());
+        }
+        if (!messages.isEmpty()) {
+            trustedClasses.produce(new AvroTrustedClassBuildItem(messages));
+        }
     }
 
     @BuildStep

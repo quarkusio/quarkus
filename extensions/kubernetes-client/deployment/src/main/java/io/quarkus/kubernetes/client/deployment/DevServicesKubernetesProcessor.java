@@ -87,6 +87,9 @@ public class DevServicesKubernetesProcessor {
     private static final String KUBERNETES_CLIENT_NAMESPACE = "quarkus.kubernetes-client.namespace";
     private static final String DEFAULT_MASTER_URL_ENDING_WITH_SLASH = Config.DEFAULT_MASTER_URL + "/";
 
+    public static final String DEVSERVICES_METADATA_PREFIX = "quarkus.devservices.internal.";
+    public static final String KUBECONFIG_DOWNLOAD_KEY = DEVSERVICES_METADATA_PREFIX + "kubeconfig.yaml";
+
     static final String DEV_SERVICE_LABEL = "quarkus-dev-service-kubernetes";
     static final int KUBERNETES_PORT = 6443;
     private static final ContainerLocator KubernetesContainerLocator = locateContainerWithLabels(KUBERNETES_PORT,
@@ -169,7 +172,8 @@ public class DevServicesKubernetesProcessor {
                         KUBERNETES_CLIENT_CLIENT_CERT_DATA, c -> c.getUser().getClientCertificateData(),
                         KUBERNETES_CLIENT_CLIENT_KEY_DATA, c -> c.getUser().getClientKeyData(),
                         KUBERNETES_CLIENT_CLIENT_KEY_ALGO, c -> Config.getKeyAlgorithm(null, c.getUser().getClientKeyData()),
-                        KUBERNETES_CLIENT_NAMESPACE, c -> "default"))
+                        KUBERNETES_CLIENT_NAMESPACE, c -> "default",
+                        KUBECONFIG_DOWNLOAD_KEY, c -> KubeConfigUtils.serializeKubeConfig(c.kubeConfig)))
                 .postStartHook(c -> {
                     log.info(
                             "Dev Services for Kubernetes started. Other Quarkus applications in dev mode will find the "
@@ -345,7 +349,8 @@ public class DevServicesKubernetesProcessor {
                 KUBERNETES_CLIENT_CLIENT_CERT_DATA, user.getClientCertificateData(),
                 KUBERNETES_CLIENT_CLIENT_KEY_DATA, user.getClientKeyData(),
                 KUBERNETES_CLIENT_CLIENT_KEY_ALGO, Config.getKeyAlgorithm(null, user.getClientKeyData()),
-                KUBERNETES_CLIENT_NAMESPACE, "default");
+                KUBERNETES_CLIENT_NAMESPACE, "default",
+                KUBECONFIG_DOWNLOAD_KEY, KubeConfigUtils.serializeKubeConfig(kubeConfig));
     }
 
     @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
@@ -491,7 +496,7 @@ public class DevServicesKubernetesProcessor {
             final Cluster cluster = new Cluster();
             cluster.setName(APISERVER);
             cluster.setCluster(new ClusterSpec());
-            cluster.getCluster().setServer(url);
+            cluster.getCluster().setServer("https://" + url);
             cluster.getCluster().setCertificateAuthorityData((base64(getFileContentFromContainer(API_SERVER_CA))));
             final User user = new User();
             user.setName(APISERVER);
@@ -504,6 +509,8 @@ public class DevServicesKubernetesProcessor {
             context.getContext().setCluster(cluster.getName());
             context.getContext().setUser(user.getName());
             final KubeConfig config = new KubeConfig();
+            config.setApiVersion("v1");
+            config.setKind("Config");
             config.setUsers(singletonList(user));
             config.setClusters(singletonList(cluster));
             config.setContexts(singletonList(context));

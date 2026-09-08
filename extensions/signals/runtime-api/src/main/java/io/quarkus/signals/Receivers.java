@@ -84,6 +84,12 @@ public interface Receivers {
     interface ReceiverInfo {
 
         /**
+         * @return a human-readable identifier ({@code declaringClassName#methodName} for a declarative receiver), or
+         *         {@code null} if not available (e.g. for a programmatic receiver)
+         */
+        String name();
+
+        /**
          * @return the received signal type
          */
         Type signalType();
@@ -117,6 +123,16 @@ public interface Receivers {
      * @see Receivers#newReceiver(Class)
      */
     interface ReceiverDefinition<SIGNAL> {
+
+        /**
+         * Sets a human-readable name of the built receiver, useful for logging and monitoring.
+         * By default, a programmatic receiver has no name.
+         *
+         * @param name the receiver name
+         * @return self
+         * @see ReceiverInfo#name()
+         */
+        ReceiverDefinition<SIGNAL> setName(String name);
 
         /**
          * Sets the qualifiers of the built receiver.

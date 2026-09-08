@@ -44,7 +44,12 @@ public abstract class InvokerReceiver<SIGNAL, RESPONSE> implements Receiver<SIGN
         }
     }
 
-    public record InvokerReceiverInfo(short signalArgPosition, boolean receiveContext, short totalParams) {
+    public record InvokerReceiverInfo(short signalArgPosition, boolean receiveContext, short totalParams, String name) {
+    }
+
+    @Override
+    public String name() {
+        return receiveInfo.name();
     }
 
     @Override

@@ -233,6 +233,11 @@ public class ReceiverManager implements Receivers, Signals {
         }
 
         @Override
+        public String name() {
+            return delegate.name();
+        }
+
+        @Override
         public java.lang.reflect.Type signalType() {
             return delegate.signalType();
         }

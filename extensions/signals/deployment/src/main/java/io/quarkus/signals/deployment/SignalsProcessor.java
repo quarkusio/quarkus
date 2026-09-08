@@ -278,7 +278,8 @@ class SignalsProcessor {
                         Expr receiveInfo = bc.new_(InvokerReceiverInfo.class,
                                 Const.of(receiver.getSignalParam().position()),
                                 Const.of(receiver.getSignalParam().type().name().equals(DotNames.SIGNAL_CONTEXT)),
-                                Const.of((short) receiver.getMethod().parametersCount()));
+                                Const.of((short) receiver.getMethod().parametersCount()),
+                                Const.of(receiver.getMethod().declaringClass().name() + "#" + receiver.getMethod().name()));
                         bc.invokeSpecial(ConstructorDesc.of(InvokerReceiver.class, Invoker.class, InvokerReceiverInfo.class),
                                 cc.this_(), invoker, receiveInfo);
 
@@ -359,6 +360,19 @@ class SignalsProcessor {
                 .creator(SignalBeanCreator.class)
                 .forceApplicationClass()
                 .done());
+    }
+
+    @BuildStep
+    void registerTracing(Capabilities capabilities, SignalsBuildTimeConfig config,
+            BuildProducer<AdditionalBeanBuildItem> beans) {
+        if (config.telemetry().tracesEnabled() && capabilities.isPresent(Capability.OPENTELEMETRY_TRACER)) {
+            // The classes are referenced by name so that OpenTelemetry types are not loaded when the capability is absent
+            beans.produce(AdditionalBeanBuildItem.builder()
+                    .addBeanClasses(
+                            "io.quarkus.signals.runtime.tracing.TracingSignalMetadataEnricher",
+                            "io.quarkus.signals.runtime.tracing.TracingReceiverInterceptor")
+                    .build());
+        }
     }
 
     @BuildStep

@@ -1,18 +1,32 @@
 package io.quarkus.grpc.transcoding;
 
 import static io.restassured.RestAssured.given;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 
 import org.junit.jupiter.api.Test;
 
+import io.quarkus.grpc.GrpcClient;
 import io.quarkus.test.junit.QuarkusTest;
 
 @QuarkusTest
 class TranscodingTest {
 
+    @GrpcClient("transcoding-service")
+    MutinyTranscodingServiceGrpc.MutinyTranscodingServiceStub client;
+
+    @Test
+    void testRegularGrpc() {
+        EchoResponse response = client.getSimple(
+                SinglePathRequest.newBuilder().setItemId("item-123").build())
+                .await().indefinitely();
+        assertThat(response.getItemId()).isEqualTo("item-123");
+    }
+
     @Test
     void testSinglePathParam() {
         given()
+                .contentType("application/json")
                 .when().get("/v1/items/item-123")
                 .then()
                 .statusCode(200)
@@ -22,6 +36,7 @@ class TranscodingTest {
     @Test
     void testMultiplePathParams() {
         given()
+                .contentType("application/json")
                 .when().get("/v1/users/user-456/items/item-789")
                 .then()
                 .statusCode(200)
@@ -32,6 +47,7 @@ class TranscodingTest {
     @Test
     void testPathAndQueryParam() {
         given()
+                .contentType("application/json")
                 .queryParam("revision", 3)
                 .when().get("/v1/items/item-123/revision")
                 .then()
@@ -43,6 +59,7 @@ class TranscodingTest {
     @Test
     void testMultiplePathAndQueryParams() {
         given()
+                .contentType("application/json")
                 .queryParam("color", "red")
                 .queryParam("size", "L")
                 .when().get("/v1/users/user-456/items/item-789/filter")

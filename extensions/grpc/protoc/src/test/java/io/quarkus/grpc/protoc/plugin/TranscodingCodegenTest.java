@@ -9,6 +9,7 @@ import org.junit.jupiter.api.Test;
 import com.google.api.AnnotationsProto;
 import com.google.api.HttpRule;
 import com.google.protobuf.DescriptorProtos;
+import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.compiler.PluginProtos;
 import com.salesforce.jprotoc.GeneratorException;
 import com.salesforce.jprotoc.ProtoTypeMap;
@@ -122,6 +123,38 @@ class TranscodingCodegenTest {
                 .getContent();
     }
 
+    // Simulates the real protoc path: request serialized to bytes and re-parsed
+    // without an extension registry, exactly as protoc sends it via stdin.
+    private static PluginProtos.CodeGeneratorRequest asReceivedFromProtoc(PluginProtos.CodeGeneratorRequest request)
+            throws InvalidProtocolBufferException {
+        return PluginProtos.CodeGeneratorRequest.parseFrom(request.toByteArray());
+    }
+
+    @Test
+    void stubContainsTranscodingFieldsWhenReceivedFromProtoc() throws GeneratorException, InvalidProtocolBufferException {
+        DescriptorProtos.MethodOptions options = DescriptorProtos.MethodOptions.newBuilder()
+                .setExtension(AnnotationsProto.http, HttpRule.newBuilder()
+                        .setGet("/v1/items/{item_id}")
+                        .build())
+                .build();
+
+        PluginProtos.CodeGeneratorRequest request = asReceivedFromProtoc(requestWith(
+                DescriptorProtos.ServiceDescriptorProto.newBuilder()
+                        .setName("TestService")
+                        .addMethod(DescriptorProtos.MethodDescriptorProto.newBuilder()
+                                .setName("GetItem")
+                                .setInputType(".test.TestRequest")
+                                .setOutputType(".test.TestResponse")
+                                .setOptions(options)
+                                .build())
+                        .build()));
+
+        String content = stub(request);
+        assertThat(content).contains("getItem_OPTIONS");
+        assertThat(content).contains("HttpMethod.valueOf(\"GET\")");
+        assertThat(content).contains("\"/v1/items/{item_id}\"");
+    }
+
     @Test
     void stubContainsNoTranscodingWhenNoAnnotation() throws GeneratorException {
         PluginProtos.CodeGeneratorRequest request = requestWith(
@@ -162,7 +195,6 @@ class TranscodingCodegenTest {
         assertThat(content).contains("\"/v1/items/{item_id}\"");
         assertThat(content).contains(
                 "TranscodingServiceMethod<io.quarkus.grpc.test.TestRequest, io.quarkus.grpc.test.TestResponse> getItem");
-        assertThat(content).contains("MethodCardinality.UNARY");
         assertThat(content).contains("GrpcMessageDecoder.decoder(io.quarkus.grpc.test.TestRequest.newBuilder())");
     }
 

@@ -63,6 +63,9 @@ message EchoResponse {
 }
 
 service TranscodingService {
+
+    rpc GetSimple(SinglePathRequest) returns (EchoResponse);
+
     rpc GetSinglePath(SinglePathRequest) returns (EchoResponse) {
         option (google.api.http) = {
             get: "/v1/items/{item_id}"

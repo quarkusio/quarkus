@@ -7,6 +7,11 @@ import io.smallrye.mutiny.Uni;
 public class TranscodingServiceImpl extends MutinyTranscodingServiceGrpc.TranscodingServiceImplBase {
 
     @Override
+    public Uni<EchoResponse> getSimple(SinglePathRequest req) {
+        return Uni.createFrom().item(EchoResponse.newBuilder().setItemId(req.getItemId()).build());
+    }
+
+    @Override
     public Uni<EchoResponse> getSinglePath(SinglePathRequest request) {
         return Uni.createFrom().item(
                 EchoResponse.newBuilder()

@@ -224,6 +224,11 @@ public class ApplicationModelBuilder {
         return this;
     }
 
+    public ApplicationModelBuilder removeReloadableWorkspaceModule(ArtifactKey key) {
+        this.reloadableWorkspaceModules.remove(key);
+        return this;
+    }
+
     public ApplicationModelBuilder addReloadableWorkspaceModules(Collection<ArtifactKey> key) {
         this.reloadableWorkspaceModules.addAll(key);
         return this;

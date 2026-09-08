@@ -18,8 +18,10 @@ import io.quarkus.test.QuarkusUnitTest;
 
 /**
  * Guards the design's "not a bean outside dev": in a non-dev build the capture
- * processor must not be in the active tracer pipeline, even though its class ships in
- * the runtime jar. Directly catches accidental ArC auto-discovery.
+ * processor must not be in the active tracer pipeline, even though {@code
+ * quarkus-opentelemetry-dev} is on this module's classpath (the deployment module
+ * depends on it to compile the build steps). Directly catches accidental ArC
+ * auto-discovery.
  */
 public class OpenTelemetryDevUIProdGuardTest {
 

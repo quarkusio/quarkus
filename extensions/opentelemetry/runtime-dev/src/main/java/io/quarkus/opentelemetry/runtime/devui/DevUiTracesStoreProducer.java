@@ -9,13 +9,16 @@ import io.quarkus.opentelemetry.runtime.config.runtime.TracesDevUiRuntimeConfig;
 /**
  * Produces the single dev-mode traces store, sized from runtime config.
  *
- * NOTE: this class deliberately carries NO class-level bean-defining annotation
- * (no {@code @Dependent}/{@code @Singleton}). The OTel runtime jar is a bean
- * archive (it ships a Jandex index), so any class annotated with a scope here
- * would be auto-discovered as a bean in ALL modes — defeating the dev-only gate.
- * Instead this class (and the processor + JSON-RPC service) is registered as a
- * bean ONLY by the dev-only build step via {@code AdditionalBeanBuildItem} with an
- * explicit default scope. The {@code @Produces} method still carries its own scope.
+ * This class lives in {@code quarkus-opentelemetry-dev}, a conditional dev dependency
+ * of the OTel extension, so it is only ever on the application classpath in dev mode.
+ *
+ * NOTE: it additionally carries NO class-level bean-defining annotation (no
+ * {@code @Dependent}/{@code @Singleton}). This jar is a bean archive (it ships a Jandex
+ * index), so a scope here would make it an auto-discovered bean whenever the jar is
+ * present — including dev runs where the traces capture is turned off. Instead this
+ * class (and the processor + JSON-RPC service) is registered as a bean ONLY by the
+ * dev-only build step via {@code AdditionalBeanBuildItem} with an explicit default
+ * scope. The {@code @Produces} method still carries its own scope.
  */
 public class DevUiTracesStoreProducer {
 

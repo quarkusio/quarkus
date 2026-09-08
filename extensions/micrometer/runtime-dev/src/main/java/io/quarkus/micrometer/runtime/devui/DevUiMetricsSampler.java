@@ -20,8 +20,12 @@ import io.vertx.core.Vertx;
  * MeterRegistry and records each meter's primary statistic into the shared metrics store.
  * Reads run off the request path on the timer thread.
  *
+ * Ships in {@code quarkus-micrometer-dev}, a conditional dev dependency, so it is never on
+ * a prod/native classpath at all.
+ *
  * NOTE: NO class-level scope annotation — registered as a bean only by the dev-only build
- * step (which supplies {@code @Singleton}), so it never exists in prod/native.
+ * step (which supplies {@code @Singleton}), so it is not auto-discovered even in dev runs
+ * where the capture is suppressed (see {@code MicrometerMetricsDevUIProcessor}).
  */
 public class DevUiMetricsSampler {
 

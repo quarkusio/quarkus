@@ -17,7 +17,7 @@ import io.quarkus.devui.observability.store.TelemetryStore;
  *
  * NOTE: NO class-level scope annotation on purpose — see the note on
  * {@link DevUiTracesStoreProducer}: a scope here would make this an auto-discovered
- * bean in prod/native and break the dev-only guard.
+ * bean whenever {@code quarkus-opentelemetry-dev} is present and break the gate.
  *
  * onEnd runs on the app's span-completion path (often the request thread), so it must
  * not block: the store's buffer add is O(1) and the broadcast is best-effort / drops.

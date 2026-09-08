@@ -13,6 +13,8 @@ import com.google.api.HttpRule;
 import com.google.common.base.Strings;
 import com.google.common.html.HtmlEscapers;
 import com.google.protobuf.DescriptorProtos;
+import com.google.protobuf.ExtensionRegistry;
+import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.compiler.PluginProtos;
 import com.salesforce.jprotoc.Generator;
 import com.salesforce.jprotoc.GeneratorException;
@@ -49,15 +51,27 @@ public class MutinyGrpcGenerator extends Generator {
     @Override
     public List<PluginProtos.CodeGeneratorResponse.File> generateFiles(PluginProtos.CodeGeneratorRequest request)
             throws GeneratorException {
-        ProtoTypeMap typeMap = ProtoTypeMap.of(request.getProtoFileList());
+        final PluginProtos.CodeGeneratorRequest req = withExtensionRegistry(request);
+        ProtoTypeMap typeMap = ProtoTypeMap.of(req.getProtoFileList());
 
-        List<DescriptorProtos.FileDescriptorProto> protosToGenerate = request.getProtoFileList().stream()
-                .filter(protoFile -> request.getFileToGenerateList().contains(protoFile.getName()))
+        List<DescriptorProtos.FileDescriptorProto> protosToGenerate = req.getProtoFileList().stream()
+                .filter(protoFile -> req.getFileToGenerateList().contains(protoFile.getName()))
                 .collect(Collectors.toList());
 
         List<ServiceContext> services = findServices(protosToGenerate, typeMap);
         validateServices(services);
         return generateFiles(services);
+    }
+
+    private static PluginProtos.CodeGeneratorRequest withExtensionRegistry(PluginProtos.CodeGeneratorRequest request)
+            throws GeneratorException {
+        ExtensionRegistry registry = ExtensionRegistry.newInstance();
+        AnnotationsProto.registerAllExtensions(registry);
+        try {
+            return PluginProtos.CodeGeneratorRequest.parseFrom(request.toByteArray(), registry);
+        } catch (InvalidProtocolBufferException e) {
+            throw new GeneratorException("Failed to re-parse CodeGeneratorRequest with extension registry: " + e.getMessage());
+        }
     }
 
     private void validateServices(List<ServiceContext> services) {

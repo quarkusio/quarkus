@@ -34,6 +34,7 @@ import tools.jackson.core.JsonGenerator;
 import tools.jackson.core.SerializableString;
 import tools.jackson.core.filter.FilteringGeneratorDelegate;
 import tools.jackson.core.filter.TokenFilter;
+import tools.jackson.core.sym.PropertyNameMatcher;
 import tools.jackson.databind.BeanProperty;
 import tools.jackson.databind.DatabindException;
 import tools.jackson.databind.DeserializationContext;
@@ -204,6 +205,26 @@ public class JacksonMapperUtil {
         } else {
             gen.writeName(strategy.nameForField(null, null, javaFieldName));
         }
+    }
+
+    /**
+     * Matches a JSON field name against a pre-built {@link PropertyNameMatcher}, falling back
+     * to on-demand translation through the naming strategy when the direct match fails.
+     *
+     * @return the matched index (≥ 0 on match, &lt; 0 on miss)
+     */
+    public static int matchFieldName(PropertyNameMatcher matcher, String name,
+            PropertyNamingStrategy strategy, String[] translatableFieldNames) {
+        int ix = matcher.matchName(name);
+        if (ix >= 0 || strategy == null) {
+            return ix;
+        }
+        for (String javaName : translatableFieldNames) {
+            if (name.equals(strategy.nameForField(null, null, javaName))) {
+                return matcher.matchName(javaName);
+            }
+        }
+        return ix;
     }
 
     /**

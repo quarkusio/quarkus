@@ -165,8 +165,9 @@ public abstract class ResteasyReactiveRequestContext
     private volatile boolean connectionClosed;
 
     public ResteasyReactiveRequestContext(Deployment deployment,
-            ThreadSetupAction requestContext, ServerRestHandler[] handlerChain, ServerRestHandler[] abortHandlerChain) {
-        super(handlerChain, abortHandlerChain, requestContext);
+            ThreadSetupAction requestContext, ServerRestHandler[] handlerChain, byte[] handlerKinds,
+            ServerRestHandler[] abortHandlerChain) {
+        super(handlerChain, handlerKinds, abortHandlerChain, requestContext);
         this.deployment = deployment;
         this.parameters = EMPTY_ARRAY;
     }
@@ -202,6 +203,7 @@ public abstract class ResteasyReactiveRequestContext
 
     public void restart(RuntimeResource target, boolean setLocatorTarget) {
         this.handlers = target.getHandlerChain();
+        this.handlerKinds = target.getHandlerKinds();
         position = 0;
         parameters = target.getParameterTypes().length == 0 ? EMPTY_ARRAY : new Object[target.getParameterTypes().length];
         if (setLocatorTarget) {
@@ -216,7 +218,7 @@ public abstract class ResteasyReactiveRequestContext
 
         serverResponse().addCloseHandler(new ConnectionCloseHandler(this));
 
-        restart(initialMatch.value.handlers);
+        restart(initialMatch.value.handlers, initialMatch.value.handlerKinds, false);
         setMaxPathParams(initialMatch.value.maxPathParams);
         setRemaining(initialMatch.remaining);
         for (int i = 0; i < initialMatch.pathParamValues.length; ++i) {
@@ -238,7 +240,7 @@ public abstract class ResteasyReactiveRequestContext
         if (initialMatch == null) {
             return false;
         }
-        restart(initialMatch.value.handlers);
+        restart(initialMatch.value.handlers, initialMatch.value.handlerKinds, false);
         setMaxPathParams(initialMatch.value.maxPathParams);
         setRemaining(initialMatch.remaining);
         for (int i = 0; i < initialMatch.pathParamValues.length; ++i) {

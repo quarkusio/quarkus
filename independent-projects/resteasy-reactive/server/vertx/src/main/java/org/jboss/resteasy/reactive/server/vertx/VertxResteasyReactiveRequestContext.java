@@ -73,9 +73,9 @@ public class VertxResteasyReactiveRequestContext extends ResteasyReactiveRequest
 
     public VertxResteasyReactiveRequestContext(Deployment deployment,
             RoutingContext context,
-            ThreadSetupAction requestContext, ServerRestHandler[] handlerChain, ServerRestHandler[] abortHandlerChain,
-            ClassLoader devModeTccl) {
-        super(deployment, requestContext, handlerChain, abortHandlerChain);
+            ThreadSetupAction requestContext, ServerRestHandler[] handlerChain, byte[] handlerKinds,
+            ServerRestHandler[] abortHandlerChain, ClassLoader devModeTccl) {
+        super(deployment, requestContext, handlerChain, handlerKinds, abortHandlerChain);
         this.context = context;
         this.request = context.request();
         this.response = context.response();

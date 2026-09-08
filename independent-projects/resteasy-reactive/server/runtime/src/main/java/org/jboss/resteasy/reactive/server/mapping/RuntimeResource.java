@@ -26,6 +26,7 @@ public class RuntimeResource {
     private final EndpointInvoker invoker;
     private final BeanFactory<Object> endpointFactory;
     private final ServerRestHandler[] handlerChain;
+    private final byte[] handlerKinds;
     private final String javaMethodName;
     private final Class<?>[] parameterTypes;
     private final Type returnType;
@@ -41,7 +42,7 @@ public class RuntimeResource {
     public RuntimeResource(String httpMethod, URITemplate path, URITemplate classPath, ServerMediaType produces,
             List<MediaType> consumes,
             EndpointInvoker invoker,
-            BeanFactory<Object> endpointFactory, ServerRestHandler[] handlerChain, String javaMethodName,
+            BeanFactory<Object> endpointFactory, ServerRestHandler[] handlerChain, byte[] handlerKinds, String javaMethodName,
             Class<?>[] parameterTypes,
             Type returnType, boolean blocking, boolean runOnVirtualThread, Class<?> resourceClass,
             ResteasyReactiveResourceInfo lazyMethod,
@@ -56,6 +57,7 @@ public class RuntimeResource {
         this.invoker = invoker;
         this.endpointFactory = endpointFactory;
         this.handlerChain = handlerChain;
+        this.handlerKinds = handlerKinds;
         this.javaMethodName = javaMethodName;
         this.parameterTypes = parameterTypes;
         this.returnType = returnType;
@@ -71,6 +73,10 @@ public class RuntimeResource {
 
     public ServerRestHandler[] getHandlerChain() {
         return handlerChain;
+    }
+
+    public byte[] getHandlerKinds() {
+        return handlerKinds;
     }
 
     public String getJavaMethodName() {

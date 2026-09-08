@@ -19,6 +19,7 @@ public class RestInitialHandler implements ServerRestHandler {
     final Deployment deployment;
     final List<ServerRestHandler> preMappingHandlers;
     final ServerRestHandler[] initialChain;
+    final byte[] initialChainKinds;
 
     final ThreadSetupAction requestContext;
     final RequestContextFactory requestContextFactory;
@@ -37,6 +38,7 @@ public class RestInitialHandler implements ServerRestHandler {
             }
             initialChain[initialChain.length - 1] = this;
         }
+        this.initialChainKinds = deployment.getHandlerKindResolver().kindsOf(initialChain);
         this.requestContext = deployment.getThreadSetupAction();
         this.requestContextFactory = deployment.getRequestContextFactory();
     }
@@ -44,14 +46,14 @@ public class RestInitialHandler implements ServerRestHandler {
     public void beginProcessing(Object externalHttpContext) {
         ResteasyReactiveRequestContext rq = requestContextFactory.createContext(deployment, externalHttpContext,
                 requestContext,
-                initialChain, deployment.getAbortHandlerChain());
+                initialChain, initialChainKinds, deployment.getAbortHandlerChain());
         rq.run();
     }
 
     public void beginProcessing(Object externalHttpContext, Throwable throwable) {
         ResteasyReactiveRequestContext rq = requestContextFactory.createContext(deployment, externalHttpContext,
                 requestContext,
-                initialChain, deployment.getAbortHandlerChain());
+                initialChain, initialChainKinds, deployment.getAbortHandlerChain());
         rq.handleException(throwable);
         rq.run();
     }
@@ -78,10 +80,12 @@ public class RestInitialHandler implements ServerRestHandler {
 
     public static class InitialMatch {
         public final ServerRestHandler[] handlers;
+        public final byte[] handlerKinds;
         public final int maxPathParams;
 
-        public InitialMatch(ServerRestHandler[] handlers, int maxPathParams) {
+        public InitialMatch(ServerRestHandler[] handlers, byte[] handlerKinds, int maxPathParams) {
             this.handlers = handlers;
+            this.handlerKinds = handlerKinds;
             this.maxPathParams = maxPathParams;
         }
     }

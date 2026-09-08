@@ -30,6 +30,7 @@ import io.quarkus.opentelemetry.runtime.tracing.instrumentation.resteasy.AttachE
 import io.quarkus.opentelemetry.runtime.tracing.instrumentation.resteasy.OpenTelemetryClassicServerFilter;
 import io.quarkus.opentelemetry.runtime.tracing.instrumentation.resteasy.OpenTelemetryReactiveServerFilter;
 import io.quarkus.resteasy.common.spi.ResteasyJaxrsProviderBuildItem;
+import io.quarkus.resteasy.reactive.server.spi.KnownServerRestHandlerBuildItem;
 import io.quarkus.resteasy.reactive.server.spi.PreExceptionMapperHandlerBuildItem;
 import io.quarkus.resteasy.reactive.spi.CustomContainerRequestFilterBuildItem;
 import io.quarkus.vertx.deployment.spi.VertxBootstrapConsumerBuildItem;
@@ -148,12 +149,15 @@ public class InstrumentationProcessor {
             Capabilities capabilities,
             BuildProducer<CustomContainerRequestFilterBuildItem> containerRequestFilterBuildItemBuildProducer,
             BuildProducer<PreExceptionMapperHandlerBuildItem> preExceptionMapperHandlerBuildItemBuildProducer,
+            BuildProducer<KnownServerRestHandlerBuildItem> knownServerRestHandlerBuildItemBuildProducer,
             OTelBuildConfig config) {
         if (capabilities.isPresent(Capability.RESTEASY_REACTIVE) && config.instrument().rest()) {
             containerRequestFilterBuildItemBuildProducer
                     .produce(new CustomContainerRequestFilterBuildItem(OpenTelemetryReactiveServerFilter.class.getName()));
             preExceptionMapperHandlerBuildItemBuildProducer
                     .produce(new PreExceptionMapperHandlerBuildItem(new AttachExceptionHandler()));
+            knownServerRestHandlerBuildItemBuildProducer
+                    .produce(new KnownServerRestHandlerBuildItem(AttachExceptionHandler.class.getName()));
         }
 
     }

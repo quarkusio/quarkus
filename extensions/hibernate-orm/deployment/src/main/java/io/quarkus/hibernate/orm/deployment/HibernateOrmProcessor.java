@@ -16,9 +16,11 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
@@ -395,6 +397,23 @@ public final class HibernateOrmProcessor {
 
         reflectiveClasses.produce(ReflectiveClassBuildItem.builder(JACKSON_3_JSON_FORMAT_MAPPER).fields(false).methods(false)
                 .constructors().reason("Hibernate instantiates the class reflectively").build());
+    }
+
+    @BuildStep
+    void aggregateDefinedPersistenceUnits(
+            List<PersistenceUnitDefinitionBuildItem> puDefinitions,
+            BuildProducer<PersistenceUnitDefinedBuildItem> definedPersistenceUnits) {
+        Map<String, Set<ProgrammingParadigm>> paradigmsByName = new LinkedHashMap<>();
+        Map<String, Optional<String>> dataSourceByName = new LinkedHashMap<>();
+        for (PersistenceUnitDefinitionBuildItem item : puDefinitions) {
+            dataSourceByName.putIfAbsent(item.getPersistenceUnitName(), item.getDataSourceName());
+            paradigmsByName.computeIfAbsent(item.getPersistenceUnitName(), k -> EnumSet.noneOf(ProgrammingParadigm.class))
+                    .add(item.getParadigm());
+        }
+        for (var entry : paradigmsByName.entrySet()) {
+            definedPersistenceUnits.produce(new PersistenceUnitDefinedBuildItem(
+                    entry.getKey(), dataSourceByName.get(entry.getKey()), entry.getValue()));
+        }
     }
 
     @BuildStep

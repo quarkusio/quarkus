@@ -451,7 +451,8 @@ In the example above, we extended the `ManagedEntity` type, and did not define a
 because `ManagedEntity` comes with a default generated database identifier, so you don't have to worry about it. It
 does this by extending the `WithId.AutoLong` class, which provides a generated database identifier of type `Long`.
 
-You can choose to extend the `WithId.AutoString` for a `String` identifier, or `WithId.AutoUUID` for a `UUID`
+You can choose to extend the `WithId.AutoString` for a `String` identifier, `WithId.AutoUUID` for a `UUID`
+identifier, or `WithId.AutoUUIDv7` for a Unique by time sortable `UUID`
 identifier to automatically get an attribute of the form:
 
 [source,java]
@@ -520,6 +521,10 @@ extend any of these types if you define you own ID:
 
 |`UUID`
 |`WithId.AutoUUID`
+|
+
+|`UUID`
+|`WithId.AutoUUIDv7`
 |
 
 |`String`

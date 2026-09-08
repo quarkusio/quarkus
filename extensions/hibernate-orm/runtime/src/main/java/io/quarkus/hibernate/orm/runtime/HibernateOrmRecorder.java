@@ -175,12 +175,12 @@ public class HibernateOrmRecorder {
             @Override
             public Session apply(SyntheticCreationalContext<Session> context) {
                 TransactionSessions transactionSessions = context.getInjectedReference(TransactionSessions.class);
-                return new SessionLazyDelegator(new Supplier<Session>() {
+                return new SessionLazyDelegator() {
                     @Override
-                    public Session get() {
+                    public Session delegate() {
                         return transactionSessions.getSession(persistenceUnitName);
                     }
-                });
+                };
             }
         };
     }

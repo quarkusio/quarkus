@@ -140,6 +140,27 @@ public class CycloneDxSbomGenerator {
         return this;
     }
 
+    /**
+     * Generates the SBOM(s) as text without persisting them to the filesystem. When the format is
+     * {@code all}, one entry per supported format is returned.
+     *
+     * @return the generated SBOM content
+     */
+    public List<String> generateText() {
+        ensureNotGenerated();
+        Objects.requireNonNull(manifest, "Manifest is null");
+        generated = true;
+        var bom = createSbom();
+        if (FORMAT_ALL.equalsIgnoreCase(format)) {
+            final List<String> result = new ArrayList<>(SUPPORTED_FORMATS.size());
+            for (String format : SUPPORTED_FORMATS) {
+                result.add(formatSbom(bom, format));
+            }
+            return result;
+        }
+        return List.of(formatSbom(bom, format == null ? DEFAULT_FORMAT : format));
+    }
+
     public List<SbomResult> generate() {
         ensureNotGenerated();
         Objects.requireNonNull(manifest, "Manifest is null");
@@ -148,14 +169,7 @@ public class CycloneDxSbomGenerator {
         }
         generated = true;
 
-        var bom = new Bom();
-        bom.setMetadata(new Metadata());
-        addToolInfo(bom);
-
-        addApplicationComponent(bom, manifest.getMainComponent());
-        for (var c : manifest.getComponents()) {
-            addComponent(bom, c);
-        }
+        var bom = createSbom();
         if (FORMAT_ALL.equalsIgnoreCase(format)) {
             if (outputFile != null) {
                 throw new IllegalArgumentException("Can't use output file " + outputFile + " with format '"
@@ -169,6 +183,18 @@ public class CycloneDxSbomGenerator {
         }
         var outputFile = getOutputFile(format == null ? DEFAULT_FORMAT : format);
         return List.of(persistSbom(bom, outputFile, getFormat(outputFile)));
+    }
+
+    private Bom createSbom() {
+        var bom = new Bom();
+        bom.setMetadata(new Metadata());
+        addToolInfo(bom);
+
+        addApplicationComponent(bom, manifest.getMainComponent());
+        for (var c : manifest.getComponents()) {
+            addComponent(bom, c);
+        }
+        return bom;
     }
 
     private void addComponent(Bom bom, ApplicationComponent component) {
@@ -508,24 +534,21 @@ public class CycloneDxSbomGenerator {
         return list;
     }
 
-    private SbomResult persistSbom(Bom bom, Path sbomFile, String format) {
-
+    private String formatSbom(Bom bom, String format) {
         var specVersion = getSchemaVersion();
-        final String sbomContent;
         if (format.equalsIgnoreCase("json")) {
             try {
                 if (providesEmitted && specVersion.getVersion() >= 1.6) {
                     // the stock generator has no notion of the CycloneDX 1.6 "provides" relationship
-                    sbomContent = new ProvidesAwareBomJsonGenerator(bom, specVersion).toJsonString();
-                } else {
-                    sbomContent = BomGeneratorFactory.createJson(specVersion, bom).toJsonString();
+                    return new ProvidesAwareBomJsonGenerator(bom, specVersion).toJsonString();
                 }
+                return BomGeneratorFactory.createJson(specVersion, bom).toJsonString();
             } catch (Throwable e) {
                 throw new RuntimeException("Failed to generate an SBOM in JSON format", e);
             }
         } else if (format.equalsIgnoreCase("xml")) {
             try {
-                sbomContent = BomGeneratorFactory.createXml(specVersion, bom).toXmlString();
+                return BomGeneratorFactory.createXml(specVersion, bom).toXmlString();
             } catch (GeneratorException e) {
                 throw new RuntimeException("Failed to generate an SBOM in XML format", e);
             }
@@ -533,7 +556,10 @@ public class CycloneDxSbomGenerator {
             throw new RuntimeException(
                     "Unsupported SBOM artifact type " + format + ", supported types are json and xml");
         }
+    }
 
+    private SbomResult persistSbom(Bom bom, Path sbomFile, String format) {
+        final String sbomContent = formatSbom(bom, format);
         var outputDir = sbomFile.getParent();
         if (outputDir != null) {
             try {

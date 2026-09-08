@@ -186,6 +186,25 @@ SBOMs generated for Mutable JAR distributions will also record locations of comp
       }
 ----
 
+[[embedded-dependency-sbom]]
+== Embedded Dependency SBOM
+
+A dependency SBOM can be embedded into the application itself as a classpath resource, so that it travels with the application and can be consumed at runtime or by tools inspecting the artifact. This is enabled with:
+
+[source,properties]
+----
+quarkus.cyclonedx.embedded.enabled=true
+----
+
+The SBOM is embedded as a classpath resource at `META-INF/sbom/dependency.cdx.json` by default. The resource name can be customized, and its extension determines the format (`.json` for JSON, `.xml` for XML):
+
+[source,properties]
+----
+quarkus.cyclonedx.embedded.resource-name=META-INF/custom-sbom.json
+----
+
+The embedded SBOM manifests the application dependencies (the input to the build) rather than the final distribution layout. When <<product-attribution,product attribution>> is enabled (the default), the embedded SBOM also includes the platform-member product components.
+
 [[product-attribution]]
 == Product Attribution
 

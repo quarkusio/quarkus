@@ -13,6 +13,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -28,6 +29,7 @@ import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.ClientAuth;
 import io.vertx.core.http.HttpServer;
+import io.vertx.core.http.HttpServerConfig;
 import io.vertx.core.net.KeyStoreOptions;
 import io.vertx.core.net.PemKeyCertOptions;
 import io.vertx.core.net.PemTrustOptions;
@@ -49,7 +51,7 @@ public class TlsCertificateReloader {
      * @throws IllegalArgumentException if any of the configuration is invalid
      */
     public static long initCertReloadingAction(Vertx vertx, HttpServer server,
-            io.vertx.core.http.HttpServerConfig httpServerConfig, ServerSSLOptions sslOptions,
+            HttpServerConfig httpServerConfig, ServerSSLOptions sslOptions,
             ServerSslConfig sslConfig,
             TlsConfigurationRegistry registry, Optional<String> tlsConfigurationName, ClientAuth clientAuth) {
 
@@ -65,13 +67,13 @@ public class TlsCertificateReloader {
             useRegistry = true;
         }
 
-        ServerSSLOptions ssl = null;
+        AtomicReference<ServerSSLOptions> currentSslOptions = new AtomicReference<>(null);
         TlsConfiguration tlsConfiguration = null;
         if (!useRegistry) {
-            ssl = sslOptions;
-            if (ssl == null) {
+            if (sslOptions == null) {
                 throw new IllegalArgumentException("Unable to configure TLS reloading - TLS/SSL is not enabled on the server");
             }
+            currentSslOptions.set(sslOptions);
         } else {
             if (tlsConfigurationName.isPresent()) {
                 tlsConfiguration = registry.get(tlsConfigurationName.get()).orElseThrow();
@@ -94,8 +96,7 @@ public class TlsCertificateReloader {
 
         boolean reloadFromRegistry = useRegistry;
         TlsConfiguration registryConfiguration = tlsConfiguration;
-        ServerSSLOptions nonRegistryOptions = ssl;
-        Supplier<CompletionStage<Boolean>> task = new Supplier<CompletionStage<Boolean>>() {
+        Supplier<CompletionStage<Boolean>> task = new Supplier<>() {
             @Override
             public CompletionStage<Boolean> get() {
 
@@ -110,8 +111,8 @@ public class TlsCertificateReloader {
                                 return null;
                             }
                         } else {
-                            var c = reloadFileContent(nonRegistryOptions, sslConfig);
-                            if (c.equals(nonRegistryOptions)) { // No change, skip the update
+                            var c = reloadFileContent(currentSslOptions.get(), sslConfig);
+                            if (c.equals(currentSslOptions.get())) { // No change, skip the update
                                 return null;
                             }
                             return c;
@@ -122,13 +123,18 @@ public class TlsCertificateReloader {
                             @Override
                             public Future<Boolean> apply(ServerSSLOptions res) {
                                 if (res != null) {
-                                    return server.updateSSLOptions(res);
+                                    return server.updateSSLOptions(res).onSuccess(new Handler<>() {
+                                        @Override
+                                        public void handle(Boolean event) {
+                                            currentSslOptions.set(res);
+                                        }
+                                    });
                                 } else {
                                     return Future.succeededFuture(false);
                                 }
                             }
                         })
-                        .onComplete(new Handler<AsyncResult<Boolean>>() {
+                        .onComplete(new Handler<>() {
                             @Override
                             public void handle(AsyncResult<Boolean> ar) {
                                 if (ar.failed()) {
@@ -146,7 +152,7 @@ public class TlsCertificateReloader {
             }
         };
 
-        long id = vertx.setPeriodic(period, new Handler<Long>() {
+        long id = vertx.setPeriodic(period, new Handler<>() {
             @Override
             public void handle(Long id) {
                 task.get();

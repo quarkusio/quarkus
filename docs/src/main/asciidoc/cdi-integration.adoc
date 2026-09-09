@@ -337,7 +337,6 @@ SyntheticBeanBuildItem syntheticBean(TestRecorder recorder) {
                 .done();
 }
 ----
-
 <1> `types()` or `addType()` must be used to specify the generic type.
 
 It is possible to mark a synthetic bean to be initialized during `RUNTIME_INIT`.

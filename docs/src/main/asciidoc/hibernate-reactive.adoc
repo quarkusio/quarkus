@@ -140,7 +140,6 @@ public class SantaClausService {
     }
 }
 ----
-
 <1> Inject your session factory and have fun
 <2> `.withTransaction()` will automatically flush at commit
 
@@ -225,7 +224,6 @@ public class FruitResource {
 
 }
 ----
-
 <1> Inject the reactive session directly
 <2> Use `@Transactional` for persist operations - creates new entities in the database
 <3> Use `@Transactional` for update operations - modifies existing entities

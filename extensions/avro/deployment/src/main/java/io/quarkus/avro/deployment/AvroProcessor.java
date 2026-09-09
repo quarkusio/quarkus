@@ -1,6 +1,9 @@
 package io.quarkus.avro.deployment;
 
 import java.util.Collection;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 import org.apache.avro.specific.AvroGenerated;
 import org.apache.avro.specific.SpecificRecordBase;
@@ -11,12 +14,14 @@ import org.jboss.jandex.DotName;
 
 import io.quarkus.avro.runtime.AvroRecorder;
 import io.quarkus.avro.runtime.jackson.SpecificRecordBaseSerializer;
+import io.quarkus.avro.spi.AvroTrustedClassBuildItem;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
+import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageConfigBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageSystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
@@ -30,6 +35,34 @@ public class AvroProcessor {
         if (launchModeBuildItem.getLaunchMode().isDevOrTest()) {
             recorder.clearStaticCaches();
         }
+    }
+
+    @BuildStep
+    void trustAvroGeneratedClasses(CombinedIndexBuildItem indexBuildItem,
+            BuildProducer<AvroTrustedClassBuildItem> trustedClasses) {
+        Set<String> generatedClasses = new HashSet<>();
+        Collection<AnnotationInstance> annotations = indexBuildItem.getIndex()
+                .getAnnotations(DotName.createSimple(AvroGenerated.class.getName()));
+        for (AnnotationInstance annotation : annotations) {
+            if (annotation.target().kind() == AnnotationTarget.Kind.CLASS) {
+                generatedClasses.add(annotation.target().asClass().name().toString());
+            }
+        }
+        if (!generatedClasses.isEmpty()) {
+            trustedClasses.produce(new AvroTrustedClassBuildItem(generatedClasses));
+        }
+    }
+
+    @BuildStep
+    @Record(ExecutionTime.RUNTIME_INIT)
+    void setupClassSecurityValidator(List<AvroTrustedClassBuildItem> trustedClassItems, AvroBuildTimeConfig config,
+            ShutdownContextBuildItem shutdownContext, AvroRecorder recorder) {
+        Set<String> trustedClasses = new HashSet<>();
+        for (AvroTrustedClassBuildItem item : trustedClassItems) {
+            trustedClasses.addAll(item.getClassNames());
+        }
+        trustedClasses.addAll(config.trustedClasses().orElse(List.of()));
+        recorder.setupClassSecurityValidator(shutdownContext, trustedClasses, config.trustedPackages().orElse(List.of()));
     }
 
     @BuildStep

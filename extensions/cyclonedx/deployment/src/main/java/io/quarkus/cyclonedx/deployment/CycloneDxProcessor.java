@@ -1,14 +1,11 @@
 package io.quarkus.cyclonedx.deployment;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.zip.GZIPOutputStream;
 
 import org.jboss.logging.Logger;
 
@@ -72,6 +69,7 @@ public class CycloneDxProcessor {
             if (manifestConfig == null) {
                 continue;
             }
+            manifestConfig.setProductAttribution(cdxSbomConfig.productAttribution());
             List<SbomContribution> contributions = collectContributions(manifestConfig.toSbomContribution(), sbomContributions);
             for (SbomResult sbom : CycloneDxSbomGenerator.newInstance()
                     .setOutputDirectory(outputTargetBuildItem.getOutputDirectory())
@@ -153,12 +151,9 @@ public class CycloneDxProcessor {
 
         byte[] sbomBytes = generateEmbeddedSbomBytes(cdxConfig, curateOutcomeBuildItem, appModelProviderBuildItem,
                 computePedigrees(treeShakeResult), sbomContributions, packageConfig.outputTimestamp().orElse(null));
-        String effectiveResourceName = effectiveResourceName(cdxConfig.embedded());
-        if (cdxConfig.embedded().compress()) {
-            sbomBytes = gzip(sbomBytes);
-        }
 
-        sbomResourceProducer.produce(new SbomGeneratedResourceBuildItem(effectiveResourceName, sbomBytes));
+        // the embedded SBOM is always stored uncompressed; compression is only applied when serving it through the endpoint
+        sbomResourceProducer.produce(new SbomGeneratedResourceBuildItem(cdxConfig.embedded().resourceName(), sbomBytes));
     }
 
     private byte[] generateEmbeddedSbomBytes(CycloneDxConfig cdxConfig,
@@ -171,7 +166,8 @@ public class CycloneDxProcessor {
 
         CoreSbomContributionConfig config = new CoreSbomContributionConfig()
                 .setApplicationModel(curateOutcomeBuildItem.getApplicationModel())
-                .setPedigrees(pedigrees);
+                .setPedigrees(pedigrees)
+                .setProductAttribution(cdxConfig.productAttribution());
         SbomContribution coreContribution = config.toSbomContribution();
 
         var depInfoProvider = getDependencyInfoProvider(appModelProviderBuildItem);
@@ -213,7 +209,7 @@ public class CycloneDxProcessor {
         }
         final CycloneDxConfig.EmbeddedSbomConfig embeddedConfig = cdxConfig.embedded();
         embeddedSbomMetadataProducer
-                .produce(new EmbeddedSbomMetadataBuildItem(effectiveResourceName(embeddedConfig), embeddedConfig.compress()));
+                .produce(new EmbeddedSbomMetadataBuildItem(embeddedConfig.resourceName(), embeddedConfig.compress()));
     }
 
     private static boolean isEmbeddedSbomEnabled(CycloneDxConfig cdxConfig,
@@ -231,14 +227,6 @@ public class CycloneDxProcessor {
         return true;
     }
 
-    private static String effectiveResourceName(CycloneDxConfig.EmbeddedSbomConfig config) {
-        String resourceName = config.resourceName();
-        if (config.compress() && !resourceName.endsWith(".gz")) {
-            return resourceName + ".gz";
-        }
-        return resourceName;
-    }
-
     private static Map<ArtifactKey, String> computePedigrees(JarTreeShakeBuildItem treeShakeResult) {
         if (!treeShakeResult.isClassesShaken()) {
             return null;
@@ -251,16 +239,6 @@ public class CycloneDxProcessor {
             }
         }
         return pedigrees.isEmpty() ? null : pedigrees;
-    }
-
-    private static byte[] gzip(byte[] data) {
-        var baos = new ByteArrayOutputStream(data.length);
-        try (var gzos = new GZIPOutputStream(baos)) {
-            gzos.write(data);
-        } catch (IOException e) {
-            throw new RuntimeException("Failed to GZIP-compress the embedded SBOM", e);
-        }
-        return baos.toByteArray();
     }
 
     private static String getFormat(String resourceName) {

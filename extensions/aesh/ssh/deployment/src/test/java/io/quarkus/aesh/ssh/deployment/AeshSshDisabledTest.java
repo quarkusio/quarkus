@@ -14,8 +14,9 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.test.QuarkusUnitTest;
 
 /**
- * Verifies that setting {@code quarkus.aesh.ssh.enabled=false} prevents the
- * SSH server from starting.
+ * Verifies that setting {@code quarkus.aesh.ssh.enabled=false} at build time
+ * prevents the SSH server beans from being registered and the SSH server
+ * from starting.
  */
 public class AeshSshDisabledTest {
 
@@ -31,7 +32,10 @@ public class AeshSshDisabledTest {
 
     @Test
     public void testSshServerNotStarted() {
-        // The SSH port should not be listening when disabled
+        // The SSH port should not be listening when disabled at build time.
+        // With enabled=false, SshServerLifecycle is not registered as a bean
+        // and no AeshRemoteTransportBuildItem is produced, so the local
+        // console is not suppressed either.
         Assertions.assertThatThrownBy(() -> {
             try (Socket socket = new Socket("localhost", SSH_PORT)) {
                 // should not connect

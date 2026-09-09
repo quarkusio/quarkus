@@ -124,7 +124,6 @@ We'll add a dimensional label (also called an attribute or a tag) that will allo
 ----
 include::{generated-dir}/examples/telemetry-micrometer-tutorial-example-resource.java[tags=primeMethod;counted;!ignore;!timed]
 ----
-
 <1> Find or create a counter called `example.prime.number` that has a `type` label with the specified value.
 <2> Increment that counter.
 
@@ -172,7 +171,6 @@ Let's add a timer to measure how long it takes to determine if a number is prime
 ----
 include::{generated-dir}/examples/telemetry-micrometer-tutorial-example-resource.java[tags=primeMethod;counted;timed;!ignore;!default]
 ----
-
 <1> Find or create a counter called `example.prime.number` that has a `type` label with the specified value.
 <2> Increment that counter.
 <3> Call a method that wraps the original `testPrimeNumber` method.
@@ -217,7 +215,6 @@ Use a gauge to observe the size of a collection, or the value returned from a fu
 ----
 include::{generated-dir}/examples/telemetry-micrometer-tutorial-example-resource.java[tags=ctor;gauge]
 ----
-
 <1> Define list that will hold arbitrary numbers.
 <2> Register a gauge that will track the size of the list.
 <3> Create a REST endpoint to populate the list.

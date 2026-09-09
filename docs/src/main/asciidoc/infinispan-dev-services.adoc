@@ -90,7 +90,6 @@ If you want run the Infinispan Server container with Cross Site Replication conf
 quarkus.infinispan-client.devservices.site=NYC <1>
 quarkus.infinispan-client.devservices.mcast-port=46666 <2>
 ----
-
 <1> Provides a site name for your Infinispan cluster
 <2> Eventually configure a mcastPort if you want to avoid creating a cluster with another container
 

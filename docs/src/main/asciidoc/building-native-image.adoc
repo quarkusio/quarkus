@@ -14,7 +14,71 @@ This guide covers:
 * Packaging the native executable in a container
 * Debugging native executable
 
-This guide takes as input the application developed in the xref:getting-started.adoc[Getting Started Guide].
+== Do you need a native executable?
+
+Quarkus on the JVM is already fast, sub-second startup, low memory footprint, and optimized throughput.
+For many applications, JVM mode is the right choice.
+
+Native executables shine when:
+
+* *Startup time is critical*: serverless/FaaS, CLI tools, or scale-to-zero environments where cold starts matter.
+* *Memory is constrained*: dense container deployments or edge devices with tight RAM budgets.
+* *You want the smallest possible container image*: native binaries produce images under 50MB.
+
+JVM mode is typically better when:
+
+* *Peak throughput matters most*: the JVM's JIT compiler optimizes hot paths at runtime, which can outperform native on long-running workloads.
+* *Build time is a constraint*: native compilation takes minutes, JVM builds take seconds.
+* *You rely heavily on reflection or dynamic class loading*: these require explicit configuration for native images.
+
+TIP: Start with JVM mode. Move to native when you have a concrete need. Both modes use the same code and the same Quarkus optimizations: native just changes how the binary is produced.
+
+[[comparing-jvm-aot-native]]
+=== Comparing JVM, Leyden AOT, and native modes
+
+Native is one of three runtime options Quarkus supports.
+JVM fast-jar, JVM with xref:aot.adoc[Project Leyden AOT caching] (JDK 24+), and native (Mandrel) each trade cold-start speed, peak throughput, memory footprint, and build cost differently.
+The table below compares them.
+Pick the mode that matches your workload's most important constraint.
+
+[cols="1,1,1,1,1,1,1,2",options="header"]
+|===
+| Mode | Cold start | Time to first request | Peak throughput | Memory (RSS) | Container image size | Build cost | When to choose
+
+| JVM fast-jar
+| ~0.4 s (small REST) to ~3 s (large CRUD)
+| 4,417 ms
+| 13,265 tps (baseline)
+| 304 MiB
+| 517 MB
+| ~30 s build; no special workflow
+| Long-running services, throughput-critical workloads; teams on pre-JDK-24 runtimes
+
+| xref:aot.adoc[JVM + Leyden AOT cache]
+| ~80 ms (small) to ~900 ms (large)
+| 1,859 ms
+| 12,389 tps (~7% below JVM)
+| 240 MiB
+| 715 MB (AOT cache adds ~198 MB)
+| Standard build plus a training run on a representative workload
+| Cold-start-sensitive but not millisecond-critical; requires JDK 24+; keeps full JVM tooling (debuggers, profilers, JFR)
+
+| Native (Mandrel)
+| ~17 ms (small) to ~240 ms (large)
+| 581 ms
+| 5,411 tps (~59% below JVM)
+| 95 MiB
+| 244 MB
+| 3-10 min build; 4-8 GB build-host RAM
+| Extreme cold start (serverless, scale-to-zero); edge deployments; high-density container hosts where memory is the binding constraint
+|===
+
+Time to first request, peak throughput, and memory (RSS) come from the https://raw.githubusercontent.com/quarkusio/benchmarks/main/images/spring-quarkus-perf-comparison/2026-04-21_09-26-13/metrics-tuned-composite-for-quarkus-light.svg[2026-04-21 perf-lab tuned benchmark] (Quarkus 3.34.3, JDK 25.0.2, GraalVM 25.0.2-graalce, 4 CPUs, `-Xmx512m`).
+Cold-start ranges and container image sizes come from the https://quarkus.io/blog/leyden-2/[Leyden integration benchmarks] and the https://quarkus.io/blog/new-benchmarks/[Mar 2026 performance post].
+For the latest numbers, see the https://github.com/quarkusio/benchmarks#chart-reference[Quarkus benchmarks chart reference].
+
+For the Leyden AOT cache path, see xref:aot.adoc[the AOT caching guide].
+If native is the right fit for your workload, read on. The next sections walk you through prerequisites, compilation, testing, and container packaging.
 
 == Prerequisites
 

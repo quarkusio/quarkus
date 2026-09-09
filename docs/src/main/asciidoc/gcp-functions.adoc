@@ -514,10 +514,9 @@ class HttpFunctionTestCase {
     }
 }
 ----
-
-1. This is a standard Quarkus test that must be annotated by `@QuarkusTest`.
-2. `@WithFunction(FunctionType.HTTP)` indicates to launch the function as an HTTP function. If multiple functions exist in the same application, the `functionName` attribute must be used to denote which one should be launched.
-3. REST-assured is used to test the function, `Hello World!` will be sent to it via the invoker.
+<1> This is a standard Quarkus test that must be annotated by `@QuarkusTest`.
+<2> `@WithFunction(FunctionType.HTTP)` indicates to launch the function as an HTTP function. If multiple functions exist in the same application, the `functionName` attribute must be used to denote which one should be launched.
+<3> REST-assured is used to test the function, `Hello World!` will be sent to it via the invoker.
 
 === The BackgroundFunction
 
@@ -545,10 +544,9 @@ class BackgroundFunctionStorageTestCase {
     }
 }
 ----
-
-1. This is a standard Quarkus test that must be annotated by `@QuarkusTest`.
-2. `@WithFunction(FunctionType.BACKGROUND)` indicates to launch the function as a background function. If multiple functions exist in the same application, the `functionName` attribute must be used to denote which one should be launched.
-3. REST-assured is used to test the function, `{"name":"hello.txt"}` will be sent to it via the invoker.
+<1> This is a standard Quarkus test that must be annotated by `@QuarkusTest`.
+<2> `@WithFunction(FunctionType.BACKGROUND)` indicates to launch the function as a background function. If multiple functions exist in the same application, the `functionName` attribute must be used to denote which one should be launched.
+<3> REST-assured is used to test the function, `{"name":"hello.txt"}` will be sent to it via the invoker.
 
 === The RawBackgroundFunction
 
@@ -576,10 +574,9 @@ class RawBackgroundFunctionPubSubTestCase {
     }
 }
 ----
-
-1. This is a standard Quarkus test that must be annotated by `@QuarkusTest`.
-2. `@WithFunction(FunctionType.RAW_BACKGROUND)` indicates to launch the function as a raw background function. If multiple functions exist in the same application, the `functionName` attribute must be used to denote which one should be launched.
-3. REST-assured is used to test the function, `{"name":"hello.txt"}` will be sent to it via the invoker.
+<1> This is a standard Quarkus test that must be annotated by `@QuarkusTest`.
+<2> `@WithFunction(FunctionType.RAW_BACKGROUND)` indicates to launch the function as a raw background function. If multiple functions exist in the same application, the `functionName` attribute must be used to denote which one should be launched.
+<3> REST-assured is used to test the function, `{"name":"hello.txt"}` will be sent to it via the invoker.
 
 === The CloudEventsFunction
 
@@ -625,11 +622,10 @@ class CloudEventStorageTestCase {
     }
 }
 ----
-
-1. This is a standard Quarkus test that must be annotated by `@QuarkusTest`.
-2. `@WithFunction(FunctionType.CLOUD_EVENTS)` indicates to launch the function as a cloud events function. If multiple functions exist in the same application, the `functionName` attribute must be used to denote which one should be launched.
-3. REST-assured is used to test the function, this payload that describe a storage event will be sent to it via the invoker.
-4. The cloud events headers must be sent via HTTP headers.
+<1> This is a standard Quarkus test that must be annotated by `@QuarkusTest`.
+<2> `@WithFunction(FunctionType.CLOUD_EVENTS)` indicates to launch the function as a cloud events function. If multiple functions exist in the same application, the `functionName` attribute must be used to denote which one should be launched.
+<3> REST-assured is used to test the function, this payload that describe a storage event will be sent to it via the invoker.
+<4> The cloud events headers must be sent via HTTP headers.
 
 == What's next?
 

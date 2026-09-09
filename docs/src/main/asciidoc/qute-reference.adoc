@@ -1791,7 +1791,7 @@ This can be done by setting a special attribute via `TemplateInstance.setVariant
 class MyService {
 
     @Inject
-    Template items; <1>
+    Template items;
 
     @Inject
     ItemManager manager;

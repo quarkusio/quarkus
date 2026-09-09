@@ -134,9 +134,8 @@ Configure your application to receive Pulsar messages on the `prices` channel as
 mp.messaging.incoming.prices.serviceUrl=pulsar://pulsar:6650 # <1>
 mp.messaging.incoming.prices.subscriptionInitialPosition=Earliest # <2>
 ----
-
-1.  Configure the Pulsar broker service url.
-2.  Make sure consumer subscription starts receiving messages from the `Earliest` position.
+<1> Configure the Pulsar broker service url.
+<2> Make sure consumer subscription starts receiving messages from the `Earliest` position.
 
 [NOTE]
 ====
@@ -465,8 +464,7 @@ Configure your application to write the messages from the `prices` channel into 
 ----
 mp.messaging.outgoing.prices.serviceUrl=pulsar://pulsar:6650 # <1>
 ----
-
-1.  Configure the Pulsar broker service url.
+<1> Configure the Pulsar broker service url.
 
 [NOTE]
 ====

@@ -33,7 +33,10 @@ public class AeshWebSocketConcurrentSessionsTest {
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .withApplicationRoot(jar -> jar.addClasses(
-                    AeshWebSocketTestHelper.class, HelloCommand.class));
+                    AeshWebSocketTestHelper.class, HelloCommand.class))
+            .overrideConfigKey("quarkus.websockets-next.server.traffic-logging.enabled", "true")
+            .overrideConfigKey("quarkus.log.category.\"io.quarkus.websockets.next.traffic\".level", "DEBUG")
+            .overrideConfigKey("quarkus.log.category.\"io.quarkus.aesh\".level", "DEBUG");
 
     @TestHTTPResource("/aesh/terminal")
     URI wsUri;

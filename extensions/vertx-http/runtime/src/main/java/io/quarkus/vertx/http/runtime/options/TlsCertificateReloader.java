@@ -12,6 +12,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -62,13 +63,14 @@ public class TlsCertificateReloader {
             useRegistry = true;
         }
 
-        SSLOptions ssl = null;
+        AtomicReference<SSLOptions> currentSslOptions = new AtomicReference<>(null);
         TlsConfiguration tlsConfiguration = null;
         if (!useRegistry) {
-            ssl = options.getSslOptions();
+            SSLOptions ssl = options.getSslOptions();
             if (ssl == null) {
                 throw new IllegalArgumentException("Unable to configure TLS reloading - TLS/SSL is not enabled on the server");
             }
+            currentSslOptions.set(ssl);
         } else {
             if (tlsConfigurationName.isPresent()) {
                 tlsConfiguration = registry.get(tlsConfigurationName.get()).orElseThrow();
@@ -91,7 +93,6 @@ public class TlsCertificateReloader {
 
         boolean reloadFromRegistry = useRegistry;
         TlsConfiguration registryConfiguration = tlsConfiguration;
-        SSLOptions nonRegistryOptions = ssl;
         Supplier<CompletionStage<Boolean>> task = new Supplier<CompletionStage<Boolean>>() {
             @Override
             public CompletionStage<Boolean> get() {
@@ -107,8 +108,8 @@ public class TlsCertificateReloader {
                                 return null;
                             }
                         } else {
-                            var c = reloadFileContent(nonRegistryOptions, sslConfig);
-                            if (c.equals(nonRegistryOptions)) { // No change, skip the update
+                            var c = reloadFileContent(currentSslOptions.get(), sslConfig);
+                            if (c.equals(currentSslOptions.get())) { // No change, skip the update
                                 return null;
                             }
                             return c;
@@ -119,13 +120,18 @@ public class TlsCertificateReloader {
                             @Override
                             public Future<Boolean> apply(SSLOptions res) {
                                 if (res != null) {
-                                    return server.updateSSLOptions(res);
+                                    return server.updateSSLOptions(res).onSuccess(new Handler<>() {
+                                        @Override
+                                        public void handle(Boolean event) {
+                                            currentSslOptions.set(res);
+                                        }
+                                    });
                                 } else {
                                     return Future.succeededFuture(false);
                                 }
                             }
                         })
-                        .onComplete(new Handler<AsyncResult<Boolean>>() {
+                        .onComplete(new Handler<>() {
                             @Override
                             public void handle(AsyncResult<Boolean> ar) {
                                 if (ar.failed()) {
@@ -143,7 +149,7 @@ public class TlsCertificateReloader {
             }
         };
 
-        long id = vertx.setPeriodic(period, new Handler<Long>() {
+        long id = vertx.setPeriodic(period, new Handler<>() {
             @Override
             public void handle(Long id) {
                 task.get();

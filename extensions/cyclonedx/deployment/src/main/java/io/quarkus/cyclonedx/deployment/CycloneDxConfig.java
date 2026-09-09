@@ -84,6 +84,15 @@ public interface CycloneDxConfig {
     boolean includeQuarkusComponentScope();
 
     /**
+     * When Quarkus platform members include product information (a CPE and the extensions/artifacts bound to
+     * an offering) and this option is enabled, each product is represented in the SBOM as a top-level component
+     * of type {@code framework} that {@code provides} the artifacts attributed to it (CycloneDX 1.6
+     * {@code dependency.provides}; recorded as {@code dependsOn} on older schema versions).
+     */
+    @WithDefault("true")
+    boolean productAttribution();
+
+    /**
      * Embedded dependency SBOM configuration
      */
     @ConfigDocSection
@@ -103,25 +112,30 @@ public interface CycloneDxConfig {
         boolean enabled();
 
         /**
-         * Base resource name for the embedded dependency SBOM.
-         * If {@link #compress()} is enabled, the actual classpath resource name will
-         * have a {@code .gz} extension appended (e.g., {@code META-INF/sbom/dependency.cdx.json.gz}).
+         * Resource name for the embedded dependency SBOM.
+         * The SBOM is always stored uncompressed under this exact name.
          *
-         * @return base resource name for the embedded dependency SBOM
+         * @return resource name for the embedded dependency SBOM
          */
         @WithDefault("META-INF/sbom/dependency.cdx.json")
         String resourceName();
 
         /**
-         * Whether to compress the embedded SBOM with GZIP.
-         * When enabled, the SBOM will be stored compressed in the application
-         * with a {@code .gz} extension appended to the {@link #resourceName()},
-         * and served compressed through the endpoint with {@code Content-Encoding: gzip}.
+         * Controls whether the embedded SBOM is served GZIP-compressed through the
+         * <em>endpoint</em>. This option does not affect how the SBOM is stored in the
+         * application: the embedded SBOM resource is always stored uncompressed.
+         * <ul>
+         * <li>if set to {@code true}, the endpoint always serves the SBOM compressed with
+         * {@code Content-Encoding: gzip};</li>
+         * <li>if set to {@code false}, the endpoint always serves the SBOM uncompressed;</li>
+         * <li>if not set, the endpoint negotiates the encoding based on the request's
+         * {@code Accept-Encoding} header, serving the SBOM compressed only when the client
+         * accepts {@code gzip}.</li>
+         * </ul>
          *
-         * @return whether to compress the embedded SBOM with GZIP
+         * @return whether to serve the embedded SBOM GZIP-compressed through the endpoint
          */
-        @WithDefault("true")
-        boolean compress();
+        Optional<Boolean> compress();
     }
 
 }

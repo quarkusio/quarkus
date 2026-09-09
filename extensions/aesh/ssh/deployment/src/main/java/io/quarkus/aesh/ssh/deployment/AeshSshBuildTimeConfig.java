@@ -11,6 +11,12 @@ import io.smallrye.config.WithName;
 public interface AeshSshBuildTimeConfig {
 
     /**
+     * Whether the SSH terminal server is enabled.
+     */
+    @WithDefault("true")
+    boolean enabled();
+
+    /**
      * Whether the health check is published when the smallrye-health extension is present.
      */
     @WithName("health.enabled")

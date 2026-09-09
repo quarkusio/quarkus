@@ -69,7 +69,6 @@ public class SantaClausService {
     }
 }
 ----
-
 <1> This annotation defines your transaction boundaries and will wrap this call within a transaction.
 <2> A `RuntimeException` crossing the transaction boundaries will roll back the transaction.
 
@@ -118,7 +117,6 @@ public class SantaClausService {
     }
 }
 ----
-
 <1> Inject the `TransactionManager` to be able to activate `setRollbackOnly` semantic.
 <2> Programmatically decide to set the transaction for rollback.
 

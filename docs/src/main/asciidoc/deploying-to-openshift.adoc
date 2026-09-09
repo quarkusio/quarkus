@@ -91,7 +91,7 @@ However, if you want to continue to use `DeploymentConfig`, it is still possible
     <artifactId>quarkus-openshift</artifactId>
 </dependency>
 ----
-* Enter the following command on the {openshift} CLI:
+* Enter the following Maven wrapper command:
 +
 [source,bash,subs="+quotes,attributes+"]
 ----
@@ -108,10 +108,10 @@ quarkus extension add quarkus-openshift
 == Logging in to an {openshift} cluster
 
 You can log in to an {openshift} cluster by using the OpenShift CLI (`oc`).
-For more information, see link:https://docs.openshift.com/container-platform/4.18/cli_reference/openshift_cli/getting-started-cli.html[Getting started with the OpenShift CLI]:
+For more information, see link:https://docs.redhat.com/en/documentation/openshift_container_platform/4.18/html/cli_tools/openshift-cli-oc#cli-getting-started[Getting started with the OpenShift CLI]:
 
 .Example: Log in by using the OpenShift CLI
-[source,bash]
+[source,shell]
 ----
 oc login -u myUsername <1>
 ----
@@ -120,7 +120,7 @@ oc login -u myUsername <1>
 Alternatively, you can log in by using the API token:
 
 .Example: Log in by using the OpenShift CLI with API token
-[source,bash]
+[source,shell]
 ----
 oc login --token=myToken --server=myServerUrl
 ----
@@ -193,7 +193,7 @@ To trigger a container image build:
 ./mvnw clean package -Dquarkus.container-image.build=true
 ----
 
-The build that is performed is a _s2i binary_ build.
+The build that is performed is an S2I binary build.
 The input of the build is the JAR file that has been built locally and the build output is an `ImageStream` that is configured to automatically trigger a deployment.
 The base or builder image is specified by using `base-jvm-image` and `base-native-image` for JVM and native mode respectively.
 An `ImageStream` for the image is automatically generated, unless these properties are used to reference an existing `ImageStreamTag` in the internal openshift registry.
@@ -227,13 +227,13 @@ oc get routes <4>
 curl http://<route>/hello <5>
 ----
 <1> Lists the image streams created.
-The image stream of our application should be tagged as <project>/openshift-quickstart:1.0.0-SNAPSHOT.
+The image stream of your application is tagged as <project>/openshift-quickstart:1.0.0-SNAPSHOT.
 <2> Create a new application from the image source.
 <3> Expose the service to the outside world.
 <4> Get the list of exposed routes.
 <5> Access your application.
 
-After this setup the next time the container image is built a deployment to OpenShift is triggered automatically.
+After this setup, the next time the container image is built, a deployment to OpenShift is triggered automatically.
 In other words, you do not need to repeat the above steps.
 endif::no-configuring-application-manually[]
 
@@ -342,7 +342,7 @@ quarkus.openshift.env.vars.my-env-var=foobar
 ----
 
 The above command adds `MY_ENV_VAR=foobar` as an environment variable.
-The key `my-env-var` will convert to uppercase and dashes will be replaced by underscores resulting in `MY_ENV_VAR`.
+The key `my-env-var` converts to uppercase, and dashes are replaced by underscores, resulting in `MY_ENV_VAR`.
 
 ==== Environment variables from Secret
 
@@ -490,7 +490,7 @@ You can configure the rest of the Kubernetes CronJob configuration by using the 
 A conflict between two definitions, for example, mistakenly assigning both a value and specifying that a variable is derived from a field, results in an error being thrown at build time.
 You can fix the issue before you deploy your application to your cluster, where it might be more difficult to diagnose the source of the issue.
 
-Similarly, two redundant definitions, for example, defining an injection from the same secret twice, does not cause an issue but reports a warning to inform you that you might not have intended to duplicate that definition.
+Similarly, two redundant definitions, for example, defining an injection from the same secret twice, do not cause an issue but report a warning to inform you that you might not have intended to duplicate that definition.
 
 === Mounting volumes
 
@@ -502,7 +502,7 @@ You can mount any volume with a simple configuration:
 quarkus.openshift.mounts.my-volume.path=/where/to/mount
 ----
 
-This will add a mount to my pod for volume `my-volume` to path `/where/to/mount`.
+This adds a mount to your pod for volume `my-volume` to path `/where/to/mount`.
 You can configure the volumes themselves as shown in the sections below:
 
 ==== Secret volumes
@@ -529,7 +529,7 @@ quarkus.openshift.pvc-volumes.my-pvc.claim-name=my-pvc
 ifndef::no-knative-serverless-deployment[]
 == Knative - OpenShift Serverless
 
-OpenShift also provides the ability to use Knative by using the link:https://www.openshift.com/learn/topics/serverless[OpenShift Serverless] functionality.
+OpenShift also provides the ability to use Knative by using the link:https://www.redhat.com/en/technologies/cloud-computing/openshift/serverless[OpenShift Serverless] functionality.
 
 First, you instruct Quarkus to generate Knative resources:
 

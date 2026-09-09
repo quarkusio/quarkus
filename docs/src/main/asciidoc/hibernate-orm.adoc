@@ -1919,7 +1919,8 @@ public static class MyInterceptor implements Interceptor, Serializable { // <2>
 to tell Quarkus it should be used in the default persistence unit.
 +
 For <<multiple-persistence-units,named persistence units>>, use `@PersistenceUnitExtension("nameOfYourPU")`
-<2> Implement methods of `org.hibernate.Interceptor` as necessary.
+<2> Implement `org.hibernate.Interceptor`. All its methods have default implementations, so you only need to override the ones you use.
+<3> For example, override `onLoad`, which Hibernate ORM calls just before it initializes an entity instance.
 
 [TIP]
 ====

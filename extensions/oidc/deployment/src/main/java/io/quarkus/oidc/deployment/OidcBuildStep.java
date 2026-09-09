@@ -41,6 +41,7 @@ import org.jboss.jandex.ParameterizedType;
 import org.jboss.jandex.Type;
 import org.jboss.logging.Logger;
 
+import io.quarkus.arc.InjectableInstance;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.arc.deployment.BeanDiscoveryFinishedBuildItem;
@@ -75,6 +76,7 @@ import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
 import io.quarkus.oidc.AuthenticationContext;
 import io.quarkus.oidc.AuthorizationCodeFlow;
 import io.quarkus.oidc.BearerTokenAuthentication;
+import io.quarkus.oidc.DPoPNonceProvider;
 import io.quarkus.oidc.IdToken;
 import io.quarkus.oidc.Oidc;
 import io.quarkus.oidc.Tenant;
@@ -113,6 +115,7 @@ import io.quarkus.security.spi.ClassSecurityAnnotationBuildItem;
 import io.quarkus.security.spi.RegisterClassSecurityCheckBuildItem;
 import io.quarkus.security.spi.SecurityTransformer;
 import io.quarkus.security.spi.SecurityTransformerBuildItem;
+import io.quarkus.security.spi.runtime.BlockingSecurityExecutor;
 import io.quarkus.smallrye.health.deployment.spi.HealthBuildItem;
 import io.quarkus.tls.deployment.spi.TlsRegistryBuildItem;
 import io.quarkus.vertx.core.deployment.CoreVertxBuildItem;
@@ -317,7 +320,12 @@ public class OidcBuildStep {
                                     .configure(TenantIdentityProvider.class)
                                     .named(tenantName)
                                     .scope(APPLICATION.getInfo())
-                                    .supplier(recorder.createTenantIdentityProvider(tenantName))
+                                    .addInjectionPoint(ClassType.create(DefaultTenantConfigResolver.class))
+                                    .addInjectionPoint(ClassType.create(BlockingSecurityExecutor.class))
+                                    // InjectableInstance<DPoPNonceProvider>
+                                    .addInjectionPoint(ParameterizedType.create(InjectableInstance.class,
+                                            ClassType.create(DPoPNonceProvider.class)))
+                                    .createWith(recorder.createTenantIdentityProvider(tenantName))
                                     .unremovable()
                                     .done()));
         }
@@ -338,7 +346,12 @@ public class OidcBuildStep {
                             // which means we need to handle ambiguous resolution
                             .alternative(true)
                             .priority(1)
-                            .supplier(recorder.createTenantIdentityProvider(DEFAULT_TENANT_ID))
+                            .addInjectionPoint(ClassType.create(DefaultTenantConfigResolver.class))
+                            .addInjectionPoint(ClassType.create(BlockingSecurityExecutor.class))
+                            // InjectableInstance<DPoPNonceProvider>
+                            .addInjectionPoint(ParameterizedType.create(InjectableInstance.class,
+                                    ClassType.create(DPoPNonceProvider.class)))
+                            .createWith(recorder.createTenantIdentityProvider(DEFAULT_TENANT_ID))
                             .unremovable()
                             .done());
         }

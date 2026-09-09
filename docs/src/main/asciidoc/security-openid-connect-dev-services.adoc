@@ -303,9 +303,7 @@ For example, if your application configures Keycloak authorization with link:htt
 quarkus.keycloak.devservices.resource-aliases.policies=/policies.jar <1>
 quarkus.keycloak.devservices.resource-mappings.policies=/opt/keycloak/providers/policies.jar <2>
 ----
-<1> `policies` alias is created for the classpath `/policies.jar` resource.
-
-Policy jars can also be located in the file system.
+<1> `policies` alias is created for the classpath `/policies.jar` resource. Policy jars can also be located in the file system.
 <2> The policies jar is mapped to the `/opt/keycloak/providers/policies.jar` container location.
 
 == Disable HTTPS

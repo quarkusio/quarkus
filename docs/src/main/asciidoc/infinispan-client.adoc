@@ -80,6 +80,7 @@ import org.infinispan.protostream.annotations.Proto;
 public record Greeting(String name, String message) {} //<2>
 ----
 <1> You only need an annotation to tag the record to be marshalled by Protostream
+<2> The record components become the fields of the generated Protobuf message, numbered in declaration order, so you do not need `@ProtoField` annotations
 
 Note that we are not going to use Java serialization. https://github.com/infinispan/protostream[Protostream] is
 a serialization library based on Protobuf data format part of Infinispan. Using an annotation based API, we

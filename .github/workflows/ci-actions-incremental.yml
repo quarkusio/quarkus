@@ -387,6 +387,11 @@ jobs:
           add-job-summary: false
           develocity-access-key: ${{ secrets.GRADLE_ENTERPRISE_ACCESS_KEY }}
           develocity-token-expiry: 6
+      - name: Make sure annotation processor is available
+        env:
+          CAPTURE_BUILD_SCAN: true
+        run: |
+          ./mvnw $COMMON_MAVEN_ARGS -Dscalpel.enabled=false -DskipTests -DskipITs -DskipDocs -Dinvoker.skip -Dskip.gradle.tests -Djbang.skip -Dtruststore.skip -Dno-format -pl :quarkus-extension-processor -am clean install
       - name: Build
         env:
           CAPTURE_BUILD_SCAN: true

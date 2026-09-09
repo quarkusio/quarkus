@@ -79,6 +79,7 @@ public class VertxBlockingOutput implements VertxOutput {
     @Override
     public void write(ByteBuf data, boolean last) throws IOException {
         if (last && data == null) {
+            // end() is serialized with pending write() calls by Vert.x, so no lock is needed here.
             request.response().end();
             //if there is a problem we still try and end, but then throw to report to the caller
             if (throwable != null) {

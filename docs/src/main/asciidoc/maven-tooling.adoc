@@ -259,6 +259,10 @@ Now every time you refresh the browser you should see any changes you have made 
 app. This is done via an HTTP based long polling transport, that will synchronize your local workspace and the remote
 application via HTTP calls.
 
+Remote development HTTP requests are limited by `quarkus.http.limits.max-body-size`.
+Set this value high enough for the largest file that must be synchronized.
+If the general HTTP body limit is disabled, remote development still applies a 10 MiB limit.
+
 If you do not want to use the HTTP feature then you can simply run the `remote-dev` command without specifying the URL.
 In this mode the command will continuously rebuild the local application, so you can use an external tool such as odo or
 rsync to sync to the remote application.

@@ -92,15 +92,24 @@ public class AllRequestHeadersAttribute implements ExchangeAttribute {
     }
 
     private String maskCookieHeaderValue(String headerValue) {
-        int idx = headerValue.indexOf('=');
-
-        final String cookieName = idx > 0 ? headerValue.substring(0, idx) : null;
-
-        if (cookieName != null && maskedCookies.contains(cookieName.toLowerCase())) {
-            return cookieName + "=...";
+        if (maskedCookies.isEmpty()) {
+            return headerValue;
         }
 
-        return headerValue;
+        final StringJoiner joiner = new StringJoiner("; ");
+        for (String pair : headerValue.split(";")) {
+            String trimmed = pair.trim();
+            int idx = trimmed.indexOf('=');
+            String cookieName = idx > 0 ? trimmed.substring(0, idx).trim() : null;
+
+            if (cookieName != null && maskedCookies.contains(cookieName.toLowerCase())) {
+                joiner.add(cookieName + "=...");
+            } else {
+                joiner.add(trimmed);
+            }
+        }
+
+        return joiner.toString();
     }
 
     @Override

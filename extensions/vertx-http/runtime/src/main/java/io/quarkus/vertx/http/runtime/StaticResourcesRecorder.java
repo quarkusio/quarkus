@@ -2,6 +2,7 @@ package io.quarkus.vertx.http.runtime;
 
 import static io.quarkus.vertx.http.runtime.RoutingUtils.*;
 
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
@@ -48,6 +49,12 @@ public class StaticResourcesRecorder {
             compressMediaTypes = Set.of();
         }
         StaticResourcesConfig config = httpConfig.getValue().staticResources();
+        // normalize index page like StaticHandler because its not expose
+        // TODO: create a converter to normalize filename in config.indexPage?
+        final String indexPage = (config.indexPage().charAt(0) == '/')
+                ? config.indexPage().substring(1)
+                : config.indexPage();
+        final StaticResourcesConfig.IndexDirectories indexDirectories = config.normalizeIndexDirectories();
 
         if (hotDeploymentResourcePaths != null && !hotDeploymentResourcePaths.isEmpty()) {
             for (Path resourcePath : hotDeploymentResourcePaths) {
@@ -68,6 +75,18 @@ public class StaticResourcesRecorder {
                             if (path == null) {
                                 ctx.fail(HttpResponseStatus.BAD_REQUEST.code());
                                 return;
+                            }
+                            if (!path.endsWith("/")) {
+                                String rel = resolvePath(ctx);
+                                Path directory = resourcePath.resolve(rel.isEmpty() ? "" : rel.substring(1));
+                                if (Files.isDirectory(directory) && Files.isRegularFile(directory.resolve(indexPage))) {
+                                    // the Vert.x handler would redirect on its own, but the behaviour has to follow the
+                                    // configuration, like in production
+                                    if (!handleIndexDirectory(ctx, indexDirectories)) {
+                                        ctx.next();
+                                    }
+                                    return;
+                                }
                             }
                             compressIfNeeded(httpBuildTimeConfig, compressMediaTypes, ctx, path);
                             staticHandler.handle(ctx);
@@ -93,11 +112,6 @@ public class StaticResourcesRecorder {
                     .setMaxAgeSeconds(config.maxAge().toSeconds())
                     .setDirectoryListing(config.directoryListing())
                     .setSendVaryHeader(config.sendVaryHeader());
-            // normalize index page like StaticHandler because its not expose
-            // TODO: create a converter to normalize filename in config.indexPage?
-            final String indexPage = (config.indexPage().charAt(0) == '/')
-                    ? config.indexPage().substring(1)
-                    : config.indexPage();
             handlers.add(new Handler<>() {
                 @Override
                 public void handle(RoutingContext ctx) {
@@ -110,6 +124,9 @@ public class StaticResourcesRecorder {
                     if (knownPaths.contains(rel) || (rel.endsWith("/") && knownPaths.contains(rel.concat(indexPage)))) {
                         compressIfNeeded(httpBuildTimeConfig, compressMediaTypes, ctx, rel);
                         staticHandler.handle(ctx);
+                    } else if (!rel.endsWith("/") && knownPaths.contains(rel + "/" + indexPage)
+                            && handleIndexDirectory(ctx, indexDirectories)) {
+                        return;
                     } else {
                         // make sure we don't lose the correct TCCL to Vert.x...
                         Thread.currentThread().setContextClassLoader(currentCl);

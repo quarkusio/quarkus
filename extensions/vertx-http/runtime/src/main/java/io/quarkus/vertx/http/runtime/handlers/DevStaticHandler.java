@@ -13,6 +13,7 @@ import org.jboss.logging.Logger;
 
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.quarkus.vertx.http.runtime.GeneratedStaticResourcesRecorder;
+import io.quarkus.vertx.http.runtime.StaticResourcesConfig;
 import io.quarkus.vertx.http.runtime.VertxHttpBuildTimeConfig;
 import io.vertx.core.Handler;
 import io.vertx.core.buffer.Buffer;
@@ -38,6 +39,7 @@ public class DevStaticHandler implements Handler<RoutingContext> {
     private final Set<String> compressMediaTypes;
     private final ClassLoader currentClassLoader;
     private final String indexPage;
+    private final StaticResourcesConfig.IndexDirectories indexDirectories;
     private final Charset defaultEncoding;
     private final VertxHttpBuildTimeConfig httpBuildTimeConfig;
 
@@ -53,6 +55,7 @@ public class DevStaticHandler implements Handler<RoutingContext> {
         }
         this.currentClassLoader = Thread.currentThread().getContextClassLoader();
         this.indexPage = options.indexPage();
+        this.indexDirectories = options.indexDirectories();
         this.defaultEncoding = options.defaultEncoding();
     }
 
@@ -74,6 +77,10 @@ public class DevStaticHandler implements Handler<RoutingContext> {
                 || this.generatedFilesResources.containsKey(path);
 
         if (!containsGeneratedResource) {
+            if (!resolvedPath.endsWith("/") && isGeneratedResource(resolvedPath + "/" + this.indexPage)
+                    && handleIndexDirectory(context, indexDirectories)) {
+                return;
+            }
             beforeNextHandler(this.currentClassLoader, context);
             return;
         }
@@ -107,6 +114,10 @@ public class DevStaticHandler implements Handler<RoutingContext> {
                 context.fail(asyncResult.cause());
             }
         });
+    }
+
+    private boolean isGeneratedResource(String path) {
+        return this.generatedClasspathResources.contains(path) || this.generatedFilesResources.containsKey(path);
     }
 
     private void handleAsyncResultSucceeded(RoutingContext context, Buffer result, String path) {

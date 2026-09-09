@@ -5,6 +5,7 @@ import java.util.Set;
 
 import org.jboss.logging.Logger;
 
+import io.netty.handler.codec.http.HttpResponseStatus;
 import io.vertx.core.http.HttpHeaders;
 import io.vertx.core.http.MimeMapping;
 import io.vertx.core.internal.net.RFC3986;
@@ -94,6 +95,37 @@ public final class RoutingUtils {
      * @param ctx
      * @param path
      */
+    /**
+     * Handles a request for a directory containing an index page when the request path does not end with a slash,
+     * according to {@code quarkus.http.static-resources.normalize-index-directories}.
+     *
+     * @return {@code true} if the request was handled, {@code false} if the caller should proceed as if the path
+     *         did not exist
+     */
+    public static boolean handleIndexDirectory(RoutingContext ctx, StaticResourcesConfig.IndexDirectories mode) {
+        String query = ctx.request().query();
+        switch (mode) {
+            case REDIRECT:
+                String location = ctx.request().path() + "/";
+                if (query != null) {
+                    location = location + "?" + query;
+                }
+                ctx.response().setStatusCode(HttpResponseStatus.MOVED_PERMANENTLY.code())
+                        .putHeader(HttpHeaders.LOCATION, location)
+                        .end();
+                return true;
+            case REROUTE:
+                String path = ctx.normalizedPath() + "/";
+                if (query != null) {
+                    path = path + "?" + query;
+                }
+                ctx.reroute(path);
+                return true;
+            default:
+                return false;
+        }
+    }
+
     public static void compressIfNeeded(VertxHttpBuildTimeConfig config, Set<String> compressMediaTypes, RoutingContext ctx,
             String path) {
         if (config.enableCompression() && isCompressed(compressMediaTypes, path)) {

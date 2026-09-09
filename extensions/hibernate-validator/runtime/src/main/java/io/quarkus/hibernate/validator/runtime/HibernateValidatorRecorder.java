@@ -29,6 +29,7 @@ import jakarta.validation.valueextraction.ValueExtractor;
 import org.hibernate.validator.HibernateValidatorFactory;
 import org.hibernate.validator.PredefinedScopeHibernateValidator;
 import org.hibernate.validator.PredefinedScopeHibernateValidatorConfiguration;
+import org.hibernate.validator.internal.engine.AbstractConfigurationImpl;
 import org.hibernate.validator.spi.messageinterpolation.LocaleResolver;
 import org.hibernate.validator.spi.nodenameprovider.PropertyNodeNameProvider;
 import org.hibernate.validator.spi.properties.GetterPropertySelectionStrategy;
@@ -109,11 +110,7 @@ public class HibernateValidatorRecorder {
                     configuration.localeResolver(localeResolver);
                 }
 
-                // Filter out classes with incomplete hierarchy
-                filterIncompleteClasses(classesToBeValidated);
-
                 configuration.builtinConstraints(detectedBuiltinConstraints)
-                        .initializeBeanMetaData(classesToBeValidated)
                         // Locales, Locale ROOT means all locales in this setting.
                         .locales(localesBuildTimeConfig.locales().contains(Locale.ROOT) ? Set.of(Locale.getAvailableLocales())
                                 : localesBuildTimeConfig.locales())
@@ -215,9 +212,14 @@ public class HibernateValidatorRecorder {
                 for (ValidatorFactoryCustomizer validatorFactoryCustomizer : validatorFactoryCustomizers) {
                     validatorFactoryCustomizer.customize(configuration);
                 }
-
+                if (configuration instanceof AbstractConfigurationImpl<?> configurationWithProgrammaticMappings) {
+                    configurationWithProgrammaticMappings.getProgrammaticMappings()
+                            .forEach(mapping -> classesToBeValidated.addAll(mapping.getConfiguredTypes()));
+                }
+                // Filter out classes with incomplete hierarchy
+                filterIncompleteClasses(classesToBeValidated);
+                configuration.initializeBeanMetaData(classesToBeValidated);
                 ValidatorFactory validatorFactory = configuration.buildValidatorFactory();
-
                 return validatorFactory.unwrap(HibernateValidatorFactory.class);
             }
 

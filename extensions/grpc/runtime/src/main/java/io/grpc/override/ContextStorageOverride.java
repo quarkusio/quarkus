@@ -35,7 +35,8 @@ public class ContextStorageOverride extends Context.Storage {
             }
         } else {
             if (dc != null && VertxContext.isDuplicatedContext(dc)) {
-                // Do nothing - duplicated context are not shared.
+                var local = dc.getLocal(VertxContext.DATA_MAP_LOCAL, ConcurrentHashMap::new);
+                local.remove(GRPC_CONTEXT);
             } else {
                 fallback.set(null);
             }

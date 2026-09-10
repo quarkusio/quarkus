@@ -61,6 +61,7 @@ import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.execannotations.ExecutionModelAnnotationsAllowedBuildItem;
+import io.quarkus.deployment.metrics.MetricsCapabilityBuildItem;
 import io.quarkus.gizmo2.ClassOutput;
 import io.quarkus.gizmo2.Const;
 import io.quarkus.gizmo2.Expr;
@@ -71,6 +72,7 @@ import io.quarkus.gizmo2.TypeArgument;
 import io.quarkus.gizmo2.desc.ConstructorDesc;
 import io.quarkus.gizmo2.desc.FieldDesc;
 import io.quarkus.gizmo2.desc.MethodDesc;
+import io.quarkus.runtime.metrics.MetricsFactory;
 import io.quarkus.runtime.util.HashUtil;
 import io.quarkus.signals.Receivers.ExecutionModel;
 import io.quarkus.signals.Signal;
@@ -371,6 +373,20 @@ class SignalsProcessor {
                     .addBeanClasses(
                             "io.quarkus.signals.runtime.tracing.TracingSignalMetadataEnricher",
                             "io.quarkus.signals.runtime.tracing.TracingReceiverInterceptor")
+                    .build());
+        }
+    }
+
+    @BuildStep
+    void registerMetrics(Optional<MetricsCapabilityBuildItem> metricsCapability, SignalsBuildTimeConfig config,
+            BuildProducer<AdditionalBeanBuildItem> beans) {
+        if (config.telemetry().metricsEnabled()
+                && metricsCapability.map(mc -> mc.metricsSupported(MetricsFactory.MICROMETER)).orElse(false)) {
+            // The classes are referenced by name so that Micrometer types are not loaded when the capability is absent
+            beans.produce(AdditionalBeanBuildItem.builder()
+                    .addBeanClasses(
+                            "io.quarkus.signals.runtime.metrics.MetricsSignalMetadataEnricher",
+                            "io.quarkus.signals.runtime.metrics.MetricsReceiverInterceptor")
                     .build());
         }
     }

@@ -520,6 +520,7 @@ NOTE: The Signals resolution model deviates from CDI observer resolution in two 
 * Use *CDI events* for simple publish/subscribe notifications between components, especially when you need synchronous delivery, transactional observers, or ordering of observers, or when you need to stay with the standard Jakarta EE API.
 * Use the *Vert.x EventBus* when you need to interact with the underlying Vert.x runtime directly or integrate with existing Vert.x components.
 
+[[opentelemetry-tracing]]
 == OpenTelemetry Tracing
 
 If the xref:opentelemetry.adoc[OpenTelemetry extension] is present, the active trace context is automatically propagated from the signal emission to the receiver invocations.
@@ -547,6 +548,35 @@ This integration is enabled by default and can be disabled with the following co
 [source,properties]
 ----
 quarkus.signals.telemetry.traces.enabled=false
+----
+
+== Micrometer Metrics
+
+If the xref:telemetry-micrometer.adoc[Micrometer extension] is present, the following counters are registered:
+
+* `signals.emissions` -- incremented once per emission (i.e., per call to `publish()`, `send()`, or `request()`), regardless of the number of matching receivers,
+* `signals.receiver.executions` -- incremented once per completed receiver invocation; a `publish` emission that reaches multiple receivers therefore increments this counter once per receiver. The outcome is distinguished by the `error.type` tag.
+
+The counters are tagged with the following dimensions:
+
+* `signal.type` -- the raw signal type name (generic type arguments are omitted to keep the cardinality bounded),
+* `emission.type` -- the emission type (`PUBLISH`, `SEND` or `REQUEST`),
+* `response.type` -- the expected response type for request-reply emissions, or `none` otherwise (only on `signals.emissions`),
+* `error.type` -- the exception class name of a failed receiver invocation, or `none` if it completed successfully (only on `signals.receiver.executions`). The number of failures can be obtained by filtering on `error.type != "none"`.
+
+[NOTE]
+====
+The counters are deliberately _not_ tagged with the receiver identity, nor with the emission qualifiers.
+
+* Receivers may be registered programmatically at runtime and may be anonymous, which would result in unbounded or missing tag values; receiver-level detail is available through <<opentelemetry-tracing,tracing spans>> instead.
+* Qualifiers are omitted to keep the number of time series bounded. As a consequence, emissions of the same signal type that differ only by qualifier are counted together.
+====
+
+This integration is enabled by default and can be disabled with the following configuration property:
+
+[source,properties]
+----
+quarkus.signals.telemetry.metrics.enabled=false
 ----
 
 == SPI

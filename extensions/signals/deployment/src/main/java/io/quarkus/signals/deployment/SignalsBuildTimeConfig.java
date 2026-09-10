@@ -26,5 +26,15 @@ public interface SignalsBuildTimeConfig {
         @WithName("traces.enabled")
         @WithDefault("true")
         boolean tracesEnabled();
+
+        /**
+         * If collection of signal metrics is enabled. When enabled, counters are registered for the number of emissions,
+         * receiver invocations and failed receiver invocations.
+         * <p>
+         * Only applicable when the Micrometer extension is present.
+         */
+        @WithName("metrics.enabled")
+        @WithDefault("true")
+        boolean metricsEnabled();
     }
 }

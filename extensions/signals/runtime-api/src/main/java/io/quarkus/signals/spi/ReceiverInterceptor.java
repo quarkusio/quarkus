@@ -40,6 +40,20 @@ public interface ReceiverInterceptor {
      * <p>
      * The interceptor must call {@link InterceptionContext#proceed()} to continue the interceptor chain and eventually invoke
      * the receiver. It may transform the result, handle errors, or skip invocation by returning a different {@link Uni}.
+     * <p>
+     * This method is invoked at <em>assembly time</em>, i.e. when the returned {@link Uni} pipeline is being built, not
+     * when the receiver actually runs. The receiver runs later, at <em>subscription time</em>, when the returned
+     * {@link Uni} is subscribed. Consequently, side effects that must be tied to the actual execution of the receiver
+     * (e.g. metrics, logging or context propagation) should be deferred to subscription rather than performed directly in
+     * the body of this method; otherwise they would run even if the returned {@link Uni} is never subscribed, and would
+     * not run again on a re-subscription. A common way to defer such a side effect is:
+     *
+     * <pre>
+     * return Uni.createFrom().deferred(() -&gt; {
+     *     // executed at subscription time, once per actual execution
+     *     return context.proceed();
+     * });
+     * </pre>
      *
      * @param context the interception context
      * @return a {@link Uni} that completes with the receiver's response

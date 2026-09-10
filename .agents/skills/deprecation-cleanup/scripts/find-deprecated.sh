@@ -100,6 +100,13 @@ get_context() {
 # Uses -C -C -C so git traces the line back through file copies/renames across
 # the full history, giving us the *original* introduction date rather than the
 # date a refactor moved the line.
+#
+# Uses committer-time, not author-time: the author date can be stale (a commit
+# rebased, cherry-picked, or amended long after it was originally authored
+# keeps its old author date but gets a fresh committer date). The 12-month
+# removal clock must run from when the code actually landed in the repo, i.e.
+# the committer date, or a genuinely-old author date can make recently-merged
+# code look falsely eligible for removal.
 blame_line() {
     local file="$1"
     local line="$2"
@@ -113,8 +120,8 @@ blame_line() {
         if [[ -z "$commit" ]]; then
             commit="${bl%% *}"          # first token of first line = hash
         fi
-        if [[ "$bl" == author-time\ * ]]; then
-            ts="${bl#author-time }"
+        if [[ "$bl" == committer-time\ * ]]; then
+            ts="${bl#committer-time }"
             break
         fi
     done <<< "$porcelain"

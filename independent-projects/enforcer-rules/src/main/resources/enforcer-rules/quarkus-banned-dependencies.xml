@@ -56,6 +56,10 @@
                 <!-- The groupId for Yasson changed from org.eclipse to org.eclipse.yasson in version 3.0.5 -->
                 <exclude>org.eclipse:yasson</exclude>
                 <exclude>org.eclipse.parsson:jakarta.json</exclude>
+                <!-- CDI 5.0 moved to the jakarta.cdi:jakarta.cdi-api coordinates, having both on
+                     the classpath breaks bean resolution as the classes are duplicated -->
+                <exclude>jakarta.enterprise:jakarta.enterprise.cdi-api</exclude>
+                <exclude>jakarta.enterprise:jakarta.enterprise.lang-model</exclude>
                 <!-- Ensure none of the deps use netty-all. This forces deps to use more fine grained netty artifacts -->
                 <exclude>io.netty:netty-all</exclude>
                 <!-- Ban Log4J 1.x -->

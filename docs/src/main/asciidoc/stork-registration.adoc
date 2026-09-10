@@ -11,6 +11,8 @@ include::_attributes.adoc[]
 
 This guide explains how to enable automatic registration and deregistration of a Quarkus application using SmallRye Stork and Consul, with minimal or no configuration.
 
+include::{includes}/extension-status.adoc[]
+
 == Overview
 
 SmallRye Stork supports service registration backends like Consul and Eureka.

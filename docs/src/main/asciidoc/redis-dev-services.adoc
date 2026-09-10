@@ -4,7 +4,6 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Dev Services for Redis
-:extension-status: stable
 include::_attributes.adoc[]
 :summary: Start Redis automatically in dev and test modes.
 :topics: data,redis,nosql,dev-services,testing,dev-mode
@@ -17,6 +16,8 @@ Quarkus will automatically start a Redis container when running tests or dev mod
 When running the production version of the application, the Redis connection need to be configured as normal,
 so if you want to include a production database config in your `application.properties` and continue to use Dev Services
 we recommend that you use the `%prod.` profile to define your Redis settings.
+
+include::{includes}/extension-status.adoc[]
 
 Dev Services for Redis relies on Docker to start the server.
 If your environment does not support Docker, you will need to start the server manually, or connect to an already running server.

@@ -4,7 +4,6 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Redis extension reference guide
-:extension-status: stable
 include::_attributes.adoc[]
 :numbered:
 :sectnums:
@@ -13,6 +12,8 @@ include::_attributes.adoc[]
 
 Redis is an in-memory data store used as a database, cache, streaming engine, and message broker.
 The Quarkus Redis extension allows integrating Quarkus applications with Redis.
+
+include::{includes}/extension-status.adoc[]
 
 To use this extension, the user must be familiar with Redis, especially understanding the mechanism of commands and how they are organized.
 Typically, we recommend:

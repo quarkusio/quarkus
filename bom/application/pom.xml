@@ -220,6 +220,7 @@
         <!-- Dev UI -->
         <importmap.version>1.0.11</importmap.version>
         <webauthn4j.version>0.30.3.RELEASE</webauthn4j.version>
+        <zstd-jni.version>1.5.7-14</zstd-jni.version> <!-- used by kafka-clients and some Camel components -->
     </properties>
 
     <pluginRepositories>
@@ -6456,6 +6457,11 @@
                 <groupId>org.aesh</groupId>
                 <artifactId>aesh</artifactId>
                 <version>${aesh.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.github.luben</groupId>
+                <artifactId>zstd-jni</artifactId>
+                <version>${zstd-jni.version}</version>
             </dependency>
 
             <!-- Picocli -->

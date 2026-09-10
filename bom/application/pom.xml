@@ -781,6 +781,11 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-devui-observability-store</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-extension-processor</artifactId>
                 <version>${project.version}</version>
             </dependency>
@@ -3597,6 +3602,11 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-micrometer-dev</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-micrometer-opentelemetry-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
@@ -3623,6 +3633,11 @@
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-opentelemetry</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-opentelemetry-dev</artifactId>
                 <version>${project.version}</version>
             </dependency>
 

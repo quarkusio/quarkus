@@ -126,6 +126,8 @@ public class BuildTimeContentProcessor {
         internalImportMapBuildItem.add("qwc-no-data", contextRoot + "qwc/qwc-no-data.js");
         internalImportMapBuildItem.add("qwc-hot-reload-element", contextRoot + "qwc/qwc-hot-reload-element.js");
         internalImportMapBuildItem.add("qwc-abstract-log-element", contextRoot + "qwc/qwc-abstract-log-element.js");
+        internalImportMapBuildItem.add("observability-card-base",
+                contextRoot + "qwc/qwc-observability-card-base.js");
         internalImportMapBuildItem.add("qwc-server-log", contextRoot + "qwc/qwc-server-log.js");
         internalImportMapBuildItem.add("qwc-footer-log", contextRoot + "qwc/qwc-footer-log.js");
         internalImportMapBuildItem.add("qwc-extension-link", contextRoot + "qwc/qwc-extension-link.js");
@@ -146,6 +148,8 @@ public class BuildTimeContentProcessor {
                 contextRoot + "echarts/echarts-force-graph.js");
         internalImportMapBuildItem.add("echarts-bar-stack",
                 contextRoot + "echarts/echarts-bar-stack.js");
+        internalImportMapBuildItem.add("echarts-line",
+                contextRoot + "echarts/echarts-line.js");
 
         // Other assets
         internalImportMapBuildItem.add("icon/", contextRoot + "icon/");

@@ -4,6 +4,7 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.TreeSet;
 
 import org.apache.avro.specific.AvroGenerated;
 import org.apache.avro.specific.SpecificRecordBase;
@@ -57,7 +58,7 @@ public class AvroProcessor {
     @Record(ExecutionTime.RUNTIME_INIT)
     void setupClassSecurityValidator(List<AvroTrustedClassBuildItem> trustedClassItems, AvroBuildTimeConfig config,
             ShutdownContextBuildItem shutdownContext, AvroRecorder recorder) {
-        Set<String> trustedClasses = new HashSet<>();
+        Set<String> trustedClasses = new TreeSet<>();
         for (AvroTrustedClassBuildItem item : trustedClassItems) {
             trustedClasses.addAll(item.getClassNames());
         }

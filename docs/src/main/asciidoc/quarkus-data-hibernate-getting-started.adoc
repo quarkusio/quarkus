@@ -421,6 +421,8 @@ public class Publisher extends ManagedEntity { // <1>
     }
 }
 ----
+<1> `ManagedEntity` replaces `RecordEntity`. This tells Hibernate to track this entity in its persistence context.
+<2> The repository uses `ManagedRepository` instead of `RecordRepository`.
 
 [source,java]
 ----

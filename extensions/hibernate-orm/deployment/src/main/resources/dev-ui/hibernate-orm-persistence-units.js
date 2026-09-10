@@ -2,11 +2,11 @@ import { QwcHotReloadElement, html, css } from 'qwc-hot-reload-element';
 import { JsonRpc } from 'jsonrpc';
 import '@vaadin/icon';
 import '@vaadin/button';
-import '@vaadin/grid';
+import '@vaadin/combo-box';
 import '@vaadin/progress-bar';
-import { columnBodyRenderer } from '@vaadin/grid/lit.js';
 import { notifier } from 'notifier';
 import { observeState } from 'lit-element-state';
+import { hibernateOrmState, restoreSelectedPU, saveSelectedPU } from './hibernate-orm-state.js';
 import { themeState } from 'theme-state';
 import '@quarkus-webcomponents/codeblock';
 import { msg, str, updateWhenLocaleChanges } from 'localization';
@@ -40,7 +40,7 @@ export class HibernateOrmPersistenceUnitsComponent extends observeState(QwcHotRe
     constructor() {
         super();
         updateWhenLocaleChanges(this);
-        this._persistenceUnits = [];
+        this._persistenceUnits = null;
     }
 
     connectedCallback() {
@@ -50,7 +50,11 @@ export class HibernateOrmPersistenceUnitsComponent extends observeState(QwcHotRe
 
     hotReload() {
         this.jsonRpc.getInfo().then(response => {
-            this._persistenceUnits = response.result.persistenceUnits;
+            this._persistenceUnits = response.result.persistenceUnits.map(pu => ({
+                ...pu,
+                label: pu.name + (pu.reactive ? ' (reactive)' : '')
+            }));
+            restoreSelectedPU(this._persistenceUnits);
         }).catch(error => {
             console.error("Failed to fetch persistence units:", error);
             this._persistenceUnits = [];
@@ -68,45 +72,49 @@ export class HibernateOrmPersistenceUnitsComponent extends observeState(QwcHotRe
     }
 
     render() {
-        if (this._persistenceUnits) {
-            return this._renderAllPUs();
-        } else {
+        if (this._persistenceUnits === null) {
             return html`
                 <div style="color: var(--lumo-secondary-text-color);width: 95%;">
                     <div>${msg('Fetching persistence units...', { id: 'quarkus-hibernate-orm-fetching-persistence-units' })}</div>
                     <vaadin-progress-bar indeterminate></vaadin-progress-bar>
                 </div>`;
         }
+        return this._renderAllPUs();
     }
 
     _renderAllPUs() {
-        return this._persistenceUnits.length === 0
-            ? html`
+        if (this._persistenceUnits.length === 0) {
+            return html`
                 <p>
                     ${msg('No persistence units were found.', { id: 'quarkus-hibernate-orm-no-persistence-units' })}
                     <vaadin-button @click="${this.hotReload}" theme="small">
                         ${msg('Check again', { id: 'quarkus-hibernate-orm-check-again' })}
                     </vaadin-button>
-                </p>`
-            : html`
-                <vaadin-tabsheet class="full-height">
-                    <span slot="prefix">
-                        ${msg('Persistence Unit', { id: 'quarkus-hibernate-orm-persistence-unit' })}
-                    </span>
-                    <vaadin-tabs slot="tabs">
-                        ${this._persistenceUnits.map(pu => html`
-                            <vaadin-tab id="pu-${pu.name}-persistence-unit">
-                                <span>${pu.name}</span>
-                            </vaadin-tab>
-                        `)}
-                    </vaadin-tabs>
+                </p>`;
+        }
+        return html`
+            <div class="full-height">
+                ${this._persistenceUnits.length > 1 ? html`
+                    <vaadin-combo-box
+                        label="${msg('Persistence Unit', { id: 'quarkus-hibernate-orm-persistence-unit' })}"
+                        item-label-path="label"
+                        item-value-path="name"
+                        .items="${this._persistenceUnits}"
+                        .value="${hibernateOrmState.selectedPersistenceUnit?.name ?? ''}"
+                        @value-changed="${this._onPersistenceUnitChanged}"
+                        .allowCustomValue="${false}">
+                    </vaadin-combo-box>` : ''}
+                ${hibernateOrmState.selectedPersistenceUnit
+                    ? this._renderPersistenceUnit(hibernateOrmState.selectedPersistenceUnit)
+                    : html`<vaadin-progress-bar indeterminate></vaadin-progress-bar>`}
+            </div>`;
+    }
 
-                    ${this._persistenceUnits.map(pu => html`
-                        <div class="full-height" tab="pu-${pu.name}-persistence-unit">
-                            ${this._renderPersistenceUnit(pu)}
-                        </div>
-                    `)}
-                </vaadin-tabsheet>`;
+    _onPersistenceUnitChanged(event) {
+        const selected = this._persistenceUnits.find(pu => pu.name === event.detail.value);
+        if (selected) {
+            saveSelectedPU(selected);
+        }
     }
 
     _renderPersistenceUnit(pu) {

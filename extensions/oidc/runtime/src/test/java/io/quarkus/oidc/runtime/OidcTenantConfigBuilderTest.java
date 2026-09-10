@@ -36,6 +36,7 @@ import io.quarkus.oidc.common.runtime.config.OidcClientCommonConfigBuilder.Secre
 import io.quarkus.oidc.runtime.OidcTenantConfig.ApplicationType;
 import io.quarkus.oidc.runtime.OidcTenantConfig.Authentication.CookieSameSite;
 import io.quarkus.oidc.runtime.OidcTenantConfig.Provider;
+import io.quarkus.oidc.runtime.OidcTenantConfig.Token.DecryptionAlgorithm;
 import io.quarkus.oidc.runtime.OidcTenantConfig.TokenStateManager.EncryptionAlgorithm;
 import io.quarkus.oidc.runtime.OidcTenantConfig.TokenStateManager.Strategy;
 import io.quarkus.oidc.runtime.builders.AuthenticationConfigBuilder;
@@ -95,6 +96,7 @@ public class OidcTenantConfigBuilderTest {
         assertEquals(OidcConstants.BEARER_SCHEME, token.authorizationScheme());
         assertTrue(token.signatureAlgorithm().isEmpty());
         assertTrue(token.decryptionKeyLocation().isEmpty());
+        assertTrue(token.decryptionAlgorithm().isEmpty());
         assertTrue(token.allowJwtIntrospection());
         assertFalse(token.requireJwtIntrospectionOnly());
         assertTrue(token.allowOpaqueTokenIntrospection());
@@ -270,6 +272,7 @@ public class OidcTenantConfigBuilderTest {
                 .requireJwtIntrospectionOnly()
                 .allowJwtIntrospection(false)
                 .decryptionKeyLocation("decryption-key-location-test")
+                .decryptionAlgorithm(DecryptionAlgorithm.RSA_OAEP_256)
                 .signatureAlgorithm(PS384)
                 .authorizationScheme("bearer-1234")
                 .header("doloris")
@@ -470,6 +473,7 @@ public class OidcTenantConfigBuilderTest {
         assertEquals("bearer-1234", token.authorizationScheme());
         assertEquals(PS384, token.signatureAlgorithm().orElse(null));
         assertEquals("decryption-key-location-test", token.decryptionKeyLocation().orElse(null));
+        assertEquals(DecryptionAlgorithm.RSA_OAEP_256, token.decryptionAlgorithm().orElse(null));
         assertFalse(token.allowJwtIntrospection());
         assertTrue(token.requireJwtIntrospectionOnly());
         assertFalse(token.allowOpaqueTokenIntrospection());

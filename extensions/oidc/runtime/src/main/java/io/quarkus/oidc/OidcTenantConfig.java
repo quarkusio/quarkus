@@ -14,6 +14,7 @@ import io.quarkus.oidc.common.runtime.OidcClientCommonConfig;
 import io.quarkus.oidc.common.runtime.OidcConstants;
 import io.quarkus.oidc.common.runtime.config.OidcCommonConfig;
 import io.quarkus.oidc.runtime.OidcConfig;
+import io.quarkus.oidc.runtime.OidcTenantConfig.Token.DecryptionAlgorithm;
 import io.quarkus.oidc.runtime.builders.AuthenticationConfigBuilder;
 import io.quarkus.oidc.runtime.builders.LogoutConfigBuilder;
 import io.quarkus.oidc.runtime.builders.TokenConfigBuilder;
@@ -2406,6 +2407,11 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
         boolean decryptAccessToken;
 
         /**
+         * ID and access token key decryption algorithm
+         */
+        Optional<DecryptionAlgorithm> decryptionAlgorithm = Optional.empty();
+
+        /**
          * Allow the remote introspection of JWT tokens when no matching JWK key is available.
          *
          * This property is set to `true` by default for backward-compatibility reasons. It is planned that this default value
@@ -2648,6 +2654,7 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
             decryptionKeyLocation = mapping.decryptionKeyLocation();
             decryptIdToken = mapping.decryptIdToken();
             decryptAccessToken = mapping.decryptAccessToken();
+            decryptionAlgorithm = mapping.decryptionAlgorithm();
             allowJwtIntrospection = mapping.allowJwtIntrospection();
             requireJwtIntrospectionOnly = mapping.requireJwtIntrospectionOnly();
             allowOpaqueTokenIntrospection = mapping.allowOpaqueTokenIntrospection();
@@ -2750,6 +2757,11 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
         @Override
         public boolean decryptAccessToken() {
             return decryptAccessToken;
+        }
+
+        @Override
+        public Optional<DecryptionAlgorithm> decryptionAlgorithm() {
+            return decryptionAlgorithm;
         }
 
         @Override

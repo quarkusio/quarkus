@@ -30,12 +30,20 @@ public final class ScheduledBusinessMethodItem extends MultiBuildItem implements
 
     public ScheduledBusinessMethodItem(BeanInfo bean, MethodInfo method, List<AnnotationInstance> schedules,
             boolean hasNonBlockingAnnotation, boolean hasRunOnVirtualThreadAnnotation) {
+        this(bean, method, schedules, hasNonBlockingAnnotation, hasRunOnVirtualThreadAnnotation, false, false);
+    }
+
+    public ScheduledBusinessMethodItem(BeanInfo bean, MethodInfo method, List<AnnotationInstance> schedules,
+            boolean hasNonBlockingAnnotation, boolean hasRunOnVirtualThreadAnnotation, boolean hasBlockingAnnotation,
+            boolean defaultRunOnVirtualThread) {
         this.bean = bean;
         this.method = method;
         this.schedules = schedules;
         this.nonBlocking = hasNonBlockingAnnotation || SchedulerDotNames.COMPLETION_STAGE.equals(method.returnType().name())
                 || SchedulerDotNames.UNI.equals(method.returnType().name()) || KotlinUtil.isSuspendMethod(method);
-        this.runOnVirtualThread = hasRunOnVirtualThreadAnnotation;
+        // the configured default only applies to blocking methods without an explicit execution model annotation
+        this.runOnVirtualThread = hasRunOnVirtualThreadAnnotation
+                || (defaultRunOnVirtualThread && !nonBlocking && !hasBlockingAnnotation);
     }
 
     /**

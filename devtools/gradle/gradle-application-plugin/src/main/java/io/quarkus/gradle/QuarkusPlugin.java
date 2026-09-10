@@ -649,6 +649,8 @@ public class QuarkusPlugin implements Plugin<Project> {
                 .deploymentClasspathSnapshot(classpath.getDeploymentConfiguration().getIncoming().getArtifacts(),
                         projectDir)));
         task.getApplicationModel().set(project.getLayout().getBuildDirectory().file(quarkusModelFile));
+        task.getGradleUserHomeDirectory().set(project.getGradle().getGradleUserHomeDir());
+        task.getRootDirectory().set(project.getRootDir());
     }
 
     private static void configureQuarkusBuildTask(Project project, QuarkusBuildTask task,
@@ -657,6 +659,8 @@ public class QuarkusPlugin implements Plugin<Project> {
             Provider<CustomFileSystemOperations> customFs,
             QuarkusPluginExtension quarkusExt) {
         task.getApplicationModel().set(quarkusGenerateAppModelTask.flatMap(QuarkusApplicationModelTask::getApplicationModel));
+        task.getRootDirectory().set(project.getRootDir());
+        task.getGradleUserHomeDirectory().set(project.getGradle().getGradleUserHomeDir());
         SourceSet mainSourceSet = getSourceSet(project, SourceSet.MAIN_SOURCE_SET_NAME);
         task.getAdditionalForcedProperties().set(serviceProvider);
         task.usesService(serviceProvider);
@@ -689,6 +693,8 @@ public class QuarkusPlugin implements Plugin<Project> {
         }
         task.getApplicationModel()
                 .set(applicationModelTaskTaskProvider.flatMap(QuarkusApplicationModelTask::getApplicationModel));
+        task.getRootDirectory().set(task.getProject().getRootDir());
+        task.getGradleUserHomeDirectory().set(task.getProject().getGradle().getGradleUserHomeDir());
         task.getGeneratedOutputDirectory().set(generatedSources.getJava().getClassesDirectory());
         task.getCachingRelevantInput()
                 .set(quarkusExt.cachingRelevantProperties(quarkusExt.getCachingRelevantProperties().get()));

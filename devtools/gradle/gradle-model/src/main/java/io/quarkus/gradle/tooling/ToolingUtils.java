@@ -9,7 +9,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HexFormat;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
@@ -27,6 +30,7 @@ import org.gradle.composite.internal.DefaultIncludedBuild;
 import org.gradle.internal.composite.IncludedBuildInternal;
 import org.gradle.internal.composite.IncludedRootBuild;
 
+import io.quarkus.bootstrap.app.ApplicationModelRelocation;
 import io.quarkus.bootstrap.app.ApplicationModelSerializer;
 import io.quarkus.bootstrap.model.ApplicationModel;
 import io.quarkus.bootstrap.model.gradle.ModelParameter;
@@ -165,16 +169,54 @@ public class ToolingUtils {
     public static Path serializeAppModel(ApplicationModel appModel, Task context, boolean test) throws IOException {
         final Path serializedModel = context.getTemporaryDir().toPath()
                 .resolve("quarkus-app" + (test ? "-test" : "") + "-model.dat");
-        ApplicationModelSerializer.serialize(appModel, serializedModel);
+        ApplicationModelSerializer.serialize(appModel, serializedModel, projectRoots(context.getProject()));
         return serializedModel;
+    }
+
+    /**
+     * The roots a model serialized for a Gradle build is expressed relative to: the environment roots
+     * every reader can derive on its own, plus the directories only the build knows about - the project
+     * itself, its build directory and the root of the build, which the modules of a multi-module project
+     * live under.
+     * <p>
+     * A build included through {@code includeBuild(...)} gets no root: it sits outside all of these at a
+     * location no reader can derive from the model's path, so its artifacts stay absolute.
+     */
+    public static List<ApplicationModelRelocation.Root> projectRoots(Project project) {
+        final List<ApplicationModelRelocation.Root> roots = new ArrayList<>(
+                ApplicationModelRelocation.environmentRoots());
+        roots.add(new ApplicationModelRelocation.Root(ApplicationModelRelocation.BUILD_DIR_ROOT,
+                project.getLayout().getBuildDirectory().get().getAsFile().toPath()));
+        roots.add(new ApplicationModelRelocation.Root(ApplicationModelRelocation.PROJECT_DIR_ROOT,
+                project.getProjectDir().toPath()));
+        roots.add(new ApplicationModelRelocation.Root(ApplicationModelRelocation.ROOT_DIR_ROOT, project.getRootDir().toPath()));
+        return roots;
     }
 
     public static ApplicationModel deserializeAppModel(Path path) throws IOException {
         return ApplicationModelSerializer.deserialize(path);
     }
 
+    /**
+     * Deserializes an application model, resolving its relocation tokens against the given roots.
+     */
+    public static ApplicationModel deserializeAppModel(Path path, Collection<ApplicationModelRelocation.Root> roots)
+            throws IOException {
+        return ApplicationModelSerializer.deserialize(path, roots);
+    }
+
     public static Path serializeAppModel(ApplicationModel appModel, Path serializedModelPath) throws IOException {
         ApplicationModelSerializer.serialize(appModel, serializedModelPath);
+        return serializedModelPath;
+    }
+
+    /**
+     * Serializes an application model, expressing the absolute paths it contains relative to the given
+     * roots so that the resulting file does not depend on where the project is checked out.
+     */
+    public static Path serializeAppModel(ApplicationModel appModel, Path serializedModelPath,
+            Collection<ApplicationModelRelocation.Root> roots) throws IOException {
+        ApplicationModelSerializer.serialize(appModel, serializedModelPath, roots);
         return serializedModelPath;
     }
 

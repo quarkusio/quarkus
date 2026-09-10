@@ -168,7 +168,7 @@ public class FullyFeaturedServerJacksonMessageBodyWriter extends ServerMessageBo
         }
         if (contextResolver != null) {
             var cr = contextResolver;
-            StringBuilder key = new StringBuilder(o.getClass().getCanonicalName());
+            StringBuilder key = new StringBuilder(o.getClass().getName());
             if (responseMediaType != null) {
                 key.append("-").append(responseMediaType.getType()).append("/").append(responseMediaType.getSubtype());
             }

@@ -54,6 +54,7 @@ import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.vertx.ReadStreamSubscriber;
 import io.smallrye.stork.api.ServiceInstance;
+import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.MultiMap;
@@ -74,6 +75,7 @@ import io.vertx.core.internal.buffer.BufferInternal;
 import io.vertx.core.internal.http.HttpClientInternal;
 import io.vertx.core.net.SocketAddress;
 import io.vertx.core.streams.Pipe;
+import io.vertx.core.streams.ReadStream;
 
 public class ClientSendRequestHandler implements ClientRestHandler {
     private static final Logger log = Logger.getLogger(ClientSendRequestHandler.class);
@@ -210,14 +212,31 @@ public class ClientSendRequestHandler implements ClientRestHandler {
                     MultivaluedMap<String, String> headerMap = requestContext.getRequestHeadersAsMap();
                     updateRequestHeadersFromConfig(requestContext, headerMap);
                     setVertxHeaders(httpClientRequest, headerMap);
-                    Future<HttpClientResponse> sent = httpClientRequest.send(ReadStreamSubscriber.asReadStream(
-                            (Multi<Buffer>) requestContext.getEntity().getEntity(),
+                    Multi<Buffer> buffers = ((Multi<?>) requestContext.getEntity().getEntity()).onItem()
+                            .transform(ClientSendRequestHandler::toBuffer);
+                    if (!httpClientRequest.headers().contains(HttpHeaders.CONTENT_LENGTH)) {
+                        httpClientRequest.setChunked(true);
+                    }
+                    // a failing Multi must fail the request: with the default pipe behaviour the body would be ended
+                    // normally and the server response to the truncated body would be reported as a success
+                    ReadStream<Buffer> body = ReadStreamSubscriber.asReadStream(buffers,
                             new Function<>() {
                                 @Override
                                 public Buffer apply(Buffer buffer) {
                                     return buffer;
                                 }
-                            }));
+                            });
+                    Pipe<Buffer> pipe = body.pipe();
+                    pipe.endOnFailure(false);
+                    pipe.to(httpClientRequest).onComplete(new Handler<>() {
+                        @Override
+                        public void handle(AsyncResult<Void> ar) {
+                            if (ar.failed()) {
+                                httpClientRequest.reset(0L, ar.cause());
+                            }
+                        }
+                    });
+                    Future<HttpClientResponse> sent = httpClientRequest.response();
                     attachSentHandlers(sent, httpClientRequest, requestContext);
                 } else {
                     Future<HttpClientResponse> sent;
@@ -324,6 +343,17 @@ public class ClientSendRequestHandler implements ClientRestHandler {
                         });
             });
         });
+    }
+
+    private static Buffer toBuffer(Object item) {
+        if (item instanceof Buffer buffer) {
+            return buffer;
+        }
+        if (item instanceof byte[] bytes) {
+            return Buffer.buffer(bytes);
+        }
+        throw new IllegalArgumentException("Unsupported item type '" + item.getClass().getName()
+                + "' for a streamed request body. Supported types are io.vertx.core.buffer.Buffer and byte[]");
     }
 
     private void attachSentHandlers(Future<HttpClientResponse> sent,

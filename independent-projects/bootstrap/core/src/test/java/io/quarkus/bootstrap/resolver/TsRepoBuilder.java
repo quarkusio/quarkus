@@ -59,6 +59,7 @@ public class TsRepoBuilder {
         if (p == null) {
             switch (artifact.type) {
                 case TsArtifact.TYPE_JAR:
+                case TsArtifact.TYPE_ZIP:
                     try {
                         p = newJar()
                                 .addMavenMetadata(artifact, pomXml)

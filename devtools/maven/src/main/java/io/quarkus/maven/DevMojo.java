@@ -1167,7 +1167,7 @@ public class DevMojo extends AbstractMojo {
     }
 
     private void addProject(DevModeCommandLineBuilder builder, ResolvedDependency module, boolean root) throws Exception {
-        if (!module.isJar()) {
+        if (!module.isJarOrZip()) {
             return;
         }
 

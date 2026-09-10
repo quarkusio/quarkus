@@ -20,6 +20,8 @@ import io.quarkus.oidc.OidcRedirectFilter;
 import io.quarkus.oidc.OidcTenantConfig;
 import io.quarkus.oidc.Redirect;
 import io.quarkus.oidc.common.runtime.OidcCommonUtils;
+import io.quarkus.oidc.runtime.OidcTenantConfig.Token;
+import io.quarkus.oidc.runtime.OidcTenantConfig.Token.DecryptionAlgorithm;
 import io.quarkus.runtime.configuration.ConfigurationException;
 import io.smallrye.mutiny.Uni;
 
@@ -103,25 +105,48 @@ final class TenantConfigContextImpl implements TenantConfigContext {
         Key key = null;
 
         OidcTenantConfig oidcConfig = provider.oidcConfig;
-        if (oidcConfig.token().decryptionKeyLocation().isPresent()) {
+        Token tokenConfig = oidcConfig.token();
+        if (tokenConfig.decryptionKeyLocation().isPresent()) {
+            verifyTokenDecryptionAlgorithm(oidcConfig, true);
             try {
-                return OidcUtils.readDecryptionKey(oidcConfig.token().decryptionKeyLocation().get());
+                key = OidcUtils.readDecryptionKey(tokenConfig.decryptionKeyLocation().get(),
+                        OidcUtils.getTokenDecryptionAlgorithm(tokenConfig, null));
             } catch (Exception ex) {
                 throw new ConfigurationException(
                         String.format("Token decryption key for tenant %s can not be read from %s",
-                                oidcConfig.tenantId().get(), oidcConfig.token().decryptionKeyLocation().get()),
+                                oidcConfig.tenantId().get(), tokenConfig.decryptionKeyLocation().get()),
                         ex);
             }
+        } else {
+            if (tokenConfig.decryptIdToken().orElse(false) || tokenConfig.decryptAccessToken()) {
+                if (provider.client.getClientJwtKey() != null) {
+                    key = provider.client.getClientJwtKey();
+                } else if (clientSecret != null) {
+                    key = OidcUtils.createSecretKeyFromDigest(clientSecret);
+                }
+            }
+            verifyTokenDecryptionAlgorithm(oidcConfig, key instanceof PrivateKey);
         }
 
-        if (oidcConfig.token().decryptIdToken().orElse(false) || oidcConfig.token().decryptAccessToken()) {
-            if (provider.client.getClientJwtKey() != null) {
-                key = provider.client.getClientJwtKey();
-            } else if (clientSecret != null) {
-                key = OidcUtils.createSecretKeyFromDigest(clientSecret);
-            }
-        }
         return key;
+    }
+
+    static void verifyTokenDecryptionAlgorithm(OidcTenantConfig oidcConfig, boolean privateKeyAvailable) {
+        DecryptionAlgorithm decryptionAlgorithm = oidcConfig.token().decryptionAlgorithm().orElse(null);
+        if (decryptionAlgorithm == null) {
+            return;
+        }
+        if (decryptionAlgorithm == DecryptionAlgorithm.A256GCMKW) {
+            if (privateKeyAvailable) {
+                throw new ConfigurationException(
+                        String.format("Tenant %s requires the %s token decryption algorithm but a private decryption key"
+                                + " is configured", oidcConfig.tenantId().get(), decryptionAlgorithm));
+            }
+        } else if (!privateKeyAvailable) {
+            throw new ConfigurationException(
+                    String.format("Tenant %s requires the %s token decryption algorithm but no private decryption key"
+                            + " is available", oidcConfig.tenantId().get(), decryptionAlgorithm));
+        }
     }
 
     private static SecretKey createStateSecretKey(OidcTenantConfig config, String possiblePkceSecret) {

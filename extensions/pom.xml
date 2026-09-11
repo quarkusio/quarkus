@@ -159,6 +159,7 @@
         <module>oidc-token-propagation-common</module>
         <module>oidc-token-propagation</module>
         <module>oidc-token-propagation-reactive</module>
+        <module>oidc-token-propagation-graphql</module>
         <module>oidc-db-token-state-manager</module>
         <module>oidc-redis-token-state-manager</module>
         <module>keycloak-authorization</module>

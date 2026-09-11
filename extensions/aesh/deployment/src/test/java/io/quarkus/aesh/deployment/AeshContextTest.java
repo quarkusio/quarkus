@@ -45,12 +45,19 @@ public class AeshContextTest {
 
     @Test
     public void testAeshContextMode() {
-        // With multiple commands + commands, should resolve to console mode
+        // With multiple independent commands, should resolve to console mode
         AeshMode mode = aeshContext.getMode();
         Assertions.assertThat(mode).isNotNull();
         Assertions.assertThat(mode).isNotEqualTo(AeshMode.auto);
-        // With commands and multiple commands, should be console mode
         Assertions.assertThat(mode).isEqualTo(AeshMode.console);
+    }
+
+    @Test
+    public void testTopCommandNullInConsoleMode() {
+        // Console mode should not have a top command set
+        Assertions.assertThat(aeshContext.getTopCommandClassName())
+                .as("Top command should be null in console mode")
+                .isNull();
     }
 
     @Test

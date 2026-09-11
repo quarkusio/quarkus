@@ -76,16 +76,42 @@ public class VertxHttpHotReplacementSetup implements HotReplacementSetup {
 
     private static volatile Set<ConnectionBase> openConnections;
 
+    /**
+     * Connections with a request waiting in {@link #handleHotReplacementRequest} for a scan or a restart to complete.
+     * They are not closed when the application stops: the request is dispatched to the restarted application once it
+     * is up.
+     */
+    private static final Set<ConnectionBase> waitingConnections = Collections.newSetFromMap(new ConcurrentHashMap<>());
+
+    /**
+     * The application state at the time the application was last shut down for a restart. Until the restarted
+     * application has installed its root handler, the state is still this one and requests must not be dispatched
+     * to the handlers of the stopped application.
+     */
+    private static volatile Object restartingFrom;
+
     public static void handleDevModeRestart() {
+        restartingFrom = VertxHttpRecorder.getCurrentApplicationState();
         if (DevConsoleManager.isDoingHttpInitiatedReload()) {
             return;
         }
         Set<ConnectionBase> cons = VertxHttpHotReplacementSetup.openConnections;
         if (cons != null) {
             for (ConnectionBase con : cons) {
-                con.close();
+                if (!waitingConnections.contains(con)) {
+                    con.close();
+                }
             }
         }
+    }
+
+    /**
+     * Whether a restart that was not initiated by an HTTP request, for example one triggered by an extension watching
+     * for changes, is in progress.
+     */
+    private static boolean isRestarting() {
+        Object from = restartingFrom;
+        return from != null && from == VertxHttpRecorder.getCurrentApplicationState();
     }
 
     void handleHotReplacementRequest(RoutingContext routingContext) {
@@ -142,7 +168,8 @@ public class VertxHttpHotReplacementSetup implements HotReplacementSetup {
         }
         if ((nextUpdate > System.currentTimeMillis() &&
                 !hotReplacementContext.isTest() &&
-                !DevConsoleManager.isDoingHttpInitiatedReload()) // if there is a live reload possibly going on we don't want to let a request through to restarting application, this is best effort, but it narrows the window a lot
+                !DevConsoleManager.isDoingHttpInitiatedReload() // if there is a live reload possibly going on we don't want to let a request through to restarting application, this is best effort, but it narrows the window a lot
+                && !isRestarting())
                 || routingContext.request().headers().contains(HEADER_NAME)) {
             if (hotReplacementContext.getDeploymentProblem() != null) {
                 handleDeploymentProblem(routingContext, hotReplacementContext.getDeploymentProblem());
@@ -154,6 +181,7 @@ public class VertxHttpHotReplacementSetup implements HotReplacementSetup {
         // We need to set the flag immediately after the check to mitigate
         // the timing issue when multiple requests are processed concurrently
         DevConsoleManager.setDoingHttpInitiatedReload(true);
+        waitingConnections.add(connectionBase);
         try {
             ClassLoader current = Thread.currentThread().getContextClassLoader();
             VertxCoreRecorder.getVertx().get().getOrCreateContext().executeBlocking(new Callable<Boolean>() {
@@ -162,10 +190,12 @@ public class VertxHttpHotReplacementSetup implements HotReplacementSetup {
                     //the blocking pool may have a stale TCCL
                     Thread.currentThread().setContextClassLoader(current);
                     boolean restart = false;
+                    Object currentState = VertxHttpRecorder.getCurrentApplicationState();
                     synchronized (VertxHttpHotReplacementSetup.this) {
-                        if (nextUpdate < System.currentTimeMillis() || hotReplacementContext.isTest()) {
+                        // a restart triggered by another source is waited for through the scan lock, whatever the
+                        // time of the last scan
+                        if (nextUpdate < System.currentTimeMillis() || hotReplacementContext.isTest() || isRestarting()) {
                             nextUpdate = System.currentTimeMillis() + HOT_REPLACEMENT_INTERVAL;
-                            Object currentState = VertxHttpRecorder.getCurrentApplicationState();
                             try {
                                 tempDeploymentProblem = hotReplacementContext.getDeploymentProblem();
                                 restart = hotReplacementContext.doScan(true);
@@ -174,13 +204,13 @@ public class VertxHttpHotReplacementSetup implements HotReplacementSetup {
                             } finally {
                                 tempDeploymentProblem = null;
                             }
-                            if (currentState != VertxHttpRecorder.getCurrentApplicationState()) {
-                                //its possible a Kafka message or some other source triggered a reload,
-                                //so we could wait for the restart (due to the scan lock)
-                                //but then fail to dispatch to the new application
-                                restart = true;
-                            }
                         }
+                    }
+                    if (currentState != VertxHttpRecorder.getCurrentApplicationState()) {
+                        //its possible a Kafka message or some other source triggered a reload,
+                        //so we could wait for the restart (due to the scan lock)
+                        //but then fail to dispatch to the new application
+                        restart = true;
                     }
                     if (hotReplacementContext.getDeploymentProblem() != null) {
                         throw new NoStackTraceException(hotReplacementContext.getDeploymentProblem());
@@ -191,7 +221,7 @@ public class VertxHttpHotReplacementSetup implements HotReplacementSetup {
                         //from holding onto the old deployment
                         Set<ConnectionBase> connections = new HashSet<>(openConnections);
                         for (ConnectionBase con : connections) {
-                            if (con != connectionBase) {
+                            if (con != connectionBase && !waitingConnections.contains(con)) {
                                 con.close();
                             }
                         }
@@ -203,6 +233,7 @@ public class VertxHttpHotReplacementSetup implements HotReplacementSetup {
                 public void handle(AsyncResult<Boolean> result) {
                     // Unset the flag when the blocking code completes
                     DevConsoleManager.setDoingHttpInitiatedReload(false);
+                    waitingConnections.remove(connectionBase);
                     if (result.failed()) {
                         handleDeploymentProblem(routingContext, result.cause());
                     } else {
@@ -220,6 +251,7 @@ public class VertxHttpHotReplacementSetup implements HotReplacementSetup {
         } catch (Throwable e) {
             // Make sure the flag is unset when something bad happens
             DevConsoleManager.setDoingHttpInitiatedReload(false);
+            waitingConnections.remove(connectionBase);
             throw e;
         }
 

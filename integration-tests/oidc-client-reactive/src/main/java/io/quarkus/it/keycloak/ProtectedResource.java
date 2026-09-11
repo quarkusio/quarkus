@@ -4,7 +4,9 @@ import java.security.Principal;
 
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
+import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.GET;
+import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
 
@@ -23,6 +25,15 @@ public class ProtectedResource {
     @Path("userName")
     public String principalName() {
         return principal.getName();
+    }
+
+    @POST
+    @RolesAllowed("user")
+    @Produces("text/plain")
+    @Consumes("text/plain")
+    @Path("userNameReactive")
+    public String echoPrincipalName(String name) {
+        return principal.getName() + ":" + name;
     }
 
     @GET

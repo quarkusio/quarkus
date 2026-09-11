@@ -249,11 +249,23 @@ public class ComposeProject {
     }
 
     private void registerContainersForShutdown() {
-        if (ryukEnabled) {
+        if (usesRyuk()) {
             ResourceReaper
                     .instance()
                     .registerLabelsFilterForCleanup(Collections.singletonMap(DOCKER_COMPOSE_PROJECT, project));
+        } else if (ryukEnabled) {
+            LOG.infov("Not registering compose project {0} with the Ryuk resource reaper, which would remove the {1} "
+                    + "configured to be kept", project, stopContainers ? "volumes" : "services");
         }
+    }
+
+    /**
+     * Ryuk removes every resource labelled with the project (containers, networks, volumes and images) when the
+     * application exits, so it is only used when the configuration asks for the services and their volumes to be
+     * removed anyway.
+     */
+    boolean usesRyuk() {
+        return ryukEnabled && stopContainers && removeVolumes;
     }
 
     private void startServices() {

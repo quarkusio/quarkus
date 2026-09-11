@@ -13,11 +13,8 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.function.Consumer;
 
 import org.eclipse.microprofile.config.Config;
@@ -36,32 +33,7 @@ import io.smallrye.config.common.utils.StringUtil;
 public final class ConfigDiagnostic {
     private static final Logger log = Logger.getLogger("io.quarkus.config");
 
-    private static final List<String> errorsMessages = new CopyOnWriteArrayList<>();
-    private static final Set<String> errorKeys = new CopyOnWriteArraySet<>();
-
     private ConfigDiagnostic() {
-    }
-
-    public static void invalidValue(String name, IllegalArgumentException ex) {
-        final String message = ex.getMessage();
-        final String loggedMessage = message != null ? message
-                : String.format("An invalid value was given for configuration key \"%s\"", name);
-        errorsMessages.add(loggedMessage);
-        errorKeys.add(name);
-    }
-
-    public static void missingValue(String name, NoSuchElementException ex) {
-        final String message = ex.getMessage();
-        final String loggedMessage = message != null ? message
-                : String.format("Configuration key \"%s\" is required, but its value is empty/missing", name);
-        errorsMessages.add(loggedMessage);
-        errorKeys.add(name);
-    }
-
-    public static void duplicate(String name) {
-        final String loggedMessage = String.format("Configuration key \"%s\" was specified more than once", name);
-        errorsMessages.add(loggedMessage);
-        errorKeys.add(name);
     }
 
     public static void deprecatedProperties(Map<String, String> deprecatedProperties) {
@@ -70,28 +42,31 @@ public final class ConfigDiagnostic {
             String propertyName = entry.getKey();
             ConfigValue configValue = config.getConfigValue(propertyName);
             if (configValue.getValue() != null && !configValue.isDefault()) {
-                ConfigDiagnostic.deprecated(propertyName, entry.getValue());
+                ConfigDiagnostic.deprecated(configValue, entry.getValue());
             }
         }
     }
 
-    public static void deprecated(String name, String javadoc) {
+    static void deprecated(ConfigValue configValue, String javadoc) {
         if (javadoc != null) {
-            log.warnf("The \"%s\" config property is deprecated and should not be used anymore. Deprecated message: %s", name,
-                    javadoc);
+            log.warnf("""
+                    Deprecated configuration property %s provided in %s; \
+                    this property is deprecated and should not be used anymore; Deprecated message: %s""",
+                    configValue.getName(), configValue.getConfigSourceName(), javadoc);
         } else {
-            log.warnf("The \"%s\" config property is deprecated and should not be used anymore.", name);
+            log.warnf("""
+                    Deprecated configuration property %s provided in %s; \
+                    this property is deprecated and should not be used anymore""",
+                    configValue.getName(), configValue.getConfigSourceName());
         }
     }
 
-    public static void unknown(String name) {
-        log.warnf(
-                "Unrecognized configuration key \"%s\" was provided; it will be ignored; verify that the dependency extension for this configuration is set or that you did not make a typo",
-                name);
-    }
-
-    public static void unknown(NameIterator name) {
-        unknown(name.getName());
+    static void unknown(ConfigValue configValue) {
+        log.warnf("""
+                Unrecognized configuration property %s provided in %s; \
+                it will be ignored; verify that the dependency extension for this configuration is set \
+                or that you did not make a typo""",
+                configValue.getName(), configValue.getConfigSourceName());
     }
 
     /**
@@ -153,51 +128,28 @@ public final class ConfigDiagnostic {
             if (!found) {
                 ConfigValue configValue = config.getConfigValue(property);
                 if (property.equals(configValue.getName())) {
-                    unknown(property);
+                    unknown(configValue);
                 }
             }
         }
     }
 
+    /**
+     * Used to generate bytecode by RunTimeConfigurationGenerator.
+     */
+    @SuppressWarnings("unused")
     public static void reportUnknown(Set<String> properties) {
         if (ImageMode.current() == ImageMode.NATIVE_BUILD) {
             unknownProperties(properties);
         }
     }
 
+    /**
+     * Used to generate bytecode by RunTimeConfigurationGenerator.
+     */
+    @SuppressWarnings("unused")
     public static void reportUnknownRuntime(Set<String> properties) {
         unknownProperties(properties);
-    }
-
-    /**
-     * Determine if a fatal configuration error has occurred.
-     *
-     * @return {@code true} if a fatal configuration error has occurred
-     */
-    public static boolean isError() {
-        return !errorsMessages.isEmpty();
-    }
-
-    /**
-     * Reset the config error status (for e.g. testing).
-     */
-    public static void resetError() {
-        errorKeys.clear();
-        errorsMessages.clear();
-    }
-
-    public static String getNiceErrorMessage() {
-        StringBuilder b = new StringBuilder();
-        for (String errorsMessage : errorsMessages) {
-            b.append("  - ");
-            b.append(errorsMessage);
-            b.append(System.lineSeparator());
-        }
-        return b.toString();
-    }
-
-    public static Set<String> getErrorKeys() {
-        return new HashSet<>(errorKeys);
     }
 
     private static final String APPLICATION = "application";

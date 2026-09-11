@@ -9,8 +9,10 @@ import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiConsumer;
+import java.util.function.Supplier;
 
 import jakarta.annotation.Priority;
+import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
 import jakarta.interceptor.AroundInvoke;
 import jakarta.interceptor.Interceptor;
@@ -32,15 +34,11 @@ import io.smallrye.mutiny.tuples.Functions;
 @Priority(PLATFORM_BEFORE)
 public class ObservedInterceptor {
 
-    private static volatile ObservedInterceptorConvention customConvention;
-
-    // Will be null if user is not overriding it
-    public static void setCustomConvention(ObservedInterceptorConvention convention) {
-        customConvention = convention;
-    }
-
     @Inject
     ObservationRegistry registry;
+
+    @Inject
+    Instance<ObservedInterceptorConvention> customConventions;
 
     private final ConcurrentHashMap<Method, DefaultObservedInterceptorConvention> conventionCache = new ConcurrentHashMap<>();
 
@@ -61,9 +59,14 @@ public class ObservedInterceptor {
                 });
 
         final Observation observation = ObservedInterceptorDocumentation.DEFAULT
-                .observation(customConvention,
+                .observation(customConventions.isUnsatisfied() ? null : customConventions.get(),
                         defaultConvention,
-                        () -> new ObservedInterceptorContext(ctx),
+                        new Supplier<>() {
+                            @Override
+                            public ObservedInterceptorContext get() {
+                                return new ObservedInterceptorContext(ctx);
+                            }
+                        },
                         registry);
 
         // See ObservationProcessor#transformObservedAnnotations for key/pair validations
@@ -85,7 +88,7 @@ public class ObservedInterceptor {
             Observation.Scope scope = observation.openScope();
             try {
                 return ((Uni<Object>) ctx.proceed())
-                        .onTermination().invoke(new Functions.TriConsumer<Object, Throwable, Boolean>() {
+                        .onTermination().invoke(new Functions.TriConsumer<>() {
                             @Override
                             public void accept(Object o, Throwable throwable, Boolean isCancelled) {
                                 if (Boolean.TRUE.equals(isCancelled)) {
@@ -110,7 +113,7 @@ public class ObservedInterceptor {
             Observation.Scope scope = observation.openScope();
             try {
                 return ((Multi<Object>) ctx.proceed())
-                        .onTermination().invoke(new BiConsumer<Throwable, Boolean>() {
+                        .onTermination().invoke(new BiConsumer<>() {
                             @Override
                             public void accept(Throwable throwable, Boolean isCancelled) {
                                 if (Boolean.TRUE.equals(isCancelled)) {
@@ -153,7 +156,7 @@ public class ObservedInterceptor {
         }
 
         // Synchronous
-        return observation.observeChecked(() -> ctx.proceed());
+        return observation.observeChecked(ctx::proceed);
     }
 
     private Observed resolveAnnotation(ArcInvocationContext ctx) {

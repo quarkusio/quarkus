@@ -5,7 +5,6 @@ import static io.quarkus.observation.deployment.ObservationProcessor.Observation
 
 import java.lang.reflect.Modifier;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -16,7 +15,6 @@ import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget.Kind;
 import org.jboss.jandex.AnnotationTransformation;
 import org.jboss.jandex.AnnotationValue;
-import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.ClassType;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.MethodInfo;
@@ -43,12 +41,14 @@ import io.quarkus.deployment.annotations.BuildSteps;
 import io.quarkus.deployment.annotations.Consume;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
-import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.observation.ObservationRecorder;
 import io.quarkus.observation.cdi.ObservedInterceptor;
 import io.quarkus.observation.cdi.convention.ObservedInterceptorConvention;
 import io.quarkus.observation.config.ObservationBuildConfig;
+import io.quarkus.observation.opentelemetry.handler.OpenTelemetryObservationHandler;
+import io.quarkus.observation.opentelemetry.handler.PropagatingReceiverTracingObservationHandler;
+import io.quarkus.observation.opentelemetry.handler.PropagatingSenderTracingObservationHandler;
 import io.quarkus.observation.opentelemetry.handler.TracingAwareMeterObservationHandler;
 import io.quarkus.observation.propagation.ObservationMpContextPropagationProvider;
 import io.quarkus.smallrye.context.deployment.spi.ThreadContextProviderBuildItem;
@@ -59,9 +59,13 @@ class ObservationProcessor {
     private static final DotName INTERCEPTOR_CLASS = DotName.createSimple(ObservedInterceptor.class.getName());
     private static final DotName OBSERVED = DotName.createSimple(Observed.class.getName());
     private static final String OBSERVATION_FEATURE = "observation";
-    private static final String PROPAGATING_RECEIVER = "io.quarkus.observation.opentelemetry.handler.PropagatingReceiverTracingObservationHandler";
-    private static final String PROPAGATING_SENDER = "io.quarkus.observation.opentelemetry.handler.PropagatingSenderTracingObservationHandler";
-    private static final String DEFAULT_TRACING = "io.quarkus.observation.opentelemetry.handler.OpenTelemetryObservationHandler";
+    private static final DotName PROPAGATING_RECEIVER_DOT_NAME = DotName
+            .createSimple(PropagatingReceiverTracingObservationHandler.class);
+    private static final DotName PROPAGATING_SENDER_DOT_NAME = DotName.createSimple(
+            PropagatingSenderTracingObservationHandler.class);
+    private static final DotName OBSERVATION_OPENTELEMETRY_DOT_NAME = DotName.createSimple(
+            OpenTelemetryObservationHandler.class);
+    private static final DotName TRACING_AWARE_METER_DOT_NAME = DotName.createSimple(TracingAwareMeterObservationHandler.class);
 
     public static class ObservationEnabled implements java.util.function.BooleanSupplier {
 
@@ -88,6 +92,7 @@ class ObservationProcessor {
                 .build();
     }
 
+    @SuppressWarnings("removal")
     @BuildStep
     void registerOtelTracingHandlers(
             Optional<OpenTelemetrySdkBuildItem> openTelemetrySdk,
@@ -97,12 +102,9 @@ class ObservationProcessor {
             // The handle inbound, local and outbound span generation and OTel context propagation.
             additionalBeans.produce(AdditionalBeanBuildItem.builder()
                     .setUnremovable()
-                    .addBeanClass(
-                            "io.quarkus.observation.opentelemetry.handler.PropagatingReceiverTracingObservationHandler")
-                    .addBeanClass(
-                            "io.quarkus.observation.opentelemetry.handler.PropagatingSenderTracingObservationHandler")
-                    .addBeanClass(
-                            "io.quarkus.observation.opentelemetry.handler.OpenTelemetryObservationHandler")
+                    .addBeanClass(PropagatingReceiverTracingObservationHandler.class)
+                    .addBeanClass(PropagatingSenderTracingObservationHandler.class)
+                    .addBeanClass(OpenTelemetryObservationHandler.class)
                     .build());
         }
     }
@@ -233,6 +235,7 @@ class ObservationProcessor {
     /**
      * Create the Observation Registry after all handlers and user extension classes are available.
      */
+    @SuppressWarnings("removal")
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
     SyntheticBeanBuildItem observationRegistryBean(
@@ -245,28 +248,13 @@ class ObservationProcessor {
                 .unremovable()
                 .setRuntimeInit()
                 .addInjectionPoint(ClassType.create(
-                        DotName.createSimple(TracingAwareMeterObservationHandler.class)));
+                        TRACING_AWARE_METER_DOT_NAME));
         if (tracingEnabled) {
-            builder.addInjectionPoint(ClassType.create(DotName.createSimple(PROPAGATING_RECEIVER)))
-                    .addInjectionPoint(ClassType.create(DotName.createSimple(PROPAGATING_SENDER)))
-                    .addInjectionPoint(ClassType.create(DotName.createSimple(DEFAULT_TRACING)));
+            builder.addInjectionPoint(ClassType.create(PROPAGATING_RECEIVER_DOT_NAME))
+                    .addInjectionPoint(ClassType.create(PROPAGATING_SENDER_DOT_NAME))
+                    .addInjectionPoint(ClassType.create(OBSERVATION_OPENTELEMETRY_DOT_NAME));
         }
         return builder.createWith(recorder.createObservationRegistry(tracingEnabled)).done();
-    }
-
-    @BuildStep
-    @Record(ExecutionTime.RUNTIME_INIT)
-    @Consume(SyntheticBeansRuntimeInitBuildItem.class)
-    void resolveCustomConvention(ObservationRecorder recorder, CombinedIndexBuildItem combinedIndex) {
-        DotName conventionName = DotName.createSimple(
-                "io.quarkus.observation.cdi.convention.ObservedInterceptorConvention");
-        DotName defaultConventionName = DotName.createSimple(
-                "io.quarkus.observation.cdi.convention.DefaultObservedInterceptorConvention");
-        Collection<ClassInfo> implementors = combinedIndex.getIndex().getAllKnownImplementors(conventionName);
-        boolean hasCustom = implementors.stream().anyMatch(ci -> !ci.name().equals(defaultConventionName));
-        if (hasCustom) {
-            recorder.setCustomConvention();
-        }
     }
 
     @BuildStep

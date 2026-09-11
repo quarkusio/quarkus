@@ -795,6 +795,7 @@ ID and access tokens may have to be decrypted or their headers preprocessed for 
 |quarkus.oidc.token.decryption-key-location || Decryption key location
 |quarkus.oidc.token.decrypt-id-token || Decrypt ID token if this property is `true` or if `quarkus.oidc.token.decryption-key-location` is set
 |quarkus.oidc.token.decrypt-access-token |false| Decrypt access token
+|quarkus.oidc.token.decryption-algorithm |`RSA-OAEP` for private decryption keys, `A256GCMKW` for secret decryption keys| Key decryption algorithm
 |quarkus.oidc.token.customizer-name || Customizer name
 |====
 
@@ -805,6 +806,8 @@ Both ID and access tokens are considered encrypted if they contain 5 parts separ
 For backward compatibility reasons, ID token decryption is attempted if  `quarkus.oidc.token.decryption-key-location` is configured, but using an optional `quarkus.oidc.token.decrypt-id-token` boolean property is RECOMMENDED instead, to allow for more flexibility in selecting decryption keys.
 
 When either ID or access token must be decrypted, `quarkus.oidc.token.decryption-key-location` is checked first. If this property is not configured, then the <<jwt-client-credentials>> key, if available, is used. Finally, if the decryption key is still not initialized, the configured client secret is used as a decryption key.
+
+The key decryption algorithm is selected according to the decryption key type: `RSA-OAEP` is expected when a private decryption key is used, and `A256GCMKW` when the client secret is used to create a secret decryption key. Set `quarkus.oidc.token.decryption-algorithm` if the OpenID Connect provider uses a different algorithm, for example, `quarkus.oidc.token.decryption-algorithm=RSA-OAEP-256`.
 
 `quarkus.oidc.token.customizer-name` is an advanced property that may be used to select a specific `io.quarkus.oidc.TokenCustomizer` implementation which can pre-process JWT token headers before its signature can be verified. The main use-case is to support verifying legacy Azure JWT tokens which must have their `nonce` header recalculated for the signature verification to succeed.
 

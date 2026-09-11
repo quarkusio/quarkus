@@ -1257,6 +1257,21 @@ public interface OidcTenantConfig extends OidcClientCommonConfig {
         boolean decryptAccessToken();
 
         /**
+         * Supported ID and access token key decryption algorithms
+         */
+        enum DecryptionAlgorithm {
+            RSA_OAEP,
+            RSA_OAEP_256,
+            A256GCMKW
+        }
+
+        /**
+         * ID and access token key decryption algorithm
+         */
+        @ConfigDocDefault("RSA-OAEP if the decryption key is a private key, A256GCMKW if it is a secret key")
+        Optional<DecryptionAlgorithm> decryptionAlgorithm();
+
+        /**
          * Allow the remote introspection of JWT tokens when no matching JWK key is available.
          *
          * This property is set to `true` by default for backward-compatibility reasons. It is planned that this default value

@@ -201,6 +201,11 @@ public class CodeFlowAuthorizationTest {
         doTestCodeFlowEncryptedIdToken("code-flow-encrypted-id-token-pem", KeyEncryptionAlgorithm.A256GCMKW);
     }
 
+    @Test
+    public void testCodeFlowEncryptedIdTokenRsaOaep256() throws IOException {
+        doTestCodeFlowEncryptedIdToken("code-flow-encrypted-id-token-rsa-oaep-256", KeyEncryptionAlgorithm.A256GCMKW);
+    }
+
     private void doTestCodeFlowEncryptedIdToken(String tenant, KeyEncryptionAlgorithm alg) throws IOException {
         try (final WebClient webClient = createWebClient()) {
             webClient.getOptions().setRedirectEnabled(true);

@@ -1699,6 +1699,13 @@ quarkus.log.category."io.quarkus.websockets.next.traffic".level=DEBUG <3>
 <2> Set the number of characters of a text message payload which will be logged.
 <3> Enable `DEBUG` level is for the logger `io.quarkus.websockets.next.traffic`.
 
+== Dev mode
+
+In dev mode, Quarkus scans for source changes when it receives an HTTP request.
+An application whose clients only communicate over open WebSocket connections would never trigger that scan, so a message received by a server endpoint triggers it as well, at most once every two seconds.
+When a change is detected, the application restarts and the open WebSocket connections are closed, because they belong to the previous deployment.
+Clients must reconnect to the restarted application, and the message that triggered the restart is not delivered to the new endpoint.
+
 [[subscribe-or-not-subscribe]]
 == When to subscribe to a `Uni` or `Multi`
 

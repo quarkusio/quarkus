@@ -17,6 +17,7 @@ import io.quarkus.security.UnauthorizedException;
 import io.quarkus.websockets.next.CloseReason;
 import io.quarkus.websockets.next.WebSocketException;
 import io.quarkus.websockets.next.runtime.config.UnhandledFailureStrategy;
+import io.quarkus.websockets.next.runtime.devmode.WebSocketHotReplacementInterceptor;
 import io.quarkus.websockets.next.runtime.telemetry.ErrorInterceptor;
 import io.quarkus.websockets.next.runtime.telemetry.TelemetrySupport;
 import io.smallrye.mutiny.Multi;
@@ -56,6 +57,9 @@ class Endpoints {
         // Create an endpoint that delegates callbacks to the endpoint bean
         WebSocketEndpoint endpoint = createEndpoint(generatedEndpointClass, context, connection, codecs, contextSupport,
                 securitySupport, telemetrySupport);
+
+        // In dev mode, messages received by server endpoints trigger the scan for source changes
+        boolean notifyHotReplacement = connection instanceof WebSocketConnectionImpl && LaunchMode.current().isDevOrTest();
 
         // A broadcast processor is only needed if Multi is consumed by the callback
         BroadcastProcessor<Object> textBroadcastProcessor = endpoint.consumedTextMultiType() != null
@@ -125,7 +129,7 @@ class Endpoints {
 
         if (textBroadcastProcessor == null) {
             // Multi not consumed - invoke @OnTextMessage callback for each message received
-            textMessageHandler(connection, endpoint, ws, onOpenContext, m -> {
+            textMessageHandler(connection, endpoint, ws, onOpenContext, notifyHotReplacement, m -> {
                 if (trafficLogger != null) {
                     trafficLogger.textMessageReceived(connection, m);
                 }
@@ -140,7 +144,7 @@ class Endpoints {
                 });
             }, true);
         } else {
-            textMessageHandler(connection, endpoint, ws, onOpenContext, m -> {
+            textMessageHandler(connection, endpoint, ws, onOpenContext, notifyHotReplacement, m -> {
                 contextSupport.start();
                 try {
                     if (trafficLogger != null) {
@@ -161,7 +165,7 @@ class Endpoints {
 
         if (binaryBroadcastProcessor == null) {
             // Multi not consumed - invoke @OnBinaryMessage callback for each message received
-            binaryMessageHandler(connection, endpoint, ws, onOpenContext, m -> {
+            binaryMessageHandler(connection, endpoint, ws, onOpenContext, notifyHotReplacement, m -> {
                 if (trafficLogger != null) {
                     trafficLogger.binaryMessageReceived(connection, m);
                 }
@@ -176,7 +180,7 @@ class Endpoints {
                 });
             }, true);
         } else {
-            binaryMessageHandler(connection, endpoint, ws, onOpenContext, m -> {
+            binaryMessageHandler(connection, endpoint, ws, onOpenContext, notifyHotReplacement, m -> {
                 contextSupport.start();
                 try {
                     if (trafficLogger != null) {
@@ -358,10 +362,13 @@ class Endpoints {
     }
 
     private static void textMessageHandler(WebSocketConnectionBase connection, WebSocketEndpoint endpoint, WebSocketBase ws,
-            Context context, Consumer<String> textAction, boolean newDuplicatedContext) {
+            Context context, boolean notifyHotReplacement, Consumer<String> textAction, boolean newDuplicatedContext) {
         ws.textMessageHandler(new Handler<String>() {
             @Override
             public void handle(String message) {
+                if (notifyHotReplacement) {
+                    WebSocketHotReplacementInterceptor.messageReceived();
+                }
                 Context duplicatedContext = newDuplicatedContext
                         ? ContextSupport.createNewDuplicatedContext(context, connection)
                         : context;
@@ -376,10 +383,13 @@ class Endpoints {
     }
 
     private static void binaryMessageHandler(WebSocketConnectionBase connection, WebSocketEndpoint endpoint, WebSocketBase ws,
-            Context context, Consumer<Buffer> binaryAction, boolean newDuplicatedContext) {
+            Context context, boolean notifyHotReplacement, Consumer<Buffer> binaryAction, boolean newDuplicatedContext) {
         ws.binaryMessageHandler(new Handler<Buffer>() {
             @Override
             public void handle(Buffer message) {
+                if (notifyHotReplacement) {
+                    WebSocketHotReplacementInterceptor.messageReceived();
+                }
                 Context duplicatedContext = newDuplicatedContext
                         ? ContextSupport.createNewDuplicatedContext(context, connection)
                         : context;

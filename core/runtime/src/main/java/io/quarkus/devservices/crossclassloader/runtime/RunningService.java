@@ -19,16 +19,18 @@ public final class RunningService implements Closeable {
     private final Map<String, String> overrideConfigs;
     private final String containerId;
     private final Closeable closeable;
+    private final boolean reusable;
 
     public RunningService(String feature, String description, Map<String, String> configs, Map<String, String> overrideConfig,
             String containerId,
-            Closeable closeable) {
+            Closeable closeable, boolean reusable) {
         this.feature = feature;
         this.description = description;
         this.configs = configs;
         this.overrideConfigs = overrideConfig;
         this.containerId = containerId;
         this.closeable = closeable;
+        this.reusable = reusable;
     }
 
     @Override
@@ -58,5 +60,9 @@ public final class RunningService implements Closeable {
 
     public String containerId() {
         return containerId;
+    }
+
+    public boolean isReusable() {
+        return reusable;
     }
 }

@@ -97,6 +97,12 @@ class DevServicesPostgresqFixedPortTest extends MojoTestBase {
         assertThat(result.getProcess().waitFor())
                 .as("Test run should succeed")
                 .isZero();
+
+        // Checked immediately, not via await() - this catches Quarkus relying on Ryuk's eventual
+        // cleanup instead of closing it itself. See https://github.com/quarkusio/quarkus/issues/55605
+        assertThat(findContainerOnPort(FIXED_PORT))
+                .as("Container should NOT still be running after the mvn test subprocess has exited, since reuse is not enabled")
+                .isNull();
     }
 
     static String findContainerOnPort(int publicPort) {

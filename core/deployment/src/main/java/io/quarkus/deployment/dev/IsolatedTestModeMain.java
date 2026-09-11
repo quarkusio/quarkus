@@ -12,9 +12,9 @@ import java.util.Map;
 import java.util.ServiceLoader;
 import java.util.Set;
 import java.util.function.BiConsumer;
-import java.util.function.BiFunction;
 
 import io.quarkus.bootstrap.app.AugmentAction;
+import io.quarkus.bootstrap.app.ClassTransformer;
 import io.quarkus.bootstrap.app.CuratedApplication;
 import io.quarkus.bootstrap.runner.Timing;
 import io.quarkus.deployment.builditem.ConsoleFormatterBannerBuildItem;
@@ -23,7 +23,6 @@ import io.quarkus.deployment.dev.testing.TestSetupBuildItem;
 import io.quarkus.deployment.dev.testing.TestSupport;
 import io.quarkus.deployment.jvm.ResolvedJVMRequirements;
 import io.quarkus.deployment.logging.LoggingSetupBuildItem;
-import io.quarkus.deployment.steps.ClassTransformingBuildStep;
 import io.quarkus.dev.spi.DevModeType;
 import io.quarkus.dev.spi.HotReplacementSetup;
 import io.quarkus.runner.bootstrap.AugmentActionImpl;
@@ -64,10 +63,10 @@ public class IsolatedTestModeMain extends IsolatedDevModeMain {
                         @Override
                         public void accept(DevModeContext.ModuleInfo moduleInfo, String s) {
                         }
-                    }, new BiFunction<String, byte[], byte[]>() {
+                    }, new ClassTransformer() {
                         @Override
-                        public byte[] apply(String s, byte[] bytes) {
-                            return ClassTransformingBuildStep.transform(s, bytes);
+                        public byte[] transform(String s, byte[] bytes) {
+                            return augmentAction.getClassTransformer().transform(s, bytes);
                         }
                     }, testSupport, deploymentProblem);
 

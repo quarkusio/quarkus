@@ -15,16 +15,19 @@ import io.quarkus.deployment.builditem.LiveReloadBuildItem;
 
 public class ChangedClassesBuildStep {
 
-    private static volatile IndexView oldIndex;
+    record PreviousIndex(IndexView index) {
+    }
 
     @BuildStep(onlyIf = IsDevelopment.class)
     ChangedClassesBuildItem changedClassesBuildItem(CombinedIndexBuildItem combinedIndexBuildItem,
             LiveReloadBuildItem liveReloadBuildItem) {
         IndexView currentIndex = combinedIndexBuildItem.getIndex();
         if (liveReloadBuildItem.getChangeInformation() == null) {
-            oldIndex = currentIndex;
+            liveReloadBuildItem.setContextObject(PreviousIndex.class, new PreviousIndex(currentIndex));
             return null;
         }
+        PreviousIndex previousIndex = liveReloadBuildItem.getContextObject(PreviousIndex.class);
+        IndexView oldIndex = previousIndex.index();
         Map<DotName, ClassInfo> changedClassesNewVersion = new HashMap<>();
         Map<DotName, ClassInfo> changedClassesOldVersion = new HashMap<>();
         Map<DotName, ClassInfo> deletedClasses = new HashMap<>();
@@ -63,7 +66,7 @@ public class ChangedClassesBuildStep {
             changedClassesNewVersion.put(name, clazz);
         }
 
-        oldIndex = currentIndex;
+        liveReloadBuildItem.setContextObject(PreviousIndex.class, new PreviousIndex(currentIndex));
         return new ChangedClassesBuildItem(changedClassesNewVersion, changedClassesOldVersion, deletedClasses, addedClasses);
     }
 

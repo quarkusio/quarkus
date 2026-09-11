@@ -21,17 +21,20 @@ public final class PersistenceUnitDefinitionBuildItem extends MultiBuildItem {
     private final List<Reason> reasons;
     private final HibernateOrmConfigPersistenceUnit config;
     private final Optional<String> dataSourceName;
+    private final Optional<String> clientName;
     private final Optional<AdditionalConfig> additionalConfig;
 
     public PersistenceUnitDefinitionBuildItem(String persistenceUnitName, ProgrammingParadigm paradigm,
             List<Reason> reasons,
             HibernateOrmConfigPersistenceUnit config, Optional<String> dataSourceName,
+            Optional<String> clientName,
             Optional<AdditionalConfig> additionalConfig) {
         this.persistenceUnitName = persistenceUnitName;
         this.paradigm = paradigm;
         this.reasons = reasons;
         this.config = config;
         this.dataSourceName = dataSourceName;
+        this.clientName = clientName;
         this.additionalConfig = additionalConfig;
     }
 
@@ -55,6 +58,10 @@ public final class PersistenceUnitDefinitionBuildItem extends MultiBuildItem {
         return dataSourceName;
     }
 
+    public Optional<String> getClientName() {
+        return clientName;
+    }
+
     /**
      * @return additional configuration from
      *         {@link io.quarkus.hibernate.orm.deployment.spi.AdditionalPersistenceUnitBuildItem},
@@ -71,6 +78,7 @@ public final class PersistenceUnitDefinitionBuildItem extends MultiBuildItem {
     public record AdditionalConfig(
             Optional<String> dataSourceName,
             Optional<String> explicitDialect,
-            Map<String, String> properties) {
+            Map<String, String> properties,
+            boolean selfManagedConnection) {
     }
 }

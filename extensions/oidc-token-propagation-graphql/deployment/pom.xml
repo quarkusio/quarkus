@@ -121,6 +121,9 @@
                         <artifactId>maven-surefire-plugin</artifactId>
                         <configuration>
                             <skip>false</skip>
+                            <systemPropertyVariables>
+                                <keycloak.use.https>false</keycloak.use.https>
+                            </systemPropertyVariables>
                         </configuration>
                     </plugin>
                 </plugins>

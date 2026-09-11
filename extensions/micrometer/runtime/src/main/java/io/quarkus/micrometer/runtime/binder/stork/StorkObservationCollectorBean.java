@@ -20,7 +20,6 @@ import io.smallrye.stork.api.observability.StorkObservation;
 @ApplicationScoped
 @Typed(ObservationCollector.class)
 public class StorkObservationCollectorBean implements ObservationCollector, StorkEventHandler {
-
     public static final String METRICS_SUFFIX = "-metrics";
     public final static Map<String, StorkObservation> STORK_METRICS = new ConcurrentHashMap<>();
     private final Meter.MeterProvider<Counter> instanceCounter;

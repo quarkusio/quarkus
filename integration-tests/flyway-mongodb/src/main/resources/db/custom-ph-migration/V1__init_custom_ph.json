@@ -1,0 +1,6 @@
+{
+  "insert": "palette",
+  "documents": [
+    { "name": "primary", "color": "#[primary-color]" }
+  ]
+}

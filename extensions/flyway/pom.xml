@@ -15,6 +15,7 @@
     <name>Quarkus - Flyway</name>
     <packaging>pom</packaging>
     <modules>
+        <module>common</module>
         <module>runtime</module>
         <module>deployment</module>
         <module>runtime-dev</module>

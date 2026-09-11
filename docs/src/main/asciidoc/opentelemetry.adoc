@@ -417,6 +417,36 @@ Currently, are available the following exporters (may be outdated) for:
 
 Also on Quarkiverse, the https://docs.quarkiverse.io/quarkus-amazon-services/dev/opentelemetry.html[Quarkus AWS SDK has integration with OpenTelemetry].
 
+=== Coexistence with the default exporter
+
+By default, when an additional exporter is present for a signal (a `SpanExporter`, `MetricExporter` or
+`LogRecordExporter` CDI bean, or an exporter contributed by a Quarkiverse extension), the built-in
+Quarkus OTLP exporter is *not* created for that signal. The additional exporter replaces the default one.
+
+If you want the built-in OTLP exporter to keep exporting *in addition to* the other exporter, so the same
+telemetry is sent to both, set the following build time property:
+
+[source,properties]
+----
+quarkus.otel.exporter.otlp.experimental.default-enabled=true
+----
+
+This is a single switch that applies to all signals (traces, metrics and logs). Setting a signal
+`exporter` to `none` (for example `quarkus.otel.traces.exporter=none`) still disables the built-in
+exporter for that signal, regardless of this property.
+
+[WARNING]
+====
+For *metrics*, all coexisting exporters share a single metric reader, which registers one
+aggregation temporality. When several metric exporters coexist, the temporality of the first one is
+applied to all of them. If the built-in OTLP exporter and a custom exporter disagree on temporality
+(for example cumulative versus delta), the one that does not match will receive metrics in an
+unexpected temporality.
+
+Coexistence of metric exporters that disagree on temporality is therefore not
+supported. Traces and logs are unaffected.
+====
+
 === Logging exporter (for debugging)
 
 You can output all metrics to the console, for debugging/development purposes.

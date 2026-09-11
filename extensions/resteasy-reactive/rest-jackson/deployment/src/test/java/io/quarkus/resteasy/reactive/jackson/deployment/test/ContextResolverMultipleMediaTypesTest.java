@@ -5,6 +5,7 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.not;
 
 import java.util.function.Supplier;
+import java.util.stream.Stream;
 
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
@@ -36,6 +37,16 @@ public class ContextResolverMultipleMediaTypesTest {
                 .body(containsString("some_number"))
                 .body(not(containsString("ssn")))
                 .body(containsString("alice"));
+    }
+
+    @Test
+    public void testStreamResponse() {
+        with().accept(ContentType.JSON)
+                .get("person/stream")
+                .then()
+                .statusCode(200)
+                .body(containsString("alice"))
+                .body(containsString("bob"));
     }
 
     @Test
@@ -88,6 +99,14 @@ public class ContextResolverMultipleMediaTypesTest {
         @Produces({ "application/json", "application/stream+json" })
         public Person get() {
             return new Person("alice", "078-05-1120");
+        }
+
+        @GET
+        @Path("/stream")
+        @Produces("application/json")
+        public Stream<Person> stream() {
+            return Stream.of(new Person("alice", "078-05-1120"), new Person("bob", "123-45-6789"))
+                    .filter(p -> p.getName() != null);
         }
     }
 

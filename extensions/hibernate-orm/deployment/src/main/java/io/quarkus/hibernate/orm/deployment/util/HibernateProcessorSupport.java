@@ -272,6 +272,14 @@ public final class HibernateProcessorSupport {
                 .setProperty(AvailableSettings.IMPLICIT_NAMING_STRATEGY, namingStrategy));
 
         // Mapping
+        // Keep the pre-ORM 8 behavior so quarkus.hibernate-orm.jdbc.timezone continues to apply to java.time values.
+        // Without this, these tests fail with Hibernate ORM 8 direct Java Time JDBC access:
+        // TimezoneDefaultStorageAutoTest
+        // TimezoneDefaultStorageDefaultTest
+        // TimezoneDefaultStorageNativeTest
+        // TimezoneDefaultStorageNormalizeTest
+        // TimezoneDefaultStorageNormalizeUtcTest
+        desc.getProperties().setProperty(AvailableSettings.JAVA_TIME_USE_DIRECT_JDBC, Boolean.FALSE.toString());
         if (config.mapping().timezone().timeZoneDefaultStorage().isPresent()) {
             desc.getProperties().setProperty(AvailableSettings.TIMEZONE_DEFAULT_STORAGE,
                     config.mapping().timezone().timeZoneDefaultStorage().get().name());

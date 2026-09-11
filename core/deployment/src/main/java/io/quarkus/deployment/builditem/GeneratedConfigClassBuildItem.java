@@ -5,7 +5,6 @@ import static java.util.Collections.unmodifiableSet;
 
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -14,7 +13,7 @@ import org.jboss.jandex.DotName;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.builder.item.MultiBuildItem;
 import io.smallrye.config.ConfigMappingLoader;
-import io.smallrye.config.ConfigMappingMetadata;
+import io.smallrye.config.ConfigMappingLoader.GeneratedConfigClass;
 
 public final class GeneratedConfigClassBuildItem extends MultiBuildItem {
     private final Class<?> configClass;
@@ -54,16 +53,18 @@ public final class GeneratedConfigClassBuildItem extends MultiBuildItem {
     }
 
     public static GeneratedConfigClassBuildItem of(final Class<?> configClass) {
-        List<ConfigMappingMetadata> configMappingsMetadata = ConfigMappingLoader.getConfigMappingsMetadata(configClass);
+        Set<GeneratedConfigClass> generatedClasses = ConfigMappingLoader.getGeneratedConfigClasses(configClass);
         boolean isApplicationClass = QuarkusClassLoader.isApplicationClass(configClass.getName());
 
         Map<Class<?>, ConfigClassImplementation> elements = new HashMap<>();
         Set<DotName> interfaces = new HashSet<>();
         Set<DotName> implementations = new HashSet<>();
-        for (ConfigMappingMetadata metadata : configMappingsMetadata) {
-            elements.putIfAbsent(metadata.getInterfaceType(), new ConfigClassImplementation(metadata, isApplicationClass));
-            interfaces.add(DotName.createSimple(metadata.getInterfaceType()));
-            implementations.add(DotName.createSimple(metadata.getClassName()));
+        for (GeneratedConfigClass generatedClass : generatedClasses) {
+            elements.putIfAbsent(generatedClass.getParent(), new ConfigClassImplementation(generatedClass, isApplicationClass));
+            if (generatedClass.getParent().equals(generatedClass.getInterfaceType())) {
+                interfaces.add(DotName.createSimple(generatedClass.getInterfaceType()));
+                implementations.add(DotName.createSimple(generatedClass.getClassName()));
+            }
         }
         return new GeneratedConfigClassBuildItem(configClass, elements, interfaces, implementations);
     }
@@ -95,11 +96,11 @@ public final class GeneratedConfigClassBuildItem extends MultiBuildItem {
     }
 
     public static class ConfigClassImplementation {
-        private final ConfigMappingMetadata mappingMetadata;
+        private final GeneratedConfigClass generatedConfigClass;
         private final boolean isApplicationClass;
 
-        ConfigClassImplementation(final ConfigMappingMetadata mappingMetadata, final boolean isApplicationClass) {
-            this.mappingMetadata = mappingMetadata;
+        ConfigClassImplementation(final GeneratedConfigClass generatedConfigClass, final boolean isApplicationClass) {
+            this.generatedConfigClass = generatedConfigClass;
             this.isApplicationClass = isApplicationClass;
         }
 
@@ -108,11 +109,11 @@ public final class GeneratedConfigClassBuildItem extends MultiBuildItem {
         }
 
         public String getName() {
-            return mappingMetadata.getClassName();
+            return generatedConfigClass.getClassName();
         }
 
         public byte[] getBytes() {
-            return mappingMetadata.getClassBytes();
+            return generatedConfigClass.generateClassBytes();
         }
     }
 }

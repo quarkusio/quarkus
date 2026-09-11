@@ -35,6 +35,7 @@ public interface Server extends Alias {
 
     @JsonProperty
     @WithName("io-threads")
+    @WithDefault("10")
     int threads();
 
     @WithConverter(ByteArrayConverter.class)
@@ -48,7 +49,7 @@ public interface Server extends Alias {
     Optional<Ssl> ssl();
 
     @JsonProperty
-    Optional<Proxy> proxy();
+    Proxy proxy();
 
     @JsonProperty
     Optional<Cors> cors();
@@ -81,10 +82,12 @@ public interface Server extends Alias {
     @RegisterForReflection
     interface Proxy {
         @JsonProperty
-        boolean enable();
+        @WithDefault("false")
+        boolean enabled();
 
         @JsonProperty
-        int timeout();
+        @WithDefault("60s")
+        Duration timeout();
     }
 
     @RegisterForReflection

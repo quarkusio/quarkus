@@ -22,21 +22,19 @@ import java.util.function.Function;
 import com.oracle.svm.core.annotate.Alias;
 import com.oracle.svm.core.annotate.Substitute;
 import com.oracle.svm.core.annotate.TargetClass;
-import com.oracle.svm.core.annotate.TargetElement;
 
-import io.smallrye.common.constraint.Assert;
-import io.smallrye.config.ConfigMappingInterface;
 import io.smallrye.config.ConfigMappingLoader;
-import io.smallrye.config.ConfigMappingMetadata;
+import io.smallrye.config.ConfigMappingLoader.GeneratedConfigClass;
 
 final class Substitutions {
 
     @TargetClass(ConfigMappingLoader.class)
     static final class Target_ConfigMappingLoader {
         @Substitute
-        static Class<?> loadClass(final Class<?> parent, final ConfigMappingMetadata configMappingMetadata) {
+        static Class<?> loadClass(final GeneratedConfigClass generatedClass) {
             try {
-                return parent.getClassLoader().loadClass(configMappingMetadata.getClassName());
+                Class<?> parent = generatedClass.getParent();
+                return parent.getClassLoader().loadClass(generatedClass.getClassName());
             } catch (ClassNotFoundException e) {
                 return null;
             }
@@ -48,61 +46,20 @@ final class Substitutions {
         }
     }
 
-    @TargetClass(ConfigMappingInterface.class)
+    @TargetClass(className = "io.smallrye.config.ConfigMappingInterface")
     static final class Target_ConfigMappingInterface {
-        @Alias
-        static ClassValue<Target_ConfigMappingInterface> cv = null;
-
-        // ClassValue is substituted by a regular ConcurrentHashMap - java.lang.ClassValue.get(JavaLangSubstitutions.java:514)
-        @Substitute
-        public static Target_ConfigMappingInterface getConfigurationInterface(Class<?> interfaceType) {
-            Assert.checkNotNullParam("interfaceType", interfaceType);
-            try {
-                return cv.get(interfaceType);
-            } catch (NullPointerException e) {
-                return null;
-            }
-        }
-
         // This should not be called, but we substitute it anyway to make sure we remove any references to ASM classes.
         @Substitute
-        public byte[] getClassBytes() {
+        public byte[] generateClassBytes() {
             return null;
         }
     }
 
-    @TargetClass(value = ConfigMappingLoader.class, innerClass = "ConfigMappingClass")
+    @TargetClass(className = "io.smallrye.config.ConfigMappingClass")
     static final class Target_ConfigMappingClass {
-        @Alias
-        static ClassValue<Target_ConfigMappingClass> cv = null;
-
-        // ClassValue is substituted by a regular ConcurrentHashMap - java.lang.ClassValue.get(JavaLangSubstitutions.java:514)
-        @Substitute
-        public static Target_ConfigMappingClass getConfigurationClass(Class<?> classType) {
-            Assert.checkNotNullParam("classType", classType);
-            try {
-                return cv.get(classType);
-            } catch (NullPointerException e) {
-                return null;
-            }
-        }
-
-        @Alias
-        private Class<?> classType;
-        @Alias
-        private String interfaceName;
-
-        @Substitute
-        @TargetElement(name = TargetElement.CONSTRUCTOR_NAME)
-        public Target_ConfigMappingClass(final Class<?> classType) {
-            this.classType = classType;
-            this.interfaceName = classType.getPackage().getName() + "." + classType.getSimpleName()
-                    + classType.getName().hashCode() + "I";
-        }
-
         // This should not be called, but we substitute it anyway to make sure we remove any references to ASM classes.
         @Substitute
-        public byte[] getClassBytes() {
+        public byte[] generateClassBytes() {
             return null;
         }
     }

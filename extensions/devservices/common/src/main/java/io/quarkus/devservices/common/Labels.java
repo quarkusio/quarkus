@@ -35,9 +35,12 @@ public final class Labels {
 
     /**
      * Label which indicates that this dev service was started by this process, and therefore should not be discovered for
-     * re-use;
+     * re-use by {@link ContainerLocator};
      * instead reuse should be managed by the DevServicesRegistry, so that config updates apply.
      * We use a UUID as the value so that we don't filter out dev services from other processes.
+     * <p>
+     * This label is omitted when Testcontainers reuse is enabled for the container, so the Docker create command hash
+     * stays stable across JVM restarts.
      */
     public static final String QUARKUS_PROCESS_UUID = QUARKUS_DEV_SERVICE + ".process-uuid";
 

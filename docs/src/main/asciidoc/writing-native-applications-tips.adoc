@@ -55,16 +55,22 @@ will include:
 
 ==== Using a configuration file
 
-If globs are not sufficiently precise for your use case and you need to rely on regular expressions, or if you prefer relying on the GraalVM infrastructure,
-you can also create a `resource-config.json` JSON file defining which resources should be included.
-This, and other native image configuration files, should be placed under the `src/main/resources/META-INF/native-image/<group-id>/<artifact-id>` folder.
-This way they will be automatically parsed by the native build, without additional configuration.
+If you prefer relying on the GraalVM infrastructure directly,
+you can also create a link:https://www.graalvm.org/{graalvm-docs-version}/reference-manual/native-image/metadata/[reachability-metadata.json] file with a `resources` section defining which resources should be included.
+This file should be placed under the `src/main/resources/META-INF/native-image/<group-id>/<artifact-id>` folder.
+This way it will be automatically parsed by the native build, without additional configuration.
 
 [WARNING]
 ====
 Relying on the GraalVM infrastructure means that you are responsible for keeping the configuration file up to date as new Mandrel and GraalVM versions are released.
 
-Please also note that the `resource-config.json` file will be overwritten by Quarkus if placed directly under `src/main/resources/META-INF/native-image/` as Quarkus generates its own configuration file in this directory.
+Note that the `reachability-metadata.json` file will be overwritten by Quarkus if placed directly under `src/main/resources/META-INF/native-image/` as Quarkus generates its own configuration files in this directory.
+====
+
+[IMPORTANT]
+====
+Legacy individual configuration files (`resource-config.json`, `reflect-config.json`, `proxy-config.json`, `jni-config.json`, `serialization-config.json`) are not supported by Quarkus. Use the unified `reachability-metadata.json` format.
+Quarkus automatically generates `reachability-metadata.json` files for native image compilation.
 ====
 
 An example of such a file is the following:
@@ -74,16 +80,16 @@ An example of such a file is the following:
 {
   "resources": [
     {
-      "pattern": ".*\\.xml$"
+      "glob": "**.xml"
     },
     {
-      "pattern": ".*\\.json$"
+      "glob": "**.json"
     }
   ]
 }
 ----
 
-The patterns are valid Java regexps.
+The glob patterns use the same syntax as `quarkus.native.resources.includes`.
 Here we include all the XML files and JSON files into the native executable.
 
 [NOTE]
@@ -204,31 +210,38 @@ You can also use a configuration file to register classes for reflection, if you
 Relying on the GraalVM infrastructure means that you are responsible for keeping the configuration file up to date as new Mandrel and GraalVM versions are released.
 ====
 
-As an example, in order to register all methods of class `com.acme.MyClass` for reflection, we create `reflect-config.json` (the most common location is within `src/main/resources`)
+[IMPORTANT]
+====
+The legacy `reflect-config.json` file is deprecated.
+Use `reachability-metadata.json` with a `reflection` section instead.
+====
+
+As an example, in order to register all methods of class `com.acme.MyClass` for reflection, we create `reachability-metadata.json` under `src/main/resources/META-INF/native-image/<group-id>/<artifact-id>`:
 
 [source,json]
 ----
-[
-  {
-    "name" : "com.acme.MyClass",
-    "allDeclaredConstructors" : true,
-    "allPublicConstructors" : true,
-    "allDeclaredMethods" : true,
-    "allPublicMethods" : true,
-    "allDeclaredFields" : true,
-    "allPublicFields" : true
-  }
-]
+{
+  "reflection": [
+    {
+      "type" : "com.acme.MyClass",
+      "allDeclaredConstructors" : true,
+      "allPublicConstructors" : true,
+      "allDeclaredMethods" : true,
+      "allPublicMethods" : true,
+      "allDeclaredFields" : true,
+      "allPublicFields" : true
+    }
+  ]
+}
 ----
 
 [NOTE]
 ====
-For more information about the format of this file, see the link:https://www.graalvm.org/{graalvm-docs-version}/reference-manual/native-image/dynamic-features/Reflection/[GraalVM Reflection in Native Image] guide.
+For more information about the format of this file, see the link:https://www.graalvm.org/{graalvm-docs-version}/reference-manual/native-image/metadata/[GraalVM Reachability Metadata] guide.
 ====
 
-The final order of business is to make the configuration file known to the `native-image` executable.
-To do that, place the configuration file under the `src/main/resources/META-INF/native-image/<group-id>/<artifact-id>` folder.
-This way they will be automatically parsed by the native build, without additional configuration.
+Place the configuration file under the `src/main/resources/META-INF/native-image/<group-id>/<artifact-id>` folder.
+This way it will be automatically parsed by the native build, without additional configuration.
 
 === Registering for proxy
 
@@ -347,11 +360,17 @@ In such a situation, the error you might encounter is:
 
 [source]
 ----
-com.oracle.svm.core.jdk.UnsupportedFeatureError: Proxy class defined by interfaces [interface org.apache.http.conn.HttpClientConnectionManager, interface org.apache.http.pool.ConnPoolControl, interface com.amazonaws.http.conn.Wrapped] not found. Generating proxy classes at runtime is not supported. Proxy classes need to be defined at image build time by specifying the list of interfaces that they implement. To define proxy classes use -H:DynamicProxyConfigurationFiles=<comma-separated-config-files> and -H:DynamicProxyConfigurationResources=<comma-separated-config-resources> options.
+com.oracle.svm.core.jdk.UnsupportedFeatureError: Proxy class defined by interfaces [interface org.apache.http.conn.HttpClientConnectionManager, interface org.apache.http.pool.ConnPoolControl, interface com.amazonaws.http.conn.Wrapped] not found. Generating proxy classes at runtime is not supported. Proxy classes need to be defined at image build time by specifying the list of interfaces that they implement.
 ----
 
-To solve the issue you can create a `proxy-config.json` file under the `src/main/resources/META-INF/native-image/<group-id>/<artifact-id>` folder.
-For more information about the format of the `proxy-config.json`, see the https://www.graalvm.org/{graalvm-docs-version}/reference-manual/native-image/metadata/#dynamic-proxy-metadata-in-json[Dynamic Proxy Metadata in JSON] documentation.
+[IMPORTANT]
+====
+The legacy `proxy-config.json` file and `-H:DynamicProxyConfigurationFiles`/`-H:DynamicProxyConfigurationResources` options are deprecated.
+Use `reachability-metadata.json` with a `proxy` section instead.
+====
+
+To solve the issue you can create a `reachability-metadata.json` file under the `src/main/resources/META-INF/native-image/<group-id>/<artifact-id>` folder with a `proxy` section.
+For more information about the format, see the link:https://www.graalvm.org/{graalvm-docs-version}/reference-manual/native-image/metadata/[GraalVM Reachability Metadata] guide.
 
 Alternatively, you can create a quarkus extension and register the proxy classes as described in <<managing-proxy-classes-extension>>.
 
@@ -673,7 +692,7 @@ public class S3Processor {
 
 This will allow Quarkus to generate the necessary configuration for handling the proxy class.
 
-Alternatively, you may create a `proxy-config.json` as described in <<managing-proxy-classes-app>>.
+Alternatively, you may create a `reachability-metadata.json` file as described in <<managing-proxy-classes-app>>.
 
 [NOTE]
 ====

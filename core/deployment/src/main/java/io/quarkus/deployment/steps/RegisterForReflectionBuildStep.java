@@ -9,24 +9,27 @@ import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.Type;
+import org.jboss.logging.Logger;
 
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
-import io.quarkus.deployment.builditem.nativeimage.LambdaCapturingTypeBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.LambdaReflectionBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyBuildItem;
 import io.quarkus.runtime.annotations.RegisterForReflection;
 
 public class RegisterForReflectionBuildStep {
 
+    private static final Logger log = Logger.getLogger(RegisterForReflectionBuildStep.class);
+
     @BuildStep
     public void build(CombinedIndexBuildItem combinedIndexBuildItem, Capabilities capabilities,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<ReflectiveHierarchyBuildItem> reflectiveClassHierarchy,
-            BuildProducer<LambdaCapturingTypeBuildItem> lambdaCapturingTypeProducer) {
+            BuildProducer<LambdaReflectionBuildItem> lambdaReflection) {
 
         Set<DotName> processedReflectiveHierarchies = new HashSet<DotName>();
 
@@ -49,10 +52,40 @@ public class RegisterForReflectionBuildStep {
             AnnotationValue targetsValue = i.value("targets");
             AnnotationValue classNamesValue = i.value("classNames");
             AnnotationValue lambdaCapturingTypesValue = i.value("lambdaCapturingTypes");
+            AnnotationValue lambdaDescriptorsValue = i.value("lambdaDescriptors");
 
             if (lambdaCapturingTypesValue != null) {
-                for (String lambdaCapturingType : lambdaCapturingTypesValue.asStringArray()) {
-                    lambdaCapturingTypeProducer.produce(new LambdaCapturingTypeBuildItem(lambdaCapturingType));
+                final String[] lambdaTypes = lambdaCapturingTypesValue.asStringArray();
+                if (lambdaTypes.length > 0) {
+                    log.errorf(
+                            "@RegisterForReflection(lambdaCapturingTypes=...) is no longer supported in reachability-metadata.json. "
+                                    + "Lambda serialization must be registered using @LambdaDescriptor, "
+                                    + "e.g. https://github.com/quarkusio/quarkus/blob/main/integration-tests/native-image-annotations/src/main/java/io/quarkus/it/nat/annotation/ProperLambdaHolder.java "
+                                    + "The following lambda types are ignored: %s. ",
+                            String.join(", ", lambdaTypes));
+                }
+            }
+            // lambda descriptors
+            if (lambdaDescriptorsValue != null) {
+                final AnnotationInstance[] lambdaDescriptors = lambdaDescriptorsValue.asNestedArray();
+                for (AnnotationInstance lambdaDesc : lambdaDescriptors) {
+                    final Type declaringClassType = lambdaDesc.value("declaringClass").asClass();
+                    final String declaringClass = declaringClassType.name().toString();
+                    final String declaringMethod = lambdaDesc.value("declaringMethod").asString();
+                    final Type[] paramTypes = lambdaDesc.valueWithDefault(computingIndex, "parameterTypes").asClassArray();
+                    final String[] parameterTypes = new String[paramTypes.length];
+                    for (int j = 0; j < paramTypes.length; j++) {
+                        parameterTypes[j] = paramTypes[j].name().toString();
+                    }
+                    final Type[] interfaceTypes = lambdaDesc.value("interfaces").asClassArray();
+                    final String[] interfaces = new String[interfaceTypes.length];
+                    for (int j = 0; j < interfaceTypes.length; j++) {
+                        interfaces[j] = interfaceTypes[j].name().toString();
+                    }
+                    lambdaReflection.produce(LambdaReflectionBuildItem.builder(declaringClass, declaringMethod)
+                            .parameterTypes(parameterTypes)
+                            .interfaces(interfaces)
+                            .build());
                 }
             }
 

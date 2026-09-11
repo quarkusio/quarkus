@@ -161,10 +161,10 @@ public class MicrometerProcessor {
 
         for (String beanClassName : OPERATING_SYSTEM_BEAN_CLASS_NAMES) {
             String reason = "Accessed by io.micrometer.core.instrument.binder.system.ProcessorMetrics.ProcessorMetrics(java.lang.Iterable<io.micrometer.core.instrument.Tag>)";
-            reflectiveMethods.produce(new ReflectiveMethodBuildItem(reason, false, beanClassName, "getCpuLoad"));
-            reflectiveMethods.produce(new ReflectiveMethodBuildItem(reason, false, beanClassName, "getSystemCpuLoad"));
-            reflectiveMethods.produce(new ReflectiveMethodBuildItem(reason, false, beanClassName, "getProcessCpuLoad"));
-            reflectiveMethods.produce(new ReflectiveMethodBuildItem(reason, false, beanClassName, "getProcessCpuTime"));
+            reflectiveMethods.produce(new ReflectiveMethodBuildItem(reason, beanClassName, "getCpuLoad"));
+            reflectiveMethods.produce(new ReflectiveMethodBuildItem(reason, beanClassName, "getSystemCpuLoad"));
+            reflectiveMethods.produce(new ReflectiveMethodBuildItem(reason, beanClassName, "getProcessCpuLoad"));
+            reflectiveMethods.produce(new ReflectiveMethodBuildItem(reason, beanClassName, "getProcessCpuTime"));
         }
 
         return UnremovableBeanBuildItem.beanTypes(METER_REGISTRY, METER_BINDER, METER_FILTER, METER_REGISTRY_CUSTOMIZER,

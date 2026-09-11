@@ -3,8 +3,10 @@ package io.quarkus.it.rest;
 import io.quarkus.runtime.annotations.RegisterForReflection;
 
 /**
- * This class is registering targets = ResourceD.StaticClassOfD
- * The class itself won't be registered by this, only target will be registered without registering nested classes
+ * Registers target = ResourceD.StaticClassOfD.
+ * Quarkus omits nested classes of the target from the JSON as `ignoreNested = true`.
+ * Mandrel/GraalVM reachability-metadata driven flow unconditionally registers
+ * the target's nested classes e.g. OtherAccessibleClassOfD and its declaring class ResourceD.
  */
 @RegisterForReflection(targets = ResourceD.StaticClassOfD.class, ignoreNested = true)
 public class ResourceC {

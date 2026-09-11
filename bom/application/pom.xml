@@ -226,6 +226,7 @@
         <webauthn4j.version>0.30.3.RELEASE</webauthn4j.version>
         <jsoup.version>1.23.2</jsoup.version> <!-- JSoup is used by Camel and LangChain4J so be careful when updating -->
         <reactor.version>3.8.7</reactor.version>
+        <zstd-jni.version>1.5.7-14</zstd-jni.version> <!-- used by kafka-clients and some Camel components -->
     </properties>
 
     <pluginRepositories>
@@ -6752,6 +6753,11 @@
                 <groupId>io.projectreactor</groupId>
                 <artifactId>reactor-core</artifactId>
                 <version>${reactor.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.github.luben</groupId>
+                <artifactId>zstd-jni</artifactId>
+                <version>${zstd-jni.version}</version>
             </dependency>
 
             <!-- Apache SSHD Netty transport (sshd-core and sshd-common already managed) -->

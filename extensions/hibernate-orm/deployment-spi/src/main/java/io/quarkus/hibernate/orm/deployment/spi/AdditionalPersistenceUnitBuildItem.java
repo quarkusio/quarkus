@@ -27,6 +27,7 @@ public final class AdditionalPersistenceUnitBuildItem extends MultiBuildItem {
     private final String persistenceUnitName;
     private final Reason reason;
     private final Optional<String> dataSourceName;
+    private final Optional<String> clientName;
     private final Optional<String> explicitDialect;
     private final Set<String> managedClassNames;
     private final Set<String> mappingFileNames;
@@ -36,6 +37,7 @@ public final class AdditionalPersistenceUnitBuildItem extends MultiBuildItem {
         this.persistenceUnitName = builder.persistenceUnitName;
         this.reason = builder.reason;
         this.dataSourceName = builder.dataSourceName;
+        this.clientName = builder.clientName;
         this.explicitDialect = builder.explicitDialect;
         this.managedClassNames = Collections.unmodifiableSet(new LinkedHashSet<>(builder.managedClassNames));
         this.mappingFileNames = Collections.unmodifiableSet(new LinkedHashSet<>(builder.mappingFileNames));
@@ -52,6 +54,10 @@ public final class AdditionalPersistenceUnitBuildItem extends MultiBuildItem {
 
     public Optional<String> getDataSourceName() {
         return dataSourceName;
+    }
+
+    public Optional<String> getClientName() {
+        return clientName;
     }
 
     public Optional<String> getExplicitDialect() {
@@ -87,6 +93,7 @@ public final class AdditionalPersistenceUnitBuildItem extends MultiBuildItem {
         private final String persistenceUnitName;
         private final Reason reason;
         private Optional<String> dataSourceName = Optional.empty();
+        private Optional<String> clientName = Optional.empty();
         private Optional<String> explicitDialect = Optional.empty();
         private final Set<String> managedClassNames = new LinkedHashSet<>();
         private final Set<String> mappingFileNames = new LinkedHashSet<>();
@@ -104,13 +111,25 @@ public final class AdditionalPersistenceUnitBuildItem extends MultiBuildItem {
 
         /**
          * Sets the datasource backing this persistence unit. When not set (or set to {@code null}), the default
-         * datasource is used.
+         * datasource is used. Mutually exclusive with {@link #clientName(String)}.
          *
          * @param dataSourceName The name of the datasource backing this persistence unit.
          * @return This builder.
          */
         public Builder dataSourceName(String dataSourceName) {
             this.dataSourceName = Optional.ofNullable(dataSourceName);
+            return this;
+        }
+
+        /**
+         * Sets the external client backing this persistence unit. When set, the persistence unit uses
+         * the named client instead of a datasource. Mutually exclusive with {@link #dataSourceName(String)}.
+         *
+         * @param clientName The name of the external client backing this persistence unit.
+         * @return This builder.
+         */
+        public Builder clientName(String clientName) {
+            this.clientName = Optional.ofNullable(clientName);
             return this;
         }
 
@@ -196,6 +215,10 @@ public final class AdditionalPersistenceUnitBuildItem extends MultiBuildItem {
         }
 
         public AdditionalPersistenceUnitBuildItem build() {
+            if (dataSourceName.isPresent() && clientName.isPresent()) {
+                throw new IllegalArgumentException(
+                        "Cannot set both dataSourceName and clientName on the same persistence unit");
+            }
             return new AdditionalPersistenceUnitBuildItem(this);
         }
     }

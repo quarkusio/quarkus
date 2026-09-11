@@ -61,7 +61,7 @@ public class DuplicateBeanStereotypesTest {
                 throw new UncheckedIOException(e);
             }
             Supplier<StereotypeInfo> stereotypeSupplier = () -> new StereotypeInfo(BuiltinScope.DEPENDENT.getInfo(),
-                    List.of(), false, null, false, false, clazz, false, List.of());
+                    List.of(), false, false, null, false, false, false, false, clazz, false, List.of());
 
             context.configure(MyBean.class)
                     .addType(MyBean.class)

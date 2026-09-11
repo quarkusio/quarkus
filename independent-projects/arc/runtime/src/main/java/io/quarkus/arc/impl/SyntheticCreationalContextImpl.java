@@ -3,8 +3,10 @@ package io.quarkus.arc.impl;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 
 import jakarta.enterprise.context.spi.CreationalContext;
 import jakarta.enterprise.inject.Default;
@@ -28,6 +30,10 @@ public final class SyntheticCreationalContextImpl<T> implements SyntheticCreatio
 
     public CreationalContext<T> getDelegateCreationalContext() {
         return creationalContext;
+    }
+
+    public Map<TypeAndQualifiers, Object> getInjectedReferences() {
+        return injectedReferences;
     }
 
     @Override
@@ -71,8 +77,13 @@ public final class SyntheticCreationalContextImpl<T> implements SyntheticCreatio
         if (qualifiers.length == 0) {
             qualifiers = new Annotation[] { Default.Literal.INSTANCE };
         }
-        R ref = (R) injectedReferences.get(new TypeAndQualifiers(requiredType, qualifiers));
+        TypeAndQualifiers key = new TypeAndQualifiers(requiredType, qualifiers);
+        R ref = (R) injectedReferences.get(key);
         if (ref == null) {
+            // uncommon case, but dependent beans can be `null`
+            if (injectedReferences.containsKey(key)) {
+                return null;
+            }
             throw new IllegalArgumentException("A synthetic injection point was not declared for required type [" + requiredType
                     + " and qualifiers: " + Arrays.toString(qualifiers));
         }
@@ -82,18 +93,18 @@ public final class SyntheticCreationalContextImpl<T> implements SyntheticCreatio
     public final static class TypeAndQualifiers {
 
         private final Type requiredType;
-        private final Annotation[] qualifiers;
+        private final Set<Annotation> qualifiers;
 
         public TypeAndQualifiers(Type requiredType, Annotation[] qualifiers) {
             this.requiredType = Objects.requireNonNull(requiredType);
-            this.qualifiers = qualifiers == null ? new Annotation[] { Default.Literal.INSTANCE } : qualifiers;
+            this.qualifiers = qualifiers == null ? Set.of(Default.Literal.INSTANCE) : Set.copyOf(List.of(qualifiers));
         }
 
         @Override
         public int hashCode() {
             final int prime = 31;
             int result = 1;
-            result = prime * result + Arrays.hashCode(qualifiers);
+            result = prime * result + qualifiers.hashCode();
             result = prime * result + requiredType.hashCode();
             return result;
         }
@@ -110,7 +121,7 @@ public final class SyntheticCreationalContextImpl<T> implements SyntheticCreatio
                 return false;
             }
             TypeAndQualifiers other = (TypeAndQualifiers) obj;
-            return Objects.equals(requiredType, other.requiredType) && Arrays.equals(qualifiers, other.qualifiers);
+            return requiredType.equals(other.requiredType) && qualifiers.equals(other.qualifiers);
         }
 
     }

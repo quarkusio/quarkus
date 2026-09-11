@@ -34,7 +34,7 @@ public class ArcDevUIProcessor {
 
         CardPageBuildItem pageBuildItem = new CardPageBuildItem();
         pageBuildItem.setLogo("cdi_logo.png", "cdi_logo.png");
-        pageBuildItem.addLibraryVersion("jakarta.enterprise", "jakarta.enterprise.cdi-api", "Jakarta CDI",
+        pageBuildItem.addLibraryVersion("jakarta.cdi", "jakarta.cdi-api", "Jakarta CDI",
                 "https://jakarta.ee/specifications/cdi/");
 
         List<DevBeanInfo> beans = beanInfos.getBeans();

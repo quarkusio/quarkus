@@ -77,6 +77,7 @@ public class CreationalContextImpl<T> implements CreationalContext<T>, Function<
 
     @Override
     public void release() {
+        // note that this method is idempotent, which is relied upon elsewhere (`CreationalContextReleaser`)
         synchronized (this) {
             if (dependentInstances != null) {
                 for (InstanceHandle<?> instance : dependentInstances) {

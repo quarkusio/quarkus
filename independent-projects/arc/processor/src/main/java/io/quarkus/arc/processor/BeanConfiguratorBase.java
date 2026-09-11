@@ -51,17 +51,22 @@ public abstract class BeanConfiguratorBase<THIS extends BeanConfiguratorBase<THI
     protected final Set<AnnotationInstance> qualifiers;
     protected ScopeInfo scope;
     protected Boolean alternative;
+    protected Boolean reserve;
     protected final List<StereotypeInfo> stereotypes;
     protected String name;
+    // this is for CDI `@Eager`, while `startupPriority` is for ArC `@Startup`
+    // they are intentionally disconnected, because expressing one in terms of the other would be needlessly complex
+    protected Boolean eager;
+    protected Boolean autoClose;
     protected Consumer<CreateGeneration> creatorConsumer;
     protected Consumer<DestroyGeneration> destroyerConsumer;
-    protected boolean defaultBean;
     protected boolean removable;
     protected Type providerType;
     protected boolean forceApplicationClass;
     protected String targetPackageName;
     protected Integer priority;
     protected final Set<TypeAndQualifiers> injectionPoints;
+    // see `eager`
     protected Integer startupPriority;
     protected InterceptionProxyInfo interceptionProxy;
     protected Consumer<CheckActiveGeneration> checkActiveConsumer;
@@ -96,14 +101,12 @@ public abstract class BeanConfiguratorBase<THIS extends BeanConfiguratorBase<THI
         qualifiers.addAll(base.qualifiers);
         scope = base.scope;
         alternative = base.alternative;
+        reserve = base.reserve;
         stereotypes.clear();
         stereotypes.addAll(base.stereotypes);
         name = base.name;
         creator(base.creatorConsumer);
         destroyer(base.destroyerConsumer);
-        if (base.defaultBean) {
-            defaultBean = true;
-        }
         removable = base.removable;
         providerType = base.providerType;
         forceApplicationClass = base.forceApplicationClass;
@@ -112,6 +115,8 @@ public abstract class BeanConfiguratorBase<THIS extends BeanConfiguratorBase<THI
         injectionPoints.clear();
         injectionPoints.addAll(base.injectionPoints);
         startupPriority = base.startupPriority;
+        eager = base.eager;
+        autoClose = base.autoClose;
         interceptionProxy = base.interceptionProxy;
         checkActiveConsumer = base.checkActiveConsumer;
         return self();
@@ -266,8 +271,15 @@ public abstract class BeanConfiguratorBase<THIS extends BeanConfiguratorBase<THI
         return name(name).addQualifier().annotation(DotNames.NAMED).addValue("value", name).done();
     }
 
+    /**
+     * @deprecated use {@link #reserve(boolean)}
+     */
+    @Deprecated(forRemoval = true, since = "4.0")
     public THIS defaultBean() {
-        this.defaultBean = true;
+        reserve(true);
+        if (priority == null) {
+            priority(0);
+        }
         return self();
     }
 
@@ -294,6 +306,11 @@ public abstract class BeanConfiguratorBase<THIS extends BeanConfiguratorBase<THI
 
     public THIS alternative(boolean alternative) {
         this.alternative = alternative;
+        return self();
+    }
+
+    public THIS reserve(boolean reserve) {
+        this.reserve = reserve;
         return self();
     }
 
@@ -374,6 +391,34 @@ public abstract class BeanConfiguratorBase<THIS extends BeanConfiguratorBase<THI
     }
 
     /**
+     * Initialize the bean eagerly at application startup.
+     * <p>
+     * The bean also becomes {@code unremovable}.
+     * <p>
+     * If this bean is not active (see {@link #checkActive(Consumer)}) and is not injected into
+     * any always active bean, eager initialization is skipped to prevent needless failures.
+     *
+     * @param eager whether this bean should be eagerly initialized
+     * @return self
+     */
+    public THIS eager(boolean eager) {
+        this.eager = eager;
+        // made unremovable in the `BeanInfo` constructor, no need to call `unremovable()`
+        return self();
+    }
+
+    /**
+     * Mark the bean as auto-closeable.
+     *
+     * @param autoClose whether this bean should be auto-closeable
+     * @return self
+     */
+    public THIS autoClose(boolean autoClose) {
+        this.autoClose = autoClose;
+        return self();
+    }
+
+    /**
      * Declares that this synthetic bean has an injection point of type {@code InterceptionProxy<PT>},
      * where {@code PT} is the {@linkplain #providerType(Type) provider type} of this bean.
      * An instance of {@code PT} may be used as a parameter to {@link InterceptionProxy#create(Object)}
@@ -436,20 +481,12 @@ public abstract class BeanConfiguratorBase<THIS extends BeanConfiguratorBase<THI
             BlockCreator bc = cg.createMethod();
 
             // return new FooBeanCreator().create(syntheticCreationalContext)
-            MethodDesc createDesc = MethodDesc.of(BeanCreator.class, "create", Object.class, SyntheticCreationalContext.class);
+            MethodDesc createDesc = MethodDesc.of(BeanCreator.class,
+                    "create", Object.class, SyntheticCreationalContext.class);
             bc.return_(bc.invokeInterface(createDesc, bc.new_(creatorClazz), cg.syntheticCreationalContext()));
         });
     }
 
-    /**
-     * The first method parameter is the synthetic creational context, i.e. the {@code MethodCreator#getMethodParam(0)} returns
-     * a {@link SyntheticCreationalContext} instance that can be used to obtain contextual references for synthetic injection
-     * points and build-time parameters.
-     * <p>
-     * Furthermore, the consumer can also read the instance field of name {@code params} and type {@link Map}. This map holds
-     * all parameters set via one of the {@code BeanConfigurator#param()} methods.
-     *
-     */
     public THIS creator(Consumer<CreateGeneration> creatorConsumer) {
         this.creatorConsumer = creatorConsumer;
         return cast(this);
@@ -459,11 +496,11 @@ public abstract class BeanConfiguratorBase<THIS extends BeanConfiguratorBase<THI
         return destroyer(dg -> {
             BlockCreator bc = dg.destroyMethod();
 
-            // new FooBeanDestroyer().destroy(instance, context, params)
-            MethodDesc destroyDesc = MethodDesc.of(BeanDestroyer.class, "destroy", void.class, Object.class,
-                    CreationalContext.class, Map.class);
-            bc.invokeInterface(destroyDesc, bc.new_(destroyerClazz), dg.destroyedInstance(),
-                    dg.creationalContext(), dg.paramsMap());
+            // new FooBeanDestroyer().destroy(instance, syntheticCreationalContext)
+            MethodDesc destroyDesc = MethodDesc.of(BeanDestroyer.class,
+                    "destroy", void.class, Object.class, SyntheticCreationalContext.class);
+            bc.invokeInterface(destroyDesc, bc.new_(destroyerClazz),
+                    dg.destroyedInstance(), dg.syntheticCreationalContext());
             bc.return_();
         });
     }
@@ -511,8 +548,8 @@ public abstract class BeanConfiguratorBase<THIS extends BeanConfiguratorBase<THI
      *
      * @param identifier
      * @return self
-     * @see #defaultBean()
      * @see #alternative(boolean)
+     * @see #reserve(boolean)
      */
     public THIS identifier(String identifier) {
         this.identifier = identifier;
@@ -591,11 +628,19 @@ public abstract class BeanConfiguratorBase<THIS extends BeanConfiguratorBase<THI
         Var destroyedInstance();
 
         /**
-         * {@return the parameter of the generated destruction method that contains the {@link CreationalContext}}
+         * @deprecated use {@link #syntheticCreationalContext()}
+         */
+        @Deprecated(forRemoval = true, since = "4.0")
+        default Var creationalContext() {
+            return syntheticCreationalContext();
+        }
+
+        /**
+         * {@return the parameter of the generated destruction method that contains the {@link SyntheticCreationalContext}}
          *
          * @see #destroyMethod()
          */
-        Var creationalContext();
+        Var syntheticCreationalContext();
     }
 
     public interface CheckActiveGeneration {

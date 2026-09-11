@@ -7,12 +7,15 @@ import java.util.Set;
 import jakarta.enterprise.context.spi.CreationalContext;
 import jakarta.enterprise.inject.Instance;
 import jakarta.enterprise.inject.spi.InjectionPoint;
+import jakarta.inject.Provider;
 
 import io.quarkus.arc.InjectableBean;
+import io.quarkus.arc.InjectableInstance;
 
 public class InstanceBean extends BuiltInBean<Instance<?>> {
 
-    public static final Set<Type> INSTANCE_TYPES = Set.of(Instance.class, Object.class);
+    public static final Set<Type> INSTANCE_TYPES = Set.of(InjectableInstance.class, Instance.class, Provider.class,
+            Object.class);
 
     static final InstanceBean INSTANCE = new InstanceBean();
 

@@ -11,6 +11,7 @@ import jakarta.enterprise.inject.build.compatible.spi.Enhancement;
 import jakarta.enterprise.inject.build.compatible.spi.FieldConfig;
 import jakarta.enterprise.inject.build.compatible.spi.InterceptorInfo;
 import jakarta.enterprise.inject.build.compatible.spi.InvokerFactory;
+import jakarta.enterprise.inject.build.compatible.spi.InvokerValidation;
 import jakarta.enterprise.inject.build.compatible.spi.Messages;
 import jakarta.enterprise.inject.build.compatible.spi.MetaAnnotations;
 import jakarta.enterprise.inject.build.compatible.spi.MethodConfig;
@@ -24,6 +25,7 @@ import jakarta.enterprise.inject.build.compatible.spi.Validation;
 import jakarta.enterprise.lang.model.declarations.ClassInfo;
 import jakarta.enterprise.lang.model.declarations.FieldInfo;
 import jakarta.enterprise.lang.model.declarations.MethodInfo;
+import jakarta.enterprise.util.TypeLiteral;
 
 import org.jboss.jandex.DotName;
 
@@ -60,9 +62,14 @@ class DotNames {
     static final DotName OBSERVER_INFO = DotName.createSimple(ObserverInfo.class);
 
     static final DotName INVOKER_FACTORY = DotName.createSimple(InvokerFactory.class);
+    static final DotName INVOKER_VALIDATION = DotName.createSimple(InvokerValidation.class);
     static final DotName MESSAGES = DotName.createSimple(Messages.class);
     static final DotName META_ANNOTATIONS = DotName.createSimple(MetaAnnotations.class);
     static final DotName SCANNED_CLASSES = DotName.createSimple(ScannedClasses.class);
     static final DotName SYNTHETIC_COMPONENTS = DotName.createSimple(SyntheticComponents.class);
     static final DotName TYPES = DotName.createSimple(Types.class);
+
+    // type literal
+
+    static final DotName TYPE_LITERAL = DotName.createSimple(TypeLiteral.class);
 }

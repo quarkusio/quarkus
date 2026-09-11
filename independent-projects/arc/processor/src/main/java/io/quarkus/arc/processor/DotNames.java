@@ -16,6 +16,8 @@ import jakarta.annotation.Priority;
 import jakarta.decorator.Decorator;
 import jakarta.decorator.Delegate;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.AutoClose;
+import jakarta.enterprise.context.Eager;
 import jakarta.enterprise.context.Initialized;
 import jakarta.enterprise.context.NormalScope;
 import jakarta.enterprise.context.control.ActivateRequestContext;
@@ -31,6 +33,7 @@ import jakarta.enterprise.inject.Disposes;
 import jakarta.enterprise.inject.Instance;
 import jakarta.enterprise.inject.Intercepted;
 import jakarta.enterprise.inject.Produces;
+import jakarta.enterprise.inject.Reserve;
 import jakarta.enterprise.inject.Specializes;
 import jakarta.enterprise.inject.Stereotype;
 import jakarta.enterprise.inject.TransientReference;
@@ -43,6 +46,7 @@ import jakarta.enterprise.inject.spi.BeanManager;
 import jakarta.enterprise.inject.spi.EventMetadata;
 import jakarta.enterprise.inject.spi.Extension;
 import jakarta.enterprise.inject.spi.InjectionPoint;
+import jakarta.enterprise.invoke.AsyncHandler;
 import jakarta.enterprise.util.Nonbinding;
 import jakarta.inject.Inject;
 import jakarta.inject.Named;
@@ -72,7 +76,6 @@ import io.quarkus.arc.Unremovable;
 import io.quarkus.arc.VetoedProducer;
 import io.quarkus.arc.WithCaching;
 import io.quarkus.arc.impl.ComputingCache;
-import io.quarkus.arc.impl.Identified;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 
@@ -112,6 +115,7 @@ public final class DotNames {
     public static final DotName EVENT = create(Event.class);
     public static final DotName EVENT_METADATA = create(EventMetadata.class);
     public static final DotName ALTERNATIVE = create(Alternative.class);
+    public static final DotName RESERVE = create(Reserve.class);
     public static final DotName DEFAULT_BEAN = create(DefaultBean.class);
     public static final DotName SCOPE = create(Scope.class);
     public static final DotName NORMAL_SCOPE = create(NormalScope.class);
@@ -144,17 +148,16 @@ public final class DotNames {
     public static final DotName LIST = create(List.class);
     public static final DotName ALL = create(All.class);
     public static final DotName SPECIALIZES = create(Specializes.class);
-    /**
-     * @see Identified
-     */
-    @Deprecated(forRemoval = true, since = "3.26")
-    public static final DotName IDENTIFIED = create(Identified.class);
+    public static final DotName EAGER = create(Eager.class);
+    public static final DotName AUTO_CLOSE = create(AutoClose.class);
     public static final DotName INSTANCE_HANDLE = create(InstanceHandle.class);
     public static final DotName NO_CLASS_INTERCEPTORS = create(NoClassInterceptors.class);
     public static final DotName DEPRECATED = create(Deprecated.class);
     public static final DotName INTERCEPTION_PROXY = create(InterceptionProxy.class);
     public static final DotName BINDINGS_SOURCE = create(BindingsSource.class);
     public static final DotName WITH_CACHING = create(WithCaching.class);
+    public static final DotName ASYNC_HANDLER_RETURN_TYPE = create(AsyncHandler.ReturnType.class);
+    public static final DotName ASYNC_HANDLER_PARAMETER_TYPE = create(AsyncHandler.ParameterType.class);
 
     public static final DotName BOOLEAN = create(Boolean.class);
     public static final DotName BYTE = create(Byte.class);
@@ -165,6 +168,8 @@ public final class DotNames {
     public static final DotName LONG = create(Long.class);
     public static final DotName SHORT = create(Short.class);
     public static final DotName STRING = create(String.class);
+
+    public static final DotName RUNNABLE = create(Runnable.class);
 
     public static final DotName COMPLETION_STAGE = create(CompletionStage.class);
     public static final DotName UNI = create(Uni.class);

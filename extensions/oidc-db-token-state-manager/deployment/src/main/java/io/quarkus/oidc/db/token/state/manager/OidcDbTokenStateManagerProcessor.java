@@ -15,11 +15,13 @@ import jakarta.inject.Singleton;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
-import io.quarkus.arc.deployment.BeanContainerListenerBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeansRuntimeInitBuildItem;
+import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.builder.item.SimpleBuildItem;
+import io.quarkus.core.deployment.action.ActionBuilder;
 import io.quarkus.deployment.Capabilities;
+import io.quarkus.deployment.Phase;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.BuildSteps;
 import io.quarkus.deployment.annotations.Consume;
@@ -108,9 +110,7 @@ public class OidcDbTokenStateManagerProcessor {
     }
 
     @BuildStep
-    @Record(STATIC_INIT)
-    BeanContainerListenerBuildItem createDbTokenStateInitializerProps(ReactiveSqlClientBuildItem sqlClientBuildItem,
-            OidcDbTokenStateManagerRecorder recorder) {
+    void createDbTokenStateInitializerProps(ReactiveSqlClientBuildItem sqlClientBuildItem, ActionBuilder action) {
         var supportedReactiveSqlClient = switch (sqlClientBuildItem.reactiveClient) {
             case REACTIVE_PG_CLIENT -> SupportedReactiveSqlClient.POSTGRESQL;
             case REACTIVE_MYSQL_CLIENT -> SupportedReactiveSqlClient.MYSQL;
@@ -119,7 +119,17 @@ public class OidcDbTokenStateManagerProcessor {
             case REACTIVE_ORACLE_CLIENT -> SupportedReactiveSqlClient.ORACLE;
             default -> throw new ConfigurationException("Unknown Reactive Sql Client " + sqlClientBuildItem.reactiveClient);
         };
-        return new BeanContainerListenerBuildItem(recorder.setSupportedReactiveSqlClient(supportedReactiveSqlClient));
+        // Formerly a BeanContainerListener; now a static-init service that pushes the
+        // build-time-selected SQL client into the initializer bean as soon as the bean
+        // container is available. The value is consumed at StartupEvent (runtime init),
+        // so the static-init -> runtime-init phase boundary preserves ordering; only a
+        // BeanContainer dependency is required.
+        action
+                .forService("io.quarkus.oidc.db.token.state.manager.initializer")
+                .atPhase(Phase.STATIC_INIT)
+                .require(BeanContainer.class)
+                .action((ctx, container) -> container.beanInstance(OidcDbTokenStateManagerInitializer.class)
+                        .setSupportedReactiveSqlClient(supportedReactiveSqlClient));
     }
 
     @Consume(SyntheticBeansRuntimeInitBuildItem.class)

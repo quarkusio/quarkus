@@ -4,18 +4,19 @@ import java.security.Security;
 
 import org.wildfly.security.password.WildFlyElytronPasswordProvider;
 
-import io.quarkus.runtime.annotations.Recorder;
-
 /**
- * The runtime security recorder class that provides methods for creating RuntimeValues for the deployment security objects.
+ * Runtime security utilities for the Elytron security common extension.
  */
-@Recorder
 public class ElytronCommonRecorder {
 
-    public void registerPasswordProvider() {
-        //we don't remove this, as there is no correct place where it can be removed
-        //as continuous testing can be running alongside the dev mode app, but there is
-        //only ever one provider
+    /**
+     * Register the WildFly Elytron password provider if not already present.
+     * <p>
+     * We don't remove this, as there is no correct place where it can be removed —
+     * continuous testing can be running alongside the dev mode app, but there is
+     * only ever one provider.
+     */
+    public static void registerPasswordProvider() {
         WildFlyElytronPasswordProvider provider = new WildFlyElytronPasswordProvider();
         if (Security.getProvider(provider.getName()) == null) {
             Security.addProvider(provider);

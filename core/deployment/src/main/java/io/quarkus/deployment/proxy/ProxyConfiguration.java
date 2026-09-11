@@ -14,8 +14,8 @@ public class ProxyConfiguration<T> {
     private Class<?> anchorClass;
     private String proxyNameSuffix;
     private ClassLoader classLoader;
-    private Class<T> superClass;
-    private List<Class<?>> additionalInterfaces = new ArrayList<>(0);
+    private Class<? super T> superClass;
+    private final List<Class<?>> additionalInterfaces = new ArrayList<>(0);
     private boolean allowPackagePrivate = false;
 
     public List<Class<?>> getAdditionalInterfaces() {
@@ -61,11 +61,11 @@ public class ProxyConfiguration<T> {
         return getAnchorClass().getName() + proxyNameSuffix;
     }
 
-    public Class<T> getSuperClass() {
+    public Class<? super T> getSuperClass() {
         return superClass;
     }
 
-    public ProxyConfiguration<T> setSuperClass(final Class<T> superClass) {
+    public ProxyConfiguration<T> setSuperClass(final Class<? super T> superClass) {
         this.superClass = superClass;
         return this;
     }

@@ -52,7 +52,7 @@ class DevServicesContainerNoReuseTest extends MojoTestBase {
 
         /* Backup existing .testcontainers.properties if present */
         if (TESTCONTAINERS_PROPS_FILE.exists()) {
-            Files.copy(TESTCONTAINERS_PROPS_FILE.toPath(), TESTCONTAINERS_PROPS_BACKUP.toPath(),
+            Files.move(TESTCONTAINERS_PROPS_FILE.toPath(), TESTCONTAINERS_PROPS_BACKUP.toPath(),
                     StandardCopyOption.REPLACE_EXISTING);
 
         }

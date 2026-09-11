@@ -76,7 +76,12 @@ public class MicroProfileConfigRecorder {
         }
     }
 
-    public void registerConfigProperties(final Map<String, Set<String>> configProperties) {
+    /**
+     * Register {@code @ConfigProperties} config classes with SmallRye Config.
+     *
+     * @param configProperties map of class name to set of prefixes
+     */
+    public static void registerConfigProperties(final Map<String, Set<String>> configProperties) {
         try {
             Set<ConfigClass> configClasses = new HashSet<>();
             for (Entry<String, Set<String>> entry : configProperties.entrySet()) {
@@ -92,32 +97,22 @@ public class MicroProfileConfigRecorder {
         }
     }
 
-    private Class<?> load(String className, ClassLoader cl) {
-        switch (className) {
-            case "boolean":
-                return boolean.class;
-            case "byte":
-                return byte.class;
-            case "short":
-                return short.class;
-            case "int":
-                return int.class;
-            case "long":
-                return long.class;
-            case "float":
-                return float.class;
-            case "double":
-                return double.class;
-            case "char":
-                return char.class;
-            case "void":
-                return void.class;
-            default:
-                try {
-                    return Class.forName(className, true, cl);
-                } catch (ClassNotFoundException e) {
-                    throw new IllegalStateException("Unable to load the config property type: " + className, e);
-                }
+    private static Class<?> load(String className, ClassLoader cl) {
+        try {
+            return switch (className) {
+                case "boolean" -> boolean.class;
+                case "byte" -> byte.class;
+                case "short" -> short.class;
+                case "int" -> int.class;
+                case "long" -> long.class;
+                case "float" -> float.class;
+                case "double" -> double.class;
+                case "char" -> char.class;
+                case "void" -> void.class;
+                default -> Class.forName(className, true, cl);
+            };
+        } catch (ClassNotFoundException e) {
+            throw new IllegalStateException("Unable to load the config property type: " + className, e);
         }
     }
 

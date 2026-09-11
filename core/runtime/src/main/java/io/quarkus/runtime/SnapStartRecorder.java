@@ -1,18 +1,17 @@
 package io.quarkus.runtime;
 
-import io.quarkus.runtime.annotations.Recorder;
-
 /**
  * Stores the optimizations to execute for SnapStart.
  */
-@Recorder
 public class SnapStartRecorder {
 
+    /**
+     * Whether SnapStart is enabled.
+     */
     public static boolean enabled = false;
-    public static boolean fullWarmup = false;
 
-    public void register(boolean fw) {
-        enabled = true;
-        fullWarmup = fw;
-    }
+    /**
+     * Whether to perform a full warmup.
+     */
+    public static boolean fullWarmup = false;
 }

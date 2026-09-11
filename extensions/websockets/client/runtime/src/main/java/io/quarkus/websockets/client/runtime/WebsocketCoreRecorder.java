@@ -19,8 +19,6 @@ import io.netty.channel.EventLoopGroup;
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ManagedContext;
 import io.quarkus.arc.runtime.BeanContainer;
-import io.quarkus.runtime.RuntimeValue;
-import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.security.identity.CurrentIdentityAssociation;
 import io.quarkus.vertx.core.runtime.VertxCoreRecorder;
 import io.undertow.websockets.ServerWebSocketContainer;
@@ -33,17 +31,19 @@ import io.undertow.websockets.util.ObjectHandle;
 import io.undertow.websockets.util.ObjectIntrospecter;
 import io.vertx.core.internal.VertxInternal;
 
-@Recorder
 public class WebsocketCoreRecorder {
 
     private static final Logger log = Logger.getLogger(WebsocketCoreRecorder.class);
 
-    public void setupWorker(Executor executor) {
+    private WebsocketCoreRecorder() {
+    }
+
+    public static void setupWorker(Executor executor) {
         ExecutorSupplier.executor = executor;
     }
 
     @SuppressWarnings("unchecked")
-    public RuntimeValue<WebSocketDeploymentInfo> createDeploymentInfo(Set<String> annotatedEndpoints, Set<String> endpoints,
+    public static WebSocketDeploymentInfo createDeploymentInfo(Set<String> annotatedEndpoints, Set<String> endpoints,
             Set<String> serverApplicationConfigClasses, int maxFrameSize, boolean dispatchToWorker) {
         WebSocketDeploymentInfo container = new WebSocketDeploymentInfo();
         container.setMaxFrameSize(maxFrameSize);
@@ -107,13 +107,12 @@ public class WebsocketCoreRecorder {
                 container.addEndpoint(endpoint);
             }
         }
-        return new RuntimeValue<>(container);
+        return container;
     }
 
-    public RuntimeValue<ServerWebSocketContainer> createServerContainer(BeanContainer beanContainer,
-            RuntimeValue<WebSocketDeploymentInfo> infoVal, ServerWebSocketContainerFactory serverContainerFactory)
+    public static ServerWebSocketContainer createServerContainer(BeanContainer beanContainer,
+            WebSocketDeploymentInfo info, ServerWebSocketContainerFactory serverContainerFactory)
             throws DeploymentException {
-        WebSocketDeploymentInfo info = infoVal.getValue();
         ClassLoader cl = Thread.currentThread().getContextClassLoader();
         ManagedContext requestContext = Arc.container().requestContext();
         if (serverContainerFactory == null) {
@@ -213,7 +212,7 @@ public class WebsocketCoreRecorder {
             container.addEndpoint(i);
         }
         UndertowContainerProvider.setDefaultContainer(container);
-        return new RuntimeValue<>(container);
+        return container;
     }
 
 }

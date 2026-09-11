@@ -59,7 +59,10 @@ class Http3AutoTlsTest {
         clientConfig.setVersions(HttpVersion.HTTP_3);
         clientConfig.setHttp3Config(new Http3ClientConfig());
 
-        ClientSSLOptions sslOptions = new ClientSSLOptions().setTrustAll(true).setHostnameVerificationAlgorithm("");
+        // trust + hostname verifications are different steps since Vert.x 5.1.8 / Netty 4.2.18.Final
+        ClientSSLOptions sslOptions = new ClientSSLOptions()
+                .setTrustAll(true)
+                .setHostnameVerificationAlgorithm("");
 
         HttpClientAgent client = vertx.httpClientBuilder().with(clientConfig).with(sslOptions).build();
 

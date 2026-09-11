@@ -13,6 +13,7 @@ public class GrpcContextLocalsProvider implements VertxServiceProvider {
 
     public static final ContextLocal<Context> GRPC_CONTEXT_LOCAL = ContextLocal.registerLocal(Context.class);
     public static final ContextLocal<RoutingContext> ROUTING_CONTEXT_LOCAL = ContextLocal.registerLocal(RoutingContext.class);
+    public static final ContextLocal<Runnable> GRPC_CONTEXT_CLEANUP_LOCAL = ContextLocal.registerLocal(Runnable.class);
 
     @Override
     public void init(VertxBootstrap builder) {

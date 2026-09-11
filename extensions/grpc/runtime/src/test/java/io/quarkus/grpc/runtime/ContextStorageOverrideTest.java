@@ -85,6 +85,16 @@ class ContextStorageOverrideTest {
         assertThat(storage.current()).isSameAs(ctx1);
     }
 
+    @Test
+    void detachWithoutVertxToSameContextIsNoOp() {
+        Context ctx = Context.ROOT.withValue(Context.key("k"), "v");
+        storage.doAttach(ctx);
+
+        storage.detach(ctx, ctx);
+
+        assertThat(storage.current()).isSameAs(ctx);
+    }
+
     // --- Vert.x duplicated context tests ---
 
     @Test
@@ -143,6 +153,21 @@ class ContextStorageOverrideTest {
         });
 
         assertThat(result.get(5, TimeUnit.SECONDS)).isSameAs(ctx1);
+    }
+
+    @Test
+    void detachOnDuplicatedContextToSameContextIsNoOp() throws Exception {
+        Context ctx = Context.ROOT.withValue(Context.key("k"), "v");
+        CompletableFuture<Context> result = new CompletableFuture<>();
+        io.vertx.core.Context dc = VertxContext.getOrCreateDuplicatedContext(vertx);
+
+        dc.runOnContext(v -> {
+            storage.doAttach(ctx);
+            storage.detach(ctx, ctx);
+            result.complete(storage.current());
+        });
+
+        assertThat(result.get(5, TimeUnit.SECONDS)).isSameAs(ctx);
     }
 
     @Test

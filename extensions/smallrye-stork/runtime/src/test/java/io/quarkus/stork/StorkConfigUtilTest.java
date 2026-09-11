@@ -11,6 +11,7 @@ import java.util.Map;
 import java.util.Optional;
 
 import org.eclipse.microprofile.config.Config;
+import org.eclipse.microprofile.config.ConfigProvider;
 import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -120,7 +121,9 @@ public class StorkConfigUtilTest {
 
         assertThat(registrar.type()).isPresent();
         assertThat("consul").isEqualTo(registrar.type().get());
-        assertThat("/custom").isEqualTo(registrar.parameters().get("health-check-url"));
+        String healthCheckUrl = registrar.parameters().get("health-check-url");
+        assertThat(healthCheckUrl).startsWith("https://");
+        assertThat(healthCheckUrl).endsWith("/custom");
     }
 
     @Test
@@ -133,7 +136,9 @@ public class StorkConfigUtilTest {
 
         assertThat(updated.serviceRegistrar()).isPresent();
         assertThat(updated.serviceRegistrar().get().type()).hasValue("consul");
-        assertThat(updated.serviceRegistrar().get().parameters()).containsEntry("health-check-url", "/health");
+        String healthCheckUrl = updated.serviceRegistrar().get().parameters().get("health-check-url");
+        assertThat(healthCheckUrl).startsWith("https://");
+        assertThat(healthCheckUrl).endsWith("/health");
 
         assertThat(updated.serviceDiscovery()).isPresent();
         assertThat(updated.serviceDiscovery().get().type()).isEqualTo("consul");
@@ -316,6 +321,91 @@ public class StorkConfigUtilTest {
         assertThat(svc.loadBalancer()).isNull();
         assertThat(svc.serviceRegistrar()).isNotNull();
         assertThat(svc.serviceRegistrar().type()).isEqualTo("consul");
+    }
+
+    @Test
+    public void shouldResolveRelativeHealthCheckPathToFullUrl() {
+        ServiceConfiguration original = buildServiceConfig(null, null,
+                buildRegistrarConfig("consul", Map.of()));
+
+        ServiceConfiguration updated = StorkConfigUtil.addRegistrarTypeIfAbsent("consul", original, "/q/health/live");
+
+        assertThat(updated.serviceRegistrar()).isPresent();
+        String healthCheckUrl = updated.serviceRegistrar().get().parameters().get("health-check-url");
+        assertThat(healthCheckUrl).startsWith("http");
+        assertThat(healthCheckUrl).contains("/q/health/live");
+    }
+
+    @Test
+    public void shouldUseManagementPortForHealthCheckWhenManagementEnabled() {
+        Map<String, String> mgmtConfigMap = new HashMap<>();
+        mgmtConfigMap.put("quarkus.http.host", "localhost");
+        mgmtConfigMap.put("quarkus.http.port", "8080");
+        mgmtConfigMap.put("quarkus.management.enabled", "true");
+        mgmtConfigMap.put("quarkus.management.host", "0.0.0.0");
+        mgmtConfigMap.put("quarkus.management.port", "9000");
+
+        Config mgmtConfig = new SmallRyeConfigBuilder()
+                .withSources(new MapBackedConfigSource("test-management", mgmtConfigMap) {
+                })
+                .build();
+        ConfigProviderResolver resolver = ConfigProviderResolver.instance();
+        resolver.releaseConfig(ConfigProvider.getConfig());
+        resolver.registerConfig(mgmtConfig, Thread.currentThread().getContextClassLoader());
+        try {
+            ServiceConfiguration original = buildServiceConfig(null, null,
+                    buildRegistrarConfig("consul", Map.of()));
+
+            ServiceConfiguration updated = StorkConfigUtil.addRegistrarTypeIfAbsent("consul", original, "/q/health/live");
+
+            assertThat(updated.serviceRegistrar()).isPresent();
+            String healthCheckUrl = updated.serviceRegistrar().get().parameters().get("health-check-url");
+            assertThat(healthCheckUrl).contains(":9000");
+            assertThat(healthCheckUrl).doesNotContain(":8080");
+        } finally {
+            resolver.releaseConfig(mgmtConfig);
+        }
+    }
+
+    @Test
+    public void shouldUseManagementPortInBuildRegistrarOnlyWhenManagementEnabled() {
+        Map<String, String> mgmtConfigMap = new HashMap<>();
+        mgmtConfigMap.put("quarkus.http.host", "localhost");
+        mgmtConfigMap.put("quarkus.http.port", "8080");
+        mgmtConfigMap.put("quarkus.management.enabled", "true");
+        mgmtConfigMap.put("quarkus.management.host", "0.0.0.0");
+        mgmtConfigMap.put("quarkus.management.port", "9000");
+
+        Config mgmtConfig = new SmallRyeConfigBuilder()
+                .withSources(new MapBackedConfigSource("test-management", mgmtConfigMap) {
+                })
+                .build();
+        ConfigProviderResolver resolver = ConfigProviderResolver.instance();
+        resolver.releaseConfig(ConfigProvider.getConfig());
+        resolver.registerConfig(mgmtConfig, Thread.currentThread().getContextClassLoader());
+        try {
+            ServiceConfiguration result = StorkConfigUtil.buildRegistrarOnlyConfiguration("consul", "/q/health/live");
+
+            assertThat(result.serviceRegistrar()).isPresent();
+            String healthCheckUrl = result.serviceRegistrar().get().parameters().get("health-check-url");
+            assertThat(healthCheckUrl).contains(":9000");
+            assertThat(healthCheckUrl).doesNotContain(":8080");
+        } finally {
+            resolver.releaseConfig(mgmtConfig);
+        }
+    }
+
+    @Test
+    public void shouldPreserveExplicitHealthCheckUrlWhenAddingRegistrarType() {
+        String userConfiguredUrl = "http://host.containers.internal:8152/q/health/live";
+        ServiceConfiguration original = buildServiceConfig(null, null,
+                buildRegistrarConfig("consul", Map.of("health-check-url", userConfiguredUrl)));
+
+        ServiceConfiguration updated = StorkConfigUtil.addRegistrarTypeIfAbsent("consul", original, "/q/health/live");
+
+        assertThat(updated.serviceRegistrar()).isPresent();
+        assertThat(updated.serviceRegistrar().get().parameters())
+                .containsEntry("health-check-url", userConfiguredUrl);
     }
 
     // --- Helper methods to build test configurations ---

@@ -20,6 +20,7 @@ import javax.imageio.ImageIO;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
+import io.quarkus.test.common.TestLog;
 import io.quarkus.test.junit.QuarkusTest;
 
 /**
@@ -40,6 +41,9 @@ public class ImageDecodersTest {
      * 0 means no difference is tolerated.
      */
     private static final int[] PIXEL_DIFFERENCE_THRESHOLD_RGBA_VEC = new int[] { 0, 0, 0, 0 };
+
+    // Injected automatically
+    protected TestLog testLog;
 
     /**
      * Exercises decoders on ordinary, valid images.
@@ -162,13 +166,13 @@ public class ImageDecodersTest {
             case "NOK":
                 assertNull(image, "The image " + fileName + " should have triggered a parsing error.");
                 if (pattern != null) {
-                    checkLog(pattern, fileName);
+                    checkLog(pattern, fileName, testLog.getLogFilePath());
                 }
                 break;
             case "NA":
                 if (pattern != null) {
                     if (image == null) {
-                        checkLog(pattern, fileName);
+                        checkLog(pattern, fileName, testLog.getLogFilePath());
                     } else {
                         assertTrue(pattern.matcher(image.toString()).matches(),
                                 "Image description should have matched " + pattern);

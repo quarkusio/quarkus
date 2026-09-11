@@ -520,7 +520,7 @@ class JarTreeShakeInput implements AutoCloseable {
         Map<String, Set<String>> conditionalRoots = new HashMap<>();
         for (ReflectiveClassConditionBuildItem item : reflectiveClassConditions) {
             conditionalRoots
-                    .computeIfAbsent(item.getTypeReachable(), k -> new HashSet<>())
+                    .computeIfAbsent(item.getTypeReached(), k -> new HashSet<>())
                     .add(item.getClassName());
         }
         return conditionalRoots;

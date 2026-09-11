@@ -65,7 +65,8 @@ public class KotlinProcessor {
         nativeResourcePatterns.produce(builder().includeGlobs(
                 "META-INF/**/*.kotlin_module",
                 "META-INF/services/kotlin.reflect.*",
-                "**/*.kotlin_builtins")
+                // as seen in e.g. kotlin-stdlib-*.jar, builtin files are in kotlin dir
+                "kotlin/**/*.kotlin_builtins")
                 .build());
 
         reflectiveHierarchyIgnoreWarning.produce(

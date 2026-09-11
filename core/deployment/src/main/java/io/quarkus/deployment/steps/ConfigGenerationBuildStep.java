@@ -82,7 +82,7 @@ import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.StaticInitConfigBuilderBuildItem;
 import io.quarkus.deployment.builditem.SuppressNonRuntimeConfigChangedWarningBuildItem;
-import io.quarkus.deployment.builditem.nativeimage.LambdaCapturingTypeBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.LambdaReflectionBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveMethodBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
@@ -624,12 +624,12 @@ public class ConfigGenerationBuildStep {
     }
 
     /**
-     * Registers the lambda capturing types required to support {@code ConfigInstanceBuilder.forInterface} in native mode.
+     * Registers the lambda metadata required to support {@code ConfigInstanceBuilder.forInterface} in native mode.
      * <p>
      * The builder resolves a configuration property name from a method reference (for instance {@code Server::host}) by
-     * reading the serialized lambda. In native mode, the class that captures such a serializable lambda must be
-     * registered for serialization, otherwise {@code writeReplaceForSerialization} returns {@code null} and the property
-     * name cannot be resolved (SRCFG00060).
+     * reading the serialized lambda. In native mode, the lambda metadata must be registered in reachability-metadata.json,
+     * otherwise {@code writeReplaceForSerialization} returns {@code null} and the property name cannot be resolved
+     * (SRCFG00060).
      * <p>
      * The capturing class always references the configuration interface, because the method reference embeds a handle to
      * one of the interface methods. We start from the known users of each configuration interface and confirm, by
@@ -640,7 +640,7 @@ public class ConfigGenerationBuildStep {
     void registerConfigInstanceBuilderLambdas(
             CombinedIndexBuildItem combinedIndex,
             List<GeneratedConfigClassBuildItem> generatedConfigClasses,
-            BuildProducer<LambdaCapturingTypeBuildItem> lambdaCapturingTypes) {
+            BuildProducer<LambdaReflectionBuildItem> lambdaReflection) {
 
         IndexView index = combinedIndex.getIndex();
 
@@ -667,7 +667,9 @@ public class ConfigGenerationBuildStep {
             }
         }
 
-        Set<DotName> registered = new HashSet<>();
+        // track what we've already registered to avoid duplicates
+        Set<String> registered = new HashSet<>();
+
         for (DotName candidate : candidates) {
             byte[] bytecode = null;
             String resourceName = candidate.toString().replace('.', '/') + ".class";
@@ -687,26 +689,67 @@ public class ConfigGenerationBuildStep {
 
             new ClassReader(bytecode).accept(new ClassVisitor(Gizmo.ASM_API_VERSION) {
                 @Override
-                public MethodVisitor visitMethod(int access, String name, String descriptor, String signature,
+                public MethodVisitor visitMethod(int access, String methodName, String methodDescriptor, String signature,
                         String[] exceptions) {
+                    // Skip the synthetic $deserializeLambda$ method.
+                    // It's generated to reconstruct lambda instances during deserialization.
+                    // The invokedynamic instructions inside it are NOT declarations of new lambdas,
+                    // they reconstruct lambdas that were already declared in other methods.
+                    // If we register them, we'd record the wrong
+                    // declaringMethod e.g. $deserializeLambda$ instead of the actual method like getServerInstance.
+                    // It then breaks serialization/deserialization: the metadata won't match the
+                    // SerializedLambda. The lambdas are already registered from their true declaring methods.
+                    // See native-image-annotations tests for round-trip lambda serialization tests.
+                    // See smallrye-config for a case that fails if we register $deserializeLambda$.
+                    if ("$deserializeLambda$".equals(methodName)) {
+                        return null;
+                    }
                     return new MethodVisitor(Gizmo.ASM_API_VERSION) {
                         @Override
-                        public void visitInvokeDynamicInsn(String name, String descriptor, Handle bootstrapMethodHandle,
+                        public void visitInvokeDynamicInsn(String invokeName, String invokeDescriptor,
+                                Handle bootstrapMethodHandle,
                                 Object... bootstrapMethodArguments) {
                             // Serializable method references are bootstrapped by LambdaMetafactory and the implementation
                             // method handle is the second bootstrap argument
                             if ("java/lang/invoke/LambdaMetafactory".equals(bootstrapMethodHandle.getOwner())
                                     && bootstrapMethodArguments.length > 1
                                     && bootstrapMethodArguments[1] instanceof Handle implementation
-                                    && configInterfaces.contains(implementation.getOwner())
-                                    && registered.add(candidate)) {
-                                lambdaCapturingTypes.produce(new LambdaCapturingTypeBuildItem(candidate.toString()));
+                                    && configInterfaces.contains(implementation.getOwner())) {
+                                // create a unique key to avoid duplicate registrations
+                                // include implementation to differentiate lambdas within the same method
+                                final String key = candidate + "#" + methodName + methodDescriptor + "#" + implementation;
+                                if (registered.add(key)) {
+                                    // extract parameter types from method descriptor
+                                    final String[] paramTypes = extractParameterTypes(methodDescriptor);
+                                    // extract lambda interfaces from the invokedynamic descriptor
+                                    final String[] interfaces = extractLambdaInterfaces(invokeDescriptor);
+                                    lambdaReflection.produce(LambdaReflectionBuildItem.builder(
+                                            candidate.toString(),
+                                            methodName)
+                                            .parameterTypes(paramTypes)
+                                            .interfaces(interfaces)
+                                            .build());
+                                }
                             }
                         }
                     };
                 }
             }, ClassReader.SKIP_DEBUG | ClassReader.SKIP_FRAMES);
         }
+    }
+
+    private static String[] extractParameterTypes(String methodDescriptor) {
+        final org.objectweb.asm.Type[] argumentTypes = org.objectweb.asm.Type.getArgumentTypes(methodDescriptor);
+        final String[] paramTypes = new String[argumentTypes.length];
+        for (int i = 0; i < argumentTypes.length; i++) {
+            paramTypes[i] = argumentTypes[i].getClassName();
+        }
+        return paramTypes;
+    }
+
+    private static String[] extractLambdaInterfaces(String invokeDescriptor) {
+        final org.objectweb.asm.Type returnType = org.objectweb.asm.Type.getReturnType(invokeDescriptor);
+        return new String[] { returnType.getClassName() };
     }
 
     @BuildStep

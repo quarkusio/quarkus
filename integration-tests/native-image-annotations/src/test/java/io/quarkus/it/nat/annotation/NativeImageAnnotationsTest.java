@@ -32,4 +32,12 @@ public class NativeImageAnnotationsTest {
                 .then()
                 .body(is("أهلاً بالعالم"));
     }
+
+    @Test
+    public void testProperLambdaSerialization() {
+        when()
+                .get("/native-image-annotations/serialize-proper")
+                .then()
+                .body(is("SUCCESS_PROPER"));
+    }
 }

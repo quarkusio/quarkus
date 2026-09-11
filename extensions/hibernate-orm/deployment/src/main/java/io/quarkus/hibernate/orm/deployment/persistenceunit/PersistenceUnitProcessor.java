@@ -530,7 +530,7 @@ final class PersistenceUnitProcessor {
             // Workaround for https://hibernate.atlassian.net/browse/HHH-19063
             reflectiveMethods.produce(new ReflectiveMethodBuildItem(
                     "Accessed in org.hibernate.engine.jdbc.env.internal.DefaultSchemaNameResolver.determineAppropriateResolverDelegate",
-                    true, "org.postgresql.jdbc.PgConnection", "getSchema"));
+                    "org.postgresql.jdbc.PgConnection", "getSchema"));
         }
 
         return supportedDatabaseKind;

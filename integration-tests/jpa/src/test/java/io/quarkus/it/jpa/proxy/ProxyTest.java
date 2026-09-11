@@ -45,10 +45,12 @@ public class ProxyTest {
     public void testProxyWarningsOnStartup() {
         // ORM 8 bytecode enhancement strips final from entity classes (HHH-20512),
         // so CompanyCustomer is no longer final at runtime and gets a proxy.
-        // No warnings expected.
+        // HHH006596 is expected from the separate preferred-types persistence unit,
+        // where H2 falls back from the explicitly requested INSTANT JDBC type.
         assertThat(LogCollectingTestResource.current().getRecords())
                 .as("Startup logs (warning or higher)")
                 .extracting(LogCollectingTestResource::format)
+                .filteredOn(message -> !message.contains("HHH006596"))
                 .isEmpty();
     }
 

@@ -106,37 +106,44 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
         // If the session is already established then try to re-authenticate
         if (sessionCookieValue != null) {
             LOG.debug("Session cookie is present, starting the reauthentication");
+            final boolean pendingCodeFlowRedirect = isPendingCodeFlowRedirect(context, cookies, oidcTenantConfig);
             Uni<TenantConfigContext> resolvedContext = resolver.resolveContext(context);
             return resolvedContext.onItem()
                     .transformToUni(new Function<TenantConfigContext, Uni<? extends SecurityIdentity>>() {
                         @Override
                         public Uni<SecurityIdentity> apply(TenantConfigContext tenantContext) {
-                            return reAuthenticate(sessionCookieValue, context, identityProviderManager, tenantContext);
+                            Uni<SecurityIdentity> identity = reAuthenticate(sessionCookieValue, context,
+                                    identityProviderManager, tenantContext);
+                            if (!pendingCodeFlowRedirect) {
+                                return identity;
+                            }
+                            // This request completes a code flow started in another browser tab before the session
+                            // was established: the session is kept and the request is redirected to the path saved
+                            // when that flow was started. If the session turns out to be invalid, the flow is
+                            // completed instead, as when no session exists.
+                            return identity.onItem().transformToUni(
+                                    new Function<SecurityIdentity, Uni<? extends SecurityIdentity>>() {
+                                        @Override
+                                        public Uni<? extends SecurityIdentity> apply(SecurityIdentity identity) {
+                                            return completePendingCodeFlowWithSession(context, tenantContext, cookies,
+                                                    identity);
+                                        }
+                                    }).onFailure(AuthenticationFailedException.class).recoverWithUni(
+                                            new Function<AuthenticationFailedException, Uni<? extends SecurityIdentity>>() {
+                                                @Override
+                                                public Uni<? extends SecurityIdentity> apply(AuthenticationFailedException t) {
+                                                    LOG.debug("Session is not valid, completing the pending code flow");
+                                                    return processPendingCodeFlowRedirect(context, oidcTenantConfig,
+                                                            identityProviderManager, cookies);
+                                                }
+                                            });
                         }
                     });
         }
 
         // Check if the state cookie is available
         if (isStateCookieAvailable(cookies)) {
-            // Authorization code flow is in progress, however it is not necessarily tied to the current request.
-            if (ResponseMode.FORM_POST == oidcTenantConfig.authentication().responseMode().orElse(ResponseMode.QUERY)) {
-                if (OidcUtils.isFormUrlEncodedRequest(context)) {
-                    return OidcUtils.getFormUrlEncodedData(context).onItem()
-                            .transformToUni(new Function<MultiMap, Uni<? extends SecurityIdentity>>() {
-                                @Override
-                                public Uni<? extends SecurityIdentity> apply(MultiMap requestParams) {
-                                    return processRedirectFromOidc(context, oidcTenantConfig, identityProviderManager,
-                                            requestParams, cookies);
-                                }
-                            });
-                }
-                LOG.debug("HTTP POST and " + HttpHeaders.APPLICATION_X_WWW_FORM_URLENCODED.toString()
-                        + " content type must be used with the form_post response mode");
-                return Uni.createFrom().failure(new AuthenticationFailedException());
-            } else {
-                return processRedirectFromOidc(context, oidcTenantConfig, identityProviderManager,
-                        context.queryParams(), cookies);
-            }
+            return processPendingCodeFlowRedirect(context, oidcTenantConfig, identityProviderManager, cookies);
         }
 
         // return an empty identity - this will lead to a challenge redirecting the user to OpenId Connect provider
@@ -144,6 +151,110 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
         context.put(NO_OIDC_COOKIES_AVAILABLE, Boolean.TRUE);
         return Uni.createFrom().optional(Optional.empty());
 
+    }
+
+    private Uni<SecurityIdentity> processPendingCodeFlowRedirect(RoutingContext context, OidcTenantConfig oidcTenantConfig,
+            IdentityProviderManager identityProviderManager, Map<String, Cookie> cookies) {
+        // Authorization code flow is in progress, however it is not necessarily tied to the current request.
+        if (ResponseMode.FORM_POST == oidcTenantConfig.authentication().responseMode().orElse(ResponseMode.QUERY)) {
+            if (OidcUtils.isFormUrlEncodedRequest(context)) {
+                return OidcUtils.getFormUrlEncodedData(context).onItem()
+                        .transformToUni(new Function<MultiMap, Uni<? extends SecurityIdentity>>() {
+                            @Override
+                            public Uni<? extends SecurityIdentity> apply(MultiMap requestParams) {
+                                return processRedirectFromOidc(context, oidcTenantConfig, identityProviderManager,
+                                        requestParams, cookies);
+                            }
+                        });
+            }
+            LOG.debug("HTTP POST and " + HttpHeaders.APPLICATION_X_WWW_FORM_URLENCODED.toString()
+                    + " content type must be used with the form_post response mode");
+            return Uni.createFrom().failure(new AuthenticationFailedException());
+        } else {
+            return processRedirectFromOidc(context, oidcTenantConfig, identityProviderManager,
+                    context.queryParams(), cookies);
+        }
+    }
+
+    /**
+     * Completes, on behalf of an existing session, a code flow started in another browser tab: the state cookie is
+     * removed, the authorization code is not used, and the request is redirected to the path saved when the flow was
+     * started. When no path was saved the request goes on with the identity of the session.
+     */
+    private Uni<SecurityIdentity> completePendingCodeFlowWithSession(RoutingContext context,
+            TenantConfigContext configContext, Map<String, Cookie> cookies, SecurityIdentity identity) {
+        final OidcTenantConfig oidcTenantConfig = configContext.oidcConfig();
+        Uni<MultiMap> requestParams;
+        if (ResponseMode.FORM_POST == oidcTenantConfig.authentication().responseMode().orElse(ResponseMode.QUERY)) {
+            requestParams = OidcUtils.getFormUrlEncodedData(context);
+        } else {
+            requestParams = Uni.createFrom().item(context.queryParams());
+        }
+        return requestParams.onItem().transformToUni(new Function<MultiMap, Uni<? extends SecurityIdentity>>() {
+            @Override
+            public Uni<? extends SecurityIdentity> apply(MultiMap params) {
+                List<String> stateQueryParam = params.getAll(OidcConstants.CODE_FLOW_STATE);
+                if (stateQueryParam.size() != 1) {
+                    return Uni.createFrom().item(identity);
+                }
+                String stateCookieNameSuffix = oidcTenantConfig.authentication().allowMultipleCodeFlows()
+                        ? "_" + stateQueryParam.get(0)
+                        : "";
+                Cookie stateCookie = context.request().getCookie(getStateCookieName(oidcTenantConfig) + stateCookieNameSuffix);
+                if (stateCookie == null) {
+                    return Uni.createFrom().item(identity);
+                }
+                String[] parsedStateCookieValue = COOKIE_PATTERN.split(stateCookie.getValue());
+                OidcUtils.removeCookie(context, oidcTenantConfig, stateCookie.getName());
+                if (!parsedStateCookieValue[0].equals(stateQueryParam.get(0))) {
+                    final String error = "State cookie value does not match the state query parameter value, "
+                            + "completing the code flow with HTTP status 401";
+                    LOG.error(error);
+                    return Uni.createFrom().failure(new AuthenticationCompletionException(error));
+                }
+                LOG.debug("Code flow started in another tab completed with the existing session, not using its code");
+                CodeAuthenticationStateBean stateBean = getCodeAuthenticationBean(parsedStateCookieValue, configContext);
+                if (stateBean == null || stateBean.getRestorePath() == null
+                        || !isRestorePath(oidcTenantConfig.authentication())) {
+                    return Uni.createFrom().item(identity);
+                }
+                String restorePath = stateBean.getRestorePath();
+                String finalRedirectUri = buildUri(context, isForceHttps(oidcTenantConfig), restorePath);
+                LOG.debugf("Redirecting to the path saved when the code flow was started: %s", finalRedirectUri);
+                return Uni.createFrom().failure(new AuthenticationRedirectException(
+                        filterRedirect(context, configContext, finalRedirectUri, Redirect.Location.LOCAL_ENDPOINT_CALLBACK)));
+            }
+        });
+    }
+
+    /**
+     * Whether the current request is the redirect from the OIDC provider completing a code flow for which a state
+     * cookie exists: the {@code state} parameter matches a state cookie and the request targets the redirect path.
+     */
+    private boolean isPendingCodeFlowRedirect(RoutingContext context, Map<String, Cookie> cookies,
+            OidcTenantConfig oidcTenantConfig) {
+        if (!isStateCookieAvailable(cookies) || !isRedirectPathRequest(context, oidcTenantConfig)) {
+            return false;
+        }
+        if (ResponseMode.FORM_POST == oidcTenantConfig.authentication().responseMode().orElse(ResponseMode.QUERY)) {
+            // the state parameter is in the form body which is read later
+            return OidcUtils.isFormUrlEncodedRequest(context);
+        }
+        List<String> state = context.queryParams().getAll(OidcConstants.CODE_FLOW_STATE);
+        if (state.size() != 1 || !(context.queryParams().contains(OidcConstants.CODE_FLOW_CODE)
+                || context.queryParams().contains(OidcConstants.CODE_FLOW_ERROR))) {
+            return false;
+        }
+        String stateCookieNameSuffix = oidcTenantConfig.authentication().allowMultipleCodeFlows() ? "_" + state.get(0) : "";
+        return cookies.containsKey(getStateCookieName(oidcTenantConfig) + stateCookieNameSuffix);
+    }
+
+    private boolean isRedirectPathRequest(RoutingContext context, OidcTenantConfig oidcTenantConfig) {
+        String redirectPath = getRedirectPath(oidcTenantConfig, context);
+        if (redirectPath.startsWith(HTTP_SCHEME)) {
+            redirectPath = URI.create(redirectPath).getPath();
+        }
+        return context.request().path().equals(redirectPath);
     }
 
     private boolean isStateCookieAvailable(Map<String, Cookie> cookies) {

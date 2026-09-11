@@ -83,6 +83,40 @@ public class DependencyUtils {
         return result;
     }
 
+    public static List<Dependency> enforceManagedDependencies(List<Dependency> dominant, List<Dependency> recessive,
+            Map<ArtifactKey, Dependency> managedVersions, Set<String> excludedScopes) {
+        if (dominant.isEmpty() && recessive.isEmpty()) {
+            return List.of();
+        }
+        final List<Dependency> result = new ArrayList<>(dominant.size() + recessive.size());
+        final Map<ArtifactKey, Dependency> dominantMap = new HashMap<>(dominant.size());
+        for (Dependency dep : dominant) {
+            if (!excludedScopes.contains(dep.getScope())) {
+                result.add(dep);
+                final ArtifactKey key = getKey(dep.getArtifact());
+                if (!managedVersions.containsKey(key)) {
+                    dominantMap.put(key, dep);
+                }
+            }
+        }
+        for (Dependency dep : recessive) {
+            if (!excludedScopes.contains(dep.getScope())) {
+                final ArtifactKey key = getKey(dep.getArtifact());
+                if (!dominantMap.containsKey(key)) {
+                    final Dependency managed = managedVersions.get(key);
+                    if (managed != null) {
+                        if (dep.getArtifact().getVersion() == null
+                                || !dep.getArtifact().getVersion().equals(managed.getArtifact().getVersion())) {
+                            dep = dep.setArtifact(dep.getArtifact().setVersion(managed.getArtifact().getVersion()));
+                        }
+                    }
+                    result.add(dep);
+                }
+            }
+        }
+        return result;
+    }
+
     public static Artifact toArtifact(String str) {
         final String groupId;
         final String artifactId;

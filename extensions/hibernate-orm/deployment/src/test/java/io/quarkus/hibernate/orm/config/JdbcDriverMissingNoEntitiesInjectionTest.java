@@ -19,8 +19,6 @@ import io.quarkus.test.QuarkusExtensionTest;
  * <p>
  * Ideally this should cause a persistence unit to be created (from the injection point)
  * and fail because no JDBC driver is available.
- * <p>
- * Right now injection points are ignored, so we only get a message from Arc about an unsatisfied injection point.
  *
  * @see <a href="https://github.com/quarkusio/quarkus/issues/51268">#51268</a>.
  * @see <a href="https://github.com/quarkusio/quarkus/issues/55217">#55217</a>.
@@ -36,7 +34,11 @@ public class JdbcDriverMissingNoEntitiesInjectionTest {
                     ArtifactKey.of("io.quarkus", "quarkus-jdbc-h2-deployment")))
             .assertException(t -> assertThat(t)
                     .hasMessageContainingAll(
-                            "Unsatisfied dependency for type org.hibernate.StatelessSession"));
+                            "Hibernate ORM persistence unit '<default>' cannot be created",
+                            "JDBC datasource '<default>' cannot be created",
+                            "Cannot infer the database kind", "no JDBC driver extension",
+                            "being created because of",
+                            "Injection of 'StatelessSession'"));
 
     @Inject
     StatelessSession statelessSession;

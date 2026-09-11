@@ -51,8 +51,6 @@ class ReactiveDataSourceProcessor {
     private static final Type POOL_CREATOR_TYPE = ClassType.create(DotName.createSimple(PoolCreator.class));
     private static final ParameterizedType POOL_CREATOR_INJECTION_TYPE = ParameterizedType.create(INJECT_INSTANCE,
             new Type[] { POOL_CREATOR_TYPE }, null);
-    private static final DotName POOL = DotName.createSimple(Pool.class);
-    private static final Type POOL_TYPE = ClassType.create(POOL);
 
     @BuildStep
     void addQualifierAsBean(BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
@@ -136,7 +134,7 @@ class ReactiveDataSourceProcessor {
                     .addType(io.vertx.mutiny.sqlclient.Pool.class)
                     .scope(ApplicationScoped.class)
                     .qualifiers(qualifiers(dataSourceName))
-                    .addInjectionPoint(POOL_TYPE, qualifier(dataSourceName))
+                    .addInjectionPoint(ReactiveDataSourceBuildUtil.VERTX_POOL_TYPE, qualifier(dataSourceName))
                     .checkActive(recorder.poolCheckActiveSupplier(dataSourceName))
                     .createWith(recorder.mutinyPool(dataSourceName))
                     .unremovable()
@@ -162,19 +160,20 @@ class ReactiveDataSourceProcessor {
     /**
      * The health check needs to be produced in a separate method to avoid a circular dependency
      * (the Vert.x instance creation consumes the AdditionalBeanBuildItems).
-     * We use ReactiveDataSourceDefinitionBuildItem (build-time) instead of ReactivePoolBuildItem (runtime)
-     * to avoid introducing a cycle.
+     * We intentionally avoid consuming ReactiveDataSourceDefinitionBuildItem or
+     * DataSourceDefinedBuildItem here, because they depend (indirectly) on
+     * BeanDiscoveryFinishedBuildItem, which would create a cycle through
+     * HealthBuildItem → AdditionalBeanBuildItem → Arc.
+     * Since this build step is in ReactiveDataSourceProcessor, which is only
+     * loaded when the reactive datasource extension is present, we always
+     * register the health check.
      */
     @BuildStep
     void addHealthCheck(
             Capabilities capabilities,
             BuildProducer<HealthBuildItem> healthChecks,
-            List<ReactiveDataSourceDefinitionBuildItem> dataSourceDefinitions,
             DataSourcesBuildTimeConfig dataSourcesBuildTimeConfig) {
         if (!capabilities.isPresent(Capability.SMALLRYE_HEALTH)) {
-            return;
-        }
-        if (dataSourceDefinitions.isEmpty()) {
             return;
         }
         healthChecks.produce(new HealthBuildItem(

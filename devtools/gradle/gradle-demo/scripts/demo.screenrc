@@ -1,0 +1,10 @@
+startup_message off
+defscrollback 10000
+
+hardstatus alwayslastline "%{= kG} Quarkus Gradle demo %{= kw}| %{= kW}%H"
+caption always "%{= kw}%-Lw%{= kW}%n %t%?%+Lw%?"
+
+screen -t commands 0 bash --noprofile --norc -ic 'PS1="demo> "; export PS1; printf "== Command pane ==\nRun these commands here:\n  ./scripts/curl-dogs.sh\n  ./scripts/demo-edit.sh app\n  ./scripts/curl-dogs.sh\n  ./scripts/demo-edit.sh build\n  ./scripts/curl-dogs.sh\n  ./scripts/demo-edit.sh reset\n\n"; exec bash --noprofile --norc -i'
+split -v
+focus right
+screen -t dev 1 bash --noprofile --norc -c 'cd "$QUARKUS_GRADLE_DEMO_DIR"; printf "== Gradle dev mode ==\n../gradlew -p . :app:quarkusApplicationDev --continuous --no-configuration-cache\n\n"; exec ../gradlew -p . :app:quarkusApplicationDev --continuous --no-configuration-cache'

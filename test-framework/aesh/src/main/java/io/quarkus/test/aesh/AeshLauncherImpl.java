@@ -6,6 +6,9 @@ import java.io.PipedInputStream;
 import java.io.PipedOutputStream;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
@@ -35,6 +38,7 @@ public class AeshLauncherImpl implements AeshLauncher {
     private volatile LaunchResult launchResult;
     private volatile int lastExitCode;
     private volatile Throwable lastError;
+    private volatile List<StageResult> lastStageResults = List.of();
     private volatile String lastCommandOutput;
     private final StringBuilder accumulatedOutput = new StringBuilder();
 
@@ -96,6 +100,7 @@ public class AeshLauncherImpl implements AeshLauncher {
         signalQueue.clear();
         lastExitCode = 0;
         lastError = null;
+        lastStageResults = List.of();
         lastCommandOutput = null;
 
         // Load pre-canned input responses into the queue for invocation.inputLine()
@@ -116,13 +121,19 @@ public class AeshLauncherImpl implements AeshLauncher {
                 throw new RuntimeException(
                         "Command '" + command + "' did not complete within " + options.timeout());
             }
-            // Extract exit code and error from the signal.
-            // The signal is Object[] { exitCode, error } from CliRunner.
-            if (signal instanceof Object[] arr) {
-                lastExitCode = (int) arr[0];
-                if (arr[1] instanceof Throwable t) {
-                    lastError = t;
-                }
+            // Extract exit code, error, and stage data from the signal.
+            // The signal is Object[] { exitCode, error, stageData } from CliRunner.
+            // stageData is null for single commands, List<Object[]> for pipelines.
+            if (!(signal instanceof Object[] arr) || arr.length < 2 || !(arr[0] instanceof Integer exitCode)) {
+                throw new RuntimeException(
+                        "Unexpected signal from REPL for command '" + command + "': " + signal);
+            }
+            lastExitCode = exitCode;
+            if (arr[1] instanceof Throwable t) {
+                lastError = t;
+            }
+            if (arr.length > 2 && arr[2] instanceof List<?> rawStages) {
+                lastStageResults = toStageResults(command, rawStages);
             }
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
@@ -193,6 +204,11 @@ public class AeshLauncherImpl implements AeshLauncher {
     }
 
     @Override
+    public List<StageResult> getStageResults() {
+        return lastStageResults;
+    }
+
+    @Override
     public LaunchResult getLaunchResult() {
         return launchResult;
     }
@@ -239,6 +255,39 @@ public class AeshLauncherImpl implements AeshLauncher {
                 Thread.currentThread().interrupt();
             }
         }
+    }
+
+    /**
+     * Convert raw stage data from the signal queue to {@link StageResult} records.
+     * Each raw entry is {@code Object[] {commandName, stageIndex, stageCount,
+     * exitCode, errorMessage, errorClass, durationMs}} — all classloader-safe types.
+     * Malformed entries fail fast with a descriptive error rather than a
+     * {@link ClassCastException} deep in the conversion.
+     */
+    private static List<StageResult> toStageResults(String command, List<?> rawStages) {
+        List<StageResult> results = new ArrayList<>(rawStages.size());
+        for (Object raw : rawStages) {
+            if (!(raw instanceof Object[] arr) || arr.length != 7
+                    || !(arr[0] instanceof String commandName)
+                    || !(arr[1] instanceof Integer stageIndex)
+                    || !(arr[2] instanceof Integer stageCount)
+                    || !(arr[3] instanceof Integer exitCode)
+                    || (arr[4] != null && !(arr[4] instanceof String))
+                    || (arr[5] != null && !(arr[5] instanceof String))
+                    || !(arr[6] instanceof Long durationMs)) {
+                throw new RuntimeException(
+                        "Malformed stage data from REPL for command '" + command + "'");
+            }
+            results.add(new StageResult(
+                    commandName,
+                    stageIndex,
+                    stageCount,
+                    exitCode,
+                    (String) arr[4],
+                    (String) arr[5],
+                    durationMs));
+        }
+        return Collections.unmodifiableList(results);
     }
 
     /**

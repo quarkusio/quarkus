@@ -10,6 +10,7 @@ import org.junit.jupiter.api.Test;
 
 import io.quarkus.test.aesh.AeshLauncher;
 import io.quarkus.test.aesh.ExecuteOptions;
+import io.quarkus.test.aesh.StageResult;
 import io.quarkus.test.junit.main.QuarkusMainTest;
 
 /**
@@ -213,5 +214,74 @@ public class AeshLauncherApiTest {
                 ExecuteOptions.expecting(CommandResult.FAILURE).input("n"));
         assertThat(launcher.getCommandOutput())
                 .contains("Cancelled: delete");
+    }
+
+    // --- Pipeline stage result tests ---
+
+    @Test
+    void singleCommandReturnsEmptyStageResults(AeshLauncher launcher) {
+        launcher.execute("hello --name=World");
+        assertThat(launcher.getStageResults()).isEmpty();
+    }
+
+    @Test
+    void pipelineReturnsStageResults(AeshLauncher launcher) {
+        launcher.execute("echo --text hello | upper");
+
+        assertThat(launcher.getStageResults())
+                .hasSize(2);
+
+        StageResult upstream = launcher.getStageResults().get(0);
+        assertThat(upstream.commandName()).isEqualTo("EchoCommand");
+        assertThat(upstream.stageIndex()).isZero();
+        assertThat(upstream.stageCount()).isEqualTo(2);
+        assertThat(upstream.isSuccess()).isTrue();
+        assertThat(upstream.exitCode()).isZero();
+        assertThat(upstream.errorMessage()).isNull();
+        assertThat(upstream.errorClass()).isNull();
+
+        StageResult terminal = launcher.getStageResults().get(1);
+        assertThat(terminal.stageIndex()).isEqualTo(1);
+        assertThat(terminal.stageCount()).isEqualTo(2);
+        assertThat(terminal.isSuccess()).isTrue();
+
+        assertThat(launcher.getCommandOutput()).isEqualTo("HELLO\n");
+    }
+
+    @Test
+    void pipelineUpstreamFailureVisibleInStageResults(AeshLauncher launcher) {
+        // failpipe throws but the terminal (upper) still succeeds (Unix semantics):
+        // only the last stage's exit code is returned.
+        launcher.execute("failpipe | upper");
+
+        assertThat(launcher.getLastExitCode()).isZero();
+        assertThat(launcher.getLastError()).isNull();
+        // The partial line written before the failure flows downstream uppercased
+        assertThat(launcher.getCommandOutput()).isEqualTo("PARTIAL\n");
+
+        assertThat(launcher.getStageResults())
+                .hasSize(2);
+
+        StageResult upstream = launcher.getStageResults().get(0);
+        assertThat(upstream.commandName()).isEqualTo("FailPipeCommand");
+        assertThat(upstream.isSuccess()).isFalse();
+        assertThat(upstream.exitCode()).isEqualTo(CommandResult.FAILURE.getExitCode());
+        assertThat(upstream.errorMessage()).contains("upstream boom");
+        assertThat(upstream.errorClass()).contains("CommandException");
+
+        StageResult terminal = launcher.getStageResults().get(1);
+        assertThat(terminal.commandName()).isEqualTo("UpperCommand");
+        assertThat(terminal.isSuccess()).isTrue();
+    }
+
+    @Test
+    void stageResultsClearedBetweenCommands(AeshLauncher launcher) {
+        // First: pipeline command
+        launcher.execute("echo --text hello | upper");
+        assertThat(launcher.getStageResults()).hasSize(2);
+
+        // Second: single command — stages should be empty again
+        launcher.execute("hello --name=World");
+        assertThat(launcher.getStageResults()).isEmpty();
     }
 }

@@ -278,6 +278,7 @@
                 <module>oidc-dpop</module>
                 <module>oidc-spiffe</module>
                 <module>oidc-token-propagation</module>
+                <module>oidc-token-propagation-graphql</module>
                 <module>oidc-token-propagation-reactive</module>
                 <module>openapi</module>
                 <module>smallrye-jwt</module>

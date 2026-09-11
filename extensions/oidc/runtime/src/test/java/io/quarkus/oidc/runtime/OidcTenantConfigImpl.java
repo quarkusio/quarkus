@@ -93,6 +93,7 @@ final class OidcTenantConfigImpl implements OidcTenantConfig {
         AUTHORIZATION_PATH,
         APPLICATION_TYPE,
         TENANT_ENABLED,
+        INITIALIZATION_RETRY_INTERVAL,
         TOKEN_STATE_MANAGER_ENCRYPTION_ALGORITHM,
         TOKEN_STATE_MANAGER_ENCRYPTION_SECRET,
         TOKEN_STATE_MANAGER_ENCRYPTION_REQUIRED,
@@ -218,6 +219,12 @@ final class OidcTenantConfigImpl implements OidcTenantConfig {
     public boolean tenantEnabled() {
         invocationsRecorder.put(ConfigMappingMethods.TENANT_ENABLED, true);
         return false;
+    }
+
+    @Override
+    public Duration initializationRetryInterval() {
+        invocationsRecorder.put(ConfigMappingMethods.INITIALIZATION_RETRY_INTERVAL, true);
+        return Duration.ZERO;
     }
 
     @Override

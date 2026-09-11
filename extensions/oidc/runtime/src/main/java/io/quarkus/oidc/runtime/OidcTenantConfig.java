@@ -43,6 +43,20 @@ public interface OidcTenantConfig extends OidcClientCommonConfig {
     boolean tenantEnabled();
 
     /**
+     * How often a static tenant whose OIDC metadata could not be discovered when the application started
+     * (for example, because the OIDC provider was temporarily unavailable) may be re-initialized.
+     * <p>
+     * By default (`0S`), no periodic re-initialization happens. Set a positive value to have Quarkus retry
+     * the initialization on this interval, in the background, until it succeeds, so the tenant recovers on
+     * its own once the OIDC provider becomes available again, without an application restart. Once the
+     * tenant becomes ready, no further attempts are made.
+     * <p>
+     * This property only affects tenants resolved with `quarkus.oidc.resolve-tenants-with-issuer=true`.
+     */
+    @WithDefault("0S")
+    Duration initializationRetryInterval();
+
+    /**
      * The application type, which can be one of the following {@link ApplicationType} values.
      */
     @ConfigDocDefault("service")

@@ -1,4 +1,4 @@
-package io.quarkus.datasource.deployment.spi;
+package io.quarkus.devservices.datasource.common;
 
 import io.quarkus.builder.item.MultiBuildItem;
 

@@ -10,10 +10,7 @@ import com.github.dockerjava.api.model.HostConfig;
 import com.github.dockerjava.api.model.PortBinding;
 import com.github.dockerjava.api.model.Ports;
 
-import io.quarkus.deployment.builditem.Startable;
-
-public class SimpleContainer extends GenericContainer<io.quarkus.tests.simpleextension.deployment.SimpleContainer>
-        implements Startable {
+public class SimpleContainer extends GenericContainer<io.quarkus.tests.simpleextension.deployment.SimpleContainer> {
 
     private static final DockerImageName dockerImageName = DockerImageName.parse("httpd");
     public static final int HTTPD_PORT = 80;
@@ -43,7 +40,6 @@ public class SimpleContainer extends GenericContainer<io.quarkus.tests.simpleext
         super.start();
     }
 
-    @Override
     public String getConnectionInfo() {
         return "http://" + getHost() + ":" + getMappedPort(HTTPD_PORT);
     }

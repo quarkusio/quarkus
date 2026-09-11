@@ -1,4 +1,4 @@
-package io.quarkus.datasource.deployment.spi;
+package io.quarkus.devservices.datasource.common;
 
 import java.util.Collections;
 import java.util.List;
@@ -6,6 +6,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.Set;
+
+import io.quarkus.datasource.deployment.spi.DatabaseFeature;
 
 public class DevServicesDatasourceContainerConfig {
 

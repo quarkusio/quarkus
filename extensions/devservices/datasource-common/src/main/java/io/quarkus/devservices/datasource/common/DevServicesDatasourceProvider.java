@@ -1,4 +1,4 @@
-package io.quarkus.datasource.deployment.spi;
+package io.quarkus.devservices.datasource.common;
 
 import java.time.Duration;
 import java.util.Optional;

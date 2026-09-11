@@ -24,16 +24,12 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
-import org.apache.commons.lang3.RandomStringUtils;
-import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
 
 import io.quarkus.bootstrap.util.PropertyUtils;
 import io.quarkus.deployment.pkg.steps.NativeImageBuildLocalContainerRunner;
 import io.quarkus.deployment.util.ContainerRuntimeUtil;
 import io.quarkus.deployment.util.ContainerRuntimeUtil.ContainerRuntime;
-import io.quarkus.runtime.logging.LogRuntimeConfig;
-import io.smallrye.config.SmallRyeConfig;
 import io.smallrye.config.common.utils.StringUtil;
 
 public class DefaultDockerContainerLauncher implements DockerContainerArtifactLauncher {
@@ -60,7 +56,8 @@ public class DefaultDockerContainerLauncher implements DockerContainerArtifactLa
     private Map<String, String> volumeMounts;
     private Map<String, String> labels;
     private final Map<String, String> systemProps = new HashMap<>();
-    private final String containerName = "quarkus-integration-test-" + RandomStringUtils.insecure().next(5, true, false);
+    private final String instanceId = LauncherUtil.generateInstanceId();
+    private final String containerName = "quarkus-integration-test-" + instanceId;
     private String containerRuntimeBinaryName;
     private final ExecutorService executorService = Executors.newSingleThreadExecutor();
     private Optional<String> entryPoint;
@@ -201,10 +198,7 @@ public class DefaultDockerContainerLauncher implements DockerContainerArtifactLa
     }
 
     @Override
-    public ListeningAddresses start() throws IOException {
-        SmallRyeConfig config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
-        LogRuntimeConfig logRuntimeConfig = config.getConfigMapping(LogRuntimeConfig.class);
-
+    public ListeningResults start() throws IOException {
         final ContainerRuntime containerRuntime = ContainerRuntimeUtil.detectContainerRuntime();
         containerRuntimeBinaryName = containerRuntime.getExecutableName();
 
@@ -292,14 +286,14 @@ public class DefaultDockerContainerLauncher implements DockerContainerArtifactLa
         args.add(containerImage);
         args.addAll(programArgs);
 
-        final Path logPath = logRuntimeConfig.file().path().toPath();
+        Path logFile = LauncherUtil.buildUniqueLogPath(instanceId);
         try {
-            Files.deleteIfExists(logPath);
-            if (logPath.getParent() != null) {
-                Files.createDirectories(logPath.getParent());
+            Files.deleteIfExists(logFile);
+            if (logFile.getParent() != null) {
+                Files.createDirectories(logFile.getParent());
             }
         } catch (FileSystemException e) {
-            log.warnf("Log file %s deletion failed, could happen on Windows, we can carry on.", logPath);
+            log.warnf("Log file %s deletion failed, could happen on Windows, we can carry on.", logFile);
         }
 
         log.infof("Executing \"%s\"", String.join(" ", args));
@@ -310,16 +304,16 @@ public class DefaultDockerContainerLauncher implements DockerContainerArtifactLa
         // to mount /work/ directory to get quarkus.log.
         containerProcess = new ProcessBuilder(args)
                 .redirectErrorStream(true)
-                .redirectOutput(ProcessBuilder.Redirect.appendTo(logPath.toFile()))
+                .redirectOutput(ProcessBuilder.Redirect.appendTo(logFile.toFile()))
                 .start();
 
         if (startedFunction != null) {
-            waitForStartedFunction(startedFunction, containerProcess, waitTimeSeconds, logPath);
-            return ListeningAddresses.EMPTY;
+            waitForStartedFunction(startedFunction, containerProcess, waitTimeSeconds, logFile);
+            return ListeningResults.EMPTY;
         } else {
             log.info("Wait for server to start by capturing listening data...");
-            ListeningAddresses result = waitForCapturedListeningData(containerProcess, logPath, waitTimeSeconds);
-            result.address().ifPresent(listeningAddress -> log.infof("Server started on port %s", listeningAddress.port()));
+            ListeningResults result = waitForCapturedListeningData(containerProcess, logFile, waitTimeSeconds);
+            result.server().ifPresent(r -> log.infof("Server started on port %s", r.address().port()));
             return result;
         }
     }

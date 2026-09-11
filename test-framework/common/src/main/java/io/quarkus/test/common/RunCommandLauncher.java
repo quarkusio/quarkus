@@ -15,6 +15,7 @@ import java.time.Duration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -24,7 +25,6 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import org.apache.commons.io.input.TeeInputStream;
-import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
 
 import io.quarkus.bootstrap.BootstrapException;
@@ -33,8 +33,6 @@ import io.quarkus.bootstrap.app.CuratedApplication;
 import io.quarkus.bootstrap.app.QuarkusBootstrap;
 import io.quarkus.deployment.cmd.RunCommandActionResultBuildItem;
 import io.quarkus.deployment.cmd.RunCommandHandler;
-import io.quarkus.runtime.logging.LogRuntimeConfig;
-import io.smallrye.config.SmallRyeConfig;
 
 public class RunCommandLauncher implements ArtifactLauncher<ArtifactLauncher.InitContext> {
     private static final Logger log = Logger.getLogger(RunCommandLauncher.class);
@@ -45,7 +43,9 @@ public class RunCommandLauncher implements ArtifactLauncher<ArtifactLauncher.Ini
     private Path workingDir;
     private String startedExpression;
     private boolean needsLogFile;
-    private Path logFilePath;
+    private Path configuredLogFile;
+    private Path logFile;
+    private final String instanceId = LauncherUtil.generateInstanceId();
 
     private final Map<String, String> systemProps = new HashMap<>();
 
@@ -93,7 +93,7 @@ public class RunCommandLauncher implements ArtifactLauncher<ArtifactLauncher.Ini
         launcher.workingDir = (Path) cmd.get(1);
         launcher.startedExpression = (String) cmd.get(2);
         launcher.needsLogFile = (Boolean) cmd.get(3);
-        launcher.logFilePath = (Path) cmd.get(4);
+        launcher.configuredLogFile = (Path) cmd.get(4);
         launcher.waitTimeSeconds = waitTime.getSeconds();
         return launcher;
     }
@@ -109,15 +109,13 @@ public class RunCommandLauncher implements ArtifactLauncher<ArtifactLauncher.Ini
     }
 
     @Override
-    public ListeningAddresses start() throws IOException {
-        Path logFile = logFilePath;
+    public ListeningResults start() throws IOException {
+        logFile = configuredLogFile;
 
         System.out.println("Executing \"" + String.join(" ", args) + "\"");
         if (needsLogFile) {
-            if (logFilePath == null) {
-                SmallRyeConfig config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
-                LogRuntimeConfig logRuntimeConfig = config.getConfigMapping(LogRuntimeConfig.class);
-                logFile = logRuntimeConfig.file().path().toPath();
+            if (configuredLogFile == null) {
+                logFile = LauncherUtil.buildUniqueLogPath(instanceId);
             }
             System.out.println("Creating Logfile for custom extension run: " + logFile.toString());
             try {
@@ -159,7 +157,15 @@ public class RunCommandLauncher implements ArtifactLauncher<ArtifactLauncher.Ini
             throw new RuntimeException("Unable to start target quarkus application " + this.waitTimeSeconds + "s");
         }
 
-        return ListeningAddresses.EMPTY;
+        ListeningResults results;
+        if (needsLogFile) {
+            ListeningAddress serverAddress = new ListeningAddress(8080, "http");
+            ListeningResult server = new ListeningResult(serverAddress, logFile);
+            results = new ListeningResults(Optional.of(server), Optional.empty());
+        } else {
+            results = ListeningResults.EMPTY;
+        }
+        return results;
     }
 
     public void includeAsSysProps(Map<String, String> systemProps) {

@@ -15,7 +15,6 @@ import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -37,11 +36,15 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusDevModeTest;
 import io.quarkus.test.common.QuarkusTestResource;
+import io.quarkus.test.common.TestLog;
 import io.quarkus.test.keycloak.server.KeycloakTestResourceLifecycleManager;
 
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 @QuarkusTestResource(KeycloakTestResourceLifecycleManager.class)
 public class CodeFlowDevModeTestCase {
+
+    // Injected automatically
+    protected TestLog testLog;
 
     private static Class<?>[] testClasses = {
             ProtectedResource.class,
@@ -196,20 +199,15 @@ public class CodeFlowDevModeTestCase {
         return webClient;
     }
 
-    protected static void checkPkceSecretGenerated() {
+    protected void checkPkceSecretGenerated() {
         AtomicBoolean checkPassed = new AtomicBoolean();
         given().pollInterval(100, TimeUnit.MILLISECONDS)
                 .atMost(10, TimeUnit.SECONDS)
                 .untilAsserted(new ThrowingRunnable() {
                     @Override
                     public void run() throws Throwable {
-                        final Path logDirectory = Paths.get(".", "target");
-                        Path accessLogFilePath = logDirectory.resolve("quarkus.log");
+                        Path accessLogFilePath = testLog.getLogFilePath();
                         boolean fileExists = Files.exists(accessLogFilePath);
-                        if (!fileExists) {
-                            accessLogFilePath = logDirectory.resolve("target/quarkus.log");
-                            fileExists = Files.exists(accessLogFilePath);
-                        }
                         assertTrue(fileExists, "quarkus log is missing");
 
                         try (BufferedReader reader = new BufferedReader(

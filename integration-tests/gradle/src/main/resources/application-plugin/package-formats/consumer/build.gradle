@@ -1,0 +1,174 @@
+import org.gradle.api.artifacts.type.ArtifactTypeDefinition
+import org.gradle.api.attributes.Attribute
+import org.gradle.api.attributes.Category
+import org.gradle.api.attributes.LibraryElements
+import org.gradle.api.file.ConfigurableFileCollection
+import org.gradle.api.file.RegularFileProperty
+import org.gradle.api.tasks.InputFiles
+import org.gradle.api.tasks.OutputFile
+import org.gradle.api.tasks.TaskAction
+import org.gradle.api.tasks.bundling.Compression
+import org.gradle.api.publish.maven.MavenPublication
+
+plugins {
+    id 'base'
+    id 'maven-publish'
+}
+
+group = 'org.acme.distribution'
+version = '1.0'
+
+def buildName = Attribute.of('io.quarkus.application.build-name', String)
+def buildType = Attribute.of('io.quarkus.application.build-type', String)
+
+def packageVariant = { String name, String quarkusBuildName, String quarkusBuildType ->
+    configurations.create(name) {
+        canBeConsumed = false
+        canBeResolved = true
+        attributes {
+            attribute(Category.CATEGORY_ATTRIBUTE,
+                objects.named(Category, 'quarkus-application-package'))
+            attribute(LibraryElements.LIBRARY_ELEMENTS_ATTRIBUTE,
+                objects.named(LibraryElements, 'quarkus-application-package-directory'))
+            attribute(ArtifactTypeDefinition.ARTIFACT_TYPE_ATTRIBUTE, 'directory')
+            attribute(buildName, quarkusBuildName)
+            attribute(buildType, quarkusBuildType)
+        }
+    }
+}
+
+def launcherVariant = { String name, String quarkusBuildName, String quarkusBuildType ->
+    configurations.create(name) {
+        canBeConsumed = false
+        canBeResolved = true
+        attributes {
+            attribute(Category.CATEGORY_ATTRIBUTE,
+                objects.named(Category, 'quarkus-application-launcher'))
+            attribute(LibraryElements.LIBRARY_ELEMENTS_ATTRIBUTE,
+                objects.named(LibraryElements, 'quarkus-application-launcher-jar'))
+            attribute(ArtifactTypeDefinition.ARTIFACT_TYPE_ATTRIBUTE, 'jar')
+            attribute(buildName, quarkusBuildName)
+            attribute(buildType, quarkusBuildType)
+        }
+    }
+}
+
+def fastPackageConfiguration = packageVariant('fastPackage', 'fast', 'fast-jar')
+def fastLauncherConfiguration = launcherVariant('fastLauncher', 'fast', 'fast-jar')
+def legacyPackageConfiguration = packageVariant('legacyPackage', 'legacy', 'legacy-jar')
+def legacyLauncherConfiguration = launcherVariant('legacyLauncher', 'legacy', 'legacy-jar')
+def uberLauncherConfiguration = launcherVariant('uberLauncher', 'uber', 'uber-jar')
+
+dependencies {
+    fastPackage project(':')
+    fastLauncher project(':')
+    legacyPackage project(':')
+    legacyLauncher project(':')
+    uberLauncher project(':')
+}
+
+tasks.register('copyFastPackage', Sync) {
+    from fastPackageConfiguration
+    into layout.buildDirectory.dir('packages/fast')
+}
+
+tasks.register('copyFastLauncher', Sync) {
+    from fastLauncherConfiguration
+    into layout.buildDirectory.dir('launchers/fast')
+}
+
+tasks.register('copyLegacyPackage', Sync) {
+    from legacyPackageConfiguration
+    into layout.buildDirectory.dir('packages/legacy')
+}
+
+tasks.register('copyUberLauncher', Sync) {
+    from uberLauncherConfiguration
+    into layout.buildDirectory.dir('launchers/uber')
+}
+
+def packageZip = tasks.register('packageZip', Zip) {
+    from fastPackageConfiguration
+    into 'application'
+    archiveClassifier = 'quarkus-app'
+    reproducibleFileOrder = true
+    preserveFileTimestamps = false
+    zip64 = true
+}
+
+tasks.register('packageTar', Tar) {
+    from fastPackageConfiguration
+    into 'application'
+    archiveClassifier = 'quarkus-app'
+    compression = Compression.GZIP
+    reproducibleFileOrder = true
+    preserveFileTimestamps = false
+}
+
+publishing {
+    publications {
+        packageArchive(MavenPublication) {
+            artifact(packageZip) {
+                classifier = 'quarkus-app'
+                extension = 'zip'
+            }
+        }
+    }
+    repositories {
+        maven {
+            name = 'test'
+            url = layout.buildDirectory.dir('repository')
+        }
+    }
+}
+
+abstract class RecordResolvedLaunchers extends DefaultTask {
+    @InputFiles
+    abstract ConfigurableFileCollection getFastPackageRoots()
+
+    @InputFiles
+    abstract ConfigurableFileCollection getFastLauncher()
+
+    @InputFiles
+    abstract ConfigurableFileCollection getLegacyPackageRoots()
+
+    @InputFiles
+    abstract ConfigurableFileCollection getLegacyLauncher()
+
+    @OutputFile
+    abstract RegularFileProperty getResultFile()
+
+    @TaskAction
+    void record() {
+        def fast = fastLauncher.singleFile
+        def legacy = legacyLauncher.singleFile
+        assert fast.isFile()
+        assert legacy.isFile()
+        assert fast.toPath().startsWith(fastPackageRoots.singleFile.toPath())
+        assert legacy.toPath().startsWith(legacyPackageRoots.singleFile.toPath())
+        def output = resultFile.get().asFile
+        output.parentFile.mkdirs()
+        def fastPath = fast.absolutePath.replace('\\', '/')
+        def legacyPath = legacy.absolutePath.replace('\\', '/')
+        output.text = "fast=${fastPath}\nlegacy=${legacyPath}\n"
+    }
+
+}
+
+tasks.register('recordResolvedLaunchers', RecordResolvedLaunchers) {
+    fastPackageRoots.from fastPackageConfiguration
+    fastLauncher.from fastLauncherConfiguration
+    legacyPackageRoots.from legacyPackageConfiguration
+    legacyLauncher.from legacyLauncherConfiguration
+    resultFile.set layout.buildDirectory.file('resolved-launchers.properties')
+}
+
+tasks.register('stagePackageVariants') {
+    dependsOn tasks.named('copyFastPackage')
+    dependsOn tasks.named('copyFastLauncher')
+    dependsOn tasks.named('copyLegacyPackage')
+    dependsOn tasks.named('copyUberLauncher')
+    dependsOn tasks.named('packageTar')
+    dependsOn tasks.named('publishPackageArchivePublicationToTestRepository')
+    dependsOn tasks.named('recordResolvedLaunchers')
+}

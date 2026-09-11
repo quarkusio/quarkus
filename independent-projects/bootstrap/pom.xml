@@ -234,6 +234,59 @@
             </properties>
         </profile>
         <profile>
+            <id>gradle-app-api-reference-javadoc</id>
+            <properties>
+                <gradle-app-api-reference-javadoc.doclint>all,-missing</gradle-app-api-reference-javadoc.doclint>
+                <gradle-app-api-reference-javadoc.warning-option>-Werror</gradle-app-api-reference-javadoc.warning-option>
+                <maven.javadoc.failOnError>true</maven.javadoc.failOnError>
+            </properties>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-javadoc-plugin</artifactId>
+                        <configuration>
+                            <doclint>${gradle-app-api-reference-javadoc.doclint}</doclint>
+                            <quiet>false</quiet>
+                            <additionalOptions combine.self="override">
+                                <additionalOption>${gradle-app-api-reference-javadoc.warning-option}</additionalOption>
+                            </additionalOptions>
+                        </configuration>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-enforcer-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>enforce-gradle-app-api-reference-javadoc-options</id>
+                                <phase>validate</phase>
+                                <goals>
+                                    <goal>enforce</goal>
+                                </goals>
+                                <configuration>
+                                    <rules>
+                                        <requireProperty>
+                                            <property>gradle-app-api-reference-javadoc.doclint</property>
+                                            <regex>^all,-missing$</regex>
+                                        </requireProperty>
+                                        <requireProperty>
+                                            <property>gradle-app-api-reference-javadoc.warning-option</property>
+                                            <regex>^-Werror$</regex>
+                                        </requireProperty>
+                                        <requireProperty>
+                                            <property>maven.javadoc.failOnError</property>
+                                            <regex>^true$</regex>
+                                        </requireProperty>
+                                    </rules>
+                                </configuration>
+                                <inherited>false</inherited>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+        <profile>
             <id>format</id>
             <activation>
                 <activeByDefault>true</activeByDefault>

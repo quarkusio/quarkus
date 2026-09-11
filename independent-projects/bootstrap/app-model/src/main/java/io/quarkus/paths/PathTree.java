@@ -132,7 +132,7 @@ public interface PathTree {
 
     /**
      * Walks the tree.
-     * <p/>
+     * <p>
      * This method will make sure the relevant multi release content
      * is associated with the expected resource name paths for the current Java version.
      *

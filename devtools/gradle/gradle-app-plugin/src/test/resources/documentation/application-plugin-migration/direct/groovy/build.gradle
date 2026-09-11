@@ -1,0 +1,49 @@
+// Source: {{source}}
+// tag::direct-legacy-build[]
+plugins {
+    id 'java'
+    id 'io.quarkus'
+}
+
+group = 'org.acme'
+version = '1.0.0'
+
+def quarkusPlatformVersion = providers.gradleProperty('quarkusPlatformVersion').get()
+def quarkusPlatformGroupId = providers.gradleProperty('quarkusPlatformGroupId')
+    .orElse('io.quarkus.platform').get()
+
+dependencies {
+    implementation enforcedPlatform("${quarkusPlatformGroupId}:quarkus-bom:${quarkusPlatformVersion}")
+    implementation 'io.quarkus:quarkus-rest'
+    quarkusDev 'io.quarkus:quarkus-jdbc-h2'
+
+    testImplementation 'io.quarkus:quarkus-junit'
+    testImplementation 'io.rest-assured:rest-assured'
+}
+
+quarkus {
+    finalName = 'acme-service'
+    quarkusBuildProperties.put('quarkus.package.jar.type', 'fast-jar')
+    quarkusBuildProperties.put('quarkus.http.test-port', '0')
+    cachingRelevantProperties.add('deploymentTarget')
+    codeGenerationProviders = ['openapi']
+    codeGenerationInputs = ['openapi']
+    manifest {
+        attributes(['Implementation-Title': 'Acme service'])
+        attributes(['Specification-Version': '1.0'], 'Specification')
+    }
+    buildForkOptions {
+        maxHeapSize = '512m'
+        systemProperty 'user.language', 'en'
+    }
+    codeGenForkOptions {
+        maxHeapSize = '256m'
+    }
+}
+
+tasks.named('quarkusBuild') {
+    nativeArgs {
+        containerBuild = true
+    }
+}
+// end::direct-legacy-build[]

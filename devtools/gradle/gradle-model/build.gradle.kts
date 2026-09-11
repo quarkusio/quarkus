@@ -34,6 +34,11 @@ tasks.withType<Jar>().configureEach {
     isReproducibleFileOrder = true
 }
 
+tasks.test {
+    // Required by Gradle's ProjectBuilder on strongly encapsulated JDKs.
+    jvmArgs("--add-opens=java.base/java.lang=ALL-UNNAMED")
+}
+
 publishing {
     publications.create<MavenPublication>("maven") {
         artifactId = "quarkus-gradle-model"

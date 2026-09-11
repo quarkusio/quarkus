@@ -1,0 +1,16 @@
+plugins {
+    id 'io.quarkus.extension.deployment'
+}
+
+group = 'org.acme.model'
+version = '1.0.0-SNAPSHOT'
+
+dependencies {
+    implementation platform("${quarkusPlatformGroupId}:${quarkusPlatformArtifactId}:${quarkusPlatformVersion}")
+    implementation 'io.quarkus:quarkus-core-deployment'
+    implementation project(':main-extension')
+    implementation project(':helper')
+    implementation 'org.acme.model:support-extension-deployment'
+    testImplementation testFixtures(project(':main-extension'))
+    testImplementation testFixtures(project(':helper'))
+}

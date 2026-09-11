@@ -1,0 +1,21 @@
+examples:
+- source: devtools/gradle/gradle-extension-plugin/src/test/resources/documentation/extension-plugin-migration/groovy/settings.gradle
+  target: gradle-extension-plugin-migration-settings-3.gradle
+- source: devtools/gradle/gradle-extension-plugin/src/test/resources/documentation/extension-plugin-migration/kotlin/settings.gradle.kts
+  target: gradle-extension-plugin-migration-settings-3.gradle.kts
+- source: devtools/gradle/gradle-extension-plugin/src/test/resources/documentation/extension-plugin-migration/groovy/settings.gradle.quarkus4
+  target: gradle-extension-plugin-migration-settings-4.gradle
+- source: devtools/gradle/gradle-extension-plugin/src/test/resources/documentation/extension-plugin-migration/kotlin/settings.gradle.kts.quarkus4
+  target: gradle-extension-plugin-migration-settings-4.gradle.kts
+- source: devtools/gradle/gradle-extension-plugin/src/test/resources/documentation/extension-plugin-migration/groovy/runtime/build.gradle
+  target: gradle-extension-plugin-migration-runtime.gradle
+- source: devtools/gradle/gradle-extension-plugin/src/test/resources/documentation/extension-plugin-migration/kotlin/runtime/build.gradle.kts
+  target: gradle-extension-plugin-migration-runtime.gradle.kts
+- source: devtools/gradle/gradle-extension-plugin/src/test/resources/documentation/extension-plugin-migration/groovy/deployment/build.gradle
+  target: gradle-extension-plugin-migration-deployment-3.gradle
+- source: devtools/gradle/gradle-extension-plugin/src/test/resources/documentation/extension-plugin-migration/kotlin/deployment/build.gradle.kts
+  target: gradle-extension-plugin-migration-deployment-3.gradle.kts
+- source: devtools/gradle/gradle-extension-plugin/src/test/resources/documentation/extension-plugin-migration/groovy/deployment/build.gradle.quarkus4
+  target: gradle-extension-plugin-migration-deployment-4.gradle
+- source: devtools/gradle/gradle-extension-plugin/src/test/resources/documentation/extension-plugin-migration/kotlin/deployment/build.gradle.kts.quarkus4
+  target: gradle-extension-plugin-migration-deployment-4.gradle.kts

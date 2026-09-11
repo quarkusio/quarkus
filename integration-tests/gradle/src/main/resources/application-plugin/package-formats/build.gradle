@@ -1,0 +1,176 @@
+import io.quarkus.gradle.application.tasks.QuarkusApplicationPackageTask
+import org.gradle.api.DefaultTask
+import org.gradle.api.GradleException
+import org.gradle.api.file.RegularFileProperty
+import org.gradle.api.plugins.jvm.JvmTestSuite
+import org.gradle.api.tasks.InputFile
+import org.gradle.api.tasks.OutputFile
+import org.gradle.api.tasks.TaskAction
+
+plugins {
+    id 'io.quarkus.application'
+}
+
+repositories {
+    mavenLocal {
+        content {
+            includeGroupByRegex 'io.quarkus.*'
+            includeGroup 'org.hibernate.orm'
+        }
+    }
+    mavenCentral()
+}
+
+dependencies {
+    implementation enforcedPlatform("${quarkusPlatformGroupId}:${quarkusPlatformArtifactId}:${quarkusPlatformVersion}")
+    implementation 'io.quarkus:quarkus-rest'
+}
+
+group = 'org.acme'
+version = '1.0.0-SNAPSHOT'
+
+quarkusApplication {
+    builds {
+        fastJar('fast') {
+            quarkusBuildProperties.put(
+                'quarkus.package.jar.manifest.attributes."Built-By"',
+                'raw-build-property'
+            )
+            manifest {
+                attributes.put('Built-By', 'fast')
+                attributes.put('Build-Version', providers.gradleProperty('manifestVersion'))
+                sections {
+                    section('Specification') {
+                        attributes.put('Specification-Title', 'fast specification')
+                    }
+                    section('Build/Info') {
+                        attributes.put('Build-Name', 'fast')
+                    }
+                }
+            }
+        }
+        mutableJar('mutable') {
+            quarkusBuildProperties.put(
+                'quarkus.package.jar.manifest.attributes."Built-By"',
+                'raw-build-property'
+            )
+            manifest {
+                attributes.put('Built-By', 'mutable')
+                attributes.put('Build-Version', providers.gradleProperty('manifestVersion'))
+                sections {
+                    section('Specification') {
+                        attributes.put('Specification-Title', 'mutable specification')
+                    }
+                    section('Build/Info') {
+                        attributes.put('Build-Name', 'mutable')
+                    }
+                }
+            }
+        }
+        legacyJar('legacy') {
+            quarkusBuildProperties.put(
+                'quarkus.package.jar.manifest.attributes."Built-By"',
+                'raw-build-property'
+            )
+            manifest {
+                attributes.put('Built-By', 'legacy')
+                attributes.put('Build-Version', providers.gradleProperty('manifestVersion'))
+                sections {
+                    section('Specification') {
+                        attributes.put('Specification-Title', 'legacy specification')
+                    }
+                    section('Build/Info') {
+                        attributes.put('Build-Name', 'legacy')
+                    }
+                }
+            }
+        }
+        uberJar('uber') {
+            quarkusBuildProperties.put(
+                'quarkus.package.jar.manifest.attributes."Built-By"',
+                'raw-build-property'
+            )
+            manifest {
+                attributes.put('Built-By', 'uber')
+                attributes.put('Build-Version', providers.gradleProperty('manifestVersion'))
+                sections {
+                    section('Specification') {
+                        attributes.put('Specification-Title', 'uber specification')
+                    }
+                    section('Build/Info') {
+                        attributes.put('Build-Name', 'uber')
+                    }
+                }
+            }
+        }
+    }
+}
+
+testing {
+    suites {
+        intTest(JvmTestSuite) {
+            dependencies {
+                implementation enforcedPlatform(
+                    "${quarkusPlatformGroupId}:${quarkusPlatformArtifactId}:${quarkusPlatformVersion}"
+                )
+                implementation project()
+                implementation 'io.quarkus:quarkus-junit'
+                runtimeOnly 'org.junit.platform:junit-platform-launcher'
+            }
+            forQuarkusIntegrationTests 'fast'
+        }
+    }
+}
+
+abstract class VerifyNamedPackageReceipts extends DefaultTask {
+    @InputFile
+    abstract RegularFileProperty getFastPackageResultFile()
+
+    @InputFile
+    abstract RegularFileProperty getMutablePackageResultFile()
+
+    @InputFile
+    abstract RegularFileProperty getLegacyPackageResultFile()
+
+    @InputFile
+    abstract RegularFileProperty getUberPackageResultFile()
+
+    @OutputFile
+    abstract RegularFileProperty getVerificationFile()
+
+    @TaskAction
+    void verify() {
+        def resultFiles = [
+            fast: fastPackageResultFile,
+            mutable: mutablePackageResultFile,
+            legacy: legacyPackageResultFile,
+            uber: uberPackageResultFile
+        ]
+        resultFiles.each { name, property ->
+            if (!property.get().asFile.isFile()) {
+                throw new GradleException(
+                    "Missing package result file for ${name}: ${property.get().asFile}"
+                )
+            }
+        }
+        def output = verificationFile.get().asFile
+        output.parentFile.mkdirs()
+        output.text = resultFiles.keySet().join('\n') + '\n'
+    }
+}
+
+tasks.register('verifyNamedPackageReceipts', VerifyNamedPackageReceipts) {
+    fastPackageResultFile.set(tasks.named('quarkusFastBuild', QuarkusApplicationPackageTask).flatMap {
+        it.packageResultFile
+    })
+    mutablePackageResultFile.set(tasks.named('quarkusMutableBuild', QuarkusApplicationPackageTask).flatMap {
+        it.packageResultFile
+    })
+    legacyPackageResultFile.set(tasks.named('quarkusLegacyBuild', QuarkusApplicationPackageTask).flatMap {
+        it.packageResultFile
+    })
+    uberPackageResultFile.set(tasks.named('quarkusUberBuild', QuarkusApplicationPackageTask).flatMap {
+        it.packageResultFile
+    })
+    verificationFile.set(layout.buildDirectory.file('verification/named-package-results.txt'))
+}

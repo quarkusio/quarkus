@@ -138,7 +138,9 @@ changes the application will still restart. This will still work even if live re
 
 It is possible to run continuous testing without starting dev mode. This can be useful if dev mode will interfere with
 your tests (e.g. running wiremock on the same port), or if you only want to develop using tests. To start continuous testing
-mode, run `mvn quarkus:test` or `gradle quarkusTest`.
+mode, run `mvn quarkus:test`, run `gradle quarkusTest` with the `io.quarkus` Gradle plugin, or run
+`./gradlew quarkusApplicationContinuousTest --continuous` with the preview
+xref:gradle-application-plugin.adoc#gradle-application-plugin-continuous-testing[`io.quarkus.application` Gradle plugin].
 
 NOTE: The Dev UI is not available when running in continuous testing mode, as this is provided by dev mode.
 
@@ -150,7 +152,8 @@ If `include-patterns` is configured, `exclude-patterns` is ignored.
 
 Alternatively, an approach native to the build system may be used.
 In Maven, that is the `-Dtest=\...` system property, while in Gradle, it is the `--tests \...` command line option.
-These options, when used with `maven quarkus:[dev|test]` or `gradle quarkus[Dev|Test]`, work just like they work with `mvn test` or `gradle test`, except that they filter the set of tests executed during continuous testing.
+These options, when used with `maven quarkus:[dev|test]` or the `io.quarkus` plugin's `gradle quarkus[Dev|Test]` tasks, work just like they work with `mvn test` or `gradle test`, except that they filter the set of tests executed during continuous testing.
+For the `io.quarkus.application` Gradle plugin, pass Gradle's `--tests` option to the xref:gradle-application-plugin.adoc#gradle-application-plugin-continuous-testing[dev or continuous-test task].
 When these options are used, the `quarkus.test.[include|exclude]-pattern` configuration is ignored.
 
 === Maven
@@ -204,4 +207,3 @@ Continuous testing supports multiple configuration options that can be used to l
 to control the output. The configuration properties are shown below:
 
 include::{generated-dir}/config/quarkus-core_quarkus.test.adoc[opts=optional, leveloffset=+2]
-

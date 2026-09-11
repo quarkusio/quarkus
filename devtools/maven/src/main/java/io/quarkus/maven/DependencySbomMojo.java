@@ -26,6 +26,7 @@ import io.quarkus.maven.components.QuarkusWorkspaceProvider;
 import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.sbom.ApplicationManifest;
 import io.quarkus.sbom.ApplicationManifestConfig;
+import io.quarkus.sbom.ProductAttribution;
 
 /**
  * Quarkus application SBOM generator
@@ -88,6 +89,14 @@ public class DependencySbomMojo extends AbstractMojo {
     @Parameter(property = "quarkus.dependency.sbom.runtime-only")
     boolean runtimeOnly;
 
+    /**
+     * When Quarkus platform members include product information (a CPE and the extensions/artifacts bound to
+     * an offering) and this option is enabled, each product is represented in the SBOM as a top-level component
+     * of type {@code framework} that {@code provides} the artifacts attributed to it.
+     */
+    @Parameter(property = "quarkus.dependency.sbom.product-attribution", defaultValue = "true")
+    boolean productAttribution;
+
     protected MavenArtifactResolver resolver;
 
     @Override
@@ -97,11 +106,16 @@ public class DependencySbomMojo extends AbstractMojo {
             return;
         }
         final Path outputFilePath = getSbomFile().toPath();
+        final ApplicationModel model = resolveApplicationModel();
+        ApplicationManifest manifest = ApplicationManifest.fromConfig(
+                ApplicationManifestConfig.builder()
+                        .setApplicationModel(model)
+                        .build());
+        if (productAttribution) {
+            manifest = ProductAttribution.augment(manifest, model);
+        }
         CycloneDxSbomGenerator.newInstance()
-                .setManifest(ApplicationManifest.fromConfig(
-                        ApplicationManifestConfig.builder()
-                                .setApplicationModel(resolveApplicationModel())
-                                .build()))
+                .setManifest(manifest)
                 .setOutputFile(outputFilePath)
                 .setFormat(format)
                 .setEffectiveModelResolver(EffectiveModelResolver.of(getResolver()))

@@ -186,6 +186,65 @@ SBOMs generated for Mutable JAR distributions will also record locations of comp
       }
 ----
 
+[[embedded-dependency-sbom]]
+== Embedded Dependency SBOM
+
+A dependency SBOM can be embedded into the application itself as a classpath resource, so that it travels with the application and can be consumed at runtime or by tools inspecting the artifact. This is enabled with:
+
+[source,properties]
+----
+quarkus.cyclonedx.embedded.enabled=true
+----
+
+The SBOM is embedded as a classpath resource at `META-INF/sbom/dependency.cdx.json` by default. The resource name can be customized, and its extension determines the format (`.json` for JSON, `.xml` for XML):
+
+[source,properties]
+----
+quarkus.cyclonedx.embedded.resource-name=META-INF/custom-sbom.json
+----
+
+The embedded SBOM manifests the application dependencies (the input to the build) rather than the final distribution layout. When <<product-attribution,product attribution>> is enabled (the default), the embedded SBOM also includes the platform-member product components.
+
+=== Native image
+
+When building a native executable, in addition to the classpath resource, the embedded SBOM is also baked into the native binary as the `sbom` and `sbom_length` global symbols, following the https://www.graalvm.org/jdk24/security-guide/native-image/sbom/[GraalVM SBOM specification]. The `sbom` symbol references a GZIP-compressed copy of the SBOM (as required by the specification), which allows tools such as `syft` to extract the SBOM directly from the executable:
+
+[source,bash]
+----
+syft scan ./my-native-app -o cyclonedx-json
+----
+
+[[product-attribution]]
+== Product Attribution
+
+Quarkus platforms (such as the Quarkus platform BOM or vendor-provided platforms) may aggregate extensions that belong to supported products, also referred to as _offerings_. When an application is built on such a platform, product attribution represents each supported product as a dedicated component in the generated SBOM and links the application artifacts that belong to that product to it. This lets downstream tools see which parts of an application are covered by a given product and match them against product-level vulnerability and support information, for example by https://nvd.nist.gov/products/cpe[CPE].
+
+Product attribution is enabled by default and applies to every SBOM that includes the core application contribution (the dependency and distribution SBOMs). It can be disabled with:
+
+[source,properties]
+----
+quarkus.cyclonedx.product-attribution=false
+----
+
+For the `quarkus:dependency-sbom` Maven goal the equivalent parameter is `quarkus.dependency.sbom.product-attribution`.
+
+=== How it works
+
+Attribution is driven entirely by metadata the platform provides through its <<../platform.adoc#product-attribution-properties,platform properties>>; an application does not configure products directly. Each imported platform member that declares a product identity (at minimum a CPE) yields, in the generated SBOM, a single product component that:
+
+* has the type `framework` (unless the platform specifies a different type), carries the product's CPE, and has its CycloneDX `scope` set to `excluded`, since the product itself is not a shipped artifact;
+* is a top-level component, so it appears as a direct dependency of the main application component;
+* _provides_ the artifacts attributed to it — the application's runtime extension artifacts that belong to the product, together with their dependencies. These are recorded as CycloneDX 1.6 `dependency.provides` relationships (the product provides/implements those artifacts). On schema versions older than 1.6, where `provides` is not available, the same artifacts are recorded as `dependsOn` relationships instead.
+
+Platform members that declare the *same* product PURL and CPE are merged into a single product component whose attributed artifacts are the union of the members' contributions.
+
+Only artifacts that are actually present in the application and match the coordinates the platform attributed to the product are linked. If the application overrides the version of an attributed dependency, that dependency is not attributed to the product.
+
+[NOTE]
+====
+A product component is emitted whenever a platform member declares a CPE, even if none of its attributed artifacts end up present in the application.
+====
+
 == Quarkus Property Taxonomy
 
 [cols="1,1,1"]

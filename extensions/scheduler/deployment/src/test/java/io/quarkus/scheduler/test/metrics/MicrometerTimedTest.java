@@ -33,7 +33,10 @@ public class MicrometerTimedTest {
     static final QuarkusExtensionTest test = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(Jobs.class)
-                    .addAsResource(new StringAsset("quarkus.scheduler.metrics.enabled=true"),
+                    .addAsResource(new StringAsset("quarkus.scheduler.metrics.enabled=true\n"
+                            // Metrics go through the Micrometer registry; OpenTelemetry is only on the test
+                            // classpath. Disable the unused OTel metrics pipeline to avoid the redundancy warning.
+                            + "quarkus.otel.metrics.enabled=false\n"),
                             "application.properties"));
 
     @Inject

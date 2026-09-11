@@ -11,6 +11,7 @@ import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
+import org.jboss.logging.Logger;
 import org.jboss.logmanager.Level;
 
 import io.micrometer.core.annotation.Counted;
@@ -24,6 +25,8 @@ import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.arc.deployment.InterceptorBindingRegistrarBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.arc.processor.InterceptorBindingRegistrar;
+import io.quarkus.deployment.Capabilities;
+import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.IsDevelopment;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -62,6 +65,8 @@ import io.quarkus.vertx.http.deployment.NonApplicationRootPathBuildItem;
 
 @BuildSteps(onlyIf = MicrometerProcessor.MicrometerEnabled.class)
 public class MicrometerProcessor {
+    private static final Logger LOGGER = Logger.getLogger(MicrometerProcessor.class);
+
     private static final DotName METER_REGISTRY = DotName.createSimple(MeterRegistry.class.getName());
     private static final DotName METER_BINDER = DotName.createSimple(MeterBinder.class.getName());
     private static final DotName METER_FILTER = DotName.createSimple(MeterFilter.class.getName());
@@ -215,7 +220,23 @@ public class MicrometerProcessor {
     void configureRegistry(MicrometerRecorder recorder,
             List<MicrometerRegistryProviderBuildItem> providerClassItems,
             List<MetricsFactoryConsumerBuildItem> metricsFactoryConsumerBuildItems,
-            ShutdownContextBuildItem shutdownContextBuildItem) {
+            ShutdownContextBuildItem shutdownContextBuildItem,
+            Capabilities capabilities) {
+
+        if (!providerClassItems.isEmpty()
+                && capabilities.isPresent(Capability.OPENTELEMETRY_METRICS)
+                && capabilities.isMissing(Capability.MICROMETER_OPENTELEMETRY)) {
+            if (LOGGER.isEnabled(Logger.Level.WARN)) {
+                // Create a comma-delimited list of the registry types
+                final String registries = String.join(", ", providerClassItems.stream()
+                        .map(i -> i.getRegistryClass().getSimpleName()).toList());
+
+                LOGGER.warnf("Redundant metrics collection detected: both Micrometer (registries: %s) and "
+                        + "OpenTelemetry are active. Consider using the quarkus-micrometer-opentelemetry "
+                        + "extension or disabling one system (e.g., setting quarkus.otel.metrics.enabled=false).",
+                        registries);
+            }
+        }
 
         Set<Class<? extends MeterRegistry>> typeClasses = new LinkedHashSet<>();
         for (MicrometerRegistryProviderBuildItem item : providerClassItems) {

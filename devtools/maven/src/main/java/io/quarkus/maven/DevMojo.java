@@ -1409,7 +1409,7 @@ public class DevMojo extends AbstractMojo {
                 .suspend(suspend)
                 .debug(debug)
                 .debugHost(debugHost)
-                .debugPort(actualDebugPort)
+                .debugPort(actualDebugPort != null ? actualDebugPort : debugPort)
                 .deleteDevJar(deleteDevJar);
 
         setJvmArgs(builder);

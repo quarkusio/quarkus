@@ -16,8 +16,8 @@
     <name>Ancillary classes for making third party frameworks to run on top of Vert.x</name>
 
     <properties>
-        <jboss-logging.version>3.6.1.Final</jboss-logging.version>
-        <vertx.version>4.5.32</vertx.version>
+        <jboss-logging.version>3.6.3.Final</jboss-logging.version>
+        <vertx.version>4.5.34</vertx.version>
     </properties>
 
     <dependencies>

@@ -30,6 +30,7 @@ public final class OidcClientConfigBuilder extends OidcClientCommonConfigBuilder
         private final Optional<Duration> accessTokenExpiresIn;
         private final Optional<Duration> accessTokenExpirySkew;
         private final Optional<Duration> refreshTokenTimeSkew;
+        private final Optional<Duration> minRemainingAccessTokenLifespan;
         private final Optional<List<String>> scopes;
         private final Optional<List<String>> audience;
         private final boolean clientEnabled;
@@ -46,6 +47,7 @@ public final class OidcClientConfigBuilder extends OidcClientCommonConfigBuilder
             this.accessTokenExpiresIn = builder.accessTokenExpiresIn;
             this.accessTokenExpirySkew = builder.accessTokenExpirySkew;
             this.refreshTokenTimeSkew = builder.refreshTokenTimeSkew;
+            this.minRemainingAccessTokenLifespan = builder.minRemainingAccessTokenLifespan;
             this.scopes = builder.scopes.isEmpty() ? Optional.empty() : Optional.of(List.copyOf(builder.scopes));
             this.audience = builder.audience.isEmpty() ? Optional.empty() : Optional.of(List.copyOf(builder.audience));
             this.clientEnabled = builder.clientEnabled;
@@ -76,6 +78,11 @@ public final class OidcClientConfigBuilder extends OidcClientCommonConfigBuilder
         @Override
         public Optional<Duration> refreshTokenTimeSkew() {
             return refreshTokenTimeSkew;
+        }
+
+        @Override
+        public Optional<Duration> minRemainingAccessTokenLifespan() {
+            return minRemainingAccessTokenLifespan;
         }
 
         @Override
@@ -136,6 +143,7 @@ public final class OidcClientConfigBuilder extends OidcClientCommonConfigBuilder
     private Optional<Duration> accessTokenExpiresIn;
     private Optional<Duration> accessTokenExpirySkew;
     private Optional<Duration> refreshTokenTimeSkew;
+    private Optional<Duration> minRemainingAccessTokenLifespan;
     private boolean clientEnabled;
     private Optional<String> id;
     private Optional<Duration> refreshInterval;
@@ -160,6 +168,7 @@ public final class OidcClientConfigBuilder extends OidcClientCommonConfigBuilder
         this.accessTokenExpiresIn = config.accessTokenExpiresIn();
         this.accessTokenExpirySkew = config.accessTokenExpirySkew();
         this.refreshTokenTimeSkew = config.refreshTokenTimeSkew();
+        this.minRemainingAccessTokenLifespan = config.minRemainingAccessTokenLifespan();
         this.clientEnabled = config.clientEnabled();
         this.id = config.id();
         this.refreshInterval = config.refreshInterval();
@@ -279,6 +288,15 @@ public final class OidcClientConfigBuilder extends OidcClientCommonConfigBuilder
      */
     public OidcClientConfigBuilder refreshTokenTimeSkew(Duration refreshTokenTimeSkew) {
         this.refreshTokenTimeSkew = Optional.ofNullable(refreshTokenTimeSkew);
+        return this;
+    }
+
+    /**
+     * @param minRemainingAccessTokenLifespan {@link OidcClientConfig#minRemainingAccessTokenLifespan()}
+     * @return this builder
+     */
+    public OidcClientConfigBuilder minRemainingAccessTokenLifespan(Duration minRemainingAccessTokenLifespan) {
+        this.minRemainingAccessTokenLifespan = Optional.ofNullable(minRemainingAccessTokenLifespan);
         return this;
     }
 

@@ -1,6 +1,7 @@
 package io.quarkus.oidc.client.runtime;
 
 import java.io.IOException;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -42,6 +43,8 @@ public class OidcClientRecorder {
 
     private static final Logger LOG = Logger.getLogger(OidcClientRecorder.class);
     private static final String CLIENT_ID_ATTRIBUTE = "client-id";
+    private static final String MIN_REMAINING_ACCESS_TOKEN_LIFESPAN_PROPERTY = "quarkus.oidc-client.min-remaining-access-token-lifespan";
+    private static final String REFRESH_TOKEN_TIME_SKEW_PROPERTY = "quarkus.oidc-client.refresh-token-time-skew";
     static final String DEFAULT_OIDC_CLIENT_ID = "Default";
 
     static Map<String, OidcClient> createStaticOidcClients(OidcClientsConfig oidcClientsConfig, Vertx vertx,
@@ -111,6 +114,7 @@ public class OidcClientRecorder {
         try {
             OidcCommonUtils.verifyCommonConfiguration(oidcConfig, false, false);
             OidcCommonUtils.validateCredentialsForAllEndpoints(oidcConfig.credentials());
+            verifyMinRemainingAccessTokenLifespan(oidcConfig);
         } catch (ConfigurationException e) {
             return Uni.createFrom().failure(e);
         }
@@ -154,6 +158,38 @@ public class OidcClientRecorder {
                                 deferredClient.onFailure().transform(t -> toOidcClientException(getEndpointUrl(oidcConfig), t)),
                                 oidcClientId, client);
                     });
+        }
+    }
+
+    /**
+     * Reusing the access token which is being refreshed is only enabled when a minimum remaining lifespan is
+     * configured lower than the refresh token time skew
+     */
+    private static void verifyMinRemainingAccessTokenLifespan(OidcClientConfig oidcConfig) {
+        if (oidcConfig.minRemainingAccessTokenLifespan().isEmpty()) {
+            return;
+        }
+        final Duration minRemainingLifespan = oidcConfig.minRemainingAccessTokenLifespan().get();
+        if (minRemainingLifespan.isNegative() || minRemainingLifespan.isZero()) {
+            throw new ConfigurationException(
+                    "'quarkus.oidc-client.min-remaining-access-token-lifespan' must be greater than zero",
+                    Set.of(MIN_REMAINING_ACCESS_TOKEN_LIFESPAN_PROPERTY));
+        }
+        if (oidcConfig.refreshTokenTimeSkew().isEmpty()) {
+            throw new ConfigurationException(
+                    "'quarkus.oidc-client.min-remaining-access-token-lifespan' requires"
+                            + " 'quarkus.oidc-client.refresh-token-time-skew' to be configured, as the access token is only"
+                            + " refreshed before it expires when the skew is set",
+                    Set.of(MIN_REMAINING_ACCESS_TOKEN_LIFESPAN_PROPERTY, REFRESH_TOKEN_TIME_SKEW_PROPERTY));
+        }
+        final Duration refreshTokenTimeSkew = oidcConfig.refreshTokenTimeSkew().get();
+        if (minRemainingLifespan.compareTo(refreshTokenTimeSkew) >= 0) {
+            throw new ConfigurationException(
+                    "'quarkus.oidc-client.min-remaining-access-token-lifespan' must be less than"
+                            + " 'quarkus.oidc-client.refresh-token-time-skew', but " + minRemainingLifespan + " is not less"
+                            + " than " + refreshTokenTimeSkew + ". A refresh only starts once less than the skew is left,"
+                            + " so the access token being refreshed would never be reused",
+                    Set.of(MIN_REMAINING_ACCESS_TOKEN_LIFESPAN_PROPERTY, REFRESH_TOKEN_TIME_SKEW_PROPERTY));
         }
     }
 

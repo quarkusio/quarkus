@@ -377,7 +377,8 @@ public class OidcClientImpl implements OidcClient {
 
                         var tokens = new Tokens(accessToken, accessTokenExpiresAt,
                                 oidcConfig.refreshTokenTimeSkew().orElse(null), refreshToken,
-                                refreshTokenExpiresAt, json, oidcConfig.clientId().orElse(DEFAULT_OIDC_CLIENT_ID));
+                                refreshTokenExpiresAt, json, oidcConfig.clientId().orElse(DEFAULT_OIDC_CLIENT_ID),
+                                oidcConfig.minRemainingAccessTokenLifespan().orElse(null));
                         return Uni.createFrom().item(tokens);
                     } else {
                         String errorMessage = buffer.toString();

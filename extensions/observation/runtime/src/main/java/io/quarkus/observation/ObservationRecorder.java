@@ -15,8 +15,6 @@ import io.quarkus.arc.ArcContainer;
 import io.quarkus.arc.InstanceHandle;
 import io.quarkus.arc.SyntheticCreationalContext;
 import io.quarkus.arc.runtime.BeanContainer;
-import io.quarkus.observation.cdi.ObservedInterceptor;
-import io.quarkus.observation.cdi.convention.ObservedInterceptorConvention;
 import io.quarkus.observation.config.ObservationRuntimeConfig;
 import io.quarkus.observation.handler.PrintOutHandler;
 import io.quarkus.observation.opentelemetry.handler.OpenTelemetryObservationHandler;
@@ -36,10 +34,10 @@ public class ObservationRecorder {
         this.runtimeConfig = runtimeConfig;
     }
 
-    @SuppressWarnings("unchecked")
     public Function<SyntheticCreationalContext<ObservationRegistry>, ObservationRegistry> createObservationRegistry(
             boolean hasOtelTracing) {
         return new Function<>() {
+            @SuppressWarnings("rawtypes")
             @Override
             public ObservationRegistry apply(SyntheticCreationalContext<ObservationRegistry> context) {
                 ObservationRegistry registry = new QuarkusObservationRegistry();
@@ -71,14 +69,6 @@ public class ObservationRecorder {
                 return registry;
             }
         };
-    }
-
-    public void setCustomConvention() {
-        InstanceHandle<ObservedInterceptorConvention> handle = Arc.container()
-                .instance(ObservedInterceptorConvention.class);
-        if (handle.isAvailable()) {
-            ObservedInterceptor.setCustomConvention(handle.get());
-        }
     }
 
     public void registerPrintOutHandler(BeanContainer beanContainer) {

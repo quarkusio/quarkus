@@ -59,6 +59,7 @@ import io.quarkus.hibernate.orm.deployment.PersistenceUnitDescriptorBuildItem;
 import io.quarkus.hibernate.orm.deployment.spi.AdditionalJpaModelBuildItem;
 import io.quarkus.panache.common.deployment.PanacheMethodCustomizerBuildItem;
 import io.quarkus.panache.hibernate.common.deployment.HibernateEnhancersRegisteredBuildItem;
+import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.security.spi.SecuredInterfaceAnnotationBuildItem;
 import io.quarkus.security.spi.SecuredTopLevelInterfaceBuildItem;
 import io.quarkus.security.spi.SecurityTransformer;
@@ -102,9 +103,44 @@ public final class QuarkusDataHibernateProcessor {
 
     private static final DotName DOTNAME_ID = DotName.createSimple(Id.class.getName());
 
+    /**
+     * Features of the classic Panache (Panache 1) Hibernate extensions, mapped to their Maven artifact ids. Quarkus Data
+     * (Panache Next) replaces these and cannot coexist with them: both register overlapping persistence unit setup, so
+     * the presence of any of them alongside Quarkus Data is a configuration error we detect and reject early. The
+     * artifact id is what a user needs to add or remove in their build file, so that is what we report in the error.
+     */
+    private static final Map<String, String> CLASSIC_PANACHE_FEATURE_ARTIFACTS = Map.of(
+            Feature.HIBERNATE_ORM_PANACHE.getName(), "quarkus-hibernate-orm-panache",
+            Feature.HIBERNATE_ORM_PANACHE_KOTLIN.getName(), "quarkus-hibernate-orm-panache-kotlin",
+            Feature.HIBERNATE_REACTIVE_PANACHE.getName(), "quarkus-hibernate-reactive-panache",
+            Feature.HIBERNATE_REACTIVE_PANACHE_KOTLIN.getName(), "quarkus-hibernate-reactive-panache-kotlin");
+
     @BuildStep
     FeatureBuildItem featureBuildItem() {
         return new FeatureBuildItem(Feature.QUARKUS_DATA_HIBERNATE);
+    }
+
+    @BuildStep
+    void detectClassicPanacheOnClasspath(List<FeatureBuildItem> features,
+            ValidationPhaseBuildItem validationPhase,
+            BuildProducer<ValidationPhaseBuildItem.ValidationErrorBuildItem> validationErrors) {
+        // The most robust detection signal available here is the FeatureBuildItem list: every extension unconditionally
+        // registers its own FeatureBuildItem, and consuming the whole list guarantees this step runs after all of them.
+        // There is no Capability defined for classic Panache, and relying on a class-on-classpath check would require a
+        // hard-coded internal class name that is more fragile than the feature name each extension owns.
+        for (FeatureBuildItem feature : features) {
+            String classicPanacheArtifact = CLASSIC_PANACHE_FEATURE_ARTIFACTS.get(feature.getName());
+            if (classicPanacheArtifact != null) {
+                validationErrors.produce(new ValidationPhaseBuildItem.ValidationErrorBuildItem(new ConfigurationException(
+                        "Quarkus Data (Panache Next, '" + Feature.QUARKUS_DATA_HIBERNATE.getName()
+                                + "') and classic Panache ('" + classicPanacheArtifact
+                                + "') were both detected on the classpath, but they cannot be used together.\n"
+                                + "These two data access layers are mutually exclusive: please use only one of them.\n"
+                                + "Either migrate your code to Quarkus Data and remove the classic Panache extension(s),"
+                                + " or keep classic Panache and remove the Quarkus Data extension(s).")));
+                return;
+            }
+        }
     }
 
     @BuildStep

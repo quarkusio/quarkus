@@ -1,5 +1,6 @@
 package io.quarkus.tls.runtime.keystores;
 
+import java.net.Socket;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
@@ -11,9 +12,11 @@ import java.util.Objects;
 import java.util.function.Function;
 
 import javax.net.ssl.ManagerFactoryParameters;
+import javax.net.ssl.SSLEngine;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.TrustManagerFactory;
 import javax.net.ssl.TrustManagerFactorySpi;
+import javax.net.ssl.X509ExtendedTrustManager;
 import javax.net.ssl.X509TrustManager;
 
 import org.jboss.logging.Logger;
@@ -92,13 +95,71 @@ public class ExpiryTrustOptions implements TrustOptions {
         var wrapped = new TrustManager[tms.length];
         for (int i = 0; i < tms.length; i++) {
             var manager = tms[i];
-            if (!(manager instanceof X509TrustManager)) {
-                wrapped[i] = manager;
-            } else {
+            if (manager instanceof X509ExtendedTrustManager) {
+                wrapped[i] = new ExpiryAwareX509ExtendedTrustManager((X509ExtendedTrustManager) manager);
+            } else if (manager instanceof X509TrustManager) {
                 wrapped[i] = new ExpiryAwareX509TrustManager((X509TrustManager) manager);
+            } else {
+                wrapped[i] = manager;
             }
         }
         return wrapped;
+    }
+
+    private class ExpiryAwareX509ExtendedTrustManager extends X509ExtendedTrustManager {
+
+        final X509ExtendedTrustManager tm;
+
+        private ExpiryAwareX509ExtendedTrustManager(X509ExtendedTrustManager tm) {
+            this.tm = tm;
+        }
+
+        @Override
+        public void checkClientTrusted(X509Certificate[] chain, String authType, Socket socket)
+                throws CertificateException {
+            verifyExpiration(chain);
+            tm.checkClientTrusted(chain, authType, socket);
+        }
+
+        @Override
+        public void checkServerTrusted(X509Certificate[] chain, String authType, Socket socket)
+                throws CertificateException {
+            verifyExpiration(chain);
+            tm.checkServerTrusted(chain, authType, socket);
+        }
+
+        @Override
+        public void checkClientTrusted(X509Certificate[] chain, String authType, SSLEngine engine)
+                throws CertificateException {
+            verifyExpiration(chain);
+            tm.checkClientTrusted(chain, authType, engine);
+        }
+
+        @Override
+        public void checkServerTrusted(X509Certificate[] chain, String authType, SSLEngine engine)
+                throws CertificateException {
+            verifyExpiration(chain);
+            tm.checkServerTrusted(chain, authType, engine);
+        }
+
+        @Override
+        public void checkClientTrusted(X509Certificate[] chain, String authType)
+                throws CertificateException {
+            verifyExpiration(chain);
+            tm.checkClientTrusted(chain, authType);
+        }
+
+        @Override
+        public void checkServerTrusted(X509Certificate[] chain, String authType)
+                throws CertificateException {
+            verifyExpiration(chain);
+            tm.checkServerTrusted(chain, authType);
+        }
+
+        @Override
+        public X509Certificate[] getAcceptedIssuers() {
+            return tm.getAcceptedIssuers();
+        }
     }
 
     private class ExpiryAwareX509TrustManager implements X509TrustManager {
@@ -110,48 +171,45 @@ public class ExpiryTrustOptions implements TrustOptions {
         }
 
         @Override
-        public void checkClientTrusted(java.security.cert.X509Certificate[] chain, String authType)
+        public void checkClientTrusted(X509Certificate[] chain, String authType)
                 throws CertificateException {
             verifyExpiration(chain);
             tm.checkClientTrusted(chain, authType);
         }
 
-        private void verifyExpiration(X509Certificate[] chain)
-                throws CertificateExpiredException, CertificateNotYetValidException {
-            // Verify if there is any expired certificate in the chain - if so, throw an exception
-            for (X509Certificate cert : chain) {
-                try {
-                    cert.checkValidity();
-                } catch (CertificateExpiredException e) {
-                    // Ignore has been handled before, so, no need to check for this value.
-                    if (policy == TrustStoreConfig.CertificateExpiryPolicy.REJECT) {
-                        LOGGER.error("A certificate has expired - rejecting", e);
-                        throw e;
-                    } else { // WARN
-                        LOGGER.warn("A certificate has expired", e);
-                    }
-                } catch (CertificateNotYetValidException e) {
-                    // Ignore has been handled before, so, no need to check for this value.
-                    if (policy == TrustStoreConfig.CertificateExpiryPolicy.REJECT) {
-                        LOGGER.error("A certificate is not yet valid - rejecting", e);
-                        throw e;
-                    } else { // WARN
-                        LOGGER.warn("A certificate is not yet valid", e);
-                    }
-                }
-            }
-        }
-
         @Override
-        public void checkServerTrusted(java.security.cert.X509Certificate[] chain, String authType)
+        public void checkServerTrusted(X509Certificate[] chain, String authType)
                 throws CertificateException {
             verifyExpiration(chain);
             tm.checkServerTrusted(chain, authType);
         }
 
         @Override
-        public java.security.cert.X509Certificate[] getAcceptedIssuers() {
+        public X509Certificate[] getAcceptedIssuers() {
             return tm.getAcceptedIssuers();
+        }
+    }
+
+    private void verifyExpiration(X509Certificate[] chain)
+            throws CertificateExpiredException, CertificateNotYetValidException {
+        for (X509Certificate cert : chain) {
+            try {
+                cert.checkValidity();
+            } catch (CertificateExpiredException e) {
+                if (policy == TrustStoreConfig.CertificateExpiryPolicy.REJECT) {
+                    LOGGER.error("A certificate has expired - rejecting", e);
+                    throw e;
+                } else { // WARN
+                    LOGGER.warn("A certificate has expired", e);
+                }
+            } catch (CertificateNotYetValidException e) {
+                if (policy == TrustStoreConfig.CertificateExpiryPolicy.REJECT) {
+                    LOGGER.error("A certificate is not yet valid - rejecting", e);
+                    throw e;
+                } else { // WARN
+                    LOGGER.warn("A certificate is not yet valid", e);
+                }
+            }
         }
     }
 

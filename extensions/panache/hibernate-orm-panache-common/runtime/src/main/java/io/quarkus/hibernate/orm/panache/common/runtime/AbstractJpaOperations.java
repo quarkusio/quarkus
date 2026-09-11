@@ -2,7 +2,6 @@ package io.quarkus.hibernate.orm.panache.common.runtime;
 
 import static io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME;
 
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -47,35 +46,6 @@ public abstract class AbstractJpaOperations<PanacheQueryType, SessionType extend
         } else {
             entityToPersistenceUnitIsIncomplete = entityToPersistenceUnitIsIncomplete || incomplete;
         }
-    }
-
-    private static volatile Map<Class<?>, Class<?>> repositoryClassToEntityClass = Collections.emptyMap();
-
-    public static void setRepositoryClassesToEntityClasses(Map<String, String> map) {
-        Map<Class<?>, Class<?>> converted = new HashMap<>();
-        ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
-        for (Entry<String, String> entry : map.entrySet()) {
-            try {
-                Class<?> repoClass = Class.forName(entry.getKey(), false, classLoader);
-                Class<?> entityClass = Class.forName(entry.getValue(), false, classLoader);
-                converted.put(repoClass, entityClass);
-            } catch (ClassNotFoundException e) {
-                throw new RuntimeException("Unable to load repository/entity class mapping "
-                        + entry.getKey() + " -> " + entry.getValue(), e);
-            }
-        }
-        repositoryClassToEntityClass = Collections.unmodifiableMap(converted);
-    }
-
-    public static <Entity> Class<? extends Entity> getRepositoryEntityClass(
-            // FIXME: if we move this to JpaOperations we can add a type constraint on the repo class
-            Class<?> repositoryImplementationClass) {
-        Class<?> ret = repositoryClassToEntityClass.get(repositoryImplementationClass);
-        if (ret == null) {
-            throw new RuntimeException("Your repository class " + repositoryImplementationClass
-                    + " was not properly detected and assigned an entity type");
-        }
-        return (Class<? extends Entity>) ret;
     }
 
     //

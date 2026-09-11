@@ -9,12 +9,19 @@ import io.quarkus.data.hibernate.reactive.ReactiveDataQuery;
 import io.quarkus.data.hibernate.reactive.ReactiveRepositoryQueries;
 import io.quarkus.data.hibernate.runtime.spi.PanacheOperations;
 import io.quarkus.data.hibernate.runtime.spi.PanacheReactiveOperations;
-import io.quarkus.hibernate.orm.panache.common.runtime.AbstractJpaOperations;
 import io.smallrye.mutiny.Uni;
 
 public interface ReactiveRecordRepositoryQueries<Entity, Id> extends ReactiveRepositoryQueries<Entity, Id> {
+
+    // See BlockingManagedRepositoryOperations for the explanation of the doGetEntityClass() pattern.
+
+    private Class<? extends Entity> doGetEntityClass() {
+        throw new UnsupportedOperationException(
+                "doGetEntityClass() should be provided by the generated repository implementation");
+    }
+
     private Class<? extends Entity> getEntityClass() {
-        return AbstractJpaOperations.getRepositoryEntityClass(getClass());
+        return doGetEntityClass();
     }
 
     private PanacheReactiveOperations operations() {

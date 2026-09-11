@@ -12,7 +12,6 @@ import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.time.Duration;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
@@ -22,12 +21,16 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.test.common.QuarkusTestResource;
+import io.quarkus.test.common.TestLog;
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.RestAssured;
 
 @QuarkusTest
 @QuarkusTestResource(KeycloakRealmResourceManager.class)
 public class OidcClientTest {
+
+    // Injected automatically
+    protected TestLog testLog;
 
     @Test
     public void testGetUserNameOidcClient() {
@@ -105,18 +108,13 @@ public class OidcClientTest {
     }
 
     private void checkLog() {
-        final Path logDirectory = Paths.get(".", "target");
         given().await().pollInterval(100, TimeUnit.MILLISECONDS)
                 .atMost(10, TimeUnit.SECONDS)
                 .untilAsserted(new ThrowingRunnable() {
                     @Override
                     public void run() throws Throwable {
-                        Path accessLogFilePath = logDirectory.resolve("quarkus.log");
+                        Path accessLogFilePath = testLog.getLogFilePath();
                         boolean fileExists = Files.exists(accessLogFilePath);
-                        if (!fileExists) {
-                            accessLogFilePath = logDirectory.resolve("target/quarkus.log");
-                            fileExists = Files.exists(accessLogFilePath);
-                        }
                         Assertions.assertTrue(Files.exists(accessLogFilePath),
                                 "quarkus log file " + accessLogFilePath + " is missing");
 

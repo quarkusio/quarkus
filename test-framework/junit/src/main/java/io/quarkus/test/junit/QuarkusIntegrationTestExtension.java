@@ -2,9 +2,10 @@ package io.quarkus.test.junit;
 
 import static io.quarkus.runtime.LaunchMode.NORMAL;
 import static io.quarkus.runtime.configuration.ConfigSourceOrdinal.INTEGRATION_TEST;
-import static io.quarkus.test.common.ListeningAddress.LISTENING_ADDRESS;
 import static io.quarkus.test.common.ListeningAddress.LOCAL_BASE_URI;
-import static io.quarkus.test.common.ListeningAddress.MANAGEMENT_LISTENING_ADDRESS;
+import static io.quarkus.test.common.ListeningResult.MANAGEMENT_LISTENING_RESULT;
+import static io.quarkus.test.common.ListeningResult.SERVER_LISTENING_RESULT;
+import static io.quarkus.test.common.TestLog.TEST_LOG;
 import static io.quarkus.test.junit.ArtifactTypeUtil.isContainer;
 import static io.quarkus.test.junit.ArtifactTypeUtil.isJar;
 import static io.quarkus.test.junit.IntegrationTestUtil.activateLogging;
@@ -32,7 +33,6 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.ServiceLoader;
-import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -61,8 +61,8 @@ import io.quarkus.runtime.configuration.ConfigUtils;
 import io.quarkus.runtime.logging.LogRuntimeConfig;
 import io.quarkus.runtime.test.TestHttpEndpointProvider;
 import io.quarkus.test.common.ArtifactLauncher;
-import io.quarkus.test.common.ListeningAddress;
-import io.quarkus.test.common.ListeningAddresses;
+import io.quarkus.test.common.ListeningResult;
+import io.quarkus.test.common.ListeningResults;
 import io.quarkus.test.common.RestAssuredStateManager;
 import io.quarkus.test.common.RunCommandLauncher;
 import io.quarkus.test.common.TestConfigUtil;
@@ -138,15 +138,10 @@ public class QuarkusIntegrationTestExtension extends AbstractQuarkusTestWithCont
             // Inject of ValueRegistry and Config done IntegrationTestUtil.doProcessTestInstance
 
             ValueRegistry valueRegistry = ValueRegistryInjector.get(context);
-            Optional<ListeningAddress> listeningAddress = valueRegistry.get(LISTENING_ADDRESS);
-            listeningAddress.ifPresent(new Consumer<ListeningAddress>() {
-                @Override
-                public void accept(ListeningAddress listeningAddress) {
-                    RestAssuredStateManager.setTestUri(
-                            valueRegistry.get(LOCAL_BASE_URI),
-                            QuarkusTestExtension.getEndpointPath(context, testHttpEndpointProviders));
-                }
-            });
+            Optional<ListeningResult> registeredListeningServer = valueRegistry.get(SERVER_LISTENING_RESULT);
+            registeredListeningServer.ifPresent(server -> RestAssuredStateManager.setTestUri(
+                    valueRegistry.get(LOCAL_BASE_URI),
+                    QuarkusTestExtension.getEndpointPath(context, testHttpEndpointProviders)));
             TestScopeManager.setup(true);
         }
     }
@@ -202,8 +197,16 @@ public class QuarkusIntegrationTestExtension extends AbstractQuarkusTestWithCont
                 setState(extensionContext, state);
             } catch (Throwable e) {
                 try {
-                    LogRuntimeConfig logRuntimeConfig = Config.get().getConfigMapping(LogRuntimeConfig.class);
-                    File appLogFile = logRuntimeConfig.file().path();
+                    ValueRegistry valueRegistry = ValueRegistryInjector.get(extensionContext);
+                    Path logPath = null;
+                    if (valueRegistry != null && valueRegistry.containsKey(TEST_LOG)) {
+                        logPath = valueRegistry.get(TEST_LOG).getLogFilePath();
+                    }
+                    if (logPath == null) {
+                        LogRuntimeConfig logRuntimeConfig = Config.get().getConfigMapping(LogRuntimeConfig.class);
+                        logPath = logRuntimeConfig.file().path().toPath();
+                    }
+                    File appLogFile = logPath.toFile();
                     if (appLogFile.exists() && (appLogFile.length() > 0)) {
                         System.err.println("Failed to launch the application. The application logs can be found at: "
                                 + appLogFile.getAbsolutePath());
@@ -358,20 +361,20 @@ public class QuarkusIntegrationTestExtension extends AbstractQuarkusTestWithCont
             activateLogging();
 
             // Start Quarkus, capture the listening port if available and register it in ValueRegistry
-            ListeningAddresses listeningData = startLauncher(launcher, additionalProperties);
-            Optional<ListeningAddress> listeningAddress = listeningData.address();
-            if (listeningAddress.isPresent()) {
-                listeningAddress.get().register(valueRegistry, newConfig);
-                valueRegistry.register(LISTENING_ADDRESS, listeningAddress);
+            ListeningResults listeningResults = startLauncher(launcher, additionalProperties);
+            Optional<ListeningResult> listeningServer = listeningResults.server();
+            if (listeningServer.isPresent()) {
+                listeningServer.get().register(valueRegistry, newConfig);
+                valueRegistry.register(SERVER_LISTENING_RESULT, listeningServer);
             } else {
-                valueRegistry.register(LISTENING_ADDRESS, Optional.empty());
+                valueRegistry.register(SERVER_LISTENING_RESULT, Optional.empty());
             }
-            Optional<ListeningAddress> managementAddress = listeningData.managementAddress();
-            if (managementAddress.isPresent()) {
-                managementAddress.get().registerManagement(valueRegistry, newConfig);
-                valueRegistry.register(MANAGEMENT_LISTENING_ADDRESS, managementAddress);
+            Optional<ListeningResult> listeningManagement = listeningResults.management();
+            if (listeningManagement.isPresent()) {
+                listeningManagement.get().registerManagement(valueRegistry, newConfig);
+                valueRegistry.register(MANAGEMENT_LISTENING_RESULT, listeningManagement);
             } else {
-                valueRegistry.register(MANAGEMENT_LISTENING_ADDRESS, Optional.empty());
+                valueRegistry.register(MANAGEMENT_LISTENING_RESULT, Optional.empty());
             }
 
             testHttpEndpointProviders = TestHttpEndpointProvider.load();

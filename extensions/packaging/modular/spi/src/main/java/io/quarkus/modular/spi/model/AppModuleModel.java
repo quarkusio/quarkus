@@ -10,6 +10,7 @@ import java.util.Set;
 
 import io.quarkus.maven.dependency.ArtifactKey;
 import io.smallrye.common.constraint.Assert;
+import io.smallrye.modules.desc.PackageAccess;
 
 public final class AppModuleModel {
     private final ModuleInfo appModuleInfo;
@@ -117,7 +118,68 @@ public final class AppModuleModel {
         }
 
         public AppModuleModel build() {
+            cleanDependencyPackageAccesses();
             return new AppModuleModel(this);
+        }
+
+        /**
+         * Remove package access entries (add-exports/add-opens) from dependencies
+         * that reference packages not present in the target module. This prevents
+         * warnings from the module runtime about missing packages.
+         */
+        private void cleanDependencyPackageAccesses() {
+            Map<String, ModuleInfo> updated = null;
+            for (ModuleInfo moduleInfo : modulesByName.values()) {
+                ModuleInfo cleaned = cleanDependencyPackageAccesses(moduleInfo);
+                if (cleaned != moduleInfo) {
+                    if (updated == null) {
+                        updated = new HashMap<>(modulesByName);
+                    }
+                    updated.put(cleaned.name(), cleaned);
+                    if (appModuleInfo != null && moduleInfo.name().equals(appModuleInfo.name())) {
+                        appModuleInfo = cleaned;
+                    }
+                }
+            }
+            if (updated != null) {
+                modulesByName = updated;
+            }
+        }
+
+        private ModuleInfo cleanDependencyPackageAccesses(ModuleInfo moduleInfo) {
+            List<DependencyInfo> deps = moduleInfo.dependencies();
+            if (deps.isEmpty()) {
+                return moduleInfo;
+            }
+            List<DependencyInfo> filtered = new ArrayList<>(deps.size());
+            boolean changed = false;
+            for (DependencyInfo dep : deps) {
+                if (dep.packageAccesses().isEmpty()) {
+                    filtered.add(dep);
+                    continue;
+                }
+                ModuleInfo targetModule = modulesByName.get(dep.moduleName());
+                if (targetModule == null) {
+                    filtered.add(dep);
+                    continue;
+                }
+                Map<String, PackageAccess> cleanedAccesses = null;
+                for (String pkg : dep.packageAccesses().keySet()) {
+                    if (!targetModule.packages().containsKey(pkg)) {
+                        if (cleanedAccesses == null) {
+                            cleanedAccesses = new HashMap<>(dep.packageAccesses());
+                        }
+                        cleanedAccesses.remove(pkg);
+                    }
+                }
+                if (cleanedAccesses != null) {
+                    changed = true;
+                    filtered.add(new DependencyInfo(dep.moduleName(), dep.modifiers(), cleanedAccesses));
+                } else {
+                    filtered.add(dep);
+                }
+            }
+            return changed ? moduleInfo.withDependencies(filtered) : moduleInfo;
         }
     }
 }

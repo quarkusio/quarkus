@@ -21,12 +21,14 @@ public final class JarTreeShakeBuildItem extends SimpleBuildItem {
     private final boolean classesShaken;
     private final Set<String> reachableClassNames;
     private final Map<ArtifactKey, List<String>> removedClasses;
+    private final Set<String> referencedJdkPackages;
 
     public JarTreeShakeBuildItem(boolean classesShaken, Set<String> reachableClassNames,
-            Map<ArtifactKey, List<String>> removedClasses) {
+            Map<ArtifactKey, List<String>> removedClasses, Set<String> referencedJdkPackages) {
         this.classesShaken = classesShaken;
         this.reachableClassNames = reachableClassNames;
         this.removedClasses = removedClasses;
+        this.referencedJdkPackages = referencedJdkPackages;
     }
 
     public boolean isClassesShaken() {
@@ -83,6 +85,13 @@ public final class JarTreeShakeBuildItem extends SimpleBuildItem {
                 }
             });
         }
+    }
+
+    /**
+     * @return dot-separated JDK package names (java.*, javax.*, jdk.*) referenced by reachable code
+     */
+    public Set<String> getReferencedJdkPackages() {
+        return referencedJdkPackages;
     }
 
     /**

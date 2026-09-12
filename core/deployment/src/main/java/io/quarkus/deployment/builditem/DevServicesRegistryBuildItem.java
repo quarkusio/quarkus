@@ -1,5 +1,6 @@
 package io.quarkus.deployment.builditem;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -101,14 +102,47 @@ public final class DevServicesRegistryBuildItem extends SimpleBuildItem {
         startSelectedServices(services, customizers, additionalConfigBuildItems, deploymentClassLoader,
                 dr -> !dr.hasDependencies(), config, overrideConfig);
 
-        // Now start everything with a dependency
-        // This won't handle the case where the dependencies also have dependencies, but that can be a follow-on work item if people ask for it
-        // I think we could implement it by getting the actual dependencies and seeing if any of them are also in the list of things we're starting, and then recursing
-        startSelectedServices(services, customizers, additionalConfigBuildItems, deploymentClassLoader,
-                DevServicesResultBuildItem::hasDependencies, config, overrideConfig);
+        // Now start everything with a dependency, one wave at a time, so that chains of dependencies
+        // (a service depending on a service which itself depends on another, and so on) are resolved
+        // regardless of how deep the chain is. Each wave starts the services whose required dependency
+        // config is already available; that may unblock further services for the next wave.
+        List<DevServicesResultBuildItem> pending = services.stream()
+                .filter(DevServicesResultBuildItem::isStartable)
+                .filter(DevServicesResultBuildItem::hasDependencies)
+                .collect(Collectors.toCollection(ArrayList::new));
+        while (!pending.isEmpty()) {
+            List<DevServicesResultBuildItem> ready = pending.stream()
+                    .filter(dr -> requiredDependenciesAvailable(dr, config))
+                    .toList();
+
+            if (ready.isEmpty()) {
+                // None of the remaining services are ready: their dependencies are missing or circular.
+                // Start them anyway so they go through the existing "did not become available" handling.
+                startSelectedServices(pending, customizers, additionalConfigBuildItems, deploymentClassLoader,
+                        dr -> true, config, overrideConfig);
+                break;
+            }
+
+            startSelectedServices(ready, customizers, additionalConfigBuildItems, deploymentClassLoader,
+                    dr -> true, config, overrideConfig);
+            pending.removeAll(ready);
+        }
 
         return new DevServicesStartResult(Collections.unmodifiableMap(config),
                 Collections.unmodifiableMap(overrideConfig));
+    }
+
+    private static boolean requiredDependenciesAvailable(DevServicesResultBuildItem dr, Map<String, String> config) {
+        var dependencies = dr.getDependencies();
+        if (dependencies == null) {
+            return true;
+        }
+        for (var dependency : dependencies) {
+            if (!config.containsKey(dependency.requiredConfigKey())) {
+                return false;
+            }
+        }
+        return true;
     }
 
     private void startSelectedServices(Collection<DevServicesResultBuildItem> services,
@@ -116,8 +150,6 @@ public final class DevServicesRegistryBuildItem extends SimpleBuildItem {
             List<DevServicesAdditionalConfigBuildItem> additionalConfigBuildItems,
             ClassLoader deploymentClassLoader, Predicate<? super DevServicesResultBuildItem> filter,
             Map<String, String> config, Map<String, String> overrideConfig) {
-        // TODO Note that this does not handle chained dependencies; dependencies can only be one level deep for now
-        // It would be easy to fix that, but let's wait until we need to
         CompletableFuture.allOf(services.stream()
                 .filter(DevServicesResultBuildItem::isStartable)
                 .filter(filter)

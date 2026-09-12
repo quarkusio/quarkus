@@ -168,7 +168,32 @@ public class CreateProjectHelper {
         if (extensions == null) {
             return extensions = Set.of();
         }
-        return extensions.stream().filter(Objects::nonNull).map(String::trim).collect(Collectors.toSet());
+        return extensions.stream()
+                .filter(Objects::nonNull)
+                .map(String::trim)
+                .map(CreateProjectHelper::stripQuotes)
+                .map(String::trim) // Trim again to handle whitespace inside quotes
+                .filter(s -> !s.isEmpty())
+                .collect(Collectors.toSet());
+    }
+
+    /**
+     * Strips surrounding single or double quotes from a string.
+     * Only removes quotes if they match (both single or both double) and surround the entire string.
+     *
+     * @param str the string to strip quotes from
+     * @return the string without surrounding quotes
+     */
+    private static String stripQuotes(String str) {
+        if (str == null || str.length() < 2) {
+            return str;
+        }
+        char first = str.charAt(0);
+        char last = str.charAt(str.length() - 1);
+        if ((first == '\'' && last == '\'') || (first == '"' && last == '"')) {
+            return str.substring(1, str.length() - 1);
+        }
+        return str;
     }
 
     public static void addSourceTypeExtensions(Set<String> extensions, SourceType sourceType) {

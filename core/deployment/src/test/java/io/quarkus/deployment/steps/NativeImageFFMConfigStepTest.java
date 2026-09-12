@@ -148,18 +148,14 @@ class NativeImageFFMConfigStepTest {
     void emptyListsProduceNoOutput() {
         NativeImageFFMConfigStep step = new NativeImageFFMConfigStep();
         List<GeneratedResourceBuildItem> produced = new ArrayList<>();
-
         step.generateFfmConfig(produced::add, List.of(), List.of());
-
         assertThat(produced).isEmpty();
     }
 
     private static String generateJson(List<FfmDowncallBuildItem> downcalls, List<FfmUpcallBuildItem> upcalls) {
         NativeImageFFMConfigStep step = new NativeImageFFMConfigStep();
         List<GeneratedResourceBuildItem> produced = new ArrayList<>();
-
         step.generateFfmConfig(produced::add, downcalls, upcalls);
-
         assertThat(produced).hasSize(1);
         assertThat(produced.get(0).getName())
                 .isEqualTo("META-INF/native-image/foreign/reachability-metadata.json");

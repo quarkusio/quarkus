@@ -24,7 +24,7 @@ develocity {
 
 rootProject.name = "quarkus-gradle-plugins"
 includeBuild("build-logic")
-include("gradle-application-plugin", "gradle-extension-plugin", "gradle-model")
+include("gradle-application-plugin", "gradle-extension-plugin", "gradle-init-plugin", "gradle-model")
 
 @Suppress("UnstableApiUsage")
 dependencyResolutionManagement {

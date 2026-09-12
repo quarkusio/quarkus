@@ -1079,7 +1079,8 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
         } finally {
             currentTestClassStack.pop();
             if (!outerInstances.isEmpty()) {
-                actualTestInstance = outerInstances.pop();
+                // outer instances are appended outermost first, so the innermost one is at the end
+                actualTestInstance = outerInstances.removeLast();
             }
         }
     }

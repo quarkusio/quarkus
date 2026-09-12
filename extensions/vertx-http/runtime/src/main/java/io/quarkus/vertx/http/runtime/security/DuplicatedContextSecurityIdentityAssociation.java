@@ -63,6 +63,18 @@ public class DuplicatedContextSecurityIdentityAssociation extends AbstractSecuri
         return super.getIdentity();
     }
 
+    @Override
+    public SecurityIdentity getIdentityOrNull() {
+        RoutingContext routingContext = getRoutingContext();
+        if (routingContext != null) {
+            SecurityIdentity securityIdentity = getSecurityIdentityFromCtx(routingContext);
+            if (securityIdentity != null) {
+                return securityIdentity;
+            }
+        }
+        return super.getIdentityOrNull();
+    }
+
     private static SecurityIdentity getSecurityIdentityFromCtx(RoutingContext routingContext) {
         if (routingContext.user() instanceof QuarkusHttpUser quarkusHttpUser) {
             return quarkusHttpUser.getSecurityIdentity();

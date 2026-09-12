@@ -81,6 +81,7 @@ import io.quarkus.signals.runtime.impl.InvokerReceiver;
 import io.quarkus.signals.runtime.impl.InvokerReceiver.InvokerReceiverInfo;
 import io.quarkus.signals.runtime.impl.ReceiverManager;
 import io.quarkus.signals.runtime.impl.RequestContextInterceptor;
+import io.quarkus.signals.runtime.impl.SecurityIntegration;
 import io.quarkus.signals.runtime.impl.SignalBeanCreator;
 import io.quarkus.signals.runtime.impl.SignalsRecorder;
 import io.quarkus.signals.runtime.impl.SignalsRecorder.SignalsContext;
@@ -476,7 +477,7 @@ class SignalsProcessor {
     }
 
     @BuildStep
-    void registerBeans(BuildProducer<AdditionalBeanBuildItem> beans,
+    void registerBeans(BuildProducer<AdditionalBeanBuildItem> beans, Capabilities capabilities,
             ReceiverExecutorImplementationBuildItem receiverExecutorImplementation) {
         AdditionalBeanBuildItem.Builder builder = AdditionalBeanBuildItem.builder();
         builder.addBeanClasses(ReceiverManager.class, RequestContextInterceptor.class);
@@ -486,6 +487,11 @@ class SignalsProcessor {
             default -> throw new IllegalArgumentException(
                     "Unexpected value: " + receiverExecutorImplementation.getImplementation());
         }
+
+        if (capabilities.isPresent(Capability.SECURITY)) {
+            builder.addBeanClass(SecurityIntegration.class);
+        }
+
         beans.produce(builder.build());
     }
 

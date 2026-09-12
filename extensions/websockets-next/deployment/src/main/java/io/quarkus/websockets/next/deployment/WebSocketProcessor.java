@@ -159,7 +159,7 @@ import io.quarkus.websockets.next.runtime.WebSocketEndpoint.ExecutionModel;
 import io.quarkus.websockets.next.runtime.WebSocketEndpointBase;
 import io.quarkus.websockets.next.runtime.WebSocketHeaderPropagationHandler;
 import io.quarkus.websockets.next.runtime.WebSocketHttpServerOptionsCustomizer;
-import io.quarkus.websockets.next.runtime.WebSocketSecurityIdentityAssociation;
+import io.quarkus.websockets.next.runtime.WebSocketSecurityIdentityAssociationProducer;
 import io.quarkus.websockets.next.runtime.WebSocketServerRecorder;
 import io.quarkus.websockets.next.runtime.config.WebSocketsServerRuntimeConfig;
 import io.quarkus.websockets.next.runtime.kotlin.ApplicationCoroutineScope;
@@ -916,7 +916,8 @@ public class WebSocketProcessor {
     void createSecurityIdentityAssociation(Capabilities capabilities,
             BuildProducer<AdditionalBeanBuildItem> additionalBeanProducer) {
         if (capabilities.isPresent(Capability.SECURITY)) {
-            additionalBeanProducer.produce(AdditionalBeanBuildItem.unremovableOf(WebSocketSecurityIdentityAssociation.class));
+            additionalBeanProducer
+                    .produce(AdditionalBeanBuildItem.unremovableOf(WebSocketSecurityIdentityAssociationProducer.class));
         }
     }
 
@@ -926,7 +927,7 @@ public class WebSocketProcessor {
         if (capabilities.isPresent(Capability.SECURITY)) {
             systemPropertyProducer
                     .produce(new SystemPropertyBuildItem("test.quarkus.test-security.delegate-identity-association",
-                            WebSocketSecurityIdentityAssociation.class.getName()));
+                            WebSocketSecurityIdentityAssociationProducer.class.getName()));
         }
     }
 

@@ -71,6 +71,32 @@ public class BearerAuthenticationOidcDevServicesTest {
     }
 
     @Test
+    public void testSendSignalAsBob() {
+        RestAssured.given()
+                .delete("/signals/clear")
+                .then()
+                .statusCode(204);
+        RestAssured.given()
+                .auth().oauth2(getAccessToken("bob"))
+                .get("/signals/roles-allowed/admin")
+                .then()
+                .statusCode(200)
+                .body(Matchers.is("roles-allowed-admin:bob [user]"));
+        RestAssured.given()
+                .auth().oauth2(getAccessToken("bob"))
+                .get("/signals/roles-allowed/user")
+                .then()
+                .statusCode(200)
+                .body(Matchers.is("roles-allowed-user:bob [user]"));
+        // only 'user' arrived, not 'admin'
+        RestAssured.given()
+                .get("/signals/messages")
+                .then()
+                .statusCode(200)
+                .body(Matchers.is("roles-allowed-user:bob [user]"));
+    }
+
+    @Test
     void testEmailAndName() {
         // test users get an @example.com appended if username is not an email address
         RestAssured.given()

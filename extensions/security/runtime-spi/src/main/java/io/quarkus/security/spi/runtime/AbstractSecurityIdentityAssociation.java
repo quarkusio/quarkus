@@ -60,4 +60,7 @@ public abstract class AbstractSecurityIdentityAssociation implements CurrentIden
         return identity;
     }
 
+    public SecurityIdentity getIdentityOrNull() {
+        return identity;
+    }
 }

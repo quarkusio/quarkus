@@ -36,6 +36,11 @@ public interface ReceiverInterceptor {
     String ID_REQUEST_CONTEXT = "quarkus.request-context";
 
     /**
+     * The identifier of the built-in interceptor that propagates a security identity into each receiver invocation.
+     */
+    String ID_SECURITY_IDENTITY = "quarkus.security-identity";
+
+    /**
      * Intercepts a receiver invocation.
      * <p>
      * The interceptor must call {@link InterceptionContext#proceed()} to continue the interceptor chain and eventually invoke

@@ -774,7 +774,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
 
                         // redirect_uri
                         String redirectPath = getRedirectPath(configContext.oidcConfig(), context);
-                        String redirectUriParam = buildUri(context, isForceHttps(configContext.oidcConfig()), redirectPath);
+                        String redirectUriParam = buildRedirectUri(context, configContext.oidcConfig(), redirectPath);
                         LOG.debugf("Authentication request redirect_uri parameter: %s", redirectUriParam);
 
                         codeFlowParams.append(AMP).append(OidcConstants.CODE_FLOW_REDIRECT_URI).append(EQ)
@@ -1443,6 +1443,14 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                 60 * 30).getValue();
     }
 
+    private String buildRedirectUri(RoutingContext context, OidcTenantConfig oidcConfig, String redirectPath) {
+        // For CIMD configs, use the helper to resolve redirect URI from client-id authority if needed
+        if (ClientIdMetadataHandler.isClientIdMetadataUrl(oidcConfig)) {
+            return OidcUtils.resolveRedirectUriForClientIdMetadata(oidcConfig);
+        }
+        return buildUri(context, isForceHttps(oidcConfig), redirectPath);
+    }
+
     private String buildUri(RoutingContext context, boolean forceHttps, String path) {
         if (path.startsWith(HTTP_SCHEME)) {
             return path;
@@ -1610,7 +1618,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
         }
 
         String redirectPath = getRedirectPath(configContext.oidcConfig(), context);
-        String redirectUriParam = buildUri(context, isForceHttps(configContext.oidcConfig()), redirectPath);
+        String redirectUriParam = buildRedirectUri(context, configContext.oidcConfig(), redirectPath);
         LOG.debugf("Token request redirect_uri parameter: %s", redirectUriParam);
 
         return configContext.provider().getCodeFlowTokens(code, redirectUriParam, codeVerifier);

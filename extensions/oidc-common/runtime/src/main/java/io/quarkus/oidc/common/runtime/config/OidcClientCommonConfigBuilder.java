@@ -498,7 +498,9 @@ public abstract class OidcClientCommonConfigBuilder<T> extends OidcCommonConfigB
 
         private record JwtImpl(Source source, Optional<String> secret, Provider secretProvider, Optional<String> key,
                 Optional<String> keyFile, Optional<String> keyStoreFile, Optional<String> keyStorePassword,
-                Optional<String> keyId, Optional<String> keyPassword, Optional<String> audience,
+                Optional<String> keyId, Optional<String> keyPassword,
+                Optional<String> publicKey, Optional<String> publicKeyFile,
+                Optional<String> audience,
                 boolean keepAudienceTrailingSlash,
                 Optional<String> tokenKeyId, Optional<String> issuer, Optional<String> subject, Map<String, String> claims,
                 Optional<String> signatureAlgorithm, int lifespan, boolean assertion,
@@ -517,6 +519,8 @@ public abstract class OidcClientCommonConfigBuilder<T> extends OidcCommonConfigB
         private Optional<String> keyStorePassword;
         private Optional<String> keyId;
         private Optional<String> keyPassword;
+        private Optional<String> publicKey;
+        private Optional<String> publicKeyFile;
         private Optional<String> audience;
         private boolean keepAudienceTrailingSlash;
         private Optional<String> tokenKeyId;
@@ -538,6 +542,8 @@ public abstract class OidcClientCommonConfigBuilder<T> extends OidcCommonConfigB
             this.keyStorePassword = Optional.empty();
             this.keyId = Optional.empty();
             this.keyPassword = Optional.empty();
+            this.publicKey = Optional.empty();
+            this.publicKeyFile = Optional.empty();
             this.audience = Optional.empty();
             this.keepAudienceTrailingSlash = false;
             this.tokenKeyId = Optional.empty();
@@ -564,6 +570,8 @@ public abstract class OidcClientCommonConfigBuilder<T> extends OidcCommonConfigB
             this.keyStorePassword = jwt.keyStorePassword();
             this.keyId = jwt.keyId();
             this.keyPassword = jwt.keyPassword();
+            this.publicKey = jwt.publicKey();
+            this.publicKeyFile = jwt.publicKeyFile();
             this.audience = jwt.audience();
             this.keepAudienceTrailingSlash = jwt.keepAudienceTrailingSlash();
             this.tokenKeyId = jwt.tokenKeyId();
@@ -636,6 +644,24 @@ public abstract class OidcClientCommonConfigBuilder<T> extends OidcCommonConfigB
          */
         public JwtBuilder<T> keyFile(String keyFile) {
             this.keyFile = Optional.ofNullable(keyFile);
+            return this;
+        }
+
+        /**
+         * @param publicKey {@link Jwt#publicKey()}
+         * @return this builder
+         */
+        public JwtBuilder<T> publicKey(String publicKey) {
+            this.publicKey = Optional.ofNullable(publicKey);
+            return this;
+        }
+
+        /**
+         * @param publicKeyFile {@link Jwt#publicKeyFile()}
+         * @return this builder
+         */
+        public JwtBuilder<T> publicKeyFile(String publicKeyFile) {
+            this.publicKeyFile = Optional.ofNullable(publicKeyFile);
             return this;
         }
 
@@ -803,6 +829,7 @@ public abstract class OidcClientCommonConfigBuilder<T> extends OidcCommonConfigB
          */
         public Jwt build() {
             return new JwtImpl(source, secret, secretProvider, key, keyFile, keyStoreFile, keyStorePassword, keyId, keyPassword,
+                    publicKey, publicKeyFile,
                     audience, keepAudienceTrailingSlash, tokenKeyId, issuer, subject, Map.copyOf(claims), signatureAlgorithm,
                     lifespan, assertion,
                     tokenPath);

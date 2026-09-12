@@ -19,5 +19,11 @@ public enum OidcRoute {
      *
      * @see OidcTenantConfig.ResourceMetadata
      */
-    RESOURCE_METADATA
+    RESOURCE_METADATA,
+    /**
+     * Allows tenants to publish a Client ID Metadata Document as defined by
+     * <a href="https://datatracker.ietf.org/doc/draft-ietf-oauth-client-id-metadata-document/">OAuth Client ID Metadata
+     * Document</a>.
+     */
+    CLIENT_ID_METADATA
 }

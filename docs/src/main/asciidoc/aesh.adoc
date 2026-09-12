@@ -1216,6 +1216,62 @@ launcher.execute("setup", ExecuteOptions.defaults().input("admin", "password123"
 For more complex interactive scenarios, `sendInput()` provides low-level
 access to the REPL's stdin:
 
+==== Pipeline commands
+
+Aesh supports Unix-style pipe operators (`cmd1 | cmd2`). When testing pipeline
+commands, `getStageResults()` returns per-stage outcomes so you can inspect
+each stage independently -- including upstream failures that Unix semantics
+would otherwise hide (only the last stage's exit code is returned).
+
+[source,java]
+----
+@Test
+void testPipelineStages(AeshLauncher launcher) {
+    launcher.execute("echo --text hello | upper");
+
+    // Terminal stage output
+    assertThat(launcher.getCommandOutput()).isEqualTo("HELLO\n");
+
+    // Per-stage results
+    List<StageResult> stages = launcher.getStageResults();
+    assertThat(stages).hasSize(2);
+
+    assertThat(stages.get(0).commandName()).isEqualTo("EchoCommand");
+    assertThat(stages.get(0).isSuccess()).isTrue();
+
+    assertThat(stages.get(1).commandName()).isEqualTo("UpperCommand");
+    assertThat(stages.get(1).isSuccess()).isTrue();
+}
+----
+
+For non-pipeline (single) commands, `getStageResults()` returns an empty list.
+
+Upstream failures are visible even when the terminal stage succeeds:
+
+[source,java]
+----
+@Test
+void testUpstreamFailure(AeshLauncher launcher) {
+    // failpipe throws after writing partial output — terminal still succeeds
+    launcher.execute("failpipe | upper");
+
+    StageResult upstream = launcher.getStageResults().get(0);
+    assertThat(upstream.isSuccess()).isFalse();
+    assertThat(upstream.errorMessage()).contains("upstream boom");
+
+    StageResult terminal = launcher.getStageResults().get(1);
+    assertThat(terminal.isSuccess()).isTrue();
+}
+----
+
+Each `StageResult` carries:
+
+* `commandName()` -- the command's simple class name
+* `stageIndex()` / `stageCount()` -- position in the pipeline
+* `exitCode()` / `isSuccess()` -- the stage's result
+* `errorMessage()` / `errorClass()` -- error details if the stage failed
+* `durationMs()` -- wall-clock execution time
+
 ==== AeshLauncher API summary
 
 * `execute(String command)` -- executes and asserts `SUCCESS`
@@ -1224,6 +1280,7 @@ access to the REPL's stdin:
 * `sendInput(String input)` -- send raw input for interactive commands
 * `getCommandOutput()` -- clean output from the last command
 * `getOutput()` / `resetOutput()` -- accumulated command output
+* `getStageResults()` -- per-stage results for pipeline commands (empty for single commands)
 * `getLastExitCode()` -- exit code from the last command
 * `getLastError()` / `getErrorOutput()` -- exception from the last failed command
 * `isRunning()` / `waitForExit(Duration)` -- REPL lifecycle state

@@ -115,6 +115,13 @@ class AeshStreamConnection extends AbstractConnection {
         return false;
     }
 
+    @Override
+    public boolean isInteractive() {
+        // Report as interactive so aesh does not switch to synchronous mode.
+        // The test framework simulates an interactive session via piped streams.
+        return true;
+    }
+
     private void startReader() {
         if (readerThread != null) {
             return;

@@ -49,7 +49,8 @@ class Http3AutoTlsTest {
         clientConfig.setVersions(HttpVersion.HTTP_3);
         clientConfig.setHttp3Config(new Http3ClientConfig());
         ClientSSLOptions sslOptions = new ClientSSLOptions()
-                .setTrustAll(true);
+                .setTrustAll(true)
+                .setHostnameVerificationAlgorithm("");
         HttpClientAgent client = vertx.httpClientBuilder().with(clientConfig).with(sslOptions).build();
 
         int port = tlsUrl.getPort();

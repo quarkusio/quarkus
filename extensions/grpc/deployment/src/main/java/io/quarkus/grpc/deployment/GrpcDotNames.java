@@ -79,4 +79,7 @@ public class GrpcDotNames {
         return instance.name().equals(GRPC_CLIENT);
     }
 
+    static final DotName TRANSCODING_SERVICE_METHOD = DotName
+            .createSimple("io.vertx.grpc.transcoding.TranscodingServiceMethod");
+
 }

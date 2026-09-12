@@ -8,9 +8,13 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
+import com.google.api.AnnotationsProto;
+import com.google.api.HttpRule;
 import com.google.common.base.Strings;
 import com.google.common.html.HtmlEscapers;
 import com.google.protobuf.DescriptorProtos;
+import com.google.protobuf.ExtensionRegistry;
+import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.compiler.PluginProtos;
 import com.salesforce.jprotoc.Generator;
 import com.salesforce.jprotoc.GeneratorException;
@@ -47,15 +51,27 @@ public class MutinyGrpcGenerator extends Generator {
     @Override
     public List<PluginProtos.CodeGeneratorResponse.File> generateFiles(PluginProtos.CodeGeneratorRequest request)
             throws GeneratorException {
-        ProtoTypeMap typeMap = ProtoTypeMap.of(request.getProtoFileList());
+        final PluginProtos.CodeGeneratorRequest req = withExtensionRegistry(request);
+        ProtoTypeMap typeMap = ProtoTypeMap.of(req.getProtoFileList());
 
-        List<DescriptorProtos.FileDescriptorProto> protosToGenerate = request.getProtoFileList().stream()
-                .filter(protoFile -> request.getFileToGenerateList().contains(protoFile.getName()))
+        List<DescriptorProtos.FileDescriptorProto> protosToGenerate = req.getProtoFileList().stream()
+                .filter(protoFile -> req.getFileToGenerateList().contains(protoFile.getName()))
                 .collect(Collectors.toList());
 
         List<ServiceContext> services = findServices(protosToGenerate, typeMap);
         validateServices(services);
         return generateFiles(services);
+    }
+
+    private static PluginProtos.CodeGeneratorRequest withExtensionRegistry(PluginProtos.CodeGeneratorRequest request)
+            throws GeneratorException {
+        ExtensionRegistry registry = ExtensionRegistry.newInstance();
+        AnnotationsProto.registerAllExtensions(registry);
+        try {
+            return PluginProtos.CodeGeneratorRequest.parseFrom(request.toByteArray(), registry);
+        } catch (InvalidProtocolBufferException e) {
+            throw new GeneratorException("Failed to re-parse CodeGeneratorRequest with extension registry: " + e.getMessage());
+        }
     }
 
     private void validateServices(List<ServiceContext> services) {
@@ -137,13 +153,55 @@ public class MutinyGrpcGenerator extends Generator {
         return serviceContext;
     }
 
-    private MethodContext buildMethodContext(DescriptorProtos.MethodDescriptorProto methodProto, ProtoTypeMap typeMap,
+    private TranscodingContext buildTranscodingContext(HttpRule rule) {
+        var tc = new TranscodingContext();
+        tc.selector = rule.getSelector();
+        tc.body = rule.getBody();
+        tc.responseBody = rule.getResponseBody();
+        tc.additionalBindings = rule.getAdditionalBindingsList().stream()
+                .map(this::buildTranscodingContext)
+                .toList();
+
+        switch (rule.getPatternCase()) {
+            case GET:
+                tc.method = "GET";
+                tc.path = rule.getGet();
+                break;
+            case POST:
+                tc.method = "POST";
+                tc.path = rule.getPost();
+                break;
+            case PUT:
+                tc.method = "PUT";
+                tc.path = rule.getPut();
+                break;
+            case DELETE:
+                tc.method = "DELETE";
+                tc.path = rule.getDelete();
+                break;
+            case PATCH:
+                tc.method = "PATCH";
+                tc.path = rule.getPatch();
+                break;
+            case CUSTOM:
+                tc.method = rule.getCustom().getKind();
+                tc.path = rule.getCustom().getPath();
+                break;
+        }
+        return tc;
+    }
+
+    MethodContext buildMethodContext(DescriptorProtos.MethodDescriptorProto methodProto, ProtoTypeMap typeMap,
             List<DescriptorProtos.SourceCodeInfo.Location> locations, int methodNumber) {
         MethodContext methodContext = new MethodContext();
         methodContext.methodName = adaptMethodName(methodProto.getName());
         methodContext.inputType = typeMap.toJavaTypeName(methodProto.getInputType());
         methodContext.outputType = typeMap.toJavaTypeName(methodProto.getOutputType());
         methodContext.deprecated = methodProto.getOptions() != null && methodProto.getOptions().getDeprecated();
+        if (methodProto.getOptions().hasExtension(AnnotationsProto.http)) {
+            methodContext.transcodingContext = buildTranscodingContext(
+                    methodProto.getOptions().getExtension(AnnotationsProto.http));
+        }
         methodContext.isManyInput = methodProto.getClientStreaming();
         methodContext.isManyOutput = methodProto.getServerStreaming();
         methodContext.methodNumber = methodNumber;
@@ -350,12 +408,26 @@ public class MutinyGrpcGenerator extends Generator {
         public List<MethodContext> manyManyMethods() {
             return methods.stream().filter(m -> m.isManyInput && m.isManyOutput).collect(Collectors.toList());
         }
+
+        public List<MethodContext> transcodingMethods() {
+            return methods.stream().filter(m -> m.transcodingContext != null).collect(Collectors.toList());
+        }
+
+    }
+
+    static class TranscodingContext {
+        public String selector;
+        public String method; // "GET", "POST", etc.
+        public String path;
+        public String body;
+        public String responseBody;
+        public List<TranscodingContext> additionalBindings = new ArrayList<>();
     }
 
     /**
      * Template class for proto RPC objects.
      */
-    private static class MethodContext {
+    static class MethodContext {
         // CHECKSTYLE DISABLE VisibilityModifier FOR 10 LINES
         public String methodName;
         public String inputType;
@@ -367,6 +439,7 @@ public class MutinyGrpcGenerator extends Generator {
         public String grpcCallsMethodName;
         public int methodNumber;
         public String javaDoc;
+        public TranscodingContext transcodingContext;
 
         // This method mimics the upper-casing method ogf gRPC to ensure compatibility
         // See https://github.com/grpc/grpc-java/blob/v1.8.0/compiler/src/java_plugin/cpp/java_generator.cpp#L58
@@ -391,6 +464,16 @@ public class MutinyGrpcGenerator extends Generator {
         public String methodNameCamelCase() {
             String mn = methodName.replace("_", "");
             return String.valueOf(Character.toLowerCase(mn.charAt(0))) + mn.substring(1);
+        }
+
+        public String cardinality() {
+            if (!isManyInput && !isManyOutput)
+                return "UNARY";
+            if (!isManyInput && isManyOutput)
+                return "SERVER_STREAMING";
+            if (isManyInput && !isManyOutput)
+                return "CLIENT_STREAMING";
+            return "BIDI_STREAMING";
         }
 
         public String methodHeader() {

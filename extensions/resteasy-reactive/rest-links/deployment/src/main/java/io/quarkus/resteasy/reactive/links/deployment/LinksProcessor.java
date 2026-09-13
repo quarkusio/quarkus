@@ -26,6 +26,7 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Produce;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
+import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.pkg.builditem.ArtifactResultBuildItem;
@@ -55,8 +56,8 @@ final class LinksProcessor {
     }
 
     @BuildStep
-    MethodScannerBuildItem linksSupport() {
-        return new MethodScannerBuildItem(new LinksMethodScanner());
+    MethodScannerBuildItem linksSupport(CombinedIndexBuildItem indexBuildItem) {
+        return new MethodScannerBuildItem(new LinksMethodScanner(indexBuildItem.getIndex()));
     }
 
     @BuildStep

@@ -4,9 +4,12 @@ import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.BindException;
+import java.net.ConnectException;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
+import java.net.UnknownHostException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
@@ -270,7 +273,8 @@ public class ClientSendRequestHandler implements ClientRestHandler {
                 requestContext.setResponseReasonPhrase("unknown");
 
                 if (event instanceof IOException) {
-                    ProcessingException throwable = new ProcessingException(event);
+                    ProcessingException throwable = new ProcessingException(
+                            connectionFailureMessage(event, requestContext.getUri()), event);
                     reportFinish(throwable, requestContext);
                     requestContext.resume(throwable);
                 } else {
@@ -279,6 +283,40 @@ public class ClientSendRequestHandler implements ClientRestHandler {
                 }
             }
         });
+    }
+
+    /**
+     * Builds the message of a failure to establish the connection: it names the target, keeps the original message
+     * and, for the most common causes, says what usually triggers them. The original exception is kept as the cause.
+     */
+    static String connectionFailureMessage(Throwable failure, URI uri) {
+        StringBuilder message = new StringBuilder("Unable to connect to ")
+                .append(uri != null ? uri : "the remote service");
+        if (failure.getMessage() != null) {
+            message.append(": ").append(failure.getMessage());
+        }
+        if (hasCause(failure, BindException.class)) {
+            message.append(". The local system could not allocate a source address for the connection, which usually means")
+                    .append(" that it ran out of ephemeral ports (many connections in TIME_WAIT) or that a configured local")
+                    .append(" address or port is not available. Reusing connections reduces the number of source ports needed,")
+                    .append(" see the connection-pool-size, keep-alive-enabled and connection-ttl properties of the REST Client");
+        } else if (hasCause(failure, ConnectException.class)) {
+            message.append(". Nothing is listening on the target address, or the connection was rejected by a firewall");
+        } else if (hasCause(failure, UnknownHostException.class)) {
+            message.append(". The host name could not be resolved");
+        }
+        return message.toString();
+    }
+
+    private static boolean hasCause(Throwable failure, Class<? extends Throwable> type) {
+        Throwable current = failure;
+        for (int i = 0; current != null && i < 16; i++) {
+            if (type.isInstance(current)) {
+                return true;
+            }
+            current = current.getCause();
+        }
+        return false;
     }
 
     private void customizeRequest(HttpClientRequest httpClientRequest, RestClientRequestContext requestContext) {

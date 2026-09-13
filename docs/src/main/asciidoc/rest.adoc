@@ -3408,7 +3408,7 @@ Similarly, you can `PUT` two different representations. JSON:
 > {"name": "brie"}
 
 < HTTP/1.1 200 OK
-< Content-Type: application/json;charset=UTF-8
+< Content-Type: application/json
 < Content-Length: 15
 <
 < {"name":"brie"}
@@ -3426,7 +3426,7 @@ Or plain text:
 > roquefort
 
 < HTTP/1.1 200 OK
-< Content-Type: application/json;charset=UTF-8
+< Content-Type: application/json
 < Content-Length: 20
 <
 < {"name":"roquefort"}

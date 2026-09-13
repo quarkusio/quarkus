@@ -790,6 +790,22 @@ public static class HelloPropagation {
 <3> The `createParentContext()` method explains how to create an OpenTelemetry context. In this case we generate the default https://www.w3.org/TR/trace-context/[W3C Trace Context] header: `traceparent`.
 <4> the `receiveAndUseContext()` method receives the contents of the `traceparent` header used to bootstrap a new OpenTelemetry context in the destination.
 
+=== Baggage entries as span attributes
+
+Baggage is propagated across services but, per the OpenTelemetry specification, it is not recorded on spans.
+To make baggage entries, such as a correlation id received in a request header, searchable in the tracing backend, Quarkus can copy them to the attributes of every span started in a context that carries them:
+
+[source,properties]
+----
+quarkus.otel.traces.baggage-as-attributes.enabled=true
+quarkus.otel.traces.baggage-as-attributes.keys=x-correlation-id <1>
+quarkus.otel.traces.baggage-as-attributes.prefix=baggage. <2>
+----
+<1> Optional list of the baggage keys to copy. All the entries are copied when it is not set.
+<2> Prefix of the attribute names, `baggage.` by default: the entry `x-correlation-id` becomes the attribute `baggage.x-correlation-id`.
+
+The entries are read when a span is started, so a baggage entry added after the span was started is not recorded on that span.
+
 === Manual Baggage propagation
 
 The https://opentelemetry.io/docs/languages/java/api/#baggage[Baggage] can be used to send application specific data using the OpenTelemetry's propagation mechanism.

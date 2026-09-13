@@ -43,7 +43,9 @@ import io.opentelemetry.sdk.trace.samplers.Sampler;
 import io.quarkus.arc.All;
 import io.quarkus.opentelemetry.runtime.config.build.OTelBuildConfig;
 import io.quarkus.opentelemetry.runtime.config.runtime.OTelRuntimeConfig;
+import io.quarkus.opentelemetry.runtime.config.runtime.TracesRuntimeConfig;
 import io.quarkus.opentelemetry.runtime.propagation.TextMapPropagatorCustomizer;
+import io.quarkus.opentelemetry.runtime.tracing.BaggageSpanProcessor;
 import io.quarkus.opentelemetry.runtime.tracing.DropTargetsSampler;
 import io.quarkus.opentelemetry.runtime.tracing.SimpleSpanProcessorWithBatchShutdown;
 import io.quarkus.opentelemetry.runtime.tracing.TracerRecorder;
@@ -254,13 +256,16 @@ public interface AutoConfiguredOpenTelemetrySdkBuilderCustomizer {
         private final OTelBuildConfig oTelBuildConfig;
         private final List<IdGenerator> idGenerator;
         private final List<SpanProcessor> spanProcessors;
+        private final TracesRuntimeConfig.BaggageAsAttributesConfig baggageAsAttributes;
 
         public TracerProviderCustomizer(OTelBuildConfig oTelBuildConfig,
+                OTelRuntimeConfig oTelRuntimeConfig,
                 @All List<IdGenerator> idGenerator,
                 @All List<SpanProcessor> spanProcessors) {
             this.oTelBuildConfig = oTelBuildConfig;
             this.idGenerator = idGenerator;
             this.spanProcessors = spanProcessors;
+            this.baggageAsAttributes = oTelRuntimeConfig.traces().baggageAsAttributes();
         }
 
         @Override
@@ -272,6 +277,10 @@ public interface AutoConfiguredOpenTelemetrySdkBuilderCustomizer {
                                 ConfigProperties configProperties) {
                             if (oTelBuildConfig.traces().enabled().orElse(TRUE)) {
                                 idGenerator.stream().findFirst().ifPresent(tracerProviderBuilder::setIdGenerator); // from cdi
+                                if (baggageAsAttributes.enabled()) {
+                                    tracerProviderBuilder.addSpanProcessor(new BaggageSpanProcessor(
+                                            baggageAsAttributes.prefix(), baggageAsAttributes.keys()));
+                                }
                                 spanProcessors.forEach(tracerProviderBuilder::addSpanProcessor);
                             }
                             return tracerProviderBuilder;

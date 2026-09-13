@@ -61,4 +61,35 @@ public interface TracesRuntimeConfig {
     @WithName("sampler.arg")
     @WithDefault("0.1d")
     Optional<String> samplerArg();
+
+    /**
+     * Copy of baggage entries to span attributes.
+     */
+    @WithName("baggage-as-attributes")
+    BaggageAsAttributesConfig baggageAsAttributes();
+
+    @ConfigGroup
+    interface BaggageAsAttributesConfig {
+
+        /**
+         * If enabled, the baggage entries present in the context in which a span is started are copied to the
+         * attributes of that span.
+         * <p>
+         * This is a Quarkus specific property. Baggage is propagated but not recorded on spans by default.
+         */
+        @WithDefault("false")
+        boolean enabled();
+
+        /**
+         * The prefix of the attribute names created from the baggage entries, e.g. the baggage entry `user.id` becomes
+         * the attribute `baggage.user.id` with the default prefix.
+         */
+        @WithDefault("baggage.")
+        String prefix();
+
+        /**
+         * The keys of the baggage entries to copy. If not set, all the entries are copied.
+         */
+        Optional<List<String>> keys();
+    }
 }

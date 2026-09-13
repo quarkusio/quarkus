@@ -29,6 +29,7 @@ import io.quarkus.deployment.builditem.GeneratedServiceProviderBuildItem;
 import io.quarkus.deployment.builditem.LiveReloadBuildItem;
 import io.quarkus.deployment.builditem.MainClassBuildItem;
 import io.quarkus.deployment.builditem.TransformedClassesBuildItem;
+import io.quarkus.deployment.jvm.ResolvedJVMRequirements;
 import io.quarkus.deployment.pkg.builditem.ArtifactResultBuildItem;
 import io.quarkus.deployment.pkg.builditem.DeploymentResultBuildItem;
 import io.quarkus.deployment.pkg.builditem.NativeImageBuildItem;
@@ -97,6 +98,7 @@ public class JBangAugmentorImpl implements BiConsumer<CuratedApplication, Map<St
             builder.addFinal(GeneratedServiceProviderBuildItem.class);
             builder.addFinal(TransformedClassesBuildItem.class);
             builder.addFinal(DeploymentResultBuildItem.class);
+            builder.addFinal(ResolvedJVMRequirements.class);
             boolean nativeRequested = "true".equals(System.getProperty("quarkus.native.enabled"));
             boolean containerBuildRequested = Boolean.getBoolean("quarkus.container-image.build");
             if (nativeRequested) {
@@ -147,6 +149,7 @@ public class JBangAugmentorImpl implements BiConsumer<CuratedApplication, Map<St
                 javaargs.add("-Djava.util.logging.manager=org.jboss.logmanager.LogManager");
                 javaargs.add(
                         "-Djava.util.concurrent.ForkJoinPool.common.threadFactory=io.quarkus.bootstrap.forkjoin.QuarkusForkJoinWorkerThreadFactory");
+                javaargs.addAll(buildResult.consume(ResolvedJVMRequirements.class).renderAsJvmArguments());
                 resultMap.put("java-args", javaargs);
                 resultMap.put("main-class", buildResult.consume(MainClassBuildItem.class).getClassName());
                 if (nativeRequested) {

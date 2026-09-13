@@ -849,6 +849,29 @@ public class DevMojoIT extends LaunchMojoTestBase {
     }
 
     @Test
+    public void testStaticResourceFromApplicationModuleShadowsDependencyModule()
+            throws MavenInvocationException, IOException {
+        testDir = initProject("projects/multimodule", "projects/multimodule-static-resource-override");
+        File override = new File(testDir, "runner/src/main/resources/META-INF/resources/a.html");
+        assertTrue(override.getParentFile().mkdirs());
+        Files.writeString(override.toPath(), "from runner");
+
+        runAndCheck();
+
+        await()
+                .pollDelay(100, TimeUnit.MILLISECONDS)
+                .atMost(TestUtils.getDefaultTimeout(), TimeUnit.MINUTES)
+                .until(() -> devModeClient.getHttpResponse("/a.html").equals("from runner"));
+
+        Files.writeString(override.toPath(), "from runner, edited");
+
+        await()
+                .pollDelay(100, TimeUnit.MILLISECONDS)
+                .atMost(TestUtils.getDefaultTimeout(), TimeUnit.MINUTES)
+                .until(() -> devModeClient.getHttpResponse("/a.html").equals("from runner, edited"));
+    }
+
+    @Test
     public void testThatTheApplicationIsReloadedMultiModule() throws MavenInvocationException, IOException {
         //we also check continuous testing
         testDir = initProject("projects/multimodule", "projects/multimodule-with-deps");

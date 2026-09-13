@@ -9,6 +9,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.OptionalInt;
@@ -22,6 +23,7 @@ import org.mockito.Mockito;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.configuration.MemorySize;
 import io.quarkus.vertx.http.runtime.ProxyConfig;
+import io.quarkus.vertx.http.runtime.ProxyConfig.ProxyProtocolListener;
 import io.quarkus.vertx.http.runtime.ServerLimitsConfig;
 import io.quarkus.vertx.http.runtime.TrafficShapingConfig;
 import io.quarkus.vertx.http.runtime.VertxHttpBuildTimeConfig;
@@ -319,6 +321,56 @@ class HttpServerOptionsUtilsTest {
         when(config.compressors()).thenReturn(compressors);
         when(config.compressionLevel()).thenReturn(compressionLevel);
         return config;
+    }
+
+    @Test
+    void proxyProtocolIsUsedOnEveryListenerByDefault() {
+        VertxHttpBuildTimeConfig buildTimeConfig = buildTimeConfig(false, Optional.empty(), OptionalInt.empty());
+        VertxHttpConfig httpConfig = minimalHttpConfig();
+        when(httpConfig.proxy().useProxyProtocol()).thenReturn(true);
+        when(httpConfig.proxy().proxyProtocolListeners()).thenReturn(EnumSet.allOf(ProxyProtocolListener.class));
+
+        for (ProxyProtocolListener listener : ProxyProtocolListener.values()) {
+            HttpServerConfig config = new HttpServerConfig();
+            HttpServerOptionsUtils.applyCommonOptions(config, buildTimeConfig, httpConfig, Collections.emptyList(),
+                    "localhost", listener);
+            assertThat(config.getTcpConfig().isUseProxyProtocol()).as(listener.name()).isTrue();
+        }
+    }
+
+    @Test
+    void proxyProtocolCanBeLimitedToTheHttpsListener() {
+        VertxHttpBuildTimeConfig buildTimeConfig = buildTimeConfig(false, Optional.empty(), OptionalInt.empty());
+        VertxHttpConfig httpConfig = minimalHttpConfig();
+        when(httpConfig.proxy().useProxyProtocol()).thenReturn(true);
+        when(httpConfig.proxy().proxyProtocolListeners()).thenReturn(EnumSet.of(ProxyProtocolListener.HTTPS));
+
+        HttpServerConfig http = new HttpServerConfig();
+        HttpServerOptionsUtils.applyCommonOptions(http, buildTimeConfig, httpConfig, Collections.emptyList(), "localhost",
+                ProxyProtocolListener.HTTP);
+        HttpServerConfig https = new HttpServerConfig();
+        HttpServerOptionsUtils.applyCommonOptions(https, buildTimeConfig, httpConfig, Collections.emptyList(), "localhost",
+                ProxyProtocolListener.HTTPS);
+        HttpServerConfig domainSocket = new HttpServerConfig();
+        HttpServerOptionsUtils.applyCommonOptions(domainSocket, buildTimeConfig, httpConfig, Collections.emptyList(),
+                "localhost", ProxyProtocolListener.DOMAIN_SOCKET);
+
+        assertThat(http.getTcpConfig().isUseProxyProtocol()).isFalse();
+        assertThat(https.getTcpConfig().isUseProxyProtocol()).isTrue();
+        assertThat(domainSocket.getTcpConfig().isUseProxyProtocol()).isFalse();
+    }
+
+    @Test
+    void proxyProtocolListenersAreIgnoredWhenTheProtocolIsDisabled() {
+        VertxHttpBuildTimeConfig buildTimeConfig = buildTimeConfig(false, Optional.empty(), OptionalInt.empty());
+        VertxHttpConfig httpConfig = minimalHttpConfig();
+        when(httpConfig.proxy().useProxyProtocol()).thenReturn(false);
+        when(httpConfig.proxy().proxyProtocolListeners()).thenReturn(EnumSet.allOf(ProxyProtocolListener.class));
+
+        HttpServerConfig https = new HttpServerConfig();
+        HttpServerOptionsUtils.applyCommonOptions(https, buildTimeConfig, httpConfig, Collections.emptyList(), "localhost",
+                ProxyProtocolListener.HTTPS);
+        assertThat(https.getTcpConfig().isUseProxyProtocol()).isFalse();
     }
 
     private VertxHttpConfig minimalHttpConfig() {

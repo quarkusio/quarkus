@@ -135,11 +135,13 @@ The paths to match are relative to the `src/main/resources` path in the dependen
 
 [source,properties]
 ----
-quarkus.generate-code.grpc.scan-for-proto-include."<groupId>:<artifactId>"=foo/**,bar/**,banana/a-proto.proto
-quarkus.generate-code.grpc.scan-for-proto-exclude."<groupId>:<artifactId>"=foo/private/**,bar/another-proto.proto
+quarkus.generate-code.grpc.scan-for-proto-include."<groupId>\:<artifactId>"=foo/**,bar/**,banana/a-proto.proto
+quarkus.generate-code.grpc.scan-for-proto-exclude."<groupId>\:<artifactId>"=foo/private/**,bar/another-proto.proto
 ----
 
-Note that `:` characters in the property keys must be escaped.
+IMPORTANT: In `application.properties`, the `:` between the group id and the artifact id must be escaped as `\:`, as in the example above.
+An unescaped `:` ends the key in the properties format, so the include or exclude patterns would not apply to the dependency.
+The code generation fails with a message pointing at the property when it finds such a key.
 
 == Kotlin code generation
 

@@ -1,13 +1,17 @@
 package io.quarkus.amazon.lambda.http;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -25,6 +29,7 @@ import org.mockito.Mockito;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayV2HTTPEvent;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayV2HTTPResponse;
 
+import io.netty.buffer.Unpooled;
 import io.netty.handler.codec.http.DefaultFullHttpResponse;
 import io.netty.handler.codec.http.DefaultHttpRequest;
 import io.netty.handler.codec.http.HttpResponseStatus;
@@ -72,8 +77,13 @@ public class LambdaHttpHandlerTest {
         when(peer.remoteAddress()).thenReturn(new VirtualAddress("whatever"));
     }
 
-    @SuppressWarnings({ "rawtypes", "unused" })
     private APIGatewayV2HTTPResponse mockHttpFunction(String query, HttpResponseStatus status)
+            throws ExecutionException, InterruptedException {
+        return mockHttpFunction(query, new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, status));
+    }
+
+    @SuppressWarnings({ "rawtypes", "unused" })
+    private APIGatewayV2HTTPResponse mockHttpFunction(String query, DefaultFullHttpResponse httpResponse)
             throws ExecutionException, InterruptedException {
         when(request.getRawQueryString()).thenReturn(query);
         try (MockedStatic<Application> applicationMock = Mockito.mockStatic(Application.class)) {
@@ -84,7 +94,7 @@ public class LambdaHttpHandlerTest {
                     connectionMock.when(() -> VirtualClientConnection.connect(any(), any(), any())).thenAnswer(i -> {
                         VirtualResponseHandler handler = i.getArgument(0);
                         CompletableFuture<Object> responseFuture = CompletableFuture.supplyAsync(() -> {
-                            handler.handleMessage(new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, status));
+                            handler.handleMessage(httpResponse);
                             return null;
                         });
                         return connection;
@@ -122,6 +132,37 @@ public class LambdaHttpHandlerTest {
         APIGatewayV2HTTPResponse response = mockHttpFunction(null, status);
         verify(connection, timeout(PROCESSING_TIMEOUT).times(2)).sendMessage(any());
         assertEquals(status.code(), response.getStatusCode());
+    }
+
+    public static Iterable<Object[]> contentTypeHeaderNames() {
+        return Arrays.asList(new Object[] { "Content-Type" }, new Object[] { "content-type" });
+    }
+
+    @ParameterizedTest
+    @MethodSource("contentTypeHeaderNames")
+    public void verifyTextBodyIsNotBase64Encoded(String contentTypeHeaderName)
+            throws ExecutionException, InterruptedException {
+        DefaultFullHttpResponse httpResponse = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK,
+                Unpooled.copiedBuffer("hello", StandardCharsets.UTF_8));
+        httpResponse.headers().set(contentTypeHeaderName, "text/plain");
+        APIGatewayV2HTTPResponse response = mockHttpFunction(null, httpResponse);
+        verify(connection, timeout(PROCESSING_TIMEOUT).times(2)).sendMessage(any());
+        assertFalse(response.getIsBase64Encoded());
+        assertEquals("hello", response.getBody());
+    }
+
+    @ParameterizedTest
+    @MethodSource("contentTypeHeaderNames")
+    public void verifyBinaryBodyIsBase64Encoded(String contentTypeHeaderName)
+            throws ExecutionException, InterruptedException {
+        byte[] bytes = new byte[] { 1, 2, 3 };
+        DefaultFullHttpResponse httpResponse = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK,
+                Unpooled.copiedBuffer(bytes));
+        httpResponse.headers().set(contentTypeHeaderName, "application/octet-stream");
+        APIGatewayV2HTTPResponse response = mockHttpFunction(null, httpResponse);
+        verify(connection, timeout(PROCESSING_TIMEOUT).times(2)).sendMessage(any());
+        assertTrue(response.getIsBase64Encoded());
+        assertEquals(Base64.getEncoder().encodeToString(bytes), response.getBody());
     }
 
     @Test

@@ -765,10 +765,8 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
             boolean blocking = isBlocking(currentMethodInfo, defaultBlocking);
             boolean runOnVirtualThread = isRunOnVirtualThread(currentMethodInfo, blocking, defaultBlocking);
             // we want to allow "overriding" the blocking/non-blocking setting from an implementation class
-            // when the class defining the annotations is an interface
-            if (!actualEndpointInfo.equals(currentClassInfo) && Modifier.isInterface(currentClassInfo.flags())) {
-                MethodInfo actualMethodInfo = actualEndpointInfo.method(currentMethodInfo.name(),
-                        currentMethodInfo.parameterTypes().toArray(new Type[0]));
+            if (!actualEndpointInfo.equals(currentClassInfo)) {
+                MethodInfo actualMethodInfo = findOverridingMethod(currentMethodInfo, actualEndpointInfo, currentClassInfo);
                 if (actualMethodInfo != null) {
                     //we don't pass AUTOMATIC here, as the method signature would be the same, so the same determination
                     //would be reached for a default
@@ -877,6 +875,29 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
         }
 
         return value;
+    }
+
+    /**
+     * Finds the method that overrides {@code method} in {@code actualEndpointInfo} or in one of its superclasses,
+     * stopping before {@code declaringClassInfo} (the class or interface declaring {@code method}).
+     *
+     * @return the most specific override, or {@code null} when the endpoint class does not override the method
+     */
+    private MethodInfo findOverridingMethod(MethodInfo method, ClassInfo actualEndpointInfo, ClassInfo declaringClassInfo) {
+        Type[] parameterTypes = method.parameterTypes().toArray(new Type[0]);
+        ClassInfo clazz = actualEndpointInfo;
+        while (clazz != null && !clazz.name().equals(declaringClassInfo.name())) {
+            MethodInfo overriding = clazz.method(method.name(), parameterTypes);
+            if (overriding != null && !Modifier.isAbstract(overriding.flags())) {
+                return overriding;
+            }
+            DotName superName = clazz.superName();
+            if (superName == null || superName.equals(OBJECT)) {
+                break;
+            }
+            clazz = index.getClassByName(superName);
+        }
+        return null;
     }
 
     private boolean isRunOnVirtualThread(MethodInfo info, boolean blocking, BlockingDefault defaultValue) {

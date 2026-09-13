@@ -1,8 +1,13 @@
 package io.quarkus.resteasy.reactive.common.deployment;
 
+import java.util.ArrayDeque;
+import java.util.Deque;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.function.Predicate;
 
 import org.jboss.jandex.ClassInfo;
+import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
@@ -28,22 +33,42 @@ public class JaxrsMethodsProcessor {
                     return true;
                 }
 
-                // also look at interfaces implemented by the method's declaringClass
-                for (Type interfaceType : method.declaringClass().interfaceTypes()) {
-                    ClassInfo interfaceInfo = index.getClassByName(interfaceType.name());
-                    if (interfaceInfo != null) {
-                        if (interfaceInfo.hasDeclaredAnnotation(ResteasyReactiveDotNames.PATH)) {
-                            return true;
-                        }
-                        MethodInfo overriddenMethodInfo = interfaceInfo.method(method.name(),
-                                method.parameterTypes().toArray(new Type[0]));
-                        if (overriddenMethodInfo != null && isJaxrsResourceMethod(overriddenMethodInfo)) {
-                            return true;
-                        }
+                Type[] parameterTypes = method.parameterTypes().toArray(new Type[0]);
+                Set<DotName> visited = new HashSet<>();
+                Deque<ClassInfo> toVisit = new ArrayDeque<>();
+                addSupertypes(method.declaringClass(), toVisit);
+                while (!toVisit.isEmpty()) {
+                    ClassInfo supertype = toVisit.poll();
+                    if (!visited.add(supertype.name())) {
+                        continue;
                     }
+                    if (supertype.hasDeclaredAnnotation(ResteasyReactiveDotNames.PATH)) {
+                        return true;
+                    }
+                    MethodInfo overriddenMethodInfo = supertype.method(method.name(), parameterTypes);
+                    if (overriddenMethodInfo != null && isJaxrsResourceMethod(overriddenMethodInfo)) {
+                        return true;
+                    }
+                    addSupertypes(supertype, toVisit);
                 }
 
                 return false;
+            }
+
+            private void addSupertypes(ClassInfo clazz, Deque<ClassInfo> toVisit) {
+                DotName superName = clazz.superName();
+                if (superName != null && !ResteasyReactiveDotNames.OBJECT.equals(superName)) {
+                    ClassInfo superClass = index.getClassByName(superName);
+                    if (superClass != null) {
+                        toVisit.add(superClass);
+                    }
+                }
+                for (Type interfaceType : clazz.interfaceTypes()) {
+                    ClassInfo interfaceInfo = index.getClassByName(interfaceType.name());
+                    if (interfaceInfo != null) {
+                        toVisit.add(interfaceInfo);
+                    }
+                }
             }
 
             private boolean isJaxrsResourceMethod(MethodInfo method) {

@@ -2,9 +2,11 @@ package io.quarkus.elytron.security.ldap;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 import javax.naming.NamingException;
 import javax.naming.directory.DirContext;
+import javax.net.SocketFactory;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,13 +23,16 @@ import io.quarkus.elytron.security.ldap.config.AttributeMappingConfig;
 import io.quarkus.elytron.security.ldap.config.DirContextConfig;
 import io.quarkus.elytron.security.ldap.config.IdentityMappingConfig;
 import io.quarkus.elytron.security.ldap.config.LdapSecurityRealmRuntimeConfig;
+import io.quarkus.tls.TlsConfiguration;
+import io.quarkus.tls.TlsConfigurationRegistry;
 
 public class LdapRecorder {
     private static final Logger log = LoggerFactory.getLogger(LdapRecorder.class);
 
-    public static SecurityRealm createRealm(LdapSecurityRealmRuntimeConfig runtimeConfig) {
+    public static SecurityRealm createRealm(LdapSecurityRealmRuntimeConfig runtimeConfig,
+            TlsConfigurationRegistry tlsRegistry) {
         LdapSecurityRealmBuilder.IdentityMappingBuilder identityMappingBuilder = LdapSecurityRealmBuilder.builder()
-                .setDirContextSupplier(createDirContextSupplier(runtimeConfig.dirContext()))
+                .setDirContextSupplier(createDirContextSupplier(runtimeConfig.dirContext(), tlsRegistry))
                 .identityMapping();
 
         if (runtimeConfig.identityMapping().searchRecursive()) {
@@ -59,14 +64,37 @@ public class LdapRecorder {
         return ldapRealm;
     }
 
-    private static ExceptionSupplier<DirContext, NamingException> createDirContextSupplier(DirContextConfig dirContext) {
+    private static ExceptionSupplier<DirContext, NamingException> createDirContextSupplier(DirContextConfig dirContext,
+            TlsConfigurationRegistry tlsRegistry) {
         DirContextFactory dirContextFactory = new QuarkusDirContextFactory(
                 dirContext.url(),
                 dirContext.principal().orElse(null),
                 dirContext.password().orElse(null),
                 dirContext.connectTimeout(),
-                dirContext.readTimeout());
+                dirContext.readTimeout(),
+                createSocketFactory(dirContext, tlsRegistry));
         return () -> dirContextFactory.obtainDirContext(dirContext.referralMode());
+    }
+
+    /**
+     * @return the socket factory of the configured TLS configuration, or {@code null} when none is configured
+     */
+    private static SocketFactory createSocketFactory(DirContextConfig dirContext,
+            TlsConfigurationRegistry tlsRegistry) {
+        if (dirContext.tlsConfigurationName().isEmpty()) {
+            return null;
+        }
+        String name = dirContext.tlsConfigurationName().get();
+        TlsConfiguration tlsConfiguration = TlsConfiguration.from(tlsRegistry, Optional.of(name))
+                .orElseThrow(() -> new IllegalArgumentException("Unable to find the TLS configuration '" + name
+                        + "' set with 'quarkus.security.ldap.dir-context.tls-configuration-name': "
+                        + "check that 'quarkus.tls." + name + ".*' is configured"));
+        try {
+            return tlsConfiguration.createSSLContext().getSocketFactory();
+        } catch (Exception e) {
+            throw new IllegalStateException("Unable to create the SSL context of the TLS configuration '" + name
+                    + "' for the LDAP connections", e);
+        }
     }
 
     private static AttributeMapping[] createAttributeMappings(IdentityMappingConfig identityMappingConfig) {

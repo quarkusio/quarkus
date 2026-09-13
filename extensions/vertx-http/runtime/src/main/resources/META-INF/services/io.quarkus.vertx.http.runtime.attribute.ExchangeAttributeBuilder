@@ -31,3 +31,4 @@ io.quarkus.vertx.http.runtime.attribute.AllRequestHeadersAttribute$Builder
 io.quarkus.vertx.http.runtime.attribute.ExchangeDataAttribute$Builder
 io.quarkus.vertx.http.runtime.attribute.VertxMDCDataAttribute$Builder
 
+io.quarkus.vertx.http.runtime.attribute.ConnectionStatusAttribute$Builder

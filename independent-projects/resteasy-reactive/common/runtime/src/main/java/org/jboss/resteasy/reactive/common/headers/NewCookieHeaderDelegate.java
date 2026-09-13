@@ -1,9 +1,8 @@
 package org.jboss.resteasy.reactive.common.headers;
 
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
+import java.time.Instant;
 import java.util.Date;
-import java.util.Locale;
+import java.util.List;
 import java.util.Map;
 
 import jakarta.ws.rs.core.NewCookie;
@@ -19,6 +18,9 @@ import org.jboss.resteasy.reactive.common.util.OrderedParameterParser;
 public class NewCookieHeaderDelegate implements RuntimeDelegate.HeaderDelegate {
     public static final NewCookieHeaderDelegate INSTANCE = new NewCookieHeaderDelegate();
     private static final String OLD_COOKIE_PATTERN = "EEE, dd-MMM-yyyy HH:mm:ss z";
+    private static final List<String> EXPIRES_PATTERNS = List.of("EEE, dd-MMM-yy HH:mm:ss zzz",
+            DateUtil.PATTERN_RFC1123, DateUtil.PATTERN_RFC1036, DateUtil.PATTERN_ASCTIME);
+    private static final Date TWO_DIGIT_YEAR_START = Date.from(Instant.EPOCH);
 
     public Object fromString(String newCookie) throws IllegalArgumentException {
         if (newCookie == null)
@@ -63,10 +65,7 @@ public class NewCookieHeaderDelegate implements RuntimeDelegate.HeaderDelegate {
             } else if (name.equalsIgnoreCase("SameSite")) {
                 sameSite = NewCookie.SameSite.valueOf(value.toUpperCase());
             } else if (name.equalsIgnoreCase("Expires")) {
-                try {
-                    expiry = new SimpleDateFormat(OLD_COOKIE_PATTERN, Locale.US).parse(value);
-                } catch (ParseException e) {
-                }
+                expiry = parseExpires(value);
             }
         }
 
@@ -87,6 +86,17 @@ public class NewCookieHeaderDelegate implements RuntimeDelegate.HeaderDelegate {
                 .sameSite(sameSite)
                 .build();
 
+    }
+
+    /**
+     * Parses the value of the Expires attribute, or returns {@code null} if it is not a supported date.
+     */
+    static Date parseExpires(String value) {
+        try {
+            return DateUtil.parseDate(value.trim().replaceAll("\\s+", " "), EXPIRES_PATTERNS, TWO_DIGIT_YEAR_START);
+        } catch (DateUtil.DateParseException e) {
+            return null;
+        }
     }
 
     protected void quote(StringBuilder b, String value) {

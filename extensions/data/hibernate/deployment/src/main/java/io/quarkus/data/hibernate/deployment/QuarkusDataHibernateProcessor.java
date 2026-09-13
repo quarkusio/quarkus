@@ -104,16 +104,15 @@ public final class QuarkusDataHibernateProcessor {
     private static final DotName DOTNAME_ID = DotName.createSimple(Id.class.getName());
 
     /**
-     * Features of the classic Panache (Panache 1) Hibernate extensions, mapped to their Maven artifact ids. Quarkus Data
-     * (Panache Next) replaces these and cannot coexist with them: both register overlapping persistence unit setup, so
-     * the presence of any of them alongside Quarkus Data is a configuration error we detect and reject early. The
-     * artifact id is what a user needs to add or remove in their build file, so that is what we report in the error.
+     * Capabilities of the classic Panache (Panache 1) Hibernate extensions, mapped to their Maven artifact ids.
+     * Quarkus Data (Panache Next) replaces these and cannot coexist with them: both register overlapping persistence
+     * unit setup. We report the artifact id because that is what a user adds or removes in their build file.
      */
-    private static final Map<String, String> CLASSIC_PANACHE_FEATURE_ARTIFACTS = Map.of(
-            Feature.HIBERNATE_ORM_PANACHE.getName(), "quarkus-hibernate-orm-panache",
-            Feature.HIBERNATE_ORM_PANACHE_KOTLIN.getName(), "quarkus-hibernate-orm-panache-kotlin",
-            Feature.HIBERNATE_REACTIVE_PANACHE.getName(), "quarkus-hibernate-reactive-panache",
-            Feature.HIBERNATE_REACTIVE_PANACHE_KOTLIN.getName(), "quarkus-hibernate-reactive-panache-kotlin");
+    private static final Map<String, String> CLASSIC_PANACHE_CAPABILITY_ARTIFACTS = Map.of(
+            Capability.HIBERNATE_ORM_PANACHE, "quarkus-hibernate-orm-panache",
+            Capability.HIBERNATE_ORM_PANACHE_KOTLIN, "quarkus-hibernate-orm-panache-kotlin",
+            Capability.HIBERNATE_REACTIVE_PANACHE, "quarkus-hibernate-reactive-panache",
+            Capability.HIBERNATE_REACTIVE_PANACHE_KOTLIN, "quarkus-hibernate-reactive-panache-kotlin");
 
     @BuildStep
     FeatureBuildItem featureBuildItem() {
@@ -121,16 +120,13 @@ public final class QuarkusDataHibernateProcessor {
     }
 
     @BuildStep
-    void detectClassicPanacheOnClasspath(List<FeatureBuildItem> features,
+    void detectClassicPanacheOnClasspath(Capabilities capabilities,
             ValidationPhaseBuildItem validationPhase,
             BuildProducer<ValidationPhaseBuildItem.ValidationErrorBuildItem> validationErrors) {
-        // The most robust detection signal available here is the FeatureBuildItem list: every extension unconditionally
-        // registers its own FeatureBuildItem, and consuming the whole list guarantees this step runs after all of them.
-        // There is no Capability defined for classic Panache, and relying on a class-on-classpath check would require a
-        // hard-coded internal class name that is more fragile than the feature name each extension owns.
-        for (FeatureBuildItem feature : features) {
-            String classicPanacheArtifact = CLASSIC_PANACHE_FEATURE_ARTIFACTS.get(feature.getName());
-            if (classicPanacheArtifact != null) {
+        // Each classic Panache extension declares a capability in its extension descriptor.
+        for (Map.Entry<String, String> classicPanache : CLASSIC_PANACHE_CAPABILITY_ARTIFACTS.entrySet()) {
+            if (capabilities.isPresent(classicPanache.getKey())) {
+                String classicPanacheArtifact = classicPanache.getValue();
                 validationErrors.produce(new ValidationPhaseBuildItem.ValidationErrorBuildItem(new ConfigurationException(
                         "Quarkus Data (Panache Next, '" + Feature.QUARKUS_DATA_HIBERNATE.getName()
                                 + "') and classic Panache ('" + classicPanacheArtifact

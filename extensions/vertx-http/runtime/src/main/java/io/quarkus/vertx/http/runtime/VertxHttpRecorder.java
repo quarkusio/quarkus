@@ -532,8 +532,14 @@ public class VertxHttpRecorder {
             AccessLogReceiver receiver;
             if (accessLog.logToFile()) {
                 File outputDir = accessLog.logDirectory().isPresent() ? new File(accessLog.logDirectory().get()) : new File("");
-                receiver = new DefaultAccessLogReceiver(executor, outputDir, accessLog.baseFileName(), accessLog.logSuffix(),
-                        accessLog.rotate());
+                receiver = DefaultAccessLogReceiver.builder()
+                        .setLogWriteExecutor(executor)
+                        .setOutputDirectory(outputDir.toPath())
+                        .setLogBaseName(accessLog.baseFileName())
+                        .setLogNameSuffix(accessLog.logSuffix())
+                        .setRotate(accessLog.rotate())
+                        .setMaxBackupIndex(accessLog.maxBackupIndex().orElse(-1))
+                        .build();
             } else {
                 receiver = new JBossLoggingAccessLogReceiver(accessLog.category());
             }

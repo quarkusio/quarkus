@@ -83,6 +83,20 @@ public class MicrometerCounterInterceptorTest {
     }
 
     @Test
+    void testCountRepeatableMeterTags() {
+        counted.countWithRepeatableTags(false);
+        Counter counter = registry.get("metric.repeatable")
+                .tag("method", "countWithRepeatableTags")
+                .tag("class", "io.quarkus.micrometer.test.CountedResource")
+                .tag("tag_a", "prefix_false")
+                .tag("tag_b", "prefix_false")
+                .tag("exception", "none")
+                .tag("result", "success").counter();
+        Assertions.assertNotNull(counter);
+        Assertions.assertEquals(1, counter.count());
+    }
+
+    @Test
     void testCountEmptyMetricName_Success() {
         counted.emptyMetricName(false);
         Counter counter = registry.get("method.counted")

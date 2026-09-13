@@ -30,6 +30,15 @@ public class CountedResource {
         }
     }
 
+    // two tags on the same parameter are wrapped in the @MeterTags container by the compiler
+    @Counted(value = "metric.repeatable")
+    public void countWithRepeatableTags(
+            @MeterTag(key = "tag_a", resolver = TestValueResolver.class) @MeterTag(key = "tag_b", resolver = TestValueResolver.class) boolean fail) {
+        if (fail) {
+            throw new NullPointerException("Failed on purpose");
+        }
+    }
+
     @Counted(value = "async.none", recordFailuresOnly = true)
     public CompletableFuture<?> onlyCountAsyncFailures(GuardedResult guardedResult) {
         return supplyAsync(guardedResult::get);

@@ -38,6 +38,11 @@ public final class TrustedProxyCheckPartConverter implements Converter<TrustedPr
                 proxyAddress = "127.0.0.1";
             }
             final var inetSocketAddress = new InetSocketAddressConverter().convert(proxyAddress);
+            if (inetSocketAddress.getPort() != 0) {
+                TrustedProxyCheck.LOGGER.warnf(
+                        "The trusted proxy address '%s' of quarkus.http.proxy.trusted-proxies specifies a port. The port is compared with the source port of the connection from the proxy, which is usually ephemeral, so this entry does not match unless the proxy connects from a fixed source port. Specify the address without a port to trust the proxy regardless of its source port.",
+                        proxyAddress);
+            }
             final boolean useHostName = inetSocketAddress.isUnresolved() || inetSocketAddress.getAddress() == null;
             if (useHostName) {
                 return new TrustedProxyCheck.TrustedProxyCheckPart(inetSocketAddress.getHostName(),

@@ -124,16 +124,18 @@ public interface ProxyConfig {
      * Routing (CIDR) notation. Please note that Quarkus needs to perform DNS lookup for all hostnames during the request.
      * For that reason, using hostnames is not recommended.
      * <p>
-     * Examples of a socket address in the form of `host` or `host:port`:
+     * Examples of an address in the form of `host`:
      *
      * <ul>
-     * <li>`127.0.0.1:8084`</li>
+     * <li>`127.0.0.1`</li>
      * <li>`[0:0:0:0:0:0:0:1]`</li>
-     * <li>`[0:0:0:0:0:0:0:1]:8084`</li>
      * <li>`[::]`</li>
      * <li>`localhost`</li>
-     * <li>`localhost:8084`</li>
      * </ul>
+     * <p>
+     * A port may be appended in the form of `host:port`, for example `127.0.0.1:8084`, but it is compared with the source
+     * port of the connection from the proxy, which is usually ephemeral, so such an entry only matches a proxy that
+     * connects from a fixed source port. A warning is logged for it.
      * <p>
      * Examples of a CIDR notation:
      *

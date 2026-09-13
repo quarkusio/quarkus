@@ -128,23 +128,9 @@ public class PublisherResponseHandler implements ServerRestHandler {
         private List<StreamingResponseCustomizer> determineCustomizers(boolean isFirst) {
             // we only need to obtain the customizers from the Publisher if it's the first time we are sending data and the Publisher has customizable data
             // at this point no matter the type of RestMulti we can safely obtain the headers and status
-            if (isFirst && (publisher instanceof RestMulti<?> restMulti)) {
-                Map<String, List<String>> headers = restMulti.getHeaders();
-                Integer status = restMulti.getStatus();
-                if (headers.isEmpty() && (status == null)) {
-                    return staticCustomizers;
-                }
-                List<StreamingResponseCustomizer> result = new ArrayList<>(staticCustomizers.size() + 2);
-                result.addAll(staticCustomizers); // these are added first so that the result specific values will take precedence if there are conflicts
-                if (!headers.isEmpty()) {
-                    result.add(new StreamingResponseCustomizer.AddHeadersCustomizer(headers));
-                }
-                if (status != null) {
-                    result.add(new StreamingResponseCustomizer.StatusCustomizer(status));
-                }
-                return result;
+            if (isFirst) {
+                return restMultiCustomizers(publisher, staticCustomizers);
             }
-
             return staticCustomizers;
         }
 
@@ -346,15 +332,41 @@ public class PublisherResponseHandler implements ServerRestHandler {
             demand = 1L;
         }
 
-        SseUtil.setHeaders(requestContext, requestContext.serverResponse(), streamingResponseCustomizers);
+        List<StreamingResponseCustomizer> customizers = restMultiCustomizers(result, streamingResponseCustomizers);
+        SseUtil.setHeaders(requestContext, requestContext.serverResponse(), customizers);
         requestContext.suspend();
         requestContext.serverResponse().write(EMPTY_BUFFER, throwable -> {
             if (throwable == null) {
-                result.subscribe(new SseMultiSubscriber(requestContext, streamingResponseCustomizers, demand));
+                result.subscribe(new SseMultiSubscriber(requestContext, customizers, demand));
             } else {
                 requestContext.resume(throwable);
             }
         });
+    }
+
+    /**
+     * Adds the headers and the status of a {@link RestMulti} to the static customizers, if it has any.
+     */
+    private static List<StreamingResponseCustomizer> restMultiCustomizers(Publisher<?> publisher,
+            List<StreamingResponseCustomizer> staticCustomizers) {
+        if (publisher instanceof RestMulti<?> restMulti) {
+            Map<String, List<String>> headers = restMulti.getHeaders();
+            Integer status = restMulti.getStatus();
+            boolean hasHeaders = (headers != null) && !headers.isEmpty();
+            if (!hasHeaders && (status == null)) {
+                return staticCustomizers;
+            }
+            List<StreamingResponseCustomizer> result = new ArrayList<>(staticCustomizers.size() + 2);
+            result.addAll(staticCustomizers); // these are added first so that the result specific values will take precedence if there are conflicts
+            if (hasHeaders) {
+                result.add(new StreamingResponseCustomizer.AddHeadersCustomizer(headers));
+            }
+            if (status != null) {
+                result.add(new StreamingResponseCustomizer.StatusCustomizer(status));
+            }
+            return result;
+        }
+        return staticCustomizers;
     }
 
     public interface StreamingResponseCustomizer {

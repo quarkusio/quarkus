@@ -21,13 +21,16 @@ import io.quarkus.elytron.security.ldap.config.AttributeMappingConfig;
 import io.quarkus.elytron.security.ldap.config.DirContextConfig;
 import io.quarkus.elytron.security.ldap.config.IdentityMappingConfig;
 import io.quarkus.elytron.security.ldap.config.LdapSecurityRealmRuntimeConfig;
+import io.quarkus.tls.TlsConfiguration;
+import io.quarkus.tls.TlsConfigurationRegistry;
 
 public class LdapRecorder {
     private static final Logger log = LoggerFactory.getLogger(LdapRecorder.class);
 
-    public static SecurityRealm createRealm(LdapSecurityRealmRuntimeConfig runtimeConfig) {
+    public static SecurityRealm createRealm(LdapSecurityRealmRuntimeConfig runtimeConfig,
+            TlsConfigurationRegistry tlsRegistry) {
         LdapSecurityRealmBuilder.IdentityMappingBuilder identityMappingBuilder = LdapSecurityRealmBuilder.builder()
-                .setDirContextSupplier(createDirContextSupplier(runtimeConfig.dirContext()))
+                .setDirContextSupplier(createDirContextSupplier(runtimeConfig.dirContext(), tlsRegistry))
                 .identityMapping();
 
         if (runtimeConfig.identityMapping().searchRecursive()) {
@@ -59,14 +62,48 @@ public class LdapRecorder {
         return ldapRealm;
     }
 
-    private static ExceptionSupplier<DirContext, NamingException> createDirContextSupplier(DirContextConfig dirContext) {
+    private static ExceptionSupplier<DirContext, NamingException> createDirContextSupplier(DirContextConfig dirContext,
+            TlsConfigurationRegistry tlsRegistry) {
         DirContextFactory dirContextFactory = new QuarkusDirContextFactory(
                 dirContext.url(),
                 dirContext.principal().orElse(null),
                 dirContext.password().orElse(null),
                 dirContext.connectTimeout(),
-                dirContext.readTimeout());
+                dirContext.readTimeout(),
+                configureTls(dirContext, tlsRegistry));
         return () -> dirContextFactory.obtainDirContext(dirContext.referralMode());
+    }
+
+    private static boolean configureTls(DirContextConfig dirContext, TlsConfigurationRegistry tlsRegistry) {
+        if (dirContext.tlsConfigurationName().isEmpty()) {
+            return false;
+        }
+        String name = dirContext.tlsConfigurationName().get();
+        checkLdapsUrls(dirContext.url(), name);
+        TlsConfiguration tlsConfiguration = tlsRegistry.get(name)
+                .orElseThrow(() -> new IllegalArgumentException("Unable to find the TLS configuration '" + name
+                        + "' set with 'quarkus.security.ldap.dir-context.tls-configuration-name': "
+                        + "check that 'quarkus.tls." + name + ".*' is configured"));
+        QuarkusLdapSocketFactory.configure(name, tlsConfiguration);
+        return true;
+    }
+
+    /**
+     * Checks that every URL of the dir context uses the {@code ldaps} scheme. The socket factory of a TLS configuration
+     * opens TLS connections only, so a plain {@code ldap} URL cannot work with it.
+     *
+     * @param url the space-separated URLs of {@code quarkus.security.ldap.dir-context.url}
+     * @param tlsConfigurationName the name of the TLS configuration
+     */
+    static void checkLdapsUrls(String url, String tlsConfigurationName) {
+        for (String value : url.trim().split("\\s+")) {
+            if (!value.regionMatches(true, 0, "ldaps://", 0, "ldaps://".length())) {
+                throw new IllegalArgumentException("The URL '" + value + "' of 'quarkus.security.ldap.dir-context.url' "
+                        + "does not use the 'ldaps' scheme, but 'quarkus.security.ldap.dir-context.tls-configuration-name' "
+                        + "is set to '" + tlsConfigurationName
+                        + "': use an 'ldaps://' URL, or remove the TLS configuration name");
+            }
+        }
     }
 
     private static AttributeMapping[] createAttributeMappings(IdentityMappingConfig identityMappingConfig) {

@@ -399,12 +399,24 @@ public class InvokerGenerator extends AbstractGenerator {
                                 b1.set(resultVar, generateCCRelease(b1, invoker, rootCC, resultVar));
                             }
 
+                            Var returnValue = resultVar;
                             if (info.returnValueTransformer != null) {
-                                b1.set(resultVar, generateTransformerCall(b1, info.returnValueTransformer, resultVar,
-                                        cleanupTasks));
+                                MethodInfo transformer = info.returnValueTransformer.method;
+                                Var input = resultVar;
+                                if (invoker.method.returnType().kind() == Type.Kind.PRIMITIVE
+                                        && Modifier.isStatic(transformer.flags())
+                                        && transformer.parameterType(0).kind() != Type.Kind.PRIMITIVE) {
+                                    input = b1.localVar("boxedResult", b1.box(resultVar));
+                                }
+                                Expr transformed = generateTransformerCall(b1, info.returnValueTransformer, input,
+                                        cleanupTasks);
+                                if (transformer.returnType().kind() == Type.Kind.PRIMITIVE) {
+                                    transformed = b1.box(transformed);
+                                }
+                                returnValue = b1.localVar("transformedResult", Object.class, transformed);
                             }
 
-                            b1.return_(resultVar);
+                            b1.return_(returnValue);
                         });
                         tc.catch_(Throwable.class, "e", (b1, e) -> {
                             if (cleanupTasks != null) {

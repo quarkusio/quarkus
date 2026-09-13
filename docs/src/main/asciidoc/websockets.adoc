@@ -172,6 +172,31 @@ include::{includes}/devtools/build-native.adoc[]
 
 You can also test your web socket applications using the approach detailed link:{quickstarts-blob-url}/websockets-quickstart/src/test/java/org/acme/websockets/ChatTest.java[here].
 
+== Accessing the HTTP request during the handshake
+
+The Jakarta WebSocket API does not expose the underlying HTTP request to `ServerEndpointConfig.Configurator#modifyHandshake`,
+so information such as the remote address of the client is not reachable through the `HandshakeRequest` parameter.
+During the handshake, Quarkus makes the request available through the `io.vertx.ext.web.RoutingContext` and
+`io.vertx.core.http.HttpServerRequest` request-scoped beans:
+
+[source,java]
+----
+import io.quarkus.arc.Arc;
+import io.vertx.core.http.HttpServerRequest;
+
+public class RemoteAddressConfigurator extends ServerEndpointConfig.Configurator {
+
+    @Override
+    public void modifyHandshake(ServerEndpointConfig config, HandshakeRequest request, HandshakeResponse response) {
+        HttpServerRequest httpRequest = Arc.container().instance(HttpServerRequest.class).get();
+        response.getHeaders().put("X-Peer", List.of(httpRequest.remoteAddress().host()));
+    }
+}
+----
+
+NOTE: The request scope activated for the handshake ends when the handshake completes: `@RequestScoped` beans used in
+`modifyHandshake` are not the ones used later by the endpoint methods.
+
 == WebSocket Clients
 
 Quarkus also contains a WebSocket client. You can call `ContainerProvider.getWebSocketContainer().connectToServer` to create a websocket connection. By default, the `quarkus-websockets` artifact includes both client and server support. However, if you only want the client you can include `quarkus-websockets-client` instead.

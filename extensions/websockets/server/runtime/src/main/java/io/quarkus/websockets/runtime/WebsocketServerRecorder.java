@@ -14,6 +14,9 @@ import org.jboss.logging.Logger;
 
 import io.netty.channel.EventLoopGroup;
 import io.netty.handler.codec.http.HttpHeaderNames;
+import io.quarkus.arc.Arc;
+import io.quarkus.arc.ManagedContext;
+import io.quarkus.vertx.http.runtime.CurrentVertxRequest;
 import io.quarkus.vertx.http.runtime.security.QuarkusHttpUser;
 import io.quarkus.websockets.client.runtime.ServerWebSocketContainerFactory;
 import io.quarkus.websockets.client.runtime.WebSocketPrincipal;
@@ -47,10 +50,25 @@ public class WebsocketServerRecorder {
         return new VertxWebSocketHandler(container, info) {
             @Override
             public void handle(RoutingContext event) {
-                if (event.request().getHeader(HttpHeaderNames.UPGRADE) != null) {
-                    publishUrlPathTemplate(event);
+                if (event.request().getHeader(HttpHeaderNames.UPGRADE) == null) {
+                    super.handle(event);
+                    return;
                 }
-                super.handle(event);
+                publishUrlPathTemplate(event);
+                ManagedContext requestContext = Arc.container().requestContext();
+                boolean activated = false;
+                if (!requestContext.isActive()) {
+                    requestContext.activate();
+                    activated = true;
+                }
+                try {
+                    Arc.container().instance(CurrentVertxRequest.class).get().setCurrent(event);
+                    super.handle(event);
+                } finally {
+                    if (activated) {
+                        requestContext.terminate();
+                    }
+                }
             }
 
             /**

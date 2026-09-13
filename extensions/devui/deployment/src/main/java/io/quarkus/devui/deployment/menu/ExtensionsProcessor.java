@@ -9,6 +9,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 
+import org.jboss.logging.Logger;
+
 import io.quarkus.deployment.IsLocalDevelopment;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -43,6 +45,8 @@ import io.quarkus.devui.spi.page.Page;
         @DevMcpParam(name = "extensionArtifactId", description = "The gav string of the extension to add in format groupId:artifactId:version")
 })
 public class ExtensionsProcessor {
+
+    private static final Logger log = Logger.getLogger(ExtensionsProcessor.class);
 
     @BuildStep(onlyIf = IsLocalDevelopment.class)
     InternalPageBuildItem createExtensionsPages(ExtensionsBuildItem extensionsBuildItem, DevUIConfig config) {
@@ -97,8 +101,12 @@ public class ExtensionsProcessor {
                 .description("Get all available categories for the Quarkus Extension List")
                 .function(ignored -> {
                     return CompletableFuture.supplyAsync(() -> {
+                        QuarkusProject project = getQuarkusProjectOrNull();
+                        if (project == null) {
+                            return List.of();
+                        }
                         try {
-                            QuarkusCommandOutcome outcome = new ListCategories(getQuarkusProject())
+                            QuarkusCommandOutcome outcome = new ListCategories(project)
                                     .format("object")
                                     .execute();
 
@@ -151,8 +159,12 @@ public class ExtensionsProcessor {
     }
 
     private List<io.quarkus.registry.catalog.Extension> listExtensionInQuarkusProject() throws RuntimeException {
+        QuarkusProject project = getQuarkusProjectOrNull();
+        if (project == null) {
+            return List.of();
+        }
         try {
-            QuarkusCommandOutcome outcome = new ListExtensions(getQuarkusProject())
+            QuarkusCommandOutcome outcome = new ListExtensions(project)
                     .installed(false)
                     .all(false)
                     .format("object")
@@ -175,8 +187,12 @@ public class ExtensionsProcessor {
                 .description("Get all extensions that is already part of the current project (i.e it's currently in the pom)")
                 .function(ignored -> {
                     return CompletableFuture.supplyAsync(() -> {
+                        QuarkusProject project = getQuarkusProjectOrNull();
+                        if (project == null) {
+                            return List.of();
+                        }
                         try {
-                            QuarkusCommandOutcome outcome = new ListExtensions(getQuarkusProject())
+                            QuarkusCommandOutcome outcome = new ListExtensions(project)
                                     .installed(true)
                                     .all(false)
                                     .format("object")
@@ -200,8 +216,6 @@ public class ExtensionsProcessor {
                             }
 
                             return null;
-                        } catch (IllegalStateException e) {
-                            return null;
                         } catch (QuarkusCommandException e) {
                             throw new RuntimeException(e);
                         }
@@ -220,8 +234,12 @@ public class ExtensionsProcessor {
                 .function(params -> {
                     return CompletableFuture.supplyAsync(() -> {
                         String extensionArtifactId = params.get("extensionArtifactId");
+                        QuarkusProject project = getQuarkusProjectOrNull();
+                        if (project == null) {
+                            return false;
+                        }
                         try {
-                            QuarkusCommandOutcome outcome = new RemoveExtensions(getQuarkusProject())
+                            QuarkusCommandOutcome outcome = new RemoveExtensions(project)
                                     .extensions(Set.of(extensionArtifactId))
                                     .execute();
                             return outcome.isSuccess();
@@ -244,9 +262,12 @@ public class ExtensionsProcessor {
                 .function(params -> {
                     return CompletableFuture.supplyAsync(() -> {
                         String extensionArtifactId = params.get("extensionArtifactId");
-
+                        QuarkusProject project = getQuarkusProjectOrNull();
+                        if (project == null) {
+                            return false;
+                        }
                         try {
-                            QuarkusCommandOutcome outcome = new AddExtensions(getQuarkusProject())
+                            QuarkusCommandOutcome outcome = new AddExtensions(project)
                                     .extensions(Set.of(extensionArtifactId))
                                     .execute();
 
@@ -258,6 +279,31 @@ public class ExtensionsProcessor {
                 })
                 .enableMcpFunctionByDefault()
                 .build();
+    }
+
+    /**
+     * The extension management features depend on the Quarkus project and its extension catalog, which may not be
+     * resolvable (offline, or a platform descriptor that is not available from the configured repositories). Listing
+     * and managing extensions is a convenience of the Dev UI, so such a failure is reported as a warning and the
+     * actions return empty results instead of failing the call.
+     */
+    private QuarkusProject getQuarkusProjectOrNull() {
+        try {
+            return getQuarkusProject();
+        } catch (RuntimeException e) {
+            log.warnf("The Quarkus project or its extension catalog could not be resolved, "
+                    + "the extension management features of the Dev UI are not available: %s", rootMessage(e));
+            log.debug("The Quarkus project or its extension catalog could not be resolved", e);
+            return null;
+        }
+    }
+
+    private static String rootMessage(Throwable e) {
+        Throwable root = e;
+        while (root.getCause() != null) {
+            root = root.getCause();
+        }
+        return root.getMessage() != null ? root.getMessage() : root.toString();
     }
 
     private QuarkusProject getQuarkusProject() {

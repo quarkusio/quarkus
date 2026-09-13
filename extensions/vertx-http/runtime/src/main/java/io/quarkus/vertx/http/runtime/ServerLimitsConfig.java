@@ -79,6 +79,17 @@ public interface ServerLimitsConfig {
     int maxMultipartHeaderCount();
 
     /**
+     * The maximum size of a single file part of a {@code multipart/form-data} request. Text attributes are bounded
+     * by {@code max-form-attribute-size} instead, and the whole request by {@code max-body-size}.
+     * <p>
+     * If a file part exceeds this limit, the request is rejected with HTTP 413. By default, file parts are only
+     * bounded by {@code max-body-size}.
+     * <p>
+     * For now, this setting only works when using Quarkus REST.
+     */
+    Optional<MemorySize> maxMultipartFileSize();
+
+    /**
      * The maximum number of connections that are allowed at any one time. If this is set
      * it is recommended to set a short idle timeout.
      */

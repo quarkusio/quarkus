@@ -53,7 +53,43 @@ public class CharsetTest {
                 .then()
                 .statusCode(200)
                 .extract().header("Content-Type");
+        assertEquals("application/json", contentType);
+    }
+
+    @Test
+    public void testResponseJson() {
+        String contentType = when().get("/test/response/json")
+                .then()
+                .statusCode(200)
+                .extract().header("Content-Type");
+        assertEquals("application/json", contentType);
+    }
+
+    @Test
+    public void testJsonWithExplicitCharset() {
+        String contentType = when().get("/test/json/charset")
+                .then()
+                .statusCode(200)
+                .extract().header("Content-Type");
         assertEquals("application/json;charset=UTF-8", contentType);
+    }
+
+    @Test
+    public void testJsonSuffix() {
+        String contentType = when().get("/test/problem")
+                .then()
+                .statusCode(200)
+                .extract().header("Content-Type");
+        assertEquals("application/problem+json", contentType);
+    }
+
+    @Test
+    public void testXml() {
+        String contentType = when().get("/test/xml")
+                .then()
+                .statusCode(200)
+                .extract().header("Content-Type");
+        assertEquals("application/xml;charset=UTF-8", contentType);
     }
 
     @Test
@@ -94,6 +130,27 @@ public class CharsetTest {
         @GET
         public Response responseJson() {
             return Response.ok("{\"foo\": \"bar\"}").build();
+        }
+
+        @Path("json/charset")
+        @Produces("application/json;charset=UTF-8")
+        @GET
+        public String jsonWithExplicitCharset() {
+            return "{\"foo\": \"bar\"}";
+        }
+
+        @Path("problem")
+        @Produces("application/problem+json")
+        @GET
+        public String problemJson() {
+            return "{\"title\": \"bar\"}";
+        }
+
+        @Path("xml")
+        @Produces("application/xml")
+        @GET
+        public String xml() {
+            return "<foo/>";
         }
 
         @Path("image")

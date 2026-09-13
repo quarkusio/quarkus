@@ -272,6 +272,7 @@ This configuration creates two users:
  * `john` with a `johnPassword` password and `reader` and `writer` roles
 
 To customize the client ID and secret, you can use the `quarkus.oidc.client-id` and `quarkus.oidc.credentials.secret` properties.
+Additionally, you can adjust the lifespans of the access token and SSO session with the `quarkus.keycloak.devservices.access-token-lifespan` and `quarkus.keycloak.devservices.sso-session-max-lifespan` properties, which are set to 10 minutes by default.
 
 However, it is likely that your Keycloak configuration is more complex and requires setting more properties.
 

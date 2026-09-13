@@ -44,5 +44,11 @@ public interface RuntimeConfiguration {
         int maxMultipartPartHeaderSize();
 
         int maxMultipartHeaderCount();
+
+        /**
+         * The maximum size of a single file part of a multipart request; empty means that file parts are only bounded
+         * by {@link #maxBodySize()}
+         */
+        OptionalLong maxMultipartFileSize();
     }
 }

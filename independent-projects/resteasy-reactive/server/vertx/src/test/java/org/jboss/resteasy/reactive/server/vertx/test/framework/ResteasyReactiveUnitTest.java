@@ -394,7 +394,7 @@ public class ResteasyReactiveUnitTest implements BeforeAllCallback, AfterAllCall
                 deleteUploadedFilesOnEnd,
                 uploadPath != null ? uploadPath.toAbsolutePath().toString() : System.getProperty("java.io.tmpdir"),
                 fileContentTypes, 0, defaultCharset, OptionalLong.empty(), maxFormAttributeSize, maxParameters,
-                maxMultipartPartHeaderSize, maxMultipartHeaderCount);
+                maxMultipartPartHeaderSize, maxMultipartHeaderCount, OptionalLong.empty());
         ResteasyReactiveDeploymentManager.RunnableApplication application = prepared.createApplication(runtimeConfiguration,
                 new VertxRequestContextFactory(), executor);
         fieldInjectionSupport.runtimeInit(testClassLoader, application.getDeployment());

@@ -9,8 +9,10 @@ import org.junit.jupiter.api.Test;
 
 import io.quarkus.cache.CacheKeyGenerator;
 import io.quarkus.cache.CacheResult;
+import io.quarkus.cache.CacheResultPredicate;
 import io.quarkus.cache.runtime.CacheInterceptionContext;
 import io.quarkus.cache.runtime.UndefinedCacheKeyGenerator;
+import io.quarkus.cache.runtime.UndefinedCacheResultPredicate;
 
 public class CacheInterceptionContextTest {
 
@@ -50,6 +52,11 @@ public class CacheInterceptionContextTest {
                 @Override
                 public Class<? extends CacheKeyGenerator> keyGenerator() {
                     return UndefinedCacheKeyGenerator.class;
+                }
+
+                @Override
+                public Class<? extends CacheResultPredicate> unless() {
+                    return UndefinedCacheResultPredicate.class;
                 }
             });
         });

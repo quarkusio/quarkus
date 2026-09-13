@@ -238,4 +238,16 @@ public interface KeycloakDevServicesConfig {
      */
     Optional<List<Integer>> hostAccessiblePorts();
 
+    /**
+     * The access token lifespan in the default realm.
+     */
+    @WithDefault("10M")
+    Duration accessTokenLifespan();
+
+    /**
+     * The SSO session max lifespan in the default realm.
+     */
+    @WithDefault("10M")
+    Duration ssoSessionMaxLifespan();
+
 }

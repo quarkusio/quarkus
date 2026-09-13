@@ -148,6 +148,8 @@ final class OidcTenantConfigImpl implements OidcTenantConfig {
         RESOURCE_METADATA_SCOPES,
         RESOURCE_METADATA_AUTHORIZATION_SERVER,
         RESOURCE_METADATA_FORCE_HTTPS_SCHEME,
+        DPOP,
+        DPOP_PROOF_AGE,
         LOGOUT_PATH,
         LOGOUT_POST_LOGOUT_PATH,
         LOGOUT_POST_LOGOUT_URI_PARAM,
@@ -608,6 +610,18 @@ final class OidcTenantConfigImpl implements OidcTenantConfig {
             public Optional<String> trustStoreFileType() {
                 invocationsRecorder.put(ConfigMappingMethods.CERTIFICATION_CHAIN_TRUST_STORE_FILE_TYPE, true);
                 return Optional.empty();
+            }
+        };
+    }
+
+    @Override
+    public Dpop dpop() {
+        invocationsRecorder.put(ConfigMappingMethods.DPOP, true);
+        return new Dpop() {
+            @Override
+            public Duration proofAge() {
+                invocationsRecorder.put(ConfigMappingMethods.DPOP_PROOF_AGE, true);
+                return Duration.ofMinutes(2);
             }
         };
     }

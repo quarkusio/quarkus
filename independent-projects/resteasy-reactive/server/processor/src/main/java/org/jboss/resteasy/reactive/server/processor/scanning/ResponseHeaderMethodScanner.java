@@ -29,8 +29,18 @@ public class ResponseHeaderMethodScanner implements MethodScanner {
             Map<String, Object> methodContext) {
         AnnotationStore annotationStore = (AnnotationStore) methodContext
                 .get(EndpointIndexer.METHOD_CONTEXT_ANNOTATION_STORE);
-        AnnotationInstance responseHeaderInstance = annotationStore.getAnnotation(method, RESPONSE_HEADER);
-        AnnotationInstance responseHeadersInstance = annotationStore.getAnnotation(method, RESPONSE_HEADER_LIST);
+        AnnotationInstance responseHeaderInstance = null;
+        AnnotationInstance responseHeadersInstance = null;
+        MethodInfo endpointImplementation = (MethodInfo) methodContext
+                .get(EndpointIndexer.METHOD_CONTEXT_ENDPOINT_IMPLEMENTATION);
+        if ((endpointImplementation != null) && !endpointImplementation.equals(method)) {
+            responseHeaderInstance = annotationStore.getAnnotation(endpointImplementation, RESPONSE_HEADER);
+            responseHeadersInstance = annotationStore.getAnnotation(endpointImplementation, RESPONSE_HEADER_LIST);
+        }
+        if ((responseHeaderInstance == null) && (responseHeadersInstance == null)) {
+            responseHeaderInstance = annotationStore.getAnnotation(method, RESPONSE_HEADER);
+            responseHeadersInstance = annotationStore.getAnnotation(method, RESPONSE_HEADER_LIST);
+        }
         if ((responseHeaderInstance == null) && (responseHeadersInstance == null)) {
             return Collections.emptyList();
         }

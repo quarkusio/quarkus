@@ -25,7 +25,15 @@ public class ResponseStatusMethodScanner implements MethodScanner {
             Map<String, Object> methodContext) {
         AnnotationStore annotationStore = (AnnotationStore) methodContext
                 .get(EndpointIndexer.METHOD_CONTEXT_ANNOTATION_STORE);
-        AnnotationInstance annotationInstance = annotationStore.getAnnotation(method, RESPONSE_STATUS);
+        AnnotationInstance annotationInstance = null;
+        MethodInfo endpointImplementation = (MethodInfo) methodContext
+                .get(EndpointIndexer.METHOD_CONTEXT_ENDPOINT_IMPLEMENTATION);
+        if ((endpointImplementation != null) && !endpointImplementation.equals(method)) {
+            annotationInstance = annotationStore.getAnnotation(endpointImplementation, RESPONSE_STATUS);
+        }
+        if (annotationInstance == null) {
+            annotationInstance = annotationStore.getAnnotation(method, RESPONSE_STATUS);
+        }
         if (annotationInstance == null) {
             return Collections.emptyList();
         }

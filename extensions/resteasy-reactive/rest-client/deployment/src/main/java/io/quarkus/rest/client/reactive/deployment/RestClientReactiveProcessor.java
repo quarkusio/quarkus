@@ -938,7 +938,7 @@ class RestClientReactiveProcessor {
         return result;
     }
 
-    private int getAnnotatedPriority(IndexView index, String className, int defaultPriority) {
+    static int getAnnotatedPriority(IndexView index, String className, int defaultPriority) {
         ClassInfo providerClass = index.getClassByName(DotName.createSimple(className));
         int priority = defaultPriority;
         if (providerClass == null) {

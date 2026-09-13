@@ -1647,7 +1647,7 @@ public class JaxrsClientReactiveProcessor {
         String subName = generatedSubResources.get(key);
         if (subName != null) {
             generateSubResourceLocatorOwnerMethod(name, ownerContext, ownerTarget, methodIndex, method, javaMethodParameters,
-                    ownerSubResourceParameters, subInterface, subName);
+                    ownerSubResourceParameters, subInterface, subName, enrichers, interfaceClass, index);
             return;
         }
         subName = subInterface.name().toString() + HashUtil.sha1(name) + methodIndex;
@@ -2151,12 +2151,13 @@ public class JaxrsClientReactiveProcessor {
 
         generatedSubResources.put(key, subName);
         generateSubResourceLocatorOwnerMethod(name, ownerContext, ownerTarget, methodIndex, method, javaMethodParameters,
-                ownerSubResourceParameters, subInterface, subName);
+                ownerSubResourceParameters, subInterface, subName, enrichers, interfaceClass, index);
     }
 
     private void generateSubResourceLocatorOwnerMethod(String name, ClassRestClientContext ownerContext,
             ResultHandle ownerTarget, int methodIndex, ResourceMethod method, String[] javaMethodParameters,
-            List<SubResourceParameter> ownerSubResourceParameters, ClassInfo subInterface, String subName) {
+            List<SubResourceParameter> ownerSubResourceParameters, ClassInfo subInterface, String subName,
+            List<JaxrsClientReactiveEnricherBuildItem> enrichers, ClassInfo interfaceClass, IndexView index) {
         MethodCreator ownerMethod = ownerContext.classCreator.getMethodCreator(method.getName(),
                 method.getSimpleReturnType(),
                 javaMethodParameters);
@@ -2168,6 +2169,10 @@ public class JaxrsClientReactiveProcessor {
             ownerContext.constructor.assign(constructorTarget,
                     disableEncodingForWebTarget(ownerContext.constructor, constructorTarget));
             encodingEnabled = false;
+        }
+        for (JaxrsClientReactiveEnricherBuildItem enricher : enrichers) {
+            enricher.getEnricher().forSubResourceTarget(ownerContext.constructor, constructorTarget, interfaceClass,
+                    subInterface, index);
         }
         FieldDescriptor forMethodTargetDesc = ownerContext.classCreator
                 .getFieldCreator("targetInOwner" + methodIndex, WebTargetImpl.class).getFieldDescriptor();

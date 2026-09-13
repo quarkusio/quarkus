@@ -10,6 +10,8 @@ import static io.quarkus.rest.client.reactive.deployment.DotNames.CLIENT_HEADER_
 import static io.quarkus.rest.client.reactive.deployment.DotNames.CLIENT_QUERY_PARAM;
 import static io.quarkus.rest.client.reactive.deployment.DotNames.CLIENT_QUERY_PARAMS;
 import static io.quarkus.rest.client.reactive.deployment.DotNames.REGISTER_CLIENT_HEADERS;
+import static io.quarkus.rest.client.reactive.deployment.DotNames.REGISTER_PROVIDER;
+import static io.quarkus.rest.client.reactive.deployment.DotNames.REGISTER_PROVIDERS;
 import static org.jboss.resteasy.reactive.client.impl.RestClientRequestContext.INVOKED_METHOD_PARAMETERS_PROP;
 import static org.jboss.resteasy.reactive.client.impl.RestClientRequestContext.INVOKED_METHOD_PROP;
 import static org.jboss.resteasy.reactive.common.processor.HashUtil.sha1;
@@ -34,8 +36,10 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
+import jakarta.ws.rs.Priorities;
 import jakarta.ws.rs.client.ClientRequestContext;
 import jakarta.ws.rs.client.Invocation;
+import jakarta.ws.rs.client.WebTarget;
 import jakarta.ws.rs.core.Configurable;
 import jakarta.ws.rs.core.MultivaluedHashMap;
 import jakarta.ws.rs.core.MultivaluedMap;
@@ -91,6 +95,7 @@ import io.quarkus.rest.client.reactive.runtime.ExtendedHeaderFiller;
 import io.quarkus.rest.client.reactive.runtime.HeaderFillerUtil;
 import io.quarkus.rest.client.reactive.runtime.MicroProfileRestClientRequestFilter;
 import io.quarkus.rest.client.reactive.runtime.NoOpHeaderFiller;
+import io.quarkus.rest.client.reactive.runtime.SubResourceProviders;
 import io.quarkus.runtime.util.HashUtil;
 
 /**
@@ -127,6 +132,9 @@ class MicroProfileRestClientEnricher implements JaxrsClientReactiveEnricher {
             "queryParam", WebTargetImpl.class, String.class, Collection.class);
 
     private static final MethodDescriptor ARRAYS_AS_LIST = ofMethod(Arrays.class, "asList", List.class, Object[].class);
+
+    private static final MethodDescriptor SUB_RESOURCE_PROVIDERS_REGISTER = ofMethod(SubResourceProviders.class, "register",
+            WebTarget.class, WebTarget.class, Class[].class, int[].class);
 
     private static final MethodDescriptor COMPUTER_PARAM_CONTEXT_IMPL_CTOR = MethodDescriptor.ofConstructor(
             ComputedParamContextImpl.class, String.class,
@@ -202,6 +210,38 @@ class MicroProfileRestClientEnricher implements JaxrsClientReactiveEnricher {
         for (var queryEntry : queryParamsByName.entrySet()) {
             addQueryParam(method, methodCreator, queryEntry.getValue(), webTarget, generatedClasses, index);
         }
+    }
+
+    @Override
+    public void forSubResourceTarget(MethodCreator ownerConstructor, AssignableResultHandle target,
+            ClassInfo ownerInterfaceClass, ClassInfo subInterfaceClass, IndexView index) {
+        List<AnnotationInstance> registerProviders = new ArrayList<>();
+        AnnotationInstance registerProvider = subInterfaceClass.declaredAnnotation(REGISTER_PROVIDER);
+        if (registerProvider != null) {
+            registerProviders.add(registerProvider);
+        }
+        AnnotationInstance registerProvidersContainer = subInterfaceClass.declaredAnnotation(REGISTER_PROVIDERS);
+        if (registerProvidersContainer != null) {
+            registerProviders.addAll(Arrays.asList(registerProvidersContainer.value().asNestedArray()));
+        }
+        if (registerProviders.isEmpty()) {
+            return;
+        }
+
+        ResultHandle providerClasses = ownerConstructor.newArray(Class.class, registerProviders.size());
+        ResultHandle priorities = ownerConstructor.newArray(int.class, registerProviders.size());
+        for (int i = 0; i < registerProviders.size(); i++) {
+            AnnotationInstance annotation = registerProviders.get(i);
+            String providerClassName = annotation.value().asString();
+            AnnotationValue priorityValue = annotation.value("priority");
+            int priority = priorityValue == null
+                    ? RestClientReactiveProcessor.getAnnotatedPriority(index, providerClassName, Priorities.USER)
+                    : priorityValue.asInt();
+            ownerConstructor.writeArrayValue(providerClasses, i, ownerConstructor.loadClassFromTCCL(providerClassName));
+            ownerConstructor.writeArrayValue(priorities, i, ownerConstructor.load(priority));
+        }
+        ownerConstructor.assign(target, ownerConstructor.invokeStaticMethod(SUB_RESOURCE_PROVIDERS_REGISTER, target,
+                providerClasses, priorities));
     }
 
     @Override

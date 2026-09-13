@@ -99,18 +99,25 @@ public class BcryptUtil {
      * @param passwordHash the Modular Crypt Format bcrypt hash to compare against
      * @return the boolean result of whether the plain text matches the decoded Modular Crypt Format bcrypt hash
      * @throws NullPointerException if the plainText password or passwordHash is null
+     * @throws IllegalArgumentException if the passwordHash is not a valid Modular Crypt Format bcrypt hash
      */
     public static boolean matches(String plainText, String passwordHash) {
         Objects.requireNonNull(plainText, "plainText password is required");
         Objects.requireNonNull(passwordHash, "passwordHash is required");
+        PasswordFactory passwordFactory;
         try {
-            PasswordFactory passwordFactory = PasswordFactory.getInstance(BCryptPassword.ALGORITHM_BCRYPT, provider);
-            Password userPasswordDecoded = ModularCrypt.decode(passwordHash);
-            Password userPasswordRestored = passwordFactory.translate(userPasswordDecoded);
-            return passwordFactory.verify(userPasswordRestored, plainText.toCharArray());
-        } catch (NoSuchAlgorithmException | InvalidKeySpecException | InvalidKeyException e) {
+            passwordFactory = PasswordFactory.getInstance(BCryptPassword.ALGORITHM_BCRYPT, provider);
+        } catch (NoSuchAlgorithmException e) {
             // can't really happen
             throw new RuntimeException(e);
+        }
+        try {
+            Password userPasswordRestored = passwordFactory.translate(ModularCrypt.decode(passwordHash));
+            return passwordFactory.verify(userPasswordRestored, plainText.toCharArray());
+        } catch (InvalidKeySpecException | InvalidKeyException | IllegalArgumentException e) {
+            throw new IllegalArgumentException("The provided password hash is not a valid Modular Crypt Format bcrypt hash"
+                    + " (expected a '$2a$' or '$2y$' prefix, the cost and 53 characters of salt and hash): " + e.getMessage(),
+                    e);
         }
     }
 }

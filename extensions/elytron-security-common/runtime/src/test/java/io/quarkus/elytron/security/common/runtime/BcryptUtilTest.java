@@ -53,4 +53,32 @@ public class BcryptUtilTest {
         String testPasswordHash = BcryptUtil.bcryptHash(testPassword);
         Assertions.assertFalse(BcryptUtil.matches("fubar2", testPasswordHash));
     }
+
+    @Test
+    public void testMatchesRejectsAHashThatIsNotModularCryptFormat() {
+        IllegalArgumentException e = Assertions.assertThrows(IllegalArgumentException.class,
+                () -> BcryptUtil.matches("fubar", "not-a-hash"));
+        assertInvalidHashMessage(e, "not-a-hash");
+        Assertions.assertInstanceOf(InvalidKeySpecException.class, e.getCause());
+    }
+
+    @Test
+    public void testMatchesRejectsATruncatedBcryptHash() {
+        IllegalArgumentException e = Assertions.assertThrows(IllegalArgumentException.class,
+                () -> BcryptUtil.matches("fubar", "$2a$10$abc"));
+        assertInvalidHashMessage(e, "$2a$10$abc");
+    }
+
+    @Test
+    public void testMatchesRejectsAHashOfAnotherAlgorithm() {
+        String md5Crypt = "$1$saltsalt$qjXMvbEw8oaL.CzflDugX/";
+        IllegalArgumentException e = Assertions.assertThrows(IllegalArgumentException.class,
+                () -> BcryptUtil.matches("fubar", md5Crypt));
+        assertInvalidHashMessage(e, md5Crypt);
+    }
+
+    private static void assertInvalidHashMessage(IllegalArgumentException e, String hash) {
+        Assertions.assertTrue(e.getMessage().contains("not a valid Modular Crypt Format bcrypt hash"), e.getMessage());
+        Assertions.assertFalse(e.getMessage().contains(hash), e.getMessage());
+    }
 }

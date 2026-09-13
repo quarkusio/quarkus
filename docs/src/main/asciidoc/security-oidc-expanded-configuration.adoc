@@ -341,7 +341,7 @@ Set `quarkus.oidc.credentials.for-all-endpoints=true` when the OIDC provider enf
 
 `quarkus.oidc.connection-retry-count` sets a number of connection retries and `quarkus.oidc.connection-time-out` sets a duration after which the current OIDC connection request times out. `quarkus.oidc.connection-delay` establishes a delay for an initial connection request only.
 
-The `quarkus.oidc.proxy.proxy-configuration-name=<name>` property configures the name of proxy configuration registered in the Proxy registry (`quarkus.proxy.<name>.*`). The proxy configuration can be used to control OIDC access to HTTP proxies.
+The `quarkus.oidc.proxy.proxy-configuration-name=<name>` property configures the name of proxy configuration registered in the Proxy registry (`quarkus.proxy.<name>.*`). The proxy configuration can be used to control OIDC access to HTTP proxies. The `quarkus.proxy.<name>.non-proxy-hosts` list of the named configuration is honored, and the special name `none` disables the proxy. Neither the default `quarkus.proxy.*` configuration nor the JVM `http.proxyHost` and `https.proxyHost` system properties are used unless a name is configured.
 
 In some cases, OIDC provider, after accepting HTTP GET requests to either discovery or UserInfo endpoints, initiates a redirect exactly to the same endpoint address while also supplying some additional cookies.
 

@@ -116,9 +116,10 @@ public interface OidcCommonConfig {
         /**
          * The name of the proxy configuration to use.
          * <p>
-         * If a name is configured, it uses the configuration from {@code quarkus.proxy.<name>.*}.
-         * Please note that the 'non-proxy-hosts' option is currently not supported.
+         * If a name is configured, it uses the configuration from {@code quarkus.proxy.<name>.*},
+         * including its 'non-proxy-hosts' option.
          * If a name is configured, but no proxy configuration is found with that name then an error will be thrown.
+         * The special name {@code none} disables the proxy.
          * <p>
          * The default proxy configuration is <strong>not</strong> used by default.
          */

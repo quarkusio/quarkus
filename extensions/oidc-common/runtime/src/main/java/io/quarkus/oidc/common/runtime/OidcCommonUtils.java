@@ -51,6 +51,7 @@ import io.quarkus.oidc.common.runtime.config.OidcClientCommonConfig.Credentials.
 import io.quarkus.oidc.common.runtime.config.OidcClientCommonConfig.Credentials.Provider;
 import io.quarkus.oidc.common.runtime.config.OidcClientCommonConfig.Credentials.Secret;
 import io.quarkus.oidc.common.runtime.config.OidcCommonConfig;
+import io.quarkus.proxy.ProxyConfiguration;
 import io.quarkus.proxy.ProxyConfigurationRegistry;
 import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.runtime.util.ClassPathUtils;
@@ -296,10 +297,7 @@ public class OidcCommonUtils {
             PoolOptions poolOptions,
             TlsConfigSupport tlsSupport, ProxyConfigurationRegistry proxyConfigurationRegistry) {
 
-        Optional<ProxyOptions> proxyOpt = toProxyOptions(oidcConfig.proxy(), proxyConfigurationRegistry);
-        if (proxyOpt.isPresent()) {
-            options.setProxyOptions(proxyOpt.get());
-        }
+        configureProxy(oidcConfig.proxy(), options, proxyConfigurationRegistry);
 
         OptionalInt maxPoolSize = oidcConfig.maxPoolSize();
         if (maxPoolSize.isPresent()) {
@@ -374,29 +372,59 @@ public class OidcCommonUtils {
         return connectionDelayInSecs * 1000;
     }
 
+    /**
+     * Applies the named proxy configuration, if any, to the client options: the proxy itself and the hosts excluded
+     * from proxying.
+     */
+    public static void configureProxy(OidcCommonConfig.Proxy oidcProxyConfig, HttpClientOptions options,
+            ProxyConfigurationRegistry proxyConfigurationRegistry) {
+        Optional<ProxyConfiguration> proxyConfig = resolveProxyConfiguration(oidcProxyConfig, proxyConfigurationRegistry);
+        if (proxyConfig.isPresent()) {
+            options.setProxyOptions(toProxyOptions(proxyConfig.get()));
+            if (proxyConfig.get().nonProxyHosts().isPresent()) {
+                options.setNonProxyHosts(new ArrayList<>(proxyConfig.get().nonProxyHosts().get()));
+            }
+        }
+    }
+
     public static Optional<ProxyOptions> toProxyOptions(OidcCommonConfig.Proxy oidcProxyConfig,
+            ProxyConfigurationRegistry proxyConfigurationRegistry) {
+        return resolveProxyConfiguration(oidcProxyConfig, proxyConfigurationRegistry).map(OidcCommonUtils::toProxyOptions);
+    }
+
+    /**
+     * Resolves the proxy configuration referenced by name. An absent name and the special {@code none} name mean that
+     * no proxy is used; an unknown name is a configuration error.
+     */
+    private static Optional<ProxyConfiguration> resolveProxyConfiguration(OidcCommonConfig.Proxy oidcProxyConfig,
             ProxyConfigurationRegistry proxyConfigurationRegistry) {
         if (oidcProxyConfig.proxyConfigurationName().isEmpty()) {
             return Optional.empty();
         }
-
-        var maybeProxyConfig = proxyConfigurationRegistry.get(oidcProxyConfig.proxyConfigurationName());
-        if (maybeProxyConfig.isEmpty()) {
-            throw new ConfigurationException("Cannot find the Proxy registry configuration '%s'"
-                    .formatted(oidcProxyConfig.proxyConfigurationName().get()));
+        String proxyConfigurationName = oidcProxyConfig.proxyConfigurationName().get();
+        if (ProxyConfigurationRegistry.NONE.equals(proxyConfigurationName)) {
+            return Optional.empty();
         }
+        Optional<ProxyConfiguration> maybeProxyConfig;
+        try {
+            maybeProxyConfig = proxyConfigurationRegistry.get(Optional.of(proxyConfigurationName));
+        } catch (IllegalStateException e) {
+            throw new ConfigurationException(
+                    "Cannot find the Proxy registry configuration '%s'".formatted(proxyConfigurationName), e);
+        }
+        if (maybeProxyConfig.isEmpty()) {
+            throw new ConfigurationException(
+                    "Cannot find the Proxy registry configuration '%s'".formatted(proxyConfigurationName));
+        }
+        return Optional.of(maybeProxyConfig.get().assertHttpType());
+    }
 
-        var proxyRegistryConfig = maybeProxyConfig.get().assertHttpType();
+    private static ProxyOptions toProxyOptions(ProxyConfiguration proxyRegistryConfig) {
         final String hostProperty = proxyRegistryConfig.host();
         final int portProperty = proxyRegistryConfig.port();
         final Optional<String> usernameProperty = proxyRegistryConfig.username();
         final Optional<String> passwordProperty = proxyRegistryConfig.password();
         final Optional<Duration> proxyConnectTimeoutProperty = proxyRegistryConfig.proxyConnectTimeout();
-        if (proxyRegistryConfig.nonProxyHosts().isPresent()) {
-            throw new ConfigurationException(
-                    "The OIDC proxy configuration currently does not support the 'quarkus.proxy.\""
-                            + oidcProxyConfig.proxyConfigurationName().get() + "\".non-proxy-hosts' property");
-        }
 
         JsonObject jsonOptions = new JsonObject();
         // Vert.x Client currently does not expect a host having a scheme but keycloak-authorization expects scheme and host.
@@ -417,7 +445,7 @@ public class OidcCommonUtils {
         if (proxyConnectTimeoutProperty.isPresent()) {
             jsonOptions.put("connectTimeout", proxyConnectTimeoutProperty.get());
         }
-        return Optional.of(new ProxyOptions(jsonOptions));
+        return new ProxyOptions(jsonOptions);
     }
 
     public static String formatConnectionErrorMessage(String authServerUrlString) {

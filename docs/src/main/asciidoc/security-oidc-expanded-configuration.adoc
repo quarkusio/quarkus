@@ -133,7 +133,7 @@ See also the <<resource-metadata-properties>> section about accessing the protec
 |quarkus.oidc.application-type |service|Application type
 |====
 
-OIDC application type determines how the the current request is authenticated.
+OIDC application type determines how the current request is authenticated.
 
 The default `service` application type is used when a `bearer` access token is sent with an HTTP `Authorization: Bearer <token>` header to access the Quarkus application. For example, a `Single-page application` (SPA) can use access tokens to access Quarkus on behalf of the currently logged-in SPA user.
 

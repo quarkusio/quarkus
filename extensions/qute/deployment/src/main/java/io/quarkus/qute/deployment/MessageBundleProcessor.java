@@ -108,6 +108,7 @@ import io.quarkus.qute.i18n.MessageTemplateLocator;
 import io.quarkus.qute.runtime.MessageBundleRecorder;
 import io.quarkus.qute.runtime.MessageBundleRecorder.MessageInfo;
 import io.quarkus.qute.runtime.QuteConfig;
+import io.quarkus.qute.runtime.QuteConfig.LocalizedFileKeys;
 import io.quarkus.runtime.LocalesBuildTimeConfig;
 import io.quarkus.runtime.util.StringUtil;
 
@@ -138,7 +139,7 @@ public class MessageBundleProcessor {
             BuildProducer<BeanConfiguratorBuildItem> configurators,
             BuildProducer<MessageBundleMethodBuildItem> messageTemplateMethods,
             BuildProducer<HotDeploymentWatchedFileBuildItem> watchedFiles,
-            LocalesBuildTimeConfig locales) throws IOException {
+            LocalesBuildTimeConfig locales, QuteConfig config) throws IOException {
 
         IndexView index = beanArchiveIndex.getIndex();
         Map<String, ClassInfo> found = new HashMap<>();
@@ -273,7 +274,7 @@ public class MessageBundleProcessor {
         // Generate implementations
         // name -> impl class
         Map<String, ClassDesc> generatedImplementations = generateImplementations(bundles, generatedClasses, generatedResources,
-                generatedServiceProviders, messageTemplateMethods, index);
+                generatedServiceProviders, messageTemplateMethods, index, config.localizedFileKeys());
 
         // Register synthetic beans
         for (MessageBundleBuildItem bundle : bundles) {
@@ -673,7 +674,8 @@ public class MessageBundleProcessor {
 
     @BuildStep(onlyIf = IsProduction.class)
     void generateExamplePropertiesFiles(List<MessageBundleMethodBuildItem> messageBundleMethods,
-            BuildSystemTargetBuildItem target, BuildProducer<GeneratedResourceBuildItem> dummy) throws IOException {
+            BuildSystemTargetBuildItem target, BuildProducer<GeneratedResourceBuildItem> dummy, QuteConfig config)
+            throws IOException {
         if (messageBundleMethods.isEmpty()) {
             return;
         }
@@ -702,8 +704,10 @@ public class MessageBundleProcessor {
                         // Skip messages with generated templates
                         continue;
                     }
-                    // Keys are mapped to method names
-                    lines.add(m.getMethod().name() + "=" + m.getTemplate());
+                    // Keys are mapped to method names unless message keys are configured for localized files
+                    String fileKey = config.localizedFileKeys() == LocalizedFileKeys.MESSAGE_KEY ? m.getKey()
+                            : m.getMethod().name();
+                    lines.add(fileKey + "=" + m.getTemplate());
                 } else {
                     // No corresponding method declared - use the key instead
                     // For example, there is no method for generated enum constant message keys
@@ -719,7 +723,7 @@ public class MessageBundleProcessor {
             BuildProducer<GeneratedResourceBuildItem> generatedResources,
             BuildProducer<GeneratedServiceProviderBuildItem> generatedServiceProviders,
             BuildProducer<MessageBundleMethodBuildItem> messageTemplateMethods,
-            IndexView index) throws IOException {
+            IndexView index, LocalizedFileKeys localizedFileKeys) throws IOException {
 
         Map<String, ClassDesc> generatedTypes = new HashMap<>();
 
@@ -728,15 +732,16 @@ public class MessageBundleProcessor {
 
         for (MessageBundleBuildItem bundle : bundles) {
             ClassInfo bundleInterface = bundle.getDefaultBundleInterface();
+            LocalizedFileKeyMapper fileKeys = new LocalizedFileKeyMapper(bundleInterface, localizedFileKeys);
 
             // take message templates not specified by Message#value from corresponding localized file
             Map<String, String> defaultKeyToMap = getLocalizedFileKeyToTemplate(bundle, bundleInterface,
-                    bundle.getDefaultLocale(), bundleInterface.methods(), null, index);
-            MergeClassInfoWrapper bundleInterfaceWrapper = new MergeClassInfoWrapper(bundleInterface, null, null);
+                    bundle.getDefaultLocale(), bundleInterface.methods(), null, index, fileKeys);
+            MergeClassInfoWrapper bundleInterfaceWrapper = new MergeClassInfoWrapper(bundleInterface, null, null, fileKeys);
 
             // Generate implementation for the default bundle interface
             String bundleImpl = generateImplementation(bundle, null, null, bundleInterfaceWrapper,
-                    defaultClassOutput, messageTemplateMethods, defaultKeyToMap, null, index);
+                    defaultClassOutput, messageTemplateMethods, defaultKeyToMap, null, index, fileKeys);
             generatedTypes.put(bundleInterface.name().toString(), ClassDesc.of(bundleImpl));
 
             // Generate a forwarding implementation that resolves the bundle for the current locale
@@ -749,13 +754,13 @@ public class MessageBundleProcessor {
 
                 // take message templates not specified by Message#value from corresponding localized file
                 Map<String, String> keyToMap = getLocalizedFileKeyToTemplate(bundle, bundleInterface, entry.getKey(),
-                        localizedInterface.methods(), localizedInterface, index);
+                        localizedInterface.methods(), localizedInterface, index, fileKeys);
                 MergeClassInfoWrapper localizedInterfaceWrapper = new MergeClassInfoWrapper(localizedInterface, bundleInterface,
-                        keyToMap);
+                        keyToMap, fileKeys);
 
                 generatedTypes.put(entry.getValue().name().toString(),
                         ClassDesc.of(generateImplementation(bundle, bundleInterface, bundleImpl, localizedInterfaceWrapper,
-                                defaultClassOutput, messageTemplateMethods, keyToMap, null, index)));
+                                defaultClassOutput, messageTemplateMethods, keyToMap, null, index, fileKeys)));
             }
 
             // Generate implementation for each localized file
@@ -764,7 +769,7 @@ public class MessageBundleProcessor {
                 if (localizedFiles.isEmpty()) {
                     continue;
                 }
-                var keyToTemplate = parseKeyToTemplateFromLocalizedFiles(bundleInterface, localizedFiles, index);
+                var keyToTemplate = parseKeyToTemplateFromLocalizedFiles(bundleInterface, localizedFiles, index, fileKeys);
 
                 String locale = entry.getKey();
                 ClassOutput localeAwareGizmoAdaptor = new GeneratedClassGizmo2Adaptor(generatedClasses, generatedResources,
@@ -781,7 +786,7 @@ public class MessageBundleProcessor {
                 generatedTypes.put(localizedFiles.get(0).fileName(),
                         ClassDesc.of(generateImplementation(bundle, bundleInterface, bundleImpl,
                                 new SimpleClassInfoWrapper(bundleInterface), localeAwareGizmoAdaptor, messageTemplateMethods,
-                                keyToTemplate, locale, index)));
+                                keyToTemplate, locale, index, fileKeys)));
             }
         }
         return generatedTypes;
@@ -830,18 +835,19 @@ public class MessageBundleProcessor {
     }
 
     private Map<String, String> getLocalizedFileKeyToTemplate(MessageBundleBuildItem bundle,
-            ClassInfo bundleInterface, String locale, List<MethodInfo> methods, ClassInfo localizedInterface, IndexView index)
-            throws IOException {
+            ClassInfo bundleInterface, String locale, List<MethodInfo> methods, ClassInfo localizedInterface, IndexView index,
+            LocalizedFileKeyMapper fileKeys) throws IOException {
 
         List<MessageFile> localizedFiles = bundle.getMergeCandidates().get(locale);
         if (localizedFiles != null) {
-            Map<String, String> keyToTemplate = parseKeyToTemplateFromLocalizedFiles(bundleInterface, localizedFiles, index);
+            Map<String, String> keyToTemplate = parseKeyToTemplateFromLocalizedFiles(bundleInterface, localizedFiles, index,
+                    fileKeys);
             if (!keyToTemplate.isEmpty()) {
 
                 // keep message templates if value wasn't provided by Message#value
                 methods
                         .stream()
-                        .filter(method -> keyToTemplate.containsKey(method.name()))
+                        .filter(method -> keyToTemplate.containsKey(fileKeys.fileKey(method)))
                         .filter(method -> {
                             AnnotationInstance messageAnnotation;
                             if (localizedInterface != null) {
@@ -860,7 +866,7 @@ public class MessageBundleProcessor {
                             }
                             return getMessageAnnotationValue(messageAnnotation, false) != null;
                         })
-                        .map(MethodInfo::name)
+                        .map(fileKeys::fileKey)
                         .forEach(keyToTemplate::remove);
                 return keyToTemplate;
             }
@@ -869,7 +875,7 @@ public class MessageBundleProcessor {
     }
 
     private Map<String, String> parseKeyToTemplateFromLocalizedFiles(ClassInfo bundleInterface,
-            List<MessageFile> localizedFile, IndexView index) throws IOException {
+            List<MessageFile> localizedFile, IndexView index, LocalizedFileKeyMapper fileKeys) throws IOException {
         Map<String, String> keyToTemplate = new HashMap<>();
         for (MessageFile messageFile : localizedFile) {
             for (ListIterator<String> it = Files.readAllLines(messageFile.path()).listIterator(); it.hasNext();) {
@@ -893,9 +899,9 @@ public class MessageBundleProcessor {
                     // Message template with higher priority takes precedence
                     continue;
                 }
-                if (!hasMessageBundleMethod(bundleInterface, key) && !isEnumConstantMessageKey(key, index, bundleInterface)) {
+                if (fileKeys.method(key) == null && !isEnumConstantMessageKey(key, index, bundleInterface)) {
                     throw new MessageBundleException(
-                            "Message bundle method " + key + "() not found on: " + bundleInterface + "\n\t- file: "
+                            fileKeys.notFoundMessage(key) + " on: " + bundleInterface + "\n\t- file: "
                                     + localizedFile + "\n\t- line " + it.previousIndex());
                 }
                 String value = adaptLine(line.substring(eqIdx + 1, line.length()));
@@ -968,10 +974,6 @@ public class MessageBundleProcessor {
         return line.stripLeading().replace("\\n", "\n");
     }
 
-    private boolean hasMessageBundleMethod(ClassInfo bundleInterface, String name) {
-        return messageBundleMethod(bundleInterface, name) != null;
-    }
-
     private MethodInfo messageBundleMethod(ClassInfo bundleInterface, String name) {
         for (MethodInfo method : bundleInterface.methods()) {
             if (method.name().equals(name)) {
@@ -981,10 +983,81 @@ public class MessageBundleProcessor {
         return null;
     }
 
+    /**
+     * Maps the methods of a message bundle interface to the keys used in localized files, and vice versa.
+     * <p>
+     * By default, a key is the name of a method. If {@link LocalizedFileKeys#MESSAGE_KEY} is configured then a key is the
+     * message key used in templates, i.e. the key derived from the {@code @MessageBundle#defaultKey()} strategy and the
+     * {@code @Message#key()} of the method declared on the default bundle interface.
+     */
+    class LocalizedFileKeyMapper {
+
+        private final ClassInfo defaultBundleInterface;
+        private final AnnotationValue defaultKeyValue;
+        private final boolean messageKeys;
+
+        LocalizedFileKeyMapper(ClassInfo defaultBundleInterface, LocalizedFileKeys localizedFileKeys) {
+            this.defaultBundleInterface = defaultBundleInterface;
+            this.defaultKeyValue = defaultBundleInterface.declaredAnnotation(Names.BUNDLE).value(BUNDLE_DEFAULT_KEY);
+            this.messageKeys = localizedFileKeys == LocalizedFileKeys.MESSAGE_KEY;
+        }
+
+        /**
+         * @param method the method declared on the default bundle interface or on a localized interface
+         * @return the key used in localized files for the given method
+         */
+        String fileKey(MethodInfo method) {
+            if (!messageKeys) {
+                return method.name();
+            }
+            MethodInfo defaultBundleMethod = defaultBundleInterface.method(method.name(),
+                    method.parameterTypes().toArray(new Type[] {}));
+            if (defaultBundleMethod == null) {
+                defaultBundleMethod = method;
+            }
+            AnnotationInstance messageAnnotation = defaultBundleMethod.annotation(Names.MESSAGE);
+            if (messageAnnotation == null) {
+                messageAnnotation = AnnotationInstance.builder(Names.MESSAGE).value(Message.DEFAULT_VALUE)
+                        .add("name", Message.DEFAULT_NAME).build();
+            }
+            return getKey(defaultBundleMethod, messageAnnotation, defaultKeyValue);
+        }
+
+        /**
+         * @param fileKey the key found in a localized file
+         * @return the corresponding method declared on the default bundle interface, or {@code null} if no such method exists
+         */
+        MethodInfo method(String fileKey) {
+            if (!messageKeys) {
+                return messageBundleMethod(defaultBundleInterface, fileKey);
+            }
+            for (MethodInfo method : defaultBundleInterface.methods()) {
+                if (fileKey.equals(fileKey(method))) {
+                    return method;
+                }
+            }
+            return null;
+        }
+
+        String notFoundMessage(String fileKey) {
+            if (!messageKeys) {
+                return "Message bundle method " + fileKey + "() not found";
+            }
+            String message = "Message bundle method with the message key [" + fileKey + "] not found";
+            MethodInfo methodByName = messageBundleMethod(defaultBundleInterface, fileKey);
+            if (methodByName != null) {
+                message += "; quarkus.qute.localized-file-keys=message-key is set, so the key for the method " + fileKey
+                        + "() is [" + fileKey(methodByName) + "]";
+            }
+            return message;
+        }
+
+    }
+
     private String generateImplementation(MessageBundleBuildItem bundle, ClassInfo defaultBundleInterface,
             String defaultBundleImpl, ClassInfoWrapper bundleInterfaceWrapper, ClassOutput classOutput,
             BuildProducer<MessageBundleMethodBuildItem> messageTemplateMethods,
-            Map<String, String> messageTemplates, String locale, IndexView index) {
+            Map<String, String> messageTemplates, String locale, IndexView index, LocalizedFileKeyMapper fileKeys) {
 
         ClassInfo bundleInterface = bundleInterfaceWrapper.getClassInfo();
         LOG.debugf("Generate bundle implementation for %s", bundleInterface);
@@ -1072,7 +1145,7 @@ public class MessageBundleProcessor {
                     keyMap.put(key, new SimpleMessageMethod(method));
 
                     boolean generatedTemplate = false;
-                    String messageTemplate = messageTemplates.get(method.name());
+                    String messageTemplate = messageTemplates.get(fileKeys.fileKey(method));
                     if (messageTemplate == null) {
                         messageTemplate = getMessageAnnotationValue(messageAnnotation, true);
                     }
@@ -1773,7 +1846,7 @@ public class MessageBundleProcessor {
         private final Map<String, MethodInfo> interfaceKeyToMethodInfo;
 
         MergeClassInfoWrapper(ClassInfo classInfo, ClassInfo interfaceClassInfo,
-                Map<String, String> localizedFileKeyToTemplate) {
+                Map<String, String> localizedFileKeyToTemplate, LocalizedFileKeyMapper fileKeys) {
             this.classInfo = classInfo;
             this.interfaceClassInfo = interfaceClassInfo;
 
@@ -1784,7 +1857,7 @@ public class MessageBundleProcessor {
                         .methods()
                         .stream()
                         // keep method with message template in localized file
-                        .filter(method -> localizedFileKeyToTemplate.containsKey(method.name()))
+                        .filter(method -> localizedFileKeyToTemplate.containsKey(fileKeys.fileKey(method)))
                         // if method is overridden, prefer implementation
                         .filter(method -> classInfoMethods.stream()
                                 .noneMatch(m -> m.name().equals(method.name())))

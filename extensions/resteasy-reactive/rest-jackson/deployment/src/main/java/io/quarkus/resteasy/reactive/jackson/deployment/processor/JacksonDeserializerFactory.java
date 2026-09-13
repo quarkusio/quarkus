@@ -331,6 +331,8 @@ public class JacksonDeserializerFactory extends JacksonCodeGenerator {
             return false;
         }
 
+        createIsCachableMethod(classCreator);
+
         MethodCreator deserialize = classCreator
                 .getMethodCreator("deserialize", Object.class, JsonParser.class, DeserializationContext.class)
                 .setModifiers(ACC_PUBLIC)
@@ -832,6 +834,20 @@ public class JacksonDeserializerFactory extends JacksonCodeGenerator {
             typeParametersIndex.put(typeParameter.identifier(), index++);
         }
         return typeParametersIndex;
+    }
+
+    /**
+     * Jackson only stores a deserializer in {@code DeserializerCache} when {@code ValueDeserializer#isCachable()}
+     * returns {@code true}, and the default is {@code false}. Without this override every nested bean read through
+     * {@code DeserializationContext#readValue} or {@code #readTreeAsValue} misses the cache, takes the
+     * deserializer-creation lock and re-introspects the bean class. The generated deserializers are stateless, so
+     * they are safe to cache: the generic variant already hands out a fresh instance from {@code createContextual}.
+     */
+    private static void createIsCachableMethod(ClassCreator classCreator) {
+        try (MethodCreator isCachable = classCreator.getMethodCreator("isCachable", boolean.class)) {
+            isCachable.setModifiers(ACC_PUBLIC);
+            isCachable.returnValue(isCachable.load(true));
+        }
     }
 
     private static void createContextualMethod(ClassCreator classCreator) {

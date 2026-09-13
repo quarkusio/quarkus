@@ -1664,6 +1664,16 @@ public interface ExtensionsService {
 
 Naturally this handling is per REST Client. `@ClientExceptionMapper` uses the default priority if the `priority` attribute is not set and the normal rules of invoking all handlers in turn apply.
 
+[WARNING]
+====
+An exception returned by your own `ResponseExceptionMapper` or `@ClientExceptionMapper` is thrown as is.
+Only the exceptions produced by the default mapper are wrapped in `org.jboss.resteasy.reactive.ClientWebApplicationException`.
+
+If your mapper returns a `jakarta.ws.rs.WebApplicationException` and the exception is not caught, Quarkus REST treats it like an exception thrown by your own endpoint.
+In particular, when the exception carries the `Response` received from the remote service, that status, headers and body are sent to your caller.
+To avoid leaking upstream responses, return an exception that does not extend `WebApplicationException`, or one that extends `ClientWebApplicationException`, which Quarkus REST reports as an internal server error instead.
+====
+
 NOTE: Methods annotated with `@ClientExceptionMapper` can also take a `java.lang.reflect.Method` parameter which is useful if the exception mapping code needs to know the REST Client method that was invoked and caused the exception mapping code to engage.
 
 === Using @Blocking annotation in exception mappers

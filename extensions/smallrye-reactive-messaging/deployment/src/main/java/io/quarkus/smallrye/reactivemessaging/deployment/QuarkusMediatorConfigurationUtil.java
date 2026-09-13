@@ -34,6 +34,9 @@ import org.jboss.jandex.Type;
 import io.quarkus.arc.processor.BeanInfo;
 import io.quarkus.deployment.recording.RecorderContext;
 import io.quarkus.runtime.configuration.ConfigurationException;
+import io.quarkus.runtime.types.GenericArrayTypeImpl;
+import io.quarkus.runtime.types.ParameterizedTypeImpl;
+import io.quarkus.runtime.types.WildcardTypeImpl;
 import io.quarkus.smallrye.reactivemessaging.deployment.items.CustomInvokerBuildItem;
 import io.quarkus.smallrye.reactivemessaging.runtime.QuarkusMediatorConfiguration;
 import io.quarkus.smallrye.reactivemessaging.runtime.QuarkusParameterDescriptor;
@@ -429,7 +432,7 @@ public final class QuarkusMediatorConfigurationUtil {
         public java.lang.reflect.Type getType(int index) {
             Type t = extract(type, index);
             if (t != null) {
-                return load(t.name().toString(), classLoader);
+                return toReflectiveType(t, classLoader);
             }
             return null;
         }
@@ -457,10 +460,58 @@ public final class QuarkusMediatorConfigurationUtil {
             if (generic != null) {
                 Type t = extract(generic, subIndex);
                 if (t != null) {
-                    return load(t.name().toString(), classLoader);
+                    return toReflectiveType(t, classLoader);
                 }
             }
             return null;
+        }
+    }
+
+    /**
+     * Converts a Jandex type to the reflective type SmallRye Reactive Messaging compares converters and ingested
+     * payload types against, keeping type arguments (as the reflection based SmallRye configuration does) instead of
+     * only the raw class. Type variables fall back to their raw bound, and the recorder knows how to write the
+     * {@code io.quarkus.runtime.types} implementations.
+     */
+    static java.lang.reflect.Type toReflectiveType(Type type, ClassLoader classLoader) {
+        switch (type.kind()) {
+            case PARAMETERIZED_TYPE: {
+                ParameterizedType parameterizedType = type.asParameterizedType();
+                Class<?> rawType = load(parameterizedType.name().toString(), classLoader);
+                List<Type> arguments = parameterizedType.arguments();
+                java.lang.reflect.Type[] reflectiveArguments = new java.lang.reflect.Type[arguments.size()];
+                for (int i = 0; i < arguments.size(); i++) {
+                    reflectiveArguments[i] = toReflectiveType(arguments.get(i), classLoader);
+                }
+                java.lang.reflect.Type owner = parameterizedType.owner() != null
+                        ? toReflectiveType(parameterizedType.owner(), classLoader)
+                        : null;
+                return new ParameterizedTypeImpl(rawType, reflectiveArguments, owner);
+            }
+            case ARRAY: {
+                Type component = type.asArrayType().constituent();
+                if (component.kind() == Type.Kind.PARAMETERIZED_TYPE) {
+                    java.lang.reflect.Type reflectiveComponent = toReflectiveType(component, classLoader);
+                    for (int i = 0; i < type.asArrayType().dimensions(); i++) {
+                        reflectiveComponent = new GenericArrayTypeImpl(reflectiveComponent);
+                    }
+                    return reflectiveComponent;
+                }
+                return load(type.name().toString(), classLoader);
+            }
+            case WILDCARD_TYPE: {
+                Type upperBound = type.asWildcardType().extendsBound();
+                Type lowerBound = type.asWildcardType().superBound();
+                if (lowerBound != null) {
+                    return WildcardTypeImpl.withLowerBound(toReflectiveType(lowerBound, classLoader));
+                }
+                if (upperBound != null && !DotName.OBJECT_NAME.equals(upperBound.name())) {
+                    return WildcardTypeImpl.withUpperBound(toReflectiveType(upperBound, classLoader));
+                }
+                return WildcardTypeImpl.defaultInstance();
+            }
+            default:
+                return load(type.name().toString(), classLoader);
         }
     }
 

@@ -19,6 +19,7 @@ import io.quarkus.oidc.runtime.OidcTenantConfig.Authentication;
 import io.quarkus.oidc.runtime.OidcTenantConfig.Authentication.CacheControl;
 import io.quarkus.oidc.runtime.OidcTenantConfig.CertificateChain;
 import io.quarkus.oidc.runtime.OidcTenantConfig.CodeGrant;
+import io.quarkus.oidc.runtime.OidcTenantConfig.Dpop;
 import io.quarkus.oidc.runtime.OidcTenantConfig.IntrospectionCredentials;
 import io.quarkus.oidc.runtime.OidcTenantConfig.Jwks;
 import io.quarkus.oidc.runtime.OidcTenantConfig.Logout;
@@ -62,6 +63,7 @@ public final class OidcTenantConfigBuilder extends OidcClientCommonConfigBuilder
         private final IntrospectionCredentials introspectionCredentials;
         private final Roles roles;
         private final Token token;
+        private final Dpop dpop;
         private final Logout logout;
         private final ResourceMetadata resourceMetadata;
         private final CertificateChain certificateChain;
@@ -89,6 +91,7 @@ public final class OidcTenantConfigBuilder extends OidcClientCommonConfigBuilder
             this.introspectionCredentials = builder.introspectionCredentials;
             this.roles = builder.roles;
             this.token = builder.token;
+            this.dpop = builder.dpop;
             this.logout = builder.logout;
             this.certificateChain = builder.certificateChain;
             this.resourceMetadata = builder.resourceMetadata;
@@ -165,6 +168,11 @@ public final class OidcTenantConfigBuilder extends OidcClientCommonConfigBuilder
         @Override
         public Token token() {
             return token;
+        }
+
+        @Override
+        public Dpop dpop() {
+            return dpop;
         }
 
         @Override
@@ -247,6 +255,7 @@ public final class OidcTenantConfigBuilder extends OidcClientCommonConfigBuilder
     private Optional<Provider> provider;
     private Logout logout;
     private Token token;
+    private Dpop dpop;
     private Authentication authentication;
 
     public OidcTenantConfigBuilder() {
@@ -267,6 +276,7 @@ public final class OidcTenantConfigBuilder extends OidcClientCommonConfigBuilder
         this.introspectionCredentials = mapping.introspectionCredentials();
         this.roles = mapping.roles();
         this.token = mapping.token();
+        this.dpop = mapping.dpop();
         this.logout = mapping.logout();
         this.certificateChain = mapping.certificateChain();
         this.resourceMetadata = mapping.resourceMetadata();
@@ -518,6 +528,18 @@ public final class OidcTenantConfigBuilder extends OidcClientCommonConfigBuilder
      */
     public OidcTenantConfigBuilder resourceMetadata(ResourceMetadata resourceMetadata) {
         this.resourceMetadata = Objects.requireNonNull(resourceMetadata);
+        return this;
+    }
+
+    /**
+     * @param proofAge {@link Dpop#proofAge()}
+     * @return this builder
+     */
+    public OidcTenantConfigBuilder dpop(Duration proofAge) {
+        Objects.requireNonNull(proofAge);
+        record DpopImpl(Duration proofAge) implements Dpop {
+        }
+        this.dpop = new DpopImpl(proofAge);
         return this;
     }
 
@@ -918,7 +940,7 @@ public final class OidcTenantConfigBuilder extends OidcClientCommonConfigBuilder
         }
 
         /**
-         * @param scopes {@link ResourceMetadata#scopes()}
+         * @param scope {@link ResourceMetadata#scopes()}
          * @return this builder
          */
         public ResourceMetadataBuilder scopes(String scope) {
@@ -935,7 +957,7 @@ public final class OidcTenantConfigBuilder extends OidcClientCommonConfigBuilder
         }
 
         /**
-         * @param resource {@link ResourceMetadata#authorizationServer()}
+         * @param authorizationServer {@link ResourceMetadata#authorizationServer()}
          * @return this builder
          */
         public ResourceMetadataBuilder authorizationServer(String authorizationServer) {

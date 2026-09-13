@@ -542,6 +542,19 @@ implementation("org.bouncycastle:bc-fips")
 - `org.bouncycastle.crypto.fips.FipsRSA`
 ====
 
+[WARNING]
+====
+Native executables that use `BCFIPS` are not supported on a FIPS-enabled operating system, for example a RHEL host booted in FIPS mode.
+In that environment the JDK loads the security providers configured for FIPS mode at run time, which a native executable cannot do, and the application fails at startup with:
+
+[source]
+----
+com.oracle.svm.core.jdk.UnsupportedFeatureError: Cannot load new security provider at runtime: BCFIPS.
+----
+
+The same application runs in JVM mode in a FIPS-enabled environment, and as a native executable when the operating system is not in FIPS mode.
+====
+
 [[bouncy-castle-jsse-fips]]
 === BouncyCastle JSSE FIPS
 

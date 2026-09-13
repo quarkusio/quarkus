@@ -406,7 +406,9 @@ public interface ExtensionsService {
 }
 ----
 
-When the `url` parameter is non-null, it will override the base URL that is configured for the client (the default base URL configuration is still mandatory).
+When the `url` parameter is non-null, it will override the base URL that is configured for the client.
+A CDI client whose interface declares an `@Url` parameter can be used without a configured base URL; each call then has to pass a non-null URL, and a call that does not (a `null` argument, or a method without an `@Url` parameter) fails with the usual "Unable to determine the proper baseUrl/baseUri" error.
+A client built programmatically with `RestClientBuilder` still requires a base URL, as mandated by the MicroProfile REST Client specification.
 
 === Sending large payloads
 

@@ -3,6 +3,7 @@ package org.jboss.resteasy.reactive.client.impl;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.io.Reader;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.InvocationTargetException;
@@ -118,7 +119,15 @@ public class ClientSerialisers extends Serialisers {
 
         if (writer.isWriteable(entityClass, entityType, entity.getAnnotations(), entity.getMediaType())) {
             if ((writerInterceptors == null) || writerInterceptors.length == 0) {
-                VertxBufferOutputStream out = new VertxBufferOutputStream();
+                VertxBufferOutputStream buffer;
+                OutputStream out;
+                if (clientRequestContext.hasEntityStream()) {
+                    buffer = clientRequestContext.getEntityBuffer();
+                    out = clientRequestContext.getEntityStream();
+                } else {
+                    buffer = new VertxBufferOutputStream();
+                    out = buffer;
+                }
                 if (writer instanceof ClientMessageBodyWriter cw) {
                     cw.writeTo(entityObject, entityClass, entityType, entity.getAnnotations(),
                             entity.getMediaType(), headerMap, out, clientRequestContext);
@@ -126,7 +135,10 @@ public class ClientSerialisers extends Serialisers {
                     writer.writeTo(entityObject, entityClass, entityType, entity.getAnnotations(),
                             entity.getMediaType(), headerMap, out);
                 }
-                return out.getBuffer();
+                if (out != buffer) {
+                    out.close();
+                }
+                return buffer.getBuffer();
             } else {
                 return runClientWriterInterceptors(entityObject, entityClass, entityType, entity.getAnnotations(),
                         entity.getMediaType(), headerMap, writer, writerInterceptors, properties, clientRequestContext,

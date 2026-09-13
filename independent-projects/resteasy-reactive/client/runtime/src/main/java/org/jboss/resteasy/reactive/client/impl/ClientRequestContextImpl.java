@@ -37,7 +37,6 @@ import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.ext.Providers;
 
 import org.jboss.resteasy.reactive.client.spi.ResteasyReactiveClientRequestContext;
-import org.jboss.resteasy.reactive.common.NotImplementedYet;
 import org.jboss.resteasy.reactive.common.core.Serialisers;
 import org.jboss.resteasy.reactive.common.headers.HeaderUtil;
 import org.jboss.resteasy.reactive.common.jaxrs.ConfigurationImpl;
@@ -289,12 +288,12 @@ public class ClientRequestContextImpl implements ResteasyReactiveClientRequestCo
 
     @Override
     public OutputStream getEntityStream() {
-        throw new NotImplementedYet();
+        return restClientRequestContext.getEntityStream();
     }
 
     @Override
     public void setEntityStream(OutputStream outputStream) {
-        throw new NotImplementedYet();
+        restClientRequestContext.setEntityStream(outputStream);
     }
 
     @Override

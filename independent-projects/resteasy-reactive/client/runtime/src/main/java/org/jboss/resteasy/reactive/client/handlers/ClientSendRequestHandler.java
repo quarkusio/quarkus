@@ -113,6 +113,10 @@ public class ClientSendRequestHandler implements ClientRestHandler {
         if (requestContext.isAborted()) {
             return;
         }
+        if (requestContext.isEntityStreamReplaced() && isStreamedUpload(requestContext)) {
+            throw new IllegalStateException(
+                    "The entity stream set by a ClientRequestFilter cannot be used for a File, Path, InputStream, Multi or multipart entity, which is streamed as is");
+        }
         requestContext.suspend();
 
         requestContext.setHttpClientOptions(httpClientOptions);
@@ -671,6 +675,11 @@ public class ClientSendRequestHandler implements ClientRestHandler {
 
         setVertxHeaders(httpClientRequest, headerMap);
         return multipartFormUpload;
+    }
+
+    private boolean isStreamedUpload(RestClientRequestContext requestContext) {
+        return requestContext.isMultipart() || requestContext.isFileUpload() || requestContext.isMultiBufferUpload()
+                || (requestContext.isInputStreamUpload() && !hasWriterInterceptors(requestContext));
     }
 
     private Buffer setRequestHeadersAndPrepareBody(HttpClientRequest httpClientRequest,

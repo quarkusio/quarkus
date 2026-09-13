@@ -54,6 +54,9 @@ public class ClientWriterInterceptorContextImpl extends AbstractClientIntercepto
         this.headers = headers;
         this.serialisers = serialisers;
         this.configuration = configuration;
+        if (clientRequestContext.hasEntityStream()) {
+            this.outputStream = clientRequestContext.getEntityStream();
+        }
     }
 
     @Override
@@ -79,7 +82,11 @@ public class ClientWriterInterceptorContextImpl extends AbstractClientIntercepto
             }
 
             outputStream.close();
-            result = Buffer.buffer(baos.toByteArray());
+            if (clientRequestContext.hasEntityStream()) {
+                result = clientRequestContext.getEntityBuffer().getBuffer();
+            } else {
+                result = Buffer.buffer(baos.toByteArray());
+            }
             done = true;
         } else {
             interceptors[index++].aroundWriteTo(this);

@@ -1491,6 +1491,23 @@ QuarkusRestClientBuilder.newBuilder()
     .build(ExtensionsService.class)
 ----
 
+A request filter can also wrap the stream the request entity is written to, for example to compress it, by replacing the entity stream:
+
+[source, java]
+----
+@Provider
+public class GzipClientRequestFilter implements ClientRequestFilter {
+
+    @Override
+    public void filter(ClientRequestContext requestContext) throws IOException {
+        requestContext.setEntityStream(new GZIPOutputStream(requestContext.getEntityStream()));
+        requestContext.getHeaders().putSingle("Content-Encoding", "gzip");
+    }
+}
+----
+
+The entity stream applies to entities serialized by a `MessageBodyWriter`; `File`, `Path`, `InputStream`, `Multi` and multipart entities are streamed as they are, and replacing the entity stream for such a request fails with an `IllegalStateException`.
+
 === Injecting the `jakarta.ws.rs.ext.Providers` instance in filters
 
 The `jakarta.ws.rs.ext.Providers` is useful when we need to lookup the provider instances of the current client.

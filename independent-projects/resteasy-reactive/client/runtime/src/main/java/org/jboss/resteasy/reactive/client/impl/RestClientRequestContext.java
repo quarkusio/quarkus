@@ -3,6 +3,7 @@ package org.jboss.resteasy.reactive.client.impl;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
@@ -14,6 +15,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.StringJoiner;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -114,6 +116,12 @@ public class RestClientRequestContext extends AbstractResteasyReactiveContext<Re
     private MultivaluedMap<String, String> responseHeaders;
     private ClientRequestContextImpl clientRequestContext;
     private ClientResponseContextImpl clientResponseContext;
+    /**
+     * Only initialised when a request filter asks for the entity stream; the stream the entity is written to
+     * (possibly wrapped by filters) and the buffer at its end
+     */
+    private OutputStream entityStream;
+    private VertxBufferOutputStream entityBuffer;
     private InputStream responseEntityStream;
     private List<InterfaceHttpData> responseMultiParts;
     private Response abortedWith;
@@ -287,6 +295,46 @@ public class RestClientRequestContext extends AbstractResteasyReactiveContext<Re
             clientRequestContext = new ClientRequestContextImpl(this, this.getRestClient(), this.getConfiguration());
         }
         return clientRequestContext;
+    }
+
+    /**
+     * Returns the stream the request entity is written to, as seen by {@code ClientRequestContext#getEntityStream()}.
+     * The stream is created on the first call, and request filters may wrap it via {@link #setEntityStream(OutputStream)};
+     * the entity is then written through the wrapper and the bytes that reach {@link #getEntityBuffer()} are sent.
+     */
+    public OutputStream getEntityStream() {
+        if (entityStream == null) {
+            entityBuffer = new VertxBufferOutputStream();
+            entityStream = entityBuffer;
+        }
+        return entityStream;
+    }
+
+    public void setEntityStream(OutputStream entityStream) {
+        Objects.requireNonNull(entityStream, "entityStream");
+        getEntityStream();
+        this.entityStream = entityStream;
+    }
+
+    /**
+     * @return {@code true} when a request filter obtained or replaced the entity stream
+     */
+    public boolean hasEntityStream() {
+        return entityStream != null;
+    }
+
+    /**
+     * @return {@code true} when a request filter replaced the entity stream with its own
+     */
+    public boolean isEntityStreamReplaced() {
+        return entityStream != null && entityStream != entityBuffer;
+    }
+
+    /**
+     * @return the buffer at the end of the entity stream, only valid when {@link #hasEntityStream()} is {@code true}
+     */
+    public VertxBufferOutputStream getEntityBuffer() {
+        return entityBuffer;
     }
 
     public Buffer writeEntity(Entity<?> entity, MultivaluedMap<String, String> headerMap, WriterInterceptor[] interceptors)

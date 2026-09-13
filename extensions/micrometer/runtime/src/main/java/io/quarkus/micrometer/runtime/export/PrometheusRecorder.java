@@ -36,8 +36,7 @@ public class PrometheusRecorder {
         return new Consumer<Route>() {
             @Override
             public void accept(Route route) {
-                route.order(1).produces("text/plain");
-                route.order(2).produces(CONTENT_TYPE_OPENMETRICS_100);
+                route.order(2).produces("text/plain").produces(CONTENT_TYPE_OPENMETRICS_100);
             }
         };
     }

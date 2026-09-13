@@ -22,6 +22,7 @@ import io.quarkus.spring.cloud.config.client.runtime.eureka.EurekaResponseMapper
 import io.quarkus.spring.cloud.config.client.runtime.eureka.RandomEurekaInstanceSelector;
 import io.quarkus.spring.cloud.config.client.runtime.util.UrlUtility;
 import io.smallrye.mutiny.Uni;
+import io.vertx.core.MultiMap;
 import io.vertx.core.VertxOptions;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.net.JksOptions;
@@ -200,6 +201,58 @@ public class VertxSpringCloudConfigGateway implements SpringCloudConfigClientGat
 
     @Override
     public Uni<Response> exchange(String applicationName, String profile) {
+        if (config.oidc().isPresent()) {
+            return acquireToken(config.oidc().get()).flatMap(token -> exchange(applicationName, profile, token));
+        }
+        return exchange(applicationName, profile, null);
+    }
+
+    /**
+     * Obtains a bearer token from the token endpoint with the configured grant. The token is requested for every
+     * configuration fetch, which happens at startup and, when enabled, at each periodic refresh, so no caching is
+     * needed.
+     */
+    private Uni<String> acquireToken(SpringCloudConfigClientConfig.OidcConfig oidc) {
+        URI tokenUri = URI.create(oidc.tokenUrl());
+        MultiMap form = MultiMap.caseInsensitiveMultiMap();
+        form.set("grant_type", oidc.grantType());
+        if ("password".equals(oidc.grantType())) {
+            form.set("username", oidc.username().orElseThrow(() -> new IllegalArgumentException(
+                    "quarkus.spring-cloud-config.oidc.username is required for the password grant type")));
+            form.set("password", oidc.password().orElseThrow(() -> new IllegalArgumentException(
+                    "quarkus.spring-cloud-config.oidc.password is required for the password grant type")));
+        }
+        oidc.scope().ifPresent(scope -> form.set("scope", scope));
+        HttpRequest<Buffer> request = webClient
+                .post(UrlUtility.getPort(tokenUri), tokenUri.getHost(), tokenUri.getRawPath())
+                .ssl(UrlUtility.isHttps(tokenUri))
+                .putHeader("Accept", "application/json");
+        if (oidc.clientSecret().isPresent()) {
+            request.basicAuthentication(oidc.clientId(), oidc.clientSecret().get());
+        } else {
+            form.set("client_id", oidc.clientId());
+        }
+        log.debug("Requesting a bearer token from '" + oidc.tokenUrl() + "'.");
+        return request.sendForm(form).map(r -> {
+            if (r.statusCode() != 200) {
+                throw new RuntimeException("Got unexpected HTTP response code " + r.statusCode()
+                        + " from the token endpoint " + oidc.tokenUrl());
+            }
+            try {
+                String accessToken = OBJECT_MAPPER.readTree(r.bodyAsString()).path("access_token").asString(null);
+                if (accessToken == null || accessToken.isEmpty()) {
+                    throw new RuntimeException("The response of the token endpoint " + oidc.tokenUrl()
+                            + " does not contain an access_token");
+                }
+                return accessToken;
+            } catch (JacksonException e) {
+                throw new RuntimeException("Got unexpected error " + e.getOriginalMessage()
+                        + " when reading the response of the token endpoint " + oidc.tokenUrl());
+            }
+        });
+    }
+
+    private Uni<Response> exchange(String applicationName, String profile, String bearerToken) {
         final ConfigServerUrl requestURI = toConfigServerUrl(applicationName, profile);
         HttpRequest<Buffer> request = webClient
                 .get(requestURI.port(), requestURI.host(), requestURI.completeURLString())
@@ -207,6 +260,9 @@ public class VertxSpringCloudConfigGateway implements SpringCloudConfigClientGat
                 .putHeader("Accept", "application/json");
         if (config.usernameAndPasswordSet()) {
             request.basicAuthentication(config.username().get(), config.password().get());
+        }
+        if (bearerToken != null) {
+            request.bearerTokenAuthentication(bearerToken);
         }
         for (Map.Entry<String, String> entry : config.headers().entrySet()) {
             request.putHeader(entry.getKey(), entry.getValue());

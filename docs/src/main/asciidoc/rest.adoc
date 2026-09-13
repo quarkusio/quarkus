@@ -788,6 +788,18 @@ that resolve to one of the mentioned return types.
 
 === Setting other response properties
 
+[[response-framing]]
+==== Content-Length and chunked responses
+
+Whether a response carries a `Content-Length` header or uses the chunked transfer encoding depends on how its entity is written, not on the media type:
+
+* An entity that is serialized in a single write, such as a `String`, a `byte[]`, or an object serialized to JSON, is sent with a `Content-Length`.
+* An entity written through the response output stream, such as an `InputStream`, a `StreamingOutput` or a streaming `MessageBodyWriter`, is buffered up to `quarkus.rest.output-buffer-size` (8191 bytes by default). If the entity ends within that buffer, it is sent with a `Content-Length`; otherwise the response is chunked, unless the resource method set a `Content-Length` header itself.
+* A `Multi` and Server-Sent Events are chunked, as their size is not known in advance.
+
+To have a large body streamed instead of materialized, return an `InputStream`, a `StreamingOutput` or a `Multi`.
+The `quarkus.http.limits.max-chunk-size` setting limits the size of the chunks of a _request_ body delivered to the application and has no effect on responses.
+
 ==== Manually setting the response
 
 If you need to set more properties on the HTTP response than just the body, such as the status code

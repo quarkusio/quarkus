@@ -44,5 +44,13 @@ public interface DirContextConfig {
     @WithDefault("60s")
     Duration readTimeout();
 
+    /**
+     * The name of the TLS configuration (`quarkus.tls.<name>.*`) to use for the connections to the LDAP server, for
+     * example to trust the private certificate authority of an `ldaps://` server.
+     * <p>
+     * If not set, the default SSL context of the JVM is used.
+     */
+    Optional<String> tlsConfigurationName();
+
     String toString();
 }

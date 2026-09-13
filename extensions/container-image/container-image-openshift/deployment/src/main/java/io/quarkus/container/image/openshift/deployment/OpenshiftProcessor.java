@@ -203,6 +203,15 @@ public class OpenshiftProcessor {
     }
 
     @BuildStep(onlyIf = { OpenshiftBuild.class })
+    public void configureInsecureRegistries(ContainerImageConfig containerImageConfig,
+            BuildProducer<DecoratorBuildItem> decorator) {
+        if (containerImageConfig.insecure()) {
+            decorator.produce(
+                    new DecoratorBuildItem(OPENSHIFT, new AddInsecureRepositoryAnnotationToImageStreamsDecorator()));
+        }
+    }
+
+    @BuildStep(onlyIf = { OpenshiftBuild.class })
     public void configureExternalRegistry(ApplicationInfoBuildItem applicationInfo,
             ContainerImageOpenshiftConfig openshiftConfig,
             ContainerImageInfoBuildItem containerImageInfo,

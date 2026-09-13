@@ -616,6 +616,22 @@ By default, every file part is written to the uploads directory. Setting `quarku
 such parts are reported by `FileItem#isInMemory()` and are only written to the uploads directory if their file is requested, e.g. through `FileUpload#uploadedFile()`.
 Parameters of type `byte[]`, `String` or `InputStream` read them directly from memory.
 
+A part is handled as a file when it has a file name, or when its media type is listed in `quarkus.http.body.multipart.file-content-types` (compared without parameters and ignoring case).
+That setting only decides how a part is parsed; it does not restrict the content types that are accepted, and no part is rejected because of its content type.
+To validate uploaded files, check `FileUpload#contentType()`, which is the value sent by the client, or the content of the file itself, in the resource method:
+
+[source,java]
+----
+@POST
+@Consumes(MediaType.MULTIPART_FORM_DATA)
+public String upload(@RestForm("image") FileUpload file) {
+    if (!Set.of("image/png", "image/jpeg").contains(file.contentType())) {
+        throw new WebApplicationException(Response.Status.UNSUPPORTED_MEDIA_TYPE);
+    }
+    // ...
+}
+----
+
 
 [TIP]
 ====

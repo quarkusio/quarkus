@@ -149,6 +149,17 @@ public interface DataSourceJdbcRuntimeConfig {
     boolean validateOnBorrow();
 
     /**
+     * Whether the readiness health check may establish a new connection to validate the datasource when no pooled
+     * connection is available.
+     * <p>
+     * By default, the health check only validates an available pooled connection, so a pool whose connections are all in
+     * use reports the datasource as `DOWN` even if the database is reachable. When enabled, the health check opens a new
+     * connection in that case, which may temporarily exceed `max-size`.
+     */
+    @WithDefault("false")
+    boolean healthCheckNewConnection();
+
+    /**
      * Disable pooling to prevent reuse of Connections. Use this when an external pool manages the life-cycle
      * of Connections.
      */

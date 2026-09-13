@@ -79,7 +79,7 @@ noadmin=n0Adm1n
 
 This file has usernames and passwords stored in plain text, which is not recommended.
 If plain text is set to false (or omitted) in the config, then passwords must be stored in the form `MD5 ( username : realm : password )`.
-This can be generated for the first example above by running the command `echo -n scott:MyRealm:jb0ss | md5` from the command line.
+This can be generated for the first example above by running the command `echo -n scott:MyRealm:jb0ss | md5sum | cut -d ' ' -f 1` from the command line (on macOS, `echo -n scott:MyRealm:jb0ss | md5` produces the same digest).
 
 ==== Roles.properties
 
@@ -120,7 +120,7 @@ quarkus.security.users.embedded.roles.noadmin=user
 
 As with the first example, this file has usernames and passwords stored in plain text, which is not recommended.
 If plain text is set to false (or omitted) in the config, then passwords must be stored in the form `MD5 ( username : realm : password )`.
-This can be generated for the first example above by running the command `echo -n scott:MyRealm:jb0ss | md5` from the command line.
+This can be generated for the first example above by running the command `echo -n scott:MyRealm:jb0ss | md5sum | cut -d ' ' -f 1` from the command line (on macOS, `echo -n scott:MyRealm:jb0ss | md5` produces the same digest).
 
 ==== Embedded Users
 

@@ -30,19 +30,23 @@ public class CognitoPrincipal implements JsonWebToken {
 
     @Override
     public Set<String> getClaimNames() {
-        return null;
+        return claims.getClaimNames();
     }
 
     @Override
     public <T> T getClaim(String claimName) {
-        if (claimName.equals(Claims.groups)) {
+        if (Claims.groups.name().equals(claimName)) {
             return (T) getGroups();
-        } else if (claimName.equals(Claims.exp)) {
+        } else if (Claims.exp.name().equals(claimName)) {
             return (T) Long.valueOf(getExpirationTime());
-        } else if (claimName.equals(Claims.iat)) {
+        } else if (Claims.iat.name().equals(claimName)) {
             return (T) Long.valueOf(getIssuedAtTime());
-        } else if (claimName.equals(Claims.aud)) {
+        } else if (Claims.aud.name().equals(claimName)) {
             return (T) getAudience();
+        } else if (Claims.sub.name().equals(claimName)) {
+            return (T) getSubject();
+        } else if (Claims.iss.name().equals(claimName)) {
+            return (T) getIssuer();
         }
         return (T) claims.getClaim(claimName);
     }
@@ -68,12 +72,19 @@ public class CognitoPrincipal implements JsonWebToken {
 
     @Override
     public long getExpirationTime() {
-        return Long.valueOf(claims.getExpiration());
+        return parseTime(claims.getExpiration());
     }
 
     @Override
     public long getIssuedAtTime() {
-        return Long.valueOf(claims.getIssuedAt());
+        return parseTime(claims.getIssuedAt());
+    }
+
+    private static long parseTime(String value) {
+        if (value == null) {
+            return 0;
+        }
+        return Long.parseLong(value);
     }
 
     @Override

@@ -11,18 +11,21 @@ import java.util.Set;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Supplier;
 
+import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.context.Dependent;
 import jakarta.enterprise.inject.Any;
 import jakarta.enterprise.inject.Instance;
 import jakarta.enterprise.inject.Instance.Handle;
 import jakarta.enterprise.inject.spi.Bean;
 import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
 import jakarta.interceptor.Interceptor.Priority;
 import jakarta.interceptor.InvocationContext;
 
 import org.jboss.logging.Logger;
 
 import io.quarkus.arc.AbstractAnnotationLiteral;
+import io.quarkus.arc.ClientProxy;
 import io.quarkus.arc.runtime.InterceptorBindings;
 import io.quarkus.cache.Cache;
 import io.quarkus.cache.CacheException;
@@ -138,23 +141,46 @@ public abstract class CacheInterceptor {
         } else if (cacheKeyParameterPositions.size() == 1) {
             // If exactly one @CacheKey-annotated parameter was identified for the intercepted method at build time, then this
             // parameter will be used as the cache key.
-            return keyParameters[cacheKeyParameterPositions.get(0)];
+            return checkKeyElement(method, keyParameters[cacheKeyParameterPositions.get(0)]);
         } else if (cacheKeyParameterPositions.size() >= 2) {
             // If two or more @CacheKey-annotated parameters were identified for the intercepted method at build time, then a
             // composite cache key built from all these parameters will be used.
             List<Object> keyElements = new ArrayList<>();
             for (short position : cacheKeyParameterPositions) {
-                keyElements.add(keyParameters[position]);
+                keyElements.add(checkKeyElement(method, keyParameters[position]));
             }
             return new CompositeCacheKey(keyElements.toArray(new Object[0]));
         } else if (keyParameters.length == 1) {
             // If the intercepted method has exactly one parameter, then this parameter will be used as the cache key.
-            return keyParameters[0];
+            return checkKeyElement(method, keyParameters[0]);
         } else {
             // If the intercepted method has two or more parameters, then a composite cache key built from all these parameters
             // will be used.
+            for (Object keyParameter : keyParameters) {
+                checkKeyElement(method, keyParameter);
+            }
             return new CompositeCacheKey(keyParameters);
         }
+    }
+
+    /**
+     * Rejects a client proxy of a bean whose scope is narrower than the application as a cache key element. The
+     * {@code equals()} and {@code hashCode()} of such a proxy delegate to whatever instance is current in the calling
+     * context, so entries stored through it can never be matched reliably, and the cache backend may call them later on a
+     * thread without an active context.
+     */
+    private static Object checkKeyElement(Method method, Object keyElement) {
+        if (keyElement instanceof ClientProxy proxy) {
+            Class<? extends Annotation> scope = proxy.arc_bean().getScope();
+            if (scope != ApplicationScoped.class && scope != Singleton.class) {
+                throw new CacheException(new IllegalArgumentException("The cache key of method [" + method
+                        + "] contains a client proxy of the @" + scope.getSimpleName() + " bean ["
+                        + proxy.arc_bean().getBeanClass().getName()
+                        + "]. Its equals() and hashCode() depend on the active context, so it cannot be used as a cache key."
+                        + " Pass a value derived from the bean instead, or declare a CacheKeyGenerator."));
+            }
+        }
+        return keyElement;
     }
 
     /**

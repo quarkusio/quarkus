@@ -4,15 +4,20 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.File;
 import java.io.InputStream;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 
+import javax.xml.parsers.SAXParserFactory;
+
 import org.cyclonedx.model.Bom;
 import org.cyclonedx.model.Component;
 import org.cyclonedx.model.component.evidence.Occurrence;
 import org.cyclonedx.parsers.JsonParser;
+import org.cyclonedx.parsers.XmlParser;
+import org.xml.sax.helpers.DefaultHandler;
 
 final class CycloneDxTestUtils {
 
@@ -23,6 +28,12 @@ final class CycloneDxTestUtils {
         final File sbomFile = new File(testDir, "target/" + sbomFileName);
         assertThat(sbomFile).exists();
         return new JsonParser().parse(sbomFile);
+    }
+
+    static Bom parseSbomXml(File testDir, String sbomFileName) throws Exception {
+        File sbomFile = new File(testDir, "target/" + sbomFileName);
+        assertThat(sbomFile).exists();
+        return new XmlParser().parse(sbomFile);
     }
 
     /**
@@ -54,7 +65,7 @@ final class CycloneDxTestUtils {
     static void assertComponent(List<Component> components, String group, String name,
             String expectedScope, String expectedLocationPrefix) {
         final Component component = components.stream()
-                .filter(c -> group.equals(c.getGroup()) && name.equals(c.getName()))
+                .filter(c -> group != null ? group.equals(c.getGroup()) && name.equals(c.getName()) : name.equals(c.getName()))
                 .findFirst()
                 .orElse(null);
         assertThat(component)
@@ -62,6 +73,23 @@ final class CycloneDxTestUtils {
                 .isNotNull();
         assertComponentScope(component, expectedScope);
         assertEvidenceLocation(component, expectedLocationPrefix);
+    }
+
+    /**
+     * Asserts that a component with the given group and name doesn't exist in the SBOM.
+     *
+     * @param components the component list
+     * @param group expected group
+     * @param name expected artifact name
+     */
+    static void assertUnavailableComponent(List<Component> components, String group, String name) {
+        Component component = components.stream()
+                .filter(c -> group != null ? group.equals(c.getGroup()) && name.equals(c.getName()) : name.equals(c.getName()))
+                .findFirst()
+                .orElse(null);
+        assertThat(component)
+                .as("Component %s:%s is present in SBOM", group, name)
+                .isNull();
     }
 
     static void assertComponentScope(Component component, String expectedScope) {
@@ -114,5 +142,48 @@ final class CycloneDxTestUtils {
                 .as("Evidence locations of %s:%s", component.getGroup(), component.getName())
                 .isNotEmpty();
         assertThat(occurrences.get(0).getLocation()).startsWith(expectedLocationPrefix);
+    }
+
+    /**
+     * Asserts that the SBOM is pretty-printed.
+     *
+     * @param sbomPath SBOM file path
+     */
+    static void assertPrettyPrint(Path sbomPath) throws Exception {
+        String original = Files.readString(sbomPath).stripTrailing();
+        boolean looksPretty = original.contains("\n") && original.contains("\n  ");
+        assertThat(looksPretty);
+    }
+
+    /**
+     * Asserts that the SBOM is minified to one line.
+     *
+     * @param sbomPath SBOM file path
+     */
+    static void assertMinified(Path sbomPath) throws Exception {
+        long linesCount;
+        try (var stream = Files.lines(sbomPath)) {
+            linesCount = stream.count();
+        }
+        assertThat(linesCount).isEqualTo(1);
+    }
+
+    /**
+     * Asserts that the SBOM is a well-formed XML file.
+     *
+     * @param sbomPath SBOM file path
+     */
+    static boolean isXml(Path sbomPath) {
+        try (InputStream in = Files.newInputStream(sbomPath)) {
+            SAXParserFactory f = SAXParserFactory.newInstance();
+            f.setNamespaceAware(true);
+            f.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
+            f.setFeature("http://xml.org/sax/features/external-general-entities", false);
+            f.setFeature("http://xml.org/sax/features/external-parameter-entities", false);
+            f.newSAXParser().parse(in, new DefaultHandler());
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
     }
 }

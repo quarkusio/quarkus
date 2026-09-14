@@ -8,11 +8,23 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::_attributes.adoc[]
 :diataxis-type: howto
 :topics: security,identity-providers,sql,database,jpa,jdbc
-:extensions: io.quarkus:quarkus-security-jpa-reactive
+:extensions: io.quarkus:quarkus-security-jpa,io.quarkus:quarkus-security-jpa-reactive
 
 You can configure your application to use Jakarta Persistence to store users' identities.
 
 Quarkus provides a Jakarta Persistence identity provider, similar to the xref:security-jdbc.adoc[JDBC identity provider]. Jakarta Persistence is suitable for use with the xref:security-basic-authentication.adoc[Basic] and xref:security-authentication-mechanisms.adoc#form-auth[Form-based] Quarkus Security mechanisms, which require username and password credentials.
+
+ifndef::no-quarkus-security-jpa-reactive[]
+[NOTE]
+====
+The identity provider is available for both persistence stacks:
+
+* `quarkus-security-jpa` for applications that use Hibernate ORM.
+* `quarkus-security-jpa-reactive` for applications that use Hibernate Reactive.
+
+The entity annotations and the configuration described in this guide are the same for both extensions.
+====
+endif::no-quarkus-security-jpa-reactive[]
 
 The Jakarta Persistence `IdentityProvider` creates a `SecurityIdentity` instance. During user authentication, this instance is used to verify and authorize access requests.
 

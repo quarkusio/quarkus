@@ -654,7 +654,11 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
                 if (type == ParameterType.BEAN
                         || type == ParameterType.MULTI_PART_FORM) {
                     // transform the bean param
-                    formParamRequired |= handleBeanParam(actualEndpointInfo, paramType, methodParameters, i, fileFormNames);
+                    Type beanParamType = paramType.kind() == Kind.TYPE_VARIABLE
+                            ? resolveTypeVariable(paramType.asTypeVariable(), currentClassInfo, actualEndpointInfo, index)
+                            : paramType;
+                    formParamRequired |= handleBeanParam(actualEndpointInfo, beanParamType, methodParameters, i,
+                            fileFormNames);
                 } else if (type == ParameterType.FORM || type == ParameterType.MULTI_PART_DATA_INPUT
                         || type == ParameterType.ENTITY_PART_LIST) {
                     formParamRequired = true;

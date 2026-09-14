@@ -87,8 +87,12 @@ public class IsolatedDevModeMain implements BiConsumer<CuratedApplication, Map<S
                         .invoke(null, getExitCodeHandler());
 
                 StartupAction start = augmentAction.createInitialRuntimeApplication();
-
-                runner = start.runMainClass(context.getArgs());
+                try {
+                    runner = start.runMainClass(context.getArgs());
+                } catch (Throwable t) {
+                    start.getClassLoader().close();
+                    throw t;
+                }
                 RuntimeUpdatesProcessor.INSTANCE
                         .setConfiguredInstrumentationEnabled(
                                 runner.getConfigValue("quarkus.live-reload.instrumentation", Boolean.class).orElse(false))
@@ -203,7 +207,12 @@ public class IsolatedDevModeMain implements BiConsumer<CuratedApplication, Map<S
             try {
                 StartupAction start = augmentAction.reloadExistingApplication(firstStartCompleted, changedResources,
                         classChangeInformation);
-                runner = start.runMainClass(context.getArgs());
+                try {
+                    runner = start.runMainClass(context.getArgs());
+                } catch (Throwable t) {
+                    start.getClassLoader().close();
+                    throw t;
+                }
                 if (!firstStartCompleted) {
                     notifyListenersAfterStart();
                     firstStartCompleted = true;

@@ -6,7 +6,7 @@ import java.util.Map;
 import java.util.TreeMap;
 
 import org.hibernate.boot.registry.StandardServiceInitiator;
-import org.hibernate.reactive.provider.impl.ReactiveServiceInitiators;
+import org.hibernate.reactive.provider.internal.ReactiveServiceInitiators;
 import org.hibernate.service.StandardServiceInitiators;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;

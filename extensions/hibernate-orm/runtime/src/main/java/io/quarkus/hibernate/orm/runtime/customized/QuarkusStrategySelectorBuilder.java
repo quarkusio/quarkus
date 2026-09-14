@@ -65,7 +65,7 @@ public final class QuarkusStrategySelectorBuilder {
         // build the baseline...
         strategySelector.registerStrategyLazily(
                 Dialect.class,
-                new AggregatedDialectSelector(classLoaderService.loadJavaServices(DialectSelector.class)));
+                new AggregatedDialectSelector(classLoaderService.loadJavaServices(DialectSelector.class))::resolve);
         strategySelector.registerStrategyLazily(JtaPlatform.class, new DefaultJtaPlatformSelector());
         addTransactionCoordinatorBuilders(strategySelector);
         addSqmMultiTableInsertStrategies(strategySelector);

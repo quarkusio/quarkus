@@ -19,8 +19,8 @@ public class ReactiveTest {
     static QuarkusExtensionTest runner = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addAsResource("application-test.properties", "application.properties")
-                    .addClasses(MyReactiveEntity.class, MyReactiveEntity_.class,
-                            MyReactiveEntity_.ManagedReactiveQueries_.class));
+                    .addClasses(MyReactiveEntity.class, MyReactiveEntity_.class, _MyReactiveEntity.class,
+                            _MyReactiveEntity._ManagedReactiveQueries.class));
 
     @WithTransaction
     Uni<Void> createOne() {

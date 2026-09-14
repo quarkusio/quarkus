@@ -5,7 +5,7 @@ import jakarta.persistence.EntityManagerFactory;
 import org.hibernate.boot.internal.SessionFactoryOptionsBuilder;
 import org.hibernate.boot.registry.StandardServiceRegistry;
 import org.hibernate.boot.spi.SessionFactoryOptions;
-import org.hibernate.reactive.session.impl.ReactiveSessionFactoryImpl;
+import org.hibernate.reactive.session.internal.ReactiveSessionFactoryImpl;
 
 import io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil;
 import io.quarkus.hibernate.orm.runtime.RuntimeSettings;

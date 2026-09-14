@@ -72,5 +72,6 @@
   </profiles>
   <activeProfiles>
     <activeProfile>google-mirror</activeProfile>
+    <activeProfile>snapshots</activeProfile>
   </activeProfiles>
 </settings>

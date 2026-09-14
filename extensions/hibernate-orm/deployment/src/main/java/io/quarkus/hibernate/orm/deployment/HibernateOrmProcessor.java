@@ -6,6 +6,7 @@ import static io.quarkus.hibernate.orm.deployment.util.HibernateProcessorSupport
 import static io.quarkus.hibernate.orm.deployment.util.HibernateProcessorSupport.configureSqlLoadScript;
 import static io.quarkus.hibernate.orm.deployment.util.HibernateProcessorSupport.setDialectAndStorageEngine;
 import static io.quarkus.hibernate.orm.deployment.util.HibernateProcessorUtil.isHibernateValidatorPresent;
+import static io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME;
 import static io.quarkus.security.spi.SecuredInterfaceAnnotationBuildItem.ofClassAnnotation;
 import static io.quarkus.security.spi.SecuredInterfaceAnnotationBuildItem.ofMethodAnnotation;
 
@@ -37,7 +38,6 @@ import java.util.concurrent.Future;
 import java.util.function.BiConsumer;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import javax.xml.namespace.QName;
 
@@ -49,8 +49,6 @@ import jakarta.xml.bind.JAXBElement;
 import org.hibernate.annotations.processing.Find;
 import org.hibernate.annotations.processing.HQL;
 import org.hibernate.annotations.processing.SQL;
-import org.hibernate.boot.archive.scan.spi.ClassDescriptor;
-import org.hibernate.boot.archive.scan.spi.PackageDescriptor;
 import org.hibernate.boot.beanvalidation.BeanValidationIntegrator;
 import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.cfg.MappingSettings;
@@ -134,6 +132,7 @@ import io.quarkus.hibernate.orm.deployment.spi.AdditionalJpaModelBuildItem;
 import io.quarkus.hibernate.orm.deployment.spi.AdditionalPersistenceUnitBuildItem;
 import io.quarkus.hibernate.orm.deployment.spi.DatabaseKindDialectBuildItem;
 import io.quarkus.hibernate.orm.deployment.spi.PersistenceUnitDefinedBuildItem;
+import io.quarkus.hibernate.orm.deployment.spi.QuarkusDataModelBuildItem;
 import io.quarkus.hibernate.orm.deployment.spi.SqlLoadScriptDefaultBuildItem;
 import io.quarkus.hibernate.orm.deployment.util.HibernateProcessorUtil;
 import io.quarkus.hibernate.orm.dev.HibernateOrmDevIntegrator;
@@ -143,7 +142,6 @@ import io.quarkus.hibernate.orm.runtime.HibernateOrmRuntimeConfig;
 import io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil;
 import io.quarkus.hibernate.orm.runtime.boot.QuarkusPersistenceUnitDefinition;
 import io.quarkus.hibernate.orm.runtime.boot.QuarkusPersistenceUnitDescriptor;
-import io.quarkus.hibernate.orm.runtime.boot.scan.QuarkusScanner;
 import io.quarkus.hibernate.orm.runtime.boot.xml.JAXBElementSubstitution;
 import io.quarkus.hibernate.orm.runtime.boot.xml.QNameSubstitution;
 import io.quarkus.hibernate.orm.runtime.config.DialectVersions;
@@ -240,12 +238,11 @@ public final class HibernateOrmProcessor {
     @BuildStep
     void registerJCacheForReflection(
             HibernateOrmConfig config,
-            List<PersistenceUnitDefinedBuildItem> definedPersistenceUnits,
             BuildProducer<ReflectiveClassBuildItem> reflective) {
 
         // Only register JCache classes if at least one persistence unit has caching enabled
-        boolean cachingEnabled = definedPersistenceUnits.stream()
-                .anyMatch(pu -> config.persistenceUnits().get(pu.getPersistenceUnitName()).secondLevelCachingEnabled());
+        boolean cachingEnabled = config.persistenceUnits().values().stream()
+                .anyMatch(HibernateOrmConfigPersistenceUnit::secondLevelCachingEnabled);
 
         if (cachingEnabled) {
             // TODO can we avoid this reflection?
@@ -577,10 +574,10 @@ public final class HibernateOrmProcessor {
         // We still need to contribute it if META-INF/orm.xml exists,
         // since that file is picked up by default.
         if (!hibernateOrmConfig.persistenceUnits()
-                .containsKey(PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME)
+                .containsKey(DEFAULT_PERSISTENCE_UNIT_NAME)
                 && Thread.currentThread().getContextClassLoader().getResource("META-INF/orm.xml") != null) {
             jpaModelPuContributions.produce(new JpaModelPersistenceUnitContributionBuildItem(
-                    PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME, null, Collections.emptySet(),
+                    DEFAULT_PERSISTENCE_UNIT_NAME, null, Collections.emptySet(),
                     Collections.emptySet()));
         }
         for (Entry<String, HibernateOrmConfigPersistenceUnit> entry : hibernateOrmConfig.persistenceUnits()
@@ -736,8 +733,6 @@ public final class HibernateOrmProcessor {
 
         recorder.enlistPersistenceUnit(jpaModel.getEntityClassNames());
 
-        final QuarkusScanner scanner = buildQuarkusScanner(jpaModel);
-
         ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
         // inspect service files for additional integrators
         Collection<Class<? extends Integrator>> integratorClasses = new LinkedHashSet<>();
@@ -773,7 +768,7 @@ public final class HibernateOrmProcessor {
 
         beanContainerListener
                 .produce(new BeanContainerListenerBuildItem(
-                        recorder.initMetadata(finalStagePUDescriptors, scanner, integratorClasses)));
+                        recorder.initMetadata(finalStagePUDescriptors, integratorClasses)));
         if (capabilities.isPresent(Capability.HIBERNATE_VALIDATOR) && hibernateOrmConfig.enabled()) {
             beanValidationTraversableResolver
                     .produce(new BeanValidationTraversableResolverBuildItem(recorder.attributeLoadedPredicate()));
@@ -1005,6 +1000,28 @@ public final class HibernateOrmProcessor {
         }
     }
 
+    // We need to add repository interfaces to the managed classes list so that
+    // their named queries are registered.
+    // See io/quarkus/it/hibernate/processor/data/HibernateOrmDataTest.java
+    @BuildStep
+    void addJakartaDataRepositoriesToJpaModel(CombinedIndexBuildItem index,
+            BuildProducer<AdditionalJpaModelBuildItem> additionalJpaModel) {
+        DotName repositoryAnnotation = DotName.createSimple(JAKARTA_DATA_REPOSITORY_ANNOTATION);
+        for (AnnotationInstance annotation : index.getIndex().getAnnotations(repositoryAnnotation)) {
+            if (annotation.target().kind() != Kind.CLASS) {
+                continue;
+            }
+            String className = annotation.target().asClass().name().toString();
+            var dataStoreValue = annotation.value("dataStore");
+            String dataStore = dataStoreValue != null ? dataStoreValue.asString() : null;
+            if (dataStore != null && !dataStore.isEmpty()) {
+                additionalJpaModel.produce(new AdditionalJpaModelBuildItem(className, Set.of(dataStore)));
+            } else {
+                additionalJpaModel.produce(new AdditionalJpaModelBuildItem(className, Set.of(DEFAULT_PERSISTENCE_UNIT_NAME)));
+            }
+        }
+    }
+
     /**
      * Hibernate ORM checks package-info and if we have a negative lookup, it's not cached by AOT class loading.
      * <p>
@@ -1122,24 +1139,27 @@ public final class HibernateOrmProcessor {
         Properties descriptorProperties = new Properties();
         additionalPuConfig.ifPresent(c -> descriptorProperties.putAll(c.properties()));
 
+        // Previously we were pushing both class names and package names
+        // to getManagedClassNames(), which was a misnomer: it could actually
+        // return both class names and package names.
+        // ORM 7's ScanningCoordinator would sort them out at runtime.
+        // See for proof:
+        // - how org.hibernate.boot.archive.scan.internal.ScanResultCollector.isListedOrDetectable
+        //   was used for packages too, even though it relied (indirectly) on getManagedClassNames().
+        // - the comment at org/hibernate/boot/model/process/internal/ScanningCoordinator.java:246:
+        //   "IMPL NOTE : "explicitlyListedClassNames" can contain class or package names..."
+        // ORM 8.0 removed ScanningCoordinator (scanning is now the container's responsibility),
+        // so we now pass class names and package names separately.
         QuarkusPersistenceUnitDescriptor descriptor = new QuarkusPersistenceUnitDescriptor(
                 persistenceUnitName,
                 new HibernateOrmPersistenceUnitProviderHelper(),
                 PersistenceUnitTransactionType.JTA,
-                // That's right, we're pushing both class names and package names
-                // to a method called "addClasses".
-                // It's a misnomer: while the method populates the set that backs getManagedClasses(),
-                // that method is also poorly named because it can actually return both class names
-                // and package names.
-                // See for proof:
-                // - how org.hibernate.boot.archive.scan.internal.ScanResultCollector.isListedOrDetectable
-                //   is used for packages too, even though it relies (indirectly) on getManagedClassNames().
-                // - the comment at org/hibernate/boot/model/process/internal/ScanningCoordinator.java:246:
-                //   "IMPL NOTE : "explicitlyListedClassNames" can contain class or package names..."
-                new ArrayList<>(model.allModelClassAndPackageNames()),
-                descriptorProperties,
+                new ArrayList<>(model.allModelClassNames()),
+                new ArrayList<>(model.modelPackageNames()),
+                new Properties(),
                 false);
-        Set<String> entityClassNames = model.entityClassNames();
+        Set<String> entityClassNames = new HashSet<>(descriptor.getManagedClassNames());
+        entityClassNames.retainAll(model.entityClassNames());
 
         MultiTenancyStrategy multiTenancyStrategy = HibernateProcessorUtil
                 .getMultiTenancyStrategy(persistenceUnitConfig.multitenant());
@@ -1292,7 +1312,9 @@ public final class HibernateOrmProcessor {
 
     @BuildStep
     public JpaModelPerPersistenceUnitBuildItem buildJpaModelPerPersistenceUnit(HibernateOrmConfig hibernateOrmConfig,
-            List<AdditionalJpaModelBuildItem> additionalJpaModelBuildItems, JpaModelBuildItem jpaModel,
+            List<AdditionalJpaModelBuildItem> additionalJpaModelBuildItems,
+            List<QuarkusDataModelBuildItem> quarkusDataModelBuildItems,
+            JpaModelBuildItem jpaModel,
             CombinedIndexBuildItem indexBuildItem) {
         IndexView index = indexBuildItem.getIndex();
         Map<String, JpaPersistenceUnitModel> modelPerPersistenceUnit = new HashMap<>();
@@ -1372,12 +1394,12 @@ public final class HibernateOrmProcessor {
                         if (jpaModel.getEntityClassNames().contains(modelClassName)) {
                             model.entityClassNames().add(modelClassName);
                         }
-                        model.allModelClassAndPackageNames().add(modelClassName);
+                        model.allModelClassNames().add(modelClassName);
 
                         // also add the hierarchy to the persistence unit
                         // we would need to add all the underlying model to it but adding the hierarchy
                         // is necessary for Panache as we need to add PanacheEntity to the PU
-                        model.allModelClassAndPackageNames().addAll(relatedModelClassNames);
+                        model.allModelClassNames().addAll(relatedModelClassNames);
                     }
                 }
             }
@@ -1405,7 +1427,22 @@ public final class HibernateOrmProcessor {
                 if (isEntity) {
                     model.entityClassNames().add(className);
                 }
-                model.allModelClassAndPackageNames().add(className);
+                model.allModelClassNames().add(className);
+            }
+        }
+
+        for (QuarkusDataModelBuildItem quarkusDataModel : quarkusDataModelBuildItems) {
+            var className = quarkusDataModel.getClassName();
+            Set<String> persistenceUnits = findEnclosingEntityPersistenceUnits(
+                    quarkusDataModel.getEnclosingEntityClassName(), modelPerPersistenceUnit);
+            if (persistenceUnits.isEmpty()) {
+                persistenceUnits = Set.of(DEFAULT_PERSISTENCE_UNIT_NAME);
+            }
+            assignedModelClassAndPackageNames.add(className);
+            for (String persistenceUnitName : persistenceUnits) {
+                modelPerPersistenceUnit.computeIfAbsent(persistenceUnitName,
+                        ignored -> new JpaPersistenceUnitModel())
+                        .allModelClassNames().add(className);
             }
         }
 
@@ -1424,7 +1461,7 @@ public final class HibernateOrmProcessor {
             for (String persistenceUnitName : persistenceUnitNames) {
                 var model = modelPerPersistenceUnit.computeIfAbsent(persistenceUnitName,
                         ignored -> new JpaPersistenceUnitModel());
-                model.allModelClassAndPackageNames().add(modelPackageName);
+                model.modelPackageNames().add(modelPackageName);
             }
         }
 
@@ -1439,15 +1476,21 @@ public final class HibernateOrmProcessor {
         assignedEntityClassNames.addAll(modelPerPersistenceUnit.values().stream()
                 .map(JpaPersistenceUnitModel::entityClassNames).flatMap(Set::stream).toList());
         assignedModelClassAndPackageNames.addAll(modelPerPersistenceUnit.values().stream()
-                .map(JpaPersistenceUnitModel::allModelClassAndPackageNames).flatMap(Set::stream).toList());
+                .map(JpaPersistenceUnitModel::allModelClassNames).flatMap(Set::stream).toList());
+        assignedModelClassAndPackageNames.addAll(modelPerPersistenceUnit.values().stream()
+                .map(JpaPersistenceUnitModel::modelPackageNames).flatMap(Set::stream).toList());
         Set<String> unaffectedEntityClassNames = jpaModel.getEntityClassNames().stream()
                 .filter(c -> !assignedEntityClassNames.contains(c))
                 .collect(Collectors.toCollection(TreeSet::new));
-        Set<String> unaffectedModelClassAndPackageNames = Stream.concat(
-                jpaModel.getAllModelClassNames().stream(),
-                jpaModel.getAllModelPackageNames().stream())
+        Set<String> unaffectedModelClassNames = jpaModel.getAllModelClassNames().stream()
                 .filter(c -> !assignedModelClassAndPackageNames.contains(c))
                 .collect(Collectors.toCollection(TreeSet::new));
+        Set<String> unaffectedModelPackageNames = jpaModel.getAllModelPackageNames().stream()
+                .filter(c -> !assignedModelClassAndPackageNames.contains(c))
+                .collect(Collectors.toCollection(TreeSet::new));
+        Set<String> unaffectedModelClassAndPackageNames = new TreeSet<>();
+        unaffectedModelClassAndPackageNames.addAll(unaffectedModelClassNames);
+        unaffectedModelClassAndPackageNames.addAll(unaffectedModelPackageNames);
         if (!unaffectedEntityClassNames.isEmpty() || !unaffectedModelClassAndPackageNames.isEmpty()) {
             if (!hasPackagesInQuarkusConfig && packageLevelPersistenceUnitAnnotations.isEmpty()) {
                 // No .packages configuration and no package-level persistence unit annotations:
@@ -1455,7 +1498,8 @@ public final class HibernateOrmProcessor {
                 var model = modelPerPersistenceUnit.computeIfAbsent(PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME,
                         ignored -> new JpaPersistenceUnitModel());
                 model.entityClassNames().addAll(unaffectedEntityClassNames);
-                model.allModelClassAndPackageNames().addAll(unaffectedModelClassAndPackageNames);
+                model.allModelClassNames().addAll(unaffectedModelClassNames);
+                model.modelPackageNames().addAll(unaffectedModelPackageNames);
             } else {
                 // unaffectedEntityClassNames would necessarily be in unaffectedModelClassAndPackageNames
                 LOG.warnf("Could not find a suitable persistence unit for model classes/packages:\n\t- %s",
@@ -1482,7 +1526,7 @@ public final class HibernateOrmProcessor {
                 .filter(name -> !spiPuNames.contains(name))
                 .collect(Collectors.toSet());
         boolean hasNamedPUs = puNames.size() > 1
-                || (puNames.size() == 1 && !puNames.contains(PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME));
+                || (puNames.size() == 1 && !puNames.contains(DEFAULT_PERSISTENCE_UNIT_NAME));
         if (!hasNamedPUs) {
             return;
         }
@@ -1517,6 +1561,17 @@ public final class HibernateOrmProcessor {
                             """,
                     missingPackagePropertyKeys)));
         }
+    }
+
+    private static Set<String> findEnclosingEntityPersistenceUnits(String enclosingClassName,
+            Map<String, JpaPersistenceUnitModel> modelPerPersistenceUnit) {
+        Set<String> result = new HashSet<>();
+        for (var entry : modelPerPersistenceUnit.entrySet()) {
+            if (entry.getValue().entityClassNames().contains(enclosingClassName)) {
+                result.add(entry.getKey());
+            }
+        }
+        return result;
     }
 
     private static Set<String> getRelatedModelClassNames(IndexView index, Set<String> knownModelClassNames,
@@ -1608,31 +1663,6 @@ public final class HibernateOrmProcessor {
      */
     private boolean shouldIgnorePersistenceXmlResources(HibernateOrmConfig config) {
         return config.persistenceXml().ignore() || Boolean.getBoolean("SKIP_PARSE_PERSISTENCE_XML");
-    }
-
-    /**
-     * Set up the scanner, as this scanning has already been done we need to just tell it about the classes we
-     * have discovered. This scanner is bytecode serializable and is passed directly into the recorder
-     *
-     * @param jpaModel the previously discovered JPA model (domain objects, ...)
-     * @return a new QuarkusScanner with all domainObjects registered
-     */
-    public static QuarkusScanner buildQuarkusScanner(JpaModelBuildItem jpaModel) {
-        QuarkusScanner scanner = new QuarkusScanner();
-        Set<PackageDescriptor> packageDescriptors = new LinkedHashSet<>();
-        for (String packageName : jpaModel.getAllModelPackageNames()) {
-            QuarkusScanner.PackageDescriptorImpl desc = new QuarkusScanner.PackageDescriptorImpl(packageName);
-            packageDescriptors.add(desc);
-        }
-        scanner.setPackageDescriptors(packageDescriptors);
-        Set<ClassDescriptor> classDescriptors = new LinkedHashSet<>();
-        for (String className : jpaModel.getEntityClassNames()) {
-            QuarkusScanner.ClassDescriptorImpl desc = new QuarkusScanner.ClassDescriptorImpl(className,
-                    ClassDescriptor.Categorization.MODEL);
-            classDescriptors.add(desc);
-        }
-        scanner.setClassDescriptors(classDescriptors);
-        return scanner;
     }
 
     private PreGeneratedProxies generateProxies(Set<String> managedClassAndPackageNames, IndexView combinedIndex,

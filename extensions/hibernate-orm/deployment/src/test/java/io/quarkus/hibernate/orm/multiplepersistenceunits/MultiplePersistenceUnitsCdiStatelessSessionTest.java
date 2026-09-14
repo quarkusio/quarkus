@@ -71,6 +71,14 @@ public class MultiplePersistenceUnitsCdiStatelessSessionTest {
     @Transactional
     public void testUserInInventorySession() {
         User user = new User("gsmet");
-        assertThatThrownBy(() -> inventorySession.insert(user)).isInstanceOf(UnknownEntityTypeException.class);
+        // ORM 8.0 wraps UnknownEntityTypeException in IllegalArgumentException
+        // see org.hibernate.internal.StatelessSessionImpl.insert():363
+        assertThatThrownBy(() -> inventorySession.insert(user))
+                .isInstanceOf(IllegalArgumentException.class)
+                .cause()
+                .isInstanceOf(UnknownEntityTypeException.class)
+                .hasMessageContaining(
+                        "Unknown entity type 'io.quarkus.hibernate.orm.multiplepersistenceunits.model.config.user.User'");
+
     }
 }

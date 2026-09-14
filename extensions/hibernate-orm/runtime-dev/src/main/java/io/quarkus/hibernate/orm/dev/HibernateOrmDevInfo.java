@@ -8,12 +8,10 @@ import java.util.Map;
 import java.util.TreeMap;
 import java.util.function.Supplier;
 
-import org.hibernate.LockOptions;
 import org.hibernate.boot.query.NamedHqlQueryDefinition;
 import org.hibernate.boot.query.NamedNativeQueryDefinition;
-import org.hibernate.boot.query.NamedQueryDefinition;
-import org.hibernate.boot.spi.AbstractNamedQueryDefinition;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
+import org.hibernate.jpa.HibernateHints;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
@@ -167,16 +165,16 @@ public class HibernateOrmDevInfo {
         public Query(NamedHqlQueryDefinition queryDefinition) {
             this.name = queryDefinition.getRegistrationName();
             this.query = queryDefinition.getHqlString();
-            this.cacheable = extractIsCacheable(queryDefinition);
-            this.lockMode = extractLockOptions(queryDefinition);
+            this.cacheable = hintAsBoolean(queryDefinition.getHints(), HibernateHints.HINT_CACHEABLE);
+            this.lockMode = hintAsString(queryDefinition.getHints(), HibernateHints.HINT_NATIVE_LOCK_MODE);
             this.type = "JPQL";
         }
 
         public Query(NamedNativeQueryDefinition nativeQueryDefinition) {
             this.name = nativeQueryDefinition.getRegistrationName();
             this.query = nativeQueryDefinition.getSqlQueryString();
-            this.cacheable = extractIsCacheable(nativeQueryDefinition);
-            this.lockMode = extractLockOptions(nativeQueryDefinition);
+            this.cacheable = hintAsBoolean(nativeQueryDefinition.getHints(), HibernateHints.HINT_CACHEABLE);
+            this.lockMode = hintAsString(nativeQueryDefinition.getHints(), HibernateHints.HINT_NATIVE_LOCK_MODE);
             this.type = "native";
         }
 
@@ -200,27 +198,14 @@ public class HibernateOrmDevInfo {
             return type;
         }
 
-        private static boolean extractIsCacheable(NamedQueryDefinition definition) {
-            //TODO cleanup and expose this properly in an SPI/API?
-            if (definition instanceof AbstractNamedQueryDefinition) {
-                AbstractNamedQueryDefinition def = (AbstractNamedQueryDefinition) definition;
-                if (def.getCacheable() == Boolean.TRUE) {
-                    return true;
-                }
-            }
-            return false;
+        private static boolean hintAsBoolean(Map<String, Object> hints, String key) {
+            Object value = hints.get(key);
+            return value != null && Boolean.parseBoolean(String.valueOf(value));
         }
 
-        private static String extractLockOptions(NamedQueryDefinition definition) {
-            //TODO cleanup and expose this properly in an SPI/API?
-            if (definition instanceof AbstractNamedQueryDefinition) {
-                final AbstractNamedQueryDefinition def = (AbstractNamedQueryDefinition) definition;
-                final LockOptions lockOptions = def.getLockOptions();
-                if (lockOptions != null && lockOptions.getLockMode() != null) {
-                    return lockOptions.getLockMode().name();
-                }
-            }
-            return "";
+        private static String hintAsString(Map<String, Object> hints, String key) {
+            Object value = hints.get(key);
+            return value != null ? String.valueOf(value) : "";
         }
     }
 }

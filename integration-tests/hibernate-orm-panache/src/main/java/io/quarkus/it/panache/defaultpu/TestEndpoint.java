@@ -30,7 +30,7 @@ import jakarta.xml.bind.annotation.XmlElements;
 import jakarta.xml.bind.annotation.XmlTransient;
 
 import org.hibernate.engine.spi.SelfDirtinessTracker;
-import org.hibernate.jpa.QueryHints;
+import org.hibernate.jpa.HibernateHints;
 import org.hibernate.query.SemanticException;
 import org.junit.jupiter.api.Assertions;
 
@@ -129,7 +129,7 @@ public class TestEndpoint {
         Assertions.assertEquals(person, persons.get(0));
 
         // next calls to this query will be cached
-        persons = Person.find("name = ?1", "stef").withHint(QueryHints.HINT_CACHEABLE, "true").list();
+        persons = Person.find("name = ?1", "stef").withHint(HibernateHints.HINT_CACHEABLE, "true").list();
         Assertions.assertEquals(1, persons.size());
         Assertions.assertEquals(person, persons.get(0));
 

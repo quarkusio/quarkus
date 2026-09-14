@@ -579,6 +579,101 @@ This integration is enabled by default and can be disabled with the following co
 quarkus.signals.telemetry.metrics.enabled=false
 ----
 
+== Security
+
+If the xref:security-overview.adoc[Quarkus Security extension] is present and CDI request context is active, the `SecurityIdentity` of the emitting thread is automatically propagated to each receiver invocation.
+
+The identity is captured at emission time and restored in the receiver's request context.
+Receiver methods can therefore inject `SecurityIdentity` and use standard security annotations such as `@RolesAllowed`.
+
+[source,java]
+----
+package org.acme.signals.security;
+
+import jakarta.annotation.security.RolesAllowed;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
+
+import io.quarkus.logging.Log;
+import io.quarkus.security.identity.SecurityIdentity;
+import io.quarkus.signals.Receives;
+
+@ApplicationScoped
+public class OrderHandlers {
+
+    record OrderPlaced(String orderId) {
+    }
+
+    @Inject
+    SecurityIdentity identity;
+
+    @RolesAllowed("admin")
+    void onOrder(@Receives OrderPlaced order) { // <1>
+        Log.infof("Order %s processed by %s", order.orderId(), identity.getPrincipal().getName());
+    }
+}
+----
+<1> Only invoked if the `SecurityIdentity` propagated from the emitter has the `admin` role. An `UnauthorizedException` or `ForbiddenException` is thrown otherwise.
+
+=== When is the identity available?
+
+The identity is only propagated when it has already been resolved at the moment the signal is emitted.
+This happens automatically when xref:security-proactive-authentication.adoc[proactive authentication] is enabled (the default).
+
+If proactive authentication is disabled (`quarkus.http.auth.proactive=false`), the identity is still propagated provided it was resolved before the emission.
+For example, when an authorization check (like `@RolesAllowed`) was performed or the `SecurityIdentity` was accessed earlier in the request:
+
+[source,properties]
+----
+quarkus.http.auth.proactive=false
+----
+
+[source,java]
+----
+package org.acme.signals.security;
+
+import jakarta.annotation.security.RolesAllowed;
+import jakarta.inject.Inject;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+
+import io.quarkus.security.identity.SecurityIdentity;
+import io.quarkus.signals.Signal;
+
+@Path("/orders")
+public class OrdersResource {
+
+    record OrderPlaced(String orderId, String username) {
+    }
+
+    @Inject
+    Signal<OrderPlaced> orderPlaced;
+
+    @Inject
+    SecurityIdentity securityIdentity;
+
+    @RolesAllowed("user") // <1>
+    @GET
+    @Path("/user")
+    public String placeOrderIfUser() {
+        orderPlaced.publish(new OrderPlaced("ORD-1", null));
+        return "ok";
+    }
+
+    @GET
+    @Path("/public")
+    public String placePublicOrder() {
+        String username = securityIdentity.getPrincipal().getName(); // <2>
+        orderPlaced.publish(new OrderPlaced("ORD-1", username));
+        return "ok";
+    }
+}
+----
+<1> The `@RolesAllowed` check forces authentication, so the identity is resolved before the signal is emitted.
+<2> Accessing the `SecurityIdentity` principal triggers authentication, so the identity is available for propagation.
+
+NOTE: When the OpenID Connect extension is used, the propagated identity is not set once the token expires and receivers will see an anonymous identity.
+
 == SPI
 
 The `io.quarkus.signals.spi` package provides extension points for integrators.

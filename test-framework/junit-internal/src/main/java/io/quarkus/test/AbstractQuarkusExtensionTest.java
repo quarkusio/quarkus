@@ -1097,10 +1097,11 @@ public abstract class AbstractQuarkusExtensionTest<S extends AbstractQuarkusExte
     }
 
     /**
-     * The resolved {@link ApplicationModel} can only be cached and reused if there are no forced or excluded dependencies.
+     * The resolved {@link ApplicationModel} can only be cached and reused if there are no forced or excluded dependencies
+     * and no bootstrap customizers that could alter model resolution (e.g. localProjectDiscovery, targetDirectory).
      */
     protected boolean isApplicationModelCacheable() {
-        return !hasDependencyCustomizations();
+        return !hasDependencyCustomizations() && bootstrapCustomizers.isEmpty();
     }
 
     /**

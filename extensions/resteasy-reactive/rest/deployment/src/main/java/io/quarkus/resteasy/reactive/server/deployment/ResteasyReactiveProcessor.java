@@ -1154,6 +1154,7 @@ public class ResteasyReactiveProcessor {
                                     }
                                     // also remove @BeanParam annotations targeting records
                                     if (field.declaredAnnotation(ResteasyReactiveDotNames.BEAN_PARAM) != null
+                                            && field.type().kind() == Type.Kind.CLASS
                                             && isRecord(resourceScanningResultBuildItem.getResult().getIndex(),
                                                     field.type().asClassType().name())) {
                                         context.remove(a -> a.name().equals(ResteasyReactiveDotNames.BEAN_PARAM));
@@ -1165,7 +1166,7 @@ public class ResteasyReactiveProcessor {
 
                             private boolean isRecord(IndexView index, DotName name) {
                                 ClassInfo classInfo = index.getClassByName(name);
-                                return classInfo.isRecord();
+                                return classInfo != null && classInfo.isRecord();
                             }
                         })));
     }

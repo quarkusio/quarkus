@@ -5,16 +5,24 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Using SSL with native executables
 include::_attributes.adoc[]
-:summary: In this guide, we will discuss how you can get your native images to support SSL, as native images don't support it out of the box.
+:summary: TLS works in native executables out of the box. This guide covers the one case that still needs configuration (clients that rely on the `java.net.URL` `https` handler) and how to set up the trust store.
 :devtools-no-gradle:
 :topics: native,ssl
 
 We are quickly moving to an SSL-everywhere world so being able to use SSL is crucial.
 
-In this guide, we will discuss how you can get your native executables to support SSL,
-as native executables don't support it out of the box.
+Since GraalVM 21.3, TLS works in native executables out of the box: the JDK TLS stack
+is included automatically, so TLS on the HTTP server and on most clients requires no
+extra configuration.
 
-NOTE: If you don't plan on using native executables, you can pass your way as in JDK mode, SSL is supported without further manipulations.
+The exception is clients that go through the `java.net.URL` / `HttpsURLConnection`
+`https` protocol handler, such as the REST client used in this guide. That handler must
+be enabled explicitly when building the native executable, which is what
+`quarkus.ssl.native` (and the underlying `-H:EnableURLProtocols=https` option) controls.
+This guide walks through that mechanism, and through configuring the trust store used at
+run time.
+
+NOTE: In JVM mode, SSL is supported without any further manipulation.
 
 == Prerequisites
 

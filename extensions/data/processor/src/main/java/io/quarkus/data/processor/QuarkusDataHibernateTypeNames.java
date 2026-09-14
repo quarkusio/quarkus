@@ -21,7 +21,7 @@ public class QuarkusDataHibernateTypeNames implements QuarkusDataTypeNames {
 
     @Override
     public String statelessBlockingRepositoryBase() {
-        return "io.quarkus.data.hibernate.stateless.blocking.BlockingRecordRepositoryBase";
+        return "io.quarkus.data.hibernate.record.blocking.BlockingRecordRepositoryBase";
     }
 
     @Override
@@ -31,6 +31,6 @@ public class QuarkusDataHibernateTypeNames implements QuarkusDataTypeNames {
 
     @Override
     public String statelessReactiveRepositoryBase() {
-        return "io.quarkus.data.hibernate.stateless.reactive.ReactiveRecordRepositoryBase";
+        return "io.quarkus.data.hibernate.record.reactive.ReactiveRecordRepositoryBase";
     }
 }

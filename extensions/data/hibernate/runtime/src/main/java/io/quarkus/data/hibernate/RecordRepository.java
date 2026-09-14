@@ -1,7 +1,7 @@
 package io.quarkus.data.hibernate;
 
-import io.quarkus.data.hibernate.stateless.blocking.BlockingRecordRepositoryBase;
-import io.quarkus.data.hibernate.stateless.reactive.ReactiveRecordRepositoryBase;
+import io.quarkus.data.hibernate.record.blocking.BlockingRecordRepositoryBase;
+import io.quarkus.data.hibernate.record.reactive.ReactiveRecordRepositoryBase;
 
 public interface RecordRepository<Entity> extends BlockingRecordRepositoryBase<Entity, Long> {
 

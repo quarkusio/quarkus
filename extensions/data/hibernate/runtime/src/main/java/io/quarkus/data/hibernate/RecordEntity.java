@@ -1,7 +1,7 @@
 package io.quarkus.data.hibernate;
 
-import io.quarkus.data.hibernate.stateless.blocking.BlockingRecordEntity;
-import io.quarkus.data.hibernate.stateless.reactive.ReactiveRecordEntity;
+import io.quarkus.data.hibernate.record.blocking.BlockingRecordEntity;
+import io.quarkus.data.hibernate.record.reactive.ReactiveRecordEntity;
 
 /**
  * Represents an entity with stateless blocking operations.

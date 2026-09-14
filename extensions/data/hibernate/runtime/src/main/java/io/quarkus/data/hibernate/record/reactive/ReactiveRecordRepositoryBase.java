@@ -1,4 +1,4 @@
-package io.quarkus.data.hibernate.stateless.reactive;
+package io.quarkus.data.hibernate.record.reactive;
 
 import io.quarkus.data.hibernate.RepositorySwitcher;
 

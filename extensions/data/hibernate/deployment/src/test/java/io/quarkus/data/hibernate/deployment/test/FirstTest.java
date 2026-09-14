@@ -9,7 +9,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.data.hibernate.managed.blocking.BlockingManagedRepositoryBase;
-import io.quarkus.data.hibernate.stateless.blocking.BlockingRecordRepositoryBase;
+import io.quarkus.data.hibernate.record.blocking.BlockingRecordRepositoryBase;
 import io.quarkus.test.QuarkusExtensionTest;
 
 public class FirstTest {
@@ -90,7 +90,7 @@ public class FirstTest {
         Assertions.assertEquals("gee", entity.foo);
         entity.foo = "fu";
         // make sure we call update
-        entity.statelessBlocking().update();
+        entity.record().update();
 
         Assertions.assertEquals(1, MyEntity_.statelessBlocking().count());
     }
@@ -112,7 +112,7 @@ public class FirstTest {
         MyEntity entity = new MyEntity();
         entity.foo = "bar";
         entity.id = 1L;
-        entity.statelessBlocking().upsert();
+        entity.record().upsert();
 
         Assertions.assertEquals(1, MyEntity_.statelessBlocking().count());
     }
@@ -125,7 +125,7 @@ public class FirstTest {
         Assertions.assertEquals("bar", entity.foo);
         Assertions.assertEquals(1L, entity.id);
         entity.foo = "fu";
-        entity.statelessBlocking().upsert();
+        entity.record().upsert();
 
         Assertions.assertEquals(1, MyEntity_.statelessBlocking().count());
     }
@@ -170,17 +170,17 @@ public class FirstTest {
         MyEntity entity = new MyEntity();
         entity.foo = "switch-test";
         entity.id = 42L;
-        entity.statelessBlocking().insert();
+        entity.record().insert();
 
         var managedRepo = MyEntity_.managedBlocking();
         Assertions.assertInstanceOf(BlockingManagedRepositoryBase.class, managedRepo);
         Assertions.assertEquals(1, managedRepo.count());
 
-        var statelessRepo = managedRepo.statelessBlocking();
+        var statelessRepo = managedRepo.record();
         Assertions.assertInstanceOf(BlockingRecordRepositoryBase.class, statelessRepo);
         Assertions.assertEquals(1, statelessRepo.count());
 
-        var managedAgain = statelessRepo.managedBlocking();
+        var managedAgain = statelessRepo.managed();
         Assertions.assertInstanceOf(BlockingManagedRepositoryBase.class, managedAgain);
         Assertions.assertEquals(1, managedAgain.count());
     }

@@ -51,6 +51,7 @@ public abstract class AbstractJarBuilder<T extends BuildItem> implements JarBuil
     protected final MainClassBuildItem mainClass;
     protected final ApplicationArchivesBuildItem applicationArchives;
     protected final TransformedClassesBuildItem transformedClasses;
+    protected final Map<ArtifactKey, Set<String>> removedResources;
     protected final List<GeneratedClassBuildItem> generatedClasses;
     protected final List<GeneratedResourceBuildItem> generatedResources;
     protected final List<GeneratedServiceProviderBuildItem> generatedServiceProviders;
@@ -65,6 +66,7 @@ public abstract class AbstractJarBuilder<T extends BuildItem> implements JarBuil
             MainClassBuildItem mainClass,
             ApplicationArchivesBuildItem applicationArchives,
             TransformedClassesBuildItem transformedClasses,
+            Map<ArtifactKey, Set<String>> removedResources,
             List<GeneratedClassBuildItem> generatedClasses,
             List<GeneratedResourceBuildItem> generatedResources,
             List<GeneratedServiceProviderBuildItem> generatedServiceProviders,
@@ -78,6 +80,7 @@ public abstract class AbstractJarBuilder<T extends BuildItem> implements JarBuil
         this.mainClass = mainClass;
         this.applicationArchives = applicationArchives;
         this.transformedClasses = transformedClasses;
+        this.removedResources = removedResources;
         this.generatedClasses = generatedClasses;
         this.generatedResources = generatedResources;
         this.generatedServiceProviders = generatedServiceProviders;

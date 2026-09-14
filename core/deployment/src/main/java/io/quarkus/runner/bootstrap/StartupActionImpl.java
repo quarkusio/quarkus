@@ -50,12 +50,14 @@ import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
 import io.quarkus.deployment.builditem.GeneratedServiceProviderBuildItem;
 import io.quarkus.deployment.builditem.MainClassBuildItem;
+import io.quarkus.deployment.builditem.RemovedResourcesBuildItem;
 import io.quarkus.deployment.builditem.RuntimeApplicationShutdownBuildItem;
 import io.quarkus.deployment.builditem.TransformedClassesBuildItem;
 import io.quarkus.deployment.dev.testing.ApplicationPropertiesUtils;
 import io.quarkus.deployment.jvm.JvmModulesReconfigurer;
 import io.quarkus.deployment.jvm.ResolvedJVMRequirements;
 import io.quarkus.dev.appstate.ApplicationStateNotification;
+import io.quarkus.maven.dependency.ArtifactKey;
 import io.quarkus.runtime.ApplicationLifecycleManager;
 import io.quarkus.runtime.Quarkus;
 
@@ -104,18 +106,19 @@ public class StartupActionImpl implements StartupAction {
         //test mode only has a single class loader, while dev uses a disposable runtime class loader
         //that is discarded between restarts
         Map<String, byte[]> transformedClasses = extractTransformedClasses(buildResult);
+        Map<ArtifactKey, Set<String>> removedResources = extractRemovedResources(buildResult);
         Map<String, byte[]> resources = new HashMap<>(extractGeneratedResources(buildResult, true));
         if (curatedApplication.isFlatClassPath()) {
             resources.putAll(extractGeneratedResources(buildResult, false));
-            baseClassLoader.reset(resources, transformedClasses);
+            baseClassLoader.reset(resources, transformedClasses, removedResources);
             runtimeClassLoader = baseClassLoader;
         } else {
-            baseClassLoader.reset(extractGeneratedResources(buildResult, false), transformedClasses);
+            baseClassLoader.reset(extractGeneratedResources(buildResult, false), transformedClasses, removedResources);
             // TODO Need to do recreations in JUnitTestRunner for dev mode case
             Path tempApplicationProperties = ApplicationPropertiesUtils
                     .createTempApplicationProperties(STARTUP_OVERRIDE.getName());
             runtimeClassLoader = curatedApplication.createRuntimeClassLoader(resources, transformedClasses,
-                    List.of(tempApplicationProperties));
+                    removedResources, List.of(tempApplicationProperties));
         }
         this.runtimeClassLoader = runtimeClassLoader;
         runtimeClassLoader.setStartupAction(this);
@@ -499,6 +502,14 @@ public class StartupActionImpl implements StartupAction {
             }
         }
         return ret;
+    }
+
+    private static Map<ArtifactKey, Set<String>> extractRemovedResources(BuildResult buildResult) {
+        RemovedResourcesBuildItem removedResources = buildResult.consumeOptional(RemovedResourcesBuildItem.class);
+        if (removedResources == null || removedResources.isEmpty()) {
+            return Map.of();
+        }
+        return removedResources.getRemovedResources();
     }
 
     private static Map<String, byte[]> extractGeneratedResources(BuildResult buildResult, boolean applicationClasses) {

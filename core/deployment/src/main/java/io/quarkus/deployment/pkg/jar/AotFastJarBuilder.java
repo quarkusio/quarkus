@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 
@@ -38,6 +39,7 @@ public class AotFastJarBuilder extends AbstractFastJarBuilder {
             ApplicationArchivesBuildItem applicationArchives,
             List<AdditionalApplicationArchiveBuildItem> additionalApplicationArchives,
             TransformedClassesBuildItem transformedClasses,
+            Map<ArtifactKey, Set<String>> removedResources,
             List<GeneratedClassBuildItem> generatedClasses,
             List<GeneratedResourceBuildItem> generatedResources,
             List<GeneratedServiceProviderBuildItem> generatedServiceProviders,
@@ -47,7 +49,7 @@ public class AotFastJarBuilder extends AbstractFastJarBuilder {
             ResolvedJVMRequirements jvmRequirements,
             JarTreeShakeBuildItem treeShakeResult) {
         super(curateOutcome, outputTarget, applicationInfo, packageConfig, mainClass, applicationArchives,
-                additionalApplicationArchives, transformedClasses, generatedClasses, generatedResources,
+                additionalApplicationArchives, transformedClasses, removedResources, generatedClasses, generatedResources,
                 generatedServiceProviders, parentFirstArtifactKeys, removedArtifactKeys, executorService, jvmRequirements,
                 treeShakeResult);
     }

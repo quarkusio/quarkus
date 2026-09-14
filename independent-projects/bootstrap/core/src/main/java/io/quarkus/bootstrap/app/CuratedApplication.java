@@ -20,7 +20,6 @@ import java.util.stream.Collectors;
 
 import io.quarkus.bootstrap.classloading.ClassPathElement;
 import io.quarkus.bootstrap.classloading.ClassPathResource;
-import io.quarkus.bootstrap.classloading.FilteredClassPathElement;
 import io.quarkus.bootstrap.classloading.MemoryClassPathElement;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.bootstrap.model.ApplicationModel;
@@ -190,16 +189,6 @@ public class CuratedApplication implements Serializable, AutoCloseable {
             consumer.accept(ClassPathElement.EMPTY);
             return;
         }
-        Collection<String> filteredResources = configuredClassLoading.getRemovedResources().get(artifact.getKey());
-        if (filteredResources != null) {
-            Consumer<ClassPathElement> old = consumer;
-            consumer = new Consumer<ClassPathElement>() {
-                @Override
-                public void accept(ClassPathElement classPathElement) {
-                    old.accept(new FilteredClassPathElement(classPathElement, filteredResources));
-                }
-            };
-        }
         ClassPathElement cpe = useCpeCache ? augmentationElements.get(artifact.getKey()) : null;
         if (cpe != null) {
             consumer.accept(cpe);
@@ -327,13 +316,6 @@ public class CuratedApplication implements Serializable, AutoCloseable {
             }
 
             builder.setResettableElement(new MemoryClassPathElement(Collections.emptyMap(), true));
-            Map<String, byte[]> banned = new HashMap<>();
-            for (Collection<String> i : configuredClassLoading.getRemovedResources().values()) {
-                for (String j : i) {
-                    banned.put(j, new byte[0]);
-                }
-            }
-            builder.addBannedElement(new MemoryClassPathElement(banned, true));
 
             for (ResolvedDependency dependency : appModel.getDependencies()) {
                 if (configuredClassLoading.isRemovedArtifact(dependency.getKey())) {
@@ -420,15 +402,17 @@ public class CuratedApplication implements Serializable, AutoCloseable {
     public QuarkusClassLoader createRuntimeClassLoader(
             Map<String, byte[]> resources,
             Map<String, byte[]> transformedClasses,
+            Map<ArtifactKey, Set<String>> removedResources,
             List<Path> additionalLocations) {
         return createRuntimeClassLoader(getOrCreateBaseRuntimeClassLoader(), resources, transformedClasses,
-                additionalLocations);
+                removedResources, additionalLocations);
     }
 
     public QuarkusClassLoader createRuntimeClassLoader(
             ClassLoader base,
             Map<String, byte[]> resources,
             Map<String, byte[]> transformedClasses,
+            Map<ArtifactKey, Set<String>> removedResources,
             List<Path> additionalLocations) {
 
         QuarkusClassLoader.Builder builder = QuarkusClassLoader
@@ -442,6 +426,7 @@ public class CuratedApplication implements Serializable, AutoCloseable {
                 .setCuratedApplication(this)
                 .setAggregateParentResources(true);
         builder.setTransformedClasses(transformedClasses);
+        builder.setRemovedResources(removedResources);
 
         for (Path additionalLocation : additionalLocations) {
             builder.addNormalPriorityElement(ClassPathElement.fromPath(additionalLocation, true));

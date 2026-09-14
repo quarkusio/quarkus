@@ -950,6 +950,10 @@ public abstract class ResteasyReactiveRequestContext
         return nonEmptyList;
     }
 
+    public Object getQueryParameter(String name, boolean single, boolean encoded) {
+        return getQueryParameter(name, single, encoded, null, false);
+    }
+
     @Override
     public Object getQueryParameter(String name, boolean single, boolean encoded, String separator, boolean restQueryMap) {
         if (single) {

@@ -18,6 +18,7 @@ import io.vertx.core.http.HttpClient;
 public class RestClientRecorder {
     private static volatile Map<String, String> configKeys;
     private static volatile Set<String> blockingClassNames;
+    private static volatile Set<String> interfacesWithUrlParam = Set.of();
 
     private static final Map<String, List<HttpClient>> tlsConfigNameToVertxHttpClients = new ConcurrentHashMap<>();
 
@@ -35,6 +36,26 @@ public class RestClientRecorder {
 
     public static boolean isClassBlocking(Class<?> exceptionMapperClass) {
         return blockingClassNames.contains(exceptionMapperClass.getName());
+    }
+
+    public void setInterfacesWithUrlParam(Set<String> interfacesWithUrlParam) {
+        RestClientRecorder.interfacesWithUrlParam = interfacesWithUrlParam;
+    }
+
+    /**
+     * @return whether the client interface, or one of the interfaces it extends, declares a method parameter annotated
+     *         with {@code @Url}
+     */
+    public static boolean hasUrlParam(Class<?> clientInterface) {
+        if (interfacesWithUrlParam.contains(clientInterface.getName())) {
+            return true;
+        }
+        for (Class<?> superInterface : clientInterface.getInterfaces()) {
+            if (hasUrlParam(superInterface)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     public void setRestClientBuilderResolver() {

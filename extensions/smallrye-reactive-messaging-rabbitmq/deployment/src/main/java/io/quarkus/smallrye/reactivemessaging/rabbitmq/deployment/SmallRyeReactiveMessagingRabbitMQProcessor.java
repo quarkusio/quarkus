@@ -14,6 +14,7 @@ import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.smallrye.reactivemessaging.rabbitmq.runtime.CredentialsProviderLink;
 import io.quarkus.smallrye.reactivemessaging.rabbitmq.runtime.RabbitMQRecorder;
@@ -25,6 +26,12 @@ public class SmallRyeReactiveMessagingRabbitMQProcessor {
     @BuildStep
     FeatureBuildItem feature() {
         return new FeatureBuildItem(Feature.MESSAGING_RABBITMQ);
+    }
+
+    @BuildStep
+    RuntimeInitializedClassBuildItem runtimeInitNettyFrameHandler() {
+        return new RuntimeInitializedClassBuildItem(
+                "com.rabbitmq.client.impl.NettyFrameHandlerFactory$NettyFrameHandler");
     }
 
     @BuildStep

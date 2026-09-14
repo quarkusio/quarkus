@@ -32,7 +32,6 @@ import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNa
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.LOCAL_DATE_TIME;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.LOCAL_TIME;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.LONG;
-import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.MAP;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.MATRIX_PARAM;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.MULTI;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.MULTI_PART_DATA_INPUT;
@@ -1464,7 +1463,7 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
                             genericElementType, currentMethodInfo);
                 }
                 builder.setOptional(true);
-            } else if (isEligibleForMapAsQuery(anns, pt)) {
+            } else if (isEligibleForMultivaluedMapAsQuery(anns, pt)) {
                 typeHandled = true;
                 builder.setSingle(false);
                 elementType = String.class.getName();
@@ -1558,18 +1557,17 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
         return builder;
     }
 
-    private boolean isEligibleForMapAsQuery(Map<DotName, AnnotationInstance> annotations, ParameterizedType type) {
+    private boolean isEligibleForMultivaluedMapAsQuery(Map<DotName, AnnotationInstance> annotations, ParameterizedType type) {
         AnnotationInstance annotation = annotations.get(REST_QUERY_PARAM);
-        return type.name().equals(MAP) && annotation != null &&
-                (annotation.value("name") == null ||
-                        annotation.value("name").asString().isBlank())
+        return type.name().equals(MULTI_VALUED_MAP) && annotation != null &&
+                (annotation.value() == null || annotation.value().asString().isBlank())
                 &&
-                isAValidMapStringString(type);
+                isAValidMultivaluedMapOfStringString(type);
     }
 
-    private boolean isAValidMapStringString(ParameterizedType parameterizedType) {
-        boolean invalidMapForInjectingQuery = parameterizedType.arguments().size() != 2;
-        if (invalidMapForInjectingQuery) {
+    private boolean isAValidMultivaluedMapOfStringString(ParameterizedType parameterizedType) {
+        boolean invalidMultivaluedMapForInjectingQuery = parameterizedType.arguments().size() != 2;
+        if (invalidMultivaluedMapForInjectingQuery) {
             return false;
         }
         return parameterizedType.arguments().stream().allMatch(item -> item.name().equals(DotName.createSimple(String.class)));

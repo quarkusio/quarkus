@@ -2,19 +2,21 @@ package org.jboss.resteasy.reactive.server.core.parameters.converters;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
-import java.util.Map;
 
+import jakarta.ws.rs.core.MultivaluedMap;
+
+import org.jboss.resteasy.reactive.common.util.QuarkusMultivaluedHashMap;
 import org.jboss.resteasy.reactive.server.model.ParamConverterProviders;
 
-public record MapConverter(ParameterConverter delegate) implements ParameterConverter {
+public record MultivaluedMapConverter(ParameterConverter delegate) implements ParameterConverter {
 
     @Override
     public Object convert(Object parameter) {
-        if (parameter instanceof Map) {
+        if (parameter instanceof MultivaluedMap) {
             return parameter;
         }
 
-        return Map.of();
+        return new QuarkusMultivaluedHashMap<>();
     }
 
     @Override
@@ -23,13 +25,13 @@ public record MapConverter(ParameterConverter delegate) implements ParameterConv
             delegate.init(deployment, rawType, genericType, annotations);
     }
 
-    public static class MapSupplier implements DelegatingParameterConverterSupplier {
+    public static class MultivaluedMapSupplier implements DelegatingParameterConverterSupplier {
         private ParameterConverterSupplier delegate;
 
-        public MapSupplier() {
+        public MultivaluedMapSupplier() {
         }
 
-        public MapSupplier(ParameterConverterSupplier converter) {
+        public MultivaluedMapSupplier(ParameterConverterSupplier converter) {
             this.delegate = converter;
         }
 
@@ -40,15 +42,15 @@ public record MapConverter(ParameterConverter delegate) implements ParameterConv
 
         @Override
         public String getClassName() {
-            return MapConverter.class.getName();
+            return MultivaluedMapConverter.class.getName();
         }
 
         @Override
         public ParameterConverter get() {
-            return delegate == null ? new MapConverter(null) : new MapConverter(delegate.get());
+            return delegate == null ? new MultivaluedMapConverter(null) : new MultivaluedMapConverter(delegate.get());
         }
 
-        public MapConverter.MapSupplier setDelegate(ParameterConverterSupplier delegate) {
+        public MultivaluedMapSupplier setDelegate(ParameterConverterSupplier delegate) {
             this.delegate = delegate;
             return this;
         }

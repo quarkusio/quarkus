@@ -77,7 +77,7 @@ import org.jboss.resteasy.reactive.server.core.parameters.converters.LoadedParam
 import org.jboss.resteasy.reactive.server.core.parameters.converters.LocalDateParamConverter;
 import org.jboss.resteasy.reactive.server.core.parameters.converters.LocalDateTimeParamConverter;
 import org.jboss.resteasy.reactive.server.core.parameters.converters.LocalTimeParamConverter;
-import org.jboss.resteasy.reactive.server.core.parameters.converters.MapConverter;
+import org.jboss.resteasy.reactive.server.core.parameters.converters.MultivaluedMapConverter;
 import org.jboss.resteasy.reactive.server.core.parameters.converters.NoopParameterConverter;
 import org.jboss.resteasy.reactive.server.core.parameters.converters.OffsetDateTimeParamConverter;
 import org.jboss.resteasy.reactive.server.core.parameters.converters.OffsetTimeParamConverter;
@@ -562,7 +562,7 @@ public class ServerEndpointIndexer
             ServerIndexedParameter builder, String elementType, MethodInfo currentMethodInfo) {
         ParameterConverterSupplier converter = extractConverter(elementType, index,
                 existingConverters, errorLocation, hasRuntimeConverters, builder.getAnns(), currentMethodInfo);
-        builder.setConverter(new MapConverter.MapSupplier(converter));
+        builder.setConverter(new MultivaluedMapConverter.MultivaluedMapSupplier(converter));
     }
 
     @Override

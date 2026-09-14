@@ -12,7 +12,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Deque;
-import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -965,11 +964,11 @@ public abstract class ResteasyReactiveRequestContext
         }
 
         if (restQueryMap) {
-            HashMap<String, String> allQueryAsMap = new HashMap<>();
-            serverRequest().queryParamNames().forEach(n -> {
-                allQueryAsMap.put(n, serverRequest().getQueryParam(n));
-            });
-            return allQueryAsMap;
+            QuarkusMultivaluedHashMap<String, String> allQueryParams = new QuarkusMultivaluedHashMap<>();
+            for (String queryParamName : serverRequest().queryParamNames()) {
+                allQueryParams.addAll(queryParamName, filterEmpty(serverRequest().getAllQueryParams(queryParamName)));
+            }
+            return allQueryParams;
         }
 
         // empty collections must not be turned to null

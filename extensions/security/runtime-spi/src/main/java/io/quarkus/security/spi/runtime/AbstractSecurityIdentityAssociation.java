@@ -37,6 +37,13 @@ public abstract class AbstractSecurityIdentityAssociation implements CurrentIden
         }
     }
 
+    /**
+     * Retrieve the {@link SecurityIdentity}. It triggers the authentication request when it is set to null.
+     *
+     * @return {@link SecurityIdentity}; never null
+     * @throws BlockingOperationNotAllowedException when the {@link SecurityIdentity} is set to null and blocking
+     *         operations are not allowed
+     */
     @Override
     public SecurityIdentity getIdentity() {
         if (identity == null) {
@@ -60,4 +67,13 @@ public abstract class AbstractSecurityIdentityAssociation implements CurrentIden
         return identity;
     }
 
+    /**
+     * Retrieve the {@link SecurityIdentity} without triggering an authentication request.
+     * A null identity value means that the authentication has not yet occurred.
+     *
+     * @return the current {@link SecurityIdentity}, or {@code null} if none exists
+     */
+    public SecurityIdentity getIdentityValue() {
+        return identity;
+    }
 }

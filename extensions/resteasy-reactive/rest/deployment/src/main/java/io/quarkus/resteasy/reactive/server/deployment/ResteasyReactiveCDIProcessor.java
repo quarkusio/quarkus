@@ -213,7 +213,7 @@ public class ResteasyReactiveCDIProcessor {
     @BuildStep
     void pathInterfaceImpls(Optional<ResourceScanningResultBuildItem> resourceScanningResultBuildItem,
             BuildProducer<AdditionalBeanBuildItem> additionalBeanBuildItemBuildProducer) {
-        if (!resourceScanningResultBuildItem.isPresent()) {
+        if (resourceScanningResultBuildItem.isEmpty()) {
             return;
         }
         ResourceScanningResult resourceScanningResult = resourceScanningResultBuildItem.get().getResult();
@@ -221,7 +221,7 @@ public class ResteasyReactiveCDIProcessor {
         List<String> impls = new ArrayList<>();
         for (Map.Entry<DotName, String> i : pathInterfaces.entrySet()) {
             List<ClassInfo> candidateBeans = new ArrayList<>(1);
-            for (ClassInfo clazz : resourceScanningResult.getIndex().getAllKnownImplementors(i.getKey())) {
+            for (ClassInfo clazz : resourceScanningResult.getIndex().getAllKnownImplementations(i.getKey())) {
                 if (!Modifier.isAbstract(clazz.flags())) {
                     if ((clazz.enclosingClass() == null || Modifier.isStatic(clazz.flags())) &&
                             clazz.enclosingMethod() == null) {
@@ -230,7 +230,7 @@ public class ResteasyReactiveCDIProcessor {
                 }
             }
             if (candidateBeans.size() == 1) {
-                impls.add(candidateBeans.get(0).name().toString());
+                impls.add(candidateBeans.getFirst().name().toString());
             }
         }
         if (!impls.isEmpty()) {

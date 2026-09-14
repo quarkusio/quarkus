@@ -336,6 +336,8 @@ public interface AutoConfiguredOpenTelemetrySdkBuilderCustomizer {
                             return metricExporter;
                         }
                     })
+                    // TODO Support more than a meeter reader and get rif of the CompositeMetricExporter.
+                    //  See: https://github.com/open-telemetry/opentelemetry-java/issues/4553
                     .addMetricReaderCustomizer(new BiFunction<MetricReader, ConfigProperties, MetricReader>() {
                         @Override
                         public MetricReader apply(MetricReader metricReader, ConfigProperties configProperties) {

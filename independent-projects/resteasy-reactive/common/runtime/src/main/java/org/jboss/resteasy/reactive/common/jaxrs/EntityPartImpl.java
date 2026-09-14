@@ -17,6 +17,7 @@ import jakarta.ws.rs.core.MultivaluedMap;
 import jakarta.ws.rs.ext.MessageBodyReader;
 
 import org.jboss.resteasy.reactive.common.core.Serialisers;
+import org.jboss.resteasy.reactive.common.providers.serialisers.MessageReaderUtil;
 
 public class EntityPartImpl implements EntityPart {
 
@@ -83,7 +84,7 @@ public class EntityPartImpl implements EntityPart {
             return rawType.cast(content);
         }
         if (rawType == String.class) {
-            return rawType.cast(new String(content.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8));
+            return rawType.cast(MessageReaderUtil.readString(content, mediaType));
         }
         if (rawType == byte[].class) {
             return rawType.cast(content.readAllBytes());

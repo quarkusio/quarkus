@@ -74,6 +74,12 @@ public interface InfoBuildTimeConfig {
         boolean enabled();
 
         /**
+         * Whether the Quarkus version should be displayed.
+         */
+        @WithDefault("true")
+        boolean quarkusVersion();
+
+        /**
          * Additional properties to be added to the build section
          */
         @WithParentName

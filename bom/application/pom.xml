@@ -224,7 +224,7 @@
         <webauthn4j.version>0.28.0.RELEASE</webauthn4j.version>
         <jsoup.version>1.23.2</jsoup.version> <!-- JSoup is used by Camel and LangChain4J so be careful when updating -->
         <reactor.version>3.8.7</reactor.version>
-        <zstd-jni.version>1.5.7-14</zstd-jni.version> <!-- used by kafka-clients and some Camel components -->
+        <zstd-jni.version>1.5.7-16</zstd-jni.version> <!-- used by kafka-clients and some Camel components -->
     </properties>
 
     <pluginRepositories>

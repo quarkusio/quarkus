@@ -312,6 +312,8 @@ public class RuntimeResourceDeployment {
                     }
                 }
             }
+            // the loop above collects the filters from last to first, so restore their original order
+            Collections.reverse(readBodyRequestFilters);
             handlers.addAll(readBodyRequestFilters);
         }
 

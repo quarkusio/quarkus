@@ -137,7 +137,7 @@ To configure the connection using the same properties for all signals, please ch
 
 By default all log levels are exported.
 
-If the following configuration is created in the the `application.properties` file, only logs with a level of `ERROR` or higher will be exported:
+If the following configuration is created in the `application.properties` file, only logs with a level of `ERROR` or higher will be exported:
 [source,properties]
 ----
 quarkus.otel.logs.level=ERROR

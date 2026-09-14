@@ -90,7 +90,7 @@ public class JarTreeShakeProcessor {
     void skipTreeShaking(BuildProducer<JarTreeShakeBuildItem> treeShakeProducer) {
         treeShakeProducer
                 .produce(new JarTreeShakeBuildItem(false, Set.of(),
-                        Map.of()));
+                        Map.of(), Set.of()));
     }
 
     @BuildStep(onlyIf = TreeShakeEnabled.class)

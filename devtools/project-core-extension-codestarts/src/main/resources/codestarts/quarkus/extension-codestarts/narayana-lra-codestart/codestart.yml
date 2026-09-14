@@ -1,0 +1,12 @@
+name: narayana-lra-codestart
+ref: narayana-lra
+type: tooling
+tags: extension-codestart
+metadata:
+  title: Narayana LRA
+  description: Set up default REST dependencies for LRA
+language:
+  base:
+    dependencies:
+      - io.quarkus:quarkus-rest-jackson
+      - io.quarkus:quarkus-rest-client

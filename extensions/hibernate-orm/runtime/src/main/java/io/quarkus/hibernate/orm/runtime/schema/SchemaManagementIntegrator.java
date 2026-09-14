@@ -11,27 +11,26 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.hibernate.boot.Metadata;
 import org.hibernate.boot.spi.BootstrapContext;
+import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.engine.config.spi.ConfigurationService;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.integrator.spi.Integrator;
 import org.hibernate.service.ServiceRegistry;
 import org.hibernate.service.spi.ServiceRegistryImplementor;
 import org.hibernate.service.spi.SessionFactoryServiceRegistry;
-import org.hibernate.tool.schema.SourceType;
+import org.hibernate.tool.schema.Action;
 import org.hibernate.tool.schema.TargetType;
 import org.hibernate.tool.schema.internal.exec.ScriptTargetOutputToWriter;
 import org.hibernate.tool.schema.spi.CommandAcceptanceException;
 import org.hibernate.tool.schema.spi.ContributableMatcher;
 import org.hibernate.tool.schema.spi.ExceptionHandler;
 import org.hibernate.tool.schema.spi.ExecutionOptions;
-import org.hibernate.tool.schema.spi.SchemaDropper;
 import org.hibernate.tool.schema.spi.SchemaManagementException;
 import org.hibernate.tool.schema.spi.SchemaManagementTool;
+import org.hibernate.tool.schema.spi.SchemaManagementToolCoordinator;
 import org.hibernate.tool.schema.spi.SchemaMigrator;
 import org.hibernate.tool.schema.spi.SchemaValidator;
-import org.hibernate.tool.schema.spi.ScriptSourceInput;
 import org.hibernate.tool.schema.spi.ScriptTargetOutput;
-import org.hibernate.tool.schema.spi.SourceDescriptor;
 import org.hibernate.tool.schema.spi.TargetDescriptor;
 import org.jboss.logging.Logger;
 
@@ -101,20 +100,57 @@ public class SchemaManagementIntegrator implements Integrator, DatabaseSchemaPro
 
         ServiceRegistry serviceRegistry = holder.sessionFactory.getServiceRegistry();
         SimpleExecutionOptions executionOptions = new SimpleExecutionOptions(serviceRegistry);
-        Object schemaGenerationDatabaseAction = executionOptions.getConfigurationValues()
-                .get("jakarta.persistence.schema-generation.database.action");
-        if (schemaGenerationDatabaseAction != null && !(schemaGenerationDatabaseAction.toString().equals("none"))) {
-            //if this is none we assume another framework is doing this (e.g. flyway)
+        Action schemaGenerationDatabaseAction = databaseAction(executionOptions);
+        if (!Action.NONE.equals(schemaGenerationDatabaseAction) && !Action.POPULATE.equals(schemaGenerationDatabaseAction)) {
+            //if this is none (or populate, which doesn't touch the schema) we assume another framework is doing this (e.g. flyway)
             SchemaManagementTool schemaManagementTool = serviceRegistry
                     .getService(SchemaManagementTool.class);
-            SchemaDropper schemaDropper = schemaManagementTool.getSchemaDropper(executionOptions.getConfigurationValues());
-            schemaDropper.doDrop(holder.metadata, executionOptions, ContributableMatcher.ALL, new SimpleSourceDescriptor(),
-                    new SimpleTargetDescriptor());
-            schemaManagementTool.getSchemaCreator(executionOptions.getConfigurationValues())
-                    .doCreation(holder.metadata, executionOptions, ContributableMatcher.ALL, new SimpleSourceDescriptor(),
-                            new SimpleTargetDescriptor());
+            // Drop and create the schema exactly like on startup,
+            // so that the schema init script and the data init script get executed too
+            SchemaManagementToolCoordinator.performDatabaseAction(Action.CREATE, holder.metadata, schemaManagementTool,
+                    serviceRegistry, executionOptions, ContributableMatcher.ALL);
         }
         //we still clear caches though
+        evictCaches(holder);
+    }
+
+    public static void populatePersistenceUnits() {
+        if (!LaunchMode.current().isDevOrTest()) {
+            throw new IllegalStateException("Can only be used in dev or test mode");
+        }
+        for (String val : metadataMap.keySet()) {
+            populatePersistenceUnit(val);
+        }
+    }
+
+    /**
+     * Executes the data init script again, for persistence units whose schema is managed by another framework
+     * (e.g. Flyway) and thus was not recreated by {@link #recreateDatabase(String)}.
+     * Must be called after that other framework is done resetting the schema.
+     */
+    public static void populatePersistenceUnit(String name) {
+        if (!LaunchMode.current().isDevOrTest()) {
+            throw new IllegalStateException("Can only be used in dev or test mode");
+        }
+        Holder holder = metadataMap.get(name);
+
+        ServiceRegistry serviceRegistry = holder.sessionFactory.getServiceRegistry();
+        SimpleExecutionOptions executionOptions = new SimpleExecutionOptions(serviceRegistry);
+        if (Action.POPULATE.equals(databaseAction(executionOptions))) {
+            SchemaManagementTool schemaManagementTool = serviceRegistry
+                    .getService(SchemaManagementTool.class);
+            SchemaManagementToolCoordinator.performDatabaseAction(Action.POPULATE, holder.metadata, schemaManagementTool,
+                    serviceRegistry, executionOptions, ContributableMatcher.ALL);
+            evictCaches(holder);
+        }
+    }
+
+    private static Action databaseAction(SimpleExecutionOptions executionOptions) {
+        return Action.interpretJpaSetting(executionOptions.getConfigurationValues()
+                .get(AvailableSettings.JAKARTA_HBM2DDL_DATABASE_ACTION));
+    }
+
+    private static void evictCaches(Holder holder) {
         holder.sessionFactory.getCache().evictAll();
         holder.sessionFactory.getCache().evictQueries();
     }
@@ -183,6 +219,21 @@ public class SchemaManagementIntegrator implements Integrator, DatabaseSchemaPro
         recreateDatabases();
     }
 
+    @Override
+    public void populateDatabase(String dbName) {
+        String name = datasourceToPuMap.get(dbName);
+        if (name == null) {
+            //not an hibernate DS
+            return;
+        }
+        populatePersistenceUnit(name);
+    }
+
+    @Override
+    public void populateAllDatabases() {
+        populatePersistenceUnits();
+    }
+
     static class Holder {
         final Metadata metadata;
         final SessionFactoryImplementor sessionFactory;
@@ -223,27 +274,4 @@ public class SchemaManagementIntegrator implements Integrator, DatabaseSchemaPro
         }
     }
 
-    private static class SimpleSourceDescriptor implements SourceDescriptor {
-        @Override
-        public SourceType getSourceType() {
-            return SourceType.METADATA;
-        }
-
-        @Override
-        public ScriptSourceInput getScriptSourceInput() {
-            return null;
-        }
-    }
-
-    private static class SimpleTargetDescriptor implements TargetDescriptor {
-        @Override
-        public EnumSet<TargetType> getTargetTypes() {
-            return EnumSet.of(TargetType.DATABASE);
-        }
-
-        @Override
-        public ScriptTargetOutput getScriptTargetOutput() {
-            return null;
-        }
-    }
 }

@@ -38,6 +38,7 @@ import io.quarkus.hibernate.orm.runtime.RuntimeSettings;
 import io.quarkus.hibernate.orm.runtime.SchemaToolingUtil;
 import io.quarkus.hibernate.orm.runtime.migration.MultiTenancyStrategy;
 import io.quarkus.hibernate.orm.runtime.observers.QuarkusSessionFactoryObserverForDbVersionCheck;
+import io.quarkus.hibernate.orm.runtime.observers.SessionFactoryObserverForDataPopulation;
 import io.quarkus.hibernate.orm.runtime.observers.SessionFactoryObserverForNamedQueryValidation;
 import io.quarkus.hibernate.orm.runtime.observers.SessionFactoryObserverForSchemaExport;
 import io.quarkus.hibernate.orm.runtime.recording.PrevalidatedQuarkusMetadata;
@@ -55,13 +56,14 @@ public class FastBootEntityManagerFactoryBuilder implements EntityManagerFactory
     protected final MultiTenancyStrategy multiTenancyStrategy;
     protected final boolean shouldApplySchemaMigration;
     private final SchemaToolingUtil.PreparedImportScripts importScripts;
+    private final boolean populateAfterBoot;
 
     public FastBootEntityManagerFactoryBuilder(
             QuarkusPersistenceUnitDescriptor puDescriptor,
             PrevalidatedQuarkusMetadata metadata,
             StandardServiceRegistry standardServiceRegistry, RuntimeSettings runtimeSettings, Object validatorFactory,
             Object cdiBeanManager, MultiTenancyStrategy multiTenancyStrategy, boolean shouldApplySchemaMigration,
-            SchemaToolingUtil.PreparedImportScripts importScripts) {
+            SchemaToolingUtil.PreparedImportScripts importScripts, boolean populateAfterBoot) {
         this.puDescriptor = puDescriptor;
         this.metadata = metadata;
         this.standardServiceRegistry = standardServiceRegistry;
@@ -71,6 +73,7 @@ public class FastBootEntityManagerFactoryBuilder implements EntityManagerFactory
         this.multiTenancyStrategy = multiTenancyStrategy;
         this.shouldApplySchemaMigration = shouldApplySchemaMigration;
         this.importScripts = importScripts;
+        this.populateAfterBoot = populateAfterBoot;
     }
 
     @Override
@@ -176,6 +179,11 @@ public class FastBootEntityManagerFactoryBuilder implements EntityManagerFactory
         // We should avoid running schema migrations multiple times
         if (shouldApplySchemaMigration) {
             options.addSessionFactoryObservers(new SessionFactoryObserverForSchemaExport(metadata));
+            // Same for the data init script, which for some schema management strategies
+            // is not executed as part of schema management
+            if (populateAfterBoot) {
+                options.addSessionFactoryObservers(new SessionFactoryObserverForDataPopulation());
+            }
         }
         //Vanilla ORM registers this one as well; we don't:
         //options.addSessionFactoryObservers( new SessionFactoryObserverForRegistration() );

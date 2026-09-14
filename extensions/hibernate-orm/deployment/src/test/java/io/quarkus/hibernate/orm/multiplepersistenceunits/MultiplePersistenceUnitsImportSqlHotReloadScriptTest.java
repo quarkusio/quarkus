@@ -28,7 +28,7 @@ public class MultiplePersistenceUnitsImportSqlHotReloadScriptTest {
                     .addPackage(SharedEntity.class.getPackage().getName())
                     .addPackage(User.class.getPackage().getName())
                     .addPackage(OtherUserInSubPackage.class.getPackage().getName())
-                    .addClass(MultiplePersistenceUnitsSqlLoadScriptTestResource.class)
+                    .addClass(MultiplePersistenceUnitsInitScriptTestResource.class)
                     .addAsResource("application-multiple-persistence-units-annotations.properties", "application.properties")
                     .addAsResource("import-sharedentity.sql", "import.sql"));
 
@@ -48,7 +48,7 @@ public class MultiplePersistenceUnitsImportSqlHotReloadScriptTest {
     }
 
     private void assertBodyIs(String expectedBody) {
-        RestAssured.when().get("/multiple-persistence-units/orm-sql-load-script/2").then().body(is(expectedBody));
+        RestAssured.when().get("/multiple-persistence-units/orm-init-script/2").then().body(is(expectedBody));
     }
 
 }

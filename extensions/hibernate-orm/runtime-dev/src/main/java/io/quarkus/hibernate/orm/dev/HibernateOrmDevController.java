@@ -8,6 +8,7 @@ import java.util.function.Supplier;
 import org.hibernate.boot.Metadata;
 import org.hibernate.boot.query.NamedHqlQueryDefinition;
 import org.hibernate.boot.query.NamedNativeQueryDefinition;
+import org.hibernate.boot.registry.classloading.spi.ClassLoaderService;
 import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.engine.config.spi.ConfigurationService;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
@@ -17,6 +18,7 @@ import org.hibernate.tool.schema.Action;
 import org.hibernate.tool.schema.SourceType;
 import org.hibernate.tool.schema.TargetType;
 import org.hibernate.tool.schema.internal.ExceptionHandlerCollectingImpl;
+import org.hibernate.tool.schema.internal.Helper;
 import org.hibernate.tool.schema.internal.HibernateSchemaManagementTool;
 import org.hibernate.tool.schema.internal.exec.ScriptTargetOutputToWriter;
 import org.hibernate.tool.schema.spi.ContributableMatcher;
@@ -127,17 +129,7 @@ public class HibernateOrmDevController {
                     config,
                     exceptionHandler);
             StringWriter writer = new StringWriter();
-            final SourceDescriptor source = new SourceDescriptor() {
-                @Override
-                public SourceType getSourceType() {
-                    return SourceType.METADATA;
-                }
-
-                @Override
-                public ScriptSourceInput getScriptSourceInput() {
-                    return null;
-                }
-            };
+            final SourceDescriptor source = createSourceDescriptor(action, config, ssr);
             final TargetDescriptor target = new TargetDescriptor() {
                 @Override
                 public EnumSet<TargetType> getTargetTypes() {
@@ -171,6 +163,35 @@ public class HibernateOrmDevController {
             e.printStackTrace(new PrintWriter(stackTraceWriter));
             return "Could not generate DDL: \n" + stackTraceWriter.toString();
         }
+    }
+
+    /**
+     * Mirrors what Hibernate ORM does on startup, so that the schema init script
+     * (jakarta.persistence.schema-generation.create-script-source) is part of the generated creation DDL.
+     */
+    private static SourceDescriptor createSourceDescriptor(Action action, Map<String, Object> config, ServiceRegistry ssr) {
+        final Object scriptSourceSetting = action == Action.CREATE
+                ? config.get(AvailableSettings.JAKARTA_HBM2DDL_CREATE_SCRIPT_SOURCE)
+                : null;
+        final SourceType sourceType = action == Action.CREATE
+                ? SourceType.interpret(config.get(AvailableSettings.JAKARTA_HBM2DDL_CREATE_SOURCE),
+                        scriptSourceSetting != null ? SourceType.SCRIPT : SourceType.METADATA)
+                : SourceType.METADATA;
+        final ScriptSourceInput scriptSourceInput = sourceType != SourceType.METADATA && scriptSourceSetting != null
+                ? Helper.interpretScriptSourceSetting(scriptSourceSetting, ssr.getService(ClassLoaderService.class),
+                        (String) config.get(AvailableSettings.HBM2DDL_CHARSET_NAME))
+                : null;
+        return new SourceDescriptor() {
+            @Override
+            public SourceType getSourceType() {
+                return sourceType;
+            }
+
+            @Override
+            public ScriptSourceInput getScriptSourceInput() {
+                return scriptSourceInput;
+            }
+        };
     }
 
 }

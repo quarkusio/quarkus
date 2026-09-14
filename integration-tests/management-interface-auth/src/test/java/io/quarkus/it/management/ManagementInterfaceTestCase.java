@@ -45,21 +45,21 @@ public class ManagementInterfaceTestCase {
 
     @Test
     void verifyThatSbomIsExposedOnManagementInterface() {
-        RestAssured.given().auth().preemptive().basic("john", "john").get(getPrefix() + "/.well-known/sbom")
+        RestAssured.given().auth().preemptive().basic("john", "john").get(getPrefix() + "/.not-so-well-known/sbom")
                 .then().statusCode(401);
 
-        RestAssured.given().auth().preemptive().basic("bob", "bob").get(getPrefix() + "/.well-known/sbom")
+        RestAssured.given().auth().preemptive().basic("bob", "bob").get(getPrefix() + "/.not-so-well-known/sbom")
                 .then().statusCode(403);
 
-        RestAssured.given().auth().basic("alice", "alice").get(getPrefix() + "/.well-known/sbom")
+        RestAssured.given().auth().basic("alice", "alice").get(getPrefix() + "/.not-so-well-known/sbom")
                 .then().statusCode(200);
 
-        RestAssured.given().auth().oauth2(getAdminToken()).get(getPrefix() + "/.well-known/sbom")
+        RestAssured.given().auth().oauth2(getAdminToken()).get(getPrefix() + "/.not-so-well-known/sbom")
                 .then().statusCode(401);
-        RestAssured.given().auth().oauth2(getUserToken()).get(getPrefix() + "/.well-known/sbom")
+        RestAssured.given().auth().oauth2(getUserToken()).get(getPrefix() + "/.not-so-well-known/sbom")
                 .then().statusCode(401);
 
-        RestAssured.get("/.well-known/sbom")
+        RestAssured.get("/.not-so-well-known/sbom")
                 .then().statusCode(404);
     }
 

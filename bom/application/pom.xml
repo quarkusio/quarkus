@@ -55,7 +55,7 @@
         <smallrye-context-propagation.version>2.3.0</smallrye-context-propagation.version>
         <smallrye-reactive-streams-operators.version>1.0.13</smallrye-reactive-streams-operators.version>
         <smallrye-reactive-types-converter.version>3.0.3</smallrye-reactive-types-converter.version>
-        <smallrye-mutiny-vertx-binding.version>3.21.6</smallrye-mutiny-vertx-binding.version>
+        <smallrye-mutiny-vertx-binding.version>3.23.1</smallrye-mutiny-vertx-binding.version>
         <smallrye-reactive-messaging.version>4.33.0</smallrye-reactive-messaging.version>
         <smallrye-stork.version>2.7.9</smallrye-stork.version>
         <jakarta.activation.version>2.1.4</jakarta.activation.version>
@@ -110,7 +110,7 @@
         <wildfly-elytron.version>2.8.4.Final</wildfly-elytron.version>
         <jboss-marshalling.version>2.3.0</jboss-marshalling.version>
         <jboss-threads.version>3.9.2</jboss-threads.version>
-        <vertx.version>4.5.32</vertx.version>
+        <vertx.version>4.5.34</vertx.version>
         <httpclient5.version>5.5.2</httpclient5.version>
         <httpcore5.version>5.3.6</httpcore5.version>
         <httpclient.version>4.5.14</httpclient.version>
@@ -132,7 +132,8 @@
         <junit.jupiter.version>6.0.3</junit.jupiter.version>
         <infinispan.version>16.0.13</infinispan.version>
         <infinispan.protostream.version>6.0.7</infinispan.protostream.version>
-        <caffeine.version>3.2.3</caffeine.version>
+        <caffeine.version>3.2.4</caffeine.version>
+        <netty-tcnative.version>2.0.81.Final</netty-tcnative.version>
         <netty.version>4.1.137.Final</netty.version>
         <brotli4j.version>1.23.0</brotli4j.version>
         <reactive-streams.version>1.0.4</reactive-streams.version>
@@ -408,6 +409,11 @@
                 <version>${vertx.version}</version>
                 <scope>import</scope>
                 <type>pom</type>
+            </dependency>
+            <dependency>
+                <groupId>io.vertx</groupId>
+                <artifactId>vertx-codegen</artifactId>
+                <version>${vertx.version}</version>
             </dependency>
 
             <!-- gRPC dependencies, imported as a BOM -->

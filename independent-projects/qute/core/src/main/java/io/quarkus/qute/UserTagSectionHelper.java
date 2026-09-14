@@ -71,6 +71,11 @@ public class UserTagSectionHelper extends IncludeSectionHelper implements Sectio
         public static final String ARGS = "_args";
 
         private static final String IT = "it";
+        /**
+         * The default value of the {@code it} parameter. It marks a call site with no first positional parameter and cannot
+         * be typed by a template author, so that {@code {#myTag it /}} passes the {@code it} of the calling template.
+         */
+        private static final String IT_DEFAULT_VALUE = "<it>";
         // Unlike regular includes user tags are isolated by default
         private static final String ISOLATED_DEFAULT_VALUE = "true";
 
@@ -101,7 +106,8 @@ public class UserTagSectionHelper extends IncludeSectionHelper implements Sectio
 
         @Override
         public ParametersInfo getParameters() {
-            ParametersInfo.Builder builder = ParametersInfo.builder().addParameter(Parameter.builder(IT).defaultValue(IT));
+            ParametersInfo.Builder builder = ParametersInfo.builder()
+                    .addParameter(Parameter.builder(IT).defaultValue(IT_DEFAULT_VALUE));
             addDefaultParams(builder);
             return builder.build();
         }
@@ -117,8 +123,9 @@ public class UserTagSectionHelper extends IncludeSectionHelper implements Sectio
                             // {#myTag _unisolated /}
                             || value.equals(UNISOLATED)
                             // IT with default value or not the first argument
-                            // e.g. it=it in {#myTag foo=bar /} or baz in {#myTag foo=bar baz /}
-                            || (key.equals(IT) && (!firstParamValue.get().equals(value) || value.equals(IT))));
+                            // e.g. it=<it> in {#myTag foo=bar /} or baz in {#myTag foo=bar baz /}
+                            || (key.equals(IT)
+                                    && (!firstParamValue.get().equals(value) || value.equals(IT_DEFAULT_VALUE))));
         }
 
         @Override
@@ -144,7 +151,7 @@ public class UserTagSectionHelper extends IncludeSectionHelper implements Sectio
         protected void processParam(Map<String, String> params, String key, String value, Supplier<String> firstParamValue,
                 BiConsumer<String, String> paramConsumer) {
             if (key.equals(IT)) {
-                if (value.equals(IT)) {
+                if (value.equals(IT_DEFAULT_VALUE)) {
                     return;
                 } else if (isSinglePart(value)) {
                     // Also register the param expression with the defaulted key

@@ -8,13 +8,17 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 
+import jakarta.enterprise.util.TypeLiteral;
 import jakarta.inject.Inject;
 
 import org.eclipse.microprofile.config.ConfigProvider;
@@ -619,6 +623,561 @@ class RedisCacheImplTest {
         assertThatTheKeyDoesNotExist("cache:test-invalidation:clé-3");
         assertThatTheKeyDoesExist("key6");
         assertThat(getAllKeys()).hasSize(1);
+    }
+
+    // ---- Bulk operations: getAll (no loader) ----------------------------------------
+
+    @Test
+    void testGetAll_allHits() {
+        RedisCacheInfo info = new RedisCacheInfo();
+        info.name = "bulk";
+        info.valueType = String.class;
+        info.expireAfterWrite = Optional.of(Duration.ofSeconds(10));
+        RedisCacheImpl cache = new RedisCacheImpl(info, vertx, redis, BLOCKING_ALLOWED);
+
+        cache.put("k1", "v1").await().indefinitely();
+        cache.put("k2", "v2").await().indefinitely();
+        cache.put("k3", "v3").await().indefinitely();
+
+        Map<String, String> result = cache.getAll(List.of("k1", "k2", "k3"), String.class).await().indefinitely();
+        assertThat(result).hasSize(3)
+                .containsEntry("k1", "v1")
+                .containsEntry("k2", "v2")
+                .containsEntry("k3", "v3");
+    }
+
+    @Test
+    void testGetAll_allMisses_noLoader() {
+        RedisCacheInfo info = new RedisCacheInfo();
+        info.name = "bulk";
+        info.valueType = String.class;
+        info.expireAfterWrite = Optional.of(Duration.ofSeconds(10));
+        RedisCacheImpl cache = new RedisCacheImpl(info, vertx, redis, BLOCKING_ALLOWED);
+
+        Map<String, String> result = cache.getAll(List.of("k1", "k2", "k3"), String.class).await().indefinitely();
+        assertThat(result).isEmpty();
+    }
+
+    @Test
+    void testGetAll_mixed_noLoader() {
+        RedisCacheInfo info = new RedisCacheInfo();
+        info.name = "bulk";
+        info.valueType = String.class;
+        info.expireAfterWrite = Optional.of(Duration.ofSeconds(10));
+        RedisCacheImpl cache = new RedisCacheImpl(info, vertx, redis, BLOCKING_ALLOWED);
+
+        cache.put("k1", "v1").await().indefinitely();
+        cache.put("k3", "v3").await().indefinitely();
+
+        Map<String, String> result = cache.getAll(List.of("k1", "k2", "k3"), String.class).await().indefinitely();
+        assertThat(result).hasSize(2)
+                .containsEntry("k1", "v1")
+                .containsEntry("k3", "v3")
+                .doesNotContainKey("k2");
+    }
+
+    @Test
+    void testGetAll_emptyCollection() {
+        RedisCacheInfo info = new RedisCacheInfo();
+        info.name = "bulk";
+        info.valueType = String.class;
+        info.expireAfterWrite = Optional.of(Duration.ofSeconds(10));
+        RedisCacheImpl cache = new RedisCacheImpl(info, vertx, redis, BLOCKING_ALLOWED);
+
+        Map<String, String> result = cache.getAll(List.<String> of(), String.class).await().indefinitely();
+        assertThat(result).isEmpty();
+    }
+
+    @Test
+    void testGetAll_withExpireAfterAccess() throws InterruptedException {
+        RedisCacheInfo info = new RedisCacheInfo();
+        info.name = "bulk-access";
+        info.valueType = String.class;
+        info.expireAfterAccess = Optional.of(Duration.ofSeconds(1));
+        RedisCacheImpl cache = new RedisCacheImpl(info, vertx, redis, BLOCKING_ALLOWED);
+
+        cache.put("k1", "v1").await().indefinitely();
+        cache.put("k2", "v2").await().indefinitely();
+
+        // First getAll — should trigger a batch of EXPIRE commands for each hit key
+        Map<String, String> result = cache.getAll(List.of("k1", "k2"), String.class).await().indefinitely();
+        assertThat(result).hasSize(2).containsEntry("k1", "v1").containsEntry("k2", "v2");
+
+        // TTL should have been set via the EXPIRE command issued for each hit
+        Response ttl = redis.send(Request.cmd(Command.TTL).arg("cache:bulk-access:k1")).await().indefinitely();
+        assertThat(ttl.toLong()).isGreaterThan(0L);
+
+        // Repeated access within the TTL window resets the expiry each time
+        for (int i = 0; i < 3; i++) {
+            Thread.sleep(500);
+            Map<String, String> refreshed = cache.getAll(List.of("k1", "k2"), String.class).await().indefinitely();
+            assertThat(refreshed).hasSize(2);
+        }
+
+        // After access stops the key should eventually expire.
+        // Use a direct Redis GET (not cache.getOrNull) because getOrNull issues GETEX which would
+        // reset the TTL on every poll and the key would never expire within the polling window.
+        await().until(
+                () -> redis.send(Request.cmd(Command.GET).arg("cache:bulk-access:k1")).await().indefinitely() == null);
+    }
+
+    // ---- Bulk operations: getAll (with sync loader) ---------------------------------
+
+    @Test
+    void testGetAll_allMisses_withLoader() {
+        RedisCacheInfo info = new RedisCacheInfo();
+        info.name = "bulk";
+        info.valueType = String.class;
+        info.expireAfterWrite = Optional.of(Duration.ofSeconds(10));
+        RedisCacheImpl cache = new RedisCacheImpl(info, vertx, redis, BLOCKING_ALLOWED);
+
+        Map<String, String> result = cache.getAll(
+                List.of("k1", "k2", "k3"),
+                String.class,
+                misses -> {
+                    Map<String, String> loaded = new LinkedHashMap<>();
+                    for (String k : misses) {
+                        loaded.put(k, k.toUpperCase());
+                    }
+                    return loaded;
+                }).await().indefinitely();
+
+        assertThat(result).hasSize(3)
+                .containsEntry("k1", "K1")
+                .containsEntry("k2", "K2")
+                .containsEntry("k3", "K3");
+
+        // Values must have been written back to Redis
+        assertThatTheKeyDoesExist("cache:bulk:k1");
+        assertThatTheKeyDoesExist("cache:bulk:k2");
+        assertThatTheKeyDoesExist("cache:bulk:k3");
+    }
+
+    @Test
+    void testGetAll_mixed_withLoader() {
+        RedisCacheInfo info = new RedisCacheInfo();
+        info.name = "bulk";
+        info.valueType = String.class;
+        info.expireAfterWrite = Optional.of(Duration.ofSeconds(10));
+        RedisCacheImpl cache = new RedisCacheImpl(info, vertx, redis, BLOCKING_ALLOWED);
+
+        cache.put("k1", "cached-v1").await().indefinitely();
+        cache.put("k3", "cached-v3").await().indefinitely();
+
+        AtomicInteger loaderCallCount = new AtomicInteger(0);
+        Map<String, String> result = cache.getAll(
+                List.of("k1", "k2", "k3"),
+                String.class,
+                misses -> {
+                    loaderCallCount.incrementAndGet();
+                    // Loader should only receive the miss key (k2)
+                    Map<String, String> loaded = new LinkedHashMap<>();
+                    for (String k : misses) {
+                        loaded.put(k, "loaded-" + k);
+                    }
+                    return loaded;
+                }).await().indefinitely();
+
+        assertThat(loaderCallCount.get()).isEqualTo(1);
+        assertThat(result).hasSize(3)
+                .containsEntry("k1", "cached-v1")
+                .containsEntry("k2", "loaded-k2")
+                .containsEntry("k3", "cached-v3");
+    }
+
+    @Test
+    void testGetAll_expireAfterWrite_loaderWriteback() {
+        RedisCacheInfo info = new RedisCacheInfo();
+        info.name = "bulk";
+        info.valueType = String.class;
+        info.expireAfterWrite = Optional.of(Duration.ofSeconds(1));
+        RedisCacheImpl cache = new RedisCacheImpl(info, vertx, redis, BLOCKING_ALLOWED);
+
+        // Load via the value loader — the write-back must honour expireAfterWrite
+        cache.getAll(
+                List.of("k1", "k2"),
+                String.class,
+                misses -> {
+                    Map<String, String> loaded = new LinkedHashMap<>();
+                    for (String k : misses) {
+                        loaded.put(k, k.toUpperCase());
+                    }
+                    return loaded;
+                }).await().indefinitely();
+
+        assertThatTheKeyDoesExist("cache:bulk:k1");
+
+        // Written-back entries must expire after the configured duration
+        await().until(() -> cache.getOrNull("k1", String.class).await().indefinitely() == null);
+    }
+
+    @Test
+    void testGetAll_nullValueInLoader_throws() {
+        RedisCacheInfo info = new RedisCacheInfo();
+        info.name = "bulk";
+        info.valueType = String.class;
+        info.expireAfterWrite = Optional.of(Duration.ofSeconds(10));
+        RedisCacheImpl cache = new RedisCacheImpl(info, vertx, redis, BLOCKING_ALLOWED);
+
+        assertThatThrownBy(() -> cache.getAll(
+                List.of("k1", "k2"),
+                String.class,
+                misses -> {
+                    Map<String, String> loaded = new LinkedHashMap<>();
+                    loaded.put("k1", "v1");
+                    loaded.put("k2", null); // null value — must throw
+                    return loaded;
+                }).await().indefinitely())
+                .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    void testGetAll_loaderNotCalledOnFullHit() {
+        RedisCacheInfo info = new RedisCacheInfo();
+        info.name = "bulk";
+        info.valueType = String.class;
+        info.expireAfterWrite = Optional.of(Duration.ofSeconds(10));
+        RedisCacheImpl cache = new RedisCacheImpl(info, vertx, redis, BLOCKING_ALLOWED);
+
+        cache.put("k1", "v1").await().indefinitely();
+        cache.put("k2", "v2").await().indefinitely();
+
+        AtomicInteger loaderCallCount = new AtomicInteger(0);
+        Map<String, String> result = cache.getAll(
+                List.of("k1", "k2"),
+                String.class,
+                misses -> {
+                    loaderCallCount.incrementAndGet();
+                    return Map.of(); // should never be called
+                }).await().indefinitely();
+
+        assertThat(loaderCallCount.get()).isEqualTo(0);
+        assertThat(result).containsEntry("k1", "v1").containsEntry("k2", "v2");
+    }
+
+    // ---- Bulk operations: getAllAsync (with async loader) ----------------------------
+
+    @Test
+    void testGetAllAsync_allMisses() {
+        RedisCacheInfo info = new RedisCacheInfo();
+        info.name = "bulk";
+        info.valueType = String.class;
+        info.expireAfterWrite = Optional.of(Duration.ofSeconds(10));
+        RedisCacheImpl cache = new RedisCacheImpl(info, vertx, redis, BLOCKING_ALLOWED);
+
+        Map<String, String> result = cache.getAllAsync(
+                List.of("k1", "k2", "k3"),
+                String.class,
+                misses -> {
+                    Map<String, String> loaded = new LinkedHashMap<>();
+                    for (String k : misses) {
+                        loaded.put(k, "async-" + k);
+                    }
+                    return Uni.createFrom().item(loaded);
+                }).await().indefinitely();
+
+        assertThat(result).hasSize(3)
+                .containsEntry("k1", "async-k1")
+                .containsEntry("k2", "async-k2")
+                .containsEntry("k3", "async-k3");
+
+        // Values must have been written back to Redis
+        assertThatTheKeyDoesExist("cache:bulk:k1");
+    }
+
+    @Test
+    void testGetAllAsync_mixed() {
+        RedisCacheInfo info = new RedisCacheInfo();
+        info.name = "bulk";
+        info.valueType = String.class;
+        info.expireAfterWrite = Optional.of(Duration.ofSeconds(10));
+        RedisCacheImpl cache = new RedisCacheImpl(info, vertx, redis, BLOCKING_ALLOWED);
+
+        cache.put("k1", "cached-v1").await().indefinitely();
+
+        AtomicInteger loaderCallCount = new AtomicInteger(0);
+        Map<String, String> result = cache.getAllAsync(
+                List.of("k1", "k2"),
+                String.class,
+                misses -> {
+                    loaderCallCount.incrementAndGet();
+                    Map<String, String> loaded = new LinkedHashMap<>();
+                    for (String k : misses) {
+                        loaded.put(k, "async-" + k);
+                    }
+                    return Uni.createFrom().item(loaded);
+                }).await().indefinitely();
+
+        assertThat(loaderCallCount.get()).isEqualTo(1);
+        assertThat(result).hasSize(2)
+                .containsEntry("k1", "cached-v1")
+                .containsEntry("k2", "async-k2");
+    }
+
+    // ---- Optimistic locking guard ---------------------------------------------------
+
+    @Test
+    void testGetAll_optimisticLocking_throws() {
+        RedisCacheInfo info = new RedisCacheInfo();
+        info.name = "bulk";
+        info.valueType = String.class;
+        info.expireAfterWrite = Optional.of(Duration.ofSeconds(10));
+        info.useOptimisticLocking = true;
+        RedisCacheImpl cache = new RedisCacheImpl(info, vertx, redis, BLOCKING_ALLOWED);
+
+        assertThatThrownBy(() -> cache.getAll(
+                List.of("k1"),
+                String.class,
+                misses -> Map.of("k1", "v1"))
+                .await().indefinitely())
+                .isInstanceOf(UnsupportedOperationException.class);
+
+        assertThatThrownBy(() -> cache.getAllAsync(
+                List.of("k1"),
+                String.class,
+                misses -> Uni.createFrom().item(Map.of("k1", "v1")))
+                .await().indefinitely())
+                .isInstanceOf(UnsupportedOperationException.class);
+    }
+
+    // ---- Bulk operations: putAll ----------------------------------------------------
+
+    @Test
+    void testPutAll_noTTL() {
+        RedisCacheInfo info = new RedisCacheInfo();
+        info.name = "bulk";
+        info.valueType = String.class;
+        // No expireAfterWrite — atomic MSET path
+        RedisCacheImpl cache = new RedisCacheImpl(info, vertx, redis, BLOCKING_ALLOWED);
+
+        Map<String, String> entries = new LinkedHashMap<>();
+        entries.put("k1", "v1");
+        entries.put("k2", "v2");
+        entries.put("k3", "v3");
+        cache.putAll(entries).await().indefinitely();
+
+        assertThatTheKeyDoesExist("cache:bulk:k1");
+        assertThatTheKeyDoesExist("cache:bulk:k2");
+        assertThatTheKeyDoesExist("cache:bulk:k3");
+
+        assertThat(cache.getOrNull("k1", String.class).await().indefinitely()).isEqualTo("v1");
+        assertThat(cache.getOrNull("k2", String.class).await().indefinitely()).isEqualTo("v2");
+        assertThat(cache.getOrNull("k3", String.class).await().indefinitely()).isEqualTo("v3");
+
+        // Keys stored via MSET should have no expiry (TTL == -1)
+        Response ttl = redis.send(Request.cmd(Command.TTL).arg("cache:bulk:k1")).await().indefinitely();
+        assertThat(ttl.toLong()).isEqualTo(-1L);
+    }
+
+    @Test
+    void testPutAll_withTTL() {
+        RedisCacheInfo info = new RedisCacheInfo();
+        info.name = "bulk";
+        info.valueType = String.class;
+        info.expireAfterWrite = Optional.of(Duration.ofSeconds(1));
+        RedisCacheImpl cache = new RedisCacheImpl(info, vertx, redis, BLOCKING_ALLOWED);
+
+        Map<String, String> entries = new LinkedHashMap<>();
+        entries.put("k1", "v1");
+        entries.put("k2", "v2");
+        cache.putAll(entries).await().indefinitely();
+
+        assertThatTheKeyDoesExist("cache:bulk:k1");
+        assertThatTheKeyDoesExist("cache:bulk:k2");
+
+        // Keys stored via pipelined SET EX should carry the configured TTL
+        Response ttl = redis.send(Request.cmd(Command.TTL).arg("cache:bulk:k1")).await().indefinitely();
+        assertThat(ttl.toLong()).isGreaterThan(0L);
+
+        // Keys must expire after the configured duration
+        await().until(() -> cache.getOrNull("k1", String.class).await().indefinitely() == null);
+        await().until(() -> cache.getOrNull("k2", String.class).await().indefinitely() == null);
+    }
+
+    @Test
+    void testPutAll_thenGetAll() {
+        RedisCacheInfo info = new RedisCacheInfo();
+        info.name = "bulk";
+        info.valueType = String.class;
+        info.expireAfterWrite = Optional.of(Duration.ofSeconds(10));
+        RedisCacheImpl cache = new RedisCacheImpl(info, vertx, redis, BLOCKING_ALLOWED);
+
+        Map<String, String> entries = new LinkedHashMap<>();
+        entries.put("k1", "v1");
+        entries.put("k2", "v2");
+        entries.put("k3", "v3");
+        cache.putAll(entries).await().indefinitely();
+
+        Map<String, String> result = cache.getAll(List.of("k1", "k2", "k3"), String.class).await().indefinitely();
+        assertThat(result).isEqualTo(entries);
+    }
+
+    @Test
+    void testPutAll_nullValue_throws() {
+        RedisCacheInfo info = new RedisCacheInfo();
+        info.name = "bulk";
+        info.valueType = String.class;
+        info.expireAfterWrite = Optional.of(Duration.ofSeconds(10));
+        RedisCacheImpl cache = new RedisCacheImpl(info, vertx, redis, BLOCKING_ALLOWED);
+
+        // TTL path (pipelined SET EX)
+        Map<String, String> withNull = new LinkedHashMap<>();
+        withNull.put("k1", "v1");
+        withNull.put("k2", null);
+        assertThatThrownBy(() -> cache.putAll(withNull).await().indefinitely())
+                .isInstanceOf(IllegalArgumentException.class);
+
+        // No-TTL path (MSET)
+        RedisCacheInfo infoNoTtl = new RedisCacheInfo();
+        infoNoTtl.name = "bulk-no-ttl";
+        infoNoTtl.valueType = String.class;
+        RedisCacheImpl cacheNoTtl = new RedisCacheImpl(infoNoTtl, vertx, redis, BLOCKING_ALLOWED);
+
+        Map<String, String> withNull2 = new LinkedHashMap<>();
+        withNull2.put("k1", "v1");
+        withNull2.put("k2", null);
+        assertThatThrownBy(() -> cacheNoTtl.putAll(withNull2).await().indefinitely())
+                .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    // ---- Type-specialised bulk tests ------------------------------------------------
+
+    @Test
+    void testGetAll_customKeyType() {
+        RedisCacheInfo info = new RedisCacheInfo();
+        info.name = "bulk";
+        info.valueType = String.class;
+        info.keyType = Integer.class;
+        info.expireAfterWrite = Optional.of(Duration.ofSeconds(10));
+        RedisCacheImpl cache = new RedisCacheImpl(info, vertx, redis, BLOCKING_ALLOWED);
+
+        cache.put(1, "one").await().indefinitely();
+        cache.put(2, "two").await().indefinitely();
+        cache.put(3, "three").await().indefinitely();
+
+        Map<Integer, String> result = cache.getAll(List.of(1, 2, 3), String.class).await().indefinitely();
+        assertThat(result).hasSize(3)
+                .containsEntry(1, "one")
+                .containsEntry(2, "two")
+                .containsEntry(3, "three");
+    }
+
+    @Test
+    void testGetAll_customValueType_POJO() {
+        RedisCacheInfo info = new RedisCacheInfo();
+        info.name = "bulk";
+        info.valueType = Person.class;
+        info.expireAfterWrite = Optional.of(Duration.ofSeconds(10));
+        RedisCacheImpl cache = new RedisCacheImpl(info, vertx, redis, BLOCKING_ALLOWED);
+
+        Person luke = new Person("luke", "skywalker");
+        Person leia = new Person("leia", "organa");
+        cache.put("luke", luke).await().indefinitely();
+        cache.put("leia", leia).await().indefinitely();
+
+        Map<String, Person> result = cache.getAll(List.of("luke", "leia", "missing"), Person.class)
+                .await().indefinitely();
+        assertThat(result).hasSize(2)
+                .containsEntry("luke", luke)
+                .containsEntry("leia", leia)
+                .doesNotContainKey("missing");
+    }
+
+    @Test
+    void testGetAll_typeLiteral() {
+        RedisCacheInfo info = new RedisCacheInfo();
+        info.name = "bulk";
+        info.valueType = List.class;
+        info.expireAfterWrite = Optional.of(Duration.ofSeconds(10));
+        RedisCacheImpl cache = new RedisCacheImpl(info, vertx, redis, BLOCKING_ALLOWED);
+
+        TypeLiteral<List<String>> type = new TypeLiteral<>() {
+        };
+
+        cache.put("tags-alice", List.of("admin", "user")).await().indefinitely();
+        cache.put("tags-bob", List.of("user")).await().indefinitely();
+
+        // getAll with TypeLiteral — no loader
+        Map<String, List<String>> result = cache.getAll(List.of("tags-alice", "tags-bob", "tags-missing"), type)
+                .await().indefinitely();
+        assertThat(result).hasSize(2)
+                .containsEntry("tags-alice", List.of("admin", "user"))
+                .containsEntry("tags-bob", List.of("user"))
+                .doesNotContainKey("tags-missing");
+
+        // getAll with TypeLiteral + sync loader
+        Map<String, List<String>> withLoader = cache.getAll(
+                List.of("tags-alice", "tags-carol"),
+                type,
+                misses -> {
+                    Map<String, List<String>> loaded = new LinkedHashMap<>();
+                    for (String k : misses) {
+                        loaded.put(k, List.of("guest"));
+                    }
+                    return loaded;
+                }).await().indefinitely();
+        assertThat(withLoader).hasSize(2)
+                .containsEntry("tags-alice", List.of("admin", "user"))
+                .containsEntry("tags-carol", List.of("guest"));
+    }
+
+    // ---- Missing default type guard -------------------------------------------------
+
+    @Test
+    void testGetAll_missingDefaultType_throws() {
+        RedisCacheInfo info = new RedisCacheInfo();
+        info.name = "bulk-no-type";
+        info.expireAfterWrite = Optional.of(Duration.ofSeconds(10));
+        // No valueType configured — default-type overloads must throw
+        RedisCacheImpl cache = new RedisCacheImpl(info, vertx, redis, BLOCKING_ALLOWED);
+
+        assertThatThrownBy(() -> cache.getAll(List.of("k1")).await().indefinitely())
+                .isInstanceOf(UnsupportedOperationException.class);
+        assertThatThrownBy(() -> cache.getAll(List.of("k1"), misses -> Map.of("k1", "v1")).await().indefinitely())
+                .isInstanceOf(UnsupportedOperationException.class);
+        assertThatThrownBy(() -> cache.getAllAsync(List.of("k1"),
+                misses -> Uni.createFrom().item(Map.of("k1", "v1"))).await().indefinitely())
+                .isInstanceOf(UnsupportedOperationException.class);
+    }
+
+    // ---- Redis unavailability fallback ----------------------------------------------
+
+    @Test
+    void testGetAll_redisUnavailable_fallback() {
+        // Start a dedicated Redis server so it can be stopped mid-test
+        GenericContainer<?> server = new GenericContainer<>("redis:7").withExposedPorts(6379);
+        server.start();
+        Redis localRedis = Redis.createClient(vertx,
+                "redis://" + server.getHost() + ":" + server.getFirstMappedPort());
+
+        RedisCacheInfo info = new RedisCacheInfo();
+        info.name = "bulk";
+        info.valueType = String.class;
+        info.expireAfterWrite = Optional.of(Duration.ofSeconds(10));
+        RedisCacheImpl cache = new RedisCacheImpl(info, vertx, localRedis, BLOCKING_ALLOWED);
+
+        server.close(); // Bring Redis down before the bulk read
+
+        AtomicInteger loaderCallCount = new AtomicInteger(0);
+        Map<String, String> result = cache.getAll(
+                List.of("k1", "k2"),
+                String.class,
+                misses -> {
+                    loaderCallCount.incrementAndGet();
+                    Map<String, String> loaded = new LinkedHashMap<>();
+                    for (String k : misses) {
+                        loaded.put(k, "fallback-" + k);
+                    }
+                    return loaded;
+                }).await().indefinitely();
+
+        // Loader must have been called once with all keys (full fallback)
+        assertThat(loaderCallCount.get()).isEqualTo(1);
+        assertThat(result).hasSize(2)
+                .containsEntry("k1", "fallback-k1")
+                .containsEntry("k2", "fallback-k2");
+
+        localRedis.close();
     }
 
     private Set<String> getAllKeys() {

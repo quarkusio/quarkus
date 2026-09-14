@@ -11,6 +11,8 @@ import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.URI;
+import java.net.URL;
+import java.net.URLClassLoader;
 import java.net.UnknownHostException;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -22,6 +24,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.ServiceLoader;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.jar.Attributes;
@@ -415,7 +418,30 @@ public class DevModeCommandLineBuilder {
             args.addAll(Arrays.asList(CommandLineUtil.translateCommandline(applicationArgs)));
         }
 
-        return new DevModeCommandLine(args, actualDebugPort, buildFiles);
+        contributeLauncherEnvironmentVariables(devModeContext, applicationName);
+
+        return new DevModeCommandLine(args, actualDebugPort, buildFiles, devModeContext.getLauncherEnvironmentVariables());
+    }
+
+    private void contributeLauncherEnvironmentVariables(DevModeContext devModeContext, String applicationName) {
+        if (classpath.isEmpty()) {
+            return;
+        }
+        List<URL> urls = new ArrayList<>(classpath.size());
+        for (File file : classpath.values()) {
+            try {
+                urls.add(file.toURI().toURL());
+            } catch (java.net.MalformedURLException e) {
+                throw new RuntimeException(e);
+            }
+        }
+        ClassLoader classLoader = new URLClassLoader(urls.toArray(URL[]::new),
+                DevModeCommandLineBuilder.class.getClassLoader());
+        for (DevModeLauncherEnvironmentProvider provider : ServiceLoader.load(DevModeLauncherEnvironmentProvider.class,
+                classLoader)) {
+            devModeContext.getLauncherEnvironmentVariables()
+                    .putAll(provider.provide(devModeContext.getBuildSystemProperties(), applicationName));
+        }
     }
 
     private File createDevJar(DevModeContext devModeContext) throws IOException {

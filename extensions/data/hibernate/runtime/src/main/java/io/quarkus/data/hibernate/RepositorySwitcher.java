@@ -3,12 +3,12 @@ package io.quarkus.data.hibernate;
 import io.quarkus.arc.Arc;
 import io.quarkus.data.hibernate.managed.blocking.BlockingManagedRepositoryBase;
 import io.quarkus.data.hibernate.managed.reactive.ReactiveManagedRepositoryBase;
-import io.quarkus.data.hibernate.stateless.blocking.BlockingRecordRepositoryBase;
-import io.quarkus.data.hibernate.stateless.reactive.ReactiveRecordRepositoryBase;
+import io.quarkus.data.hibernate.record.blocking.BlockingRecordRepositoryBase;
+import io.quarkus.data.hibernate.record.reactive.ReactiveRecordRepositoryBase;
 import io.quarkus.hibernate.orm.panache.common.runtime.AbstractJpaOperations;
 
 public interface RepositorySwitcher<Entity, Id> {
-    default BlockingManagedRepositoryBase<Entity, Id> managedBlocking() {
+    default BlockingManagedRepositoryBase<Entity, Id> managed() {
         if (this instanceof BlockingManagedRepositoryBase) {
             return (BlockingManagedRepositoryBase<Entity, Id>) this;
         }
@@ -22,14 +22,14 @@ public interface RepositorySwitcher<Entity, Id> {
         return findRepository(ReactiveManagedRepositoryBase.class);
     }
 
-    default BlockingRecordRepositoryBase<Entity, Id> statelessBlocking() {
+    default BlockingRecordRepositoryBase<Entity, Id> record() {
         if (this instanceof BlockingRecordRepositoryBase) {
             return (BlockingRecordRepositoryBase<Entity, Id>) this;
         }
         return findRepository(BlockingRecordRepositoryBase.class);
     }
 
-    default ReactiveRecordRepositoryBase<Entity, Id> statelessReactive() {
+    default ReactiveRecordRepositoryBase<Entity, Id> recordReactive() {
         if (this instanceof ReactiveRecordRepositoryBase) {
             return (ReactiveRecordRepositoryBase<Entity, Id>) this;
         }

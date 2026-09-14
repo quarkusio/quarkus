@@ -1,12 +1,12 @@
-package io.quarkus.data.hibernate.stateless.blocking;
+package io.quarkus.data.hibernate.record.blocking;
 
 import java.util.stream.Stream;
 
 import org.hibernate.StatelessSession;
 
+import io.quarkus.data.hibernate.record.RecordRepositoryOperations;
 import io.quarkus.data.hibernate.runtime.spi.PanacheBlockingOperations;
 import io.quarkus.data.hibernate.runtime.spi.PanacheOperations;
-import io.quarkus.data.hibernate.stateless.RecordRepositoryOperations;
 import io.quarkus.hibernate.orm.panache.common.runtime.AbstractJpaOperations;
 
 public interface BlockingRecordRepositoryOperations<Entity, Id>

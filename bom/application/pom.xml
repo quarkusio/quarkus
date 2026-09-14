@@ -222,7 +222,7 @@
         <!-- Dev UI -->
         <importmap.version>1.0.11</importmap.version>
         <webauthn4j.version>0.28.0.RELEASE</webauthn4j.version>
-        <zstd-jni.version>1.5.7-14</zstd-jni.version> <!-- used by kafka-clients and some Camel components -->
+        <zstd-jni.version>1.5.7-16</zstd-jni.version> <!-- used by kafka-clients and some Camel components -->
     </properties>
 
     <pluginRepositories>

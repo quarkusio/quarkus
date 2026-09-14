@@ -667,6 +667,15 @@ Compose Dev Services will only try to discover existing services with the determ
 When `quarkus.compose.devservices.stop-services=false` is set, services will continue running after the application stops.
 This allows services to be reused by other applications or subsequent runs of the same application.
 
+Volumes are removed by compose down by default; set `quarkus.compose.devservices.remove-volumes=false` to keep them, for example to preserve database data between runs.
+Volumes belong to the compose project, so for tests to find them again the project name has to be stable across runs, see <<Compose Dev Services used for tests>>.
+
+[NOTE]
+====
+By default, the project is also registered with the Testcontainers Ryuk resource reaper, which removes all of the project's containers, networks, volumes and images if the application exits without running compose down (for example when the JVM is killed).
+Ryuk cannot spare some of these resources, so it is not used when `stop-services` or `remove-volumes` is disabled: in that case, resources left behind by an abrupt exit have to be removed manually with `compose down`.
+====
+
 You can also configure the timeout for stopping services with the `quarkus.compose.devservices.stop-timeout` property.
 After the timeout, Compose Dev Services will forcefully stop the services.
 The default timeout is deliberately chosen to be short (1 second) for fast cleanup, but you can increase it as needed:

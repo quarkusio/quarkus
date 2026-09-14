@@ -381,6 +381,7 @@ public class ClientBuilderImpl extends ClientBuilder {
 
     private void populateSecurityOptionsFromTlsConfig(HttpClientOptions options) {
         options.setSsl(true);
+        options.setVerifyHost(verifyHost);
 
         if (tlsConfig.getTrustStoreOptions() != null) {
             options.setTrustOptions(tlsConfig.getTrustStoreOptions());
@@ -393,6 +394,7 @@ public class ClientBuilderImpl extends ClientBuilder {
 
         if (tlsConfig.isTrustAll()) {
             options.setTrustAll(true);
+            options.setVerifyHost(false);
         }
         if (tlsConfig.getHostnameVerificationAlgorithm().isPresent()
                 && tlsConfig.getHostnameVerificationAlgorithm().get().equals("NONE")) {

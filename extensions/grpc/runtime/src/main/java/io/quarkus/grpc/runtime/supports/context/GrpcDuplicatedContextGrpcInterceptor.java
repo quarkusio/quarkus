@@ -203,13 +203,15 @@ public class GrpcDuplicatedContextGrpcInterceptor implements ServerInterceptor, 
         @Override
         public void onCancel() {
             invoke(listener -> {
-                // Run cleanup here because close() may never be called when the client cancels.
+                // Notify inner interceptors first so they can still read context keys in their
+                // onCancel() handlers, then clean up because close() may never be called
+                // when the client cancels.
+                listener.onCancel();
                 Runnable cleanup = GrpcContextLocalsProvider.GRPC_CONTEXT_CLEANUP_LOCAL.get(context);
                 if (cleanup != null) {
                     GrpcContextLocalsProvider.GRPC_CONTEXT_CLEANUP_LOCAL.remove(context);
                     cleanup.run();
                 }
-                listener.onCancel();
             });
         }
 

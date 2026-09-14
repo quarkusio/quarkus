@@ -84,10 +84,18 @@ public class ContextWatcherInterceptor {
         return latch != null && latch.await(timeout, unit);
     }
 
-    /** Reads {@code Context.current()} on the captured duplicated Vert.x context. Call after {@link #awaitClose}. */
+    /**
+     * Reads {@code Context.current()} on the captured duplicated Vert.x context.
+     * Returns a future completed with {@code null} if no context has been captured yet.
+     * Call after {@link #awaitClose}, or poll with Awaitility for the cancel path.
+     */
     public CompletableFuture<io.grpc.Context> readContextOnDuplicatedContext() {
+        Context ctx = capturedDuplicatedContext;
+        if (ctx == null) {
+            return CompletableFuture.completedFuture(null);
+        }
         CompletableFuture<io.grpc.Context> result = new CompletableFuture<>();
-        capturedDuplicatedContext.runOnContext(v -> result.complete(io.grpc.Context.current()));
+        ctx.runOnContext(v -> result.complete(io.grpc.Context.current()));
         return result;
     }
 

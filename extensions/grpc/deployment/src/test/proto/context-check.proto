@@ -10,6 +10,8 @@ service ContextCheck {
     rpc Check (CheckRequest) returns (CheckReply) {}
     rpc CheckBlocking (CheckRequest) returns (CheckReply) {}
     rpc CheckVirtual (CheckRequest) returns (CheckReply) {}
+    rpc CheckSlowBlocking (CheckRequest) returns (CheckReply) {}
+    rpc CheckSlowVirtual (CheckRequest) returns (CheckReply) {}
 }
 
 message CheckRequest {

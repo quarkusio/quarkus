@@ -556,7 +556,7 @@ The difference is that it works with xref:rest-client.adoc[Reactive RestClient] 
 
 `OidcClientRequestReactiveFilter` delays an initial token acquisition until it is executed to avoid blocking an IO thread.
 
-You can selectively register `OidcClientRequestReactiveFilter` by using either `io.quarkus.oidc.client.reactive.filter.OidcClientFilter` or `org.eclipse.microprofile.rest.client.annotation.RegisterProvider` annotations:
+You can selectively register `OidcClientRequestReactiveFilter` by using either `io.quarkus.oidc.client.filter.OidcClientFilter` or `org.eclipse.microprofile.rest.client.annotation.RegisterProvider` annotations:
 
 [source,java]
 ----
@@ -576,7 +576,9 @@ public interface ProtectedResourceService {
 }
 ----
 
-or
+Alternatively, apply `@OidcClientFilter` to individual methods to register the OIDC client filter only for those methods.
+Applying `@OidcClientFilter` to a REST client interface and any of its methods causes the application build to fail.
+This lets a single REST client interface call both public endpoints and endpoints that require an access token:
 
 [source,java]
 ----
@@ -594,7 +596,7 @@ public interface InformationService {
     @GET
     Uni<String> getUserName();
 
-    @OidcClientFilter
+    @Path("/public")
     @GET
     Uni<String> getPublicInformation();
 }
@@ -713,7 +715,9 @@ public interface ProtectedResourceService {
 }
 ----
 
-or
+Alternatively, apply `@OidcClientFilter` to individual methods to register the OIDC client filter only for those methods.
+Applying `@OidcClientFilter` to a REST client interface and any of its methods causes the application build to fail.
+This lets a single REST client interface call both public endpoints and endpoints that require an access token:
 
 [source,java]
 ----
@@ -730,6 +734,7 @@ public interface InformationService {
     @GET
     String getUserName();
 
+    @Path("/public")
     @GET
     String getPublicInformation();
 }
@@ -1508,7 +1513,8 @@ public interface ProtectedResourceService {
 }
 ----
 
-or
+Alternatively, apply `@AccessToken` to individual methods to register the token propagation filter only for those methods.
+This lets a single REST client interface call both public endpoints and endpoints that require an access token:
 
 [source,java]
 ----
@@ -1550,6 +1556,9 @@ public interface ProtectedResourceService {
     String getUserName();
 }
 ----
+
+When you use `@AccessToken`, you can apply it to the REST client interface and to individual methods.
+For each annotated method, the method-level annotation, including its `exchangeTokenClient` attribute, takes precedence over the interface-level annotation.
 
 Additionally, `AccessTokenRequestReactiveFilter` can support a complex application that needs to exchange tokens before propagating them.
 
@@ -1632,7 +1641,8 @@ public interface ProtectedResourceService {
 }
 ----
 
-or
+Alternatively, apply `@AccessToken` to individual methods to register the token propagation filter only for those methods.
+This lets a single REST client interface call both public endpoints and endpoints that require an access token:
 
 [source,java]
 ----
@@ -1674,6 +1684,9 @@ public interface ProtectedResourceService {
     String getUserName();
 }
 ----
+
+When you use `@AccessToken`, you can apply it to the REST client interface and to individual methods.
+For each annotated method, the method-level annotation, including its `exchangeTokenClient` attribute, takes precedence over the interface-level annotation.
 
 Alternatively, `AccessTokenRequestFilter` can be registered automatically with all MP Rest or Jakarta REST clients if the `quarkus.resteasy-client-oidc-token-propagation.register-filter` property is set to `true` and the `quarkus.resteasy-client-oidc-token-propagation.json-web-token` property is set to `false`, which is the default value.
 

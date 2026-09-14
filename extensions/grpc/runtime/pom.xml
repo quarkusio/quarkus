@@ -91,6 +91,10 @@
             <groupId>io.vertx</groupId>
             <artifactId>vertx-grpcio-server</artifactId>
         </dependency>
+        <dependency>
+            <groupId>io.vertx</groupId>
+            <artifactId>vertx-grpc-transcoding</artifactId>
+        </dependency>
 
         <dependency>
             <groupId>com.google.protobuf</groupId>

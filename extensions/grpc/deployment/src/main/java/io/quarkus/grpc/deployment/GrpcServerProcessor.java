@@ -7,6 +7,7 @@ import static io.quarkus.grpc.deployment.GrpcDotNames.MUTINY_SERVICE;
 import static io.quarkus.grpc.deployment.GrpcDotNames.NON_BLOCKING;
 import static io.quarkus.grpc.deployment.GrpcDotNames.RUN_ON_VIRTUAL_THREAD;
 import static io.quarkus.grpc.deployment.GrpcDotNames.TRANSACTIONAL;
+import static io.quarkus.grpc.deployment.GrpcDotNames.TRANSCODING_SERVICE_METHOD;
 import static io.quarkus.grpc.deployment.GrpcInterceptors.MICROMETER_INTERCEPTORS;
 
 import java.lang.reflect.Modifier;
@@ -887,7 +888,8 @@ public class GrpcServerProcessor {
             VertxBuildItem vertx, Capabilities capabilities,
             List<FilterBuildItem> filterBuildItems,
             ValidationPhaseBuildItem validationPhase,
-            BeanContainerBuildItem beanContainerBuildItem) {
+            BeanContainerBuildItem beanContainerBuildItem,
+            TranscodingServiceClassesBuildItem transcodingClasses) {
 
         // Build the list of blocking methods per service implementation
         Map<String, List<String>> blocking = new HashMap<>();
@@ -934,7 +936,8 @@ public class GrpcServerProcessor {
             recorder.initializeGrpcServer(bindableServiceBeanStream.isEmpty(), beanContainerBuildItem.getValue(),
                     vertx.getVertx(), routerRuntimeValue,
                     shutdown, blocking, virtuals, launchModeBuildItem.getLaunchMode(),
-                    capabilities.isPresent(Capability.SECURITY), securityHandlers);
+                    capabilities.isPresent(Capability.SECURITY), securityHandlers,
+                    transcodingClasses.getClasses());
             return new ServiceStartBuildItem(GRPC_SERVER);
         }
         return null;
@@ -1003,6 +1006,23 @@ public class GrpcServerProcessor {
                 recorder.initGrpcSecurityInterceptor(blocking, beanContainer.getValue());
             }
         }
+    }
+
+    @BuildStep
+    TranscodingServiceClassesBuildItem collectTranscodingClasses(CombinedIndexBuildItem combinedIndex) {
+        var classes = combinedIndex.getIndex().getAllKnownImplementors(GrpcDotNames.MUTINY_GRPC);
+        return new TranscodingServiceClassesBuildItem(collectTranscodingClassesHelper(classes));
+    }
+
+    static Set<String> collectTranscodingClassesHelper(Collection<ClassInfo> classes) {
+        var res = new HashSet<String>();
+        for (ClassInfo aClass : classes) {
+            if (aClass.fields().stream()
+                    .anyMatch(f -> f.type().name().equals(TRANSCODING_SERVICE_METHOD) && Modifier.isStatic(f.flags()))) {
+                res.add(aClass.name().toString());
+            }
+        }
+        return res;
     }
 
 }

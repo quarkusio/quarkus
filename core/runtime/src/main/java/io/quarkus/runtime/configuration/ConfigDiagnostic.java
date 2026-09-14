@@ -228,6 +228,10 @@ public final class ConfigDiagnostic {
         } catch (NotDirectoryException ignored) {
             log.debugf("File %s is not a directory", configFilesLocation.toAbsolutePath());
             return Collections.emptySet();
+        } catch (IOException e) {
+            // this scan only produces warnings, so a location that cannot be read must not fail the startup
+            log.debugf(e, "Unable to scan %s for configuration files", configFilesLocation.toAbsolutePath());
+            return Collections.emptySet();
         }
         return configFiles;
     }

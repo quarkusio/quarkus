@@ -43,13 +43,15 @@ public class MeterTagsSupport {
         Parameter[] parameters = method.getParameters();
         for (int i = 0; i < parameters.length; i++) {
             Parameter methodParameter = parameters[i];
-            MeterTag annotation = methodParameter.getAnnotation(MeterTag.class);
-            if (annotation != null) {
+            // getAnnotationsByType also finds tags wrapped in the repeatable @MeterTags container
+            MeterTag[] annotations = methodParameter.getAnnotationsByType(MeterTag.class);
+            if (annotations.length > 0) {
                 Object parameterValue = context.getParameters()[i];
-
-                tags.add(Tag.of(
-                        resolveTagKey(annotation, methodParameter.getName()),
-                        resolveTagValue(annotation, parameterValue)));
+                for (MeterTag annotation : annotations) {
+                    tags.add(Tag.of(
+                            resolveTagKey(annotation, methodParameter.getName()),
+                            resolveTagValue(annotation, parameterValue)));
+                }
             }
         }
         return Tags.of(tags);

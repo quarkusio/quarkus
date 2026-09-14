@@ -8,7 +8,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.data.hibernate.managed.reactive.ReactiveManagedRepositoryBase;
-import io.quarkus.data.hibernate.stateless.reactive.ReactiveRecordRepositoryBase;
+import io.quarkus.data.hibernate.record.reactive.ReactiveRecordRepositoryBase;
 import io.quarkus.hibernate.reactive.panache.common.WithTransaction;
 import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.vertx.RunOnVertxContext;
@@ -100,7 +100,7 @@ public class ReactiveTest {
                     Assertions.assertEquals("gee", entity.foo);
                     entity.foo = "fu";
                     // not ignored this time
-                    return entity.statelessReactive().update();
+                    return entity.recordReactive().update();
                 })
                 .replaceWithVoid();
     }
@@ -126,7 +126,7 @@ public class ReactiveTest {
                     entity.foo = "bar";
                     entity.id = 1L;
 
-                    return entity.statelessReactive().upsert();
+                    return entity.recordReactive().upsert();
                 })
                 .flatMap(v -> MyReactiveEntity_.statelessReactive().count())
                 .map(count -> {
@@ -146,7 +146,7 @@ public class ReactiveTest {
                     Assertions.assertEquals(1L, entity.id);
                     entity.foo = "fu";
 
-                    return entity.statelessReactive().upsert();
+                    return entity.recordReactive().upsert();
                 })
                 .flatMap(v -> MyReactiveEntity_.statelessReactive().count())
                 .map(count -> {
@@ -164,7 +164,7 @@ public class ReactiveTest {
                     MyReactiveEntity entity = list.get(0);
                     Assertions.assertEquals("fu", entity.foo);
 
-                    return entity.statelessReactive().upsert();
+                    return entity.recordReactive().upsert();
                 })
                 .flatMap(v -> MyReactiveEntity_.statelessReactive().count())
                 .map(count -> {
@@ -203,7 +203,7 @@ public class ReactiveTest {
                 .flatMap(v -> {
                     var managedRepo = MyReactiveEntity_.managedReactive();
                     Assertions.assertInstanceOf(ReactiveManagedRepositoryBase.class, managedRepo);
-                    var statelessRepo = managedRepo.statelessReactive();
+                    var statelessRepo = managedRepo.recordReactive();
                     Assertions.assertInstanceOf(ReactiveRecordRepositoryBase.class, statelessRepo);
                     var managedAgain = statelessRepo.managedReactive();
                     Assertions.assertInstanceOf(ReactiveManagedRepositoryBase.class, managedAgain);
@@ -222,7 +222,7 @@ public class ReactiveTest {
                     Assertions.assertInstanceOf(ReactiveRecordRepositoryBase.class, statelessRepo);
                     var managedRepo = statelessRepo.managedReactive();
                     Assertions.assertInstanceOf(ReactiveManagedRepositoryBase.class, managedRepo);
-                    var statelessAgain = managedRepo.statelessReactive();
+                    var statelessAgain = managedRepo.recordReactive();
                     Assertions.assertInstanceOf(ReactiveRecordRepositoryBase.class, statelessAgain);
                     return statelessAgain.count();
                 })

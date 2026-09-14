@@ -1,8 +1,8 @@
-package io.quarkus.data.hibernate.stateless.reactive;
+package io.quarkus.data.hibernate.record.reactive;
 
+import io.quarkus.data.hibernate.record.RecordEntityOperations;
 import io.quarkus.data.hibernate.runtime.spi.PanacheOperations;
 import io.quarkus.data.hibernate.runtime.spi.PanacheReactiveOperations;
-import io.quarkus.data.hibernate.stateless.RecordEntityOperations;
 import io.smallrye.mutiny.Uni;
 
 public interface ReactiveRecordEntity extends RecordEntityOperations<Uni<Void>, Uni<Boolean>> {

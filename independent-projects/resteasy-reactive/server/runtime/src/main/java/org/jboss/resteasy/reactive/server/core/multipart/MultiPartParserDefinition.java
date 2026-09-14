@@ -311,8 +311,14 @@ public class MultiPartParserDefinition implements FormParserFactory.ParserDefini
             if (contentType == null || fileContentTypes == null) {
                 return false;
             }
-
-            return fileContentTypes.contains(contentType);
+            int parameters = contentType.indexOf(';');
+            String mediaType = (parameters >= 0 ? contentType.substring(0, parameters) : contentType).trim();
+            for (String fileContentType : fileContentTypes) {
+                if (fileContentType.equalsIgnoreCase(mediaType)) {
+                    return true;
+                }
+            }
+            return false;
         }
 
         @Override

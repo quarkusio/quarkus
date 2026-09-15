@@ -626,8 +626,10 @@ public interface ProtectedResourceService {
 }
 ----
 
-Alternatively, apply `@OidcClientFilter` to individual methods to register the OIDC client filter only for those methods.
-Applying `@OidcClientFilter` to a REST client interface and any of its methods causes the application build to fail.
+Alternatively, apply `@OidcClientFilter` to individual methods.
+For requests from annotated methods, the filter adds the OIDC client access token to the `Authorization` header.
+Do not combine class-level and method-level `@OidcClientFilter` annotations on the same REST client, regardless of the OIDC client name.
+To use different OIDC clients for different methods, annotate each method that requires a token separately.
 This lets a single REST client interface call both public endpoints and endpoints that require an access token:
 
 [source,java]
@@ -765,8 +767,10 @@ public interface ProtectedResourceService {
 }
 ----
 
-Alternatively, apply `@OidcClientFilter` to individual methods to register the OIDC client filter only for those methods.
-Applying `@OidcClientFilter` to a REST client interface and any of its methods causes the application build to fail.
+Alternatively, apply `@OidcClientFilter` to individual methods.
+For requests from annotated methods, the filter adds the OIDC client access token to the `Authorization` header.
+Do not combine class-level and method-level `@OidcClientFilter` annotations on the same REST client, regardless of the OIDC client name.
+To use different OIDC clients for different methods, annotate each method that requires a token separately.
 This lets a single REST client interface call both public endpoints and endpoints that require an access token:
 
 [source,java]
@@ -1600,7 +1604,7 @@ public interface ProtectedResourceService {
 }
 ----
 
-Alternatively, apply `@AccessToken` to individual methods to register the token propagation filter only for those methods.
+Alternatively, apply `@AccessToken` to individual methods to propagate access tokens for requests made by those methods.
 This lets a single REST client interface call both public endpoints and endpoints that require an access token:
 
 [source,java]
@@ -1644,8 +1648,8 @@ public interface ProtectedResourceService {
 }
 ----
 
-When you use `@AccessToken`, you can apply it to the REST client interface and to individual methods.
-For each annotated method, the method-level annotation, including its `exchangeTokenClient` attribute, takes precedence over the interface-level annotation.
+You can combine class-level and method-level `@AccessToken` annotations on the same REST client.
+When you do, Quarkus uses the class-level annotation for unannotated methods and the method-level annotation, including its `exchangeTokenClient` attribute, for annotated methods.
 
 Additionally, `AccessTokenRequestReactiveFilter` can support a complex application that needs to exchange tokens before propagating them.
 
@@ -1728,7 +1732,7 @@ public interface ProtectedResourceService {
 }
 ----
 
-Alternatively, apply `@AccessToken` to individual methods to register the token propagation filter only for those methods.
+Alternatively, apply `@AccessToken` to individual methods to propagate access tokens for requests made by those methods.
 This lets a single REST client interface call both public endpoints and endpoints that require an access token:
 
 [source,java]
@@ -1772,8 +1776,8 @@ public interface ProtectedResourceService {
 }
 ----
 
-When you use `@AccessToken`, you can apply it to the REST client interface and to individual methods.
-For each annotated method, the method-level annotation, including its `exchangeTokenClient` attribute, takes precedence over the interface-level annotation.
+You can combine class-level and method-level `@AccessToken` annotations on the same REST client.
+When you do, Quarkus uses the class-level annotation for unannotated methods and the method-level annotation, including its `exchangeTokenClient` attribute, for annotated methods.
 
 Alternatively, `AccessTokenRequestFilter` can be registered automatically with all MP Rest or Jakarta REST clients if the `quarkus.resteasy-client-oidc-token-propagation.register-filter` property is set to `true` and the `quarkus.resteasy-client-oidc-token-propagation.json-web-token` property is set to `false`, which is the default value.
 

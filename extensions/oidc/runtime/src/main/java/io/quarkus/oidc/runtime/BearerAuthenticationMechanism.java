@@ -135,6 +135,24 @@ public class BearerAuthenticationMechanism extends AbstractOidcAuthenticationMec
                 throw new AuthenticationFailedException(invalidDPoPProofMap(token));
             }
 
+            Object proofIatObj = proofJwtClaims.getValue(Claims.iat.name());
+            if (proofIatObj == null) {
+                LOG.debug("DPoP proof iat claim is missing");
+                throw new AuthenticationFailedException(invalidDPoPProofMap(token));
+            }
+            if (!(proofIatObj instanceof Number)) {
+                LOG.debug("DPoP proof iat claim is malformed");
+                throw new AuthenticationFailedException(invalidDPoPProofMap(token));
+            }
+
+            Object proofExpObj = proofJwtClaims.getValue(Claims.exp.name());
+            if (proofExpObj != null) {
+                if (!(proofExpObj instanceof Number)) {
+                    LOG.debug("DPoP proof exp claim is malformed");
+                    throw new AuthenticationFailedException(invalidDPoPProofMap(token));
+                }
+            }
+
             context.put(OidcUtils.DPOP_PROOF, proof);
             context.put(OidcUtils.DPOP_PROOF_JWT_HEADERS, proofJwtHeaders);
             context.put(OidcUtils.DPOP_PROOF_JWT_CLAIMS, proofJwtClaims);

@@ -1336,6 +1336,10 @@ You can define a link:https://www.rfc-editor.org/rfc/rfc9449.html#name-resource-
 If the DPoP proof nonce is missing or invalid, Quarkus responds with the `401 Unauthorized` status and attaches the expected nonce as the `DPoP-Nonce` header value.
 The provider can also use the verified DPoP proof link:https://datatracker.ietf.org/doc/html/rfc9449#section-4.2[`jti`] identifier to detect and reject replayed DPoP proofs.
 
+Use the `quarkus.oidc.dpop.proof-age` property to reject DPoP proofs older than the configured duration (default is 2 minutes), calculated from the proof's `iat` (issued at) claim.
+This ensures proofs with timestamps in the past or future are properly rejected. The `quarkus.oidc.token.lifespan-grace` property can optionally add a grace period to tolerate slight clock skews.
+The optional `exp` (expiry) claim is also verified when present.
+
 === Mutual TLS token binding
 
 https://datatracker.ietf.org/doc/html/rfc8705[RFC8705] describes a mechanism for binding access tokens to Mutual TLS (mTLS) client authentication certificates.

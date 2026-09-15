@@ -3,6 +3,7 @@ package io.quarkus.oidc.runtime;
 import static io.quarkus.oidc.SecurityEvent.AUTH_SERVER_URL;
 import static io.quarkus.oidc.SecurityEvent.Type.OIDC_SERVER_AVAILABLE;
 import static io.quarkus.oidc.SecurityEvent.Type.OIDC_SERVER_NOT_AVAILABLE;
+import static io.quarkus.oidc.common.runtime.OidcConstants.DPOP_SCHEME;
 import static io.quarkus.oidc.runtime.OidcRecorder.LOG;
 import static io.quarkus.oidc.runtime.OidcUtils.DEFAULT_TENANT_ID;
 
@@ -352,6 +353,16 @@ final class TenantContextFactory {
                     Set.of(tokenIssuedAtRequired, tokenAge));
         }
 
+        if (!DPOP_SCHEME.equalsIgnoreCase(oidcConfig.token().authorizationScheme())) {
+            boolean dpopExplicitlyConfigured = oidcConfig.dpop().proofAge().toMinutes() != 2;
+            if (dpopExplicitlyConfigured) {
+                String tokenAuthorizationScheme = getConfigPropertyForTenant(tenantId, "token.authorization-scheme");
+                throw new ConfigurationException(
+                        "DPoP properties are configured for tenant '%s', but the '%s' is not set to 'DPoP'"
+                                .formatted(tenantId, tokenAuthorizationScheme));
+            }
+        }
+
         return createOidcProvider(oidcConfig).flatMap(p -> TenantConfigContext.createReady(p, oidcConfig));
     }
 
@@ -368,7 +379,7 @@ final class TenantContextFactory {
         }
     }
 
-    private String getConfigPropertyForTenant(String tenantId, String configSubKey) {
+    static String getConfigPropertyForTenant(String tenantId, String configSubKey) {
         if (DEFAULT_TENANT_ID.equals(tenantId)) {
             return "quarkus.oidc." + configSubKey;
         } else {

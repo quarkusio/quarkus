@@ -65,6 +65,7 @@ public class OidcTenantConfigBuilderTest {
         assertTrue(config.allowUserInfoCache());
         assertTrue(config.cacheUserInfoInIdtoken().isEmpty());
         assertTrue(config.provider().isEmpty());
+        assertEquals(Duration.ofMinutes(2), config.dpop().proofAge());
 
         var introspectionCredentials = config.introspectionCredentials();
         assertNotNull(introspectionCredentials);
@@ -416,6 +417,7 @@ public class OidcTenantConfigBuilderTest {
                 .followRedirects(false)
                 .tlsConfigurationName("Teacher!")
                 .proxyConfigurationName("Kreacher!")
+                .dpop(Duration.ofSeconds(20))
                 .build();
 
         // OidcTenantConfig methods
@@ -434,6 +436,7 @@ public class OidcTenantConfigBuilderTest {
         assertTrue(config.allowUserInfoCache());
         assertTrue(config.cacheUserInfoInIdtoken().orElseThrow());
         assertEquals(Provider.FACEBOOK, config.provider().orElse(null));
+        assertEquals(Duration.ofSeconds(20), config.dpop().proofAge());
 
         var introspectionCredentials = config.introspectionCredentials();
         assertNotNull(introspectionCredentials);
@@ -687,6 +690,7 @@ public class OidcTenantConfigBuilderTest {
                 .allowUserInfoCache()
                 .cacheUserInfoInIdtoken()
                 .provider(Provider.GOOGLE)
+                .dpop(Duration.ofMinutes(4))
                 // the rest of c&p tests for the OidcTenantConfig are tested in their dedicated builder tests below
                 .build();
 
@@ -701,6 +705,7 @@ public class OidcTenantConfigBuilderTest {
         assertTrue(existingConfig.allowTokenIntrospectionCache());
         assertTrue(existingConfig.allowUserInfoCache());
         assertTrue(existingConfig.cacheUserInfoInIdtoken().orElseThrow());
+        assertEquals(Duration.ofMinutes(4), existingConfig.dpop().proofAge());
 
         var newConfig = OidcTenantConfig.builder(existingConfig)
                 // OidcTenantConfig methods
@@ -731,6 +736,7 @@ public class OidcTenantConfigBuilderTest {
         assertFalse(newConfig.allowUserInfoCache());
         assertFalse(newConfig.cacheUserInfoInIdtoken().orElseThrow());
         assertEquals(Provider.GOOGLE, newConfig.provider().orElse(null));
+        assertEquals(Duration.ofMinutes(4), newConfig.dpop().proofAge());
     }
 
     @Test

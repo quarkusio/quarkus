@@ -138,8 +138,9 @@ public interface ContainerConfig extends EnvVarHolder {
                     EnvFromSourceBuilder envFromBuilder = new EnvFromSourceBuilder();
                     final var type = kebi.getType();
                     switch (type) {
-                        case secret -> envFromBuilder.withNewSecretRef(kebi.getSecret(), null);
-                        case configmap -> envFromBuilder.withNewConfigMapRef(kebi.getConfigMap(), null);
+                        case secret -> envFromBuilder.withNewSecretRef(kebi.getSecret(), kebi.isOptional() ? true : null);
+                        case configmap ->
+                            envFromBuilder.withNewConfigMapRef(kebi.getConfigMap(), kebi.isOptional() ? true : null);
                     }
                     envFromBuilder.withPrefix(kebi.getPrefix());
                     return envFromBuilder.build();

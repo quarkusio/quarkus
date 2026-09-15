@@ -7,6 +7,7 @@ import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
@@ -311,10 +312,16 @@ public abstract class BaseKubeProcessor<P, C extends PlatformConfiguration> {
         createArgsDecorator(context, config, command);
 
         config.initContainers().entrySet()
-                .forEach(e -> context.add(new AddInitContainerDecorator(context.name, ContainerConverter.convert(e))));
+                .forEach(e -> {
+                    context.add(new AddInitContainerDecorator(context.name, ContainerConverter.convert(e)));
+                    addOptionalEnvFromDecorators(context, e.getKey(), e.getValue().convertToBuildItems());
+                });
 
         config.sidecars().entrySet()
-                .forEach(e -> context.add(new AddSidecarDecorator(context.name, ContainerConverter.convert(e))));
+                .forEach(e -> {
+                    context.add(new AddSidecarDecorator(context.name, ContainerConverter.convert(e)));
+                    addOptionalEnvFromDecorators(context, e.getKey(), e.getValue().convertToBuildItems());
+                });
 
         // Handle Pull Secrets
         if (config.generateImagePullSecret()) {
@@ -814,7 +821,8 @@ public abstract class BaseKubeProcessor<P, C extends PlatformConfiguration> {
         if (config.idempotent()) {
             stream = stream.sorted(Comparator.comparing(e -> EnvConverter.convertName(e.getName())));
         }
-        stream.map(e -> new AddEnvVarDecorator(ApplicationContainerDecorator.ANY, name, new EnvBuilder()
+        List<KubernetesEnvBuildItem> envItems = stream.toList();
+        envItems.stream().map(e -> new AddEnvVarDecorator(ApplicationContainerDecorator.ANY, name, new EnvBuilder()
                 .withName(EnvConverter.convertName(e.getName()))
                 .withValue(e.getValue())
                 .withSecret(e.getSecret())
@@ -823,8 +831,29 @@ public abstract class BaseKubeProcessor<P, C extends PlatformConfiguration> {
                 .withPrefix(e.getPrefix())
                 .build()))
                 .forEach(context::add);
+        addOptionalEnvFromDecorators(context, name, envItems);
 
         return context;
+    }
+
+    /**
+     * The Dekorate environment variable model cannot mark {@code envFrom} references as optional, so the generated
+     * container is post-processed for the Secrets and ConfigMaps that were declared optional.
+     */
+    private static void addOptionalEnvFromDecorators(DecoratorsContext context, String containerName,
+            Collection<KubernetesEnvBuildItem> envItems) {
+        Set<String> optionalConfigMaps = envItems.stream()
+                .filter(e -> e.isOptional() && e.getType() == KubernetesEnvBuildItem.EnvType.configmap)
+                .map(KubernetesEnvBuildItem::getConfigMap).collect(Collectors.toSet());
+        if (!optionalConfigMaps.isEmpty()) {
+            context.add(new ApplyOptionalToConfigMapEnvSourceDecorator(containerName, optionalConfigMaps));
+        }
+        Set<String> optionalSecrets = envItems.stream()
+                .filter(e -> e.isOptional() && e.getType() == KubernetesEnvBuildItem.EnvType.secret)
+                .map(KubernetesEnvBuildItem::getSecret).collect(Collectors.toSet());
+        if (!optionalSecrets.isEmpty()) {
+            context.add(new ApplyOptionalToSecretEnvSourceDecorator(containerName, optionalSecrets));
+        }
     }
 
     protected void initTasks(DecoratorsContext context, List<KubernetesInitContainerBuildItem> initContainers,

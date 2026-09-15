@@ -346,6 +346,11 @@ public class PublisherResponseHandler implements ServerRestHandler {
 
     /**
      * Adds the headers and the status of a {@link RestMulti} to the static customizers, if it has any.
+     * <p>
+     * The streaming path calls this once the first item has been emitted, so any type of {@link RestMulti} has its
+     * headers and status by then. The server-sent events path calls it before the result is subscribed to, so a
+     * {@link RestMulti} built from a {@link io.smallrye.mutiny.Uni} has nothing to contribute there yet and only the
+     * static customizers apply.
      */
     private static List<StreamingResponseCustomizer> restMultiCustomizers(Publisher<?> publisher,
             List<StreamingResponseCustomizer> staticCustomizers) {

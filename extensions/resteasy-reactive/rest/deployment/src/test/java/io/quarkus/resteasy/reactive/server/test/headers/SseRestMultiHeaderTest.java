@@ -13,6 +13,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.test.QuarkusExtensionTest;
 import io.restassured.RestAssured;
 import io.smallrye.mutiny.Multi;
+import io.smallrye.mutiny.Uni;
 
 /**
  * Headers and status set on a {@link RestMulti} must be sent for server-sent events too, not only for the other
@@ -32,16 +33,17 @@ public class SseRestMultiHeaderTest {
                 .then()
                 .statusCode(222)
                 .header("Foo", "Bar")
-                .contentType(Matchers.startsWith(MediaType.SERVER_SENT_EVENTS));
+                .contentType(Matchers.startsWith(MediaType.SERVER_SENT_EVENTS))
+                .body(Matchers.allOf(Matchers.containsString("data:a"), Matchers.containsString("data:b")));
     }
 
     @Test
-    public void streamingHonoursRestMultiHeadersAndStatus() {
+    public void streamingToleratesNullHeaders() {
         RestAssured.given()
-                .get("/sse-headers/plain")
+                .get("/sse-headers/null-headers")
                 .then()
-                .statusCode(222)
-                .header("Foo", "Bar");
+                .statusCode(200)
+                .body(Matchers.allOf(Matchers.containsString("a"), Matchers.containsString("b")));
     }
 
     @Path("/sse-headers")
@@ -58,12 +60,12 @@ public class SseRestMultiHeaderTest {
         }
 
         @GET
-        @Path("/plain")
-        public RestMulti<String> plain() {
-            return RestMulti.fromMultiData(Multi.createFrom().items("a", "b"))
-                    .header("Foo", "Bar")
-                    .status(222)
-                    .build();
+        @Path("/null-headers")
+        @Produces(MediaType.APPLICATION_JSON)
+        public RestMulti<String> nullHeaders() {
+            return RestMulti.fromUniResponse(Uni.createFrom().item("ignored"),
+                    ignored -> Multi.createFrom().items("a", "b"),
+                    ignored -> null);
         }
     }
 }

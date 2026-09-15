@@ -94,7 +94,7 @@ Field descriptions are defined in the canonical JSON Schema and reproduced below
 
 include::{generated-dir}/infra/quarkus-extension-schema-reference.adoc[opts=optional]
 
-To mark an extension as deprecated, set `metadata.status` to a single string value `deprecated` (not an array):
+To mark an extension as deprecated, set `status` to a single string value `deprecated` (not an array):
 
 [source,yaml,subs=attributes+]
 

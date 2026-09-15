@@ -57,6 +57,16 @@ implementation("io.quarkus:quarkus-data-hibernate")
 implementation("io.quarkus:quarkus-jdbc-postgresql")
 ----
 
+[WARNING]
+====
+Quarkus Data Hibernate (Panache Next) and the classic Panache (Panache 1) extensions cannot be used together.
+Adding both `quarkus-data-hibernate` and any classic Panache extension
+(such as `quarkus-hibernate-orm-panache`, `quarkus-hibernate-orm-panache-kotlin`,
+`quarkus-hibernate-reactive-panache` or `quarkus-hibernate-reactive-panache-kotlin`) to the same
+application makes the build fail with an explicit error. These two data access layers are mutually
+exclusive, so pick only one of them.
+====
+
 You also have to configure the Hibernate processor, which is required:
 
 [source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]

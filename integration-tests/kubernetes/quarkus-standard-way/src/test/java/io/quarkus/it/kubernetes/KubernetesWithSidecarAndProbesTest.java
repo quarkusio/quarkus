@@ -58,6 +58,13 @@ public class KubernetesWithSidecarAndProbesTest {
                                         assertNotNull(p.getHttpGet());
                                         assertEquals(p.getHttpGet().getPort().getIntVal(), 9090);
                                     });
+                                    assertThat(container.getStartupProbe()).isNotNull().satisfies(p -> {
+                                        assertProbePath(p, "/q/health/started");
+                                        assertNotNull(p.getHttpGet());
+                                        assertEquals(p.getHttpGet().getPort().getIntVal(), 9090);
+                                        assertEquals(30, p.getFailureThreshold());
+                                    });
+                                    assertThat(container.getReadinessProbe()).isNull();
                                 });
                     });
                 });

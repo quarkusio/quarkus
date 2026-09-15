@@ -30,7 +30,8 @@ public class OpenTelemetryContinuousTestingTest {
                             "quarkus.otel.traces.exporter=test-span-exporter",
                             "quarkus.otel.metrics.exporter=none",
                             "quarkus.otel.logs.exporter=none",
-                            "quarkus.datasource.devservices.enabled=false")),
+                            "quarkus.datasource.devservices.enabled=false",
+                            "quarkus.observability.enabled=false")),
                             "application.properties"))
             .setTestArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClass(TracerRouterUT.class));

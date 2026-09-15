@@ -35,6 +35,7 @@ public class OpenTelemetryDestroyerTest {
                                     quarkus.otel.logs.exporter=none
                                     quarkus.otel.experimental.shutdown-wait-time=PT60S
                                     quarkus.datasource.devservices.enabled=false
+                                    quarkus.observability.enabled=false
                                     """),
                             "application.properties"));
 

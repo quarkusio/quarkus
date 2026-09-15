@@ -9,6 +9,7 @@ import jakarta.enterprise.util.Nonbinding;
 import jakarta.interceptor.InterceptorBinding;
 
 import io.quarkus.cache.runtime.UndefinedCacheKeyGenerator;
+import io.quarkus.cache.runtime.UndefinedCacheResultPredicate;
 
 /**
  * When a method annotated with {@link CacheResult} is invoked, Quarkus will compute a cache key and use it to check in the
@@ -68,4 +69,13 @@ public @interface CacheResult {
      */
     @Nonbinding
     Class<? extends CacheKeyGenerator> keyGenerator() default UndefinedCacheKeyGenerator.class;
+
+    /**
+     * The {@link CacheResultPredicate} implementation deciding, once the annotated method has been invoked, whether its
+     * result must be removed from the cache: when the predicate returns {@code true}, the result is returned to the
+     * caller but the next invocation with the same key invokes the method again. Typical uses are not caching empty or
+     * negative results. By default, every result is cached.
+     */
+    @Nonbinding
+    Class<? extends CacheResultPredicate> unless() default UndefinedCacheResultPredicate.class;
 }

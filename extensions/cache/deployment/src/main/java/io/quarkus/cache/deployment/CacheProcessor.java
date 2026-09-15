@@ -50,6 +50,7 @@ import io.quarkus.arc.processor.BeanInfo;
 import io.quarkus.arc.processor.KotlinUtils;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.cache.CacheManager;
+import io.quarkus.cache.deployment.exception.CacheResultPredicateConstructorException;
 import io.quarkus.cache.deployment.exception.ClassTargetException;
 import io.quarkus.cache.deployment.exception.KeyGeneratorConstructorException;
 import io.quarkus.cache.deployment.exception.PrivateMethodTargetException;
@@ -114,6 +115,7 @@ class CacheProcessor {
         Set<String> names = new HashSet<>();
         // The cache key generators constructors are validated at the end of this build step.
         Set<DotName> keyGenerators = new HashSet<>();
+        Set<DotName> resultPredicates = new HashSet<>();
 
         /*
          * First, for each non-repeated cache interceptor binding:
@@ -124,6 +126,7 @@ class CacheProcessor {
             for (AnnotationInstance binding : combinedIndex.getIndex().getAnnotations(bindingName)) {
                 throwables.addAll(validateInterceptorBindingTarget(binding, binding.target()));
                 findCacheKeyGenerator(binding, binding.target()).ifPresent(keyGenerators::add);
+                findCacheResultPredicate(binding).ifPresent(resultPredicates::add);
                 if (binding.target().kind() == METHOD) {
                     /*
                      * Cache names from the interceptor bindings placed on cache interceptors must not be collected to prevent
@@ -140,6 +143,7 @@ class CacheProcessor {
                 for (AnnotationInstance binding : container.value("value").asNestedArray()) {
                     throwables.addAll(validateInterceptorBindingTarget(binding, container.target()));
                     findCacheKeyGenerator(binding, container.target()).ifPresent(keyGenerators::add);
+                    findCacheResultPredicate(binding).ifPresent(resultPredicates::add);
                     names.add(binding.value(CACHE_NAME_PARAM).asString());
                 }
                 /*
@@ -178,6 +182,9 @@ class CacheProcessor {
 
         if (!keyGenerators.isEmpty()) {
             throwables.addAll(validateKeyGenerators(combinedIndex, beanDiscoveryFinished, keyGenerators));
+        }
+        if (!resultPredicates.isEmpty()) {
+            throwables.addAll(validateResultPredicates(combinedIndex, beanDiscoveryFinished, resultPredicates));
         }
 
         validationErrors.produce(new ValidationErrorBuildItem(throwables.toArray(new Throwable[0])));
@@ -236,6 +243,39 @@ class CacheProcessor {
             }
         }
         return Optional.empty();
+    }
+
+    private Optional<DotName> findCacheResultPredicate(AnnotationInstance binding) {
+        if (CACHE_RESULT.equals(binding.name())) {
+            AnnotationValue unless = binding.value("unless");
+            if (unless != null) {
+                return Optional.of(unless.asClass().name());
+            }
+        }
+        return Optional.empty();
+    }
+
+    private List<Throwable> validateResultPredicates(CombinedIndexBuildItem combinedIndex,
+            BeanDiscoveryFinishedBuildItem beanDiscoveryFinished, Set<DotName> resultPredicates) {
+        List<Throwable> throwables = new ArrayList<>();
+        for (DotName predicateClassName : resultPredicates) {
+            List<BeanInfo> beans = beanDiscoveryFinished.beanStream().withBeanType(predicateClassName).collect();
+            if (beans.isEmpty()) {
+                ClassInfo predicateClassInfo = combinedIndex.getIndex().getClassByName(predicateClassName);
+                if (predicateClassInfo == null) {
+                    throwables.add(new IllegalStateException(
+                            "Unable to find the cache result predicate class in the index:" + predicateClassName));
+                } else if (!predicateClassInfo.hasNoArgsConstructor()) {
+                    throwables.add(new CacheResultPredicateConstructorException(predicateClassInfo));
+                }
+            } else if (beans.size() > 1) {
+                String message = String.format(
+                        "There must be exactly one bean that matches the cache result predicate class: \"%s\"\n\t- beans: %s",
+                        predicateClassName, beans);
+                throwables.add(new IllegalStateException(message));
+            }
+        }
+        return throwables;
     }
 
     private List<Throwable> validateKeyGenerators(CombinedIndexBuildItem combinedIndex,

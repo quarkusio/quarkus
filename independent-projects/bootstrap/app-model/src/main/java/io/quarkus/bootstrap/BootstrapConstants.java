@@ -16,6 +16,8 @@ public interface BootstrapConstants {
     /**
      * Constant for sharing the additional mappings between test-sources and the corresponding application-sources.
      * The Gradle plugin populates this data which is then read by the PathTestHelper when executing tests.
+     * It can be set either as a system property or as an environment variable.
+     * If both are set, the system property takes precedence.
      */
     String TEST_TO_MAIN_MAPPINGS = "TEST_TO_MAIN_MAPPINGS";
 

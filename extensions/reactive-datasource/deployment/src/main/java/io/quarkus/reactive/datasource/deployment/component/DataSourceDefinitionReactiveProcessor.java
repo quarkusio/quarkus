@@ -1,14 +1,22 @@
 package io.quarkus.reactive.datasource.deployment.component;
 
+import static io.quarkus.reactive.datasource.deployment.ReactiveDataSourceBuildUtil.REACTIVE_DATASOURCE_QUALIFIER;
+import static io.quarkus.reactive.datasource.deployment.ReactiveDataSourceBuildUtil.REACTIVE_INJECTABLE_TYPES;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 import java.util.function.Predicate;
 
+import org.jboss.jandex.AnnotationValue;
 import org.jboss.logging.Logger;
 
+import io.quarkus.arc.deployment.BeanDiscoveryFinishedBuildItem;
+import io.quarkus.arc.deployment.BeanDiscoveryInjectionPointsBuildItem;
+import io.quarkus.arc.deployment.InjectionPointScanningUtil;
 import io.quarkus.arc.deployment.ValidationPhaseBuildItem;
+import io.quarkus.arc.processor.DotNames;
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
 import io.quarkus.datasource.deployment.component.DataSourceProcessorSupport;
 import io.quarkus.datasource.deployment.spi.DataSourceDbKindResolverBuildItem;
@@ -83,12 +91,25 @@ class DataSourceDefinitionReactiveProcessor {
         DataSourceProcessorSupport.collectImplicitDataSourceRequestsFromConfiguration(
                 ProgrammingParadigm.REACTIVE, reactiveConfig.dataSources().keySet(), "reactive.*", enabled,
                 dataSourceRequests);
+    }
 
-        // We don't derive requests from injection points of datasource related beans,
-        // because those could just be referencing custom beans,
-        // as we suggest in https://quarkus.io/guides/datasource#datasource-active
-        // TODO https://github.com/quarkusio/quarkus/issues/55217
-        //  Find a way to collect injection points for a given DS that have no matching user-defined producer
+    @BuildStep
+    void collectReactiveDataSourceRequestsFromInjection(
+            BeanDiscoveryFinishedBuildItem beanDiscovery,
+            BeanDiscoveryInjectionPointsBuildItem injectionPointIndex,
+            BuildProducer<DataSourceRequestBuildItem> dataSourceRequests) {
+        InjectionPointScanningUtil.collectUnsatisfiedInjectionPoints(
+                beanDiscovery, injectionPointIndex,
+                REACTIVE_INJECTABLE_TYPES,
+                List.of(REACTIVE_DATASOURCE_QUALIFIER, DotNames.NAMED),
+                DataSourceUtil.DEFAULT_DATASOURCE_NAME,
+                qualifier -> {
+                    AnnotationValue value = qualifier.value();
+                    return (value != null && !value.asString().isEmpty()) ? value.asString()
+                            : DataSourceUtil.DEFAULT_DATASOURCE_NAME;
+                },
+                (name, reason) -> dataSourceRequests
+                        .produce(new DataSourceRequestBuildItem(name, ProgrammingParadigm.REACTIVE, reason)));
     }
 
     @BuildStep

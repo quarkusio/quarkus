@@ -6,6 +6,7 @@ import static io.quarkus.oidc.SecurityEvent.Type.OIDC_SERVER_NOT_AVAILABLE;
 import static io.quarkus.oidc.runtime.OidcRecorder.LOG;
 import static io.quarkus.oidc.runtime.OidcUtils.DEFAULT_TENANT_ID;
 
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -207,6 +208,15 @@ final class TenantContextFactory {
             OidcCommonUtils.verifyEndpointUrl(oidcConfig.authServerUrl().get());
             OidcCommonUtils.verifyCommonConfiguration(oidcConfig, OidcUtils.isServiceApp(oidcConfig), true);
             verifyAllowedRoutes(oidcConfig, tenantId);
+            if (ClientIdMetadataHandler.isClientIdMetadataUrl(oidcConfig)) {
+                LOG.debugf("'%s' tenant client-id is a Client ID Metadata Document URL", tenantId);
+                verifyClientIdMetadataConfiguration(oidcConfig, tenantId);
+            } else if (OidcCommonUtils.isJwtPublicKeyConfigured(oidcConfig.credentials().jwt())) {
+                throw new ConfigurationException(
+                        "A JWT public key is configured for tenant '" + tenantId + "' but the Client ID Metadata"
+                                + " Document is not enabled. The JWT public key can only be used with the Client ID"
+                                + " Metadata Document");
+            }
         } catch (ConfigurationException t) {
             return Uni.createFrom().failure(t);
         }
@@ -366,13 +376,143 @@ final class TenantContextFactory {
                     + " 'quarkus.oidc.allowed-routes'; this tenant will not provide protected resource metadata",
                     getConfigPropertyForTenant(tenantId, "resource-metadata.enabled"), tenantId);
         }
+        if (!allowedRoutes.contains(OidcRoute.CLIENT_ID_METADATA)
+                && ClientIdMetadataHandler.isClientIdMetadataUrl(oidcConfig)) {
+            LOG.warnf("'%s' is a Client ID Metadata Document URL but the 'client-id-metadata' route is not in"
+                    + " 'quarkus.oidc.allowed-routes'; this tenant will not publish its Client ID Metadata Document",
+                    getConfigPropertyForTenant(tenantId, "client-id"));
+        }
     }
 
-    private String getConfigPropertyForTenant(String tenantId, String configSubKey) {
+    private static String getConfigPropertyForTenant(String tenantId, String configSubKey) {
         if (DEFAULT_TENANT_ID.equals(tenantId)) {
             return "quarkus.oidc." + configSubKey;
         } else {
             return "quarkus.oidc." + tenantId + "." + configSubKey;
+        }
+    }
+
+    private static boolean hasDotPathSegment(String rawPath) {
+        for (String segment : rawPath.split("/")) {
+            String decodedSegment = segment.replace("%2e", ".").replace("%2E", ".");
+            if (".".equals(decodedSegment) || "..".equals(decodedSegment)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    static void verifyClientIdMetadataConfiguration(OidcTenantConfig oidcConfig, String tenantId) {
+        if (OidcUtils.isServiceApp(oidcConfig)) {
+            throw new ConfigurationException(
+                    "'" + getConfigPropertyForTenant(tenantId, "client-id")
+                            + "' Client ID Metadata Document URL can not be currently used with 'service' applications");
+        }
+
+        final URI clientIdUri;
+        try {
+            clientIdUri = URI.create(oidcConfig.clientId().get());
+        } catch (IllegalArgumentException ex) {
+            throw new ConfigurationException(
+                    "'" + getConfigPropertyForTenant(tenantId, "client-id")
+                            + "' Client ID Metadata Document URL is not a valid URL",
+                    ex);
+        }
+
+        if (clientIdUri.getRawPath() == null || clientIdUri.getRawPath().isEmpty()
+                || "/".equals(clientIdUri.getRawPath())) {
+            throw new ConfigurationException(
+                    "'" + getConfigPropertyForTenant(tenantId, "client-id")
+                            + "' Client ID Metadata Document URL must have a path component");
+        }
+
+        if (hasDotPathSegment(clientIdUri.getRawPath())) {
+            throw new ConfigurationException(
+                    "'" + getConfigPropertyForTenant(tenantId, "client-id")
+                            + "' Client ID Metadata Document URL must not contain single-dot or double-dot path"
+                            + " components");
+        }
+
+        if (clientIdUri.getRawUserInfo() != null) {
+            throw new ConfigurationException(
+                    "'" + getConfigPropertyForTenant(tenantId, "client-id")
+                            + "' Client ID Metadata Document URL must not contain a userinfo component");
+        }
+
+        if (clientIdUri.getRawQuery() != null) {
+            throw new ConfigurationException(
+                    "'" + getConfigPropertyForTenant(tenantId, "client-id")
+                            + "' Client ID Metadata Document URL must not contain a query component");
+        }
+
+        if (clientIdUri.getRawFragment() != null) {
+            throw new ConfigurationException(
+                    "'" + getConfigPropertyForTenant(tenantId, "client-id")
+                            + "' Client ID Metadata Document URL must not contain a fragment component");
+        }
+
+        if (oidcConfig.clientName().isEmpty()) {
+            throw new ConfigurationException(
+                    "'" + getConfigPropertyForTenant(tenantId, "client-name")
+                            + "' must be set when the client-id is a Client ID Metadata Document URL");
+        }
+
+        var credentials = oidcConfig.credentials();
+        if (credentials.secret().isPresent()
+                || credentials.clientSecret().value().isPresent()
+                || credentials.clientSecret().provider().key().isPresent()
+                || credentials.jwt().secret().isPresent()
+                || credentials.jwt().secretProvider().key().isPresent()) {
+            throw new ConfigurationException(
+                    "Client ID Metadata Document does not permit shared secret authentication methods"
+                            + " for tenant '" + tenantId + "'."
+                            + " Use 'private_key_jwt' or remove the client secret configuration");
+        }
+
+        boolean hasPrivateKey = OidcCommonUtils.isJwtPrivateKeyConfigured(credentials.jwt());
+        boolean hasPublicKey = OidcCommonUtils.isJwtPublicKeyConfigured(credentials.jwt());
+        if (hasPrivateKey && !hasPublicKey) {
+            throw new ConfigurationException(
+                    "A JWT private key is configured for tenant '" + tenantId + "' but no JWT public key is set."
+                            + " A JWT public key must be configured for the authorization server to verify"
+                            + " the private key client assertion signature");
+        }
+        if (hasPublicKey && !hasPrivateKey) {
+            throw new ConfigurationException(
+                    "A JWT public key is configured for tenant '" + tenantId + "' but no JWT private key is set."
+                            + " The JWT public key can not be used without a JWT private key");
+        }
+
+        if (oidcConfig.authentication().redirectPath().isEmpty()) {
+            throw new ConfigurationException(
+                    "'" + getConfigPropertyForTenant(tenantId, "authentication.redirect-path")
+                            + "' must be set when the client-id is a Client ID Metadata Document URL");
+        }
+
+        String redirectPath = oidcConfig.authentication().redirectPath().get();
+        if (redirectPath.startsWith("//")) {
+            throw new ConfigurationException(
+                    "'" + getConfigPropertyForTenant(tenantId, "authentication.redirect-path")
+                            + "' must not start with '//'");
+        }
+
+        final URI redirectPathUri;
+        try {
+            redirectPathUri = URI.create(redirectPath);
+        } catch (IllegalArgumentException ex) {
+            throw new ConfigurationException(
+                    "'" + getConfigPropertyForTenant(tenantId, "authentication.redirect-path")
+                            + "' is not a valid URI",
+                    ex);
+        }
+
+        if (redirectPathUri.isAbsolute()) {
+            String clientIdAuthority = OidcUtils.getUriAuthority(clientIdUri);
+            if (!redirectPath.startsWith(clientIdAuthority)) {
+                throw new ConfigurationException(
+                        "'" + getConfigPropertyForTenant(tenantId, "authentication.redirect-path")
+                                + "' authority must match the client-id URL authority");
+            }
         }
     }
 

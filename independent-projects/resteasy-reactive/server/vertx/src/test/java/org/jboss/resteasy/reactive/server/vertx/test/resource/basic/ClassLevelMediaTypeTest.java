@@ -54,7 +54,7 @@ public class ClassLevelMediaTypeTest {
             Response response = base.request().get();
             Assertions.assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
             String body = response.readEntity(String.class);
-            Assertions.assertEquals(response.getHeaderString("Content-Type"), "application/json;charset=UTF-8");
+            Assertions.assertEquals(response.getHeaderString("Content-Type"), "application/json");
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

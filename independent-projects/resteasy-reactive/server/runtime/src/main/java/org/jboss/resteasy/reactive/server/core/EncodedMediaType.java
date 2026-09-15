@@ -22,7 +22,9 @@ public class EncodedMediaType implements ContentType {
         MediaType effectiveMediaType = mediaType;
         String effectiveCharset;
         String originalCharset = mediaType.getParameters().get("charset");
-        if (MediaTypeHelper.isTextLike(mediaType)) {
+        if (isJson(mediaType)) {
+            effectiveCharset = originalCharset;
+        } else if (MediaTypeHelper.isTextLike(mediaType)) {
             effectiveCharset = originalCharset;
             if (effectiveCharset == null) {
                 effectiveCharset = StandardCharsets.UTF_8.name();
@@ -36,6 +38,20 @@ public class EncodedMediaType implements ContentType {
             effectiveMediaType = mediaType.withCharset(effectiveCharset);
         }
         this.mediaType = effectiveMediaType;
+    }
+
+    /**
+     * JSON text is always encoded in UTF-8, UTF-16 or UTF-32 (RFC 8259) and the {@code application/json} media type
+     * registration defines no {@code charset} parameter, so a charset is only kept if it was set explicitly.
+     *
+     * @return {@code true} for {@code application/json} and the {@code +json} structured syntax suffix
+     */
+    private static boolean isJson(MediaType mediaType) {
+        if (!"application".equals(mediaType.getType())) {
+            return false;
+        }
+        String subtype = mediaType.getSubtype();
+        return "json".equals(subtype) || subtype.endsWith("+json");
     }
 
     // TODO: does this need to be more complex?

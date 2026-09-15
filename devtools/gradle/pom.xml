@@ -25,6 +25,7 @@
         <module>gradle-model</module>
         <module>gradle-application-plugin</module>
         <module>gradle-extension-plugin</module>
+        <module>gradle-init-plugin</module>
     </modules>
 
     <dependencyManagement>

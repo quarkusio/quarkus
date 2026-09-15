@@ -2,8 +2,10 @@ package io.quarkus.vertx.http.runtime;
 
 import static io.quarkus.vertx.http.runtime.RoutingUtils.*;
 
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Consumer;
@@ -37,6 +39,26 @@ public class StaticResourcesRecorder {
 
     public static void setHotDeploymentResources(List<Path> resources) {
         hotDeploymentResourcePaths = resources;
+    }
+
+    /**
+     * Returns the build-time known paths that a hot deployment root provides. In dev and test mode these files are
+     * served from disk by the handlers registered for the hot deployment roots, so a request for one of them that
+     * reaches the classpath handler means the file was deleted: it must not be looked up through the classpath,
+     * whose view of the resources directory is the one captured at startup.
+     */
+    private static Set<String> hotDeploymentPaths(Set<String> knownPaths, List<Path> roots) {
+        Set<String> result = new HashSet<>();
+        for (String path : knownPaths) {
+            String relative = path.startsWith("/") ? path.substring(1) : path;
+            for (Path root : roots) {
+                if (Files.exists(root.resolve(relative))) {
+                    result.add(path);
+                    break;
+                }
+            }
+        }
+        return result;
     }
 
     public Consumer<Route> start(Set<String> knownPaths) {
@@ -98,6 +120,8 @@ public class StaticResourcesRecorder {
             final String indexPage = (config.indexPage().charAt(0) == '/')
                     ? config.indexPage().substring(1)
                     : config.indexPage();
+            final Set<String> hotDeploymentPaths = hotDeploymentResourcePaths == null ? Set.of()
+                    : hotDeploymentPaths(knownPaths, hotDeploymentResourcePaths);
             handlers.add(new Handler<>() {
                 @Override
                 public void handle(RoutingContext ctx) {
@@ -107,7 +131,9 @@ public class StaticResourcesRecorder {
                         return;
                     }
                     // check effective path, otherwise the index page when path ends with '/'
-                    if (knownPaths.contains(rel) || (rel.endsWith("/") && knownPaths.contains(rel.concat(indexPage)))) {
+                    String effective = rel.endsWith("/") ? rel.concat(indexPage) : rel;
+                    boolean known = knownPaths.contains(rel) || (rel.endsWith("/") && knownPaths.contains(effective));
+                    if (known && !hotDeploymentPaths.contains(effective)) {
                         compressIfNeeded(httpBuildTimeConfig, compressMediaTypes, ctx, rel);
                         staticHandler.handle(ctx);
                     } else {

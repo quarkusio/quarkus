@@ -133,8 +133,16 @@ public class DevUIRecorder {
         return new LocalHostOnlyFilter(hosts);
     }
 
+    public Handler<RoutingContext> createLocalHostOnlyFilter(List<String> hosts, boolean allowLoopbackHostnames) {
+        return new LocalHostOnlyFilter(hosts, allowLoopbackHostnames);
+    }
+
     public Handler<RoutingContext> createDevUICorsFilter(List<String> hosts) {
         return new DevUICORSFilter(hosts);
+    }
+
+    public Handler<RoutingContext> createDevUICorsFilter(List<String> hosts, boolean allowLoopbackHostnames) {
+        return new DevUICORSFilter(hosts, allowLoopbackHostnames);
     }
 
     private static final class DeleteDirectoryRunnable implements Runnable {

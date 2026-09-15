@@ -43,7 +43,7 @@
         <parsson.version>1.1.9</parsson.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <!-- Versions -->
-        <jakarta.enterprise.cdi-api.version>4.1.0</jakarta.enterprise.cdi-api.version>
+        <jakarta.cdi-api.version>5.0.0.CR1</jakarta.cdi-api.version>
         <jandex.version>3.6.0</jandex.version>
         <bytebuddy.version>1.17.6</bytebuddy.version>
         <junit.version>6.1.3</junit.version>
@@ -166,9 +166,24 @@
                 <version>${project.version}</version>
             </dependency>
             <dependency>
+                <groupId>jakarta.cdi</groupId>
+                <artifactId>jakarta.cdi-api</artifactId>
+                <version>${jakarta.cdi-api.version}</version>
+            </dependency>
+            <!-- CDI 5.0 moved to the jakarta.cdi coordinates but is still published under the old
+                 ones as a relocation. Managing the old coordinates makes dependencies that were
+                 built against CDI 4 resolve the new artifacts instead of putting a second copy of
+                 the CDI API on the classpath. These two entries can go away once nothing depends
+                 on CDI 4 anymore. -->
+            <dependency>
                 <groupId>jakarta.enterprise</groupId>
                 <artifactId>jakarta.enterprise.cdi-api</artifactId>
-                <version>${jakarta.enterprise.cdi-api.version}</version>
+                <version>${jakarta.cdi-api.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>jakarta.enterprise</groupId>
+                <artifactId>jakarta.enterprise.lang-model</artifactId>
+                <version>${jakarta.cdi-api.version}</version>
             </dependency>
             <dependency>
                 <groupId>jakarta.json</groupId>

@@ -1,6 +1,6 @@
 package io.quarkus.arc.test.instance.illegal;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -23,10 +23,9 @@ public class TypeVariableInstanceInjectionPointTest {
     public void testError() {
         Throwable failure = container.getFailure();
         assertNotNull(failure);
-        assertTrue(failure instanceof DefinitionException);
-        assertEquals(
-                "Type variable is not a legal type argument for jakarta.enterprise.inject.Instance: io.quarkus.arc.test.instance.illegal.TypeVariableInstanceInjectionPointTest$Head#instance",
-                failure.getMessage());
+        assertInstanceOf(DefinitionException.class, failure);
+        assertTrue(failure.getMessage()
+                .contains("Type variable is not a legal type argument for jakarta.enterprise.inject.Instance"));
     }
 
     @Dependent

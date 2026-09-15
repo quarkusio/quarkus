@@ -1,11 +1,9 @@
 package io.quarkus.arc.processor;
 
-import static io.quarkus.gizmo2.Reflection2Gizmo.classDescOf;
 import static org.jboss.jandex.gizmo2.Jandex2Gizmo.classDescOf;
 import static org.jboss.jandex.gizmo2.Jandex2Gizmo.methodDescOf;
 
 import java.lang.constant.ClassDesc;
-import java.lang.constant.MethodTypeDesc;
 import java.lang.reflect.Modifier;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -38,10 +36,10 @@ import org.jboss.jandex.PrimitiveType.Primitive;
 import org.jboss.jandex.Type;
 import org.jboss.jandex.TypeVariable;
 import org.jboss.jandex.gizmo2.StringBuilderGen;
-import org.jboss.logging.Logger;
 
 import io.quarkus.arc.impl.CreationalContextImpl;
 import io.quarkus.arc.impl.InvokerCleanupTasks;
+import io.quarkus.arc.impl.invoke.CreationalContextReleaser;
 import io.quarkus.arc.processor.BuiltinBean.GeneratorContext;
 import io.quarkus.arc.processor.ResourceOutput.Resource;
 import io.quarkus.gizmo2.Const;
@@ -59,7 +57,7 @@ import io.quarkus.gizmo2.desc.MethodDesc;
 import io.smallrye.common.annotation.SuppressForbidden;
 
 public class InvokerGenerator extends AbstractGenerator {
-    private static final Logger LOGGER = Logger.getLogger(InvokerGenerator.class);
+    private static final String ASYNC_HANDLERS_SUFFIX = "_AsyncHandlers";
 
     private final Predicate<DotName> applicationClassPredicate;
     private final IndexView beanArchiveIndex;
@@ -67,12 +65,13 @@ public class InvokerGenerator extends AbstractGenerator {
     private final AnnotationLiteralProcessor annotationLiterals;
     private final ReflectionRegistration reflectionRegistration;
     private final Predicate<DotName> injectionPointAnnotationsPredicate;
+    private final String name;
 
     private final Assignability assignability;
 
     InvokerGenerator(boolean generateSources, Predicate<DotName> applicationClassPredicate, BeanDeployment deployment,
             AnnotationLiteralProcessor annotationLiterals, ReflectionRegistration reflectionRegistration,
-            Predicate<DotName> injectionPointAnnotationsPredicate) {
+            Predicate<DotName> injectionPointAnnotationsPredicate, String name) {
         super(generateSources);
         this.applicationClassPredicate = applicationClassPredicate;
         this.beanArchiveIndex = deployment.getBeanArchiveIndex();
@@ -80,6 +79,7 @@ public class InvokerGenerator extends AbstractGenerator {
         this.annotationLiterals = annotationLiterals;
         this.reflectionRegistration = reflectionRegistration;
         this.injectionPointAnnotationsPredicate = injectionPointAnnotationsPredicate;
+        this.name = name;
 
         this.assignability = new Assignability(deployment.getBeanArchiveIndex());
     }
@@ -104,6 +104,37 @@ public class InvokerGenerator extends AbstractGenerator {
         createInvokerClass(gizmo, invoker);
 
         return classOutput.getResources();
+    }
+
+    Collection<Resource> generateAsyncHandlersSetup(List<AsyncHandlerInfo> asyncHandlers) {
+        // the generated class references all async handler classes in its static field initializers,
+        // some of which may be application classes, so the generated class is always an application class
+        ResourceClassOutput classOutput = new ResourceClassOutput(true, generateSources);
+
+        io.quarkus.gizmo2.Gizmo gizmo = gizmo(classOutput);
+
+        gizmo.class_(ComponentsProviderGenerator.SETUP_PACKAGE + "." + name + ASYNC_HANDLERS_SUFFIX, cc -> {
+            for (AsyncHandlerInfo asyncHandler : asyncHandlers) {
+                cc.staticField(asyncHandler.asyncType().toString('_'), fc -> {
+                    fc.public_();
+                    fc.final_();
+                    fc.setType(classDescOf(asyncHandler.clazz()));
+                    fc.setInitializer(bc -> {
+                        bc.yield(bc.new_(classDescOf(asyncHandler.clazz())));
+                    });
+                });
+            }
+
+            cc.defaultConstructor();
+        });
+
+        return classOutput.getResources();
+    }
+
+    StaticFieldVar readAsyncHandler(AsyncHandlerInfo asyncHandler) {
+        return Expr.staticField(FieldDesc.of(
+                ClassDesc.of(ComponentsProviderGenerator.SETUP_PACKAGE + "." + name + ASYNC_HANDLERS_SUFFIX),
+                asyncHandler.asyncType().toString('_'), classDescOf(asyncHandler.clazz())));
     }
 
     // ---
@@ -377,6 +408,27 @@ public class InvokerGenerator extends AbstractGenerator {
                         b0.get(argumentsParam.elem(invoker.method.parametersCount() - 1));
                     }
 
+                    LocalVar ccReleaser;
+                    if (rootCC != null && invoker.isAsynchronousReturnType()) {
+                        ccReleaser = b0.localVar("ccReleaser", b0.new_(
+                                ConstructorDesc.of(CreationalContextReleaser.ForReturnType.class, CreationalContext.class),
+                                rootCC));
+                    } else if (rootCC != null && invoker.isAsynchronousParameterType()) {
+                        ccReleaser = b0.localVar("ccReleaser", b0.new_(
+                                ConstructorDesc.of(CreationalContextReleaser.ForParameterType.class, CreationalContext.class),
+                                rootCC));
+                    } else {
+                        ccReleaser = null;
+                    }
+
+                    if (ccReleaser != null && invoker.isAsynchronousParameterType()) {
+                        int position = invoker.asyncParameterPosition();
+                        Var asyncHandler = readAsyncHandler(invoker.asyncHandler);
+                        arguments[position] = b0.localVar("asyncArgument", b0.invokeInterface(
+                                MethodDescs.ASYNC_HANDLER_PARAM_TRANSFORM_ARGUMENT, asyncHandler, arguments[position],
+                                ccReleaser));
+                    }
+
                     b0.try_(tc -> {
                         tc.body(b1 -> {
                             Expr result;
@@ -396,7 +448,19 @@ public class InvokerGenerator extends AbstractGenerator {
                             }
 
                             if (rootCC != null) {
-                                b1.set(resultVar, generateCCRelease(b1, invoker, rootCC, resultVar));
+                                if (ccReleaser == null) {
+                                    b1.invokeInterface(MethodDescs.CREATIONAL_CTX_RELEASE, rootCC);
+                                } else if (invoker.isAsynchronousReturnType()) {
+                                    Var asyncHandler = readAsyncHandler(invoker.asyncHandler);
+                                    b1.set(resultVar, b1.invokeInterface(MethodDescs.ASYNC_HANDLER_RET_TRANSFORM,
+                                            asyncHandler, resultVar, ccReleaser));
+                                } else if (invoker.isAsynchronousParameterType()) {
+                                    Var asyncHandler = readAsyncHandler(invoker.asyncHandler);
+                                    b1.set(resultVar, b1.invokeInterface(MethodDescs.ASYNC_HANDLER_PARAM_TRANSFORM_RETURN_VALUE,
+                                            asyncHandler, resultVar, ccReleaser));
+                                    b1.invokeVirtual(MethodDesc.of(CreationalContextReleaser.ForParameterType.class,
+                                            "methodReturned", void.class), ccReleaser);
+                                }
                             }
 
                             if (info.returnValueTransformer != null) {
@@ -412,8 +476,8 @@ public class InvokerGenerator extends AbstractGenerator {
                             }
 
                             if (rootCC != null) {
-                                // return value is always `null` here, so we can ignore it
-                                generateCCRelease(b1, invoker, rootCC, null);
+                                // we don't have to distinguish sync/async here
+                                b1.invokeInterface(MethodDescs.CREATIONAL_CTX_RELEASE, rootCC);
                             }
 
                             if (invoker.exceptionTransformer != null) {
@@ -456,22 +520,6 @@ public class InvokerGenerator extends AbstractGenerator {
             } else {
                 return bc.invokeVirtual(methodDesc, value);
             }
-        }
-    }
-
-    private Expr generateCCRelease(BlockCreator bc, InvokerInfo invoker, LocalVar rootCC, LocalVar returnValue) {
-        assert rootCC != null;
-
-        // `returnValue` is `null` when the target method has thrown an exception;
-        // we're going to rethrow it, so we need to release the `CreationalContext` immediately
-        if (returnValue == null || !invoker.isAsynchronous()) {
-            bc.invokeInterface(MethodDescs.CREATIONAL_CTX_RELEASE, rootCC);
-            return returnValue;
-        } else {
-            ClassDesc asyncType = classDescOf(invoker.method.returnType());
-            return bc.invokeStatic(ClassMethodDesc.of(classDescOf(InvokerCleanupTasks.class), "deferRelease",
-                    MethodTypeDesc.of(asyncType, classDescOf(CreationalContext.class), asyncType)),
-                    rootCC, returnValue);
         }
     }
 

@@ -84,7 +84,13 @@ public class BeanInfo implements InjectionTargetInfo {
 
     private final String name;
 
-    private final boolean defaultBean;
+    private final boolean reserve;
+
+    // this is for CDI `@Eager`, while `startupPriority` is for ArC `@Startup`
+    // they are intentionally disconnected, because expressing one in terms of the other would be needlessly complex
+    private final boolean eager;
+
+    private final boolean autoClose;
 
     private final List<MethodInfo> aroundInvokes;
 
@@ -108,6 +114,7 @@ public class BeanInfo implements InjectionTargetInfo {
 
     private final String targetPackageName;
 
+    // see `eager`
     private final Integer startupPriority;
 
     // used to create the implementation of `InjectableBean.checkActive()`,
@@ -116,16 +123,18 @@ public class BeanInfo implements InjectionTargetInfo {
 
     BeanInfo(AnnotationTarget target, BeanDeployment beanDeployment, ScopeInfo scope, Set<Type> types,
             Set<AnnotationInstance> qualifiers, List<Injection> injections, BeanInfo declaringBean, DisposerInfo disposer,
-            boolean alternative, List<StereotypeInfo> stereotypes, String name, boolean isDefaultBean, String targetPackageName,
-            Integer priority, Set<Type> unrestrictedTypes, InterceptionProxyInfo interceptionProxy) {
+            boolean alternative, List<StereotypeInfo> stereotypes, String name, boolean isReserve, boolean isEager,
+            boolean isAutoClose, String targetPackageName, Integer priority, Set<Type> unrestrictedTypes,
+            InterceptionProxyInfo interceptionProxy) {
         this(null, null, target, beanDeployment, scope, types, qualifiers, injections, declaringBean, disposer,
-                alternative, stereotypes, name, isDefaultBean, null, null, Collections.emptyMap(), true, false,
-                targetPackageName, priority, null, unrestrictedTypes, null, interceptionProxy, null);
+                alternative, stereotypes, name, isReserve, isEager, isAutoClose, null, null, Collections.emptyMap(), true,
+                false, targetPackageName, priority, null, unrestrictedTypes, null, interceptionProxy, null);
     }
 
     BeanInfo(ClassInfo implClazz, Type providerType, AnnotationTarget target, BeanDeployment beanDeployment, ScopeInfo scope,
             Set<Type> types, Set<AnnotationInstance> qualifiers, List<Injection> injections, BeanInfo declaringBean,
-            DisposerInfo disposer, boolean alternative, List<StereotypeInfo> stereotypes, String name, boolean isDefaultBean,
+            DisposerInfo disposer, boolean alternative, List<StereotypeInfo> stereotypes, String name, boolean isReserve,
+            boolean isEager, boolean isAutoClose,
             Consumer<BeanConfiguratorBase.CreateGeneration> creatorConsumer,
             Consumer<BeanConfiguratorBase.DestroyGeneration> destroyerConsumer,
             Map<String, Object> params, boolean isRemovable, boolean forceApplicationClass, String targetPackageName,
@@ -162,10 +171,12 @@ public class BeanInfo implements InjectionTargetInfo {
         this.priority = priority;
         this.stereotypes = Unique.stereotypes(stereotypes);
         this.name = name;
-        this.defaultBean = isDefaultBean;
+        this.reserve = isReserve;
+        this.eager = isEager;
+        this.autoClose = isAutoClose;
         this.creatorConsumer = creatorConsumer;
         this.destroyerConsumer = destroyerConsumer;
-        this.removable = isRemovable;
+        this.removable = eager ? false : isRemovable;
         this.params = params;
         this.interceptionProxy = interceptionProxy;
         this.checkActiveConsumer = checkActiveConsumer;
@@ -465,8 +476,8 @@ public class BeanInfo implements InjectionTargetInfo {
         if (isInterceptor()) {
             return false;
         }
-        if (disposer != null || destroyerConsumer != null) {
-            // producer with disposer or custom bean with destruction logic
+        if (autoClose || disposer != null || destroyerConsumer != null) {
+            // auto-closeable bean or producer with disposer or custom bean with destruction logic
             return true;
         }
         // test class bean with @PreDestroy interceptor or callback
@@ -594,8 +605,24 @@ public class BeanInfo implements InjectionTargetInfo {
         return name;
     }
 
+    public boolean isReserve() {
+        return reserve;
+    }
+
+    /**
+     * @deprecated use {@link #isReserve()}
+     */
+    @Deprecated(forRemoval = true, since = "4.0")
     public boolean isDefaultBean() {
-        return defaultBean;
+        return reserve;
+    }
+
+    public boolean isEager() {
+        return eager;
+    }
+
+    public boolean isAutoClose() {
+        return autoClose;
     }
 
     public OptionalInt getStartupPriority() {
@@ -1182,7 +1209,11 @@ public class BeanInfo implements InjectionTargetInfo {
 
         private String name;
 
-        private boolean isDefaultBean;
+        private boolean reserve;
+
+        private boolean eager;
+
+        private boolean autoClose;
 
         private Consumer<BeanConfiguratorBase.CreateGeneration> creatorConsumer;
 
@@ -1284,8 +1315,26 @@ public class BeanInfo implements InjectionTargetInfo {
             return this;
         }
 
+        Builder reserve(boolean value) {
+            this.reserve = value;
+            return this;
+        }
+
+        /**
+         * @deprecated use {@link #reserve(boolean)}
+         */
+        @Deprecated(forRemoval = true, since = "4.0")
         Builder defaultBean(boolean isDefaultBean) {
-            this.isDefaultBean = isDefaultBean;
+            return reserve(isDefaultBean);
+        }
+
+        Builder eager(boolean value) {
+            this.eager = value;
+            return this;
+        }
+
+        Builder autoClose(boolean value) {
+            this.autoClose = value;
             return this;
         }
 
@@ -1331,7 +1380,7 @@ public class BeanInfo implements InjectionTargetInfo {
 
         BeanInfo build() {
             return new BeanInfo(implClazz, providerType, target, beanDeployment, scope, types, qualifiers, injections,
-                    declaringBean, disposer, alternative, stereotypes, name, isDefaultBean, creatorConsumer,
+                    declaringBean, disposer, alternative, stereotypes, name, reserve, eager, autoClose, creatorConsumer,
                     destroyerConsumer, params, removable, forceApplicationClass, targetPackageName, priority,
                     identifier, null, startupPriority, interceptionProxy, checkActiveConsumer);
         }

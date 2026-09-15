@@ -37,7 +37,7 @@ abstract class ExtensionPhaseBase {
     }
 
     // complex phases may override, but this is enough for the simple phases
-    void runExtensionMethod(ExtensionMethod method) throws ReflectiveOperationException {
+    void runExtensionMethod(ExtensionMethod method) throws Exception {
         List<ExtensionMethodParameter> parameters = new ArrayList<>(method.parametersCount());
         for (org.jboss.jandex.Type parameterType : method.parameterTypes()) {
             ExtensionMethodParameter parameter = ExtensionMethodParameter.of(parameterType);

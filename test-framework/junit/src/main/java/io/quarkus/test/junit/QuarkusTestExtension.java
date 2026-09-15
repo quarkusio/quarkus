@@ -98,10 +98,6 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
 
     private static boolean failedBoot;
 
-    // True only while ensureStarted() is closing the previous app for a mid-run transition; lets
-    // ExtensionState.doClose() tell that apart from a truly final close.
-    private static boolean closingForApplicationTransition;
-
     private static Class<?> actualTestClass;
     private static Object actualTestInstance;
     // needed for @Nested
@@ -621,7 +617,6 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
             throw new IllegalStateException(
                     "Internal error: ClassLoader " + incomingClassLoader + " does not have a linked curated application.");
         }
-        incomingCuratedApplication.setEligibleForReuse(isSameCuratedApplication);
 
         // Let's clear the class-based caches of JDK/libraries when we switch to another application
         if (!isSameCuratedApplication) {
@@ -639,12 +634,9 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
             if (isNewApplication) {
                 if (state != null) {
                     try {
-                        closingForApplicationTransition = true;
                         state.close();
                     } catch (Throwable throwable) {
                         markTestAsFailed(extensionContext, throwable);
-                    } finally {
-                        closingForApplicationTransition = false;
                     }
                 }
             }
@@ -1206,13 +1198,6 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
             ClassLoader old = Thread.currentThread().getContextClassLoader();
             if (runningQuarkusApplication != null) {
                 Thread.currentThread().setContextClassLoader(runningQuarkusApplication.getClassLoader());
-                if (!closingForApplicationTransition) {
-                    // eligibleForReuse reflects the *next* test only; at a truly final close it's stale
-                    // and would otherwise block close() below from closing the class loaders, leaking
-                    // the dev services they own.
-                    ((QuarkusClassLoader) runningQuarkusApplication.getClassLoader()).getCuratedApplication()
-                            .setEligibleForReuse(false);
-                }
             }
             try {
                 // this will close the application, the test resources, the class loader...

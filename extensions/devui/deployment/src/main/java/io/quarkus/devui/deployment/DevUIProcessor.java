@@ -587,7 +587,7 @@ public class DevUIProcessor {
                 .artifactKey(UI_JAR)
                 .root(DEVUI + SLASH).build());
 
-        devUIWebJarProducer.produce(new DevUIWebJarBuildItem(UI_JAR, DEVUI));
+        devUIWebJarProducer.produce(new DevUIWebJarBuildItem(UI_JAR, DEVUI, getNamespace(UI_JAR)));
 
         final boolean assistantIsAvailable = capabilities.isPresent(Capability.ASSISTANT);
 
@@ -1049,7 +1049,7 @@ public class DevUIProcessor {
                 })
                 .build());
 
-        devUIWebJarProducer.produce(new DevUIWebJarBuildItem(deploymentKey, DEVUI));
+        devUIWebJarProducer.produce(new DevUIWebJarBuildItem(deploymentKey, DEVUI, namespace));
     }
 
     private static GACT getDeploymentKey(ResolvedDependency runtimeExt) {
@@ -1094,7 +1094,7 @@ public class DevUIProcessor {
             WebJarResultsBuildItem.WebJarResult result = webJarResultsBuildItem
                     .byArtifactKey(devUIWebJarBuiltItem.getArtifactKey());
             if (result != null) {
-                String namespace = getNamespace(devUIWebJarBuiltItem.getArtifactKey());
+                String namespace = devUIWebJarBuiltItem.getNamespace();
                 devUIRoutesProducer.produce(new DevUIRoutesBuildItem(namespace, devUIWebJarBuiltItem.getPath(),
                         result.getFinalDestination(), result.getWebRootConfigurations()));
             }

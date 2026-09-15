@@ -12,7 +12,7 @@ public interface ArtifactLauncher<T extends ArtifactLauncher.InitContext> extend
 
     void init(T t);
 
-    ListeningAddresses start() throws IOException;
+    ListeningResults start() throws IOException;
 
     LaunchResult runToCompletion(String[] args);
 

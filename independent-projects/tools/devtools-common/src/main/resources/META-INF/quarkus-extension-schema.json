@@ -49,7 +49,7 @@
         },
         "categories": {
           "type": "array",
-          "description": "Categories under which the extension appears on https://code.quarkus.io. May be omitted; the extension is still listed but not categorized.",
+          "description": "Categories under which the extension appears in tooling (such as https://code.quarkus.io). Prefer existing categories. If this is omitted or free-form categories are used, the extension is still listed but may be harder to find in the tools."
           "items": {
             "type": "string"
           },

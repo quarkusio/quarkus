@@ -3095,7 +3095,10 @@ On the other hand, if there is the `msg_en.properties` file in the application r
 
 The file format is very simple: each line represents either a key/value pair with the equals sign used as a separator or a comment (line starts with `#`).
 Blank lines are ignored.
-Keys are _mapped to method names_ from the corresponding message bundle interface.
+By default, keys are _mapped to method names_ from the corresponding message bundle interface.
+Set the `quarkus.qute.localized-file-keys` configuration property to `message-key` if the keys should be the _message keys_ used in templates instead, i.e. the keys derived from the strategy defined by `@MessageBundle#defaultKey()` and `@Message#key()`.
+For example, if the strategy is `Message.UNDERSCORED_ELEMENT_NAME` then the method `helloName()` is mapped to the key `helloName` by default, and to `hello_name` if message keys are used.
+Note that the keys of enum constant messages, such as `myEnum_ON`, are always derived from the method name.
 Values represent the templates normally defined by `io.quarkus.qute.i18n.Message#value()`.
 A value may be spread out across several adjacent normal lines.
 In such case, the line terminator must be escaped with a backslash character `\`.
@@ -3107,12 +3110,12 @@ The behavior is very similar to the behavior of the `java.util.Properties.load(R
 # This comment is ignored
 hello_name=Hallo {name}! <1> <2>
 ----
-<1> Each line in a localized file represents a key/value pair. The key must correspond to a method declared on the message bundle interface. The value is the message template.
+<1> Each line in a localized file represents a key/value pair. The key must correspond to a method declared on the message bundle interface, either by its name or, if `quarkus.qute.localized-file-keys=message-key` is set, by its message key. The value is the message template.
 <2> Keys and values are separated by the equals sign.
 
 NOTE: We use the `.properties` suffix in our example because most IDEs and text editors support syntax highlighting of `.properties` files. But in fact, the suffix could be anything - it is just ignored.
 
-TIP: An example properties file is generated into the target directory for each message bundle interface automatically. For example, by default if no name is specified for `@MessageBundle` the file `target/qute-i18n-examples/msg.properties` is generated when the application is build via `mvn clean package`. You can use this file as a base for a specific locale. Just rename the file - e.g. `msg_fr.properties`, change the message templates and move it in the `src/main/resources/messages` directory.
+TIP: An example properties file is generated into the target directory for each message bundle interface automatically. For example, by default if no name is specified for `@MessageBundle` the file `target/qute-i18n-examples/msg.properties` is generated when the application is build via `mvn clean package`. You can use this file as a base for a specific locale. Just rename the file - e.g. `msg_fr.properties`, change the message templates and move it in the `src/main/resources/messages` directory. The keys in the generated file follow the `quarkus.qute.localized-file-keys` configuration property.
 
 .Value Spread Out Across Several Adjacent Lines
 [source,properties]

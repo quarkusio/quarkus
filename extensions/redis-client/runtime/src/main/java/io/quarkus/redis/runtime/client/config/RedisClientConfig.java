@@ -82,6 +82,14 @@ public interface RedisClientConfig {
     Optional<RedisReplicas> replicas();
 
     /**
+     * The default username for Redis connections, used for the ACL authentication of Redis 6 and later
+     * ({@code AUTH <username> <password>}).
+     * <p>
+     * A username set in a {@code hosts} URI takes precedence over this property.
+     */
+    Optional<String> username();
+
+    /**
      * The default password for Redis connections.
      * <p>
      * If not set, it will try to extract the value from the {@code hosts}.

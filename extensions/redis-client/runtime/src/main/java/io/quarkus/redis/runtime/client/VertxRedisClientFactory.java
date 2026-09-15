@@ -101,7 +101,7 @@ public class VertxRedisClientFactory {
 
         options.setProtocolNegotiation(config.protocolNegotiation());
         config.preferredProtocolVersion().ifPresent(options::setPreferredProtocolVersion);
-        options.setPassword(config.password().orElse(null));
+        configureCredentials(options, config);
         config.poolCleanerInterval().ifPresent(d -> options.setPoolCleanerInterval((int) d.toMillis()));
         config.poolRecycleTimeout().ifPresent(d -> options.setPoolRecycleTimeout((int) d.toMillis()));
         config.topologyCacheTtl().ifPresent(d -> options.setTopologyCacheTTL((int) d.toMillis()));
@@ -168,6 +168,15 @@ public class VertxRedisClientFactory {
             }
         }
         return false;
+    }
+
+    /**
+     * Applies the username and password from the configuration. Credentials set in a connection URI take precedence
+     * over these options in the Vert.x Redis client.
+     */
+    static void configureCredentials(RedisOptions options, RedisClientConfig config) {
+        options.setUser(config.username().orElse(null));
+        options.setPassword(config.password().orElse(null));
     }
 
     private static void customize(String name, RedisOptions options) {

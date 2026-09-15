@@ -43,7 +43,7 @@ public class ProxyFactory<T> {
         Objects.requireNonNull(configuration.getProxyNameSuffix(), "proxyNameSuffix must be set");
         this.proxyName = configuration.getProxyName();
 
-        Class<T> superClass = configuration.getSuperClass() != null ? configuration.getSuperClass() : (Class<T>) Object.class;
+        Class<? super T> superClass = configuration.getSuperClass() != null ? configuration.getSuperClass() : Object.class;
         this.superClassName = superClass.getName();
 
         if (!configuration.isAllowPackagePrivate() && !Modifier.isPublic(superClass.getModifiers())) {

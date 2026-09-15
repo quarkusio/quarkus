@@ -4,6 +4,7 @@ import static org.jboss.resteasy.reactive.client.impl.RestClientRequestContext.I
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import jakarta.ws.rs.client.ClientRequestContext;
@@ -21,6 +22,14 @@ import org.jboss.resteasy.reactive.common.jaxrs.ResponseImpl;
 import io.vertx.core.Context;
 
 public class MicroProfileRestClientResponseFilter implements PreservesThreadClientResponseFilter {
+
+    /**
+     * Name of the configuration property that, when set on a {@link jakarta.ws.rs.client.WebTarget}, holds the list of
+     * {@link ResponseExceptionMapper}s to use for requests made through that target instead of the mappers this filter
+     * was created with. Set for the targets of sub-resource clients whose interface declares its own mappers.
+     */
+    public static final String EXCEPTION_MAPPERS_PROPERTY = "io.quarkus.rest-client.exception-mappers";
+
     private static final ClientRestHandler[] EMPTY_CLIENT_REST_HANDLERS = new ClientRestHandler[0];
     private final List<ResponseExceptionMapper<?>> exceptionMappers;
 
@@ -31,9 +40,18 @@ public class MicroProfileRestClientResponseFilter implements PreservesThreadClie
         this.exceptionMappers = exceptionMappers;
     }
 
+    public List<ResponseExceptionMapper<?>> getExceptionMappers() {
+        return Collections.unmodifiableList(exceptionMappers);
+    }
+
     @SuppressWarnings({ "rawtypes", "unchecked" })
     @Override
     public void filter(ClientRequestContext requestContext, ClientResponseContext responseContext) throws IOException {
+        List<ResponseExceptionMapper<?>> exceptionMappers = this.exceptionMappers;
+        Object targetExceptionMappers = requestContext.getConfiguration().getProperty(EXCEPTION_MAPPERS_PROPERTY);
+        if (targetExceptionMappers instanceof List) {
+            exceptionMappers = (List<ResponseExceptionMapper<?>>) targetExceptionMappers;
+        }
         for (ResponseExceptionMapper exceptionMapper : exceptionMappers) {
             if (exceptionMapper.handles(responseContext.getStatus(), responseContext.getHeaders())) {
                 RestClientRequestContext restClientContext = ((ClientRequestContextImpl) requestContext)

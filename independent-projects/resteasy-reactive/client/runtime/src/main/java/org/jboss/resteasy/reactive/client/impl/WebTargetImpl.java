@@ -305,6 +305,16 @@ public class WebTargetImpl implements WebTarget {
         return newInstance(client, uriBuilder, configuration, preClientSendHandler);
     }
 
+    /**
+     * Returns a copy of this target that has its own copy of the configuration, so that components
+     * registered on the returned target (or on targets derived from it) do not affect this target,
+     * the client or any other target derived from the client.
+     */
+    public WebTargetImpl withIsolatedConfiguration() {
+        abortIfClosed();
+        return newInstance(client, uriBuilder, new ConfigurationImpl(configuration));
+    }
+
     protected WebTargetImpl newInstance(HttpClient client, UriBuilder uriBuilder,
             ConfigurationImpl configuration,
             ClientRestHandler preClientSendHandler) {

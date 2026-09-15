@@ -1491,6 +1491,11 @@ QuarkusRestClientBuilder.newBuilder()
     .build(ExtensionsService.class)
 ----
 
+A provider registered on the REST Client interface also applies to the requests made through the sub-resources returned by its methods.
+A `@RegisterProvider` annotation on a sub-resource interface applies to the requests made through that sub-resource (and through the sub-resources it returns) only,
+in addition to the providers of the REST Client interface.
+A `ResponseExceptionMapper` registered this way is used together with the mappers of the REST Client interface, in the order given by their priorities.
+
 === Injecting the `jakarta.ws.rs.ext.Providers` instance in filters
 
 The `jakarta.ws.rs.ext.Providers` is useful when we need to lookup the provider instances of the current client.

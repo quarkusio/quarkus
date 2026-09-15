@@ -38,6 +38,22 @@ public interface JaxrsClientReactiveEnricher {
             AssignableResultHandle webTarget, BuildProducer<GeneratedClassBuildItem> generatedClasses);
 
     /**
+     * Called in the constructor of the client that owns a sub-resource locator method, once the
+     * {@link jakarta.ws.rs.client.WebTarget} that every instance of the sub Client returned by that method
+     * starts from has been created. Used by MicroProfile Rest Client implementation to register the providers
+     * declared on the sub-resource interface.
+     *
+     * @param ownerConstructor constructor of the client that owns the sub-resource locator method
+     * @param target the web target the sub Client is built from, assignable to replace it
+     * @param ownerInterfaceClass interface that declares the sub-resource locator method
+     * @param subInterfaceClass interface returned by the sub-resource locator method
+     * @param index jandex index
+     */
+    default void forSubResourceTarget(MethodCreator ownerConstructor, AssignableResultHandle target,
+            ClassInfo ownerInterfaceClass, ClassInfo subInterfaceClass, IndexView index) {
+    }
+
+    /**
      * Called when a {@link jakarta.ws.rs.client.WebTarget} has been populated for a sub Client
      */
     void forSubResourceWebTarget(MethodCreator methodCreator, IndexView index, ClassInfo rootInterfaceClass,

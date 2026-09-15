@@ -162,6 +162,10 @@ include::{includes}/devtools/extension-add.adoc[]
 OpenShift builds require creating a `BuildConfig` and two `ImageStream` resources, one for the builder image and one for the output image.
 The creation of such objects is being taken care of by the Quarkus Kubernetes extension.
 
+When `quarkus.container-image.insecure=true`, the generated `ImageStream` resources are annotated with `openshift.io/image.insecureRepository`, so that OpenShift imports their images from insecure registries.
+This covers pulling the builder image (or the output image referenced through an external registry) from a registry with a self-signed certificate or plain HTTP.
+Pushing the build output to such a registry is a cluster-level setting of the OpenShift build system and is not affected by this option.
+
 
 [[buildpack]]
 === Buildpack

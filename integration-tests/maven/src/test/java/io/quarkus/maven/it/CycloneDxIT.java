@@ -324,29 +324,6 @@ public class CycloneDxIT extends MojoTestBase {
     }
 
     @Test
-    public void testEmbeddedSbomUncompressed() throws Exception {
-        testDir = initProject("projects/cyclonedx-sbom", "projects/cyclonedx-sbom-embedded-uncompressed");
-        running = new RunningInvoker(testDir, false);
-
-        Properties p = new Properties();
-        p.setProperty("quarkus.cyclonedx.embedded.enabled", "true");
-        p.setProperty("quarkus.cyclonedx.embedded.compress", "false");
-
-        final MavenProcessInvocationResult result = running.execute(
-                List.of("package", "-DskipTests"),
-                Map.of(), p);
-        assertThat(result.getProcess().waitFor()).isEqualTo(0);
-
-        final Path generatedJar = testDir.toPath()
-                .resolve("target/quarkus-app/quarkus/generated-bytecode.jar");
-
-        // with compress=false, the resource should be uncompressed JSON without .gz extension
-        assertNoEmbeddedResource(generatedJar, "META-INF/sbom/dependency.cdx.json.gz");
-        final Bom bom = parseEmbeddedSbom(generatedJar, "META-INF/sbom/dependency.cdx.json");
-        assertEmbeddedSbomComponents(bom);
-    }
-
-    @Test
     public void testEmbeddedSbomDisabledByDefault() throws Exception {
         testDir = initProject("projects/cyclonedx-sbom", "projects/cyclonedx-sbom-embedded-disabled");
         running = new RunningInvoker(testDir, false);

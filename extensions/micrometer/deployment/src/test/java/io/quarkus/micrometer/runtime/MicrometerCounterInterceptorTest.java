@@ -4,6 +4,7 @@ import java.util.concurrent.CompletableFuture;
 
 import jakarta.inject.Inject;
 
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -42,9 +43,16 @@ public class MicrometerCounterInterceptorTest {
     @Inject
     CountedResource counted;
 
+    static final SimpleMeterRegistry simpleRegistry = new SimpleMeterRegistry();
+
     @BeforeAll
     static void addSimpleRegistry() {
-        Metrics.globalRegistry.add(new SimpleMeterRegistry());
+        Metrics.addRegistry(simpleRegistry);
+    }
+
+    @AfterAll
+    static void removeSimpleRegistry() {
+        Metrics.removeRegistry(simpleRegistry);
     }
 
     @Test

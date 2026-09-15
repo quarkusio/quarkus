@@ -55,6 +55,7 @@ import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelInitializer;
 import io.netty.handler.codec.http.HttpHeaderNames;
 import io.netty.handler.codec.http.HttpResponseStatus;
+import io.netty.util.NetUtil;
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;
 import io.quarkus.arc.InstanceHandle;
@@ -1164,8 +1165,7 @@ public class VertxHttpRecorder {
         int socketCount = 0;
 
         if (!httpDisabled && httpServerConfig != null) {
-            serverListeningMessage.append(String.format(
-                    "http://%s:%s", getDeveloperFriendlyHostName(httpServerConfig), actualHttpPort));
+            appendListeningMessage(serverListeningMessage, "http", httpServerConfig.getTcpHost(), actualHttpPort);
             socketCount++;
         }
 
@@ -1173,8 +1173,7 @@ public class VertxHttpRecorder {
             if (socketCount > 0) {
                 serverListeningMessage.append(" and ");
             }
-            serverListeningMessage
-                    .append(String.format("https://%s:%s", getDeveloperFriendlyHostName(sslConfig), actualHttpsPort));
+            appendListeningMessage(serverListeningMessage, "https", sslConfig.getTcpHost(), actualHttpsPort);
             socketCount++;
         }
 
@@ -1182,34 +1181,35 @@ public class VertxHttpRecorder {
             if (socketCount > 0) {
                 serverListeningMessage.append(" and ");
             }
-            serverListeningMessage.append(String.format("unix:%s", getDeveloperFriendlyHostName(domainSocketConfig)));
+            serverListeningMessage.append(String.format("unix:%s", domainSocketConfig.getTcpHost()));
         }
         if (managementConfig != null) {
-            serverListeningMessage.append(
-                    String.format(". Management interface listening on http%s://%s:%s.",
-                            httpManagementSslOptions != null ? "s" : "",
-                            getDeveloperFriendlyHostName(managementConfig), actualManagementPort));
+            serverListeningMessage.append(". Management interface listening on ");
+            appendListeningMessage(serverListeningMessage, httpManagementSslOptions != null ? "https" : "http",
+                    managementConfig.getTcpHost(), actualManagementPort);
         }
 
         Timing.setHttpServer(serverListeningMessage.toString(), auxiliaryApplication);
     }
 
-    /**
-     * To improve developer experience in WSL dev/test mode, the server listening message should print "localhost" when
-     * the host is set to "0.0.0.0". Otherwise, display the actual host.
-     * Do not use this during the actual configuration, use config.getTcpHost() there directly instead.
-     */
-    private static String getDeveloperFriendlyHostName(HttpServerConfig config) {
-        return (LaunchMode.current().isDevOrTest() && "0.0.0.0".equals(config.getTcpHost()) && isWSL()) ? "localhost"
-                : config.getTcpHost();
+    static void appendListeningMessage(StringBuilder builder, String protocol, String host, int port) {
+        boolean ipv6 = NetUtil.isValidIpV6Address(host);
+        if ((ipv6 && isAnyBindAddress(NetUtil.createByteArrayFromIpAddressString(host))) || "0.0.0.0".equals(host)) {
+            builder.append("all addresses including ");
+            host = "localhost"; // don't show the any bind address in a url
+            ipv6 = false;
+        }
+        builder.append(String.format("%s://%s:%s", protocol,
+                (ipv6 && !host.startsWith("[")) ? ("[" + host + "]") : host, port));
     }
 
-    /**
-     * @return {@code true} if the application is running in a WSL (Windows Subsystem for Linux) environment
-     */
-    private static boolean isWSL() {
-        var sysEnv = System.getenv();
-        return sysEnv.containsKey("IS_WSL") || sysEnv.containsKey("WSL_DISTRO_NAME");
+    private static boolean isAnyBindAddress(byte[] bytes) {
+        for (byte b : bytes) {
+            if (b != 0x00) {
+                return false;
+            }
+        }
+        return true;
     }
 
     public void addRoute(RuntimeValue<Router> router, Function<Router, Route> route, Handler<RoutingContext> handler,

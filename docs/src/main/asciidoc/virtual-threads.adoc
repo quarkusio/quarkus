@@ -298,6 +298,29 @@ The following table summarizes the options:
 
 Note that all three models can be used in a single application.
 
+==== Use virtual threads by default
+
+Instead of annotating every endpoint, you can make virtual threads the default execution model for all your REST endpoints.
+Either set the build-time property `quarkus.rest.default-blocking-execution-mode=virtual-thread`, or create a JAX-RS `Application` class annotated with `@RunOnVirtualThread`:
+
+[source,java]
+----
+package org.acme;
+
+import jakarta.ws.rs.core.Application;
+
+import io.smallrye.common.annotation.RunOnVirtualThread;
+
+@RunOnVirtualThread
+public class MyApplication extends Application {
+}
+----
+
+In both cases, individual endpoints can opt out with an explicit `@Blocking` annotation.
+The two approaches differ in how they treat endpoints considered non-blocking, so review the semantics before choosing one.
+Before doing this, make sure your application does not suffer from pinning or monopolization, as described below.
+For more information, see the Quarkus xref:rest-virtual-threads.adoc[Use virtual threads in REST applications] guide.
+
 == Use virtual thread friendly clients
 
 As mentioned in the xref:why-not[Why not run everything on virtual threads?] section, the Java ecosystem is not entirely ready for virtual threads.

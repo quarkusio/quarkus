@@ -1,14 +1,21 @@
 package io.quarkus.cache.test.runtime;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.time.Duration;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
+import java.util.Queue;
 import java.util.concurrent.BrokenBarrierException;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -21,6 +28,9 @@ import jakarta.inject.Inject;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.quarkus.cache.Cache;
+import io.quarkus.cache.CacheKey;
+import io.quarkus.cache.CacheName;
 import io.quarkus.cache.CacheResult;
 import io.quarkus.test.QuarkusExtensionTest;
 import io.smallrye.mutiny.Uni;
@@ -41,6 +51,10 @@ public class UniReturnTypeWithFailureTest {
 
     @Inject
     FailureCachingService failureCachingService;
+
+    @Inject
+    @CacheName("failure-cache")
+    Cache cache;
 
     @Test
     void testCacheResult() {
@@ -69,6 +83,59 @@ public class UniReturnTypeWithFailureTest {
 
         assertEquals(2, failureCachingService.getInvocations(key),
                 "Failures should not be cached - method should be invoked again (issue #39677)");
+    }
+
+    @Test
+    void testFailureWithRunSubscriptionOn() throws Exception {
+        String key = "async-failure-test-key";
+        Queue<Runnable> subscriptions = new ArrayDeque<>();
+        List<String> failures = new ArrayList<>();
+        failureCachingService.resetCounter(key);
+
+        CompletableFuture<String> result = failureCachingService.getUsernameByIdOnExecutor(key, subscriptions::add)
+                .onFailure().invoke(failure -> failures.add(failure.getMessage()))
+                .onFailure().retry().atMost(2)
+                .subscribeAsCompletionStage();
+
+        subscriptions.remove().run();
+        assertEquals(List.of("failure-1"), failures);
+        assertEquals(2, failureCachingService.getInvocations(key));
+        assertFalse(result.isDone());
+
+        subscriptions.remove().run();
+        assertEquals(List.of("failure-1", "failure-2"), failures);
+        assertEquals(3, failureCachingService.getInvocations(key));
+        assertFalse(result.isDone());
+
+        subscriptions.remove().run();
+        assertEquals("username-" + key, result.get(5, TimeUnit.SECONDS));
+        assertEquals(3, failureCachingService.getInvocations(key));
+        assertEquals("username-" + key, failureCachingService.getUsernameByIdOnExecutor(key, subscriptions::add)
+                .await().atMost(Duration.ofSeconds(5)));
+        assertTrue(subscriptions.isEmpty());
+        assertEquals(3, failureCachingService.getInvocations(key));
+    }
+
+    @Test
+    void testAsyncFailureDoesNotInvalidateRecoveredValue() throws Exception {
+        String key = "async-recovery-test-key";
+        CompletableFuture<String> value = new CompletableFuture<>();
+        AtomicInteger recoveryInvocations = new AtomicInteger();
+        Uni<String> result = cache.getAsync(key, k -> Uni.createFrom().completionStage(value))
+                .onFailure().recoverWithUni(failure -> cache.getAsync(key, k -> {
+                    recoveryInvocations.incrementAndGet();
+                    return Uni.createFrom().item("recovered");
+                }));
+        CompletableFuture<String> first = result.subscribeAsCompletionStage();
+        CompletableFuture<String> second = result.subscribeAsCompletionStage();
+
+        value.completeExceptionally(new IllegalStateException("failed load"));
+
+        assertEquals("recovered", first.get(5, TimeUnit.SECONDS));
+        assertEquals("recovered", second.get(5, TimeUnit.SECONDS));
+        assertEquals(1, recoveryInvocations.get());
+        assertEquals("recovered", cache.getAsync(key, k -> Uni.createFrom().item("unexpected reload"))
+                .await().atMost(Duration.ofSeconds(5)));
     }
 
     /**
@@ -230,6 +297,18 @@ public class UniReturnTypeWithFailureTest {
             AtomicInteger counter = counters.computeIfAbsent(userId, k -> new AtomicInteger(0));
             counter.incrementAndGet();
             return Uni.createFrom().failure(new NoStackTraceException("Error when getUsername"));
+        }
+
+        @CacheResult(cacheName = "failure-cache")
+        public Uni<String> getUsernameByIdOnExecutor(@CacheKey String userId, Executor executor) {
+            AtomicInteger counter = counters.computeIfAbsent(userId, k -> new AtomicInteger(0));
+            int invocationNumber = counter.incrementAndGet();
+            return Uni.createFrom().item(() -> {
+                if (invocationNumber <= 2) {
+                    throw new IllegalStateException("failure-" + invocationNumber);
+                }
+                return "username-" + userId;
+            }).runSubscriptionOn(executor);
         }
 
         @CacheResult(cacheName = "timeout-failure-cache")

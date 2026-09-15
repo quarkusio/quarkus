@@ -7,6 +7,7 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Executor;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -121,7 +122,12 @@ public class CaffeineCacheImpl extends AbstractCache implements CaffeineCache {
                             }
                         });
                 recorder.doRecord(key);
-                return Uni.createFrom().completionStage(result);
+                return Uni.createFrom().completionStage(result).onFailure().invoke(new Consumer<Throwable>() {
+                    @Override
+                    public void accept(Throwable throwable) {
+                        cache.asMap().remove(key, result);
+                    }
+                });
             }
         })
                 .map(fromCacheValue())

@@ -185,6 +185,8 @@ public class ServerEndpointIndexer
     protected ServerResourceMethod createResourceMethod(MethodInfo methodInfo, ClassInfo actualEndpointClass,
             Map<String, Object> methodContext) {
         ServerResourceMethod serverResourceMethod = new ServerResourceMethod();
+        MethodInfo endpointImplementation = findEndpointImplementation(methodInfo, actualEndpointClass, index);
+        methodContext.put(EndpointIndexer.METHOD_CONTEXT_ENDPOINT_IMPLEMENTATION, endpointImplementation);
         List<HandlerChainCustomizer> methodCustomizers = new ArrayList<>();
         for (MethodScanner i : methodScanners) {
             List<HandlerChainCustomizer> scanned = i.scan(methodInfo, actualEndpointClass, methodContext);
@@ -194,7 +196,7 @@ public class ServerEndpointIndexer
         }
         serverResourceMethod.setHandlerChainCustomizers(methodCustomizers);
 
-        var actualDeclaringClassName = findActualDeclaringClassName(methodInfo, actualEndpointClass);
+        var actualDeclaringClassName = endpointImplementation.declaringClass().name().toString();
         serverResourceMethod.setActualDeclaringClassName(actualDeclaringClassName);
         var classDeclMethodThatHasJaxRsEndpointDefiningAnn = methodInfo.declaringClass().name().toString();
         if (!actualDeclaringClassName.equals(classDeclMethodThatHasJaxRsEndpointDefiningAnn)) {
@@ -203,10 +205,6 @@ public class ServerEndpointIndexer
         }
 
         return serverResourceMethod;
-    }
-
-    private String findActualDeclaringClassName(MethodInfo methodInfo, ClassInfo actualEndpointClass) {
-        return findEndpointImplementation(methodInfo, actualEndpointClass, index).declaringClass().name().toString();
     }
 
     /**

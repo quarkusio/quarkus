@@ -170,6 +170,11 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
 
     public static final String METHOD_CONTEXT_CUSTOM_RETURN_TYPE_KEY = "METHOD_CONTEXT_CUSTOM_RETURN_TYPE_KEY";
     public static final String METHOD_CONTEXT_ANNOTATION_STORE = "ANNOTATION_STORE";
+    /**
+     * The {@link MethodInfo} that is actually invoked on the endpoint instance, when the scanned method is declared
+     * on an interface or a superclass. It is the scanned method itself when there is no such override.
+     */
+    public static final String METHOD_CONTEXT_ENDPOINT_IMPLEMENTATION = "ENDPOINT_IMPLEMENTATION";
     public static final String METHOD_PRODUCES = "METHOD_PRODUCES";
 
     static {

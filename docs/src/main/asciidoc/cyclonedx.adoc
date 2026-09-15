@@ -332,6 +332,25 @@ podman run --rm -v $(pwd):/tmp:z anchore/syft scan myapp -o cyclonedx-json
 
 NOTE: The SBOM is always GZIP-compressed before being embedded as a global symbol, as required by the GraalVM SBOM specification and regardless of the `quarkus.cyclonedx.embedded.compress` setting. Since the classpath resource is always stored uncompressed, Quarkus compresses it at native image build time.
 
+The embedded SBOM additionally records the GraalVM/Mandrel `native-image` builder that produced the executable. A single component describing the builder distribution and version (for example `Mandrel`, `Oracle-GraalVM`, `GraalVM-CE` or `Liberica-NIK`) is added to both the top-level `components` array and, for CycloneDX 1.5 and later, `metadata.tools.components`.
+Both entries use the same `purl`, but only the top-level component includes a `bom-ref`, keeping the builder's reference unique within the SBOM.
+The top-level component has the following form:
+
+[source,json]
+----
+{
+  "type" : "library",
+  "bom-ref" : "pkg:generic/Mandrel@25.0.4.1",
+  "group" : "org.graalvm",
+  "name" : "Mandrel",
+  "version" : "25.0.4.1",
+  "description" : "GraalVM native-image builder used to build the native executable",
+  "purl" : "pkg:generic/Mandrel@25.0.4.1"
+}
+----
+
+NOTE: The builder component is added at native image build time and is present *only* in the SBOM embedded in the executable (the `sbom` global symbol). The classpath resource and the SBOM served by the <<sbom-endpoint,REST endpoint>> are not modified, since they are produced before the `native-image` version is known.
+
 === Mutable JAR
 
 Mutable JAR distribution is similar to the Fast JAR one except it also includes build time dependencies to support re-augmentation (re-building) of an application.

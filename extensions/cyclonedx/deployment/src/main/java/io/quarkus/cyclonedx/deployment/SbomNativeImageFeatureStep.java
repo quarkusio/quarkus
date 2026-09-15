@@ -11,6 +11,7 @@ import java.util.zip.GZIPOutputStream;
 import org.graalvm.nativeimage.hosted.Feature;
 
 import io.quarkus.cyclonedx.deployment.spi.EmbeddedSbomMetadataBuildItem;
+import io.quarkus.cyclonedx.runtime.EmbeddedSbomBuilderInjector;
 import io.quarkus.deployment.GeneratedClassGizmo2Adaptor;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -31,6 +32,11 @@ import io.quarkus.runtime.graal.GraalVM;
  * into the native image as {@code sbom} and {@code sbom_length} global symbols,
  * following the <a href="https://www.graalvm.org/jdk25/security-guide/native-image/sbom/">GraalVM SBOM spec</a>.
  * <p>
+ * Before embedding, the SBOM is patched by {@link EmbeddedSbomBuilderInjector} to add a
+ * component identifying the actual GraalVM/Mandrel native-image builder used to compile the
+ * executable. Only the embedded {@code sbom} symbol is patched; the classpath resource served
+ * by the CycloneDX endpoint is left untouched.
+ * <p>
  * Internal GraalVM APIs ({@code CGlobalDataFactory}, {@code CGlobalDataFeature}, {@code WordFactory})
  * are referenced via {@link ClassMethodDesc} to avoid compile-time dependencies.
  */
@@ -44,6 +50,14 @@ public class SbomNativeImageFeatureStep {
             "readAllBytes", byte[].class);
     private static final MethodDesc CLOSE_INPUT_STREAM = MethodDesc.of(InputStream.class,
             "close", void.class);
+
+    // Patches the SBOM (adding the native-image builder component).
+    private static final MethodDesc SBOM_INJECT = MethodDesc.of(EmbeddedSbomBuilderInjector.class, "inject",
+            byte[].class, byte[].class, String.class, String.class);
+
+    // GZIP compression: the GraalVM SBOM spec requires the sbom global symbol to be GZIP-compressed.
+    private static final ConstructorDesc GZIP_OUTPUT_STREAM_CTOR = ConstructorDesc.of(
+            GZIPOutputStream.class, OutputStream.class);
     private static final MethodDesc GZIP_WRITE = MethodDesc.of(GZIPOutputStream.class,
             "write", void.class, byte[].class);
     private static final MethodDesc GZIP_CLOSE = MethodDesc.of(GZIPOutputStream.class,
@@ -52,13 +66,15 @@ public class SbomNativeImageFeatureStep {
             "toByteArray", byte[].class);
     private static final MethodDesc BAOS_CLOSE = MethodDesc.of(ByteArrayOutputStream.class,
             "close", void.class);
-    private static final ConstructorDesc GZIP_OUTPUT_STREAM_CTOR = ConstructorDesc.of(
-            GZIPOutputStream.class, OutputStream.class);
 
     private static final MethodDesc GRAALVM_VERSION_GET_CURRENT = MethodDesc.of(GraalVM.Version.class, "getCurrent",
             GraalVM.Version.class);
     private static final MethodDesc GRAALVM_VERSION_COMPARE_TO = MethodDesc.of(GraalVM.Version.class, "compareTo", int.class,
             int[].class);
+    private static final MethodDesc GRAALVM_VERSION_GET_BUILDER_NAME = MethodDesc.of(GraalVM.Version.class, "getBuilderName",
+            String.class);
+    private static final MethodDesc GRAALVM_VERSION_GET_VERSION_AS_STRING = MethodDesc.of(GraalVM.Version.class,
+            "getVersionAsString", String.class);
 
     // GraalVM <= 25.0: com.oracle.svm.core.c
     private static final ClassDesc CD_CGLOBAL_DATA = ClassDesc.of("com.oracle.svm.core.c.CGlobalData");
@@ -155,11 +171,23 @@ public class SbomNativeImageFeatureStep {
                                     tb.invokeVirtual(READ_ALL_BYTES, is));
                             tb.invokeVirtual(CLOSE_INPUT_STREAM, is);
 
+                            LocalVar graalVMVersion = tb.localVar("graalVMVersion",
+                                    tb.invokeStatic(GRAALVM_VERSION_GET_CURRENT));
+
+                            // Patch the embedded copy of the SBOM with the actual native-image
+                            // builder (distribution + version).
+                            LocalVar builderName = tb.localVar("builderName",
+                                    tb.invokeVirtual(GRAALVM_VERSION_GET_BUILDER_NAME, graalVMVersion));
+                            LocalVar builderVersion = tb.localVar("builderVersion",
+                                    tb.invokeVirtual(GRAALVM_VERSION_GET_VERSION_AS_STRING, graalVMVersion));
+                            LocalVar injectedBytes = tb.localVar("injectedBytes",
+                                    tb.invokeStatic(SBOM_INJECT, resourceBytes, builderName, builderVersion));
+
                             // the embedded SBOM resource is always stored uncompressed, but the GraalVM SBOM spec
                             // requires the sbom global symbol to be GZIP-compressed, so compress it here
                             LocalVar bout = tb.localVar("bout", tb.new_(ByteArrayOutputStream.class));
                             LocalVar gout = tb.localVar("gout", tb.new_(GZIP_OUTPUT_STREAM_CTOR, bout));
-                            tb.invokeVirtual(GZIP_WRITE, gout, resourceBytes);
+                            tb.invokeVirtual(GZIP_WRITE, gout, injectedBytes);
                             tb.invokeVirtual(GZIP_CLOSE, gout);
                             LocalVar sbomBytes = tb.localVar("sbomBytes", tb.invokeVirtual(BAOS_TO_BYTE_ARRAY, bout));
                             tb.invokeVirtual(BAOS_CLOSE, bout);
@@ -172,9 +200,6 @@ public class SbomNativeImageFeatureStep {
                             LocalVar unsignedLen = tb.localVar("unsignedLen",
                                     tb.invokeStatic(WORD_FACTORY_UNSIGNED,
                                             tb.cast(sbomBytes.length(), long.class)));
-
-                            LocalVar graalVMVersion = tb.localVar("graalVMVersion",
-                                    tb.invokeStatic(GRAALVM_VERSION_GET_CURRENT));
 
                             LocalVar cgFeature = tb.localVar("cgFeature",
                                     tb.invokeStatic(CGLOBAL_DATA_FEATURE_SINGLETON));

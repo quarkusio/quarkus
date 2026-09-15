@@ -26,7 +26,7 @@ public class FixedAtBuildTimeConfigTest {
 
     @Test
     void frozenValueIsServedFromBuildTimeSource() {
-        assertEquals("value", config.getRawValue("quarkus.mapping.rt.value"));
+        assertEquals("value", config.getConfigValue("quarkus.mapping.rt.value").getValue());
         assertEquals("BuildTime RunTime Fixed", config.getConfigValue("quarkus.mapping.rt.value").getConfigSourceName());
     }
 
@@ -34,14 +34,14 @@ public class FixedAtBuildTimeConfigTest {
     void runtimeApplicationPropertiesChangeDoesNotOverride() {
         // overrideRuntimeConfigKey injects "runtime-override" as a runtime config override,
         // simulating an external source trying to change the value after the build
-        assertEquals("value", config.getRawValue("quarkus.mapping.rt.value"));
+        assertEquals("value", config.getConfigValue("quarkus.mapping.rt.value").getValue());
     }
 
     @Test
     void systemPropertyDoesNotOverride() {
         System.setProperty("quarkus.mapping.rt.value", "sys-override");
         try {
-            assertEquals("value", config.getRawValue("quarkus.mapping.rt.value"));
+            assertEquals("value", config.getConfigValue("quarkus.mapping.rt.value").getValue());
         } finally {
             System.clearProperty("quarkus.mapping.rt.value");
         }
@@ -64,7 +64,7 @@ public class FixedAtBuildTimeConfigTest {
         // system at all — so it cannot trigger "unrecognized property" warnings
         System.setProperty("quarkus.some.unknown.property", "stray-value");
         try {
-            assertNull(config.getRawValue("quarkus.some.unknown.property"));
+            assertNull(config.getConfigValue("quarkus.some.unknown.property").getValue());
         } finally {
             System.clearProperty("quarkus.some.unknown.property");
         }
@@ -75,7 +75,7 @@ public class FixedAtBuildTimeConfigTest {
         String original = System.getProperty("java.io.tmpdir");
         System.setProperty("java.io.tmpdir", "/custom/tmp");
         try {
-            assertEquals("/custom/tmp/cache", config.getRawValue("fixed-at-build-time.cache-dir"));
+            assertEquals("/custom/tmp/cache", config.getConfigValue("fixed-at-build-time.cache-dir").getValue());
         } finally {
             System.setProperty("java.io.tmpdir", original);
         }
@@ -83,7 +83,7 @@ public class FixedAtBuildTimeConfigTest {
 
     @Test
     void withDefaultStillWorks() {
-        var value = config.getRawValue("quarkus.mapping.rt.record-default");
+        var value = config.getConfigValue("quarkus.mapping.rt.record-default").getValue();
         assertTrue(value != null && !value.isEmpty());
     }
 }

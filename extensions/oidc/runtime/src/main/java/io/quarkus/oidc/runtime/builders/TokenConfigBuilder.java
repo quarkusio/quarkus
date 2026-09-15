@@ -16,6 +16,7 @@ import java.util.stream.Collectors;
 import io.quarkus.oidc.OidcTenantConfigBuilder;
 import io.quarkus.oidc.runtime.OidcTenantConfig;
 import io.quarkus.oidc.runtime.OidcTenantConfig.Binding;
+import io.quarkus.oidc.runtime.OidcTenantConfig.Token.DecryptionAlgorithm;
 
 /**
  * Builder for the {@link OidcTenantConfig.Token}.
@@ -29,6 +30,7 @@ public final class TokenConfigBuilder {
             Duration forcedJwkRefreshInterval, Optional<String> header,
             String authorizationScheme, Optional<OidcTenantConfig.SignatureAlgorithm> signatureAlgorithm,
             Optional<String> decryptionKeyLocation, Optional<Boolean> decryptIdToken, boolean decryptAccessToken,
+            Optional<DecryptionAlgorithm> decryptionAlgorithm,
             boolean allowJwtIntrospection, boolean requireJwtIntrospectionOnly,
             boolean allowOpaqueTokenIntrospection, Optional<String> customizerName,
             Optional<Boolean> verifyAccessTokenWithUserInfo, Binding binding) implements OidcTenantConfig.Token {
@@ -54,6 +56,7 @@ public final class TokenConfigBuilder {
     private Optional<String> decryptionKeyLocation;
     Optional<Boolean> decryptIdToken;
     private boolean decryptAccessToken;
+    private Optional<DecryptionAlgorithm> decryptionAlgorithm;
     private boolean allowJwtIntrospection;
     private boolean requireJwtIntrospectionOnly;
     private boolean allowOpaqueTokenIntrospection;
@@ -91,6 +94,7 @@ public final class TokenConfigBuilder {
         this.decryptionKeyLocation = token.decryptionKeyLocation();
         this.decryptIdToken = token.decryptIdToken();
         this.decryptAccessToken = token.decryptAccessToken();
+        this.decryptionAlgorithm = token.decryptionAlgorithm();
         this.allowJwtIntrospection = token.allowJwtIntrospection();
         this.requireJwtIntrospectionOnly = token.requireJwtIntrospectionOnly();
         this.allowOpaqueTokenIntrospection = token.allowOpaqueTokenIntrospection();
@@ -386,6 +390,15 @@ public final class TokenConfigBuilder {
     }
 
     /**
+     * @param decryptionAlgorithm {@link OidcTenantConfig.Token#decryptionAlgorithm()}
+     * @return this builder
+     */
+    public TokenConfigBuilder decryptionAlgorithm(DecryptionAlgorithm decryptionAlgorithm) {
+        this.decryptionAlgorithm = Optional.ofNullable(decryptionAlgorithm);
+        return this;
+    }
+
+    /**
      * Sets {@link OidcTenantConfig.Token#allowJwtIntrospection()} to true.
      *
      * @return this builder
@@ -502,7 +515,8 @@ public final class TokenConfigBuilder {
                 refreshTokenCacheTimeToLive,
                 forcedJwkRefreshInterval, header, authorizationScheme, signatureAlgorithm, decryptionKeyLocation,
                 decryptIdToken,
-                decryptAccessToken, allowJwtIntrospection, requireJwtIntrospectionOnly, allowOpaqueTokenIntrospection,
+                decryptAccessToken, decryptionAlgorithm, allowJwtIntrospection, requireJwtIntrospectionOnly,
+                allowOpaqueTokenIntrospection,
                 customizerName,
                 verifyAccessTokenWithUserInfo, binding);
     }

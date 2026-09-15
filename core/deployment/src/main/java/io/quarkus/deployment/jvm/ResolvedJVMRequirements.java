@@ -1,5 +1,6 @@
 package io.quarkus.deployment.jvm;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.TreeSet;
@@ -40,14 +41,7 @@ public final class ResolvedJVMRequirements extends SimpleBuildItem {
         //we're ignoring the ModuleOpenBuildItem#openingModuleName in this context.
         //N.B.2: if the app is a module, this Manifest attribute will apparently be ignored!
         // See: https://docs.oracle.com/en/java/javase/25/docs/specs/jar/jar.html#main-attributes
-        final Collection<String> modulesToAddOpens = new TreeSet<>(); //Choose a TreeSet as it will sort them, providing a stable order for reproducibility
-        for (ModuleOpenBuildItem moduleOpenBuildItem : addOpens) {
-            for (String packageName : moduleOpenBuildItem.packageNames()) {
-                //When there are multiple packages to be opened within the same module, the whole definition needs to be repeated; e.g.:
-                //Add-Opens: java.base/java.lang java.base/java.util
-                modulesToAddOpens.add(moduleOpenBuildItem.openedModuleName() + '/' + packageName);
-            }
-        }
+        final Collection<String> modulesToAddOpens = modulePackagesToOpen();
         if (!modulesToAddOpens.isEmpty()) {
             if (attributes.getValue(ADD_OPENS_JARATTRIBUTENAME) != null) {
                 Logger.getLogger(ResolvedJVMRequirements.class)
@@ -59,6 +53,36 @@ public final class ResolvedJVMRequirements extends SimpleBuildItem {
         if (!enableNativeAccesses.isEmpty()) {
             attributes.put(ENABLE_NATIVE_JARATTRIBUTENAME, "ALL-UNNAMED");//This is the only supported value for now
         }
+    }
+
+    /**
+     * Renders the requirements as JVM command line arguments, for launchers that start the application
+     * class directly rather than through the manifest of a packaged jar. As with the manifest, modules are
+     * opened to the unnamed module; the {@link ModuleOpenBuildItem#openingModuleName()} is ignored.
+     *
+     * @return the {@code --add-opens} and {@code --enable-native-access} arguments, in a stable order
+     */
+    public List<String> renderAsJvmArguments() {
+        final List<String> arguments = new ArrayList<>();
+        for (String modulePackage : modulePackagesToOpen()) {
+            arguments.add("--add-opens=" + modulePackage + "=ALL-UNNAMED");
+        }
+        if (!enableNativeAccesses.isEmpty()) {
+            arguments.add("--enable-native-access=ALL-UNNAMED");
+        }
+        return arguments;
+    }
+
+    private Collection<String> modulePackagesToOpen() {
+        final Collection<String> modulesToAddOpens = new TreeSet<>(); //Choose a TreeSet as it will sort them, providing a stable order for reproducibility
+        for (ModuleOpenBuildItem moduleOpenBuildItem : addOpens) {
+            for (String packageName : moduleOpenBuildItem.packageNames()) {
+                //When there are multiple packages to be opened within the same module, the whole definition needs to be repeated; e.g.:
+                //Add-Opens: java.base/java.lang java.base/java.util
+                modulesToAddOpens.add(moduleOpenBuildItem.openedModuleName() + '/' + packageName);
+            }
+        }
+        return modulesToAddOpens;
     }
 
     public void applyJavaModuleConfigurationToRuntime(JvmModulesReconfigurer reconfigurer,

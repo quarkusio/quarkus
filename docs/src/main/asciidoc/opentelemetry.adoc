@@ -15,6 +15,8 @@ Observability for interactive web applications.
 
 On this page we show the signal independent features of the extension.
 
+include::{includes}/extension-status.adoc[]
+
 include::{includes}/observability-include.adoc[]
 
 [NOTE]

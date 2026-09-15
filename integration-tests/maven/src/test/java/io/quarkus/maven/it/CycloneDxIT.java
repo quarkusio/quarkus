@@ -16,6 +16,7 @@ import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 import java.util.zip.GZIPInputStream;
 
+import org.cyclonedx.CycloneDxSchema;
 import org.cyclonedx.model.Bom;
 import org.cyclonedx.model.Component;
 import org.cyclonedx.parsers.JsonParser;
@@ -112,6 +113,144 @@ public class CycloneDxIT extends MojoTestBase {
     }
 
     @Test
+    public void testDefaultConfigProperties() throws Exception {
+        testDir = initProject("projects/cyclonedx-sbom", "projects/cyclonedx-sbom-default-config-props");
+        running = new RunningInvoker(testDir, false);
+        MavenProcessInvocationResult result = running.execute(
+                List.of("package", "-DskipTests"),
+                Map.of());
+        assertThat(result.getProcess().waitFor()).isEqualTo(0);
+
+        Bom bom = parseSbom(testDir, "quarkus-run-cyclonedx.json");
+        Path sbomPath = testDir.toPath().resolve("target").resolve("quarkus-run-cyclonedx.json");
+
+        // check default for quarkus.cyclonedx.pretty-print
+        assertMinified(sbomPath);
+
+        // check default for quarkus.cyclonedx.runtime-only
+        List<Component> components = bom.getComponents();
+        assertComponent(components, "io.quarkus", "quarkus-rest-deployment", "development", null);
+        assertComponent(components, "io.quarkus", "quarkus-cyclonedx-deployment", "development", null);
+
+        // check default for quarkus.cyclonedx.libraries-only
+        assertComponent(components, null, "quarkus-app-dependencies.txt", "runtime", "");
+
+        // check default for quarkus.cyclonedx.schema-version
+        assertThat(bom.getSpecVersion()).as("Schema version").isEqualTo(CycloneDxSchema.VERSION_LATEST.getVersionString());
+
+        // check default for quarkus.cyclonedx.include-quarkus-component-scope
+        components.forEach(component -> {
+            assertThat(component.getProperties())
+                    .as("Component %s:%s properties", component.getGroup(), component.getName())
+                    .isNull();
+        });
+
+        // check default for quarkus.cyclonedx.cyclonedx.include-license-text
+        components.forEach(component -> {
+            // Quarkus build artifacts (e.g. quarkus-run.jar) do not have license entries
+            if (component.getLicenses() != null) {
+                assertThat(component.getLicenses().getLicenses().get(0).getAttachmentText())
+                        .as("Component %s:%s license", component.getGroup(), component.getName())
+                        .isNull();
+            }
+        });
+    }
+
+    @Test
+    public void testCustomizedConfigProperties() throws Exception {
+        testDir = initProject("projects/cyclonedx-sbom", "projects/cyclonedx-sbom-custom-config-props");
+        running = new RunningInvoker(testDir, false);
+        MavenProcessInvocationResult result = running.execute(
+                List.of("package", "-DskipTests",
+                        "-Dquarkus.cyclonedx.pretty-print=true",
+                        "-Dquarkus.cyclonedx.runtime-only=true",
+                        "-Dquarkus.cyclonedx.libraries-only=true",
+                        "-Dquarkus.cyclonedx.schema-version=1.5",
+                        "-Dquarkus.cyclonedx.include-quarkus-component-scope=true",
+                        "-Dquarkus.cyclonedx.include-license-text=true"),
+                Map.of());
+
+        assertThat(result.getProcess().waitFor()).isEqualTo(0);
+
+        Bom bom = parseSbom(testDir, "quarkus-run-cyclonedx.json");
+        Path sbomPath = testDir.toPath().resolve("target").resolve("quarkus-run-cyclonedx.json");
+
+        // check for quarkus.cyclonedx.pretty-print
+        assertPrettyPrint(sbomPath);
+
+        // check for quarkus.cyclonedx.runtime-only
+        List<Component> components = bom.getComponents();
+        assertUnavailableComponent(components, "io.quarkus", "quarkus-rest-deployment");
+        assertUnavailableComponent(components, "io.quarkus", "quarkus-cyclonedx-deployment");
+
+        // check for quarkus.cyclonedx.libraries-only
+        assertUnavailableComponent(components, null, "quarkus-app-dependencies.txt");
+
+        // check for quarkus.cyclonedx.schema-version
+        assertThat(bom.getSpecVersion()).as("Schema version").isEqualTo("1.5");
+
+        // check for quarkus.cyclonedx.include-quarkus-component-scope
+        components.forEach(component -> {
+            assertThat(component.getProperties())
+                    .as("Component %s:%s properties", component.getGroup(), component.getName())
+                    .isNotNull();
+            assertThat(component.getProperties().get(0).getName())
+                    .as("Component %s:%s properties - first property name", component.getGroup(), component.getName())
+                    .isEqualTo("quarkus:component:scope");
+        });
+
+        // check for quarkus.cyclonedx.cyclonedx.include-license-text
+        components.forEach(component -> {
+            // Quarkus build artifacts (e.g. quarkus-run.jar) do not have license entries
+            if (component.getLicenses() != null) {
+                assertThat(component.getLicenses().getLicenses().get(0).getAttachmentText())
+                        .as("Component %s:%s license", component.getGroup(), component.getName())
+                        .isNotNull();
+            }
+        });
+    }
+
+    @Test
+    public void testDisabledExtension() throws Exception {
+        testDir = initProject("projects/cyclonedx-sbom", "projects/cyclonedx-sbom-disabled");
+        running = new RunningInvoker(testDir, false);
+        MavenProcessInvocationResult result = running.execute(
+                List.of("package", "-DskipTests", "-Dquarkus.cyclonedx.enabled=false"),
+                Map.of());
+        assertThat(result.getProcess().waitFor()).isEqualTo(0);
+
+        Path sbomPath = testDir.toPath().resolve("target").resolve("quarkus-run-cyclonedx.json");
+        assertThat(sbomPath).doesNotExist();
+    }
+
+    @Test
+    public void testXmlFormat() throws Exception {
+        testDir = initProject("projects/cyclonedx-sbom", "projects/cyclonedx-sbom-xml");
+        running = new RunningInvoker(testDir, false);
+        MavenProcessInvocationResult result = running.execute(
+                List.of("package", "-DskipTests", "-Dquarkus.cyclonedx.format=xml"),
+                Map.of());
+
+        assertThat(result.getProcess().waitFor()).isEqualTo(0);
+
+        Path sbomPath = testDir.toPath().resolve("target").resolve("quarkus-run-cyclonedx.xml");
+
+        assertThat(sbomPath).exists();
+        assertThat(isXml(sbomPath)).as("Generated file is XML").isTrue();
+
+        // TODO enable this once https://github.com/CycloneDX/cyclonedx-core-java/issues/938 is fixed
+        //        Bom bom = parseSbomXml(testDir, "quarkus-run-cyclonedx.xml");
+        //        assertRunnerMainComponent(bom);
+        //
+        //        List<Component> components = bom.getComponents();
+        //        assertThat(components).isNotEmpty();
+        //        assertComponent(components, "io.quarkus", "quarkus-rest", "runtime", "lib/main/");
+        //        assertComponent(components, "io.quarkus", "quarkus-rest-deployment", "development", null);
+        //        assertComponent(components, "io.quarkus", "quarkus-cyclonedx", "runtime", "lib/main/");
+        //        assertComponent(components, "io.quarkus", "quarkus-cyclonedx-deployment", "development", null);
+    }
+
+    @Test
     public void testEmbeddedSbomFastJar() throws Exception {
         testDir = initProject("projects/cyclonedx-sbom", "projects/cyclonedx-sbom-embedded-fast-jar");
         running = new RunningInvoker(testDir, false);
@@ -181,29 +320,6 @@ public class CycloneDxIT extends MojoTestBase {
         // the custom resource name should be stored uncompressed under its exact name
         assertNoEmbeddedResource(generatedJar, customResourceName + ".gz");
         final Bom bom = parseEmbeddedSbom(generatedJar, customResourceName);
-        assertEmbeddedSbomComponents(bom);
-    }
-
-    @Test
-    public void testEmbeddedSbomUncompressed() throws Exception {
-        testDir = initProject("projects/cyclonedx-sbom", "projects/cyclonedx-sbom-embedded-uncompressed");
-        running = new RunningInvoker(testDir, false);
-
-        Properties p = new Properties();
-        p.setProperty("quarkus.cyclonedx.embedded.enabled", "true");
-        p.setProperty("quarkus.cyclonedx.embedded.compress", "false");
-
-        final MavenProcessInvocationResult result = running.execute(
-                List.of("package", "-DskipTests"),
-                Map.of(), p);
-        assertThat(result.getProcess().waitFor()).isEqualTo(0);
-
-        final Path generatedJar = testDir.toPath()
-                .resolve("target/quarkus-app/quarkus/generated-bytecode.jar");
-
-        // with compress=false, the resource should be uncompressed JSON without .gz extension
-        assertNoEmbeddedResource(generatedJar, "META-INF/sbom/dependency.cdx.json.gz");
-        final Bom bom = parseEmbeddedSbom(generatedJar, "META-INF/sbom/dependency.cdx.json");
         assertEmbeddedSbomComponents(bom);
     }
 
@@ -320,6 +436,7 @@ public class CycloneDxIT extends MojoTestBase {
         HttpURLConnection conn = (HttpURLConnection) new URL("http://localhost:8080/.well-known/sbom").openConnection();
         conn.setRequestProperty("Accept-Encoding", acceptEncoding);
         try {
+            assertThat(conn.getContentType()).isEqualTo("application/vnd.cyclonedx+json");
             final boolean gzipped = "gzip".equals(conn.getContentEncoding());
             assertThat(gzipped).isEqualTo(expectGzip);
             try (InputStream is = gzipped ? new GZIPInputStream(conn.getInputStream()) : conn.getInputStream()) {

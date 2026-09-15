@@ -87,8 +87,7 @@
         <jboss-metadata-web.version>17.1.0</jboss-metadata-web.version>
         <maven-toolchain.version>3.0-alpha-2</maven-toolchain.version>
         <plexus-component-annotations.version>2.1.0</plexus-component-annotations.version>
-        <!-- GraalVM sdk 23.1.2 has a minimum JDK requirement of 17+ at runtime -->
-        <graal-sdk.version>23.1.2</graal-sdk.version>
+        <graal-sdk.version>25.0.4.1</graal-sdk.version>
         <gizmo.version>1.10.1</gizmo.version>
         <gizmo2.version>2.1.1</gizmo2.version>
         <jackson-bom.version>2.22.2</jackson-bom.version>
@@ -114,7 +113,7 @@
         <jboss-marshalling.version>2.3.0</jboss-marshalling.version>
         <jboss-threads.version>3.9.2</jboss-threads.version>
         <vertx.version>4.5.34</vertx.version>
-        <httpclient5.version>5.6.3</httpclient5.version>
+        <httpclient5.version>5.6.4</httpclient5.version>
         <httpcore5.version>5.4.3</httpcore5.version>
         <httpclient.version>4.5.14</httpclient.version>
         <httpcore.version>4.4.16</httpcore.version>
@@ -133,7 +132,7 @@
         <shrinkwrap.version>1.2.6</shrinkwrap.version>
         <hamcrest.version>2.2</hamcrest.version><!-- The version needs to be compatible with both REST Assured and Awaitility -->
         <junit.jupiter.version>6.1.3</junit.jupiter.version>
-        <infinispan.version>16.0.14</infinispan.version>
+        <infinispan.version>16.0.15</infinispan.version>
         <infinispan.protostream.version>6.0.7</infinispan.protostream.version>
         <caffeine.version>3.2.4</caffeine.version>
         <netty-tcnative.version>2.0.84.Final</netty-tcnative.version>
@@ -225,6 +224,7 @@
         <webauthn4j.version>0.30.3.RELEASE</webauthn4j.version>
         <jsoup.version>1.23.2</jsoup.version> <!-- JSoup is used by Camel and LangChain4J so be careful when updating -->
         <reactor.version>3.8.7</reactor.version>
+        <zstd-jni.version>1.5.7-16</zstd-jni.version> <!-- used by kafka-clients and some Camel components -->
     </properties>
 
     <pluginRepositories>
@@ -6706,6 +6706,11 @@
                 <groupId>io.projectreactor</groupId>
                 <artifactId>reactor-core</artifactId>
                 <version>${reactor.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.github.luben</groupId>
+                <artifactId>zstd-jni</artifactId>
+                <version>${zstd-jni.version}</version>
             </dependency>
 
             <!-- Apache SSHD Netty transport (sshd-core and sshd-common already managed) -->

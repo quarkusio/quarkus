@@ -13,10 +13,13 @@
 package io.quarkus.amazon.lambda.http.model;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import com.fasterxml.jackson.annotation.JsonAnySetter;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
@@ -80,6 +83,42 @@ public class CognitoAuthorizerClaims {
     @JsonAnySetter
     public void setClaim(String claim, String value) {
         claims.put(claim, value);
+    }
+
+    /**
+     * @return the names of all the claims: the ones mapped to the typed properties and the other ones
+     */
+    @JsonIgnore
+    public Set<String> getClaimNames() {
+        Set<String> names = new HashSet<>(claims.keySet());
+        if (subject != null) {
+            names.add("sub");
+        }
+        if (audience != null) {
+            names.add("aud");
+        }
+        if (issuer != null) {
+            names.add("iss");
+        }
+        if (tokenUse != null) {
+            names.add("token_use");
+        }
+        if (username != null) {
+            names.add("cognito:username");
+        }
+        if (email != null) {
+            names.add("email");
+        }
+        if (authTime != null) {
+            names.add("auth_time");
+        }
+        if (expiration != null) {
+            names.add("exp");
+        }
+        if (issuedAt != null) {
+            names.add("iat");
+        }
+        return names;
     }
 
     public String getSubject() {

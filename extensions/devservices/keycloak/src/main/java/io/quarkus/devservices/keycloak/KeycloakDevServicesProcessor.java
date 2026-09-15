@@ -69,6 +69,7 @@ import io.quarkus.devservices.common.StartableContainer;
 import io.quarkus.devui.spi.page.CardPageBuildItem;
 import io.quarkus.devui.spi.page.Page;
 import io.quarkus.runtime.LaunchMode;
+import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.runtime.configuration.MemorySize;
 import io.smallrye.mutiny.TimeoutException;
 import io.smallrye.mutiny.Uni;
@@ -885,8 +886,14 @@ public class KeycloakDevServicesProcessor {
         realm.setEnabled(true);
         realm.setUsers(new ArrayList<>());
         realm.setClients(new ArrayList<>());
-        realm.setAccessTokenLifespan(600);
-        realm.setSsoSessionMaxLifespan(600);
+        realm.setAccessTokenLifespan((int) config.accessTokenLifespan().toSeconds());
+        realm.setSsoSessionMaxLifespan((int) config.ssoSessionMaxLifespan().toSeconds());
+        if (config.ssoSessionMaxLifespan().compareTo(config.accessTokenLifespan()) < 0) {
+            throw new ConfigurationException(
+                    "The configuration property 'quarkus.keycloak.devservices.sso-session-max-lifespan' value must be"
+                            + " greater or equal than the value of the 'quarkus.keycloak.devservices.access-token-lifespan' " +
+                            "configuration property");
+        }
         realm.setRefreshTokenMaxReuse(10);
         realm.setRequiredActions(List.of());
 

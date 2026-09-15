@@ -4,7 +4,6 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Using security with .properties file
-
 include::_attributes.adoc[]
 :summary: This guide demonstrates how your Quarkus application can use a .properties file to store your user identities.
 :topics: security,identity-providers

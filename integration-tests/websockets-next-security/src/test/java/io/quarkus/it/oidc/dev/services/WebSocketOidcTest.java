@@ -14,12 +14,10 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 
-import jakarta.inject.Inject;
-
 import org.awaitility.Awaitility;
-import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import io.netty.handler.codec.http.websocketx.WebSocketCloseStatus;
@@ -27,7 +25,6 @@ import io.quarkus.it.oidc.dev.services.SecurityIdentityUpdateWebSocket.ResponseD
 import io.quarkus.test.common.http.TestHTTPResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.oidc.client.OidcTestClient;
-import io.restassured.RestAssured;
 import io.vertx.core.Vertx;
 import io.vertx.core.http.WebSocket;
 import io.vertx.core.http.WebSocketClient;
@@ -35,9 +32,15 @@ import io.vertx.core.http.WebSocketConnectOptions;
 import tools.jackson.databind.ObjectMapper;
 
 @QuarkusTest
-public class WebSocketOidcTest {
+class WebSocketOidcTest {
 
     private static final Duration TIMEOUT = Duration.ofSeconds(10);
+
+    private static final ObjectMapper objectMapper = new ObjectMapper();
+
+    private static final OidcTestClient oidcTestClient = new OidcTestClient();
+
+    private static Vertx vertx = null;
 
     @TestHTTPResource("/chat")
     URI chatUri;
@@ -51,24 +54,22 @@ public class WebSocketOidcTest {
     @TestHTTPResource("/change-in-updated-identity-roles")
     URI updatedIdentityRoleUri;
 
-    @Inject
-    Vertx vertx;
-
-    @Inject
-    ObjectMapper objectMapper;
-
-    private static final OidcTestClient oidcTestClient = new OidcTestClient();
+    @BeforeAll
+    static void prepareVertx() {
+        vertx = Vertx.vertx();
+    }
 
     @AfterAll
-    public static void close() {
+    static void close() {
         oidcTestClient.close();
+        if (vertx != null) {
+            vertx.close().await();
+        }
     }
 
     @Test
-    public void testDocumentedTokenPropagationUsingSubProtocol()
+    void testDocumentedTokenPropagationUsingSubProtocol()
             throws InterruptedException, ExecutionException, TimeoutException {
-        RestAssured.given().delete("/signals/clear").then().statusCode(204);
-
         // verify that handler documented in WebSockets Next reference
         // propagates "Sec-WebSocket-Protocol" as Authorization header
         // and authentication is successful
@@ -107,19 +108,13 @@ public class WebSocketOidcTest {
             assertEquals(2, messages.size(), "Messages: " + messages);
             assertEquals("opened", messages.get(0));
             assertEquals("hello alice", messages.get(1));
-
-            Awaitility.await().atMost(Duration.ofSeconds(3)).untilAsserted(() -> RestAssured.given()
-                    .get("/signals/messages")
-                    .then()
-                    .statusCode(200)
-                    .body(Matchers.containsString("websockets:hello alice")));
         } finally {
             client.close().toCompletionStage().toCompletableFuture().get(5, TimeUnit.SECONDS);
         }
     }
 
     @Test
-    public void testSecurityIdentityUpdate() throws InterruptedException, ExecutionException, TimeoutException {
+    void testSecurityIdentityUpdate() throws InterruptedException, ExecutionException, TimeoutException {
         CountDownLatch connectedLatch = new CountDownLatch(1);
         List<ResponseDto> messages = new CopyOnWriteArrayList<>();
         AtomicReference<WebSocket> ws1 = new AtomicReference<>();
@@ -195,7 +190,7 @@ public class WebSocketOidcTest {
     }
 
     @Test
-    public void testUpdatedSecurityIdentityExpiration() throws InterruptedException, ExecutionException, TimeoutException {
+    void testUpdatedSecurityIdentityExpiration() throws InterruptedException, ExecutionException, TimeoutException {
         CountDownLatch connectedLatch = new CountDownLatch(1);
         CountDownLatch messagesLatch = new CountDownLatch(1);
         List<String> messages = new CopyOnWriteArrayList<>();
@@ -248,7 +243,7 @@ public class WebSocketOidcTest {
     }
 
     @Test
-    public void testUpdatedSecurityIdentityHasDifferentRole()
+    void testUpdatedSecurityIdentityHasDifferentRole()
             throws InterruptedException, ExecutionException, TimeoutException {
         CountDownLatch connectedLatch = new CountDownLatch(1);
         CountDownLatch messagesLatch = new CountDownLatch(1);
@@ -306,7 +301,7 @@ public class WebSocketOidcTest {
         }
     }
 
-    private String createRequest(String message, String accessToken) {
+    private static String createRequest(String message, String accessToken) {
         SecurityIdentityUpdateWebSocket.Metadata metadata;
         if (accessToken != null) {
             metadata = new SecurityIdentityUpdateWebSocket.Metadata(accessToken);

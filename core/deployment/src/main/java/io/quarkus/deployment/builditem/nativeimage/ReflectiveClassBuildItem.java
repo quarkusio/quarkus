@@ -15,6 +15,8 @@ import io.quarkus.builder.item.MultiBuildItem;
  */
 public final class ReflectiveClassBuildItem extends MultiBuildItem {
 
+    private static final Logger log = Logger.getLogger(ReflectiveClassBuildItem.class);
+
     // The names of the classes that should be registered for reflection
     private final Collection<String> className;
     private final boolean methods;
@@ -29,8 +31,6 @@ public final class ReflectiveClassBuildItem extends MultiBuildItem {
     private final boolean serialization;
     private final boolean unsafeAllocated;
     private final String reason;
-
-    private static final Logger log = Logger.getLogger(ReflectiveClassBuildItem.class);
 
     public static Builder builder(Class<?>... classes) {
         List<String> classNames = stream(classes)
@@ -110,14 +110,7 @@ public final class ReflectiveClassBuildItem extends MultiBuildItem {
         this.classes = classes;
         this.constructors = constructors;
         this.publicConstructors = publicConstructors;
-        if (constructors && queryConstructors) {
-            log.warnf(
-                    "Both constructors and queryConstructors are set to true for classes: %s. queryConstructors is redundant and will be ignored",
-                    String.join(", ", className));
-            this.queryConstructors = false;
-        } else {
-            this.queryConstructors = queryConstructors;
-        }
+        this.queryConstructors = queryConstructors;
         this.weak = weak;
         this.serialization = serialization;
         this.unsafeAllocated = unsafeAllocated;
@@ -230,19 +223,6 @@ public final class ReflectiveClassBuildItem extends MultiBuildItem {
 
         public Builder publicConstructors() {
             return publicConstructors(true);
-        }
-
-        /**
-         * Configures whether constructors should be registered for reflection, for query purposes only.
-         * Setting this enables getting all declared constructors for the class but does not allow invoking them reflectively.
-         */
-        public Builder queryConstructors(boolean queryConstructors) {
-            this.queryConstructors = queryConstructors;
-            return this;
-        }
-
-        public Builder queryConstructors() {
-            return queryConstructors(true);
         }
 
         /**

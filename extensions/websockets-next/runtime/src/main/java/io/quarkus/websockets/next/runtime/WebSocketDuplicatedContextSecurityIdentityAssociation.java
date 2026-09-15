@@ -7,27 +7,21 @@ import jakarta.enterprise.context.RequestScoped;
 
 import io.quarkus.security.identity.IdentityProviderManager;
 import io.quarkus.security.identity.SecurityIdentity;
-import io.quarkus.security.spi.runtime.AbstractSecurityIdentityAssociation;
+import io.quarkus.vertx.http.runtime.security.DuplicatedContextSecurityIdentityAssociation;
 import io.smallrye.mutiny.Uni;
 
 @RequestScoped
-public class WebSocketSecurityIdentityAssociation extends AbstractSecurityIdentityAssociation {
+public class WebSocketDuplicatedContextSecurityIdentityAssociation extends DuplicatedContextSecurityIdentityAssociation {
 
-    private final IdentityProviderManager identityProviderManager;
     private volatile boolean userChangedIdentity = false;
 
-    WebSocketSecurityIdentityAssociation(IdentityProviderManager identityProviderManager) {
-        this.identityProviderManager = identityProviderManager;
+    private WebSocketDuplicatedContextSecurityIdentityAssociation(IdentityProviderManager identityProviderManager) {
+        setIdentityProviderManager(identityProviderManager);
     }
 
     @Override
     public Uni<SecurityIdentity> getDeferredIdentity() {
         return getSecurityIdentityUni(userChangedIdentity, super::getDeferredIdentity);
-    }
-
-    @Override
-    protected IdentityProviderManager getIdentityProviderManager() {
-        return identityProviderManager;
     }
 
     @Override

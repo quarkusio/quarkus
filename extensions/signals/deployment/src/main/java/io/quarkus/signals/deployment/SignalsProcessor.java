@@ -476,7 +476,7 @@ class SignalsProcessor {
     }
 
     @BuildStep
-    void registerBeans(BuildProducer<AdditionalBeanBuildItem> beans,
+    void registerBeans(BuildProducer<AdditionalBeanBuildItem> beans, Capabilities capabilities,
             ReceiverExecutorImplementationBuildItem receiverExecutorImplementation) {
         AdditionalBeanBuildItem.Builder builder = AdditionalBeanBuildItem.builder();
         builder.addBeanClasses(ReceiverManager.class, RequestContextInterceptor.class);
@@ -486,6 +486,11 @@ class SignalsProcessor {
             default -> throw new IllegalArgumentException(
                     "Unexpected value: " + receiverExecutorImplementation.getImplementation());
         }
+
+        if (capabilities.isPresent(Capability.SECURITY)) {
+            builder.addBeanClass("io.quarkus.signals.runtime.impl.SecurityIntegration");
+        }
+
         beans.produce(builder.build());
     }
 

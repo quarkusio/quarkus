@@ -4,6 +4,7 @@ import static io.quarkus.websockets.next.runtime.SecuritySupport.QUARKUS_IDENTIT
 
 import jakarta.inject.Inject;
 
+import io.quarkus.runtime.annotations.RegisterForReflection;
 import io.quarkus.security.PermissionChecker;
 import io.quarkus.security.PermissionsAllowed;
 import io.quarkus.security.identity.SecurityIdentity;
@@ -19,9 +20,11 @@ public class SecurityIdentityUpdateWebSocket {
             boolean identitiesIdentical) {
     }
 
+    @RegisterForReflection
     record Metadata(String authorization) {
     }
 
+    @RegisterForReflection
     record RequestDto(String message, Metadata metadata) {
     }
 

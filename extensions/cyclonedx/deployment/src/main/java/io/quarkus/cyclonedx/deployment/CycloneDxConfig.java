@@ -21,9 +21,13 @@ public interface CycloneDxConfig {
     boolean enabled();
 
     /**
-     * SBOM file format. Supported formats are {code json} and {code xml}.
+     * SBOM file format. Supported formats are {@code json} and {@code xml}.
      * The default format is JSON.
      * If both are desired then {@code all} could be used as the value of this option.
+     * <p>
+     * <strong>Note:</strong> JSON format is the primary focus of the CycloneDX extension,
+     * as the underlying library prioritizes JSON. When {@code format=all} is specified,
+     * the embedded SBOM will use JSON format.
      *
      * @return SBOM file format
      */
@@ -47,6 +51,7 @@ public interface CycloneDxConfig {
 
     /**
      * Whether to pretty-print the generated SBOM output.
+     * This applies to both JSON and XML formats.
      *
      * @return whether to pretty-print the generated SBOM output
      */
@@ -114,6 +119,10 @@ public interface CycloneDxConfig {
         /**
          * Resource name for the embedded dependency SBOM.
          * The SBOM is always stored uncompressed under this exact name.
+         * <p>
+         * The format of the embedded SBOM is determined by the {@code quarkus.cyclonedx.format}
+         * configuration option, not by the file extension in this resource name. The resource
+         * name is primarily used for locating the SBOM resource within the application archive.
          *
          * @return resource name for the embedded dependency SBOM
          */

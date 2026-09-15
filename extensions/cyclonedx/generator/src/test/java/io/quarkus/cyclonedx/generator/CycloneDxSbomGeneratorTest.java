@@ -921,4 +921,100 @@ class CycloneDxSbomGeneratorTest {
                 .findFirst()
                 .orElse(null);
     }
+
+    @Test
+    void xmlPrettyPrintRespected() {
+        ComponentDescriptor react = ComponentDescriptor.builder()
+                .setPurl(Purl.npm(null, "react", "18.0.0"))
+                .build();
+        SbomContribution contribution = SbomContribution.ofComponents(List.of(react));
+
+        // Generate with prettyPrint=false
+        List<String> resultNoPretty = CycloneDxSbomGenerator.newInstance()
+                .setFormat("xml")
+                .setPrettyPrint(false)
+                .setContributions(List.of(contribution))
+                .generateText();
+
+        assertThat(resultNoPretty).hasSize(1);
+        String xmlNoPretty = resultNoPretty.get(0);
+
+        // Without pretty-print, XML should not have indentation or newlines between elements
+        assertThat(xmlNoPretty).doesNotContain("\n  <");
+
+        // Generate with prettyPrint=true
+        List<String> resultPretty = CycloneDxSbomGenerator.newInstance()
+                .setFormat("xml")
+                .setPrettyPrint(true)
+                .setContributions(List.of(contribution))
+                .generateText();
+
+        assertThat(resultPretty).hasSize(1);
+        String xmlPretty = resultPretty.get(0);
+
+        // With pretty-print, XML should have indentation and newlines
+        assertThat(xmlPretty).contains("\n  <");
+
+        // Both should produce valid XML but different formatting
+        assertThat(xmlPretty.length()).isGreaterThan(xmlNoPretty.length());
+    }
+
+    @Test
+    void jsonPrettyPrintRespected() {
+        ComponentDescriptor react = ComponentDescriptor.builder()
+                .setPurl(Purl.npm(null, "react", "18.0.0"))
+                .build();
+        SbomContribution contribution = SbomContribution.ofComponents(List.of(react));
+
+        // Generate with prettyPrint=false
+        List<String> resultNoPretty = CycloneDxSbomGenerator.newInstance()
+                .setFormat("json")
+                .setPrettyPrint(false)
+                .setContributions(List.of(contribution))
+                .generateText();
+
+        assertThat(resultNoPretty).hasSize(1);
+        String jsonNoPretty = resultNoPretty.get(0);
+
+        // Without pretty-print, JSON should be compact (no newlines within the structure)
+        assertThat(jsonNoPretty.split("\n").length).isLessThan(10);
+
+        // Generate with prettyPrint=true
+        List<String> resultPretty = CycloneDxSbomGenerator.newInstance()
+                .setFormat("json")
+                .setPrettyPrint(true)
+                .setContributions(List.of(contribution))
+                .generateText();
+
+        assertThat(resultPretty).hasSize(1);
+        String jsonPretty = resultPretty.get(0);
+
+        // With pretty-print, JSON should have multiple lines
+        assertThat(jsonPretty.split("\n").length).isGreaterThan(20);
+
+        // Both should produce valid JSON but different formatting
+        assertThat(jsonPretty.length()).isGreaterThan(jsonNoPretty.length());
+    }
+
+    @Test
+    void formatAllGeneratesMultipleSboms() {
+        ComponentDescriptor react = ComponentDescriptor.builder()
+                .setPurl(Purl.npm(null, "react", "18.0.0"))
+                .build();
+        SbomContribution contribution = SbomContribution.ofComponents(List.of(react));
+
+        List<String> result = CycloneDxSbomGenerator.newInstance()
+                .setFormat("all")
+                .setContributions(List.of(contribution))
+                .generateText();
+
+        // Should generate both JSON and XML
+        assertThat(result).hasSize(2);
+
+        // One should be JSON (starts with { or [{)
+        assertThat(result).anyMatch(s -> s.trim().startsWith("{"));
+
+        // One should be XML (starts with <? or <)
+        assertThat(result).anyMatch(s -> s.trim().startsWith("<"));
+    }
 }

@@ -966,7 +966,7 @@ public class CycloneDxSbomGenerator {
             }
         } else if (format.equalsIgnoreCase("xml")) {
             try {
-                sbomContent = BomGeneratorFactory.createXml(specVersion, bom).toXmlString();
+                sbomContent = BomGeneratorFactory.createXml(specVersion, bom).toXmlString(prettyPrint);
             } catch (GeneratorException e) {
                 throw new RuntimeException("Failed to generate an SBOM in XML format", e);
             }

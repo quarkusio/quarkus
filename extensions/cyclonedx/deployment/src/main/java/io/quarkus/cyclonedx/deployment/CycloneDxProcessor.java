@@ -163,6 +163,20 @@ public class CycloneDxProcessor {
             List<SbomContributionBuildItem> sbomContributions,
             Instant outputTimestamp) {
         final String resourceName = cdxConfig.embedded().resourceName();
+        final String configuredFormat = cdxConfig.format();
+
+        // Determine the format for the embedded SBOM
+        // Priority: configured format > resourceName extension
+        // If format is "all", use JSON as the primary format for embedding
+        String embeddedFormat;
+        if ("all".equalsIgnoreCase(configuredFormat)) {
+            embeddedFormat = "json";
+            log.debug("Format 'all' configured; using JSON for embedded SBOM");
+        } else if (configuredFormat != null && !configuredFormat.isEmpty()) {
+            embeddedFormat = configuredFormat;
+        } else {
+            embeddedFormat = getFormat(resourceName);
+        }
 
         CoreSbomContributionConfig config = new CoreSbomContributionConfig()
                 .setApplicationModel(curateOutcomeBuildItem.getApplicationModel())
@@ -173,7 +187,7 @@ public class CycloneDxProcessor {
         var depInfoProvider = getDependencyInfoProvider(appModelProviderBuildItem);
         List<String> result = CycloneDxSbomGenerator.newInstance()
                 .setEffectiveModelResolver(depInfoProvider == null ? null : depInfoProvider.getMavenModelResolver())
-                .setFormat(getFormat(resourceName))
+                .setFormat(embeddedFormat)
                 .setSchemaVersion(cdxConfig.schemaVersion().orElse(null))
                 .setIncludeLicenseText(cdxConfig.includeLicenseText())
                 .setPrettyPrint(cdxConfig.prettyPrint())

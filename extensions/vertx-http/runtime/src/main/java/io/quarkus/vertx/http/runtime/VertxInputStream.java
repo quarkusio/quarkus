@@ -6,6 +6,9 @@ import java.io.InterruptedIOException;
 import java.nio.channels.ClosedChannelException;
 import java.util.ArrayDeque;
 import java.util.Deque;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.ReentrantLock;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.handler.codec.http.HttpHeaderNames;
@@ -174,12 +177,16 @@ public class VertxInputStream extends InputStream {
         protected boolean eof = false;
         protected Throwable readException;
         private final long timeout;
+        private final ReentrantLock lock = new ReentrantLock();
+        private final Condition dataAvailable = lock.newCondition();
 
         public VertxBlockingInput(HttpServerRequest request, long timeout) {
             this.request = request;
             this.timeout = timeout;
             final ConnectionBase connection = (ConnectionBase) request.connection();
-            synchronized (connection) {
+            // Lock before registering handlers: a buffer arriving immediately after fetch(1) must not race with initialization.
+            lock.lock();
+            try {
                 if (!connection.channel().isOpen()) {
                     readException = new ClosedChannelException();
                 } else if (!request.isEnded()) {
@@ -188,18 +195,24 @@ public class VertxInputStream extends InputStream {
                     request.endHandler(new Handler<Void>() {
                         @Override
                         public void handle(Void event) {
-                            synchronized (connection) {
+                            // Lock to publish eof and signal the blocked reader from the event loop.
+                            lock.lock();
+                            try {
                                 eof = true;
                                 if (waiting) {
-                                    connection.notifyAll();
+                                    dataAvailable.signalAll(); // EOF received; wake the blocked reader.
                                 }
+                            } finally {
+                                lock.unlock();
                             }
                         }
                     });
                     request.exceptionHandler(new Handler<Throwable>() {
                         @Override
                         public void handle(Throwable event) {
-                            synchronized (connection) {
+                            // Lock to publish readException and signal the blocked reader from the event loop.
+                            lock.lock();
+                            try {
                                 readException = new IOException(event);
                                 if (input1 != null) {
                                     ((BufferInternal) input1).getByteBuf().release();
@@ -213,24 +226,29 @@ public class VertxInputStream extends InputStream {
                                     }
                                 }
                                 if (waiting) {
-                                    connection.notifyAll();
+                                    dataAvailable.signalAll(); // Error received; wake the blocked reader.
                                 }
+                            } finally {
+                                lock.unlock();
                             }
                         }
-
                     });
                     request.fetch(1);
                 } else {
                     eof = true;
                 }
+            } finally {
+                lock.unlock();
             }
         }
 
         protected ByteBuf readBlocking() throws IOException {
-            long expire = System.currentTimeMillis() + timeout;
-            synchronized (request.connection()) {
+            long expire = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(timeout);
+            // Lock to guard input1/eof/readException while waiting for the event loop to deliver data.
+            lock.lock();
+            try {
                 while (input1 == null && !eof && readException == null) {
-                    long rem = expire - System.currentTimeMillis();
+                    long rem = expire - System.nanoTime();
                     if (rem <= 0) {
                         //everything is broken, if read has timed out we can assume that the underling connection
                         //is wrecked, so just close it
@@ -245,7 +263,7 @@ public class VertxInputStream extends InputStream {
                             throw new BlockingOperationNotAllowedException("Attempting a blocking read on io thread");
                         }
                         waiting = true;
-                        request.connection().wait(rem);
+                        dataAvailable.await(rem, TimeUnit.NANOSECONDS); // Park and release lock; resumes when data, EOF, or error arrives.
                     } catch (InterruptedException e) {
                         throw new InterruptedIOException(e.getMessage());
                     } finally {
@@ -266,17 +284,21 @@ public class VertxInputStream extends InputStream {
                     request.fetch(1);
                 }
                 return ret == null ? null : ((BufferInternal) ret).getByteBuf();
+            } finally {
+                lock.unlock();
             }
         }
 
         @Override
         public void handle(Buffer event) {
-            synchronized (request.connection()) {
+            // Lock to publish the buffer (or eof) and signal the blocked reader from the event loop.
+            lock.lock();
+            try {
                 if (event.length() == 0 && request.version() == HttpVersion.HTTP_2) {
                     // When using HTTP/2 H2, this indicates that we won't receive anymore data.
                     eof = true;
                     if (waiting) {
-                        request.connection().notifyAll();
+                        dataAvailable.signalAll(); // HTTP/2 EOF marker; wake the blocked reader.
                     }
                     return;
                 }
@@ -289,14 +311,22 @@ public class VertxInputStream extends InputStream {
                     inputOverflow.add(event);
                 }
                 if (waiting) {
-                    request.connection().notifyAll();
+                    dataAvailable.signalAll(); // Data available; wake the blocked reader.
                 }
+            } finally {
+                lock.unlock();
             }
         }
 
         public int readBytesAvailable() {
-            if (input1 != null) {
-                return ((BufferInternal) input1).getByteBuf().readableBytes();
+            // Lock for a consistent snapshot of input1 alongside concurrent event-loop handler mutations.
+            lock.lock();
+            try {
+                if (input1 != null) {
+                    return ((BufferInternal) input1).getByteBuf().readableBytes();
+                }
+            } finally {
+                lock.unlock();
             }
 
             String length = request.getHeader(HttpHeaders.CONTENT_LENGTH);

@@ -576,5 +576,23 @@
                 </plugins>
             </build>
         </profile>
+        <profile>
+            <id>ojdbc-ea</id>
+            <!-- Oracle JDBC drivers early access. -->
+            <dependencyManagement>
+                <dependencies>
+                    <dependency>
+                        <groupId>com.oracle.database.jdbc</groupId>
+                        <artifactId>ojdbc17</artifactId>
+                        <version>23.26.4.0.0</version>
+                    </dependency>
+                    <dependency>
+                        <groupId>com.oracle.database.jdbc</groupId>
+                        <artifactId>ojdbc11</artifactId>
+                        <version>23.26.4.0.0</version>
+                    </dependency>
+                </dependencies>
+            </dependencyManagement>
+        </profile>
     </profiles>
 </project>

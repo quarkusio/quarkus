@@ -13,9 +13,11 @@ import java.util.stream.Collectors;
 
 import org.jboss.logging.Logger;
 
+import io.quarkus.datasource.common.runtime.DataSourceUtil;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.annotations.BuildProducer;
+import io.quarkus.deployment.component.ComponentLookup;
 import io.quarkus.hibernate.orm.deployment.HibernateOrmConfig;
 import io.quarkus.hibernate.orm.deployment.HibernateOrmConfigPersistenceUnit;
 import io.quarkus.hibernate.orm.deployment.JpaModelPerPersistenceUnitBuildItem;
@@ -116,6 +118,8 @@ public final class PersistenceUnitDefinitionSupport {
     public static void definePersistenceUnits(ProgrammingParadigm paradigm,
             HibernateOrmConfig config,
             PersistenceUnitLookupBuildItem lookupBuildItem,
+            ComponentLookup dataSourceLookup,
+            ComponentLookup clientLookup,
             List<PersistenceUnitRequestBuildItem> puRequests,
             List<PersistenceXmlDescriptorBuildItem> persistenceXmlDescriptors,
             List<AdditionalPersistenceUnitBuildItem> additionalPersistenceUnits,
@@ -164,10 +168,25 @@ public final class PersistenceUnitDefinitionSupport {
             var previous = additionalConfigs.put(puName,
                     new PersistenceUnitDefinitionBuildItem.AdditionalConfig(
                             item.getDataSourceName(),
-                            item.getExplicitDialect(), item.getProperties()));
+                            item.getExplicitDialect(), item.getProperties(),
+                            false));
             if (previous != null) {
                 throw new IllegalStateException("Multiple " + AdditionalPersistenceUnitBuildItem.class.getSimpleName()
                         + " for persistence unit '" + puName + "'");
+            }
+        }
+
+        // For PUs that should use a client (explicitly configured or implicitly resolved),
+        // resolve the client name. Client existence is checked later, similar to datasources.
+        Map<String, String> resolvedClientNames = new HashMap<>();
+        for (var entry : puNamesWithReasons.entrySet()) {
+            String puName = entry.getKey();
+            if (additionalConfigs.containsKey(puName)) {
+                continue;
+            }
+            String clientName = getEffectiveClientName(config, puName, dataSourceLookup, clientLookup);
+            if (clientName != null) {
+                resolvedClientNames.put(puName, clientName);
             }
         }
 
@@ -200,15 +219,64 @@ public final class PersistenceUnitDefinitionSupport {
             }
 
             PersistenceUnitDefinitionBuildItem.AdditionalConfig additionalConfig = additionalConfigs.get(puName);
-            Optional<String> dataSourceName = additionalConfig != null
-                    ? additionalConfig.dataSourceName().or(() -> HibernateProcessorUtil.getDataSourceName(config, puName))
-                    : HibernateProcessorUtil.getDataSourceName(config, puName);
+            Optional<String> dataSourceName;
+            if (additionalConfig != null && additionalConfig.selfManagedConnection()) {
+                dataSourceName = Optional.empty();
+            } else if (resolvedClientNames.containsKey(puName)) {
+                dataSourceName = Optional.empty();
+            } else if (additionalConfig != null) {
+                dataSourceName = additionalConfig.dataSourceName()
+                        .or(() -> HibernateProcessorUtil.getDataSourceName(config, puName));
+            } else {
+                dataSourceName = HibernateProcessorUtil.getDataSourceName(config, puName);
+            }
             persistenceUnitDefinitions.produce(new PersistenceUnitDefinitionBuildItem(puName, paradigm,
                     entry.getValue(),
                     config.persistenceUnits().get(puName),
                     dataSourceName,
+                    Optional.ofNullable(resolvedClientNames.get(puName)),
                     Optional.ofNullable(additionalConfigs.get(puName))));
         }
+    }
+
+    /**
+     * Determines the effective client name for a persistence unit, mirroring how
+     * {@link HibernateProcessorUtil#getDataSourceName} resolves the datasource name.
+     * <p>
+     * Resolution order:
+     * <ol>
+     * <li>Explicit {@code client} config property</li>
+     * <li>For the default PU with no explicit datasource: fall back to the default client
+     * if the implicit default datasource is unavailable</li>
+     * </ol>
+     *
+     * @return the client name, or {@code null} if no client should be used
+     */
+    static String getEffectiveClientName(HibernateOrmConfig config, String puName, ComponentLookup dataSourceLookup,
+            ComponentLookup clientLookup) {
+        HibernateOrmConfigPersistenceUnit puConfig = config.persistenceUnits().get(puName);
+        // Explicit client
+        if (puConfig != null && puConfig.client().isPresent()) {
+            return puConfig.client().get();
+        }
+        // Implicit default: only for the default PU with no explicit datasource
+        if (!PersistenceUnitUtil.isDefaultPersistenceUnit(puName)) {
+            return null;
+        }
+        if (puConfig != null && puConfig.datasource().isPresent()) {
+            return null;
+        }
+        // Check if the implicit default datasource is available
+        if (dataSourceLookup.unavailableReasons(DataSourceUtil.DEFAULT_DATASOURCE_NAME,
+                ProgrammingParadigm.BLOCKING).isEmpty()) {
+            return null;
+        }
+        // Default datasource unavailable — use the default client if available
+        if (clientLookup.unavailableReasons(DataSourceUtil.DEFAULT_DATASOURCE_NAME,
+                ProgrammingParadigm.BLOCKING).isEmpty()) {
+            return DataSourceUtil.DEFAULT_DATASOURCE_NAME;
+        }
+        return null;
     }
 
     private static boolean isExplicitlyDisabled(ProgrammingParadigm paradigm, String puName, HibernateOrmConfig config) {

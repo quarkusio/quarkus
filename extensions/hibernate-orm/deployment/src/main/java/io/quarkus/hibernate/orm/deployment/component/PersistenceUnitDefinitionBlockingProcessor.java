@@ -2,6 +2,7 @@ package io.quarkus.hibernate.orm.deployment.component;
 
 import java.util.List;
 
+import io.quarkus.datasource.deployment.spi.component.DataSourceLookupBuildItem;
 import io.quarkus.datasource.deployment.spi.component.DataSourceRequestBuildItem;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -12,6 +13,8 @@ import io.quarkus.hibernate.orm.deployment.HibernateOrmEnabled;
 import io.quarkus.hibernate.orm.deployment.JpaModelPerPersistenceUnitBuildItem;
 import io.quarkus.hibernate.orm.deployment.PersistenceXmlDescriptorBuildItem;
 import io.quarkus.hibernate.orm.deployment.spi.AdditionalPersistenceUnitBuildItem;
+import io.quarkus.hibernate.orm.deployment.spi.HibernateOrmClientLookupBuildItem;
+import io.quarkus.hibernate.orm.deployment.spi.HibernateOrmClientRequestBuildItem;
 import io.quarkus.hibernate.orm.deployment.spi.component.PersistenceUnitLookupBuildItem;
 import io.quarkus.hibernate.orm.deployment.spi.component.PersistenceUnitRequestBuildItem;
 import io.quarkus.runtime.util.ProgrammingParadigm;
@@ -53,13 +56,17 @@ class PersistenceUnitDefinitionBlockingProcessor {
     @BuildStep
     void defineBlockingPersistenceUnits(HibernateOrmConfig hibernateOrmConfig,
             PersistenceUnitLookupBuildItem lookupBuildItem,
+            DataSourceLookupBuildItem dataSourceLookupBuildItem,
+            HibernateOrmClientLookupBuildItem clientLookupBuildItem,
             List<PersistenceUnitRequestBuildItem> puRequests,
             List<PersistenceXmlDescriptorBuildItem> persistenceXmlDescriptors,
             List<AdditionalPersistenceUnitBuildItem> additionalPersistenceUnits,
             BuildProducer<PersistenceUnitDefinitionBuildItem> persistenceUnitDefinitions) {
         PersistenceUnitDefinitionSupport.definePersistenceUnits(ProgrammingParadigm.BLOCKING, hibernateOrmConfig,
-                lookupBuildItem,
-                puRequests, persistenceXmlDescriptors, additionalPersistenceUnits, persistenceUnitDefinitions);
+                lookupBuildItem, dataSourceLookupBuildItem.getLookup(),
+                clientLookupBuildItem.getLookup(),
+                puRequests, persistenceXmlDescriptors, additionalPersistenceUnits,
+                persistenceUnitDefinitions);
     }
 
     @BuildStep
@@ -75,6 +82,24 @@ class PersistenceUnitDefinitionBlockingProcessor {
                     "Hibernate ORM persistence unit '" + puDefinition.getPersistenceUnitName() + "'",
                     puDefinition.getReasons());
             datasourceReferences.produce(new DataSourceRequestBuildItem(puDefinition.getDataSourceName().get(),
+                    ProgrammingParadigm.BLOCKING, reason));
+        }
+    }
+
+    @BuildStep
+    public void produceClientReferencesFromPersistenceUnits(
+            List<PersistenceUnitDefinitionBuildItem> puDefinitions,
+            BuildProducer<HibernateOrmClientRequestBuildItem> clientReferences) {
+        for (PersistenceUnitDefinitionBuildItem puDefinition : puDefinitions) {
+            if (!ProgrammingParadigm.BLOCKING.equals(puDefinition.getParadigm())
+                    || puDefinition.getClientName().isEmpty()) {
+                continue;
+            }
+            Reason reason = new Reason(
+                    "Hibernate ORM persistence unit '" + puDefinition.getPersistenceUnitName() + "'",
+                    puDefinition.getReasons());
+            clientReferences.produce(new HibernateOrmClientRequestBuildItem(
+                    puDefinition.getClientName().get(),
                     ProgrammingParadigm.BLOCKING, reason));
         }
     }

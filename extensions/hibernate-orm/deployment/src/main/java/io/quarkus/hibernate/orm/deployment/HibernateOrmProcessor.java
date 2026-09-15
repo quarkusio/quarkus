@@ -133,6 +133,7 @@ import io.quarkus.hibernate.orm.deployment.integration.QuarkusClassFileLocator;
 import io.quarkus.hibernate.orm.deployment.spi.AdditionalJpaModelBuildItem;
 import io.quarkus.hibernate.orm.deployment.spi.AdditionalPersistenceUnitBuildItem;
 import io.quarkus.hibernate.orm.deployment.spi.DatabaseKindDialectBuildItem;
+import io.quarkus.hibernate.orm.deployment.spi.HibernateOrmClientDefinedBuildItem;
 import io.quarkus.hibernate.orm.deployment.spi.PersistenceUnitDefinedBuildItem;
 import io.quarkus.hibernate.orm.deployment.spi.SqlLoadScriptDefaultBuildItem;
 import io.quarkus.hibernate.orm.deployment.util.HibernateProcessorUtil;
@@ -408,14 +409,19 @@ public final class HibernateOrmProcessor {
             BuildProducer<PersistenceUnitDefinedBuildItem> definedPersistenceUnits) {
         Map<String, Set<ProgrammingParadigm>> paradigmsByName = new LinkedHashMap<>();
         Map<String, Optional<String>> dataSourceByName = new LinkedHashMap<>();
+        Map<String, Optional<String>> clientNameByPuName = new LinkedHashMap<>();
         for (PersistenceUnitDefinitionBuildItem item : puDefinitions) {
             dataSourceByName.putIfAbsent(item.getPersistenceUnitName(), item.getDataSourceName());
+            clientNameByPuName.putIfAbsent(item.getPersistenceUnitName(), item.getClientName());
             paradigmsByName.computeIfAbsent(item.getPersistenceUnitName(), k -> EnumSet.noneOf(ProgrammingParadigm.class))
                     .add(item.getParadigm());
         }
         for (var entry : paradigmsByName.entrySet()) {
+            String puName = entry.getKey();
             definedPersistenceUnits.produce(new PersistenceUnitDefinedBuildItem(
-                    entry.getKey(), dataSourceByName.get(entry.getKey()), entry.getValue()));
+                    puName, dataSourceByName.get(puName),
+                    clientNameByPuName.getOrDefault(puName, Optional.empty()),
+                    entry.getValue()));
         }
     }
 
@@ -1068,6 +1074,7 @@ public final class HibernateOrmProcessor {
     public void buildBlockingPersistenceUnitsFromConfig(
             HibernateOrmConfig hibernateOrmConfig,
             List<PersistenceUnitDefinitionBuildItem> persistenceUnitDefinitions,
+            List<HibernateOrmClientDefinedBuildItem> definedClients,
             JpaModelPerPersistenceUnitBuildItem jpaModel,
             List<JdbcDataSourceBuildItem> jdbcDataSources,
             ApplicationArchivesBuildItem applicationArchivesBuildItem,
@@ -1079,6 +1086,10 @@ public final class HibernateOrmProcessor {
             BuildProducer<PersistenceUnitDescriptorBuildItem> persistenceUnitDescriptors,
             BuildProducer<ReflectiveMethodBuildItem> reflectiveMethods,
             List<DatabaseKindDialectBuildItem> dbKindMetadataBuildItems) {
+        Map<String, List<HibernateOrmClientDefinedBuildItem>> clientsByName = new LinkedHashMap<>();
+        for (HibernateOrmClientDefinedBuildItem client : definedClients) {
+            clientsByName.computeIfAbsent(client.getName(), k -> new ArrayList<>()).add(client);
+        }
         for (PersistenceUnitDefinitionBuildItem puDefinition : persistenceUnitDefinitions) {
             if (puDefinition.getParadigm() != ProgrammingParadigm.BLOCKING) {
                 continue;
@@ -1089,6 +1100,7 @@ public final class HibernateOrmProcessor {
             }
             buildBlockingPersistenceUnitFromConfig(
                     hibernateOrmConfig, puDefinition, model,
+                    clientsByName,
                     jdbcDataSources, applicationArchivesBuildItem, launchMode.getLaunchMode(), capabilities,
                     additionalSqlLoadScriptDefaults,
                     nativeImageResources, hotDeploymentWatchedFiles, persistenceUnitDescriptors,
@@ -1100,6 +1112,7 @@ public final class HibernateOrmProcessor {
             HibernateOrmConfig hibernateOrmConfig,
             PersistenceUnitDefinitionBuildItem puDefinition,
             JpaPersistenceUnitModel model,
+            Map<String, List<HibernateOrmClientDefinedBuildItem>> clientsByName,
             List<JdbcDataSourceBuildItem> jdbcDataSources,
             ApplicationArchivesBuildItem applicationArchivesBuildItem,
             LaunchMode launchMode,
@@ -1113,6 +1126,38 @@ public final class HibernateOrmProcessor {
         String persistenceUnitName = puDefinition.getPersistenceUnitName();
         HibernateOrmConfigPersistenceUnit persistenceUnitConfig = puDefinition.getConfig();
         Optional<PersistenceUnitDefinitionBuildItem.AdditionalConfig> additionalPuConfig = puDefinition.getAdditionalConfig();
+
+        // For client-backed PUs, resolve the client and synthesize an AdditionalConfig
+        if (puDefinition.getClientName().isPresent() && additionalPuConfig.isEmpty()) {
+            String clientName = puDefinition.getClientName().get();
+            List<HibernateOrmClientDefinedBuildItem> clients = clientsByName.get(clientName);
+            if (clients == null || clients.isEmpty()) {
+                throw new ConfigurationException(String.format(Locale.ROOT,
+                        "Persistence unit '%s' is configured with '%s',"
+                                + " but no client extension can handle client '%s'."
+                                + " Add an extension that provides this client"
+                                + " (e.g. quarkus-mongodb-hibernate).",
+                        persistenceUnitName,
+                        HibernateOrmRuntimeConfig.puPropertyKey(persistenceUnitName, "client"),
+                        clientName));
+            }
+            if (clients.size() > 1) {
+                throw new ConfigurationException(String.format(Locale.ROOT,
+                        "Persistence unit '%s' is configured with '%s',"
+                                + " but multiple client extensions can handle client '%s'."
+                                + " Make sure only one extension provides this client.",
+                        persistenceUnitName,
+                        HibernateOrmRuntimeConfig.puPropertyKey(persistenceUnitName, "client"),
+                        clientName));
+            }
+            HibernateOrmClientDefinedBuildItem client = clients.get(0);
+            additionalPuConfig = Optional.of(new PersistenceUnitDefinitionBuildItem.AdditionalConfig(
+                    Optional.empty(),
+                    Optional.of(client.getDialectClass()),
+                    client.getProperties(),
+                    true));
+        }
+
         Optional<String> dataSourceName = puDefinition.getDataSourceName();
         Optional<JdbcDataSourceBuildItem> jdbcDataSource = dataSourceName
                 .map(name -> HibernateProcessorUtil.findDataSourceWithName(name,
@@ -1147,10 +1192,12 @@ public final class HibernateOrmProcessor {
         Optional<String> explicitDialect = additionalPuConfig
                 .flatMap(PersistenceUnitDefinitionBuildItem.AdditionalConfig::explicitDialect)
                 .or(() -> persistenceUnitConfig.dialect().dialect());
+        boolean selfManagedConnection = additionalPuConfig
+                .map(PersistenceUnitDefinitionBuildItem.AdditionalConfig::selfManagedConnection).orElse(false);
         Optional<DatabaseKind.SupportedDatabaseKind> supportedDatabaseKind = collectDialectConfig(persistenceUnitName,
                 persistenceUnitConfig,
                 dbKindMetadataBuildItems, jdbcDataSource, multiTenancyStrategy,
-                explicitDialect,
+                explicitDialect, selfManagedConnection,
                 reflectiveMethods, descriptor.getProperties()::setProperty);
 
         configureProperties(descriptor, persistenceUnitConfig, hibernateOrmConfig, false);
@@ -1190,6 +1237,7 @@ public final class HibernateOrmProcessor {
             Optional<JdbcDataSourceBuildItem> jdbcDataSource,
             MultiTenancyStrategy multiTenancyStrategy,
             Optional<String> dialect,
+            boolean selfManagedConnection,
             BuildProducer<ReflectiveMethodBuildItem> reflectiveMethods,
             BiConsumer<String, String> puPropertiesCollector) {
         final HibernateOrmConfigPersistenceUnit.HibernateOrmConfigPersistenceUnitDialect dialectConfig = persistenceUnitConfig
@@ -1197,7 +1245,7 @@ public final class HibernateOrmProcessor {
 
         Optional<String> dbKind = jdbcDataSource.map(JdbcDataSourceBuildItem::getDbKind);
         Optional<String> dbVersion = jdbcDataSource.flatMap(JdbcDataSourceBuildItem::getDbVersion);
-        if (multiTenancyStrategy != MultiTenancyStrategy.DATABASE && jdbcDataSource.isEmpty()) {
+        if (multiTenancyStrategy != MultiTenancyStrategy.DATABASE && jdbcDataSource.isEmpty() && !selfManagedConnection) {
             String dsConfigProperty = HibernateOrmRuntimeConfig.puPropertyKey(persistenceUnitName, "datasource");
             throw new ConfigurationException(String.format(Locale.ROOT,
                     "Datasource must be defined for persistence unit '%s'. Setting the datasource for the persistence unit can be done via the '%s' property. "

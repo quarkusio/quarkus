@@ -384,11 +384,20 @@ public class MyTransactionScopedBean {
     }
 
     @PreDestroy
-    void onBeforeEndTransaction() {
-        // This gets invoked before a transaction ends (commit or rollback).
+    void onAfterEndTransaction() {
+        // This gets invoked after a transaction ends (commit or rollback).
     }
 }
 ----
+
+[NOTE]
+====
+The transaction context is destroyed once the transaction has completed, so `@PreDestroy` callbacks
+of `@TransactionScoped` beans run after the commit or rollback, when the transaction is no longer active.
+To run code before the transaction completes, while it is still active, observe the
+`@BeforeDestroyed(TransactionScoped.class)` event as shown below,
+or use a transactional observer method with `@Observes(during = TransactionPhase.BEFORE_COMPLETION)`.
+====
 
 Alternatively, if you don't necessarily need to hold state during the transaction,
 and just want to react to transaction start/end events,

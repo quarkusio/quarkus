@@ -628,7 +628,8 @@ Edit `src/main/resources/application.properties` and inject the following config
 ----
 quarkus.datasource.db-kind=postgresql <1>
 
-quarkus.hibernate-orm.sql-load-script=import.sql <2>
+quarkus.hibernate-orm.data-management.init-script=import.sql <2>
+quarkus.hibernate-orm.data-management.strategy=create <2>
 
 quarkus.hibernate-search-orm.elasticsearch.version=9 <3>
 quarkus.hibernate-search-orm.indexing.plan.synchronization.strategy=sync <4>

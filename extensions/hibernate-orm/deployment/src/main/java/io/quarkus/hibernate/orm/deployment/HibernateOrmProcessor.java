@@ -2,8 +2,8 @@ package io.quarkus.hibernate.orm.deployment;
 
 import static io.quarkus.deployment.annotations.ExecutionTime.RUNTIME_INIT;
 import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
+import static io.quarkus.hibernate.orm.deployment.util.HibernateProcessorSupport.configureInitScripts;
 import static io.quarkus.hibernate.orm.deployment.util.HibernateProcessorSupport.configureProperties;
-import static io.quarkus.hibernate.orm.deployment.util.HibernateProcessorSupport.configureSqlLoadScript;
 import static io.quarkus.hibernate.orm.deployment.util.HibernateProcessorSupport.setDialectAndStorageEngine;
 import static io.quarkus.hibernate.orm.deployment.util.HibernateProcessorUtil.isHibernateValidatorPresent;
 import static io.quarkus.security.spi.SecuredInterfaceAnnotationBuildItem.ofClassAnnotation;
@@ -1161,7 +1161,7 @@ public final class HibernateOrmProcessor {
         }
 
         if (additionalPuConfig.isEmpty()) {
-            configureSqlLoadScript(persistenceUnitName, persistenceUnitConfig, applicationArchivesBuildItem, launchMode,
+            configureInitScripts(persistenceUnitName, persistenceUnitConfig, applicationArchivesBuildItem, launchMode,
                     additionalSqlLoadScriptDefaults,
                     nativeImageResources, hotDeploymentWatchedFiles, descriptor);
         }

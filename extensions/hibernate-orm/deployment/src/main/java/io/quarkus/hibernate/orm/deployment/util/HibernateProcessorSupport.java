@@ -13,12 +13,14 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.Properties;
+import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 
@@ -43,6 +45,7 @@ import io.quarkus.hibernate.orm.runtime.HibernateOrmRuntimeConfig;
 import io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil;
 import io.quarkus.hibernate.orm.runtime.boot.QuarkusPersistenceUnitDescriptor;
 import io.quarkus.hibernate.orm.runtime.cache.QuarkusPersistenceUnitCacheConfiguration;
+import io.quarkus.hibernate.orm.runtime.schema.InitScriptSupport;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.configuration.ConfigurationException;
 
@@ -60,6 +63,12 @@ public final class HibernateProcessorSupport {
     }
 
     public static final String NO_SQL_LOAD_SCRIPT_FILE = "no-file";
+
+    private static final String DEFAULT_SCHEMA_INIT_SCRIPT = "import.sql";
+    private static final String DEFAULT_DATA_INIT_SCRIPT = "data.sql";
+    private static final String SQL_LOAD_SCRIPT_PROPERTY = "sql-load-script";
+    private static final String SCHEMA_INIT_SCRIPT_PROPERTY = "schema-management.init-script";
+    private static final String DATA_INIT_SCRIPT_PROPERTY = "data-management.init-script";
 
     public static Optional<SupportedDatabaseKind> setDialectAndStorageEngine(
             String persistenceUnitName,
@@ -375,27 +384,6 @@ public final class HibernateProcessorSupport {
         descriptor.getProperties().setProperty(AvailableSettings.MAX_FETCH_DEPTH, String.valueOf(maxFetchDepth.getAsInt()));
     }
 
-    private static List<String> getSqlLoadScript(Optional<List<String>> sqlLoadScript,
-            LaunchMode launchMode, String persistenceUnitName,
-            List<SqlLoadScriptDefaultBuildItem> additionalDefaults) {
-        if (sqlLoadScript.isPresent()) {
-            return sqlLoadScript.get().stream()
-                    .filter(s -> !NO_SQL_LOAD_SCRIPT_FILE.equalsIgnoreCase(s))
-                    .collect(Collectors.toList());
-        }
-        if (launchMode.isProduction()) {
-            return Collections.emptyList();
-        }
-        List<String> defaults = new ArrayList<>();
-        defaults.add("import.sql");
-        if (PersistenceUnitUtil.isDefaultPersistenceUnit(persistenceUnitName)) {
-            for (SqlLoadScriptDefaultBuildItem additionalDefault : additionalDefaults) {
-                defaults.add(additionalDefault.getResourceName());
-            }
-        }
-        return defaults;
-    }
-
     private static void configureCaching(QuarkusPersistenceUnitDescriptor descriptor,
             HibernateOrmConfigPersistenceUnit config) {
         Properties p = descriptor.getProperties();
@@ -469,55 +457,211 @@ public final class HibernateProcessorSupport {
         }
     }
 
-    public static void configureSqlLoadScript(String persistenceUnitName,
+    /**
+     * Configures the SQL init scripts of a persistence unit:
+     * <ul>
+     * <li>the data init scripts ({@code quarkus.hibernate-orm.data-management.init-script},
+     * {@code data.sql} by default in dev/test mode), executed to load data regardless of how the schema is managed;
+     * their execution is decided at runtime based on {@code quarkus.hibernate-orm.data-management.strategy},
+     * see {@link InitScriptSupport#configureDataManagement};</li>
+     * <li>the schema init scripts ({@code quarkus.hibernate-orm.schema-management.init-script},
+     * {@code import.sql} by default in dev/test mode), executed right after Hibernate ORM created the schema.</li>
+     * </ul>
+     * Scripts configured through the deprecated {@code quarkus.hibernate-orm.sql-load-script} property
+     * keep their historical behavior: they are only executed when Hibernate ORM creates the schema.
+     */
+    public static void configureInitScripts(String persistenceUnitName,
             HibernateOrmConfigPersistenceUnit persistenceUnitConfig,
             ApplicationArchivesBuildItem applicationArchivesBuildItem, LaunchMode launchMode,
             List<SqlLoadScriptDefaultBuildItem> additionalSqlLoadScriptDefaults,
             BuildProducer<NativeImageResourceBuildItem> nativeImageResources,
             BuildProducer<HotDeploymentWatchedFileBuildItem> hotDeploymentWatchedFiles,
             QuarkusPersistenceUnitDescriptor descriptor) {
-        // This defaults to 'import.sql', and potentially 'data.sql', in non-production modes
-        List<String> importFiles = getSqlLoadScript(persistenceUnitConfig.sqlLoadScript(),
-                launchMode, persistenceUnitName, additionalSqlLoadScriptDefaults);
-        if (!importFiles.isEmpty()) {
-            List<String> existingImportFiles = new ArrayList<>();
-            for (String importFile : importFiles) {
-                Path loadScriptPath;
-                try {
-                    loadScriptPath = applicationArchivesBuildItem.getRootArchive().getChildPath(importFile);
-                } catch (RuntimeException e) {
-                    throw new ConfigurationException(
-                            "Unable to interpret path referenced in '"
-                                    + HibernateOrmRuntimeConfig.puPropertyKey(persistenceUnitName, "sql-load-script") + "="
-                                    + String.join(",", persistenceUnitConfig.sqlLoadScript().get())
-                                    + "': " + e.getMessage());
-                }
+        Optional<List<String>> legacySqlLoadScript = persistenceUnitConfig.sqlLoadScript();
+        Optional<List<String>> dataInitScript = persistenceUnitConfig.dataManagement().initScript();
+        Optional<List<String>> schemaInitScript = persistenceUnitConfig.schemaManagement().initScript();
 
-                if (loadScriptPath != null && !Files.isDirectory(loadScriptPath)) {
-                    // enlist resource if present
-                    existingImportFiles.add(importFile);
-                    nativeImageResources.produce(new NativeImageResourceBuildItem(importFile));
-                } else if (persistenceUnitConfig.sqlLoadScript().isPresent()) {
-                    //raise exception if explicit file is not present (i.e. not the default)
-                    throw new ConfigurationException(
-                            "Unable to find file referenced in '"
-                                    + HibernateOrmRuntimeConfig.puPropertyKey(persistenceUnitName, "sql-load-script") + "="
-                                    + String.join(",", persistenceUnitConfig.sqlLoadScript().get())
-                                    + "'. Remove property or add file to your path.");
-                }
-                // in dev mode we want to make sure that we watch for changes to file even if it doesn't currently exist
-                // as a user could still add it after performing the initial configuration
-                hotDeploymentWatchedFiles.produce(new HotDeploymentWatchedFileBuildItem(importFile));
-            }
+        if (legacySqlLoadScript.isPresent() && dataInitScript.isPresent()) {
+            throw new ConfigurationException(String.format(Locale.ROOT,
+                    "Both '%s' and '%s' are set. '%s' is deprecated: remove it and only use '%s'.",
+                    HibernateOrmRuntimeConfig.puPropertyKey(persistenceUnitName, DATA_INIT_SCRIPT_PROPERTY),
+                    HibernateOrmRuntimeConfig.puPropertyKey(persistenceUnitName, SQL_LOAD_SCRIPT_PROPERTY),
+                    HibernateOrmRuntimeConfig.puPropertyKey(persistenceUnitName, SQL_LOAD_SCRIPT_PROPERTY),
+                    HibernateOrmRuntimeConfig.puPropertyKey(persistenceUnitName, DATA_INIT_SCRIPT_PROPERTY)));
+        }
 
-            if (!existingImportFiles.isEmpty()) {
-                descriptor.getProperties().setProperty(AvailableSettings.JAKARTA_HBM2DDL_LOAD_SCRIPT_SOURCE,
-                        String.join(",", existingImportFiles));
+        // Data init scripts, executed to load data
+        InitScriptConfig dataScripts;
+        boolean legacy = false;
+        if (dataInitScript.isPresent()) {
+            dataScripts = InitScriptConfig.explicit(DATA_INIT_SCRIPT_PROPERTY, dataInitScript.get());
+        } else if (legacySqlLoadScript.isPresent()) {
+            legacy = true;
+            dataScripts = InitScriptConfig.explicit(SQL_LOAD_SCRIPT_PROPERTY, legacySqlLoadScript.get());
+            if (dataScripts.scripts.isEmpty()) {
+                LOG.warnf("Persistence unit '%s' uses the deprecated configuration property '%s'."
+                        + " To ignore the default init scripts, set '%s' and '%s' to '%s' instead.",
+                        persistenceUnitName,
+                        HibernateOrmRuntimeConfig.puPropertyKey(persistenceUnitName, SQL_LOAD_SCRIPT_PROPERTY),
+                        HibernateOrmRuntimeConfig.puPropertyKey(persistenceUnitName, SCHEMA_INIT_SCRIPT_PROPERTY),
+                        HibernateOrmRuntimeConfig.puPropertyKey(persistenceUnitName, DATA_INIT_SCRIPT_PROPERTY),
+                        NO_SQL_LOAD_SCRIPT_FILE);
+            } else {
+                LOG.warnf("Persistence unit '%s' uses the deprecated configuration property '%s'."
+                        + " Use '%s' to load data (executed regardless of how the schema is managed)"
+                        + " or '%s' to complete the schema (executed only when Hibernate ORM creates the schema).",
+                        persistenceUnitName,
+                        HibernateOrmRuntimeConfig.puPropertyKey(persistenceUnitName, SQL_LOAD_SCRIPT_PROPERTY),
+                        HibernateOrmRuntimeConfig.puPropertyKey(persistenceUnitName, DATA_INIT_SCRIPT_PROPERTY),
+                        HibernateOrmRuntimeConfig.puPropertyKey(persistenceUnitName, SCHEMA_INIT_SCRIPT_PROPERTY));
             }
+        } else {
+            dataScripts = InitScriptConfig.defaults(DATA_INIT_SCRIPT_PROPERTY,
+                    defaultDataInitScripts(launchMode, persistenceUnitName, additionalSqlLoadScriptDefaults));
+        }
+
+        // Schema init scripts, executed right after Hibernate ORM created the schema
+        InitScriptConfig schemaScripts;
+        if (schemaInitScript.isPresent()) {
+            schemaScripts = InitScriptConfig.explicit(SCHEMA_INIT_SCRIPT_PROPERTY, schemaInitScript.get());
+            for (String script : schemaScripts.scripts) {
+                if (script.toLowerCase(Locale.ROOT).endsWith(".zip")) {
+                    throw new ConfigurationException(String.format(Locale.ROOT,
+                            "Zip files are not supported in '%s=%s'. Reference the SQL files directly.",
+                            HibernateOrmRuntimeConfig.puPropertyKey(persistenceUnitName, SCHEMA_INIT_SCRIPT_PROPERTY),
+                            String.join(",", schemaScripts.configuredScripts)));
+                }
+            }
+        } else if (launchMode.isProduction() || legacy) {
+            // Historically, an explicit 'sql-load-script' replaced the default 'import.sql' entirely: keep it that way.
+            schemaScripts = InitScriptConfig.defaults(SCHEMA_INIT_SCRIPT_PROPERTY, Collections.emptyList());
+        } else {
+            schemaScripts = InitScriptConfig.defaults(SCHEMA_INIT_SCRIPT_PROPERTY, List.of(DEFAULT_SCHEMA_INIT_SCRIPT));
+        }
+
+        // A given file is either a data init script or a schema init script, never both.
+        if (dataScripts.explicit && schemaScripts.explicit) {
+            for (String script : schemaScripts.scripts) {
+                if (dataScripts.scripts.contains(script)) {
+                    throw new ConfigurationException(String.format(Locale.ROOT,
+                            "'%s' is referenced in both '%s' and '%s'."
+                                    + " A file must either load data or complete the schema, not both.",
+                            script,
+                            HibernateOrmRuntimeConfig.puPropertyKey(persistenceUnitName, dataScripts.propertyName),
+                            HibernateOrmRuntimeConfig.puPropertyKey(persistenceUnitName, schemaScripts.propertyName)));
+                }
+            }
+        } else if (dataScripts.explicit) {
+            schemaScripts.scripts.removeAll(dataScripts.scripts);
+        } else {
+            dataScripts.scripts.removeAll(schemaScripts.scripts);
+        }
+
+        List<String> existingDataScripts = registerInitScripts(persistenceUnitName, dataScripts,
+                applicationArchivesBuildItem, nativeImageResources, hotDeploymentWatchedFiles);
+        if (!existingDataScripts.isEmpty()) {
+            descriptor.getProperties().setProperty(AvailableSettings.JAKARTA_HBM2DDL_LOAD_SCRIPT_SOURCE,
+                    String.join(",", existingDataScripts));
+            if (legacy) {
+                descriptor.getProperties().setProperty(InitScriptSupport.LEGACY_SQL_LOAD_SCRIPT, "true");
+            }
+        }
+
+        List<String> existingSchemaScripts = registerInitScripts(persistenceUnitName, schemaScripts,
+                applicationArchivesBuildItem, nativeImageResources, hotDeploymentWatchedFiles);
+        if (!existingSchemaScripts.isEmpty()) {
+            descriptor.getProperties().setProperty(AvailableSettings.JAKARTA_HBM2DDL_CREATE_SCRIPT_SOURCE,
+                    String.join(",", existingSchemaScripts));
+            descriptor.getProperties().setProperty(AvailableSettings.JAKARTA_HBM2DDL_CREATE_SOURCE,
+                    InitScriptSupport.CREATE_SOURCE_METADATA_THEN_SCRIPT);
         }
 
         //Disable implicit loading of the default import script (import.sql)
         descriptor.getProperties().setProperty(AvailableSettings.HBM2DDL_SKIP_DEFAULT_IMPORT_FILE, "true");
+    }
+
+    private static List<String> defaultDataInitScripts(LaunchMode launchMode, String persistenceUnitName,
+            List<SqlLoadScriptDefaultBuildItem> additionalDefaults) {
+        if (launchMode.isProduction()) {
+            return Collections.emptyList();
+        }
+        Set<String> defaults = new LinkedHashSet<>();
+        defaults.add(DEFAULT_DATA_INIT_SCRIPT);
+        if (PersistenceUnitUtil.isDefaultPersistenceUnit(persistenceUnitName)) {
+            for (SqlLoadScriptDefaultBuildItem additionalDefault : additionalDefaults) {
+                defaults.add(additionalDefault.getResourceName());
+            }
+        }
+        return new ArrayList<>(defaults);
+    }
+
+    /**
+     * Registers the given scripts as native resources and hot-deployment watched files,
+     * and returns those that exist in the application archive.
+     */
+    private static List<String> registerInitScripts(String persistenceUnitName, InitScriptConfig config,
+            ApplicationArchivesBuildItem applicationArchivesBuildItem,
+            BuildProducer<NativeImageResourceBuildItem> nativeImageResources,
+            BuildProducer<HotDeploymentWatchedFileBuildItem> hotDeploymentWatchedFiles) {
+        List<String> existingScripts = new ArrayList<>();
+        for (String script : config.scripts) {
+            Path scriptPath;
+            try {
+                scriptPath = applicationArchivesBuildItem.getRootArchive().getChildPath(script);
+            } catch (RuntimeException e) {
+                throw new ConfigurationException(
+                        "Unable to interpret path referenced in '"
+                                + HibernateOrmRuntimeConfig.puPropertyKey(persistenceUnitName, config.propertyName) + "="
+                                + String.join(",", config.configuredScripts)
+                                + "': " + e.getMessage());
+            }
+
+            if (scriptPath != null && !Files.isDirectory(scriptPath)) {
+                // enlist resource if present
+                existingScripts.add(script);
+                nativeImageResources.produce(new NativeImageResourceBuildItem(script));
+            } else if (config.explicit) {
+                //raise exception if explicit file is not present (i.e. not the default)
+                throw new ConfigurationException(
+                        "Unable to find file referenced in '"
+                                + HibernateOrmRuntimeConfig.puPropertyKey(persistenceUnitName, config.propertyName) + "="
+                                + String.join(",", config.configuredScripts)
+                                + "'. Remove property or add file to your path.");
+            }
+            // in dev mode we want to make sure that we watch for changes to file even if it doesn't currently exist
+            // as a user could still add it after performing the initial configuration
+            hotDeploymentWatchedFiles.produce(new HotDeploymentWatchedFileBuildItem(script));
+        }
+        return existingScripts;
+    }
+
+    private static final class InitScriptConfig {
+        final String propertyName;
+        final List<String> configuredScripts;
+        final List<String> scripts;
+        final boolean explicit;
+
+        private InitScriptConfig(String propertyName, List<String> configuredScripts, List<String> scripts,
+                boolean explicit) {
+            this.propertyName = propertyName;
+            this.configuredScripts = configuredScripts;
+            this.scripts = scripts;
+            this.explicit = explicit;
+        }
+
+        static InitScriptConfig explicit(String propertyName, List<String> configuredScripts) {
+            List<String> scripts = new ArrayList<>();
+            for (String script : configuredScripts) {
+                if (!NO_SQL_LOAD_SCRIPT_FILE.equalsIgnoreCase(script)) {
+                    scripts.add(script);
+                }
+            }
+            return new InitScriptConfig(propertyName, configuredScripts, scripts, true);
+        }
+
+        static InitScriptConfig defaults(String propertyName, List<String> scripts) {
+            return new InitScriptConfig(propertyName, scripts, new ArrayList<>(scripts), false);
+        }
     }
 
 }

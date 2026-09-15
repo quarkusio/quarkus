@@ -167,7 +167,7 @@ public class ClientEndpointIndexer
                 elementType, declaredTypes.getDeclaredType(), declaredTypes.getDeclaredUnresolvedType(), signature, type,
                 single,
                 defaultValue, parameterResult.isObtainedAsCollection(), parameterResult.isOptional(), encoded,
-                mimePart, partFileName, separator);
+                mimePart, partFileName, separator, parameterResult.getRestQueryMap());
     }
 
     private String getPartFileName(Map<DotName, AnnotationInstance> annotations) {

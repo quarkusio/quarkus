@@ -1277,7 +1277,8 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
                 .setField(field)
                 .setHasRuntimeConverters(hasRuntimeConverters)
                 .setPathParameters(pathParameters)
-                .setSourceName(sourceName);
+                .setSourceName(sourceName)
+                .setRestQueryMap(false);
 
         AnnotationInstance beanParam = anns.get(BEAN_PARAM);
         AnnotationInstance multiPartFormParam = anns.get(MULTI_PART_FORM_PARAM);
@@ -1462,6 +1463,14 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
                             genericElementType, currentMethodInfo);
                 }
                 builder.setOptional(true);
+            } else if (isEligibleForMultivaluedMapAsQuery(anns, pt)) {
+                typeHandled = true;
+                builder.setSingle(false);
+                elementType = String.class.getName();
+                builder.setRestQueryMap(true);
+                handleMapParam(existingConverters, errorLocation, hasRuntimeConverters, builder,
+                        elementType,
+                        currentMethodInfo);
             } else if (convertible) {
                 typeHandled = true;
                 elementType = toClassName(pt, currentClassInfo, actualEndpointInfo, index);
@@ -1548,6 +1557,22 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
         return builder;
     }
 
+    private boolean isEligibleForMultivaluedMapAsQuery(Map<DotName, AnnotationInstance> annotations, ParameterizedType type) {
+        AnnotationInstance annotation = annotations.get(REST_QUERY_PARAM);
+        return type.name().equals(MULTI_VALUED_MAP) && annotation != null &&
+                (annotation.value() == null || annotation.value().asString().isBlank())
+                &&
+                isAValidMultivaluedMapOfStringString(type);
+    }
+
+    private boolean isAValidMultivaluedMapOfStringString(ParameterizedType parameterizedType) {
+        boolean invalidMultivaluedMapForInjectingQuery = parameterizedType.arguments().size() != 2;
+        if (invalidMultivaluedMapForInjectingQuery) {
+            return false;
+        }
+        return parameterizedType.arguments().stream().allMatch(item -> item.name().equals(DotName.createSimple(String.class)));
+    }
+
     private boolean isFormParamConvertible(Type paramType) {
         // let's not call the array converter for byte[] for multipart
         if (paramType.kind() == Kind.ARRAY
@@ -1597,6 +1622,10 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
 
     protected void handleSortedSetParam(Map<String, String> existingConverters, String errorLocation,
             boolean hasRuntimeConverters, PARAM builder, String elementType, MethodInfo currentMethodInfo) {
+    }
+
+    protected void handleMapParam(Map<String, String> existingConverters, String errorLocation, boolean hasRuntimeConverters,
+            PARAM builder, String elementType, MethodInfo currentMethodInfo) {
     }
 
     protected void handleOptionalParam(Map<String, String> existingConverters,

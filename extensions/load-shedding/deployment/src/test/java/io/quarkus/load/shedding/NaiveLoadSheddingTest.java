@@ -22,7 +22,7 @@ public class NaiveLoadSheddingTest {
     static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot(jar -> jar.addClasses(MyResource.class))
             .overrideConfigKey("quarkus.load-shedding.initial-limit", "5")
-            .overrideConfigKey("quarkus.load-shedding.max-limit", "10")
+            .overrideConfigKey("quarkus.load-shedding.max-limit", "5")
             .overrideConfigKey("quarkus.load-shedding.priority.enabled", "false");
 
     @Test

@@ -14,6 +14,8 @@ import org.testcontainers.oracle.OracleContainer;
 import org.testcontainers.utility.DockerImageName;
 import org.testcontainers.utility.MountableFile;
 
+import com.github.dockerjava.api.command.InspectContainerResponse;
+
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
 import io.quarkus.datasource.common.runtime.DatabaseKind;
 import io.quarkus.deployment.Feature;
@@ -122,6 +124,20 @@ public class OracleDevServicesProcessor {
     }
 
     private static class QuarkusOracleServerContainer extends OracleContainer implements DatasourceStartable {
+
+        /**
+         * A reused container keeps its data, including the effect of the init scripts that ran when it was first
+         * started, so the scripts are not run again: a non-idempotent script would fail on the second run.
+         */
+        @Override
+        protected void containerIsStarted(InspectContainerResponse containerInfo, boolean reused) {
+            if (reused) {
+                LOG.info("Reusing existing container, not running the datasource Dev Service init scripts again");
+            } else {
+                super.containerIsStarted(containerInfo, reused);
+            }
+        }
+
         private final OptionalInt fixedExposedPort;
         private final boolean useSharedNetwork;
 

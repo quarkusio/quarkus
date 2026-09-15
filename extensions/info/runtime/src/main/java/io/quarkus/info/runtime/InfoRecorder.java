@@ -16,6 +16,7 @@ import io.quarkus.info.BuildInfo;
 import io.quarkus.info.GitInfo;
 import io.quarkus.info.JavaInfo;
 import io.quarkus.info.OsInfo;
+import io.quarkus.info.runtime.produi.InfoProdUIService;
 import io.quarkus.info.runtime.spi.InfoContributor;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.annotations.Recorder;
@@ -61,6 +62,14 @@ public class InfoRecorder {
     @RuntimeInit
     public Handler<RoutingContext> handler(RuntimeValue<Map<String, Object>> finalBuildInfo) {
         return new InfoHandler(finalBuildInfo.getValue());
+    }
+
+    @RuntimeInit
+    public void initializeProdUIService(RuntimeValue<Map<String, Object>> finalBuildInfo) {
+        InstanceHandle<InfoProdUIService> handle = Arc.container().instance(InfoProdUIService.class);
+        if (handle.isAvailable()) {
+            handle.get().setInfo(finalBuildInfo.getValue());
+        }
     }
 
     @RuntimeInit

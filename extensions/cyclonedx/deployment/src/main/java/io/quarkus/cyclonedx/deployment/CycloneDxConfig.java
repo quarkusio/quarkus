@@ -21,7 +21,7 @@ public interface CycloneDxConfig {
     boolean enabled();
 
     /**
-     * SBOM file format. Supported formats are {code json} and {code xml}.
+     * SBOM file format. Supported formats are {@code json} and {@code xml}.
      * The default format is JSON.
      * If both are desired then {@code all} could be used as the value of this option.
      *
@@ -114,6 +114,8 @@ public interface CycloneDxConfig {
         /**
          * Resource name for the embedded dependency SBOM.
          * The SBOM is always stored uncompressed under this exact name.
+         * The format is determined by the resource name extension: {@code .json} for JSON,
+         * {@code .xml} for XML.
          *
          * @return resource name for the embedded dependency SBOM
          */

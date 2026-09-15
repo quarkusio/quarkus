@@ -127,7 +127,10 @@ The embedded dependency SBOM can be exposed through a REST endpoint, making it a
 quarkus.cyclonedx.endpoint.enabled=true
 ----
 
-The embedded SBOM will be served at `/.well-known/sbom` with the `application/vnd.cyclonedx+json` content type (or `application/vnd.cyclonedx+xml` for XML SBOMs).
+The embedded SBOM will be served at `/.well-known/sbom`. The content type is determined by the embedded SBOM format:
+* `application/vnd.cyclonedx+json` for JSON SBOMs (default)
+* `application/vnd.cyclonedx+xml` for XML SBOMs
+
 The path can be customized using the `quarkus.cyclonedx.endpoint.path` property.
 
 Enabling the endpoint will automatically trigger SBOM embedding, even if `quarkus.cyclonedx.embedded.enabled` is not explicitly set to `true`.
@@ -179,7 +182,7 @@ To generate CycloneDX distribution SBOMs, add `io.quarkus:quarkus-cyclonedx` as 
 * `<executable-name>` is the base file name (without the extension) of the executable that launches the application;
 * `<format>` is either `json` (the default) or `xml`, which can be configured using the `quarkus.cyclonedx.format` property. If both formats are desired, `quarkus.cyclonedx.format` can be set to `all`.
 
-By default, generated JSON SBOMs are not pretty-printed. To enable pretty-printing:
+By default, generated SBOMs are not pretty-printed. To enable pretty-printing:
 
 [source,properties]
 ----

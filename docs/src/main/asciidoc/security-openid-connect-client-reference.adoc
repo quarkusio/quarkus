@@ -606,7 +606,7 @@ The difference is that it works with xref:rest-client.adoc[Reactive RestClient] 
 
 `OidcClientRequestReactiveFilter` delays an initial token acquisition until it is executed to avoid blocking an IO thread.
 
-You can selectively register `OidcClientRequestReactiveFilter` by using either `io.quarkus.oidc.client.filter.OidcClientFilter` or `org.eclipse.microprofile.rest.client.annotation.RegisterProvider` annotations:
+To add an OIDC client access token to requests from all methods, register `OidcClientRequestReactiveFilter` for the REST client interface with `io.quarkus.oidc.client.filter.OidcClientFilter` or `org.eclipse.microprofile.rest.client.annotation.RegisterProvider`:
 
 [source,java]
 ----
@@ -626,11 +626,12 @@ public interface ProtectedResourceService {
 }
 ----
 
-Alternatively, apply `@OidcClientFilter` to individual methods.
-For requests from annotated methods, the filter adds the OIDC client access token to the `Authorization` header.
-Do not combine class-level and method-level `@OidcClientFilter` annotations on the same REST client, regardless of the OIDC client name.
-To use different OIDC clients for different methods, annotate each method that requires a token separately.
-This lets a single REST client interface call both public endpoints and endpoints that require an access token:
+To add the token only to requests from selected methods, apply `@OidcClientFilter` to those methods instead of the REST client interface.
+
+You cannot combine class-level and method-level `@OidcClientFilter` annotations on the same REST client, regardless of the OIDC client name.
+To use different OIDC clients for different methods, leave the interface unannotated and annotate every method that requires a token, specifying the client name where needed.
+
+For example, a single REST client interface can call both public endpoints and endpoints that require an access token:
 
 [source,java]
 ----
@@ -748,7 +749,7 @@ NOTE: It will also bring `io.quarkus:quarkus-oidc-client`.
 By default, this filter uses `OidcClient` to acquire the first pair of access and refresh tokens at initialization time.
 If the access tokens are short-lived and refresh tokens are unavailable, then the token acquisition should be delayed with `quarkus.oidc-client.early-tokens-acquisition=false`.
 
-You can selectively register `OidcClientRequestFilter` by using either `io.quarkus.oidc.client.filter.OidcClientFilter` or `org.eclipse.microprofile.rest.client.annotation.RegisterProvider` annotations:
+To add an OIDC client access token to requests from all methods, register `OidcClientRequestFilter` for the REST client interface with `io.quarkus.oidc.client.filter.OidcClientFilter` or `org.eclipse.microprofile.rest.client.annotation.RegisterProvider`:
 
 [source,java]
 ----
@@ -767,11 +768,12 @@ public interface ProtectedResourceService {
 }
 ----
 
-Alternatively, apply `@OidcClientFilter` to individual methods.
-For requests from annotated methods, the filter adds the OIDC client access token to the `Authorization` header.
-Do not combine class-level and method-level `@OidcClientFilter` annotations on the same REST client, regardless of the OIDC client name.
-To use different OIDC clients for different methods, annotate each method that requires a token separately.
-This lets a single REST client interface call both public endpoints and endpoints that require an access token:
+To add the token only to requests from selected methods, apply `@OidcClientFilter` to those methods instead of the REST client interface.
+
+You cannot combine class-level and method-level `@OidcClientFilter` annotations on the same REST client, regardless of the OIDC client name.
+To use different OIDC clients for different methods, leave the interface unannotated and annotate every method that requires a token, specifying the client name where needed.
+
+For example, a single REST client interface can call both public endpoints and endpoints that require an access token:
 
 [source,java]
 ----

@@ -25,14 +25,14 @@ public class DefaultQueryDepthTest extends AbstractGraphQLTest {
 
     @Test
     public void testQueryExceedingDefaultDepthIsRejected() {
-        String query = getPayload(nestedQuery(11));
+        String query = getPayload(nestedQuery(21));
         RestAssured.given()
                 .body(query)
                 .contentType(MEDIATYPE_JSON)
                 .post("/graphql/")
                 .then()
                 .assertThat()
-                .body("errors[0].message", equalTo("maximum query depth exceeded 11 > 10"))
+                .body("errors[0].message", equalTo("maximum query depth exceeded 21 > 20"))
                 .body("data", nullValue());
     }
 

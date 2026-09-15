@@ -355,6 +355,7 @@ public class HttpServerOptionsUtils {
 
         // Query param decoder config
         config.setQueryParamConfig(new QueryParamDecoderConfig()
+                .setMaxSize(httpConfig.limits().maxQueryParameters())
                 .setUseSemicolonAsDelimiter(httpConfig.useSemicolonAsQueryParamDelimiter()));
 
         // Compression config
@@ -452,6 +453,7 @@ public class HttpServerOptionsUtils {
 
         // Query param decoder config
         config.setQueryParamConfig(new QueryParamDecoderConfig()
+                .setMaxSize(managementConfig.limits().maxQueryParameters())
                 .setUseSemicolonAsDelimiter(managementConfig.useSemicolonAsQueryParamDelimiter()));
 
         // Compression

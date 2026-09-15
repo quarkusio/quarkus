@@ -238,7 +238,7 @@ platform.org.acme.acme-camel-bom.cpe=cpe:2.3:a:acme:quarkus:3.40:*:*:*:*:*:*:*
 platform.org.acme.acme-camel-bom.cpe-artifacts=<base64>
 ----
 
-The generated product component can be further described with the following optional properties, using the same `platform.<member-bom-groupId>.<member-bom-artifactId>.` prefix: `product-purl`, `product-name`, `product-version`, `product-description` and `product-type` (defaults to `framework`). If `product-purl` is not set, the member BOM's own `pkg:maven` PURL is used.
+The generated product component can be further described with the following optional properties, using the same `platform.<member-bom-groupId>.<member-bom-artifactId>.` prefix: `product-name`, `product-version`, `product-description` and `product-type` (defaults to `framework`).
 
 [[cpe-artifacts-format]]
 ===== `cpe-artifacts` value format
@@ -260,11 +260,11 @@ Coordinates recur heavily across entries (deployment closures overlap, and even 
 ----
 @org.apache.camel.quarkus     ← groupId; the NEXT line is this group's common artifactId prefix
 camel-quarkus-                ← positional prefix line (empty when there is no shared prefix)
-=3.33.0                       ← version sub-block
+=3.20.0                       ← version sub-block, ordered lexicographically
+legacy                        ← camel-quarkus-legacy
+=3.33.0                       ← further versions reuse the same groupId + prefix
 core                          ← artifactId minus prefix → camel-quarkus-core     (classifier "", type jar)
 support:linux-x86_64          ← camel-quarkus-support, classifier linux-x86_64, type jar
-=3.20.0                       ← further versions reuse the same groupId + prefix
-legacy                        ← camel-quarkus-legacy
 @io.quarkus
 quarkus-core                  ← prefix equals the only artifactId (singleton group)
 =3.15.0

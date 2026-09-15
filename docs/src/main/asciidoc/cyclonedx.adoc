@@ -230,7 +230,7 @@ For the `quarkus:dependency-sbom` Maven goal the equivalent parameter is `quarku
 
 === How it works
 
-Attribution is driven entirely by metadata the platform provides through its <<../platform.adoc#product-attribution-properties,platform properties>>; an application does not configure products directly. Each imported platform member that declares a product identity (at minimum a CPE) yields, in the generated SBOM, a single product component that:
+Attribution is driven entirely by metadata the platform provides through its <<platform.adoc#product-attribution-properties,platform properties>>; an application does not configure products directly. Each imported platform member that declares a product identity (at minimum a CPE) yields, in the generated SBOM, a single product component that:
 
 * has the type `framework` (unless the platform specifies a different type), carries the product's CPE, and has its CycloneDX `scope` set to `excluded`, since the product itself is not a shipped artifact;
 * is a top-level component, so it appears as a direct dependency of the main application component;

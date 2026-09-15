@@ -15,8 +15,4 @@ public class PanacheHibernateRecorder {
                     .addEntityTypesToPersistenceUnit(entityToPersistenceUnit);
         }
     }
-
-    public void setRepositoryClassesToEntityClasses(Map<String, String> repositoryClassesToEntityClasses) {
-        AbstractJpaOperations.setRepositoryClassesToEntityClasses(repositoryClassesToEntityClasses);
-    }
 }

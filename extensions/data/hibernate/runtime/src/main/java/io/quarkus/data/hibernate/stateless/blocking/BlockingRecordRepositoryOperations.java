@@ -7,13 +7,19 @@ import org.hibernate.StatelessSession;
 import io.quarkus.data.hibernate.runtime.spi.PanacheBlockingOperations;
 import io.quarkus.data.hibernate.runtime.spi.PanacheOperations;
 import io.quarkus.data.hibernate.stateless.RecordRepositoryOperations;
-import io.quarkus.hibernate.orm.panache.common.runtime.AbstractJpaOperations;
 
 public interface BlockingRecordRepositoryOperations<Entity, Id>
         extends RecordRepositoryOperations<Entity, StatelessSession, Void, Boolean, Id> {
 
+    // See BlockingManagedRepositoryOperations for the explanation of the doGetEntityClass() pattern.
+
+    private Class<? extends Entity> doGetEntityClass() {
+        throw new UnsupportedOperationException(
+                "doGetEntityClass() should be provided by the generated repository implementation");
+    }
+
     private Class<? extends Entity> getEntityClass() {
-        return AbstractJpaOperations.getRepositoryEntityClass(getClass());
+        return doGetEntityClass();
     }
 
     private PanacheBlockingOperations operations() {

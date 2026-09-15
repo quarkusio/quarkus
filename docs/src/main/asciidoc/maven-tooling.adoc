@@ -682,6 +682,11 @@ artifact classifier for the Uber-Jar artifact. There are two ways to attach an U
 [[multi-module-maven]]
 === Working with multi-module projects
 
+A multi-module Maven project is typically organized as a parent (aggregator) module with several child modules, for example one or more shared library modules and one or more Quarkus application modules that depend on them.
+
+[[multi-module-bean-discovery]]
+==== Making CDI beans discoverable across modules
+
 By default, Quarkus will not discover CDI beans inside another module.
 
 The best way to enable CDI bean discovery for a module in a multi-module project would be to include the `jandex-maven-plugin`,
@@ -709,6 +714,38 @@ unless it is the main application module already configured with the quarkus-mav
 ----
 
 More information on this topic can be found on the xref:cdi-reference.adoc#bean_discovery[Bean Discovery] section of the CDI guide.
+
+[[multi-module-dev-mode]]
+==== Running dev mode in a multi-module project
+
+<<dev-mode,Development mode>> is started on a single Quarkus application module, not on the aggregator.
+Before starting it, build the whole project once so that the other modules the application depends on are compiled:
+
+[source,bash]
+----
+./mvnw install -DskipTests
+----
+
+Then start dev mode on the application module only, selecting it from the root of the project with `-pl`:
+
+[source,bash]
+----
+./mvnw quarkus:dev -pl :my-app
+----
+
+Alternatively, run it from within the module directory:
+
+[source,bash]
+----
+cd my-app
+../mvnw quarkus:dev
+----
+
+Local modules that the application depends on are treated as hot-reloadable dependencies: when you edit their sources and a change is detected, Quarkus recompiles them and redeploys the application, exactly as it does for the application's own sources.
+This is why the project must be built at least once first; otherwise dev mode fails with a `Hot reloadable dependency ... has not been compiled yet` error.
+
+Dev mode runs a single Quarkus application at a time.
+If your project contains several Quarkus application modules, start each one in its own dev mode session, in a separate terminal, and if needed on a different port using `-Dquarkus.http.port`.
 
 [[maven-test-configuration]]
 === Maven test plugin configuration

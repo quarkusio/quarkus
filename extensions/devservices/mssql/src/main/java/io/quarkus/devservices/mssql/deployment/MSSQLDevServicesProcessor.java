@@ -9,8 +9,11 @@ import java.util.Optional;
 import java.util.OptionalInt;
 
 import org.jboss.logging.Logger;
+import org.testcontainers.DockerClientFactory;
 import org.testcontainers.mssqlserver.MSSQLServerContainer;
 import org.testcontainers.utility.DockerImageName;
+
+import com.github.dockerjava.api.model.Info;
 
 import io.quarkus.datasource.common.runtime.DatabaseKind;
 import io.quarkus.deployment.Feature;
@@ -18,6 +21,7 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.DevServicesComposeProjectBuildItem;
 import io.quarkus.deployment.builditem.DevServicesSharedNetworkBuildItem;
 import io.quarkus.deployment.dev.devservices.DevServicesConfig;
+import io.quarkus.deployment.util.ContainerRuntimeUtil;
 import io.quarkus.devservices.common.ComposeLocator;
 import io.quarkus.devservices.common.ConfigureUtil;
 import io.quarkus.devservices.common.DevServicesHostUtil;
@@ -30,6 +34,7 @@ import io.quarkus.devservices.datasource.common.DevServicesDatasourceContainerCo
 import io.quarkus.devservices.datasource.common.DevServicesDatasourceProvider;
 import io.quarkus.devservices.datasource.common.DevServicesDatasourceProviderBuildItem;
 import io.quarkus.runtime.LaunchMode;
+import io.smallrye.common.os.OS;
 
 public class MSSQLDevServicesProcessor {
 
@@ -66,10 +71,26 @@ public class MSSQLDevServicesProcessor {
                 startupTimeout.ifPresent(container::withStartupTimeout);
 
                 // Workaround for https://github.com/microsoft/mssql-docker/issues/954
-                // SQL Server 2025 crashes when the visible CPU count is not a power of 2.
-                int safeCpuCount = Integer.highestOneBit(Runtime.getRuntime().availableProcessors());
-                container.withCreateContainerCmdModifier(
-                        cmd -> cmd.getHostConfig().withCpusetCpus("0-" + (safeCpuCount - 1)));
+                // SQL Server crashes when the visible CPU count is not a power of 2.
+                // With Podman on Linux the cpuset cgroup controller may not be available
+                // (rootless Podman/cgroups v2), so we limit CPU time with NanoCPUs instead.
+                boolean podmanOnLinux = OS.LINUX.isCurrent()
+                        && ContainerRuntimeUtil.detectContainerRuntime(false, true,
+                                ContainerRuntimeUtil.ContainerRuntime.PODMAN,
+                                ContainerRuntimeUtil.ContainerRuntime.DOCKER).isPodman();
+                if (podmanOnLinux) {
+                    int safeCpuCount = Math.min(2, Integer.highestOneBit(Math.max(1,
+                            Runtime.getRuntime().availableProcessors())));
+                    long nanoCpus = safeCpuCount * 1_000_000_000L;
+                    container.withCreateContainerCmdModifier(
+                            cmd -> cmd.getHostConfig().withNanoCPUs(nanoCpus));
+                } else {
+                    int safeCpuCount = Math.min(2, Integer.highestOneBit(Math.max(1,
+                            containerEngineCpuCount())));
+                    String cpusetCpus = "0-" + (safeCpuCount - 1);
+                    container.withCreateContainerCmdModifier(
+                            cmd -> cmd.getHostConfig().withCpusetCpus(cpusetCpus));
+                }
 
                 String effectivePassword = containerConfig.getPassword()
                         .orElse(password.orElse(DEFAULT_DATABASE_STRONG_PASSWORD));
@@ -111,6 +132,19 @@ public class MSSQLDevServicesProcessor {
                         .map(containerAddress -> configurator.composeRunningService(containerAddress, containerConfig));
             }
         });
+    }
+
+    static int containerEngineCpuCount() {
+        try {
+            Info info = DockerClientFactory.lazyClient().infoCmd().exec();
+            Integer ncpu = info == null ? null : info.getNCPU();
+            if (ncpu != null && ncpu > 0) {
+                return ncpu;
+            }
+        } catch (RuntimeException e) {
+            LOG.debug("Unable to determine container engine CPU count; defaulting to 1 CPU", e);
+        }
+        return 1;
     }
 
     private static class QuarkusMSSQLServerContainer extends MSSQLServerContainer implements DatasourceStartable {

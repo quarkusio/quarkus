@@ -21,7 +21,8 @@ public class HttpLoadShedding {
         }
 
         router.route().order(-1_000_000_000).handler(ctx -> {
-            if (detector.isOverloaded() && priority.shedLoad(ctx)) {
+            boolean accepted = detector.tryBeginRequest();
+            if (!accepted && priority.shedLoad(ctx)) {
                 HttpServerResponse response = ctx.response();
                 response.setStatusCode(HttpResponseStatus.SERVICE_UNAVAILABLE.code());
                 response.headers().add(HttpHeaderNames.CONNECTION, "close");
@@ -33,7 +34,10 @@ public class HttpLoadShedding {
                 });
                 response.end();
             } else {
-                detector.requestBegin();
+                // If not accepted but priority says don't shed, force increment for high-priority request
+                if (!accepted) {
+                    detector.requestBegin();
+                }
                 long start = System.nanoTime();
                 ctx.addEndHandler(new Handler<AsyncResult<Void>>() {
                     @Override

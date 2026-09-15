@@ -47,6 +47,26 @@ public class OverloadDetector {
         return currentRequests.get() >= currentLimit;
     }
 
+    /**
+     * Atomically checks if we can accept a new request and increments the counter if so.
+     * This prevents race conditions where multiple threads check isOverloaded() and then
+     * all call requestBegin(), potentially exceeding the limit.
+     *
+     * @return true if the request was accepted (counter incremented), false if overloaded
+     */
+    public boolean tryBeginRequest() {
+        int current;
+        int next;
+        do {
+            current = currentRequests.get();
+            if (current >= currentLimit) {
+                return false;
+            }
+            next = current + 1;
+        } while (!currentRequests.compareAndSet(current, next));
+        return true;
+    }
+
     public void requestBegin() {
         currentRequests.incrementAndGet();
     }

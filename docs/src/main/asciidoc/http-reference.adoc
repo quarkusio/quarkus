@@ -786,6 +786,8 @@ quarkus.http.proxy.trusted-proxies=127.0.0.1 <1>
 ----
 <1> Configure trusted proxy with the IP address `127.0.0.1`. Request headers from any other address are going to be ignored.
 
+NOTE: Specify trusted proxies by IP address, hostname or CIDR notation, without a port. A port appended to an address, such as `127.0.0.1:8084`, is compared with the source port of the connection from the proxy, which is usually ephemeral, so the entry only matches a proxy that connects from a fixed source port, and a warning is logged for it.
+
 Alternatively, in mTLS environments where proxy IP addresses are not stable (e.g., Kubernetes), you can trust a proxy by its TLS client certificate Subject DN.
 The proxy is trusted when its certificate's Subject DN contains all components specified in any configured value.
 For example, `CN=my-proxy,O=MyOrg` matches a certificate with Subject DN `CN=my-proxy,O=MyOrg,C=US`.

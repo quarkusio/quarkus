@@ -97,7 +97,9 @@ public class VertxResteasyReactiveRequestContext extends ResteasyReactiveRequest
                 });
             }
         };
-        request.pause();
+        if (!request.isEnded()) {
+            request.pause();
+        }
     }
 
     @Override
@@ -305,7 +307,9 @@ public class VertxResteasyReactiveRequestContext extends ResteasyReactiveRequest
 
     @Override
     public ServerHttpResponse pauseRequestInput() {
-        request.pause();
+        if (!request.isEnded()) {
+            request.pause();
+        }
         return this;
     }
 
@@ -315,7 +319,9 @@ public class VertxResteasyReactiveRequestContext extends ResteasyReactiveRequest
             continueState = ContinueState.SENT;
             response.writeContinue();
         }
-        request.resume();
+        if (!request.isEnded()) {
+            request.resume();
+        }
         return this;
     }
 

@@ -77,11 +77,9 @@ public class StorkConfigUtil {
     public static ServiceConfiguration buildRegistrarOnlyConfiguration(String serviceRegistrarType, String healthCheckPath) {
         requireRegistrarTypeNotBlank(serviceRegistrarType);
         Map<String, String> parameters = new HashMap<>();
-        Config quarkusConfig = ConfigProvider.getConfig();
         if (healthCheckPath != null && !healthCheckPath.isBlank()) {
-            healthCheckPath = HTTPS + getOrDefaultHost(parameters, quarkusConfig) + ":"
-                    + getOrDefaultPort(parameters, quarkusConfig) + healthCheckPath;
-            parameters.put("health-check-url", healthCheckPath);
+            Config quarkusConfig = ConfigProvider.getConfig();
+            parameters.put("health-check-url", resolveHealthCheckUrl(healthCheckPath, parameters, quarkusConfig));
         }
         StorkServiceRegistrarConfiguration registrar = buildServiceRegistrarConfiguration(serviceRegistrarType, true,
                 parameters);
@@ -108,12 +106,14 @@ public class StorkConfigUtil {
      * and optional health check URL added if the registrar type is not already set.
      * <p>
      * If the registrar is already present, its configuration is reused and only the missing
-     * health check URL may be appended. The registrar is marked as enabled by default unless
-     * specified otherwise.
+     * health check URL may be appended. A {@code health-check-url} already present in the
+     * existing registrar parameters takes precedence over the auto-derived {@code healthCheckUrl}.
+     * The registrar is marked as enabled by default unless specified otherwise.
      *
      * @param serviceRegistrarType the registrar type to set if missing (e.g., "consul"); must not be blank
      * @param serviceConfiguration the existing service configuration to update
-     * @param healthCheckUrl optional full health check URL to add to the parameters
+     * @param healthCheckUrl fallback health check URL, used only when the existing parameters
+     *        do not already contain a {@code health-check-url} entry
      * @return an updated {@link ServiceConfiguration} with type and health check URL as needed
      * @throws IllegalArgumentException if {@code serviceRegistrarType} is null or blank
      */
@@ -125,8 +125,12 @@ public class StorkConfigUtil {
         Map<String, String> parameters = storkServiceRegistrarConfiguration
                 .map(StorkServiceRegistrarConfiguration::parameters)
                 .orElse(new HashMap<>());
+        // Preserve a user-configured health-check-url; only fall back to the auto-derived path
         if (healthCheckUrl != null && !healthCheckUrl.isBlank()) {
-            parameters.put("health-check-url", healthCheckUrl);
+            if (!parameters.containsKey("health-check-url")) {
+                Config quarkusConfig = ConfigProvider.getConfig();
+                parameters.put("health-check-url", resolveHealthCheckUrl(healthCheckUrl, parameters, quarkusConfig));
+            }
         }
         boolean enabled = storkServiceRegistrarConfiguration.map(StorkServiceRegistrarConfiguration::enabled).orElse(true);
         StorkServiceRegistrarConfiguration registrar = buildServiceRegistrarConfiguration(serviceRegistrarType, enabled,
@@ -278,6 +282,22 @@ public class StorkConfigUtil {
         }
 
         return null;
+    }
+
+    /**
+     * Builds a full health-check URL from a relative path, using the management host and port
+     * when the management interface is enabled, or the service registration host and port otherwise.
+     */
+    private static String resolveHealthCheckUrl(String healthCheckPath, Map<String, String> registrarParameters,
+            Config quarkusConfig) {
+        String host = getOrDefaultHost(registrarParameters, quarkusConfig);
+        int port;
+        if (quarkusConfig.getOptionalValue("quarkus.management.enabled", Boolean.class).orElse(false)) {
+            port = quarkusConfig.getOptionalValue("quarkus.management.port", Integer.class).orElse(9000);
+        } else {
+            port = getOrDefaultPort(registrarParameters, quarkusConfig);
+        }
+        return HTTPS + host + ":" + port + healthCheckPath;
     }
 
     public static void requireRegistrarTypeNotBlank(String type) {

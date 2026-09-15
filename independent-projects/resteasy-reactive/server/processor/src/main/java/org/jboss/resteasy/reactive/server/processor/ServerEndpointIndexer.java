@@ -393,7 +393,7 @@ public class ServerEndpointIndexer
                 continue;
             }
             Map<DotName, AnnotationInstance> annotations = new HashMap<>();
-            for (AnnotationInstance i : field.annotations()) {
+            for (AnnotationInstance i : getAnnotationStore().getAnnotations(field)) {
                 annotations.put(i.name(), i);
             }
             ServerIndexedParameter result = extractParameterInfo(currentClassInfo, actualEndpointInfo, null, existingConverters,
@@ -426,8 +426,8 @@ public class ServerEndpointIndexer
 
                 if (SUPPORTED_MULTIPART_FILE_TYPES.contains(field.type().name())) {
                     String name = field.name();
-                    AnnotationInstance restForm = field.annotation(ResteasyReactiveDotNames.REST_FORM_PARAM);
-                    AnnotationInstance formParam = field.annotation(ResteasyReactiveDotNames.FORM_PARAM);
+                    AnnotationInstance restForm = annotations.get(ResteasyReactiveDotNames.REST_FORM_PARAM);
+                    AnnotationInstance formParam = annotations.get(ResteasyReactiveDotNames.FORM_PARAM);
                     if (restForm != null) {
                         AnnotationValue value = restForm.value();
                         if (value != null) {
@@ -663,7 +663,7 @@ public class ServerEndpointIndexer
             return;
         }
         for (MethodInfo method : currentClassInfo.methods()) {
-            for (AnnotationInstance annotation : method.annotations()) {
+            for (AnnotationInstance annotation : getAnnotationStore().getAnnotations(method)) {
                 if (annotation.target().kind() == AnnotationTarget.Kind.METHOD) {
                     for (DotName annotationForField : JAX_RS_ANNOTATIONS_FOR_FIELDS) {
                         if (annotation.name().equals(annotationForField)) {

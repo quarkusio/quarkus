@@ -1,0 +1,12 @@
+plugins {
+    id 'java-library'
+    id 'java-test-fixtures'
+    id 'com.github.vlsi.jandex'
+}
+
+group = 'org.acme.model'
+version = '1.0.0-SNAPSHOT'
+
+jandex {
+    toolVersion = '3.1.0'
+}

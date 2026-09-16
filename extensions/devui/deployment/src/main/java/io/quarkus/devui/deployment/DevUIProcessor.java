@@ -1092,7 +1092,7 @@ public class DevUIProcessor {
 
         for (DevUIWebJarBuildItem devUIWebJarBuiltItem : devUIWebJarBuiltItems) {
             WebJarResultsBuildItem.WebJarResult result = webJarResultsBuildItem
-                    .byArtifactKey(devUIWebJarBuiltItem.getArtifactKey());
+                    .byArtifactKeyAndRoot(devUIWebJarBuiltItem.getArtifactKey(), DEVUI + SLASH);
             if (result != null) {
                 String namespace = getNamespace(devUIWebJarBuiltItem.getArtifactKey());
                 devUIRoutesProducer.produce(new DevUIRoutesBuildItem(namespace, devUIWebJarBuiltItem.getPath(),

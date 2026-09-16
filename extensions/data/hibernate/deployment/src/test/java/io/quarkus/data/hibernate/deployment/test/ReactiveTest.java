@@ -79,7 +79,7 @@ public class ReactiveTest {
 
     @WithTransaction(stateless = true)
     Uni<Void> modifyOneStatelessNoUpdate() {
-        return MyReactiveEntity_.statelessReactive().listAll()
+        return MyReactiveEntity_.recordReactive().listAll()
                 .onItem().invoke(list -> {
                     Assertions.assertEquals(1, list.size());
                     MyReactiveEntity entity = list.get(0);
@@ -92,7 +92,7 @@ public class ReactiveTest {
 
     @WithTransaction(stateless = true)
     Uni<Void> modifyOneStateless() {
-        return MyReactiveEntity_.statelessReactive().listAll()
+        return MyReactiveEntity_.recordReactive().listAll()
                 .flatMap(list -> {
                     Assertions.assertEquals(1, list.size());
                     MyReactiveEntity entity = list.get(0);
@@ -107,7 +107,7 @@ public class ReactiveTest {
 
     @WithTransaction(stateless = true)
     Uni<Void> modifyOneStatelessCheck() {
-        return MyReactiveEntity_.statelessReactive().listAll()
+        return MyReactiveEntity_.recordReactive().listAll()
                 .onItem().invoke(list -> {
                     Assertions.assertEquals(1, list.size());
                     MyReactiveEntity entity = list.get(0);
@@ -118,7 +118,7 @@ public class ReactiveTest {
 
     @WithTransaction(stateless = true)
     Uni<Void> upsertNew() {
-        return MyReactiveEntity_.statelessReactive().count()
+        return MyReactiveEntity_.recordReactive().count()
                 .flatMap(count -> {
                     Assertions.assertEquals(0, count);
 
@@ -128,7 +128,7 @@ public class ReactiveTest {
 
                     return entity.recordReactive().upsert();
                 })
-                .flatMap(v -> MyReactiveEntity_.statelessReactive().count())
+                .flatMap(v -> MyReactiveEntity_.recordReactive().count())
                 .map(count -> {
                     Assertions.assertEquals(1, count);
                     return null;
@@ -137,7 +137,7 @@ public class ReactiveTest {
 
     @WithTransaction(stateless = true)
     Uni<Void> upsertExisting() {
-        return MyReactiveEntity_.statelessReactive().listAll()
+        return MyReactiveEntity_.recordReactive().listAll()
                 .flatMap(list -> {
                     Assertions.assertEquals(1, list.size());
 
@@ -148,7 +148,7 @@ public class ReactiveTest {
 
                     return entity.recordReactive().upsert();
                 })
-                .flatMap(v -> MyReactiveEntity_.statelessReactive().count())
+                .flatMap(v -> MyReactiveEntity_.recordReactive().count())
                 .map(count -> {
                     Assertions.assertEquals(1, count);
                     return null;
@@ -157,7 +157,7 @@ public class ReactiveTest {
 
     @WithTransaction(stateless = true)
     Uni<Void> upsertCheck() {
-        return MyReactiveEntity_.statelessReactive().listAll()
+        return MyReactiveEntity_.recordReactive().listAll()
                 .flatMap(list -> {
                     Assertions.assertEquals(1, list.size());
 
@@ -166,7 +166,7 @@ public class ReactiveTest {
 
                     return entity.recordReactive().upsert();
                 })
-                .flatMap(v -> MyReactiveEntity_.statelessReactive().count())
+                .flatMap(v -> MyReactiveEntity_.recordReactive().count())
                 .map(count -> {
                     Assertions.assertEquals(1, count);
                     return null;
@@ -215,10 +215,10 @@ public class ReactiveTest {
 
     @WithTransaction(stateless = true)
     Uni<Void> repositorySwitchingFromStateless() {
-        return MyReactiveEntity_.statelessReactive().count()
+        return MyReactiveEntity_.recordReactive().count()
                 .flatMap(count -> {
                     Assertions.assertEquals(1L, count);
-                    var statelessRepo = MyReactiveEntity_.statelessReactive();
+                    var statelessRepo = MyReactiveEntity_.recordReactive();
                     Assertions.assertInstanceOf(ReactiveRecordRepositoryBase.class, statelessRepo);
                     var managedRepo = statelessRepo.managedReactive();
                     Assertions.assertInstanceOf(ReactiveManagedRepositoryBase.class, managedRepo);

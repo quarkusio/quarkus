@@ -10,12 +10,12 @@ import io.quarkus.data.hibernate.ManagedEntity;
 @Entity
 public class EntityWithBadRepoNames extends ManagedEntity {
     // These repos lie, they're just here to validate that we don't generate clashing accessors
-    public interface ManagedBlocking {
+    public interface Managed {
         @Find
         List<EntityWithBadRepoNames> all();
     }
 
-    public interface StatelessBlocking {
+    public interface Record {
         @Find
         List<EntityWithBadRepoNames> all();
     }
@@ -25,13 +25,13 @@ public class EntityWithBadRepoNames extends ManagedEntity {
         List<EntityWithBadRepoNames> all();
     }
 
-    public interface StatelessReactive {
+    public interface RecordReactive {
         @Find
         List<EntityWithBadRepoNames> all();
     }
 
     // This forces a rename of the generated repo
-    public interface PanacheStatelessReactiveRepository {
+    public interface QuarkusDataRecordReactiveRepository {
         @Find
         List<EntityWithBadRepoNames> all();
     }

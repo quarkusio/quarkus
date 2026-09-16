@@ -51,7 +51,7 @@ public class LambdaHttpHandlerTest {
                     .orElseThrow(() -> new AssertionError("The request failure was not logged"));
             assertInstanceOf(IllegalStateException.class, failure.getThrown(), failure.getThrown().toString());
             String message = failure.getThrown().getMessage();
-            assertTrue(message.contains("httpMethod"), message);
+            assertTrue(message.contains("Missing HTTP method"), message);
             assertTrue(message.contains("quarkus-amazon-lambda-http"), message);
         } finally {
             jbossLogger.removeHandler(handler);

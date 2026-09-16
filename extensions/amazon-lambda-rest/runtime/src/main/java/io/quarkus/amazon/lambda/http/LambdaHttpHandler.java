@@ -153,13 +153,13 @@ public class LambdaHttpHandler implements RequestHandler<AwsProxyRequest, AwsPro
             Context context)
             throws Exception {
         if (request.getHttpMethod() == null) {
-            throw new IllegalStateException("Missing 'httpMethod' in request event. "
+            throw new IllegalStateException("Missing HTTP method in the request event. "
                     + "quarkus-amazon-lambda-rest expects an API Gateway REST API (payload format 1.0) proxy event "
-                    + "(AwsProxyRequest / APIGatewayProxyRequestEvent). For API Gateway HTTP API events "
-                    + "(payload format 2.0, APIGatewayV2HTTPEvent) use quarkus-amazon-lambda-http instead, "
+                    + "(AwsProxyRequest). For API Gateway HTTP API events (payload format 2.0, APIGatewayV2HTTPEvent) "
+                    + "use quarkus-amazon-lambda-http instead, "
                     + "and make sure that the Lambda proxy integration is enabled");
         }
-        String path = request.getPath() == null ? "/" : request.getPath();
+        String path = request.getPath();
         //log.info("---- Got lambda request: " + path);
         if (request.getMultiValueQueryStringParameters() != null && !request.getMultiValueQueryStringParameters().isEmpty()) {
             StringBuilder sb = new StringBuilder(path);

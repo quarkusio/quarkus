@@ -592,8 +592,10 @@ link:{resteasy-reactive-common-api}/org/jboss/resteasy/reactive/RestForm.html[`@
 while the `file` parameter will contain data about the uploaded file in the `image` part of HTTP request, and
 the `person` parameter will read the `Person` entity using the `JSON` <<json,body reader>>.
 
-The size of every part in a multipart request must conform to the value of `quarkus.http.limits.max-form-attribute-size`, for which the default is 2048 bytes.
-Any request with a part of a size exceeding this configuration will result in HTTP status code 413.
+The size of every non-file part in a multipart request must conform to the value of `quarkus.http.limits.max-form-attribute-size`, for which the default is 2048 bytes.
+File parts are only bounded by `quarkus.http.limits.max-body-size` (the limit for the whole request, 10 MB by default) unless `quarkus.http.limits.max-multipart-file-size` is set, in which case every file part must conform to it individually.
+Any request with a part of a size exceeding these limits will result in HTTP status code 413.
+Note that `quarkus.http.limits.max-body-size` needs to be raised to accept large uploads at all.
 
 NOTE: link:{resteasy-reactive-common-api}/org/jboss/resteasy/reactive/multipart/FileUpload.html[`FileUpload`]
 provides access to various metadata of the uploaded file. If however all you need is a handle to the uploaded file, `java.nio.file.Path` or `java.io.File` could be used.

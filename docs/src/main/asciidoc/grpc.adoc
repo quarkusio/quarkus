@@ -16,7 +16,7 @@ It is also applicable in the last mile of distributed computing to connect devic
 In general, gRPC uses HTTP/2, TLS, and https://developers.google.com/protocol-buffers[Protobuf (Protocol Buffers)].
 In a microservice architecture, gRPC is an efficient, type-safe alternative to HTTP.
 
-The Quarkus gRPC extension integrate gRPC in Quarkus application.
+The Quarkus gRPC extension integrates gRPC in Quarkus applications.
 It:
 
 * supports implementing gRPC services

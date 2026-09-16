@@ -211,7 +211,7 @@ include::{generated-dir}/config/quarkus-grpc_quarkus.grpc.clients.adoc[opts=opti
 
 The `client-name` is the name set in the `@GrpcClient` or derived from the injection point if not explicitly defined.
 
-The following examples uses _hello_ as the client name.
+The following examples use _hello_ as the client name.
 Don't forget to replace it with the name you used in the `@GrpcClient` annotation.
 
 IMPORTANT: When you enable `quarkus.grpc.clients."client-name".xds.enabled`, it's the xDS that should handle most of the configuration above.
@@ -372,7 +372,7 @@ public class MyService {
 <1> Alter the client to make calls with the `extraHeaders` attached
 <2> Perform the call with the altered client. The original client remains unmodified
 
-`GrpcClientUtils` work with all flavors of clients.
+`GrpcClientUtils` works with all flavors of clients.
 
 == Client Interceptors
 

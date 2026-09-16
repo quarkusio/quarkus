@@ -47,12 +47,12 @@ public class QuarkusDataOrmTest {
         Assertions.assertEquals(QuarkusDataBook.MyRepo.class, method.getReturnType());
 
         // Predefined repo accessors
-        method = entityClass.getDeclaredMethod("managedBlocking");
+        method = entityClass.getDeclaredMethod("managed");
         Assertions.assertNotNull(method);
         Assertions.assertTrue(Modifier.isStatic(method.getModifiers()));
         Assertions.assertEquals(QuarkusDataBook.class.getName() + "$MyRepo", method.getReturnType().getName());
 
-        method = entityClass.getDeclaredMethod("statelessBlocking");
+        method = entityClass.getDeclaredMethod("record");
         Assertions.assertNotNull(method);
         Assertions.assertTrue(Modifier.isStatic(method.getModifiers()));
         Assertions.assertEquals(QuarkusDataBook.class.getName() + "$StatelessRepo",
@@ -78,12 +78,12 @@ public class QuarkusDataOrmTest {
         Assertions.assertEquals(QuarkusDataBookCustomId.StatelessQueries.class, method.getReturnType());
 
         // Predefined repo accessors
-        method = entityClass.getDeclaredMethod("managedBlocking");
+        method = entityClass.getDeclaredMethod("managed");
         Assertions.assertNotNull(method);
         Assertions.assertTrue(Modifier.isStatic(method.getModifiers()));
         Assertions.assertEquals(QuarkusDataBookCustomId.ManagedQueries.class, method.getReturnType());
 
-        method = entityClass.getDeclaredMethod("statelessBlocking");
+        method = entityClass.getDeclaredMethod("record");
         Assertions.assertNotNull(method);
         Assertions.assertTrue(Modifier.isStatic(method.getModifiers()));
         Assertions.assertEquals(QuarkusDataBookCustomId.StatelessQueries.class, method.getReturnType());

@@ -312,12 +312,6 @@ public class SmallRyeFaultToleranceProcessor {
                                     "Both @Asynchronous and @AsynchronousNonBlocking present on '" + method + "'"));
                         }
 
-                        if (annotationStore.hasAnnotation(method, DotNames.BLOCKING)
-                                && annotationStore.hasAnnotation(method, DotNames.NON_BLOCKING)) {
-                            exceptions.add(
-                                    new DefinitionException("Both @Blocking and @NonBlocking present on '" + method + "'"));
-                        }
-
                         for (String exceptionConfig : exceptionConfigs) {
                             Optional<String[]> exceptionNames = config.getOptionalValue(beanClass.name().toString()
                                     + "/" + method.name() + "/" + exceptionConfig, String[].class);
@@ -343,11 +337,6 @@ public class SmallRyeFaultToleranceProcessor {
                         && annotationStore.hasAnnotation(beanClass, DotNames.ASYNCHRONOUS_NON_BLOCKING)) {
                     exceptions.add(new DefinitionException(
                             "Both @Asynchronous and @AsynchronousNonBlocking present on '" + beanClass + "'"));
-                }
-
-                if (annotationStore.hasAnnotation(beanClass, DotNames.BLOCKING)
-                        && annotationStore.hasAnnotation(beanClass, DotNames.NON_BLOCKING)) {
-                    exceptions.add(new DefinitionException("Both @Blocking and @NonBlocking present on '" + beanClass + "'"));
                 }
 
                 if (annotationStore.hasAnnotation(beanClass, DotNames.APPLY_GUARD)) {

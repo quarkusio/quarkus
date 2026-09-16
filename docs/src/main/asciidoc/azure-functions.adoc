@@ -137,6 +137,7 @@ https://localhost:8081/HttpExample?name=Bill
 
 You can implement integration tests using `@QuarkusIntegrationTest` functionality.  When these
 integration tests run, the local Azure Functions environment will be spun up for the duration of integration testing.
+The profile set with `quarkus.test.integration-test-profile` is passed to the local Azure Functions environment as the `QUARKUS_PROFILE` environment variable.
 
 [source,bash,subs=attributes+,role="primary asciidoc-tabs-sync-maven"]
 .Maven

@@ -35,6 +35,7 @@ import io.quarkus.deployment.cmd.RunCommandActionResultBuildItem;
 import io.quarkus.deployment.cmd.RunCommandHandler;
 import io.quarkus.runtime.logging.LogRuntimeConfig;
 import io.smallrye.config.SmallRyeConfig;
+import io.smallrye.config.common.utils.StringUtil;
 
 public class RunCommandLauncher implements ArtifactLauncher<ArtifactLauncher.InitContext> {
     private static final Logger log = Logger.getLogger(RunCommandLauncher.class);
@@ -47,11 +48,22 @@ public class RunCommandLauncher implements ArtifactLauncher<ArtifactLauncher.Ini
     private boolean needsLogFile;
     private Path logFilePath;
 
+    private String testProfile;
+
     private final Map<String, String> systemProps = new HashMap<>();
 
     private ExecutorService executorService = Executors.newFixedThreadPool(3);
 
     public static RunCommandLauncher tryLauncher(QuarkusBootstrap bootstrap, String target, Duration waitTime) {
+        return tryLauncher(bootstrap, target, waitTime, null);
+    }
+
+    /**
+     * @param testProfile the integration test profile, passed to the application as the {@code QUARKUS_PROFILE}
+     *        environment variable of the executed command, or {@code null}
+     */
+    public static RunCommandLauncher tryLauncher(QuarkusBootstrap bootstrap, String target, Duration waitTime,
+            String testProfile) {
         Map<String, List> cmds = new HashMap<>();
         try (CuratedApplication curatedApplication = bootstrap.bootstrap()) {
             AugmentAction action = curatedApplication.createAugmentor();
@@ -95,6 +107,7 @@ public class RunCommandLauncher implements ArtifactLauncher<ArtifactLauncher.Ini
         launcher.needsLogFile = (Boolean) cmd.get(3);
         launcher.logFilePath = (Path) cmd.get(4);
         launcher.waitTimeSeconds = waitTime.getSeconds();
+        launcher.testProfile = testProfile;
         return launcher;
     }
 
@@ -129,8 +142,7 @@ public class RunCommandLauncher implements ArtifactLauncher<ArtifactLauncher.Ini
                 log.warnf("Log file %s deletion failed, could happen on Windows, we can carry on.", logFile);
             }
             FileOutputStream logOutputStream = new FileOutputStream(logFile.toFile(), true);
-            quarkusProcess = new ProcessBuilder(args)
-                    .directory(workingDir.toFile())
+            quarkusProcess = newProcessBuilder()
                     .redirectError(PIPE)
                     .redirectOutput(PIPE)
                     .start();
@@ -139,8 +151,7 @@ public class RunCommandLauncher implements ArtifactLauncher<ArtifactLauncher.Ini
             InputStream tee = new TeeInputStream(quarkusProcess.getErrorStream(), System.err);
             executorService.submit(() -> tee.transferTo(logOutputStream));
         } else {
-            quarkusProcess = new ProcessBuilder(args)
-                    .directory(workingDir.toFile())
+            quarkusProcess = newProcessBuilder()
                     .inheritIO()
                     .start();
         }
@@ -160,6 +171,26 @@ public class RunCommandLauncher implements ArtifactLauncher<ArtifactLauncher.Ini
         }
 
         return ListeningAddresses.EMPTY;
+    }
+
+    private ProcessBuilder newProcessBuilder() {
+        ProcessBuilder processBuilder = new ProcessBuilder(args).directory(workingDir.toFile());
+        applyEnvironment(processBuilder.environment(), testProfile, systemProps);
+        return processBuilder;
+    }
+
+    /**
+     * The command is executed by an external tool, so the integration test profile and the additional properties are
+     * passed to the application as environment variables, e.g. {@code quarkus.http.test-port} becomes
+     * {@code QUARKUS_HTTP_TEST_PORT}.
+     */
+    static void applyEnvironment(Map<String, String> environment, String testProfile, Map<String, String> systemProps) {
+        if (testProfile != null && !testProfile.isBlank()) {
+            environment.put("QUARKUS_PROFILE", testProfile);
+        }
+        for (Map.Entry<String, String> entry : systemProps.entrySet()) {
+            environment.put(StringUtil.replaceNonAlphanumericByUnderscores(entry.getKey()).toUpperCase(), entry.getValue());
+        }
     }
 
     public void includeAsSysProps(Map<String, String> systemProps) {

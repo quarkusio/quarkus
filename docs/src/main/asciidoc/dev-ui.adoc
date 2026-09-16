@@ -66,6 +66,9 @@ The *menu* on the left-hand side provides structured access to built-in pages:
 | *Dev Services*
 | Displays information about automatically started services (e.g., databases, Kafka brokers).
 
+| *Observability*
+| A dashboard of telemetry cards you compose yourself: application metrics, plus a card per signal (such as OpenTelemetry traces) contributed by the telemetry extensions in use. Only present when at least one such extension is present.
+
 | *Build Metrics*
 | Provides performance metrics from the last build and reload cycle.
 
@@ -1773,11 +1776,11 @@ Depending on what your action does with the content input, your output might pro
 
 === Observability dashboard
 
-Dev UI has one *Observability* entry in the left menu, and it is a dashboard the user composes:
-they pick the cards they want the first time they open it, change their mind later with
-*Edit dashboard*, and drag the cards into the order that suits them. The choice is kept in the
-browser's local storage rather than per application, so it follows the developer from one
-application to the next.
+As soon as one extension contributes a telemetry signal, Dev UI adds a single *Observability*
+entry to the left menu, and that entry is a dashboard the user composes: they pick the cards they
+want the first time they open it, change their mind later with *Edit dashboard*, and drag the
+cards into the order that suits them. The choice is kept in the browser's local storage rather
+than per application, so it follows the developer from one application to the next.
 
 Extensions contribute to that dashboard in two ways.
 
@@ -1808,9 +1811,9 @@ void tracesPage(BuildProducer<UnlistedPageBuildItem> unlistedPages,
             "spanCount")); // <6>
 }
 ----
-<1> The page that backs the card. An unlisted page is reached from the dashboard rather than
-from your extension's card, but a listed page works just as well - all the dashboard needs is a
-page whose web component it can import.
+<1> The page that backs the card. It has to be an unlisted page: the dashboard resolves the page
+id against the unlisted pages only, and a signal pointing at a card, menu or footer page is
+dropped without an error, leaving you with a signal that never shows up as a card.
 <2> A key unique among all signals. It identifies the card in the stored dashboard, so changing
 it drops the card from dashboards that already have it.
 <3> The title shown on the card and in the picker. Name the backend here, not just the signal:
@@ -1823,26 +1826,43 @@ what metrics does, since it expands into one card per meter instead).
 <6> Optional name of a JSON-RPC method returning a live count. Reserved for a future count on the
 card; pass `null` if you have none.
 
-The card renders your component inline, in a box roughly a third of the page tall, with an *Open*
-link through to the full page. Size the component against its host (`height: 100%`, or a flex
-column) rather than against the viewport, and let it scroll internally - the user can always
-maximize the card to give it the whole dashboard area. Nothing else changes: the component is
-imported only when the card is actually on the dashboard, and its JSON-RPC calls, subscriptions
-and hot reload behave exactly as they do on the full page.
+The card renders your component inline, in a box 320 pixels tall (420 for a card spanning the
+full width), with an *Open* link through to the full page. Size the component against its host
+(`height: 100%`, or a flex column) rather than against the viewport - the card body scrolls what
+does not fit, and the user can always maximize the card to give it the whole dashboard area.
+Nothing else changes: the component is imported only when the card is actually on the dashboard,
+and its JSON-RPC calls, subscriptions and hot reload behave exactly as they do on the full page.
+
+Extend `ObservabilityCardBase` rather than `QwcHotReloadElement` in that component. Core Dev UI
+puts it in the import map under the bare specifier `observability-card-base`; it extends
+`QwcHotReloadElement` itself, so you keep `hotReload()`, and adds the affordances every signal
+component ends up wanting, currently `exportCsv(rows, filename)`:
+
+[source,javascript]
+----
+import { ObservabilityCardBase } from 'observability-card-base';
+
+export class QwcOtelTraces extends ObservabilityCardBase {
+    // ...
+}
+----
 
 ==== Contributing metrics
 
 Meters need no work at all. Every meter registered with Micrometer or with the OpenTelemetry SDK
 is listed in the dashboard's picker automatically, and the dashboard chooses how to draw the ones
-the user adds: a rate for a counter, a dial for a gauge, bucket bars for a histogram, and mean,
-max and percentiles for a timer or a distribution summary. If your extension exposes metrics,
-simply register them as usual.
+the user adds. That choice follows what was actually captured rather than the declared meter
+type: a rate for a counter, a dial for a gauge, and mean and max per interval for a timer or a
+distribution summary, joined by percentiles when the meter publishes them and replaced by bucket
+bars when it publishes a histogram. If your extension exposes metrics, simply register them as
+usual.
 
 Writing a new metrics *backend* is the exception. A backend samples meters into the shared
 `MetricsTimeSeriesStore` and tells the core Dev UI it did so by producing a
-`MetricsBackendBuildItem`; the core then registers the JSON-RPC service and the metrics signal
-once, no matter how many backends are active. See `DevUiMetricsSampler` (Micrometer) and
-`DevUiMetricsExporter` (OpenTelemetry) for the two existing implementations.
+`MetricsBackendBuildItem` naming itself (`new MetricsBackendBuildItem("micrometer")`); the core
+then registers the JSON-RPC service and the metrics signal once, no matter how many backends are
+active. See `DevUiMetricsSampler` (Micrometer) and `DevUiMetricsExporter` (OpenTelemetry) for the
+two existing implementations.
 
 === Advanced: Custom cards
 

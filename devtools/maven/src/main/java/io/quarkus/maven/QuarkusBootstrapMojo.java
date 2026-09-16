@@ -31,9 +31,15 @@ import io.quarkus.maven.components.BootstrapSessionListener;
 import io.quarkus.maven.components.ManifestSection;
 import io.quarkus.maven.dependency.ArtifactKey;
 import io.quarkus.maven.dependency.Dependency;
+import io.quarkus.runtime.JVMUnsafeWarningsControl;
 import io.quarkus.runtime.LaunchMode;
 
 public abstract class QuarkusBootstrapMojo extends AbstractMojo {
+
+    static {
+        // Suppress Unsafe warnings as early as possible, before Maven's Guice dependency triggers them
+        JVMUnsafeWarningsControl.disableUnsafeRelatedWarnings();
+    }
 
     static final String BOOTSTRAP_ID_PARAM = "bootstrapId";
     static final String CLOSE_BOOTSTRAPPED_APP_PARAM = "closeBootstrappedApp";

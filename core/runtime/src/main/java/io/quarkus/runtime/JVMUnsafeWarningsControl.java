@@ -24,14 +24,31 @@ public final class JVMUnsafeWarningsControl {
             MethodHandles.Lookup lookup = MethodHandles.privateLookupIn(
                     unsafeClass,
                     MethodHandles.lookup());
-            MethodHandle trySetMemoryAccessWarned = lookup.findStatic(
-                    unsafeClass,
-                    "trySetMemoryAccessWarned",
-                    MethodType.methodType(boolean.class));
-            @SuppressWarnings("unused")
-            boolean unused = (boolean) trySetMemoryAccessWarned.invokeExact();
+
+            // Suppress memory access warnings
+            tryInvokeWarningSuppressionMethod(lookup, unsafeClass, "trySetMemoryAccessWarned");
+
+            // Suppress field offset access warnings (staticFieldBase, staticFieldOffset)
+            // Available in Java 25+
+            tryInvokeWarningSuppressionMethod(lookup, unsafeClass, "trySetAccessFieldOffsetWarned");
         } catch (Throwable e) {
             //let's ignore it - if we failed with our horrible hack, worst that could happen is that the ugly warning is printed
+        }
+    }
+
+    private static void tryInvokeWarningSuppressionMethod(MethodHandles.Lookup lookup, Class<?> unsafeClass,
+            String methodName) {
+        try {
+            MethodHandle method = lookup.findStatic(
+                    unsafeClass,
+                    methodName,
+                    MethodType.methodType(boolean.class));
+            @SuppressWarnings("unused")
+            boolean unused = (boolean) method.invokeExact();
+        } catch (NoSuchMethodException e) {
+            // Method not available in this JDK version, ignore
+        } catch (Throwable e) {
+            // Some other error, ignore as well
         }
     }
 }

@@ -3,7 +3,10 @@ package io.quarkus.aesh.ssh.deployment;
 import java.io.ByteArrayOutputStream;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
+import java.time.temporal.ChronoUnit;
 
+import io.quarkus.test.QuarkusExtensionTest;
 import org.aesh.command.Command;
 import org.aesh.command.CommandDefinition;
 import org.aesh.command.CommandResult;
@@ -12,10 +15,9 @@ import org.apache.sshd.client.SshClient;
 import org.apache.sshd.client.channel.ChannelShell;
 import org.apache.sshd.client.session.ClientSession;
 import org.assertj.core.api.Assertions;
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
-
-import io.quarkus.test.QuarkusUnitTest;
 
 /**
  * Verifies that sending commands resets the idle timeout timer,
@@ -24,7 +26,7 @@ import io.quarkus.test.QuarkusUnitTest;
 public class AeshSshIdleActivityResetTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot(jar -> jar.addClasses(HelloCommand.class))
             .overrideConfigKey("quarkus.aesh.ssh.port", "12237")
             .overrideConfigKey("quarkus.http.test-port", "0")
@@ -66,23 +68,25 @@ public class AeshSshIdleActivityResetTest {
                         pipedIn.flush();
                     }
 
-                    // Wait a bit for the last response
-                    Thread.sleep(500);
-                    String output = responseStream.toString(StandardCharsets.UTF_8);
+                    // poll for at most the idle duration, after 2 seconds we have less then 4 or connection closed
+                    Awaitility.waitAtMost(Duration.of(2, ChronoUnit.SECONDS))
+                            .untilAsserted(() -> {
+                                String output = responseStream.toString(StandardCharsets.UTF_8);
 
-                    // The session should still be alive and have received all responses.
-                    // If idle timeout wasn't reset, the connection would have been dropped
-                    // after ~2s and we'd see "Connection closed" or fewer "Hello!" responses.
-                    long helloCount = output.lines()
-                            .filter(line -> line.contains("Hello!"))
-                            .count();
-                    Assertions.assertThat(helloCount)
-                            .as("All 4 hello commands should have produced output (activity resets idle timer)")
-                            .isGreaterThanOrEqualTo(4);
+                                // The session should still be alive and have received all responses.
+                                // If idle timeout wasn't reset, the connection would have been dropped
+                                // after ~2s and we'd see "Connection closed" or fewer "Hello!" responses.
+                                long helloCount = output.lines()
+                                        .filter(line -> line.contains("Hello!"))
+                                        .count();
+                                Assertions.assertThat(helloCount)
+                                        .as("All 4 hello commands should have produced output (activity resets idle timer)")
+                                        .isGreaterThanOrEqualTo(4);
 
-                    Assertions.assertThat(channel.isOpen())
-                            .as("Channel should still be open after continuous activity")
-                            .isTrue();
+                                Assertions.assertThat(channel.isOpen())
+                                        .as("Channel should still be open after continuous activity")
+                                        .isTrue();
+                            });
                 }
             } finally {
                 client.stop();

@@ -1,6 +1,8 @@
 package io.quarkus.micrometer.deployment.binder;
 
 import java.net.URI;
+import java.util.Collection;
+import java.util.List;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
 
@@ -17,6 +19,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Timer;
 import io.quarkus.micrometer.test.Util;
 import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.common.http.TestHTTPResource;
@@ -45,11 +48,27 @@ public class UriTagWebSocketWithHttpRootTest {
     @Test
     public void upgradeRequestsAreTaggedWithThePathTemplate() throws Exception {
         Assertions.assertEquals("hello alice", greet("alice"));
+        Assertions.assertEquals("hello bob", greet("bob"));
 
-        Util.waitForMeters(registry.find("http.server.requests").timers(), 1);
+        for (int i = 0; i < 200 && registry.find("http.server.requests").tag("uri", "/ws/{name}").timers().isEmpty(); i++) {
+            Thread.sleep(50);
+        }
 
-        Assertions.assertEquals(1, registry.find("http.server.requests").tag("uri", "/ws/{name}").timers().size(),
+        Collection<Timer> templated = registry.find("http.server.requests").tag("uri", "/ws/{name}").timers();
+        Assertions.assertEquals(1, templated.size(),
                 Util.foundServerRequests(registry, "The WebSocket endpoint template (/ws/{name}) should be used"));
+
+        Timer timer = templated.iterator().next();
+        Assertions.assertEquals(2, timer.count(),
+                Util.foundServerRequests(registry, "Both upgrades should accumulate into the one templated timer"));
+        Assertions.assertEquals("GET", timer.getId().getTag("method"));
+        Assertions.assertEquals("101", timer.getId().getTag("status"));
+        Assertions.assertEquals("INFORMATIONAL", timer.getId().getTag("outcome"));
+
+        for (String notExpected : List.of("/foo/ws/{name}", "/ws/alice", "/ws/bob", "/foo/ws/alice")) {
+            Assertions.assertEquals(0, registry.find("http.server.requests").tag("uri", notExpected).timers().size(),
+                    Util.foundServerRequests(registry, "No timer should be tagged uri=" + notExpected));
+        }
     }
 
     private String greet(String name) throws Exception {

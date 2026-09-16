@@ -1,6 +1,7 @@
 package io.quarkus.oidc.runtime;
 
 import static io.quarkus.oidc.runtime.OidcUtils.validateAndCreateIdentity;
+import static io.quarkus.oidc.runtime.TenantContextFactory.getConfigPropertyForTenant;
 import static io.quarkus.vertx.http.runtime.security.HttpSecurityUtils.getRoutingContextAttribute;
 
 import java.security.NoSuchAlgorithmException;
@@ -356,6 +357,31 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
                                     throw new AuthenticationFailedException(Map.of(
                                             OidcConstants.ACCESS_TOKEN_VALUE, request.getToken().getToken(),
                                             OidcConstants.USE_DPOP_NONCE, Boolean.TRUE));
+                                }
+                            }
+
+                            long proofIat = proofClaims.getLong(Claims.iat.name());
+                            final long nowSecs = System.currentTimeMillis() / 1000;
+                            final int lifespanGrace = resolvedContext.oidcConfig().token().lifespanGrace().orElse(0);
+
+                            if (proofIat > nowSecs + lifespanGrace) {
+                                LOG.warn("DPoP proof iat claim is in the future");
+                                throw new AuthenticationFailedException(invalidDPoPProofMap(request.getToken()));
+                            }
+
+                            if (nowSecs - proofIat > resolvedContext.oidcConfig().dpop().proofAge().toSeconds()
+                                    + lifespanGrace) {
+                                LOG.debugf("DPoP proof age exceeds the configured '%s' plus lifespan grace",
+                                        getConfigPropertyForTenant(resolvedContext.oidcConfig().tenantId().get(),
+                                                "dpop.proof-age"));
+                                throw new AuthenticationFailedException(invalidDPoPProofMap(request.getToken()));
+                            }
+
+                            if (proofClaims.containsKey(Claims.exp.name())) {
+                                long proofExp = proofClaims.getLong(Claims.exp.name());
+                                if (nowSecs > proofExp + lifespanGrace) {
+                                    LOG.debug("DPoP proof has expired");
+                                    throw new AuthenticationFailedException(invalidDPoPProofMap(request.getToken()));
                                 }
                             }
 

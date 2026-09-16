@@ -332,6 +332,15 @@ public class VertxResteasyReactiveRequestContext extends ResteasyReactiveRequest
             callback.done();
             return this;
         }
+        /*
+         * The request can have been read already without its body being buffered in the routing context, by a route
+         * that consumed it before handing the request over. There is nothing left to read, and neither the data
+         * handler nor the end handler registered below would ever be called, so the read is completed right away.
+         */
+        if (request.isEnded()) {
+            callback.done();
+            return this;
+        }
         request.pause();
         if (continueState == ContinueState.REQUIRED) {
             continueState = ContinueState.SENT;

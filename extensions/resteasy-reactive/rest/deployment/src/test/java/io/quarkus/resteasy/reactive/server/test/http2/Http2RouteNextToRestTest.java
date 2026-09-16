@@ -1,10 +1,14 @@
 package io.quarkus.resteasy.reactive.server.test.http2;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 
@@ -32,14 +36,21 @@ public class Http2RouteNextToRestTest {
 
     @RegisterExtension
     static final QuarkusExtensionTest test = new QuarkusExtensionTest()
-            .withApplicationRoot((jar) -> jar.addClasses(HelloResource.class, ForwardingRoute.class));
+            .withApplicationRoot((jar) -> jar.addClasses(HelloResource.class, ForwardingRoute.class,
+                    StreamResource.class));
+
+    @Inject
+    Vertx vertx;
 
     @TestHTTPResource("/hello")
     URL url;
 
+    @TestHTTPResource("/stream")
+    URL streamUrl;
+
     @Test
     public void http2ClearTextUpgrade() throws Exception {
-        HttpResponse<Buffer> response = post(new WebClientOptions()
+        HttpResponse<Buffer> response = post(url, new WebClientOptions()
                 .setProtocolVersion(HttpVersion.HTTP_2)
                 .setHttp2ClearTextUpgrade(true));
         Assertions.assertEquals(HttpVersion.HTTP_2, response.version());
@@ -49,7 +60,7 @@ public class Http2RouteNextToRestTest {
 
     @Test
     public void http2ClearTextPriorKnowledge() throws Exception {
-        HttpResponse<Buffer> response = post(new WebClientOptions()
+        HttpResponse<Buffer> response = post(url, new WebClientOptions()
                 .setProtocolVersion(HttpVersion.HTTP_2)
                 .setHttp2ClearTextUpgrade(false));
         Assertions.assertEquals(HttpVersion.HTTP_2, response.version());
@@ -59,18 +70,41 @@ public class Http2RouteNextToRestTest {
 
     @Test
     public void http11() throws Exception {
-        HttpResponse<Buffer> response = post(new WebClientOptions().setProtocolVersion(HttpVersion.HTTP_1_1));
+        HttpResponse<Buffer> response = post(url, new WebClientOptions().setProtocolVersion(HttpVersion.HTTP_1_1));
         Assertions.assertEquals(200, response.statusCode());
         Assertions.assertEquals("hello juan", response.bodyAsString());
     }
 
-    private HttpResponse<Buffer> post(WebClientOptions options) throws ExecutionException, InterruptedException {
-        Vertx vertx = Vertx.vertx();
+    @Test
+    public void http2StreamWithoutBody() throws Exception {
+        HttpResponse<Buffer> response = post(streamUrl, new WebClientOptions()
+                .setProtocolVersion(HttpVersion.HTTP_2)
+                .setHttp2ClearTextUpgrade(false), Buffer.buffer());
+        Assertions.assertEquals(HttpVersion.HTTP_2, response.version());
+        Assertions.assertEquals(200, response.statusCode());
+        Assertions.assertEquals("read 0", response.bodyAsString());
+    }
+
+    @Test
+    public void http11StreamWithoutBody() throws Exception {
+        HttpResponse<Buffer> response = post(streamUrl,
+                new WebClientOptions().setProtocolVersion(HttpVersion.HTTP_1_1), Buffer.buffer());
+        Assertions.assertEquals(200, response.statusCode());
+        Assertions.assertEquals("read 0", response.bodyAsString());
+    }
+
+    private HttpResponse<Buffer> post(URL target, WebClientOptions options)
+            throws ExecutionException, InterruptedException {
+        return post(target, options, Buffer.buffer("juan"));
+    }
+
+    private HttpResponse<Buffer> post(URL target, WebClientOptions options, Buffer body)
+            throws ExecutionException, InterruptedException {
+        CompletableFuture<HttpResponse<Buffer>> result = new CompletableFuture<>();
+        WebClient client = WebClient.create(vertx, options);
         try {
-            CompletableFuture<HttpResponse<Buffer>> result = new CompletableFuture<>();
-            WebClient.create(vertx, options)
-                    .post(url.getPort(), url.getHost(), url.getPath())
-                    .sendBuffer(Buffer.buffer("juan"))
+            client.post(target.getPort(), target.getHost(), target.getPath())
+                    .sendBuffer(body)
                     .onComplete(ar -> {
                         if (ar.succeeded()) {
                             result.complete(ar.result());
@@ -80,7 +114,7 @@ public class Http2RouteNextToRestTest {
                     });
             return result.get();
         } finally {
-            vertx.close();
+            client.close();
         }
     }
 
@@ -90,6 +124,15 @@ public class Http2RouteNextToRestTest {
         @POST
         public String post(String body) {
             return "hello " + body;
+        }
+    }
+
+    @Path("/stream")
+    public static class StreamResource {
+
+        @POST
+        public String post(InputStream body) throws IOException {
+            return "read " + new String(body.readAllBytes(), StandardCharsets.UTF_8).length();
         }
     }
 

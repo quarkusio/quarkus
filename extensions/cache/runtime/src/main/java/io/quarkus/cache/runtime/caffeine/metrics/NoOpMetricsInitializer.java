@@ -18,7 +18,7 @@ public class NoOpMetricsInitializer implements MetricsInitializer {
     }
 
     @Override
-    public void recordMetrics(AsyncCache<Object, Object> cache, String cacheName) {
+    public void recordMetrics(AsyncCache<Object, ?> cache, String cacheName) {
         LOGGER.tracef("Initializing no-op metrics for cache [%s]", cacheName);
         // Do nothing more.
     }

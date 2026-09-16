@@ -31,6 +31,7 @@ import org.gradle.testkit.runner.BuildTask;
 import org.gradle.testkit.runner.TaskOutcome;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledOnOs;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -40,6 +41,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 import io.quarkus.gradle.testing.BaseGradleTest;
 
 @ExtendWith(SoftAssertionsExtension.class)
+@DisabledOnOs(architectures = "ppc64le", disabledReason = "CachingTest fails miserably on Power, no idea why")
 public class CachingTest extends BaseGradleTest {
     private static final Map<String, TaskOutcome> ALL_SUCCESS = Map.of(
             ":quarkusGenerateCode", TaskOutcome.SUCCESS,

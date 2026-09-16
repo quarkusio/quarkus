@@ -212,7 +212,7 @@ final class PersistenceUnitProcessor {
 
     // --- Static init and runtime bootstrap ---
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({ "unchecked", "deprecation" })
     @BuildStep
     @Record(STATIC_INIT)
     public void build(RecorderContext recorderContext, HibernateOrmRecorder recorder,
@@ -288,6 +288,7 @@ final class PersistenceUnitProcessor {
         }
     }
 
+    @SuppressWarnings("deprecation")
     @BuildStep
     @Consume(RecorderBeanInitializedBuildItem.class)
     @Record(RUNTIME_INIT)

@@ -43,10 +43,10 @@ import io.quarkus.hibernate.orm.runtime.cache.QuarkusPersistenceUnitCacheConfigu
 import io.quarkus.hibernate.orm.runtime.cache.QuarkusPersistenceUnitCaffeineCacheManager;
 import io.quarkus.hibernate.orm.runtime.config.DatabaseOrmCompatibilityVersion;
 import io.quarkus.hibernate.orm.runtime.integration.HibernateOrmIntegrationRuntimeDescriptor;
-import io.quarkus.hibernate.orm.runtime.integration.HibernateOrmIntegrationRuntimeInitListener;
 import io.quarkus.hibernate.orm.runtime.migration.MultiTenancyStrategy;
 import io.quarkus.hibernate.orm.runtime.recording.PrevalidatedQuarkusMetadata;
 import io.quarkus.hibernate.orm.runtime.recording.RecordedState;
+import io.quarkus.hibernate.orm.runtime.spi.HibernateOrmIntegrationRuntimeInitListener;
 
 /**
  * This can not inherit from HibernatePersistenceProvider as that would force

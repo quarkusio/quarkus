@@ -125,13 +125,57 @@ public class VertxCertificateHolder implements TlsConfiguration {
         };
     }
 
+    /**
+     * Checks if a key exchange group is a PQC-capable (post-quantum cryptography) group.
+     *
+     * @param group the key exchange group name
+     * @return true if the group is PQC-capable
+     */
+    private static boolean isPqcCapableGroup(String group) {
+        String normalized = group.toLowerCase().trim();
+        return normalized.equals("x25519mlkem768")
+                || normalized.equals("secp256r1mlkem768")
+                || normalized.equals("secp384r1mlkem1024");
+    }
+
     private synchronized void populateCommonSSLOptions(SSLOptions options) {
         options.setKeyCertOptions(getKeyStoreOptions());
         options.setTrustOptions(getTrustStoreOptions());
         options.setUseAlpn(config().alpn());
+
         if (config().keyExchangeGroups().isPresent()) {
-            options.setKeyExchangeGroups(config().keyExchangeGroups().get());
+            List<String> configuredGroups = config().keyExchangeGroups().get();
+            PqcEnforcementPolicy policy = config().pqcEnforcementPolicy();
+
+            // For STRICT policy, filter out non-PQC groups
+            if (policy == PqcEnforcementPolicy.STRICT) {
+                List<String> pqcOnlyGroups = configuredGroups.stream()
+                        .filter(VertxCertificateHolder::isPqcCapableGroup)
+                        .toList();
+
+                List<String> filteredOutGroups = configuredGroups.stream()
+                        .filter(group -> !isPqcCapableGroup(group))
+                        .toList();
+
+                if (!filteredOutGroups.isEmpty()) {
+                    LOGGER.warnf("TLS bucket '%s' configures non-PQC key exchange groups %s with 'strict' enforcement policy. "
+                            + "These groups have been filtered out because 'strict' policy requires PQC-capable groups only. "
+                            + "Only the following PQC-capable groups will be used: %s. "
+                            + "To allow classical key exchange as a fallback, use 'client-negotiated' policy instead.",
+                            name, filteredOutGroups,
+                            pqcOnlyGroups.isEmpty() ? "none (will use Vert.x PQC defaults)" : pqcOnlyGroups);
+                }
+
+                // Set the filtered groups, or don't set if empty (let Vert.x use PQC defaults)
+                if (!pqcOnlyGroups.isEmpty()) {
+                    options.setKeyExchangeGroups(pqcOnlyGroups);
+                }
+            } else {
+                // For CLIENT_NEGOTIATED and RELAXED, use groups as-is
+                options.setKeyExchangeGroups(configuredGroups);
+            }
         }
+
         options.setPqcEnforcementPolicy(toVertxPqcPolicy(config().pqcEnforcementPolicy()));
 
         if (config().keyExchangeGroups().isPresent()

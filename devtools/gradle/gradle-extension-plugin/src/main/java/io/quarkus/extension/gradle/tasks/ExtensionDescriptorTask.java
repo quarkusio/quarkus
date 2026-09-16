@@ -26,6 +26,7 @@ import org.gradle.api.artifacts.ResolvedArtifact;
 import org.gradle.api.file.FileCollection;
 import org.gradle.api.tasks.Classpath;
 import org.gradle.api.tasks.Input;
+import org.gradle.api.tasks.InputFile;
 import org.gradle.api.tasks.InputFiles;
 import org.gradle.api.tasks.Optional;
 import org.gradle.api.tasks.OutputFile;
@@ -37,6 +38,7 @@ import org.gradle.work.DisableCachingByDefault;
 
 import io.quarkus.bootstrap.BootstrapConstants;
 import io.quarkus.bootstrap.model.ApplicationModelBuilder;
+import io.quarkus.devtools.messagewriter.MessageWriter;
 import io.quarkus.devtools.project.extensions.ScmInfoProvider;
 import io.quarkus.extension.gradle.QuarkusExtensionConfiguration;
 import io.quarkus.extension.gradle.dsl.Capability;
@@ -45,6 +47,7 @@ import io.quarkus.fs.util.ZipUtils;
 import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.maven.dependency.ArtifactKey;
 import io.quarkus.maven.dependency.GACT;
+import io.quarkus.platform.tools.ExtensionCategoryChecker;
 import io.quarkus.platform.tools.ExtensionMetadataValidator;
 import tools.jackson.core.util.DefaultIndenter;
 import tools.jackson.core.util.DefaultPrettyPrinter;
@@ -140,6 +143,13 @@ public class ExtensionDescriptorTask extends DefaultTask {
     @Optional
     public String getRequiresQuarkusCore() {
         return quarkusExtensionConfiguration.getRequiresQuarkusCore().getOrNull();
+    }
+
+    @InputFile
+    @Optional
+    @PathSensitive(PathSensitivity.ABSOLUTE)
+    public String getLocalPlatformOverridesFile() {
+        return quarkusExtensionConfiguration.getLocalPlatformOverridesFile().getOrNull();
     }
 
     @Input
@@ -329,6 +339,50 @@ public class ExtensionDescriptorTask extends DefaultTask {
         }
     }
 
+    private void warnAboutUnknownCategories(ObjectNode extObject) {
+        String localPlatformOverridesFile = getLocalPlatformOverridesFile();
+        final ExtensionCategoryChecker categoryChecker;
+        try {
+            categoryChecker = localPlatformOverridesFile == null
+                    ? new ExtensionCategoryChecker(new TaskLogMessageWriter())
+                    : new ExtensionCategoryChecker(Path.of(localPlatformOverridesFile), new TaskLogMessageWriter());
+        } catch (IOException e) {
+            throw new GradleException("Failed to parse " + localPlatformOverridesFile, e);
+        }
+        for (String unknown : categoryChecker.findUnknownCategories(extObject)) {
+            getLogger().warn(ExtensionCategoryChecker.warningFor(unknown)
+                    + " Consider using one of the existing categories (run `quarkus ext categories` to see the categories in the recommended platform). You can also propose adding the ' "
+                    + unknown + "' category. See the extension metadata documentation for instructions.");
+        }
+    }
+
+    private final class TaskLogMessageWriter implements MessageWriter {
+        @Override
+        public void info(String msg) {
+            getLogger().info(msg);
+        }
+
+        @Override
+        public void error(String msg) {
+            getLogger().error(msg);
+        }
+
+        @Override
+        public boolean isDebugEnabled() {
+            return getLogger().isDebugEnabled();
+        }
+
+        @Override
+        public void debug(String msg) {
+            getLogger().debug(msg);
+        }
+
+        @Override
+        public void warn(String msg) {
+            getLogger().warn(msg);
+        }
+    }
+
     private static void setConditionalDepsProperty(String propName, List<String> conditionalDependencies, Properties props) {
         if (conditionalDependencies != null && !conditionalDependencies.isEmpty()) {
             final StringBuilder buf = new StringBuilder();
@@ -368,6 +422,7 @@ public class ExtensionDescriptorTask extends DefaultTask {
         } catch (IOException e) {
             throw new GradleException(e.getMessage(), e.getCause());
         }
+        warnAboutUnknownCategories(extObject);
 
         final DefaultPrettyPrinter prettyPrinter = new DefaultPrettyPrinter();
         prettyPrinter.indentArraysWith(DefaultIndenter.SYSTEM_LINEFEED_INSTANCE);

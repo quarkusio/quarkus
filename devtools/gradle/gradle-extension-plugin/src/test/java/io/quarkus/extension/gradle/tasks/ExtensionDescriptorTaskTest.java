@@ -36,6 +36,14 @@ public class ExtensionDescriptorTaskTest {
         File settingFile = new File(testProjectDir, "settings.gradle");
         String settingsContent = "rootProject.name = 'test'";
         TestUtils.writeFile(settingFile, settingsContent);
+
+        // Disable the registry-client fallback used to resolve known extension categories when no local
+        // localPlatformOverridesFile is configured, so these tests never depend on network access. Using org.gradle.jvmargs
+        // (rather than systemProp) matters here: it's part of the Gradle daemon's compatibility fingerprint, so
+        // it reliably forces a daemon with this property already set, instead of racing against whichever
+        // (possibly already-initialized) daemon TestKit happens to reuse across test methods.
+        TestUtils.writeFile(new File(testProjectDir, "gradle.properties"),
+                "org.gradle.jvmargs=-DquarkusRegistryClient=false\n");
     }
 
     @Test
@@ -206,6 +214,56 @@ public class ExtensionDescriptorTaskTest {
         assertThat(result.task(":extensionDescriptor").getOutcome()).isEqualTo(TaskOutcome.FAILED);
         assertThat(result.getOutput()).contains("Invalid quarkus-extension.yaml metadata");
         assertThat(result.getOutput()).contains("status");
+    }
+
+    @Test
+    public void shouldWarnOnUnknownCategory() throws IOException {
+        File localPlatformOverridesFile = new File(testProjectDir, "catalog-overrides.json");
+        TestUtils.writeFile(localPlatformOverridesFile, "{\"categories\":[{\"id\":\"web\"}]}");
+
+        String localPlatformOverridesPath = localPlatformOverridesFile.getAbsolutePath().replace('\\', '/');
+        TestUtils.writeFile(buildFile, TestUtils.getDefaultGradleBuildFileContent(true, Collections.emptyList(),
+                "localPlatformOverridesFile = '" + localPlatformOverridesPath + "'\n"));
+        File metaInfDir = new File(testProjectDir, "src/main/resources/META-INF");
+        metaInfDir.mkdirs();
+        String descriptor = "name: extension-name\n" +
+                "metadata:\n" +
+                "  categories:\n" +
+                "  - web\n" +
+                "  - not-a-real-category\n";
+        TestUtils.writeFile(new File(metaInfDir, "quarkus-extension.yaml"), descriptor);
+
+        BuildResult result = GradleRunner.create()
+                .withPluginClasspath()
+                .withProjectDir(testProjectDir)
+                .withArguments("extensionDescriptor")
+                .build();
+
+        assertThat(result.task(":extensionDescriptor").getOutcome()).isEqualTo(TaskOutcome.SUCCESS);
+        assertThat(result.getOutput()).contains("not-a-real-category");
+    }
+
+    @Test
+    public void shouldNotWarnWhenNoCategoryDataIsAvailable() throws IOException {
+        // localPlatformOverridesFile is intentionally left unset, and the registry-client fallback is disabled in
+        // setupProject(), so no known categories are available at all
+        TestUtils.writeFile(buildFile, TestUtils.getDefaultGradleBuildFileContent(true, Collections.emptyList(), ""));
+        File metaInfDir = new File(testProjectDir, "src/main/resources/META-INF");
+        metaInfDir.mkdirs();
+        String descriptor = "name: extension-name\n" +
+                "metadata:\n" +
+                "  categories:\n" +
+                "  - not-a-real-category\n";
+        TestUtils.writeFile(new File(metaInfDir, "quarkus-extension.yaml"), descriptor);
+
+        BuildResult result = GradleRunner.create()
+                .withPluginClasspath()
+                .withProjectDir(testProjectDir)
+                .withArguments("extensionDescriptor")
+                .build();
+
+        assertThat(result.task(":extensionDescriptor").getOutcome()).isEqualTo(TaskOutcome.SUCCESS);
+        assertThat(result.getOutput()).doesNotContain("not-a-real-category");
     }
 
     @Test

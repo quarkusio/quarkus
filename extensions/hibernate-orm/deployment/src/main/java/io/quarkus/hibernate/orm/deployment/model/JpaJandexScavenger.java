@@ -1,4 +1,4 @@
-package io.quarkus.hibernate.orm.deployment;
+package io.quarkus.hibernate.orm.deployment.model;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -37,6 +37,8 @@ import io.quarkus.builder.BuildException;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.builditem.HotDeploymentWatchedFileBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
+import io.quarkus.hibernate.orm.deployment.ClassNames;
+import io.quarkus.hibernate.orm.deployment.JpaModelBuildItem;
 import io.quarkus.hibernate.orm.deployment.xml.QuarkusMappingFileParser;
 import io.quarkus.hibernate.orm.runtime.boot.xml.RecordableXmlMapping;
 import io.quarkus.runtime.configuration.ConfigurationException;
@@ -65,7 +67,7 @@ public final class JpaJandexScavenger {
     private final IndexView index;
     private final Set<String> ignorableNonIndexedClasses;
 
-    JpaJandexScavenger(BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
+    public JpaJandexScavenger(BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<HotDeploymentWatchedFileBuildItem> hotDeploymentWatchedFiles,
             List<JpaModelPersistenceUnitContributionBuildItem> persistenceUnitContributions,
             IndexView index,
@@ -77,7 +79,7 @@ public final class JpaJandexScavenger {
         this.ignorableNonIndexedClasses = ignorableNonIndexedClasses;
     }
 
-    Collector collectModel() throws BuildException {
+    public Collector collectModel() throws BuildException {
         Collector collector = new Collector();
 
         for (DotName packageAnnotation : ClassNames.PACKAGE_ANNOTATIONS) {
@@ -105,7 +107,7 @@ public final class JpaJandexScavenger {
         return collector;
     }
 
-    JpaModelBuildItem buildModelFromCollector(Collector collector) {
+    public JpaModelBuildItem buildModelFromCollector(Collector collector) {
         Set<String> managedClassNames = new HashSet<>(collector.entityTypes);
         managedClassNames.addAll(collector.modelTypes);
         reflectiveClass.produce(ReflectiveClassBuildItem.builder(managedClassNames).methods().fields().build());
@@ -626,14 +628,14 @@ public final class JpaJandexScavenger {
         return className.startsWith("java.");
     }
 
-    static class Collector {
-        final Set<String> packages = new HashSet<>();
-        final Set<String> entityTypes = new HashSet<>();
-        final Set<DotName> potentialCdiBeanTypes = new HashSet<>();
-        final Set<String> modelTypes = new HashSet<>();
-        final Set<String> enumTypes = new HashSet<>();
-        final Set<String> javaTypes = new HashSet<>();
-        final Set<DotName> unindexedClasses = new HashSet<>();
-        final Map<String, List<RecordableXmlMapping>> xmlMappingsByPU = new HashMap<>();
+    public static class Collector {
+        public final Set<String> packages = new HashSet<>();
+        public final Set<String> entityTypes = new HashSet<>();
+        public final Set<DotName> potentialCdiBeanTypes = new HashSet<>();
+        public final Set<String> modelTypes = new HashSet<>();
+        public final Set<String> enumTypes = new HashSet<>();
+        public final Set<String> javaTypes = new HashSet<>();
+        public final Set<DotName> unindexedClasses = new HashSet<>();
+        public final Map<String, List<RecordableXmlMapping>> xmlMappingsByPU = new HashMap<>();
     }
 }

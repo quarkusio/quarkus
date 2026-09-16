@@ -53,11 +53,12 @@ CardPageBuildItem devUI() {
 }
 ```
 
-Register the JSON-RPC provider in a separate build step. This does not need the
-`IsDevelopment` guard because the build item is only consumed in dev mode:
+Register the JSON-RPC provider in a separate build step. This one must **not**
+be gated: it is also used to discover valid usages of execution model affecting
+annotations, which happens outside dev mode.
 
 ```java
-import io.quarkus.devui.spi.JsonRPCProvidersBuildItem;
+import io.quarkus.devjsonrpc.spi.JsonRPCProvidersBuildItem;
 
 @BuildStep
 JsonRPCProvidersBuildItem jsonRpcProvider() {
@@ -70,9 +71,12 @@ JsonRPCProvidersBuildItem jsonRpcProvider() {
 ```xml
 <dependency>
     <groupId>io.quarkus</groupId>
-    <artifactId>quarkus-devui-spi</artifactId>
+    <artifactId>quarkus-devui-deployment-spi</artifactId>
 </dependency>
 ```
+
+That brings in `quarkus-devjsonrpc-deployment-spi` transitively, which is where
+`JsonRPCProvidersBuildItem` lives.
 
 ## Runtime JSON-RPC Service
 
@@ -161,8 +165,9 @@ public class MyFeatureDevUITest extends DevUIJsonRPCTest {
 
 ## Key Rules
 
-- **Correct imports:** `CardPageBuildItem` is in `io.quarkus.devui.spi.page`,
-  `JsonRPCProvidersBuildItem` is in `io.quarkus.devui.spi`.
+- **Correct imports:** `CardPageBuildItem` is in `io.quarkus.devui.spi.page`
+  (`quarkus-devui-deployment-spi`), `JsonRPCProvidersBuildItem` is in
+  `io.quarkus.devjsonrpc.spi` (`quarkus-devjsonrpc-deployment-spi`).
 - **JSON-RPC services belong in `runtime-dev/`**, never in `runtime/`.
 - **JS files go in `deployment/src/main/resources/dev-ui/`**.
 - **Extend `QwcHotReloadElement`**, not `LitElement` — it provides the

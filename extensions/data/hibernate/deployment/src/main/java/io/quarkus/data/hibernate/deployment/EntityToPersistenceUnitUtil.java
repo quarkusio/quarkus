@@ -8,8 +8,8 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.TreeMap;
 
-import io.quarkus.hibernate.orm.deployment.JpaModelPersistenceUnitMappingBuildItem;
 import io.quarkus.hibernate.orm.deployment.PersistenceUnitDescriptorBuildItem;
+import io.quarkus.hibernate.orm.deployment.spi.JpaModelPersistenceUnitMappingBuildItem;
 
 //FIXME: duplicate with ORM and probably HR
 public final class EntityToPersistenceUnitUtil {

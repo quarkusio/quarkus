@@ -22,6 +22,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.MockedStatic;
 import org.mockito.Mockito;
@@ -77,11 +78,6 @@ public class LambdaHttpHandlerTest {
         when(peer.remoteAddress()).thenReturn(new VirtualAddress("whatever"));
     }
 
-    private APIGatewayV2HTTPResponse mockHttpFunction(String query, HttpResponseStatus status)
-            throws ExecutionException, InterruptedException {
-        return mockHttpFunction(query, new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, status));
-    }
-
     @SuppressWarnings({ "rawtypes", "unused" })
     private APIGatewayV2HTTPResponse mockHttpFunction(String query, DefaultFullHttpResponse httpResponse)
             throws ExecutionException, InterruptedException {
@@ -114,7 +110,7 @@ public class LambdaHttpHandlerTest {
     @ParameterizedTest
     @MethodSource("queries")
     public void verifyQueryParametersBypass(String query, String expected) throws ExecutionException, InterruptedException {
-        mockHttpFunction(query, HttpResponseStatus.OK);
+        mockHttpFunction(query, new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK));
         ArgumentCaptor<Object> captor = ArgumentCaptor.forClass(Object.class);
         verify(connection, timeout(PROCESSING_TIMEOUT).times(2)).sendMessage(captor.capture());
         DefaultHttpRequest rq = (DefaultHttpRequest) captor.getAllValues().get(0);
@@ -129,17 +125,14 @@ public class LambdaHttpHandlerTest {
     @ParameterizedTest
     @MethodSource("responses")
     public void verifyResponseStatusBypass(final HttpResponseStatus status) throws ExecutionException, InterruptedException {
-        APIGatewayV2HTTPResponse response = mockHttpFunction(null, status);
+        APIGatewayV2HTTPResponse response = mockHttpFunction(null,
+                new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, status));
         verify(connection, timeout(PROCESSING_TIMEOUT).times(2)).sendMessage(any());
         assertEquals(status.code(), response.getStatusCode());
     }
 
-    public static Iterable<Object[]> contentTypeHeaderNames() {
-        return Arrays.asList(new Object[] { "Content-Type" }, new Object[] { "content-type" });
-    }
-
     @ParameterizedTest
-    @MethodSource("contentTypeHeaderNames")
+    @ValueSource(strings = { "Content-Type", "content-type" })
     public void verifyTextBodyIsNotBase64Encoded(String contentTypeHeaderName)
             throws ExecutionException, InterruptedException {
         DefaultFullHttpResponse httpResponse = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK,
@@ -152,7 +145,7 @@ public class LambdaHttpHandlerTest {
     }
 
     @ParameterizedTest
-    @MethodSource("contentTypeHeaderNames")
+    @ValueSource(strings = { "Content-Type", "content-type" })
     public void verifyBinaryBodyIsBase64Encoded(String contentTypeHeaderName)
             throws ExecutionException, InterruptedException {
         byte[] bytes = new byte[] { 1, 2, 3 };
@@ -167,7 +160,7 @@ public class LambdaHttpHandlerTest {
 
     @Test
     public void verifyCookies() throws ExecutionException, InterruptedException {
-        mockHttpFunction(null, HttpResponseStatus.OK);
+        mockHttpFunction(null, new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK));
         ArgumentCaptor<Object> captor = ArgumentCaptor.forClass(Object.class);
         verify(connection, timeout(PROCESSING_TIMEOUT).times(2)).sendMessage(captor.capture());
         DefaultHttpRequest rq = (DefaultHttpRequest) captor.getAllValues().get(0);

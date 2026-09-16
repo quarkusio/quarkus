@@ -150,6 +150,10 @@ public class BuildTimeContentProcessor {
                 contextRoot + "echarts/echarts-bar-stack.js");
         internalImportMapBuildItem.add("echarts-line",
                 contextRoot + "echarts/echarts-line.js");
+        internalImportMapBuildItem.add("echarts-histogram",
+                contextRoot + "echarts/echarts-histogram.js");
+        internalImportMapBuildItem.add("echarts-gauge",
+                contextRoot + "echarts/echarts-gauge.js");
 
         // Other assets
         internalImportMapBuildItem.add("icon/", contextRoot + "icon/");

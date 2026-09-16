@@ -68,7 +68,7 @@ class MetricsTimeSeriesStoreTest {
     }
 
     @Test
-    void clearResetsHistoryCatalogAndSelection() {
+    void clearDropsHistoryButKeepsCatalogAndSelection() {
         MetricsTimeSeriesStore store = newStore(60_000L, 100);
         store.setSelection(List.of("a.x"));
         store.observe(sample("a.x", "1", 1, 1000L));
@@ -76,13 +76,15 @@ class MetricsTimeSeriesStoreTest {
         assertThat(store.catalog().snapshot()).hasSize(1);
 
         store.clear();
-        // History, catalog and selection are all gone.
         assertThat(store.snapshot()).isEmpty();
         assertThat(store.seriesCount()).isZero();
-        assertThat(store.catalog().snapshot()).isEmpty();
-        // Selection was cleared, so a further observe of the previously-selected name is not stored.
+        // The picker still knows the meter exists.
+        assertThat(store.catalog().snapshot()).hasSize(1);
+
+        // Still selected, so capture resumes immediately rather than after a re-selection.
         store.observe(sample("a.x", "1", 2, 2000L));
-        assertThat(store.snapshot()).isEmpty();
+        assertThat(store.snapshot()).hasSize(1);
+        assertThat(store.snapshot().get(0).timestamps()).containsExactly(2000L);
     }
 
     @Test

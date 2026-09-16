@@ -1,6 +1,7 @@
 package io.quarkus.devui.deployment.observability;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -17,8 +18,9 @@ import io.quarkus.devui.spi.page.Page;
  * section is a core-owned, cross-extension page rather than a per-extension card, so
  * it appears once regardless of which telemetry extensions are present.
  * <p>
- * The section landing page (qwc-observability-section.js) reads the
- * "observabilitySignals" build-time data and links to each signal's detail page.
+ * The section is a single page (qwc-observability-dashboard.js): a dashboard the user
+ * composes from the available cards. It reads the "observabilitySignals" build-time data to
+ * discover what is on offer and stores the chosen cards in browser LocalStorage.
  */
 public class ObservabilitySectionProcessor {
 
@@ -33,11 +35,15 @@ public class ObservabilitySectionProcessor {
 
         List<Map<String, String>> signalData = new ArrayList<>();
         for (ObservabilitySignalBuildItem signal : signals) {
-            signalData.add(Map.of(
-                    "key", signal.getKey(),
-                    "title", signal.getTitle(),
-                    "icon", signal.getIcon(),
-                    "pageId", signal.getPageId()));
+            // Not Map.of: pageId is optional and Map.of rejects null values.
+            Map<String, String> data = new HashMap<>();
+            data.put("key", signal.getKey());
+            data.put("title", signal.getTitle());
+            data.put("icon", signal.getIcon());
+            if (signal.getPageId() != null) {
+                data.put("pageId", signal.getPageId());
+            }
+            signalData.add(data);
         }
 
         InternalPageBuildItem page = new InternalPageBuildItem("Observability", 45);
@@ -46,7 +52,7 @@ public class ObservabilitySectionProcessor {
                 .namespace(NAMESPACE)
                 .icon("font-awesome-solid:binoculars")
                 .title("Observability")
-                .componentLink("qwc-observability-section.js"));
+                .componentLink("qwc-observability-dashboard.js"));
 
         page.addBuildTimeData("observabilitySignals", signalData,
                 "The telemetry signals (e.g. traces) contributed by observability extensions");

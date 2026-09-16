@@ -19,6 +19,7 @@ public final class MetricCatalog {
         final String group;
         volatile String type;
         volatile boolean cumulative;
+        volatile String unit;
         final java.util.Set<String> seriesKeys = ConcurrentHashMap.newKeySet();
         volatile double lastValue;
 
@@ -37,6 +38,7 @@ public final class MetricCatalog {
                 n -> new Entry(n, group(n), s.type(), s.cumulative()));
         e.type = s.type();
         e.cumulative = s.cumulative();
+        e.unit = s.unit();
         e.seriesKeys.add(s.seriesKey());
         e.lastValue = s.value();
     }
@@ -60,7 +62,7 @@ public final class MetricCatalog {
         List<MetricCatalogEntry> out = new ArrayList<>();
         TreeMap<String, Entry> ordered = new TreeMap<>(byName);
         for (Entry e : ordered.values()) {
-            out.add(new MetricCatalogEntry(e.name, e.group, e.type, e.cumulative,
+            out.add(new MetricCatalogEntry(e.name, e.group, e.type, e.cumulative, e.unit,
                     e.seriesKeys.size(), e.lastValue));
         }
         return out;

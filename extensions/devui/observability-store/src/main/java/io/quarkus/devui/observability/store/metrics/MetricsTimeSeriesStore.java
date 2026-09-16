@@ -49,10 +49,13 @@ public final class MetricsTimeSeriesStore {
             return; // not selected -> no history, no stream
         }
         MetricSeries ser = series.computeIfAbsent(s.seriesKey(),
-                k -> new MetricSeries(s.name(), s.tags(), s.type(), s.cumulative(), s.source(), maxPointsPerSeries));
-        ser.add(s.timestampMillis(), s.value());
+                k -> new MetricSeries(s.name(), s.tags(), s.type(), s.cumulative(), s.source(), s.unit(),
+                        maxPointsPerSeries));
+        double[] buckets = ser.add(s.timestampMillis(), s.value(), s.distribution());
         ser.evictOlderThan(s.timestampMillis() - retentionMillis);
-        broadcaster.onNext(s);
+        // Stream the accumulated bucket counts, not the raw cumulative ones the backend reported,
+        // so a client appending live samples sees exactly what a fresh snapshot would give it.
+        broadcaster.onNext(buckets == null ? s : s.withBucketCounts(buckets));
     }
 
     public MetricCatalog catalog() {
@@ -100,14 +103,14 @@ public final class MetricsTimeSeriesStore {
     }
 
     /**
-     * Full manual reset (the Dev UI "Clear" action): drops captured history, the catalog, and the
-     * current selection, returning the store to its initial empty state. The catalog and any
-     * re-selected series repopulate from the next sample cycle.
+     * Drops captured history (the Dev UI "Clear history" action), so the charts start again from
+     * the next sample cycle. The selection and the catalog are configuration rather than data and
+     * deliberately survive: clearing them would stop capture and blank the dashboard until the
+     * next sample repopulated them. Dropping the series also re-baselines histogram buckets, so
+     * bucket bars cover the same fresh period the line charts do.
      */
     public void clear() {
         series.clear();
-        selection.clear();
-        catalog.clear();
     }
 
     /**

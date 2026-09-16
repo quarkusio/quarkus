@@ -190,10 +190,14 @@ This dependency must be added to the project:
 
 === Traces in the Dev UI
 
-In dev mode, when the OpenTelemetry extension is present, an *Observability* section
-appears in the Dev UI (`/q/dev-ui`) menu with a *Traces* view. It captures finished
+In dev mode, when the OpenTelemetry extension is present, an *Observability* dashboard
+appears in the Dev UI (`/q/dev-ui`) menu, offering a *Traces* card. It captures finished
 spans into a small in-memory ring buffer and renders them grouped by trace as a
-live waterfall — no containers or Dev Services required.
+live waterfall, with no containers or Dev Services required. Add the card the first
+time you open the dashboard, or later with *Edit dashboard*, and drag it by its header
+to position it among the other cards. A waterfall benefits from room: the expand icon in
+the card's header gives it the whole dashboard area until you press *Escape*, and
+*Open* links through to the full-page view.
 
 The capture is dev-mode only and does not affect production or native builds.
 

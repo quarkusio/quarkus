@@ -272,6 +272,7 @@ This configuration creates two users:
  * `john` with a `johnPassword` password and `reader` and `writer` roles
 
 To customize the client ID and secret, you can use the `quarkus.oidc.client-id` and `quarkus.oidc.credentials.secret` properties.
+Additionally, you can adjust the lifespans of the access token and SSO session with the `quarkus.keycloak.devservices.access-token-lifespan` and `quarkus.keycloak.devservices.sso-session-max-lifespan` properties, which are set to 10 minutes by default.
 
 However, it is likely that your Keycloak configuration is more complex and requires setting more properties.
 
@@ -303,9 +304,7 @@ For example, if your application configures Keycloak authorization with link:htt
 quarkus.keycloak.devservices.resource-aliases.policies=/policies.jar <1>
 quarkus.keycloak.devservices.resource-mappings.policies=/opt/keycloak/providers/policies.jar <2>
 ----
-<1> `policies` alias is created for the classpath `/policies.jar` resource.
-
-Policy jars can also be located in the file system.
+<1> `policies` alias is created for the classpath `/policies.jar` resource. Policy jars can also be located in the file system.
 <2> The policies jar is mapped to the `/opt/keycloak/providers/policies.jar` container location.
 
 == Disable HTTPS

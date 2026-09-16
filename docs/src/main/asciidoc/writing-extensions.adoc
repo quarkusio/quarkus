@@ -1638,9 +1638,8 @@ public void generateResources(
     );
 }
 ----
-
-1. Registering a SPI service provider via `GeneratedServiceProviderBuildItem` — do NOT use `GeneratedResourceBuildItem` for `META-INF/services/` paths
-2. Producing a static resource (e.g., JavaScript file) served by Vertx
+<1> Registering a SPI service provider via `GeneratedServiceProviderBuildItem`. Do NOT use `GeneratedResourceBuildItem` for `META-INF/services/` paths.
+<2> Producing a static resource (e.g., JavaScript file) served by Vertx.
 
 ==== Key Points
 

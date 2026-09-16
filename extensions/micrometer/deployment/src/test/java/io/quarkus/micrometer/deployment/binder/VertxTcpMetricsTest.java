@@ -9,12 +9,15 @@ import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.micrometer.core.instrument.Metrics;
 import io.micrometer.core.instrument.search.Search;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.quarkus.test.QuarkusExtensionTest;
 import io.vertx.core.net.NetClientOptions;
 import io.vertx.mutiny.core.Vertx;
@@ -35,8 +38,20 @@ public class VertxTcpMetricsTest {
     @Inject
     NetServer server;
 
+    static final SimpleMeterRegistry registry = new SimpleMeterRegistry();
+
+    @BeforeAll
+    static void addRegistry() {
+        Metrics.addRegistry(registry);
+    }
+
+    @AfterAll
+    static void removeRegistry() {
+        Metrics.removeRegistry(registry);
+    }
+
     private Search getMeter(String name) {
-        return Metrics.globalRegistry.find(name);
+        return registry.find(name);
     }
 
     @Test

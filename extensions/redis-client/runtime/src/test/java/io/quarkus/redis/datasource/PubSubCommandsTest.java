@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -54,9 +55,42 @@ public class PubSubCommandsTest extends DatasourceTestBase {
 
     private void awaitNoMoreActiveChannels() {
         Awaitility.await().untilAsserted(() -> {
-            Response response = api.pubsub(List.of("CHANNELS")).await().indefinitely();
-            assertThat(response).isEmpty();
+            assertThat(activeChannels()).isEmpty();
+            assertThat(activePatternCount()).isZero();
         });
+    }
+
+    private List<String> activeChannels() {
+        Response response = api.pubsub(List.of("CHANNELS")).await().indefinitely();
+        List<String> channels = new ArrayList<>();
+        for (Response channel : response) {
+            channels.add(channel.toString());
+        }
+        return channels;
+    }
+
+    private int activePatternCount() {
+        return api.pubsub(List.of("NUMPAT")).await().indefinitely().toInteger();
+    }
+
+    /**
+     * Waits until Redis reports the given channels as subscribed.
+     * <p>
+     * The {@link Multi}-based subscriptions register asynchronously: subscribing to the {@code Multi} returns
+     * before the {@code SUBSCRIBE} command reaches Redis. As pub/sub messages are not buffered, anything
+     * published in that window is silently dropped, which used to make these tests flaky.
+     */
+    private void awaitSubscribedToChannels(String... channels) {
+        Awaitility.await().untilAsserted(() -> assertThat(activeChannels()).contains(channels));
+    }
+
+    /**
+     * Waits until Redis reports the expected number of subscribed patterns.
+     *
+     * @see #awaitSubscribedToChannels(String...)
+     */
+    private void awaitSubscribedToPatterns(int expected) {
+        Awaitility.await().untilAsserted(() -> assertThat(activePatternCount()).isEqualTo(expected));
     }
 
     @Test
@@ -277,6 +311,7 @@ public class PubSubCommandsTest extends DatasourceTestBase {
         Multi<Person> multi = reactive.subscribeToPatterns(channel + "*", "foo");
 
         Cancellable cancellable = multi.subscribe().with(people1::add);
+        awaitSubscribedToPatterns(2);
 
         pubsub.publish(channel, new Person("luke", "skywalker"));
         pubsub.publish("foo", new Person("luke", "skywalker"));
@@ -284,7 +319,7 @@ public class PubSubCommandsTest extends DatasourceTestBase {
         pubsub.publish(channel, new Person("leia", "skywalker"));
         pubsub.publish("foo", new Person("leia", "skywalker"));
 
-        Awaitility.await().until(() -> people1.size() > 1);
+        Awaitility.await().until(() -> people1.size() == 5);
 
         cancellable.cancel();
 
@@ -298,6 +333,7 @@ public class PubSubCommandsTest extends DatasourceTestBase {
         Multi<RedisPubSubMessage<Person>> multi = reactive.subscribeAsMessagesToPatterns(channel + "*", "foo");
 
         Cancellable cancellable = multi.subscribe().with(people::add);
+        awaitSubscribedToPatterns(2);
 
         pubsub.publish(channel, new Person("luke", "skywalker"));
         pubsub.publish("foo", new Person("luke", "skywalker"));
@@ -305,7 +341,7 @@ public class PubSubCommandsTest extends DatasourceTestBase {
         pubsub.publish(channel, new Person("leia", "skywalker"));
         pubsub.publish("foo", new Person("leia", "skywalker"));
 
-        Awaitility.await().until(() -> people.size() > 1);
+        Awaitility.await().until(() -> people.size() == 5);
 
         assertThat(people).allSatisfy(m -> {
             assertThat(m.getChannel()).isNotBlank();
@@ -324,6 +360,7 @@ public class PubSubCommandsTest extends DatasourceTestBase {
         Multi<Person> multi = reactive.subscribeToPatterns(channel + "*");
 
         Cancellable cancellable = multi.subscribe().with(people1::add);
+        awaitSubscribedToPatterns(1);
 
         pubsub.publish("foo", new Person("luke", "skywalker"));
         pubsub.publish(channel, new Person("luke", "skywalker"));
@@ -348,6 +385,7 @@ public class PubSubCommandsTest extends DatasourceTestBase {
         Multi<RedisPubSubMessage<Person>> multi = reactive.subscribeAsMessagesToPatterns(channel + "*");
 
         Cancellable cancellable = multi.subscribe().with(people::add);
+        awaitSubscribedToPatterns(1);
 
         pubsub.publish("foo", new Person("luke", "skywalker"));
         pubsub.publish(channel, new Person("luke", "skywalker"));
@@ -377,6 +415,7 @@ public class PubSubCommandsTest extends DatasourceTestBase {
         Multi<RedisPubSubMessage<Person>> multi = reactive.subscribeAsMessages(channel);
 
         Cancellable cancellable = multi.subscribe().with(people::add);
+        awaitSubscribedToChannels(channel);
 
         pubsub.publish("foo", new Person("luke", "skywalker"));
         pubsub.publish(channel, new Person("luke", "skywalker"));

@@ -14,6 +14,8 @@ You can update or upgrade your {project-name} projects to the latest version of 
 
 The update command primarily employs OpenRewrite recipes to automate updates for most project dependencies, source code, and documentation.
 
+include::{includes}/extension-status.adoc[]
+
 [IMPORTANT]
 ====
 The update command automates only a subset of the migration.

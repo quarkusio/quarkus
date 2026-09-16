@@ -32,6 +32,13 @@ public class CodeFlowEncryptedIdTokenResource {
 
     @GET
     @Authenticated
+    @Path("/code-flow-encrypted-id-token-rsa-oaep-256")
+    public String accessRsaOaep256() {
+        return "user: " + idToken.getName();
+    }
+
+    @GET
+    @Authenticated
     @Path("/code-flow-encrypted-id-token-disabled")
     public String idTokenDecryptionDisabled() {
         throw new RuntimeException("ID token decryption disabled");

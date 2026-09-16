@@ -4,6 +4,8 @@ import static io.restassured.RestAssured.with;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.not;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.function.Supplier;
 
 import jakarta.ws.rs.GET;
@@ -35,6 +37,16 @@ public class ContextResolverMultipleMediaTypesTest {
                 .body(containsString("some_number"))
                 .body(not(containsString("ssn")))
                 .body(containsString("alice"));
+    }
+
+    @Test
+    public void testListResponse() {
+        with().accept(ContentType.JSON)
+                .get("person/list")
+                .then()
+                .statusCode(200)
+                .body(containsString("alice"))
+                .body(containsString("bob"));
     }
 
     @Test
@@ -87,6 +99,15 @@ public class ContextResolverMultipleMediaTypesTest {
         @Produces({ "application/json", "application/stream+json" })
         public Person get() {
             return new Person("alice", "078-05-1120");
+        }
+
+        @GET
+        @Path("/list")
+        @Produces("application/json")
+        public List<Person> list() {
+            // anonymous subclass of ArrayList to trigger the getCanonicalName() == null path
+            return new ArrayList<>(List.of(new Person("alice", "078-05-1120"), new Person("bob", "123-45-6789"))) {
+            };
         }
     }
 

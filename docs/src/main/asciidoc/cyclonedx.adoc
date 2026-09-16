@@ -620,3 +620,5 @@ SbomContributionBuildItem contributeNpmComponents() {
 == Configuration Reference
 
 include::{generated-dir}/config/quarkus-cyclonedx.adoc[opts=optional, leveloffset=+2]
+
+include::{generated-dir}/config/quarkus-cyclonedx-endpoint.adoc[opts=optional, leveloffset=+2]

@@ -9,6 +9,7 @@ public record MetricCatalogEntry(
         String group,
         String type,
         boolean cumulative,
+        String unit,
         int seriesCount,
         double lastValue) {
 }

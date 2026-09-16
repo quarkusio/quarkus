@@ -138,6 +138,35 @@ customElements.define('qwc-myfeature-dashboard', QwcMyfeatureDashboard);
 - For state updates, use spread: `this._items = [...this._items, newItem]`.
 - Unsubscribe streaming observers in `disconnectedCallback()`.
 
+## Observability Dashboard
+
+An extension that captures a telemetry signal (traces, logs, events) can offer
+its page as a card on the core **Observability** dashboard, on top of its own
+extension card. Produce an `ObservabilitySignalBuildItem`
+(`io.quarkus.devui.spi.observability`, in `quarkus-devui-deployment-spi`)
+next to the page it refers to:
+
+```java
+signals.produce(new ObservabilitySignalBuildItem(
+        "traces",                                  // unique key, identifies the stored card
+        "OpenTelemetry Traces",                    // title (name the backend, not just the signal)
+        "font-awesome-solid:diagram-project",      // icon
+        "quarkus-opentelemetry/traces",            // page id: <namespace>/<dashed-title>, or null
+        "spanCount"));                             // JSON-RPC live count, or null
+```
+
+The dashboard imports that page's web component and renders it inline in a card,
+so size the component against its host (`height: 100%` or a flex column), not
+against the viewport. A null page id advertises the signal without contributing
+a card, which is what metrics does - meters are picked individually instead.
+
+Meters need no build item: everything registered with Micrometer or the
+OpenTelemetry SDK is offered in the dashboard's picker automatically. Only a new
+metrics *backend* (one that samples into `MetricsTimeSeriesStore`) produces a
+`MetricsBackendBuildItem`.
+
+Full documentation: `docs/src/main/asciidoc/dev-ui.adoc`, "Observability dashboard".
+
 ## Testing
 
 Extend `DevUIJsonRPCTest` (`io.quarkus.devui.tests`). Pass the extension

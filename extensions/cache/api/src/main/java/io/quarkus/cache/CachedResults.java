@@ -10,7 +10,6 @@ import java.lang.annotation.Target;
 
 import jakarta.inject.Qualifier;
 
-import io.quarkus.cache.runtime.UndefinedCacheKeyGenerator;
 import io.smallrye.common.annotation.Experimental;
 
 /**

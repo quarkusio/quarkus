@@ -576,12 +576,19 @@ public class CachedExpensiveService {
             // Put an expensive call here.
         }).await().indefinitely(); //<4>
     }
+
+    public Uni<String> getWithCustomExpiration(Object key, Duration expiresAfter) {
+        return cache.get(key, k -> {
+            // Put an expensive call here.
+        }, expiresAfter); //<5>
+    }
 }
 ----
 <1> This is optional.
 <2> This method returns the `Uni<String>` type which is non-blocking.
 <3> The `k` argument contains the cache key value.
 <4> If you don't need the call to be non-blocking, this is how you can retrieve the cache value in a blocking way.
+<5> You can optionally specify a custom `Duration expiresAfter` to control per-item expiration.
 
 === Retrieving a `Cache` from the `CacheManager`
 

@@ -280,15 +280,6 @@ public interface NativeConfig {
     Optional<List<String>> containerRuntimeOptions();
 
     /**
-     * If the resulting image should allow VM introspection.
-     *
-     * @deprecated Use {@code quarkus.native.monitoring} instead.
-     */
-    @WithDefault("false")
-    @Deprecated
-    boolean enableVmInspection();
-
-    /**
      * Enable monitoring various monitoring options. The value should be comma separated.
      * <ul>
      * <li><code>jfr</code> for JDK flight recorder support</li>
@@ -425,33 +416,6 @@ public interface NativeConfig {
          */
         Optional<List<String>> includes();
 
-        /**
-         * A comma separated list of globs to match resource paths that should <b>not</b> be added to the native image.
-         * <p>
-         * Use slash ({@code /}) as a path separator on all platforms. Globs must not start with slash.
-         * <p>
-         * Please refer to {@link #includes} for details about the glob syntax.
-         * <p>
-         * By default, no resources are excluded.
-         * <p>
-         * Example: Given that you have {@code src/main/resources/red.png}
-         * and {@code src/main/resources/foo/green.png} in your source tree and one of your dependency JARs contains
-         * {@code bar/blue.png} file, with the following configuration
-         *
-         * <pre>
-         * quarkus.native.resources.includes = **&#47;*.png
-         * quarkus.native.resources.excludes = foo/**,**&#47;green.png
-         * </pre>
-         * <p>
-         * the resource {@code red.png} will be available in the native image while the resources {@code foo/green.png}
-         * and {@code bar/blue.png} will not be available in the native image.
-         *
-         * @deprecated Excluding resources is not supported in the new reachability-metadata.json file used with Mandrel/GraalVM
-         *             25.0 and onwards. Quarkus plans to adopt the use of reachability-metadata.json for Mandrel/GraalVM 23.1
-         *             for JDK 21 as well (see https://github.com/quarkusio/quarkus/issues/41016)
-         */
-        @Deprecated(since = "3.29", forRemoval = true)
-        Optional<List<String>> excludes();
     }
 
     /**

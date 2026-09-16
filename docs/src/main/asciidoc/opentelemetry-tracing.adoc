@@ -5,7 +5,6 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 [id=opentelemetry-tracing]
 = Using OpenTelemetry Tracing
-:extension-status: stable
 include::_attributes.adoc[]
 :diataxis-type: reference
 :summary: This guide explains how your Quarkus application can utilize OpenTelemetry Tracing to provide distributed tracing for interactive web applications.
@@ -14,6 +13,8 @@ include::_attributes.adoc[]
 
 This guide explains how your Quarkus application can utilize https://opentelemetry.io/[OpenTelemetry] (OTel) to provide
 distributed tracing for interactive web applications.
+
+include::{includes}/extension-status.adoc[]
 
 include::{includes}/observability-include.adoc[]
 
@@ -609,6 +610,11 @@ Multi.createFrom().items("Alice", "Bob", "Charlie")
 ----
 Instead of `transformToMultiAndConcatenate` you can use `transformToMultiAndMerge` if you don't care about the order of the items.
 
+The `wrapWithSpan` utility method propagates the whole parent `Context` into the wrapped pipeline, not just the new span.
+Any `Baggage` present in the parent `Context` therefore remains available through `Baggage.current()`
+inside the pipeline. Passing `Optional.empty()` only detaches the trace parent to create a root span; a baggage already
+active in the surrounding context is still propagated.
+
 === Quarkus Messaging - Kafka
 
 When using the Quarkus Messaging extension for Kafka,
@@ -845,6 +851,7 @@ See the main xref:opentelemetry.adoc#exporters[OpenTelemetry Guide exporters] se
 * https://quarkus.io/guides/resteasy[`quarkus-resteasy`]
 * https://quarkus.io/guides/resteasy-client[`quarkus-resteasy-client`]
 * https://quarkus.io/guides/scheduler[`quarkus-scheduler`]
+* https://quarkus.io/guides/signals[`quarkus-signals`]
 * https://quarkus.io/guides/smallrye-graphql[`quarkus-smallrye-graphql`]
 * https://quarkus.io/extensions/io.quarkus/quarkus-mongodb-client[`quarkus-mongodb-client`]
 * https://quarkus.io/extensions/io.quarkus/quarkus-messaging[`quarkus-messaging`]

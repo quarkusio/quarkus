@@ -8,8 +8,11 @@ import java.net.SocketException;
 import java.net.URI;
 import java.net.URL;
 import java.net.UnknownHostException;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.eclipse.microprofile.config.Config;
+import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
 import org.jboss.logging.MDC;
 
@@ -55,6 +58,31 @@ public abstract class AbstractLambdaPollLoop {
 
     private static final RuntimeKey<URI> LOCAL_BASE_URI = RuntimeKey.key("quarkus.http.local-base-uri");
 
+    /**
+     * The path part of the local base URI, built like the one the Vert.x HTTP server registers so that tests
+     * see the same base path ({@code quarkus.http.root-path} and {@code quarkus.servlet.context-path})
+     * whether requests go through the HTTP server or the mock event server.
+     */
+    private static String localBasePath() {
+        Config config = ConfigProvider.getConfig();
+        String rootPath = config.getOptionalValue("quarkus.http.root-path", String.class).orElse("/");
+        Optional<String> contextPath = config.getOptionalValue("quarkus.servlet.context-path", String.class);
+        StringBuilder path = new StringBuilder(rootPath);
+        if (!rootPath.endsWith("/")) {
+            path.append("/");
+        }
+        if (!rootPath.startsWith("/")) {
+            path.insert(0, "/");
+        }
+        if (contextPath.isPresent()) {
+            path.append(contextPath.get().startsWith("/") ? contextPath.get().substring(1) : contextPath.get());
+        }
+        if (path.charAt(path.length() - 1) == '/') {
+            path.deleteCharAt(path.length() - 1);
+        }
+        return path.toString();
+    }
+
     public void startPollLoop(ValueRegistry valueRegistry, ShutdownContext context) {
         final AtomicBoolean running = new AtomicBoolean(true);
         // flag to check whether to interrupt.
@@ -62,7 +90,8 @@ public abstract class AbstractLambdaPollLoop {
         String baseUrl = AmazonLambdaApi.baseUrl();
         URI lambdaBase = URI.create(AmazonLambdaApi.baseUrl());
         valueRegistry.register(LOCAL_BASE_URI,
-                URI.create(lambdaBase.getScheme() + "://" + lambdaBase.getHost() + ":" + lambdaBase.getPort()));
+                URI.create(lambdaBase.getScheme() + "://" + lambdaBase.getHost() + ":" + lambdaBase.getPort()
+                        + localBasePath()));
         final Thread pollingThread = new Thread(new Runnable() {
             @Override
             public void run() {

@@ -11,8 +11,8 @@ include::_attributes.adoc[]
 :extensions: io.quarkus:quarkus-spiffe-client
 
 https://spiffe.io/[SPIFFE] (Secure Production Identity Framework for Everyone) provides cryptographic workload identities in zero-trust environments.
-The SPIFFE client extension uses the https://github.com/spiffe/spiffe/blob/main/standards/SPIFFE_Workload_API.md[Workload API] to retrieve https://github.com/spiffe/spiffe/blob/main/standards/JWT-SVID.md[JWT Verifiable Identity Documents (JWT-SVIDs)] for Quarkus workloads directly from the local https://spiffe.io/docs/latest/spire-about/spire-concepts/[SPIRE Agent].
-It simplifies deployment by eliminating the need for a SPIFFE client sidecar that stores JWT-SVIDs on a mounted file path for Quarkus to read.
+The SPIFFE client extension uses the https://github.com/spiffe/spiffe/blob/main/standards/SPIFFE_Workload_API.md[Workload API] to retrieve https://github.com/spiffe/spiffe/blob/main/standards/JWT-SVID.md[JWT-SVIDs] and https://github.com/spiffe/spiffe/blob/main/standards/X509-SVID.md[X.509-SVIDs] for Quarkus workloads directly from the local https://spiffe.io/docs/latest/spire-about/spire-concepts/[SPIRE Agent].
+It simplifies deployment by eliminating the need for a SPIFFE client sidecar that stores SVIDs on a mounted file path for Quarkus to read.
 
 include::{includes}/extension-status.adoc[]
 
@@ -59,22 +59,22 @@ On Windows, only the `tcp://` scheme is currently supported.
 
 == Retrieve JWT-SVID
 
-Inject the `SpiffeClient` CDI bean to retrieve JWT-SVIDs from the SPIRE Agent.
+Inject the `JwtSvidClient` CDI bean to retrieve JWT-SVIDs from the SPIRE Agent.
 The following example retrieves a single JWT-SVID for one audience:
 
 [source,java]
 ----
-import io.quarkus.spiffe.client.WorkloadJsonWebToken;
-import io.quarkus.spiffe.client.SpiffeClient;
+import io.quarkus.spiffe.svid.jwt.JwtSvidClient;
+import io.quarkus.spiffe.svid.jwt.WorkloadJsonWebToken;
 
 @ApplicationScoped
 public class MyService {
 
     @Inject
-    SpiffeClient spiffeClient;
+    JwtSvidClient jwtSvidClient;
 
     public Uni<String> getToken() {
-        return spiffeClient.getWorkloadJsonWebToken("https://my-audience")
+        return jwtSvidClient.getWorkloadJsonWebToken("https://my-audience")
                 .map(WorkloadJsonWebToken::token);
     }
 }
@@ -86,12 +86,12 @@ To specify multiple audiences:
 ----
 import java.util.Set;
 
-import io.quarkus.spiffe.client.WorkloadJsonWebToken;
-import io.quarkus.spiffe.client.SpiffeClient;
+import io.quarkus.spiffe.svid.jwt.JwtSvidClient;
+import io.quarkus.spiffe.svid.jwt.WorkloadJsonWebToken;
 import io.smallrye.mutiny.Uni;
 
 public Uni<String> getWorkloadIdentity() {
-    return spiffeClient.getWorkloadJsonWebToken(Set.of("https://audience-a", "https://audience-b"))
+    return jwtSvidClient.getWorkloadJsonWebToken(Set.of("https://audience-a", "https://audience-b"))
             .map(WorkloadJsonWebToken::subject); <1>
 }
 ----
@@ -110,20 +110,107 @@ quarkus.spiffe-client.audiences=https://keycloak.example.com,https://mcp-server.
 
 [source,java]
 ----
-return spiffeClient.getWorkloadJsonWebToken().map(WorkloadJsonWebToken::token);
+return jwtSvidClient.getWorkloadJsonWebToken().map(WorkloadJsonWebToken::token);
 ----
 
 When explicit audiences are provided, they take precedence over the configured defaults:
 
 [source,java]
 ----
-return spiffeClient.getWorkloadJsonWebToken("https://other-service.example.com").map(WorkloadJsonWebToken::token);
+return jwtSvidClient.getWorkloadJsonWebToken("https://other-service.example.com").map(WorkloadJsonWebToken::token);
 ----
 
 == OIDC SPIFFE Client Authentication
 
 When this extension is combined with either `quarkus-oidc` or `quarkus-oidc-client` extensions, JWT-SVIDs can be supplied automatically and used as OIDC client authentication assertions.
 Please see the xref:security-oidc-code-flow-authentication.adoc#oidc-provider-client-authentication[OIDC provider client authentication] section of the OIDC code flow authentication guide and the xref:security-openid-connect-client-reference.adoc#oidc-client-authentication[OIDC Client authentication] section of the OIDC client guide for more information.
+
+== Retrieve X.509-SVID
+
+X.509-SVID is an X.509 workload certificate document which includes a client certificate chain and private key, as well as a server trust bundle.
+
+To retrieve an X.509-SVID from the SPIFFE Agent, inject the `X509SvidClient` CDI bean:
+
+=== Quarkus REST Client
+
+The following example shows how to configure a Quarkus REST client with a retrieved X.509-SVID:
+
+[source,java]
+----
+import java.net.URI;
+
+import jakarta.enterprise.context.RequestScoped;
+import jakarta.enterprise.inject.Produces;
+import jakarta.inject.Inject;
+
+import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
+import io.quarkus.spiffe.svid.x509.WorkloadCertificateDocument;
+import io.quarkus.spiffe.svid.x509.X509SvidClient;
+import io.quarkus.tls.BaseTlsConfiguration;
+import io.vertx.core.buffer.Buffer;
+import io.vertx.core.net.KeyCertOptions;
+import io.vertx.core.net.PemKeyCertOptions;
+import io.vertx.core.net.PemTrustOptions;
+import io.vertx.core.net.TrustOptions;
+
+@RequestScoped
+class MyServiceClientProducer {
+
+    @Inject
+    X509SvidClient x509SvidClient;
+
+    @Produces
+    @ApplicationScoped
+    MyServiceClient createClient() { <1>
+        WorkloadCertificateDocument cert = x509SvidClient.getWorkloadCertificate()
+                .await().indefinitely();
+        return QuarkusRestClientBuilder.newBuilder()
+                .baseUri(URI.create("https://my-service:8443"))
+                .tlsConfiguration(new SpiffeTlsConfiguration(cert))
+                .build(MyServiceClient.class);
+    }
+
+    private static final class SpiffeTlsConfiguration extends BaseTlsConfiguration {
+
+        private final KeyCertOptions keyCertOptions;
+        private final TrustOptions trustOptions;
+
+        private SpiffeTlsConfiguration(WorkloadCertificateDocument cert) {
+            var keyCert = new PemKeyCertOptions(); <2>
+            for (String pem : cert.certificateChain().chainPem()) {
+                keyCert.addCertValue(Buffer.buffer(pem));
+            }
+            keyCert.addKeyValue(Buffer.buffer(cert.certificateChain().privateKeyPem()));
+            this.keyCertOptions = keyCert;
+
+            var trust = new PemTrustOptions(); <3>
+            for (String pem : cert.trustBundle().certificatesPem()) {
+                trust.addCertValue(Buffer.buffer(pem));
+            }
+            this.trustOptions = trust;
+        }
+
+        @Override
+        public KeyCertOptions getKeyStoreOptions() {
+            return keyCertOptions;
+        }
+
+        @Override
+        public TrustOptions getTrustStoreOptions() {
+            return trustOptions;
+        }
+    }
+}
+----
+<1> Creates a REST client per request, fetching a fresh X.509-SVID from the SPIFFE Workload API. In practice, clients should consider caching SVIDs until close to expiration.
+<2> Builds PEM key-cert options from the SPIFFE certificate chain and private key.
+<3> Builds PEM trust options from the trust bundle CA certificates. The server certificate must be issued by a CA in the SPIFFE trust bundle for the TLS handshake to succeed.
+
+NOTE: When the server also presents an X.509-SVID, standard hostname verification must be disabled because SPIFFE conveys workload identity in the URI SAN, not the DNS SAN.
+In that case, the https://github.com/spiffe/spiffe/blob/main/standards/X509-SVID.md#5-constraints-and-usage[X.509-SVID specification] requires additional leaf certificate validation — verifying the URI SAN contains a valid SPIFFE ID, that `basicConstraints` has `cA=false`, and that `keyUsage` includes `digitalSignature` but not `keyCertSign`.
+SPIFFE-aware trust validation via TLS registry integration will be provided in a future release.
+
+TIP: The `io.quarkus.spiffe.client.SpiffeClient` class extends both `JwtSvidClient` and `X509SvidClient` classes. When your workload needs both JWT-SVIDs and X.509-SVIDs, consider injecting `SpiffeClient` instead of dealing with both `JwtSvidClient` and `X509SvidClient` clients.
 
 == Testing
 
@@ -134,7 +221,7 @@ You can choose the transport protocol with the `quarkus.spiffe-client.devservice
 [[keycloak-dev-svc-integration]]
 === Testing SPIFFE client authentication with Keycloak
 
-To test OIDC SPIFFE client authentication against Keycloak Dev Services, you need to configure a Keycloak realm with a SPIFFE identity provider and a `federated-jwt` client. 
+To test OIDC SPIFFE client authentication against Keycloak Dev Services, you need to configure a Keycloak realm with a SPIFFE identity provider and a `federated-jwt` client.
 You can automate this setup by creating a custom test resource using `KeycloakTestClient`. This ensures the realm is ready before your tests execute.
 For example, you can create a test realm like this:
 

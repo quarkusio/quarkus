@@ -989,16 +989,6 @@ public interface OidcTenantConfig extends OidcClientCommonConfig {
         Optional<Boolean> pkceRequired();
 
         /**
-         * Secret used to encrypt a Proof Key for Code Exchange (PKCE) code verifier in the code flow state.
-         * This secret should be at least 32 characters long.
-         *
-         * @deprecated This field is deprecated. Use {@link #stateSecret} instead.
-         *
-         */
-        @Deprecated(forRemoval = true)
-        Optional<String> pkceSecret();
-
-        /**
          * Secret used to encrypt Proof Key for Code Exchange (PKCE) code verifier and/or nonce in the code flow
          * state.
          * This secret should be at least 32 characters long.
@@ -1265,6 +1255,21 @@ public interface OidcTenantConfig extends OidcClientCommonConfig {
          */
         @WithDefault("false")
         boolean decryptAccessToken();
+
+        /**
+         * Supported ID and access token key decryption algorithms
+         */
+        enum DecryptionAlgorithm {
+            RSA_OAEP,
+            RSA_OAEP_256,
+            A256GCMKW
+        }
+
+        /**
+         * ID and access token key decryption algorithm
+         */
+        @ConfigDocDefault("RSA-OAEP if the decryption key is a private key, A256GCMKW if it is a secret key")
+        Optional<DecryptionAlgorithm> decryptionAlgorithm();
 
         /**
          * Allow the remote introspection of JWT tokens when no matching JWK key is available.

@@ -67,4 +67,19 @@ public interface BootstrapConfig {
         WARN,
         IGNORE;
     }
+
+    /**
+     * Whether to throw an error, warn or silently ignore extensions whose metadata declares a supported
+     * Quarkus version range ({@code requires-quarkus-version} in {@code META-INF/quarkus-extension.properties})
+     * that does not include the Quarkus core version used by the application. The check is skipped when the
+     * Quarkus core version is {@code 999-SNAPSHOT} or when an extension does not declare a version range.
+     */
+    @WithDefault("error")
+    IncompatibleExtensions incompatibleExtensions();
+
+    enum IncompatibleExtensions {
+        ERROR,
+        WARN,
+        IGNORE;
+    }
 }

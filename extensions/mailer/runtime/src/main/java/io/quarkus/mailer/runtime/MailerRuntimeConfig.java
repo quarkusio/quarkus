@@ -79,15 +79,6 @@ public interface MailerRuntimeConfig {
     Optional<String> tlsConfigurationName();
 
     /**
-     * Enables or disables the TLS/SSL.
-     *
-     * @deprecated Use {{@link #tls}}
-     */
-    @Deprecated
-    @WithDefault("false")
-    boolean ssl();
-
-    /**
      * Whether the connection should be secured using TLS.
      * <p>
      * SMTP allows establishing connection with or without TLS.
@@ -100,15 +91,6 @@ public interface MailerRuntimeConfig {
      * required to not establish a connection with TLS.
      */
     Optional<Boolean> tls();
-
-    /**
-     * Set whether all server certificates should be trusted.
-     * This option is only used when {@link #ssl} is enabled.
-     *
-     * @deprecated Use the TLS registry instead.
-     */
-    @Deprecated
-    Optional<Boolean> trustAll();
 
     /**
      * Sets the max number of open connections to the mail server.
@@ -171,28 +153,6 @@ public interface MailerRuntimeConfig {
      * The list is given as a space separated list, such as {@code DIGEST-MD5 CRAM-SHA256 CRAM-SHA1 CRAM-MD5 PLAIN LOGIN}.
      */
     Optional<String> authMethods();
-
-    /**
-     * Set the trust store.
-     *
-     * @deprecated Use the TLS registry instead.
-     */
-    @Deprecated
-    Optional<String> keyStore();
-
-    /**
-     * Sets the trust store password if any.
-     *
-     * @deprecated Use the TLS registry instead.
-     */
-    Optional<String> keyStorePassword();
-
-    /**
-     * Configures the trust store.
-     *
-     * @deprecated Use the TLS registry instead.
-     */
-    TrustStoreConfig truststore();
 
     /**
      * Whether the mail should always been sent as multipart even if they don't have attachments.

@@ -234,7 +234,7 @@ public class ApplicationDependencyResolver {
                     .setGroupId(a.getGroupId())
                     .setArtifactId(a.getArtifactId())
                     .setClassifier(a.getClassifier())
-                    .setType(a.getExtension())
+                    .setType(DependencyUtils.getType(a))
                     .setVersion(a.getVersion())
                     .setScope(dep.getScope());
             var appDep = appBuilder.getDependency(depBuilder.getKey());
@@ -642,6 +642,7 @@ public class ApplicationDependencyResolver {
                 }
                 try {
                     resolvedDep = DependencyUtils.toAppArtifact(getResolvedArtifact(), module)
+                            .setType(DependencyUtils.getType(artifact))
                             .setOptional(node.getDependency().isOptional())
                             .setScope(node.getDependency().getScope())
                             .setFlags(DependencyFlags.RUNTIME_CP | DependencyFlags.DEPLOYMENT_CP);

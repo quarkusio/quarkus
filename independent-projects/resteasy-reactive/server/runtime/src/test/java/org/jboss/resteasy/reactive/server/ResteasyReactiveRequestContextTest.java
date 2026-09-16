@@ -16,7 +16,7 @@ public class ResteasyReactiveRequestContextTest {
     @Test
     void testAbsoluteUriWithOverrides() {
         var request = Mockito.mock(ServerHttpRequest.class);
-        var context = new ResteasyReactiveRequestContext(null, null, null, null) {
+        var context = new ResteasyReactiveRequestContext(null, null, null, null, null) {
 
             @Override
             public ServerHttpResponse serverResponse() {

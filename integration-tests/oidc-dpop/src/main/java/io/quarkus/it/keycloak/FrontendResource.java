@@ -1,8 +1,10 @@
 package io.quarkus.it.keycloak;
 
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.security.KeyPair;
 import java.security.PrivateKey;
+import java.security.Signature;
 import java.util.UUID;
 
 import jakarta.annotation.PreDestroy;
@@ -143,6 +145,46 @@ public class FrontendResource {
     }
 
     @GET
+    @Path("login-jwt-missing-jti")
+    public Response loginJwtMissingJti() {
+        return redirect("dpop-jwt", "callback-jwt-missing-jti");
+    }
+
+    @GET
+    @Path("callback-jwt-missing-jti")
+    public Response callbackJwtMissingJti(@QueryParam("code") String code) throws Exception {
+        return callProtectedEndpoint(code, "dpop-jwt", "callback-jwt-missing-jti", "GET", "dpop-jwt", "dpop-jwt",
+                false, false, false, null, null);
+    }
+
+    @GET
+    @Path("login-jwt-with-nonce-and-jti/{nonce}/{jti}")
+    public Response loginJwtWithNonceAndJti(@RestPath String nonce, @RestPath String jti) {
+        return redirect("dpop-jwt", "callback-jwt-with-nonce-and-jti/" + nonce + "/" + jti);
+    }
+
+    @GET
+    @Path("callback-jwt-with-nonce-and-jti/{nonce}/{jti}")
+    public Response callbackJwtWithNonceAndJti(@RestQuery String code, @RestPath String nonce, @RestPath String jti)
+            throws Exception {
+        return callProtectedEndpoint(code, "dpop-jwt", "callback-jwt-with-nonce-and-jti/" + nonce + "/" + jti, "GET",
+                "dpop-jwt", "dpop-jwt", false, false, false, nonce, jti);
+    }
+
+    @GET
+    @Path("login-jwt-no-nonce-with-jti/{jti}")
+    public Response loginJwtNoNonceWithJti(@RestPath String jti) {
+        return redirect("dpop-jwt", "callback-jwt-no-nonce-with-jti/" + jti);
+    }
+
+    @GET
+    @Path("callback-jwt-no-nonce-with-jti/{jti}")
+    public Response callbackJwtNoNonceWithJti(@RestQuery String code, @RestPath String jti) throws Exception {
+        return callProtectedEndpoint(code, "dpop-jwt", "callback-jwt-no-nonce-with-jti/" + jti, "GET",
+                "dpop-jwt", "dpop-jwt", false, false, false, null, jti);
+    }
+
+    @GET
     @Path("login-jwt-wrong-dpop-http-method")
     public Response loginJwtWrongDpopHttpMethod() {
         return redirect("dpop-jwt", "callback-jwt-wrong-dpop-http-method");
@@ -223,6 +265,16 @@ public class FrontendResource {
             boolean wrongDpopJwkKey,
             boolean wrongDpopTokenHash, String resourceNonce)
             throws Exception {
+        return callProtectedEndpoint(code, tenantId, redirectPath, dPopHttpMethod, dPopEndpointPath, quarkusEndpointPath,
+                wrongDpopSignature, wrongDpopJwkKey, wrongDpopTokenHash, resourceNonce, UUID.randomUUID().toString());
+    }
+
+    private Response callProtectedEndpoint(String code, String tenantId, String redirectPath, String dPopHttpMethod,
+            String dPopEndpointPath, String quarkusEndpointPath,
+            boolean wrongDpopSignature,
+            boolean wrongDpopJwkKey,
+            boolean wrongDpopTokenHash, String resourceNonce, String jti)
+            throws Exception {
         String redirectUriParam = ui.getBaseUriBuilder().path("single-page-app").path(redirectPath).build().toString();
 
         MultiMap grantParams = MultiMap.caseInsensitiveMultiMap();
@@ -246,7 +298,7 @@ public class FrontendResource {
         requestToQuarkus.putHeader("Accept", "text/plain");
         String absoluteDpopEndpointUri = ui.getBaseUriBuilder().path("service").path(dPopEndpointPath).build().toString();
         requestToQuarkus.putHeader("DPoP", createDPopProofForQuarkus(keyPair, accessToken, dPopHttpMethod,
-                absoluteDpopEndpointUri, wrongDpopSignature, wrongDpopJwkKey, wrongDpopTokenHash, resourceNonce));
+                absoluteDpopEndpointUri, wrongDpopSignature, wrongDpopJwkKey, wrongDpopTokenHash, resourceNonce, jti));
         requestToQuarkus.putHeader("Authorization", "DPoP " + accessToken);
         HttpResponse<Buffer> response = requestToQuarkus.sendAndAwait();
         if (response.statusCode() == 401) {
@@ -302,7 +354,11 @@ public class FrontendResource {
             String dPopEndpointPath,
             boolean wrongDpopSignature,
             boolean wrongDpopJwkKey,
-            boolean wrongAccesstokenHash, String nonce) throws Exception {
+            boolean wrongAccesstokenHash, String nonce, String jti) throws Exception {
+
+        if (jti == null) {
+            return createDPopProofForQuarkusWithoutJti(keyPair, accessToken, dPopHttpMethod, dPopEndpointPath);
+        }
 
         JwtClaimsBuilder jwtClaimsBuilder = Jwt.claim("htm", dPopHttpMethod)
                 .claim("htu", dPopEndpointPath);
@@ -310,6 +366,8 @@ public class FrontendResource {
         if (nonce != null) {
             jwtClaimsBuilder.claim("nonce", nonce);
         }
+
+        jwtClaimsBuilder.claim("jti", jti);
 
         JwtSignatureBuilder jwtSignatureBuilder = jwtClaimsBuilder
                 .claim("ath", wrongAccesstokenHash ? accessToken
@@ -324,6 +382,23 @@ public class FrontendResource {
         PrivateKey signingKey = wrongDpopSignature ? KeyUtils.generateKeyPair(2048).getPrivate()
                 : keyPair.getPrivate();
         return jwtSignatureBuilder.sign(signingKey);
+    }
+
+    private String createDPopProofForQuarkusWithoutJti(KeyPair keyPair, String accessToken, String dPopHttpMethod,
+            String dPopEndpointPath) throws Exception {
+        String header = OidcCommonUtils.base64UrlEncode(
+                new JsonObject().put("typ", "dpop+jwt").put("alg", "RS256").encode().getBytes(StandardCharsets.UTF_8));
+        String payload = OidcCommonUtils.base64UrlEncode(new JsonObject()
+                .put("htm", dPopHttpMethod)
+                .put("htu", dPopEndpointPath)
+                .put("ath", OidcCommonUtils.base64UrlEncode(OidcUtils.getSha256Digest(accessToken)))
+                .encode().getBytes(StandardCharsets.UTF_8));
+
+        String signingInput = header + "." + payload;
+        Signature signature = Signature.getInstance("SHA256withRSA");
+        signature.initSign(keyPair.getPrivate());
+        signature.update(signingInput.getBytes(StandardCharsets.UTF_8));
+        return signingInput + "." + OidcCommonUtils.base64UrlEncode(signature.sign());
     }
 
     private OidcConfigurationMetadata getConfigMetadata(String tenantId) {

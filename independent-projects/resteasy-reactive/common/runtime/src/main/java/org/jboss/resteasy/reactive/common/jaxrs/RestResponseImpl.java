@@ -51,6 +51,7 @@ public class RestResponseImpl<T> extends RestResponse<T> {
     protected boolean consumed;
     protected boolean closed;
     protected boolean buffered;
+    private boolean clientResponse;
 
     @Override
     public Response toResponse() {
@@ -326,6 +327,14 @@ public class RestResponseImpl<T> extends RestResponse<T> {
 
     public Annotation[] getEntityAnnotations() {
         return entityAnnotations;
+    }
+
+    public boolean isClientResponse() {
+        return clientResponse;
+    }
+
+    public void setClientResponse(boolean clientResponse) {
+        this.clientResponse = clientResponse;
     }
 
 }

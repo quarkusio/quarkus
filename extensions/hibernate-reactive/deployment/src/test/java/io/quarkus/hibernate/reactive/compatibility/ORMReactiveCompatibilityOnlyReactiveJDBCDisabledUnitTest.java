@@ -26,7 +26,6 @@ public class ORMReactiveCompatibilityOnlyReactiveJDBCDisabledUnitTest extends Co
             .overrideConfigKey("quarkus.hibernate-orm.schema-management.strategy", SCHEMA_MANAGEMENT_STRATEGY)
             .overrideConfigKey("quarkus.datasource.jdbc", "false")
             .overrideConfigKey("quarkus.datasource.reactive", "true")
-            .overrideConfigKey("quarkus.datasource.db-kind", POSTGRES_KIND)
             .overrideConfigKey("quarkus.datasource.username", USERNAME_PWD)
             .overrideConfigKey("quarkus.datasource.password", USERNAME_PWD);
 

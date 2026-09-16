@@ -90,7 +90,7 @@ class RuntimeMappingDeployment {
 
             RuntimeResource fake = new RuntimeResource(currentHttpMethod, path, null, null, Collections.emptyList(),
                     null, null,
-                    new ServerRestHandler[] { mapper }, null, new Class[0], null, false,
+                    new ServerRestHandler[] { mapper }, new byte[1], null, new Class[0], null, false,
                     false, null, null, null, null, null,
                     resources.get(0).getClassExceptionMappers());
             currentMapperPerMethodTemplates.add(new RequestMapper.RequestPath<>(false, fake.getPath(), fake));

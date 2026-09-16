@@ -59,8 +59,6 @@ class ConfigurationTest {
 
         clientConfig = restClientsConfig.getClient(ConfigKeyClient.class);
         verifyClientConfig(clientConfig, true);
-        assertThat(clientConfig.proxyAddress().isPresent()).isTrue();
-        assertThat(clientConfig.proxyAddress().get()).isEqualTo("localhost:8080");
         assertThat(clientConfig.headers()).containsOnly(entry("user-agent", "MP REST Client"), entry("foo", "bar"));
 
         clientConfig = restClientsConfig.getClient(QuotedConfigKeyClient.class);
@@ -93,6 +91,8 @@ class ConfigurationTest {
         assertThat(clientConfig.queryParamStyle().get()).isEqualTo(QueryParamStyle.COMMA_SEPARATED);
 
         if (checkExtraProperties) {
+            assertTrue(clientConfig.formParamStyle().isPresent());
+            assertThat(clientConfig.formParamStyle().get()).isEqualTo(QueryParamStyle.ARRAY_PAIRS);
             assertTrue(clientConfig.connectionTTL().isPresent());
             assertThat(clientConfig.connectionTTL().getAsInt()).isEqualTo(30000);
             assertTrue(clientConfig.connectionPoolSize().isPresent());

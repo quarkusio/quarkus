@@ -48,6 +48,7 @@ import org.jboss.resteasy.reactive.server.model.HandlerChainCustomizer;
 import org.jboss.resteasy.reactive.server.model.ParamConverterProviders;
 import org.jboss.resteasy.reactive.server.model.ServerResourceMethod;
 import org.jboss.resteasy.reactive.server.spi.GenericRuntimeConfigurableServerRestHandler;
+import org.jboss.resteasy.reactive.server.spi.HandlerKindResolver;
 import org.jboss.resteasy.reactive.server.spi.ServerRestHandler;
 import org.jboss.resteasy.reactive.spi.BeanFactory;
 import org.jboss.resteasy.reactive.spi.ThreadSetupAction;
@@ -62,6 +63,7 @@ public class RuntimeDeploymentManager {
     private final RequestContextFactory requestContextFactory;
     private final ThreadSetupAction threadSetupAction;
     private final String rootPath;
+    private final HandlerKindResolver handlerKindResolver;
 
     private ArrayList<RequestMapper.RequestPath<RestInitialHandler.InitialMatch>> classMappers;
 
@@ -70,6 +72,16 @@ public class RuntimeDeploymentManager {
             Supplier<Executor> virtualExecutorSupplier,
             Consumer<Closeable> closeTaskHandler,
             RequestContextFactory requestContextFactory, ThreadSetupAction threadSetupAction, String rootPath) {
+        this(info, executorSupplier, virtualExecutorSupplier, closeTaskHandler, requestContextFactory, threadSetupAction,
+                rootPath, HandlerKindResolver.NONE);
+    }
+
+    public RuntimeDeploymentManager(DeploymentInfo info,
+            Supplier<Executor> executorSupplier,
+            Supplier<Executor> virtualExecutorSupplier,
+            Consumer<Closeable> closeTaskHandler,
+            RequestContextFactory requestContextFactory, ThreadSetupAction threadSetupAction, String rootPath,
+            HandlerKindResolver handlerKindResolver) {
         this.info = info;
         this.executorSupplier = executorSupplier;
         this.virtualExecutorSupplier = virtualExecutorSupplier;
@@ -77,6 +89,7 @@ public class RuntimeDeploymentManager {
         this.requestContextFactory = requestContextFactory;
         this.threadSetupAction = threadSetupAction;
         this.rootPath = rootPath;
+        this.handlerKindResolver = handlerKindResolver;
     }
 
     public Deployment deploy() {
@@ -121,7 +134,8 @@ public class RuntimeDeploymentManager {
         String finalPrefix = prefix;
 
         List<GenericRuntimeConfigurableServerRestHandler<?>> runtimeConfigurableServerRestHandlers = new ArrayList<>();
-        RuntimeResourceDeployment runtimeResourceDeployment = new RuntimeResourceDeployment(info, executorSupplier,
+        RuntimeResourceDeployment runtimeResourceDeployment = new RuntimeResourceDeployment(info, handlerKindResolver,
+                executorSupplier,
                 virtualExecutorSupplier,
                 interceptorDeployment, dynamicEntityWriter, resourceLocatorHandler, requestContextFactory.isDefaultBlocking());
         List<ResourceClass> possibleSubResource = new ArrayList<>(locatableResourceClasses);
@@ -236,7 +250,7 @@ public class RuntimeDeploymentManager {
                             null, null));
         }
         return new Deployment(exceptionMapping, info.getCtxResolvers(), serialisers,
-                abortHandlingChain.toArray(EMPTY_REST_HANDLER_ARRAY), dynamicEntityWriter,
+                abortHandlingChain.toArray(EMPTY_REST_HANDLER_ARRAY), handlerKindResolver, dynamicEntityWriter,
                 prefix, paramConverterProviders, configurationImpl, applicationSupplier,
                 threadSetupAction, requestContextFactory, preMatchHandlers, classMappers,
                 runtimeConfigurableServerRestHandlers, exceptionMapper, info.isServletPresent(),
@@ -250,8 +264,10 @@ public class RuntimeDeploymentManager {
         RuntimeMappingDeployment runtimeMappingDeployment = new RuntimeMappingDeployment(classTemplates);
         ClassRoutingHandler classRoutingHandler = new ClassRoutingHandler(runtimeMappingDeployment.buildClassMapper(),
                 classTemplateNameCount, info.isServletPresent());
+        ServerRestHandler[] classRoutingChain = new ServerRestHandler[] { classRoutingHandler };
         classMappers.add(new RequestMapper.RequestPath<>(true, key.path,
-                new RestInitialHandler.InitialMatch(new ServerRestHandler[] { classRoutingHandler },
+                new RestInitialHandler.InitialMatch(classRoutingChain,
+                        handlerKindResolver.kindsOf(classRoutingChain),
                         runtimeMappingDeployment.getMaxMethodTemplateNameCount() + classTemplateNameCount)));
     }
 

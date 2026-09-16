@@ -797,5 +797,12 @@ triage:
       labels: [area/virtual-threads]
       title: "(virtual.thread|RunOnVirtualThread)"
       notify: [cescoffier, ozangunalp]
+    - id: sbom
+      labels: [area/sbom]
+      title: "(sbom|cyclonedx)"
+      notify: [aloubyansky]
+      notifyInPullRequest: true
+      directories:
+        - extensions/cyclonedx/
   qe:
     notify: [rsvoboda, mjurc]

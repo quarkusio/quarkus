@@ -17,7 +17,6 @@ import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
-import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 
@@ -27,6 +26,7 @@ import org.jboss.logmanager.handlers.ConsoleHandler;
 
 import io.quarkus.bootstrap.app.AugmentAction;
 import io.quarkus.bootstrap.app.ClassChangeInformation;
+import io.quarkus.bootstrap.app.ClassTransformer;
 import io.quarkus.bootstrap.app.CuratedApplication;
 import io.quarkus.bootstrap.app.RunningQuarkusApplication;
 import io.quarkus.bootstrap.app.StartupAction;
@@ -40,7 +40,6 @@ import io.quarkus.deployment.builditem.ApplicationClassPredicateBuildItem;
 import io.quarkus.deployment.console.ConsoleCommand;
 import io.quarkus.deployment.console.ConsoleStateManager;
 import io.quarkus.deployment.dev.testing.TestSupport;
-import io.quarkus.deployment.steps.ClassTransformingBuildStep;
 import io.quarkus.dev.appstate.ApplicationStartException;
 import io.quarkus.dev.appstate.ApplicationStateNotification;
 import io.quarkus.dev.console.DevConsoleManager;
@@ -88,8 +87,12 @@ public class IsolatedDevModeMain implements BiConsumer<CuratedApplication, Map<S
                         .invoke(null, getExitCodeHandler());
 
                 StartupAction start = augmentAction.createInitialRuntimeApplication();
-
-                runner = start.runMainClass(context.getArgs());
+                try {
+                    runner = start.runMainClass(context.getArgs());
+                } catch (Throwable t) {
+                    start.getClassLoader().close();
+                    throw t;
+                }
                 RuntimeUpdatesProcessor.INSTANCE
                         .setConfiguredInstrumentationEnabled(
                                 runner.getConfigValue("quarkus.live-reload.instrumentation", Boolean.class).orElse(false))
@@ -204,7 +207,12 @@ public class IsolatedDevModeMain implements BiConsumer<CuratedApplication, Map<S
             try {
                 StartupAction start = augmentAction.reloadExistingApplication(firstStartCompleted, changedResources,
                         classChangeInformation);
-                runner = start.runMainClass(context.getArgs());
+                try {
+                    runner = start.runMainClass(context.getArgs());
+                } catch (Throwable t) {
+                    start.getClassLoader().close();
+                    throw t;
+                }
                 if (!firstStartCompleted) {
                     notifyListenersAfterStart();
                     firstStartCompleted = true;
@@ -258,10 +266,10 @@ public class IsolatedDevModeMain implements BiConsumer<CuratedApplication, Map<S
             }
 
             RuntimeUpdatesProcessor processor = new RuntimeUpdatesProcessor(appRoot, context, compiler,
-                    devModeType, this::restartCallback, null, new BiFunction<String, byte[], byte[]>() {
+                    devModeType, this::restartCallback, null, new ClassTransformer() {
                         @Override
-                        public byte[] apply(String s, byte[] bytes) {
-                            return ClassTransformingBuildStep.transform(s, bytes);
+                        public byte[] transform(String s, byte[] bytes) {
+                            return augmentAction.getClassTransformer().transform(s, bytes);
                         }
                     }, testSupport, deploymentProblem);
 

@@ -40,12 +40,30 @@ public class QuarkusExceptionHandler implements ExceptionHandler {
             Logger.Level stackTraceLevel = log.stackTraceLevel();
             String category = log.category();
             handleCustomLog(exchange, t, level, stackTraceLevel, category, uid);
-        } else if (t instanceof IOException) {
+        } else if (isIOException(t)) {
             //we log IOExceptions at a lower level
             //because they can be easily caused by malicious remote clients in at attempt to DOS the server by filling the logs
             UndertowLogger.REQUEST_IO_LOGGER.debugf(t, "Exception handling request %s to %s", uid, exchange.getRequestURI());
         } else {
             UndertowLogger.REQUEST_IO_LOGGER.errorf(t, "Exception handling request %s to %s", uid, exchange.getRequestURI());
+        }
+        // once the response is complete, typically because the client went away while it was being written, no error
+        // page can be sent any more and attempting it fails in turn
+        return exchange.isResponseComplete();
+    }
+
+    /**
+     * Whether the exception is, or wraps, an {@link IOException}: frameworks such as RESTEasy report a failed write
+     * to the client through their own exception type.
+     */
+    private static boolean isIOException(Throwable t) {
+        for (Throwable cause = t; cause != null; cause = cause.getCause()) {
+            if (cause instanceof IOException) {
+                return true;
+            }
+            if (cause.getCause() == cause) {
+                break;
+            }
         }
         return false;
     }

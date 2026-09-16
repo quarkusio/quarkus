@@ -7,7 +7,9 @@ import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.LongConsumer;
 import java.util.function.Predicate;
 
 import jakarta.ws.rs.client.Entity;
@@ -22,10 +24,13 @@ import org.jboss.resteasy.reactive.common.util.RestMediaType;
 
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
+import io.smallrye.mutiny.helpers.Subscriptions;
 import io.smallrye.mutiny.subscription.MultiEmitter;
 import io.vertx.core.AsyncResult;
+import io.vertx.core.Context;
 import io.vertx.core.Handler;
 import io.vertx.core.Promise;
+import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpClientResponse;
 import io.vertx.core.net.impl.ConnectionBase;
@@ -154,14 +159,15 @@ public class MultiInvoker extends AbstractRxInvoker<Multi<?>> {
                                     (String) restClientRequestContext.getProperties()
                                             .get(RestClientRequestContext.DEFAULT_CONTENT_TYPE_PROP),
                                     restClientRequestContext.getInvokedMethod());
+                            vertxResponse.resume();
                         } else if (response.getStatus() == 200
                                 && isNewlineDelimited(response)) {
                             registerForJsonStream(multiRequest, restClientRequestContext, responseType, response,
                                     vertxResponse);
+                            vertxResponse.resume();
                         } else {
                             registerForChunks(multiRequest, restClientRequestContext, responseType, response, vertxResponse);
                         }
-                        vertxResponse.resume();
                     } else {
                         vertxResponse.request().connection().close();
                     }
@@ -307,6 +313,7 @@ public class MultiInvoker extends AbstractRxInvoker<Multi<?>> {
         // we don't add a closeHandler handler on the connection as it can race with this handler
         // and close before the emitter emits anything
         // see: https://github.com/quarkusio/quarkus/pull/16438
+        DemandDrivenFetch fetch = new DemandDrivenFetch(multiRequest.emitter, vertxClientResponse, Vertx.currentContext());
         vertxClientResponse.handler(new Handler<Buffer>() {
             @Override
             public void handle(Buffer buffer) {
@@ -320,6 +327,7 @@ public class MultiInvoker extends AbstractRxInvoker<Multi<?>> {
                             mediaType,
                             restClientRequestContext.getMethodDeclaredAnnotationsSafe(),
                             response.getMetadata());
+                    fetch.emitted.incrementAndGet();
                     multiRequest.emitter.emit(item);
 
                 } catch (Throwable t) {
@@ -338,6 +346,63 @@ public class MultiInvoker extends AbstractRxInvoker<Multi<?>> {
         multiRequest.onCancel(() -> {
             vertxClientResponse.request().connection().close();
         });
+        fetch.start();
+    }
+
+    private static class DemandDrivenFetch {
+
+        private final MultiEmitter<?> emitter;
+        private final HttpClientResponse response;
+        private final Context context;
+        final AtomicLong emitted = new AtomicLong();
+        private long fetched;
+
+        DemandDrivenFetch(MultiEmitter<?> emitter, HttpClientResponse response, Context context) {
+            this.emitter = emitter;
+            this.response = response;
+            this.context = context;
+        }
+
+        void start() {
+            response.pause();
+            emitter.onRequest(new LongConsumer() {
+                @Override
+                public void accept(long n) {
+                    fetchRequested();
+                }
+            });
+            fetchRequested();
+        }
+
+        private synchronized void fetchRequested() {
+            if (fetched == Long.MAX_VALUE) {
+                return;
+            }
+            long totalRequested = Subscriptions.add(emitter.requested(), emitted.get());
+            if (totalRequested == Long.MAX_VALUE) {
+                fetched = Long.MAX_VALUE;
+                fetch(Long.MAX_VALUE);
+                return;
+            }
+            long toFetch = totalRequested - fetched;
+            if (toFetch > 0) {
+                fetched = totalRequested;
+                fetch(toFetch);
+            }
+        }
+
+        private void fetch(long amount) {
+            if (context == null || Vertx.currentContext() == context) {
+                response.fetch(amount);
+            } else {
+                context.runOnContext(new Handler<Void>() {
+                    @Override
+                    public void handle(Void v) {
+                        response.fetch(amount);
+                    }
+                });
+            }
+        }
     }
 
     private <R> void registerForJsonStream(MultiRequest<? super R> multiRequest,

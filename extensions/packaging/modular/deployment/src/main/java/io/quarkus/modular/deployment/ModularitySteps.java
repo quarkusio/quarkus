@@ -742,7 +742,7 @@ public final class ModularitySteps {
             case "io.quarkus.resteasy.reactive.vertx" -> {
                 depAccesses.computeIfAbsent("io.vertx.core", ModularitySteps::newMap)
                         .putAll(Map.of("io.vertx.core.impl", PackageAccess.EXPORTED,
-                                "io.vertx.core.buffer.impl", PackageAccess.EXPORTED,
+                                "io.vertx.core.impl.buffer", PackageAccess.EXPORTED,
                                 "io.vertx.core.http.impl", PackageAccess.EXPORTED,
                                 "io.vertx.core.net.impl", PackageAccess.EXPORTED));
             }
@@ -782,7 +782,6 @@ public final class ModularitySteps {
                 depAccesses.computeIfAbsent("io.vertx.core", ModularitySteps::newMap)
                         .putAll(Map.of(
                                 "io.vertx.core.impl", PackageAccess.EXPORTED,
-                                "io.vertx.core.impl.logging", PackageAccess.EXPORTED,
                                 "io.vertx.core.http.impl", PackageAccess.EXPORTED,
                                 "io.vertx.core.net.impl", PackageAccess.EXPORTED));
             }
@@ -1075,7 +1074,7 @@ public final class ModularitySteps {
      * @return the artifact key (group, artifact, and classifier only) (not {@code null})
      */
     private static ArtifactKey keyOf(final ArtifactCoords dependency) {
-        return ArtifactKey.gac(dependency.getGroupId(), dependency.getArtifactId(), dependency.getClassifier());
+        return ArtifactKey.of(dependency.getGroupId(), dependency.getArtifactId(), dependency.getClassifier(), null);
     }
 
     /**

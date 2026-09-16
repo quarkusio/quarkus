@@ -57,11 +57,8 @@ public class OpenTelemetryLogHandler extends ExtHandler {
      */
     public OpenTelemetryLogHandler() {
         final Config config = ConfigProvider.getConfig();
-        this.logFileEnabled = config.getOptionalValue("quarkus.log.file.enable", Boolean.class)
-                .orElse(config.getOptionalValue("quarkus.log.file.enabled", Boolean.class)
-                        .orElse(false));
-        this.logFilePath = this.logFileEnabled ? config.getOptionalValue("quarkus.log.file.path", String.class).orElse(null)
-                : null;
+        this.logFileEnabled = config.getValue("quarkus.log.file.enabled", boolean.class);
+        this.logFilePath = this.logFileEnabled ? config.getValue("quarkus.log.file.path", String.class) : null;
     }
 
     /**

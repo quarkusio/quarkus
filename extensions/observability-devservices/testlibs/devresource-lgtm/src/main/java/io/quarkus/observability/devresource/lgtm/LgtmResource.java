@@ -159,6 +159,9 @@ public class LgtmResource extends ContainerResource<LgtmContainer, LgtmConfig> {
             case ContainerConstants.GRAFANA_PORT:
                 containerConfigs.put("grafana.endpoint", String.format("http://%s:%s", host, publicPort));
                 break;
+            case ContainerConstants.PROMETHEUS_PORT:
+                containerConfigs.put("prometheus.endpoint", String.format("http://%s:%s", host, publicPort));
+                break;
             case ContainerConstants.TEMPO_MCP_PORT:
                 containerConfigs.put("tempo-mcp.endpoint", String.format("http://%s:%s", host, publicPort));
                 break;
@@ -191,6 +194,19 @@ public class LgtmResource extends ContainerResource<LgtmContainer, LgtmConfig> {
     }
 
     @Override
+    public <S> Map<String, Function<S, String>> configProvider(Function<S, Map<String, String>> fn) {
+        return createConfigProvider(
+                fn,
+                Prop.of("grafana.endpoint"),
+                Prop.of("prometheus.endpoint"),
+                Prop.of("tempo-mcp.endpoint"),
+                Prop.of("otel-collector.url"),
+                new Prop("quarkus.micrometer.export.otlp.url", () -> catalog != null && catalog.hasMicrometerOtlp()),
+                new Prop("quarkus.otel.exporter.otlp.endpoint", () -> catalog != null && catalog.hasOpenTelemetry()),
+                new Prop("quarkus.otel.exporter.otlp.protocol", () -> catalog != null && catalog.hasOpenTelemetry()));
+    }
+
+    @Override
     protected LgtmContainer defaultContainer() {
         return new LgtmContainer(isScrapingRequired(TCCL_FN)); // best we can do?
     }
@@ -201,13 +217,23 @@ public class LgtmResource extends ContainerResource<LgtmContainer, LgtmConfig> {
         Map<String, String> containerConfigs = new HashMap<>();
 
         containerConfigs.putAll(config(ContainerConstants.GRAFANA_PORT, host));
+        containerConfigs.putAll(config(ContainerConstants.PROMETHEUS_PORT, host));
         containerConfigs.putAll(config(ContainerConstants.TEMPO_MCP_PORT, host));
         containerConfigs.putAll(config(ContainerConstants.OTEL_HTTP_EXPORTER_PORT, host));
         // Iff GRPC is the OTLP protocol, overwrite the otel-collector.url we just wrote with the correct grpc one, and set up the otlp endpoints
         if (ContainerConstants.OTEL_GRPC_PROTOCOL.equals(container.getOtlpProtocol())) {
             containerConfigs.putAll(config(ContainerConstants.OTEL_GRPC_EXPORTER_PORT, host));
         }
+
         return containerConfigs;
+    }
+
+    @Override
+    public void logInfo() {
+        // move here, so we see it logged
+        for (String dashboard : container.getCustomDashboards()) {
+            log.infof("Adding custom Grafana dashboard config: %s", dashboard);
+        }
     }
 
     @Override

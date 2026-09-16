@@ -11,6 +11,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
@@ -68,7 +69,10 @@ public class CuratedApplication implements Serializable, AutoCloseable {
     final ApplicationModel appModel;
 
     final AtomicInteger runtimeClassLoaderCount = new AtomicInteger();
-    private boolean eligibleForReuse = false;
+    private final AtomicInteger activeRuntimeClassLoaderCount = new AtomicInteger();
+
+    // Per-CuratedApplication context that survives across AugmentActionImpl instances
+    private final Map<Class<?>, Object> curatedApplicationContext = new ConcurrentHashMap<>();
 
     CuratedApplication(QuarkusBootstrap quarkusBootstrap, CurationResult curationResult,
             ConfiguredClassLoading configuredClassLoading) {
@@ -76,10 +80,6 @@ public class CuratedApplication implements Serializable, AutoCloseable {
         this.curationResult = curationResult;
         this.appModel = curationResult.getApplicationModel();
         this.configuredClassLoading = configuredClassLoading;
-    }
-
-    public void setEligibleForReuse(boolean eligible) {
-        this.eligibleForReuse = eligible;
     }
 
     public boolean isFlatClassPath() {
@@ -466,7 +466,12 @@ public class CuratedApplication implements Serializable, AutoCloseable {
         for (Path root : configuredClassLoading.getAdditionalClasspathElements()) {
             builder.addNormalPriorityElement(ClassPathElement.fromPath(root, true));
         }
-        return builder.build();
+        activeRuntimeClassLoaderCount.incrementAndGet();
+        QuarkusClassLoader runtimeClassLoader = builder.build();
+        runtimeClassLoader.addCloseTask(() -> {
+            activeRuntimeClassLoaderCount.decrementAndGet();
+        });
+        return runtimeClassLoader;
     }
 
     public boolean isReloadableArtifact(ArtifactKey key) {
@@ -477,8 +482,15 @@ public class CuratedApplication implements Serializable, AutoCloseable {
         return this.configuredClassLoading.hasReloadableArtifacts();
     }
 
+    public Map<Class<?>, Object> getCuratedApplicationContext() {
+        return curatedApplicationContext;
+    }
+
     @Override
     public void close() {
+        if (activeRuntimeClassLoaderCount.get() > 0) {
+            return;
+        }
         if (augmentClassLoader != null) {
             augmentClassLoader.close();
             augmentClassLoader = null;
@@ -488,10 +500,7 @@ public class CuratedApplication implements Serializable, AutoCloseable {
             baseRuntimeClassLoader = null;
         }
         augmentationElements.clear();
-    }
-
-    public boolean isEligibleForReuse() {
-        return eligibleForReuse;
+        curatedApplicationContext.clear();
     }
 
     /**

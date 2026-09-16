@@ -36,13 +36,6 @@ public class RedisCacheInfoBuilder {
                     cacheInfo.expireAfterWrite = defaultRuntimeConfig.expireAfterWrite();
                 }
 
-                // Handle the deprecated TTL
-                if (namedRuntimeConfig != null && namedRuntimeConfig.ttl().isPresent()) {
-                    cacheInfo.expireAfterWrite = namedRuntimeConfig.ttl();
-                } else if (defaultRuntimeConfig.ttl().isPresent()) {
-                    cacheInfo.expireAfterWrite = defaultRuntimeConfig.ttl();
-                }
-
                 if (namedRuntimeConfig != null && namedRuntimeConfig.prefix().isPresent()) {
                     cacheInfo.prefix = namedRuntimeConfig.prefix().get();
                 } else if (defaultRuntimeConfig.prefix().isPresent()) {

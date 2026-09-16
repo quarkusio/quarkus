@@ -712,6 +712,7 @@ java -Dio.netty.leakDetection.level=advanced ...
 * https://quarkus.io/guides/resteasy[`quarkus-resteasy-jackson`]
 * https://quarkus.io/guides/resteasy-client[`quarkus-resteasy-client`]
 * https://quarkus.io/guides/scheduler[`quarkus-scheduler`]
+* https://quarkus.io/guides/signals[`quarkus-signals`]
 * https://quarkus.io/guides/smallrye-graphql[`quarkus-smallrye-graphql`]
 * https://quarkus.io/extensions/io.quarkus/quarkus-messaging[`quarkus-messaging`]
 ** AMQP 1.0

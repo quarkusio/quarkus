@@ -20,43 +20,37 @@ public class AeshReplWithHibernateTest {
 
     @Test
     void testAddAndListItems(AeshLauncher launcher) {
-        launcher.launch();
-
         // Database starts empty
-        String output = launcher.executeCommand("list-items");
-        assertThat(output).contains("No items found");
+        launcher.execute("list-items");
+        assertThat(launcher.getCommandOutput()).contains("No items found");
 
         // Add items
-        output = launcher.executeCommand("add-item apple");
-        assertThat(output).contains("Added: apple");
+        launcher.execute("add-item apple");
+        assertThat(launcher.getCommandOutput()).isEqualTo("Added: apple\n");
 
-        output = launcher.executeCommand("add-item banana");
-        assertThat(output).contains("Added: banana");
+        launcher.execute("add-item banana");
+        assertThat(launcher.getCommandOutput()).isEqualTo("Added: banana\n");
 
-        // Verify persistence
-        output = launcher.executeCommand("list-items");
-        assertThat(output).contains("Items (2):");
-        assertThat(output).contains("- apple");
-        assertThat(output).contains("- banana");
-
-        launcher.exit();
+        // Verify persistence — multi-line output, use contains for individual lines
+        launcher.execute("list-items");
+        assertThat(launcher.getCommandOutput())
+                .contains("Items (2):")
+                .contains("- apple")
+                .contains("- banana");
     }
 
     @Test
     void testDataIsolationBetweenTests(AeshLauncher launcher) {
-        launcher.launch();
-
         // Each test gets a fresh database (drop-and-create)
-        String output = launcher.executeCommand("list-items");
-        assertThat(output).contains("No items found");
+        launcher.execute("list-items");
+        assertThat(launcher.getCommandOutput()).contains("No items found");
 
-        output = launcher.executeCommand("add-item cherry");
-        assertThat(output).contains("Added: cherry");
+        launcher.execute("add-item cherry");
+        assertThat(launcher.getCommandOutput()).isEqualTo("Added: cherry\n");
 
-        output = launcher.executeCommand("list-items");
-        assertThat(output).contains("Items (1):");
-        assertThat(output).contains("- cherry");
-
-        launcher.exit();
+        launcher.execute("list-items");
+        assertThat(launcher.getCommandOutput())
+                .contains("Items (1):")
+                .contains("- cherry");
     }
 }

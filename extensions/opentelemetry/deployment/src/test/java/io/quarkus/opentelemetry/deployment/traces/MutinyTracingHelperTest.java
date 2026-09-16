@@ -6,6 +6,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
 
 import jakarta.inject.Inject;
@@ -19,6 +21,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import io.opentelemetry.api.baggage.Baggage;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.context.Scope;
@@ -129,6 +132,115 @@ class MutinyTracingHelperTest {
                 subspanName);
         assertChildSpan(spans, parentSpanName, pipelineSpanName);
         assertChildSpan(spans, pipelineSpanName, subspanName);
+    }
+
+    @ParameterizedTest(name = "{index}: Baggage from parent context is propagated {1}")
+    @MethodSource("generateContextRunners")
+    void testBaggageIsPropagatedFromParentContext(final String contextType, final String contextName) {
+
+        final Baggage baggage = Baggage.builder().put("OriginatorId", "12345678").build();
+        final io.opentelemetry.context.Context parentContext = io.opentelemetry.context.Context.current().with(baggage);
+
+        final AtomicReference<String> observedBaggage = new AtomicReference<>();
+
+        final UniAssertSubscriber<String> subscriber = Uni.createFrom()
+                .item("Hello")
+                .emitOn(r -> runOnContext(r, vertx, contextType))
+                .onItem()
+                .transformToUni(m -> wrapWithSpan(tracer, Optional.of(parentContext), "baggageSpan",
+                        Uni.createFrom().item(m).onItem().transform(s -> {
+                            observedBaggage.set(Baggage.current().getEntryValue("OriginatorId"));
+                            return s + " world";
+                        })))
+                .subscribe()
+                .withSubscriber(new UniAssertSubscriber<>());
+
+        subscriber.awaitItem().assertItem("Hello world");
+
+        //the baggage set in the parent context must be visible inside the wrapped pipeline
+        assertThat(observedBaggage.get()).isEqualTo("12345678");
+
+        //drain the span so its asynchronous export does not leak into the next test
+        final List<SpanData> spans = spanExporter.getFinishedSpanItems(1);
+        assertThat(spans.stream().map(SpanData::getName)).containsExactly("baggageSpan");
+    }
+
+    @ParameterizedTest(name = "{index}: Baggage from parent context is propagated in multi {1}")
+    @MethodSource("generateContextRunners")
+    void testBaggageIsPropagatedFromParentContextInMulti(final String contextType, final String contextName) {
+
+        final Baggage baggage = Baggage.builder().put("OriginatorId", "12345678").build();
+        final io.opentelemetry.context.Context parentContext = io.opentelemetry.context.Context.current().with(baggage);
+
+        final List<String> observedBaggage = new CopyOnWriteArrayList<>();
+
+        final AssertSubscriber<String> subscriber = Multi.createFrom()
+                .items("test1", "test2", "test3")
+                .emitOn(r -> runOnContext(r, vertx, contextType))
+                .onItem()
+                .transformToUniAndConcatenate(m -> wrapWithSpan(tracer, Optional.of(parentContext), "baggageSpan " + m,
+                        Uni.createFrom().item(m).onItem().transform(s -> {
+                            observedBaggage.add(Baggage.current().getEntryValue("OriginatorId"));
+                            return s + " transformed";
+                        })))
+                .subscribe()
+                .withSubscriber(AssertSubscriber.create(3));
+
+        subscriber.awaitCompletion().assertItems("test1 transformed", "test2 transformed", "test3 transformed");
+
+        //each wrapped item must see the baggage from the parent context
+        assertThat(observedBaggage).containsExactly("12345678", "12345678", "12345678");
+
+        //drain the spans so their asynchronous export does not leak into the next test
+        final List<SpanData> spans = spanExporter.getFinishedSpanItems(3);
+        assertThat(spans.stream().map(SpanData::getName))
+                .containsExactlyInAnyOrder("baggageSpan test1", "baggageSpan test2", "baggageSpan test3");
+    }
+
+    @ParameterizedTest(name = "{index}: Baggage survives an explicit no-parent (root) span {1}")
+    @MethodSource("generateContextRunners")
+    void testBaggageSurvivesExplicitNoParent(final String contextType, final String contextName) {
+
+        final Baggage baggage = Baggage.builder().put("OriginatorId", "12345678").build();
+        final io.opentelemetry.context.Context parentContext = io.opentelemetry.context.Context.current().with(baggage);
+
+        final AtomicReference<String> outerBaggage = new AtomicReference<>();
+        final AtomicReference<String> innerBaggage = new AtomicReference<>();
+
+        final UniAssertSubscriber<String> subscriber = Uni.createFrom()
+                .item("Hello")
+                .emitOn(r -> runOnContext(r, vertx, contextType))
+                .onItem()
+                .transformToUni(m -> wrapWithSpan(tracer, Optional.of(parentContext), "outerSpan",
+                        Uni.createFrom().item(m)
+                                //the outer pipeline runs with the explicit parent context, so its baggage is visible
+                                .onItem().invoke(() -> outerBaggage.set(Baggage.current().getEntryValue("OriginatorId")))
+                                //nest an explicit no-parent (root) span while baggage is active in the surrounding context
+                                .onItem().transformToUni(s -> wrapWithSpan(tracer, Optional.empty(), "innerSpan",
+                                        Uni.createFrom().item(s).onItem().transform(x -> {
+                                            innerBaggage.set(Baggage.current().getEntryValue("OriginatorId"));
+                                            return x + " world";
+                                        })))))
+                .subscribe()
+                .withSubscriber(new UniAssertSubscriber<>());
+
+        subscriber.awaitItem().assertItem("Hello world");
+
+        //the outer pipeline sees the baggage from the explicit parent context...
+        assertThat(outerBaggage.get()).isEqualTo("12345678");
+        //...and Optional.empty() only detaches the trace parent (root span), so baggage from the
+        //surrounding context is still propagated into the wrapped pipeline
+        assertThat(innerBaggage.get()).isEqualTo("12345678");
+
+        //drain the spans so their asynchronous export does not leak into the next test
+        final List<SpanData> spans = spanExporter.getFinishedSpanItems(2);
+        assertThat(spans.stream().map(SpanData::getName)).containsExactlyInAnyOrder("outerSpan", "innerSpan");
+        //the inner span must have no parent, even though it inherits the baggage
+        assertThat(spans.stream()
+                .filter(span -> span.getName().equals("innerSpan"))
+                .findAny()
+                .orElseThrow()
+                .getParentSpanId()).isEqualTo("0000000000000000");//signifies no parent
     }
 
     @ParameterizedTest(name = "{index}: Nested uni pipeline with implicit parent {1}")

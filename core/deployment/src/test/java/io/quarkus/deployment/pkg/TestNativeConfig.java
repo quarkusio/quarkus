@@ -165,11 +165,6 @@ public class TestNativeConfig implements NativeConfig {
     }
 
     @Override
-    public boolean enableVmInspection() {
-        return false;
-    }
-
-    @Override
     public Optional<List<MonitoringOption>> monitoring() {
         return Optional.empty();
     }

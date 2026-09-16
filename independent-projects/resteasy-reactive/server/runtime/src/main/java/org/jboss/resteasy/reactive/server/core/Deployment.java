@@ -26,6 +26,7 @@ import org.jboss.resteasy.reactive.server.mapping.RequestMapper;
 import org.jboss.resteasy.reactive.server.model.ContextResolvers;
 import org.jboss.resteasy.reactive.server.model.ParamConverterProviders;
 import org.jboss.resteasy.reactive.server.spi.GenericRuntimeConfigurableServerRestHandler;
+import org.jboss.resteasy.reactive.server.spi.HandlerKindResolver;
 import org.jboss.resteasy.reactive.server.spi.RuntimeConfiguration;
 import org.jboss.resteasy.reactive.server.spi.ServerRestHandler;
 import org.jboss.resteasy.reactive.spi.BeanFactory.BeanInstance;
@@ -36,6 +37,7 @@ public class Deployment {
     private final ContextResolvers contextResolvers;
     private final ServerSerialisers serialisers;
     private final ServerRestHandler[] abortHandlerChain;
+    private final HandlerKindResolver handlerKindResolver;
     private final EntityWriter dynamicEntityWriter;
     private final String prefix;
     private final ParamConverterProviders paramConverterProviders;
@@ -56,7 +58,7 @@ public class Deployment {
     public Deployment(ExceptionMapping exceptionMapping,
             ContextResolvers contextResolvers,
             ServerSerialisers serialisers,
-            ServerRestHandler[] abortHandlerChain,
+            ServerRestHandler[] abortHandlerChain, HandlerKindResolver handlerKindResolver,
             EntityWriter dynamicEntityWriter, String prefix, ParamConverterProviders paramConverterProviders,
             ConfigurationImpl configuration, Supplier<Application> applicationSupplier,
             ThreadSetupAction threadSetupAction, RequestContextFactory requestContextFactory,
@@ -71,6 +73,7 @@ public class Deployment {
         this.contextResolvers = contextResolvers;
         this.serialisers = serialisers;
         this.abortHandlerChain = abortHandlerChain;
+        this.handlerKindResolver = handlerKindResolver;
         this.dynamicEntityWriter = dynamicEntityWriter;
         this.prefix = prefix;
         this.paramConverterProviders = paramConverterProviders;
@@ -121,6 +124,10 @@ public class Deployment {
 
     public ServerRestHandler[] getAbortHandlerChain() {
         return abortHandlerChain;
+    }
+
+    public HandlerKindResolver getHandlerKindResolver() {
+        return handlerKindResolver;
     }
 
     public EntityWriter getDynamicEntityWriter() {

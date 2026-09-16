@@ -26,7 +26,7 @@ public interface DataSourcesBuildTimeConfig {
     @ConfigDocMapKey("datasource-name")
     @WithParentName
     @WithDefaults
-    @WithUnnamedKey(DataSourceUtil.DEFAULT_DATASOURCE_NAME)
+    @WithUnnamedKey(value = DataSourceUtil.DEFAULT_DATASOURCE_NAME, eager = false)
     Map<String, DataSourceBuildTimeConfig> dataSources();
 
     /**
@@ -83,8 +83,7 @@ public interface DataSourcesBuildTimeConfig {
     Optional<String> driver();
 
     default boolean hasNamedDataSources() {
-        return dataSources().keySet().size() > 1
-                || (!dataSources().isEmpty()
-                        && !dataSources().containsKey(DataSourceUtil.DEFAULT_DATASOURCE_NAME));
+        return dataSources().keySet().stream()
+                .anyMatch(name -> !DataSourceUtil.isDefault(name));
     }
 }

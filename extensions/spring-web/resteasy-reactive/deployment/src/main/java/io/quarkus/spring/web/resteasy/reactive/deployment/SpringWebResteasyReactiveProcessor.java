@@ -3,6 +3,7 @@ package io.quarkus.spring.web.resteasy.reactive.deployment;
 import static org.jboss.jandex.AnnotationInstance.create;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.DEFAULT_VALUE;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.REST_COOKIE_PARAM;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.REST_HEADER_PARAM;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.REST_MATRIX_PARAM;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.REST_PATH_PARAM;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.REST_QUERY_PARAM;
@@ -51,6 +52,7 @@ import io.quarkus.resteasy.reactive.spi.ExceptionMapperBuildItem;
 import io.quarkus.resteasy.server.common.spi.AdditionalJaxRsResourceMethodParamAnnotations;
 import io.quarkus.spring.web.resteasy.reactive.runtime.ResponseEntityHandler;
 import io.quarkus.spring.web.resteasy.reactive.runtime.ResponseStatusHandler;
+import io.quarkus.spring.web.resteasy.reactive.runtime.SpringHeaderMapParamExtractor;
 import io.quarkus.spring.web.resteasy.reactive.runtime.SpringMapParamExtractor;
 import io.quarkus.spring.web.resteasy.reactive.runtime.SpringMultiValueListParamExtractor;
 import io.quarkus.spring.web.resteasy.reactive.runtime.SpringMultiValueMapParamExtractor;
@@ -291,7 +293,7 @@ public class SpringWebResteasyReactiveProcessor {
                             if (annotationName.equals(REQUEST_PARAM)) {
                                 jaxRsAnnotation = REST_QUERY_PARAM;
                             } else if (annotationName.equals(REQUEST_HEADER)) {
-                                jaxRsAnnotation = REST_QUERY_PARAM;
+                                jaxRsAnnotation = REST_HEADER_PARAM;
                             } else if (annotationName.equals(COOKIE_VALUE)) {
                                 jaxRsAnnotation = REST_COOKIE_PARAM;
                             } else {
@@ -467,6 +469,11 @@ public class SpringWebResteasyReactiveProcessor {
                     }
                     if (paramType.name().equals(JAVA_UTIL_MAP)) {
                         return new SpringMapParamExtractor();
+                    }
+                }
+                if (annotations.containsKey(REQUEST_HEADER)) {
+                    if (paramType.name().equals(JAVA_UTIL_MAP)) {
+                        return new SpringHeaderMapParamExtractor();
                     }
                 }
                 return null;

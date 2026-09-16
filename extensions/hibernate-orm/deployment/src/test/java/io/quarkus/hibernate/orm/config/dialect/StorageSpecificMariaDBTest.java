@@ -15,7 +15,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.builder.Version;
 import io.quarkus.hibernate.orm.MyEntity;
-import io.quarkus.hibernate.orm.deployment.util.HibernateProcessorUtil;
+import io.quarkus.hibernate.orm.deployment.util.HibernateProcessorSupport;
 import io.quarkus.maven.dependency.Dependency;
 import io.quarkus.test.QuarkusExtensionTest;
 
@@ -34,8 +34,7 @@ public class StorageSpecificMariaDBTest {
                     .addAsResource("application-start-offline-mysql-dialect.properties", "application.properties"))
             .setForcedDependencies(List.of(
                     Dependency.of("io.quarkus", "quarkus-jdbc-mysql-deployment", Version.getVersion())))
-            .setLogRecordPredicate(record -> HibernateProcessorUtil.class.getName().equals(record.getLoggerName()))
-            .overrideConfigKey("quarkus.hibernate-orm.dialect.storage-engine", "")
+            .setLogRecordPredicate(record -> HibernateProcessorSupport.class.getName().equals(record.getLoggerName()))
             .overrideConfigKey("quarkus.hibernate-orm.dialect.mariadb.storage-engine", "innodb");
 
     @Test

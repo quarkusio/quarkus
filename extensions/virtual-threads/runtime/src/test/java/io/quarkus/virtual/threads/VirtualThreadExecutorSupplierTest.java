@@ -2,7 +2,6 @@ package io.quarkus.virtual.threads;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.lang.reflect.InvocationTargetException;
 import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.Callable;
@@ -32,8 +31,7 @@ class VirtualThreadExecutorSupplierTest {
     }
 
     @Test
-    void virtualThreadCustomScheduler()
-            throws ClassNotFoundException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
+    void virtualThreadCustomScheduler() {
         Executor executor = VirtualThreadsRecorder.newVirtualThreadPerTaskExecutorWithName("vthread-");
         var assertSubscriber = Uni.createFrom().emitter(e -> {
             assertThat(Thread.currentThread().getName()).isNotEmpty()
@@ -46,7 +44,7 @@ class VirtualThreadExecutorSupplierTest {
     }
 
     @Test
-    void execute() throws ClassNotFoundException, InvocationTargetException, NoSuchMethodException, IllegalAccessException {
+    void execute() {
         Executor executor = VirtualThreadsRecorder.newVirtualThreadPerTaskExecutorWithName(null);
         var assertSubscriber = Uni.createFrom().emitter(e -> {
             assertThat(Thread.currentThread().getName()).isEmpty();

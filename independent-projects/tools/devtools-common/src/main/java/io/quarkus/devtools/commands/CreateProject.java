@@ -96,18 +96,6 @@ public class CreateProject {
         return this;
     }
 
-    @Deprecated
-    public CreateProject quarkusMavenPluginVersion(String version) {
-        setValue(QUARKUS_MAVEN_PLUGIN_VERSION, version);
-        return this;
-    }
-
-    @Deprecated
-    public CreateProject quarkusGradlePluginVersion(String version) {
-        setValue(QUARKUS_GRADLE_PLUGIN_VERSION, version);
-        return this;
-    }
-
     public CreateProject quarkusPluginVersion(String version) {
         if (quarkusProject.getBuildTool().equals(BuildTool.MAVEN)) {
             setValue(QUARKUS_MAVEN_PLUGIN_VERSION, version);

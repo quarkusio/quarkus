@@ -5,13 +5,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.util.List;
 import java.util.Set;
 
-import jakarta.inject.Inject;
-
-import org.hibernate.reactive.mutiny.Mutiny;
+import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.arc.InjectableInstance;
 import io.quarkus.builder.Version;
 import io.quarkus.maven.dependency.ArtifactKey;
 import io.quarkus.maven.dependency.Dependency;
@@ -40,14 +37,16 @@ public class ReactiveSqlClientMultipleTest {
             .setForcedDependencies(List.of(
                     Dependency.of("io.quarkus", "quarkus-reactive-mysql-client-deployment", Version.getVersion()),
                     Dependency.of("io.quarkus", "quarkus-reactive-db2-client-deployment", Version.getVersion())))
-            .overrideConfigKey("quarkus.devservices.enabled", "false");
-
-    @Inject
-    InjectableInstance<Mutiny.SessionFactory> sessionFactory;
+            .overrideConfigKey("quarkus.devservices.enabled", "false")
+            .assertException(t -> assertThat(t)
+                    .hasMessageContainingAll(
+                            "persistence unit '<default>' cannot be created",
+                            "Reactive datasource '<default>' cannot be created",
+                            "Cannot infer the database kind", "multiple reactive SQL client extensions"));
 
     @Test
     public void test() {
-        assertThat(sessionFactory.isUnsatisfied()).isTrue();
+        Assertions.fail("Startup should have failed");
     }
 
 }

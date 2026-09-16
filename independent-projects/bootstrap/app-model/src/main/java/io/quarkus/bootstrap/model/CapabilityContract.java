@@ -13,18 +13,6 @@ public class CapabilityContract implements ExtensionCapabilities, Serializable {
 
     private static final Pattern capabilitiesPattern = Pattern.compile("\\s*,\\s*");
 
-    /**
-     * @deprecated in favor of {@link #of(String, String, String)}
-     *
-     * @param extension extension id
-     * @param commaSeparatedList provided capabilities as a command-separated string
-     * @return capability contract
-     */
-    @Deprecated(forRemoval = true)
-    public static CapabilityContract providesCapabilities(String extension, String commaSeparatedList) {
-        return of(extension, commaSeparatedList, null);
-    }
-
     public static CapabilityContract of(String extension, String providesStr, String requiresStr) {
 
         final Collection<String> provides = parseCapabilities(providesStr);
@@ -52,18 +40,6 @@ public class CapabilityContract implements ExtensionCapabilities, Serializable {
     private final String extension;
     private final Collection<String> providesCapabilities;
     private final Collection<String> requiresCapabilities;
-
-    /**
-     * @deprecated in favor of {@link #CapabilityContract(String, Collection, Collection)}
-     *
-     * @param extension extension id, typically its artifact coordinates but could also potentially be "unknown", currently used
-     *        for display purposes.
-     * @param providesCapabilities provided capabilities
-     */
-    @Deprecated(forRemoval = true)
-    public CapabilityContract(String extension, Collection<String> providesCapabilities) {
-        this(extension, providesCapabilities, List.of());
-    }
 
     public CapabilityContract(String extension, Collection<String> providesCapabilities,
             Collection<String> requiresCapabilities) {

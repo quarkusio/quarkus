@@ -12,6 +12,12 @@ import io.quarkus.hibernate.orm.panache.deployment.test.MyEntity;
 import io.quarkus.maven.dependency.ArtifactKey;
 import io.quarkus.test.QuarkusExtensionTest;
 
+/**
+ * Test that we get a helpful error message when using Hibernate ORM with entities
+ * but without any JDBC driver dependency (the user forgot to add one).
+ *
+ * @see <a href="https://github.com/quarkusio/quarkus/issues/51268">#51268</a>.
+ */
 public class JdbcDriverMissingEntitiesTest {
 
     @RegisterExtension
@@ -23,12 +29,11 @@ public class JdbcDriverMissingEntitiesTest {
                     ArtifactKey.of("io.quarkus", "quarkus-jdbc-h2-deployment")))
             .assertException(t -> assertThat(t)
                     .hasMessageContainingAll(
-                            "Persistence unit '<default>' defines entities [" + MyEntity.class.getName()
-                                    + "], but its datasource '<default>' cannot be found",
-                            "Datasource '<default>' is not configured.",
-                            "To solve this, configure datasource '<default>'",
-                            "Refer to https://quarkus.io/guides/datasource for guidance.",
-                            "Alternatively, disable Hibernate ORM by setting 'quarkus.hibernate-orm.enabled=false', and the entities will be ignored"));
+                            "Hibernate ORM persistence unit '<default>' cannot be created",
+                            "JDBC datasource '<default>' cannot be created",
+                            "Cannot infer the database kind", "no JDBC driver extension",
+                            "being created because of",
+                            "JPA model including classes/packages", MyEntity.class.getName()));
 
     @Test
     public void test() {

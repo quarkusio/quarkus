@@ -23,4 +23,16 @@ public class ListResolverTest {
                 .withMessageContaining("in expression {list.abc}");
     }
 
+    @Test
+    public void testIndexParameterIsRequired() {
+        List<String> list = List.of("jedna", "dva", "tri");
+        Engine engine = Engine.builder().addDefaults().build();
+        for (String expression : List.of("{list.get}", "{list.take}", "{list.takeLast}")) {
+            assertThatExceptionOfType(TemplateException.class)
+                    .isThrownBy(() -> engine.parse(expression).data("list", list).render())
+                    .withMessageContaining("not found on the base object")
+                    .withMessageContaining("in expression " + expression);
+        }
+    }
+
 }

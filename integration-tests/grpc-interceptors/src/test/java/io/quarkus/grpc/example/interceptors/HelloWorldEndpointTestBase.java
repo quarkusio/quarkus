@@ -1,5 +1,6 @@
 package io.quarkus.grpc.example.interceptors;
 
+import static io.quarkus.test.micrometer.PrometheusMetricsAssert.assertMetrics;
 import static io.restassured.RestAssured.get;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -46,19 +47,16 @@ class HelloWorldEndpointTestBase {
                 .extract().asString();
         assertThat(response).isEqualTo("pong Hello neo");
 
-        String metrics = get("/q/metrics").then().statusCode(200)
-                .extract().asString();
-        assertThat(metrics).contains("http_client_requests_seconds");
+        assertMetrics(get("/q/metrics").then().statusCode(200)
+                .extract().asInputStream())
+                .hasMetricNameContaining("http_client_requests_seconds");
     }
 
     public void ensureThatMetricsAreProduced() {
-        String metrics = get("/q/metrics")
-                .then().statusCode(200)
-                .extract().asString();
-
-        assertThat(metrics)
-                .contains("grpc_server_processing_duration_seconds_max") // server
-                .contains("grpc_client_processing_duration_seconds_count"); // client
+        assertMetrics(get("/q/metrics").then().statusCode(200)
+                .extract().asInputStream())
+                .hasMetricNameContaining("grpc_server_processing_duration_seconds_max") // server
+                .hasMetricNameContaining("grpc_client_processing_duration_seconds_count"); // client
     }
 
 }

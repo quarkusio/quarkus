@@ -18,11 +18,12 @@ public class ServletRequestContextFactory implements RequestContextFactory {
 
     @Override
     public ResteasyReactiveRequestContext createContext(Deployment deployment,
-            Object context, ThreadSetupAction requestContext, ServerRestHandler[] handlerChain,
+            Object context, ThreadSetupAction requestContext, ServerRestHandler[] handlerChain, byte[] handlerKinds,
             ServerRestHandler[] abortHandlerChain) {
         io.undertow.servlet.handlers.ServletRequestContext src = (io.undertow.servlet.handlers.ServletRequestContext) context;
         return new ServletRequestContext(deployment, (HttpServletRequest) src.getServletRequest(),
-                (HttpServletResponse) src.getServletResponse(), requestContext, handlerChain, abortHandlerChain,
+                (HttpServletResponse) src.getServletResponse(), requestContext, handlerChain, handlerKinds,
+                abortHandlerChain,
                 (RoutingContext) ((VertxHttpExchange) src.getExchange().getDelegate()).getContext(), src.getExchange());
     }
 

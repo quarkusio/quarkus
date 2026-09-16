@@ -29,25 +29,10 @@ import io.quarkus.util.GlobUtil;
  * </ul>
  */
 public final class NativeImageResourcePatternsBuildItem extends MultiBuildItem {
-
-    @Deprecated(since = "3.29", forRemoval = true)
-    private final List<String> excludePatterns;
-
     private final List<String> includePatterns;
 
-    private NativeImageResourcePatternsBuildItem(List<String> includePatterns, List<String> excludePatterns) {
+    private NativeImageResourcePatternsBuildItem(List<String> includePatterns) {
         this.includePatterns = includePatterns;
-        this.excludePatterns = excludePatterns;
-    }
-
-    /**
-     * @deprecated Excluding resources is not supported in the new reachability-metadata.json file used with Mandrel/GraalVM
-     *             25.0 and onwards. Quarkus plans to adopt the use of reachability-metadata.json for Mandrel/GraalVM 23.1 for
-     *             JDK 21 as well (see https://github.com/quarkusio/quarkus/issues/41016)
-     */
-    @Deprecated(since = "3.29", forRemoval = true)
-    public List<String> getExcludePatterns() {
-        return excludePatterns;
     }
 
     public List<String> getIncludePatterns() {
@@ -59,133 +44,12 @@ public final class NativeImageResourcePatternsBuildItem extends MultiBuildItem {
     }
 
     public static class Builder {
-        @Deprecated(since = "3.29", forRemoval = true)
-        private List<String> excludePatterns = new ArrayList<>();
         private List<String> includePatterns = new ArrayList<>();
 
         public NativeImageResourcePatternsBuildItem build() {
             final List<String> incl = includePatterns;
             includePatterns = null;
-            final List<String> excl = excludePatterns;
-            excludePatterns = null;
-            return new NativeImageResourcePatternsBuildItem(Collections.unmodifiableList(incl),
-                    Collections.unmodifiableList(excl));
-        }
-
-        /**
-         * Add a glob pattern for matching resource paths that should <strong>not</strong> be added to the native image.
-         * <p>
-         * Use slash ({@code /}) as a path separator on all platforms. Globs must not start with slash. See
-         * {@link NativeConfig.ResourcesConfig#includes} for the supported glob syntax.
-         *
-         * @param glob the glob pattern to add to the list of patterns to exclude
-         * @return this {@link Builder}
-         *
-         * @deprecated Excluding resources is not supported in the new reachability-metadata.json file used with Mandrel/GraalVM
-         *             25.0 and onwards. Quarkus plans to adopt the use of reachability-metadata.json for Mandrel/GraalVM 23.1
-         *             for JDK 21 as well (see https://github.com/quarkusio/quarkus/issues/41016)
-         */
-        @Deprecated(since = "3.29", forRemoval = true)
-        public Builder excludeGlob(String glob) {
-            excludePatterns.add(GlobUtil.toRegexPattern(glob));
-            return this;
-        }
-
-        /**
-         * Add a collection of glob patterns for matching resource paths that should <strong>not</strong> be added to the
-         * native image.
-         * <p>
-         * Use slash ({@code /}) as a path separator on all platforms. Globs must not start with slash. See
-         * {@link NativeConfig.ResourcesConfig#includes} for the supported glob syntax.
-         *
-         * @param globs the glob patterns to add to the list of patterns to exclude
-         * @return this {@link Builder}
-         *
-         * @deprecated Excluding resources is not supported in the new reachability-metadata.json file used with Mandrel/GraalVM
-         *             25.0 and onwards. Quarkus plans to adopt the use of reachability-metadata.json for Mandrel/GraalVM 23.1
-         *             for JDK 21 as well (see https://github.com/quarkusio/quarkus/issues/41016)
-         */
-        @Deprecated(since = "3.29", forRemoval = true)
-        public Builder excludeGlobs(Collection<String> globs) {
-            globs.stream().map(GlobUtil::toRegexPattern).forEach(excludePatterns::add);
-            return this;
-        }
-
-        /**
-         * Add an array of glob patterns for matching resource paths that should <strong>not</strong> be added to the
-         * native image.
-         * <p>
-         * Use slash ({@code /}) as a path separator on all platforms. Globs must not start with slash. See
-         * {@link NativeConfig.ResourcesConfig#includes} for the supported glob syntax.
-         *
-         * @param globs the glob patterns to add to the list of patterns to exclude
-         * @return this {@link Builder}
-         *
-         * @deprecated Excluding resources is not supported in the new reachability-metadata.json file used with Mandrel/GraalVM
-         *             25.0 and onwards. Quarkus plans to adopt the use of reachability-metadata.json for Mandrel/GraalVM 23.1
-         *             for JDK 21 as well (see https://github.com/quarkusio/quarkus/issues/41016)
-         */
-        @Deprecated(since = "3.29", forRemoval = true)
-        public Builder excludeGlobs(String... globs) {
-            Stream.of(globs).map(GlobUtil::toRegexPattern).forEach(excludePatterns::add);
-            return this;
-        }
-
-        /**
-         * Add a regular expression for matching resource paths that should <strong>not</strong> be added to the native
-         * image.
-         * <p>
-         * Use slash ({@code /}) as a path separator on all platforms. The pattern must not start with slash.
-         *
-         * @param pattern the regular expression to add to the list of patterns to exclude
-         * @return this {@link Builder}
-         *
-         * @deprecated Excluding resources is not supported in the new reachability-metadata.json file used with Mandrel/GraalVM
-         *             25.0 and onwards. Quarkus plans to adopt the use of reachability-metadata.json for Mandrel/GraalVM 23.1
-         *             for JDK 21 as well (see https://github.com/quarkusio/quarkus/issues/41016)
-         */
-        @Deprecated(since = "3.29", forRemoval = true)
-        public Builder excludePattern(String pattern) {
-            excludePatterns.add(pattern);
-            return this;
-        }
-
-        /**
-         * Add a collection of regular expressions for matching resource paths that should <strong>not</strong> be added
-         * to the native image.
-         * <p>
-         * Use slash ({@code /}) as a path separator on all platforms. The pattern must not start with slash.
-         *
-         * @param patterns the regular expressions to add to the list of patterns to exclude
-         * @return this {@link Builder}
-         *
-         * @deprecated Excluding resources is not supported in the new reachability-metadata.json file used with Mandrel/GraalVM
-         *             25.0 and onwards. Quarkus plans to adopt the use of reachability-metadata.json for Mandrel/GraalVM 23.1
-         *             for JDK 21 as well (see https://github.com/quarkusio/quarkus/issues/41016)
-         */
-        @Deprecated(since = "3.29", forRemoval = true)
-        public Builder excludePatterns(Collection<String> patterns) {
-            excludePatterns.addAll(patterns);
-            return this;
-        }
-
-        /**
-         * Add an array of regular expressions for matching resource paths that should <strong>not</strong> be added
-         * to the native image.
-         * <p>
-         * Use slash ({@code /}) as a path separator on all platforms. The pattern must not start with slash.
-         *
-         * @param patterns the regular expressions to add to the list of patterns to exclude
-         * @return this {@link Builder}
-         *
-         * @deprecated Excluding resources is not supported in the new reachability-metadata.json file used with Mandrel/GraalVM
-         *             25.0 and onwards. Quarkus plans to adopt the use of reachability-metadata.json for Mandrel/GraalVM 23.1
-         *             for JDK 21 as well (see https://github.com/quarkusio/quarkus/issues/41016)
-         */
-        @Deprecated(since = "3.29", forRemoval = true)
-        public Builder excludePatterns(String... patterns) {
-            Stream.of(patterns).forEach(excludePatterns::add);
-            return this;
+            return new NativeImageResourcePatternsBuildItem(Collections.unmodifiableList(incl));
         }
 
         /**
@@ -229,61 +93,5 @@ public final class NativeImageResourcePatternsBuildItem extends MultiBuildItem {
             Stream.of(globs).map(GlobUtil::toRegexPattern).forEach(includePatterns::add);
             return this;
         }
-
-        /**
-         * Add a regular expression for matching resource paths that should be added to the native image.
-         * <p>
-         * Use slash ({@code /}) as a path separator on all platforms. The pattern must not start with slash.
-         *
-         * @param pattern the regular expression to add
-         * @return this {@link Builder}
-         *
-         * @deprecated Including resources using patterns is not supported in the new reachability-metadata.json file used with
-         *             Mandrel/GraalVM 25.0 and onwards. Quarkus plans to adopt the use of reachability-metadata.json for
-         *             Mandrel/GraalVM 23.1 for JDK 21 as well (see https://github.com/quarkusio/quarkus/issues/41016)
-         */
-        @Deprecated(since = "3.29", forRemoval = true)
-        public Builder includePattern(String pattern) {
-            includePatterns.add(pattern);
-            return this;
-        }
-
-        /**
-         * Add a collection of regular expressions for matching resource paths that should be added to the native image.
-         * <p>
-         * Use slash ({@code /}) as a path separator on all platforms. The patterns must not start with slash.
-         *
-         * @param patterns the regular expressions to add
-         * @return this {@link Builder}
-         *
-         * @deprecated Including resources using patterns is not supported in the new reachability-metadata.json file used with
-         *             Mandrel/GraalVM 25.0 and onwards. Quarkus plans to adopt the use of reachability-metadata.json for
-         *             Mandrel/GraalVM 23.1 for JDK 21 as well (see https://github.com/quarkusio/quarkus/issues/41016)
-         */
-        @Deprecated(since = "3.29", forRemoval = true)
-        public Builder includePatterns(Collection<String> patterns) {
-            includePatterns.addAll(patterns);
-            return this;
-        }
-
-        /**
-         * Add an array of regular expressions for matching resource paths that should be added to the native image.
-         * <p>
-         * Use slash ({@code /}) as a path separator on all platforms. The patterns must not start with slash.
-         *
-         * @param patterns the regular expressions to add
-         * @return this {@link Builder}
-         *
-         * @deprecated Including resources using patterns is not supported in the new reachability-metadata.json file used with
-         *             Mandrel/GraalVM 25.0 and onwards. Quarkus plans to adopt the use of reachability-metadata.json for
-         *             Mandrel/GraalVM 23.1 for JDK 21 as well (see https://github.com/quarkusio/quarkus/issues/41016)
-         */
-        @Deprecated(since = "3.29", forRemoval = true)
-        public Builder includePatterns(String... patterns) {
-            Stream.of(patterns).forEach(includePatterns::add);
-            return this;
-        }
-
     }
-
 }

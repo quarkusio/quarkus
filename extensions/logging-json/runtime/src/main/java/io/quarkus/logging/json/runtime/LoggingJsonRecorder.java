@@ -126,7 +126,7 @@ public class LoggingJsonRecorder {
 
     private RuntimeValue<Optional<Formatter>> getDefaultFormatter(JsonConfig config,
             OverridableJsonConfig overridableJsonConfig, List<JsonProvider> providers) {
-        if (!config.enabled().orElse(config.enable())) {
+        if (!config.enabled().orElse(true)) {
             return new RuntimeValue<>(Optional.empty());
         }
 
@@ -141,6 +141,7 @@ public class LoggingJsonRecorder {
             formatter.setTracePrefix("projects/" + applicationConfig.getValue().name().orElse("") + "/traces/");
         }
         formatter.setFlatMdc(config.mdcFlatFields());
+        formatter.setStructuredAccessLog(config.structuredAccessLog());
         formatter.setExcludedKeys(overridableJsonConfig.excludedKeys());
         formatter.setAdditionalFields(overridableJsonConfig.additionalFields());
         formatter.setDiscoveredProviders(providers);

@@ -37,9 +37,9 @@ https://how-to.vertx.io/web-and-oauth2-oidc/#create-a-project[Create the project
   <groupId>howto</groupId>
   <artifactId>oauth-oidc</artifactId>
   <version>1.0.0-SNAPSHOT</version>
-  
+
   <properties>
-    <! ... --> 
+    <! ... -->
     <vertx.version>5.1.5</vertx.version>
     <main.verticle>howto.oauth_oidc.MainVerticle</main.verticle>
     <launcher.class>io.vertx.launcher.application.VertxApplication</launcher.class>
@@ -81,7 +81,7 @@ https://how-to.vertx.io/web-and-oauth2-oidc/#create-a-project[Create the project
     <! ... -->
   </dependencies>
   <! ... -->
-</project>  
+</project>
 ----
 
 Register the GitHub application as described in the https://how-to.vertx.io/web-and-oauth2-oidc/[Securing a Web Application with OAuth2/OpenID Connect] tutorial, the only difference is that you should register a `http://localhost:8080/login` callback url, instead of `http://localhost:8080/callback`.
@@ -132,7 +132,7 @@ public class MainVerticle extends VerticleBase {
 
         router.get("/protected").handler(
 
-                OAuth2AuthHandler.create(vertx, authProvider, "http://localhost:8080/login") 
+                OAuth2AuthHandler.create(vertx, authProvider, "http://localhost:8080/login")
                         .setupCallback(router.route("/login")).withScope("user:email")) // <6>
                 .handler(AuthorizationHandler.create(PermissionBasedAuthorization.create("user:email"))
                         .addAuthorizationProvider(ScopeAuthorization.create(" "))) // <7>
@@ -150,6 +150,7 @@ public class MainVerticle extends VerticleBase {
 <5> Initialize OAuth2 GitHub provider with a Vert.x instance, and GitHub client id and secret properties.
 <6> Register OAuth2 handler to secure the `http://localhost:8080/protected` endpoint. This handler uses the GitHub provider to authenticate users and requests a `user:email` scope when redirecting users to GitHub. The handler is set up with a callback route which uses a returned authorizaion code and the provided `http://localhost:8080/login` redirect URL to complete the authorization code flow and acquire a GitHub access token.
 <7> Do not allow access to the `http://localhost:8080/protected` endpoint if the GitHub access token does not have a `user:email` scope. Please note that while the `PermissionBasedAuthorization` capability to constrain access tokens is great, applying it in the context of this application is not necessary: authorization code flow access tokens, and GitHub access tokens in particular, are not meant to control access to the application that acquired them but for this application to use them on behalf of the authenticated user to access another API, such as GitHub API, as indeed, is demonsrtated below.
+<8> Register the following `ProtectedProfileHandler` route handler, which uses the GitHub access token to get the user emails from the GitHub API and renders them with the Handlebars template engine.
 
 The `ProtectedProfileHandler` Java class returns a list of user emails and looks exactly as shown in the https://how-to.vertx.io/web-and-oauth2-oidc/#create-a-project[Securing a Web Application with OAuth2/OpenID Connect] tutorial:
 
@@ -231,9 +232,9 @@ Let's update `pom.xml` as follows:
   <groupId>howto</groupId>
   <artifactId>quarkus-oauth-oidc</artifactId>
   <version>1.0.0-SNAPSHOT</version>
-  
+
   <properties>
-    <! ... --> 
+    <! ... -->
     <quarkus.platform.artifact-id>quarkus-bom</quarkus.platform.artifact-id>
     <quarkus.platform.group-id>io.quarkus</quarkus.platform.group-id>
     <quarkus.platform.version>3.24.0</quarkus.platform.version>
@@ -263,14 +264,14 @@ Let's update `pom.xml` as follows:
       <dependency>
           <groupId>io.vertx</groupId>
           <artifactId>vertx-web-client</artifactId>
-      </dependency>    
+      </dependency>
       <dependency>
           <groupId>io.vertx</groupId>
           <artifactId>vertx-auth-oauth2</artifactId>
       </dependency>
   </dependencies>
   <! ... -->
-</project>  
+</project>
 ----
 
 Compared to the pom.xml from the <<vertx-oidc-vertx>> section, this pom.xml retains only two original Vert.x dependencies in the `io.vertx` group, `vertx-web-client` to support GitHub API calls, and `vertx-auth-oauth2` to continue securing the protected endpoint with the Vert.x GitHub OAuth2 provider.
@@ -302,17 +303,17 @@ import jakarta.inject.Inject;
 
 @ApplicationScoped
 public class GitHubProfileService {
-    
+
     OAuth2Auth authProvider;
     @Inject
     Template userEmail;
-    
-    public GithubProfileService(Vertx vertx, 
+
+    public GithubProfileService(Vertx vertx,
             @ConfigProperty(name = "github_client_id") String githubClientId,
             @ConfigProperty(name = "github_client_secret") String githubClientSecret) {
         authProvider = GithubAuth.create(vertx, githubClientId, githubClientSecret); // <1>
     }
-    
+
     void start(@Observes Router router, Vertx vertx) { // <2>
 
         router.route().handler(SessionHandler.create(LocalSessionStore.create(vertx)));
@@ -362,7 +363,7 @@ class ProtectedProfileHandler implements Handler<RoutingContext> {
                     .authentication(new TokenCredentials(ctx.user().<String>get("access_token"))) // <2>
                     .as(BodyCodec.jsonArray()).send().onSuccess(res -> {
                         userInfo.put("private_emails", res.body());
-                        
+
                         userEmail.data("userInfo", userInfo).renderAsync() // <3>
                            .whenComplete((result, failure) -> {
 		               if (failure == null) {
@@ -381,7 +382,7 @@ class ProtectedProfileHandler implements Handler<RoutingContext> {
 <2> Use the GitHub access token to access GitHub API
 <3> Update UserInfo with a JSON array containing private emails, pass it to the `userEmail` template and render it asynchronously.
 
-The `index.hbs` has been renamed to the `index.html` Qute template and moved to the `src/main/resources/META-INF/resources/` directory, its content remains the same. 
+The `index.hbs` has been renamed to the `index.html` Qute template and moved to the `src/main/resources/META-INF/resources/` directory, its content remains the same.
 
 The `protected.hbs` has been converted to the `userEmail.html` Qute template and moved to the `src/main/templates` directory. It has been updated to follow Qute rules:
 
@@ -403,7 +404,7 @@ The `protected.hbs` has been converted to the `userEmail.html` Qute template and
     private email addresses:
     {#for email in userInfo.private_emails}
       {email.email}
-      {#if email_hasNext},{/if} 
+      {#if email_hasNext},{/if}
     {/for}
   {#else}
     Also, you're a bit secretive about your private email
@@ -443,9 +444,9 @@ Let's start with updating the `pom.xml`, it should look like this:
   <groupId>howto</groupId>
   <artifactId>quarkus-oauth-oidc</artifactId>
   <version>1.0.0-SNAPSHOT</version>
-  
+
   <properties>
-    <! ... --> 
+    <! ... -->
     <quarkus.platform.artifact-id>quarkus-bom</quarkus.platform.artifact-id>
     <quarkus.platform.group-id>io.quarkus</quarkus.platform.group-id>
     <quarkus.platform.version>3.24.0</quarkus.platform.version>
@@ -494,7 +495,7 @@ Let's start with updating the `pom.xml`, it should look like this:
       </dependency>
   </dependencies>
   <! ... -->
-</project>  
+</project>
 ----
 
 Compared to the pom.xml from the <<vertx-oidc-quarkus>> section above, this pom.xml no longer has dependencies in the `io.vertx` group but retains two Quarkus dependencies in the `io.quarkus` group, `quarkus-vertx-http` and `quarkus-qute`, and adds several more Quarkus dependencies.
@@ -542,7 +543,7 @@ public class GitHubProfileService {
     @Inject
     @RestClient
     GitHubApiClient gitHubApiClient; // <3>
-    
+
     @Inject
     OidcSession oidcSession; // <4>
 
@@ -634,7 +635,7 @@ quarkus.oidc.credentials.secret=${github_client_secret} # <2>
 quarkus.oidc.authentication.redirect-path=/login # <3>
 quarkus.oidc.authentication.restore-path-after-redirect=true # <4>
 
-quarkus.http.auth.permission.login.paths=/login # <5>                   
+quarkus.http.auth.permission.login.paths=/login # <5>
 quarkus.http.auth.permission.login.policy=authenticated
 
 quarkus.rest-client.github-api-client.url=https://api.github.com # <6>
@@ -754,6 +755,7 @@ public class GitHubProfileService {
 //...
 }
 ----
+<1> `@PermissionsAllowed("user:email")` requires an authenticated user with the `user:email` permission, so the `@Authenticated` annotation is no longer needed.
 
 And add the following configuration property: `quarkus.oidc.roles.source=accesstoken`.
 
@@ -807,7 +809,7 @@ Update the pom.xml from either the <<vertx-oidc-to-quarkus-oidc>> or <<vertx-oid
       </dependency>
   </dependencies>
   <! ... -->
-</project>  
+</project>
 ----
 
 It is all that you need to do to start using the Redis `TokenStateManager`.
@@ -824,7 +826,7 @@ On the other hand, Quarkus OIDC uses a dedicated `q_auth_<uuid>` state cookie wh
 
 If you are considering to migrate from Vert.x OIDC to Quarkus OIDC and have questions that may not have been answered in this guide, please https://quarkus.io/support/[reach out to the Quarkus team].
 
-Please also see the <<references>> for more information. 
+Please also see the <<references>> for more information.
 
 [[references]]
 == References
@@ -834,4 +836,3 @@ Please also see the <<references>> for more information.
 * xref:security-oidc-bearer-token-authentication.adoc[OpenID Connect bearer access token authentication].
 * xref:security-openid-connect-multitenancy.adoc[Using OpenID Connect Multi-Tenancy]
 * xref:security-oidc-expanded-configuration.adoc[Expanded OIDC Configuration Reference]
-

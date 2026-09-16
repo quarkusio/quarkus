@@ -88,7 +88,7 @@ public class ArcContainerImpl implements ArcContainer {
     private final List<InjectableBean<?>> beans;
     private final Map<String, InjectableBean<?>> beansById;
     private final Map<String, List<InjectableBean<?>>> beansByRawType;
-    private final LazyValue<List<RemovedBean>> removedBeans;
+    private final LazyValue<RemovedBeans> removedBeans;
     private final List<InjectableInterceptor<?>> interceptors;
     private final List<InjectableDecorator<?>> decorators;
     private final List<InjectableObserverMethod<?>> observers;
@@ -188,15 +188,15 @@ public class ArcContainerImpl implements ArcContainer {
         this.interceptors = List.copyOf(interceptors);
         this.decorators = List.copyOf(decorators);
         this.observers = List.copyOf(observers);
-        this.removedBeans = new LazyValue<>(new Supplier<List<RemovedBean>>() {
+        this.removedBeans = new LazyValue<>(new Supplier<RemovedBeans>() {
             @Override
-            public List<RemovedBean> get() {
+            public RemovedBeans get() {
                 List<RemovedBean> removed = new ArrayList<>();
                 for (Supplier<Collection<RemovedBean>> supplier : removedBeans) {
                     removed.addAll(supplier.get());
                 }
                 LOGGER.debugf("Loaded %s removed beans lazily", removed.size());
-                return List.copyOf(removed);
+                return new RemovedBeans(removed);
             }
         });
         this.registeredQualifiers = new Qualifiers(qualifiers, qualifierNonbindingMembers);
@@ -499,7 +499,7 @@ public class ArcContainerImpl implements ArcContainer {
     }
 
     public List<RemovedBean> getRemovedBeans() {
-        return removedBeans.get();
+        return removedBeans.get().list;
     }
 
     public List<InjectableInterceptor<?>> getInterceptors() {
@@ -782,7 +782,7 @@ public class ArcContainerImpl implements ArcContainer {
 
     List<RemovedBean> getMatchingRemovedBeans(Resolvable resolvable) {
         List<RemovedBean> matching = new ArrayList<>();
-        for (RemovedBean removedBean : removedBeans.get()) {
+        for (RemovedBean removedBean : removedBeans.get().potentialMatches(resolvable.requiredType)) {
             if (matches(removedBean.getTypes(), removedBean.getQualifiers(), resolvable.requiredType,
                     resolvable.qualifiers)) {
                 matching.add(removedBean);
@@ -1041,6 +1041,46 @@ public class ArcContainerImpl implements ArcContainer {
 
     private static AtomicReference<Event<?>> newEventMockReference(TypeAndQualifiers typeAndQualifiers) {
         return new AtomicReference<>();
+    }
+
+    private static final class RemovedBeans {
+
+        final List<RemovedBean> list;
+        final Map<String, List<RemovedBean>> byRawType;
+
+        RemovedBeans(List<RemovedBean> removedBeans) {
+            this.list = List.copyOf(removedBeans);
+            Map<String, List<RemovedBean>> map = new HashMap<>();
+            for (RemovedBean removedBean : this.list) {
+                for (Type type : removedBean.getTypes()) {
+                    if (Object.class.equals(type)) {
+                        continue;
+                    }
+                    Class<?> rawType = Types.getRawType(type);
+                    if (rawType != null) {
+                        String name = Types.boxedClass(rawType).getName();
+                        List<RemovedBean> beansForType = map.get(name);
+                        if (beansForType == null) {
+                            beansForType = new ArrayList<>();
+                            map.put(name, beansForType);
+                        }
+                        beansForType.add(removedBean);
+                    }
+                }
+            }
+            this.byRawType = map;
+        }
+
+        Iterable<RemovedBean> potentialMatches(Type requiredType) {
+            if (!Object.class.equals(requiredType)) {
+                Class<?> rawType = Types.getRawType(requiredType);
+                if (rawType != null) {
+                    List<RemovedBean> match = byRawType.get(Types.boxedClass(rawType).getName());
+                    return match == null ? List.of() : match;
+                }
+            }
+            return list;
+        }
     }
 
     private static final class Resolvable {

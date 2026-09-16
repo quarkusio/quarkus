@@ -51,7 +51,6 @@ import io.quarkus.oidc.common.runtime.config.OidcClientCommonConfig.Credentials.
 import io.quarkus.oidc.common.runtime.config.OidcClientCommonConfig.Credentials.Provider;
 import io.quarkus.oidc.common.runtime.config.OidcClientCommonConfig.Credentials.Secret;
 import io.quarkus.oidc.common.runtime.config.OidcCommonConfig;
-import io.quarkus.oidc.common.runtime.config.OidcCommonConfig.Tls.Verification;
 import io.quarkus.proxy.ProxyConfigurationRegistry;
 import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.runtime.util.ClassPathUtils;
@@ -70,7 +69,6 @@ import io.vertx.core.http.HttpHeaders;
 import io.vertx.core.http.PoolOptions;
 import io.vertx.core.json.DecodeException;
 import io.vertx.core.json.JsonObject;
-import io.vertx.core.net.KeyStoreOptions;
 import io.vertx.core.net.ProxyOptions;
 import io.vertx.mutiny.core.Vertx;
 import io.vertx.mutiny.ext.web.client.HttpRequest;
@@ -315,53 +313,9 @@ public class OidcCommonUtils {
             return;
         }
 
-        boolean trustAll = oidcConfig.tls().verification().isPresent()
-                ? oidcConfig.tls().verification().get() == Verification.NONE
-                : tlsSupport.isGlobalTrustAll();
-        if (trustAll) {
+        if (tlsSupport.isGlobalTrustAll()) {
             options.setTrustAll(true);
             options.setVerifyHost(false);
-        } else if (oidcConfig.tls().trustStoreFile().isPresent()) {
-            try {
-                byte[] trustStoreData = getFileContent(oidcConfig.tls().trustStoreFile().get());
-                io.vertx.core.net.KeyStoreOptions trustStoreOptions = new KeyStoreOptions()
-                        .setPassword(oidcConfig.tls().trustStorePassword().orElse("password"))
-                        .setAlias(oidcConfig.tls().trustStoreCertAlias().orElse(null))
-                        .setValue(io.vertx.core.buffer.Buffer.buffer(trustStoreData))
-                        .setType(
-                                getKeyStoreType(oidcConfig.tls().trustStoreFileType(), oidcConfig.tls().trustStoreFile().get()))
-                        .setProvider(oidcConfig.tls().trustStoreProvider().orElse(null));
-                options.setTrustOptions(trustStoreOptions);
-                if (Verification.CERTIFICATE_VALIDATION == oidcConfig.tls().verification().orElse(Verification.REQUIRED)) {
-                    options.setVerifyHost(false);
-                }
-            } catch (IOException ex) {
-                throw new ConfigurationException(String.format(
-                        "OIDC truststore file %s does not exist or can not be read",
-                        oidcConfig.tls().trustStoreFile().get()), ex);
-            }
-        }
-        if (oidcConfig.tls().keyStoreFile().isPresent()) {
-            try {
-                byte[] keyStoreData = getFileContent(oidcConfig.tls().keyStoreFile().get());
-                io.vertx.core.net.KeyStoreOptions keyStoreOptions = new KeyStoreOptions()
-                        .setAlias(oidcConfig.tls().keyStoreKeyAlias().orElse(null))
-                        .setAliasPassword(oidcConfig.tls().keyStoreKeyPassword().orElse(null))
-                        .setValue(io.vertx.core.buffer.Buffer.buffer(keyStoreData))
-                        .setType(getKeyStoreType(oidcConfig.tls().keyStoreFileType(), oidcConfig.tls().keyStoreFile().get()))
-                        .setProvider(oidcConfig.tls().keyStoreProvider().orElse(null));
-
-                if (oidcConfig.tls().keyStorePassword().isPresent()) {
-                    keyStoreOptions.setPassword(oidcConfig.tls().keyStorePassword().get());
-                }
-
-                options.setKeyCertOptions(keyStoreOptions);
-
-            } catch (IOException ex) {
-                throw new ConfigurationException(String.format(
-                        "OIDC keystore file %s does not exist or can not be read",
-                        oidcConfig.tls().keyStoreFile().get()), ex);
-            }
         }
     }
 
@@ -422,40 +376,26 @@ public class OidcCommonUtils {
 
     public static Optional<ProxyOptions> toProxyOptions(OidcCommonConfig.Proxy oidcProxyConfig,
             ProxyConfigurationRegistry proxyConfigurationRegistry) {
-        // Proxy is enabled if (at least) "host" is configured.
-        if (oidcProxyConfig.host().isEmpty() && oidcProxyConfig.proxyConfigurationName().isEmpty()) {
+        if (oidcProxyConfig.proxyConfigurationName().isEmpty()) {
             return Optional.empty();
         }
 
-        final String hostProperty;
-        final int portProperty;
-        final Optional<String> usernameProperty;
-        final Optional<String> passwordProperty;
-        final Optional<Duration> proxyConnectTimeoutProperty;
-        if (oidcProxyConfig.proxyConfigurationName().isPresent()) {
-            var maybeProxyConfig = proxyConfigurationRegistry.get(oidcProxyConfig.proxyConfigurationName());
-            if (maybeProxyConfig.isEmpty()) {
-                throw new ConfigurationException("Cannot find the Proxy registry configuration '%s'"
-                        .formatted(oidcProxyConfig.proxyConfigurationName().get()));
-            } else {
-                var proxyRegistryConfig = maybeProxyConfig.get().assertHttpType();
-                hostProperty = proxyRegistryConfig.host();
-                portProperty = proxyRegistryConfig.port();
-                usernameProperty = proxyRegistryConfig.username();
-                passwordProperty = proxyRegistryConfig.password();
-                proxyConnectTimeoutProperty = proxyRegistryConfig.proxyConnectTimeout();
-                if (proxyRegistryConfig.nonProxyHosts().isPresent()) {
-                    throw new ConfigurationException(
-                            "The OIDC proxy configuration currently does not support the 'quarkus.proxy.\""
-                                    + oidcProxyConfig.proxyConfigurationName().get() + "\".non-proxy-hosts' property");
-                }
-            }
-        } else {
-            hostProperty = oidcProxyConfig.host().get();
-            portProperty = oidcProxyConfig.port();
-            usernameProperty = oidcProxyConfig.username();
-            passwordProperty = oidcProxyConfig.password();
-            proxyConnectTimeoutProperty = Optional.empty();
+        var maybeProxyConfig = proxyConfigurationRegistry.get(oidcProxyConfig.proxyConfigurationName());
+        if (maybeProxyConfig.isEmpty()) {
+            throw new ConfigurationException("Cannot find the Proxy registry configuration '%s'"
+                    .formatted(oidcProxyConfig.proxyConfigurationName().get()));
+        }
+
+        var proxyRegistryConfig = maybeProxyConfig.get().assertHttpType();
+        final String hostProperty = proxyRegistryConfig.host();
+        final int portProperty = proxyRegistryConfig.port();
+        final Optional<String> usernameProperty = proxyRegistryConfig.username();
+        final Optional<String> passwordProperty = proxyRegistryConfig.password();
+        final Optional<Duration> proxyConnectTimeoutProperty = proxyRegistryConfig.proxyConnectTimeout();
+        if (proxyRegistryConfig.nonProxyHosts().isPresent()) {
+            throw new ConfigurationException(
+                    "The OIDC proxy configuration currently does not support the 'quarkus.proxy.\""
+                            + oidcProxyConfig.proxyConfigurationName().get() + "\".non-proxy-hosts' property");
         }
 
         JsonObject jsonOptions = new JsonObject();

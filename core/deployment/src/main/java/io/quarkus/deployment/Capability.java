@@ -128,6 +128,8 @@ public interface Capability {
     String OPENTELEMETRY_METRICS = QUARKUS_PREFIX + ".opentelemetry.metrics";
     String OPENTELEMETRY_LOGS = QUARKUS_PREFIX + ".opentelemetry.logs";
 
+    String MICROMETER_OPENTELEMETRY = QUARKUS_PREFIX + ".micrometer.opentelemetry";
+
     String OPENSHIFT = QUARKUS_PREFIX + ".openshift";
     String OPENSHIFT_CLIENT = OPENSHIFT + ".client";
 
@@ -163,11 +165,6 @@ public interface Capability {
 
     String KAFKA = QUARKUS_PREFIX + ".kafka";
 
-    @Deprecated
-    /**
-     * @deprecated use {@link #MESSAGING} instead
-     */
-    String SMALLRYE_REACTIVE_MESSAGING = QUARKUS_PREFIX + ".smallrye.reactive.messaging";
     String MESSAGING = QUARKUS_PREFIX + ".messaging";
     String REDIS_CLIENT = QUARKUS_PREFIX + ".redis";
 

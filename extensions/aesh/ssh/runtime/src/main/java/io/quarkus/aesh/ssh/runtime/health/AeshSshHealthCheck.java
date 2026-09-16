@@ -11,6 +11,13 @@ import org.eclipse.microprofile.health.Readiness;
 import io.quarkus.aesh.ssh.runtime.AeshSshConfig;
 import io.quarkus.aesh.ssh.runtime.SshServerLifecycle;
 
+/**
+ * Health check for the Aesh SSH server.
+ * <p>
+ * This bean is only registered when {@code quarkus.aesh.ssh.enabled=true}
+ * (the default) and the SmallRye Health extension is present. The processor
+ * vetoes this class otherwise, so there is no need for a runtime enabled check.
+ */
 @Readiness
 @ApplicationScoped
 public class AeshSshHealthCheck implements HealthCheck {
@@ -25,10 +32,6 @@ public class AeshSshHealthCheck implements HealthCheck {
     public HealthCheckResponse call() {
         HealthCheckResponseBuilder builder = HealthCheckResponse
                 .named("Aesh SSH server health check");
-
-        if (!config.enabled()) {
-            return builder.up().withData("server", "disabled").build();
-        }
 
         if (sshServer.isRunning()) {
             return builder.up()

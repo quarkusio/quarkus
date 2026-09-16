@@ -715,6 +715,47 @@ return an Optional of the requested type. Defaults to `false`
 If it is set, `Optional` getters will be generated only for fields that are nullable. If the field is mandatory,
 regular getter will be generated. Defaults to `false`
 
+== Avro deserialization and class security
+
+Starting with Apache Avro 1.12.2, Avro validates every class against a global security validator before it is
+deserialized. If a class is not trusted, deserialization fails with a `java.lang.SecurityException`.
+
+The `quarkus-avro` extension (pulled in transitively by `quarkus-apicurio-registry-avro` and
+`quarkus-confluent-registry-avro`) automatically installs a validator that trusts:
+
+* all Avro-generated classes (those annotated with `@org.apache.avro.specific.AvroGenerated`),
+* classes that other extensions register as trusted — for example the Protobuf-generated messages contributed by the
+`quarkus-grpc` and `quarkus-messaging-pulsar` extensions, which may be deserialized through Avro, and
+* Avro's built-in trusted types (such as the boxed primitives, `String`, `BigDecimal` and `BigInteger`).
+
+Because generated classes are trusted out of the box, no configuration is required for the typical use case shown in
+this guide. If you deserialize additional, non-generated classes, you can trust them explicitly:
+
+[source,properties]
+----
+# Trust individual classes by their fully qualified name
+quarkus.avro.trusted-classes=org.acme.MyClass,org.acme.OtherClass
+
+# Trust whole packages (and their sub-packages)
+quarkus.avro.trusted-packages=org.acme.model,org.acme.dto
+----
+
+NOTE: Package matching respects package boundaries. Configuring `org.acme` trusts `org.acme.Foo` and classes in any
+sub-package such as `org.acme.sub.Bar`, but does not trust `org.acme2.Foo`.
+
+NOTE: `quarkus.avro.trusted-classes` matches classes by their exact name. A nested class must therefore be listed by
+its binary name using `$` (for example `org.acme.Outer$Inner`); trusting its enclosing class does not trust the nested
+class. Trusting the class's package, on the other hand, does cover its nested classes.
+
+Both properties are build-time properties, so changing them requires rebuilding the application. Avro's own
+`org.apache.avro.SERIALIZABLE_CLASSES` and `org.apache.avro.SERIALIZABLE_PACKAGES` system properties remain available
+as an additional runtime escape hatch.
+
+TIP: If you are developing an extension that generates or handles classes deserialized through Avro, add a dependency on
+`quarkus-avro-spi` and produce an `io.quarkus.avro.spi.AvroTrustedClassBuildItem` for those classes from a build step.
+They will then be trusted automatically whenever the `quarkus-avro` extension is present, without your extension having
+to depend on it directly.
+
 == Further reading
 
 * link:https://smallrye.io/smallrye-reactive-messaging/smallrye-reactive-messaging/3.4/kafka/kafka.html[SmallRye Reactive Messaging Kafka] documentation

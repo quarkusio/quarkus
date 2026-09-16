@@ -49,6 +49,12 @@ public class NamedOidcClientResource {
     }
 
     @GET
+    @Path("/client1/refreshToken")
+    public Uni<String> client1RefreshTokenUni() {
+        return client1.getTokens().flatMap(tokens -> Uni.createFrom().item(tokens.getRefreshToken()));
+    }
+
+    @GET
     @Path("/client2/token")
     public Uni<String> client2TokenUni() {
         return client2.getTokens().flatMap(tokens -> Uni.createFrom().item(tokens.getAccessToken()));

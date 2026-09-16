@@ -79,12 +79,46 @@ public class ReactiveRedisDataSourceImpl implements ReactiveRedisDataSource, Red
     @Override
     public Uni<TransactionResult> withTransaction(Function<ReactiveTransactionalRedisDataSource, Uni<Void>> tx) {
         nonNull(tx, "tx");
-        return redis.connect()
-                .onItem().transformToUni(connection -> {
-                    ReactiveRedisDataSourceImpl singleConnectionDS = new ReactiveRedisDataSourceImpl(vertx, redis, connection);
-                    TransactionHolder th = new TransactionHolder();
-                    return connection.send(Request.cmd(Command.MULTI))
-                            .chain(x -> tx.apply(new ReactiveTransactionalRedisDataSourceImpl(singleConnectionDS, th)))
+        return RedisConnections.withNewConnection(redis, connection -> {
+            ReactiveRedisDataSourceImpl singleConnectionDS = new ReactiveRedisDataSourceImpl(vertx, redis, connection);
+            TransactionHolder th = new TransactionHolder();
+            return connection.send(Request.cmd(Command.MULTI))
+                    .chain(x -> tx.apply(new ReactiveTransactionalRedisDataSourceImpl(singleConnectionDS, th)))
+                    .onItemOrFailure().transformToUni((x, failure) -> {
+                        if (failure != null) {
+                            if (th.discarded()) {
+                                return Uni.createFrom().failure(failure);
+                            }
+                            return connection.send(Request.cmd(Command.DISCARD))
+                                    .onItemOrFailure().transformToUni((response2, failure2) -> {
+                                        if (failure2 != null) {
+                                            failure.addSuppressed(failure2);
+                                        }
+                                        return Uni.createFrom().failure(failure);
+                                    });
+                        }
+                        if (th.discarded()) {
+                            return Uni.createFrom().nullItem();
+                        }
+                        return connection.send(Request.cmd(Command.EXEC));
+                    })
+                    .map(r -> toTransactionResult(r, th));
+        });
+    }
+
+    @Override
+    public Uni<TransactionResult> withTransaction(Function<ReactiveTransactionalRedisDataSource, Uni<Void>> tx,
+            String... watchedKeys) {
+        nonNull(tx, "tx");
+        notNullOrEmpty(watchedKeys, "watchedKeys");
+        doesNotContainNull(watchedKeys, "watchedKeys");
+        return RedisConnections.withNewConnection(redis, connection -> {
+            ReactiveRedisDataSourceImpl singleConnectionDS = new ReactiveRedisDataSourceImpl(vertx, redis, connection);
+            TransactionHolder th = new TransactionHolder();
+            return watch(connection, watchedKeys) // WATCH keys
+                    .chain(() -> connection.send(Request.cmd(Command.MULTI))
+                            .chain(x -> tx
+                                    .apply(new ReactiveTransactionalRedisDataSourceImpl(singleConnectionDS, th)))
                             .onItemOrFailure().transformToUni((x, failure) -> {
                                 if (failure != null) {
                                     if (th.discarded()) {
@@ -103,46 +137,8 @@ public class ReactiveRedisDataSourceImpl implements ReactiveRedisDataSource, Red
                                 }
                                 return connection.send(Request.cmd(Command.EXEC));
                             })
-                            .onTermination().call(connection::close)
-                            .map(r -> toTransactionResult(r, th));
-                });
-    }
-
-    @Override
-    public Uni<TransactionResult> withTransaction(Function<ReactiveTransactionalRedisDataSource, Uni<Void>> tx,
-            String... watchedKeys) {
-        nonNull(tx, "tx");
-        notNullOrEmpty(watchedKeys, "watchedKeys");
-        doesNotContainNull(watchedKeys, "watchedKeys");
-        return redis.connect()
-                .onItem().transformToUni(connection -> {
-                    ReactiveRedisDataSourceImpl singleConnectionDS = new ReactiveRedisDataSourceImpl(vertx, redis, connection);
-                    TransactionHolder th = new TransactionHolder();
-                    return watch(connection, watchedKeys) // WATCH keys
-                            .chain(() -> connection.send(Request.cmd(Command.MULTI))
-                                    .chain(x -> tx
-                                            .apply(new ReactiveTransactionalRedisDataSourceImpl(singleConnectionDS, th)))
-                                    .onItemOrFailure().transformToUni((x, failure) -> {
-                                        if (failure != null) {
-                                            if (th.discarded()) {
-                                                return Uni.createFrom().failure(failure);
-                                            }
-                                            return connection.send(Request.cmd(Command.DISCARD))
-                                                    .onItemOrFailure().transformToUni((response2, failure2) -> {
-                                                        if (failure2 != null) {
-                                                            failure.addSuppressed(failure2);
-                                                        }
-                                                        return Uni.createFrom().failure(failure);
-                                                    });
-                                        }
-                                        if (th.discarded()) {
-                                            return Uni.createFrom().nullItem();
-                                        }
-                                        return connection.send(Request.cmd(Command.EXEC));
-                                    })
-                                    .onTermination().call(connection::close)
-                                    .map(r -> toTransactionResult(r, th)));
-                });
+                            .map(r -> toTransactionResult(r, th)));
+        });
     }
 
     private Uni<Void> watch(RedisConnection connection, String... keys) {
@@ -163,45 +159,43 @@ public class ReactiveRedisDataSourceImpl implements ReactiveRedisDataSource, Red
         notNullOrEmpty(watchedKeys, "watchedKeys");
         doesNotContainNull(watchedKeys, "watchedKeys");
 
-        return redis.connect()
-                .onItem().transformToUni(connection -> {
-                    ReactiveRedisDataSourceImpl singleConnectionDS = new ReactiveRedisDataSourceImpl(vertx, redis, connection);
-                    TransactionHolder th = new TransactionHolder();
-                    return watch(connection, watchedKeys) // WATCH keys
-                            .chain(x -> preTx.apply(new ReactiveRedisDataSourceImpl(vertx, redis, connection)))// Execute the pre-tx-block
-                            .onFailure().recoverWithUni(failure -> {
-                                return connection.send(Request.cmd(Command.UNWATCH))
-                                        .onItemOrFailure().transformToUni((response2, failure2) -> {
-                                            if (failure2 != null) {
-                                                failure.addSuppressed(failure2);
-                                            }
-                                            return Uni.createFrom().failure(failure);
-                                        });
-                            })
-                            .chain(input -> connection.send(Request.cmd(Command.MULTI))
-                                    .chain(x -> tx
-                                            .apply(input, new ReactiveTransactionalRedisDataSourceImpl(singleConnectionDS, th)))
-                                    .onItemOrFailure().transformToUni((x, failure) -> {
-                                        if (failure != null) {
-                                            if (th.discarded()) {
+        return RedisConnections.withNewConnection(redis, connection -> {
+            ReactiveRedisDataSourceImpl singleConnectionDS = new ReactiveRedisDataSourceImpl(vertx, redis, connection);
+            TransactionHolder th = new TransactionHolder();
+            return watch(connection, watchedKeys) // WATCH keys
+                    .chain(x -> preTx.apply(new ReactiveRedisDataSourceImpl(vertx, redis, connection)))// Execute the pre-tx-block
+                    .onFailure().recoverWithUni(failure -> {
+                        return connection.send(Request.cmd(Command.UNWATCH))
+                                .onItemOrFailure().transformToUni((response2, failure2) -> {
+                                    if (failure2 != null) {
+                                        failure.addSuppressed(failure2);
+                                    }
+                                    return Uni.createFrom().failure(failure);
+                                });
+                    })
+                    .chain(input -> connection.send(Request.cmd(Command.MULTI))
+                            .chain(x -> tx
+                                    .apply(input, new ReactiveTransactionalRedisDataSourceImpl(singleConnectionDS, th)))
+                            .onItemOrFailure().transformToUni((x, failure) -> {
+                                if (failure != null) {
+                                    if (th.discarded()) {
+                                        return Uni.createFrom().failure(failure);
+                                    }
+                                    return connection.send(Request.cmd(Command.DISCARD))
+                                            .onItemOrFailure().transformToUni((response2, failure2) -> {
+                                                if (failure2 != null) {
+                                                    failure.addSuppressed(failure2);
+                                                }
                                                 return Uni.createFrom().failure(failure);
-                                            }
-                                            return connection.send(Request.cmd(Command.DISCARD))
-                                                    .onItemOrFailure().transformToUni((response2, failure2) -> {
-                                                        if (failure2 != null) {
-                                                            failure.addSuppressed(failure2);
-                                                        }
-                                                        return Uni.createFrom().failure(failure);
-                                                    });
-                                        }
-                                        if (th.discarded()) {
-                                            return Uni.createFrom().nullItem();
-                                        }
-                                        return connection.send(Request.cmd(Command.EXEC));
-                                    })
-                                    .onTermination().call(connection::close)
-                                    .map(r -> toTransactionResult(r, input, th)));
-                });
+                                            });
+                                }
+                                if (th.discarded()) {
+                                    return Uni.createFrom().nullItem();
+                                }
+                                return connection.send(Request.cmd(Command.EXEC));
+                            })
+                            .map(r -> toTransactionResult(r, input, th)));
+        });
     }
 
     public static TransactionResult toTransactionResult(Response response, TransactionHolder th) {
@@ -243,12 +237,10 @@ public class ReactiveRedisDataSourceImpl implements ReactiveRedisDataSource, Red
             // We are already on a connection, keep this one
             return function.apply(this);
         }
-        return redis.connect()
-                .onItem().transformToUni(connection -> {
-                    ReactiveRedisDataSourceImpl singleConnectionDS = new ReactiveRedisDataSourceImpl(vertx, redis, connection);
-                    return function.apply(singleConnectionDS)
-                            .onTermination().call(connection::close);
-                });
+        return RedisConnections.withNewConnection(redis, connection -> {
+            ReactiveRedisDataSourceImpl singleConnectionDS = new ReactiveRedisDataSourceImpl(vertx, redis, connection);
+            return function.apply(singleConnectionDS);
+        });
     }
 
     @Override

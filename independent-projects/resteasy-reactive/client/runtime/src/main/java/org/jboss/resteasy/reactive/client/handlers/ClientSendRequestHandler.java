@@ -12,6 +12,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.concurrent.Callable;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -54,6 +55,7 @@ import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.vertx.ReadStreamSubscriber;
 import io.smallrye.stork.api.ServiceInstance;
+import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.MultiMap;
@@ -74,6 +76,7 @@ import io.vertx.core.internal.buffer.BufferInternal;
 import io.vertx.core.internal.http.HttpClientInternal;
 import io.vertx.core.net.SocketAddress;
 import io.vertx.core.streams.Pipe;
+import io.vertx.core.streams.ReadStream;
 
 public class ClientSendRequestHandler implements ClientRestHandler {
     private static final Logger log = Logger.getLogger(ClientSendRequestHandler.class);
@@ -210,17 +213,55 @@ public class ClientSendRequestHandler implements ClientRestHandler {
                     MultivaluedMap<String, String> headerMap = requestContext.getRequestHeadersAsMap();
                     updateRequestHeadersFromConfig(requestContext, headerMap);
                     setVertxHeaders(httpClientRequest, headerMap);
-                    Future<HttpClientResponse> sent = httpClientRequest.send(ReadStreamSubscriber.asReadStream(
-                            (Multi<Buffer>) requestContext.getEntity().getEntity(),
+                    Multi<Buffer> buffers = ((Multi<?>) requestContext.getEntity().getEntity()).onItem()
+                            .transform(ClientSendRequestHandler::toBuffer);
+                    if (!httpClientRequest.headers().contains(HttpHeaders.CONTENT_LENGTH)) {
+                        httpClientRequest.setChunked(true);
+                    }
+                    // a failing Multi must fail the request: with the default pipe behaviour the body would be ended
+                    // normally and the server response to the truncated body would be reported as a success
+                    ReadStream<Buffer> body = ReadStreamSubscriber.asReadStream(buffers,
                             new Function<>() {
                                 @Override
                                 public Buffer apply(Buffer buffer) {
                                     return buffer;
                                 }
-                            }));
+                            });
+                    Pipe<Buffer> pipe = body.pipe();
+                    pipe.endOnFailure(false);
+                    pipe.to(httpClientRequest).onComplete(new Handler<>() {
+                        @Override
+                        public void handle(AsyncResult<Void> ar) {
+                            if (ar.failed()) {
+                                httpClientRequest.reset(0L, ar.cause());
+                            }
+                        }
+                    });
+                    Future<HttpClientResponse> sent = httpClientRequest.response();
                     attachSentHandlers(sent, httpClientRequest, requestContext);
+                } else if (requestContext.isInputStreamUpload() && hasWriterInterceptors(requestContext)) {
+                    // the entity has to be serialized through the writer interceptors, which means reading the whole
+                    // stream; as reading the stream may block (e.g. its data may come from a database), this is done
+                    // on a worker thread
+                    MultivaluedMap<String, String> headerMap = requestContext.getRequestHeadersAsMap();
+                    Vertx.currentContext().executeBlocking(new Callable<Buffer>() {
+                        @Override
+                        public Buffer call() throws Exception {
+                            return ClientSendRequestHandler.this.prepareBody(requestContext, headerMap);
+                        }
+                    }, false).onComplete(new Handler<>() {
+                        @Override
+                        public void handle(AsyncResult<Buffer> ar) {
+                            if (ar.failed()) {
+                                requestContext.resume(ar.cause());
+                                return;
+                            }
+                            // set the Vertx headers after we've run the interceptors because they can modify them
+                            setVertxHeaders(httpClientRequest, headerMap);
+                            sendEntity(httpClientRequest, requestContext, ar.result());
+                        }
+                    });
                 } else {
-                    Future<HttpClientResponse> sent;
                     Buffer actualEntity;
                     try {
                         actualEntity = ClientSendRequestHandler.this
@@ -229,18 +270,7 @@ public class ClientSendRequestHandler implements ClientRestHandler {
                         requestContext.resume(e);
                         return;
                     }
-                    if (actualEntity == AsyncInvokerImpl.EMPTY_BUFFER) {
-                        sent = httpClientRequest.send();
-                        if (loggingScope != LoggingScope.NONE) {
-                            clientLogger.logRequest(httpClientRequest, null, false);
-                        }
-                    } else {
-                        sent = httpClientRequest.send(actualEntity);
-                        if (loggingScope != LoggingScope.NONE) {
-                            clientLogger.logRequest(httpClientRequest, actualEntity, false);
-                        }
-                    }
-                    attachSentHandlers(sent, httpClientRequest, requestContext);
+                    sendEntity(httpClientRequest, requestContext, actualEntity);
                 }
             }
         }, new Consumer<>() {
@@ -324,6 +354,17 @@ public class ClientSendRequestHandler implements ClientRestHandler {
                         });
             });
         });
+    }
+
+    private static Buffer toBuffer(Object item) {
+        if (item instanceof Buffer buffer) {
+            return buffer;
+        }
+        if (item instanceof byte[] bytes) {
+            return Buffer.buffer(bytes);
+        }
+        throw new IllegalArgumentException("Unsupported item type '" + item.getClass().getName()
+                + "' for a streamed request body. Supported types are io.vertx.core.buffer.Buffer and byte[]");
     }
 
     private void attachSentHandlers(Future<HttpClientResponse> sent,
@@ -643,10 +684,38 @@ public class ClientSendRequestHandler implements ClientRestHandler {
         return multipartFormUpload;
     }
 
+    private void sendEntity(HttpClientRequest httpClientRequest, RestClientRequestContext requestContext,
+            Buffer actualEntity) {
+        Future<HttpClientResponse> sent;
+        if (actualEntity == AsyncInvokerImpl.EMPTY_BUFFER) {
+            sent = httpClientRequest.send();
+            if (loggingScope != LoggingScope.NONE) {
+                clientLogger.logRequest(httpClientRequest, null, false);
+            }
+        } else {
+            sent = httpClientRequest.send(actualEntity);
+            if (loggingScope != LoggingScope.NONE) {
+                clientLogger.logRequest(httpClientRequest, actualEntity, false);
+            }
+        }
+        attachSentHandlers(sent, httpClientRequest, requestContext);
+    }
+
     private Buffer setRequestHeadersAndPrepareBody(HttpClientRequest httpClientRequest,
             RestClientRequestContext state)
             throws IOException {
         MultivaluedMap<String, String> headerMap = state.getRequestHeadersAsMap();
+        Buffer actualEntity = prepareBody(state, headerMap);
+        // set the Vertx headers after we've run the interceptors because they can modify them
+        setVertxHeaders(httpClientRequest, headerMap);
+        return actualEntity;
+    }
+
+    /**
+     * Serializes the entity, running the writer interceptors, and completes the headers accordingly.
+     */
+    private Buffer prepareBody(RestClientRequestContext state, MultivaluedMap<String, String> headerMap)
+            throws IOException {
         updateRequestHeadersFromConfig(state, headerMap);
 
         Buffer actualEntity = AsyncInvokerImpl.EMPTY_BUFFER;
@@ -662,8 +731,6 @@ public class ClientSendRequestHandler implements ClientRestHandler {
                 headerMap.putSingle(HttpHeaders.CONTENT_LENGTH, "0");
             }
         }
-        // set the Vertx headers after we've run the interceptors because they can modify them
-        setVertxHeaders(httpClientRequest, headerMap);
         return actualEntity;
     }
 

@@ -61,6 +61,7 @@ import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.execannotations.ExecutionModelAnnotationsAllowedBuildItem;
+import io.quarkus.deployment.metrics.MetricsCapabilityBuildItem;
 import io.quarkus.gizmo2.ClassOutput;
 import io.quarkus.gizmo2.Const;
 import io.quarkus.gizmo2.Expr;
@@ -71,6 +72,7 @@ import io.quarkus.gizmo2.TypeArgument;
 import io.quarkus.gizmo2.desc.ConstructorDesc;
 import io.quarkus.gizmo2.desc.FieldDesc;
 import io.quarkus.gizmo2.desc.MethodDesc;
+import io.quarkus.runtime.metrics.MetricsFactory;
 import io.quarkus.runtime.util.HashUtil;
 import io.quarkus.signals.Receivers.ExecutionModel;
 import io.quarkus.signals.Signal;
@@ -278,7 +280,8 @@ class SignalsProcessor {
                         Expr receiveInfo = bc.new_(InvokerReceiverInfo.class,
                                 Const.of(receiver.getSignalParam().position()),
                                 Const.of(receiver.getSignalParam().type().name().equals(DotNames.SIGNAL_CONTEXT)),
-                                Const.of((short) receiver.getMethod().parametersCount()));
+                                Const.of((short) receiver.getMethod().parametersCount()),
+                                Const.of(receiver.getMethod().declaringClass().name() + "#" + receiver.getMethod().name()));
                         bc.invokeSpecial(ConstructorDesc.of(InvokerReceiver.class, Invoker.class, InvokerReceiverInfo.class),
                                 cc.this_(), invoker, receiveInfo);
 
@@ -359,6 +362,33 @@ class SignalsProcessor {
                 .creator(SignalBeanCreator.class)
                 .forceApplicationClass()
                 .done());
+    }
+
+    @BuildStep
+    void registerTracing(Capabilities capabilities, SignalsBuildTimeConfig config,
+            BuildProducer<AdditionalBeanBuildItem> beans) {
+        if (config.telemetry().tracesEnabled() && capabilities.isPresent(Capability.OPENTELEMETRY_TRACER)) {
+            // The classes are referenced by name so that OpenTelemetry types are not loaded when the capability is absent
+            beans.produce(AdditionalBeanBuildItem.builder()
+                    .addBeanClasses(
+                            "io.quarkus.signals.runtime.tracing.TracingSignalMetadataEnricher",
+                            "io.quarkus.signals.runtime.tracing.TracingReceiverInterceptor")
+                    .build());
+        }
+    }
+
+    @BuildStep
+    void registerMetrics(Optional<MetricsCapabilityBuildItem> metricsCapability, SignalsBuildTimeConfig config,
+            BuildProducer<AdditionalBeanBuildItem> beans) {
+        if (config.telemetry().metricsEnabled()
+                && metricsCapability.map(mc -> mc.metricsSupported(MetricsFactory.MICROMETER)).orElse(false)) {
+            // The classes are referenced by name so that Micrometer types are not loaded when the capability is absent
+            beans.produce(AdditionalBeanBuildItem.builder()
+                    .addBeanClasses(
+                            "io.quarkus.signals.runtime.metrics.MetricsSignalMetadataEnricher",
+                            "io.quarkus.signals.runtime.metrics.MetricsReceiverInterceptor")
+                    .build());
+        }
     }
 
     @BuildStep
@@ -446,7 +476,7 @@ class SignalsProcessor {
     }
 
     @BuildStep
-    void registerBeans(BuildProducer<AdditionalBeanBuildItem> beans,
+    void registerBeans(BuildProducer<AdditionalBeanBuildItem> beans, Capabilities capabilities,
             ReceiverExecutorImplementationBuildItem receiverExecutorImplementation) {
         AdditionalBeanBuildItem.Builder builder = AdditionalBeanBuildItem.builder();
         builder.addBeanClasses(ReceiverManager.class, RequestContextInterceptor.class);
@@ -456,6 +486,11 @@ class SignalsProcessor {
             default -> throw new IllegalArgumentException(
                     "Unexpected value: " + receiverExecutorImplementation.getImplementation());
         }
+
+        if (capabilities.isPresent(Capability.SECURITY)) {
+            builder.addBeanClass("io.quarkus.signals.runtime.impl.SecurityIntegration");
+        }
+
         beans.produce(builder.build());
     }
 

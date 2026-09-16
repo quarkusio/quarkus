@@ -92,6 +92,7 @@ import org.jboss.resteasy.reactive.server.model.ParamConverterProviders;
 import org.jboss.resteasy.reactive.server.model.ServerMethodParameter;
 import org.jboss.resteasy.reactive.server.model.ServerResourceMethod;
 import org.jboss.resteasy.reactive.server.spi.EndpointInvoker;
+import org.jboss.resteasy.reactive.server.spi.HandlerKindResolver;
 import org.jboss.resteasy.reactive.server.spi.ResteasyReactiveResourceInfo;
 import org.jboss.resteasy.reactive.server.spi.ServerMessageBodyWriter;
 import org.jboss.resteasy.reactive.server.spi.ServerRestHandler;
@@ -110,6 +111,7 @@ public class RuntimeResourceDeployment {
     private static final Logger log = Logger.getLogger(RuntimeResourceDeployment.class);
 
     private final DeploymentInfo info;
+    private final HandlerKindResolver handlerKindResolver;
     private final ServerSerialisers serialisers;
     private final ResteasyReactiveConfig resteasyReactiveConfig;
     private final Supplier<Executor> executorSupplier;
@@ -124,11 +126,13 @@ public class RuntimeResourceDeployment {
     private final BlockingHandler blockingHandlerVirtualThread;
     private final ResponseWriterHandler responseWriterHandler;
 
-    public RuntimeResourceDeployment(DeploymentInfo info, Supplier<Executor> executorSupplier,
+    public RuntimeResourceDeployment(DeploymentInfo info, HandlerKindResolver handlerKindResolver,
+            Supplier<Executor> executorSupplier,
             Supplier<Executor> virtualExecutorSupplier,
             RuntimeInterceptorDeployment runtimeInterceptorDeployment, DynamicEntityWriter dynamicEntityWriter,
             ResourceLocatorHandler resourceLocatorHandler, boolean defaultBlocking) {
         this.info = info;
+        this.handlerKindResolver = handlerKindResolver;
         this.serialisers = info.getSerialisers();
         this.resteasyReactiveConfig = info.getResteasyReactiveConfig();
         this.executorSupplier = executorSupplier;
@@ -495,11 +499,13 @@ public class RuntimeResourceDeployment {
 
         handlers.set(0, new AbortChainHandler(abortHandlingChain.toArray(EMPTY_REST_HANDLER_ARRAY)));
 
+        ServerRestHandler[] handlerChain = handlers.toArray(EMPTY_REST_HANDLER_ARRAY);
         return new RuntimeResource(method.getHttpMethod(), methodPathTemplate,
                 classPathTemplate,
                 method.getProduces() == null ? null : serverMediaType,
                 consumesMediaTypes, invoker,
-                clazz.getFactory(), handlers.toArray(EMPTY_REST_HANDLER_ARRAY), method.getName(), parameterDeclaredTypes,
+                clazz.getFactory(), handlerChain, handlerKindResolver.kindsOf(handlerChain), method.getName(),
+                parameterDeclaredTypes,
                 effectiveReturnType, method.isBlocking(), method.isRunOnVirtualThread(), resourceClass,
                 lazyMethod,
                 pathParameterIndexes, info.isDevelopmentMode() ? score : null, streamElementType,

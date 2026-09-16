@@ -344,7 +344,10 @@ public interface AutoConfiguredOpenTelemetrySdkBuilderCustomizer {
                             if (metricReader instanceof PeriodicMetricReader && managedExecutor.isResolvable()) {
                                 return PeriodicMetricReader.builder(metricExporterRef.get())
                                         .setInterval(oTelRuntimeConfig.metric().exportInterval())
-                                        .setExecutor(managedExecutor.get())
+                                        // wrap the shared managed executor: the reader assumes it owns its
+                                        // executor and shuts it down (with a 5s awaitTermination) on shutdown,
+                                        // which must not touch or block on the container-managed pool
+                                        .setExecutor(new NonShutdownableScheduledExecutorService(managedExecutor.get()))
                                         .build();
                             }
                             return metricReader;

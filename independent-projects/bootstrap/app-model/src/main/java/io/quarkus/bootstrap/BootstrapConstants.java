@@ -16,6 +16,8 @@ public interface BootstrapConstants {
     /**
      * Constant for sharing the additional mappings between test-sources and the corresponding application-sources.
      * The Gradle plugin populates this data which is then read by the PathTestHelper when executing tests.
+     * It can be set either as a system property or as an environment variable.
+     * If both are set, the system property takes precedence.
      */
     String TEST_TO_MAIN_MAPPINGS = "TEST_TO_MAIN_MAPPINGS";
 
@@ -34,6 +36,7 @@ public interface BootstrapConstants {
     String PROP_DEPLOYMENT_ARTIFACT = "deployment-artifact";
     String PROP_PROVIDES_CAPABILITIES = "provides-capabilities";
     String PROP_REQUIRES_CAPABILITIES = "requires-capabilities";
+    String PROP_REQUIRES_QUARKUS_VERSION = "requires-quarkus-version";
     String PARENT_FIRST_ARTIFACTS = "parent-first-artifacts";
     String EXCLUDED_ARTIFACTS = "excluded-artifacts";
     String LESSER_PRIORITY_ARTIFACTS = "lesser-priority-artifacts";
@@ -71,6 +74,7 @@ public interface BootstrapConstants {
     String MAPPABLE_LOCAL_PROJECTS = "local-projects";
     String MAPPABLE_EXCLUDED_RESOURCES = "excluded-resources";
     String MAPPABLE_EXTENSION_DEV_CONFIG = "extension-dev-config";
+    String MAPPABLE_REQUIRED_QUARKUS_VERSIONS = "required-quarkus-versions";
     // ArtifactDependency Mappable keys
     String MAPPABLE_MAVEN_ARTIFACT = "maven-artifact";
     String MAPPABLE_SCOPE = "scope";

@@ -1,6 +1,8 @@
 package io.quarkus.qute.deployment.extensions;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.Collections;
 import java.util.List;
@@ -12,6 +14,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.qute.Engine;
+import io.quarkus.qute.TemplateException;
 import io.quarkus.test.QuarkusExtensionTest;
 
 public class CollectionTemplateExtensionsTest {
@@ -72,6 +75,16 @@ public class CollectionTemplateExtensionsTest {
     @Test
     public void testLast() {
         assertEquals("CHARLIE", engine.getTemplate("last").data("list", listOfNames()).render());
+    }
+
+    @Test
+    public void testIndexParameterIsRequired() {
+        for (String expression : List.of("{list.get}", "{list.take}", "{list.takeLast}")) {
+            TemplateException expected = assertThrows(TemplateException.class,
+                    () -> engine.parse(expression).data("list", listOfNames()).render());
+            assertTrue(expected.getMessage().contains("not found on the base object"), expected.getMessage());
+            assertTrue(expected.getMessage().contains("in expression " + expression), expected.getMessage());
+        }
     }
 
     private List<String> listOfNames() {

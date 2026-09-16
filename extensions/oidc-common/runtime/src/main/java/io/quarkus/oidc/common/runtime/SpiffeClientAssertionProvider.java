@@ -4,7 +4,7 @@ import org.jboss.logging.Logger;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.spiffe.client.SpiffeClient;
-import io.quarkus.spiffe.client.WorkloadJsonWebToken;
+import io.quarkus.spiffe.svid.jwt.WorkloadJsonWebToken;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.Vertx;
 

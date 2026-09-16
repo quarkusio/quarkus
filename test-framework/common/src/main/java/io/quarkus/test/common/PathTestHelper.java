@@ -100,7 +100,10 @@ public final class PathTestHelper {
                 File.separator + "classes");
         //endregion
 
-        String mappings = System.getenv(BootstrapConstants.TEST_TO_MAIN_MAPPINGS);
+        String mappings = System.getProperty(BootstrapConstants.TEST_TO_MAIN_MAPPINGS);
+        if (mappings == null) {
+            mappings = System.getenv(BootstrapConstants.TEST_TO_MAIN_MAPPINGS);
+        }
         if (mappings != null) {
             Stream.of(mappings.split(","))
                     .filter(s -> !s.isEmpty())

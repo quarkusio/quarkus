@@ -3,6 +3,7 @@ package io.quarkus.devservices.common;
 import java.util.function.Function;
 
 import org.testcontainers.containers.GenericContainer;
+import org.testcontainers.utility.TestcontainersConfiguration;
 
 import io.quarkus.deployment.builditem.Startable;
 
@@ -50,5 +51,15 @@ public class StartableContainer<T extends GenericContainer<?>> implements Starta
     @Override
     public void close() {
         container.close();
+    }
+
+    @Override
+    public boolean isReusable() {
+        return isContainerReusable(container);
+    }
+
+    public static boolean isContainerReusable(GenericContainer<?> container) {
+        return TestcontainersConfiguration.getInstance().environmentSupportsReuse()
+                && container.isShouldBeReused();
     }
 }

@@ -24,7 +24,6 @@ import org.hibernate.search.engine.cfg.EngineSettings;
 import org.hibernate.search.engine.environment.bean.BeanReference;
 import org.hibernate.search.engine.reporting.FailureHandler;
 import org.hibernate.search.mapper.orm.Search;
-import org.hibernate.search.mapper.orm.automaticindexing.session.AutomaticIndexingSynchronizationStrategy;
 import org.hibernate.search.mapper.orm.bootstrap.impl.HibernateSearchPreIntegrationService;
 import org.hibernate.search.mapper.orm.bootstrap.spi.HibernateOrmIntegrationBooter;
 import org.hibernate.search.mapper.orm.cfg.HibernateOrmMapperSettings;
@@ -321,9 +320,6 @@ public class HibernateSearchElasticsearchRecorder {
                         HibernateOrmMapperSettings.SCHEMA_MANAGEMENT_STRATEGY,
                         runtimeConfig.schemaManagement().strategy());
                 addConfig(propertyCollector,
-                        HibernateOrmMapperSettings.AUTOMATIC_INDEXING_ENABLE_DIRTY_CHECK,
-                        runtimeConfig.automaticIndexing().enableDirtyCheck());
-                addConfig(propertyCollector,
                         HibernateOrmMapperSettings.QUERY_LOADING_CACHE_LOOKUP_STRATEGY,
                         runtimeConfig.queryLoading().cacheLookup().strategy());
                 addConfig(propertyCollector,
@@ -340,12 +336,6 @@ public class HibernateSearchElasticsearchRecorder {
                             runtimeConfig == null ? Optional.empty()
                                     : runtimeConfig.indexing().plan().synchronization().strategy(),
                             IndexingPlanSynchronizationStrategy.class, persistenceUnitName, null, null));
-            addConfig(propertyCollector,
-                    HibernateOrmMapperSettings.AUTOMATIC_INDEXING_SYNCHRONIZATION_STRATEGY,
-                    HibernateSearchBeanUtil.singleExtensionBeanReferenceFor(
-                            runtimeConfig == null ? Optional.empty()
-                                    : runtimeConfig.automaticIndexing().synchronization().strategy(),
-                            AutomaticIndexingSynchronizationStrategy.class, persistenceUnitName, null, null));
 
             HibernateSearchBackendElasticsearchConfigHandler.contributeBackendRuntimeProperties(
                     propertyCollector, mapperContext,

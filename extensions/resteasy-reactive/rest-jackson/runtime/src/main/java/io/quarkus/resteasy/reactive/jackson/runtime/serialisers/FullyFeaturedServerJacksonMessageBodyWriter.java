@@ -37,12 +37,16 @@ import tools.jackson.databind.ObjectWriter;
 
 public class FullyFeaturedServerJacksonMessageBodyWriter extends ServerMessageBodyWriter.AllWriteableMessageBodyWriter {
 
+    // when a resource method uses a wildcard @Produces, the response media type is whatever the client sent in Accept,
+    // so we need to bound the size of the cache in order to avoid a client filling it with unbounded values
+    private static final int MAX_CONTEXT_RESOLVER_CACHE_SIZE = 128;
+
     private final Instance<ObjectMapper> originalMapper;
     private final Providers providers;
     private final LazyValue<ObjectWriter> defaultWriter;
     private final ConcurrentMap<String, ObjectWriter> perMethodWriter = new ConcurrentHashMap<>();
     private final ConcurrentMap<String, ObjectWriter> perTypeWriter = new ConcurrentHashMap<>();
-    private final ConcurrentMap<Class<?>, ObjectMapper> contextResolverMap = new ConcurrentHashMap<>();
+    private final ConcurrentMap<String, ObjectMapper> contextResolverMap = new ConcurrentHashMap<>();
     private final ConcurrentMap<ObjectMapper, ObjectWriter> objectWriterMap = new ConcurrentHashMap<>();
 
     // used by Arc
@@ -118,17 +122,19 @@ public class FullyFeaturedServerJacksonMessageBodyWriter extends ServerMessageBo
                     new MethodObjectWriterFunction(customSerializationValue, type, mapper));
         }
 
-        // Otherwise, check `@CustomSerialization` annotated in class. In this case, we use the effective type for caching up
-        // the object.
-        customSerializationValue = ResteasyReactiveServerJacksonRecorder
-                .customSerializationForClass(resourceInfo.getResourceClass());
+        // Otherwise, check `@CustomSerialization` annotated in class. In this case, we use the resource class along with the
+        // effective type for caching up the object.
+        // The resource class needs to be part of the key because different resource classes can return the same type
+        // while using different `@CustomSerialization` values
+        Class<?> resourceClass = resourceInfo.getResourceClass();
+        customSerializationValue = ResteasyReactiveServerJacksonRecorder.customSerializationForClass(resourceClass);
         if (customSerializationValue != null) {
             Type effectiveType = type;
             if (type instanceof ParameterizedType) {
                 effectiveType = ((ParameterizedType) type).getActualTypeArguments()[0];
             }
 
-            return perTypeWriter.computeIfAbsent(effectiveType.getTypeName(),
+            return perTypeWriter.computeIfAbsent(resourceClass.getName() + "-" + effectiveType.getTypeName(),
                     new MethodObjectWriterFunction(customSerializationValue, type, mapper));
         }
 
@@ -153,20 +159,30 @@ public class FullyFeaturedServerJacksonMessageBodyWriter extends ServerMessageBo
      */
     private ObjectMapper getEffectiveMapper(Object o, ServerRequestContext context) {
         ObjectMapper effectiveMapper = originalMapper.get();
+        MediaType responseMediaType = context.getResponseMediaType();
         ContextResolver<ObjectMapper> contextResolver = providers.getContextResolver(ObjectMapper.class,
-                context.getResponseMediaType());
+                responseMediaType);
         if (contextResolver == null) {
             // TODO: not sure if this is correct, but Jackson does this as well...
             contextResolver = providers.getContextResolver(ObjectMapper.class, null);
         }
         if (contextResolver != null) {
             var cr = contextResolver;
-            ObjectMapper mapperFromContextResolver = contextResolverMap.computeIfAbsent(o.getClass(), new Function<>() {
-                @Override
-                public ObjectMapper apply(Class<?> aClass) {
-                    return cr.getContext(o.getClass());
-                }
-            });
+            StringBuilder key = new StringBuilder(o.getClass().getName());
+            if (responseMediaType != null) {
+                key.append("-").append(responseMediaType.getType()).append("/").append(responseMediaType.getSubtype());
+            }
+            if (contextResolverMap.size() >= MAX_CONTEXT_RESOLVER_CACHE_SIZE) {
+                // avoid an ever-growing cache size
+                contextResolverMap.clear();
+            }
+            ObjectMapper mapperFromContextResolver = contextResolverMap
+                    .computeIfAbsent(key.toString(), new Function<>() {
+                        @Override
+                        public ObjectMapper apply(String key) {
+                            return cr.getContext(o.getClass());
+                        }
+                    });
             if (mapperFromContextResolver != null) {
                 effectiveMapper = mapperFromContextResolver;
             }

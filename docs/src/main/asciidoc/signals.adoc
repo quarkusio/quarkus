@@ -16,6 +16,8 @@ include::_attributes.adoc[]
 Signals allow application components to interact in a loosely coupled fashion, by emitting and receiving _signals_.
 A signal is an object -- optionally augmented with qualifiers and metadata -- that is emitted by one component and delivered to one or more _receivers_.
 
+include::{includes}/extension-status.adoc[]
+
 Resolution:: The extension provides a type-safe resolution model, inspired by the https://jakarta.ee/specifications/cdi/4.1/jakarta-cdi-spec-4.1#events[CDI events].
 Emission Modes:: Inspired by the https://vertx.io/docs/vertx-core/java/#event_bus[Vert.x EventBus], the API supports unicast (point-to-point) and request-reply patterns in addition to the traditional multicast (publish-subscribe) pattern.
 Execution Model:: Receivers are always executed asynchronously and support both blocking and non-blocking logic. The execution model is determined from the method return type and annotations such as `@Blocking`, `@NonBlocking`, and `@RunOnVirtualThread`, following Quarkus conventions.
@@ -519,6 +521,160 @@ NOTE: The Signals resolution model deviates from CDI observer resolution in two 
 * Reach for *Signals* as the default choice for loosely coupled, in-process asynchronous communication: they combine the compile-time type safety of CDI events with the flexible emission modes of the Vert.x EventBus, and add a Quarkus-idiomatic execution model on top. Signals are a particularly good fit when you need more than plain publish/subscribe (unicast or request-reply), want receivers that integrate naturally with reactive pipelines and virtual threads, or benefit from having both a declarative (`@Receives`) and a programmatic receiver API.
 * Use *CDI events* for simple publish/subscribe notifications between components, especially when you need synchronous delivery, transactional observers, or ordering of observers, or when you need to stay with the standard Jakarta EE API.
 * Use the *Vert.x EventBus* when you need to interact with the underlying Vert.x runtime directly or integrate with existing Vert.x components.
+
+[[opentelemetry-tracing]]
+== OpenTelemetry Tracing
+
+If the xref:opentelemetry.adoc[OpenTelemetry extension] is present, the active trace context is automatically propagated from the signal emission to the receiver invocations.
+
+Because receivers are executed asynchronously on a separate context, the trace context captured on the emitting thread would otherwise be lost.
+To bridge this gap, when the signal is emitted the active context is captured into the signal metadata under the `quarkus.tracing` key -- as a map of https://www.w3.org/TR/trace-context/[W3C Trace Context] headers (e.g. `traceparent`) -- and restored when a receiver is invoked.
+A new span is created for each receiver invocation.
+When the signal is emitted within an active trace, the span is a child of the emitter's span, so a `publish` emission that reaches multiple receivers results in one child span per receiver.
+Otherwise the span is started as a new root span (i.e. a new trace).
+Each span is named `receive <signal type>` (where `<signal type>` is the raw signal type name) and carries the following attributes:
+
+* `signals.signal.type` -- the signal type, including generic type arguments if any (unlike the span name, which uses the raw type name),
+* `signals.emission.type` -- the emission type (`PUBLISH`, `SEND` or `REQUEST`),
+* `signals.response.type` -- the expected response type; only present for request-reply emissions,
+* `signals.qualifiers` -- the emission qualifiers, excluding the built-in `@Default` and `@Any`; only present if there is at least one such qualifier,
+* `signals.receiver` -- a human-readable name of the receiver; only present if available,
+* `signals.receiver.wait_ms` -- the time in milliseconds elapsed between the emission and the start of the receiver invocation.
+
+If the receiver fails, the span status is set to error and the exception is recorded together with the `error.type` attribute.
+
+NOTE: If the signal metadata already contains a `quarkus.tracing` entry it is left untouched.
+
+This integration is enabled by default and can be disabled with the following configuration property:
+
+[source,properties]
+----
+quarkus.signals.telemetry.traces.enabled=false
+----
+
+== Micrometer Metrics
+
+If the xref:telemetry-micrometer.adoc[Micrometer extension] is present, the following counters are registered:
+
+* `signals.emissions` -- incremented once per emission (i.e., per call to `publish()`, `send()`, or `request()`), regardless of the number of matching receivers,
+* `signals.receiver.executions` -- incremented once per completed receiver invocation; a `publish` emission that reaches multiple receivers therefore increments this counter once per receiver. The outcome is distinguished by the `error.type` tag.
+
+The counters are tagged with the following dimensions:
+
+* `signal.type` -- the raw signal type name (generic type arguments are omitted to keep the cardinality bounded),
+* `emission.type` -- the emission type (`PUBLISH`, `SEND` or `REQUEST`),
+* `response.type` -- the expected response type for request-reply emissions, or `none` otherwise (only on `signals.emissions`),
+* `error.type` -- the exception class name of a failed receiver invocation, or `none` if it completed successfully (only on `signals.receiver.executions`). The number of failures can be obtained by filtering on `error.type != "none"`.
+
+[NOTE]
+====
+The counters are deliberately _not_ tagged with the receiver identity, nor with the emission qualifiers.
+
+* Receivers may be registered programmatically at runtime and may be anonymous, which would result in unbounded or missing tag values; receiver-level detail is available through <<opentelemetry-tracing,tracing spans>> instead.
+* Qualifiers are omitted to keep the number of time series bounded. As a consequence, emissions of the same signal type that differ only by qualifier are counted together.
+====
+
+This integration is enabled by default and can be disabled with the following configuration property:
+
+[source,properties]
+----
+quarkus.signals.telemetry.metrics.enabled=false
+----
+
+== Security
+
+If the xref:security-overview.adoc[Quarkus Security extension] is present and CDI request context is active, the `SecurityIdentity` of the emitting thread is automatically propagated to each receiver invocation.
+
+The identity is captured at emission time and restored in the receiver's request context.
+Receiver methods can therefore inject `SecurityIdentity` and use standard security annotations such as `@RolesAllowed`.
+
+[source,java]
+----
+package org.acme.signals.security;
+
+import jakarta.annotation.security.RolesAllowed;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
+
+import io.quarkus.logging.Log;
+import io.quarkus.security.identity.SecurityIdentity;
+import io.quarkus.signals.Receives;
+
+@ApplicationScoped
+public class OrderHandlers {
+
+    record OrderPlaced(String orderId) {
+    }
+
+    @Inject
+    SecurityIdentity identity;
+
+    @RolesAllowed("admin")
+    void onOrder(@Receives OrderPlaced order) { // <1>
+        Log.infof("Order %s processed by %s", order.orderId(), identity.getPrincipal().getName());
+    }
+}
+----
+<1> Only invoked if the `SecurityIdentity` propagated from the emitter has the `admin` role. An `UnauthorizedException` or `ForbiddenException` is thrown otherwise.
+
+=== When is the identity available?
+
+The identity is only propagated when it has already been resolved at the moment the signal is emitted.
+This happens automatically when xref:security-proactive-authentication.adoc[proactive authentication] is enabled (the default).
+
+If proactive authentication is disabled (`quarkus.http.auth.proactive=false`), the identity is still propagated provided it was resolved before the emission.
+For example, when an authorization check (like `@RolesAllowed`) was performed or the `SecurityIdentity` was accessed earlier in the request:
+
+[source,properties]
+----
+quarkus.http.auth.proactive=false
+----
+
+[source,java]
+----
+package org.acme.signals.security;
+
+import jakarta.annotation.security.RolesAllowed;
+import jakarta.inject.Inject;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+
+import io.quarkus.security.identity.SecurityIdentity;
+import io.quarkus.signals.Signal;
+
+@Path("/orders")
+public class OrdersResource {
+
+    record OrderPlaced(String orderId, String username) {
+    }
+
+    @Inject
+    Signal<OrderPlaced> orderPlaced;
+
+    @Inject
+    SecurityIdentity securityIdentity;
+
+    @RolesAllowed("user") // <1>
+    @GET
+    @Path("/user")
+    public String placeOrderIfUser() {
+        orderPlaced.publish(new OrderPlaced("ORD-1", null));
+        return "ok";
+    }
+
+    @GET
+    @Path("/public")
+    public String placePublicOrder() {
+        String username = securityIdentity.getPrincipal().getName(); // <2>
+        orderPlaced.publish(new OrderPlaced("ORD-1", username));
+        return "ok";
+    }
+}
+----
+<1> The `@RolesAllowed` check forces authentication, so the identity is resolved before the signal is emitted.
+<2> Accessing the `SecurityIdentity` principal triggers authentication, so the identity is available for propagation.
+
+NOTE: When the OpenID Connect extension is used, the propagated identity is not set once the token expires and receivers will see an anonymous identity.
 
 == SPI
 

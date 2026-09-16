@@ -31,13 +31,13 @@
         <jandex-gradle-plugin.version>2.3.0</jandex-gradle-plugin.version>
 
         <asciidoctorj.version>3.0.0</asciidoctorj.version>
-        <htmlunit.version>5.4.0</htmlunit.version>
+        <htmlunit.version>5.5.0</htmlunit.version>
         <javaparser-core.version>3.28.2</javaparser-core.version>
         <jdeparser.version>2.1.0</jdeparser.version>
         <subethasmtp.version>6.0.1</subethasmtp.version>
 
         <!-- Dev tools -->
-        <freemarker.version>2.3.34</freemarker.version>
+        <freemarker.version>2.3.35</freemarker.version>
         <commonmark.version>0.30.0</commonmark.version>
         <jgit.version>7.7.1.202607240634-r</jgit.version>
 
@@ -161,7 +161,7 @@
         <kafka.native.image>quay.io/ogunalp/kafka-native:latest</kafka.native.image>
         <kafka.upstream.image>docker.io/apache/kafka:4.2.0</kafka.upstream.image>
         <kafka.upstream.native.image>docker.io/apache/kafka-native:4.2.0</kafka.upstream.native.image>
-        <observability.lgtm.image>docker.io/grafana/otel-lgtm:0.24.0</observability.lgtm.image>
+        <observability.lgtm.image>docker.io/grafana/otel-lgtm:0.31.0</observability.lgtm.image>
 
         <!-- Code Coverage Properties-->
         <jacoco.agent.argLine></jacoco.agent.argLine>
@@ -661,7 +661,7 @@
                         <dependency>
                             <groupId>org.apache.groovy</groupId>
                             <artifactId>groovy</artifactId>
-                            <version>5.1.0</version>
+                            <version>5.1.2</version>
                         </dependency>
                     </dependencies>
                 </plugin>

@@ -99,8 +99,7 @@ public class HibernateOrmCdiProcessor {
 
     @BuildStep
     AnnotationsTransformerBuildItem convertJpaResourceAnnotationsToQualifier(
-            List<PersistenceUnitDescriptorBuildItem> persistenceUnitDescriptors,
-            ImpliedBlockingPersistenceUnitTypeBuildItem impliedBlockingPersistenceUnitType) {
+            List<PersistenceXmlDescriptorBuildItem> persistenceXmlDescriptors) {
         AnnotationTransformation transformer = new AnnotationsTransformer() {
 
             @Override
@@ -135,9 +134,8 @@ public class HibernateOrmCdiProcessor {
                         .add(DotNames.INJECT);
                 if (persistenceUnitNameAnnotationValue == null || persistenceUnitNameAnnotationValue.asString().isEmpty()) {
                     transformation.add(DotNames.DEFAULT);
-                } else if (persistenceUnitDescriptors.size() == 1
-                        && !impliedBlockingPersistenceUnitType.shouldGenerateImpliedBlockingPersistenceUnit()
-                        && persistenceUnitDescriptors.get(0).getPersistenceUnitName()
+                } else if (persistenceXmlDescriptors.size() == 1
+                        && persistenceXmlDescriptors.get(0).getDescriptor().getName()
                                 .equals(persistenceUnitNameAnnotationValue.asString())) {
                     // we are in the case where we have only one persistence unit defined in a persistence.xml
                     // in this case, we consider it the default too if the name matches

@@ -16,12 +16,6 @@ import io.smallrye.config.WithDefault;
 public interface AeshSshConfig {
 
     /**
-     * Whether the SSH terminal server is enabled.
-     */
-    @WithDefault("true")
-    boolean enabled();
-
-    /**
      * SSH server port.
      */
     @WithDefault("2222")

@@ -1,7 +1,7 @@
 package io.quarkus.devservices.test;
 
-import static io.quarkus.tests.oldmodelextension.Constants.OLD_MODEL_EXTENSION_BASE_URL;
-import static io.quarkus.tests.oldmodelextension.Constants.OLD_MODEL_EXTENSION_STATIC_THING;
+import static io.quarkus.tests.simpleextension.Constants.QUARKUS_SIMPLE_EXTENSION_BASE_URL;
+import static io.quarkus.tests.simpleextension.Constants.QUARKUS_SIMPLE_EXTENSION_STATIC_THING;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.util.Map;
@@ -26,19 +26,19 @@ public class DevServicesDisabledTest {
         }
     }
 
-    @ConfigProperty(name = OLD_MODEL_EXTENSION_BASE_URL, defaultValue = UNSET)
-    String oldModelExtensionBaseUrl;
+    @ConfigProperty(name = QUARKUS_SIMPLE_EXTENSION_BASE_URL, defaultValue = UNSET)
+    String simpleExtensionBaseUrl;
 
-    @ConfigProperty(name = OLD_MODEL_EXTENSION_STATIC_THING, defaultValue = UNSET)
-    String oldModelStaticProperty;
+    @ConfigProperty(name = QUARKUS_SIMPLE_EXTENSION_STATIC_THING, defaultValue = UNSET)
+    String simpleStaticProperty;
 
     @Test
-    public void testOldModelServiceIsNotStartedWhenDevServicesDisabled() {
-        assertEquals(UNSET, oldModelExtensionBaseUrl);
+    public void testServiceIsNotStartedWhenDevServicesDisabled() {
+        assertEquals(UNSET, simpleExtensionBaseUrl);
     }
 
     @Test
-    public void testOldModelStaticConfigIsNotSetWhenDevServicesDisabled() {
-        assertEquals(UNSET, oldModelStaticProperty);
+    public void testStaticConfigIsNotSetWhenDevServicesDisabled() {
+        assertEquals(UNSET, simpleStaticProperty);
     }
 }

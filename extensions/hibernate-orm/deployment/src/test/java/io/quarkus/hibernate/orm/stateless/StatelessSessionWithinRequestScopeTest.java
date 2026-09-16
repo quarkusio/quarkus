@@ -1,5 +1,6 @@
 package io.quarkus.hibernate.orm.stateless;
 
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import jakarta.inject.Inject;
@@ -41,14 +42,8 @@ public class StatelessSessionWithinRequestScopeTest {
 
     @Test
     public void write() {
-        assertEquals(0L, statelessSession
-                .createSelectionQuery("SELECT entity FROM MyEntity entity", MyEntity.class)
-                .getResultCount());
-        // TODO: On contrary to Session, it seems we don't prevent writes on StatelessSessions with no transaction active?
-        statelessSession.insert(new MyEntity("john"));
-        assertEquals(1L, statelessSession
-                .createSelectionQuery("SELECT entity FROM MyEntity entity", MyEntity.class)
-                .getResultCount());
+        assertThatThrownBy(() -> statelessSession.insert(new MyEntity("john")))
+                .hasMessageContaining("Transaction is not active");
     }
 
     @AfterEach

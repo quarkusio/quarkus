@@ -17,6 +17,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import jakarta.inject.Inject;
 
 import org.awaitility.Awaitility;
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -26,6 +27,7 @@ import io.quarkus.it.oidc.dev.services.SecurityIdentityUpdateWebSocket.ResponseD
 import io.quarkus.test.common.http.TestHTTPResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.oidc.client.OidcTestClient;
+import io.restassured.RestAssured;
 import io.vertx.core.Vertx;
 import io.vertx.core.http.WebSocket;
 import io.vertx.core.http.WebSocketClient;
@@ -65,6 +67,8 @@ public class WebSocketOidcTest {
     @Test
     public void testDocumentedTokenPropagationUsingSubProtocol()
             throws InterruptedException, ExecutionException, TimeoutException {
+        RestAssured.given().delete("/signals/clear").then().statusCode(204);
+
         // verify that handler documented in WebSockets Next reference
         // propagates "Sec-WebSocket-Protocol" as Authorization header
         // and authentication is successful
@@ -103,6 +107,12 @@ public class WebSocketOidcTest {
             assertEquals(2, messages.size(), "Messages: " + messages);
             assertEquals("opened", messages.get(0));
             assertEquals("hello alice", messages.get(1));
+
+            Awaitility.await().atMost(Duration.ofSeconds(3)).untilAsserted(() -> RestAssured.given()
+                    .get("/signals/messages")
+                    .then()
+                    .statusCode(200)
+                    .body(Matchers.containsString("websockets:hello alice")));
         } finally {
             client.close().toCompletionStage().toCompletableFuture().get(5, TimeUnit.SECONDS);
         }

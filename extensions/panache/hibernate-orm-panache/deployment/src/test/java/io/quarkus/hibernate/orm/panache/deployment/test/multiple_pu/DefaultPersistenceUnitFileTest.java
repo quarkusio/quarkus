@@ -19,8 +19,7 @@ public class DefaultPersistenceUnitFileTest {
             .withApplicationRoot((jar) -> jar
                     .addClasses(FirstEntity.class, SecondEntity.class, PanacheTestResource.class)
                     .addAsManifestResource("META-INF/some-persistence.xml", "persistence.xml")
-                    .addAsResource(new StringAsset(
-                            "quarkus.datasource.db-kind=h2"),
+                    .addAsResource(new StringAsset(""),
                             "application.properties"));
 
     @Test

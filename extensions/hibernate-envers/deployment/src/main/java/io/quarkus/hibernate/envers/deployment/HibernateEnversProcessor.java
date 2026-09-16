@@ -20,11 +20,22 @@ import io.quarkus.hibernate.envers.runtime.graal.DisableLoggingFeature;
 import io.quarkus.hibernate.orm.deployment.PersistenceUnitDescriptorBuildItem;
 import io.quarkus.hibernate.orm.deployment.integration.HibernateOrmIntegrationStaticConfiguredBuildItem;
 import io.quarkus.hibernate.orm.deployment.spi.AdditionalJpaModelBuildItem;
+import io.quarkus.hibernate.orm.deployment.spi.component.PersistenceUnitRequestBuildItem;
+import io.quarkus.runtime.util.ProgrammingParadigm;
 
 @BuildSteps(onlyIf = HibernateEnversEnabled.class)
 public final class HibernateEnversProcessor {
 
     static final String HIBERNATE_ENVERS = "Hibernate Envers";
+
+    @BuildStep
+    void collectImplicitPersistenceUnitRequests(HibernateEnversBuildTimeConfig config,
+            BuildProducer<PersistenceUnitRequestBuildItem> puRequests) {
+        for (String name : config.persistenceUnits().keySet()) {
+            puRequests.produce(new PersistenceUnitRequestBuildItem(name, ProgrammingParadigm.BLOCKING,
+                    String.format("Configuration '%s'", HibernateEnversBuildTimeConfig.persistenceUnitPropertyKey(name, "*"))));
+        }
+    }
 
     @BuildStep
     List<AdditionalJpaModelBuildItem> addJpaModelClasses() {

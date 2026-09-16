@@ -29,6 +29,7 @@ import io.quarkus.jfr.runtime.internal.runtime.JfrRuntimeBean;
 import io.quarkus.jfr.runtime.internal.runtime.QuarkusRuntimeInfo;
 import io.quarkus.resteasy.common.spi.ResteasyJaxrsProviderBuildItem;
 import io.quarkus.resteasy.reactive.server.spi.GlobalHandlerCustomizerBuildItem;
+import io.quarkus.resteasy.reactive.server.spi.KnownServerRestHandlerBuildItem;
 import io.quarkus.resteasy.reactive.spi.CustomContainerRequestFilterBuildItem;
 
 @BuildSteps
@@ -83,7 +84,8 @@ public class JfrProcessor {
     void registerRestIntegration(Capabilities capabilities,
             BuildProducer<CustomContainerRequestFilterBuildItem> filterBeans,
             BuildProducer<AdditionalBeanBuildItem> additionalBeans,
-            BuildProducer<GlobalHandlerCustomizerBuildItem> globalHandlerCustomizerProducer) {
+            BuildProducer<GlobalHandlerCustomizerBuildItem> globalHandlerCustomizerProducer,
+            BuildProducer<KnownServerRestHandlerBuildItem> knownServerRestHandlerProducer) {
 
         if (capabilities.isPresent(Capability.RESTEASY_REACTIVE)) {
 
@@ -96,6 +98,8 @@ public class JfrProcessor {
 
             globalHandlerCustomizerProducer
                     .produce(new GlobalHandlerCustomizerBuildItem(new ServerStartRecordingHandler.Customizer()));
+            knownServerRestHandlerProducer
+                    .produce(new KnownServerRestHandlerBuildItem(ServerStartRecordingHandler.class.getName()));
         }
     }
 

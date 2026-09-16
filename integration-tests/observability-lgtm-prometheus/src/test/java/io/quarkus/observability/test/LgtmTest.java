@@ -28,12 +28,18 @@ public class LgtmTest {
     @ConfigProperty(name = "grafana.endpoint")
     String endpoint;
 
+    @ConfigProperty(name = "prometheus.endpoint")
+    String prometheusEndpoint;
+
+    @ConfigProperty(name = "tempo-mcp.endpoint")
+    String tempoEndpoint;
+
     @Test
     public void testPoke() {
         log.info("Testing Grafana ...");
         String response = RestAssured.get("/api/poke?f=100").body().asString();
         log.info("Response: " + response);
-        GrafanaClient client = new GrafanaClient(endpoint, "admin", "admin");
+        GrafanaClient client = new GrafanaClient(endpoint, prometheusEndpoint, tempoEndpoint, "admin", "admin");
 
         Awaitility.setDefaultPollInterval(1, TimeUnit.SECONDS); // reduce load on the server. Default is .1s
 

@@ -70,20 +70,6 @@ public interface MongoConfig {
     Map<String, MongoClientConfig> clients();
 
     /**
-     * The default DNS resolver used to handle {@code mongo+srv://} urls cannot be used in a native executable.
-     * This option enables a fallback to use Vert.x to resolve the server names instead of JNDI.
-     *
-     * <strong>IMPORTANT:</strong> The resolution may be different in JVM mode using the default (JNDI-based) DNS resolver,
-     * and in native mode. This feature is experimental.
-     *
-     * @deprecated This resolver is always used
-     */
-    @Deprecated
-    @WithName("native.dns.use-vertx-dns-resolver")
-    @WithDefault("false")
-    boolean useVertxDnsResolverInNativeMode();
-
-    /**
      * This property configures the DNS server. If the server is not set, it tries to read the first {@code nameserver} from
      * {@code /etc /resolv.conf} (if the file exists), otherwise fallback to the default.
      */
@@ -97,8 +83,7 @@ public interface MongoConfig {
     OptionalInt dnsServerPort();
 
     /**
-     * If {@code native.dns.use-vertx-dns-resolver} is set to {@code true}, this property configures the DNS lookup timeout
-     * duration.
+     * This property configures the DNS lookup timeout duration.
      */
     @WithName("dns.lookup-timeout")
     @WithDefault("5s")

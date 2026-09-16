@@ -22,7 +22,7 @@ For example, it reuses the same ports and is compatible with the same security m
 
 The interaction using WebSocket initiates with an HTTP request employing the 'Upgrade' header to transition to the WebSocket protocol.
 Instead of a `200 OK` response, the server replies with a `101 Switching Protocols` response to upgrade the HTTP connection to a WebSocket connection.
-Following this successful handshake, the TCP socket utilized in the initial HTTP upgrade request remains open, allowing both client and server to exchange messages in both direction continually.
+Following this successful handshake, the TCP socket utilized in the initial HTTP upgrade request remains open, allowing both client and server to exchange messages in both directions continually.
 
 == HTTP and WebSocket architecture styles
 
@@ -43,7 +43,7 @@ For WebSocket clients and servers, the `Sec-WebSocket-Protocol` header in the HT
 == Quarkus WebSockets vs. Quarkus WebSockets Next
 
 This guide utilizes the `quarkus-websockets-next` extension, an implementation of the WebSocket API boasting enhanced efficiency and usability compared to the legacy `quarkus-websockets` extension.
-The original `quarkus-websockets` extension remains accessible, will receive ongoing support, but it's unlikely to receive to feature development.
+The original `quarkus-websockets` extension remains accessible, will receive ongoing support, but it's unlikely to receive feature development.
 
 Unlike `quarkus-websockets`, the `quarkus-websockets-next` extension does **not** implement the Jakarta WebSocket specification.
 Instead, it introduces a modern API, prioritizing simplicity of use.
@@ -54,7 +54,7 @@ The JSR annotations carry a semantic that the Quarkus WebSockets Next extension 
 
 == Project setup
 
-To use the `websockets-next` extension, you need to add the `io.quarkus:quarkus-websockets-next` depencency to your project.
+To use the `websockets-next` extension, you need to add the `io.quarkus:quarkus-websockets-next` dependency to your project.
 
 [source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
 .pom.xml
@@ -94,13 +94,13 @@ package org.acme.websockets;
 import io.quarkus.websockets.next.WebSocket;
 import jakarta.inject.Inject;
 
-@WebSocket(path = "/chat/{username}") <1>
+@WebSocket(path = "/chat/{username}")
 public class ChatWebSocket {
 
 }
 ----
 
-Thus, client can connect to this web socket endpoint using `ws://localhost:8080/chat/your-name`.
+Thus, a client can connect to this web socket endpoint using `ws://localhost:8080/chat/your-name`.
 If TLS is used, the URL is `wss://localhost:8443/chat/your-name`.
 
 NOTE: The endpoint path is relative to the xref:http-reference.adoc#context-path[root context] configured by the `quarkus.http.root-path` (which is `/` by default). For example, if you add `quarkus.http.root-path=/api` to your `application.properties` then a client can connect to this endpoint using `http://localhost:8080/api/chat/the-name`.
@@ -118,7 +118,7 @@ package org.acme.websockets;
 import io.quarkus.websockets.next.WebSocketClient;
 import jakarta.inject.Inject;
 
-@WebSocketClient(path = "/chat/{username}") <1>
+@WebSocketClient(path = "/chat/{username}")
 public class ChatWebSocket {
 
 }
@@ -186,7 +186,7 @@ Each WebSocket endpoint callback method execution is associated with a new CDI _
 * Annotated with the `@RequestScoped` annotation.
 * Has a method annotated with a security annotation such as `@RolesAllowed`.
 * Depends directly or indirectly on a `@RequestScoped` bean.
-* Depends directly or indirectly on a CDI beans secured with a standard security annotation.
+* Depends directly or indirectly on a CDI bean secured with a standard security annotation.
 
 TIP: It is also possible to set the `quarkus.websockets-next.server.activate-request-context` config property to `always`. In this case, the request context is always activated when an endpoint callback is invoked.
 
@@ -214,7 +214,7 @@ A WebSocket endpoint may declare:
 * At most one `@OnPongMessage` method: Handles the pong messages from the connected client/server.
 * At most one `@OnOpen` method: Invoked when a connection is opened.
 * At most one `@OnClose` method: Executed when the connection is closed.
-* Any number of `@OnError` methods: Invoked when an error occurs; that is when an endpoint callback throws a runtime error, or when a conversion errors occurs, or when a returned `io.smallrye.mutiny.Uni`/`io.smallrye.mutiny.Multi` receives a failure.
+* Any number of `@OnError` methods: Invoked when an error occurs; that is when an endpoint callback throws a runtime error, or when a conversion error occurs, or when a returned `io.smallrye.mutiny.Uni`/`io.smallrye.mutiny.Multi` receives a failure.
 
 Only some endpoints need to include all methods.
 However, it must contain at least `@On[Text|Binary]Message` or `@OnOpen`.
@@ -226,7 +226,7 @@ IMPORTANT: Any methods annotated with `@OnTextMessage`, `@OnBinaryMessage`, `@On
 
 === Processing messages
 
-Method receiving messages from the client are annotated with `@OnTextMessage` or `@OnBinaryMessage`.
+Methods receiving messages from the client are annotated with `@OnTextMessage` or `@OnBinaryMessage`.
 
 `OnTextMessage` are invoked for every _text_ message received from the client.
 `OnBinaryMessage` are invoked for every _binary_ message the client receives.
@@ -463,7 +463,7 @@ They can only send messages to the other clients by using the `WebSocketConnecti
 === Error handling
 
 WebSocket endpoints can also be notified when an error occurs.
-A WebSocket endpoint method annotated with `@io.quarkus.websockets.next.OnError` is invoked when an endpoint callback throws a runtime error, or when a conversion errors occurs,
+A WebSocket endpoint method annotated with `@io.quarkus.websockets.next.OnError` is invoked when an endpoint callback throws a runtime error, or when a conversion error occurs,
 or when a returned `io.smallrye.mutiny.Uni`/`io.smallrye.mutiny.Multi` receives a failure.
 
 The method must accept exactly one _error_ parameter, i.e. a parameter that is assignable from `java.lang.Throwable`.
@@ -536,7 +536,7 @@ Item find(Item item) {
         //....
 }
 ----
-1. Specify the codec to use for both the deserialization and serialization of the message
+<1> Specify the codec to use for both the deserialization and serialization of the message
 
 When the serialization and deserialization must use a different codec, you can specify the codec to use for the serialization and deserialization separately:
 
@@ -549,8 +549,8 @@ Item find(Item item) {
         //....
 }
 ----
-1. Specify the codec to use for the deserialization of the incoming message
-2. Specify the codec to use for the serialization of the outgoing message
+<1> Specify the codec to use for the deserialization of the incoming message
+<2> Specify the codec to use for the serialization of the outgoing message
 
 === Ping/Pong messages
 
@@ -745,7 +745,7 @@ class MyEndpoint {
   void open(WebSocketConnection connection) {
      connection.userData().put(TypedKey.forBoolean("isCool"), service.isCool(connection.pathParam("username"))); <1>
   }
-  
+
   @OnTextMessage
   String process(String message) {
      if (connection.userData().get(TypedKey.forBoolean("isCool"))) { <2>
@@ -1117,7 +1117,7 @@ Do not forget to encode the sub-protocol value as a URI component to avoid encod
 
 For the WebSocket server to accept the `Authorization` passed as a sub-protocol, we must:
 
-* Configure our WebSocket server with the supported sub-protocols. When the WebSocket client provides a lists of supported sub-protocols in the HTTP `Sec-WebSocket-Protocol` request header, the WebSocket server must agree to serve content with one of them.
+* Configure our WebSocket server with the supported sub-protocols. When the WebSocket client provides a list of supported sub-protocols in the HTTP `Sec-WebSocket-Protocol` request header, the WebSocket server must agree to serve content with one of them.
 * Enable Quarkus HTTP upgrade sub-protocol mapping to the opening WebSocket handshake request headers.
 
 [source, properties]
@@ -1187,7 +1187,7 @@ Please also make sure the `SecurityIdentity` is only updated when necessary and 
 Always use the `wss` protocol to enforce encrypted HTTP connection via TLS when sending credentials as part of the WebSocket message.
 ====
 
-WebSocket client application have to send a new access token before previous one expires:
+WebSocket client applications have to send a new access token before previous one expires:
 
 [source,html]
 ----
@@ -1276,7 +1276,7 @@ As a direct consequence of the fact this extension reuses the _main_ HTTP server
 === Hibernate multitenancy
 The `RoutingContext` is not available after the HTTP upgrade. However, it is possible to inject the `WebSocketConnection` and access the headers of the initial HTTP request.
 
-If a custom `TenantResolver` is used and you would like to combine REST/HTTP and WebSockets, the code may look like this: 
+If a custom `TenantResolver` is used and you would like to combine REST/HTTP and WebSockets, the code may look like this:
 [source, java]
 ----
 @RequestScoped
@@ -1321,7 +1321,7 @@ For more information on Hibernate multitenancy, refer to the https://quarkus.io/
 === Client connectors
 
 A connector can be used to configure and open a new client connection backed by a client endpoint that is used to consume and send messages.
-Quarkus provides a CDI bean with bean type `io.quarkus.websockets.next.WebSocketConnector<CLIENT>` and default qualifer that can be injected in other beans.
+Quarkus provides a CDI bean with bean type `io.quarkus.websockets.next.WebSocketConnector<CLIENT>` and default qualifier that can be injected in other beans.
 The actual type argument of an injection point is used to determine the client endpoint.
 The type is validated during build - if it does not represent a client endpoint the build fails.
 
@@ -1375,7 +1375,7 @@ public class MyBean {
 NOTE: If an application attempts to inject a connector for a missing endpoint, an error is thrown.
 
 Connectors are not thread-safe and should not be used concurrently.
-Connectors should also not be reused. 
+Connectors should also not be reused.
 If you need to create multiple connections in a row you'll need to obtain a new connector instance programmatically using `Instance#get()`:
 
 [source, java]
@@ -1436,12 +1436,12 @@ public class MyBean {
 <6> Optionally, customize client and connection options not configurable with the connector API or Quarkus configuration.
 
 The basic connector is closer to a low-level API and is reserved for advanced users.
-However, unlike others low-level WebSocket clients, it is still a CDI bean and can be injected in other beans.
+However, unlike other low-level WebSocket clients, it is still a CDI bean and can be injected in other beans.
 It also provides a way to configure the execution model of the callbacks, ensuring optimal integration with the rest of Quarkus.
 
 Connectors are not thread-safe and should not be used concurrently.
 Connectors should also not be reused.
-If you need to create multiple connections in a row you'll need to obtain a new connetor instance programmatically using `Instance#get()`:
+If you need to create multiple connections in a row you'll need to obtain a new connector instance programmatically using `Instance#get()`:
 
 [source, java]
 ----
@@ -1554,7 +1554,7 @@ class MyEndpoint {
   void open(WebSocketClientConnection connection) {
      connection.userData().put(TypedKey.forBoolean("isCool"), service.isCool(connection.pathParam("username"))); <1>
   }
-  
+
   @OnTextMessage
   String process(String message) {
      if (connection.userData().get(TypedKey.forBoolean("isCool"))) { <2>
@@ -1745,7 +1745,7 @@ quarkus.websockets-next.client.traces.enabled=false
 ----
 
 When the Micrometer extension is present, Quarkus can collect metrics for messages, errors and bytes transferred.
-If you require a WebSocket metrics, you can enable the metrics like in the example below:
+If you require WebSocket metrics, you can enable the metrics like in the example below:
 
 [source, properties]
 ----

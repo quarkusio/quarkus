@@ -31,20 +31,12 @@ public class generaterelocations implements Runnable {
     private static final Map<String, Function<String, Relocation>> RELOCATIONS = new TreeMap<>();
 
     static {
-        Function<String, Relocation>  junitJupiterRelocation = a -> Relocation.ofArtifactId(a, a.replace("junit5", "junit"),
-                "3.31");
-        RELOCATIONS.put("quarkus-junit5", junitJupiterRelocation);
-        RELOCATIONS.put("quarkus-junit5-component", junitJupiterRelocation);
-        RELOCATIONS.put("quarkus-junit5-config", junitJupiterRelocation);
-        RELOCATIONS.put("quarkus-junit5-internal", junitJupiterRelocation);
-        RELOCATIONS.put("quarkus-junit5-mockito", junitJupiterRelocation);
-        RELOCATIONS.put("quarkus-junit5-mockito-config", junitJupiterRelocation);
-        RELOCATIONS.put("quarkus-junit5-component", junitJupiterRelocation);
-
-        Function<String, Relocation> panacheNextRelocation = a -> Relocation.ofArtifactId(a,
-                a.replace("quarkus-hibernate-panache-next", "quarkus-data-hibernate"), "3.37");
-        RELOCATIONS.put("quarkus-hibernate-panache-next", panacheNextRelocation);
-        RELOCATIONS.put("quarkus-hibernate-panache-next-deployment", panacheNextRelocation);
+        // Declare the relocations to generate here, then run this script from the relocations/ directory.
+        // The 3.x relocations were dropped in Quarkus 4.0, so this list starts empty again. For example:
+        //
+        //     Function<String, Relocation> junitJupiterRelocation = a -> Relocation.ofArtifactId(a,
+        //             a.replace("junit5", "junit"), "3.31");
+        //     RELOCATIONS.put("quarkus-junit5", junitJupiterRelocation);
     }
 
     private static final String RELOCATION_POM_TEMPLATE = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" + //

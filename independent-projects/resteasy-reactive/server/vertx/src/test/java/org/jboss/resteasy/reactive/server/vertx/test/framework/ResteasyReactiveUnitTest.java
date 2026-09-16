@@ -393,7 +393,7 @@ public class ResteasyReactiveUnitTest implements BeforeAllCallback, AfterAllCall
         DefaultRuntimeConfiguration runtimeConfiguration = new DefaultRuntimeConfiguration(Duration.ofMinutes(1),
                 deleteUploadedFilesOnEnd,
                 uploadPath != null ? uploadPath.toAbsolutePath().toString() : System.getProperty("java.io.tmpdir"),
-                fileContentTypes, defaultCharset, OptionalLong.empty(), maxFormAttributeSize, maxParameters,
+                fileContentTypes, 0, defaultCharset, OptionalLong.empty(), maxFormAttributeSize, maxParameters,
                 maxMultipartPartHeaderSize, maxMultipartHeaderCount);
         ResteasyReactiveDeploymentManager.RunnableApplication application = prepared.createApplication(runtimeConfiguration,
                 new VertxRequestContextFactory(), executor);

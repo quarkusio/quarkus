@@ -142,17 +142,19 @@ public class FullyFeaturedServerJacksonMessageBodyReader extends AbstractServerJ
                             mapper));
         }
 
-        // Otherwise, check `@CustomDeserialization` annotated in class. In this case, we use the effective type for caching up
-        // the object.
-        customDeserializationValue = ResteasyReactiveServerJacksonRecorder
-                .customDeserializationForClass(resourceInfo.getResourceClass());
+        // Otherwise, check `@CustomDeserialization` annotated in class. In this case, we use the resource class along with the
+        // effective type for caching up the object.
+        // The resource class needs to be part of the key because different resource classes can consume the same type
+        // while using different `@CustomDeserialization` values
+        Class<?> resourceClass = resourceInfo.getResourceClass();
+        customDeserializationValue = ResteasyReactiveServerJacksonRecorder.customDeserializationForClass(resourceClass);
         if (customDeserializationValue != null) {
             Type effectiveType = type;
             if (type instanceof ParameterizedType) {
                 effectiveType = ((ParameterizedType) type).getActualTypeArguments()[0];
             }
 
-            return perTypeReader.computeIfAbsent(effectiveType.getTypeName(),
+            return perTypeReader.computeIfAbsent(resourceClass.getName() + "-" + effectiveType.getTypeName(),
                     new FullyFeaturedServerJacksonMessageBodyReader.MethodObjectReaderFunction(customDeserializationValue, type,
                             mapper));
         }

@@ -35,6 +35,21 @@ public final class QuarkusUpdates {
                 request.targetVersion,
                 request.projectExtensionsUpdateInfo
                         .getVersionUpdates());
+        QuarkusUpdateRecipe recipe = createProjectRecipe(request);
+        for (String s : result.getRecipes()) {
+            recipe.addRecipes(QuarkusUpdateRecipeIO.readRecipesYaml(s));
+        }
+
+        QuarkusUpdateRecipeIO.write(log, target, recipe);
+        return result;
+    }
+
+    /**
+     * The operations updating the project itself: Quarkus and platform versions, the Java version, the build plugin
+     * versions the platform recommends, and the extension versions. The migration recipes of the update recipes
+     * artifact are added separately.
+     */
+    static QuarkusUpdateRecipe createProjectRecipe(ProjectUpdateRequest request) {
         QuarkusUpdateRecipe recipe = new QuarkusUpdateRecipe()
                 .buildTool(request.buildTool);
         if (request.updateJavaVersion.isPresent()) {
@@ -53,6 +68,14 @@ public final class QuarkusUpdates {
                         .addOperation(new UpdatePropertyOperation("quarkus-plugin.version", request.targetVersion));
                 if (request.kotlinVersion != null) {
                     recipe.addOperation(new UpdatePropertyOperation("kotlin.version", request.kotlinVersion));
+                }
+                if (request.compilerPluginVersion != null) {
+                    recipe.addOperation(
+                            new UpdatePropertyOperation("compiler-plugin.version", request.compilerPluginVersion));
+                }
+                if (request.surefirePluginVersion != null) {
+                    recipe.addOperation(
+                            new UpdatePropertyOperation("surefire-plugin.version", request.surefirePluginVersion));
                 }
                 break;
             case GRADLE:
@@ -82,12 +105,7 @@ public final class QuarkusUpdates {
 
         }
 
-        for (String s : result.getRecipes()) {
-            recipe.addRecipes(QuarkusUpdateRecipeIO.readRecipesYaml(s));
-        }
-
-        QuarkusUpdateRecipeIO.write(log, target, recipe);
-        return result;
+        return recipe;
     }
 
     public static class ProjectUpdateRequest {
@@ -96,6 +114,8 @@ public final class QuarkusUpdates {
         public final String currentVersion;
         public final String targetVersion;
         public final String kotlinVersion;
+        public final String compilerPluginVersion;
+        public final String surefirePluginVersion;
         public final Optional<Integer> updateJavaVersion;
         public final ProjectExtensionsUpdateInfo projectExtensionsUpdateInfo;
 
@@ -108,10 +128,19 @@ public final class QuarkusUpdates {
         public ProjectUpdateRequest(BuildTool buildTool, String currentVersion, String targetVersion,
                 String kotlinVersion,
                 Optional<Integer> updateJavaVersion, ProjectExtensionsUpdateInfo projectExtensionsUpdateInfo) {
+            this(buildTool, currentVersion, targetVersion, kotlinVersion, null, null, updateJavaVersion,
+                    projectExtensionsUpdateInfo);
+        }
+
+        public ProjectUpdateRequest(BuildTool buildTool, String currentVersion, String targetVersion,
+                String kotlinVersion, String compilerPluginVersion, String surefirePluginVersion,
+                Optional<Integer> updateJavaVersion, ProjectExtensionsUpdateInfo projectExtensionsUpdateInfo) {
             this.buildTool = buildTool;
             this.currentVersion = currentVersion;
             this.targetVersion = targetVersion;
             this.kotlinVersion = kotlinVersion;
+            this.compilerPluginVersion = compilerPluginVersion;
+            this.surefirePluginVersion = surefirePluginVersion;
             this.updateJavaVersion = updateJavaVersion;
             this.projectExtensionsUpdateInfo = projectExtensionsUpdateInfo;
         }

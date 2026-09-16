@@ -10,17 +10,21 @@ import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import io.quarkus.bootstrap.BootstrapConstants;
 import io.quarkus.bootstrap.model.ApplicationModel;
 import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.maven.dependency.ArtifactKey;
+import io.quarkus.maven.dependency.DependencyFlags;
 import io.quarkus.maven.dependency.ResolvedDependency;
 
 /**
@@ -62,6 +66,10 @@ public class CoreSbomContributionConfig {
         ResolvedDependency dep;
         String pedigree;
         Collection<ArtifactCoords> explicitDependencies;
+        // When true, this component's collected relationships are emitted as CycloneDX "provides"
+        // (the component provides/implements them) rather than "dependsOn". Used for platform
+        // member product components attributing their artifacts.
+        boolean providesRelationships;
 
         ComponentHolder(ComponentDescriptor component) {
             this.component = component;
@@ -84,6 +92,7 @@ public class CoreSbomContributionConfig {
     private Map<ArtifactKey, String> pedigrees;
     private List<ComponentHolder> additionalComponents = new ArrayList<>();
     private Map<Path, List<Path>> extraFileDependencies = new HashMap<>();
+    private boolean productAttribution = true;
 
     /**
      * Sets the application model whose dependencies will be converted to
@@ -96,6 +105,19 @@ public class CoreSbomContributionConfig {
      */
     public CoreSbomContributionConfig setApplicationModel(ApplicationModel model) {
         this.applicationModel = model;
+        return this;
+    }
+
+    /**
+     * Enables or disables platform-member product attribution. When enabled
+     * (the default) and the application model carries platform member product
+     * identity, one product component per used member is added to the SBOM.
+     *
+     * @param productAttribution whether to perform product attribution
+     * @return this config
+     */
+    public CoreSbomContributionConfig setProductAttribution(boolean productAttribution) {
+        this.productAttribution = productAttribution;
         return this;
     }
 
@@ -268,6 +290,7 @@ public class CoreSbomContributionConfig {
         ComponentHolder main = resolveMainComponent(compArtifacts, compPaths, compList);
         addAdditionalComponents(compArtifacts, compPaths, compList, bomRefCounters);
         addRemainingDistributionContent(main, compArtifacts, compPaths, compList);
+        addProductAttribution(compList, bomRefCounters);
         return buildContribution(main, compList, compPaths);
     }
 
@@ -446,13 +469,201 @@ public class CoreSbomContributionConfig {
         }
     }
 
+    /**
+     * Links artifacts that belong to a supported offering to the CPE of that offering configured in the platform
+     * properties.
+     * <p>
+     * This is a no-op unless product attribution is {@linkplain #setProductAttribution(boolean)
+     * enabled} and an application model with non-empty platform properties and imported
+     * platform BOMs is present.
+     * <p>
+     * Each distinct product - identified by the combination of its product PURL and CPE - yields a single
+     * product top-level component (scoped {@link ComponentDescriptor#SCOPE_EXCLUDED}). Its explicit
+     * dependencies are the artifacts attributed to the product - the extension artifacts of this application
+     * that map to it, plus their dependencies.
+     * <p>
+     * Platform members that share <em>both</em> the same product PURL and the same CPE are treated as one
+     * product and merged into a single component whose attributed artifacts are the union of the members'
+     * contributions. Members with differing PURLs remain separate components even if they share a CPE.
+     * <p>
+     * Note: only extension dependencies from the applications that match the original extension dependencies are
+     * attributed to the platform member CPE. If a certain dependency version was overridden in the application,
+     * that dependency will not be linked to the platform member CPE.
+     *
+     * @param compList the mutable list of component holders to append product components to;
+     *        also read to determine which coordinates are already present
+     * @param bomRefCounters counters used to allocate unique bom-refs for the new components
+     */
+    private void addProductAttribution(List<ComponentHolder> compList, Map<String, AtomicInteger> bomRefCounters) {
+        if (!productAttribution || applicationModel == null) {
+            return;
+        }
+        Map<String, String> props = applicationModel.getPlatformProperties();
+        if (props == null || props.isEmpty()) {
+            return;
+        }
+        var platforms = applicationModel.getPlatforms();
+        if (platforms == null || platforms.getImportedPlatformBoms() == null) {
+            return;
+        }
+
+        // bom-refs of every component already in the SBOM (maven purls) and the coords of used runtime
+        // extensions; collected lazily below, only once a platform member with a CPE is actually found
+        Set<String> presentBomRefs = null;
+        List<ArtifactCoords> presentRtExtCoords = null;
+
+        // Products keyed by PURL + CPE so that members sharing both are merged into a single component.
+        Map<String, ProductAttribution> products = new LinkedHashMap<>();
+        for (ArtifactCoords memberBom : platforms.getImportedPlatformBoms()) {
+            String memberPrefix = BootstrapConstants.PLATFORM_PROPERTY_PREFIX
+                    + memberBom.getGroupId() + "." + memberBom.getArtifactId() + ".";
+            String cpe = props.get(memberPrefix + "cpe");
+            if (cpe == null || cpe.isBlank()) {
+                continue;
+            }
+
+            // lazily collect present components/extensions the first time a CPE is encountered
+            if (presentBomRefs == null) {
+                presentBomRefs = collectPresentBomRefs(compList);
+                presentRtExtCoords = collectPresentRtExtCoords();
+            }
+
+            // A product component is emitted whenever a CPE is present, even if there are no attributed
+            // artifacts (absent or empty cpe-artifacts).
+            Map<ArtifactCoords, List<ArtifactCoords>> originalExtDeps = decodeCpeArtifacts(
+                    props.get(memberPrefix + "cpe-artifacts"));
+            Purl purl = resolveProductPurl(memberBom, memberPrefix, props);
+            String key = purl + "#" + cpe;
+            ProductAttribution product = products.computeIfAbsent(key, k -> new ProductAttribution(purl, cpe, memberPrefix));
+
+            // attributed coords present as components, contributed by used runtime extensions
+            for (ArtifactCoords rtExtCoords : presentRtExtCoords) {
+                List<ArtifactCoords> deps = originalExtDeps.get(rtExtCoords);
+                if (deps != null) {
+                    for (ArtifactCoords coords : deps) {
+                        product.attribute(coords, presentBomRefs);
+                    }
+                }
+            }
+        }
+
+        for (ProductAttribution product : products.values()) {
+            addProductComponent(product, props, compList, bomRefCounters);
+        }
+    }
+
+    /**
+     * Collects the bom-refs (maven purls) of every component already in the SBOM.
+     */
+    private static Set<String> collectPresentBomRefs(List<ComponentHolder> compList) {
+        Set<String> presentBomRefs = new HashSet<>(compList.size());
+        for (ComponentHolder h : compList) {
+            presentBomRefs.add(h.component.getBomRef());
+        }
+        return presentBomRefs;
+    }
+
+    /**
+     * Collects the coords of the runtime extension artifacts used by the application.
+     */
+    private List<ArtifactCoords> collectPresentRtExtCoords() {
+        List<ArtifactCoords> presentRtExtCoords = new ArrayList<>();
+        for (ResolvedDependency dep : applicationModel.getDependencies(DependencyFlags.RUNTIME_EXTENSION_ARTIFACT)) {
+            presentRtExtCoords.add(ArtifactCoords.of(dep.getGroupId(), dep.getArtifactId(), dep.getClassifier(), dep.getType(),
+                    dep.getVersion()));
+        }
+        return presentRtExtCoords;
+    }
+
+    /**
+     * Accumulates the artifacts attributed to a single product (identified by PURL + CPE), merging the
+     * contributions of every platform member that maps to it.
+     */
+    private static class ProductAttribution {
+        final Purl purl;
+        final String cpe;
+        // prefix of the first member seen for this product, used to read the product metadata properties
+        final String prefix;
+        final List<ArtifactCoords> attributed = new ArrayList<>();
+        final Set<String> seenRefs = new HashSet<>();
+
+        ProductAttribution(Purl purl, String cpe, String prefix) {
+            this.purl = purl;
+            this.cpe = cpe;
+            this.prefix = prefix;
+        }
+
+        void attribute(ArtifactCoords coords, Set<String> presentBomRefs) {
+            String ref = mavenPurl(coords).toString();
+            if (presentBomRefs.contains(ref) && seenRefs.add(ref)) {
+                attributed.add(coords);
+            }
+        }
+    }
+
+    private static Purl resolveProductPurl(ArtifactCoords memberBom, String prefix, Map<String, String> props) {
+        String purlStr = props.get(prefix + "product-purl");
+        if (purlStr != null && !purlStr.isBlank()) {
+            return Purl.parse(purlStr);
+        }
+        return Purl.maven(memberBom.getGroupId(), memberBom.getArtifactId(),
+                memberBom.getVersion(), "pom", null);
+    }
+
+    private static Map<ArtifactCoords, List<ArtifactCoords>> decodeCpeArtifacts(String encoded) {
+        return encoded == null || encoded.isBlank() ? Map.of() : CpeArtifactsEncoder.decode(encoded);
+    }
+
+    private void addProductComponent(ProductAttribution product, Map<String, String> props,
+            List<ComponentHolder> compList, Map<String, AtomicInteger> bomRefCounters) {
+        String bomRef = uniqueBomRef(product.purl.toString(), bomRefCounters);
+
+        String type = props.get(product.prefix + "product-type");
+        ComponentDescriptor.Builder builder = ComponentDescriptor.builder()
+                .setPurl(product.purl)
+                .setBomRef(bomRef)
+                .setCpe(product.cpe)
+                .setScope(ComponentDescriptor.SCOPE_EXCLUDED)
+                .setComponentType(type == null || type.isBlank() ? "framework" : type)
+                .setTopLevel(true);
+        setIfPresent(props, product.prefix + "product-name", builder::setName);
+        setIfPresent(props, product.prefix + "product-version", builder::setVersion);
+        setIfPresent(props, product.prefix + "product-description", builder::setDescription);
+
+        ComponentHolder holder = new ComponentHolder(builder.build());
+        // The product component provides/implements its attributed artifacts rather than
+        // depending on them (CycloneDX 1.6 "provides").
+        holder.providesRelationships = true;
+        if (!product.attributed.isEmpty()) {
+            // sort for a deterministic dependency order in the generated SBOM
+            product.attributed.sort(Comparator.comparing(c -> mavenPurl(c).toString()));
+            holder.explicitDependencies = product.attributed;
+        }
+        compList.add(holder);
+    }
+
+    private static void setIfPresent(Map<String, String> props, String key,
+            java.util.function.Consumer<String> setter) {
+        String value = props.get(key);
+        if (value != null && !value.isBlank()) {
+            setter.accept(value);
+        }
+    }
+
     private SbomContribution buildContribution(ComponentHolder main, List<ComponentHolder> compList,
             Map<Path, ComponentHolder> compPaths) {
         Set<String> directDepPurls = collectDirectDependencyPurls(main);
         SbomContribution.Builder sb = SbomContribution.builder();
         sb.setRunnerPath(runnerPath);
+        ArtifactCoords appArtifact = mainArtifact != null ? mainArtifact
+                : applicationModel != null ? applicationModel.getAppArtifact() : null;
+        if (appArtifact != null) {
+            sb.setAppArtifact(appArtifact);
+        }
 
         Map<String, List<String>> depMap = new HashMap<>();
+        // bom-refs whose collected relationships must be emitted as "provides" rather than "dependsOn"
+        Set<String> providesBomRefs = new HashSet<>();
 
         for (ComponentHolder holder : compList) {
             if (holder == main) {
@@ -468,6 +679,9 @@ public class CoreSbomContributionConfig {
             }
             sb.addComponent(holder.component.ensureImmutable());
             collectDependencies(holder, depMap);
+            if (holder.providesRelationships) {
+                providesBomRefs.add(holder.component.getBomRef());
+            }
         }
 
         if (distDir != null) {
@@ -478,11 +692,18 @@ public class CoreSbomContributionConfig {
         sb.setMainComponentBomRef(mainComponent.getBomRef());
         sb.addComponent(mainComponent);
         collectDependencies(main, depMap);
+        if (main.providesRelationships) {
+            providesBomRefs.add(mainComponent.getBomRef());
+        }
 
         applyExtraFileDependencies(compPaths, depMap);
 
         for (var entry : depMap.entrySet()) {
-            sb.addDependency(ComponentDependencies.of(entry.getKey(), entry.getValue()));
+            if (providesBomRefs.contains(entry.getKey())) {
+                sb.addDependency(ComponentDependencies.provides(entry.getKey(), entry.getValue()));
+            } else {
+                sb.addDependency(ComponentDependencies.of(entry.getKey(), entry.getValue()));
+            }
         }
 
         return sb.build();

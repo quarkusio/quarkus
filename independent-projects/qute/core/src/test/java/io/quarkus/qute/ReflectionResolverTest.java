@@ -4,7 +4,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
+import java.lang.reflect.Method;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.stream.IntStream;
@@ -12,6 +14,7 @@ import java.util.stream.IntStream;
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.qute.ExpressionImpl.PartImpl;
+import io.quarkus.qute.ParserTest.Foo;
 
 public class ReflectionResolverTest {
 
@@ -21,7 +24,8 @@ public class ReflectionResolverTest {
         treeMap.put(2, "bar");
         treeMap.put(1, "foo");
         assertEquals("foo::o", Engine.builder().addDefaults().addValueResolver(new ReflectionValueResolver()).build()
-                .parse("{map.entrySet.iterator.next.value}::{str.charAt(1)}").data("map", treeMap, "str", "foo").render());
+                .parse("{map.entrySet.iterator.next.value}::{str.charAt(1)}").data("map", treeMap, "str", "foo")
+                .render());
     }
 
     @Test
@@ -75,6 +79,81 @@ public class ReflectionResolverTest {
         assertTrue(fooNamePart.cachedResolver instanceof ReflectionValueResolver.AccessorResolver);
         assertTrue(fooNameRepeat5Part.cachedResolver instanceof ReflectionValueResolver.AccessorResolver);
         assertTrue(fooNameRepeatNPart.cachedResolver instanceof ReflectionValueResolver.CandidateResolver);
+    }
+
+    enum Status {
+        ACTIVE,
+        INACTIVE
+    }
+
+    @Test
+    public void testSecurity() throws NoSuchMethodException, ClassNotFoundException {
+        Engine engine = Engine.builder()
+                .addDefaults()
+                .addSectionHelper(new EvalSectionHelper.Factory())
+                .addValueResolver(new ReflectionValueResolver())
+                .build();
+
+        Enum<?> enumValue = Status.ACTIVE;
+
+        // java.lang.Class is not a safe declaring class
+        try {
+            engine.parse(
+                    "{this.declaringClass.classLoader"
+                            + ".loadClass('java.lang.Runtime')"
+                            + ".getMethod('getRuntime').invoke(null)"
+                            + ".exec('id').inputReader().readLine()}")
+                    .instance().data(enumValue).render();
+            fail();
+        } catch (TemplateException expected) {
+            assertTrue(expected.getMessage().startsWith(
+                    "Rendering error: Property \"classLoader\" not found on the base object \"java.lang.Class\""),
+                    expected.getMessage());
+        }
+
+        // Any ClassLoader is not a safe declaring class
+        try {
+            engine.parse(
+                    "{this.loadClass('javax.naming.InitialContext')"
+                            + ".newInstance().lookup('ldap://boom')}")
+                    .instance().data(ReflectionResolverTest.class.getClassLoader()).render();
+            fail();
+        } catch (TemplateException expected) {
+            assertTrue(expected.getMessage().startsWith(
+                    "Rendering error: Method \"loadClass('javax.naming.InitialContext')\" not found on the base object"),
+                    expected.getMessage());
+        }
+
+        // java.lang.Class is not a safe declaring class - {#eval}
+        try {
+            engine.parse(
+                    "{#eval myTemp /}")
+                    .instance()
+                    .data("enumValue", enumValue)
+                    .data("myTemp", "{enumValue.declaringClass.classLoader"
+                            + ".loadClass('java.lang.Runtime')"
+                            + ".getMethod('getRuntime').invoke(null)"
+                            + ".exec('id').inputReader().readLine()}")
+                    .render();
+            fail();
+        } catch (TemplateException expected) {
+            assertTrue(expected.getMessage().startsWith(
+                    "Rendering error: Property \"classLoader\" not found on the base object \"java.lang.Class\""),
+                    expected.getMessage());
+        }
+
+        // java.lang.reflect.Method is not a safe declaring class
+        try {
+            Method method = this.getClass().getClassLoader().loadClass("java.lang.Runtime").getMethod("getRuntime");
+            engine.parse(
+                    "{this.invoke(null).exec('id').inputReader().readLine()}")
+                    .instance().data(method).render();
+            fail();
+        } catch (TemplateException expected) {
+            assertTrue(expected.getMessage().startsWith(
+                    "Rendering error: Method \"invoke(null)\" not found on the base object \"java.lang.reflect.Method\""),
+                    expected.getMessage());
+        }
     }
 
     public static class Foo {

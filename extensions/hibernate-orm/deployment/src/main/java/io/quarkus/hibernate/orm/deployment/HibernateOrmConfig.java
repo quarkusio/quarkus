@@ -68,7 +68,7 @@ public interface HibernateOrmConfig {
      * Configuration for persistence units.
      */
     @WithParentName
-    @WithUnnamedKey(PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME)
+    @WithUnnamedKey(value = PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME, eager = false)
     @WithDefaults
     @ConfigDocMapKey("persistence-unit-name")
     Map<String, HibernateOrmConfigPersistenceUnit> persistenceUnits();
@@ -123,9 +123,8 @@ public interface HibernateOrmConfig {
 
     default boolean isAnyNonPersistenceXmlPropertySet() {
         // Do NOT include persistenceXml in here.
-        return defaultPersistenceUnit().isAnyPropertySet() ||
-                !namedPersistenceUnits().isEmpty() ||
-                log().isAnyPropertySet() ||
+        return !persistenceUnits().isEmpty() ||
+                log().bindParameters() ||
                 statistics().isPresent() ||
                 logSessionMetrics().isPresent() ||
                 metrics().isAnyPropertySet();
@@ -145,16 +144,6 @@ public interface HibernateOrmConfig {
 
     @ConfigGroup
     interface HibernateOrmConfigLog {
-
-        /**
-         * Logs SQL bind parameter.
-         * <p>
-         * Setting it to true is obviously not recommended in production.
-         */
-        @Deprecated
-        @WithDefault("false")
-        boolean bindParam();
-
         /**
          * Logs SQL bind parameters.
          * <p>
@@ -162,10 +151,6 @@ public interface HibernateOrmConfig {
          */
         @WithDefault("false")
         boolean bindParameters();
-
-        default boolean isAnyPropertySet() {
-            return bindParam() || bindParameters();
-        }
     }
 
     @ConfigGroup

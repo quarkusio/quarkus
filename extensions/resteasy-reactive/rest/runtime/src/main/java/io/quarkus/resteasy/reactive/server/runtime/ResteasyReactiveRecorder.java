@@ -112,9 +112,11 @@ public class ResteasyReactiveRecorder extends ResteasyReactiveCommonRecorder imp
             RequestContextFactory contextFactory,
             BeanFactory<ResteasyReactiveInitialiser> initClassFactory,
             LaunchMode launchMode,
-            boolean servletPresent) {
+            boolean servletPresent,
+            String dispatcherClassName) {
 
         info.setServletPresent(servletPresent);
+        ServerRestHandlerDispatcher dispatcher = createDispatcher(dispatcherClassName);
 
         CurrentRequestManager
                 .setCurrentRequestInstance(new QuarkusCurrentRequest(beanContainer.beanInstance(CurrentVertxRequest.class)));
@@ -140,11 +142,13 @@ public class ResteasyReactiveRecorder extends ResteasyReactiveCommonRecorder imp
                 @Override
                 public ResteasyReactiveRequestContext createContext(Deployment deployment,
                         Object context, ThreadSetupAction requestContext,
-                        ServerRestHandler[] handlerChain, ServerRestHandler[] abortHandlerChain) {
+                        ServerRestHandler[] handlerChain, byte[] handlerKinds, ServerRestHandler[] abortHandlerChain) {
                     return new QuarkusResteasyReactiveRequestContext(deployment, (RoutingContext) context,
                             requestContext,
                             handlerChain,
-                            abortHandlerChain, launchMode == LaunchMode.DEVELOPMENT ? tccl : null, currentIdentityAssociation);
+                            handlerKinds,
+                            abortHandlerChain, launchMode == LaunchMode.DEVELOPMENT ? tccl : null, currentIdentityAssociation,
+                            dispatcher);
                 }
 
             };
@@ -153,7 +157,7 @@ public class ResteasyReactiveRecorder extends ResteasyReactiveCommonRecorder imp
         RuntimeDeploymentManager runtimeDeploymentManager = new RuntimeDeploymentManager(info, EXECUTOR_SUPPLIER,
                 VTHREAD_EXECUTOR_SUPPLIER,
                 closeTaskHandler, contextFactory, new ArcThreadSetupAction(beanContainer.requestContext()),
-                httpBuildTimeConfig.rootPath());
+                httpBuildTimeConfig.rootPath(), dispatcher);
         Deployment deployment = runtimeDeploymentManager.deploy();
         DisabledRestEndpoints.set(deployment.getDisabledEndpoints());
         initClassFactory.createInstance().getInstance().init(deployment);
@@ -167,6 +171,16 @@ public class ResteasyReactiveRecorder extends ResteasyReactiveCommonRecorder imp
                     ScoreSystem.ScoreVisitor);
         }
         return new RuntimeValue<>(deployment);
+    }
+
+    private ServerRestHandlerDispatcher createDispatcher(String className) {
+        try {
+            return (ServerRestHandlerDispatcher) Class
+                    .forName(className, true, Thread.currentThread().getContextClassLoader())
+                    .getDeclaredConstructor().newInstance();
+        } catch (ReflectiveOperationException e) {
+            throw new IllegalStateException("Unable to create the generated handler dispatcher " + className, e);
+        }
     }
 
     public RuntimeValue<RestInitialHandler> restInitialHandler(RuntimeValue<Deployment> deploymentRuntimeValue) {

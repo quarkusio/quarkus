@@ -50,6 +50,10 @@ public class CustomIntrospectionUserInfoCache implements TokenIntrospectionCache
         return tokenCache.getCacheSize();
     }
 
+    public boolean containsCacheKey(String tenantId, String token) {
+        return tokenCache.containsCacheKey(tenantId, token);
+    }
+
     public void clearCache() {
         tokenCache.clearCache();
     }

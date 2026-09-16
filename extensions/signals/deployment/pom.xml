@@ -19,6 +19,11 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-arc-deployment</artifactId>
         </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-security-runtime-spi</artifactId>
+            <optional>true</optional>
+        </dependency>
         <!-- Test dependencies -->
         <dependency>
             <groupId>io.quarkus</groupId>
@@ -37,7 +42,19 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-security-test-utils</artifactId>
+            <artifactId>quarkus-security-deployment</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <!-- Needed for InMemorySpanExporter to verify captured traces -->
+        <dependency>
+            <groupId>io.opentelemetry</groupId>
+            <artifactId>opentelemetry-sdk-testing</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <!-- Needed to verify captured metrics; the deployment artifact is forced as a dependency in the tests -->
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-micrometer-deployment</artifactId>
             <scope>test</scope>
         </dependency>
     </dependencies>

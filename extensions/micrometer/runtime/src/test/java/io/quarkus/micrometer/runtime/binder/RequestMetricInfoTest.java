@@ -17,7 +17,6 @@ import org.mockito.Mockito;
 
 import io.quarkus.micrometer.runtime.config.runtime.HttpClientConfig;
 import io.quarkus.micrometer.runtime.config.runtime.HttpServerConfig;
-import io.quarkus.micrometer.runtime.config.runtime.VertxConfig;
 
 public class RequestMetricInfoTest {
 
@@ -96,10 +95,9 @@ public class RequestMetricInfoTest {
         Mockito.doReturn(Optional.of(new ArrayList<>(Arrays.asList(" /item/.* ", " /oranges/.* "))))
                 .when(httpServerConfig).ignorePatterns();
         HttpClientConfig httpClientConfig = Mockito.mock(HttpClientConfig.class);
-        VertxConfig vertxConfig = Mockito.mock(VertxConfig.class);
         HttpBinderConfiguration binderConfig = new HttpBinderConfiguration(
                 true, false,
-                httpServerConfig, httpClientConfig, vertxConfig);
+                httpServerConfig, httpClientConfig);
         Assertions.assertEquals(2, binderConfig.serverIgnorePatterns.size());
 
         Pattern p = binderConfig.serverIgnorePatterns.get(0);
@@ -137,10 +135,9 @@ public class RequestMetricInfoTest {
                 .of(new ArrayList<>(Arrays.asList(" /item/\\d+=/item/{id} ", "  /msg/\\d+=/msg/{other} "))))
                 .when(httpServerConfig).matchPatterns();
         HttpClientConfig httpClientConfig = Mockito.mock(HttpClientConfig.class);
-        VertxConfig vertxConfig = Mockito.mock(VertxConfig.class);
         HttpBinderConfiguration binderConfig = new HttpBinderConfiguration(
                 true, false,
-                httpServerConfig, httpClientConfig, vertxConfig);
+                httpServerConfig, httpClientConfig);
 
         Assertions.assertFalse(binderConfig.serverMatchPatterns.isEmpty());
         Iterator<Map.Entry<Pattern, String>> i = binderConfig.serverMatchPatterns.entrySet().iterator();

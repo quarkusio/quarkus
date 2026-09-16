@@ -27,11 +27,7 @@ import io.quarkus.tls.TlsConfiguration;
 import io.quarkus.tls.TlsConfigurationRegistry;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
-import io.vertx.core.net.JksOptions;
-import io.vertx.core.net.PemTrustOptions;
-import io.vertx.core.net.PfxOptions;
 import io.vertx.core.net.SSLOptions;
-import io.vertx.core.net.TrustOptions;
 import io.vertx.ext.mail.CanonicalizationAlgorithm;
 import io.vertx.ext.mail.DKIMSignOptions;
 import io.vertx.ext.mail.LoginOption;
@@ -347,113 +343,8 @@ public class Mailers {
             }
 
         } else {
-            boolean trustAll = config.trustAll().isPresent() ? config.trustAll().get() : defaultTrustAll;
-            cfg.setSsl(config.ssl() || config.tls().orElse(trustAll));
-            cfg.setTrustAll(trustAll);
-            applyTruststore(name, config, cfg);
+            cfg.setSsl(config.tls().orElse(defaultTrustAll));
+            cfg.setTrustAll(defaultTrustAll);
         }
     }
-
-    private void applyTruststore(String name, MailerRuntimeConfig config, io.vertx.ext.mail.MailConfig cfg) {
-        // Handle deprecated config
-        if (config.keyStore().isPresent()) {
-            LOGGER.warn("`quarkus.mailer.key-store` is deprecated, use `quarkus.mailer.trust-store.path` instead");
-            JksOptions options = new JksOptions();
-            options.setPath(config.keyStore().get());
-            if (config.keyStorePassword().isPresent()) {
-                LOGGER.warn(
-                        "`quarkus.mailer.key-store-password` is deprecated, use `quarkus.mailer.trust-store.password` instead");
-                options.setPassword(config.keyStorePassword().get());
-            }
-            cfg.setTrustOptions(options);
-            return;
-        }
-
-        TrustStoreConfig truststore = config.truststore();
-        if (truststore.isConfigured()) {
-            if (cfg.isTrustAll()) { // Use the value configured before.
-                LOGGER.warn(
-                        "SMTP is configured with a trust store and also with trust-all, disable trust-all to enforce the trust store usage");
-            }
-            cfg.setTrustOptions(getTrustOptions(name, truststore.password(), truststore.paths(), truststore.type()));
-        }
-    }
-
-    private TrustOptions getTrustOptions(String name, Optional<String> pwd, Optional<List<String>> paths,
-            Optional<String> type) {
-        if (!paths.isPresent()) {
-            throw new ConfigurationException("Expected SMTP trust store `paths` to have at least one value");
-        }
-        List<String> actualPaths = paths.get();
-        if (actualPaths.isEmpty()) {
-            throw new ConfigurationException("Expected SMTP trust store `paths` to have at least one value");
-        }
-
-        if (type.isPresent()) {
-            String actualType = type.get();
-            if (actualType.equalsIgnoreCase("JKS")) {
-                return configureJksTrustOptions(actualPaths, pwd);
-            } else if (actualType.equalsIgnoreCase("PKCS")) {
-                return configurePkcsTrustOptions(actualPaths, pwd);
-            } else if (actualType.equalsIgnoreCase("PEM")) {
-                return configurePemTrustOptions(actualPaths, pwd);
-            } else {
-                throw new ConfigurationException("Unsupported value for the SMTP trust store type. The value (" + actualType
-                        + ") must be JKS, PKCS or PEM");
-            }
-        }
-
-        String firstPath = actualPaths.get(0).toLowerCase();
-        if (firstPath.endsWith(".jks")) {
-            return configureJksTrustOptions(actualPaths, pwd);
-        } else if (firstPath.endsWith(".p12") || firstPath.endsWith(".pfx")) {
-            return configurePkcsTrustOptions(actualPaths, pwd);
-        } else if (firstPath.endsWith(".pem") || firstPath.endsWith(".crt")) {
-            return configurePemTrustOptions(actualPaths, pwd);
-        }
-
-        if (DEFAULT_MAILER_NAME.equals(name)) {
-            throw new ConfigurationException(
-                    "Unable to deduce the SMTP trust store type from the file name. Configure `quarkus.mailer.truststore.type` explicitly");
-        } else {
-            throw new ConfigurationException(
-                    "Unable to deduce the SMTP trust store type from the file name. Configure `quarkus.mailer." + name
-                            + ".truststore.type` explicitly");
-        }
-
-    }
-
-    private TrustOptions configureJksTrustOptions(List<String> paths, Optional<String> pwd) {
-        JksOptions options = new JksOptions();
-        options.setPassword(pwd.orElse(null));
-        if (paths.size() > 1) {
-            throw new ConfigurationException(
-                    "Invalid SMTP trust store configuration, JKS only supports a single file, found " + paths.size());
-        }
-        options.setPath(paths.get(0).trim());
-        return options;
-    }
-
-    private TrustOptions configurePkcsTrustOptions(List<String> paths, Optional<String> pwd) {
-        PfxOptions options = new PfxOptions();
-        options.setPassword(pwd.orElse(null));
-        if (paths.size() > 1) {
-            throw new ConfigurationException(
-                    "Invalid SMTP trust store configuration, PFX only supports a single file, found " + paths.size());
-        }
-        options.setPath(paths.get(0).trim());
-        return options;
-    }
-
-    private TrustOptions configurePemTrustOptions(List<String> paths, Optional<String> pwd) {
-        PemTrustOptions options = new PemTrustOptions();
-        if (pwd.isPresent()) {
-            throw new ConfigurationException("Invalid SMTP trust store configuration, PEM trust store to not support password");
-        }
-        for (String path : paths) {
-            options.addCertPath(path.trim());
-        }
-        return options;
-    }
-
 }

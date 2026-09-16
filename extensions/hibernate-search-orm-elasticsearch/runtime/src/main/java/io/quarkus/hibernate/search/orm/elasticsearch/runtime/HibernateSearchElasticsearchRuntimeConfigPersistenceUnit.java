@@ -61,14 +61,6 @@ public interface HibernateSearchElasticsearchRuntimeConfigPersistenceUnit {
     IndexingConfig indexing();
 
     /**
-     * Configuration for automatic indexing.
-     *
-     * @deprecated Use {@code quarkus.hibernate-search-orm.indexing} instead.
-     */
-    @Deprecated
-    AutomaticIndexingConfig automaticIndexing();
-
-    /**
      * Configuration for multi-tenancy.
      */
     MultiTenancyConfig multiTenancy();
@@ -183,46 +175,6 @@ public interface HibernateSearchElasticsearchRuntimeConfigPersistenceUnit {
         @ConfigDocDefault("write-sync")
         Optional<String> strategy();
 
-    }
-
-    @ConfigGroup
-    @Deprecated
-    interface AutomaticIndexingConfig {
-
-        /**
-         * Configuration for synchronization with the index when indexing automatically.
-         *
-         * @deprecated Use {@code quarkus.hibernate-search-orm.indexing.plan.synchronization} instead.
-         */
-        AutomaticIndexingSynchronizationConfig synchronization();
-
-        /**
-         * Whether to check if dirty properties are relevant to indexing before actually reindexing an entity.
-         * <p>
-         * When enabled, re-indexing of an entity is skipped if the only changes are on properties that are not used when
-         * indexing.
-         *
-         * @deprecated This property is deprecated with no alternative to replace it.
-         *             In the future, a dirty check will always be performed when considering whether to trigger reindexing.
-         */
-        @WithDefault("true")
-        @Deprecated
-        boolean enableDirtyCheck();
-    }
-
-    @ConfigGroup
-    @Deprecated
-    interface AutomaticIndexingSynchronizationConfig {
-
-        // @formatter:off
-        /**
-         * The synchronization strategy to use when indexing automatically.
-         *
-         * @deprecated Use {@code quarkus.hibernate-search-orm.indexing.plan.synchronization.strategy} instead.
-         */
-        // @formatter:on
-        @ConfigDocDefault("write-sync")
-        Optional<String> strategy();
     }
 
     @ConfigGroup

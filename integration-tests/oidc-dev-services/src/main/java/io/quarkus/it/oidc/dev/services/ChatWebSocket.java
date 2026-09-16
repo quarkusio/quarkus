@@ -15,6 +15,9 @@ public class ChatWebSocket {
     @Inject
     SecurityIdentity identity;
 
+    @Inject
+    SignalsResource signals;
+
     @OnOpen
     public String onOpen() {
         return "opened";
@@ -22,7 +25,9 @@ public class ChatWebSocket {
 
     @OnTextMessage
     public String echo(String message) {
-        return message + " " + identity.getPrincipal().getName();
+        String responseMessage = message + " " + identity.getPrincipal().getName();
+        signals.fire("websockets:" + responseMessage, "admin");
+        return responseMessage;
     }
 
 }

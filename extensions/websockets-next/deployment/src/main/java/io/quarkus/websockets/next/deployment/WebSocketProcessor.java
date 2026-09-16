@@ -126,6 +126,7 @@ import io.quarkus.vertx.http.deployment.EagerSecurityInterceptorClassesBuildItem
 import io.quarkus.vertx.http.deployment.FilterBuildItem;
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
 import io.quarkus.vertx.http.runtime.HandlerType;
+import io.quarkus.vertx.http.runtime.VertxHttpBuildTimeConfig;
 import io.quarkus.vertx.http.runtime.security.EagerSecurityInterceptorStorage;
 import io.quarkus.vertx.http.runtime.security.HttpSecurityPolicy;
 import io.quarkus.vertx.http.runtime.security.SecurityHandlerPriorities;
@@ -154,6 +155,7 @@ import io.quarkus.websockets.next.runtime.WebSocketClientRecorder;
 import io.quarkus.websockets.next.runtime.WebSocketClientRecorder.ClientEndpoint;
 import io.quarkus.websockets.next.runtime.WebSocketConnectionBase;
 import io.quarkus.websockets.next.runtime.WebSocketConnectorImpl;
+import io.quarkus.websockets.next.runtime.WebSocketDuplicatedContextSecurityIdentityAssociation;
 import io.quarkus.websockets.next.runtime.WebSocketEndpoint;
 import io.quarkus.websockets.next.runtime.WebSocketEndpoint.ExecutionModel;
 import io.quarkus.websockets.next.runtime.WebSocketEndpointBase;
@@ -913,20 +915,29 @@ public class WebSocketProcessor {
     }
 
     @BuildStep
-    void createSecurityIdentityAssociation(Capabilities capabilities,
+    void createSecurityIdentityAssociation(Capabilities capabilities, VertxHttpBuildTimeConfig buildTimeConfig,
             BuildProducer<AdditionalBeanBuildItem> additionalBeanProducer) {
         if (capabilities.isPresent(Capability.SECURITY)) {
-            additionalBeanProducer.produce(AdditionalBeanBuildItem.unremovableOf(WebSocketSecurityIdentityAssociation.class));
+            additionalBeanProducer.produce(
+                    AdditionalBeanBuildItem.unremovableOf(getSecurityIdentityAssociationClass(buildTimeConfig)));
         }
     }
 
     @BuildStep(onlyIf = IsTest.class)
     void delegateToWebSocketSecurityIdentityAssociationFromTestSecurity(Capabilities capabilities,
-            BuildProducer<SystemPropertyBuildItem> systemPropertyProducer) {
+            VertxHttpBuildTimeConfig buildTimeConfig, BuildProducer<SystemPropertyBuildItem> systemPropertyProducer) {
         if (capabilities.isPresent(Capability.SECURITY)) {
             systemPropertyProducer
                     .produce(new SystemPropertyBuildItem("test.quarkus.test-security.delegate-identity-association",
-                            WebSocketSecurityIdentityAssociation.class.getName()));
+                            getSecurityIdentityAssociationClass(buildTimeConfig).getName()));
+        }
+    }
+
+    private static Class<?> getSecurityIdentityAssociationClass(VertxHttpBuildTimeConfig buildTimeConfig) {
+        if (buildTimeConfig.auth().propagateSecurityIdentity()) {
+            return WebSocketDuplicatedContextSecurityIdentityAssociation.class;
+        } else {
+            return WebSocketSecurityIdentityAssociation.class;
         }
     }
 

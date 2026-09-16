@@ -77,13 +77,6 @@ public interface SmallRyeHealthBuildTimeConfig {
     String startupPath();
 
     /**
-     * Whether the context should be propagated to each health check invocation.
-     */
-    @WithDefault("false")
-    @Deprecated(since = "3.30", forRemoval = true)
-    boolean contextPropagation();
-
-    /**
      * The number of the maximum health groups that can be created.
      */
     OptionalInt maxGroupRegistriesCount();

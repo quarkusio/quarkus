@@ -4,6 +4,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -71,6 +73,49 @@ public class QuarkusTestIT extends RunAndCheckMojoTestBase {
         assertThat(installInvocation.getExecutionException()).isNull();
         assertThat(installInvocation.getExitCode()).isEqualTo(0);
 
+    }
+
+    /**
+     * When JUnit is going to exclude every test of a {@code @QuarkusTest} class through its tags, no Quarkus
+     * application must be built for that class: the application in this project deliberately fails to build (see
+     * {@code BrokenBean}), and building it means Dev Services would be started (and Docker required) for tests that
+     * never run.
+     *
+     * See https://github.com/quarkusio/quarkus/issues/54435
+     */
+    @Test
+    public void testQuarkusTestsExcludedByTagsDoNotBuildAnApplication()
+            throws MavenInvocationException, InterruptedException, IOException {
+        String sourceDir = "projects/test-quarkus-tests-excluded-by-tags";
+        testDir = initProject(sourceDir, sourceDir + "-processed");
+
+        // Every test in both @QuarkusTest classes carries the class-level tag (the nested test inherits it)
+        RunningInvoker excludedByClassTag = runTests("-DexcludedGroups=quarkus-app");
+        assertThat(excludedByClassTag.getResult().getExitCode()).as(excludedByClassTag.log()).isEqualTo(0);
+        assertThat(excludedByClassTag.log()).contains("Tests run: 1, Failures: 0, Errors: 0, Skipped: 0")
+                .doesNotContain("Unsatisfied dependency");
+
+        // Same thing expressed as an inclusion: only the plain JUnit test is selected
+        RunningInvoker includedByTag = runTests("-Dgroups=vanilla");
+        assertThat(includedByTag.getResult().getExitCode()).as(includedByTag.log()).isEqualTo(0);
+        assertThat(includedByTag.log()).contains("Tests run: 1, Failures: 0, Errors: 0, Skipped: 0")
+                .doesNotContain("Unsatisfied dependency");
+
+        // Control: MethodTaggedQuarkusTest still has an untagged test to run, so the application has to be built,
+        // which fails. This proves the runs above would have hit the same failure without the exclusion.
+        RunningInvoker partiallyExcluded = runTests("-DexcludedGroups=partial");
+        assertThat(partiallyExcluded.getResult().getExitCode()).as(partiallyExcluded.log()).isNotEqualTo(0);
+        assertThat(partiallyExcluded.log()).contains("Unsatisfied dependency");
+    }
+
+    private RunningInvoker runTests(String... args) throws MavenInvocationException, InterruptedException {
+        RunningInvoker invoker = new RunningInvoker(testDir, false);
+        List<String> goals = new ArrayList<>(List.of("clean", "test", "-Dquarkus.analytics.disabled=true"));
+        goals.addAll(List.of(args));
+        MavenProcessInvocationResult result = invoker.execute(goals, Collections.emptyMap());
+        assertThat(result.getProcess().waitFor(2, TimeUnit.MINUTES)).isTrue();
+        assertThat(result.getExecutionException()).isNull();
+        return invoker;
     }
 
     @Test

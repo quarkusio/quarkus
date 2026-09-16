@@ -78,9 +78,9 @@ public class ServletRequestContext extends ResteasyReactiveRequestContext
 
     public ServletRequestContext(Deployment deployment,
             HttpServletRequest request, HttpServletResponse response,
-            ThreadSetupAction requestContext, ServerRestHandler[] handlerChain, ServerRestHandler[] abortHandlerChain,
-            RoutingContext context, HttpServerExchange exchange) {
-        super(deployment, requestContext, handlerChain, abortHandlerChain);
+            ThreadSetupAction requestContext, ServerRestHandler[] handlerChain, byte[] handlerKinds,
+            ServerRestHandler[] abortHandlerChain, RoutingContext context, HttpServerExchange exchange) {
+        super(deployment, requestContext, handlerChain, handlerKinds, abortHandlerChain);
         this.request = request;
         this.response = response;
         this.context = context;

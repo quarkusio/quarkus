@@ -233,8 +233,11 @@ public class InfoProcessor {
         OffsetDateTime dateTime = packageConfig.outputTimestamp().atZone(ZoneId.systemDefault()).toOffsetDateTime();
         String time = ISO_OFFSET_DATE_TIME.format(dateTime);
         buildData.put("time", time); // TODO: what is the proper notion of build time?
-        String quarkusVersion = Version.getVersion();
-        buildData.put("quarkusVersion", quarkusVersion);
+        String quarkusVersion = null;
+        if (config.build().quarkusVersion()) {
+            quarkusVersion = Version.getVersion();
+            buildData.put("quarkusVersion", quarkusVersion);
+        }
         Map<String, Object> data = finalBuildData(buildData, config.build());
         valuesProducer.produce(new InfoBuildTimeValuesBuildItem("build", data));
         beanProducer.produce(SyntheticBeanBuildItem.configure(BuildInfo.class)

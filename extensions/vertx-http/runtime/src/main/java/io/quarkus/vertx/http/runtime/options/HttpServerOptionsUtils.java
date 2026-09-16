@@ -581,23 +581,11 @@ public class HttpServerOptionsUtils {
 
         Optional<String> keyStoreAliasPassword = Optional.empty();
         if (sslConfig.certificate().keyStoreAliasPassword().isPresent()
-                || sslConfig.certificate().keyStoreKeyPassword().isPresent()
-                || sslConfig.certificate().keyStoreKeyPasswordKey().isPresent()
                 || sslConfig.certificate().keyStoreAliasPasswordKey().isPresent()) {
-            if (sslConfig.certificate().keyStoreKeyPasswordKey().isPresent()
-                    && sslConfig.certificate().keyStoreAliasPasswordKey().isPresent()) {
-                throw new ConfigurationException(
-                        "You cannot specify both `keyStoreKeyPasswordKey` and `keyStoreAliasPasswordKey` - Use `keyStoreAliasPasswordKey` instead");
-            }
-            if (sslConfig.certificate().keyStoreAliasPassword().isPresent()
-                    && sslConfig.certificate().keyStoreKeyPassword().isPresent()) {
-                throw new ConfigurationException(
-                        "You cannot specify both `keyStoreKeyPassword` and `keyStoreAliasPassword` - Use `keyStoreAliasPassword` instead");
-            }
             keyStoreAliasPassword = getCredential(
-                    or(sslConfig.certificate().keyStoreAliasPassword(), sslConfig.certificate().keyStoreKeyPassword()),
+                    sslConfig.certificate().keyStoreAliasPassword(),
                     credentials,
-                    or(sslConfig.certificate().keyStoreAliasPasswordKey(), sslConfig.certificate().keyStoreKeyPasswordKey()));
+                    sslConfig.certificate().keyStoreAliasPasswordKey());
         }
 
         final Optional<String> trustStorePassword = getCredential(sslConfig.certificate().trustStorePassword(), credentials,

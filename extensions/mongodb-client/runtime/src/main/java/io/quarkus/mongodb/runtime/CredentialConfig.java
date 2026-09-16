@@ -35,10 +35,10 @@ public interface CredentialConfig {
     /**
      * Configures the source of the authentication credentials.
      * This is typically the database where the credentials have been created.
-     * The value defaults to the database
-     * specified in the path portion of the connection string or in the 'database' configuration property.
-     * If the database is specified in neither place, the default value is {@code admin}. This option is only
-     * respected when using the MONGO-CR mechanism (the default).
+     * The value defaults to the {@code authSource} option in the connection string, then to the database specified in
+     * the {@code database} configuration property, then to the database specified in the path portion of the connection
+     * string. If none of these are specified, the default value is {@code admin}. This option is only respected when
+     * using the MONGO-CR mechanism (the default).
      */
     Optional<String> authSource();
 

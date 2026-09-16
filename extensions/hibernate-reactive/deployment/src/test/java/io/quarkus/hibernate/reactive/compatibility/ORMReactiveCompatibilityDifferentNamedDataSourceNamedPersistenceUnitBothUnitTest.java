@@ -31,7 +31,6 @@ public class ORMReactiveCompatibilityDifferentNamedDataSourceNamedPersistenceUni
             // Reactive named datasource
             .overrideConfigKey("quarkus.datasource.\"named-datasource-reactive\".jdbc", "false")
             .overrideConfigKey("quarkus.datasource.\"named-datasource-reactive\".reactive", "true")
-            .overrideConfigKey("quarkus.datasource.\"named-datasource-reactive\".db-kind", POSTGRES_KIND)
             .overrideConfigKey("quarkus.datasource.\"named-datasource-reactive\".username", USERNAME_PWD)
             .overrideConfigKey("quarkus.datasource.\"named-datasource-reactive\".password", USERNAME_PWD)
             // Reactive named persistence unit
@@ -43,7 +42,6 @@ public class ORMReactiveCompatibilityDifferentNamedDataSourceNamedPersistenceUni
             // Blocking named datasource
             .overrideConfigKey("quarkus.datasource.\"named-datasource-blocking\".jdbc", "true")
             .overrideConfigKey("quarkus.datasource.\"named-datasource-blocking\".reactive", "false")
-            .overrideConfigKey("quarkus.datasource.\"named-datasource-blocking\".db-kind", POSTGRES_KIND)
             .overrideConfigKey("quarkus.datasource.\"named-datasource-blocking\".username", USERNAME_PWD)
             .overrideConfigKey("quarkus.datasource.\"named-datasource-blocking\".password", USERNAME_PWD)
             // Blocking named persistence unit

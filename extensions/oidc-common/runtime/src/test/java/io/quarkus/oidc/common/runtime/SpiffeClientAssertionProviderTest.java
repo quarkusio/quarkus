@@ -15,7 +15,8 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.spiffe.client.SpiffeClient;
-import io.quarkus.spiffe.client.WorkloadJsonWebToken;
+import io.quarkus.spiffe.svid.jwt.WorkloadJsonWebToken;
+import io.quarkus.spiffe.svid.x509.WorkloadCertificateDocument;
 import io.smallrye.jwt.build.Jwt;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.Vertx;
@@ -145,6 +146,11 @@ public class SpiffeClientAssertionProviderTest {
 
         int fetchCount() {
             return fetchCount.get();
+        }
+
+        @Override
+        public Uni<WorkloadCertificateDocument> getWorkloadCertificate() {
+            throw new IllegalStateException("not implemented for this test");
         }
 
         @Override

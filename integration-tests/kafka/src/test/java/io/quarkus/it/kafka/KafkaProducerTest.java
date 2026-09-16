@@ -1,7 +1,7 @@
 package io.quarkus.it.kafka;
 
+import static io.quarkus.test.micrometer.PrometheusMetricsAssert.assertMetrics;
 import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 
 import org.apache.kafka.clients.consumer.ConsumerRecord;
@@ -56,8 +56,9 @@ public class KafkaProducerTest {
     @Test
     public void metrics() {
         // Look for kafka producer metrics (add .log().all() to examine what they are
-        RestAssured.when().get("/q/metrics").then()
+        assertMetrics(RestAssured.when().get("/q/metrics").then()
                 .statusCode(200)
-                .body(containsString("kafka_producer_"));
+                .extract().asInputStream())
+                .hasMetricNameContaining("kafka_producer_");
     }
 }

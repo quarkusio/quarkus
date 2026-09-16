@@ -148,7 +148,7 @@ You will see a log entry like this:
 
 [source, log]
 ----
-[io.qu.ob.de.ObservabilityDevServiceProcessor] (build-35) Dev Service Lgtm started, config: {grafana.endpoint=http://localhost:42797, quarkus.otel.exporter.otlp.endpoint=http://localhost:34711, otel-collector.url=localhost:34711, quarkus.micrometer.export.otlp.url=http://localhost:34711/v1/metrics, quarkus.otel.exporter.otlp.protocol=http/protobuf}
+[io.qu.ob.de.ObservabilityDevServiceProcessor] (build-35) Dev Service Lgtm started, config: {grafana.endpoint=http://localhost:42797, prometheus.endpoint=http://localhost:39090, tempo-mcp.endpoint=http://localhost:43200, quarkus.otel.exporter.otlp.endpoint=http://localhost:34711, otel-collector.url=localhost:34711, quarkus.micrometer.export.otlp.url=http://localhost:34711/v1/metrics, quarkus.otel.exporter.otlp.protocol=http/protobuf}
 ----
 Remember that Grafana is accessible in an ephemeral port, so you need to check the logs to see which port is being used. In this example, the grafana endpoint is `grafana.endpoint=http://localhost:42797`.
 
@@ -308,6 +308,268 @@ quarkus.observability.dev-resources=true
 `quarkus.observability.enabled` must be set to `false` when using Dev Resources mode. The two modes are mutually exclusive.
 ====
 
+=== MCP integration for AI tools
+
+The LGTM Dev Service supports the https://github.com/grafana/docker-otel-lgtm/blob/main/docs/mcp-integration.md[Model Context Protocol (MCP)], allowing AI coding tools like Claude Code and Cursor to query telemetry data directly from the running container.
+
+Two MCP pathways are available:
+
+[cols="1,1,1,1"]
+|===
+|Component |MCP Server |Transport |Capabilities
+
+|Grafana
+|`uvx mcp-grafana` (runs on host)
+|stdio
+|Dashboards, PromQL, LogQL
+
+|Tempo
+|Built-in HTTP endpoint
+|HTTP
+|Traces via TraceQL
+|===
+
+==== Tempo MCP
+
+The Tempo MCP server is automatically enabled and exposes an HTTP endpoint at port 3200 (`/api/mcp`).
+
+You can fix the Tempo MCP port if needed:
+
+[source,properties]
+----
+quarkus.observability.lgtm.tempo-mcp-port=3200
+----
+
+The mapped endpoint is available as the `tempo-mcp.endpoint` config property:
+
+[source,java]
+----
+@ConfigProperty(name = "tempo-mcp.endpoint")
+String tempoMcpEndpoint; // e.g. http://localhost:45678
+----
+
+To add the Tempo MCP server to Claude Code, use the endpoint from the Dev Service startup log:
+
+[source,bash]
+----
+claude mcp add --transport http tempo <tempo-mcp.endpoint>/api/mcp
+----
+
+==== Grafana MCP
+
+The Grafana MCP server runs as a client-side process on the host using https://github.com/grafana/mcp-grafana[`uvx mcp-grafana`] and connects to the Grafana instance inside the container. It provides access to dashboards, PromQL queries (metrics), and LogQL queries (logs).
+
+The mapped Grafana endpoint is available as the `grafana.endpoint` config property:
+
+[source,java]
+----
+@ConfigProperty(name = "grafana.endpoint")
+String grafanaEndpoint; // e.g. http://localhost:42797
+----
+
+After the container starts, a Grafana service account token is automatically created inside the container at `/tmp/grafana-sa-token`. You can retrieve it and the full MCP configuration:
+
+[source,bash]
+----
+# Find the container name
+docker ps --filter "label=quarkus-dev-service=lgtm" --format '{{.Names}}'
+
+# Retrieve the service account token
+TOKEN=$(docker exec <container-name> cat /tmp/grafana-sa-token)
+
+# Retrieve the full MCP configuration JSON
+docker exec <container-name> cat /etc/lgtm/mcp.json
+----
+
+To add the Grafana MCP server to Claude Code (requires https://docs.astral.sh/uv/[`uvx`]), use the `grafana.endpoint` URL from the Dev Service startup log:
+
+[source,bash]
+----
+claude mcp add grafana \
+  -e GRAFANA_URL=<grafana.endpoint> \
+  -e GRAFANA_SERVICE_ACCOUNT_TOKEN="$TOKEN" \
+  -- uvx mcp-grafana
+----
+
+[NOTE]
+====
+The Grafana MCP server also proxies the Tempo MCP server, so adding both is optional. Tempo's standalone endpoint is useful when you only need trace queries without the full Grafana integration.
+====
+
+=== Exposed backend endpoints
+
+In addition to the Grafana, Tempo MCP, and OTel Collector endpoints, the Dev Service also exposes the Prometheus HTTP API directly. This is useful for querying metrics programmatically without going through Grafana:
+
+[source,java]
+----
+@ConfigProperty(name = "prometheus.endpoint")
+String prometheusEndpoint; // e.g. http://localhost:39090
+----
+
+The full list of exposed endpoints:
+
+[cols="1,1"]
+|===
+|Config property |Description
+
+|`grafana.endpoint`
+|Grafana UI and API
+
+|`prometheus.endpoint`
+|Prometheus HTTP API (e.g. `/api/v1/query`)
+
+|`tempo-mcp.endpoint`
+|Tempo query-frontend (search API and MCP)
+
+|`otel-collector.url`
+|OpenTelemetry Collector (gRPC or HTTP, depending on `otlp-protocol`)
+|===
+
+=== Container component logging
+
+You can enable container log output for individual LGTM components by setting the `logging` property. This maps to the `ENABLE_LOGS_*` environment variables in the container.
+
+[source,properties]
+----
+quarkus.observability.lgtm.logging=TEMPO,OTELCOL
+----
+
+Available components: `GRAFANA`, `LOKI`, `PROMETHEUS`, `TEMPO`, `PYROSCOPE`, `OTELCOL`, `OBI`, `ALL`.
+
+=== Shutdown timeout
+
+The container forwards `SIGTERM` and `SIGINT` to every backend and waits for a graceful shutdown. By default the timeout is 5 seconds. You can override it:
+
+[source,properties]
+----
+quarkus.observability.lgtm.shutdown-timeout=15
+----
+
+=== OBI (eBPF auto-instrumentation)
+
+https://github.com/grafana/docker-otel-lgtm#enable-obi-ebpf-auto-instrumentation[OBI] (OpenTelemetry eBPF Instrumentation) automatically generates traces and RED metrics for HTTP/gRPC services without code changes. It requires Linux kernel 5.8+ with BTF support.
+
+When enabled, the container is started with `--pid=host` and `--privileged` flags.
+
+[source,properties]
+----
+quarkus.observability.lgtm.enable-obi=true
+quarkus.observability.lgtm.obi-target=java
+----
+
+Additional OBI targeting options:
+
+[cols="1,1"]
+|===
+|Property |Description
+
+|`quarkus.observability.lgtm.obi-target`
+|Language (`java`, `python`, `node`, `dotnet`, `ruby`) or any regex matching an executable name
+
+|`quarkus.observability.lgtm.obi-open-port`
+|Override which ports OBI monitors (e.g. `8080,9090`)
+
+|`quarkus.observability.lgtm.obi-auto-target-exe`
+|Executable name pattern for targeting
+|===
+
+=== Customize backend configuration
+
+==== Extra CLI arguments
+
+Each backend supports extra CLI arguments appended at startup. The value is split on whitespace into separate arguments.
+
+[source,properties]
+----
+quarkus.observability.lgtm.prometheus-extra-args=--storage.tsdb.retention.time=90d
+quarkus.observability.lgtm.loki-extra-args=-store.retention=90d
+quarkus.observability.lgtm.tempo-extra-args=--additional-flag=value
+quarkus.observability.lgtm.pyroscope-extra-args=--some-flag
+quarkus.observability.lgtm.otelcol-extra-args=--some-flag
+----
+
+[NOTE]
+====
+Tempo always includes `--query-frontend.mcp-server.enabled=true` by default. Any value set via `tempo-extra-args` is appended after this flag.
+====
+
+==== Custom configuration files
+
+For deeper customization, you can mount full configuration files from the classpath into the container. Place your custom YAML file in `src/main/resources/` and reference it:
+
+[source,properties]
+----
+quarkus.observability.lgtm.prometheus-config=my-prometheus.yaml
+quarkus.observability.lgtm.loki-config=my-loki-config.yaml
+quarkus.observability.lgtm.tempo-config=my-tempo-config.yaml
+quarkus.observability.lgtm.pyroscope-config=my-pyroscope-config.yaml
+quarkus.observability.lgtm.otelcol-config=my-otelcol-config.yaml
+----
+
+[cols="1,1"]
+|===
+|Property |Container path
+
+|`prometheus-config`
+|`/otel-lgtm/prometheus.yaml`
+
+|`loki-config`
+|`/otel-lgtm/loki-config.yaml`
+
+|`tempo-config`
+|`/otel-lgtm/tempo-config.yaml`
+
+|`pyroscope-config`
+|`/otel-lgtm/pyroscope-config.yaml`
+
+|`otelcol-config`
+|`/otel-lgtm/otelcol-config.yaml`
+|===
+
+[NOTE]
+====
+When a custom `prometheus-config` is provided, it replaces the Prometheus configuration that Quarkus generates (including scraping configuration). The other backends have no generated configuration, so the custom file simply replaces the container defaults.
+====
+
+=== Pre-install Grafana plugins
+
+You can pre-install Grafana plugins by setting a comma-separated list:
+
+[source,properties]
+----
+quarkus.observability.lgtm.grafana-plugins-preinstall=grafana-clock-panel,grafana-simple-json-datasource
+----
+
+See the https://grafana.com/docs/grafana/latest/setup-grafana/installation/docker/#install-plugins-in-the-docker-container[Grafana documentation] for details on available plugins.
+
+=== Custom Grafana home dashboard
+
+To set a custom dashboard as the Grafana home dashboard, point to a dashboard JSON file path inside the container. This is useful in combination with <<Custom dashboards>> which are copied to `/otel-lgtm/`:
+
+[source,properties]
+----
+quarkus.observability.lgtm.grafana-home-dashboard-path=/otel-lgtm/grafana-dashboard-my-home.json
+----
+
+=== Forward telemetry to external vendors
+
+The built-in OpenTelemetry Collector can forward telemetry data to external backends via OTLP/HTTP, enabling easy comparison between the local LGTM stack and a vendor backend.
+
+[source,properties]
+----
+quarkus.observability.lgtm.vendor-otlp-endpoint=https://otlp-gateway.example.com
+quarkus.observability.lgtm.vendor-otlp-headers=Authorization=Basic xxx
+----
+
+Per-signal endpoints take precedence over the global endpoint:
+
+[source,properties]
+----
+quarkus.observability.lgtm.vendor-otlp-logs-endpoint=https://logs.example.com
+quarkus.observability.lgtm.vendor-otlp-metrics-endpoint=https://metrics.example.com
+quarkus.observability.lgtm.vendor-otlp-traces-endpoint=https://traces.example.com
+----
+
 == Testing full Grafana OTel LGTM stack - example
 
 Use existing Quarkus MicroMeter OTLP registry
@@ -351,7 +613,7 @@ public class SimpleEndpoint {
 }
 ----
 
-Where you can then check Grafana's datasource API for existing metrics data.
+Where you can then check Prometheus for existing metrics data, using the exposed `prometheus.endpoint`:
 
 [source, java]
 ----
@@ -360,11 +622,14 @@ public class LgtmTestBase {
     @ConfigProperty(name = "grafana.endpoint")
     String endpoint; // NOTE -- injected Grafana endpoint!
 
+    @ConfigProperty(name = "prometheus.endpoint")
+    String prometheusEndpoint; // NOTE -- injected Prometheus endpoint!
+
     @Test
     public void testTracing() {
         String response = RestAssured.get("/api/poke?f=100").body().asString();
         System.out.println(response);
-        GrafanaClient client = new GrafanaClient(endpoint, "admin", "admin");
+        GrafanaClient client = new GrafanaClient(endpoint, prometheusEndpoint, null, "admin", "admin");
         Awaitility.await().atMost(61, TimeUnit.SECONDS).until(
                 client::user,
                 u -> "admin".equals(u.login));
@@ -374,84 +639,4 @@ public class LgtmTestBase {
     }
 
 }
-
-// simple Grafana HTTP client
-
-public class GrafanaClient {
-    private static final ObjectMapper MAPPER = new ObjectMapper();
-
-    private final String url;
-    private final String username;
-    private final String password;
-
-    public GrafanaClient(String url, String username, String password) {
-        this.url = url;
-        this.username = username;
-        this.password = password;
-    }
-
-    private <T> void handle(
-            String path,
-            Function<HttpRequest.Builder, HttpRequest.Builder> method,
-            HttpResponse.BodyHandler<T> bodyHandler,
-            BiConsumer<HttpResponse<T>, T> consumer) {
-        try {
-            String credentials = username + ":" + password;
-            String encodedCredentials = Base64.getEncoder().encodeToString(credentials.getBytes());
-
-            HttpClient httpClient = HttpClient.newHttpClient();
-            HttpRequest.Builder builder = HttpRequest.newBuilder()
-                    .uri(URI.create(url + path))
-                    .header("Authorization", "Basic " + encodedCredentials);
-            HttpRequest request = method.apply(builder).build();
-
-            HttpResponse<T> response = httpClient.send(request, bodyHandler);
-            int code = response.statusCode();
-            if (code < 200 || code > 299) {
-                throw new IllegalStateException("Bad response: " + code + " >> " + response.body());
-            }
-            consumer.accept(response, response.body());
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            throw new RuntimeException(e);
-        }
-    }
-
-    public User user() {
-        AtomicReference<User> ref = new AtomicReference<>();
-        handle(
-                "/api/user",
-                HttpRequest.Builder::GET,
-                HttpResponse.BodyHandlers.ofString(),
-                (r, b) -> {
-                    try {
-                        User user = MAPPER.readValue(b, User.class);
-                        ref.set(user);
-                    } catch (JsonProcessingException e) {
-                        throw new UncheckedIOException(e);
-                    }
-                });
-        return ref.get();
-    }
-
-    public QueryResult query(String query) {
-        AtomicReference<QueryResult> ref = new AtomicReference<>();
-        handle(
-                "/api/datasources/proxy/1/api/v1/query?query=" + query,
-                HttpRequest.Builder::GET,
-                HttpResponse.BodyHandlers.ofString(),
-                (r, b) -> {
-                    try {
-                        QueryResult result = MAPPER.readValue(b, QueryResult.class);
-                        ref.set(result);
-                    } catch (JsonProcessingException e) {
-                        throw new UncheckedIOException(e);
-                    }
-                });
-        return ref.get();
-    }
-}
-
 ----

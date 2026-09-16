@@ -20,25 +20,11 @@ public interface CodeGenProvider {
     String providerId();
 
     /**
-     * File extension that CodeGenProvider will generate code from
-     * Deprecated: use inputExtensions instead
-     *
-     * @return file extension
-     */
-    @Deprecated
-    default String inputExtension() {
-        return null;
-    }
-
-    /**
      * File extensions that CodeGenProvider will generate code from
      *
      * @return file extensions
      */
     default String[] inputExtensions() {
-        if (inputExtension() != null) {
-            return new String[] { inputExtension() };
-        }
         return new String[] {};
     }
 

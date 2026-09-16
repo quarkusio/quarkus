@@ -8,11 +8,23 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 include::_attributes.adoc[]
 :diataxis-type: howto
 :topics: security,identity-providers,sql,database,jpa,jdbc
-:extensions: io.quarkus:quarkus-security-jpa-reactive
+:extensions: io.quarkus:quarkus-security-jpa,io.quarkus:quarkus-security-jpa-reactive
 
 You can configure your application to use Jakarta Persistence to store users' identities.
 
 Quarkus provides a Jakarta Persistence identity provider, similar to the xref:security-jdbc.adoc[JDBC identity provider]. Jakarta Persistence is suitable for use with the xref:security-basic-authentication.adoc[Basic] and xref:security-authentication-mechanisms.adoc#form-auth[Form-based] Quarkus Security mechanisms, which require username and password credentials.
+
+ifndef::no-quarkus-security-jpa-reactive[]
+[NOTE]
+====
+The identity provider is available for both persistence stacks:
+
+* `quarkus-security-jpa` for applications that use Hibernate ORM.
+* `quarkus-security-jpa-reactive` for applications that use Hibernate Reactive.
+
+The entity annotations and the configuration described in this guide are the same for both extensions.
+====
+endif::no-quarkus-security-jpa-reactive[]
 
 The Jakarta Persistence `IdentityProvider` creates a `SecurityIdentity` instance. During user authentication, this instance is used to verify and authorize access requests.
 
@@ -76,9 +88,6 @@ public class User extends PanacheEntity {
 }
 
 ----
-
-The `quarkus-security-jpa` extension initializes only if a single entity is annotated with `@UserDefinition`.
-
 <1> Table name. Do not define it as `user`, which is a restricted keyword in most databases.
 <2> The `@UserDefinition` annotation must be present on a single entity, either a regular Hibernate ORM entity or a Hibernate ORM with Panache entity.
 <3> Indicates the field used for the username.
@@ -86,6 +95,8 @@ The `quarkus-security-jpa` extension initializes only if a single entity is anno
 By default, `quarkus-security-jpa` uses bcrypt-hashed passwords, or you can configure plain text or custom passwords instead.
 <5> This indicates the comma-separated list of roles added to the target principal representation attributes.
 <6> This method lets you add users while hashing passwords with the proper `bcrypt` hash.
+
+The `quarkus-security-jpa` extension initializes only if a single entity is annotated with `@UserDefinition`.
 
 
 == Jakarta Persistence entity as storage of roles

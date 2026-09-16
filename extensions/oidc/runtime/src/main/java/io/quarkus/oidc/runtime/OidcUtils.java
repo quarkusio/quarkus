@@ -10,7 +10,6 @@ import java.nio.charset.StandardCharsets;
 import java.security.Key;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.security.PrivateKey;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -954,7 +953,7 @@ public final class OidcUtils {
         }
     }
 
-    public static Key readDecryptionKey(String decryptionKeyLocation) throws Exception {
+    public static Key readDecryptionKey(String decryptionKeyLocation, KeyEncryptionAlgorithm algorithm) throws Exception {
         Key key = null;
 
         String keyContent = KeyUtils.readKeyContent(decryptionKeyLocation);
@@ -962,15 +961,25 @@ public final class OidcUtils {
             List<JsonWebKey> keys = KeyUtils.loadJsonWebKeys(keyContent);
             if (keys != null && keys.size() == 1 &&
                     (keys.get(0).getAlgorithm() == null
-                            || keys.get(0).getAlgorithm().equals(KeyEncryptionAlgorithm.RSA_OAEP.getAlgorithm()))
+                            || keys.get(0).getAlgorithm().equals(algorithm.getAlgorithm()))
                     && ("enc".equals(keys.get(0).getUse()) || keys.get(0).getUse() == null)) {
                 key = PublicJsonWebKey.class.cast(keys.get(0)).getPrivateKey();
             }
         }
         if (key == null) {
-            key = KeyUtils.decodeDecryptionPrivateKey(keyContent);
+            key = KeyUtils.decodeDecryptionPrivateKey(keyContent, algorithm);
         }
         return key;
+    }
+
+    /**
+     * Returns the configured ID and access token key decryption algorithm.
+     */
+    public static KeyEncryptionAlgorithm getTokenDecryptionAlgorithm(Token token, Key decryptionKey) {
+        if (token.decryptionAlgorithm().isPresent()) {
+            return KeyEncryptionAlgorithm.valueOf(token.decryptionAlgorithm().get().name());
+        }
+        return decryptionKey instanceof SecretKey ? KeyEncryptionAlgorithm.A256GCMKW : KeyEncryptionAlgorithm.RSA_OAEP;
     }
 
     public static String decryptToken(TenantConfigContext resolvedContext, String token) {
@@ -982,9 +991,8 @@ public final class OidcUtils {
                 throw new AuthenticationFailedException();
             }
 
-            //TODO: Make the encryption algorithm configurable
-            KeyEncryptionAlgorithm encryptionAlgorithm = decryptionKey instanceof PrivateKey ? KeyEncryptionAlgorithm.RSA_OAEP
-                    : KeyEncryptionAlgorithm.A256GCMKW;
+            KeyEncryptionAlgorithm encryptionAlgorithm = getTokenDecryptionAlgorithm(
+                    resolvedContext.oidcConfig().token(), decryptionKey);
 
             try {
                 return OidcUtils.decryptString(token, decryptionKey, encryptionAlgorithm);

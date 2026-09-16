@@ -15,22 +15,12 @@
     <description>This is the parent of relocated artifacts, that are still released for compatibility reasons.</description>
     <packaging>pom</packaging>
 
+    <!--
+        All relocations inherited from the 3.x line were dropped in Quarkus 4.0: every one of them was still
+        published (and still warned) in 3.40, the last 3.x LTS, which is the supported staging point for the
+        upgrade to 4.0. New relocations introduced during the 4.x line should be added below.
+    -->
     <modules>
-        <module>quarkus-hibernate-search-orm-coordination-outbox-polling</module>
-        <module>quarkus-hibernate-search-orm-coordination-outbox-polling-deployment</module>
-        <module>quarkus-webjars-locator</module>
-        <module>quarkus-webjars-locator-deployment</module>
-        <module>quarkus-vertx-http-dev-ui-spi</module>
-        <module>quarkus-vertx-http-dev-ui-tests</module>
-        <module>quarkus-junit5</module>
-        <module>quarkus-junit5-component</module>
-        <module>quarkus-junit5-config</module>
-        <module>quarkus-junit5-internal</module>
-        <module>quarkus-junit5-mockito</module>
-        <module>quarkus-junit5-mockito-config</module>
-        <module>junit5-virtual-threads</module>
-        <module>quarkus-hibernate-panache-next</module>
-        <module>quarkus-hibernate-panache-next-deployment</module>
     </modules>
 
 </project>

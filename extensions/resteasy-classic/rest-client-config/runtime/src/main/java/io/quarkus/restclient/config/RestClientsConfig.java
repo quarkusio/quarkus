@@ -1,7 +1,6 @@
 package io.quarkus.restclient.config;
 
 import java.io.InputStream;
-import java.time.Duration;
 import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalInt;
@@ -16,11 +15,9 @@ import io.quarkus.runtime.annotations.ConfigDocMapKey;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
 import io.quarkus.runtime.configuration.MemorySize;
-import io.quarkus.runtime.configuration.TrimmedStringConverter;
 import io.smallrye.config.ConfigMapping;
 import io.smallrye.config.ConfigValue;
 import io.smallrye.config.SmallRyeConfig;
-import io.smallrye.config.WithConverter;
 import io.smallrye.config.WithDefault;
 import io.smallrye.config.WithDefaults;
 import io.smallrye.config.WithKeys;
@@ -56,7 +53,7 @@ public interface RestClientsConfig {
     Optional<String> multipartPostEncoderMode();
 
     /**
-     * The name of the proxy configuration to use; ignored if {@code quarkus.rest-client.proxy-address} is set.
+     * The name of the proxy configuration to use.
      * <p>
      * If not set and the default proxy configuration is configured ({@code quarkus.proxy.*}) then that will be used.
      * If the proxy configuration name is set, the configuration from {@code quarkus.proxy.<name>.*} will be used.
@@ -70,71 +67,6 @@ public interface RestClientsConfig {
      * Quarkus RESTEasy client (provided by the quarkus-resteasy-client dependency) does not support this property.
      */
     Optional<String> proxyConfigurationName();
-
-    /**
-     * A string value in the form of `<proxyHost>:<proxyPort>` that specifies the HTTP proxy server hostname
-     * (or IP address) and port for requests of clients to use.
-     * <p>
-     * Can be overwritten by client-specific settings.
-     *
-     * @deprecated use {@code quarkus.rest-client.proxy-configuration-name} instead
-     */
-    @Deprecated
-    Optional<@WithConverter(TrimmedStringConverter.class) String> proxyAddress();
-
-    /**
-     * Proxy username, equivalent to the http.proxy or https.proxy JVM settings.
-     * Honored only if {@code quarkus.rest-client.proxy-address} is set.
-     * <p>
-     * Can be overwritten by client-specific settings.
-     * <p>
-     * This property is not applicable to the RESTEasy Client.
-     *
-     * @deprecated use {@code quarkus.rest-client.proxy-configuration-name} instead
-     */
-    @Deprecated
-    Optional<String> proxyUser();
-
-    /**
-     * Proxy password, equivalent to the http.proxyPassword or https.proxyPassword JVM settings.
-     * Honored only if {@code quarkus.rest-client.proxy-address} is set.
-     * <p>
-     * Can be overwritten by client-specific settings.
-     * <p>
-     * This property is not applicable to the RESTEasy Client.
-     *
-     * @deprecated use {@code quarkus.rest-client.proxy-configuration-name} instead
-     */
-    @Deprecated
-    Optional<String> proxyPassword();
-
-    /**
-     * Hosts to access without proxy, similar to the http.nonProxyHosts or https.nonProxyHosts JVM settings.
-     * Please note that unlike the JVM settings, this property is empty by default.
-     * Honored only if {@code quarkus.rest-client.proxy-address} is set.
-     * <p>
-     * Can be overwritten by client-specific settings.
-     * <p>
-     * This property is not applicable to the RESTEasy Client.
-     *
-     * @deprecated use {@code quarkus.rest-client.proxy-configuration-name} instead
-     */
-    @Deprecated
-    Optional<String> nonProxyHosts();
-
-    /**
-     * Proxy connection timeout.
-     * Honored only if {@code quarkus.rest-client.proxy-address} is set.
-     * <p>
-     * Can be overwritten by client-specific settings.
-     * <p>
-     * This property is not applicable to the RESTEasy Client.
-     *
-     * @deprecated use {@code quarkus.rest-client.proxy-configuration-name} instead
-     */
-    @Deprecated
-    @ConfigDocDefault("10s")
-    Optional<Duration> proxyConnectTimeout();
 
     /**
      * A timeout in milliseconds that REST clients should wait to connect to the remote endpoint.
@@ -245,6 +177,17 @@ public interface RestClientsConfig {
     Optional<QueryParamStyle> queryParamStyle();
 
     /**
+     * An enumerated type string value with possible values of "MULTI_PAIRS" (default), "COMMA_SEPARATED",
+     * or "ARRAY_PAIRS" that specifies the format in which multiple values for the same
+     * {@code application/x-www-form-urlencoded} form parameter is used.
+     * <p>
+     * Can be overwritten by client-specific settings.
+     * <p>
+     * This property is not applicable to the RESTEasy Client.
+     */
+    Optional<QueryParamStyle> formParamStyle();
+
+    /**
      * Set whether hostname verification is enabled. Default is enabled.
      * This setting should not be disabled in production as it makes the client vulnerable to MITM attacks.
      * <p>
@@ -353,7 +296,7 @@ public interface RestClientsConfig {
      * <p>
      * Can be overwritten by client-specific settings.
      */
-    Optional<Boolean> enableCompression();
+    Optional<Boolean> enableResponseDecompression();
 
     /**
      * If the Application-Layer Protocol Negotiation is enabled, the client will negotiate which protocol to use over the
@@ -374,11 +317,6 @@ public interface RestClientsConfig {
      * Logging configuration.
      */
     RestClientLoggingConfig logging();
-
-    /**
-     * Multipart configuration.
-     */
-    RestClientMultipartConfig multipart();
 
     default RestClientConfig getClient(final Class<?> restClientInterface) {
         if (RestClientKeysProvider.KEYS.contains(restClientInterface.getName())) {
@@ -427,24 +365,7 @@ public interface RestClientsConfig {
         Optional<Set<String>> maskedHeaders();
     }
 
-    interface RestClientMultipartConfig {
-        /**
-         * The max HTTP chunk size (8096 bytes by default).
-         * <p>
-         * This property is not applicable to the Quarkus RESTEasy client (provided by the quarkus-resteasy-client dependency).
-         *
-         * @deprecated Use {@code quarkus.rest-client.max-chunk-size} instead
-         */
-        @Deprecated
-        OptionalInt maxChunkSize();
-    }
-
     interface RestClientConfig {
-        /**
-         * Multipart configuration.
-         */
-        RestClientMultipartConfig multipart();
-
         /**
          * The base URL to use for this service. This property or the `uri` property is considered required, unless
          * the `baseUri` attribute is configured in the `@RegisterRestClient` annotation.
@@ -529,7 +450,7 @@ public interface RestClientsConfig {
         Optional<String> multipartPostEncoderMode();
 
         /**
-         * The name of the proxy configuration to use; ignored if {@code quarkus.rest-client."client".proxy-address} is set.
+         * The name of the proxy configuration to use.
          * <p>
          * If not set and {@code quarkus.rest-client.proxy-configuration-name} or the default proxy configuration
          * ({@code quarkus.proxy.*}) is set, then the first valid of them will get effective.
@@ -545,66 +466,19 @@ public interface RestClientsConfig {
         Optional<String> proxyConfigurationName();
 
         /**
-         * A string value in the form of `<proxyHost>:<proxyPort>` that specifies the HTTP proxy server hostname
-         * (or IP address) and port for requests of this client to use.
-         * <p>
-         * Use `none` to disable proxy
-         *
-         * @deprecated use {@code quarkus.rest-client."client".proxy-configuration-name} instead
-         */
-        @Deprecated
-        Optional<@WithConverter(TrimmedStringConverter.class) String> proxyAddress();
-
-        /**
-         * Proxy username.
-         * Honored only if {@code quarkus.rest-client."client".proxy-address} is set.
-         * <p>
-         * This property is not applicable to the RESTEasy Client.
-         *
-         * @deprecated use {@code quarkus.rest-client."client".proxy-configuration-name} instead
-         */
-        @Deprecated
-        Optional<String> proxyUser();
-
-        /**
-         * Proxy password.
-         * Honored only if {@code quarkus.rest-client."client".proxy-address} is set.
-         * <p>
-         * This property is not applicable to the RESTEasy Client.
-         *
-         * @deprecated use {@code quarkus.rest-client."client".proxy-configuration-name} instead
-         */
-        @Deprecated
-        Optional<String> proxyPassword();
-
-        /**
-         * Hosts to access without proxy.
-         * Honored only if {@code quarkus.rest-client."client".proxy-address} is set.
-         * <p>
-         * This property is not applicable to the RESTEasy Client.
-         *
-         * @deprecated use {@code quarkus.rest-client."client".proxy-configuration-name} instead
-         */
-        @Deprecated
-        Optional<String> nonProxyHosts();
-
-        /**
-         * Proxy connection timeout.
-         * Honored only if {@code quarkus.rest-client."client".proxy-address} is set.
-         * <p>
-         * This property is not applicable to the RESTEasy Client.
-         *
-         * @deprecated use {@code quarkus.rest-client."client".proxy-configuration-name} instead
-         */
-        @Deprecated
-        @ConfigDocDefault("10s")
-        Optional<Duration> proxyConnectTimeout();
-
-        /**
          * An enumerated type string value with possible values of "MULTI_PAIRS" (default), "COMMA_SEPARATED",
          * or "ARRAY_PAIRS" that specifies the format in which multiple values for the same query parameter is used.
          */
         Optional<QueryParamStyle> queryParamStyle();
+
+        /**
+         * An enumerated type string value with possible values of "MULTI_PAIRS" (default), "COMMA_SEPARATED",
+         * or "ARRAY_PAIRS" that specifies the format in which multiple values for the same
+         * {@code application/x-www-form-urlencoded} form parameter is used.
+         * <p>
+         * Quarkus RESTEasy client (provided by the quarkus-resteasy-client dependency) does not support this property.
+         */
+        Optional<QueryParamStyle> formParamStyle();
 
         /**
          * Set whether hostname verification is enabled. Default is enabled.

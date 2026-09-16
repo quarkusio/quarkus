@@ -629,7 +629,7 @@ public class BearerTokenAuthorizationTest {
                 .body(equalTo("tenant-oidc:alice"));
 
         // Finally try the opaque token
-        RestAssured.given().auth().oauth2(getOpaqueAccessTokenFromSimpleOidc())
+        RestAssured.given().auth().oauth2(getOpaqueAccessTokenFromSimpleOidc("client"))
                 .when().get("/tenant-opaque/tenant-oidc/api/user")
                 .then()
                 .statusCode(200)
@@ -770,6 +770,104 @@ public class BearerTokenAuthorizationTest {
         RestAssured.when().get("/cache/size").then().body(equalTo("3"));
     }
 
+    @Test
+    public void testMultiTenantJwtTokenIntrospectionOnlyAndUserInfoCache() {
+        RestAssured.when().post("/oidc/introspection-endpoint-call-count").then().body(equalTo("0"));
+        RestAssured.when().post("/oidc/userinfo-endpoint-call-count").then().body(equalTo("0"));
+        RestAssured.when().post("/oidc/enable-introspection").then().body(equalTo("true"));
+        RestAssured.when().get("/cache/size").then().body(equalTo("0"));
+
+        // Get a token bound to tenant-one's client_id
+        String tokenOne = getOpaqueAccessTokenFromSimpleOidc("client-introspection-cache-one");
+
+        // Send the token to tenant-introspection-cache-one 3 times,
+        // only 1 call to introspection and userinfo endpoints is expected
+        verifyOpaqueTokenIntrospectionAndUserInfoAreCached(tokenOne, "tenant-introspection-cache-one",
+                "client-introspection-cache-one");
+        RestAssured.when().get("/cache/size").then().body(equalTo("1"));
+
+        // Send the same token to tenant-introspection-cache-two,
+        // the composite cache key includes the tenant id so the cached entry from tenant one must not be reused,
+        // the introspection endpoint returns active=false because the token was issued for "client-introspection-cache-one"
+        // but tenant-two uses "client-introspection-cache-two"
+        RestAssured.given().auth().oauth2(tokenOne)
+                .when().get("/tenant-opaque/tenant-introspection-cache-two")
+                .then()
+                .statusCode(401);
+        RestAssured.when().get("/oidc/introspection-endpoint-call-count").then().body(equalTo("1"));
+        RestAssured.when().post("/oidc/introspection-endpoint-call-count").then().body(equalTo("0"));
+        RestAssured.when().get("/oidc/userinfo-endpoint-call-count").then().body(equalTo("0"));
+        RestAssured.when().post("/oidc/userinfo-endpoint-call-count").then().body(equalTo("0"));
+        RestAssured.when().get("/cache/size").then().body(equalTo("1"));
+
+        // Get a token bound to tenant-two's client_id and send it to tenant-two,
+        // the introspection endpoint returns active=true, 1 new call to introspection and userinfo is expected
+        String tokenTwo = getOpaqueAccessTokenFromSimpleOidc("client-introspection-cache-two");
+        verifyOpaqueTokenIntrospectionAndUserInfoAreCached(tokenTwo, "tenant-introspection-cache-two",
+                "client-introspection-cache-two");
+        RestAssured.when().get("/cache/size").then().body(equalTo("2"));
+
+        // Send tokenTwo to tenant-introspection-cache-one,
+        // the introspection endpoint returns active=false because the token was issued for "client-introspection-cache-two"
+        // but tenant-one uses "client-introspection-cache-one"
+        RestAssured.given().auth().oauth2(tokenTwo)
+                .when().get("/tenant-opaque/tenant-introspection-cache-one")
+                .then()
+                .statusCode(401);
+        RestAssured.when().get("/oidc/introspection-endpoint-call-count").then().body(equalTo("1"));
+        RestAssured.when().post("/oidc/introspection-endpoint-call-count").then().body(equalTo("0"));
+        RestAssured.when().get("/oidc/userinfo-endpoint-call-count").then().body(equalTo("0"));
+        RestAssured.when().post("/oidc/userinfo-endpoint-call-count").then().body(equalTo("0"));
+
+        // Send tokenOne to tenant-introspection-cache-one again,
+        // the cached entry from tenant one must be reused, no new calls are expected
+        for (int i = 0; i < 3; i++) {
+            RestAssured.given().auth().oauth2(tokenOne)
+                    .when().get("/tenant-opaque/tenant-introspection-cache-one")
+                    .then()
+                    .statusCode(200)
+                    .body(equalTo(
+                            "tenant-introspection-cache-one:alice:user@gmail.com:userinfo-client-id:client-introspection-cache-one"));
+        }
+        RestAssured.when().get("/oidc/introspection-endpoint-call-count").then().body(equalTo("0"));
+        RestAssured.when().get("/oidc/userinfo-endpoint-call-count").then().body(equalTo("0"));
+
+        // Send tokenTwo to tenant-introspection-cache-two again,
+        // the cached entry from tenant two must be reused, no new calls are expected
+        for (int i = 0; i < 3; i++) {
+            RestAssured.given().auth().oauth2(tokenTwo)
+                    .when().get("/tenant-opaque/tenant-introspection-cache-two")
+                    .then()
+                    .statusCode(200)
+                    .body(equalTo(
+                            "tenant-introspection-cache-two:alice:user@gmail.com:userinfo-client-id:client-introspection-cache-two"));
+        }
+        RestAssured.when().get("/oidc/introspection-endpoint-call-count").then().body(equalTo("0"));
+        RestAssured.when().get("/oidc/userinfo-endpoint-call-count").then().body(equalTo("0"));
+
+        RestAssured.when().post("/oidc/disable-introspection").then().body(equalTo("false"));
+        RestAssured.when().get("/cache/size").then().body(equalTo("2"));
+        RestAssured.when().get("/cache/contains-key/tenant-introspection-cache-one/" + tokenOne)
+                .then().body(equalTo("true"));
+        RestAssured.when().get("/cache/contains-key/tenant-introspection-cache-two/" + tokenTwo)
+                .then().body(equalTo("true"));
+    }
+
+    private void verifyOpaqueTokenIntrospectionAndUserInfoAreCached(String token, String tenantPath,
+            String expectedClientId) {
+        for (int i = 0; i < 3; i++) {
+            RestAssured.given().auth().oauth2(token)
+                    .when().get("/tenant-opaque/" + tenantPath)
+                    .then()
+                    .statusCode(200)
+                    .body(equalTo(tenantPath + ":alice:user@gmail.com:userinfo-client-id:" + expectedClientId));
+        }
+        RestAssured.when().get("/oidc/introspection-endpoint-call-count").then().body(equalTo("1"));
+        RestAssured.when().post("/oidc/introspection-endpoint-call-count").then().body(equalTo("0"));
+        RestAssured.when().get("/oidc/userinfo-endpoint-call-count").then().body(equalTo("1"));
+        RestAssured.when().post("/oidc/userinfo-endpoint-call-count").then().body(equalTo("0"));
+    }
+
     private void verifyTokenIntrospectionAndUserInfoAreCached(String token1, int expectedCacheSize) {
         // Each token is unique, each sequence of 3 calls should only result in a single introspection endpoint call
         for (int i = 0; i < 3; i++) {
@@ -809,7 +907,7 @@ public class BearerTokenAuthorizationTest {
         RestAssured.when().post("/oidc/introspection-endpoint-call-count").then().body(equalTo("0"));
 
         // Verify the the opaque token is rejected with 401
-        RestAssured.given().auth().oauth2(getOpaqueAccessTokenFromSimpleOidc())
+        RestAssured.given().auth().oauth2(getOpaqueAccessTokenFromSimpleOidc("client"))
                 .when().get("/tenant-opaque/tenant-oidc-no-opaque-token/api/user")
                 .then()
                 .statusCode(401);
@@ -892,12 +990,12 @@ public class BearerTokenAuthorizationTest {
         RestAssured.when().post("/cache/clear").then().body(equalTo("0"));
 
         // verify introspection scopes are mapped to the StringPermissions
-        RestAssured.given().auth().oauth2(getOpaqueAccessTokenFromSimpleOidc())
+        RestAssured.given().auth().oauth2(getOpaqueAccessTokenFromSimpleOidc("client"))
                 .when().get("/tenant-opaque/tenant-oidc/api/user-permission")
                 .then()
                 .statusCode(200)
                 .body(equalTo("user"));
-        RestAssured.given().auth().oauth2(getOpaqueAccessTokenFromSimpleOidc())
+        RestAssured.given().auth().oauth2(getOpaqueAccessTokenFromSimpleOidc("client"))
                 .when().get("/tenant-opaque/tenant-oidc/api/admin-permission")
                 .then()
                 .statusCode(403);
@@ -909,7 +1007,7 @@ public class BearerTokenAuthorizationTest {
         RestAssured.when().post("/oidc/opaque-token-call-count").then().body(equalTo("0"));
 
         // Successful request with opaque token 2
-        String opaqueToken2 = getOpaqueAccessToken2FromSimpleOidc();
+        String opaqueToken2 = getOpaqueAccessToken2FromSimpleOidc("client");
         RestAssured.given().auth().oauth2(opaqueToken2)
                 .when().get("/tenant-introspection/tenant-introspection-required-claims")
                 .then()
@@ -929,7 +1027,7 @@ public class BearerTokenAuthorizationTest {
     public void testMultipleTokenIntrospectionRequiredClaims() {
         RestAssured.when().post("/oidc/enable-introspection").then().body(equalTo("true"));
         RestAssured.when().post("/oidc/opaque-token-3-call-count").then().body(equalTo("0"));
-        String opaqueToken3 = getOpaqueAccessToken3FromSimpleOidc();
+        String opaqueToken3 = getOpaqueAccessToken3FromSimpleOidc("client");
 
         // Expected to fail now because its introspection does include the expected required claim, but value is "1"
         RestAssured.given().auth().oauth2(opaqueToken3)
@@ -1166,7 +1264,7 @@ public class BearerTokenAuthorizationTest {
         RestAssured.given().get("/oidc-filter/request/custom-bearer-token-auth").then().statusCode(200);
         RestAssured.given().get("/oidc-filter/response/custom-tenant-feature-auth").then().statusCode(200);
 
-        String opaqueToken2 = getOpaqueAccessToken2FromSimpleOidc();
+        String opaqueToken2 = getOpaqueAccessToken2FromSimpleOidc("client");
         RestAssured.given().auth().oauth2(opaqueToken2)
                 .when().get("/tenant-introspection/tenant-introspection-required-claims")
                 .then()
@@ -1179,7 +1277,7 @@ public class BearerTokenAuthorizationTest {
         RestAssured.given().get("/oidc-filter/response/custom-tenant-feature-auth").then().statusCode(200)
                 .body(is(""));
 
-        String opaqueToken3 = getOpaqueAccessToken3FromSimpleOidc();
+        String opaqueToken3 = getOpaqueAccessToken3FromSimpleOidc("client");
         RestAssured.given().auth().oauth2(opaqueToken3)
                 .when().get("/tenant-introspection/tenant-introspection-multiple-required-claims")
                 .then()
@@ -1259,8 +1357,9 @@ public class BearerTokenAuthorizationTest {
         return object.getString("access_token");
     }
 
-    private String getOpaqueAccessTokenFromSimpleOidc() {
-        String json = RestAssured
+    private String getOpaqueAccessTokenFromSimpleOidc(String clientId) {
+        String json = RestAssured.given()
+                .queryParam("client_id", clientId)
                 .when()
                 .post("/oidc/opaque-token")
                 .body().asString();
@@ -1268,8 +1367,9 @@ public class BearerTokenAuthorizationTest {
         return object.getString("access_token");
     }
 
-    private String getOpaqueAccessToken2FromSimpleOidc() {
-        String json = RestAssured
+    private String getOpaqueAccessToken2FromSimpleOidc(String clientId) {
+        String json = RestAssured.given()
+                .queryParam("client_id", clientId)
                 .when()
                 .post("/oidc/opaque-token2")
                 .body().asString();
@@ -1277,8 +1377,9 @@ public class BearerTokenAuthorizationTest {
         return object.getString("access_token");
     }
 
-    private String getOpaqueAccessToken3FromSimpleOidc() {
-        String json = RestAssured
+    private String getOpaqueAccessToken3FromSimpleOidc(String clientId) {
+        String json = RestAssured.given()
+                .queryParam("client_id", clientId)
                 .when()
                 .post("/oidc/opaque-token3")
                 .body().asString();

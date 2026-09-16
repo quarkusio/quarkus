@@ -14,11 +14,16 @@ public abstract class LgtmTestHelper {
 
     protected abstract String grafanaEndpoint();
 
+    protected abstract String prometheusEndpoint();
+
+    protected abstract String tempoEndpoint();
+
     protected void poke(String path) {
         log.info("Testing Grafana ...");
         String response = RestAssured.get(path + "/poke?f=100").body().asString();
         log.info("Response: " + response);
-        GrafanaClient client = new GrafanaClient(grafanaEndpoint(), "admin", "admin");
+        GrafanaClient client = new GrafanaClient(grafanaEndpoint(), prometheusEndpoint(), tempoEndpoint(), "admin",
+                "admin");
 
         Awaitility.setDefaultPollInterval(5, TimeUnit.SECONDS); // reduce load on the server. Default is .1s
 

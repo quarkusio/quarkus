@@ -764,6 +764,7 @@ public final class ValueResolvers {
                         }
                     });
                 }
+                return Results.notFound(context);
             case ListResolver.TAKE:
                 if (context.getParams().size() == 1) {
                     return context.evaluate(context.getParams().get(0)).thenApply(r -> {
@@ -778,6 +779,7 @@ public final class ValueResolvers {
                         }
                     });
                 }
+                return Results.notFound(context);
             case ListResolver.TAKE_LAST:
                 if (context.getParams().size() == 1) {
                     return context.evaluate(context.getParams().get(0)).thenApply(r -> {
@@ -792,6 +794,7 @@ public final class ValueResolvers {
                         }
                     });
                 }
+                return Results.notFound(context);
             case ListResolver.FIRST:
                 if (list.isEmpty()) {
                     throw new NoSuchElementException();

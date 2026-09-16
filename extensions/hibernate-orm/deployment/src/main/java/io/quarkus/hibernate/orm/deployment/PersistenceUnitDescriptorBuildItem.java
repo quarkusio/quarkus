@@ -21,20 +21,17 @@ public final class PersistenceUnitDescriptorBuildItem extends MultiBuildItem {
     private final QuarkusPersistenceUnitDescriptor descriptor;
 
     private final RecordedConfig config;
-    private final String multiTenancySchemaDataSource;
     private final List<RecordableXmlMapping> xmlMappings;
     private final boolean fromPersistenceXml;
     private final boolean isHibernateValidatorPresent;
 
     public PersistenceUnitDescriptorBuildItem(QuarkusPersistenceUnitDescriptor descriptor,
             RecordedConfig config,
-            String multiTenancySchemaDataSource,
             List<RecordableXmlMapping> xmlMappings,
             boolean fromPersistenceXml,
             boolean isHibernateValidatorPresent) {
         this.descriptor = descriptor;
         this.config = config;
-        this.multiTenancySchemaDataSource = multiTenancySchemaDataSource;
         this.xmlMappings = xmlMappings;
         this.fromPersistenceXml = fromPersistenceXml;
         this.isHibernateValidatorPresent = isHibernateValidatorPresent;
@@ -54,10 +51,6 @@ public final class PersistenceUnitDescriptorBuildItem extends MultiBuildItem {
 
     public RecordedConfig getConfig() {
         return config;
-    }
-
-    public String getMultiTenancySchemaDataSource() {
-        return multiTenancySchemaDataSource;
     }
 
     public boolean hasXmlMappings() {

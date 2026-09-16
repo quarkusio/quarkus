@@ -1,5 +1,3 @@
-import io.quarkus.deployment.util.ExecUtil
-
 import java.nio.file.Files;
 import java.io.File;
 import java.util.concurrent.ThreadLocalRandom
@@ -11,14 +9,14 @@ if (Runtime.version().feature() < 25) {
 }
 
 try {
-    ExecUtil.execWithSystemLogging("docker", "version", "--format", "'{{.Server.Version}}'")
+    execWithSystemLogging("docker", "version", "--format", "'{{.Server.Version}}'")
 } catch (Exception ignored) {
     return
 }
 
 String baseImage = "${System.getProperty("user.name")}/container-build-docker-aot:0.1-SNAPSHOT"
 String image = "$baseImage-aot"
-assert ExecUtil.execWithSystemLogging("docker", "images", image)
+assert execWithSystemLogging("docker", "images", image)
 
 String containerName = "container-build-docker-aot-" + ThreadLocalRandom.current().nextInt(10000)
 int maxTimesToCheck = 10
@@ -59,8 +57,8 @@ try {
     assert logs.contains("-XX:AOTCache")
     assert !logs.contains("-Xlog:aot") // this is what is printed when there is an error
 } finally {
-    ExecUtil.execWithSystemLogging("docker", "rmi", "-f", image)
-    ExecUtil.execWithSystemLogging("docker", "rmi", "-f", baseImage)
+    execWithSystemLogging("docker", "rmi", "-f", image)
+    execWithSystemLogging("docker", "rmi", "-f", baseImage)
 }
 
 
@@ -68,3 +66,8 @@ try {
 
 
 
+
+boolean execWithSystemLogging(String... command) {
+    def process = new ProcessBuilder(command).inheritIO().start()
+    return process.waitFor() == 0
+}

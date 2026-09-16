@@ -30,11 +30,11 @@ public class TransactionSessions {
     Instance<RequestScopedStatelessSessionHolder> requestScopedStatelessSession;
 
     private final ConcurrentMap<String, TransactionScopedSession> sessions;
-    private final ConcurrentMap<String, TransactionScopedStatelessSession> staleSessions;
+    private final ConcurrentMap<String, TransactionScopedStatelessSession> statelessSessions;
 
     public TransactionSessions() {
         this.sessions = new ConcurrentHashMap<>();
-        this.staleSessions = new ConcurrentHashMap<>();
+        this.statelessSessions = new ConcurrentHashMap<>();
     }
 
     public Session getSession(String unitName) {
@@ -49,14 +49,15 @@ public class TransactionSessions {
     }
 
     public StatelessSession getStatelessSession(String unitName) {
-        TransactionScopedStatelessSession session = staleSessions.get(unitName);
+        TransactionScopedStatelessSession session = statelessSessions.get(unitName);
         if (session != null) {
             return session;
         }
-        return staleSessions.computeIfAbsent(unitName, (un) -> new TransactionScopedStatelessSession(
+        return statelessSessions.computeIfAbsent(unitName, (un) -> new TransactionScopedStatelessSession(
                 getTransactionManager(), getTransactionSynchronizationRegistry(),
                 jpaConfig.getEntityManagerFactory(un, false).unwrap(SessionFactory.class), un,
-                jpaConfig.getRequestScopedSessionEnabled(), requestScopedStatelessSession));
+                jpaConfig.getRequestScopedSessionEnabled(), jpaConfig.getRequestScopedStatelessSessionAllowWrite(),
+                requestScopedStatelessSession));
     }
 
     private TransactionManager getTransactionManager() {

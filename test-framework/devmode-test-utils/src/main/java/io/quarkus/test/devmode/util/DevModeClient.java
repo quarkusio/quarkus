@@ -152,7 +152,7 @@ public class DevModeClient {
     }
 
     public String getHttpResponse(String path, boolean allowError, Supplier<String> brokenReason) {
-        return getHttpResponse(path, allowError, brokenReason, 1, TimeUnit.MINUTES);
+        return getHttpResponse(path, allowError, brokenReason, DEFAULT_TIMEOUT, TimeUnit.MINUTES);
     }
 
     public String getHttpResponse(String path, boolean allowError, Supplier<String> brokenReason, long timeout,

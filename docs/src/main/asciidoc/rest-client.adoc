@@ -242,12 +242,14 @@ package org.acme.rest.client;
 
 import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 import org.jboss.resteasy.reactive.RestForm;
+import org.jboss.resteasy.reactive.Separator;
 
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.FormParam;
 import jakarta.ws.rs.core.MultivaluedMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -271,8 +273,18 @@ public interface ExtensionsService {
     @Consumes(MediaType.APPLICATION_FORM_URLENCODED)
     Set<Extension> postFilters(@RestForm MultivaluedMap<String, String> filters);
 
+    @POST
+    @Consumes(MediaType.APPLICATION_FORM_URLENCODED)
+    Set<Extension> postNames(@RestForm @Separator(",") List<String> names); <1>
+
 }
 ----
+<1> Just like for query parameters, `@Separator` lets you specify a custom delimiter between the values of a collection-valued form parameter.
+In this example, the request body will be `names=first,second` instead of `names=first&names=second`.
+
+By default, multiple values of the same form parameter are sent as repeated `name=value` pairs.
+This can be changed for all the form parameters of a client using the `quarkus.rest-client.form-param-style` configuration property
+(or `quarkus.rest-client."config-key".form-param-style` for a specific client).
 
 ==== Using @ClientFormParam
 
@@ -401,12 +413,45 @@ When the `url` parameter is non-null, it will override the base URL that is conf
 The REST Client is capable of sending arbitrarily large HTTP bodies without buffering the contents in memory, if one of the following types is used:
 
 * `InputStream`
-* `Multi<io.vertx.mutiny.core.buffer.Buffer>`
+* `Multi<byte[]>`
+* `Multi<io.vertx.core.buffer.Buffer>`
+
+The `Multi` variants are consumed lazily, so a large body can be streamed from another source without buffering it in memory.
+For example, a `Multi<byte[]>` returned by another REST Client method can be passed directly as the request body.
 
 Furthermore, the client can also send arbitrarily large files if one of the following types is used:
 
 * `File`
 * `Path`
+
+=== Receiving large payloads
+
+Symmetrically, the REST Client can receive arbitrarily large HTTP bodies without buffering the contents in memory, if the method returns one of the following types:
+
+* `InputStream`, read on a worker thread
+* `Multi<byte[]>`, each item being a chunk of the body as it is received
+
+[source,java]
+----
+package org.acme.rest.client;
+
+import io.smallrye.mutiny.Multi;
+import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
+
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+
+@Path("/files")
+@RegisterRestClient
+public interface FilesService {
+
+    @GET
+    @Path("/large")
+    Multi<byte[]> download();
+}
+----
+
+The body is read according to the demand of the subscriber of the `Multi`: a subscriber that consumes the chunks slowly, for example by writing them to disk one at a time, slows down the reading of the response instead of causing its remaining content to accumulate in memory.
 
 === Getting other response properties
 
@@ -489,9 +534,6 @@ public class ExtensionsResource {
     }
 }
 ----
-
-There are two interesting parts in this listing:
-
 <1> the client stub is injected with the `@RestClient` annotation instead of the usual CDI `@Inject`
 <2> `org.jboss.resteasy.reactive.RestResponse` used as effective way of getting response properties via RestResponse directly from RestClient, 
 as described in <<Using RestResponse>>
@@ -1842,7 +1884,7 @@ In a similar fashion if the received server multipart request is known and looks
 
 [source, java]
 ----
-public class Request { // <1>
+public class Request {
 
   @RestForm("files")
   @PartType(MediaType.APPLICATION_OCTET_STREAM)
@@ -1938,9 +1980,6 @@ public interface CRMService {
     }
 }
 ----
-
-The code uses the following pieces:
-
 <1>  `@ClientHeaderParam(name = "Content-Type", value = "{calculateContentType}")` which ensures that the `Content-Type` header is created by calling the interface's `calculateContentType` default method.
 <2> The aforementioned parameter needs to be annotated with `@NotBody` because it is only used to aid the construction of HTTP headers.
 <3> `context.methodParameters().get(1).value()` which allows the `calculateContentType` method to obtain the proper method parameter passed to the REST Client method.
@@ -1957,10 +1996,10 @@ An example configuration could be:
 [source,properties]
 ----
 # global configuration is used for all clients
-quarkus.rest-client.enable-compression=true
+quarkus.rest-client.enable-response-decompression=true
 
 # per-client configuration overrides the global settings for a specific client
-quarkus.rest-client.my-client.enable-compression=true
+quarkus.rest-client.my-client.enable-response-decompression=true
 ----
 
 The REST Client falls back onto the Quarkus wide `quarkus.http.enable-compression` configuration property (which defaults to `false`) if no REST Client specific property is set.

@@ -1,6 +1,5 @@
 package io.quarkus.oidc.common.runtime.config;
 
-import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Optional;
 import java.util.OptionalInt;
@@ -110,129 +109,6 @@ public interface OidcCommonConfig {
          * The default TLS configuration is <strong>not</strong> used by default.
          */
         Optional<String> tlsConfigurationName();
-
-        enum Verification {
-            /**
-             * Certificates are validated and hostname verification is enabled. This is the default value.
-             */
-            REQUIRED,
-
-            /**
-             * Certificates are validated but hostname verification is disabled.
-             */
-            CERTIFICATE_VALIDATION,
-
-            /**
-             * All certificates are trusted and hostname verification is disabled.
-             */
-            NONE
-        }
-
-        /**
-         * Certificate validation and hostname verification, which can be one of the following {@link Verification}
-         * values.
-         * Default is `required`.
-         *
-         * @deprecated Use the TLS registry instead.
-         */
-        @Deprecated
-        Optional<Verification> verification();
-
-        /**
-         * An optional keystore that holds the certificate information instead of specifying separate files.
-         *
-         * @deprecated Use the TLS registry instead.
-         */
-        @Deprecated
-        Optional<Path> keyStoreFile();
-
-        /**
-         * The type of the keystore file. If not given, the type is automatically detected based on the file name.
-         *
-         * @deprecated Use the TLS registry instead.
-         */
-        @Deprecated
-        Optional<String> keyStoreFileType();
-
-        /**
-         * The provider of the keystore file. If not given, the provider is automatically detected based on the
-         * keystore file type.
-         *
-         * @deprecated Use the TLS registry instead.
-         */
-        @Deprecated
-        Optional<String> keyStoreProvider();
-
-        /**
-         * The password of the keystore file. If not given, the default value, `password`, is used.
-         *
-         * @deprecated Use the TLS registry instead.
-         */
-        @Deprecated
-        Optional<String> keyStorePassword();
-
-        /**
-         * The alias of a specific key in the keystore.
-         * When SNI is disabled, if the keystore contains multiple
-         * keys and no alias is specified, the behavior is undefined.
-         *
-         * @deprecated Use the TLS registry instead.
-         */
-        @Deprecated
-        Optional<String> keyStoreKeyAlias();
-
-        /**
-         * The password of the key, if it is different from the {@link #keyStorePassword}.
-         *
-         * @deprecated Use the TLS registry instead.
-         */
-        @Deprecated
-        Optional<String> keyStoreKeyPassword();
-
-        /**
-         * The truststore that holds the certificate information of the certificates to trust.
-         *
-         * @deprecated Use the TLS registry instead.
-         */
-        @Deprecated
-        Optional<Path> trustStoreFile();
-
-        /**
-         * The password of the truststore file.
-         *
-         * @deprecated Use the TLS registry instead.
-         */
-        @Deprecated
-        Optional<String> trustStorePassword();
-
-        /**
-         * The alias of the truststore certificate.
-         *
-         * @deprecated Use the TLS registry instead.
-         */
-        @Deprecated
-        Optional<String> trustStoreCertAlias();
-
-        /**
-         * The type of the truststore file.
-         * If not given, the type is automatically detected
-         * based on the file name.
-         *
-         * @deprecated Use the TLS registry instead.
-         */
-        @Deprecated
-        Optional<String> trustStoreFileType();
-
-        /**
-         * The provider of the truststore file.
-         * If not given, the provider is automatically detected
-         * based on the truststore file type.
-         *
-         * @deprecated Use the TLS registry instead.
-         */
-        @Deprecated
-        Optional<String> trustStoreProvider();
-
     }
 
     interface Proxy {
@@ -247,41 +123,5 @@ public interface OidcCommonConfig {
          * The default proxy configuration is <strong>not</strong> used by default.
          */
         Optional<String> proxyConfigurationName();
-
-        /**
-         * The host name or IP address of the Proxy.<br/>
-         * Note: If the OIDC adapter requires a Proxy to talk with the OIDC server (Provider),
-         * set this value to enable the usage of a Proxy.
-         *
-         * @deprecated Use the proxy registry instead.
-         */
-        @Deprecated(since = "3.31", forRemoval = true)
-        Optional<String> host();
-
-        /**
-         * The port number of the Proxy. The default value is `80`.
-         *
-         * @deprecated Use the proxy registry instead.
-         */
-        @Deprecated(since = "3.31", forRemoval = true)
-        @WithDefault("80")
-        int port();
-
-        /**
-         * The username, if the Proxy needs authentication.
-         *
-         * @deprecated Use the proxy registry instead.
-         */
-        @Deprecated(since = "3.31", forRemoval = true)
-        Optional<String> username();
-
-        /**
-         * The password, if the Proxy needs authentication.
-         *
-         * @deprecated Use the proxy registry instead.
-         */
-        @Deprecated(since = "3.31", forRemoval = true)
-        Optional<String> password();
-
     }
 }

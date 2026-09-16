@@ -33,11 +33,28 @@ public interface HibernateOrmRuntimeConfig {
      * When enabled, the corresponding sessions will be read-only.
      *
      * Defaults to enabled for backwards compatibility, but disabling this is recommended,
-     * to avoid inconsistent resulsts caused by queries running outside of transactions.
+     * to avoid inconsistent results caused by queries running outside of transactions.
      */
     @WithName("request-scoped.enabled")
     @WithDefault("true")
     boolean requestScopedSessionEnabled();
+
+    /**
+     * Enable or disable write operations on a Hibernate ORM `StatelessSession`
+     * *when no transaction is active* but a request scope is.
+     *
+     * When disabled, no mutation operations will be allowed outside of active transactions.
+     *
+     * Defaults to 'false' but, for backwards compatibility, it can be set to 'true' if you have valid reasons
+     * to not use transactions.
+     *
+     * @deprecated This setting will be removed in a future version, and then allowing writes outside of transactions
+     *             will no longer be possible.
+     */
+    @WithName("request-scoped.stateless-session.allow-write")
+    @WithDefault("false")
+    @Deprecated
+    boolean requestScopedStatelessSessionAllowWrite();
 
     static String extensionPropertyKey(String radical) {
         return "quarkus.hibernate-orm." + radical;

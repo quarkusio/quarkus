@@ -9,7 +9,6 @@ import io.quarkus.runtime.annotations.ConfigDocDefault;
 import io.quarkus.runtime.annotations.ConfigDocMapKey;
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.smallrye.config.WithDefault;
-import io.smallrye.config.WithName;
 
 @ConfigGroup
 public interface InfinispanDevServicesConfig {
@@ -105,22 +104,6 @@ public interface InfinispanDevServicesConfig {
      * https://github.com/infinispan/infinispan-simple-tutorials/blob/main/infinispan-remote/cross-site-replication/docker-compose/
      */
     OptionalInt mcastPort();
-
-    /**
-     * Runs the Infinispan Server container with tracing enabled. Traces are disabled by default
-     */
-    @WithName("tracing.enabled")
-    @WithDefault("false")
-    @Deprecated(forRemoval = true)
-    Optional<Boolean> tracing();
-
-    /**
-     * Sets Infinispan Server otlp endpoint. Default value is http://localhost:4317
-     */
-    @WithName("tracing.exporter.otlp.endpoint")
-    @WithDefault("http://localhost:4317")
-    @Deprecated(forRemoval = true)
-    Optional<String> exporterOtlpEndpoint();
 
     /**
      * Environment variables that are passed to the container.

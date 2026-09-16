@@ -203,6 +203,7 @@ public class JaxrsClientReactiveProcessor {
     private static final String MULTI_BYTE_SIGNATURE = "L" + Multi.class.getName().replace('.', '/') + "<Ljava/lang/Byte;>;";
     private static final String MULTI_BUFFER_SIGNATURE = "L" + Multi.class.getName().replace('.', '/')
             + "<Lio/vertx/core/buffer/Buffer;>;";
+    private static final String MULTI_BYTE_ARRAY_SIGNATURE = "L" + Multi.class.getName().replace('.', '/') + "<[B>;";
     private static final String FILE_SIGNATURE = "L" + File.class.getName().replace('.', '/') + ";";
     private static final String PATH_SIGNATURE = "L" + java.nio.file.Path.class.getName().replace('.', '/') + ";";
     private static final String BUFFER_SIGNATURE = "L" + Buffer.class.getName().replace('.', '/') + ";";
@@ -1172,9 +1173,10 @@ public class JaxrsClientReactiveProcessor {
                                     getAnnotationsFromArray(methodCreator, methodParamAnnotationsField, paramIdx));
                         } else if (param.parameterType == ParameterType.BODY) {
                             if (param.declaredType.equals(Multi.class.getName())) {
-                                if (!param.signature.equals(MULTI_BUFFER_SIGNATURE)) {
+                                if (!param.signature.equals(MULTI_BUFFER_SIGNATURE)
+                                        && !param.signature.equals(MULTI_BYTE_ARRAY_SIGNATURE)) {
                                     throw new IllegalArgumentException(
-                                            "When using Multi as body parameter only Multi<io.vertx.core.buffer.Buffer> is supported");
+                                            "When using Multi as body parameter only Multi<io.vertx.core.buffer.Buffer> and Multi<byte[]> are supported");
                                 }
                             }
 
@@ -1248,7 +1250,7 @@ public class JaxrsClientReactiveProcessor {
                                     getGenericTypeFromArray(methodCreator, methodGenericParametersField, paramIdx),
                                     getAnnotationsFromArray(methodCreator, methodParamAnnotationsField, paramIdx),
                                     multipart,
-                                    param.mimeType, param.partFileName,
+                                    param.mimeType, param.partFileName, param.separator,
                                     jandexMethod.declaringClass().name() + "." + jandexMethod.name());
                         }
                     }
@@ -3118,7 +3120,7 @@ public class JaxrsClientReactiveProcessor {
                             formParams,
                             getGenericTypeFromParameter(creator, beanParamDescriptorField, item.fieldName()),
                             getAnnotationsFromParameter(creator, beanParamDescriptorField, item.fieldName()),
-                            multipart, formParam.getMimeType(), formParam.getFileName(),
+                            multipart, formParam.getMimeType(), formParam.getFileName(), null,
                             beanParamClass + "." + formParam.getSourceName());
                     break;
                 default:
@@ -3556,7 +3558,7 @@ public class JaxrsClientReactiveProcessor {
             String restClientInterfaceClassName, ResultHandle client, AssignableResultHandle formParams,
             ResultHandle genericType,
             ResultHandle parameterAnnotations, boolean multipart,
-            String mimeType, String partFilename, String errorLocation) {
+            String mimeType, String partFilename, String separator, String errorLocation) {
         if (multipart) {
             handleMultipartField(index, paramName, mimeType, partFilename, parameterType, parameterSignature,
                     formParamHandle,
@@ -3583,7 +3585,8 @@ public class JaxrsClientReactiveProcessor {
                         MethodDescriptor.ofMethod(RestClientBase.class, "convertParamArray", Object[].class, Object[].class,
                                 Class.class, java.lang.reflect.Type.class, Annotation[].class, String.class),
                         client, paramArray, creator.loadClassFromTCCL(componentType), genericType,
-                        creator.newArray(Annotation.class, 0), creator.loadNull());
+                        creator.newArray(Annotation.class, 0),
+                        separator == null ? creator.loadNull() : creator.load(separator));
                 creator.invokeInterfaceMethod(MULTIVALUED_MAP_ADD_ALL, formParams,
                         creator.load(paramName), convertedParamArray);
             } else if (isMap(parameterType, index)) {

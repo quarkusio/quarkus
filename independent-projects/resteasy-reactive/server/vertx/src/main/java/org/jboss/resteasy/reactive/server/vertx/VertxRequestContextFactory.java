@@ -12,8 +12,8 @@ public class VertxRequestContextFactory implements RequestContextFactory {
     @Override
     public ResteasyReactiveRequestContext createContext(Deployment deployment,
             Object context, ThreadSetupAction requestContext,
-            ServerRestHandler[] handlerChain, ServerRestHandler[] abortHandlerChain) {
+            ServerRestHandler[] handlerChain, byte[] handlerKinds, ServerRestHandler[] abortHandlerChain) {
         return new VertxResteasyReactiveRequestContext(deployment, (RoutingContext) context,
-                requestContext, handlerChain, abortHandlerChain, null);
+                requestContext, handlerChain, handlerKinds, abortHandlerChain, null);
     }
 }

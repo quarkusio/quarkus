@@ -18,7 +18,6 @@ public class AgroalMetricsOnlyTestCase {
     @RegisterExtension
     static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .overrideConfigKey("quarkus.otel.enabled", "false")
-            .overrideConfigKey("quarkus.datasource.db-kind", "h2")
             .overrideConfigKey("quarkus.datasource.metrics.enabled", "true")
             .overrideRuntimeConfigKey("quarkus.datasource.username", "username-named");
 

@@ -81,6 +81,7 @@ import io.quarkus.arc.deployment.UnremovableBeanBuildItem.BeanTypeExclusion;
 import io.quarkus.arc.deployment.ValidationPhaseBuildItem.ValidationErrorBuildItem;
 import io.quarkus.arc.deployment.staticmethods.InterceptedStaticMethodsTransformersRegisteredBuildItem;
 import io.quarkus.arc.processor.DotNames;
+import io.quarkus.bootstrap.workspace.WorkspaceModule;
 import io.quarkus.builder.BuildException;
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
 import io.quarkus.datasource.common.runtime.DatabaseKind;
@@ -119,6 +120,7 @@ import io.quarkus.deployment.builditem.nativeimage.ReflectiveMethodBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.deployment.index.LazyIndexer;
 import io.quarkus.deployment.pkg.AotJarEnabled;
+import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
 import io.quarkus.deployment.pkg.steps.NativeOrNativeSourcesBuild;
 import io.quarkus.deployment.recording.RecorderContext;
 import io.quarkus.deployment.util.IoUtil;
@@ -1071,7 +1073,7 @@ public final class HibernateOrmProcessor {
             JpaModelPerPersistenceUnitBuildItem jpaModel,
             List<JdbcDataSourceBuildItem> jdbcDataSources,
             ApplicationArchivesBuildItem applicationArchivesBuildItem,
-            LaunchModeBuildItem launchMode,
+            CurateOutcomeBuildItem curateOutcome,
             Capabilities capabilities,
             List<SqlLoadScriptDefaultBuildItem> additionalSqlLoadScriptDefaults,
             BuildProducer<NativeImageResourceBuildItem> nativeImageResources,
@@ -1079,6 +1081,7 @@ public final class HibernateOrmProcessor {
             BuildProducer<PersistenceUnitDescriptorBuildItem> persistenceUnitDescriptors,
             BuildProducer<ReflectiveMethodBuildItem> reflectiveMethods,
             List<DatabaseKindDialectBuildItem> dbKindMetadataBuildItems) {
+        WorkspaceModule applicationModule = curateOutcome.getApplicationModel().getApplicationModule();
         for (PersistenceUnitDefinitionBuildItem puDefinition : persistenceUnitDefinitions) {
             if (puDefinition.getParadigm() != ProgrammingParadigm.BLOCKING) {
                 continue;
@@ -1089,7 +1092,7 @@ public final class HibernateOrmProcessor {
             }
             buildBlockingPersistenceUnitFromConfig(
                     hibernateOrmConfig, puDefinition, model,
-                    jdbcDataSources, applicationArchivesBuildItem, launchMode.getLaunchMode(), capabilities,
+                    jdbcDataSources, applicationArchivesBuildItem, applicationModule, capabilities,
                     additionalSqlLoadScriptDefaults,
                     nativeImageResources, hotDeploymentWatchedFiles, persistenceUnitDescriptors,
                     reflectiveMethods, dbKindMetadataBuildItems);
@@ -1102,7 +1105,7 @@ public final class HibernateOrmProcessor {
             JpaPersistenceUnitModel model,
             List<JdbcDataSourceBuildItem> jdbcDataSources,
             ApplicationArchivesBuildItem applicationArchivesBuildItem,
-            LaunchMode launchMode,
+            WorkspaceModule applicationModule,
             Capabilities capabilities,
             List<SqlLoadScriptDefaultBuildItem> additionalSqlLoadScriptDefaults,
             BuildProducer<NativeImageResourceBuildItem> nativeImageResources,
@@ -1161,8 +1164,8 @@ public final class HibernateOrmProcessor {
         }
 
         if (additionalPuConfig.isEmpty()) {
-            configureInitScripts(persistenceUnitName, persistenceUnitConfig, applicationArchivesBuildItem, launchMode,
-                    additionalSqlLoadScriptDefaults,
+            configureInitScripts(persistenceUnitName, persistenceUnitConfig, applicationArchivesBuildItem,
+                    applicationModule, additionalSqlLoadScriptDefaults,
                     nativeImageResources, hotDeploymentWatchedFiles, descriptor);
         }
 

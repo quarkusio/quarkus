@@ -1,4 +1,4 @@
-package io.quarkus.hibernate.orm.schema_management;
+package io.quarkus.hibernate.orm.sql_load_script;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -11,26 +11,28 @@ import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.test.QuarkusExtensionTest;
 
 /**
- * A given file cannot be both a schema init script and a data init script.
+ * The deprecated "sql-load-script" property cannot be combined with the schema init script either.
  */
-public class SchemaInitScriptAndDataInitScriptOverlapTestCase {
+public class DeprecatedSqlLoadScriptAndSchemaInitScriptTestCase {
+
     @RegisterExtension
     static QuarkusExtensionTest runner = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(MyEntity.class)
+                    .addAsResource("import.sql")
                     .addAsResource("schema-init.sql"))
             .withConfigurationResource("application.properties")
+            .overrideConfigKey("quarkus.hibernate-orm.sql-load-script", "import.sql")
             .overrideConfigKey("quarkus.hibernate-orm.schema-management.init-script", "schema-init.sql")
-            .overrideConfigKey("quarkus.hibernate-orm.data-management.init-script", "schema-init.sql")
             .assertException(t -> assertThat(t)
                     .isInstanceOf(ConfigurationException.class)
                     .hasMessageContainingAll(
-                            "'schema-init.sql' is referenced in both 'quarkus.hibernate-orm.data-management.init-script'"
-                                    + " and 'quarkus.hibernate-orm.schema-management.init-script'.",
-                            "A file must either load data or complete the schema, not both."));
+                            "'quarkus.hibernate-orm.sql-load-script' is deprecated and cannot be used together with"
+                                    + " 'quarkus.hibernate-orm.data-management.init-script' or 'quarkus.hibernate-orm.schema-management.init-script'.",
+                            "Remove it and only use those properties."));
 
     @Test
-    public void testOverlap() {
+    public void testBothPropertiesSet() {
         // deployment exception should happen first
         Assertions.fail();
     }

@@ -26,8 +26,9 @@ public class DeprecatedSqlLoadScriptAndDataInitScriptTestCase {
             .assertException(t -> assertThat(t)
                     .isInstanceOf(ConfigurationException.class)
                     .hasMessageContainingAll(
-                            "Both 'quarkus.hibernate-orm.data-management.init-script' and 'quarkus.hibernate-orm.sql-load-script' are set.",
-                            "'quarkus.hibernate-orm.sql-load-script' is deprecated: remove it and only use 'quarkus.hibernate-orm.data-management.init-script'."));
+                            "'quarkus.hibernate-orm.sql-load-script' is deprecated and cannot be used together with"
+                                    + " 'quarkus.hibernate-orm.data-management.init-script' or 'quarkus.hibernate-orm.schema-management.init-script'.",
+                            "Remove it and only use those properties."));
 
     @Test
     public void testBothPropertiesSet() {

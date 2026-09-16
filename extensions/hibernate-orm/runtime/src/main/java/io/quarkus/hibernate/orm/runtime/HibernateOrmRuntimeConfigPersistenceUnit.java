@@ -251,23 +251,30 @@ public interface HibernateOrmRuntimeConfigPersistenceUnit {
          * Select whether the data init script is executed when Hibernate ORM starts.
          *
          * The data init script is configured with `quarkus.hibernate-orm.data-management.init-script`
-         * and defaults to `data.sql` in dev and test modes (`no-file` otherwise).
+         * and defaults to `data.sql` if it exists in the classpath.
          *
-         * With `create` (the default in dev and test modes), the script is executed regardless of how the database schema is managed:
+         * With `create`, the script is executed regardless of how the database schema is managed:
          *
          * * if `quarkus.hibernate-orm.schema-management.strategy` creates the schema,
          *   the script is executed right after the schema has been created;
          * * otherwise (`none`, `update`, `validate`), for example when the schema is managed by Flyway or Liquibase,
          *   the script is executed once Hibernate ORM has started.
          *
-         * With `none` (the default in other modes, e.g. in production), the script is never executed.
+         * This is the default in dev and test modes, and whenever Hibernate ORM creates the schema.
+         *
+         * With `none` (the default in other cases, e.g. in production with a schema managed by Flyway or Liquibase),
+         * the script is not executed on start.
+         * It is still passed to Hibernate ORM, so that it can be executed on demand through the `SchemaManager`
+         * (`truncate()`, which reimports the data, or Hibernate ORM's `populate()`),
+         * unless `quarkus.hibernate-orm.schema-management.strategy` creates the schema,
+         * in which case Hibernate ORM would execute it on start no matter what.
          *
          * Accepted values: `none`, `create`.
          *
          * @asciidoclet
          */
         // @formatter:on
-        @ConfigDocDefault("`create` in dev and test modes; `none` otherwise")
+        @ConfigDocDefault("`create` in dev and test modes, and when Hibernate ORM creates the schema; `none` otherwise")
         Optional<DataManagementStrategy> strategy();
 
     }

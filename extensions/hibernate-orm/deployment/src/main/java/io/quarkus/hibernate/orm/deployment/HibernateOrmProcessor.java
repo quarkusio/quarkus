@@ -594,19 +594,24 @@ public final class HibernateOrmProcessor {
         }
     }
 
+    @SuppressWarnings("deprecation")
     @BuildStep
     public void defineJpaModel(
             JpaModelIndexBuildItem indexBuildItem,
             BuildProducer<JpaModelBuildItem> domainObjectsProducer,
-            List<IgnorableNonIndexedClasses> ignorableNonIndexedClassesBuildItems,
+            List<io.quarkus.hibernate.orm.deployment.spi.IgnorableNonIndexedClasses> ignorableNonIndexedClassesBuildItems,
+            List<IgnorableNonIndexedClasses> deprecatedIgnorableNonIndexedClassesBuildItems,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<HotDeploymentWatchedFileBuildItem> hotDeploymentWatchedFiles,
             List<JpaModelPersistenceUnitContributionBuildItem> jpaModelPuContributions) throws BuildException {
 
         Set<String> ignorableNonIndexedClasses = Collections.emptySet();
-        if (!ignorableNonIndexedClassesBuildItems.isEmpty()) {
+        if (!ignorableNonIndexedClassesBuildItems.isEmpty() || !deprecatedIgnorableNonIndexedClassesBuildItems.isEmpty()) {
             ignorableNonIndexedClasses = new HashSet<>();
-            for (IgnorableNonIndexedClasses buildItem : ignorableNonIndexedClassesBuildItems) {
+            for (io.quarkus.hibernate.orm.deployment.spi.IgnorableNonIndexedClasses buildItem : ignorableNonIndexedClassesBuildItems) {
+                ignorableNonIndexedClasses.addAll(buildItem.getClasses());
+            }
+            for (IgnorableNonIndexedClasses buildItem : deprecatedIgnorableNonIndexedClassesBuildItems) {
                 ignorableNonIndexedClasses.addAll(buildItem.getClasses());
             }
         }
@@ -837,8 +842,11 @@ public final class HibernateOrmProcessor {
         return new HibernateModelClassCandidatesForFieldAccessBuildItem(jpaModel.getManagedClassNames());
     }
 
+    @SuppressWarnings("deprecation")
     @BuildStep
-    public void build(BuildProducer<JpaModelPersistenceUnitMappingBuildItem> jpaModelPersistenceUnitMapping,
+    public void build(
+            BuildProducer<io.quarkus.hibernate.orm.deployment.spi.JpaModelPersistenceUnitMappingBuildItem> jpaModelPersistenceUnitMapping,
+            BuildProducer<JpaModelPersistenceUnitMappingBuildItem> deprecatedJpaModelPersistenceUnitMapping,
             List<PersistenceUnitDescriptorBuildItem> descriptors) throws Exception {
         if (descriptors.isEmpty()) {
             return;
@@ -858,7 +866,10 @@ public final class HibernateOrmProcessor {
             }
         }
 
-        jpaModelPersistenceUnitMapping
+        jpaModelPersistenceUnitMapping.produce(
+                new io.quarkus.hibernate.orm.deployment.spi.JpaModelPersistenceUnitMappingBuildItem(
+                        entityPersistenceUnitMapping, incomplete));
+        deprecatedJpaModelPersistenceUnitMapping
                 .produce(new JpaModelPersistenceUnitMappingBuildItem(entityPersistenceUnitMapping, incomplete));
     }
 

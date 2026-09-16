@@ -83,13 +83,10 @@ public class GrpcDuplicatedContextGrpcInterceptor implements ServerInterceptor, 
                             super.close(status, trailers);
                         } finally {
                             if (isDuplicated) {
-                                Context currentDc = Vertx.currentContext();
-                                if (currentDc != null) {
-                                    Runnable cleanup = GrpcContextLocalsProvider.GRPC_CONTEXT_CLEANUP_LOCAL.get(currentDc);
-                                    if (cleanup != null) {
-                                        GrpcContextLocalsProvider.GRPC_CONTEXT_CLEANUP_LOCAL.remove(currentDc);
-                                        cleanup.run();
-                                    }
+                                Runnable cleanup = GrpcContextLocalsProvider.GRPC_CONTEXT_CLEANUP_LOCAL.get(dc);
+                                if (cleanup != null) {
+                                    GrpcContextLocalsProvider.GRPC_CONTEXT_CLEANUP_LOCAL.remove(dc);
+                                    cleanup.run();
                                 }
                             }
                         }

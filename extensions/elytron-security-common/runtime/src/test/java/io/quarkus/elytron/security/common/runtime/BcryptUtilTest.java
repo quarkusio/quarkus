@@ -1,8 +1,10 @@
 package io.quarkus.elytron.security.common.runtime;
 
+import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.Security;
 import java.security.spec.InvalidKeySpecException;
+import java.util.List;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -52,5 +54,57 @@ public class BcryptUtilTest {
         String testPassword = "fubar";
         String testPasswordHash = BcryptUtil.bcryptHash(testPassword);
         Assertions.assertFalse(BcryptUtil.matches("fubar2", testPasswordHash));
+    }
+
+    @Test
+    public void testMatchesAcceptsTheSupportedPrefixes() {
+        String bcrypt = BcryptUtil.bcryptHash("fubar");
+        for (String prefix : List.of("$2$", "$2a$", "$2x$", "$2y$")) {
+            Assertions.assertTrue(BcryptUtil.matches("fubar", prefix + bcrypt.substring(4)), prefix);
+        }
+    }
+
+    @Test
+    public void testMatchesRejectsAHashThatIsNotModularCryptFormat() {
+        IllegalArgumentException e = Assertions.assertThrows(IllegalArgumentException.class,
+                () -> BcryptUtil.matches("fubar", "not-a-hash"));
+        assertInvalidHashMessage(e, "not-a-hash");
+        Assertions.assertInstanceOf(InvalidKeySpecException.class, e.getCause());
+        Assertions.assertTrue(e.getMessage().contains("ELY08003"), e.getMessage());
+    }
+
+    @Test
+    public void testMatchesRejectsATruncatedBcryptHash() {
+        IllegalArgumentException e = Assertions.assertThrows(IllegalArgumentException.class,
+                () -> BcryptUtil.matches("fubar", "$2a$10$abc"));
+        assertInvalidHashMessage(e, "$2a$10$abc");
+        Assertions.assertInstanceOf(IllegalArgumentException.class, e.getCause());
+        Assertions.assertTrue(e.getMessage().contains("ELY08021"), e.getMessage());
+    }
+
+    @Test
+    public void testMatchesRejectsAHashOfAnotherAlgorithm() {
+        String md5Crypt = "$1$saltsalt$qjXMvbEw8oaL.CzflDugX/";
+        IllegalArgumentException e = Assertions.assertThrows(IllegalArgumentException.class,
+                () -> BcryptUtil.matches("fubar", md5Crypt));
+        assertInvalidHashMessage(e, md5Crypt);
+        Assertions.assertInstanceOf(InvalidKeyException.class, e.getCause());
+        Assertions.assertTrue(e.getMessage().contains("ELY08027"), e.getMessage());
+    }
+
+    @Test
+    public void testMatchesRejectsThe2bPrefix() {
+        String notSupported = "$2b$" + BcryptUtil.bcryptHash("fubar").substring(4);
+        IllegalArgumentException e = Assertions.assertThrows(IllegalArgumentException.class,
+                () -> BcryptUtil.matches("fubar", notSupported));
+        assertInvalidHashMessage(e, notSupported);
+        Assertions.assertInstanceOf(InvalidKeySpecException.class, e.getCause());
+    }
+
+    private static void assertInvalidHashMessage(IllegalArgumentException e, String hash) {
+        Assertions.assertTrue(e.getMessage().contains("not a valid Modular Crypt Format bcrypt hash"), e.getMessage());
+        Assertions.assertTrue(e.getMessage().contains("'$2a$'"), e.getMessage());
+        Assertions.assertTrue(e.getMessage().contains("53 characters of salt and hash"), e.getMessage());
+        Assertions.assertFalse(e.getMessage().contains(hash), e.getMessage());
     }
 }

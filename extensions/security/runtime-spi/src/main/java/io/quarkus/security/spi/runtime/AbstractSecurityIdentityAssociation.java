@@ -8,25 +8,61 @@ import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.security.identity.request.AnonymousAuthenticationRequest;
 import io.smallrye.mutiny.Uni;
 
+/**
+ * Base class for Quarkus built-in {@link CurrentIdentityAssociation} implementations to prevent code duplication.
+ * Implementations must be {@link jakarta.enterprise.context.RequestScoped} to ensure thread safety.
+ *
+ * @see CurrentIdentityAssociation for more information
+ */
 public abstract class AbstractSecurityIdentityAssociation implements CurrentIdentityAssociation {
 
     private volatile SecurityIdentity identity;
     private volatile Uni<SecurityIdentity> deferredIdentity;
 
+    /**
+     * Returns the {@link IdentityProviderManager}.
+     *
+     * @return {@link IdentityProviderManager}
+     */
     protected abstract IdentityProviderManager getIdentityProviderManager();
 
+    /**
+     * Sets the current {@link SecurityIdentity}, replacing any previous values set by this method
+     * or {@link #setIdentity(Uni)}. This method should typically be called early when the CDI request
+     * context is activated and should remain unchanged during the request.
+     *
+     * @param identity The new identity
+     * @see CurrentIdentityAssociation#setIdentity(SecurityIdentity)
+     */
     @Override
     public void setIdentity(SecurityIdentity identity) {
         this.identity = identity;
         this.deferredIdentity = null;
     }
 
+    /**
+     * Sets the current deferred {@link SecurityIdentity}, replacing any previous values set by this method
+     * or {@link #setIdentity(SecurityIdentity)}. This method should typically be called early when the CDI request
+     * context is activated and should remain unchanged during the request.
+     *
+     * @param identity The new identity
+     * @see CurrentIdentityAssociation#setIdentity(Uni)
+     */
     @Override
     public void setIdentity(Uni<SecurityIdentity> identity) {
         this.identity = null;
         this.deferredIdentity = identity;
     }
 
+    /**
+     * Retrieves a deferred {@link SecurityIdentity} that is resolved when the returned {@link Uni} is subscribed.
+     * Subscribing may trigger authentication if the user is not already authenticated.
+     * Quarkus Security memoizes this deferred identity, meaning authentication typically occurs only once
+     * per CDI request context. Subsequent subscriptions are cheap.
+     *
+     * @return {@link SecurityIdentity}; never null
+     * @see CurrentIdentityAssociation#getDeferredIdentity()
+     */
     public Uni<SecurityIdentity> getDeferredIdentity() {
         if (deferredIdentity != null) {
             return deferredIdentity;

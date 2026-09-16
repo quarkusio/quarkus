@@ -1,6 +1,7 @@
 package io.quarkus.hibernate.orm.deployment;
 
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 import org.hibernate.annotations.processing.Find;
@@ -20,6 +21,8 @@ import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.NativeImageFeatureBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
+import io.quarkus.hibernate.orm.deployment.integration.HibernateOrmIntegrationRuntimeConfiguredBuildItem;
+import io.quarkus.hibernate.orm.deployment.integration.HibernateOrmIntegrationStaticConfiguredBuildItem;
 import io.quarkus.hibernate.orm.runtime.graal.RegisterServicesForReflectionFeature;
 import io.quarkus.hibernate.orm.runtime.graal.RegisterStateManagementForReflectionFeature;
 
@@ -108,6 +111,32 @@ public final class HibernateOrmProcessor {
             reflective.produce(ReflectiveClassBuildItem.builder(classes.toArray(new String[0]))
                     .reason(ClassNames.HIBERNATE_ORM_PROCESSOR.toString())
                     .constructors(false).methods().build());
+        }
+    }
+
+    @SuppressWarnings("deprecation")
+    @BuildStep
+    void bridgeIntegrationBuildItems(
+            List<io.quarkus.hibernate.orm.deployment.spi.HibernateOrmIntegrationStaticConfiguredBuildItem> spiStaticItems,
+            List<io.quarkus.hibernate.orm.deployment.spi.HibernateOrmIntegrationRuntimeConfiguredBuildItem> spiRuntimeItems,
+            BuildProducer<HibernateOrmIntegrationStaticConfiguredBuildItem> staticProducer,
+            BuildProducer<HibernateOrmIntegrationRuntimeConfiguredBuildItem> runtimeProducer) {
+        for (var spiItem : spiStaticItems) {
+            HibernateOrmIntegrationStaticConfiguredBuildItem item = new HibernateOrmIntegrationStaticConfiguredBuildItem(
+                    spiItem.getIntegrationName(), spiItem.getPersistenceUnitName());
+            if (spiItem.getInitListener() != null) {
+                item.setInitListener(spiItem.getInitListener());
+            }
+            item.setXmlMappingRequired(spiItem.isXmlMappingRequired());
+            staticProducer.produce(item);
+        }
+        for (var spiItem : spiRuntimeItems) {
+            HibernateOrmIntegrationRuntimeConfiguredBuildItem item = new HibernateOrmIntegrationRuntimeConfiguredBuildItem(
+                    spiItem.getIntegrationName(), spiItem.getPersistenceUnitName());
+            if (spiItem.getInitListener() != null) {
+                item.setInitListener(spiItem.getInitListener());
+            }
+            runtimeProducer.produce(item);
         }
     }
 }

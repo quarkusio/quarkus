@@ -18,8 +18,8 @@ import io.quarkus.hibernate.envers.HibernateEnversBuildTimeConfigPersistenceUnit
 import io.quarkus.hibernate.envers.HibernateEnversRecorder;
 import io.quarkus.hibernate.envers.runtime.graal.DisableLoggingFeature;
 import io.quarkus.hibernate.orm.deployment.PersistenceUnitDescriptorBuildItem;
-import io.quarkus.hibernate.orm.deployment.integration.HibernateOrmIntegrationStaticConfiguredBuildItem;
 import io.quarkus.hibernate.orm.deployment.spi.AdditionalJpaModelBuildItem;
+import io.quarkus.hibernate.orm.deployment.spi.HibernateOrmIntegrationStaticConfiguredBuildItem;
 import io.quarkus.hibernate.orm.deployment.spi.component.PersistenceUnitRequestBuildItem;
 import io.quarkus.runtime.util.ProgrammingParadigm;
 

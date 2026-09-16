@@ -125,7 +125,8 @@
         <!-- See https://endoflife.date/postgresql -->
         <postgres.default.version>16</postgres.default.version>
 
-        <mongo.image>docker.io/library/mongo:8.3</mongo.image>
+        <!-- mongo:8.x refuses to start on Linux kernel >= 6.19 (https://jira.mongodb.org/browse/SERVER-121912) -->
+        <mongo.image>docker.io/library/mongo:7.0</mongo.image>
 
         <!-- Align various dependencies that are not really part of the bom-->
         <junit4.version>4.13.2</junit4.version>

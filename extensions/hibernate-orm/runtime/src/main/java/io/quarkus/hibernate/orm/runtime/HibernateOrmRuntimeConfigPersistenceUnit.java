@@ -281,7 +281,8 @@ public interface HibernateOrmRuntimeConfigPersistenceUnit {
 
     enum DataManagementStrategy {
         /**
-         * Never execute the data init script.
+         * Do not execute the data init script on start.
+         * It can still be executed on demand through the `SchemaManager`.
          *
          * @asciidoclet
          */

@@ -1,0 +1,94 @@
+package io.quarkus.micrometer.deployment.binder;
+
+import java.net.URI;
+import java.util.Collection;
+import java.util.List;
+import java.util.concurrent.LinkedBlockingDeque;
+import java.util.concurrent.TimeUnit;
+
+import jakarta.inject.Inject;
+import jakarta.websocket.ClientEndpointConfig;
+import jakarta.websocket.ContainerProvider;
+import jakarta.websocket.Endpoint;
+import jakarta.websocket.EndpointConfig;
+import jakarta.websocket.MessageHandler;
+import jakarta.websocket.Session;
+
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Timer;
+import io.quarkus.micrometer.test.Util;
+import io.quarkus.test.QuarkusExtensionTest;
+import io.quarkus.test.common.http.TestHTTPResource;
+
+/**
+ * Same as {@link UriTagWebSocketTest} with a root path: the template must not include the root path, like for REST.
+ */
+public class UriTagWebSocketWithHttpRootTest {
+    @RegisterExtension
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
+            .withConfigurationResource("test-logging.properties")
+            .overrideConfigKey("quarkus.otel.enabled", "false")
+            .overrideConfigKey("quarkus.http.root-path", "/foo")
+            .overrideConfigKey("quarkus.micrometer.binder-enabled-default", "false")
+            .overrideConfigKey("quarkus.micrometer.binder.http-server.enabled", "true")
+            .overrideConfigKey("quarkus.micrometer.binder.vertx.enabled", "true")
+            .overrideConfigKey("quarkus.redis.devservices.enabled", "false")
+            .withApplicationRoot((jar) -> jar.addClasses(Util.class, UriTagWebSocketTest.GreetingWebSocket.class));
+
+    @Inject
+    MeterRegistry registry;
+
+    @TestHTTPResource("ws")
+    URI wsUri;
+
+    @Test
+    public void upgradeRequestsAreTaggedWithThePathTemplate() throws Exception {
+        Assertions.assertEquals("hello alice", greet("alice"));
+        Assertions.assertEquals("hello bob", greet("bob"));
+
+        for (int i = 0; i < 200 && registry.find("http.server.requests").tag("uri", "/ws/{name}").timers().isEmpty(); i++) {
+            Thread.sleep(50);
+        }
+
+        Collection<Timer> templated = registry.find("http.server.requests").tag("uri", "/ws/{name}").timers();
+        Assertions.assertEquals(1, templated.size(),
+                Util.foundServerRequests(registry, "The WebSocket endpoint template (/ws/{name}) should be used"));
+
+        Timer timer = templated.iterator().next();
+        Assertions.assertEquals(2, timer.count(),
+                Util.foundServerRequests(registry, "Both upgrades should accumulate into the one templated timer"));
+        Assertions.assertEquals("GET", timer.getId().getTag("method"));
+        Assertions.assertEquals("101", timer.getId().getTag("status"));
+        Assertions.assertEquals("INFORMATIONAL", timer.getId().getTag("outcome"));
+
+        for (String notExpected : List.of("/foo/ws/{name}", "/ws/alice", "/ws/bob", "/foo/ws/alice")) {
+            Assertions.assertEquals(0, registry.find("http.server.requests").tag("uri", notExpected).timers().size(),
+                    Util.foundServerRequests(registry, "No timer should be tagged uri=" + notExpected));
+        }
+    }
+
+    private String greet(String name) throws Exception {
+        LinkedBlockingDeque<String> messages = new LinkedBlockingDeque<>();
+        Session session = ContainerProvider.getWebSocketContainer().connectToServer(new Endpoint() {
+            @Override
+            public void onOpen(Session session, EndpointConfig endpointConfig) {
+                session.addMessageHandler(new MessageHandler.Whole<String>() {
+                    @Override
+                    public void onMessage(String message) {
+                        messages.add(message);
+                    }
+                });
+                session.getAsyncRemote().sendText("hello");
+            }
+        }, ClientEndpointConfig.Builder.create().build(), URI.create(wsUri + "/" + name));
+        try {
+            return messages.poll(20, TimeUnit.SECONDS);
+        } finally {
+            session.close();
+        }
+    }
+}

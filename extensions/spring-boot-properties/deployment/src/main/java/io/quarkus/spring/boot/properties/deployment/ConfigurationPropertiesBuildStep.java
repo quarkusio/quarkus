@@ -29,6 +29,7 @@ import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveMethodBuildItem;
 import io.quarkus.gizmo2.ClassOutput;
 import io.quarkus.gizmo2.Gizmo;
+import io.quarkus.gizmo2.LambdaStrategy;
 import io.quarkus.spring.boot.properties.deployment.InterfaceConfigurationPropertiesUtil.GeneratedClass;
 
 public class ConfigurationPropertiesBuildStep {
@@ -62,7 +63,8 @@ public class ConfigurationPropertiesBuildStep {
         IndexView index = combinedIndex.getIndex();
         YamlListObjectHandler yamlListObjectHandler = new YamlListObjectHandler(nonBeansClassOutput, index, reflectiveClasses);
 
-        Gizmo gizmo = Gizmo.create(beansClassOutput);
+        Gizmo gizmo = Gizmo.create(beansClassOutput)
+                .withLambdaStrategy(LambdaStrategy.ANONYMOUS_CLASS);
         gizmo.class_(ConfigurationPropertiesUtil.PACKAGE_TO_PLACE_GENERATED_CLASSES + ".ConfigPropertiesProducer", cc -> {
             cc.addAnnotation(Singleton.class);
             cc.defaultConstructor();

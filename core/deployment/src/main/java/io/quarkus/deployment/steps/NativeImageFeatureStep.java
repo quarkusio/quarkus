@@ -26,6 +26,7 @@ import io.quarkus.deployment.pkg.NativeConfig;
 import io.quarkus.gizmo2.Const;
 import io.quarkus.gizmo2.Expr;
 import io.quarkus.gizmo2.Gizmo;
+import io.quarkus.gizmo2.LambdaStrategy;
 import io.quarkus.gizmo2.LocalVar;
 import io.quarkus.gizmo2.ParamVar;
 import io.quarkus.gizmo2.desc.MethodDesc;
@@ -71,7 +72,8 @@ public class NativeImageFeatureStep {
                 item -> {
                 },
                 null,
-                false));
+                false))
+                .withLambdaStrategy(LambdaStrategy.ANONYMOUS_CLASS);
 
         g.class_(GRAAL_FEATURE, cc -> {
             cc.implements_(Feature.class);

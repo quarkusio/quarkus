@@ -8,6 +8,7 @@ import org.jboss.jandex.MethodInfo;
 import io.quarkus.arc.Arc;
 import io.quarkus.gizmo2.ClassOutput;
 import io.quarkus.gizmo2.Gizmo;
+import io.quarkus.gizmo2.LambdaStrategy;
 
 abstract class AbstractGenerator {
 
@@ -35,7 +36,7 @@ abstract class AbstractGenerator {
         return Gizmo.create(classOutput)
                 .withDebugInfo(false)
                 .withParameters(false)
-                .withLambdasAsAnonymousClasses(true);
+                .withLambdaStrategy(LambdaStrategy.ANONYMOUS_CLASS);
     }
 
     /**

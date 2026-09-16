@@ -25,6 +25,7 @@ import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.gizmo2.ClassOutput;
 import io.quarkus.gizmo2.Expr;
 import io.quarkus.gizmo2.Gizmo;
+import io.quarkus.gizmo2.LambdaStrategy;
 import io.quarkus.gizmo2.ParamVar;
 import io.quarkus.resteasy.reactive.server.runtime.ResteasyReactiveRecorder;
 
@@ -61,6 +62,7 @@ public class QuarkusInvokerFactory implements EndpointInvokerFactory {
         ClassOutput classOutput = new GeneratedClassGizmo2Adaptor(generatedClassBuildItemBuildProducer, null, null,
                 applicationClassPredicate.test(currentClassInfo.name().toString()));
         Gizmo g = Gizmo.create(classOutput)
+                .withLambdaStrategy(LambdaStrategy.ANONYMOUS_CLASS)
                 .withDebugInfo(false)
                 .withParameters(false);
         g.class_(baseName, cc -> {

@@ -28,6 +28,7 @@ import io.quarkus.arc.processor.DotNames;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.gizmo2.Const;
 import io.quarkus.gizmo2.Gizmo;
+import io.quarkus.gizmo2.LambdaStrategy;
 import io.quarkus.gizmo2.desc.ConstructorDesc;
 import io.quarkus.gizmo2.desc.MethodDesc;
 import io.quarkus.oidc.client.filter.OidcClientFilter;
@@ -53,7 +54,8 @@ public class OidcClientFilterDeploymentHelper<T extends AbstractTokensProducer> 
     public OidcClientFilterDeploymentHelper(Class<T> baseClass, BuildProducer<GeneratedBeanBuildItem> generatedBean,
             boolean refreshOnUnauthorized) {
         this.baseClass = baseClass;
-        this.gizmo = Gizmo.create(new GeneratedBeanGizmo2Adaptor(generatedBean));
+        this.gizmo = Gizmo.create(new GeneratedBeanGizmo2Adaptor(generatedBean))
+                .withLambdaStrategy(LambdaStrategy.ANONYMOUS_CLASS);
         this.targetPackage = DotNames
                 .packagePrefix(DotName.createSimple(baseClass));
         this.refreshOnUnauthorized = refreshOnUnauthorized;

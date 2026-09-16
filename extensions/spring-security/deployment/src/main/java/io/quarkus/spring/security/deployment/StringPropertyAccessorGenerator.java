@@ -13,6 +13,7 @@ import io.quarkus.gizmo2.ClassOutput;
 import io.quarkus.gizmo2.Const;
 import io.quarkus.gizmo2.Expr;
 import io.quarkus.gizmo2.Gizmo;
+import io.quarkus.gizmo2.LambdaStrategy;
 import io.quarkus.gizmo2.LocalVar;
 import io.quarkus.gizmo2.ParamVar;
 import io.quarkus.gizmo2.desc.ClassMethodDesc;
@@ -56,7 +57,7 @@ final class StringPropertyAccessorGenerator {
      */
     static String generate(DotName className, Set<FieldInfo> properties, ClassOutput classOutput) {
         String generatedClassName = getAccessorClassName(className);
-        Gizmo.create(classOutput).class_(generatedClassName, cc -> {
+        Gizmo.create(classOutput).withLambdaStrategy(LambdaStrategy.ANONYMOUS_CLASS).class_(generatedClassName, cc -> {
             cc.implements_(StringPropertyAccessor.class);
             cc.addAnnotation(Singleton.class);
             cc.defaultConstructor();

@@ -74,6 +74,7 @@ import io.quarkus.gizmo2.ClassOutput;
 import io.quarkus.gizmo2.Const;
 import io.quarkus.gizmo2.Expr;
 import io.quarkus.gizmo2.Gizmo;
+import io.quarkus.gizmo2.LambdaStrategy;
 import io.quarkus.gizmo2.LocalVar;
 import io.quarkus.gizmo2.ParamVar;
 import io.quarkus.gizmo2.Reflection2Gizmo;
@@ -216,7 +217,8 @@ public class InterceptedStaticMethodsProcessor {
                         return applicationClassPredicate.test(base);
                     }
                 });
-        Gizmo gizmo = Gizmo.create(classOutput);
+        Gizmo gizmo = Gizmo.create(classOutput)
+                .withLambdaStrategy(LambdaStrategy.ANONYMOUS_CLASS);
 
         // declaring class -> intercepted static methods
         Map<DotName, List<InterceptedStaticMethodBuildItem>> interceptedStaticMethodsMap = new HashMap<>();

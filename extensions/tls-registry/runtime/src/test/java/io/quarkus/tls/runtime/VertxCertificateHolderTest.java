@@ -110,6 +110,116 @@ class VertxCertificateHolderTest {
     }
 
     @Test
+    void testKeyExchangeGroupsWithStrictPolicy() {
+        VertxCertificateHolder strictHolder = holderWithPqcPolicyAndGroups(PqcEnforcementPolicy.STRICT,
+                List.of("X25519MLKEM768"));
+        assertEquals(1, strictHolder.getServerSSLOptions().getKeyExchangeGroups().size());
+        assertTrue(strictHolder.getServerSSLOptions().getKeyExchangeGroups().contains("X25519MLKEM768"));
+        assertEquals(io.vertx.core.net.PqcEnforcementPolicy.STRICT,
+                strictHolder.getServerSSLOptions().getPqcEnforcementPolicy());
+    }
+
+    @Test
+    void testKeyExchangeGroupsWithClientNegotiatedPolicy() {
+        VertxCertificateHolder clientNegotiatedHolder = holderWithPqcPolicyAndGroups(PqcEnforcementPolicy.CLIENT_NEGOTIATED,
+                List.of("X25519MLKEM768"));
+        assertEquals(1, clientNegotiatedHolder.getServerSSLOptions().getKeyExchangeGroups().size());
+        assertTrue(clientNegotiatedHolder.getServerSSLOptions().getKeyExchangeGroups().contains("X25519MLKEM768"));
+        assertEquals(io.vertx.core.net.PqcEnforcementPolicy.CLIENT_NEGOTIATED,
+                clientNegotiatedHolder.getServerSSLOptions().getPqcEnforcementPolicy());
+    }
+
+    @Test
+    void testKeyExchangeGroupsWithRelaxedPolicyAreIgnored() {
+        // When RELAXED policy is used with key exchange groups, the groups should be ignored
+        VertxCertificateHolder relaxedHolder = holderWithPqcPolicyAndGroups(PqcEnforcementPolicy.RELAXED,
+                List.of("X25519MLKEM768"));
+        // getKeyExchangeGroups() returns null when not set
+        assertEquals(null, relaxedHolder.getServerSSLOptions().getKeyExchangeGroups());
+        assertEquals(io.vertx.core.net.PqcEnforcementPolicy.RELAXED,
+                relaxedHolder.getServerSSLOptions().getPqcEnforcementPolicy());
+    }
+
+    @Test
+    void testRelaxedPolicyWithoutKeyExchangeGroups() {
+        // When RELAXED policy is used without key exchange groups, it should work normally
+        VertxCertificateHolder relaxedHolder = holderWithPqcPolicyAndGroups(PqcEnforcementPolicy.RELAXED, null);
+        // getKeyExchangeGroups() returns null when not set
+        assertEquals(null, relaxedHolder.getServerSSLOptions().getKeyExchangeGroups());
+        assertEquals(io.vertx.core.net.PqcEnforcementPolicy.RELAXED,
+                relaxedHolder.getServerSSLOptions().getPqcEnforcementPolicy());
+    }
+
+    private VertxCertificateHolder holderWithPqcPolicyAndGroups(PqcEnforcementPolicy policy, List<String> groups) {
+        return new VertxCertificateHolder(null, "test", new TlsBucketConfig() {
+            @Override
+            public Optional<KeyStoreConfig> keyStore() {
+                return Optional.empty();
+            }
+
+            @Override
+            public Optional<TrustStoreConfig> trustStore() {
+                return Optional.empty();
+            }
+
+            @Override
+            public Optional<List<String>> cipherSuites() {
+                return Optional.empty();
+            }
+
+            @Override
+            public Set<String> protocols() {
+                return Set.of();
+            }
+
+            @Override
+            public Optional<List<Path>> certificateRevocationList() {
+                return Optional.empty();
+            }
+
+            @Override
+            public boolean trustAll() {
+                return false;
+            }
+
+            @Override
+            public Optional<String> hostnameVerificationAlgorithm() {
+                return Optional.empty();
+            }
+
+            @Override
+            public boolean alpn() {
+                return false;
+            }
+
+            @Override
+            public PqcEnforcementPolicy pqcEnforcementPolicy() {
+                return policy;
+            }
+
+            @Override
+            public Optional<List<String>> keyExchangeGroups() {
+                return groups != null ? Optional.of(groups) : Optional.empty();
+            }
+
+            @Override
+            public Duration handshakeTimeout() {
+                return Duration.ofSeconds(10);
+            }
+
+            @Override
+            public Optional<Duration> reloadPeriod() {
+                return Optional.empty();
+            }
+
+            @Override
+            public Optional<SslEngineType> sslEngine() {
+                return Optional.empty();
+            }
+        }, null, null);
+    }
+
+    @Test
     void testSslEngineOptions() {
         assertFalse(holder.getSslEngineOptions().isPresent());
     }

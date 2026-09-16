@@ -130,16 +130,15 @@ public class VertxCertificateHolder implements TlsConfiguration {
         options.setTrustOptions(getTrustStoreOptions());
         options.setUseAlpn(config().alpn());
         if (config().keyExchangeGroups().isPresent()) {
-            options.setKeyExchangeGroups(config().keyExchangeGroups().get());
+            if (config().pqcEnforcementPolicy() == PqcEnforcementPolicy.RELAXED) {
+                LOGGER.warnf("TLS bucket '%s' configures post-quantum key exchange groups with a 'relaxed' enforcement policy. "
+                        + "The post-quantum groups will be ignored because 'relaxed' does not enforce post-quantum key exchange. "
+                        + "Use 'strict' or 'client-negotiated' to enable post-quantum cryptography.", name);
+            } else {
+                options.setKeyExchangeGroups(config().keyExchangeGroups().get());
+            }
         }
         options.setPqcEnforcementPolicy(toVertxPqcPolicy(config().pqcEnforcementPolicy()));
-
-        if (config().keyExchangeGroups().isPresent()
-                && config().pqcEnforcementPolicy() == PqcEnforcementPolicy.RELAXED) {
-            LOGGER.warnf("TLS bucket '%s' configures post-quantum key exchange groups with a 'relaxed' enforcement policy. "
-                    + "The post-quantum groups will be ignored because 'relaxed' does not enforce post-quantum key exchange. "
-                    + "Use 'strict' or 'client-negotiated' to enable post-quantum cryptography.", name);
-        }
         options.setSslHandshakeTimeoutUnit(TimeUnit.SECONDS);
         options.setSslHandshakeTimeout(config().handshakeTimeout().toSeconds());
         options.setEnabledSecureTransportProtocols(config().protocols());

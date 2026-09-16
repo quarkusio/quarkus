@@ -246,6 +246,7 @@
                 <module>vertx-kotlin</module>
                 <module>websockets</module>
                 <module>websockets-next</module>
+                <module>websockets-next-security</module>
                 <module>spring-di</module>
                 <module>spring-web</module>
                 <module>spring-data-jpa</module>
@@ -376,6 +377,7 @@
                 <module>packaging</module>
                 <module>signals</module>
                 <module>signals-command-mode</module>
+                <module>signals-security</module>
                 <module>simple with space</module>
                 <module>aesh</module>
                 <module>aesh-native</module>

@@ -95,6 +95,8 @@ import org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames;
 import org.jboss.resteasy.reactive.common.processor.TargetJavaVersion;
 import org.jboss.resteasy.reactive.common.processor.scanning.ApplicationScanningResult;
 import org.jboss.resteasy.reactive.common.processor.scanning.ResourceScanningResult;
+import org.jboss.resteasy.reactive.common.processor.scanning.ResteasyReactiveParameterContainerScanner;
+import org.jboss.resteasy.reactive.common.processor.transformation.AnnotationStore;
 import org.jboss.resteasy.reactive.common.types.AllWriteableMarker;
 import org.jboss.resteasy.reactive.common.util.Encode;
 import org.jboss.resteasy.reactive.common.util.types.Types;
@@ -374,6 +376,30 @@ public class ResteasyReactiveProcessor {
                         io.vertx.mutiny.core.file.AsyncFile.class.getName(), Collections.singletonList(MediaType.WILDCARD),
                         RuntimeType.SERVER, true,
                         Priorities.USER));
+    }
+
+    /**
+     * Parameter containers are discovered by looking for the parameter annotations in the index. When those annotations
+     * are only added by annotation transformations, the classes used as {@code @BeanParam} are examined through the
+     * transformations instead.
+     */
+    @BuildStep
+    void transformedParameterContainers(Optional<ResourceScanningResultBuildItem> resourceScanningResultBuildItem,
+            List<AnnotationsTransformerBuildItem> annotationTransformerBuildItems,
+            BuildProducer<ParameterContainersBuildItem> producer) {
+        if (resourceScanningResultBuildItem.isEmpty() || annotationTransformerBuildItems.isEmpty()) {
+            return;
+        }
+        List<AnnotationTransformation> annotationTransformations = new ArrayList<>(annotationTransformerBuildItems.size());
+        for (AnnotationsTransformerBuildItem bi : annotationTransformerBuildItems) {
+            annotationTransformations.add(bi.getAnnotationTransformation());
+        }
+        IndexView index = resourceScanningResultBuildItem.get().getResult().getIndex();
+        Set<DotName> containers = ResteasyReactiveParameterContainerScanner.scanTransformedParameterContainers(index,
+                new AnnotationStore(index, annotationTransformations));
+        if (!containers.isEmpty()) {
+            producer.produce(new ParameterContainersBuildItem(containers));
+        }
     }
 
     @BuildStep

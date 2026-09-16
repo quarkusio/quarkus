@@ -1678,7 +1678,7 @@ public class VertxHttpRecorder {
                         // This is the root context used by the HTTP connection (read and write MUST be done from
                         // THAT event loop).
                         ContextInternal rootContext = vertx.getOrCreateContext();
-                        HttpServerOptions options = createVirtualHttpServerOptions();
+                        HttpServerOptions options = createVirtualHttpServerOptions(limits);
                         VertxHandler<Http1ServerConnection> handler = VertxHandler.create(chctx -> {
 
                             Http1ServerConnection conn = new Http1ServerConnection(
@@ -1714,13 +1714,9 @@ public class VertxHttpRecorder {
                         ch.pipeline().addLast("handler", handler);
                     }
 
-                    private static HttpServerOptions createVirtualHttpServerOptions() {
+                    private static HttpServerOptions createVirtualHttpServerOptions(ServerLimitsConfig limits) {
                         var result = new HttpServerOptions();
-                        Optional<MemorySize> maybeMaxHeadersSize = ConfigProvider.getConfig()
-                                .getOptionalValue("quarkus.http.limits.max-header-size", MemorySize.class);
-                        if (maybeMaxHeadersSize.isPresent()) {
-                            result.setMaxHeaderSize(maybeMaxHeadersSize.get().asIntValue());
-                        }
+                        result.setMaxHeaderSize(limits.maxHeaderSize().asIntValue());
                         return result;
                     }
                 });

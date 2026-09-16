@@ -93,6 +93,7 @@ public class CycloneDxSbomGenerator {
     private boolean includeLicenseText;
 
     private Version effectiveSchemaVersion;
+    private boolean providesEmitted;
 
     private CycloneDxSbomGenerator() {
     }
@@ -139,6 +140,27 @@ public class CycloneDxSbomGenerator {
         return this;
     }
 
+    /**
+     * Generates the SBOM(s) as text without persisting them to the filesystem. When the format is
+     * {@code all}, one entry per supported format is returned.
+     *
+     * @return the generated SBOM content
+     */
+    public List<String> generateText() {
+        ensureNotGenerated();
+        Objects.requireNonNull(manifest, "Manifest is null");
+        generated = true;
+        var bom = createSbom();
+        if (FORMAT_ALL.equalsIgnoreCase(format)) {
+            final List<String> result = new ArrayList<>(SUPPORTED_FORMATS.size());
+            for (String format : SUPPORTED_FORMATS) {
+                result.add(formatSbom(bom, format));
+            }
+            return result;
+        }
+        return List.of(formatSbom(bom, format == null ? DEFAULT_FORMAT : format));
+    }
+
     public List<SbomResult> generate() {
         ensureNotGenerated();
         Objects.requireNonNull(manifest, "Manifest is null");
@@ -147,14 +169,7 @@ public class CycloneDxSbomGenerator {
         }
         generated = true;
 
-        var bom = new Bom();
-        bom.setMetadata(new Metadata());
-        addToolInfo(bom);
-
-        addApplicationComponent(bom, manifest.getMainComponent());
-        for (var c : manifest.getComponents()) {
-            addComponent(bom, c);
-        }
+        var bom = createSbom();
         if (FORMAT_ALL.equalsIgnoreCase(format)) {
             if (outputFile != null) {
                 throw new IllegalArgumentException("Can't use output file " + outputFile + " with format '"
@@ -170,20 +185,59 @@ public class CycloneDxSbomGenerator {
         return List.of(persistSbom(bom, outputFile, getFormat(outputFile)));
     }
 
+    private Bom createSbom() {
+        var bom = new Bom();
+        bom.setMetadata(new Metadata());
+        addToolInfo(bom);
+
+        addApplicationComponent(bom, manifest.getMainComponent());
+        for (var c : manifest.getComponents()) {
+            addComponent(bom, c);
+        }
+        return bom;
+    }
+
     private void addComponent(Bom bom, ApplicationComponent component) {
         final org.cyclonedx.model.Component c = getComponent(component);
         bom.addComponent(c);
         recordDependencies(bom, component, c);
     }
 
-    private static void recordDependencies(Bom bom, ApplicationComponent component, Component c) {
-        if (!component.getDependencies().isEmpty()) {
-            final Dependency d = new Dependency(c.getBomRef());
-            for (var depCoords : sortAlphabetically(component.getDependencies())) {
-                d.addDependency(new Dependency(getPurl(depCoords).toString()));
-            }
-            bom.addDependency(d);
+    private void recordDependencies(Bom bom, ApplicationComponent component, Component c) {
+        Collection<ArtifactCoords> dependsOn = component.getDependencies();
+        final Collection<ArtifactCoords> provides = component.getProvides();
+        final boolean hasProvides = provides != null && !provides.isEmpty();
+        if (dependsOn.isEmpty() && !hasProvides) {
+            return;
         }
+        final Dependency d;
+        if (hasProvides && getSchemaVersion().getVersion() >= 1.6) {
+            // CycloneDX 1.6 "provides" relationship
+            final ProvidesDependency pd = new ProvidesDependency(c.getBomRef());
+            for (var coords : sortAlphabetically(provides)) {
+                pd.addProvides(getPurl(coords).toString());
+            }
+            d = pd;
+            providesEmitted = true;
+        } else {
+            d = new Dependency(c.getBomRef());
+            // "provides" is a CycloneDX 1.6 construct; on older schema versions the provided
+            // refs are represented as plain dependsOn relationships instead
+            if (hasProvides) {
+                if (dependsOn.isEmpty()) {
+                    dependsOn = provides;
+                } else {
+                    final Collection<ArtifactCoords> tmp = new ArrayList<>(dependsOn.size() + provides.size());
+                    tmp.addAll(dependsOn);
+                    tmp.addAll(provides);
+                    dependsOn = tmp;
+                }
+            }
+        }
+        for (var depCoords : sortAlphabetically(dependsOn)) {
+            d.addDependency(new Dependency(getPurl(depCoords).toString()));
+        }
+        bom.addDependency(d);
     }
 
     private void addApplicationComponent(Bom bom, ApplicationComponent component) {
@@ -194,15 +248,33 @@ public class CycloneDxSbomGenerator {
         recordDependencies(bom, component, c);
     }
 
-    private org.cyclonedx.model.Component getComponent(ApplicationComponent component) {
-        final org.cyclonedx.model.Component c = new org.cyclonedx.model.Component();
+    private Component getComponent(ApplicationComponent component) {
+        final Component c = new Component();
         var dep = component.getResolvedDependency();
         if (dep != null) {
             initMavenComponent(dep, c);
+        } else if (component.getCoordinates() != null) {
+            // synthetic Maven component (e.g. a product component); its POM metadata is intentionally
+            // not resolved, product metadata comes from the platform properties instead
+            setMavenCoordinates(component.getCoordinates(), c);
         } else if (component.getDistributionPath() != null || component.getPath() != null) {
             initGenericComponent(component, c);
         } else {
             throw new RuntimeException("Component is not associated with any file system path");
+        }
+
+        // optional overrides carried by synthetic components (e.g. platform-member product components)
+        if (component.getName() != null) {
+            c.setName(component.getName());
+        }
+        if (component.getDescription() != null) {
+            c.setDescription(component.getDescription());
+        }
+        if (component.getType() != null) {
+            c.setType(mapComponentType(component.getType()));
+        }
+        if (component.getCpe() != null) {
+            c.setCpe(component.getCpe());
         }
 
         final List<Property> props = new ArrayList<>(2);
@@ -211,7 +283,12 @@ public class CycloneDxSbomGenerator {
             quarkusScope = dep == null || dep.isRuntimeCp() ? ApplicationComponent.SCOPE_RUNTIME
                     : ApplicationComponent.SCOPE_DEVELOPMENT;
         }
-        addProperty(props, QUARKUS_COMPONENT_SCOPE, quarkusScope);
+        if (ApplicationComponent.SCOPE_EXCLUDED.equals(quarkusScope)) {
+            // emit a real CycloneDX scope for excluded components (e.g. product components)
+            c.setScope(Component.Scope.EXCLUDED);
+        } else {
+            addProperty(props, QUARKUS_COMPONENT_SCOPE, quarkusScope);
+        }
         if (component.getDistributionPath() != null) {
             if (getSchemaVersion().getVersion() >= 1.5) {
                 var occurence = new Occurrence();
@@ -252,6 +329,14 @@ public class CycloneDxSbomGenerator {
 
     private void initMavenComponent(ArtifactCoords coords, Component c) {
         addPomMetadata(coords, c);
+        setMavenCoordinates(coords, c);
+    }
+
+    /**
+     * Sets the Maven coordinate-derived fields (group, name, version, PURL, bom-ref) and the default
+     * {@code library} type. Product components override the type in {@link #getComponent}.
+     */
+    private static void setMavenCoordinates(ArtifactCoords coords, Component c) {
         c.setGroup(coords.getGroupId());
         c.setName(coords.getArtifactId());
         c.setVersion(coords.getVersion());
@@ -259,6 +344,15 @@ public class CycloneDxSbomGenerator {
         c.setPurl(purl);
         c.setBomRef(purl.toString());
         c.setType(Component.Type.LIBRARY);
+    }
+
+    private static Component.Type mapComponentType(String type) {
+        for (var t : Component.Type.values()) {
+            if (t.getTypeName().equalsIgnoreCase(type)) {
+                return t;
+            }
+        }
+        return Component.Type.FRAMEWORK;
     }
 
     private void addPomMetadata(ArtifactCoords dep, org.cyclonedx.model.Component component) {
@@ -440,19 +534,21 @@ public class CycloneDxSbomGenerator {
         return list;
     }
 
-    private SbomResult persistSbom(Bom bom, Path sbomFile, String format) {
-
+    private String formatSbom(Bom bom, String format) {
         var specVersion = getSchemaVersion();
-        final String sbomContent;
         if (format.equalsIgnoreCase("json")) {
             try {
-                sbomContent = BomGeneratorFactory.createJson(specVersion, bom).toJsonString();
+                if (providesEmitted && specVersion.getVersion() >= 1.6) {
+                    // the stock generator has no notion of the CycloneDX 1.6 "provides" relationship
+                    return new ProvidesAwareBomJsonGenerator(bom, specVersion).toJsonString();
+                }
+                return BomGeneratorFactory.createJson(specVersion, bom).toJsonString();
             } catch (Throwable e) {
                 throw new RuntimeException("Failed to generate an SBOM in JSON format", e);
             }
         } else if (format.equalsIgnoreCase("xml")) {
             try {
-                sbomContent = BomGeneratorFactory.createXml(specVersion, bom).toXmlString();
+                return BomGeneratorFactory.createXml(specVersion, bom).toXmlString();
             } catch (GeneratorException e) {
                 throw new RuntimeException("Failed to generate an SBOM in XML format", e);
             }
@@ -460,7 +556,10 @@ public class CycloneDxSbomGenerator {
             throw new RuntimeException(
                     "Unsupported SBOM artifact type " + format + ", supported types are json and xml");
         }
+    }
 
+    private SbomResult persistSbom(Bom bom, Path sbomFile, String format) {
+        final String sbomContent = formatSbom(bom, format);
         var outputDir = sbomFile.getParent();
         if (outputDir != null) {
             try {

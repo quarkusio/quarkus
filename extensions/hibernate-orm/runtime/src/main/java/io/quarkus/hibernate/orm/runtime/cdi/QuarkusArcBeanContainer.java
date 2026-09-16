@@ -31,7 +31,7 @@ import org.hibernate.resource.beans.spi.BeanInstanceProducer;
  * TODO: this is what we've always done and what we assume in tests, but is this what we want?
  * <p>
  * Note this behavior is only possible because we give attribute converters and entity listeners the dependent scope by default:
- * see {@code io.quarkus.hibernate.orm.deployment.HibernateOrmCdiProcessor#registerBeans}.
+ * see {@code io.quarkus.hibernate.orm.deployment.cdi.HibernateOrmCdiProcessor#registerBeans}.
  */
 @Singleton
 public class QuarkusArcBeanContainer extends AbstractCdiBeanContainer {

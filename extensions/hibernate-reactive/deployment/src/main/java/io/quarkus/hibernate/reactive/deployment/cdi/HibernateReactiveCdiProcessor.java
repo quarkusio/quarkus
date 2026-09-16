@@ -1,4 +1,4 @@
-package io.quarkus.hibernate.reactive.deployment;
+package io.quarkus.hibernate.reactive.deployment.cdi;
 
 import static io.quarkus.hibernate.reactive.deployment.ClassNames.IMPLEMENTOR;
 import static io.quarkus.hibernate.reactive.deployment.ClassNames.MUTINY_SESSION;

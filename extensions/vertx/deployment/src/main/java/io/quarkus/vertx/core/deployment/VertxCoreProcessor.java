@@ -54,9 +54,11 @@ import io.quarkus.deployment.util.ServiceUtil;
 import io.quarkus.mutiny.deployment.MutinyRuntimeInitBuildItem;
 import io.quarkus.netty.deployment.EventLoopSupplierBuildItem;
 import io.quarkus.runtime.configuration.ConfigurationException;
+import io.quarkus.smallrye.context.deployment.spi.ThreadContextProviderBuildItem;
 import io.quarkus.vertx.VertxOptionsCustomizer;
 import io.quarkus.vertx.core.runtime.VertxCoreRecorder;
 import io.quarkus.vertx.core.runtime.VertxLogDelegateFactory;
+import io.quarkus.vertx.core.runtime.VertxMDCThreadContextProvider;
 import io.quarkus.vertx.core.runtime.config.NativeTransportMode;
 import io.quarkus.vertx.core.runtime.config.NativeTransportType;
 import io.quarkus.vertx.core.runtime.config.VertxBuildTimeConfig;
@@ -85,6 +87,11 @@ class VertxCoreProcessor {
     @BuildStep
     AdditionalBeanBuildItem registerSafeDuplicatedContextInterceptor() {
         return new AdditionalBeanBuildItem(SafeVertxContextInterceptor.class.getName());
+    }
+
+    @BuildStep
+    ThreadContextProviderBuildItem registerMdcThreadContextProvider() {
+        return new ThreadContextProviderBuildItem(VertxMDCThreadContextProvider.class);
     }
 
     @BuildStep

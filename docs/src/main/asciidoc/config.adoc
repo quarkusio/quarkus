@@ -92,7 +92,7 @@ configuration properties in the application.
 
 [source,java]
 ----
-@ConfigProperty(name = "greeting.message") <1>
+@ConfigProperty(name = "greeting.message") // <1>
 String message;
 ----
 <1> You can use `@Inject @ConfigProperty` or just `@ConfigProperty`. The `@Inject` annotation is not necessary for
@@ -104,14 +104,14 @@ Edit the `org.acme.config.GreetingResource`, and introduce the following configu
 
 [source,java]
 ----
-@ConfigProperty(name = "greeting.message") <1>
+@ConfigProperty(name = "greeting.message") // <1>
 String message;
 
-@ConfigProperty(name = "greeting.suffix", defaultValue="!") <2>
+@ConfigProperty(name = "greeting.suffix", defaultValue="!") // <2>
 String suffix;
 
 @ConfigProperty(name = "greeting.name")
-Optional<String> name; <3>
+Optional<String> name; // <3>
 ----
 <1> If you do not provide a value for this property, the application startup fails with `jakarta.enterprise.inject.spi.DeploymentException: No config value of type [class java.lang.String] exists for: greeting.message`.
 <2> The default value is injected if the configuration does not provide a value for `greeting.suffix`.
@@ -250,14 +250,16 @@ application behaviour at runtime.
 Quarkus relies on link:https://github.com/smallrye/smallrye-config/[SmallRye Config] and inherits its features:
 
 * Additional ``ConfigSource``s
+* Configurable sources with `ConfigSourceFactory`
 * Additional ``Converter``s
 * Indexed properties
-* Parent profile
+* Parent profile (with multi-level hierarchy support)
 * Interceptors for configuration value resolution
 * Relocate configuration properties
 * Fallback configuration properties
 * Logging
-* Hide secrets
+* Hide Secrets and `Secret<T>`
+* Customize the `Config` with `SmallRyeConfigBuilderCustomizer`
 
 For more information, please check the
 link:https://smallrye.io/smallrye-config/Main/[SmallRye Config documentation].

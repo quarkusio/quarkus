@@ -102,6 +102,66 @@
     <build>
         <plugins>
             <plugin>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <!--
+                These tests all use QuarkusDevModeTest, which creates and (imperfectly) tears down
+                deployment ClassLoaders. Running all of them in a single JVM accumulates enough
+                leaked ClassLoaders to exhaust metaspace/heap (OOME, e.g. DevMcpTest in CI).
+                We split them across several surefire executions so each runs in its own, shorter-lived
+                JVM fork, keeping the number of ClassLoaders alive at any one time low.
+                The 'default-test' execution is the catch-all: it excludes the classes handled by the
+                other executions, so any newly added test is picked up automatically.
+                -->
+                <executions>
+                    <execution>
+                        <id>default-test</id>
+                        <configuration>
+                            <excludes>
+                                <exclude>%regex[.*DevMcp.*Test.*]</exclude>
+                                <exclude>%regex[.*(DevServices|DevUI|ContinuousTesting).*Test.*]</exclude>
+                                <exclude>%regex[.*(BuildMetrics|Card|Configuration|ExceptionProcessor).*Test.*]</exclude>
+                            </excludes>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>devmcp</id>
+                        <phase>test</phase>
+                        <goals>
+                            <goal>test</goal>
+                        </goals>
+                        <configuration>
+                            <includes>
+                                <include>%regex[.*DevMcp.*Test.*]</include>
+                            </includes>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>devui-http</id>
+                        <phase>test</phase>
+                        <goals>
+                            <goal>test</goal>
+                        </goals>
+                        <configuration>
+                            <includes>
+                                <include>%regex[.*(DevServices|DevUI|ContinuousTesting).*Test.*]</include>
+                            </includes>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>cards-config</id>
+                        <phase>test</phase>
+                        <goals>
+                            <goal>test</goal>
+                        </goals>
+                        <configuration>
+                            <includes>
+                                <include>%regex[.*(BuildMetrics|Card|Configuration|ExceptionProcessor).*Test.*]</include>
+                            </includes>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <executions>
                     <execution>

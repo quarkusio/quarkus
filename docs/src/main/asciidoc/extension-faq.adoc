@@ -94,7 +94,7 @@ To debug a missing extension, first:
 
 - Check your extension is present in link:https://central.sonatype.com/[Maven Central]
 - Check the extension is included the link:https://github.com/quarkusio/quarkus-extension-catalog/tree/main/extensions[extensions catalog list] (it only needs to be included once, and future versions will be automatically detected)
-- Check if the extension is listed in the http://https://registry.quarkus.io/q/swagger-ui/#/Client/get_client_extensions_all[Quarkus registry] list of all known extensions
+- Check if the extension is listed in the link:https://registry.quarkus.io/q/swagger-ui/#/Client/get_client_extensions_all[Quarkus registry] list of all known extensions
 - Check if there has been a green link:https://github.com/quarkusio/extensions/actions/workflows/build_and_publish.yml[build of the extensions site] since updating the catalog
 
 == Other topics

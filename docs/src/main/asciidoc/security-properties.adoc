@@ -10,7 +10,7 @@ include::_attributes.adoc[]
 :extensions: io.quarkus:quarkus-elytron-security-properties-file
 
 Quarkus provides support for properties file-based authentication intended for development and testing purposes.
-It is not recommended to use this authentication in production as, at present, only plain-text and MD5 hashed passwords are used, and properties files are generally too limited.
+It is not recommended to use this authentication in production as, at present, only plain-text and digest hashed passwords are used, and properties files are generally too limited.
 
 Add the following to your build file:
 
@@ -79,7 +79,14 @@ noadmin=n0Adm1n
 
 This file has usernames and passwords stored in plain text, which is not recommended.
 If plain text is set to false (or omitted) in the config, then passwords must be stored in the form `MD5 ( username : realm : password )`.
-This can be generated for the first example above by running the command `echo -n scott:MyRealm:jb0ss | md5sum | cut -d ' ' -f 1` from the command line (on macOS, `echo -n scott:MyRealm:jb0ss | md5` produces the same digest).
+This realm supports no other digest algorithm.
+The hash for the first example above can be generated with the following command:
+
+[source,shell]
+----
+echo -n scott:MyRealm:jb0ss | md5sum | cut -d ' ' -f 1 <1>
+----
+<1> On macOS, `md5` can be used in place of `md5sum | cut -d ' ' -f 1`.
 
 ==== Roles.properties
 
@@ -119,8 +126,16 @@ quarkus.security.users.embedded.roles.noadmin=user
 ----
 
 As with the first example, this file has usernames and passwords stored in plain text, which is not recommended.
-If plain text is set to false (or omitted) in the config, then passwords must be stored in the form `MD5 ( username : realm : password )`.
-This can be generated for the first example above by running the command `echo -n scott:MyRealm:jb0ss | md5sum | cut -d ' ' -f 1` from the command line (on macOS, `echo -n scott:MyRealm:jb0ss | md5` produces the same digest).
+If plain text is set to false (or omitted) in the config, then passwords must be stored in the form `ALGORITHM ( username : realm : password )`, where the algorithm is the one set by `quarkus.security.users.embedded.algorithm`.
+That property defaults to SHA-512, so the hash for the first example above can be generated with the following command:
+
+[source,shell]
+----
+echo -n scott:MyRealm:jb0ss | sha512sum | cut -d ' ' -f 1 <1>
+----
+<1> On macOS, `shasum -a 512` can be used in place of `sha512sum`.
+
+Set `quarkus.security.users.embedded.algorithm` to one of `digest-md5`, `digest-sha`, `digest-sha-256`, `digest-sha-384`, `digest-sha-512` or `digest-sha-512-256` to use a different one, and generate the hashes with the matching command.
 
 ==== Embedded Users
 

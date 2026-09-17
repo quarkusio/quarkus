@@ -1,5 +1,6 @@
 package io.quarkus.devui.runtime;
 
+import java.net.URI;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -38,11 +39,19 @@ public class DevUICORSFilter implements Handler<RoutingContext> {
 
     private final List<String> hosts;
     private final List<Pattern> hostsPatterns;
+    private final boolean allowLoopbackHostnames;
+    private final LoopbackHostnameResolver loopbackHostnameResolver;
     private volatile CORSConfig baseCorsConfig;
 
     public DevUICORSFilter(List<String> hosts) {
+        this(hosts, false);
+    }
+
+    public DevUICORSFilter(List<String> hosts, boolean allowLoopbackHostnames) {
         this.hosts = hosts;
         this.hostsPatterns = DevUIFilterHelper.detectPatterns(this.hosts);
+        this.allowLoopbackHostnames = allowLoopbackHostnames;
+        this.loopbackHostnameResolver = allowLoopbackHostnames ? new LoopbackHostnameResolver() : null;
         this.baseCorsConfig = null;
     }
 
@@ -59,19 +68,42 @@ public class DevUICORSFilter implements Handler<RoutingContext> {
     @Override
     public void handle(RoutingContext event) {
         HttpServerRequest request = event.request();
-        HttpServerResponse response = event.response();
         String origin = request.getHeader(HttpHeaders.ORIGIN);
         if (origin == null || isLocalHost(origin)) {
             corsFilter(null).handle(event);
         } else if (isConfiguredHost(origin) || isConfiguredHostPattern(origin)) {
             corsFilter(origin).handle(event);
+        } else if (allowLoopbackHostnames && originHost(origin) != null) {
+            loopbackHostnameResolver.isLoopback(originHost(origin), event.vertx(), new Handler<Boolean>() {
+                @Override
+                public void handle(Boolean loopback) {
+                    if (loopback) {
+                        corsFilter(origin).handle(event);
+                    } else {
+                        reject(event, origin);
+                    }
+                }
+            });
         } else {
-            if (!origin.startsWith(CHROME_EXTENSION)) {
-                LOG.errorf("Only localhost origin is allowed, but Origin header value is: %s", origin);
-            }
-            response.setStatusCode(403);
-            response.setStatusMessage("CORS Rejected - Invalid origin");
-            response.end();
+            reject(event, origin);
+        }
+    }
+
+    private static void reject(RoutingContext event, String origin) {
+        if (!origin.startsWith(CHROME_EXTENSION)) {
+            LOG.errorf("Only localhost origin is allowed, but Origin header value is: %s", origin);
+        }
+        HttpServerResponse response = event.response();
+        response.setStatusCode(403);
+        response.setStatusMessage("CORS Rejected - Invalid origin");
+        response.end();
+    }
+
+    private static String originHost(String origin) {
+        try {
+            return URI.create(origin).getHost();
+        } catch (IllegalArgumentException e) {
+            return null;
         }
     }
 

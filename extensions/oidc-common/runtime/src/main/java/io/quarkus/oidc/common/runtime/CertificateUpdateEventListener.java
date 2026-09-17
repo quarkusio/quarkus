@@ -1,8 +1,10 @@
 package io.quarkus.oidc.common.runtime;
 
+import java.time.Duration;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.CountDownLatch;
+import java.util.function.Function;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
@@ -10,6 +12,7 @@ import jakarta.enterprise.event.Observes;
 import org.jboss.logging.Logger;
 
 import io.quarkus.tls.CertificateUpdatedEvent;
+import io.smallrye.mutiny.Uni;
 import io.vertx.mutiny.ext.web.client.WebClient;
 
 @ApplicationScoped
@@ -26,29 +29,36 @@ public class CertificateUpdateEventListener {
         this.webClientRegistrations = new CopyOnWriteArrayList<>();
     }
 
-    void onCertificateUpdate(@Observes CertificateUpdatedEvent event) throws InterruptedException {
+    void onCertificateUpdate(@Observes CertificateUpdatedEvent event) {
         if (!webClientRegistrations.isEmpty()) {
             var registrationsToUpdate = webClientRegistrations.stream().filter(r -> r.tlsConfigName.equals(event.name()))
                     .toList();
             if (!registrationsToUpdate.isEmpty()) {
-                CountDownLatch latch = new CountDownLatch(registrationsToUpdate.size());
+                List<Uni<Void>> updates = new ArrayList<>();
                 for (var registration : registrationsToUpdate) {
-                    registration.webClient.updateSSLOptions(event.tlsConfiguration().getClientSSLOptions())
-                            .subscribe().with(
-                                    ignored -> {
-                                        LOG.infof("The TLS configuration `%s` used by the WebClient of the %s has been updated",
-                                                event.name(), registration.clientUser);
-                                        latch.countDown();
-                                    },
-                                    throwable -> {
-                                        LOG.warnf(throwable,
-                                                "Failed to update TLS configuration `%s` for the WebClient of the %s",
-                                                event.name(), registration.clientUser);
-                                        latch.countDown();
-                                    });
+                    Uni<Void> updateUni = registration.webClient
+                            .updateSSLOptions(event.tlsConfiguration().getClientSSLOptions())
+                            .onItem().invoke(new Runnable() {
+                                @Override
+                                public void run() {
+                                    LOG.infof("The TLS configuration `%s` used by the WebClient of the %s has been updated",
+                                            event.name(), registration.clientUser);
+                                }
+                            })
+                            .onFailure().recoverWithUni(new Function<Throwable, Uni<? extends Boolean>>() {
+                                @Override
+                                public Uni<? extends Boolean> apply(Throwable throwable) {
+                                    LOG.warnf(throwable,
+                                            "Failed to update TLS configuration `%s` for the WebClient of the %s",
+                                            event.name(), registration.clientUser);
+                                    return Uni.createFrom().item(false);
+                                }
+                            })
+                            .replaceWithVoid();
+                    updates.add(updateUni);
                 }
 
-                latch.await();
+                Uni.join().all(updates).andFailFast().await().atMost(Duration.ofSeconds(30));
             }
         }
     }

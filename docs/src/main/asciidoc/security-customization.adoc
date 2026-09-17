@@ -544,15 +544,19 @@ implementation("org.bouncycastle:bc-fips")
 
 [WARNING]
 ====
-Native executables that use `BCFIPS` are not supported on a FIPS-enabled operating system, for example a RHEL host booted in FIPS mode.
-In that environment the JDK loads the security providers configured for FIPS mode at run time, which a native executable cannot do, and the application fails at startup with:
+`BCFIPS` is an external security provider, in both JVM and native mode.
+Unlike the JDK providers that back FIPS mode on a FIPS-enabled operating system, whose cryptographic primitives come from a certified system library, `BCFIPS` is resolved from a Maven repository and Quarkus makes no claim about its FIPS certification.
+Establishing that an application using `BCFIPS` meets a FIPS requirement is the responsibility of the application owner, and running it on a FIPS-enabled operating system does not by itself make it FIPS compliant.
+
+Native mode has an additional hard limitation.
+On a FIPS-enabled operating system, for example a RHEL host booted in FIPS mode, the JDK loads the security providers configured for FIPS mode at run time, which a native executable cannot do, and the application fails at startup with:
 
 [source]
 ----
 com.oracle.svm.core.jdk.UnsupportedFeatureError: Cannot load new security provider at runtime: BCFIPS.
 ----
 
-The same application runs in JVM mode in a FIPS-enabled environment, and as a native executable when the operating system is not in FIPS mode.
+This is a restriction of native image itself rather than of a particular builder image, and enabling FIPS for a native executable would also require the native build to run on a FIPS-enabled host.
 ====
 
 [[bouncy-castle-jsse-fips]]

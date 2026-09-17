@@ -10,14 +10,13 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import jakarta.enterprise.context.ApplicationScoped;
 
+import org.eclipse.microprofile.faulttolerance.Asynchronous;
 import org.eclipse.microprofile.faulttolerance.Fallback;
 import org.eclipse.microprofile.faulttolerance.Retry;
 
-import io.smallrye.common.annotation.Blocking;
-
 @ApplicationScoped
 @Retry(maxRetries = 3, delay = 0, jitter = 0)
-public class BlockingService {
+public class AsyncService {
     private final List<Thread> helloThreads = new CopyOnWriteArrayList<>();
     private final List<StackTraceElement[]> helloStackTraces = new CopyOnWriteArrayList<>();
 
@@ -25,7 +24,7 @@ public class BlockingService {
 
     private volatile Thread fallbackThread;
 
-    @Blocking
+    @Asynchronous
     @Fallback(fallbackMethod = "fallback")
     public CompletionStage<String> hello() {
         invocationCounter.incrementAndGet();

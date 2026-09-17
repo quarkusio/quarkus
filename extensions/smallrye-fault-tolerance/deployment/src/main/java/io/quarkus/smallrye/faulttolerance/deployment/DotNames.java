@@ -11,11 +11,8 @@ import org.eclipse.microprofile.faulttolerance.Retry;
 import org.eclipse.microprofile.faulttolerance.Timeout;
 import org.jboss.jandex.DotName;
 
-import io.smallrye.common.annotation.Blocking;
 import io.smallrye.common.annotation.Identifier;
-import io.smallrye.common.annotation.NonBlocking;
 import io.smallrye.faulttolerance.FaultToleranceInterceptor;
-import io.smallrye.faulttolerance.api.ApplyFaultTolerance;
 import io.smallrye.faulttolerance.api.ApplyGuard;
 import io.smallrye.faulttolerance.api.AsynchronousNonBlocking;
 import io.smallrye.faulttolerance.api.BeforeRetry;
@@ -45,13 +42,10 @@ public final class DotNames {
     // ---
     // fault tolerance annotations
 
-    public static final DotName APPLY_FAULT_TOLERANCE = DotName.createSimple(ApplyFaultTolerance.class);
     public static final DotName APPLY_GUARD = DotName.createSimple(ApplyGuard.class);
 
     public static final DotName ASYNCHRONOUS = DotName.createSimple(Asynchronous.class);
     public static final DotName ASYNCHRONOUS_NON_BLOCKING = DotName.createSimple(AsynchronousNonBlocking.class);
-    public static final DotName BLOCKING = DotName.createSimple(Blocking.class);
-    public static final DotName NON_BLOCKING = DotName.createSimple(NonBlocking.class);
 
     public static final DotName BULKHEAD = DotName.createSimple(Bulkhead.class);
     public static final DotName CIRCUIT_BREAKER = DotName.createSimple(CircuitBreaker.class);
@@ -68,10 +62,10 @@ public final class DotNames {
     public static final DotName RETRY_WHEN = DotName.createSimple(RetryWhen.class);
     public static final DotName BEFORE_RETRY = DotName.createSimple(BeforeRetry.class);
 
-    // certain SmallRye annotations (@CircuitBreakerName, @[Non]Blocking, @*Backoff, @RetryWhen, @BeforeRetry)
+    // certain SmallRye annotations (@CircuitBreakerName, @*Backoff, @RetryWhen, @BeforeRetry)
     // do _not_ trigger the fault tolerance interceptor alone, only in combination
     // with other fault tolerance annotations
-    public static final Set<DotName> FT_ANNOTATIONS = Set.of(APPLY_FAULT_TOLERANCE, APPLY_GUARD, ASYNCHRONOUS,
+    public static final Set<DotName> FT_ANNOTATIONS = Set.of(APPLY_GUARD, ASYNCHRONOUS,
             ASYNCHRONOUS_NON_BLOCKING, BULKHEAD, CIRCUIT_BREAKER, FALLBACK, RATE_LIMIT, RETRY, TIMEOUT);
 
     public static final Set<DotName> BACKOFF_ANNOTATIONS = Set.of(EXPONENTIAL_BACKOFF, FIBONACCI_BACKOFF, CUSTOM_BACKOFF);

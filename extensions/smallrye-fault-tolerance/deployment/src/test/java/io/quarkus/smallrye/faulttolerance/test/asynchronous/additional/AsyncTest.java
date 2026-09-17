@@ -11,25 +11,23 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusExtensionTest;
 
-public class NonblockingTest {
+public class AsyncTest {
     @RegisterExtension
     static final QuarkusExtensionTest config = new QuarkusExtensionTest()
-            .withApplicationRoot((jar) -> jar.addClasses(NonblockingService.class));
+            .withApplicationRoot((jar) -> jar.addClasses(AsyncService.class));
 
     @Inject
-    NonblockingService service;
+    AsyncService service;
 
     @Test
-    public void noThreadOffloadAndFallback() throws Exception {
+    public void threadOffloadAndFallback() throws Exception {
         Thread mainThread = Thread.currentThread();
 
         CompletionStage<String> future = service.hello();
         assertThat(future.toCompletableFuture().get()).isEqualTo("hello");
 
-        // no delay between retries, all executions happen on the same thread
-        // if there _was_ a delay, subsequent retries would be offloaded to another thread
         assertThat(service.getHelloThreads()).allSatisfy(thread -> {
-            assertThat(thread).isSameAs(mainThread);
+            assertThat(thread).isNotSameAs(mainThread);
         });
         assertThat(service.getHelloStackTraces()).allSatisfy(stackTrace -> {
             assertThat(stackTrace).anySatisfy(frame -> {
@@ -40,6 +38,6 @@ public class NonblockingTest {
         // 1 initial execution + 3 retries
         assertThat(service.getInvocationCounter()).hasValue(4);
 
-        assertThat(service.getFallbackThread()).isSameAs(mainThread);
+        assertThat(service.getFallbackThread()).isNotSameAs(mainThread);
     }
 }

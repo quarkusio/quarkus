@@ -25,6 +25,7 @@ import io.quarkus.gizmo2.Const;
 import io.quarkus.gizmo2.Expr;
 import io.quarkus.gizmo2.GenericType;
 import io.quarkus.gizmo2.Gizmo;
+import io.quarkus.gizmo2.LambdaStrategy;
 import io.quarkus.gizmo2.LocalVar;
 import io.quarkus.gizmo2.TypeArgument;
 import io.quarkus.gizmo2.creator.BlockCreator;
@@ -107,7 +108,8 @@ class YamlListObjectHandler {
 
     private MethodDesc generateWrapperClass(String wrapperClassName, String configName, ClassInfo classInfo,
             String getterName) {
-        Gizmo gizmo = Gizmo.create(classOutput);
+        Gizmo gizmo = Gizmo.create(classOutput)
+                .withLambdaStrategy(LambdaStrategy.ANONYMOUS_CLASS);
         ClassDesc wrapperClassDesc = ClassDesc.of(wrapperClassName);
         ClassDesc elementClassDesc = ClassDesc.of(classInfo.name().toString());
         GenericType listOfElement = GenericType.ofClass(List.class, TypeArgument.of(elementClassDesc));
@@ -143,7 +145,8 @@ class YamlListObjectHandler {
     }
 
     private void generateConverterClass(String wrapperConverterClassName, String wrapperClassName, ClassInfo classInfo) {
-        Gizmo gizmo = Gizmo.create(classOutput);
+        Gizmo gizmo = Gizmo.create(classOutput)
+                .withLambdaStrategy(LambdaStrategy.ANONYMOUS_CLASS);
         ClassDesc wrapperClassDesc = ClassDesc.of(wrapperClassName);
         gizmo.class_(wrapperConverterClassName, cc -> {
             cc.extends_(GenericType.ofClass(ClassDesc.of(ABSTRACT_YAML_CONVERTER_CNAME),

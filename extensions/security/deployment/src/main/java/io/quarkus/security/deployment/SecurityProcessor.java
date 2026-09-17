@@ -109,6 +109,7 @@ import io.quarkus.deployment.pkg.steps.NativeImageFutureDefault;
 import io.quarkus.gizmo2.Const;
 import io.quarkus.gizmo2.Expr;
 import io.quarkus.gizmo2.Gizmo;
+import io.quarkus.gizmo2.LambdaStrategy;
 import io.quarkus.gizmo2.LocalVar;
 import io.quarkus.gizmo2.desc.ConstructorDesc;
 import io.quarkus.gizmo2.desc.MethodDesc;
@@ -524,7 +525,8 @@ public class SecurityProcessor {
                     String className = resourceName.substring(0, resourceName.length() - 6).replace('/', '.');
                     nativeImageClass.produce(new GeneratedNativeImageClassBuildItem(className, bytes));
                 }
-            });
+            })
+                    .withLambdaStrategy(LambdaStrategy.ANONYMOUS_CLASS);
 
             gizmo.class_("io.quarkus.security.BouncyCastleFeature", cc -> {
                 cc.implements_(org.graalvm.nativeimage.hosted.Feature.class);

@@ -47,6 +47,7 @@ import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.gizmo2.ClassOutput;
 import io.quarkus.gizmo2.Expr;
 import io.quarkus.gizmo2.Gizmo;
+import io.quarkus.gizmo2.LambdaStrategy;
 import io.quarkus.gizmo2.ParamVar;
 import io.quarkus.gizmo2.desc.FieldDesc;
 import io.quarkus.gizmo2.desc.InterfaceMethodDesc;
@@ -84,6 +85,7 @@ public class CachedResultsProcessor {
             BuildProducer<CachedResultsDifferentiator> diffs) {
         ClassOutput classOutput = new GeneratedBeanGizmo2Adaptor(generatedBeans);
         Gizmo gizmo = Gizmo.create(classOutput)
+                .withLambdaStrategy(LambdaStrategy.ANONYMOUS_CLASS)
                 .withDebugInfo(false)
                 .withParameters(false);
         // Generate a wrapper bean for each @CachedResults config

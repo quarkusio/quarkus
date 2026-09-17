@@ -98,6 +98,7 @@ import io.quarkus.deployment.execannotations.ExecutionModelAnnotationsAllowedBui
 import io.quarkus.gizmo2.Const;
 import io.quarkus.gizmo2.Expr;
 import io.quarkus.gizmo2.Gizmo;
+import io.quarkus.gizmo2.LambdaStrategy;
 import io.quarkus.gizmo2.LocalVar;
 import io.quarkus.gizmo2.ParamVar;
 import io.quarkus.gizmo2.creator.BlockCreator;
@@ -366,8 +367,8 @@ class RestClientReactiveProcessor {
         }
 
         MultivaluedMap<String, GeneratedClassResult> generatedProviders = new QuarkusMultivaluedHashMap<>();
-        Gizmo classGizmo = Gizmo
-                .create(new GeneratedClassGizmo2Adaptor(generatedClassesProducer, null, null, true));
+        Gizmo classGizmo = Gizmo.create(new GeneratedClassGizmo2Adaptor(generatedClassesProducer, null, null, true))
+                .withLambdaStrategy(LambdaStrategy.ANONYMOUS_CLASS);
         populateClientExceptionMapperFromAnnotations(index, classGizmo, reflectiveClassesProducer,
                 executionModelAnnotationsAllowedProducer)
                 .forEach(generatedProviders::add);
@@ -414,7 +415,8 @@ class RestClientReactiveProcessor {
         }
 
         // Generate the class using Gizmo2
-        Gizmo gizmo = Gizmo.create(new GeneratedBeanGizmo2Adaptor(generatedBeansProducer));
+        Gizmo gizmo = Gizmo.create(new GeneratedBeanGizmo2Adaptor(generatedBeansProducer))
+                .withLambdaStrategy(LambdaStrategy.ANONYMOUS_CLASS);
         gizmo.class_(annotationRegisteredProvidersImpl, cc -> {
             cc.extends_(AnnotationRegisteredProviders.class);
             cc.addAnnotation(Singleton.class);
@@ -679,7 +681,8 @@ class RestClientReactiveProcessor {
             ClassDesc interfaceClassDesc = classDescOf(jaxrsInterface);
             ClassDesc wrapperBaseClassDesc = ClassDesc.of(RestClientReactiveCDIWrapperBase.class.getName());
 
-            Gizmo gizmo = Gizmo.create(new GeneratedBeanGizmo2Adaptor(generatedBeans));
+            Gizmo gizmo = Gizmo.create(new GeneratedBeanGizmo2Adaptor(generatedBeans))
+                    .withLambdaStrategy(LambdaStrategy.ANONYMOUS_CLASS);
             gizmo.class_(wrapperClassName, cc -> {
                 cc.extends_(RestClientReactiveCDIWrapperBase.class);
                 cc.implements_(interfaceClassDesc);

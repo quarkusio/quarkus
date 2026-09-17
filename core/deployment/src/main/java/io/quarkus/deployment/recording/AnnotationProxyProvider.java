@@ -27,6 +27,7 @@ import org.jboss.jandex.MethodInfo;
 import io.quarkus.deployment.util.IoUtil;
 import io.quarkus.gizmo2.GenericType;
 import io.quarkus.gizmo2.Gizmo;
+import io.quarkus.gizmo2.LambdaStrategy;
 import io.quarkus.gizmo2.ParamVar;
 import io.quarkus.gizmo2.TypeArgument;
 import io.quarkus.gizmo2.desc.ConstructorDesc;
@@ -179,6 +180,7 @@ public class AnnotationProxyProvider {
         public A build(io.quarkus.gizmo2.ClassOutput classOutput) {
             generatedLiterals.computeIfAbsent(annotationLiteral, generatedName -> {
                 Gizmo gizmo = Gizmo.create(classOutput)
+                        .withLambdaStrategy(LambdaStrategy.ANONYMOUS_CLASS)
                         .withDebugInfo(false)
                         .withParameters(false);
                 gizmo.class_(generatedName, cc -> {

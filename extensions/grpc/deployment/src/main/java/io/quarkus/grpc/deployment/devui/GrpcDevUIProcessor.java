@@ -45,6 +45,7 @@ import io.quarkus.devui.spi.page.CardPageBuildItem;
 import io.quarkus.devui.spi.page.Page;
 import io.quarkus.gizmo2.Const;
 import io.quarkus.gizmo2.Gizmo;
+import io.quarkus.gizmo2.LambdaStrategy;
 import io.quarkus.gizmo2.desc.ConstructorDesc;
 import io.quarkus.gizmo2.desc.MethodDesc;
 import io.quarkus.grpc.deployment.DelegatingGrpcBeanBuildItem;
@@ -72,7 +73,8 @@ public class GrpcDevUIProcessor {
             BuildProducer<UnremovableBeanBuildItem> unremovableBeans,
             BuildProducer<GeneratedBeanBuildItem> generatedBeans) {
         String className = "io.quarkus.grpc.internal.DelegatingGrpcBeansStorageImpl";
-        Gizmo gizmo = Gizmo.create(new GeneratedBeanGizmo2Adaptor(generatedBeans));
+        Gizmo gizmo = Gizmo.create(new GeneratedBeanGizmo2Adaptor(generatedBeans))
+                .withLambdaStrategy(LambdaStrategy.ANONYMOUS_CLASS);
         gizmo.class_(className, cc -> {
             cc.extends_(DelegatingGrpcBeansStorage.class);
             cc.addAnnotation(Singleton.class);

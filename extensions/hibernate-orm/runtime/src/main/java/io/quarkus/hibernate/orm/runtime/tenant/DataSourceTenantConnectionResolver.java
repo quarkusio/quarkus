@@ -22,7 +22,7 @@ import io.quarkus.hibernate.orm.runtime.migration.MultiTenancyStrategy;
  * @author Michael Schnell
  *
  */
-public class DataSourceTenantConnectionResolver implements TenantConnectionResolver {
+public class DataSourceTenantConnectionResolver implements TenantConnectionResolver<String> {
 
     private static final Logger LOG = Logger.getLogger(DataSourceTenantConnectionResolver.class);
 

@@ -16,6 +16,7 @@ import io.quarkus.gizmo2.ClassOutput;
 import io.quarkus.gizmo2.Expr;
 import io.quarkus.gizmo2.GenericType;
 import io.quarkus.gizmo2.Gizmo;
+import io.quarkus.gizmo2.LambdaStrategy;
 import io.quarkus.gizmo2.TypeArgument;
 import io.quarkus.gizmo2.creator.BlockCreator;
 import io.quarkus.gizmo2.creator.ClassCreator;
@@ -49,7 +50,8 @@ abstract class AbstractExceptionMapperGenerator {
         ClassDesc exceptionClassDesc = ClassDesc.of(exceptionClassName);
         ClassDesc generatedClassDesc = ClassDesc.of(generatedClassName);
 
-        Gizmo gizmo = Gizmo.create(classOutput);
+        Gizmo gizmo = Gizmo.create(classOutput)
+                .withLambdaStrategy(LambdaStrategy.ANONYMOUS_CLASS);
         gizmo.class_(generatedClassName, cc -> {
             cc.implements_(GenericType.ofClass(ExceptionMapper.class,
                     TypeArgument.of(exceptionClassDesc)));

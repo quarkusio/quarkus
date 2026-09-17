@@ -32,6 +32,7 @@ import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.gizmo2.ClassOutput;
 import io.quarkus.gizmo2.Const;
 import io.quarkus.gizmo2.Gizmo;
+import io.quarkus.gizmo2.LambdaStrategy;
 import io.quarkus.gizmo2.desc.ConstructorDesc;
 import io.quarkus.oidc.client.graphql.runtime.AbstractGraphQLTokenProvider;
 import io.quarkus.oidc.client.graphql.runtime.OidcClientGraphQLConfig;
@@ -106,7 +107,8 @@ class OidcGraphQLClientIntegrationProcessor {
             BuildProducer<GeneratedBeanBuildItem> generatedBeanProducer) {
         graphQLTokenProducerInfo.oidcClientToTokenProducerBeanName.forEach((oidcClientName, generatedClassName) -> {
             ClassOutput classOutput = new GeneratedBeanGizmo2Adaptor(generatedBeanProducer);
-            Gizmo gizmo = Gizmo.create(classOutput).withDebugInfo(false).withParameters(false);
+            Gizmo gizmo = Gizmo.create(classOutput)
+                    .withLambdaStrategy(LambdaStrategy.ANONYMOUS_CLASS).withDebugInfo(false).withParameters(false);
             gizmo.class_(generatedClassName, cc -> {
                 cc.public_();
                 cc.addAnnotation(Singleton.class);

@@ -34,6 +34,7 @@ import io.quarkus.gizmo2.ClassOutput;
 import io.quarkus.gizmo2.Const;
 import io.quarkus.gizmo2.Expr;
 import io.quarkus.gizmo2.Gizmo;
+import io.quarkus.gizmo2.LambdaStrategy;
 import io.quarkus.gizmo2.LocalVar;
 import io.quarkus.gizmo2.ParamVar;
 import io.quarkus.gizmo2.creator.BlockCreator;
@@ -501,7 +502,8 @@ public class CustomQueryMethodsAdder extends AbstractMethodsAdder {
 
         ClassInfo interfaceInfo = index.getClassByName(interfaceName);
 
-        Gizmo gizmo = Gizmo.create(nonBeansClassOutput);
+        Gizmo gizmo = Gizmo.create(nonBeansClassOutput)
+                .withLambdaStrategy(LambdaStrategy.ANONYMOUS_CLASS);
         gizmo.class_(implName.toString(), implClassCreator -> {
             implClassCreator.implements_(ClassDesc.of(interfaceName.toString()));
 

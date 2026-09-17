@@ -11,6 +11,7 @@ import io.quarkus.deployment.builditem.RunTimeConfigBuilderBuildItem;
 import io.quarkus.deployment.builditem.StaticInitConfigBuilderBuildItem;
 import io.quarkus.gizmo2.Const;
 import io.quarkus.gizmo2.Gizmo;
+import io.quarkus.gizmo2.LambdaStrategy;
 import io.quarkus.gizmo2.desc.ConstructorDesc;
 import io.quarkus.gizmo2.desc.MethodDesc;
 import io.quarkus.restclient.config.AbstractRestClientConfigBuilder;
@@ -33,7 +34,8 @@ public final class RestClientConfigUtils {
 
         String className = "io.quarkus.runtime.generated.RestClientConfigBuilder";
         Gizmo gizmo = Gizmo
-                .create(new GeneratedClassGizmo2Adaptor(generatedClass, generatedResource, generatedServiceProvider, true));
+                .create(new GeneratedClassGizmo2Adaptor(generatedClass, generatedResource, generatedServiceProvider, true))
+                .withLambdaStrategy(LambdaStrategy.ANONYMOUS_CLASS);
         gizmo.class_(className, cc -> {
             cc.final_();
             cc.extends_(AbstractRestClientConfigBuilder.class);

@@ -9,6 +9,7 @@ import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
 import io.quarkus.deployment.builditem.GeneratedServiceProviderBuildItem;
 import io.quarkus.gizmo2.Const;
 import io.quarkus.gizmo2.Gizmo;
+import io.quarkus.gizmo2.LambdaStrategy;
 import io.quarkus.gizmo2.desc.ConstructorDesc;
 import io.quarkus.kafka.client.serialization.ObjectMapperDeserializer;
 import io.quarkus.kafka.client.serialization.ObjectMapperSerializer;
@@ -24,7 +25,8 @@ public class JacksonSerdeGenerator {
             BuildProducer<GeneratedResourceBuildItem> generatedResources,
             BuildProducer<GeneratedServiceProviderBuildItem> generatedServiceProviders, Type type) {
         var classOutput = new GeneratedClassGizmo2Adaptor(generatedClass, generatedResources, generatedServiceProviders, true);
-        var gizmo = Gizmo.create(classOutput);
+        var gizmo = Gizmo.create(classOutput)
+                .withLambdaStrategy(LambdaStrategy.ANONYMOUS_CLASS);
         String baseName = type.name().withoutPackagePrefix();
         String out = baseName + "_Serializer_" + HashUtil.sha1(type.name().toString());
         String className = type.name().packagePrefix() + "." + out;
@@ -39,7 +41,8 @@ public class JacksonSerdeGenerator {
             BuildProducer<GeneratedResourceBuildItem> generatedResources,
             BuildProducer<GeneratedServiceProviderBuildItem> generatedServiceProviders, Type type) {
         var classOutput = new GeneratedClassGizmo2Adaptor(generatedClass, generatedResources, generatedServiceProviders, true);
-        var gizmo = Gizmo.create(classOutput);
+        var gizmo = Gizmo.create(classOutput)
+                .withLambdaStrategy(LambdaStrategy.ANONYMOUS_CLASS);
         String baseName = type.name().withoutPackagePrefix();
         String out = baseName + "_Deserializer_" + HashUtil.sha1(type.name().toString());
         String className = type.name().packagePrefix() + "." + out;

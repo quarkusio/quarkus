@@ -11,6 +11,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import io.quarkus.gizmo2.Gizmo;
+import io.quarkus.gizmo2.LambdaStrategy;
 
 class BytecodeToolsTest {
 
@@ -86,7 +87,8 @@ class BytecodeToolsTest {
 
     private Map<String, byte[]> generateSimpleClass(String binaryName) {
         Map<String, byte[]> result = new HashMap<>();
-        Gizmo g = Gizmo.create((path, bytes) -> result.put(path, bytes));
+        Gizmo g = Gizmo.create((path, bytes) -> result.put(path, bytes))
+                .withLambdaStrategy(LambdaStrategy.ANONYMOUS_CLASS);
         g.class_(binaryName, cc -> {
             cc.public_();
         });
@@ -95,7 +97,8 @@ class BytecodeToolsTest {
 
     private Map<String, byte[]> generateClassWithField(String binaryName, String fieldName) {
         Map<String, byte[]> result = new HashMap<>();
-        Gizmo g = Gizmo.create((path, bytes) -> result.put(path, bytes));
+        Gizmo g = Gizmo.create((path, bytes) -> result.put(path, bytes))
+                .withLambdaStrategy(LambdaStrategy.ANONYMOUS_CLASS);
         g.class_(binaryName, cc -> {
             cc.public_();
             cc.field(fieldName, fc -> {

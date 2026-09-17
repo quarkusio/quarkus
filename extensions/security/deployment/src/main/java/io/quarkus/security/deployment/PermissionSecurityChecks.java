@@ -48,6 +48,7 @@ import io.quarkus.gizmo2.Const;
 import io.quarkus.gizmo2.Expr;
 import io.quarkus.gizmo2.GenericType;
 import io.quarkus.gizmo2.Gizmo;
+import io.quarkus.gizmo2.LambdaStrategy;
 import io.quarkus.gizmo2.ParamVar;
 import io.quarkus.gizmo2.TypeArgument;
 import io.quarkus.gizmo2.creator.BlockCreator;
@@ -786,7 +787,8 @@ interface PermissionSecurityChecks {
                 BuildProducer<GeneratedResourceBuildItem> generatedResourceProducer,
                 BuildProducer<GeneratedServiceProviderBuildItem> generatedServiceProviderProducer) {
             var gizmo = Gizmo.create(new GeneratedClassGizmo2Adaptor(generatedClassProducer, generatedResourceProducer,
-                    generatedServiceProviderProducer, true));
+                    generatedServiceProviderProducer, true))
+                    .withLambdaStrategy(LambdaStrategy.ANONYMOUS_CLASS);
 
             permissionNameToChecker.values().forEach(checkerMetadata -> {
                 var declaringCdiBean = checkerMetadata.checkerMethod().declaringClass();
@@ -1642,7 +1644,8 @@ interface PermissionSecurityChecks {
                 reflectiveClassesProducer.produce(ReflectiveClassBuildItem.builder(GENERATED_CLASS_NAME).methods().build());
 
                 var gizmo = Gizmo.create(new GeneratedClassGizmo2Adaptor(generatedClassesProducer, generatedResourcesProducer,
-                        generatedServiceProvidersProducer, true));
+                        generatedServiceProvidersProducer, true))
+                        .withLambdaStrategy(LambdaStrategy.ANONYMOUS_CLASS);
                 gizmo.class_(GENERATED_CLASS_NAME, cc -> {
                     cc.final_();
                     for (ConverterTask task : converterTasks) {

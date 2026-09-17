@@ -42,6 +42,7 @@ import io.quarkus.deployment.builditem.nativeimage.ReflectiveMethodBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.gizmo2.ClassOutput;
 import io.quarkus.gizmo2.Gizmo;
+import io.quarkus.gizmo2.LambdaStrategy;
 import io.quarkus.gizmo2.ParamVar;
 import io.quarkus.gizmo2.desc.ConstructorDesc;
 import io.quarkus.gizmo2.desc.MethodDesc;
@@ -158,7 +159,8 @@ public class JsonbProcessor {
 
         ClassOutput classOutput = new GeneratedBeanGizmo2Adaptor(generatedBeans);
 
-        Gizmo gizmo = Gizmo.create(classOutput);
+        Gizmo gizmo = Gizmo.create(classOutput)
+                .withLambdaStrategy(LambdaStrategy.ANONYMOUS_CLASS);
         gizmo.class_("io.quarkus.jsonb.customizer.RegisterSerializersAndDeserializersCustomizer", cc -> {
             cc.implements_(JsonbConfigCustomizer.class);
             cc.defaultConstructor();

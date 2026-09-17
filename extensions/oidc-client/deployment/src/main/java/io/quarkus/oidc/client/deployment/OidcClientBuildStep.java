@@ -38,6 +38,7 @@ import io.quarkus.deployment.builditem.RunTimeConfigBuilderBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
 import io.quarkus.gizmo2.Const;
 import io.quarkus.gizmo2.Gizmo;
+import io.quarkus.gizmo2.LambdaStrategy;
 import io.quarkus.gizmo2.desc.ConstructorDesc;
 import io.quarkus.gizmo2.desc.MethodDesc;
 import io.quarkus.oidc.client.NamedOidcClient;
@@ -132,7 +133,8 @@ public class OidcClientBuildStep {
             BuildProducer<GeneratedBeanBuildItem> generatedBean,
             OidcClientNamesBuildItem oidcClientNames) {
 
-        Gizmo gizmo = Gizmo.create(new GeneratedBeanGizmo2Adaptor(generatedBean));
+        Gizmo gizmo = Gizmo.create(new GeneratedBeanGizmo2Adaptor(generatedBean))
+                .withLambdaStrategy(LambdaStrategy.ANONYMOUS_CLASS);
 
         String targetPackage = DotNames
                 .packagePrefix(DotName.createSimple(TokensProducer.class));

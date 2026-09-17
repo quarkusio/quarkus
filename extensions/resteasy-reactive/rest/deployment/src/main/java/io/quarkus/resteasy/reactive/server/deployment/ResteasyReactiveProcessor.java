@@ -187,6 +187,7 @@ import io.quarkus.gizmo.Gizmo;
 import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo2.Const;
+import io.quarkus.gizmo2.LambdaStrategy;
 import io.quarkus.gizmo2.ParamVar;
 import io.quarkus.gizmo2.desc.ClassMethodDesc;
 import io.quarkus.gizmo2.desc.MethodDesc;
@@ -1602,7 +1603,8 @@ public class ResteasyReactiveProcessor {
         MethodDesc handleMethod = MethodDesc.of(ServerRestHandler.class, "handle", void.class,
                 ResteasyReactiveRequestContext.class);
         io.quarkus.gizmo2.Gizmo gizmo = io.quarkus.gizmo2.Gizmo
-                .create(new GeneratedClassGizmo2Adaptor(generatedClass, generatedResource, true));
+                .create(new GeneratedClassGizmo2Adaptor(generatedClass, generatedResource, true))
+                .withLambdaStrategy(LambdaStrategy.ANONYMOUS_CLASS);
         gizmo.class_(HANDLER_DISPATCHER_CLASS, cc -> {
             cc.final_();
             cc.extends_(ServerRestHandlerDispatcher.class);

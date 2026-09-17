@@ -1347,7 +1347,7 @@ There are different query languages used in this API:
 which is the query language used by Hibernate, supported by the `@HQL` annotation.
 - The link:{jakarta-persistence-spec-url}#a4665[Jakarta Persistence Query Language] (JP-QL), which is a subset of the Hibernate
 Query Language. It is currently being moved to its own spec called
-link:https://jakarta.ee/specifications/query/1.0/jakarta-query-1.0-m1[Jakarta Query].
+link:https://jakarta.ee/specifications/query/1.0/[Jakarta Query].
 - The link:{jakarta-data-spec-url}#_jakarta_data_query_language[Jakarta Data Query Language] (JD-QL), which is a subset of the
 Jakarta Persistence Query Language, supported by the `@Query` annotation.
 - The Panache Query Language, which is a superset of the Hibernate Query Language adding very few shortcuts, which

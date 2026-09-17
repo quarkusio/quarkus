@@ -122,7 +122,7 @@ public class StorkConfigUtilTest {
         assertThat(registrar.type()).isPresent();
         assertThat("consul").isEqualTo(registrar.type().get());
         String healthCheckUrl = registrar.parameters().get("health-check-url");
-        assertThat(healthCheckUrl).startsWith("https://");
+        assertThat(healthCheckUrl).startsWith("http://");
         assertThat(healthCheckUrl).endsWith("/custom");
     }
 
@@ -137,7 +137,7 @@ public class StorkConfigUtilTest {
         assertThat(updated.serviceRegistrar()).isPresent();
         assertThat(updated.serviceRegistrar().get().type()).hasValue("consul");
         String healthCheckUrl = updated.serviceRegistrar().get().parameters().get("health-check-url");
-        assertThat(healthCheckUrl).startsWith("https://");
+        assertThat(healthCheckUrl).startsWith("http://");
         assertThat(healthCheckUrl).endsWith("/health");
 
         assertThat(updated.serviceDiscovery()).isPresent();
@@ -337,12 +337,12 @@ public class StorkConfigUtilTest {
     }
 
     @Test
-    public void shouldUseManagementPortForHealthCheckWhenManagementEnabled() {
+    public void shouldUseManagementHostAndPortForHealthCheckWhenManagementEnabled() {
         Map<String, String> mgmtConfigMap = new HashMap<>();
-        mgmtConfigMap.put("quarkus.http.host", "localhost");
+        mgmtConfigMap.put("quarkus.http.host", "app.internal");
         mgmtConfigMap.put("quarkus.http.port", "8080");
         mgmtConfigMap.put("quarkus.management.enabled", "true");
-        mgmtConfigMap.put("quarkus.management.host", "0.0.0.0");
+        mgmtConfigMap.put("quarkus.management.host", "mgmt.internal");
         mgmtConfigMap.put("quarkus.management.port", "9000");
 
         Config mgmtConfig = new SmallRyeConfigBuilder()
@@ -360,20 +360,19 @@ public class StorkConfigUtilTest {
 
             assertThat(updated.serviceRegistrar()).isPresent();
             String healthCheckUrl = updated.serviceRegistrar().get().parameters().get("health-check-url");
-            assertThat(healthCheckUrl).contains(":9000");
-            assertThat(healthCheckUrl).doesNotContain(":8080");
+            assertThat(healthCheckUrl).isEqualTo("http://mgmt.internal:9000/q/health/live");
         } finally {
             resolver.releaseConfig(mgmtConfig);
         }
     }
 
     @Test
-    public void shouldUseManagementPortInBuildRegistrarOnlyWhenManagementEnabled() {
+    public void shouldUseManagementHostAndPortInBuildRegistrarOnlyWhenManagementEnabled() {
         Map<String, String> mgmtConfigMap = new HashMap<>();
-        mgmtConfigMap.put("quarkus.http.host", "localhost");
+        mgmtConfigMap.put("quarkus.http.host", "app.internal");
         mgmtConfigMap.put("quarkus.http.port", "8080");
         mgmtConfigMap.put("quarkus.management.enabled", "true");
-        mgmtConfigMap.put("quarkus.management.host", "0.0.0.0");
+        mgmtConfigMap.put("quarkus.management.host", "mgmt.internal");
         mgmtConfigMap.put("quarkus.management.port", "9000");
 
         Config mgmtConfig = new SmallRyeConfigBuilder()
@@ -388,10 +387,37 @@ public class StorkConfigUtilTest {
 
             assertThat(result.serviceRegistrar()).isPresent();
             String healthCheckUrl = result.serviceRegistrar().get().parameters().get("health-check-url");
-            assertThat(healthCheckUrl).contains(":9000");
-            assertThat(healthCheckUrl).doesNotContain(":8080");
+            assertThat(healthCheckUrl).isEqualTo("http://mgmt.internal:9000/q/health/live");
         } finally {
             resolver.releaseConfig(mgmtConfig);
+        }
+    }
+
+    @Test
+    public void shouldUseHttpsWhenInsecureRequestsDisabled() {
+        Map<String, String> tlsConfigMap = new HashMap<>();
+        tlsConfigMap.put("quarkus.http.host", "localhost");
+        tlsConfigMap.put("quarkus.http.port", "8443");
+        tlsConfigMap.put("quarkus.http.insecure-requests", "disabled");
+
+        Config tlsConfig = new SmallRyeConfigBuilder()
+                .withSources(new MapBackedConfigSource("test-tls", tlsConfigMap) {
+                })
+                .build();
+        ConfigProviderResolver resolver = ConfigProviderResolver.instance();
+        resolver.releaseConfig(ConfigProvider.getConfig());
+        resolver.registerConfig(tlsConfig, Thread.currentThread().getContextClassLoader());
+        try {
+            ServiceConfiguration original = buildServiceConfig(null, null,
+                    buildRegistrarConfig("consul", Map.of()));
+
+            ServiceConfiguration updated = StorkConfigUtil.addRegistrarTypeIfAbsent("consul", original, "/q/health/live");
+
+            assertThat(updated.serviceRegistrar()).isPresent();
+            String healthCheckUrl = updated.serviceRegistrar().get().parameters().get("health-check-url");
+            assertThat(healthCheckUrl).startsWith("https://");
+        } finally {
+            resolver.releaseConfig(tlsConfig);
         }
     }
 

@@ -79,7 +79,8 @@ public class HttpServerOptionsUtils {
      * Holds the result of building server configuration: an {@link HttpServerConfig}, optional {@link ServerSSLOptions},
      * and optional {@link SSLEngineOptions} for selecting the SSL engine.
      */
-    public record ServerConfig(HttpServerConfig config, ServerSSLOptions sslOptions, SSLEngineOptions sslEngineOptions) {
+    public record ServerConfig(HttpServerConfig config, ServerSSLOptions sslOptions,
+            SSLEngineOptions sslEngineOptions) {
         public ServerConfig(HttpServerConfig config, ServerSSLOptions sslOptions) {
             this(config, sslOptions, null);
         }
@@ -641,12 +642,11 @@ public class HttpServerOptionsUtils {
                         compression.addDeflate();
                     }
                 } else if ("br".equalsIgnoreCase(compressor)) {
-                    // For now, do not configure the quality level for Brotli - See https://github.com/eclipse-vertx/vert.x/issues/6201
-                    //                    if (compressionLevel.isPresent()) {
-                    //                        compression.addBrotli(compressionLevel.getAsInt());
-                    //                    } else {
-                    compression.addBrotli();
-                    //                    }
+                    if (compressionLevel.isPresent()) {
+                        compression.addBrotli(compressionLevel.getAsInt());
+                    } else {
+                        compression.addBrotli();
+                    }
                 } else if ("snappy".equalsIgnoreCase(compressor)) {
                     compression.addSnappy();
                 } else {

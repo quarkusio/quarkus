@@ -154,9 +154,6 @@ The filter logs the reason at the `DEBUG` level, so enable that level for its lo
 quarkus.log.category."io.quarkus.vertx.http.runtime.cors.CORSFilter".level=DEBUG
 ----
 
-If the application raises `quarkus.log.min-level` above `DEBUG`, also set `quarkus.log.category."io.quarkus.vertx.http.runtime.cors.CORSFilter".min-level=DEBUG`, which is a build-time property, otherwise the `DEBUG` records are removed at build time.
-See the xref:logging.adoc[logging guide] for details.
-
 Compare the logged origin, method, and headers with the values of `quarkus.http.cors.origins`, `quarkus.http.cors.methods`, and `quarkus.http.cors.headers`.
 Browsers also report the failed CORS check in their developer tools console, next to the request that triggered it.
 

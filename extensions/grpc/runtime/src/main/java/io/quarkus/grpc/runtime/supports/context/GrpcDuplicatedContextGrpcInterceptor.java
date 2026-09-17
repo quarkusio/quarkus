@@ -214,7 +214,14 @@ public class GrpcDuplicatedContextGrpcInterceptor implements ServerInterceptor, 
 
         @Override
         public void onComplete() {
-            invoke(ServerCall.Listener::onComplete);
+            invoke(listener -> {
+                listener.onComplete();
+                Runnable cleanup = GrpcContextLocalsProvider.GRPC_CONTEXT_CLEANUP_LOCAL.get(context);
+                if (cleanup != null) {
+                    GrpcContextLocalsProvider.GRPC_CONTEXT_CLEANUP_LOCAL.remove(context);
+                    cleanup.run();
+                }
+            });
         }
     }
 }

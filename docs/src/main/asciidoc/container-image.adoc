@@ -145,9 +145,8 @@ Use either the `quarkus-container-image-docker` or `quarkus-container-image-podm
 For example, building multi-platform images is implemented differently for Docker and Podman. Docker uses https://docs.docker.com/engine/reference/commandline/buildx_build/[the buildx plugin] whereas Podman can build multi-platform images https://docs.podman.io/en/latest/markdown/podman-build.1.html#platform-os-arch-variant[natively]. Because of this, you would need to use the specific extension to perform that function.
 ====
 
-[[s2i]]
 [[openshift]]
-=== OpenShift
+=== OpenShift [[s2i]]
 
 The extension `quarkus-container-image-openshift` is using OpenShift binary builds in order to perform container builds inside the OpenShift cluster.
 The idea behind the binary build is that you just upload the artifact and its dependencies to the cluster and during the build they will be merged to a builder image (defaults to `ubi9/openjdk-17` or `ubi9/openjdk-21`).

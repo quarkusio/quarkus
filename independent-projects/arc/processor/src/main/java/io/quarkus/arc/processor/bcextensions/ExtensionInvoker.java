@@ -3,6 +3,7 @@ package io.quarkus.arc.processor.bcextensions;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -78,8 +79,7 @@ class ExtensionInvoker {
         return Interceptor.Priority.APPLICATION + 500;
     }
 
-    void callExtensionMethod(ExtensionMethod method, List<Object> arguments)
-            throws ReflectiveOperationException {
+    void callExtensionMethod(ExtensionMethod method, List<Object> arguments) throws Exception {
 
         Class<?>[] parameterTypes = new Class[arguments.size()];
         for (int i = 0; i < parameterTypes.length; i++) {
@@ -91,7 +91,14 @@ class ExtensionInvoker {
 
         Method methodReflective = extensionClass.getDeclaredMethod(method.name(), parameterTypes);
         methodReflective.setAccessible(true);
-        methodReflective.invoke(extensionClassInstance, arguments.toArray());
+        try {
+            methodReflective.invoke(extensionClassInstance, arguments.toArray());
+        } catch (InvocationTargetException e) {
+            if (e.getCause() instanceof Exception cause) {
+                throw cause;
+            }
+            throw e;
+        }
     }
 
     void invalidate() {

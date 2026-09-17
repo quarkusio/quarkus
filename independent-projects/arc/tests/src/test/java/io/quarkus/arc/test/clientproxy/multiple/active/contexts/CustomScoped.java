@@ -1,0 +1,16 @@
+package io.quarkus.arc.test.clientproxy.multiple.active.contexts;
+
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Inherited;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
+
+import jakarta.enterprise.context.NormalScope;
+
+@NormalScope
+@Inherited
+@Target({ ElementType.TYPE, ElementType.METHOD, ElementType.FIELD })
+@Retention(RetentionPolicy.RUNTIME)
+public @interface CustomScoped {
+}

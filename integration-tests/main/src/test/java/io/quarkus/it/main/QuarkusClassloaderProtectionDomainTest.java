@@ -37,7 +37,7 @@ public class QuarkusClassloaderProtectionDomainTest {
             try (JarInputStream jarInputStream = new JarInputStream(inputStream)) {
                 Manifest manifest = jarInputStream.getManifest();
                 assertNotNull(manifest);
-                assertEquals("jakarta.enterprise.cdi-api", manifest.getMainAttributes().getValue("Bundle-SymbolicName"));
+                assertEquals("jakarta.cdi.jakarta.cdi-api", manifest.getMainAttributes().getValue("Bundle-SymbolicName"));
             }
         }
     }

@@ -113,12 +113,10 @@ final class Interceptors {
             if (seenValues != null) {
                 // interceptor binding of the same type already seen
                 // all annotation members (except nonbinding) must have equal values
-                ClassInfo declaration = beanDeployment.getInterceptorBinding(name);
                 Set<String> nonBindingMembers = beanDeployment.getInterceptorNonbindingMembers(name);
 
                 for (AnnotationValue value : seenValues) {
-                    if (declaration.method(value.name()).hasDeclaredAnnotation(DotNames.NONBINDING)
-                            || nonBindingMembers.contains(value.name())) {
+                    if (nonBindingMembers.contains(value.name())) {
                         continue;
                     }
 

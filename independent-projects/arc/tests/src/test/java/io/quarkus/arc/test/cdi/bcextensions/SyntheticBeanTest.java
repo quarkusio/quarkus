@@ -11,7 +11,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import jakarta.enterprise.inject.Instance;
 import jakarta.enterprise.inject.build.compatible.spi.AnnotationBuilder;
 import jakarta.enterprise.inject.build.compatible.spi.BeanInfo;
 import jakarta.enterprise.inject.build.compatible.spi.BuildCompatibleExtension;
@@ -22,6 +21,7 @@ import jakarta.enterprise.inject.build.compatible.spi.Synthesis;
 import jakarta.enterprise.inject.build.compatible.spi.SyntheticBeanCreator;
 import jakarta.enterprise.inject.build.compatible.spi.SyntheticBeanDisposer;
 import jakarta.enterprise.inject.build.compatible.spi.SyntheticComponents;
+import jakarta.enterprise.inject.build.compatible.spi.SyntheticInjections;
 import jakarta.enterprise.inject.build.compatible.spi.Types;
 import jakarta.enterprise.inject.build.compatible.spi.Validation;
 import jakarta.enterprise.inject.spi.InjectionPoint;
@@ -89,6 +89,7 @@ public class SyntheticBeanTest {
                             .member("nested", new MySimpleValue.Literal("yes", new byte[] { 4, 5, 6 }))
                             .build())
                     .withParam("name", "World")
+                    .withInjectionPoint(InjectionPoint.class)
                     .createWith(MyPojoCreator.class)
                     .disposeWith(MyPojoDisposer.class);
 
@@ -105,6 +106,7 @@ public class SyntheticBeanTest {
                                             .build())
                             .build())
                     .withParam("name", "SynBean")
+                    .withInjectionPoint(InjectionPoint.class)
                     .createWith(MyPojoCreator.class)
                     .disposeWith(MyPojoDisposer.class);
         }
@@ -195,12 +197,12 @@ public class SyntheticBeanTest {
         static final Map<String, MyComplexValue> annotations = new HashMap<>();
 
         @Override
-        public MyPojo create(Instance<Object> lookup, Parameters params) {
+        public MyPojo create(SyntheticInjections injections, Parameters params) {
             String name = params.get("name", String.class);
 
             annotations.put(name, params.get("data", MyComplexValue.class));
 
-            InjectionPoint injectionPoint = lookup.select(InjectionPoint.class).get();
+            InjectionPoint injectionPoint = injections.get(InjectionPoint.class);
             if (injectionPoint.getQualifiers().stream().anyMatch(it -> it.annotationType().equals(MyQualifier.class))) {
                 return new MyPojo("Hello @MyQualifier " + name);
             }
@@ -211,7 +213,7 @@ public class SyntheticBeanTest {
 
     public static class MyPojoDisposer implements SyntheticBeanDisposer<MyPojo> {
         @Override
-        public void dispose(MyPojo instance, Instance<Object> lookup, Parameters params) {
+        public void dispose(MyPojo instance, SyntheticInjections injections, Parameters params) {
             System.out.println("disposing " + instance.data);
         }
     }

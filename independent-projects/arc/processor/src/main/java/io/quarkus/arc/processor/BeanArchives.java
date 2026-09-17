@@ -42,7 +42,6 @@ import io.quarkus.arc.All;
 import io.quarkus.arc.Lock;
 import io.quarkus.arc.impl.ActivateRequestContextInterceptor;
 import io.quarkus.arc.impl.DefaultAsyncObserverExceptionHandler;
-import io.quarkus.arc.impl.Identified;
 import io.quarkus.arc.impl.InjectableRequestContextController;
 import io.quarkus.arc.impl.LockInterceptor;
 
@@ -87,7 +86,6 @@ public final class BeanArchives {
         index(indexer, Model.class.getName());
         index(indexer, Lock.class.getName());
         index(indexer, All.class.getName());
-        index(indexer, Identified.class.getName());
         // Arc built-in beans
         index(indexer, ActivateRequestContextInterceptor.class.getName());
         index(indexer, InjectableRequestContextController.class.getName());

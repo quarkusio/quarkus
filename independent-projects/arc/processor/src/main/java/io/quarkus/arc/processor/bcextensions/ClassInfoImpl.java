@@ -89,6 +89,14 @@ class ClassInfoImpl extends DeclarationInfoImpl<org.jboss.jandex.ClassInfo> impl
     }
 
     @Override
+    public Collection<ClassInfo> permittedSubclasses() {
+        return jandexDeclaration.permittedSubclasses()
+                .stream()
+                .map(it -> (ClassInfo) new ClassInfoImpl(jandexIndex, annotationOverlay, jandexIndex.getClassByName(it)))
+                .toList();
+    }
+
+    @Override
     public boolean isPlainClass() {
         return !isInterface() && !isEnum() && !isAnnotation() && !isRecord();
     }
@@ -118,12 +126,17 @@ class ClassInfoImpl extends DeclarationInfoImpl<org.jboss.jandex.ClassInfo> impl
 
     @Override
     public boolean isAbstract() {
-        return Modifier.isAbstract(jandexDeclaration.flags());
+        return jandexDeclaration.isAbstract();
     }
 
     @Override
     public boolean isFinal() {
-        return Modifier.isFinal(jandexDeclaration.flags());
+        return jandexDeclaration.isFinal();
+    }
+
+    @Override
+    public boolean isSealed() {
+        return jandexDeclaration.isSealed();
     }
 
     @Override

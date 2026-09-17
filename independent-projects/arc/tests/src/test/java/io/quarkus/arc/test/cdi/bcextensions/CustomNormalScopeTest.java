@@ -26,7 +26,6 @@ import jakarta.enterprise.context.NormalScope;
 import jakarta.enterprise.context.spi.AlterableContext;
 import jakarta.enterprise.context.spi.Contextual;
 import jakarta.enterprise.context.spi.CreationalContext;
-import jakarta.enterprise.inject.Instance;
 import jakarta.enterprise.inject.build.compatible.spi.BuildCompatibleExtension;
 import jakarta.enterprise.inject.build.compatible.spi.Discovery;
 import jakarta.enterprise.inject.build.compatible.spi.MetaAnnotations;
@@ -35,6 +34,7 @@ import jakarta.enterprise.inject.build.compatible.spi.ScannedClasses;
 import jakarta.enterprise.inject.build.compatible.spi.Synthesis;
 import jakarta.enterprise.inject.build.compatible.spi.SyntheticBeanCreator;
 import jakarta.enterprise.inject.build.compatible.spi.SyntheticComponents;
+import jakarta.enterprise.inject.build.compatible.spi.SyntheticInjections;
 import jakarta.enterprise.inject.spi.BeanContainer;
 import jakarta.inject.Inject;
 import jakarta.interceptor.Interceptor;
@@ -142,19 +142,21 @@ public class CustomNormalScopeTest {
             syn.addBean(CommandContextController.class)
                     .type(CommandContextController.class)
                     .scope(Dependent.class)
+                    .withInjectionPoint(BeanContainer.class)
                     .createWith(CommandContextControllerCreator.class);
 
             syn.addBean(CommandExecution.class)
                     .type(CommandExecution.class)
                     .scope(CommandScoped.class)
+                    .withInjectionPoint(BeanContainer.class)
                     .createWith(CommandExecutionCreator.class);
         }
     }
 
     static class CommandContextControllerCreator implements SyntheticBeanCreator<CommandContextController> {
         @Override
-        public CommandContextController create(Instance<Object> lookup, Parameters params) {
-            BeanContainer beanContainer = lookup.select(BeanContainer.class).get();
+        public CommandContextController create(SyntheticInjections injections, Parameters params) {
+            BeanContainer beanContainer = injections.get(BeanContainer.class);
             CommandContext ctx = (CommandContext) beanContainer.getContexts(CommandScoped.class).iterator().next();
             return new CommandContextController(ctx, beanContainer);
         }
@@ -162,8 +164,8 @@ public class CustomNormalScopeTest {
 
     static class CommandExecutionCreator implements SyntheticBeanCreator<CommandExecution> {
         @Override
-        public CommandExecution create(Instance<Object> lookup, Parameters params) {
-            CommandContext ctx = (CommandContext) lookup.select(BeanContainer.class).get().getContext(CommandScoped.class);
+        public CommandExecution create(SyntheticInjections injections, Parameters params) {
+            CommandContext ctx = (CommandContext) injections.get(BeanContainer.class).getContext(CommandScoped.class);
             return ctx.getCurrentCommandExecution();
         }
     }

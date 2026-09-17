@@ -105,6 +105,11 @@
       }
     },
     {
+      "name": "Command line",
+      "id": "command-line",
+      "description": "Command-line applications and tools"
+    },
+    {
       "name": "Observability",
       "id": "observability",
       "description": "Metrics, tracing, etc"

@@ -188,10 +188,7 @@ class VertxInputStreamTest {
         verify(request).handler(handlerCaptor.capture());
         Handler<Buffer> dataHandler = handlerCaptor.getValue();
 
-        // Feed data through handler (must be done in synchronized block on connection)
-        synchronized (connection) {
-            dataHandler.handle(Buffer.buffer("test"));
-        }
+        dataHandler.handle(Buffer.buffer("test"));
 
         // Read triggers continueState -> writeContinue
         byte[] out = new byte[4];
@@ -282,10 +279,7 @@ class VertxInputStreamTest {
 
         VertxInputStream.VertxBlockingInput input = new VertxInputStream.VertxBlockingInput(request, 10000);
 
-        // Feed an empty buffer (HTTP/2 signals EOF)
-        synchronized (connection) {
-            input.handle(Buffer.buffer(new byte[0]));
-        }
+        input.handle(Buffer.buffer(new byte[0]));
 
         io.netty.buffer.ByteBuf result = input.readBlocking();
         assertThat(result).isNull();
@@ -331,10 +325,8 @@ class VertxInputStreamTest {
         VertxInputStream.VertxBlockingInput input = new VertxInputStream.VertxBlockingInput(request, 10000);
 
         // Feed two chunks
-        synchronized (connection) {
-            input.handle(Buffer.buffer("abc"));
-            input.handle(Buffer.buffer("def"));
-        }
+        input.handle(Buffer.buffer("abc"));
+        input.handle(Buffer.buffer("def"));
 
         io.netty.buffer.ByteBuf chunk1 = input.readBlocking();
         assertThat(chunk1).isNotNull();

@@ -62,6 +62,10 @@
             </exclusions>
         </dependency>
         <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-smallrye-stork</artifactId>
+        </dependency>
+        <dependency>
             <groupId>org.crac</groupId>
             <artifactId>crac</artifactId>
         </dependency>

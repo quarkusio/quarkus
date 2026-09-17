@@ -30,7 +30,7 @@ import java.util.Objects;
  * </pre>
  *
  * @see <a href=
- *      "https://www.graalvm.org/jdk25.2/reference-manual/native-image/native-code-interoperability/ffm-api/#linker-options">GraalVM
+ *      "https://www.graalvm.org/latest/reference-manual/native-image/native-code-interoperability/ffm-api/#linker-options">GraalVM
  *      FFM Linker Options</a>
  */
 public final class FfmDowncallBuildItem extends FfmCallBuildItem {
@@ -122,7 +122,7 @@ public final class FfmDowncallBuildItem extends FfmCallBuildItem {
      * but restricts what the native function can do.
      *
      * @see <a href=
-     *      "https://www.graalvm.org/jdk25.2/reference-manual/native-image/native-code-interoperability/ffm-api/#linker-options">GraalVM
+     *      "https://www.graalvm.org/latest/reference-manual/native-image/native-code-interoperability/ffm-api/#linker-options">GraalVM
      *      FFM Linker Options</a>
      */
     public enum CriticalOption {

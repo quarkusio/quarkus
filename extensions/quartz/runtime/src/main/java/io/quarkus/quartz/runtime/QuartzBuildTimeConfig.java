@@ -39,7 +39,7 @@ public interface QuartzBuildTimeConfig {
      * <p>
      * To create Quartz tables, you can perform a schema migration via the <a href="https://quarkus.io/guides/flyway"> Flyway
      * extension</a> using a SQL script matching your database picked from <a href=
-     * "https://github.com/quartz-scheduler/quartz/blob/master/quartz-core/src/main/resources/org/quartz/impl/jdbcjobstore">Quartz
+     * "https://github.com/quartz-scheduler/quartz/tree/main/quartz/src/main/resources/org/quartz/impl/jdbcjobstore">Quartz
      * repository</a>.
      */
     @WithDefault("ram")

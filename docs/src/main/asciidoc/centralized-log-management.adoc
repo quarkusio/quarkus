@@ -583,7 +583,9 @@ When the second message will arrive to Elasticsearch, it will have a `MessagePar
 To work around this limitation, you can disable sending log message parameters via `logging-gelf` by configuring `quarkus.log.handler.gelf.include-log-message-parameters=false`,
 or you can configure your Elasticsearch index to store those fields as text or keyword, Elasticsearch will then automatically make the translation from int/boolean to a String.
 
-See the following documentation for Graylog (but the same issue exists for the other central logging stacks): link:https://docs.graylog.org/en/3.2/pages/configuration/elasticsearch.html#custom-index-mappings[Custom Index Mappings].
+See the following documentation for Graylog (but the same issue exists for the other central logging stacks): link::https://g
+o2docs.graylog.org/current/setting_up_graylog/opensearch.htm#C
+ustomIndexMappings[Custom Index Mapping].
 
 [[configuration-reference]]
 === Configuration Reference
@@ -593,4 +595,4 @@ Configuration is done through the usual `application.properties` file.
 include::{generated-dir}/config/quarkus-logging-gelf.adoc[opts=optional, leveloffset=+1]
 
 This extension uses the `logstash-gelf` library that allow more configuration options via system properties,
-you can access its documentation here: https://logging.paluch.biz/.
+you can access its documentation here: https://github.com/mp911de/logstash-gelf.

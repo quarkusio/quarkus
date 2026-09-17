@@ -97,14 +97,15 @@ public class BcryptUtil {
      * <p>
      * The hash must be a bcrypt hash in Modular Crypt Format, that is a {@code $2$}, {@code $2a$}, {@code $2x$} or
      * {@code $2y$} prefix, the cost as two digits, {@code $}, and 53 characters of radix-64 salt and hash, as
-     * {@link #bcryptHash(String)} produces. Note that {@code $2b$}, which most other bcrypt implementations emit
-     * today, is not among the prefixes the underlying provider recognises.
+     * {@link #bcryptHash(String)} produces.
      *
      * @param plainText the plain text string to check
      * @param passwordHash the Modular Crypt Format bcrypt hash to compare against
      * @return the boolean result of whether the plain text matches the decoded Modular Crypt Format bcrypt hash
      * @throws NullPointerException if the plainText password or passwordHash is null
      * @throws IllegalArgumentException if the passwordHash is not a bcrypt hash of that form
+     * @throws RuntimeException wrapping a {@link NoSuchAlgorithmException} if the security providers offer no bcrypt
+     *         implementation
      */
     public static boolean matches(String plainText, String passwordHash) {
         Objects.requireNonNull(plainText, "plainText password is required");
@@ -121,8 +122,8 @@ public class BcryptUtil {
             return passwordFactory.verify(userPasswordRestored, plainText.toCharArray());
         } catch (InvalidKeySpecException | InvalidKeyException | IllegalArgumentException e) {
             throw new IllegalArgumentException("The provided password hash is not a valid Modular Crypt Format bcrypt hash"
-                    + " (expected a '$2$', '$2a$', '$2x$' or '$2y$' prefix, the cost, and 53 characters of salt and hash;"
-                    + " '$2b$' is not supported): " + e.getMessage(), e);
+                    + " (expected a '$2$', '$2a$', '$2x$' or '$2y$' prefix, the cost, and 53 characters of salt and"
+                    + " hash): " + e.getMessage(), e);
         }
     }
 }

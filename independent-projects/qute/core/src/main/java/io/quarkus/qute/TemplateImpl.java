@@ -12,12 +12,13 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
@@ -279,7 +280,6 @@ class TemplateImpl implements Template {
         }
 
         private CompletionStage<Void> renderData(Object data, Consumer<String> consumer) {
-            CompletableFuture<Void> result = new CompletableFuture<>();
             ResolutionContext rootContext = new ResolutionContextImpl(data,
                     engine.getEvaluator(), null, this);
             setAttribute(DataNamespaceResolver.ROOT_CONTEXT, rootContext);
@@ -289,36 +289,36 @@ class TemplateImpl implements Template {
                 engine.getTraceManager().fireStartTemplate(event);
             }
             // Async resolution
-            root.resolve(rootContext).whenComplete((r, t) -> {
-                if (t != null) {
-                    result.completeExceptionally(t);
-                } else {
-                    // Sync processing of the result tree - build the output
-                    try {
-                        r.process(consumer);
-                        result.complete(null);
-                    } catch (Throwable e) {
-                        result.completeExceptionally(e);
-                    } finally {
-                        if (renderedActions != null) {
-                            for (Runnable action : renderedActions) {
-                                try {
-                                    action.run();
-                                } catch (Throwable e) {
-                                    LOG.error("Unable to perform an action when rendering finished", e);
+            return root.resolve(rootContext)
+                    .<Void> thenApply(new Function<ResultNode, Void>() {
+                        @Override
+                        public Void apply(ResultNode r) {
+                            try {
+                                r.process(consumer);
+                                return null;
+                            } finally {
+                                if (renderedActions != null) {
+                                    for (Runnable action : renderedActions) {
+                                        try {
+                                            action.run();
+                                        } catch (Throwable e) {
+                                            LOG.error("Unable to perform an action when rendering finished", e);
+                                        }
+                                    }
                                 }
                             }
                         }
-
-                    }
-                }
-                if (event != null) {
-                    // Notify trace listeners that template rendering has ended.
-                    event.done();
-                    engine.getTraceManager().fireEndTemplate(event);
-                }
-            });
-            return result;
+                    })
+                    .whenComplete(new BiConsumer<Void, Throwable>() {
+                        @Override
+                        public void accept(Void v, Throwable t) {
+                            if (event != null) {
+                                // Notify trace listeners that template rendering has ended.
+                                event.done();
+                                engine.getTraceManager().fireEndTemplate(event);
+                            }
+                        }
+                    });
         }
 
         @Override

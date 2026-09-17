@@ -1,6 +1,5 @@
 package io.quarkus.devui.deployment;
 
-import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -25,7 +24,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Properties;
 import java.util.Scanner;
 import java.util.Set;
 import java.util.jar.JarEntry;
@@ -54,6 +52,7 @@ import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
+import io.quarkus.deployment.util.ArtifactInfoUtil;
 import io.quarkus.dev.console.DevConsoleManager;
 import io.quarkus.devjsonrpc.deployment.DeploymentMethodBuildItem;
 import io.quarkus.devjsonrpc.deployment.DevJsonRpcProcessor;
@@ -114,6 +113,7 @@ public class DevUIProcessor {
     private static final String JS_SUFFIX = ".js";
     private static final String I18N_DIR = "dev-ui/i18n/";
     private static final String DEVUI = "dev-ui";
+    private static final String INTERNAL_NAMESPACE = "devui";
     private static final String UNDERSCORE = "_";
     private static final String SLASH = "/";
     private static final String SLASH_ALL = SLASH + "*";
@@ -587,7 +587,7 @@ public class DevUIProcessor {
                 .artifactKey(UI_JAR)
                 .root(DEVUI + SLASH).build());
 
-        devUIWebJarProducer.produce(new DevUIWebJarBuildItem(UI_JAR, DEVUI, getNamespace(UI_JAR)));
+        devUIWebJarProducer.produce(new DevUIWebJarBuildItem(UI_JAR, DEVUI, getWebJarNamespace(UI_JAR)));
 
         final boolean assistantIsAvailable = capabilities.isPresent(Capability.ASSISTANT);
 
@@ -1024,10 +1024,7 @@ public class DevUIProcessor {
             BuildProducer<WebJarBuildItem> webJarBuildProducer,
             BuildProducer<DevUIWebJarBuildItem> devUIWebJarProducer) {
 
-        String namespace = getNamespace(runtimeExt.getKey());
-        if (namespace.isEmpty()) {
-            namespace = "devui";
-        }
+        String namespace = getWebJarNamespace(runtimeExt.getKey());
         String buildTimeDataImport = namespace + "-data";
 
         final GACT deploymentKey = getDeploymentKey(runtimeExt);
@@ -1053,31 +1050,13 @@ public class DevUIProcessor {
     }
 
     private static GACT getDeploymentKey(ResolvedDependency runtimeExt) {
-        // Return null instead of throwing when the resource is not found in a given path tree root,
-        // so that MultiRootPathTree.apply() can continue searching the remaining roots.
-        final GACT result = runtimeExt.getContentTree().apply(BootstrapConstants.DESCRIPTOR_PATH, extPropsVisit -> {
-            if (extPropsVisit == null) {
-                return null;
-            }
-            final Properties props = new Properties();
-            try (BufferedReader reader = Files.newBufferedReader(extPropsVisit.getPath())) {
-                props.load(reader);
-            } catch (IOException e) {
-                throw new RuntimeException("Failed to read " + extPropsVisit.getUrl(), e);
-            }
-            final String deploymentCoords = props.getProperty(BootstrapConstants.PROP_DEPLOYMENT_ARTIFACT);
-            if (deploymentCoords == null) {
-                throw new RuntimeException(
-                        "Failed to locate " + BootstrapConstants.PROP_DEPLOYMENT_ARTIFACT + " in " + extPropsVisit.getUrl());
-            }
-            var coords = GACTV.fromString(deploymentCoords);
-            return new GACT(coords.getGroupId(), coords.getArtifactId(), coords.getClassifier(), coords.getType());
-        });
-        if (result == null) {
-            throw new RuntimeException("Failed to locate " + BootstrapConstants.DESCRIPTOR_PATH
-                    + " in " + runtimeExt.toCompactCoords());
+        String deploymentCoords = ArtifactInfoUtil.deploymentArtifactCoords(runtimeExt);
+        if (deploymentCoords == null) {
+            throw new RuntimeException("Failed to locate " + BootstrapConstants.PROP_DEPLOYMENT_ARTIFACT + " in "
+                    + BootstrapConstants.DESCRIPTOR_PATH + " of " + runtimeExt.toCompactCoords());
         }
-        return result;
+        var coords = GACTV.fromString(deploymentCoords);
+        return new GACT(coords.getGroupId(), coords.getArtifactId(), coords.getClassifier(), coords.getType());
     }
 
     @BuildStep(onlyIf = IsLocalDevelopment.class)
@@ -1099,6 +1078,15 @@ public class DevUIProcessor {
                         result.getFinalDestination(), result.getWebRootConfigurations()));
             }
         }
+    }
+
+    /**
+     * The namespace a {@link DevUIWebJarBuildItem} is registered under, which is the internal one for the Dev UI's own
+     * resources rather than the empty string {@link #getNamespace(ArtifactKey)} returns for them.
+     */
+    private String getWebJarNamespace(ArtifactKey artifactKey) {
+        String namespace = getNamespace(artifactKey);
+        return namespace.isEmpty() ? INTERNAL_NAMESPACE : namespace;
     }
 
     private String getNamespace(ArtifactKey artifactKey) {

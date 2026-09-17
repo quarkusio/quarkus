@@ -1,17 +1,15 @@
 package io.quarkus.devjsonrpc.spi;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.nio.file.Files;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Properties;
 import java.util.WeakHashMap;
 
-import io.quarkus.bootstrap.BootstrapConstants;
+import org.jboss.logging.Logger;
+
 import io.quarkus.bootstrap.model.ApplicationModel;
 import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
+import io.quarkus.deployment.util.ArtifactInfoUtil;
 import io.quarkus.maven.dependency.ArtifactKey;
 import io.quarkus.maven.dependency.DependencyFlags;
 import io.quarkus.maven.dependency.GACTV;
@@ -25,10 +23,24 @@ import io.quarkus.maven.dependency.ResolvedDependency;
  * Relying on the {@code -deployment} naming convention alone breaks extensions whose deployment artifact is named
  * differently, for example a runtime {@code framework-core} with a deployment {@code framework-deployment}.
  */
-public final class ExtensionNamespaces {
+final class ExtensionNamespaces {
+
+    private static final Logger LOG = Logger.getLogger(ExtensionNamespaces.class);
 
     private static final String DEPLOYMENT_SUFFIX = "-deployment";
 
+    /**
+     * Caches the mapping per application model, because it is resolved from a build item constructor rather than from
+     * a build step, so it cannot be produced once and consumed as a build item.
+     * <p>
+     * Two properties of this cache are relied upon and are not enforced by the types. The keys are compared by
+     * identity, because {@link ApplicationModel} implementations do not override {@code equals} and {@code hashCode};
+     * were one to gain value-based equality, every lookup would hash the whole dependency graph. The entries are
+     * weakly referenced so that a model from a previous build, for example an earlier dev mode restart, does not keep
+     * its dependency graph reachable. The mapping is also computed outside the map's lock, since building it reads the
+     * descriptor of every runtime extension, and build steps run in parallel; a concurrent first call may therefore
+     * compute it twice and discard one result, which is cheaper than serialising that I/O.
+     */
     private static final Map<ApplicationModel, Map<ArtifactKey, String>> CACHE = Collections
             .synchronizedMap(new WeakHashMap<>());
 
@@ -41,32 +53,37 @@ public final class ExtensionNamespaces {
      * @return the artifactId of the runtime artifact whose descriptor points at that deployment artifact, or the
      *         artifactId of the given key when no descriptor does
      */
-    public static String runtimeArtifactId(CurateOutcomeBuildItem curateOutcomeBuildItem, ArtifactKey deploymentKey) {
+    static String runtimeArtifactId(CurateOutcomeBuildItem curateOutcomeBuildItem, ArtifactKey deploymentKey) {
         ApplicationModel model = curateOutcomeBuildItem.getApplicationModel();
-        Map<ArtifactKey, String> mapping = CACHE.computeIfAbsent(model, ExtensionNamespaces::deploymentToRuntime);
+        Map<ArtifactKey, String> mapping = CACHE.get(model);
+        if (mapping == null) {
+            mapping = deploymentToRuntime(model);
+            Map<ArtifactKey, String> concurrent = CACHE.putIfAbsent(model, mapping);
+            if (concurrent != null) {
+                mapping = concurrent;
+            }
+        }
         return mapping.getOrDefault(ArtifactKey.ga(deploymentKey.getGroupId(), deploymentKey.getArtifactId()),
                 deploymentKey.getArtifactId());
     }
 
-    private static Map<ArtifactKey, String> deploymentToRuntime(ApplicationModel model) {
+    /**
+     * Maps the key that the build items of a deployment artifact are resolved to, onto the artifactId of the runtime
+     * artifact that declares it.
+     */
+    static Map<ArtifactKey, String> deploymentToRuntime(ApplicationModel model) {
         Map<ArtifactKey, String> mapping = new HashMap<>();
         for (ResolvedDependency runtimeExtension : model.getDependencies(DependencyFlags.RUNTIME_EXTENSION_ARTIFACT)) {
-            String deploymentCoords = runtimeExtension.getContentTree().apply(BootstrapConstants.DESCRIPTOR_PATH,
-                    visit -> {
-                        if (visit == null) {
-                            return null;
-                        }
-                        Properties props = new Properties();
-                        try (BufferedReader reader = Files.newBufferedReader(visit.getPath())) {
-                            props.load(reader);
-                        } catch (IOException e) {
-                            throw new RuntimeException("Failed to read " + visit.getUrl(), e);
-                        }
-                        return props.getProperty(BootstrapConstants.PROP_DEPLOYMENT_ARTIFACT);
-                    });
-            ArtifactKey deploymentKey = deploymentKey(deploymentCoords);
-            if (deploymentKey != null) {
-                mapping.putIfAbsent(deploymentKey, runtimeExtension.getArtifactId());
+            ArtifactKey deploymentKey = deploymentKey(ArtifactInfoUtil.deploymentArtifactCoords(runtimeExtension));
+            if (deploymentKey == null) {
+                continue;
+            }
+            String previous = mapping.putIfAbsent(deploymentKey, runtimeExtension.getArtifactId());
+            if (previous != null && !previous.equals(runtimeExtension.getArtifactId())) {
+                LOG.warnf("The Dev UI build items of %s cannot be attributed to a single extension, because both %s"
+                        + " and %s declare it as their deployment artifact. Using %s. Rename one of the deployment"
+                        + " artifacts to resolve this.", deploymentKey, previous, runtimeExtension.getArtifactId(),
+                        previous);
             }
         }
         return mapping;

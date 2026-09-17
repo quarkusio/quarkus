@@ -563,7 +563,7 @@ public class QuarkusProdModeTest
      * @throws RuntimeException when application errors at startup.
      * @throws IllegalStateException if the application is already started.
      */
-    public void start() {
+    public Process start() {
         if (process != null && process.isAlive()) {
             throw new IllegalStateException("Quarkus application is already started. ");
         }
@@ -622,6 +622,7 @@ public class QuarkusProdModeTest
         } catch (IOException ex) {
             throw new RuntimeException("The produced jar could not be launched. ", ex);
         }
+        return process;
     }
 
     /**

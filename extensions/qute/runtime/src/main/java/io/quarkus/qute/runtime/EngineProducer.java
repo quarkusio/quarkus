@@ -51,7 +51,6 @@ import io.quarkus.qute.ReflectionValueResolver;
 import io.quarkus.qute.Resolver;
 import io.quarkus.qute.Results;
 import io.quarkus.qute.SectionHelperFactory;
-import io.quarkus.qute.StrEvalNamespaceResolver;
 import io.quarkus.qute.Template;
 import io.quarkus.qute.TemplateGlobalProvider;
 import io.quarkus.qute.TemplateInstance;
@@ -198,8 +197,6 @@ public class EngineProducer {
         for (NamespaceResolver namespaceResolver : namespaceResolvers) {
             builder.addNamespaceResolver(namespaceResolver);
         }
-        // str:eval
-        builder.addNamespaceResolver(new StrEvalNamespaceResolver());
         // Fragment namespace resolvers
         builder.addNamespaceResolver(new NamedArgument.ParamNamespaceResolver());
         builder.addNamespaceResolver(new FragmentNamespaceResolver(FragmentNamespaceResolver.FRAGMENT));

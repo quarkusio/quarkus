@@ -10,6 +10,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -80,7 +81,6 @@ public final class Results {
             // No async results present
             return CompletedStage.of(new MultiResultNode(allResults));
         } else {
-            CompletableFuture<ResultNode> ret = new CompletableFuture<ResultNode>();
             CompletionStage<?> cs;
             if (asyncResults.size() == 1) {
                 cs = asyncResults.get(0);
@@ -88,14 +88,12 @@ public final class Results {
                 cs = CompletableFuture
                         .allOf(asyncResults.toArray(new CompletableFuture[0]));
             }
-            cs.whenComplete((v, t) -> {
-                if (t != null) {
-                    ret.completeExceptionally(t);
-                } else {
-                    ret.complete(new MultiResultNode(allResults));
+            return cs.thenApply(new Function<Object, ResultNode>() {
+                @Override
+                public ResultNode apply(Object ignored) {
+                    return new MultiResultNode(allResults);
                 }
             });
-            return ret;
         }
     }
 

@@ -83,6 +83,7 @@ public class LambdaHttpHandler implements RequestHandler<APIGatewayV2HTTPEvent, 
         WritableByteChannel byteChannel;
         final APIGatewayV2HTTPEvent request;
         CompletableFuture<APIGatewayV2HTTPResponse> future = new CompletableFuture<>();
+        String contentType;
 
         public NettyResponseHandler(APIGatewayV2HTTPEvent request) {
             this.request = request;
@@ -100,6 +101,7 @@ public class LambdaHttpHandler implements RequestHandler<APIGatewayV2HTTPEvent, 
                 if (msg instanceof HttpResponse) {
                     HttpResponse res = (HttpResponse) msg;
                     responseBuilder.setStatusCode(res.status().code());
+                    contentType = res.headers().get(HttpHeaderNames.CONTENT_TYPE);
 
                     final Map<String, String> headers = new HashMap<>();
                     responseBuilder.setHeaders(headers);
@@ -150,7 +152,7 @@ public class LambdaHttpHandler implements RequestHandler<APIGatewayV2HTTPEvent, 
                 }
                 if (msg instanceof LastHttpContent) {
                     if (baos != null) {
-                        if (isText(responseBuilder.getHeaders().get("Content-Type"))) {
+                        if (isText(contentType)) {
                             responseBuilder.setBody(baos.toString(StandardCharsets.UTF_8));
                         } else {
                             responseBuilder.setIsBase64Encoded(true);

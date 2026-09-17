@@ -39,15 +39,16 @@ jobs:
           path: documentation-temp
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Store PR id as variable
+      - name: Validate and expose PR number
         id: pr
+        env:
+          RAW_PR_NUMBER: ${{ github.event.workflow_run.pull_requests[0].number }}
         run: |
-          pr=$(<documentation-temp/pr-id.txt)
-          if ! [[ $pr =~ ^[0-9]+$ ]] ; then
-            echo "PR id extracted from documentation-temp/pr-id.txt is not a number: $pr"
+          if ! [[ "$RAW_PR_NUMBER" =~ ^[0-9]+$ ]]; then
+            echo "Invalid PR number: $RAW_PR_NUMBER" >&2
             exit 1
           fi
-          echo "id=$(<documentation-temp/pr-id.txt)" >> $GITHUB_OUTPUT
+          echo "id=$RAW_PR_NUMBER" >> "$GITHUB_OUTPUT"
       - name: Sync documentation
         shell: bash
         # make sure we override the script coming from the artifact with the version from the main repository
@@ -93,9 +94,10 @@ jobs:
           rm -rf target/roq/blog/
       - name: Publishing to surge for preview
         id: deploy
-        run: npx surge@0.23.1 ./target/roq --domain https://quarkus-pr-main-${PR_ID}-preview.surge.sh --token ${{ secrets.SURGE_TOKEN }}
         env:
           PR_ID: ${{ steps.pr.outputs.id }}
+          SURGE_TOKEN: ${{ secrets.SURGE_TOKEN }}
+        run: npx surge@0.23.1 ./target/roq --domain "https://quarkus-pr-main-${PR_ID}-preview.surge.sh" --token "$SURGE_TOKEN"
 
       - name: Update PR status comment on success
         uses: quarkusio/action-helpers@main

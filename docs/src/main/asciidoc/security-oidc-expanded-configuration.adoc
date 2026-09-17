@@ -952,6 +952,8 @@ Sometimes the roles are contained in the UserInfo response - do `quarkus.oidc.ro
 
 Token bindings are tools for sender-constraining access tokens.
 
+==== Mutual TLS (mTLS)
+
 .MTLS token binding
 [options="header"]
 |====
@@ -964,7 +966,26 @@ Token bindings are tools for sender-constraining access tokens.
 
 Please see the xref:security-oidc-bearer-token-authentication.adoc#mutual-tls-token-binding[Mutual TLS token binding] section for more information.
 
-See also the <<bearer-token-source-properties>> section for details about enabling a Demonstrating Proof of Possession (DPoP) binding.
+[[dpop-token-binding]]
+==== Demonstrating Proof of Possession (DPoP)
+
+https://datatracker.ietf.org/doc/html/rfc9449[RFC 9449] describes a Demonstrating Proof of Possession (DPoP) mechanism for cryptographically binding an access token to the client.
+To enable the DPoP binding, set `quarkus.oidc.token.authorization-scheme=DPoP` to accept the DPoP access tokens sent as `Authorization: DPoP <token>`.
+See the <<bearer-token-source-properties>> section for more information.
+
+Use the following properties to configure the DPoP binding restrictions:
+
+.DPoP token binding
+[options="header"]
+|====
+|Property | Default |Description
+
+|quarkus.oidc.dpop.proof-age | 2 minutes | Maximum acceptable age of DPoP proof
+|====
+
+The `quarkus.oidc.dpop.proof-age` property can be used to configure the DPoP proof freshness validation.
+
+See the xref:security-oidc-bearer-token-authentication.adoc#demonstrating-proof-of-possession-dpop[Demonstrating Proof of Possession for access tokens] section of the xref:security-oidc-bearer-token-authentication.adoc[OpenID Connect Bearer token authentication] guide for more information.
 
 [[bearer-token-source-properties]]
 === Bearer token header
@@ -986,7 +1007,7 @@ In some cases, both the header and the scheme may have to customized.
 `quarkus.oidc.token.header` and `quarkus.oidc.token.authorization-scheme` can be used to customize which HTTP header contains a bearer access token. You can customize the header and, when the HTTP `Authorization` is used - the scheme.
 
 For example, you can set `quarkus.oidc.token.authorization-scheme=DPoP` to accept the DPoP access tokens sent as `Authorization: DPoP <token>`.
-See the xref:security-oidc-bearer-token-authentication#demonstrating-proof-of-possession-dpop[Demonstrating Proof of Possession] section for more information.
+See the <<dpop-token-binding>> section for more information.
 
 See also the <<token-binding>> section.
 

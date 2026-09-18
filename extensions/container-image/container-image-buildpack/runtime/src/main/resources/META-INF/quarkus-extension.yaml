@@ -8,6 +8,7 @@ metadata:
     - "cnb"
     - "container"
     - "image"
+  guide: "https://quarkus.io/guides/container-image#buildpack"
   categories:
     - "cloud"
   status: "preview"

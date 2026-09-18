@@ -13,6 +13,7 @@ metadata:
   - "resteasy-reactive"
   - "rest"
   - "jakarta-rest"
+  guide: "https://quarkus.io/guides/rest-client"
   categories:
   - "web"
   - "serialization"

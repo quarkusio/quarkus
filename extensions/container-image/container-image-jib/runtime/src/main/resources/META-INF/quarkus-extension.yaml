@@ -6,6 +6,7 @@ metadata:
     - "jib"
     - "container"
     - "image"
+  guide: "https://quarkus.io/guides/container-image#jib"
   categories:
     - "cloud"
   status: "preview"

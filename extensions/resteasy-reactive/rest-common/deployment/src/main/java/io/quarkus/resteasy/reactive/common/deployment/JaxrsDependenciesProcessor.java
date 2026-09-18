@@ -9,6 +9,6 @@ public class JaxrsDependenciesProcessor {
     AddDependencyBuildItem addDependency() {
         // make sure that `jakarta.ws.rs` can see our implementation
         return new AddDependencyBuildItem("jakarta.ws.rs", "io.quarkus.resteasy.reactive.common",
-            Dependency.Modifier.Set.of(Dependency.Modifier.SERVICES, Dependency.Modifier.OPTIONAL));
+                Dependency.Modifier.Set.of(Dependency.Modifier.SERVICES, Dependency.Modifier.OPTIONAL));
     }
 }

@@ -94,7 +94,9 @@ public final class ModularitySteps {
                 new AddDependencyBuildItem("org.eclipse.microprofile.config", "io.smallrye.config",
                         Modifier.Set.of(Modifier.SERVICES)),
                 new AddDependencyBuildItem("org.slf4j", "org.jboss.logmanager.slf4j",
-                        Modifier.Set.of(Modifier.SERVICES)));
+                        Modifier.Set.of(Modifier.SERVICES)),
+                new AddDependencyBuildItem("io.smallrye.context.propagation.api", "jakarta.cdi",
+                        Modifier.Set.of(Modifier.READ, Modifier.LINKED)));
     }
 
     @BuildStep

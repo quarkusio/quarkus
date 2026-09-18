@@ -52,7 +52,7 @@ class ModuleInfoTest {
     @Test
     void constructorMakesDefensiveCopies() {
         HashMap<String, PackageInfo> packages = new HashMap<>();
-        packages.put("com.foo", new PackageInfo(PackageAccess.EXPORTED, Set.of(), Set.of()));
+        packages.put("com.foo", PackageInfo.of(PackageAccess.EXPORTED, Set.of(), Set.of()));
         ArrayList<DependencyInfo> deps = new ArrayList<>();
         deps.add(new DependencyInfo("dep.a", Dependency.Modifier.Set.of(), Map.of()));
         ArrayList<Resource> resources = new ArrayList<>();
@@ -63,7 +63,7 @@ class ModuleInfoTest {
                 packages, deps, List.of(), Set.of(), Map.of(), resources);
 
         // mutating originals should not affect the record
-        packages.put("com.bar", new PackageInfo(PackageAccess.PRIVATE, Set.of(), Set.of()));
+        packages.put("com.bar", PackageInfo.of(PackageAccess.PRIVATE, Set.of(), Set.of()));
         deps.add(new DependencyInfo("dep.b", Dependency.Modifier.Set.of(), Map.of()));
         resources.add(new MemoryResource("test2.txt", new byte[0]));
 
@@ -124,7 +124,7 @@ class ModuleInfoTest {
     @Test
     void withMorePackagesAddsNewPackages() {
         ModuleInfo info = base();
-        PackageInfo pi = new PackageInfo(PackageAccess.EXPORTED, Set.of(), Set.of());
+        PackageInfo pi = PackageInfo.of(PackageAccess.EXPORTED, Set.of(), Set.of());
         ModuleInfo result = info.withMorePackages(Map.of("com.foo", pi));
         assertThat(result).isNotSameAs(info);
         assertThat(result.packages()).containsKey("com.foo");
@@ -140,11 +140,11 @@ class ModuleInfoTest {
 
     @Test
     void withMorePackagesMergesOverlappingKeys() {
-        PackageInfo existing = new PackageInfo(PackageAccess.PRIVATE, Set.of(), Set.of());
+        PackageInfo existing = PackageInfo.of(PackageAccess.PRIVATE, Set.of(), Set.of());
         ModuleInfo info = new ModuleInfo(
                 "test.module", "1.0", ModuleDescriptor.Modifier.Set.of(), ARTIFACT, null,
                 Map.of("com.foo", existing), List.of(), List.of(), Set.of(), Map.of(), List.of());
-        PackageInfo incoming = new PackageInfo(PackageAccess.EXPORTED, Set.of(), Set.of());
+        PackageInfo incoming = PackageInfo.of(PackageAccess.EXPORTED, Set.of(), Set.of());
         ModuleInfo result = info.withMorePackages(Map.of("com.foo", incoming));
         // mergedWith should have been called; the result depends on PackageInfo.mergedWith() semantics
         assertThat(result.packages()).containsKey("com.foo");

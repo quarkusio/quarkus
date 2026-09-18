@@ -1,4 +1,4 @@
-package io.quarkus.hibernate.orm.deployment;
+package io.quarkus.hibernate.orm.deployment.bytecode;
 
 import java.util.List;
 
@@ -6,6 +6,7 @@ import org.hibernate.bytecode.internal.bytebuddy.BytecodeProviderImpl;
 import org.hibernate.proxy.pojo.bytebuddy.ByteBuddyProxyHelper;
 import org.jboss.jandex.ClassInfo;
 
+import io.quarkus.hibernate.orm.deployment.ClassNames;
 import net.bytebuddy.ClassFileVersion;
 import net.bytebuddy.description.type.TypeDefinition;
 import net.bytebuddy.dynamic.DynamicType;

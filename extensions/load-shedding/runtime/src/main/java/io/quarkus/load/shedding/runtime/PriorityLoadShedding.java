@@ -1,12 +1,9 @@
 package io.quarkus.load.shedding.runtime;
 
-import java.lang.management.ManagementFactory;
 import java.util.List;
 
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
-
-import com.sun.management.OperatingSystemMXBean;
 
 import io.quarkus.arc.All;
 import io.quarkus.load.shedding.RequestClassifier;
@@ -27,41 +24,23 @@ public class PriorityLoadShedding {
 
     private final int max;
 
-    private final OperatingSystemMXBean os;
-
-    private double lastThreshold;
-
-    private long lastThresholdTime;
-
     @Inject
     PriorityLoadShedding(LoadSheddingRuntimeConfig config) {
         enabled = config.priority().enabled();
         max = RequestPriority.values().length * RequestClassifier.numCohorts();
-        os = (OperatingSystemMXBean) ManagementFactory.getOperatingSystemMXBean();
     }
 
-    // when this is called, we know we're overloaded
-    public boolean shedLoad(Object request) {
+    // when this is called, we know we're overloaded; `overloadDepth` says by how much,
+    // as a number between 0.0 and 1.0
+    public boolean shedLoad(Object request, double overloadDepth) {
         if (!enabled) {
             return true;
         }
 
-        long now = System.currentTimeMillis();
-        synchronized (this) {
-            if (now - lastThresholdTime > 1_000) {
-                double load = os.getCpuLoad();
-                if (load < 0) {
-                    lastThreshold = -1;
-                } else {
-                    lastThreshold = max * (1.0 - load * load * load);
-                }
-                lastThresholdTime = now;
-            }
-        }
-        double threshold = lastThreshold;
-        if (threshold < 0) {
-            return true;
-        }
+        // the deeper the overload, the lower the threshold and the more request groups
+        // end up above it; the curve is deliberately flat near 0, so that a slight excess
+        // over the concurrency limit only sheds the least important requests
+        double threshold = max * (1.0 - overloadDepth * overloadDepth * overloadDepth);
 
         RequestPriority priority = RequestPriority.NORMAL;
         for (RequestPrioritizer requestPrioritizer : requestPrioritizers) {

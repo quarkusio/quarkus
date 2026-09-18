@@ -27,6 +27,14 @@ public class OverloadDetector {
 
     static final double HYSTERESIS_FACTOR = 0.8;
 
+    // Controls the initial slope steepness (growth rate) at excess ratio r = 0.
+    // Higher values increase initial steepness to shed low-priority requests faster.
+    private static final double K = 5.0;
+
+    // Pre-calculated normalization constant. Ensures that overload depth scales
+    // precisely to 1.0 at full saturation.
+    private static final double TANH_MAX = Math.tanh(K / 2.0);
+
     private final int maxLimit;
     private final int alphaFactor;
     private final int betaFactor;
@@ -93,6 +101,39 @@ public class OverloadDetector {
 
     public boolean isOverloaded() {
         return overloaded;
+    }
+
+    /**
+     * Returns how far past the concurrency limit the application currently is, as a number
+     * between 0.0 and 1.0. It is 0.0 when the number of current requests is at the current limit.
+     * <p>
+     * When the number of current requests exceeds the current limit, the result scales smoothly
+     * using the right half of a sigmoid curve (hyperbolic tangent). This provides maximum initial
+     * steepness to aggressively shed lower-priority requests immediately upon crossing the limit,
+     * while smoothly flattening out near 1.0 to provide a broad runway for higher-priority traffic.
+     * <p>
+     * When the limit is below the maximum limit, the result reaches 1.0 when the number of current
+     * requests reaches the maximum limit. When the limit is at the maximum limit, the result
+     * reaches 1.0 when the number of current requests reaches 130% of the maximum limit, leaving
+     * a 30% safety buffer for the most important requests.
+     */
+    public double overloadDepth() {
+        long limit = currentLimit;
+        int current = currentRequests.get();
+
+        if (current <= limit) {
+            return 0.0;
+        }
+
+        double headroom = Math.max(maxLimit - limit, 0.3 * maxLimit);
+        double ratio = (double) (current - limit) / headroom;
+
+        if (ratio >= 1.0) {
+            return 1.0;
+        }
+
+        double normalizedDepth = Math.tanh((K * ratio) / 2.0) / TANH_MAX;
+        return Math.clamp(normalizedDepth, 0.0, 1.0);
     }
 
     public void requestBegin() {

@@ -85,11 +85,17 @@ The longer recent requests take, compared to the recent lowest response time, th
 
 If an overload situation is signalled, priority load shedding is invoked.
 
-If priority load shedding is disabled, there's nothing to do and all requests are rejected immediately.
-However, by default, priority load shedding is enabled, which means a request is only rejected if the current CPU load is high enough.
+If priority load shedding is disabled, no prioritization is applied and all requests beyond the current limit are rejected immediately.
+However, by default, priority load shedding is enabled, which means a request is only rejected if the overload is deep enough.
 
-NOTE: Priority load shedding is currently always based on CPU load.
-Other mechanisms are possible (such as network utilization), but currently not implemented.
+The overload depth is expressed as a number between 0.0 and 1.0.
+It is 0.0 when the number of current requests is at the current limit.
+When the number of current requests exceeds the current limit, the result scales smoothly using the right half of a sigmoid curve (hyperbolic tangent).
+This provides maximum initial steepness to aggressively shed lower-priority requests immediately upon crossing the limit, while smoothly flattening out near 1.0 to provide a broad runway for higher-priority traffic.
+When the limit is below the maximum limit, the overload depth reaches 1.0 when the number of current requests reaches the maximum limit.
+When the limit is at the maximum limit, the overload depth reaches 1.0 when the number of current requests reaches 130% of the maximum limit, leaving a 30% safety buffer for the most important requests.
+
+The more requests are admitted past the limit, the deeper the overload and the more requests are rejected, until the application settles at a level of concurrency it can sustain.
 
 To determine whether a request should be rejected, 2 attributes are considered:
 
@@ -100,10 +106,10 @@ There are 5 statically defined priorities and 128 cohorts, which amounts to 640 
 
 After both priority and cohort are assigned to a request, a request group number is computed.
 The group number is smaller for higher priority requests and higher for lower priority requests.
-If the group number is higher that the current CPU load, the request is rejected, otherwise it is allowed even in an overload situation.
+If the group number is lower than a threshold derived from the overload depth, the request is accepted, otherwise it is rejected.
 
-NOTE: The group number is actually not compared to the CPU load directly; instead, it is compared to a function of CPU load.
-The function is `(1 - load^3) * 640`, where `load` is the CPU load as a number between 0.0 and 1.0, and 640 is a number of requests group as mentioned above.
+The threshold is derived as `(1 - overload^3) * 640`, where `overload` is the overload depth (described above) and 640 is the number of request groups (also described above).
+The cubic curve is chosen deliberately, because it is flat near 0, so that a slight excess over the concurrency limit only rejects the least important requests.
 
 ==== Customizing request priority
 

@@ -8,7 +8,11 @@ import jakarta.enterprise.inject.spi.CDI;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
+import io.quarkus.runtime.service.Services;
+import io.quarkus.runtime.service.Services.Resolver;
 import io.smallrye.stork.Stork;
+import io.smallrye.stork.api.Service;
+import io.smallrye.stork.api.ServiceInstance;
 import io.smallrye.stork.api.config.ServiceConfig;
 import io.smallrye.stork.api.observability.ObservationCollector;
 import io.vertx.core.Vertx;
@@ -31,6 +35,29 @@ public class SmallRyeStorkRecorder {
             QuarkusStorkInfrastructure infrastructure = new QuarkusStorkInfrastructure(vertx.getValue());
             Stork.initialize(infrastructure);
         }
+
+        Services.initialize(new Resolver() {
+            @Override
+            public Services.ServiceInstance resolve(String name) {
+                Stork stork = Stork.getInstance();
+                Service service = stork.getServiceOptional(name)
+                        .orElseThrow(() -> new IllegalArgumentException("Service not found: " + name));
+
+                List<ServiceInstance> instances = service.getInstances().await().indefinitely();
+
+                if (instances.isEmpty()) {
+                    throw new IllegalArgumentException();
+                }
+                if (instances.size() != 1) {
+                    throw new IllegalStateException();
+                }
+
+                QuarkusServiceInstance instance = (QuarkusServiceInstance) instances.getFirst();
+                return new Services.ServiceInstance(
+                        instance.getScheme(), instance.getHost(), instance.getPort(), instance.getPath(),
+                        instance.getDomainSocket());
+            }
+        });
 
         shutdown.addLastShutdownTask(new Runnable() {
             @Override

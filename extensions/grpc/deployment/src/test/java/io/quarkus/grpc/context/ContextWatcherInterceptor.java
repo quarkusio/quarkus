@@ -17,6 +17,7 @@ import io.grpc.ServerInterceptor;
 import io.grpc.Status;
 import io.quarkus.grpc.GlobalInterceptor;
 import io.quarkus.grpc.runtime.Interceptors;
+import io.smallrye.common.vertx.VertxContext;
 import io.vertx.core.Context;
 import io.vertx.core.Vertx;
 
@@ -28,7 +29,9 @@ import io.vertx.core.Vertx;
  * <ul>
  * <li>{@link Outer} (MAX_VALUE−6) wraps {@code ServerCall.close()} — which propagates
  * outward through the chain, so {@code super.close()} calls into
- * {@code GrpcDuplicatedContextGrpcInterceptor}'s cleanup before the latch fires.</li>
+ * {@code GrpcDuplicatedContextGrpcInterceptor}'s cleanup before the latch fires.
+ * {@code contextAtClose} is captured before {@code super.close()} so it reflects
+ * the gRPC context while it is still attached.</li>
  * <li>{@link Inner} (priority 0) wraps the listener — as the innermost interceptor it is
  * the last to process {@code onMessage} and {@code onHalfClose} before the service
  * handler on all paths: directly on the event-loop for non-blocking calls, and inside
@@ -42,14 +45,26 @@ public class ContextWatcherInterceptor {
     private volatile Context capturedDuplicatedContext;
     private volatile io.grpc.Context contextAtOnMessage;
     private volatile io.grpc.Context contextAtOnHalfClose;
+    private volatile io.grpc.Context contextAtOnCancel;
+    private volatile io.grpc.Context contextAtClose;
     private volatile CountDownLatch closeLatch;
+
+    // diagnostic fields set alongside contextAtOnCancel
+    volatile boolean onCancelOnDuplicatedContext;
+    volatile Context onCancelVertxContext;
+    volatile String onCancelThread;
 
     /** Reset between tests. */
     public void reset() {
         capturedDuplicatedContext = null;
         contextAtOnMessage = null;
         contextAtOnHalfClose = null;
+        contextAtOnCancel = null;
+        contextAtClose = null;
         closeLatch = new CountDownLatch(1);
+        onCancelOnDuplicatedContext = false;
+        onCancelVertxContext = null;
+        onCancelThread = null;
     }
 
     public void setCapturedDuplicatedContext(Context ctx) {
@@ -72,6 +87,22 @@ public class ContextWatcherInterceptor {
         return contextAtOnHalfClose;
     }
 
+    public void setContextAtOnCancel(io.grpc.Context ctx) {
+        contextAtOnCancel = ctx;
+    }
+
+    public io.grpc.Context getContextAtOnCancel() {
+        return contextAtOnCancel;
+    }
+
+    public void setContextAtClose(io.grpc.Context ctx) {
+        contextAtClose = ctx;
+    }
+
+    public io.grpc.Context getContextAtClose() {
+        return contextAtClose;
+    }
+
     public void countDownClose() {
         CountDownLatch latch = closeLatch;
         if (latch != null) {
@@ -87,7 +118,7 @@ public class ContextWatcherInterceptor {
     /**
      * Reads {@code Context.current()} on the captured duplicated Vert.x context.
      * Returns a future completed with {@code null} if no context has been captured yet.
-     * Call after {@link #awaitClose}, or poll with Awaitility for the cancel path.
+     * Call after {@link #awaitClose}.
      */
     public CompletableFuture<io.grpc.Context> readContextOnDuplicatedContext() {
         Context ctx = capturedDuplicatedContext;
@@ -119,8 +150,10 @@ public class ContextWatcherInterceptor {
             ServerCall<ReqT, RespT> forwardingCall = new ForwardingServerCall.SimpleForwardingServerCall<>(call) {
                 @Override
                 public void close(Status status, Metadata trailers) {
-                    // Cleanup runs inside super.close() (GrpcDuplicatedContextGrpcInterceptor is outer);
-                    // latch fires after cleanup is done.
+                    // Capture context before super.close() — cleanup runs inside it
+                    // (GrpcDuplicatedContextGrpcInterceptor's finally block), so this
+                    // reflects the gRPC context while it is still attached.
+                    watcher.setContextAtClose(io.grpc.Context.current());
                     try {
                         super.close(status, trailers);
                     } finally {
@@ -163,6 +196,15 @@ public class ContextWatcherInterceptor {
                 public void onHalfClose() {
                     watcher.setContextAtOnHalfClose(io.grpc.Context.current());
                     super.onHalfClose();
+                }
+
+                @Override
+                public void onCancel() {
+                    watcher.setContextAtOnCancel(io.grpc.Context.current());
+                    watcher.onCancelOnDuplicatedContext = VertxContext.isOnDuplicatedContext();
+                    watcher.onCancelVertxContext = Vertx.currentContext();
+                    watcher.onCancelThread = Thread.currentThread().toString();
+                    super.onCancel();
                 }
             };
         }

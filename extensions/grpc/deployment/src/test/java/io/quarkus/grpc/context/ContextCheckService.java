@@ -55,7 +55,10 @@ public class ContextCheckService extends MutinyContextCheckGrpc.ContextCheckImpl
 
     @Override
     public Uni<CheckReply> checkSlowEventLoop(CheckRequest request) {
-        return slowReply();
+        // never emits — no write-side activity means the Mutiny bridge cannot
+        // call serverCall.close() proactively, so the runOnContext lambda that
+        // fires Inner.onCancel() wins Race 2 reliably
+        return Uni.createFrom().nothing();
     }
 
     private static Uni<CheckReply> slowReply() {

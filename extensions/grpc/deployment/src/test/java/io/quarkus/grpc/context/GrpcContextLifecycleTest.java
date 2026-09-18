@@ -146,7 +146,10 @@ public class GrpcContextLifecycleTest {
         assertThat(watcher.awaitClose(5, TimeUnit.SECONDS))
                 .as("close() must have fired within 5s on the event-loop path")
                 .isTrue();
-
+        assertThat(watcher.getContextAtClose())
+                .as("gRPC context must be non-ROOT at close() before cleanup on the event-loop path")
+                .isNotNull()
+                .isNotSameAs(io.grpc.Context.ROOT);
         assertThat(watcher.readContextOnDuplicatedContext().get(5, TimeUnit.SECONDS))
                 .as("gRPC context must be ROOT on the duplicated context after close() on the event-loop path")
                 .isSameAs(io.grpc.Context.ROOT);
@@ -159,7 +162,10 @@ public class GrpcContextLifecycleTest {
         assertThat(watcher.awaitClose(5, TimeUnit.SECONDS))
                 .as("close() must have fired within 5s on the blocking-worker path")
                 .isTrue();
-
+        assertThat(watcher.getContextAtClose())
+                .as("gRPC context must be non-ROOT at close() before cleanup on the blocking-worker path")
+                .isNotNull()
+                .isNotSameAs(io.grpc.Context.ROOT);
         assertThat(watcher.readContextOnDuplicatedContext().get(5, TimeUnit.SECONDS))
                 .as("gRPC context must be ROOT on the duplicated context after close() on the blocking-worker path")
                 .isSameAs(io.grpc.Context.ROOT);
@@ -172,7 +178,10 @@ public class GrpcContextLifecycleTest {
         assertThat(watcher.awaitClose(5, TimeUnit.SECONDS))
                 .as("close() must have fired within 5s on the virtual-thread path")
                 .isTrue();
-
+        assertThat(watcher.getContextAtClose())
+                .as("gRPC context must be non-ROOT at close() before cleanup on the virtual-thread path")
+                .isNotNull()
+                .isNotSameAs(io.grpc.Context.ROOT);
         assertThat(watcher.readContextOnDuplicatedContext().get(5, TimeUnit.SECONDS))
                 .as("gRPC context must be ROOT on the duplicated context after close() on the virtual-thread path")
                 .isSameAs(io.grpc.Context.ROOT);

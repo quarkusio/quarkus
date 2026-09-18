@@ -50,7 +50,7 @@ public class GrpcDuplicatedContextGrpcInterceptor implements ServerInterceptor, 
             setContextSafe(local, true);
 
             // Must be sure to call next.startCall on the right context
-            return new ListenedOnDuplicatedContext<>(ehp, call, nextCall(call, headers, next), local);
+            return new ListenedOnDuplicatedContext<>(ehp, call, nextCall(call, headers, next, local), local);
         } else {
             log.warn("Unable to run on a duplicated context - interceptor not called on the Vert.x event loop");
             return next.startCall(call, headers);
@@ -59,45 +59,34 @@ public class GrpcDuplicatedContextGrpcInterceptor implements ServerInterceptor, 
 
     private <ReqT, RespT> Function<Runnable, ServerCall.Listener<ReqT>> nextCall(ServerCall<ReqT, RespT> call,
             Metadata headers,
-            ServerCallHandler<ReqT, RespT> next) {
+            ServerCallHandler<ReqT, RespT> next,
+            Context dc) {
         // Must be sure to call next.startCall on the right context
         io.grpc.Context current = io.grpc.Context.current();
         return onClose -> {
             io.grpc.Context previous = current.attach();
-            Context dc = Vertx.currentContext();
-            boolean isDuplicated = dc != null && VertxContext.isDuplicatedContext(dc);
-            if (isDuplicated) {
-                GrpcContextLocalsProvider.GRPC_CONTEXT_CLEANUP_LOCAL.put(dc, () -> current.detach(previous));
-            }
-            try {
-                var forwardingCall = new ForwardingServerCall<ReqT, RespT>() {
-                    @Override
-                    protected ServerCall<ReqT, RespT> delegate() {
-                        return call;
-                    }
+            GrpcContextLocalsProvider.GRPC_CONTEXT_CLEANUP_LOCAL.put(dc, () -> current.detach(previous));
+            var forwardingCall = new ForwardingServerCall<ReqT, RespT>() {
+                @Override
+                protected ServerCall<ReqT, RespT> delegate() {
+                    return call;
+                }
 
-                    @Override
-                    public void close(Status status, Metadata trailers) {
-                        onClose.run();
-                        try {
-                            super.close(status, trailers);
-                        } finally {
-                            if (isDuplicated) {
-                                Runnable cleanup = GrpcContextLocalsProvider.GRPC_CONTEXT_CLEANUP_LOCAL.get(dc);
-                                if (cleanup != null) {
-                                    GrpcContextLocalsProvider.GRPC_CONTEXT_CLEANUP_LOCAL.remove(dc);
-                                    cleanup.run();
-                                }
-                            }
+                @Override
+                public void close(Status status, Metadata trailers) {
+                    onClose.run();
+                    try {
+                        super.close(status, trailers);
+                    } finally {
+                        Runnable cleanup = GrpcContextLocalsProvider.GRPC_CONTEXT_CLEANUP_LOCAL.get(dc);
+                        if (cleanup != null) {
+                            GrpcContextLocalsProvider.GRPC_CONTEXT_CLEANUP_LOCAL.remove(dc);
+                            cleanup.run();
                         }
                     }
-                };
-                return next.startCall(forwardingCall, headers);
-            } finally {
-                if (!isDuplicated) {
-                    current.detach(previous);
                 }
-            }
+            };
+            return next.startCall(forwardingCall, headers);
         };
     }
 

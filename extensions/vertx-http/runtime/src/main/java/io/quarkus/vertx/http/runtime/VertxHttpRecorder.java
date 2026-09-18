@@ -378,8 +378,9 @@ public class VertxHttpRecorder {
             System.setProperty(DISABLE_WEBSOCKETS_PROP_NAME, "true");
         }
 
+        VertxHttpConfig httpConfiguration = this.httpConfig.getValue();
         if (startVirtual) {
-            initializeVirtual(vertx.get());
+            initializeVirtual(vertx.get(), httpConfiguration.limits());
             shutdown.addShutdownTask(() -> {
                 try {
                     virtualBootstrapChannel.channel().close().sync();
@@ -391,7 +392,6 @@ public class VertxHttpRecorder {
                 }
             });
         }
-        VertxHttpConfig httpConfiguration = this.httpConfig.getValue();
         ManagementConfig managementConfig = this.managementConfig == null ? null : this.managementConfig.getValue();
         if (startSocket && (httpConfiguration.hostEnabled() || httpConfiguration.domainSocketEnabled()
                 || (managementConfig != null && managementConfig.hostEnabled())
@@ -1656,7 +1656,7 @@ public class VertxHttpRecorder {
     protected static ChannelFuture virtualBootstrapChannel;
     public static VirtualAddress VIRTUAL_HTTP = new VirtualAddress("netty-virtual-http");
 
-    private static void initializeVirtual(Vertx vertxRuntime) {
+    private static void initializeVirtual(Vertx vertxRuntime, ServerLimitsConfig limits) {
         if (virtualBootstrap != null) {
             return;
         }
@@ -1678,7 +1678,7 @@ public class VertxHttpRecorder {
                         // This is the root context used by the HTTP connection (read and write MUST be done from
                         // THAT event loop).
                         ContextInternal rootContext = vertx.getOrCreateContext();
-                        HttpServerOptions options = createVirtualHttpServerOptions();
+                        HttpServerOptions options = createVirtualHttpServerOptions(limits);
                         VertxHandler<Http1ServerConnection> handler = VertxHandler.create(chctx -> {
 
                             Http1ServerConnection conn = new Http1ServerConnection(
@@ -1696,7 +1696,7 @@ public class VertxHttpRecorder {
                                     options.getMaxFormAttributeSize(),
                                     options.getMaxFormFields(),
                                     options.getMaxFormBufferedBytes(),
-                                    new QueryParamDecoderConfig(),
+                                    new QueryParamDecoderConfig().setMaxSize(limits.maxQueryParameters()),
                                     options.getHttp1Config() != null ? options.getHttp1Config() : new Http1ServerConfig(),
                                     options.isRegisterWebSocketWriteHandlers(),
                                     options.getWebSocketConfig() != null ? options.getWebSocketConfig()
@@ -1714,13 +1714,9 @@ public class VertxHttpRecorder {
                         ch.pipeline().addLast("handler", handler);
                     }
 
-                    private static HttpServerOptions createVirtualHttpServerOptions() {
+                    private static HttpServerOptions createVirtualHttpServerOptions(ServerLimitsConfig limits) {
                         var result = new HttpServerOptions();
-                        Optional<MemorySize> maybeMaxHeadersSize = ConfigProvider.getConfig()
-                                .getOptionalValue("quarkus.http.limits.max-header-size", MemorySize.class);
-                        if (maybeMaxHeadersSize.isPresent()) {
-                            result.setMaxHeaderSize(maybeMaxHeadersSize.get().asIntValue());
-                        }
+                        result.setMaxHeaderSize(limits.maxHeaderSize().asIntValue());
                         return result;
                     }
                 });

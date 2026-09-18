@@ -793,6 +793,10 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
                 if (outerClass.isInstance(actualTestInstance)) {
                     outerInstances.add(actualTestInstance);
                     actualTestInstance = declaredConstructor.newInstance(actualTestInstance);
+                } else if (outerClass.isInstance(outerInstances.peekLast())) {
+                    // this class is being initialized again, which happens when it has its own tests and also
+                    // encloses a nested class; its outer instance is already the innermost one on the stack
+                    actualTestInstance = declaredConstructor.newInstance(outerInstances.peekLast());
                 } else {
                     Object outerInstance = createActualTestInstance(outerClass, extensionContext, state);
                     invokeAfterConstructCallbacks(Object.class, outerInstance);

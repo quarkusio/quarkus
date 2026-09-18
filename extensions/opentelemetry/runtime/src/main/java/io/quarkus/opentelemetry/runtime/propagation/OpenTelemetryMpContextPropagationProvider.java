@@ -84,10 +84,20 @@ public class OpenTelemetryMpContextPropagationProvider implements ThreadContextP
         return new ThreadContextSnapshot() {
             @Override
             public ThreadContextController begin() {
+                // The OpenTelemetry context is to be cleared: run the task with an empty (root) OTel
+                // context so a context left on this (pooled) thread cannot leak into it, then restore
+                // the previous context once the task completes. Unlike a ThreadLocal storage there is
+                // no "set null", so we clear by attaching the root context. See ObservationMpContextPropagationProvider
+                Scope scope = QuarkusContextStorage.INSTANCE.attach(Context.root());
                 return new ThreadContextController() {
                     @Override
                     public void endContext() throws IllegalStateException {
-                        // nothing to do
+                        // Guard: If other OTel scopes have mutated the storage between begin() and
+                        // now, closing here would restore a stale context. This mirrors the guard in
+                        // ThreadLocalContextStorage.ScopeImpl.close().
+                        if (QuarkusContextStorage.INSTANCE.current() == Context.root()) {
+                            scope.close();
+                        }
                     }
                 };
             }

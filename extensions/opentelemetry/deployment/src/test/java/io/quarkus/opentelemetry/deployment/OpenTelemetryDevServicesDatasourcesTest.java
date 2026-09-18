@@ -52,7 +52,7 @@ public class OpenTelemetryDevServicesDatasourcesTest {
                                     quarkus.otel.logs.exporter=none
                                     quarkus.otel.bsp.export.timeout=1s
                                     quarkus.otel.bsp.schedule.delay=50
-                                    quarkus.observability.lgtm.enabled=false
+                                    quarkus.observability.enabled=false
                                     """),
                             "application.properties"));
 

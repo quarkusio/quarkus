@@ -113,9 +113,11 @@ public class ResteasyReactiveRecorder extends ResteasyReactiveCommonRecorder imp
             BeanFactory<ResteasyReactiveInitialiser> initClassFactory,
             LaunchMode launchMode,
             boolean servletPresent,
+            boolean resumeOn404,
             String dispatcherClassName) {
 
         info.setServletPresent(servletPresent);
+        info.setResumeOn404(resumeOn404);
         ServerRestHandlerDispatcher dispatcher = createDispatcher(dispatcherClassName);
 
         CurrentRequestManager

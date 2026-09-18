@@ -1796,10 +1796,13 @@ public class ResteasyReactiveProcessor {
             servletPresent = true;
         }
 
+        boolean resumeOn404 = config.resumeOn404() || !resumeOn404Items.isEmpty();
+
         RuntimeValue<Deployment> deployment = recorder.createDeployment(deploymentPath, deploymentInfo,
                 beanContainerBuildItem.getValue(), shutdownContext, httpBuildTimeConfig,
                 requestContextFactoryBuildItem.map(RequestContextFactoryBuildItem::getFactory).orElse(null),
-                initClassFactory, launchModeBuildItem.getLaunchMode(), servletPresent, HANDLER_DISPATCHER_CLASS);
+                initClassFactory, launchModeBuildItem.getLaunchMode(), servletPresent, resumeOn404,
+                HANDLER_DISPATCHER_CLASS);
 
         quarkusRestDeploymentBuildItemBuildProducer
                 .produce(new ResteasyReactiveDeploymentBuildItem(deployment, deploymentPath));

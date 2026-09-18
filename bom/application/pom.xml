@@ -178,7 +178,7 @@
         <quarkus-spring-api.version>7.0.SP1</quarkus-spring-api.version>
         <quarkus-spring-data-api.version>4.1</quarkus-spring-data-api.version>
         <quarkus-spring-security-api.version>7.1.SP1</quarkus-spring-security-api.version>
-        <quarkus-spring-boot-api.version>4.1.SP1</quarkus-spring-boot-api.version>
+        <quarkus-spring-boot-api.version>4.1.SP2-SNAPSHOT</quarkus-spring-boot-api.version>
         <quarkus-spring-test-api.version>4.1</quarkus-spring-test-api.version>
         <mockito.version>5.21.0</mockito.version>
         <jna.version>5.8.0</jna.version><!-- should satisfy both testcontainers and mongodb -->

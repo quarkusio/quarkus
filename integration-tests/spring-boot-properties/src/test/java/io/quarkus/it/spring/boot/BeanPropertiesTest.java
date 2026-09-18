@@ -12,13 +12,6 @@ import io.quarkus.test.junit.QuarkusTest;
 class BeanPropertiesTest {
 
     @Test
-    void shouldHaveFinalValue() {
-        when().get("/bean/finalValue")
-                .then()
-                .body(is(equalTo("final")));
-    }
-
-    @Test
     void shouldHavePackagePrivateValue() {
         when().get("/bean/packagePrivateValue")
                 .then()

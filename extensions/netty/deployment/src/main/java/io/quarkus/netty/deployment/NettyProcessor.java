@@ -12,6 +12,8 @@ import java.util.SplittableRandom;
 import java.util.function.BiFunction;
 import java.util.function.Supplier;
 
+import io.quarkus.modular.spi.items.AddDependencyBuildItem;
+import io.smallrye.modules.desc.Dependency;
 import jakarta.inject.Singleton;
 
 import org.jboss.jandex.AnnotationTarget;
@@ -1716,6 +1718,16 @@ class NettyProcessor {
         if (QuarkusClassLoader.isClassPresentAtRuntime("io.netty.channel.uring.IoUring")) {
             nativeAccess.produce(new ModuleEnableNativeAccessBuildItem("io.netty.transport.classes.io_uring"));
         }
+    }
+
+    @BuildStep
+    AddDependencyBuildItem addedDependencies() {
+        // This one must be READ and LINKED because an ArC synthetic bean requires it
+        return new AddDependencyBuildItem("io.netty.transport", "io.quarkus.netty",
+                Dependency.Modifier.Set.of(
+                    Dependency.Modifier.SERVICES,
+                    Dependency.Modifier.READ,
+                    Dependency.Modifier.LINKED));
     }
 
     @BuildStep

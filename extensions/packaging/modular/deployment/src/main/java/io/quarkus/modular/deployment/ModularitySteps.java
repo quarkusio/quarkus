@@ -90,16 +90,11 @@ public final class ModularitySteps {
     @BuildStep
     public List<AddDependencyBuildItem> standardAddedDependencies(
             CurateOutcomeBuildItem curateOutcome) {
-        // TODO: migrate these to their relevant extensions
         return List.of(
                 new AddDependencyBuildItem("org.eclipse.microprofile.config", "io.smallrye.config",
                         Modifier.Set.of(Modifier.SERVICES)),
-                // todo: this one must be READ and LINKED because an ArC synthetic bean requires it
-                new AddDependencyBuildItem("io.netty.transport", "io.quarkus.netty",
-                        Modifier.Set.of(Modifier.SERVICES, Modifier.READ, Modifier.LINKED)),
-                new AddDependencyBuildItem("jakarta.ws.rs", "io.quarkus.resteasy.reactive.common",
-                        Modifier.Set.of(Modifier.SERVICES, Modifier.OPTIONAL)),
-                new AddDependencyBuildItem("org.slf4j", "org.jboss.logmanager.slf4j", Modifier.Set.of(Modifier.SERVICES)));
+                new AddDependencyBuildItem("org.slf4j", "org.jboss.logmanager.slf4j",
+                        Modifier.Set.of(Modifier.SERVICES)));
     }
 
     @BuildStep

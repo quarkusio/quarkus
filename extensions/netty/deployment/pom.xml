@@ -35,6 +35,10 @@
             <artifactId>assertj-core</artifactId>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-modular-spi</artifactId>
+        </dependency>
     </dependencies>
 
     <build>

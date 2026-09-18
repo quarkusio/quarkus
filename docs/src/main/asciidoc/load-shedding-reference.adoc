@@ -48,6 +48,11 @@ Priority load shedding only rejects a fraction of requests even if overload is d
 By default, priority load shedding is enabled.
 It can be disabled by setting `quarkus.load-shedding.priority.enabled` to `false.`
 
+WARNING: Pure load shedding rejects _all_ requests while the application is overloaded, including requests to the non-application endpoints such as health checks.
+An orchestrator that probes those endpoints may conclude that the application is dead and restart it.
+Request priority, described below, is the only mechanism that can exempt them.
+If you disable priority load shedding, consider also exposing the management endpoints on the xref:management-interface-reference.adoc[separate management interface], which is not subject to load shedding.
+
 There are 2 ways of customizing priority load shedding:
 
 * By implementing `io.quarkus.load.shedding.RequestPrioritizer`, the application can decide which requests can be rejected early on and which requests can only be rejected when there's no other choice.
@@ -118,11 +123,17 @@ If no implementation is an alternative, all implementations are retained and are
 ==== Customizing request cohort
 
 Cohort is assigned by a `io.quarkus.load.shedding.RequestClassifier`.
-There is 128 statically defined cohorts, with the lowest number being 1 and highest number being 128.
-The classifier should return a number in this interval; if it does not, the number is adjusted automatically.
+There are 128 statically defined cohorts, with the lowest number being 0 and the highest number being 127.
+The classifier should return a number in this interval; if it doesn't, the result is clamped by a simple bit mask.
+This puts requirements on the returned value that are described in the `RequestClassifier` javadoc.
 
 There is one default classifier which assigns a cohort based on a hash of the remote IP address and current time, such that an IP address changes its cohort roughly every hour.
 It declares no `@Priority`.
+
+IMPORTANT: If the application is deployed behind a reverse proxy, an ingress or a load balancer, the remote IP address is the address of that intermediary and is therefore identical for all clients.
+All requests then land in a single cohort, the cohort dimension collapses and shedding degenerates to all-or-nothing within each priority level.
+To avoid this, either set `quarkus.http.proxy.proxy-address-forwarding` to `true`, in which case the remote address is taken from the `Forwarded` or `X-Forwarded-For` header and the default classifier works as intended, or implement a custom classifier.
+A custom classifier can also use a better key than the IP address if the application has one, such as a tenant or account identifier.
 
 It is possible to define custom implementations of the `RequestClassifier` interface.
 The implementations must be CDI beans, otherwise they are ignored.

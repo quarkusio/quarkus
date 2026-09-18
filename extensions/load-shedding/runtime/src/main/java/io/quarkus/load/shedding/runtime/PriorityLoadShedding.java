@@ -36,7 +36,7 @@ public class PriorityLoadShedding {
     @Inject
     PriorityLoadShedding(LoadSheddingRuntimeConfig config) {
         enabled = config.priority().enabled();
-        max = RequestPriority.values().length * RequestClassifier.MAX_COHORT;
+        max = RequestPriority.values().length * RequestClassifier.numCohorts();
         os = (OperatingSystemMXBean) ManagementFactory.getOperatingSystemMXBean();
     }
 
@@ -71,23 +71,15 @@ public class PriorityLoadShedding {
             }
         }
 
-        int cohort = 64; // in the middle of the [1,128] interval
+        int cohort = RequestClassifier.numCohorts() / 2; // in the middle of the interval
         for (RequestClassifier requestClassifier : requestClassifiers) {
             if (requestClassifier.appliesTo(request)) {
                 cohort = requestClassifier.cohort(request);
                 break;
             }
         }
-        if (cohort == Integer.MIN_VALUE) {
-            cohort = RequestClassifier.MAX_COHORT;
-        } else if (cohort < 0) {
-            cohort = (-cohort) % RequestClassifier.MAX_COHORT + 1;
-        } else if (cohort == 0) {
-            cohort = RequestClassifier.MIN_COHORT;
-        } else if (cohort > RequestClassifier.MAX_COHORT) {
-            cohort = cohort % RequestClassifier.MAX_COHORT + 1;
-        }
+        cohort &= RequestClassifier.maxCohort();
 
-        return priority.cohortBaseline() + cohort > threshold;
+        return priority.cohortBaseline() + cohort >= threshold;
     }
 }

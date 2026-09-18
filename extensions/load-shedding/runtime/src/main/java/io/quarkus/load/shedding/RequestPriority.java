@@ -24,7 +24,7 @@ public enum RequestPriority {
     private final int cohortBaseline;
 
     RequestPriority(int factor) {
-        this.cohortBaseline = factor * RequestClassifier.MAX_COHORT;
+        this.cohortBaseline = factor * RequestClassifier.numCohorts();
     }
 
     public int cohortBaseline() {

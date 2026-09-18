@@ -25,6 +25,8 @@ public class OverloadDetector {
         }
     }
 
+    static final double HYSTERESIS_FACTOR = 0.8;
+
     private final int maxLimit;
     private final int alphaFactor;
     private final int betaFactor;
@@ -34,6 +36,7 @@ public class OverloadDetector {
     private final AtomicLong lowestRequestTime = new AtomicLong(Long.MAX_VALUE);
     private final AtomicLong requestsSinceLastProbe = new AtomicLong();
     private volatile long currentLimit;
+    private volatile boolean overloaded;
 
     private final ReentrantLock lock = new ReentrantLock();
     // this field is guarded by `lock`
@@ -89,11 +92,11 @@ public class OverloadDetector {
     }
 
     public boolean isOverloaded() {
-        return currentRequests.get() >= currentLimit;
+        return overloaded;
     }
 
     public void requestBegin() {
-        currentRequests.incrementAndGet();
+        updateOverloaded(currentRequests.incrementAndGet());
     }
 
     public void requestEnd(long timeInMicros) {
@@ -105,6 +108,9 @@ public class OverloadDetector {
         boolean isLowest = updateLowestRequestTime(timeInMicros);
 
         updateLimit(timeInMicros, isLowest, current);
+
+        // after `updateLimit()`, so that the possibly adapted limit is used
+        updateOverloaded(current - 1);
     }
 
     private boolean updateLowestRequestTime(long requestTime) {
@@ -183,6 +189,21 @@ public class OverloadDetector {
             this.currentLimit = newLimit;
         } finally {
             lock.unlock();
+        }
+    }
+
+    // the overloaded state is hysteretic: it is entered when the number of concurrent
+    // requests reaches the limit and it is only left when it drops well below it
+    private void updateOverloaded(int currentRequests) {
+        long limit = currentLimit;
+        if (overloaded) {
+            if (currentRequests < limit * HYSTERESIS_FACTOR) {
+                overloaded = false;
+            }
+        } else {
+            if (currentRequests >= limit) {
+                overloaded = true;
+            }
         }
     }
 }

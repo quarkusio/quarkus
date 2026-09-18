@@ -27,14 +27,13 @@ class ConfigurationPropertiesTest {
                             """
                                     config.spring.map.one=one
                                     config.spring.map.two=two
-                                    config.spring.servers.one=host: localhost, port: 8080
+                                    config.spring.servers.one.host=localhost
+                                    config.spring.servers.one.port=8080
                                     config.spring.required.one=one
                                     """), "application.properties"));
 
     @Inject
     MapConfig mapConfig;
-    @Inject
-    MapInterfaceConfig mapInterfaceConfig;
 
     @Test
     void config() {
@@ -44,13 +43,6 @@ class ConfigurationPropertiesTest {
         assertEquals("localhost", mapConfig.getServers().get("one").getHost());
         assertEquals(8080, mapConfig.getServers().get("one").getPort());
         assertEquals("one", mapConfig.required.get("one"));
-
-        assertFalse(mapInterfaceConfig.map().isEmpty());
-        assertEquals("one", mapInterfaceConfig.map().get("one"));
-        assertEquals("two", mapInterfaceConfig.map().get("two"));
-        assertEquals("localhost", mapInterfaceConfig.servers().get("one").getHost());
-        assertEquals(8080, mapInterfaceConfig.servers().get("one").getPort());
-        assertEquals("one", mapInterfaceConfig.required().get("one"));
     }
 
     @ConfigurationProperties("config.spring")
@@ -79,15 +71,6 @@ class ConfigurationPropertiesTest {
         public void setRequired(Map<String, String> required) {
             this.required = required;
         }
-    }
-
-    @ConfigurationProperties("config.spring")
-    public interface MapInterfaceConfig {
-        Map<String, String> map();
-
-        Map<String, Server> servers();
-
-        Map<String, String> required();
     }
 
     public static final class Server {

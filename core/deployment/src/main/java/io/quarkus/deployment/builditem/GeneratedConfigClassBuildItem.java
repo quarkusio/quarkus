@@ -1,5 +1,6 @@
 package io.quarkus.deployment.builditem;
 
+import static io.smallrye.config.ConfigMappingLoader.getGeneratedConfigClasses;
 import static java.util.Collections.unmodifiableMap;
 import static java.util.Collections.unmodifiableSet;
 
@@ -12,8 +13,8 @@ import org.jboss.jandex.DotName;
 
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.builder.item.MultiBuildItem;
+import io.smallrye.config.ConfigMappingHandler;
 import io.smallrye.config.ConfigMappingInterface.Property;
-import io.smallrye.config.ConfigMappingLoader;
 import io.smallrye.config.ConfigMappingLoader.GeneratedConfigClass;
 
 public final class GeneratedConfigClassBuildItem extends MultiBuildItem {
@@ -53,8 +54,17 @@ public final class GeneratedConfigClassBuildItem extends MultiBuildItem {
         return of(loadClass(configClass.toString()));
     }
 
+    public static GeneratedConfigClassBuildItem of(final DotName configClass, final ConfigMappingHandler handler) {
+        return of(loadClass(configClass.toString()), handler);
+    }
+
     public static GeneratedConfigClassBuildItem of(final Class<?> configClass) {
-        Set<GeneratedConfigClass> generatedClasses = ConfigMappingLoader.getGeneratedConfigClasses(configClass);
+        return of(configClass, null);
+    }
+
+    public static GeneratedConfigClassBuildItem of(final Class<?> configClass, final ConfigMappingHandler handler) {
+        Set<GeneratedConfigClass> generatedClasses = handler == null ? getGeneratedConfigClasses(configClass)
+                : getGeneratedConfigClasses(configClass, handler);
         boolean isApplicationClass = QuarkusClassLoader.isApplicationClass(configClass.getName());
 
         Map<Class<?>, ConfigClassImplementation> elements = new HashMap<>();

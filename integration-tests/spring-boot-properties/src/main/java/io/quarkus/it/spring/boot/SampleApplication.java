@@ -10,7 +10,7 @@ public class SampleApplication {
     @Bean
     @ConfigurationProperties
     public BeanProperties beanProperties() {
-        BeanProperties result = new BeanProperties("final");
+        BeanProperties result = new BeanProperties();
         result.packagePrivateValue = 100;
         return result;
     }

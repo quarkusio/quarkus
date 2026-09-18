@@ -101,8 +101,9 @@ The dependency is mandated by specification (for example, the implicit dependenc
 
 == Related core build items
 
-The `quarkus-core-deployment` module provides two additional build items that affect the module graph.
+The `quarkus-core-deployment` module provides three additional build items that affect the module graph.
 These are documented separately but are noted here for completeness.
 
 `ModuleOpenBuildItem` declares that one module should open specified packages to another module (equivalent to the `--add-opens` JVM flag).
+`ModuleExportBuildItem` declares that one module should export specified packages to another module (equivalent to the `--add-exports` JVM flag).
 `ModuleEnableNativeAccessBuildItem` declares that a module requires native access (equivalent to the `--enable-native-access` JVM flag).

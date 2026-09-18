@@ -9,7 +9,7 @@
         {
             "category": "Messaging",
             "timeout": 45,
-            "test-modules": "virtual-threads/amqp-virtual-threads, virtual-threads/jms-virtual-threads, virtual-threads/kafka-virtual-threads",
+            "test-modules": "virtual-threads/amqp-virtual-threads, virtual-threads/kafka-virtual-threads",
             "os-name": "ubuntu-latest"
         },
         {

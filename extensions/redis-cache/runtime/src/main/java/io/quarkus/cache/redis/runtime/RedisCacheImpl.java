@@ -5,10 +5,10 @@ import java.net.ConnectException;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
-import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -26,8 +26,8 @@ import io.quarkus.redis.client.RedisClientName;
 import io.quarkus.redis.runtime.datasource.Marshaller;
 import io.quarkus.redis.runtime.datasource.RedisConnections;
 import io.quarkus.runtime.BlockingOperationControl;
+import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
-import io.smallrye.mutiny.subscription.UniEmitter;
 import io.smallrye.mutiny.unchecked.Unchecked;
 import io.smallrye.mutiny.unchecked.UncheckedFunction;
 import io.smallrye.mutiny.vertx.MutinyHelper;
@@ -208,14 +208,12 @@ public class RedisCacheImpl extends AbstractCache implements RedisCache {
                                                 throw new IllegalArgumentException("Cannot cache `null` value");
                                             }
                                             byte[] encodedValue = marshaller.encode(value);
-                                            Uni<V> result;
+                                            Uni<?> result;
                                             if (cacheInfo.useOptimisticLocking) {
                                                 result = multi(connection,
-                                                        set(connection, encodedKey, encodedValue, expiresAfter))
-                                                        .replaceWith(value);
+                                                        set(connection, encodedKey, encodedValue, expiresAfter));
                                             } else {
-                                                result = set(connection, encodedKey, encodedValue, expiresAfter)
-                                                        .replaceWith(value);
+                                                result = set(connection, encodedKey, encodedValue, expiresAfter);
                                             }
                                             if (isWorkerThread) {
                                                 return result.runSubscriptionOn(
@@ -295,15 +293,13 @@ public class RedisCacheImpl extends AbstractCache implements RedisCache {
                             } else {
                                 Uni<V> getter = valueLoader.apply(key);
                                 return getter
-                                        .chain(value -> {
+                                        .call(value -> {
                                             byte[] encodedValue = marshaller.encode(value);
                                             if (cacheInfo.useOptimisticLocking) {
                                                 return multi(connection,
-                                                        set(connection, encodedKey, encodedValue, expiresAfter))
-                                                        .replaceWith(value);
+                                                        set(connection, encodedKey, encodedValue, expiresAfter));
                                             } else {
-                                                return set(connection, encodedKey, encodedValue, expiresAfter)
-                                                        .replaceWith(value);
+                                                return set(connection, encodedKey, encodedValue, expiresAfter);
                                             }
                                         });
                             }
@@ -413,61 +409,69 @@ public class RedisCacheImpl extends AbstractCache implements RedisCache {
 
     @Override
     public Uni<Void> invalidateIf(Predicate<Object> predicate) {
-        return Uni.createFrom().emitter(new Consumer<UniEmitter<? super Set<String>>>() {
-            @Override
-            public void accept(UniEmitter<? super Set<String>> uniEmitter) {
-                scanForKeys("0", new HashSet<>(), uniEmitter);
-            }
-        }).chain(new Function<Set<String>, Uni<?>>() {
-            @Override
-            public Uni<?> apply(Set<String> setOfKeys) {
-                var req = Request.cmd(Command.DEL);
-                boolean hasAtLeastOneMatch = false;
-                for (String key : setOfKeys) {
-                    Object userKey = computeUserKey(key);
-                    if (predicate.test(userKey)) {
-                        hasAtLeastOneMatch = true;
-                        req.arg(marshaller.encode(key));
+        return scanForKeys()
+                .chain(new Function<Set<String>, Uni<?>>() {
+                    @Override
+                    public Uni<?> apply(Set<String> setOfKeys) {
+                        var req = Request.cmd(Command.DEL);
+                        boolean hasAtLeastOneMatch = false;
+                        for (String key : setOfKeys) {
+                            Object userKey = computeUserKey(key);
+                            if (predicate.test(userKey)) {
+                                hasAtLeastOneMatch = true;
+                                req.arg(marshaller.encode(key));
+                            }
+                        }
+                        if (hasAtLeastOneMatch) {
+                            // We cannot send the command without parameters, it would not be a valid command.
+                            return redis.send(req);
+                        } else {
+                            return Uni.createFrom().voidItem();
+                        }
                     }
-                }
-                if (hasAtLeastOneMatch) {
-                    // We cannot send the command without parameters, it would not be a valid command.
-                    return redis.send(req);
-                } else {
-                    return Uni.createFrom().voidItem();
-                }
-            }
-        })
+                })
                 .replaceWithVoid();
     }
 
-    private void scanForKeys(String cursor, Set<String> result, UniEmitter<? super Set<String>> em) {
-        Request cmd = Request.cmd(Command.SCAN).arg(cursor)
-                .arg("MATCH").arg(getKeyPattern());
-        if (cacheInfo.invalidationScanSize.isPresent()) {
-            cmd.arg("COUNT").arg(cacheInfo.invalidationScanSize.getAsInt());
-        }
-        redis.send(cmd)
-                .subscribe().with(new Consumer<Response>() {
-                    @Override
-                    public void accept(Response response) {
-                        String newCursor = response.get(0).toString();
-                        Response partResponse = response.get(1);
-                        if (partResponse != null) {
-                            result.addAll(marshaller.decodeAsList(partResponse, String.class));
-                        }
-                        if ("0".equals(newCursor)) {
-                            em.complete(result);
-                        } else {
-                            scanForKeys(newCursor, result, em);
-                        }
-                    }
-                }, new Consumer<Throwable>() {
-                    @Override
-                    public void accept(Throwable throwable) {
-                        em.fail(throwable);
-                    }
-                });
+    private Uni<Set<String>> scanForKeys() {
+        return Uni.createFrom().deferred(new Supplier<Uni<? extends Set<String>>>() {
+            String cursor;
+
+            @Override
+            public Uni<? extends Set<String>> get() {
+                cursor = "0";
+                return Multi.createBy().repeating()
+                        .uni(new Supplier<Uni<? extends List<String>>>() {
+                            @Override
+                            public Uni<? extends List<String>> get() {
+                                Request cmd = Request.cmd(Command.SCAN).arg(cursor)
+                                        .arg("MATCH").arg(getKeyPattern());
+                                if (cacheInfo.invalidationScanSize.isPresent()) {
+                                    cmd.arg("COUNT").arg(cacheInfo.invalidationScanSize.getAsInt());
+                                }
+                                return redis.send(cmd)
+                                        .map(new Function<Response, List<String>>() {
+                                            @Override
+                                            public List<String> apply(Response response) {
+                                                cursor = response.get(0).toString();
+                                                Response partResponse = response.get(1);
+                                                if (partResponse != null) {
+                                                    return marshaller.decodeAsList(partResponse, String.class);
+                                                }
+                                                return List.of();
+                                            }
+                                        });
+                            }
+                        })
+                        .whilst(new Predicate<List<String>>() {
+                            @Override
+                            public boolean test(List<String> keys) {
+                                return !"0".equals(cursor);
+                            }
+                        })
+                        .collect().in(HashSet::new, Set::addAll);
+            }
+        });
     }
 
     // visible only for tests

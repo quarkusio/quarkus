@@ -119,7 +119,7 @@ public interface Server extends Alias {
             COMMON,
             SHORT,
             COMBINED,
-            LONG;
+            LONG
         }
     }
 

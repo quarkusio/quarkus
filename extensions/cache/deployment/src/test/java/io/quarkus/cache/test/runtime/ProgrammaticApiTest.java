@@ -8,6 +8,7 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
@@ -213,6 +214,44 @@ public class ProgrammaticApiTest {
         } finally {
             // invalidate to remove side effects in other tests
             cache.invalidate("foo").await().indefinitely();
+        }
+    }
+
+    @Test
+    public void testPutWithCustomExpiration() {
+        CaffeineCache caffeineCache = cache.as(CaffeineCache.class);
+        try {
+            caffeineCache.put("foo-expired", CompletableFuture.completedFuture("bar"), Duration.ZERO);
+            assertNull(caffeineCache.getIfPresent("foo-expired"));
+        } finally {
+            cache.invalidate("foo-expired").await().indefinitely();
+        }
+    }
+
+    @Test
+    public void testGetWithCustomExpiration() {
+        CaffeineCache caffeineCache = cache.as(CaffeineCache.class);
+        try {
+            // zero duration -> expires immediately on creation
+            String val = cache.get("foo-get-expired", k -> "bar", Duration.ZERO).await().indefinitely();
+            assertEquals("bar", val);
+            assertNull(caffeineCache.getIfPresent("foo-get-expired"));
+        } finally {
+            cache.invalidate("foo-get-expired").await().indefinitely();
+        }
+    }
+
+    @Test
+    public void testGetAsyncWithCustomExpiration() {
+        CaffeineCache caffeineCache = cache.as(CaffeineCache.class);
+        try {
+            // zero duration -> expires immediately on creation
+            String val = cache.getAsync("foo-async-expired", k -> Uni.createFrom().item("bar"), Duration.ZERO).await()
+                    .indefinitely();
+            assertEquals("bar", val);
+            assertNull(caffeineCache.getIfPresent("foo-async-expired"));
+        } finally {
+            cache.invalidate("foo-async-expired").await().indefinitely();
         }
     }
 

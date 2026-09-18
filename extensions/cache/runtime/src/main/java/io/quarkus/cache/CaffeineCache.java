@@ -44,6 +44,21 @@ public interface CaffeineCache extends Cache {
     <V> void put(Object key, CompletableFuture<V> valueFuture);
 
     /**
+     * Associates {@code value} with {@code key} in this cache, with a custom expiration duration.
+     * If the cache previously contained a value associated with {@code key}, the old value is replaced
+     * by {@code value}. If the asynchronous computation fails, the entry will be automatically removed.
+     * <p>
+     * The cached value will automatically expire after the given {@code expiresAfter} duration has elapsed.
+     * If {@code expiresAfter} is {@code null}, the cache's default expiration policy is used.
+     *
+     * @param key key with which the specified value is to be associated
+     * @param valueFuture value to be associated with the specified key
+     * @param expiresAfter the duration after which the entry should be removed, or {@code null} for default
+     * @throws NullPointerException if the specified key or value is null
+     */
+    <V> void put(Object key, CompletableFuture<V> valueFuture, Duration expiresAfter);
+
+    /**
      * Changes the duration, initially set from the configuration, after which each entry should be automatically removed from
      * the cache once that duration has elapsed after the entry's creation, or the most recent replacement of its value.
      * <p>

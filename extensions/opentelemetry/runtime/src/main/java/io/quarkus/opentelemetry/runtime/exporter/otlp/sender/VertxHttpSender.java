@@ -10,7 +10,6 @@ import java.util.Map;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -28,7 +27,6 @@ import io.opentelemetry.sdk.common.internal.ThrottlingLogger;
 import io.quarkus.vertx.core.runtime.BufferOutputStream;
 import io.smallrye.common.annotation.SuppressForbidden;
 import io.smallrye.mutiny.Uni;
-import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
@@ -261,55 +259,54 @@ public final class VertxHttpSender implements HttpSender {
         @Override
         public void handle(HttpClientRequest request) {
 
-            AtomicReference<HttpClientResponse> responseRef = new AtomicReference<>();
             request.response()
                     .compose(new Function<HttpClientResponse, Future<Buffer>>() {
                         @Override
-                        public Future<Buffer> apply(HttpClientResponse resp) {
-                            responseRef.set(resp);
-                            return resp.body();
+                        public Future<Buffer> apply(HttpClientResponse clientResponse) {
+                            return clientResponse.body()
+                                    .onSuccess(new Handler<Buffer>() {
+                                        @Override
+                                        public void handle(Buffer body) {
+                                            if (clientResponse.statusCode() >= 500) {
+                                                if (attemptNumber <= MAX_ATTEMPTS && !isShutdown.get()) {
+                                                    // we should retry for 5xx error as they might be recoverable
+                                                    initiateSend(client, requestURI,
+                                                            MAX_ATTEMPTS - attemptNumber,
+                                                            newAttempt(),
+                                                            onError);
+                                                    return;
+                                                }
+                                            }
+                                            onHttpResponseRead.accept(new HttpResponse() {
+                                                @Override
+                                                public int getStatusCode() {
+                                                    return clientResponse.statusCode();
+                                                }
+
+                                                @Override
+                                                public String getStatusMessage() {
+                                                    return clientResponse.statusMessage();
+                                                }
+
+                                                @Override
+                                                public byte[] getResponseBody() {
+                                                    return body.getBytes();
+                                                }
+                                            });
+                                        }
+                                    });
                         }
                     })
-                    .onComplete(new Handler<AsyncResult<Buffer>>() {
+                    .onFailure(new Handler<Throwable>() {
                         @Override
-                        public void handle(AsyncResult<Buffer> ar) {
-                            if (ar.succeeded()) {
-                                HttpClientResponse clientResponse = responseRef.get();
-                                if (clientResponse.statusCode() >= 500) {
-                                    if (attemptNumber <= MAX_ATTEMPTS && !isShutdown.get()) {
-                                        // we should retry for 5xx error as they might be recoverable
-                                        initiateSend(client, requestURI,
-                                                MAX_ATTEMPTS - attemptNumber,
-                                                newAttempt(),
-                                                onError);
-                                        return;
-                                    }
-                                }
-                                onHttpResponseRead.accept(new HttpResponse() {
-                                    @Override
-                                    public int getStatusCode() {
-                                        return clientResponse.statusCode();
-                                    }
-
-                                    @Override
-                                    public String getStatusMessage() {
-                                        return clientResponse.statusMessage();
-                                    }
-
-                                    @Override
-                                    public byte[] getResponseBody() {
-                                        return ar.result().getBytes();
-                                    }
-                                });
+                        public void handle(Throwable err) {
+                            if (attemptNumber <= MAX_ATTEMPTS && !isShutdown.get()) {
+                                initiateSend(client, requestURI,
+                                        MAX_ATTEMPTS - attemptNumber,
+                                        newAttempt(),
+                                        onError);
                             } else {
-                                if (attemptNumber <= MAX_ATTEMPTS && !isShutdown.get()) {
-                                    initiateSend(client, requestURI,
-                                            MAX_ATTEMPTS - attemptNumber,
-                                            newAttempt(),
-                                            onError);
-                                } else {
-                                    onError.accept(ar.cause());
-                                }
+                                onError.accept(err);
                             }
                         }
                     });

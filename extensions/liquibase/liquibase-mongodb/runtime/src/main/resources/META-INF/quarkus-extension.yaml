@@ -6,6 +6,7 @@ metadata:
     - "liquibase"
     - "mongodb"
     - "data"
+  guide: "https://quarkus.io/guides/liquibase-mongodb"
   categories:
     - "data"
   status: "experimental"

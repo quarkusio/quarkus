@@ -125,7 +125,6 @@ public class OpenTelemetryProcessor {
                 "io.opentelemetry.exporter.logging.LoggingMetricExporter")) {
             reflectiveItem.produce(new ReflectiveMethodBuildItem(
                     "Used by OpenTelemetry Export Logging",
-                    false,
                     "io.opentelemetry.sdk.metrics.internal.SdkMeterProviderUtil",
                     "addMeterConfiguratorCondition"));
         }

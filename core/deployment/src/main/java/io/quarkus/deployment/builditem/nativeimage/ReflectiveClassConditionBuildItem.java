@@ -16,22 +16,22 @@ import io.quarkus.builder.item.MultiBuildItem;
 public final class ReflectiveClassConditionBuildItem extends MultiBuildItem {
 
     private final String className;
-    private final String typeReachable;
+    private final String typeReached;
 
-    public ReflectiveClassConditionBuildItem(Class<?> className, String typeReachable) {
-        this(className.getName(), typeReachable);
+    public ReflectiveClassConditionBuildItem(Class<?> className, String typeReached) {
+        this(className.getName(), typeReached);
     }
 
-    public ReflectiveClassConditionBuildItem(String className, String typeReachable) {
+    public ReflectiveClassConditionBuildItem(String className, String typeReached) {
         this.className = className;
-        this.typeReachable = typeReachable;
+        this.typeReached = typeReached;
     }
 
     public String getClassName() {
         return className;
     }
 
-    public String getTypeReachable() {
-        return typeReachable;
+    public String getTypeReached() {
+        return typeReached;
     }
 }

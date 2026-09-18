@@ -2,6 +2,8 @@ package io.quarkus.load.shedding.runtime;
 
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.locks.ReentrantLock;
 
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
@@ -29,10 +31,12 @@ public class OverloadDetector {
     private final double probeFactor;
 
     private final AtomicInteger currentRequests = new AtomicInteger();
+    private final AtomicLong lowestRequestTime = new AtomicLong(Long.MAX_VALUE);
+    private final AtomicLong requestsSinceLastProbe = new AtomicLong();
     private volatile long currentLimit;
 
-    private long lowestRequestTime = Long.MAX_VALUE;
-    private double probeCount = 0.0;
+    private final ReentrantLock lock = new ReentrantLock();
+    // this field is guarded by `lock`
     private double probeJitter;
 
     @Inject
@@ -44,7 +48,10 @@ public class OverloadDetector {
         betaFactor = config.betaFactor();
         probeFactor = config.probeFactor();
         currentLimit = config.initialLimit();
-        resetProbeJitter();
+
+        lock.lock();
+        probeJitter = ThreadLocalRandom.current().nextDouble(0.5, 1);
+        lock.unlock();
     }
 
     /**
@@ -90,58 +97,92 @@ public class OverloadDetector {
     }
 
     public void requestEnd(long timeInMicros) {
+        // we divide by the request time when the queue size is estimated below, so it must not be 0
+        timeInMicros = Math.max(1, timeInMicros);
+
         int current = currentRequests.getAndDecrement();
 
-        update(timeInMicros, current);
+        boolean isLowest = updateLowestRequestTime(timeInMicros);
+
+        updateLimit(timeInMicros, isLowest, current);
     }
 
-    private synchronized void update(long requestTime, int currentRequests) {
-        probeCount++;
-        if (probeFactor * probeJitter * currentLimit <= probeCount) {
-            resetProbeJitter();
-            probeCount = 0.0;
-            lowestRequestTime = requestTime;
-            return;
+    private boolean updateLowestRequestTime(long requestTime) {
+        long current = lowestRequestTime.get();
+        if (current > requestTime) {
+            // a lost race means another thread set a lower value, or a probe reset raised
+            // the baseline; either way this is not worth retrying
+            lowestRequestTime.compareAndSet(current, requestTime);
+            return true;
         }
-
-        if (requestTime < lowestRequestTime) {
-            lowestRequestTime = requestTime;
-            return;
-        }
-
-        long currentLimit = this.currentLimit;
-
-        if (2L * currentRequests < currentLimit) {
-            return;
-        }
-
-        int queueSize = (int) Math.ceil(currentLimit * (1.0 - (double) lowestRequestTime / (double) requestTime));
-
-        int currentLimitLog10Plus1;
-        if (currentLimit >= 0 && currentLimit < 1_000) {
-            currentLimitLog10Plus1 = LOG10_PLUS_1_TABLE[(int) currentLimit];
-        } else {
-            currentLimitLog10Plus1 = 1 + (int) Math.log10(currentLimit);
-        }
-        int alpha = alphaFactor * currentLimitLog10Plus1;
-        int beta = betaFactor * currentLimitLog10Plus1;
-
-        long newLimit;
-        if (queueSize <= currentLimitLog10Plus1) {
-            newLimit = currentLimit + beta;
-        } else if (queueSize < alpha) {
-            newLimit = currentLimit + currentLimitLog10Plus1;
-        } else if (queueSize > beta) {
-            newLimit = currentLimit - currentLimitLog10Plus1;
-        } else {
-            return;
-        }
-
-        newLimit = Math.max(1, Math.min(maxLimit, newLimit));
-        this.currentLimit = newLimit;
+        return false;
     }
 
-    private void resetProbeJitter() {
-        probeJitter = ThreadLocalRandom.current().nextDouble(0.5, 1);
+    private void updateLimit(long requestTime, boolean isLowest, int currentRequests) {
+        // must increment before the lock, so that requests skipped because of contention
+        // still count towards the next probe
+        requestsSinceLastProbe.incrementAndGet();
+
+        if (!lock.tryLock()) {
+            // someone else holds the lock and performs adaptation, we can skip that entirely
+            return;
+        }
+        try {
+            long probeCount = requestsSinceLastProbe.get(); // must read inside the lock
+            if (probeFactor * probeJitter * currentLimit <= probeCount) {
+                probeJitter = ThreadLocalRandom.current().nextDouble(0.5, 1);
+                requestsSinceLastProbe.set(0);
+                lowestRequestTime.set(requestTime);
+                return;
+            }
+
+            // this request established a new baseline; the queue size computed below would be 0,
+            // which would grow the limit without evidence that there is spare capacity
+            if (isLowest) {
+                return;
+            }
+
+            long currentLimit = this.currentLimit;
+
+            if (2L * currentRequests < currentLimit) {
+                return;
+            }
+
+            // the `lowestRequestTime` is updated outside the lock, in `updateLowestRequestTime()`
+            // it is possible that between `updateLowestRequestTime()` and this point, another thread
+            // have raised the `lowestRequestTime` past this request's time, and the queue size
+            // below would then go negative, growing the limit as if there were no queue at all
+            long lowest = lowestRequestTime.get();
+            if (lowest > requestTime) {
+                return;
+            }
+
+            int queueSize = (int) Math.ceil(currentLimit * (1.0 - (double) lowest / (double) requestTime));
+
+            int currentLimitLog10Plus1;
+            if (currentLimit >= 0 && currentLimit < 1_000) {
+                currentLimitLog10Plus1 = LOG10_PLUS_1_TABLE[(int) currentLimit];
+            } else {
+                currentLimitLog10Plus1 = 1 + (int) Math.log10(currentLimit);
+            }
+            int alpha = alphaFactor * currentLimitLog10Plus1;
+            int beta = betaFactor * currentLimitLog10Plus1;
+
+            long newLimit;
+            if (queueSize <= currentLimitLog10Plus1) {
+                newLimit = currentLimit + beta;
+            } else if (queueSize < alpha) {
+                newLimit = currentLimit + currentLimitLog10Plus1;
+            } else if (queueSize > beta) {
+                newLimit = currentLimit - currentLimitLog10Plus1;
+            } else {
+                return;
+            }
+
+            newLimit = Math.clamp(newLimit, 1, maxLimit);
+            this.currentLimit = newLimit;
+        } finally {
+            lock.unlock();
+        }
     }
 }

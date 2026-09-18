@@ -1,8 +1,8 @@
 package io.quarkus.signals.runtime.impl;
 
-import java.util.concurrent.Callable;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 import jakarta.inject.Singleton;
 
@@ -12,6 +12,7 @@ import io.quarkus.signals.Receivers.ExecutionModel;
 import io.quarkus.signals.SignalContext;
 import io.quarkus.signals.spi.Receiver;
 import io.smallrye.mutiny.Uni;
+import io.smallrye.mutiny.subscription.UniEmitter;
 
 @Singleton
 public class DefaultBlockingReceiverExecutor implements ReceiverExecutor {
@@ -42,49 +43,34 @@ public class DefaultBlockingReceiverExecutor implements ReceiverExecutor {
         }
         LOG.debugf("Notify %s [signal=%s, emission=%s]", receiver, context.signalType(),
                 context.emissionType());
-        CompletableFuture<RESPONSE> ret = execute(executionModel, new Callable<Uni<RESPONSE>>() {
+
+        Uni<RESPONSE> work = Uni.createFrom().deferred(new Supplier<Uni<? extends RESPONSE>>() {
             @Override
-            public Uni<RESPONSE> call() throws Exception {
+            public Uni<? extends RESPONSE> get() {
                 return receiver.notify(context);
             }
-        });
-        return Uni.createFrom().completionStage(ret);
-    }
+        }).runSubscriptionOn(executorService);
 
-    protected <RESULT> CompletableFuture<RESULT> execute(ExecutionModel executionModel, Callable<Uni<RESULT>> action) {
-        CompletableFuture<RESULT> ret = new CompletableFuture<>();
         ConcurrencyLimiter limiter = blockingLimiter;
         if (limiter != null) {
-            limiter.run(new Runnable() {
+            return Uni.createFrom().<Void> emitter(new Consumer<UniEmitter<? super Void>>() {
                 @Override
-                public void run() {
-                    executorService.execute(new Runnable() {
+                public void accept(UniEmitter<? super Void> em) {
+                    limiter.run(new Runnable() {
                         @Override
                         public void run() {
-                            try {
-                                action.call().eventually(limiter::complete).subscribe().with(ret::complete,
-                                        ret::completeExceptionally);
-                            } catch (Throwable e) {
-                                limiter.complete();
-                                ret.completeExceptionally(e);
-                            }
+                            em.complete(null);
+                        }
+                    }, new Consumer<Throwable>() {
+                        @Override
+                        public void accept(Throwable t) {
+                            em.fail(t);
                         }
                     });
                 }
-            }, ret::completeExceptionally);
-        } else {
-            executorService.execute(new Runnable() {
-                @Override
-                public void run() {
-                    try {
-                        action.call().subscribe().with(ret::complete, ret::completeExceptionally);
-                    } catch (Throwable e) {
-                        ret.completeExceptionally(e);
-                    }
-                }
-            });
+            }).replaceWith(work.eventually(limiter::complete));
         }
-        return ret;
+        return work;
     }
 
 }

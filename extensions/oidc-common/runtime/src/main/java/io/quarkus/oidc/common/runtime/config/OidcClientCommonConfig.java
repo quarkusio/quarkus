@@ -26,6 +26,13 @@ public interface OidcClientCommonConfig extends OidcCommonConfig {
     /**
      * The client id of the application. Each application has a client id that is used to identify the application.
      * Setting the client id is not required if {@link #applicationType} is `service` and no token introspection is required.
+     * <p>
+     * If this property is set to an HTTPS URL, the
+     * <a href="https://datatracker.ietf.org/doc/html/draft-ietf-oauth-client-id-metadata-document">OAuth Client ID
+     * Metadata Document</a> registration is activated. In this mode, Quarkus serves a metadata document at the URL path
+     * derived from the client id, allowing the authorization server to discover the client configuration without
+     * prior registration. The {@link #clientName()} property must also be set in this case.
+     * This option is only supported by the OIDC extension.
      */
     Optional<String> clientId();
 
@@ -221,6 +228,31 @@ public interface OidcClientCommonConfig extends OidcCommonConfig {
              * The private key password.
              */
             Optional<String> keyPassword();
+
+            /**
+             * String representation of a public key in PEM format.
+             * Ignored unless the {@link OidcClientCommonConfig#clientId() client-id} is an HTTPS URL activating
+             * the <a href="https://datatracker.ietf.org/doc/html/draft-ietf-oauth-client-id-metadata-document">Client ID
+             * Metadata Document</a> registration, and a private key ({@link #key}, {@link #keyFile}, or
+             * {@link #keyStoreFile}) is also configured.
+             * The public key is published in the metadata document {@code jwks} property and
+             * {@code token_endpoint_auth_method} is set to {@code private_key_jwt}.
+             * This option is only supported by the OIDC extension.
+             */
+            Optional<String> publicKey();
+
+            /**
+             * Path to a file containing the public key in PEM format.
+             * Both public keys and certificates are accepted.
+             * Ignored unless the {@link OidcClientCommonConfig#clientId() client-id} is an HTTPS URL activating
+             * the <a href="https://datatracker.ietf.org/doc/html/draft-ietf-oauth-client-id-metadata-document">Client ID
+             * Metadata Document</a> registration, and a private key ({@link #key}, {@link #keyFile}, or
+             * {@link #keyStoreFile}) is also configured.
+             * The public key is published in the metadata document {@code jwks} property and
+             * {@code token_endpoint_auth_method} is set to {@code private_key_jwt}.
+             * This option is only supported by the OIDC extension.
+             */
+            Optional<String> publicKeyFile();
 
             /**
              * The JWT audience ({@code aud}) claim value.

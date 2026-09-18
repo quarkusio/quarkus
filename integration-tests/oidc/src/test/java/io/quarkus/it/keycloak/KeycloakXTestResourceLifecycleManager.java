@@ -15,6 +15,8 @@ import io.quarkus.test.common.DevServicesContext;
 import io.quarkus.test.common.QuarkusTestResourceLifecycleManager;
 import io.quarkus.test.keycloak.client.KeycloakTestClient;
 import io.quarkus.test.keycloak.client.KeycloakTestClient.Tls;
+import io.restassured.RestAssured;
+import io.restassured.specification.RequestSpecification;
 
 public class KeycloakXTestResourceLifecycleManager
         implements QuarkusTestResourceLifecycleManager, DevServicesContext.ContextAware {
@@ -31,6 +33,7 @@ public class KeycloakXTestResourceLifecycleManager
 
         RealmRepresentation realm = createRealm(KEYCLOAK_REALM);
         client.createRealm(realm);
+        configureCimdClientPolicy(KEYCLOAK_REALM);
 
         return Map.of();
     }
@@ -95,6 +98,66 @@ public class KeycloakXTestResourceLifecycleManager
         user.getCredentials().add(credential);
 
         return user;
+    }
+
+    private void configureCimdClientPolicy(String realmName) {
+        String adminToken = client.getAdminAccessToken();
+        String baseUrl = client.getAuthServerBaseUrl();
+
+        String profiles = """
+                {
+                  "profiles": [{
+                    "name": "cimd-profile",
+                    "executors": [{
+                      "executor": "client-id-metadata-document",
+                      "configuration": {
+                        "cimd-allow-permitted-domains": ["host.testcontainers.internal"]
+                      }
+                    }]
+                  }]
+                }
+                """;
+
+        keycloakRequest()
+                .auth().oauth2(adminToken)
+                .contentType("application/json")
+                .body(profiles)
+                .when()
+                .put(baseUrl + "/admin/realms/" + realmName + "/client-policies/profiles")
+                .then()
+                .statusCode(204);
+
+        String policies = """
+                {
+                  "policies": [{
+                    "name": "cimd-policy",
+                    "enabled": true,
+                    "conditions": [{
+                      "condition": "client-id-uri",
+                      "configuration": {
+                        "client-id-uri-scheme": ["https"],
+                        "client-id-uri-allow-permitted-domains": ["host.testcontainers.internal"]
+                      }
+                    }],
+                    "profiles": ["cimd-profile"]
+                  }]
+                }
+                """;
+
+        keycloakRequest()
+                .auth().oauth2(adminToken)
+                .contentType("application/json")
+                .body(policies)
+                .when()
+                .put(baseUrl + "/admin/realms/" + realmName + "/client-policies/policies")
+                .then()
+                .statusCode(204);
+    }
+
+    private static RequestSpecification keycloakRequest() {
+        return RestAssured.given()
+                .keyStore("target/certificates/oidc-client-keystore.p12", "password")
+                .trustStore("target/certificates/oidc-client-truststore.p12", "password");
     }
 
     @Override

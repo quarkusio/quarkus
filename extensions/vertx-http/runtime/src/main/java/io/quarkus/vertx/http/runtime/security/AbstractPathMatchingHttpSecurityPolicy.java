@@ -223,7 +223,24 @@ public class AbstractPathMatchingHttpSecurityPolicy {
     private static List<HttpMatcher> findHttpMatchers(RoutingContext context,
             ImmutablePathMatcher<List<HttpMatcher>> pathMatcher) {
         String normalizedPath = context.normalizedPath();
-        PathMatch<List<HttpMatcher>> toCheck = pathMatcher.match(HttpSecurityUtils.normalizePath(normalizedPath));
+        String securityPath = HttpSecurityUtils.normalizePath(normalizedPath);
+        PathMatch<List<HttpMatcher>> toCheck = pathMatcher.match(securityPath);
+        if (!securityPath.equals(normalizedPath)) {
+            // Aggressive normalization may map the request path into a different policy prefix.
+            // For example /admin/..;/public/data normalizes to /public/data, matching a permit
+            // policy while the router still dispatches into /admin/*.
+            // Match the router's own normalized path too and combine all matched policies
+            // so that neither normalization form can weaken the other.
+            PathMatch<List<HttpMatcher>> routerCheck = pathMatcher.match(normalizedPath);
+            if (toCheck.getValue() == null || toCheck.getValue().isEmpty()) {
+                toCheck = routerCheck;
+            } else if (routerCheck.getValue() != null && !routerCheck.getValue().isEmpty()
+                    && !toCheck.getMatched().equals(routerCheck.getMatched())) {
+                List<HttpMatcher> merged = new ArrayList<>(toCheck.getValue());
+                merged.addAll(routerCheck.getValue());
+                toCheck = new PathMatch<>(toCheck.getMatched(), merged);
+            }
+        }
         if (toCheck.getValue() == null || toCheck.getValue().isEmpty()) {
             return List.of();
         }

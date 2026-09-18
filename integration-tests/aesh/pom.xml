@@ -93,6 +93,44 @@
     <build>
         <plugins>
             <plugin>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <!--
+                This module mixes two kinds of Quarkus tests, each of which builds Quarkus
+                applications and leaks deployment ClassLoaders/heap. Running them all in one JVM
+                accumulates enough of them to exhaust memory (OOME, e.g. AeshLauncherApiTest in CI).
+                The QuarkusProdModeTest tests (named Test*) are run in their own surefire execution,
+                separate from the QuarkusMainTest tests (named Aesh*Test).
+                In addition, reuseForks is disabled for the QuarkusMainTest tests so every test class
+                runs in a fresh, short-lived JVM: those tests leak enough that a reused fork can
+                still OOME (e.g. AeshReplTest after AeshLauncherApiTest in CI).
+                The 'default-test' execution is the catch-all: it excludes the Test* classes handled
+                by the 'prod-mode' execution, so any newly added test is picked up automatically.
+                -->
+                <executions>
+                    <execution>
+                        <id>default-test</id>
+                        <configuration>
+                            <reuseForks>false</reuseForks>
+                            <excludes>
+                                <exclude>%regex[.*/Test.*]</exclude>
+                            </excludes>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>prod-mode</id>
+                        <phase>test</phase>
+                        <goals>
+                            <goal>test</goal>
+                        </goals>
+                        <configuration>
+                            <includes>
+                                <include>%regex[.*/Test.*]</include>
+                            </includes>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <configuration>
                     <annotationProcessorPathsUseDepMgmt>true</annotationProcessorPathsUseDepMgmt>

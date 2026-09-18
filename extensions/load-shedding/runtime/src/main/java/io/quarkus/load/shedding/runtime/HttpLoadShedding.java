@@ -13,14 +13,16 @@ import io.vertx.ext.web.Router;
 
 @Singleton
 public class HttpLoadShedding {
-    public void init(@Observes @Priority(-1_000_000_000) Router router, OverloadDetector detector,
+    public static final int PRIORITY = -1_000_000_000;
+
+    public void init(@Observes @Priority(PRIORITY) Router router, OverloadDetector detector,
             PriorityLoadShedding priority, LoadSheddingRuntimeConfig config) {
 
         if (!config.enabled()) {
             return;
         }
 
-        router.route().order(-1_000_000_000).handler(ctx -> {
+        router.route().order(PRIORITY).handler(ctx -> {
             if (detector.isOverloaded() && priority.shedLoad(ctx)) {
                 HttpServerResponse response = ctx.response();
                 response.setStatusCode(HttpResponseStatus.SERVICE_UNAVAILABLE.code());

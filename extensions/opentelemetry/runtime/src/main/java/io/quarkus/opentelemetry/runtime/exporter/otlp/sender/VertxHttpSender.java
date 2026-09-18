@@ -10,7 +10,9 @@ import java.util.Map;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.logging.Level;
@@ -259,67 +261,58 @@ public final class VertxHttpSender implements HttpSender {
         @Override
         public void handle(HttpClientRequest request) {
 
-            request.response().onComplete(new Handler<>() {
-                @Override
-                public void handle(AsyncResult<HttpClientResponse> callResult) {
-                    if (callResult.succeeded()) {
-                        HttpClientResponse clientResponse = callResult.result();
-                        clientResponse.body().onComplete(new Handler<>() {
-                            @Override
-                            public void handle(AsyncResult<Buffer> bodyResult) {
-                                if (bodyResult.succeeded()) {
-                                    if (clientResponse.statusCode() >= 500) {
-                                        if (attemptNumber <= MAX_ATTEMPTS && !isShutdown.get()) {
-                                            // we should retry for 5xx error as they might be recoverable
-                                            initiateSend(client, requestURI,
-                                                    MAX_ATTEMPTS - attemptNumber,
-                                                    newAttempt(),
-                                                    onError);
-                                            return;
-                                        }
-                                    }
-                                    onHttpResponseRead.accept(new HttpResponse() {
-                                        @Override
-                                        public int getStatusCode() {
-                                            return clientResponse.statusCode();
-                                        }
-
-                                        @Override
-                                        public String getStatusMessage() {
-                                            return clientResponse.statusMessage();
-                                        }
-
-                                        @Override
-                                        public byte[] getResponseBody() {
-                                            return bodyResult.result().getBytes();
-                                        }
-                                    });
-                                } else {
+            AtomicReference<HttpClientResponse> responseRef = new AtomicReference<>();
+            request.response()
+                    .compose(new Function<HttpClientResponse, Future<Buffer>>() {
+                        @Override
+                        public Future<Buffer> apply(HttpClientResponse resp) {
+                            responseRef.set(resp);
+                            return resp.body();
+                        }
+                    })
+                    .onComplete(new Handler<AsyncResult<Buffer>>() {
+                        @Override
+                        public void handle(AsyncResult<Buffer> ar) {
+                            if (ar.succeeded()) {
+                                HttpClientResponse clientResponse = responseRef.get();
+                                if (clientResponse.statusCode() >= 500) {
                                     if (attemptNumber <= MAX_ATTEMPTS && !isShutdown.get()) {
-                                        // retry
+                                        // we should retry for 5xx error as they might be recoverable
                                         initiateSend(client, requestURI,
                                                 MAX_ATTEMPTS - attemptNumber,
                                                 newAttempt(),
                                                 onError);
-                                    } else {
-                                        onError.accept(bodyResult.cause());
+                                        return;
                                     }
                                 }
+                                onHttpResponseRead.accept(new HttpResponse() {
+                                    @Override
+                                    public int getStatusCode() {
+                                        return clientResponse.statusCode();
+                                    }
+
+                                    @Override
+                                    public String getStatusMessage() {
+                                        return clientResponse.statusMessage();
+                                    }
+
+                                    @Override
+                                    public byte[] getResponseBody() {
+                                        return ar.result().getBytes();
+                                    }
+                                });
+                            } else {
+                                if (attemptNumber <= MAX_ATTEMPTS && !isShutdown.get()) {
+                                    initiateSend(client, requestURI,
+                                            MAX_ATTEMPTS - attemptNumber,
+                                            newAttempt(),
+                                            onError);
+                                } else {
+                                    onError.accept(ar.cause());
+                                }
                             }
-                        });
-                    } else {
-                        if (attemptNumber <= MAX_ATTEMPTS && !isShutdown.get()) {
-                            // retry
-                            initiateSend(client, requestURI,
-                                    MAX_ATTEMPTS - attemptNumber,
-                                    newAttempt(),
-                                    onError);
-                        } else {
-                            onError.accept(callResult.cause());
                         }
-                    }
-                }
-            });
+                    });
             request.putHeader("Content-Type", contentType);
 
             Buffer buffer = Buffer.buffer(requestBodyWriter.getContentLength());

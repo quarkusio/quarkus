@@ -114,6 +114,12 @@
 
         <dependency>
             <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-websockets-deployment</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>io.quarkus</groupId>
             <artifactId>quarkus-smallrye-stork-deployment</artifactId>
             <scope>test</scope>
         </dependency>

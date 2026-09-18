@@ -612,6 +612,33 @@ This means that if an endpoint receives events `A` and `B` (in this particular o
 However, in some situations it is preferable to process events concurrently, i.e. with no ordering guarantees but also with no concurrency limits.
 For this cases, the `InboundProcessingMode#CONCURRENT` should be used.
 
+[[max-pending-messages]]
+==== Limiting the number of pending messages
+
+A peer that sends messages faster than the application can process them may cause an unbounded number of messages to be buffered in memory; this is especially relevant when `InboundProcessingMode#CONCURRENT` is used.
+To prevent this, Quarkus bounds the number of _pending_ (in-flight) messages, i.e. messages that a connection has received but has not yet fully processed, for a single connection.
+The limit is controlled by the following configuration property:
+
+* `quarkus.websockets-next.server.max-pending-messages` for server endpoints, and
+* `quarkus.websockets-next.client.max-pending-messages` for client endpoints.
+
+When the limit is reached, the underlying WebSocket read stream is paused and no more messages are received until the pending messages are processed.
+
+The default value is `256`.
+Set the property to `0` or a negative value to disable this back-pressure completely, in which case there is no limit on the number of in-flight messages.
+
+[source,properties]
+----
+quarkus.websockets-next.server.max-pending-messages=32
+quarkus.websockets-next.client.max-pending-messages=32
+----
+
+[WARNING]
+====
+Pausing the read stream also pauses the delivery of ping/pong control frames for the affected connection.
+Under sustained saturation, i.e. when the number of pending messages stays at the limit, automatic pong replies and `@OnPingMessage`/`@OnPongMessage` callbacks may be delayed.
+====
+
 [[server-api]]
 == Server API
 
@@ -1201,6 +1228,63 @@ public class ExampleHttpUpgradeCheck implements HttpUpgradeCheck {
 <2> Reject the HTTP upgrade. Initial HTTP handshake ends with the 400 Bad Request response status code.
 
 TIP: You can choose WebSocket endpoints to which the `HttpUpgradeCheck` is applied with the `HttpUpgradeCheck#appliesTo` method.
+
+[[limiting-number-of-connections]]
+==== Limiting the number of connections
+
+There is no built-in configuration property to cap the number of open connections.
+However, a stateful `HttpUpgradeCheck` can reject the HTTP upgrade once a limit is reached.
+The <<list-open-connections,`OpenConnections`>> bean provides a live snapshot of the open connections and can be consulted to count the connections of a specific endpoint.
+
+.Example HttpUpgradeCheck limiting the number of connections per endpoint
+[source, java]
+----
+package io.quarkus.websockets.next.test;
+
+import org.eclipse.microprofile.config.inject.ConfigProperty;
+
+import io.quarkus.websockets.next.HttpUpgradeCheck;
+import io.quarkus.websockets.next.OpenConnections;
+import io.smallrye.mutiny.Uni;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
+
+@ApplicationScoped
+public class ConnectionLimitCheck implements HttpUpgradeCheck {
+
+    private static final String ENDPOINT_ID = "foo-endpoint-id";
+
+    @ConfigProperty(name = "foo-max-connections")
+    int fooMaxConnections;
+
+    @Inject
+    OpenConnections connections;
+
+    @Override
+    public boolean appliesTo(String endpointId) {
+        return ENDPOINT_ID.equals(endpointId); <1>
+    }
+
+    @Override
+    public Uni<CheckResult> perform(HttpUpgradeContext context) {
+        long current = connections.findByEndpointId(ENDPOINT_ID).size(); <2>
+        if (current >= fooMaxConnections) {
+            return CheckResult.rejectUpgrade(503); <3>
+        }
+        return CheckResult.permitUpgrade();
+    }
+}
+----
+<1> Only apply this check to the `foo-endpoint-id` endpoint; the `perform` method is not invoked for HTTP upgrades of other endpoints.
+<2> The endpoint id defaults to the simple name of the endpoint class but can be set with `@WebSocket#endpointId()`.
+<3> Reject the HTTP upgrade with the 503 Service Unavailable response status code once the limit is reached.
+
+[WARNING]
+====
+The check runs _before_ the HTTP upgrade completes, and a connection only appears in `OpenConnections` after it has been established.
+Therefore, the snapshot returned by `OpenConnections` may not account for connections that are being established concurrently, and the limit is not strictly enforced under high concurrency.
+If you need a strict cap, maintain your own counter (e.g. an `AtomicInteger` incremented in the check and decremented in an `@OnClose` callback).
+====
 
 === TLS
 

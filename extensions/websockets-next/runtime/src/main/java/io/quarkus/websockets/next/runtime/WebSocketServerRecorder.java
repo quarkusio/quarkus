@@ -149,7 +149,7 @@ public class WebSocketServerRecorder {
                             runtimeConfig.getValue().autoPingInterval(), connection.securitySupport(),
                             runtimeConfig.getValue().unhandledFailureStrategy(), trafficLogger,
                             () -> connectionManager.remove(generatedEndpointClass, connection), activateRequestContext,
-                            activateSessionContext, telemetrySupport);
+                            activateSessionContext, telemetrySupport, runtimeConfig.getValue().maxPendingMessages());
                 });
             }
 

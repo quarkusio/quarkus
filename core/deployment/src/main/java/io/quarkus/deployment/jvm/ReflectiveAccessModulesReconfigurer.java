@@ -9,6 +9,7 @@ import java.util.List;
 
 import org.jboss.logging.Logger;
 
+import io.quarkus.deployment.builditem.ModuleExportBuildItem;
 import io.quarkus.deployment.builditem.ModuleOpenBuildItem;
 
 /**
@@ -28,9 +29,12 @@ final class ReflectiveAccessModulesReconfigurer implements JvmModulesReconfigure
 
     private static final Logger logger = JVMDeploymentLogger.logger;
     private final MethodHandle implAddOpensHandle;
+    private final MethodHandle implAddExportsHandle;
 
     ReflectiveAccessModulesReconfigurer() {
-        implAddOpensHandle = methodHandleInit();
+        Handles handles = methodHandlesInit();
+        implAddOpensHandle = handles.implAddOpens;
+        implAddExportsHandle = handles.implAddExports;
     }
 
     @Override
@@ -46,13 +50,28 @@ final class ReflectiveAccessModulesReconfigurer implements JvmModulesReconfigure
         }
     }
 
+    @Override
+    public void exportJavaModules(List<ModuleExportBuildItem> addExports, ModulesClassloaderContext modulesContext) {
+        if (addExports.isEmpty())
+            return;
+        for (ModuleExportBuildItem m : addExports) {
+            final Module exportedModule = modulesContext.findModule(m.exportedModuleName());
+            final Module exportingModule = modulesContext.findModule(m.exportingModuleName());
+            for (String packageName : m.packageNames()) {
+                addExports(exportedModule, packageName, exportingModule);
+            }
+        }
+    }
+
+    private record Handles(MethodHandle implAddOpens, MethodHandle implAddExports) {
+    }
+
     /**
-     * Attempts to get a handle to the private implAddOpens method of Module;
+     * Attempts to get a handle to the private implAddOpens and implAddExports methods of Module;
      * this is normally sealed, so it MUST be run with: --add-opens=java.base/java.lang.invoke=ALL-UNNAMED
-     * Once we have it, we have full access to reconfigure other modules.
+     * Once we have them, we have full access to reconfigure other modules.
      */
-    private static MethodHandle methodHandleInit() {
-        final MethodHandle handle;
+    private static Handles methodHandlesInit() {
         try {
             //Get the super-privileged MethodHandles.Lookup instance (IMPL_LOOKUP):
             //this is necessary to access the otherwise sealed private implAddOpens method.
@@ -66,18 +85,25 @@ final class ReflectiveAccessModulesReconfigurer implements JvmModulesReconfigure
             //Signature of the method we want to find
             MethodType methodType = MethodType.methodType(void.class, String.class, Module.class);
 
-            //Use the privileged lookup to find the private method
-            handle = privilegedLookup.findVirtual(
+            //Use the privileged lookup to find the private methods
+            MethodHandle implAddOpens = privilegedLookup.findVirtual(
                     Module.class, // Class to find the method in
                     "implAddOpens", // Name of the private method
                     methodType // Signature of the method
             );
-
             logger.debug("Successfully acquired MethodHandle for implAddOpens.");
-            return handle;
+
+            MethodHandle implAddExports = privilegedLookup.findVirtual(
+                    Module.class, // Class to find the method in
+                    "implAddExports", // Name of the private method
+                    methodType // Signature of the method
+            );
+            logger.debug("Successfully acquired MethodHandle for implAddExports.");
+
+            return new Handles(implAddOpens, implAddExports);
 
         } catch (NoSuchFieldException | IllegalAccessException | NoSuchMethodException | InaccessibleObjectException e) {
-            throw new RuntimeException("Failed to acquire handle to Module#implAddOpens. " +
+            throw new RuntimeException("Failed to acquire handle to Module#implAddOpens / Module#implAddExports. " +
                     "This must be run with JVM parameter '--add-opens=java.base/java.lang.invoke=ALL-UNNAMED'", e);
         }
     }
@@ -97,6 +123,24 @@ final class ReflectiveAccessModulesReconfigurer implements JvmModulesReconfigure
         } catch (Throwable e) {
             // MethodHandle.invokeExact throws Throwable
             throw new RuntimeException("Failed to invoke implAddOpens", e);
+        }
+    }
+
+    /**
+     * Uses the MethodHandle to export a package.
+     *
+     * @param sourceModule The module to export
+     * @param packageName The package to export
+     * @param targetModule The module to export to
+     */
+    private void addExports(Module sourceModule, String packageName, Module targetModule) {
+        try {
+            implAddExportsHandle.invokeExact(sourceModule, packageName, targetModule);
+            logger.debugf("Successfully exported module %s/%s to %s",
+                    sourceModule.getName(), packageName, targetModule.isNamed() ? targetModule.getName() : "UNNAMED");
+        } catch (Throwable e) {
+            // MethodHandle.invokeExact throws Throwable
+            throw new RuntimeException("Failed to invoke implAddExports", e);
         }
     }
 

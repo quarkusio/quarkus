@@ -26,6 +26,7 @@ public class ModulesOpenedTestEndpoint extends HttpServlet {
         String errorMessage = null;
         try {
             verifyJavaUtilsWasOpened();
+            verifySunSecurityX509WasExported();
             testPassed = true;
         } catch (Exception e) {
             testPassed = false;
@@ -35,6 +36,15 @@ public class ModulesOpenedTestEndpoint extends HttpServlet {
             writer.write("OK");
         } else {
             writer.write("Test Failed: " + errorMessage);
+        }
+    }
+
+    public void verifySunSecurityX509WasExported() {
+        Module baseModule = Object.class.getModule();
+        Module targetModule = ModulesOpenedTestEndpoint.class.getClassLoader().getUnnamedModule();
+        boolean isExported = baseModule.isExported("sun.security.x509", targetModule);
+        if (!isExported) {
+            throw new RuntimeException("Test Failed: Module java.base/sun.security.x509 is NOT exported!");
         }
     }
 

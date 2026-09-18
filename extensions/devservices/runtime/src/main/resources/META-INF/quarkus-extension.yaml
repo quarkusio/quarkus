@@ -8,6 +8,6 @@ metadata:
   categories:
   - "core"
   status: "stable"
-  unlisted: "true"
+  unlisted: true
   config:
   - "quarkus.devservices."

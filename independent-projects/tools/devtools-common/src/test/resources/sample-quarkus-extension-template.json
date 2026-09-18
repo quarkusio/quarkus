@@ -1,0 +1,14 @@
+{
+  "name": "REST",
+  "artifact": "io.quarkus:quarkus-rest:999-SNAPSHOT",
+  "metadata": {
+    "short-name": "rest",
+    "keywords": ["jaxrs", "web", "rest"],
+    "categories": ["web", "reactive"],
+    "status": "stable",
+    "guide": "https://quarkus.io/guides/rest",
+    "quickstart": "rest-json-quickstart",
+    "unlisted": true,
+    "config": ["quarkus.rest."]
+  }
+}

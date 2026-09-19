@@ -553,6 +553,10 @@
                             <configuration>
                                 <deployment>${project.groupId}:${project.artifactId}-deployment:${project.version}
                                 </deployment>
+                                <!-- Only resolves to a real file when building this repository itself; harmless
+                                     no-op for consumers of this plugin (e.g. Quarkiverse extensions) since they
+                                     won't have this path relative to their own build root. -->
+                                <localPlatformOverridesFile>${maven.multiModuleProjectDirectory}/devtools/bom-descriptor-json/src/main/resources/catalog-overrides.json</localPlatformOverridesFile>
                             </configuration>
                         </execution>
                     </executions>

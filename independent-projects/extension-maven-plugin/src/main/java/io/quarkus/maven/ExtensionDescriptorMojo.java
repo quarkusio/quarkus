@@ -58,6 +58,7 @@ import io.quarkus.bootstrap.resolver.maven.workspace.LocalProject;
 import io.quarkus.bootstrap.resolver.maven.workspace.LocalWorkspace;
 import io.quarkus.bootstrap.util.DependencyUtils;
 import io.quarkus.bootstrap.util.PropertyUtils;
+import io.quarkus.devtools.messagewriter.MessageWriter;
 import io.quarkus.devtools.project.extensions.ScmInfoProvider;
 import io.quarkus.fs.util.ZipUtils;
 import io.quarkus.maven.capabilities.CapabilitiesConfig;
@@ -65,6 +66,7 @@ import io.quarkus.maven.capabilities.CapabilityConfig;
 import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.maven.dependency.ArtifactKey;
 import io.quarkus.maven.dependency.GACTV;
+import io.quarkus.platform.tools.ExtensionCategoryChecker;
 import io.quarkus.platform.tools.ExtensionMetadataValidator;
 import tools.jackson.core.json.JsonReadFeature;
 import tools.jackson.core.util.DefaultIndenter;
@@ -263,6 +265,14 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
     @Parameter
     ExtensionDevModeMavenConfig devMode;
 
+    /**
+     * Path to a {@code catalog-overrides.json}-shaped file with the metadata for the platform this
+     * extension targets. This is useful for development of extensions within a platform
+     * which has not yet been published.
+     */
+    @Parameter(property = "quarkus.extension.localPlatformOverridesFile")
+    File localPlatformOverridesFile;
+
     ArtifactCoords deploymentCoords;
     CollectResult collectedDeploymentDeps;
     DependencyResult runtimeDeps;
@@ -375,6 +385,7 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
         } catch (IOException e) {
             throw new MojoExecutionException(e.getMessage(), e.getCause());
         }
+        warnAboutUnknownCategories(extObject);
 
         final DefaultPrettyPrinter prettyPrinter = new DefaultPrettyPrinter();
         prettyPrinter.indentArraysWith(DefaultIndenter.SYSTEM_LINEFEED_INSTANCE);
@@ -622,6 +633,50 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
             return mapper.readValue(is, ObjectNode.class);
         } catch (IOException io) {
             throw new MojoExecutionException("Failed to parse " + extensionFile, io);
+        }
+    }
+
+    private void warnAboutUnknownCategories(ObjectNode extObject) throws MojoExecutionException {
+        final ExtensionCategoryChecker categoryChecker;
+        try {
+            categoryChecker = localPlatformOverridesFile == null
+                    ? new ExtensionCategoryChecker(new MojoLogMessageWriter())
+                    : new ExtensionCategoryChecker(localPlatformOverridesFile.toPath(), new MojoLogMessageWriter());
+        } catch (IOException e) {
+            throw new MojoExecutionException("Failed to parse " + localPlatformOverridesFile, e);
+        }
+        for (String unknown : categoryChecker.findUnknownCategories(extObject)) {
+            getLog().warn(ExtensionCategoryChecker.warningFor(unknown)
+                    + " Run 'mvn quarkus:list-categories' to see the recommended list. "
+                    + "You can also propose adding the '" + unknown
+                    + "' category. See the extension metadata documentation for instructions.");
+        }
+    }
+
+    private final class MojoLogMessageWriter implements MessageWriter {
+        @Override
+        public void info(String msg) {
+            getLog().info(msg);
+        }
+
+        @Override
+        public void error(String msg) {
+            getLog().error(msg);
+        }
+
+        @Override
+        public boolean isDebugEnabled() {
+            return getLog().isDebugEnabled();
+        }
+
+        @Override
+        public void debug(String msg) {
+            getLog().debug(msg);
+        }
+
+        @Override
+        public void warn(String msg) {
+            getLog().warn(msg);
         }
     }
 

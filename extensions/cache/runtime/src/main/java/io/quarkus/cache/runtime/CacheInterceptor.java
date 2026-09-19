@@ -11,14 +11,12 @@ import java.util.Set;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Supplier;
 
-import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.context.Dependent;
 import jakarta.enterprise.inject.Any;
 import jakarta.enterprise.inject.Instance;
 import jakarta.enterprise.inject.Instance.Handle;
 import jakarta.enterprise.inject.spi.Bean;
 import jakarta.inject.Inject;
-import jakarta.inject.Singleton;
 import jakarta.interceptor.Interceptor.Priority;
 import jakarta.interceptor.InvocationContext;
 
@@ -134,7 +132,7 @@ public abstract class CacheInterceptor {
         // Kotlin suspend functions have a synthetic Continuation as last parameter which must never be part of the cache key.
         Object[] keyParameters = excludeKotlinContinuationParameter(method, methodParameterValues);
         if (keyGeneratorClass != UndefinedCacheKeyGenerator.class) {
-            return generateKey(keyGeneratorClass, method, keyParameters);
+            return checkKeyElement(method, generateKey(keyGeneratorClass, method, keyParameters));
         } else if (keyParameters == null || keyParameters.length == 0) {
             // If the intercepted method doesn't have any parameter, then the default cache key will be used.
             return cache.getDefaultKey();
@@ -164,20 +162,24 @@ public abstract class CacheInterceptor {
     }
 
     /**
-     * Rejects a client proxy of a bean whose scope is narrower than the application as a cache key element. The
-     * {@code equals()} and {@code hashCode()} of such a proxy delegate to whatever instance is current in the calling
-     * context, so entries stored through it can never be matched reliably, and the cache backend may call them later on a
-     * thread without an active context.
+     * Rejects a CDI client proxy as a cache key element, including the elements of a composite key.
+     * <p>
+     * The CDI specification leaves every method a client proxy inherits from {@link Object} undefined except
+     * {@code toString()}, so neither {@code equals()} nor {@code hashCode()} can be relied upon: entries stored through
+     * a proxy cannot be matched reliably, and the cache may call those methods later on a thread with no active
+     * context.
      */
     private static Object checkKeyElement(Method method, Object keyElement) {
         if (keyElement instanceof ClientProxy proxy) {
-            Class<? extends Annotation> scope = proxy.arc_bean().getScope();
-            if (scope != ApplicationScoped.class && scope != Singleton.class) {
-                throw new CacheException(new IllegalArgumentException("The cache key of method [" + method
-                        + "] contains a client proxy of the @" + scope.getSimpleName() + " bean ["
-                        + proxy.arc_bean().getBeanClass().getName()
-                        + "]. Its equals() and hashCode() depend on the active context, so it cannot be used as a cache key."
-                        + " Pass a value derived from the bean instead, or declare a CacheKeyGenerator."));
+            throw new CacheException(new IllegalArgumentException("The cache key of method [" + method
+                    + "] contains a client proxy of the bean [" + proxy.arc_bean().getBeanClass().getName()
+                    + "]. The CDI specification only defines toString() on a client proxy, so its equals() and"
+                    + " hashCode() cannot be used as a cache key. Pass a value derived from the bean instead, or"
+                    + " declare a CacheKeyGenerator."));
+        }
+        if (keyElement instanceof CompositeCacheKey compositeKey) {
+            for (Object element : compositeKey.getKeyElements()) {
+                checkKeyElement(method, element);
             }
         }
         return keyElement;

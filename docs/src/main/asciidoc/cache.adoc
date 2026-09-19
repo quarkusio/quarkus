@@ -351,7 +351,7 @@ Cache keys are built by the annotations API using the following logic:
 ====
 Each non-primitive method argument that is part of the key must implement `equals()` and `hashCode()` correctly for the cache to work as expected.
 
-For that reason, an injected bean with a scope narrower than the application (for example a `@RequestScoped` `JsonWebToken`, `Principal` or `SecurityIdentity`) cannot be used as a key argument: what gets injected is a client proxy whose `equals()` and `hashCode()` depend on the active context. Such an argument is rejected with a `CacheException`. Pass a value derived from the bean instead, such as `principal.getName()`, or declare a `CacheKeyGenerator`.
+For that reason, an injected normal-scoped bean (for example a `@RequestScoped` `JsonWebToken`, `Principal` or `SecurityIdentity`, but also an `@ApplicationScoped` one) cannot be used as a key argument: what gets injected is a CDI client proxy, and the CDI specification leaves every method a proxy inherits from `Object` undefined apart from `toString()`. Such an argument is rejected with a `CacheException`, whether it is the key itself, part of a composite key, or returned by a `CacheKeyGenerator`. Pass a value derived from the bean instead, such as `principal.getName()`.
 ====
 
 When a cache key is built from several method arguments, whether they are explicitly identified with `@CacheKey` or not, the building logic depends on the order of these arguments in the method signature. On the other hand, the arguments names are not used at all and do not have any effect on the cache key.

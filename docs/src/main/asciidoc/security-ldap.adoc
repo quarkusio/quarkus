@@ -190,6 +190,20 @@ It can be configured by setting `quarkus.security.ldap.cache.max-age`.
 The number of cache entries is limited by `quarkus.security.ldap.cache.size`, which defaults to `100`.
 ====
 
+=== Connecting over LDAPS
+
+When the LDAP server uses a certificate that the JVM does not trust by default, for example one signed by a private certificate authority,
+configure the trust store in the xref:tls-registry-reference.adoc[TLS registry] and name that configuration in `quarkus.security.ldap.dir-context.tls-configuration-name`:
+
+[source,properties]
+----
+quarkus.tls.ldap.trust-store.pem.certs=/path/to/ca.crt
+quarkus.security.ldap.dir-context.url=ldaps://ldap.server.local
+quarkus.security.ldap.dir-context.tls-configuration-name=ldap
+----
+
+Without `quarkus.security.ldap.dir-context.tls-configuration-name`, the connections use the default SSL context of the JVM.
+
 === Map LDAP groups to `SecurityIdentity` roles
 
 Previously described application configuration showed how to map `CN` attribute of the LDAP Distinguished Name group to a Quarkus `SecurityIdentity` role.

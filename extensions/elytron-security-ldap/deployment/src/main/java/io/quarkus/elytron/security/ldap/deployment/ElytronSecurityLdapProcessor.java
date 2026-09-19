@@ -1,5 +1,6 @@
 package io.quarkus.elytron.security.ldap.deployment;
 
+import org.wildfly.security.auth.realm.ldap.ThreadLocalSSLSocketFactory;
 import org.wildfly.security.auth.server.SecurityRealm;
 
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
@@ -17,6 +18,7 @@ import io.quarkus.elytron.security.ldap.LdapRecorder;
 import io.quarkus.elytron.security.ldap.QuarkusDirContextFactory;
 import io.quarkus.elytron.security.ldap.deployment.config.LdapSecurityRealmBuildTimeConfig;
 import io.quarkus.runtime.RuntimeValue;
+import io.quarkus.tls.deployment.spi.TlsRegistryBuildItem;
 
 class ElytronSecurityLdapProcessor {
 
@@ -40,13 +42,13 @@ class ElytronSecurityLdapProcessor {
     void configureLdapRealmAuthConfig(LdapRecorder recorder,
             LdapSecurityRealmBuildTimeConfig ldapSecurityRealmBuildTimeConfig,
             BuildProducer<SecurityRealmBuildItem> securityRealm,
-            BeanContainerBuildItem beanContainerBuildItem //we need this to make sure ArC is initialized
-    ) throws Exception {
+            BeanContainerBuildItem beanContainerBuildItem, //we need this to make sure ArC is initialized
+            TlsRegistryBuildItem tlsRegistryBuildItem) throws Exception {
         if (!ldapSecurityRealmBuildTimeConfig.enabled()) {
             return;
         }
 
-        RuntimeValue<SecurityRealm> realm = recorder.createRealm();
+        RuntimeValue<SecurityRealm> realm = recorder.createRealm(tlsRegistryBuildItem.registry());
         securityRealm.produce(new SecurityRealmBuildItem(realm, ldapSecurityRealmBuildTimeConfig.realmName(), null));
     }
 
@@ -68,5 +70,6 @@ class ElytronSecurityLdapProcessor {
                 ReflectiveClassBuildItem.builder("com.sun.jndi.dns.DnsContextFactory").build());
         reflection.produce(ReflectiveClassBuildItem.builder("com.sun.jndi.rmi.registry.RegistryContextFactory")
                 .build());
+        reflection.produce(ReflectiveClassBuildItem.builder(ThreadLocalSSLSocketFactory.class).methods().build());
     }
 }

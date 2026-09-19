@@ -4,7 +4,7 @@ name: "Kubernetes"
 metadata:
   keywords:
   - "kubernetes"
-  guide: "https://quarkus.io/guides/kubernetes"
+  guide: "https://quarkus.io/guides/deploying-to-kubernetes"
   categories:
   - "cloud"
   status: "stable"

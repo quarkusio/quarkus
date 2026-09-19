@@ -10,7 +10,7 @@ metadata:
   - "hibernate"
   - "reactive"
   - "database"
-  guide: "https://quarkus.io/guides/security-getting-started"
+  guide: "https://quarkus.io/guides/security-jpa"
   categories:
   - "security"
   status: "preview"

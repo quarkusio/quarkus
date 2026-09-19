@@ -11,6 +11,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -24,10 +25,7 @@ import org.gradle.api.provider.Property;
 import org.gradle.api.provider.Provider;
 import org.gradle.api.tasks.Classpath;
 import org.gradle.api.tasks.Input;
-import org.gradle.api.tasks.InputFile;
 import org.gradle.api.tasks.Internal;
-import org.gradle.api.tasks.PathSensitive;
-import org.gradle.api.tasks.PathSensitivity;
 import org.gradle.api.tasks.StopExecutionException;
 import org.gradle.api.tasks.TaskContainer;
 import org.gradle.jvm.tasks.Jar;
@@ -210,9 +208,25 @@ public abstract class QuarkusBuildTask extends QuarkusTaskWithExtensionView {
 
     }
 
-    @InputFile
-    @PathSensitive(PathSensitivity.RELATIVE)
+    /**
+     * The serialized application model. Deliberately {@code @Internal}: the file embeds absolute
+     * filesystem paths, so hashing it as an {@code @InputFile} would tie the build cache key to the
+     * checkout directory and to {@code GRADLE_USER_HOME}, making entries produced in one working
+     * directory unusable from another. Its cache-relevant content is declared by
+     * {@link #getApplicationModelDependencies()} and {@link #getApplicationModelProperties()} instead.
+     */
+    @Internal
     public abstract RegularFileProperty getApplicationModel();
+
+    @Classpath
+    public Provider<List<File>> getApplicationModelDependencies() {
+        return ApplicationModelCacheKey.resolvedDependencyFiles(getApplicationModel());
+    }
+
+    @Input
+    public Provider<Map<String, String>> getApplicationModelProperties() {
+        return ApplicationModelCacheKey.relocatableProperties(getApplicationModel());
+    }
 
     ApplicationModel resolveAppModelForBuild() {
         try {

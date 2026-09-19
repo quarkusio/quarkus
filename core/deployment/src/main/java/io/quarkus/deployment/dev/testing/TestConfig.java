@@ -2,10 +2,13 @@ package io.quarkus.deployment.dev.testing;
 
 import java.time.Duration;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
+import java.util.OptionalInt;
 
 import io.quarkus.runtime.annotations.ConfigDocMapKey;
+import io.quarkus.runtime.annotations.ConfigDocSection;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
 import io.quarkus.runtime.configuration.TrimmedStringConverter;
@@ -127,6 +130,20 @@ public interface TestConfig {
      * Container related test settings
      */
     Container container();
+
+    /**
+     * Kubernetes cluster related test settings, used when {@code @QuarkusIntegrationTest} deploys to a real
+     * Kubernetes cluster instead of running the artifact locally.
+     */
+    @ConfigDocSection(generated = true)
+    Kubernetes kubernetes();
+
+    /**
+     * Openshift cluster related test settings, used when {@code @QuarkusIntegrationTest} deploys to a real
+     * Openshift cluster instead of running the artifact locally.
+     */
+    @ConfigDocSection(generated = true)
+    Openshift openshift();
 
     /**
      * RestAssured related test settings
@@ -256,6 +273,115 @@ public interface TestConfig {
          */
         @ConfigDocMapKey("host-path")
         Map<String, String> volumeMounts();
+    }
+
+    /**
+     * The settings shared by {@link Kubernetes} and {@link Openshift} - each independently resolves these under
+     * its own prefix ({@code quarkus.test.kubernetes.*} / {@code quarkus.test.openshift.*}).
+     */
+    interface ClusterTestTarget {
+        /**
+         * The registry (reachable from the cluster) that the locally built image is retagged and pushed to before
+         * deployment. Whichever one of {@code quarkus.test.kubernetes.registry} or
+         * {@code quarkus.test.openshift.registry} is set determines both that this launch mode activates and which
+         * target ({@code kubernetes} or {@code openshift}) is used - exactly one of the two may be set. Setting
+         * both is a configuration error ({@code @QuarkusIntegrationTest} fails to start rather than picking one or
+         * running both), since only a single target is ever active for a given test run.
+         */
+        Optional<String> registry();
+
+        /**
+         * The tag to push the retagged test image under. If not set, a random per-run tag is generated so
+         * concurrent runs don't collide. Set explicitly to reuse (and overwrite) the same tag across runs instead
+         * of accumulating a new uniquely-tagged image in the registry every time.
+         */
+        Optional<String> tag();
+
+        /**
+         * Whether the registry the retagged test image is pushed to is insecure (plain HTTP, or HTTPS with an
+         * untrusted certificate). Only applies when pushing with Podman - Podman verifies TLS by default for any
+         * registry host, unlike Docker (which relies on daemon-level {@code insecure-registries} configuration
+         * instead of a per-command flag, so this has no effect when pushing with Docker).
+         */
+        @WithDefault("false")
+        boolean insecureRegistry();
+
+        /**
+         * How the test HTTP client reaches the deployed application.
+         * <p>
+         * Allowed values are:
+         * <ul>
+         * <li>{@code external} - uses the Route/Ingress host</li>
+         * <li>{@code port-forward} - opens a local port-forward directly to the pod</li>
+         * </ul>
+         * If not set, this is auto-detected from the generated manifest: {@code external} if it contains a
+         * Route/Ingress, {@code port-forward} otherwise.
+         */
+        Optional<Exposure> exposure();
+
+        /**
+         * The port to reach the Route/Ingress host on, for {@code external} exposure. Defaults to 443 if the
+         * Route/Ingress uses TLS, 80 otherwise - override this if the cluster's router/ingress controller is
+         * actually reachable on a different port (e.g. a rootless container runtime that can't bind to a port
+         * below 1024, so the ingress controller ends up exposed on a high port instead).
+         */
+        OptionalInt externalPort();
+
+        /**
+         * Namespace to deploy to. Defaults to the current kubeconfig context's namespace, or {@code default} if
+         * the context doesn't specify one.
+         */
+        Optional<String> namespace();
+
+        /**
+         * Whether the deployed resources are deleted after the test run. Set to {@code false} to leave them
+         * running for debugging. Note that this doesn't include the pushed tag, only K8s/Openshift resources.
+         */
+        @WithDefault("true")
+        boolean deleteAfterTest();
+
+        /**
+         * How long to wait for the deployment to become ready.
+         */
+        @WithDefault("2M")
+        Duration waitTimeout();
+
+        enum Exposure {
+            /**
+             * Uses the Kubernetes {@code Ingress} host or OpenShift {@code Route} host, whichever applies to the
+             * target. Requires {@code quarkus.kubernetes.ingress.expose=true} (Kubernetes) or
+             * {@code quarkus.openshift.route.expose=true} (OpenShift) to be set at the application level,
+             * otherwise there's no Route/Ingress for the launcher to find.
+             */
+            EXTERNAL,
+            /**
+             * Opens a local port-forward directly to the pod, mirroring how Docker mode uses {@code localhost}.
+             */
+            PORT_FORWARD;
+
+            /**
+             * The config property value form of this enum constant (e.g. {@code PORT_FORWARD} -&gt;
+             * {@code port-forward}), matching how SmallRye Config's implicit enum converter parses it.
+             */
+            @Override
+            public String toString() {
+                return name().toLowerCase(Locale.ROOT).replace('_', '-');
+            }
+        }
+    }
+
+    /**
+     * Settings used when {@code @QuarkusIntegrationTest} targets a plain Kubernetes cluster (i.e.
+     * {@code quarkus.test.kubernetes.registry} is set).
+     */
+    interface Kubernetes extends ClusterTestTarget {
+    }
+
+    /**
+     * Settings used when {@code @QuarkusIntegrationTest} targets an OpenShift cluster (i.e.
+     * {@code quarkus.test.openshift.registry} is set).
+     */
+    interface Openshift extends ClusterTestTarget {
     }
 
     interface RestAssured {

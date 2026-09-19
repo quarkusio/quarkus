@@ -3,6 +3,7 @@ package io.quarkus.vertx.http.runtime;
 import java.util.List;
 import java.util.Optional;
 import java.util.OptionalInt;
+import java.util.Set;
 
 import io.quarkus.runtime.annotations.ConfigDocDefault;
 import io.quarkus.runtime.configuration.TrimmedStringConverter;
@@ -22,6 +23,23 @@ public interface ProxyConfig {
      */
     @WithDefault("false")
     boolean useProxyProtocol();
+
+    /**
+     * The listeners on which the {@code PROXY} protocol is expected when {@code use-proxy-protocol} is enabled.
+     * Connections to the other listeners are served without a {@code PROXY} protocol header.
+     * By default, the protocol is expected on every listener.
+     */
+    @WithDefault("http,https,domain-socket")
+    Set<ProxyProtocolListener> proxyProtocolListeners();
+
+    /**
+     * The listeners of the HTTP server.
+     */
+    enum ProxyProtocolListener {
+        HTTP,
+        HTTPS,
+        DOMAIN_SOCKET
+    }
 
     /**
      * If this is true then the address, scheme etc. will be set from headers forwarded by the proxy server, such as

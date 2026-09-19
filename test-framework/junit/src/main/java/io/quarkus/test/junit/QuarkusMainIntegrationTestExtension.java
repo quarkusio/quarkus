@@ -20,6 +20,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.ServiceLoader;
+import java.util.logging.LogRecord;
 
 import org.eclipse.microprofile.config.spi.ConfigSource;
 import org.junit.jupiter.api.Assertions;
@@ -99,6 +100,12 @@ public class QuarkusMainIntegrationTestExtension extends AbstractQuarkusTestWith
             @Override
             public int exitCode() {
                 return result.getStatusCode();
+            }
+
+            @Override
+            public List<LogRecord> getLogRecords() {
+                throw new UnsupportedOperationException(
+                        "Log records are not available for integration tests. Use getOutputStream() instead.");
             }
         };
     }

@@ -1099,6 +1099,10 @@ so that a subsequent call to `callRemote()` with the same parameter value will n
 answered out of the cache.
 It will instead result in another attempt to call the remote.
 
+The same applies when a `@CacheResult` method returns a `Uni` that fails asynchronously,
+including when its subscription is scheduled with `runSubscriptionOn`.
+A retry can compute a new value, and a successful result is cached.
+
 == Going native
 
 The Cache extension supports building native executables.

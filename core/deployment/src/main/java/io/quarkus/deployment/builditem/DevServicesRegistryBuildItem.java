@@ -171,6 +171,47 @@ public final class DevServicesRegistryBuildItem extends SimpleBuildItem {
         }
     }
 
+    /**
+     * Start a dev service, retrying on a transient Docker daemon connection failure.
+     * <p>
+     * Some Docker daemons (notably podman's Docker-compatibility socket) close idle keep-alive connections
+     * server-side; the pooled HTTP client can then reuse a connection the daemon has already closed, so the
+     * very next request (here, the container create) gets no response. This is a connection-liveness issue,
+     * not a real startup failure: discarding the dead connection and retrying uses a fresh one. We only retry
+     * on the connection-error signature, so genuine failures (bad image, port conflict, wait-strategy timeout)
+     * still surface immediately. The retry is safe because the failure occurs at create time, before any
+     * container exists, so it cannot leak a container.
+     */
+    private void startWithStaleConnectionRetry(DevServicesResultBuildItem request, Startable startable) {
+        int maxAttempts = 3;
+        for (int attempt = 1;; attempt++) {
+            try {
+                startable.start();
+                return;
+            } catch (RuntimeException e) {
+                if (attempt >= maxAttempts || !isStaleConnectionFailure(e)) {
+                    throw e;
+                }
+                log.warnf("Dev service %s failed to start due to a transient Docker daemon connection error;"
+                        + " discarding the stale connection and retrying (%d/%d)", request.getName(), attempt, maxAttempts);
+            }
+        }
+    }
+
+    private static boolean isStaleConnectionFailure(Throwable t) {
+        for (Throwable c = t; c != null; c = c.getCause()) {
+            String simpleName = c.getClass().getSimpleName();
+            String message = String.valueOf(c.getMessage());
+            if (simpleName.contains("NoHttpResponse")
+                    || message.contains("failed to respond")
+                    || message.contains("Connection reset")
+                    || message.contains("Broken pipe")) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     private void reallyStart(DevServicesResultBuildItem request, List<DevServicesCustomizerBuildItem> customizers,
             List<DevServicesAdditionalConfigBuildItem> additionalConfigBuildItems, Map<String, String> allDevServicesConfig,
             Map<String, String> allDevServicesOverrideConfigs) {
@@ -213,7 +254,7 @@ public final class DevServicesRegistryBuildItem extends SimpleBuildItem {
             }
 
             if (missingDependency == null) {
-                startable.start();
+                startWithStaleConnectionRetry(request, startable);
 
                 Map<String, String> config = request.getConfig(startable);
                 Map<String, String> overrideConfig = request.getOverrideConfig(startable);

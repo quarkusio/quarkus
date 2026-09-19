@@ -92,7 +92,9 @@ public class ApplicationModelSerializer {
         if (JOS) {
             serializeWithJos(model, serializedModel);
         } else {
-            writeJson(toJsonObjectBuilder(model.asMap()), serializedModel);
+            writeJson(toJsonObjectBuilder(
+                    ApplicationModelRelocation.relocate(model.asMap(), ApplicationModelRelocation.environmentRoots())),
+                    serializedModel);
         }
         return serializedModel;
     }
@@ -119,11 +121,31 @@ public class ApplicationModelSerializer {
      * @throws IOException in case of a failure
      */
     public static void serialize(ApplicationModel appModel, Path file) throws IOException {
+        serialize(appModel, file, ApplicationModelRelocation.environmentRoots());
+    }
+
+    /**
+     * Serializes an {@link ApplicationModel} to a file, expressing the absolute paths it contains
+     * relative to the given roots.
+     * <p>
+     * Recording paths relative to well-known roots makes the serialized model independent of where the
+     * project and the dependency repositories sit on disk, so that identical inputs serialize to
+     * identical bytes. See {@link ApplicationModelRelocation}.
+     *
+     * @param appModel application model to serialize
+     * @param file target file
+     * @param roots roots to express the model's absolute paths relative to
+     * @throws IOException in case of a failure
+     */
+    public static void serialize(ApplicationModel appModel, Path file, Collection<ApplicationModelRelocation.Root> roots)
+            throws IOException {
         Files.createDirectories(file.getParent());
         if (JOS) {
+            // Java Object Serialization writes the model's object graph directly, so there is no map
+            // representation to rewrite; such a model is simply not relocatable
             serializeWithJos(appModel, file);
         } else {
-            toJson(appModel, file);
+            toJson(appModel, file, roots);
         }
     }
 
@@ -135,7 +157,25 @@ public class ApplicationModelSerializer {
      * @throws IOException in case of a failure
      */
     public static ApplicationModel deserialize(Path file) throws IOException {
-        return JOS ? deserializeWithJos(file) : fromJson(file);
+        return deserialize(file, ApplicationModelRelocation.rootsForModelAt(file));
+    }
+
+    /**
+     * Deserializes an {@link ApplicationModel} from a given file, resolving the relocation tokens it may
+     * contain against the given roots.
+     * <p>
+     * A caller that knows where the project sits - a build tool does - should pass its own roots in
+     * addition to {@link ApplicationModelRelocation#environmentRoots()}. Tokens whose root is not among
+     * them are left unresolved rather than pointed at a wrong location.
+     *
+     * @param file file to deserialize the application model from
+     * @param roots roots to resolve relocation tokens against
+     * @return deserialized application model
+     * @throws IOException in case of a failure
+     */
+    public static ApplicationModel deserialize(Path file, Collection<ApplicationModelRelocation.Root> roots)
+            throws IOException {
+        return JOS ? deserializeWithJos(file) : fromJson(file, roots);
     }
 
     /**
@@ -173,8 +213,12 @@ public class ApplicationModelSerializer {
      * @param file target file
      * @throws IOException in case of a failure
      */
-    private static void toJson(ApplicationModel appModel, Path file) throws IOException {
-        writeJson((Json.JsonObjectBuilder) appModel.asMap(JSON_CONTAINER_FACTORY), file);
+    private static void toJson(ApplicationModel appModel, Path file, Collection<ApplicationModelRelocation.Root> roots)
+            throws IOException {
+        final Map<String, Object> map = appModel.asMap(JSON_CONTAINER_FACTORY);
+        final Map<String, Object> relocated = ApplicationModelRelocation.relocate(map, roots);
+        // relocate() copies into plain maps, so the result has to be converted back to JSON builders
+        writeJson(relocated == map ? (Json.JsonObjectBuilder) map : toJsonObjectBuilder(relocated), file);
     }
 
     /**
@@ -197,9 +241,10 @@ public class ApplicationModelSerializer {
      * @return deserialized application model
      * @throws IOException in case of a failure
      */
-    private static ApplicationModel fromJson(Path file) throws IOException {
+    private static ApplicationModel fromJson(Path file, Collection<ApplicationModelRelocation.Root> roots)
+            throws IOException {
         final Map<String, Object> modelMap = asMap(JsonReader.of(Files.readString(file)).read());
-        return ApplicationModelBuilder.fromMap(modelMap);
+        return ApplicationModelBuilder.fromMap(ApplicationModelRelocation.absolutize(modelMap, roots));
     }
 
     /**

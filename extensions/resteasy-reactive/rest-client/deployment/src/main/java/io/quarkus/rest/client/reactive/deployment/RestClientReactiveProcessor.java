@@ -135,6 +135,7 @@ class RestClientReactiveProcessor {
     private static final DotName REST_CLIENT = DotName.createSimple(RestClient.class.getName());
     private static final DotName INJECT_MOCK = DotName.createSimple("io.quarkus.test.InjectMock");
     private static final DotName KOTLIN_METADATA_ANNOTATION = DotName.createSimple("kotlin.Metadata");
+    private static final DotName URL = DotName.createSimple("io.quarkus.rest.client.reactive.Url");
 
     private static final String ENABLE_COMPRESSION = "quarkus.http.enable-compression";
     private static final String KOTLIN_INTERFACE_DEFAULT_IMPL_SUFFIX = "$DefaultImpls";
@@ -825,6 +826,15 @@ class RestClientReactiveProcessor {
         }
 
         recorder.setBlockingClassNames(blockingClassNames);
+
+        Set<String> interfacesWithUrlParam = new HashSet<>();
+        for (AnnotationInstance urlAnnotation : index.getAnnotations(URL)) {
+            if (urlAnnotation.target().kind() == AnnotationTarget.Kind.METHOD_PARAMETER) {
+                interfacesWithUrlParam.add(
+                        urlAnnotation.target().asMethodParameter().method().declaringClass().name().toString());
+            }
+        }
+        recorder.setInterfacesWithUrlParam(interfacesWithUrlParam);
 
         if (LaunchMode.current() == LaunchMode.DEVELOPMENT) {
             recorder.setConfigKeys(configKeys);

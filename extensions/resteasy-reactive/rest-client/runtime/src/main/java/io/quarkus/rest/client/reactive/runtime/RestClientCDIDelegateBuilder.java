@@ -425,13 +425,18 @@ public class RestClientCDIDelegateBuilder<T> {
         if (((baseUriFromAnnotation == null) || baseUriFromAnnotation.isEmpty())
                 && propertyOptional.isEmpty()) {
             String propertyPrefix = configKey != null ? configKey : "\"" + jaxrsInterface.getName() + "\"";
-            throw new IllegalArgumentException(
-                    String.format(
-                            "Unable to determine the proper baseUrl/baseUri. " +
-                                    "Consider registering using @RegisterRestClient(baseUri=\"someuri\"), @RegisterRestClient(configKey=\"orkey\"), "
-                                    +
-                                    "or by adding '%s' or '%s' to your Quarkus configuration",
-                            String.format(REST_URL_FORMAT, propertyPrefix), String.format(REST_URI_FORMAT, propertyPrefix)));
+            String message = String.format(
+                    "Unable to determine the proper baseUrl/baseUri. " +
+                            "Consider registering using @RegisterRestClient(baseUri=\"someuri\"), @RegisterRestClient(configKey=\"orkey\"), "
+                            +
+                            "or by adding '%s' or '%s' to your Quarkus configuration",
+                    String.format(REST_URL_FORMAT, propertyPrefix), String.format(REST_URI_FORMAT, propertyPrefix));
+            if (RestClientRecorder.hasUrlParam(jaxrsInterface)) {
+                builder.baseUri(MissingBaseUrlRequestFilter.PLACEHOLDER_URI);
+                builder.register(new MissingBaseUrlRequestFilter(message), Integer.MIN_VALUE);
+                return;
+            }
+            throw new IllegalArgumentException(message);
         }
         String baseUrl = propertyOptional.orElse(baseUriFromAnnotation);
 

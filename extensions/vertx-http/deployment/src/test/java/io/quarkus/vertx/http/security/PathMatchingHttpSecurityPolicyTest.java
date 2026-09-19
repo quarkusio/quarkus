@@ -2,9 +2,11 @@ package io.quarkus.vertx.http.security;
 
 import static org.awaitility.Awaitility.await;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import java.net.URL;
 import java.time.Duration;
+import java.util.function.Function;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
@@ -27,9 +29,12 @@ import io.quarkus.security.test.utils.TestIdentityController;
 import io.quarkus.security.test.utils.TestIdentityProvider;
 import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.common.http.TestHTTPResource;
+import io.quarkus.vertx.http.runtime.security.HttpAuthorizer;
 import io.quarkus.vertx.http.runtime.security.HttpSecurityPolicy;
 import io.quarkus.vertx.http.runtime.security.QuarkusHttpUser;
+import io.quarkus.vertx.http.runtime.security.SecurityHandlerPriorities;
 import io.smallrye.mutiny.Uni;
+import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
@@ -351,12 +356,32 @@ public abstract class PathMatchingHttpSecurityPolicyTest {
         // here no HTTP Security policy that requires authentication is applied, and we want to check that identity
         // is still augmented
         assurePath("/api/public", 200, null, "public1", null);
-        assurePath("/api/public", 403, null, "root1", null);
+        // here 403 comes from a test route logic, not from the authorization itself, hence override expected result
+        Function<Integer, PermissionEvaluationResult> statusCodeToEvalResult = s -> PermissionEvaluationResult.PERMIT;
+        assurePath("/api/public", 403, null, "root1", null, statusCodeToEvalResult);
+    }
+
+    enum PermissionEvaluationResult {
+        PERMIT,
+        DENY,
+        PUBLIC_ROUTE
     }
 
     @ApplicationScoped
     public static class RouteHandler {
-        public void setup(@Observes Router router) {
+        public void setup(@Observes Router router, HttpAuthorizer httpAuthorizer) {
+            Handler<RoutingContext> permissionEvaluationHandler = rc -> httpAuthorizer
+                    .evaluatePermission(rc).subscribe().with(item -> {
+                        final PermissionEvaluationResult result;
+                        if (item == null) {
+                            result = PermissionEvaluationResult.PUBLIC_ROUTE;
+                        } else {
+                            result = item.isPermitted() ? PermissionEvaluationResult.PERMIT : PermissionEvaluationResult.DENY;
+                        }
+                        rc.response().putHeader(PermissionEvaluationResult.class.getSimpleName(), result.toString());
+                        rc.next();
+                    }, err -> rc.fail(500, err));
+            router.route().order(-1 * (SecurityHandlerPriorities.AUTHENTICATION - 10)).handler(permissionEvaluationHandler);
             router.route("/api/baz").order(-1).handler(rc -> rc.response().end("/api/baz response"));
             router.route("/api/public").order(-1).handler(rc -> {
                 if (rc.user() instanceof QuarkusHttpUser user && user.getSecurityIdentity() != null
@@ -378,6 +403,17 @@ public abstract class PathMatchingHttpSecurityPolicyTest {
     }
 
     private void assurePath(String path, int expectedStatusCode, String body, String auth, String header) {
+        Function<Integer, PermissionEvaluationResult> statusCodeToEvalResult = statusCode -> {
+            if (expectedStatusCode == 401 || expectedStatusCode == 403) {
+                return PermissionEvaluationResult.DENY;
+            }
+            return PermissionEvaluationResult.PERMIT;
+        };
+        assurePath(path, expectedStatusCode, body, auth, header, statusCodeToEvalResult);
+    }
+
+    private void assurePath(String path, int expectedStatusCode, String body, String auth, String header,
+            Function<Integer, PermissionEvaluationResult> statusCodeToEvalResult) {
         var req = getClient().get(url.getPort(), url.getHost(), path);
         if (auth != null) {
             req.basicAuthentication(auth, auth);
@@ -387,10 +423,16 @@ public abstract class PathMatchingHttpSecurityPolicyTest {
         }
         var result = req.send();
         await().atMost(REQUEST_TIMEOUT).until(result::isComplete);
-        assertEquals(expectedStatusCode, result.result().statusCode(), path);
+        int resultStatusCode = result.result().statusCode();
+        assertEquals(expectedStatusCode, resultStatusCode, path);
         if (body != null) {
             Assertions.assertTrue(result.result().bodyAsString().contains(body), path);
         }
+        String evaluationResult = result.result().getHeader(PermissionEvaluationResult.class.getSimpleName());
+        assertNotNull(evaluationResult);
+        PermissionEvaluationResult actualEvaluationResult = PermissionEvaluationResult.valueOf(evaluationResult);
+        PermissionEvaluationResult expectedEvaluationResult = statusCodeToEvalResult.apply(expectedStatusCode);
+        assertEquals(expectedEvaluationResult, actualEvaluationResult);
     }
 
     @Singleton

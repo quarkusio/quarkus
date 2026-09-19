@@ -59,6 +59,7 @@ import io.quarkus.hibernate.orm.deployment.PersistenceUnitDescriptorBuildItem;
 import io.quarkus.hibernate.orm.deployment.spi.AdditionalJpaModelBuildItem;
 import io.quarkus.panache.common.deployment.PanacheMethodCustomizerBuildItem;
 import io.quarkus.panache.hibernate.common.deployment.HibernateEnhancersRegisteredBuildItem;
+import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.security.spi.SecuredInterfaceAnnotationBuildItem;
 import io.quarkus.security.spi.SecuredTopLevelInterfaceBuildItem;
 import io.quarkus.security.spi.SecurityTransformer;
@@ -102,9 +103,40 @@ public final class QuarkusDataHibernateProcessor {
 
     private static final DotName DOTNAME_ID = DotName.createSimple(Id.class.getName());
 
+    /**
+     * Capabilities of the classic Panache (Panache 1) Hibernate extensions, mapped to their Maven artifact ids.
+     * Quarkus Data (Panache Next) replaces these and cannot coexist with them: both register overlapping persistence
+     * unit setup. We report the artifact id because that is what a user adds or removes in their build file.
+     */
+    private static final Map<String, String> CLASSIC_PANACHE_CAPABILITY_ARTIFACTS = Map.of(
+            Capability.HIBERNATE_ORM_PANACHE, "quarkus-hibernate-orm-panache",
+            Capability.HIBERNATE_ORM_PANACHE_KOTLIN, "quarkus-hibernate-orm-panache-kotlin",
+            Capability.HIBERNATE_REACTIVE_PANACHE, "quarkus-hibernate-reactive-panache",
+            Capability.HIBERNATE_REACTIVE_PANACHE_KOTLIN, "quarkus-hibernate-reactive-panache-kotlin");
+
     @BuildStep
     FeatureBuildItem featureBuildItem() {
         return new FeatureBuildItem(Feature.QUARKUS_DATA_HIBERNATE);
+    }
+
+    @BuildStep
+    void detectClassicPanacheOnClasspath(Capabilities capabilities,
+            ValidationPhaseBuildItem validationPhase,
+            BuildProducer<ValidationPhaseBuildItem.ValidationErrorBuildItem> validationErrors) {
+        // Each classic Panache extension declares a capability in its extension descriptor.
+        for (Map.Entry<String, String> classicPanache : CLASSIC_PANACHE_CAPABILITY_ARTIFACTS.entrySet()) {
+            if (capabilities.isPresent(classicPanache.getKey())) {
+                String classicPanacheArtifact = classicPanache.getValue();
+                validationErrors.produce(new ValidationPhaseBuildItem.ValidationErrorBuildItem(new ConfigurationException(
+                        "Quarkus Data (Panache Next, '" + Feature.QUARKUS_DATA_HIBERNATE.getName()
+                                + "') and classic Panache ('" + classicPanacheArtifact
+                                + "') were both detected on the classpath, but they cannot be used together.\n"
+                                + "These two data access layers are mutually exclusive: please use only one of them.\n"
+                                + "Either migrate your code to Quarkus Data and remove the classic Panache extension(s),"
+                                + " or keep classic Panache and remove the Quarkus Data extension(s).")));
+                return;
+            }
+        }
     }
 
     @BuildStep

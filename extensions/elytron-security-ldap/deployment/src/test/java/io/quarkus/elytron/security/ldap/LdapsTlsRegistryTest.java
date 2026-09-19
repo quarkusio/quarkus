@@ -41,12 +41,9 @@ public class LdapsTlsRegistryTest {
             .withApplicationRoot((jar) -> jar
                     .addClasses(SingleRoleSecuredServlet.class, TestApplication.class, RolesEndpointClassLevel.class,
                             ParametrizedPathsResource.class, SubjectExposingResource.class)
-                    .addAsResource("ldaps-config/application.properties", "application.properties"));
-
-    static {
-        config.setBeforeAllCustomizer(LdapsTlsRegistryTest::startLdapsServer)
-                .setAfterAllCustomizer(LdapsTlsRegistryTest::stopLdapsServer);
-    }
+                    .addAsResource("ldaps-config/application.properties", "application.properties"))
+            .setBeforeAllCustomizer(LdapsTlsRegistryTest::startLdapsServer)
+            .setAfterAllCustomizer(LdapsTlsRegistryTest::stopLdapsServer);
 
     private static void startLdapsServer() {
         try {

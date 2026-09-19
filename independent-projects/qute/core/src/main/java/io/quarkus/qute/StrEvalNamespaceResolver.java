@@ -21,7 +21,7 @@ public class StrEvalNamespaceResolver implements NamespaceResolver, EngineListen
 
     private final int priority;
 
-    private final ConcurrentMap<String, Template> templates = new ConcurrentHashMap<>();
+    private final ConcurrentMap<CacheKey, Template> templates = new ConcurrentHashMap<>();
 
     public StrEvalNamespaceResolver() {
         this(-3);
@@ -45,13 +45,16 @@ public class StrEvalNamespaceResolver implements NamespaceResolver, EngineListen
         Expression p = context.getParams().get(0);
         if (p.isLiteral()) {
             // We can optimize the case where a literal is used
+            // Note that the variant is a part of the cache key because it's used during parsing
             String contents = p.getLiteral().toString();
-            resolve(ret, context, templates.computeIfAbsent(contents, new Function<String, Template>() {
-                @Override
-                public Template apply(String contents) {
-                    return parse(contents, context.resolutionContext().getTemplate().getVariant().orElse(null));
-                }
-            }));
+            Variant variant = context.resolutionContext().getTemplate().getVariant().orElse(null);
+            resolve(ret, context,
+                    templates.computeIfAbsent(new CacheKey(contents, variant), new Function<CacheKey, Template>() {
+                        @Override
+                        public Template apply(CacheKey key) {
+                            return parse(key.contents, key.variant);
+                        }
+                    }));
         } else {
             context.evaluate(p).whenComplete((r, t) -> {
                 if (t != null) {
@@ -81,6 +84,9 @@ public class StrEvalNamespaceResolver implements NamespaceResolver, EngineListen
             throw new IllegalStateException("Engine not set");
         }
         return e.parse(contents, variant);
+    }
+
+    private record CacheKey(String contents, Variant variant) {
     }
 
     private void resolve(CompletableFuture<Object> ret, EvalContext context, Template template) {

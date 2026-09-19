@@ -66,7 +66,6 @@ import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
 import io.quarkus.deployment.logging.LogCleanupFilterBuildItem;
 import io.quarkus.gizmo2.Gizmo;
-import io.quarkus.gizmo2.LambdaStrategy;
 import io.quarkus.narayana.jta.runtime.NarayanaJtaProducers;
 import io.quarkus.narayana.jta.runtime.NarayanaJtaRecorder;
 import io.quarkus.narayana.jta.runtime.context.TransactionContext;
@@ -196,8 +195,7 @@ class NarayanaJtaProcessor {
         //generate the annotated interceptor with gizmo
         //all the logic is in the parent, but we don't have access to the
         //binding annotation here
-        Gizmo gizmo = Gizmo.create(new GeneratedBeanGizmo2Adaptor(generatedBeanBuildItemBuildProducer))
-                .withLambdaStrategy(LambdaStrategy.ANONYMOUS_CLASS);
+        Gizmo gizmo = Gizmo.create(new GeneratedBeanGizmo2Adaptor(generatedBeanBuildItemBuildProducer));
         gizmo.class_(TestTransactionInterceptor.class.getName() + "Generated", cc -> {
             cc.extends_(TestTransactionInterceptor.class);
             cc.addAnnotation(ClassDesc.of(TEST_TRANSACTION), RetentionPolicy.RUNTIME, ac -> {

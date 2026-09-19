@@ -23,7 +23,6 @@ import io.quarkus.builder.BuildChainBuilder;
 import io.quarkus.builder.BuildContext;
 import io.quarkus.builder.BuildStep;
 import io.quarkus.gizmo2.Gizmo;
-import io.quarkus.gizmo2.LambdaStrategy;
 import io.quarkus.gizmo2.ParamVar;
 import io.quarkus.gizmo2.desc.ConstructorDesc;
 import io.quarkus.gizmo2.desc.FieldDesc;
@@ -102,8 +101,7 @@ class AdditionalPersistenceUnitExternalEntityTest {
             if (path.endsWith(".class")) {
                 result[0] = bytes;
             }
-        })
-                .withLambdaStrategy(LambdaStrategy.ANONYMOUS_CLASS);
+        });
         g.class_(EXTERNAL_ENTITY_CLASS_NAME, cc -> {
             cc.public_();
             cc.addAnnotation(Entity.class);

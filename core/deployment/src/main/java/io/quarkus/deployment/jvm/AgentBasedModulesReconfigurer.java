@@ -13,6 +13,7 @@ import java.util.concurrent.CopyOnWriteArraySet;
 
 import org.jboss.logging.Logger;
 
+import io.quarkus.deployment.builditem.ModuleExportBuildItem;
 import io.quarkus.deployment.builditem.ModuleOpenBuildItem;
 
 final class AgentBasedModulesReconfigurer implements JvmModulesReconfigurer {
@@ -85,6 +86,26 @@ final class AgentBasedModulesReconfigurer implements JvmModulesReconfigurer {
         }
     }
 
+    @Override
+    public void exportJavaModules(List<ModuleExportBuildItem> addExports, ModulesClassloaderContext modulesContext) {
+        if (addExports.isEmpty())
+            return;
+        reportUnnamedModulesSet(this.instrumentation);//Provides very useful diagnostics
+        HashMap<Module, PerModuleExportInstructions> aggregateByModule = new HashMap<>();
+        for (ModuleExportBuildItem m : addExports) {
+            final Module exportedModule = modulesContext.findModule(m.exportedModuleName());
+            PerModuleExportInstructions perModuleExportInstructions = aggregateByModule.computeIfAbsent(exportedModule,
+                    k -> new PerModuleExportInstructions());
+            final Module exportingModule = modulesContext.findModule(m.exportingModuleName());
+            for (String packageName : m.packageNames()) {
+                perModuleExportInstructions.addExports(packageName, exportingModule);
+            }
+        }
+        for (Map.Entry<Module, PerModuleExportInstructions> entry : aggregateByModule.entrySet()) {
+            addExports(entry.getKey(), entry.getValue().modulesToExportToByPackage);
+        }
+    }
+
     /**
      * Uses the MethodHandle to open a package.
      *
@@ -114,6 +135,25 @@ final class AgentBasedModulesReconfigurer implements JvmModulesReconfigurer {
         }
     }
 
+    private void addExports(Module sourceModule, Map<String, Set<Module>> exportInstructions) {
+        if (logger.isDebugEnabled()) {
+            exportInstructions.forEach(
+                    (pkg, modules) -> logger.debugf("Exporting package %s of %s to modules %s", pkg, sourceModule, modules));
+        }
+        try {
+            instrumentation.redefineModule(
+                    sourceModule, // The module to change
+                    Set.of(), // Extra reads
+                    exportInstructions, // Extra exports
+                    Map.of(), // Extra opens
+                    Set.of(), // Extra uses
+                    Map.of() // Extra provides
+            );
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to redefine module " + sourceModule.getName());
+        }
+    }
+
     // A convenience container to keep our logic above more readable
     private static class PerModuleOpenInstructions {
         private final Map<String, Set<Module>> modulesToOpenToByPackage = new HashMap<>();
@@ -121,6 +161,15 @@ final class AgentBasedModulesReconfigurer implements JvmModulesReconfigurer {
         public void addOpens(final String packageName, final Module openingModule) {
             final Set<Module> modulesToOpenTo = modulesToOpenToByPackage.computeIfAbsent(packageName, k -> new HashSet<>());
             modulesToOpenTo.add(openingModule);
+        }
+    }
+
+    private static class PerModuleExportInstructions {
+        private final Map<String, Set<Module>> modulesToExportToByPackage = new HashMap<>();
+
+        public void addExports(final String packageName, final Module exportingModule) {
+            final Set<Module> modulesToExportTo = modulesToExportToByPackage.computeIfAbsent(packageName, k -> new HashSet<>());
+            modulesToExportTo.add(exportingModule);
         }
     }
 

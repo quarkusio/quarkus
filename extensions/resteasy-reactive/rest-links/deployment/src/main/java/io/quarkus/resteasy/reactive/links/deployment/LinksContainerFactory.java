@@ -17,6 +17,7 @@ import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
 import org.jboss.resteasy.reactive.common.model.ResourceMethod;
 import org.jboss.resteasy.reactive.common.util.URLUtils;
+import org.jboss.resteasy.reactive.server.processor.ServerEndpointIndexer;
 
 import io.quarkus.resteasy.reactive.links.RestLink;
 import io.quarkus.resteasy.reactive.links.runtime.LinkInfo;
@@ -39,7 +40,12 @@ final class LinksContainerFactory {
 
         for (ResteasyReactiveResourceMethodEntriesBuildItem.Entry entry : entries) {
             MethodInfo resourceMethodInfo = entry.getMethodInfo();
-            AnnotationInstance restLinkAnnotation = resourceMethodInfo.annotation(DotNames.REST_LINK_ANNOTATION);
+            MethodInfo endpointImplementation = ServerEndpointIndexer.findEndpointImplementation(resourceMethodInfo,
+                    entry.getActualClassInfo(), index);
+            AnnotationInstance restLinkAnnotation = endpointImplementation.annotation(DotNames.REST_LINK_ANNOTATION);
+            if (restLinkAnnotation == null) {
+                restLinkAnnotation = resourceMethodInfo.annotation(DotNames.REST_LINK_ANNOTATION);
+            }
             if (restLinkAnnotation != null) {
                 LinkInfo linkInfo = getLinkInfo(entry.getResourceMethod(), resourceMethodInfo,
                         restLinkAnnotation, entry.getBasicResourceClassInfo().getPath(), index);

@@ -7,4 +7,4 @@ metadata:
   categories:
   - "security"
   stable: "true"
-  unlisted: "true"
+  unlisted: true

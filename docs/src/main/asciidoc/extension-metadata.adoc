@@ -21,6 +21,7 @@ in a template `META-INF/quarkus-extension.yaml` found in the extension runtime m
 
 [source,yaml,subs=attributes+]
 ----
+$schema: "https://quarkus.io/schemas/quarkus-extension-schema.json"
 name: "REST" <1>
 artifact: ${project.groupId}:${project.artifactId}:${project.version} <2>
 metadata:
@@ -40,6 +41,7 @@ metadata:
     languages:
       - "java"
       - "kotlin"
+      - "scala"
     artifact: "io.quarkus:quarkus-project-core-extension-codestarts"
   config: <10>
   - "quarkus.rest."
@@ -57,11 +59,13 @@ sponsor: A Sponsoring Organisation <11>
 <10> Configuration prefix
 <11> The sponsor(s) of this extension. Optional, and will sometimes be determined automatically from commit history.
 
-To mark an extension as deprecated, set the status to `deprecated`:
+Field descriptions are defined in the canonical JSON Schema and reproduced below at documentation build time.
+
+include::{generated-dir}/infra/quarkus-extension-schema-reference.adoc[opts=optional]
+
+To mark an extension as deprecated, set `status` to a single string value `deprecated` (not an array):
 
 [source,yaml,subs=attributes+]
-
-
 ----
 metadata:
   status: "deprecated"

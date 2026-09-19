@@ -9,4 +9,4 @@ metadata:
     - "serialization"
     - "reactive"
   status: "experimental"
-  unlisted: "true"
+  unlisted: true

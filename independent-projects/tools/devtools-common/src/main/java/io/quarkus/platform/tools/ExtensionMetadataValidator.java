@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
 
+import com.networknt.schema.Error;
 import com.networknt.schema.InputFormat;
 import com.networknt.schema.Schema;
 import com.networknt.schema.SchemaRegistry;
@@ -43,11 +44,11 @@ public final class ExtensionMetadataValidator {
             schema.initializeValidators();
         }
 
-        final List<com.networknt.schema.Error> errors = schema.validate(extObject.toString(), InputFormat.JSON);
+        final List<Error> errors = schema.validate(extObject.toString(), InputFormat.JSON);
         if (!errors.isEmpty()) {
             final StringBuilder sb = new StringBuilder();
             sb.append("Invalid ").append(BootstrapConstants.QUARKUS_EXTENSION_FILE_NAME).append(" metadata:");
-            for (com.networknt.schema.Error err : errors) {
+            for (Error err : errors) {
                 sb.append(System.lineSeparator()).append("- ").append(err.getInstanceLocation()).append(": ")
                         .append(err.getMessage());
             }

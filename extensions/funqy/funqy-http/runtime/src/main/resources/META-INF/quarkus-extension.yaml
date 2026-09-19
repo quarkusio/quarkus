@@ -11,5 +11,6 @@ metadata:
   status: "experimental"
   codestart:
     name: "funqy-http"
-    languages: "java"
+    languages:
+      - "java"
     artifact: "io.quarkus:quarkus-project-core-extension-codestarts"

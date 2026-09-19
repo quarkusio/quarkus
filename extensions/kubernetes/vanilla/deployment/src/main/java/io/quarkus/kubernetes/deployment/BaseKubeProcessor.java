@@ -14,6 +14,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -57,6 +58,8 @@ import io.dekorate.utils.Labels;
 import io.dekorate.utils.Strings;
 import io.fabric8.kubernetes.api.model.ContainerBuilder;
 import io.fabric8.kubernetes.api.model.ContainerFluent;
+import io.fabric8.kubernetes.api.model.HasMetadata;
+import io.fabric8.kubernetes.api.model.KubernetesListBuilder;
 import io.fabric8.kubernetes.api.model.ObjectMeta;
 import io.fabric8.kubernetes.api.model.batch.v1.JobBuilder;
 import io.fabric8.kubernetes.api.model.rbac.PolicyRule;
@@ -831,6 +834,56 @@ public abstract class BaseKubeProcessor<P, C extends PlatformConfiguration> {
             List<KubernetesJobBuildItem> jobs) {
         createInitContainerDecorators(context, initContainers);
         createInitJobDecorators(context, jobs);
+        createInitTaskMetadataDecorators(context, jobs);
+    }
+
+    private void createInitTaskMetadataDecorators(DecoratorsContext context, List<KubernetesJobBuildItem> jobs) {
+        List<KubernetesJobBuildItem> jobsForTarget = Targetable.filteredByTarget(jobs, context.target).toList();
+        if (jobsForTarget.isEmpty()) {
+            return;
+        }
+
+        List<String> resourceNames = new ArrayList<>();
+        for (KubernetesJobBuildItem job : jobsForTarget) {
+            resourceNames.add(job.getName());
+        }
+        // Same Role / RoleBinding names produced by InitTaskProcessor (binding name defaults to <app>-<role>).
+        resourceNames.add(InitTaskProcessor.VIEW_JOBS_ROLE_NAME);
+        resourceNames.add(context.name() + "-" + InitTaskProcessor.VIEW_JOBS_ROLE_NAME);
+
+        // Re-apply the same label/annotation decorators that target the main app resource.
+        // Init-task resources use different names, so the original decorators never match them.
+        // Use Quarkus-specific decorators whose equals() includes the resource name: dekorate stores
+        // decorators in a TreeSet and AddLabelDecorator/RemoveLabelDecorator/AddAnnotationDecorator
+        // ignore the name in equals(), which would drop these per-resource copies.
+        for (AddLabelDecorator labelDecorator : context.decoratorsOfType(AddLabelDecorator.class)) {
+            var label = labelDecorator.getLabel();
+            for (String resourceName : resourceNames) {
+                context.add(new AddLabelToResourceDecorator(resourceName, label.getKey(), label.getValue()));
+            }
+        }
+        for (AddAnnotationDecorator annotationDecorator : context.decoratorsOfType(AddAnnotationDecorator.class)) {
+            var annotation = annotationOf(annotationDecorator);
+            for (String resourceName : resourceNames) {
+                context.add(new AddAnnotationToResourceDecorator(resourceName, annotation.getKey(), annotation.getValue()));
+            }
+        }
+        for (RemoveLabelDecorator removeLabelDecorator : context.decoratorsOfType(RemoveLabelDecorator.class)) {
+            String key = removeLabelDecorator.getLabelKey();
+            for (String resourceName : resourceNames) {
+                context.add(new RemoveLabelFromResourceDecorator(resourceName, key));
+            }
+        }
+    }
+
+    private static io.dekorate.kubernetes.config.Annotation annotationOf(AddAnnotationDecorator decorator) {
+        try {
+            var field = AddAnnotationDecorator.class.getDeclaredField("annotation");
+            field.setAccessible(true);
+            return (io.dekorate.kubernetes.config.Annotation) field.get(decorator);
+        } catch (ReflectiveOperationException e) {
+            throw new IllegalStateException("Unable to read annotation from AddAnnotationDecorator", e);
+        }
     }
 
     private void createInitContainerDecorators(DecoratorsContext context, List<KubernetesInitContainerBuildItem> items) {
@@ -910,6 +963,7 @@ public abstract class BaseKubeProcessor<P, C extends PlatformConfiguration> {
             serviceAccount = Optional.empty();
         }
 
+        final String deploymentName = context.name();
         Targetable.filteredByTarget(items, context.target).forEach(item -> {
 
             final var name = item.getName();
@@ -918,13 +972,26 @@ public abstract class BaseKubeProcessor<P, C extends PlatformConfiguration> {
             // this is needed as we've removed decorators that were previously applied to the simple job resource created here
             // with this specialized job creator, we inherit the behavior that directly sets values instead of using decorators but add specialized behavior as well
             final var job = new AddJobResourceDecorator(name, config(), null) {
+                private Map<String, String> labels = Map.of();
+
+                @Override
+                protected void prepare(List<HasMetadata> items, KubernetesListBuilder list) {
+                    super.prepare(items, list);
+                    // Same approach as RBAC resources: inherit name/version labels from the main deployment.
+                    labels = mergeLabelsFromDeploymentWith(items, Map.of(), deploymentName);
+                }
+
                 @Override
                 protected void initBuilderWithDefaults(JobBuilder builder) {
+                    updateMetadata(builder.editOrNewMetadata(), null, labels).endMetadata();
                     super.initBuilderWithDefaults(builder);
 
                     builder.editOrNewSpec()
                             .withCompletionMode(DEFAULT_COMPLETION_MODE)
                             .editOrNewTemplate()
+                            .editOrNewMetadata()
+                            .addToLabels(new TreeMap<>(labels))
+                            .endMetadata()
                             .editOrNewSpec()
                             .withRestartPolicy(DEFAULT_RESTART_POLICY)
                             .withServiceAccountName(serviceAccountName)

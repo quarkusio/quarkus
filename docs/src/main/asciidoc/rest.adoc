@@ -3176,6 +3176,47 @@ GET /hello?name=foo,bar HTTP/1.1
 
 then the response will be `hello foo bar`.
 
+==== Collecting all query parameters
+
+Instead of binding a single query parameter, you can annotate a
+`jakarta.ws.rs.core.MultivaluedMap<String, String>` parameter with a bare `@RestQuery`
+(without specifying a name) to collect all the query parameters of the request. 
+Each entry in the map corresponds to one query parameter name, and its value is the list of
+all the values given for that name.
+
+[source,java]
+----
+@Path("hello")
+public static class HelloResource {
+
+    @GET
+    public String hello(@RestQuery MultivaluedMap<String, String> queryParams) {
+        return queryParams.toString();
+    }
+}
+----
+
+Given the following request:
+
+[source,http]
+----
+GET /hello?name=foo&city=bar HTTP/1.1
+----
+
+the `queryParams` map will contain `name=[foo]` and `city=[bar]`. If the same
+query parameter is repeated, such as in:
+
+[source,http]
+----
+GET /hello?name=foo&name=bar HTTP/1.1
+----
+
+then `queryParams` will contain a single `name` entry with both values: `name=[foo, bar]`.
+
+NOTE: The `@RestQuery` annotation must not specify a name (i.e. use `@RestQuery`, not
+`@RestQuery("name")`) for this collection behavior to apply, since it is meant to
+gather every query parameter rather than a single named one.
+
 ==== Handling dates
 
 Quarkus REST supports the use of the implementations of `java.time.Temporal` (like `java.time.LocalDateTime`) as query, path, or form params.

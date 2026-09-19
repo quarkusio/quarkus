@@ -951,11 +951,11 @@ public abstract class ResteasyReactiveRequestContext
     }
 
     public Object getQueryParameter(String name, boolean single, boolean encoded) {
-        return getQueryParameter(name, single, encoded, null);
+        return getQueryParameter(name, single, encoded, null, false);
     }
 
     @Override
-    public Object getQueryParameter(String name, boolean single, boolean encoded, String separator) {
+    public Object getQueryParameter(String name, boolean single, boolean encoded, String separator, boolean restQueryMap) {
         if (single) {
             String val = serverRequest().getQueryParam(name);
             if (val != null && val.isEmpty()) {
@@ -965,6 +965,14 @@ public abstract class ResteasyReactiveRequestContext
                 val = Encode.encodeQueryParam(val);
             }
             return val;
+        }
+
+        if (restQueryMap) {
+            QuarkusMultivaluedHashMap<String, String> allQueryParams = new QuarkusMultivaluedHashMap<>();
+            for (String queryParamName : serverRequest().queryParamNames()) {
+                allQueryParams.addAll(queryParamName, filterEmpty(serverRequest().getAllQueryParams(queryParamName)));
+            }
+            return allQueryParams;
         }
 
         // empty collections must not be turned to null

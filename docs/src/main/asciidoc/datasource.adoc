@@ -369,26 +369,18 @@ Each with its configuration:
 
 [source,properties]
 ----
-quarkus.datasource.db-kind=h2
 quarkus.datasource.username=username-default
 quarkus.datasource.jdbc.max-size=13
 
-quarkus.datasource.users.db-kind=h2
 quarkus.datasource.users.username=username1
 quarkus.datasource.users.jdbc.max-size=11
 
-quarkus.datasource.inventory.db-kind=h2
 quarkus.datasource.inventory.username=username2
 quarkus.datasource.inventory.jdbc.max-size=12
 ----
 
 Notice there is an extra section in the configuration property key.
 The syntax is as follows: `quarkus.datasource.[optional name.][datasource property]`.
-
-NOTE: Named datasources must set at least one build-time property so Quarkus can detect them.
-Setting `db-kind` is the most common approach.
-If the datasource is used by Hibernate ORM, it will be detected automatically;
-see <<datasource-detection,Conditions for datasource creation>>.
 
 ==== Named datasource injection
 
@@ -415,21 +407,19 @@ AgroalDataSource inventoryDataSource;
 
 Quarkus creates a datasource when it detects that one is needed, i.e. when any of the following conditions is met:
 
-* It is requested by another extension (e.g. Hibernate ORM, Flyway, Liquibase).
-For example, when Hibernate ORM has entities to manage, it will automatically request the datasource(s) it needs.
+* It is requested by another extension (e.g. Hibernate ORM, Flyway, Liquibase)
+* OR it is injected statically in application code (e.g. `@Inject Session` or `@Inject @PersistenceUnit("users") SessionFactory`)
+* OR it is injected statically in application code (e.g. `@Inject DataSource` or `@Inject @DataSource("inventory") AgroalDataSource`)
 * OR at least one build-time property is set for it (e.g. `db-kind`).
 * OR no datasource is defined at all: then the default datasource is created.
 
-When a named datasource is not used by any extension that requests it automatically,
-you need to set at least one build-time property for it to be created.
-Setting <<datasource-db-kind,`db-kind`>> is the most common approach.
-This is particularly relevant for named datasources used only through direct injection
-(e.g. `@Inject @DataSource("inventory") AgroalDataSource`).
-
-When a datasource is used by Hibernate ORM,
+Notably, as soon as a datasource is used by Hibernate ORM or injected in your application,
 you may not need any configuration for it while developing,
 as the database type (<<datasource-db-kind,`db-kind`>>) will be inferred automatically if you only have one JDBC driver in the classpath,
 and the database URL, username and password will be filled in automatically by <<dev-services,Dev Services>>.
+
+All this applies equally to the default datasource and to named datasource.
+You can mix the default datasource and named datasources, or only have a default datasource, or only have named datasources.
 
 [[datasource-db-kind]]
 === Applications with multiple datasource extensions

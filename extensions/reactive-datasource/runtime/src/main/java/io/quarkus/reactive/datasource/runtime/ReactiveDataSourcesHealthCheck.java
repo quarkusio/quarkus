@@ -6,11 +6,12 @@ import java.util.Set;
 import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Any;
+import jakarta.enterprise.inject.Instance;
+import jakarta.inject.Inject;
 
 import org.eclipse.microprofile.health.Readiness;
 
 import io.quarkus.arc.Arc;
-import io.quarkus.arc.ArcContainer;
 import io.quarkus.arc.InstanceHandle;
 import io.quarkus.datasource.runtime.DataSourceSupport;
 import io.vertx.sqlclient.Pool;
@@ -19,18 +20,24 @@ import io.vertx.sqlclient.Pool;
 @ApplicationScoped
 class ReactiveDataSourcesHealthCheck extends ReactiveDatasourceHealthCheck {
 
+    @Inject
+    Instance<DataSourceSupport> dataSourceSupport;
+
+    @Inject
+    Instance<ReactivePoolsHealthConfig> healthConfig;
+
     public ReactiveDataSourcesHealthCheck() {
         super("Reactive datasource connections health check", "SELECT 1");
     }
 
     @PostConstruct
     protected void init() {
-        ArcContainer container = Arc.container();
-        DataSourceSupport dataSourceSupport = container.instance(DataSourceSupport.class).get();
-        Set<String> excludedNames = dataSourceSupport.getHealthCheckExcludedNames();
-        ReactivePoolsHealthConfig healthConfig = container.instance(ReactivePoolsHealthConfig.class).get();
-        Map<String, String> healthSqlMap = healthConfig.getHealthCheckSqlByDatasource();
-        for (InstanceHandle<Pool> handle : container.select(Pool.class, Any.Literal.INSTANCE).handles()) {
+        if (!dataSourceSupport.isResolvable() || !healthConfig.isResolvable()) {
+            return;
+        }
+        Set<String> excludedNames = dataSourceSupport.get().getHealthCheckExcludedNames();
+        Map<String, String> healthSqlMap = healthConfig.get().getHealthCheckSqlByDatasource();
+        for (InstanceHandle<Pool> handle : Arc.container().select(Pool.class, Any.Literal.INSTANCE).handles()) {
             if (!handle.getBean().isActive()) {
                 continue;
             }

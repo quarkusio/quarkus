@@ -1,7 +1,10 @@
 package io.quarkus.agroal.deployment;
 
+import static io.quarkus.agroal.deployment.AgroalDataSourceBuildUtil.AGROAL_DATA_SOURCE;
+import static io.quarkus.agroal.deployment.AgroalDataSourceBuildUtil.DATA_SOURCE;
 import static io.quarkus.agroal.deployment.AgroalDataSourceBuildUtil.qualifiers;
 import static io.quarkus.arc.deployment.OpenTelemetrySdkBuildItem.isOtelSdkEnabled;
+import static io.quarkus.deployment.Capability.OPENTELEMETRY_TRACER;
 
 import java.util.HashMap;
 import java.util.List;
@@ -12,17 +15,23 @@ import java.util.stream.Collectors;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Singleton;
+import jakarta.transaction.TransactionManager;
+import jakarta.transaction.TransactionSynchronizationRegistry;
 
 import org.jboss.jandex.ClassType;
 import org.jboss.jandex.DotName;
 import org.jboss.logging.Logger;
+import org.jboss.tm.XAResourceRecoveryRegistry;
 
 import io.agroal.api.AgroalDataSource;
 import io.agroal.api.AgroalPoolInterceptor;
 import io.quarkus.agroal.DataSource;
 import io.quarkus.agroal.runtime.AgroalDataSourceSupport;
+import io.quarkus.agroal.runtime.AgroalOpenTelemetryWrapper;
 import io.quarkus.agroal.runtime.AgroalRecorder;
 import io.quarkus.agroal.runtime.DataSources;
+import io.quarkus.agroal.runtime.DataSourcesJdbcBuildTimeConfig;
+import io.quarkus.agroal.runtime.DataSourcesJdbcRuntimeConfig;
 import io.quarkus.agroal.runtime.JdbcDriver;
 import io.quarkus.agroal.runtime.TransactionIntegration;
 import io.quarkus.agroal.spi.JdbcDataSourceBuildItem;
@@ -32,9 +41,9 @@ import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.OpenTelemetrySdkBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
-import io.quarkus.arc.processor.DotNames;
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
 import io.quarkus.datasource.runtime.DataSourcesBuildTimeConfig;
+import io.quarkus.datasource.runtime.DataSourcesRuntimeConfig;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.Feature;
@@ -50,6 +59,7 @@ import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBundleBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.narayana.jta.deployment.NarayanaInitBuildItem;
+import io.quarkus.narayana.jta.runtime.TransactionManagerConfiguration;
 import io.quarkus.smallrye.health.deployment.spi.HealthBuildItem;
 
 @SuppressWarnings("deprecation")
@@ -57,12 +67,12 @@ class AgroalProcessor {
 
     private static final Logger log = Logger.getLogger(AgroalProcessor.class);
 
-    private static final DotName DATA_SOURCE = DotName.createSimple(javax.sql.DataSource.class.getName());
-    private static final DotName AGROAL_DATA_SOURCE = DotName.createSimple(AgroalDataSource.class.getName());
-
     @BuildStep
-    void agroal(BuildProducer<FeatureBuildItem> feature) {
+    void agroal(BuildProducer<FeatureBuildItem> feature,
+            BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
         feature.produce(new FeatureBuildItem(Feature.AGROAL));
+        additionalBeans.produce(new AdditionalBeanBuildItem(JdbcDriver.class));
+        additionalBeans.produce(AdditionalBeanBuildItem.builder().addBeanClass(DataSource.class).build());
     }
 
     private AgroalDataSourceSupport getDataSourceSupport(
@@ -85,24 +95,17 @@ class AgroalProcessor {
     @Record(ExecutionTime.STATIC_INIT)
     @BuildStep
     void generateDataSourceSupportBean(AgroalRecorder recorder,
+            DataSourcesBuildTimeConfig dataSourcesBuildTimeConfig,
+            DataSourcesJdbcBuildTimeConfig dataSourcesJdbcBuildTimeConfig,
             List<JdbcDataSourceDefinitionBuildItem> aggregatedBuildTimeConfigBuildItems,
             SslNativeConfigBuildItem sslNativeConfig,
             Capabilities capabilities,
-            BuildProducer<AdditionalBeanBuildItem> additionalBeans,
             BuildProducer<SyntheticBeanBuildItem> syntheticBeanBuildItemBuildProducer,
             BuildProducer<UnremovableBeanBuildItem> unremovableBeans) {
-        additionalBeans.produce(new AdditionalBeanBuildItem(JdbcDriver.class));
-
         if (aggregatedBuildTimeConfigBuildItems.isEmpty()) {
             // No datasource has been configured so bail out
             return;
         }
-
-        // make a DataSources bean
-        additionalBeans.produce(AdditionalBeanBuildItem.builder().addBeanClasses(DataSources.class).setUnremovable()
-                .setDefaultScope(DotNames.SINGLETON).build());
-        // add the @DataSource class otherwise it won't be registered as a qualifier
-        additionalBeans.produce(AdditionalBeanBuildItem.builder().addBeanClass(DataSource.class).build());
 
         // make AgroalPoolInterceptor beans unremovable, users still have to make them beans
         unremovableBeans.produce(UnremovableBeanBuildItem.beanTypes(AgroalPoolInterceptor.class));
@@ -117,6 +120,33 @@ class AgroalProcessor {
                 .unremovable()
                 .setRuntimeInit()
                 .done());
+
+        // DataSources and AgroalOpenTelemetryWrapper are registered as SyntheticBeanBuildItems,
+        // not as AdditionalBeanBuildItems, because this step depends (transitively) on
+        // BeanDiscoveryFinishedBuildItem and AdditionalBeanBuildItem feeds into Arc's
+        // bean discovery, which would create a cycle.
+        syntheticBeanBuildItemBuildProducer.produce(SyntheticBeanBuildItem.configure(DataSources.class)
+                .addType(DataSources.class)
+                .scope(Singleton.class)
+                .unremovable()
+                .setRuntimeInit()
+                .addInjectionPoint(ClassType.create(DotName.createSimple(AgroalDataSourceSupport.class)))
+                .addInjectionPoint(ClassType.create(DotName.createSimple(DataSourcesRuntimeConfig.class)))
+                .addInjectionPoint(ClassType.create(DotName.createSimple(DataSourcesJdbcRuntimeConfig.class)))
+                .addInjectionPoint(ClassType.create(DotName.createSimple(TransactionManagerConfiguration.class)))
+                .addInjectionPoint(ClassType.create(DotName.createSimple(TransactionManager.class)))
+                .addInjectionPoint(ClassType.create(DotName.createSimple(XAResourceRecoveryRegistry.class)))
+                .addInjectionPoint(ClassType.create(DotName.createSimple(TransactionSynchronizationRegistry.class)))
+                .createWith(recorder.dataSourcesSupplier(dataSourcesBuildTimeConfig, dataSourcesJdbcBuildTimeConfig))
+                .done());
+        if (capabilities.isPresent(OPENTELEMETRY_TRACER)) {
+            syntheticBeanBuildItemBuildProducer.produce(SyntheticBeanBuildItem.configure(AgroalOpenTelemetryWrapper.class)
+                    .scope(Singleton.class)
+                    .unremovable()
+                    .setRuntimeInit()
+                    .supplier(recorder.openTelemetryWrapperSupplier())
+                    .done());
+        }
     }
 
     @Record(ExecutionTime.RUNTIME_INIT)

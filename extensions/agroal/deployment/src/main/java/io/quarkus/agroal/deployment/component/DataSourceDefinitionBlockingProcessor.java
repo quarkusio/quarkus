@@ -1,6 +1,7 @@
 package io.quarkus.agroal.deployment.component;
 
-import static io.quarkus.deployment.Capability.OPENTELEMETRY_TRACER;
+import static io.quarkus.agroal.deployment.AgroalDataSourceBuildUtil.AGROAL_INJECTABLE_TYPES;
+import static io.quarkus.agroal.deployment.AgroalDataSourceBuildUtil.DATASOURCE_QUALIFIER;
 
 import java.sql.Driver;
 import java.util.ArrayList;
@@ -13,15 +14,17 @@ import java.util.stream.Collectors;
 
 import javax.sql.XADataSource;
 
+import org.jboss.jandex.AnnotationValue;
 import org.jboss.logging.Logger;
 
 import io.quarkus.agroal.deployment.JdbcDataSourceDefinitionBuildItem;
-import io.quarkus.agroal.runtime.AgroalOpenTelemetryWrapper;
 import io.quarkus.agroal.runtime.DataSourceJdbcBuildTimeConfig;
 import io.quarkus.agroal.runtime.DataSourcesJdbcBuildTimeConfig;
 import io.quarkus.agroal.runtime.TransactionIntegration;
 import io.quarkus.agroal.spi.JdbcDriverBuildItem;
-import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
+import io.quarkus.arc.deployment.BeanDiscoveryFinishedBuildItem;
+import io.quarkus.arc.deployment.BeanDiscoveryInjectionPointsBuildItem;
+import io.quarkus.arc.deployment.InjectionPointScanningUtil;
 import io.quarkus.arc.deployment.ValidationPhaseBuildItem;
 import io.quarkus.arc.processor.DotNames;
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
@@ -104,11 +107,25 @@ class DataSourceDefinitionBlockingProcessor {
                 ProgrammingParadigm.BLOCKING, jdbcConfig.dataSources().keySet(), "jdbc.*", enabled,
                 dataSourceRequests);
 
-        // We don't derive requests from injection points of datasource related beans,
-        // because those could just be referencing custom beans,
-        // as we suggest in https://quarkus.io/guides/datasource#datasource-active
-        // TODO https://github.com/quarkusio/quarkus/issues/55217
-        //  Find a way to collect injection points for a given DS that have no matching user-defined producer
+    }
+
+    @BuildStep
+    void collectInjectionJdbcDataSourceRequests(
+            BeanDiscoveryFinishedBuildItem beanDiscovery,
+            BeanDiscoveryInjectionPointsBuildItem injectionPointIndex,
+            BuildProducer<DataSourceRequestBuildItem> dataSourceRequests) {
+        InjectionPointScanningUtil.collectUnsatisfiedInjectionPoints(
+                beanDiscovery, injectionPointIndex,
+                AGROAL_INJECTABLE_TYPES,
+                List.of(DATASOURCE_QUALIFIER, DotNames.NAMED),
+                DataSourceUtil.DEFAULT_DATASOURCE_NAME,
+                qualifier -> {
+                    AnnotationValue value = qualifier.value();
+                    return (value != null && !value.asString().isEmpty()) ? value.asString()
+                            : DataSourceUtil.DEFAULT_DATASOURCE_NAME;
+                },
+                (name, reason) -> dataSourceRequests
+                        .produce(new DataSourceRequestBuildItem(name, ProgrammingParadigm.BLOCKING, reason)));
     }
 
     @BuildStep
@@ -127,8 +144,7 @@ class DataSourceDefinitionBlockingProcessor {
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<NativeImageResourceBuildItem> resource,
             BuildProducer<ServiceProviderBuildItem> service,
-            BuildProducer<ExtensionSslNativeSupportBuildItem> sslNativeSupport,
-            BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
+            BuildProducer<ExtensionSslNativeSupportBuildItem> sslNativeSupport) {
         Set<String> defined = DataSourceProcessorSupport.defineDataSources(
                 ProgrammingParadigm.BLOCKING, config,
                 lookupBuildItem,
@@ -167,14 +183,6 @@ class DataSourceDefinitionBlockingProcessor {
             reflectiveClass
                     .produce(ReflectiveClassBuildItem.builder(definition.getResolvedDriverClass())
                             .methods().build());
-        }
-
-        if (otelJdbcInstrumentationActive && capabilities.isPresent(OPENTELEMETRY_TRACER)) {
-            // at least one datasource is using OpenTelemetry JDBC instrumentation,
-            // therefore we register the OpenTelemetry data source wrapper bean
-            additionalBeans.produce(new AdditionalBeanBuildItem.Builder()
-                    .addBeanClass(AgroalOpenTelemetryWrapper.class)
-                    .setDefaultScope(DotNames.SINGLETON).build());
         }
 
         // For now, we can't push the security providers to Agroal so we need to include

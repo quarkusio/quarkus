@@ -35,8 +35,9 @@ public class BuildTimeRegistrationTest {
     @RegisterExtension
     static final QuarkusExtensionTest config = new QuarkusExtensionTest().setArchiveProducer(
             () -> ShrinkWrap.create(JavaArchive.class)
+                    .addClass(MyCertificateSupplier.class)
                     .add(new StringAsset(configuration), "application.properties"))
-            .addBuildChainCustomizer(buildCustomizer());;
+            .addBuildChainCustomizer(buildCustomizer());
 
     @Inject
     TlsConfigurationRegistry registry;
@@ -65,7 +66,7 @@ public class BuildTimeRegistrationTest {
         };
     }
 
-    public static class MyCertificateSupplier implements Supplier<TlsConfiguration> {
+    public record MyCertificateSupplier() implements Supplier<TlsConfiguration> {
 
         @Override
         public TlsConfiguration get() {

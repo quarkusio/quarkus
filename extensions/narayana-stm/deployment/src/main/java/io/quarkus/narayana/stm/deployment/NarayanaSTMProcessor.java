@@ -1,7 +1,5 @@
 package io.quarkus.narayana.stm.deployment;
 
-import static io.quarkus.deployment.annotations.ExecutionTime.RUNTIME_INIT;
-
 import java.util.ArrayList;
 import java.util.Collection;
 
@@ -15,15 +13,16 @@ import org.jboss.jandex.IndexView;
 import org.jboss.logging.Logger;
 import org.jboss.stm.annotations.Transactional;
 
+import com.arjuna.ats.arjuna.common.arjPropertyManager;
 import com.arjuna.ats.internal.arjuna.coordinator.CheckedActionFactoryImple;
 import com.arjuna.ats.internal.arjuna.objectstore.ShadowNoFileLockStore;
 import com.arjuna.ats.internal.arjuna.utils.SocketProcessId;
 import com.arjuna.ats.txoj.Lock;
 
+import io.quarkus.core.deployment.action.ActionBuilder;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
-import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageProxyDefinitionBuildItem;
@@ -31,7 +30,6 @@ import io.quarkus.deployment.builditem.nativeimage.NativeImageSystemPropertyBuil
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
-import io.quarkus.narayana.stm.runtime.NarayanaSTMRecorder;
 
 class NarayanaSTMProcessor {
     private static final Logger log = Logger.getLogger(NarayanaSTMProcessor.class.getName());
@@ -59,10 +57,11 @@ class NarayanaSTMProcessor {
     // the software transactional memory implementation does not require a TSM
     // so disable it at runtime
     @BuildStep()
-    @Record(RUNTIME_INIT)
-    public void configureRuntimeProperties(NarayanaSTMRecorder recorder,
+    public void configureRuntimeProperties(ActionBuilder action,
             BuildProducer<RuntimeInitializedClassBuildItem> runtimeInit) {
-        recorder.disableTransactionStatusManager();
+        action
+                .forService("io.quarkus.narayana-stm.tsm-disable")
+                .action(ctx -> arjPropertyManager.getCoordinatorEnvironmentBean().setTransactionStatusManagerEnable(false));
         runtimeInit.produce(new RuntimeInitializedClassBuildItem(SocketProcessId.class.getName()));
         runtimeInit.produce(new RuntimeInitializedClassBuildItem(Lock.class.getName()));
     }

@@ -931,6 +931,10 @@ quarkus.oidc.tenant-b.credentials.secret=${tenant-b-client-secret}
 <2> Tenant `tenant-a` discovers the `issuer` from the OIDC provider's well-known configuration endpoint.
 <3> Tenant `tenant-b` configures the `issuer` because its OIDC provider does not support the discovery.
 
+If a tenant's OIDC provider is unavailable when the application starts, the tenant's metadata cannot be discovered and the tenant is excluded from issuer-based resolution until it is initialized on a later request.
+By default, only one such initialization attempt is made, on the first request that could match the tenant; if that attempt also fails, the tenant remains excluded until the application is restarted.
+Set `quarkus.oidc.<tenant-id>.initialization-retry-interval` to a positive duration to keep retrying the initialization, at most once per interval, so the tenant recovers on its own once its OIDC provider becomes available again.
+
 [[header-based-tenant-resolver]]
 ==== Resolve tenants with a token header name
 

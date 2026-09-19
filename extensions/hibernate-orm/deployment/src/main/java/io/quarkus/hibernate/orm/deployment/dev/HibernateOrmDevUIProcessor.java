@@ -31,7 +31,7 @@ public class HibernateOrmDevUIProcessor {
                 "https://jakarta.ee/specifications/persistence/");
 
         card.addPage(Page.webComponentPageBuilder()
-                .title("Persistence Units")
+                .title("DDL")
                 .componentLink("hibernate-orm-persistence-units.js")
                 .icon("font-awesome-solid:boxes-stacked")
                 .dynamicLabelJsonRPCMethodName("getNumberOfPersistenceUnits"));

@@ -1,12 +1,15 @@
 package io.quarkus.load.shedding.runtime;
 
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantLock;
 
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
+
+import org.jboss.logging.Logger;
 
 import io.quarkus.runtime.configuration.ConfigurationException;
 
@@ -16,6 +19,18 @@ import io.quarkus.runtime.configuration.ConfigurationException;
  */
 @Singleton
 public class OverloadDetector {
+    private static final Logger LOG = Logger.getLogger(OverloadDetector.class);
+
+    // The overloaded state may flip very often around the hysteresis band: the band is
+    // `0.2 * limit` wide while the number of concurrent requests fluctuates by something like
+    // `sqrt(limit)`, so the smaller the limit, the less the count has to move to cross it.
+    // At a limit of 1, which the adaptation is allowed to reach and does reach exactly when
+    // the application is worst off, every single request is two transitions. Measured rates
+    // run into millions per second, so a transition is only ever reported once per this interval;
+    // load shedding must not become a source of load itself, and that goes for logging at any
+    // level, which is why there is no per-transition DEBUG here either.
+    private static final long LOG_INTERVAL_NANOS = TimeUnit.SECONDS.toNanos(10);
+
     private static final int[] LOG10_PLUS_1_TABLE = new int[1_000];
 
     static {
@@ -51,6 +66,12 @@ public class OverloadDetector {
     // this field is guarded by `lock`
     private double probeJitter;
 
+    // Which clock interval was last reported, see `logInterval()`. Deliberately neither
+    // volatile nor compared-and-set: this only has to keep the log from filling up,
+    // so the worst a lost update can do is let one more message through per CPU core.
+    // A plain `int` also cannot word-tear, while a plain `long` is allowed to.
+    private int lastLogInterval;
+
     @Inject
     public OverloadDetector(LoadSheddingRuntimeConfig config) {
         validate(config);
@@ -64,6 +85,9 @@ public class OverloadDetector {
         lock.lock();
         probeJitter = ThreadLocalRandom.current().nextDouble(0.5, 1);
         lock.unlock();
+
+        // so that the first transition is always reported, whatever interval the clock starts in
+        lastLogInterval = logInterval() - 1;
     }
 
     /**
@@ -240,12 +264,14 @@ public class OverloadDetector {
         long limit = currentLimit;
         long since = overloadedSince.get();
         if (since != 0L) {
-            if (currentRequests < limit * HYSTERESIS_FACTOR) {
-                overloadedSince.compareAndSet(since, 0L);
+            // the compare and set also makes the transition happen once, so that only the
+            // thread that performed it reports it
+            if (currentRequests < limit * HYSTERESIS_FACTOR && overloadedSince.compareAndSet(since, 0L)) {
+                logTransition(false, currentRequests, limit);
             }
         } else {
-            if (currentRequests >= limit) {
-                overloadedSince.compareAndSet(0L, startTimestamp());
+            if (currentRequests >= limit && overloadedSince.compareAndSet(0L, startTimestamp())) {
+                logTransition(true, currentRequests, limit);
             }
         }
     }
@@ -264,5 +290,28 @@ public class OverloadDetector {
     public long overloadDurationNanos() {
         long since = overloadedSince.get();
         return since == 0L ? 0L : Math.max(0L, System.nanoTime() - since);
+    }
+
+    private void logTransition(boolean entered, int currentRequests, long limit) {
+        int interval = logInterval();
+        if (interval == lastLogInterval) {
+            return;
+        }
+        lastLogInterval = interval;
+
+        LOG.infof("Load shedding %s the overloaded state (%d concurrent requests, limit %d)",
+                entered ? "entered" : "left", currentRequests, limit);
+    }
+
+    // `System.nanoTime()` divided into intervals of `LOG_INTERVAL_NANOS`. Storing the interval
+    // rather than a deadline is what makes a plain field enough: two threads that compute the
+    // same interval agree without having to see each other's writes.
+    //
+    // `floorDiv`, not `/`, because the clock has an arbitrary origin and is quite possibly
+    // negative; truncation towards zero would make the one interval containing zero twice as
+    // wide.
+    private static int logInterval() {
+        // fits in an `int` over the whole range of `nanoTime()` at 10s intervals
+        return (int) Math.floorDiv(System.nanoTime(), LOG_INTERVAL_NANOS);
     }
 }

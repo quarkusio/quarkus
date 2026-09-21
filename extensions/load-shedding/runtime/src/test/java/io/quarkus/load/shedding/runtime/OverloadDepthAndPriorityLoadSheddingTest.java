@@ -44,7 +44,7 @@ public class OverloadDepthAndPriorityLoadSheddingTest {
     @Test
     public void nothingIsShedAtExactlyTheLimit() {
         for (int limit : new int[] { 1, 100, MAX_LIMIT / 2, MAX_LIMIT }) {
-            for (RequestPriority priority : RequestPriority.values()) {
+            for (RequestPriority priority : RequestPriority.levels()) {
                 assertThat(shedsAt(limit, limit, priority, RequestClassifier.maxCohort())).isFalse();
                 assertThat(shedsAt(limit, limit, priority, RequestClassifier.minCohort())).isFalse();
             }
@@ -55,7 +55,7 @@ public class OverloadDepthAndPriorityLoadSheddingTest {
     public void moreImportantPrioritiesAreShedLaterThanLessImportantOnes() {
         for (int cohort : new int[] { RequestClassifier.minCohort(), RequestClassifier.maxCohort() }) {
             int previous = -1;
-            for (RequestPriority priority : RequestPriority.values().reversed()) {
+            for (RequestPriority priority : RequestPriority.levels().reversed()) {
                 int firstShed = lowestConcurrencyThatSheds(MAX_LIMIT / 2, priority, cohort);
                 if (previous != -1) {
                     assertThat(firstShed).isGreaterThan(previous);
@@ -67,7 +67,7 @@ public class OverloadDepthAndPriorityLoadSheddingTest {
 
     @Test
     public void worstCohortsAreShedEarlierThanBestOnes() {
-        for (RequestPriority priority : RequestPriority.values()) {
+        for (RequestPriority priority : RequestPriority.levels()) {
             int worst = lowestConcurrencyThatSheds(MAX_LIMIT / 2, priority, RequestClassifier.maxCohort());
             int best = lowestConcurrencyThatSheds(MAX_LIMIT / 2, priority, RequestClassifier.minCohort());
             assertThat(worst).isLessThan(best);
@@ -94,6 +94,13 @@ public class OverloadDepthAndPriorityLoadSheddingTest {
 
         assertThat(depthAt(MAX_LIMIT, SATURATION_BOUND)).isEqualTo(1.0);
         assertThat(shedsAt(MAX_LIMIT, SATURATION_BOUND, RequestPriority.CRITICAL, RequestClassifier.minCohort())).isTrue();
+    }
+
+    @Test
+    public void neverIsNeverShedEvenAtFullSaturation() {
+        for (int cohort = RequestClassifier.minCohort(); cohort <= RequestClassifier.maxCohort(); cohort++) {
+            assertThat(shedsAt(MAX_LIMIT, SATURATION_BOUND, RequestPriority.NEVER, cohort)).isFalse();
+        }
     }
 
     @Test
@@ -139,7 +146,7 @@ public class OverloadDepthAndPriorityLoadSheddingTest {
         OverloadDetector detector = detector(limit);
         for (int concurrency = 1; concurrency <= SATURATION_BOUND; concurrency++) {
             detector.requestBegin();
-            for (RequestPriority priority : RequestPriority.values()) {
+            for (RequestPriority priority : RequestPriority.levels()) {
                 boolean now = sheds(detector, priority, RequestClassifier.maxCohort());
                 if (shed[priority.ordinal()]) {
                     assertThat(now)

@@ -27,7 +27,7 @@ public class PriorityLoadShedding {
     @Inject
     PriorityLoadShedding(LoadSheddingRuntimeConfig config) {
         enabled = config.priority().enabled();
-        max = RequestPriority.values().length * RequestClassifier.numCohorts();
+        max = RequestPriority.levels().size() * RequestClassifier.numCohorts();
     }
 
     // when this is called, we know we're overloaded; `overloadDepth` says by how much,
@@ -37,17 +37,16 @@ public class PriorityLoadShedding {
             return true;
         }
 
-        // the deeper the overload, the lower the threshold and the more request groups
-        // end up above it; the curve is deliberately flat near 0, so that a slight excess
-        // over the concurrency limit only sheds the least important requests
-        double threshold = max * (1.0 - overloadDepth * overloadDepth * overloadDepth);
-
         RequestPriority priority = RequestPriority.NORMAL;
         for (RequestPrioritizer requestPrioritizer : requestPrioritizers) {
             if (requestPrioritizer.appliesTo(request)) {
                 priority = requestPrioritizer.priority(request);
                 break;
             }
+        }
+
+        if (priority == RequestPriority.NEVER) {
+            return false;
         }
 
         int cohort = RequestClassifier.numCohorts() / 2; // in the middle of the interval
@@ -58,6 +57,11 @@ public class PriorityLoadShedding {
             }
         }
         cohort &= RequestClassifier.maxCohort();
+
+        // the deeper the overload, the lower the threshold and the more request groups
+        // end up above it; the curve is deliberately flat near 0, so that a slight excess
+        // over the concurrency limit only sheds the least important requests
+        double threshold = max * (1.0 - overloadDepth * overloadDepth * overloadDepth);
 
         return priority.cohortBaseline() + cohort >= threshold;
     }

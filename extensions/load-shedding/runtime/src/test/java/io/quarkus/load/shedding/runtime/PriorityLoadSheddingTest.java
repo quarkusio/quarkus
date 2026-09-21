@@ -21,7 +21,7 @@ public class PriorityLoadSheddingTest {
 
     @Test
     public void disabledShedsEverything() {
-        for (RequestPriority priority : RequestPriority.values()) {
+        for (RequestPriority priority : RequestPriority.levels()) {
             PriorityLoadShedding shedding = priorityLoadShedding(false, priority, RequestClassifier.minCohort());
             assertThat(shedding.shedLoad(REQUEST, 0.0)).isTrue();
             assertThat(shedding.shedLoad(REQUEST, 1.0)).isTrue();
@@ -43,7 +43,7 @@ public class PriorityLoadSheddingTest {
 
     @Test
     public void fullOverloadShedsEverything() {
-        for (RequestPriority priority : RequestPriority.values()) {
+        for (RequestPriority priority : RequestPriority.levels()) {
             assertThat(priorityLoadShedding(true, priority, RequestClassifier.minCohort()).shedLoad(REQUEST, 1.0)).isTrue();
             assertThat(priorityLoadShedding(true, priority, RequestClassifier.maxCohort()).shedLoad(REQUEST, 1.0)).isTrue();
         }
@@ -55,14 +55,14 @@ public class PriorityLoadSheddingTest {
 
         double overload = previousStep(lowestOverloadThatSheds(RequestPriority.BACKGROUND, RequestClassifier.minCohort()));
 
-        for (RequestPriority priority : RequestPriority.values()) {
+        for (RequestPriority priority : RequestPriority.levels()) {
             boolean shed = priority.ordinal() == RequestPriority.DEGRADED.ordinal();
             assertThat(priorityLoadShedding(true, priority, cohort).shedLoad(REQUEST, overload)).isEqualTo(shed);
         }
 
         overload = previousStep(lowestOverloadThatSheds(RequestPriority.IMPORTANT, RequestClassifier.minCohort()));
 
-        for (RequestPriority priority : RequestPriority.values()) {
+        for (RequestPriority priority : RequestPriority.levels()) {
             boolean shed = priority.ordinal() >= RequestPriority.NORMAL.ordinal();
             assertThat(priorityLoadShedding(true, priority, cohort).shedLoad(REQUEST, overload)).isEqualTo(shed);
         }
@@ -80,7 +80,7 @@ public class PriorityLoadSheddingTest {
     @Test
     public void deeperOverloadShedsMore() {
         // once a request group is shed, growing the overload never admits it again
-        for (RequestPriority priority : RequestPriority.values()) {
+        for (RequestPriority priority : RequestPriority.levels()) {
             IntStream.rangeClosed(RequestClassifier.minCohort(), RequestClassifier.maxCohort()).forEach(cohort -> {
                 double shedFrom = lowestOverloadThatSheds(priority, cohort);
 
@@ -91,6 +91,19 @@ public class PriorityLoadSheddingTest {
                             .isTrue();
                 }
             });
+        }
+    }
+
+    @Test
+    public void neverIsNeverShed() {
+        for (int cohort = 0; cohort < RequestClassifier.numCohorts(); cohort++) {
+            PriorityLoadShedding shedding = priorityLoadShedding(true, RequestPriority.NEVER, cohort);
+            for (int step = 0; step <= STEPS; step++) {
+                double overload = (double) step / STEPS;
+                assertThat(shedding.shedLoad(REQUEST, overload))
+                        .describedAs("cohort %s at overload %s", cohort, overload)
+                        .isFalse();
+            }
         }
     }
 

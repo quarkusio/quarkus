@@ -42,6 +42,6 @@ public class ManagementRequestPrioritizer implements RequestPrioritizer<RoutingC
 
     @Override
     public RequestPriority priority(RoutingContext request) {
-        return RequestPriority.CRITICAL;
+        return RequestPriority.NEVER;
     }
 }

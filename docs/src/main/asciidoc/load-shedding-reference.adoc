@@ -116,9 +116,14 @@ The cubic curve is chosen deliberately, because it is flat near 0, so that a sli
 Priority is assigned by a `io.quarkus.load.shedding.RequestPrioritizer`.
 There is 5 statically defined priorities in the `io.quarkus.load.shedding.RequestPriority` enum: `CRITICAL`, `IMPORTANT`, `NORMAL`, `BACKGROUND` and `DEGRADED`.
 By default, if no request prioritizer applies, the priority is assumed to be `NORMAL`.
+Further, there's a special priority level called `NEVER`, which is exempt from load shedding entirely.
 
-There is one default prioritizer which assigns the priority of `CRITICAL` to requests to the non-application endpoints.
+There is one default prioritizer which assigns the priority of `NEVER` to requests to the non-application endpoints.
 It declares no `@Priority`.
+
+IMPORTANT: The `NEVER` priority must be used sparingly.
+A request should only be assigned `NEVER` if it is part of the operational control plane (health checks, in-memory metrics scraping, etc.), where failures would trigger cascading failures, AND if it satisfies strict execution bounds.
+The request should execute in sub-millisecond time, only read pre-aggregated values from memory, perform no disk or network I/O, and require no thread offload.
 
 It is possible to define custom implementations of the `RequestPrioritizer` interface.
 The implementations must be CDI beans, otherwise they are ignored.

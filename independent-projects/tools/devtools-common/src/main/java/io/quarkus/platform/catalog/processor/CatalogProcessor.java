@@ -2,7 +2,12 @@ package io.quarkus.platform.catalog.processor;
 
 import static io.quarkus.platform.catalog.processor.ExtensionProcessor.isUnlisted;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import io.quarkus.registry.catalog.Category;
@@ -11,16 +16,16 @@ import io.quarkus.registry.catalog.ExtensionCatalog;
 
 public class CatalogProcessor {
     private static final String CODESTART_ARTIFACTS = "codestarts-artifacts";
-    private static final Category UNCATEGORIZED_CATEGORY;
+    private static final Category UNKNOWN_CATEGORY;
 
     private final ExtensionCatalog catalog;
 
     static {
         Category.Mutable draft = Category.builder()
                 .setId("uncategorized")
-                .setName("Uncategorized")
-                .setDescription("The category is not defined for those extensions.");
-        UNCATEGORIZED_CATEGORY = draft.build();
+                .setName("Other")
+                .setDescription("The category for those extensions is not a known category.");
+        UNKNOWN_CATEGORY = draft.build();
     }
 
     private CatalogProcessor(ExtensionCatalog catalog) {
@@ -41,7 +46,7 @@ public class CatalogProcessor {
                     .collect(Collectors.toCollection(ArrayList::new));
             if (!isUnlisted(e)) {
                 if (categories.isEmpty()) {
-                    categories.add(UNCATEGORIZED_CATEGORY.getId());
+                    categories.add(UNKNOWN_CATEGORY.getId());
                 }
                 for (String c : categories) {
                     if (!extsByCategory.containsKey(c)) {
@@ -54,8 +59,8 @@ public class CatalogProcessor {
 
         final List<ProcessedCategory> orderedCategories = new ArrayList<>(catalog.getCategories().size());
         final List<Category> categories = new ArrayList<>(catalog.getCategories());
-        if (categories.stream().noneMatch(c -> Objects.equals(c.getId(), UNCATEGORIZED_CATEGORY.getId()))) {
-            categories.add(UNCATEGORIZED_CATEGORY);
+        if (categories.stream().noneMatch(c -> Objects.equals(c.getId(), UNKNOWN_CATEGORY.getId()))) {
+            categories.add(UNKNOWN_CATEGORY);
         }
         for (Category c : categories) {
             if (extsByCategory.containsKey(c.getId())) {

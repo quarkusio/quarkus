@@ -38,7 +38,7 @@ public class MetricsBridgeSourceSelectionTest extends DevUIJsonRPCTest {
 
     @Test
     public void micrometerSamplerSuppressedAndNoDuplicateSeries() throws Exception {
-        // Presence matrix: bridge + OTel metrics enabled -> the sampler bean must NOT be registered.
+        // Presence matrix: bridge + OTel metrics enabled -> the micrometer sampler bean must NOT be registered.
         RestAssured.get("/probe/sampler-present").then().statusCode(200).body(is("false"));
 
         // Metrics still appear (via the OTel reader). Select everything the catalog knows, then

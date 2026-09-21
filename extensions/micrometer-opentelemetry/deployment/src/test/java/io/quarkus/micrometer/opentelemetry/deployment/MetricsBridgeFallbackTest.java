@@ -36,7 +36,7 @@ public class MetricsBridgeFallbackTest extends DevUIJsonRPCTest {
 
     @Test
     public void samplerRunsAsFallbackWhenOtelMetricsDisabled() throws Exception {
-        // OTel metrics disabled -> no OTel reader -> the sampler must run.
+        // OTel metrics disabled -> no OTel reader -> the micrometer sampler must run.
         RestAssured.get("/probe/sampler-present").then().statusCode(200).body(is("true"));
 
         // Metrics still appear, all sourced from micrometer (the fallback path).

@@ -1,5 +1,6 @@
 package io.quarkus.gradle.tooling.dependency;
 
+import java.io.InputStream;
 import java.io.Serial;
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -16,6 +17,7 @@ import org.apache.maven.model.building.DefaultModelBuilderFactory;
 import org.apache.maven.model.building.DefaultModelBuildingRequest;
 import org.apache.maven.model.building.ModelBuildingException;
 import org.apache.maven.model.building.ModelBuildingRequest;
+import org.apache.maven.model.io.xpp3.MavenXpp3Reader;
 import org.apache.maven.model.resolution.UnresolvableModelException;
 import org.gradle.api.GradleException;
 import org.gradle.api.Project;
@@ -31,6 +33,7 @@ import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.internal.composite.IncludedBuildInternal;
 
 import io.quarkus.bootstrap.model.ApplicationModelBuilder;
+import io.quarkus.gradle.dependency.PlatformSpec;
 import io.quarkus.gradle.tooling.GradleAssistedMavenModelResolverImpl;
 import io.quarkus.gradle.tooling.ToolingUtils;
 import io.quarkus.gradle.tooling.taskrunner.MavenModelResolutionTaskRunner;
@@ -52,6 +55,7 @@ public class DependencyDataCollector {
     private final DefaultModelBuilder modelBuilder;
 
     private final Map<DeclaredDepsCacheKey, DeclaredDepsResult> declaredDependenciesCache = new ConcurrentHashMap<>();
+    private final Map<ArtifactKey, ArtifactKey> relocationCache = new ConcurrentHashMap<>();
 
     public DependencyDataCollector(Project project) {
         this.mavenModelResolver = new GradleAssistedMavenModelResolverImpl(project);
@@ -164,7 +168,8 @@ public class DependencyDataCollector {
     /**
      * Collects and returns declared dependencies for the given configuration.
      */
-    public Map<ArtifactKey, DeclaredDepsResult> collectDeclaredDependencies(Project project, Configuration configuration) {
+    public Map<ArtifactKey, DeclaredDepsResult> collectDeclaredDependencies(Project project, Configuration configuration,
+            PlatformSpec platformSpec) {
         if (!declaredDependencyCollectorEnabled(project)) {
             return Collections.emptyMap();
         }
@@ -172,16 +177,18 @@ public class DependencyDataCollector {
         var startTime = project.getLogger().isDebugEnabled() ? System.currentTimeMillis() : -1;
         ArtifactCollection artifacts = configuration.getIncoming().getArtifacts();
         boolean isTestConfig = configuration.getName().toLowerCase().contains("test");
+        Map<ArtifactKey, String> versionConstraints = getVersionConstraints(configuration, platformSpec, artifacts);
+
         MavenModelResolutionTaskRunner taskRunner = new MavenModelResolutionTaskRunner((task, error) -> project.getLogger()
                 .error("Error during declared dependencies collection task execution: {}", error.getMessage(), error));
         Map<ArtifactKey, DeclaredDepsResult> result = new ConcurrentHashMap<>();
-        collectDeclaredFromRootProject(project, isTestConfig, result);
+        collectDeclaredFromRootProject(project, isTestConfig, versionConstraints, result);
         for (ResolvedArtifactResult artifact : artifacts.getArtifacts()) {
             var componentId = artifact.getId().getComponentIdentifier();
             if (componentId instanceof ModuleComponentIdentifier moduleId) {
-                taskRunner.run(() -> collectDeclaredFromModule(project, artifact, moduleId, result));
+                taskRunner.run(() -> collectDeclaredFromModule(project, artifact, moduleId, versionConstraints, result));
             } else if (componentId instanceof ProjectComponentIdentifier projectId) {
-                collectDeclaredFromNonRootProject(project, artifact, projectId, result);
+                collectDeclaredFromNonRootProject(project, artifact, projectId, versionConstraints, result);
             }
         }
         taskRunner.waitForCompletion();
@@ -192,10 +199,55 @@ public class DependencyDataCollector {
         return result;
     }
 
+    /**
+     * Extracts all version constraints from platform BOMs, local configuration dependency constraints,
+     * and actual resolved classpath artifacts, to be used for resolving relocation versions.
+     *
+     * @param configuration the configuration containing dependency constraints and dependencies
+     * @param platformSpec the platform spec containing BOM constraints, if available
+     * @param artifacts the resolved artifact collection representing the classpath
+     * @return a map of artifact keys to their resolved versions or constraint versions
+     */
+    private static Map<ArtifactKey, String> getVersionConstraints(Configuration configuration, PlatformSpec platformSpec,
+            ArtifactCollection artifacts) {
+        Map<ArtifactKey, String> resolvedVersions = new ConcurrentHashMap<>();
+
+        // Platform constraints (BOM)
+        if (platformSpec != null && platformSpec.getConstraints() != null) {
+            for (var constraint : platformSpec.getConstraints().values()) {
+                ArtifactKey key = ArtifactKey.of(constraint.getGroupId(), constraint.getArtifactId());
+                resolvedVersions.put(key, constraint.getVersion());
+            }
+        }
+
+        // Local dependency constraints
+        try {
+            for (var constraint : configuration.getAllDependencyConstraints()) {
+                if (constraint.getGroup() != null && constraint.getName() != null && constraint.getVersion() != null) {
+                    ArtifactKey key = ArtifactKey.of(constraint.getGroup(), constraint.getName());
+                    resolvedVersions.put(key, constraint.getVersion());
+                }
+            }
+        } catch (Exception e) {
+            // ignore
+        }
+
+        // Resolved classpath artifacts
+        for (ResolvedArtifactResult artifact : artifacts.getArtifacts()) {
+            var componentId = artifact.getId().getComponentIdentifier();
+            if (componentId instanceof ModuleComponentIdentifier moduleId) {
+                ArtifactKey key = ArtifactKey.of(moduleId.getGroup(), moduleId.getModule());
+                resolvedVersions.put(key, moduleId.getVersion());
+            }
+        }
+        return resolvedVersions;
+    }
+
     private void collectDeclaredFromModule(
             Project project,
             ResolvedArtifactResult artifact,
             ModuleComponentIdentifier moduleId,
+            Map<ArtifactKey, String> resolvedVersions,
             Map<ArtifactKey, DeclaredDepsResult> resultMap) {
 
         String groupId = moduleId.getGroup();
@@ -206,15 +258,9 @@ public class DependencyDataCollector {
         DeclaredDepsResult result = declaredDependenciesCache.computeIfAbsent(new DeclaredDepsCacheKey(moduleKey, false),
                 key -> {
                     try {
-                        var modelSource = mavenModelResolver.resolveModel(moduleKey.getGroupId(), moduleKey.getArtifactId(),
-                                version);
-                        var request = new DefaultModelBuildingRequest();
-                        request.setModelSource(modelSource);
-                        request.setModelResolver(mavenModelResolver);
-                        request.getSystemProperties().putAll(System.getProperties());
-                        request.setValidationLevel(ModelBuildingRequest.VALIDATION_LEVEL_MINIMAL);
-                        Model effectiveModel = modelBuilder.build(request).getEffectiveModel();
+                        Model effectiveModel = resolveEffectiveModel(moduleKey, version);
                         List<DeclaredDependency> declaredDeps = toDeclaredDependencies(effectiveModel);
+                        declaredDeps = resolveRelocations(declaredDeps, resolvedVersions);
                         return DeclaredDepsResult.resolved(declaredDeps);
                     } catch (UnresolvableModelException | ModelBuildingException e) {
                         project.getLogger().warn("Unable to resolve effective model for {}:{}:{}: {}",
@@ -225,10 +271,31 @@ public class DependencyDataCollector {
         resultMap.put(moduleKey, result);
     }
 
+    /**
+     * Resolves and returns the effective Maven model for the given module coordinate.
+     *
+     * @param moduleKey the artifact key of the module
+     * @param version the version of the module to resolve
+     * @return the resolved effective model
+     * @throws UnresolvableModelException if the model source cannot be resolved
+     * @throws ModelBuildingException if the model cannot be built
+     */
+    private Model resolveEffectiveModel(ArtifactKey moduleKey, String version)
+            throws UnresolvableModelException, ModelBuildingException {
+        var modelSource = mavenModelResolver.resolveModel(moduleKey.getGroupId(), moduleKey.getArtifactId(), version);
+        var request = new DefaultModelBuildingRequest();
+        request.setModelSource(modelSource);
+        request.setModelResolver(mavenModelResolver);
+        request.getSystemProperties().putAll(System.getProperties());
+        request.setValidationLevel(ModelBuildingRequest.VALIDATION_LEVEL_MINIMAL);
+        return modelBuilder.build(request).getEffectiveModel();
+    }
+
     private void collectDeclaredFromNonRootProject(
             Project project,
             ResolvedArtifactResult artifact,
             ProjectComponentIdentifier projectId,
+            Map<ArtifactKey, String> resolvedVersions,
             Map<ArtifactKey, DeclaredDepsResult> resultMap) {
         final Project depProject = getProject(project, projectId);
         if (depProject == null) {
@@ -239,9 +306,13 @@ public class DependencyDataCollector {
         String version = String.valueOf(depProject.getVersion());
         String type = resolveArtifactType(artifact);
         ArtifactKey projectKey = DependencyUtils.getKey(groupId, artifactId, version, artifact.getFile(), type);
-        // from this code branche, depProject is never a root project, so we set collectTestScopes to false
+        // from this code branch, depProject is never a root project, so we set collectTestScopes to false
         DeclaredDepsResult result = declaredDependenciesCache.computeIfAbsent(new DeclaredDepsCacheKey(projectKey, false),
-                key -> DeclaredDepsResult.resolved(collectDeclaredFromProject(depProject, false)));
+                key -> {
+                    List<DeclaredDependency> declaredDeps = collectDeclaredFromProject(depProject, false);
+                    declaredDeps = resolveRelocations(declaredDeps, resolvedVersions);
+                    return DeclaredDepsResult.resolved(declaredDeps);
+                });
         resultMap.put(projectKey, result);
     }
 
@@ -261,16 +332,158 @@ public class DependencyDataCollector {
     }
 
     private void collectDeclaredFromRootProject(Project project, boolean isTestConfig,
+            Map<ArtifactKey, String> resolvedVersions,
             Map<ArtifactKey, DeclaredDepsResult> resultMap) {
-        String groupId = String.valueOf(project.getGroup());
-        String artifactId = project.getName();
-        ArtifactKey projectKey = ArtifactKey.of(groupId, artifactId,
-                ArtifactCoords.DEFAULT_CLASSIFIER, ArtifactCoords.TYPE_JAR);
+        ArtifactKey projectKey = ArtifactKey.of(String.valueOf(project.getGroup()), project.getName());
         DeclaredDepsCacheKey cacheKey = new DeclaredDepsCacheKey(projectKey, isTestConfig);
         DeclaredDepsResult result = declaredDependenciesCache.computeIfAbsent(
                 cacheKey,
-                k -> DeclaredDepsResult.resolved(collectDeclaredFromProject(project, isTestConfig)));
+                k -> {
+                    List<DeclaredDependency> declaredDeps = collectDeclaredFromProject(project, isTestConfig);
+                    declaredDeps = resolveRelocations(declaredDeps, resolvedVersions);
+                    return DeclaredDepsResult.resolved(declaredDeps);
+                });
         resultMap.put(projectKey, result);
+    }
+
+    /**
+     * Processes a list of declared dependencies, resolving Maven relocations for each of them.
+     *
+     * @param declaredDeps the list of declared dependencies to process
+     * @param resolvedVersions a map of artifact keys to their resolved versions or constraint versions
+     * @return a new list of declared dependencies with updated coordinates for any relocated dependencies
+     */
+    private List<DeclaredDependency> resolveRelocations(List<DeclaredDependency> declaredDeps,
+            Map<ArtifactKey, String> resolvedVersions) {
+        List<DeclaredDependency> relocatedDeps = new ArrayList<>(declaredDeps.size());
+        for (var dep : declaredDeps) {
+            relocatedDeps.add(resolveRelocation(dep, resolvedVersions));
+        }
+        return relocatedDeps;
+    }
+
+    /**
+     * Resolves relocation for a single declared dependency, checking if its GA coordinates
+     * have been relocated, and updating its coordinates accordingly while preserving its classifier,
+     * type, scope, and optional flags.
+     *
+     * @param dep the declared dependency to resolve
+     * @param resolvedVersions a map of artifact keys to their resolved versions or constraint versions
+     * @return the relocated declared dependency, or the original dependency if no relocation was found
+     */
+    private DeclaredDependency resolveRelocation(DeclaredDependency dep, Map<ArtifactKey, String> resolvedVersions) {
+        ArtifactKey depKey = ArtifactKey.of(dep.getGroupId(), dep.getArtifactId());
+        ArtifactKey cachedKey = relocationCache.get(depKey);
+        if (cachedKey != null) {
+            if (!cachedKey.equals(depKey)) {
+                String resolvedVersion = resolvedVersions.get(cachedKey);
+                return new DeclaredDependency(cachedKey.getGroupId(), cachedKey.getArtifactId(),
+                        resolvedVersion != null ? resolvedVersion : dep.getVersion(),
+                        dep.getClassifier(), dep.getType(), dep.getScope(), dep.isOptional());
+            }
+            return dep;
+        }
+
+        ArtifactCoords target = getRelocationTargetOrNull(depKey, dep.getVersion(), resolvedVersions);
+        if (target != null
+                && (!target.getGroupId().equals(dep.getGroupId()) || !target.getArtifactId().equals(dep.getArtifactId()))) {
+            ArtifactKey relocatedKey = ArtifactKey.of(target.getGroupId(), target.getArtifactId());
+            relocationCache.put(depKey, relocatedKey);
+            String resolvedVersion = resolvedVersions.get(relocatedKey);
+            return new DeclaredDependency(relocatedKey.getGroupId(), relocatedKey.getArtifactId(),
+                    resolvedVersion != null ? resolvedVersion : target.getVersion(),
+                    dep.getClassifier(), dep.getType(), dep.getScope(), dep.isOptional());
+        }
+        relocationCache.put(depKey, depKey);
+        return dep;
+    }
+
+    /**
+     * Traverses the relocation chain for a given Maven coordinate recursively, using resolved
+     * version constraints from the classpath and project configurations.
+     *
+     * @param key the artifact key of the dependency
+     * @param version the declared version of the dependency
+     * @param resolvedVersions a map of artifact keys to their resolved versions or constraint versions
+     * @return the final target coordinates of the relocation, or null if no relocation was found or resolved
+     */
+    private ArtifactCoords getRelocationTargetOrNull(ArtifactKey key, String version,
+            Map<ArtifactKey, String> resolvedVersions) {
+        String resolvedVersion = resolvedVersions.get(key);
+        String pomVersion = resolvedVersion != null ? resolvedVersion : version;
+        if (pomVersion == null) {
+            return null;
+        }
+        try {
+            Model rawModel = resolveRawModel(key, pomVersion);
+            if (rawModel == null) {
+                return null;
+            }
+            var relocation = rawModel.getDistributionManagement() == null ? null
+                    : rawModel.getDistributionManagement().getRelocation();
+            if (relocation == null) {
+                return null;
+            }
+
+            String targetGroupId = relocation.getGroupId() != null ? relocation.getGroupId() : key.getGroupId();
+            String targetArtifactId = relocation.getArtifactId() != null ? relocation.getArtifactId() : key.getArtifactId();
+            String targetVersion = relocation.getVersion() != null ? relocation.getVersion() : pomVersion;
+
+            if (containsPropertyExpr(targetGroupId) || containsPropertyExpr(targetArtifactId)
+                    || containsPropertyExpr(targetVersion)) {
+                Model effectiveModel = resolveEffectiveModel(key, pomVersion);
+                relocation = effectiveModel.getDistributionManagement() == null ? null
+                        : effectiveModel.getDistributionManagement().getRelocation();
+                if (relocation == null) {
+                    return null;
+                }
+                targetGroupId = relocation.getGroupId() != null ? relocation.getGroupId() : key.getGroupId();
+                targetArtifactId = relocation.getArtifactId() != null ? relocation.getArtifactId() : key.getArtifactId();
+                targetVersion = relocation.getVersion() != null ? relocation.getVersion() : pomVersion;
+            }
+
+            ArtifactKey targetKey = ArtifactKey.of(targetGroupId, targetArtifactId);
+            String targetResolvedVersion = resolvedVersions.get(targetKey);
+
+            ArtifactCoords nextTarget = getRelocationTargetOrNull(targetKey,
+                    targetResolvedVersion != null ? targetResolvedVersion : targetVersion, resolvedVersions);
+            if (nextTarget != null) {
+                return nextTarget;
+            }
+
+            return ArtifactCoords.of(targetGroupId, targetArtifactId, key.getClassifier(), key.getType(),
+                    targetResolvedVersion != null ? targetResolvedVersion : targetVersion);
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    /**
+     * Resolves the raw Maven model directly from the resolved model source without performing full effective building.
+     *
+     * @param key the artifact key of the dependency
+     * @param version the version of the dependency
+     * @return the parsed raw Maven model, or null if resolution fails
+     */
+    private Model resolveRawModel(ArtifactKey key, String version) {
+        try {
+            var modelSource = mavenModelResolver.resolveModel(key.getGroupId(), key.getArtifactId(), version);
+            try (InputStream is = modelSource.getInputStream()) {
+                return new MavenXpp3Reader().read(is);
+            }
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    /**
+     * Checks if a string contains unresolved Maven property expression syntax (e.g. ${...}).
+     *
+     * @param s the string to check
+     * @return true if the string contains unresolved property syntax, false otherwise
+     */
+    private static boolean containsPropertyExpr(String s) {
+        return s != null && s.contains("${");
     }
 
     private record DeclaredDepsCacheKey(ArtifactKey artifactKey, boolean includeTestScopes) {

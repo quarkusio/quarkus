@@ -29,6 +29,12 @@
             <artifactId>quarkus-rest-deployment</artifactId>
             <scope>test</scope>
         </dependency>
+        <!-- needed to verify the published metrics; the tests force it as an application dependency -->
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-micrometer-deployment</artifactId>
+            <scope>test</scope>
+        </dependency>
 
         <dependency>
             <groupId>io.quarkus</groupId>

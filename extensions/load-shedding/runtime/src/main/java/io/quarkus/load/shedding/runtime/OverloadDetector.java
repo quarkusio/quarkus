@@ -129,6 +129,20 @@ public class OverloadDetector {
     }
 
     /**
+     * Returns the number of requests that are currently in flight.
+     */
+    public int currentRequests() {
+        return currentRequests.get();
+    }
+
+    /**
+     * Returns the limit of concurrent requests the algorithm has currently adapted to.
+     */
+    public long currentLimit() {
+        return currentLimit;
+    }
+
+    /**
      * Returns how far past the concurrency limit the application currently is, as a number
      * between 0.0 and 1.0. It is 0.0 when the number of current requests is at the current limit.
      * <p>

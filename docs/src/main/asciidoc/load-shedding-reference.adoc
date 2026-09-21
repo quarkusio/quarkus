@@ -147,6 +147,43 @@ The CDI rules of typesafe resolution must be followed.
 That is, if multiple implementations exist with a different `@Priority` value and some of them are ``@Alternative``s, only the alternatives with the highest priority value are retained.
 If no implementation is an alternative, all implementations are retained and are sorted in descending `@Priority` order (highest priority value comes first).
 
+== Metrics
+
+If the xref:telemetry-micrometer.adoc[Micrometer extension] is present, this extension publishes the following metrics:
+
+|===
+| Name | Type | Description
+
+| `load.shedding.shed.requests`
+| counter
+| Number of requests rejected by load shedding.
+
+| `load.shedding.current.requests`
+| gauge
+| Number of requests currently in flight, as counted by the overload detector.
+
+| `load.shedding.current.limit`
+| gauge
+| The request limit the overload detector has currently adapted to; reaching it signals an overload.
+
+| `load.shedding.overload.status`
+| gauge
+| Whether the application is currently overloaded: `1` if it is, `0` if it is not.
+
+| `load.shedding.overload.depth`
+| gauge
+| How deep the overload currently is, as a number between 0.0 and 1.0.
+
+| `load.shedding.overload.duration`
+| gauge
+| How long the current overload has lasted, or `0` if the application is not overloaded.
+|===
+
+The overload status is hysteretic, so it cannot be derived from the number of current requests and the current limit; that is why it is published on its own.
+
+Publishing the meters can be turned off by setting `quarkus.load-shedding.metrics.enabled` to `false`.
+No meters are published if load shedding itself is disabled, because nothing would ever update them.
+
 == Limitations
 
 The load shedding extension currently only applies to HTTP requests, and is heavily skewed towards request/response network interactions.

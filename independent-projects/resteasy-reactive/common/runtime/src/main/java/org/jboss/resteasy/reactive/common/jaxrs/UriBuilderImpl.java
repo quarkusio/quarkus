@@ -7,6 +7,8 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -90,6 +92,23 @@ public class UriBuilderImpl extends UriBuilder {
     public static final Pattern opaqueUri = Pattern.compile("^([^:/?#{]+):([^/].*)");
     public static final Pattern hierarchicalUri = Pattern
             .compile("^(([^:/?#{]+):)?(//([^/?#]*))?([^?#]*)(\\?([^#]*))?(#(.*))?");
+
+    /**
+     * Caches, per resource {@link Class}, the {@link Method} resolved for a given method name by
+     * {@link #path(Class, String)}. This is the reflective fallback used when {@link ResourceMethodPathRegistry} has no
+     * build-time entry for a class (e.g. REST client interfaces or classes not scanned as endpoints). The cache is
+     * cleared on a dev-mode restart via a shutdown task (see {@code ResourceMethodPathRecorder}), which also prevents
+     * application classes from being pinned across restarts.
+     */
+    private static final Map<Class<?>, Map<String, Method>> pathMethodCache = new ConcurrentHashMap<>();
+
+    /**
+     * Clears the reflective method cache. Invoked from a shutdown task (alongside {@link ResourceMethodPathRegistry}) so
+     * that state held in the persistent base runtime class loader is reset on a dev-mode restart.
+     */
+    public static void clearMethodCache() {
+        pathMethodCache.clear();
+    }
 
     public static boolean compare(String s1, String s2) {
         if (s1 == s2)
@@ -415,6 +434,28 @@ public class UriBuilderImpl extends UriBuilder {
             throw new IllegalArgumentException("resource is null");
         if (method == null)
             throw new IllegalArgumentException("method is null");
+        String recordedPath = ResourceMethodPathRegistry.getPath(resource.getName(), method);
+        if (recordedPath != null) {
+            path = paths(encode, path, recordedPath);
+            return this;
+        }
+        Map<String, Method> resolvedMethods = pathMethodCache.computeIfAbsent(resource,
+                new Function<>() {
+                    @Override
+                    public Map<String, Method> apply(Class<?> aClass) {
+                        return new ConcurrentHashMap<>();
+                    }
+                });
+        Method theMethod = resolvedMethods.get(method);
+        if (theMethod == null) {
+            theMethod = resolveResourceMethod(resource, method);
+            resolvedMethods.put(method, theMethod);
+        }
+        return path(theMethod);
+    }
+
+    @SuppressWarnings("rawtypes")
+    private static Method resolveResourceMethod(Class resource, String method) {
         Method theMethod = null;
         for (Method m : resource.getMethods()) {
             if (m.getName().equals(method)) {
@@ -427,7 +468,7 @@ public class UriBuilderImpl extends UriBuilder {
         }
         if (theMethod == null)
             throw new IllegalArgumentException("No public method annotated with @Path " + resource.getName() + " " + method);
-        return path(theMethod);
+        return theMethod;
     }
 
     public UriBuilder path(Method method) throws IllegalArgumentException {

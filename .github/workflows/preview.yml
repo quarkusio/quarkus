@@ -42,8 +42,19 @@ jobs:
       - name: Validate and expose PR number
         id: pr
         env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           RAW_PR_NUMBER: ${{ github.event.workflow_run.pull_requests[0].number }}
+          HEAD_OWNER: ${{ github.event.workflow_run.head_repository.owner.login }}
+          HEAD_BRANCH: ${{ github.event.workflow_run.head_branch }}
+          HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
         run: |
+          # workflow_run.pull_requests is empty for pull requests opened from forks:
+          # look the pull request up from the head of the documentation build instead
+          if [[ -z "$RAW_PR_NUMBER" ]]; then
+            RAW_PR_NUMBER=$(gh api -X GET "repos/${GITHUB_REPOSITORY}/pulls" \
+              -f state=open -f head="${HEAD_OWNER}:${HEAD_BRANCH}" -f per_page=100 \
+              --jq 'map(select(.head.sha == env.HEAD_SHA)) | .[0].number // empty')
+          fi
           if ! [[ "$RAW_PR_NUMBER" =~ ^[0-9]+$ ]]; then
             echo "Invalid PR number: $RAW_PR_NUMBER" >&2
             exit 1

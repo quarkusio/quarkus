@@ -431,7 +431,7 @@ Later, you configure the `smallrye.jwt.sign.key.location` property to specify th
 ====
 You can generate a public and private key pair by using the Quarkus CLI:
 
-[source, bash]
+[source,shell]
 ----
 quarkus jwt generate-key
 ----
@@ -439,7 +439,7 @@ quarkus jwt generate-key
 This generates RSA 2048-bit keys by default.
 You can also generate EC keys or specify a different key size:
 
-[source, bash]
+[source,shell]
 ----
 quarkus jwt generate-key --algo EC
 quarkus jwt generate-key --algo RSA --size 4096
@@ -463,7 +463,7 @@ openssl rsa -pubout -in rsaPrivateKey.pem -out publicKey.pem
 An additional step is required to generate and convert the private key to the PKCS#8 format, commonly used for secure key storage and transport.
 
 .`openssl` commands to perform the conversion
-[source, bash]
+[source,shell]
 ----
 openssl pkcs8 -topk8 -nocrypt -inform pem -in rsaPrivateKey.pem -outform pem -out privateKey.pem
 ----
@@ -637,7 +637,7 @@ include::{includes}/devtools/build.adoc[]
 . Run the application:
 +
 ====
-[source,bash]
+[source,shell]
 ----
 java -jar target/quarkus-app/quarkus-run.jar
 ----
@@ -660,7 +660,7 @@ include::{includes}/devtools/build-native.adoc[]
 . Run the following binary directly:
 +
 ====
-[source,bash]
+[source,shell]
 ----
 ./target/security-jwt-quickstart-1.0.0-SNAPSHOT-runner
 ----
@@ -877,7 +877,7 @@ Please see the xref:security-openid-connect-client-reference.adoc#token-propagat
 [[auto-generated-keys]]
 ==== Automatic key generation
 
-This extension generates an asymmetric RSA 2024 bit signing key pair in the dev and test modes if the verification key has not been configured.
+This extension generates an asymmetric RSA 2048-bit signing key pair in the dev and test modes if the verification key has not been configured.
 Once the key pair is generated, the public RSA key is used to configure the `mp.jwt.verify.publickey` property, and the RSA private key is available to tests to sign tokens using `smallrye-jwt-build`, for example:
 
 [source,java]
@@ -891,7 +891,7 @@ public String token() {
 }
 ----
 
-See xref:security-jwt-build.adoc#sign-claims[signing claims guide] for mode details.
+See xref:security-jwt-build.adoc#sign-claims[signing claims guide] for more details.
 
 For production, you can generate your own key pair with `quarkus jwt generate-key`, which also adds the required configuration to `application.properties`.
 

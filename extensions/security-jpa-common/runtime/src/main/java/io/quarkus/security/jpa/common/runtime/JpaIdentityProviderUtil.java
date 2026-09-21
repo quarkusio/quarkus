@@ -1,5 +1,16 @@
 package io.quarkus.security.jpa.common.runtime;
 
+import java.security.spec.InvalidKeySpecException;
+import java.util.List;
+import java.util.UUID;
+
+import org.wildfly.security.credential.PasswordCredential;
+import org.wildfly.security.evidence.PasswordGuessEvidence;
+import org.wildfly.security.password.Password;
+import org.wildfly.security.password.interfaces.ClearPassword;
+import org.wildfly.security.password.util.ModularCrypt;
+import org.wildfly.security.provider.util.ProviderUtil;
+
 import io.quarkus.elytron.security.common.BcryptUtil;
 import io.quarkus.security.AuthenticationFailedException;
 import io.quarkus.security.identity.request.TrustedAuthenticationRequest;
@@ -7,15 +18,6 @@ import io.quarkus.security.identity.request.UsernamePasswordAuthenticationReques
 import io.quarkus.security.jpa.PasswordType;
 import io.quarkus.security.runtime.QuarkusPrincipal;
 import io.quarkus.security.runtime.QuarkusSecurityIdentity;
-import java.security.spec.InvalidKeySpecException;
-import java.util.List;
-import java.util.UUID;
-import org.wildfly.security.credential.PasswordCredential;
-import org.wildfly.security.evidence.PasswordGuessEvidence;
-import org.wildfly.security.password.Password;
-import org.wildfly.security.password.interfaces.ClearPassword;
-import org.wildfly.security.password.util.ModularCrypt;
-import org.wildfly.security.provider.util.ProviderUtil;
 
 public class JpaIdentityProviderUtil {
 

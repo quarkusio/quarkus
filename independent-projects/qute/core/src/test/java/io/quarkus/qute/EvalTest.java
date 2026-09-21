@@ -47,6 +47,7 @@ public class EvalTest {
     @Test
     public void testVariantPropagated() {
         Engine engine = Engine.builder()
+                .addSectionHelper(new EvalSectionHelper.Factory())
                 .addDefaults()
                 .addResultMapper(new HtmlEscaper(List.of("text/html")))
                 .build();

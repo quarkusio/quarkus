@@ -7,7 +7,7 @@ import org.gradle.api.artifacts.ExcludeRule;
 
 import io.quarkus.maven.dependency.ArtifactKey;
 
-class PlatformSpec {
+public class PlatformSpec {
     private final Map<ArtifactKey, Constraint> constraints;
     private final Set<ExcludeRule> exclusions;
 
@@ -24,7 +24,7 @@ class PlatformSpec {
         return exclusions;
     }
 
-    static class Constraint {
+    public static class Constraint {
         private final String groupId;
         private final String artifactId;
         private final String version;

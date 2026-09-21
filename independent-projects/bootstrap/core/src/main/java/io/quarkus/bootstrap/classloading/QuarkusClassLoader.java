@@ -798,6 +798,7 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
         List<Runnable> tasks;
         synchronized (closeTasks) {
             tasks = new ArrayList<>(closeTasks);
+            closeTasks.clear();
         }
         for (Runnable i : tasks) {
             try {

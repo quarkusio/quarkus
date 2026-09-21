@@ -155,6 +155,69 @@ public class PriorityLoadSheddingTest {
         assertThat(shedding.shedLoad(REQUEST, 0.7)).isTrue();
     }
 
+    // A prioritizer and a classifier are user code, called on the first handler in the chain
+    // while the application is overloaded. Letting an exception out of there would turn
+    // requests that load shedding may well have admitted into 500s, at the worst possible
+    // moment, so a failing implementation is treated as not applying to the request.
+
+    @Test
+    public void failingPrioritizerFallsBackToNormal() {
+        PriorityLoadShedding shedding = priorityLoadShedding(true, null, RequestClassifier.minCohort());
+        shedding.requestPrioritizers = List.of(new FailingPrioritizer());
+
+        double normal = lowestOverloadThatSheds(RequestPriority.NORMAL, RequestClassifier.minCohort());
+        assertThat(shedding.shedLoad(REQUEST, normal)).isTrue();
+        assertThat(shedding.shedLoad(REQUEST, previousStep(normal))).isFalse();
+    }
+
+    @Test
+    public void failingClassifierFallsBackToTheMiddleCohort() {
+        PriorityLoadShedding shedding = priorityLoadShedding(true, RequestPriority.NORMAL, null);
+        shedding.requestClassifiers = List.of(new FailingClassifier());
+
+        double middle = lowestOverloadThatSheds(RequestPriority.NORMAL, RequestClassifier.numCohorts() / 2);
+        assertThat(shedding.shedLoad(REQUEST, middle)).isTrue();
+        assertThat(shedding.shedLoad(REQUEST, previousStep(middle))).isFalse();
+    }
+
+    // The interface takes an `Object` so that a single list can hold prioritizers for
+    // different request types, which makes an `appliesTo()` that is more permissive than the
+    // type parameter an easy mistake. The bridge method then throws before the implementation
+    // is even entered.
+    @Test
+    public void prioritizerThatDoesNotMatchItsTypeParameterFallsBack() {
+        PriorityLoadShedding shedding = priorityLoadShedding(true, null, RequestClassifier.minCohort());
+        shedding.requestPrioritizers = List.of(new StringOnlyPrioritizer());
+
+        double normal = lowestOverloadThatSheds(RequestPriority.NORMAL, RequestClassifier.minCohort());
+        assertThat(shedding.shedLoad(REQUEST, normal)).isTrue();
+        assertThat(shedding.shedLoad(REQUEST, previousStep(normal))).isFalse();
+
+        // and it still works for the request type it was written for
+        assertThat(shedding.shedLoad("a string", normal)).isFalse();
+    }
+
+    @Test
+    public void prioritizerReturningNullFallsBackToNormal() {
+        PriorityLoadShedding shedding = priorityLoadShedding(true, null, RequestClassifier.minCohort());
+        shedding.requestPrioritizers = List.of(new FixedPrioritizer(true, null));
+
+        double normal = lowestOverloadThatSheds(RequestPriority.NORMAL, RequestClassifier.minCohort());
+        assertThat(shedding.shedLoad(REQUEST, normal)).isTrue();
+        assertThat(shedding.shedLoad(REQUEST, previousStep(normal))).isFalse();
+    }
+
+    @Test
+    public void failingImplementationDoesNotHideTheNextOne() {
+        // a broken implementation must not take the ones behind it down
+        PriorityLoadShedding shedding = priorityLoadShedding(true, null, RequestClassifier.maxCohort());
+        shedding.requestPrioritizers = List.of(
+                new FailingPrioritizer(),
+                new FixedPrioritizer(true, RequestPriority.IMPORTANT));
+
+        assertThat(shedding.shedLoad(REQUEST, 0.5)).isFalse();
+    }
+
     // the lowest probed overload at which the given request group is shed
     private double lowestOverloadThatSheds(RequestPriority priority, int cohort) {
         PriorityLoadShedding shedding = priorityLoadShedding(true, priority, cohort);
@@ -220,6 +283,43 @@ public class PriorityLoadSheddingTest {
         @Override
         public int cohort(Object request) {
             return cohort;
+        }
+    }
+
+    private static class FailingPrioritizer implements RequestPrioritizer<Object> {
+        @Override
+        public boolean appliesTo(Object request) {
+            return true;
+        }
+
+        @Override
+        public RequestPriority priority(Object request) {
+            throw new IllegalStateException("broken prioritizer");
+        }
+    }
+
+    private static class FailingClassifier implements RequestClassifier<Object> {
+        @Override
+        public boolean appliesTo(Object request) {
+            return true;
+        }
+
+        @Override
+        public int cohort(Object request) {
+            throw new IllegalStateException("broken classifier");
+        }
+    }
+
+    // `appliesTo()` accepts everything, but the implementation is only written for strings
+    private static class StringOnlyPrioritizer implements RequestPrioritizer<String> {
+        @Override
+        public boolean appliesTo(Object request) {
+            return true;
+        }
+
+        @Override
+        public RequestPriority priority(String request) {
+            return RequestPriority.CRITICAL;
         }
     }
 }

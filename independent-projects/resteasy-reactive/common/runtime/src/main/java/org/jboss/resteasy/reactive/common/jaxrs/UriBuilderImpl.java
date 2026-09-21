@@ -7,6 +7,8 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -90,6 +92,23 @@ public class UriBuilderImpl extends UriBuilder {
     public static final Pattern opaqueUri = Pattern.compile("^([^:/?#{]+):([^/].*)");
     public static final Pattern hierarchicalUri = Pattern
             .compile("^(([^:/?#{]+):)?(//([^/?#]*))?([^?#]*)(\\?([^#]*))?(#(.*))?");
+
+    /**
+     * Caches, per resource {@link Class}, the {@link Method} resolved for a given method name by
+     * {@link #path(Class, String)}. This is the reflective fallback used when {@link ResourceMethodPathRegistry} has no
+     * build-time entry for a class (e.g. REST client interfaces or classes not scanned as endpoints). The cache is
+     * cleared on a dev-mode restart via a shutdown task (see {@code ResourceMethodPathRecorder}), which also prevents
+     * application classes from being pinned across restarts.
+     */
+    private static final Map<Class<?>, Map<String, Method>> pathMethodCache = new ConcurrentHashMap<>();
+
+    /**
+     * Clears the reflective method cache. Invoked from a shutdown task (alongside {@link ResourceMethodPathRegistry}) so
+     * that state held in the persistent base runtime class loader is reset on a dev-mode restart.
+     */
+    public static void clearMethodCache() {
+        pathMethodCache.clear();
+    }
 
     public static boolean compare(String s1, String s2) {
         if (s1 == s2)
@@ -290,10 +309,10 @@ public class UriBuilderImpl extends UriBuilder {
             }
         }
 
-        if (uri.getRawPath() != null && uri.getRawPath().length() > 0) {
+        if (uri.getRawPath() != null && !uri.getRawPath().isEmpty()) {
             path = uri.getRawPath();
         }
-        if (uri.getRawQuery() != null && uri.getRawQuery().length() > 0) {
+        if (uri.getRawQuery() != null && !uri.getRawQuery().isEmpty()) {
             query = uri.getRawQuery();
         }
 
@@ -312,9 +331,8 @@ public class UriBuilderImpl extends UriBuilder {
         StringBuilder sb = new StringBuilder();
         if (scheme != null)
             sb.append(scheme).append(':');
-        if (ssp != null)
-            sb.append(ssp);
-        if (fragment != null && fragment.length() > 0)
+        sb.append(ssp);
+        if (fragment != null && !fragment.isEmpty())
             sb.append('#').append(fragment);
         URI uri = URI.create(sb.toString());
 
@@ -339,7 +357,7 @@ public class UriBuilderImpl extends UriBuilder {
     }
 
     public UriBuilder host(String host) throws IllegalArgumentException {
-        if (host != null && host.equals(""))
+        if (host != null && host.isEmpty())
             throw new IllegalArgumentException("invalid host");
         this.host = host;
         return this;
@@ -358,35 +376,33 @@ public class UriBuilderImpl extends UriBuilder {
     }
 
     protected static String paths(boolean encode, String basePath, String... segments) {
-        String path = basePath;
-        if (path == null)
-            path = "";
+        StringBuilder path = new StringBuilder(basePath == null ? "" : basePath);
         for (String segment : segments) {
             if ("".equals(segment))
                 continue;
-            if (path.endsWith("/")) {
+            if (path.toString().endsWith("/")) {
                 if (segment.startsWith("/")) {
                     segment = segment.substring(1);
-                    if ("".equals(segment))
+                    if (segment.isEmpty())
                         continue;
                 }
                 if (encode)
                     segment = Encode.encodePath(segment);
-                path += segment;
+                path.append(segment);
             } else {
                 if (encode)
                     segment = Encode.encodePath(segment);
-                if ("".equals(path)) {
-                    path = segment;
+                if (path.isEmpty()) {
+                    path = new StringBuilder(segment);
                 } else if (segment.startsWith("/")) {
-                    path += segment;
+                    path.append(segment);
                 } else {
-                    path += "/" + segment;
+                    path.append("/").append(segment);
                 }
             }
 
         }
-        return path;
+        return path.toString();
     }
 
     public UriBuilder path(String segment) throws IllegalArgumentException {
@@ -415,6 +431,28 @@ public class UriBuilderImpl extends UriBuilder {
             throw new IllegalArgumentException("resource is null");
         if (method == null)
             throw new IllegalArgumentException("method is null");
+        String recordedPath = ResourceMethodPathRegistry.getPath(resource.getName(), method);
+        if (recordedPath != null) {
+            path = paths(encode, path, recordedPath);
+            return this;
+        }
+        Map<String, Method> resolvedMethods = pathMethodCache.computeIfAbsent(resource,
+                new Function<>() {
+                    @Override
+                    public Map<String, Method> apply(Class<?> aClass) {
+                        return new ConcurrentHashMap<>();
+                    }
+                });
+        Method theMethod = resolvedMethods.get(method);
+        if (theMethod == null) {
+            theMethod = resolveResourceMethod(resource, method);
+            resolvedMethods.put(method, theMethod);
+        }
+        return path(theMethod);
+    }
+
+    @SuppressWarnings("rawtypes")
+    private static Method resolveResourceMethod(Class resource, String method) {
         Method theMethod = null;
         for (Method m : resource.getMethods()) {
             if (m.getName().equals(method)) {
@@ -427,7 +465,7 @@ public class UriBuilderImpl extends UriBuilder {
         }
         if (theMethod == null)
             throw new IllegalArgumentException("No public method annotated with @Path " + resource.getName() + " " + method);
-        return path(theMethod);
+        return theMethod;
     }
 
     public UriBuilder path(Method method) throws IllegalArgumentException {
@@ -466,7 +504,7 @@ public class UriBuilderImpl extends UriBuilder {
     }
 
     public UriBuilder replaceQuery(String query) throws IllegalArgumentException {
-        if (query == null || query.length() == 0) {
+        if (query == null || query.isEmpty()) {
             this.query = null;
             return this;
         }
@@ -547,7 +585,7 @@ public class UriBuilderImpl extends UriBuilder {
             if (userInfo != null)
                 replaceParameter(paramMap, fromEncodedMap, isTemplate, userInfo, builder, encodeSlash).append("@");
             if (host != null) {
-                if ("".equals(host))
+                if (host.isEmpty())
                     throw new UriBuilderException("empty host");
                 replaceParameter(paramMap, fromEncodedMap, isTemplate, host, builder, encodeSlash);
             }
@@ -561,7 +599,7 @@ public class UriBuilderImpl extends UriBuilder {
             StringBuilder tmp = new StringBuilder();
             replaceParameter(paramMap, fromEncodedMap, isTemplate, path, tmp, encode, encodeSlash);
             if (userInfo != null || host != null) {
-                if (tmp.length() > 0 && tmp.charAt(0) != '/')
+                if (!tmp.isEmpty() && tmp.charAt(0) != '/')
                     builder.append("/");
             }
             builder.append(tmp);
@@ -606,8 +644,7 @@ public class UriBuilderImpl extends UriBuilder {
     }
 
     public static Matcher createUriParamMatcher(String string) {
-        Matcher matcher = PathHelper.URI_PARAM_PATTERN.matcher(PathHelper.replaceEnclosedCurlyBracesCS(string));
-        return matcher;
+        return PathHelper.URI_PARAM_PATTERN.matcher(PathHelper.replaceEnclosedCurlyBracesCS(string));
     }
 
     protected StringBuilder replaceParameter(Map<String, ? extends Object> paramMap, boolean fromEncodedMap, boolean isTemplate,
@@ -982,7 +1019,7 @@ public class UriBuilderImpl extends UriBuilder {
     public UriBuilder replaceQueryParam(String name, Object... values) throws IllegalArgumentException {
         if (name == null)
             throw new IllegalArgumentException("Name parameter is null");
-        if (query == null || query.equals("")) {
+        if (query == null || query.isEmpty()) {
             if (values != null)
                 return queryParam(name, values);
             return this;
@@ -1076,7 +1113,7 @@ public class UriBuilderImpl extends UriBuilder {
     }
 
     public String toTemplate() {
-        return buildString(new HashMap<String, Object>(), true, true, true);
+        return buildString(new HashMap<>(), true, true, true);
     }
 
     public UriBuilder resolveTemplate(String name, Object value) throws IllegalArgumentException {
@@ -1084,7 +1121,7 @@ public class UriBuilderImpl extends UriBuilder {
             throw new IllegalArgumentException("Name is null");
         if (value == null)
             throw new IllegalArgumentException("Value is null");
-        HashMap<String, Object> vals = new HashMap<String, Object>();
+        HashMap<String, Object> vals = new HashMap<>();
         vals.put(name, value);
         return resolveTemplates(vals);
     }

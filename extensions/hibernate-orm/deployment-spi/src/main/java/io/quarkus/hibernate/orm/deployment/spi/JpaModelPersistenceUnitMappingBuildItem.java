@@ -7,7 +7,14 @@ import java.util.Set;
 import io.quarkus.builder.item.SimpleBuildItem;
 
 /**
- * Internal model to hold the mapping linking a JPA entity to its corresponding persistence units.
+ * Maps each JPA entity class name to the set of persistence units it belongs to.
+ * <p>
+ * Produced once all persistence unit descriptors have been built, after JPA model discovery
+ * and per-persistence-unit assignment are complete.
+ * <p>
+ * Consumed by extensions that need to know which persistence unit owns a given entity
+ * (e.g. Panache, Jakarta Data) to generate the correct persistence-unit-aware repository
+ * or active-record implementation.
  */
 public final class JpaModelPersistenceUnitMappingBuildItem extends SimpleBuildItem {
 

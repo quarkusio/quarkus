@@ -7,7 +7,12 @@ import jakarta.ws.rs.Path;
 
 import io.quarkus.micrometer.runtime.devui.DevUiMetricsSampler;
 
-/** In-app probe (see the Task D4 rationale) — reports sampler bean resolvability over HTTP. */
+/**
+ * In-app probe to understand when the Micrometer specific DevUiMetricsSampler is resolved.
+ * If OTel metrics is present, sampling will be done there.
+ * This class should only be resolved if only Micrometer metrics are being used.
+ * We don't want to double-sample.
+ */
 @Path("/probe")
 @ApplicationScoped
 public class BridgeSamplerProbeResource {

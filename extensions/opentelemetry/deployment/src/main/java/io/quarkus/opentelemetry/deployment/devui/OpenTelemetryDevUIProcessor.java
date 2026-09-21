@@ -5,16 +5,18 @@ import io.quarkus.arc.processor.DotNames;
 import io.quarkus.deployment.IsLocalDevelopment;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.annotations.BuildSteps;
 import io.quarkus.devjsonrpc.spi.JsonRPCProvidersBuildItem;
 import io.quarkus.devui.spi.observability.ObservabilitySignalBuildItem;
 import io.quarkus.devui.spi.page.Page;
 import io.quarkus.devui.spi.page.UnlistedPageBuildItem;
+import io.quarkus.opentelemetry.deployment.OpenTelemetryEnabled;
 import io.quarkus.opentelemetry.runtime.config.build.TracesDevUiBuildTimeConfig;
 import io.quarkus.opentelemetry.runtime.devui.DevUiTracesSpanProcessor;
 import io.quarkus.opentelemetry.runtime.devui.DevUiTracesStoreProducer;
 import io.quarkus.opentelemetry.runtime.devui.OpenTelemetryDevUIJsonRPCService;
 
-// FIXME OTel must be enabled
+@BuildSteps(onlyIf = { OpenTelemetryEnabled.class, IsLocalDevelopment.class })
 public class OpenTelemetryDevUIProcessor {
 
     private static final String TRACES_TITLE = "Traces";
@@ -22,7 +24,7 @@ public class OpenTelemetryDevUIProcessor {
     // is clear which extension contributes it; the page itself stays titled "Traces".
     private static final String SIGNAL_TITLE = "OpenTelemetry Traces";
 
-    @BuildStep(onlyIf = IsLocalDevelopment.class)
+    @BuildStep
     void registerDevUiBeans(TracesDevUiBuildTimeConfig config,
             BuildProducer<AdditionalBeanBuildItem> additionalBeans,
             BuildProducer<JsonRPCProvidersBuildItem> jsonRpcProviders) {
@@ -43,7 +45,7 @@ public class OpenTelemetryDevUIProcessor {
         jsonRpcProviders.produce(new JsonRPCProvidersBuildItem(OpenTelemetryDevUIJsonRPCService.class));
     }
 
-    @BuildStep(onlyIf = IsLocalDevelopment.class)
+    @BuildStep
     void tracesPage(TracesDevUiBuildTimeConfig config,
             BuildProducer<UnlistedPageBuildItem> unlistedPages,
             BuildProducer<ObservabilitySignalBuildItem> signals) {

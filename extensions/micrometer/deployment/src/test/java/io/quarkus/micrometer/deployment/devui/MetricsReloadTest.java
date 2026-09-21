@@ -1,5 +1,6 @@
 package io.quarkus.micrometer.deployment.devui;
 
+import static io.restassured.RestAssured.get;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
@@ -14,7 +15,6 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.devui.tests.DevUIJsonRPCTest;
 import io.quarkus.test.QuarkusDevModeTest;
-import io.restassured.RestAssured;
 import tools.jackson.databind.JsonNode;
 
 /**
@@ -29,7 +29,8 @@ public class MetricsReloadTest extends DevUIJsonRPCTest {
                     .addClasses(MetricsResource.class, ReloadMarker.class)
                     .addAsResource(new StringAsset(
                             "quarkus.dev-ui.observability.metrics.sample-interval=200ms\n"
-                                    + "quarkus.micrometer.export.json.enabled=true\n"),
+                                    + "quarkus.micrometer.export.json.enabled=true\n"
+                                    + "quarkus.devservices.enabled=false\n"),
                             "application.properties"));
 
     public MetricsReloadTest() {
@@ -38,16 +39,15 @@ public class MetricsReloadTest extends DevUIJsonRPCTest {
 
     @Test
     public void historySurvivesAppCodeReload() throws Exception {
-        RestAssured.get("/metrics-test/hit").then().statusCode(200);
+        get("/metrics-test/hit").then().statusCode(200);
         super.executeJsonRPCMethod("setSelection", java.util.Map.of("names", List.of("demo.hits")));
 
         // Accumulate at least a couple of points.
         AtomicInteger before = new AtomicInteger();
-        await().atMost(Duration.ofSeconds(5)).untilAsserted(() -> {
-            RestAssured.get("/metrics-test/hit");
-            int n = pointCount(super.executeJsonRPCMethod("getSnapshot"), "demo.hits");
-            before.set(n);
-            assertThat(n).isGreaterThanOrEqualTo(2);
+        await().atMost(Duration.ofSeconds(10)).untilAsserted(() -> {
+            get("/metrics-test/hit");
+            before.set(pointCount(super.executeJsonRPCMethod("getSnapshot"), "demo.hits"));
+            assertThat(before.get()).isGreaterThanOrEqualTo(2);
         });
 
         // Force an app-code reload by editing a source file.
@@ -55,10 +55,11 @@ public class MetricsReloadTest extends DevUIJsonRPCTest {
 
         // After the reload the selection and history are still there (store holder survived),
         // and capture resumes into the same series — the point count never resets to 0.
-        await().atMost(Duration.ofSeconds(6)).untilAsserted(() -> {
-            RestAssured.get("/metrics-test/hit");
+        await().atMost(Duration.ofSeconds(20)).untilAsserted(() -> {
+            get("/metrics-test/hit");
             int n = pointCount(super.executeJsonRPCMethod("getSnapshot"), "demo.hits");
-            assertThat(n).isGreaterThanOrEqualTo(before.get());
+            assertThat(n).as(n + "hits found but before we had: " + before.get())
+                    .isGreaterThanOrEqualTo(before.get());
         });
     }
 

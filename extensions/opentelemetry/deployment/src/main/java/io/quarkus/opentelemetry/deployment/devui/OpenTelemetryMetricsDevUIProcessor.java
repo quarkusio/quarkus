@@ -5,7 +5,9 @@ import io.quarkus.arc.processor.DotNames;
 import io.quarkus.deployment.IsLocalDevelopment;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.annotations.BuildSteps;
 import io.quarkus.devui.spi.observability.MetricsBackendBuildItem;
+import io.quarkus.opentelemetry.deployment.OpenTelemetryEnabled;
 import io.quarkus.opentelemetry.runtime.config.build.OTelBuildConfig;
 import io.quarkus.opentelemetry.runtime.devui.DevUiMetricsSdkBuilderCustomizer;
 
@@ -16,9 +18,10 @@ import io.quarkus.opentelemetry.runtime.devui.DevUiMetricsSdkBuilderCustomizer;
  * coverage with no double counting. The metrics view has no separate build-time enable flag;
  * it is dev-only via IsLocalDevelopment and never registered in prod/native.
  */
+@BuildSteps(onlyIf = { OpenTelemetryEnabled.class, IsLocalDevelopment.class })
 public class OpenTelemetryMetricsDevUIProcessor {
 
-    @BuildStep(onlyIf = IsLocalDevelopment.class)
+    @BuildStep
     void registerOtelMetricsCapture(OTelBuildConfig oTelBuildConfig,
             BuildProducer<AdditionalBeanBuildItem> additionalBeans,
             BuildProducer<MetricsBackendBuildItem> backends) {

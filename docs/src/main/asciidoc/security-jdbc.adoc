@@ -192,7 +192,7 @@ import io.quarkus.elytron.security.common.BcryptUtil;
 
 public class AccountService {
 
-    public void signupUser(String username, String password) {
+    public void signupUser(String username, char[] password) {
         String encryptedPassword = BcryptUtil.bcryptHash(password);
 
         // store user with the encrypted password in the database

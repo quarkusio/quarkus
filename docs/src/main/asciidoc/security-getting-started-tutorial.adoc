@@ -272,7 +272,7 @@ public class User extends PanacheEntity {
      * @param password the unencrypted password (it is encrypted with bcrypt)
      * @param role the comma-separated roles
      */
-    public static void add(String username, String password, String role) { <5>
+    public static void add(String username, char[] password, String role) { <5>
         User user = new User();
         user.username = username;
         user.password = BcryptUtil.bcryptHash(password);
@@ -301,8 +301,8 @@ The `quarkus-security-jpa` extension only initializes if a single entity is anno
 
 * Always pass plain text passwords to `BcryptUtil.bcryptHash()` - never pre-hash them.
 * The bcrypt hash includes the salt, so no separate salt storage is needed.
-* To verify passwords during authentication, the framework automatically uses `BcryptUtil.matches(plainPassword, hashedPassword)`.
-* For custom iterations: `BcryptUtil.bcryptHash(password, iterationCount)` where higher iterations (12-14) provide more security but slower performance.
+* To verify a plain text password against a stored hash, use `BcryptUtil.matches(char[] plainPassword, String hashedPassword)`.
+* For custom iterations: `BcryptUtil.bcryptHash(char[] password, int iterationCount)` where higher iterations (12-14) provide more security but slower performance.
 ====
 
 - For more information about configuring passwords and roles, see xref:configure-the-application[Configure the application].
@@ -393,8 +393,8 @@ public class Startup {
     public void loadUsers(@Observes StartupEvent evt) {
         // reset and load all test users
         User.deleteAll();
-        User.add("admin", "admin", "admin");
-        User.add("user", "user", "user");
+        User.add("admin", "admin".toCharArray(), "admin");
+        User.add("user", "user".toCharArray(), "user");
     }
 }
 ----

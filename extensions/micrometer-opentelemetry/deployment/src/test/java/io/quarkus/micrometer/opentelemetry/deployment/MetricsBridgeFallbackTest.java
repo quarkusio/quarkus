@@ -27,7 +27,8 @@ public class MetricsBridgeFallbackTest extends DevUIJsonRPCTest {
                     .addAsResource(new StringAsset(
                             "quarkus.dev-ui.observability.metrics.sample-interval=200ms\n"
                                     + "quarkus.otel.metrics.enabled=false\n"
-                                    + "quarkus.micrometer.export.json.enabled=true\n"),
+                                    + "quarkus.micrometer.export.json.enabled=true\n"
+                                    + "quarkus.devservices.enabled=false\n"),
                             "application.properties"));
 
     public MetricsBridgeFallbackTest() {
@@ -36,7 +37,7 @@ public class MetricsBridgeFallbackTest extends DevUIJsonRPCTest {
 
     @Test
     public void samplerRunsAsFallbackWhenOtelMetricsDisabled() throws Exception {
-        // OTel metrics disabled -> no OTel reader -> the sampler must run.
+        // OTel metrics disabled -> no OTel reader -> the micrometer sampler must run.
         RestAssured.get("/probe/sampler-present").then().statusCode(200).body(is("true"));
 
         // Metrics still appear, all sourced from micrometer (the fallback path).

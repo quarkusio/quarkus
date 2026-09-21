@@ -15,6 +15,7 @@ public class MetricsSamplerProdGuardTest {
 
     @RegisterExtension
     static final QuarkusUnitTest test = new QuarkusUnitTest()
+            .overrideConfigKey("quarkus.redis.devservices.enabled", "false")
             .withApplicationRoot((JavaArchive jar) -> {
             });
 

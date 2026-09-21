@@ -26,7 +26,9 @@ public class OpenTelemetryMetricsDevUITest extends DevUIJsonRPCTest {
                     .addAsResource(new StringAsset(
                             "quarkus.dev-ui.observability.metrics.sample-interval=200ms\n"
                                     + "quarkus.otel.metrics.enabled=true\n"
-                                    + "quarkus.otel.traces.enabled=false\n"),
+                                    + "quarkus.otel.logs.enabled=false\n"
+                                    + "quarkus.otel.traces.enabled=false\n"
+                                    + "quarkus.devservices.enabled=false\n"),
                             "application.properties"));
 
     public OpenTelemetryMetricsDevUITest() {

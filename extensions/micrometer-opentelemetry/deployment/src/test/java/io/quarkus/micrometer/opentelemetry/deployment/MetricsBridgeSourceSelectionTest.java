@@ -29,7 +29,8 @@ public class MetricsBridgeSourceSelectionTest extends DevUIJsonRPCTest {
                                     + "quarkus.otel.metrics.enabled=true\n"
                                     + "quarkus.otel.exporter.otlp.metrics.enabled=false\n"
                                     + "quarkus.otel.traces.enabled=false\n"
-                                    + "quarkus.micrometer.export.json.enabled=true\n"),
+                                    + "quarkus.micrometer.export.json.enabled=true\n"
+                                    + "quarkus.devservices.enabled=false\n"),
                             "application.properties"));
 
     public MetricsBridgeSourceSelectionTest() {
@@ -38,7 +39,7 @@ public class MetricsBridgeSourceSelectionTest extends DevUIJsonRPCTest {
 
     @Test
     public void micrometerSamplerSuppressedAndNoDuplicateSeries() throws Exception {
-        // Presence matrix: bridge + OTel metrics enabled -> the sampler bean must NOT be registered.
+        // Presence matrix: bridge + OTel metrics enabled -> the micrometer sampler bean must NOT be registered.
         RestAssured.get("/probe/sampler-present").then().statusCode(200).body(is("false"));
 
         // Metrics still appear (via the OTel reader). Select everything the catalog knows, then

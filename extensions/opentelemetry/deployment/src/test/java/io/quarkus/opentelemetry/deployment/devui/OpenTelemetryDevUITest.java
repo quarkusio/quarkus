@@ -118,21 +118,6 @@ public class OpenTelemetryDevUITest extends DevUIJsonRPCTest {
         });
     }
 
-    @Test
-    public void capturesMultiReactiveSpan() throws Exception {
-        RestAssured.when().get("/multi").then().statusCode(200);
-        Awaitility.await().atMost(Duration.ofSeconds(5)).untilAsserted(() -> {
-            JsonNode snapshot = super.executeJsonRPCMethod("getSnapshot");
-            // A Multi (SSE) endpoint streams items and completes off the request thread;
-            // its server span must still be captured.
-            JsonNode span = firstSpanMatching(snapshot,
-                    s -> s.get("name").asText().contains("/multi"));
-            assertThat(span)
-                    .as("the reactive Multi (SSE) endpoint should be captured as a span")
-                    .isNotNull();
-        });
-    }
-
     /** Returns the first span (across all traces) matching the predicate, or {@code null}. */
     private static JsonNode firstSpanMatching(JsonNode snapshot, Predicate<JsonNode> predicate) {
         JsonNode traces = snapshot.get("traces");

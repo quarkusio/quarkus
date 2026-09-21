@@ -29,7 +29,8 @@ public class MetricsDevUITest extends DevUIJsonRPCTest {
                     .addClasses(MetricsResource.class)
                     .addAsResource(new StringAsset(
                             "quarkus.dev-ui.observability.metrics.sample-interval=200ms\n"
-                                    + "quarkus.micrometer.export.json.enabled=true\n"),
+                                    + "quarkus.micrometer.export.json.enabled=true\n"
+                                    + "quarkus.devservices.enabled=false\n"),
                             "application.properties"));
 
     public MetricsDevUITest() {

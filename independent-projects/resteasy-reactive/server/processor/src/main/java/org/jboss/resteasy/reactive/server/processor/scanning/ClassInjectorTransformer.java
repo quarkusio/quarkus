@@ -844,9 +844,10 @@ public class ClassInjectorTransformer implements BiFunction<String, ClassVisitor
             case QUERY:
                 ResultHandle separator = param.getSeparator() != null ? method.load(param.getSeparator()) : method.loadNull();
                 methodDesc = MethodDescriptor.ofMethod(ResteasyReactiveInjectionContext.class, "getQueryParameter",
-                        Object.class, String.class, boolean.class, boolean.class, String.class);
+                        Object.class, String.class, boolean.class, boolean.class, String.class, boolean.class);
                 value = method.invokeInterfaceMethod(methodDesc, ctx, paramName,
-                        method.load(param.isSingle()), method.load(encoded), separator);
+                        method.load(param.isSingle()), method.load(encoded), separator,
+                        method.load(param.getRestQueryMap()));
                 break;
             default:
                 throw new IllegalStateException("Unexpected parameter type: " + paramType);

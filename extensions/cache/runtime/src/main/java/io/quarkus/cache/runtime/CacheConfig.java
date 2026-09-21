@@ -80,6 +80,20 @@ public interface CacheConfig {
              * value to {@code true} will enable the accumulation of cache stats inside Caffeine.
              */
             Optional<Boolean> metricsEnabled();
+
+            /**
+             * Whether per-item expiration is enabled for this cache. When enabled, individual cache entries can have
+             * custom expiration durations set via the programmatic API ({@code get(key, valueLoader, expiresAfter)}).
+             * <p>
+             * Enabling this option adds a small amount of memory overhead per cache entry and a per-read computation
+             * cost, even for entries that do not use a custom expiration. Only enable this if you need per-item
+             * expiration control.
+             * <p>
+             * Note: regardless of this setting, each Caffeine cache entry carries a small fixed wrapper overhead
+             * to support the per-item expiration infrastructure.
+             */
+            @WithDefault("false")
+            boolean perItemExpiration();
         }
     }
 }

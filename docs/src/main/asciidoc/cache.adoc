@@ -576,12 +576,19 @@ public class CachedExpensiveService {
             // Put an expensive call here.
         }).await().indefinitely(); //<4>
     }
+
+    public Uni<String> getWithCustomExpiration(Object key, Duration expiresAfter) {
+        return cache.get(key, k -> {
+            // Put an expensive call here.
+        }, expiresAfter); //<5>
+    }
 }
 ----
 <1> This is optional.
 <2> This method returns the `Uni<String>` type which is non-blocking.
 <3> The `k` argument contains the cache key value.
 <4> If you don't need the call to be non-blocking, this is how you can retrieve the cache value in a blocking way.
+<5> You can optionally specify a custom `Duration expiresAfter` to control per-item expiration. For Caffeine caches, this requires enabling per-item expiration on the cache with `quarkus.cache.caffeine."cache-name".per-item-expiration=true`. Enabling per-item expiration adds a small amount of memory overhead per cache entry and a per-read computation cost, even for entries that do not use a custom expiration.
 
 === Retrieving a `Cache` from the `CacheManager`
 

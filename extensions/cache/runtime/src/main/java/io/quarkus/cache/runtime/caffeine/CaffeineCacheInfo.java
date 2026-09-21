@@ -11,11 +11,13 @@ public class CaffeineCacheInfo {
 
     public Long maximumSize;
 
-    public Duration expireAfterWrite;
+    public volatile Duration expireAfterWrite;
 
-    public Duration expireAfterAccess;
+    public volatile Duration expireAfterAccess;
 
     public boolean metricsEnabled;
+
+    public boolean perItemExpiration;
 
     @Override
     public int hashCode() {

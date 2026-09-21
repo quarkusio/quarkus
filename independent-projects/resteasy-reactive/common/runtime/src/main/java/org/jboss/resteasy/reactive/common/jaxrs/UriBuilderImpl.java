@@ -309,10 +309,10 @@ public class UriBuilderImpl extends UriBuilder {
             }
         }
 
-        if (uri.getRawPath() != null && uri.getRawPath().length() > 0) {
+        if (uri.getRawPath() != null && !uri.getRawPath().isEmpty()) {
             path = uri.getRawPath();
         }
-        if (uri.getRawQuery() != null && uri.getRawQuery().length() > 0) {
+        if (uri.getRawQuery() != null && !uri.getRawQuery().isEmpty()) {
             query = uri.getRawQuery();
         }
 
@@ -331,9 +331,8 @@ public class UriBuilderImpl extends UriBuilder {
         StringBuilder sb = new StringBuilder();
         if (scheme != null)
             sb.append(scheme).append(':');
-        if (ssp != null)
-            sb.append(ssp);
-        if (fragment != null && fragment.length() > 0)
+        sb.append(ssp);
+        if (fragment != null && !fragment.isEmpty())
             sb.append('#').append(fragment);
         URI uri = URI.create(sb.toString());
 
@@ -358,7 +357,7 @@ public class UriBuilderImpl extends UriBuilder {
     }
 
     public UriBuilder host(String host) throws IllegalArgumentException {
-        if (host != null && host.equals(""))
+        if (host != null && host.isEmpty())
             throw new IllegalArgumentException("invalid host");
         this.host = host;
         return this;
@@ -377,35 +376,33 @@ public class UriBuilderImpl extends UriBuilder {
     }
 
     protected static String paths(boolean encode, String basePath, String... segments) {
-        String path = basePath;
-        if (path == null)
-            path = "";
+        StringBuilder path = new StringBuilder(basePath == null ? "" : basePath);
         for (String segment : segments) {
             if ("".equals(segment))
                 continue;
-            if (path.endsWith("/")) {
+            if (path.toString().endsWith("/")) {
                 if (segment.startsWith("/")) {
                     segment = segment.substring(1);
-                    if ("".equals(segment))
+                    if (segment.isEmpty())
                         continue;
                 }
                 if (encode)
                     segment = Encode.encodePath(segment);
-                path += segment;
+                path.append(segment);
             } else {
                 if (encode)
                     segment = Encode.encodePath(segment);
-                if ("".equals(path)) {
-                    path = segment;
+                if (path.isEmpty()) {
+                    path = new StringBuilder(segment);
                 } else if (segment.startsWith("/")) {
-                    path += segment;
+                    path.append(segment);
                 } else {
-                    path += "/" + segment;
+                    path.append("/").append(segment);
                 }
             }
 
         }
-        return path;
+        return path.toString();
     }
 
     public UriBuilder path(String segment) throws IllegalArgumentException {
@@ -507,7 +504,7 @@ public class UriBuilderImpl extends UriBuilder {
     }
 
     public UriBuilder replaceQuery(String query) throws IllegalArgumentException {
-        if (query == null || query.length() == 0) {
+        if (query == null || query.isEmpty()) {
             this.query = null;
             return this;
         }
@@ -588,7 +585,7 @@ public class UriBuilderImpl extends UriBuilder {
             if (userInfo != null)
                 replaceParameter(paramMap, fromEncodedMap, isTemplate, userInfo, builder, encodeSlash).append("@");
             if (host != null) {
-                if ("".equals(host))
+                if (host.isEmpty())
                     throw new UriBuilderException("empty host");
                 replaceParameter(paramMap, fromEncodedMap, isTemplate, host, builder, encodeSlash);
             }
@@ -602,7 +599,7 @@ public class UriBuilderImpl extends UriBuilder {
             StringBuilder tmp = new StringBuilder();
             replaceParameter(paramMap, fromEncodedMap, isTemplate, path, tmp, encode, encodeSlash);
             if (userInfo != null || host != null) {
-                if (tmp.length() > 0 && tmp.charAt(0) != '/')
+                if (!tmp.isEmpty() && tmp.charAt(0) != '/')
                     builder.append("/");
             }
             builder.append(tmp);
@@ -647,8 +644,7 @@ public class UriBuilderImpl extends UriBuilder {
     }
 
     public static Matcher createUriParamMatcher(String string) {
-        Matcher matcher = PathHelper.URI_PARAM_PATTERN.matcher(PathHelper.replaceEnclosedCurlyBracesCS(string));
-        return matcher;
+        return PathHelper.URI_PARAM_PATTERN.matcher(PathHelper.replaceEnclosedCurlyBracesCS(string));
     }
 
     protected StringBuilder replaceParameter(Map<String, ? extends Object> paramMap, boolean fromEncodedMap, boolean isTemplate,
@@ -1023,7 +1019,7 @@ public class UriBuilderImpl extends UriBuilder {
     public UriBuilder replaceQueryParam(String name, Object... values) throws IllegalArgumentException {
         if (name == null)
             throw new IllegalArgumentException("Name parameter is null");
-        if (query == null || query.equals("")) {
+        if (query == null || query.isEmpty()) {
             if (values != null)
                 return queryParam(name, values);
             return this;
@@ -1117,7 +1113,7 @@ public class UriBuilderImpl extends UriBuilder {
     }
 
     public String toTemplate() {
-        return buildString(new HashMap<String, Object>(), true, true, true);
+        return buildString(new HashMap<>(), true, true, true);
     }
 
     public UriBuilder resolveTemplate(String name, Object value) throws IllegalArgumentException {
@@ -1125,7 +1121,7 @@ public class UriBuilderImpl extends UriBuilder {
             throw new IllegalArgumentException("Name is null");
         if (value == null)
             throw new IllegalArgumentException("Value is null");
-        HashMap<String, Object> vals = new HashMap<String, Object>();
+        HashMap<String, Object> vals = new HashMap<>();
         vals.put(name, value);
         return resolveTemplates(vals);
     }

@@ -1,5 +1,7 @@
 package io.quarkus.hibernate.orm.deployment.spi;
 
+import java.util.Objects;
+
 import io.quarkus.builder.item.MultiBuildItem;
 import io.quarkus.hibernate.orm.runtime.spi.HibernateOrmIntegrationRuntimeInitListener;
 
@@ -22,21 +24,20 @@ public final class HibernateOrmIntegrationRuntimeConfiguredBuildItem extends Mul
 
     private final String integrationName;
     private final String persistenceUnitName;
-    private HibernateOrmIntegrationRuntimeInitListener initListener;
+    private final HibernateOrmIntegrationRuntimeInitListener initListener;
+
+    private HibernateOrmIntegrationRuntimeConfiguredBuildItem(Builder builder) {
+        this.integrationName = builder.integrationName;
+        this.persistenceUnitName = builder.persistenceUnitName;
+        this.initListener = builder.initListener;
+    }
 
     /**
      * @param integrationName a unique identifier for the integration (e.g. {@code "hibernate-search-elasticsearch"})
      * @param persistenceUnitName the name of the persistence unit this integration targets
      */
-    public HibernateOrmIntegrationRuntimeConfiguredBuildItem(String integrationName, String persistenceUnitName) {
-        if (integrationName == null) {
-            throw new IllegalArgumentException("name cannot be null");
-        }
-        this.integrationName = integrationName;
-        if (persistenceUnitName == null) {
-            throw new IllegalArgumentException("persistenceUnitName cannot be null");
-        }
-        this.persistenceUnitName = persistenceUnitName;
+    public static Builder builder(String integrationName, String persistenceUnitName) {
+        return new Builder(integrationName, persistenceUnitName);
     }
 
     @Override
@@ -56,13 +57,28 @@ public final class HibernateOrmIntegrationRuntimeConfiguredBuildItem extends Mul
         return initListener;
     }
 
-    /**
-     * Sets a listener that will be called during runtime init to contribute runtime properties
-     * and service initiators.
-     */
-    public HibernateOrmIntegrationRuntimeConfiguredBuildItem setInitListener(
-            HibernateOrmIntegrationRuntimeInitListener initListener) {
-        this.initListener = initListener;
-        return this;
+    public static final class Builder {
+
+        private final String integrationName;
+        private final String persistenceUnitName;
+        private HibernateOrmIntegrationRuntimeInitListener initListener;
+
+        private Builder(String integrationName, String persistenceUnitName) {
+            this.integrationName = Objects.requireNonNull(integrationName, "integrationName must not be null");
+            this.persistenceUnitName = Objects.requireNonNull(persistenceUnitName, "persistenceUnitName must not be null");
+        }
+
+        /**
+         * Sets a listener that will be called during runtime init to contribute runtime properties
+         * and service initiators.
+         */
+        public Builder initListener(HibernateOrmIntegrationRuntimeInitListener initListener) {
+            this.initListener = initListener;
+            return this;
+        }
+
+        public HibernateOrmIntegrationRuntimeConfiguredBuildItem build() {
+            return new HibernateOrmIntegrationRuntimeConfiguredBuildItem(this);
+        }
     }
 }

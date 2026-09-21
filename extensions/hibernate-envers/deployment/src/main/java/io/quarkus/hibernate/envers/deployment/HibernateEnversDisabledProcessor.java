@@ -26,11 +26,12 @@ public final class HibernateEnversDisabledProcessor {
         checkNoExplicitActiveTrue(buildTimeConfig);
         for (PersistenceUnitDescriptorBuildItem puDescriptor : persistenceUnitDescriptorBuildItems) {
             integrationProducer.produce(
-                    new HibernateOrmIntegrationStaticConfiguredBuildItem(HibernateEnversProcessor.HIBERNATE_ENVERS,
+                    HibernateOrmIntegrationStaticConfiguredBuildItem.builder(HibernateEnversProcessor.HIBERNATE_ENVERS,
                             puDescriptor.getPersistenceUnitName())
-                            .setInitListener(recorder.createStaticInitInactiveListener())
+                            .initListener(recorder.createStaticInitInactiveListener())
                             // We don't need XML mapping if Envers is disabled
-                            .setXmlMappingRequired(false));
+                            .xmlMappingRequired(false)
+                            .build());
         }
     }
 

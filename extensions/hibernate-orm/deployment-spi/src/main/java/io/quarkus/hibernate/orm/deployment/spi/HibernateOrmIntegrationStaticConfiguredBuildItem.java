@@ -1,5 +1,7 @@
 package io.quarkus.hibernate.orm.deployment.spi;
 
+import java.util.Objects;
+
 import io.quarkus.builder.item.MultiBuildItem;
 import io.quarkus.hibernate.orm.runtime.spi.HibernateOrmIntegrationStaticInitListener;
 
@@ -22,22 +24,22 @@ public final class HibernateOrmIntegrationStaticConfiguredBuildItem extends Mult
 
     private final String integrationName;
     private final String persistenceUnitName;
-    private HibernateOrmIntegrationStaticInitListener initListener;
-    private boolean xmlMappingRequired = false;
+    private final HibernateOrmIntegrationStaticInitListener initListener;
+    private final boolean xmlMappingRequired;
+
+    private HibernateOrmIntegrationStaticConfiguredBuildItem(Builder builder) {
+        this.integrationName = builder.integrationName;
+        this.persistenceUnitName = builder.persistenceUnitName;
+        this.initListener = builder.initListener;
+        this.xmlMappingRequired = builder.xmlMappingRequired;
+    }
 
     /**
      * @param integrationName a unique identifier for the integration (e.g. {@code "hibernate-envers"})
      * @param persistenceUnitName the name of the persistence unit this integration targets
      */
-    public HibernateOrmIntegrationStaticConfiguredBuildItem(String integrationName, String persistenceUnitName) {
-        if (integrationName == null) {
-            throw new IllegalArgumentException("name cannot be null");
-        }
-        this.integrationName = integrationName;
-        if (persistenceUnitName == null) {
-            throw new IllegalArgumentException("persistenceUnitName cannot be null");
-        }
-        this.persistenceUnitName = persistenceUnitName;
+    public static Builder builder(String integrationName, String persistenceUnitName) {
+        return new Builder(integrationName, persistenceUnitName);
     }
 
     @Override
@@ -57,25 +59,41 @@ public final class HibernateOrmIntegrationStaticConfiguredBuildItem extends Mult
         return initListener;
     }
 
-    /**
-     * Sets a listener that will be called during static init to contribute boot properties
-     * and react to metadata initialization.
-     */
-    public HibernateOrmIntegrationStaticConfiguredBuildItem setInitListener(
-            HibernateOrmIntegrationStaticInitListener initListener) {
-        this.initListener = initListener;
-        return this;
-    }
-
     public boolean isXmlMappingRequired() {
         return xmlMappingRequired;
     }
 
-    /**
-     * Indicates that this integration requires XML mapping to be enabled for its persistence unit.
-     */
-    public HibernateOrmIntegrationStaticConfiguredBuildItem setXmlMappingRequired(boolean xmlMappingRequired) {
-        this.xmlMappingRequired = xmlMappingRequired;
-        return this;
+    public static final class Builder {
+
+        private final String integrationName;
+        private final String persistenceUnitName;
+        private HibernateOrmIntegrationStaticInitListener initListener;
+        private boolean xmlMappingRequired = false;
+
+        private Builder(String integrationName, String persistenceUnitName) {
+            this.integrationName = Objects.requireNonNull(integrationName, "integrationName must not be null");
+            this.persistenceUnitName = Objects.requireNonNull(persistenceUnitName, "persistenceUnitName must not be null");
+        }
+
+        /**
+         * Sets a listener that will be called during static init to contribute boot properties
+         * and react to metadata initialization.
+         */
+        public Builder initListener(HibernateOrmIntegrationStaticInitListener initListener) {
+            this.initListener = initListener;
+            return this;
+        }
+
+        /**
+         * Indicates that this integration requires XML mapping to be enabled for its persistence unit.
+         */
+        public Builder xmlMappingRequired(boolean xmlMappingRequired) {
+            this.xmlMappingRequired = xmlMappingRequired;
+            return this;
+        }
+
+        public HibernateOrmIntegrationStaticConfiguredBuildItem build() {
+            return new HibernateOrmIntegrationStaticConfiguredBuildItem(this);
+        }
     }
 }

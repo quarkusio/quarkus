@@ -1,17 +1,19 @@
 package io.quarkus.elytron.security.common.runtime;
 
-import io.quarkus.elytron.security.common.BcryptUtil;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.Security;
 import java.security.spec.InvalidKeySpecException;
 import java.util.List;
+
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.wildfly.security.credential.PasswordCredential;
 import org.wildfly.security.evidence.PasswordGuessEvidence;
 import org.wildfly.security.password.WildFlyElytronPasswordProvider;
 import org.wildfly.security.password.util.ModularCrypt;
+
+import io.quarkus.elytron.security.common.BcryptUtil;
 
 public class BcryptUtilTest {
 

@@ -18,30 +18,47 @@ public interface LoadSheddingRuntimeConfig {
 
     /**
      * The maximum number of concurrent requests allowed.
+     * <p>
+     * Must be at least 1; the application fails to start otherwise.
      */
     @WithDefault("1000")
     int maxLimit();
 
     /**
      * The {@code alpha} factor of the Vegas overload detection algorithm.
+     * The algorithm grows the limit while the estimated request queue is shorter than
+     * this factor times {@code log10(current limit) + 1}.
+     * <p>
+     * Must be at least 1; the application fails to start otherwise.
      */
     @WithDefault("3")
     int alphaFactor();
 
     /**
      * The {@code beta} factor of the Vegas overload detection algorithm.
+     * The algorithm shrinks the limit once the estimated request queue is longer than
+     * this factor times {@code log10(current limit) + 1}, and holds the limit steady in between.
+     * <p>
+     * Must be greater than the {@code alpha} factor; the application fails to start otherwise.
      */
     @WithDefault("6")
     int betaFactor();
 
     /**
      * The probe factor of the Vegas overload detection algorithm.
+     * It controls how often the algorithm discards the lowest request time it has seen and
+     * measures against a fresh one; the higher the factor, the rarer that is.
+     * <p>
+     * Must be positive; the application fails to start otherwise.
      */
     @WithDefault("30.0")
     double probeFactor();
 
     /**
      * The initial limit of concurrent requests allowed.
+     * <p>
+     * Must be at least 1 and less than or equal to {@code max-limit}; the application fails
+     * to start otherwise.
      */
     @WithDefault("100")
     int initialLimit();

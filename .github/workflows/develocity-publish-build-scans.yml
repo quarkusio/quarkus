@@ -27,7 +27,7 @@ jobs:
           add-job-summary: true
       - name: Publish Maven Build Scans
         id: publish
-        uses: gradle/develocity-actions/maven-publish-build-scan@0e1f30c14ab56d0c1ecf229a0ffc3eb3e40e4642 # v2.2
+        uses: gradle/develocity-actions/maven-publish-build-scan@4b276bd81fb55e2fcbae724c48699de57e2156eb # v2.3
         with:
           develocity-url: 'https://ge.quarkus.io'
           develocity-access-key: ${{ secrets.GRADLE_ENTERPRISE_ACCESS_KEY }}

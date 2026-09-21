@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.jboss.logging.Logger;
 
@@ -47,6 +48,8 @@ import io.quarkus.devui.spi.page.Page;
 public class ExtensionsProcessor {
 
     private static final Logger log = Logger.getLogger(ExtensionsProcessor.class);
+
+    private final AtomicBoolean projectUnavailable = new AtomicBoolean();
 
     @BuildStep(onlyIf = IsLocalDevelopment.class)
     InternalPageBuildItem createExtensionsPages(ExtensionsBuildItem extensionsBuildItem, DevUIConfig config) {
@@ -189,7 +192,10 @@ public class ExtensionsProcessor {
                     return CompletableFuture.supplyAsync(() -> {
                         QuarkusProject project = getQuarkusProjectOrNull();
                         if (project == null) {
-                            return List.of();
+                            // This action gates the extension management UI: qwc-extensions.js only enables the
+                            // add extension button when this returns a result. An empty list is a result, so it
+                            // would offer extension management for a project whose catalog cannot be resolved.
+                            return null;
                         }
                         try {
                             QuarkusCommandOutcome outcome = new ListExtensions(project)
@@ -285,15 +291,24 @@ public class ExtensionsProcessor {
      * The extension management features depend on the Quarkus project and its extension catalog, which may not be
      * resolvable (offline, or a platform descriptor that is not available from the configured repositories). Listing
      * and managing extensions is a convenience of the Dev UI, so such a failure is reported as a warning and the
-     * actions return empty results instead of failing the call.
+     * actions degrade instead of failing the call.
+     * <p>
+     * {@link QuarkusProjectHelper} does not cache Maven projects, so every call pays for the resolution again,
+     * including the remote lookups that made it fail. The failure is therefore remembered for as long as this build
+     * step instance lives, which means it is retried on the next augmentation, i.e. on the next live reload.
      */
     private QuarkusProject getQuarkusProjectOrNull() {
+        if (projectUnavailable.get()) {
+            return null;
+        }
         try {
             return getQuarkusProject();
         } catch (RuntimeException e) {
-            log.warnf("The Quarkus project or its extension catalog could not be resolved, "
-                    + "the extension management features of the Dev UI are not available: %s", rootMessage(e));
-            log.debug("The Quarkus project or its extension catalog could not be resolved", e);
+            if (projectUnavailable.compareAndSet(false, true)) {
+                log.warnf("The Quarkus project or its extension catalog could not be resolved, "
+                        + "the extension management features of the Dev UI are not available: %s", rootMessage(e));
+                log.debug("The Quarkus project or its extension catalog could not be resolved", e);
+            }
             return null;
         }
     }

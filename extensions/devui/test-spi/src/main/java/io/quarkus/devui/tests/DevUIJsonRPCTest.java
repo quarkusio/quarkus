@@ -28,6 +28,7 @@ import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.JavaType;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.node.NullNode;
 import tools.jackson.databind.node.ObjectNode;
 
 public class DevUIJsonRPCTest {
@@ -169,7 +170,11 @@ public class DevUIJsonRPCTest {
                 ObjectNode json = (ObjectNode) new ObjectMapper().readTree(response.message());
                 JsonNode result = json.get("result");
                 if (result != null) {
-                    return result.get("object");
+                    JsonNode object = result.get("object");
+                    // An action that answers null is a valid response and the codec omits the field. Hand back a
+                    // node rather than null, otherwise the caller retries a response that was already consumed and
+                    // can only time out.
+                    return object == null ? NullNode.getInstance() : object;
                 }
             }
             return null;

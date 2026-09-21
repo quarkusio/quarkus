@@ -4,6 +4,8 @@ import java.util.Map;
 
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Assumptions;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -12,13 +14,16 @@ import io.quarkus.test.QuarkusDevModeTest;
 import tools.jackson.databind.JsonNode;
 
 /**
- * When the project and its extension catalog cannot be resolved, the extension management actions must degrade to
- * empty results instead of failing the JSON-RPC call.
+ * When the project and its extension catalog cannot be resolved, the extension management actions must degrade
+ * instead of failing the JSON-RPC call: the listings answer empty, {@code getInstalledNamespaces} answers null so
+ * that the Dev UI keeps the extension management UI hidden, and adding an extension answers false.
  */
 public class ExtensionsCatalogUnavailableTest extends DevUIJsonRPCTest {
 
     /**
-     * Pointing the registry client at a configuration file that does not exist makes every catalog resolution fail
+     * Pointing the registry client at a configuration file that does not exist makes every catalog resolution fail.
+     * This is read by {@code RegistriesConfigLocator} before any project or Maven work happens, so the actions fail
+     * where the reported issue fails them, before they can touch the build file of the surrounding project.
      */
     private static final String TOOLS_CONFIG = "quarkus.tools.config";
     private static final String PREVIOUS_TOOLS_CONFIG = System.getProperty(TOOLS_CONFIG);
@@ -32,6 +37,14 @@ public class ExtensionsCatalogUnavailableTest extends DevUIJsonRPCTest {
 
     public ExtensionsCatalogUnavailableTest() {
         super("devui-extensions");
+    }
+
+    @BeforeAll
+    static void requireTheConfigFileToBeConsulted() {
+        // QUARKUS_REGISTRIES short circuits RegistriesConfigLocator, which would leave the catalog resolvable and
+        // the failure uninjected.
+        Assumptions.assumeTrue(System.getenv("QUARKUS_REGISTRIES") == null,
+                "QUARKUS_REGISTRIES overrides the registry client configuration, the failure cannot be injected");
     }
 
     @AfterAll
@@ -59,16 +72,24 @@ public class ExtensionsCatalogUnavailableTest extends DevUIJsonRPCTest {
         Assertions.assertTrue(categories.isEmpty(), categories.toString());
     }
 
+    /**
+     * Not an empty list: the Dev UI enables extension management on any result this action returns.
+     */
     @Test
-    public void installedNamespacesAreEmptyWhenTheCatalogIsUnavailable() throws Exception {
+    public void installedNamespacesAreNullWhenTheCatalogIsUnavailable() throws Exception {
         JsonNode namespaces = executeJsonRPCMethod("getInstalledNamespaces");
         Assertions.assertNotNull(namespaces);
-        Assertions.assertTrue(namespaces.isArray(), namespaces.toString());
-        Assertions.assertTrue(namespaces.isEmpty(), namespaces.toString());
+        Assertions.assertTrue(namespaces.isNull(), namespaces.toString());
     }
 
     @Test
     public void addingAnExtensionFailsSoftlyWhenTheCatalogIsUnavailable() throws Exception {
+        // AddExtensions writes to the build file of the project it is given, which here is the module this test
+        // runs in. Only exercise it once the read only actions have shown that the catalog really is unavailable.
+        JsonNode installable = executeJsonRPCMethod("getInstallableExtensions");
+        Assumptions.assumeTrue(installable != null && installable.isArray() && installable.isEmpty(),
+                "The extension catalog resolved, the unavailable path cannot be exercised safely");
+
         JsonNode added = executeJsonRPCMethod("addExtension",
                 Map.of("extensionArtifactId", "io.quarkus:quarkus-rest"));
         Assertions.assertNotNull(added);

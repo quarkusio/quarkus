@@ -3,9 +3,9 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= Simplified Hibernate with Quarkus Data Hibernate
+= Quarkus Data Hibernate reference guide
 include::_attributes.adoc[]
-:summary: Hibernate is the de facto Jakarta Persistence implementation and offers you the full breadth of an Object Relational Mapper. It makes complex mappings possible, but it does not make simple and common mappings trivial. Quarkus Data Hibernate focuses on making your entities trivial and fun to write.
+:summary: Hibernate is the de facto Jakarta Persistence implementation and offers you the full breadth of an Object Relational Mapper. Quarkus Data Hibernate focuses on making simple and common mappings trivial.
 :config-file: application.properties
 :topics: data,hibernate-orm,hibernate-reactive,panache,sql,jdbc
 :extensions: io.quarkus:quarkus-data-hibernate,io.quarkus:quarkus-hibernate-orm,io.quarkus:quarkus-hibernate-reactive
@@ -14,6 +14,16 @@ include::_attributes.adoc[]
 
 Quarkus Data Hibernate is the perfect solution if you want to get started using Hibernate in Quarkus.
 
+If you are new to Quarkus Data Hibernate, start with the
+xref:quarkus-data-hibernate-getting-started.adoc[Quarkus Data Hibernate getting started tutorial].
+For native SQL queries, see the
+xref:quarkus-data-hibernate-sql.adoc[Quarkus Data Hibernate native SQL tutorial].
+
+This guide does not go into the specifics of using either
+xref:hibernate-orm.adoc[Hibernate ORM], or its underlying
+link:{jakarta-persistence-spec-url}[Jakarta Persistence specification].
+Refer to their documentation for more in-depth knowledge.
+
 include::{includes}/extension-status.adoc[]
 
 WARNING: This extension is currently experimental, so its API may change, in particular names of
@@ -21,176 +31,36 @@ classes or packages may change, even the module name. We are in the process of m
 to obtain public feedback, so please report feedback either on link:https://quarkusio.zulipchat.com/#narrow/channel/187038-dev/topic/WG.20-.20Panache.2ENext/with/562916276[Zulip]
 or via link:https://github.com/orgs/quarkusio/projects/50/views/1[GitHub issues].
 
-== Walk-through
+== Installation
 
-Let's take a progressive approach to learning how to use Quarkus Data Hibernate, and start with a simple entity.
+Quarkus Data Hibernate uses an annotation processor to inspect your entities and repository interfaces at build time.
+It validates repository methods and queries, then generates the repository implementations that Quarkus makes
+available as CDI beans. This catches many mapping and query errors during the build instead of at runtime.
 
-This guide is not going to go into the specifics of using either
-xref:hibernate-orm.adoc[Hibernate], or its underlying
-link:{jakarta-persistence-spec-url}[Jakarta Persistence specification],
-because both already have great documentation that you can and should use for more in-depth knowledge.
+To add the required extensions and database driver, configure the datasource, and enable the annotation processor,
+follow the xref:quarkus-data-hibernate-getting-started.adoc[Quarkus Data Hibernate getting started tutorial].
 
-== Importing the extension, and configuration
+== Entities
 
-[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
-.pom.xml
-----
-<!-- Import the Quarkus Data Hibernate extension -->
-<dependency>
-    <groupId>io.quarkus</groupId>
-    <artifactId>quarkus-data-hibernate</artifactId>
-</dependency>
-<!-- Pick your database driver -->
-<dependency>
-    <groupId>io.quarkus</groupId>
-    <artifactId>quarkus-jdbc-postgresql</artifactId>
-</dependency>
-----
+An entity is a Java class that represents data stored in a database. Typically, the class maps to a table, each entity
+instance maps to a row, and its fields map to columns. Quarkus Data Hibernate works with entities defined using
+Jakarta Persistence annotations.
 
-[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
-.build.gradle
-----
-// Import the Quarkus Data Hibernate extension
-implementation("io.quarkus:quarkus-data-hibernate")
-
-// Pick your database driver
-implementation("io.quarkus:quarkus-jdbc-postgresql")
-----
-
-You also have to configure the Hibernate processor, which is required:
-
-[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
-.pom.xml
-----
-<plugin>
-    <artifactId>maven-compiler-plugin</artifactId>
-    <configuration>
-        <!-- This setting is required for the annotation processor dependencies to be managed by Quarkus.
-             More information is available in Maven compiler plugin documentation:
-             https://maven.apache.org/plugins/maven-compiler-plugin/compile-mojo.html#annotationProcessorPathsUseDepMgmt -->
-        <annotationProcessorPathsUseDepMgmt>true</annotationProcessorPathsUseDepMgmt>
-        <annotationProcessorPaths>
-            <path>
-                <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-data-processor</artifactId>
-                <!-- Note, no artifact version is required, it's managed by Quarkus.  -->
-            </path>
-            <!-- other processors that may be required by your app -->
-        </annotationProcessorPaths>
-        <!-- Other compiler plugin configuration options -->
-    </configuration>
-</plugin>
-----
-
-[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
-.build.gradle
-----
-// Enforce the version management of your annotation processor dependencies,
-// so that there's no need to define an explicit version of the quarkus-data-processor
-annotationProcessor enforcedPlatform("${quarkusPlatformGroupId}:${quarkusPlatformArtifactId}:${quarkusPlatformVersion}")
-annotationProcessor 'io.quarkus:quarkus-data-processor'
-----
-
-TIP: You can use any of the xref:hibernate-orm.adoc#setting-up-and-configuring-hibernate-orm[supported JDBC drivers].
-
-Add the relevant configuration properties in `{config-file}`.
-
-[source,properties]
-.Example `{config-file}`
-----
-quarkus.datasource.db-kind = postgresql <1>
-
-%prod.quarkus.datasource.username = hibernate
-%prod.quarkus.datasource.password = hibernate
-%prod.quarkus.datasource.jdbc.url = jdbc:postgresql://localhost:5432/hibernate_db
-%prod.quarkus.hibernate-orm.schema-management.strategy=create <2>
-----
-<1> xref:datasource.adoc[Configure the datasource] for production, relying on xref:datasource#dev-services[Dev Services] for connection information in tests / dev mode.
-<2> Configure Hibernate ORM to create the schema on startup in production, which is useful for experimentation, but rely on xref:hibernate-orm.adoc#dev-mode[convenient defaults in tests / dev mode].
-
-== Our first entity
-
-What this guide will focus on is the basics of how to use Quarkus Data Hibernate, so let's start with how to
-create an entity:
-
-[source,java]
-----
-import io.quarkus.data.hibernate.ManagedEntity;
-import jakarta.persistence.Entity;
-
-import java.time.LocalDate;
-
-@Entity
-public class Cat extends ManagedEntity {
-    public String name;
-    public LocalDate birth;
-    public Breed breed;
-
-    public enum Breed {
-        CUTE, HAIRLESS;
-    }
-}
-----
+=== Defining an entity
 
 In order to map a Java class to a Database table, just:
 
-- Write a class
-- Annotate it with link:{jakarta-persistence-javadocs-url}/jakarta/persistence/entity[`@Entity`]
-- Make it extend `ManagedEntity`
-- Make its fields `public`
-
-And that's it, now you can start creating instances of your entity, persist it to your database, after which point
-all changes to its fields will be automatically sent to the database (no need for any explicit `update` instruction),
-and even remove it from the database:
-
-[source,java]
-----
-import jakarta.transaction.Transactional;
-
-import java.time.LocalDate;
-import java.util.List;
-
-public class Code {
-
-    @Transactional <1>
-    public void method() {
-        Cat cat = new Cat();
-        cat.name = "Lucky";
-        cat.birth = LocalDate.of(2015, 01, 12);
-        cat.breed = Cat.Breed.CUTE;
-
-        // Persist the cat
-        cat.persist();
-
-        // Make a change, no need to update it
-        cat.name = "Luckynou";
-
-        // Delete our cat
-        cat.delete();
-    }
-}
-----
-<1> This is required on any method which interacts with the database, in order to run the operations in a transaction.
-
-== Our first repository
-
-Now that we know how to create, update and delete our entities, let's see how we can query our database to find them,
-or even run delete queries.
-
-Because query operations do not belong on instances of our entities, we will place these operations on another type
-called a `Repository`, and because those queries are intimately tied with the entities they operate on, we recommend
-placing them on an interface nested in the entity:
+- Write a class.
+- Annotate it with link:{jakarta-persistence-javadocs-url}/jakarta/persistence/entity[`@Entity`].
+- Make it extend `ManagedEntity`.
+- Make its fields `public`.
 
 [source,java]
 ----
 import io.quarkus.data.hibernate.ManagedEntity;
-import io.quarkus.data.hibernate.ManagedRepository;
 import jakarta.persistence.Entity;
-import org.hibernate.annotations.processing.Find;
-import org.hibernate.annotations.processing.HQL;
 
 import java.time.LocalDate;
-import java.util.List;
 
 @Entity
 public class Cat extends ManagedEntity {
@@ -201,259 +71,20 @@ public class Cat extends ManagedEntity {
     public enum Breed {
         CUTE, HAIRLESS;
     }
-
-    public interface Repo extends ManagedRepository<Cat> {
-        @Find
-        Cat findByName(String name);
-
-        @HQL("where breed = CUTE")
-        List<Cat> findCute();
-
-        @HQL("delete from Cat where name = :name")
-        long deleteByName(String name);
-
-        @HQL("delete from Cat where breed = HAIRLESS")
-        long deleteHairless();
-    }
 }
 ----
 
-A Quarkus Data Hibernate repository is:
-
-- An interface nested in the entity (though it could be a toplevel interface if you prefer)
-- Which extends the `ManagedRepository` interface, with the entity in question as type parameter
-- And contains query methods, annotated with either `@Find` or `@HQL` or even `@SQL` (for native queries), or
-  `default` methods with implementation of queries
-
-You can use `@Find` methods to find single instances, or collections of entities, by using the parameters of the
-method to build a query. The Hibernate documentation has
-https://docs.jboss.org/hibernate/orm/7.1/introduction/html_single/Hibernate_Introduction.html#generated-finder-methods[all the information you need about this].
-
-.A few common examples
-[source,java]
-----
-@Find
-public List<Cat> findAllCats(); <1>
-
-@Find
-public long countAllCats(); <2>
-
-@Find
-public Cat findCatByNameAndBreed(String name, Breed breed); <3>
-----
-<1> Finder methods may return collections of entities
-<2> Or generate `COUNT` queries
-<3> Or single entities, and any number of parameters which must all match the queried entities.
-
-Alternately, you can use `@HQL` or `@SQL` queries, which support HQL and SQL queries. Once again
-the Hibernate documentation has https://docs.jboss.org/hibernate/orm/7.1/introduction/html_single/Hibernate_Introduction.html#generated-query-methods[all the information you need].
-
-.A few common examples
-[source,java]
-----
-@HQL("from Cat")
-public List<Cat> findAllCats(); <1>
-
-@HQL("select min(birth) from Cat")
-public LocalDate oldestCat(); <2>
-
-@HQL("where name = :name and breed = :breed")
-public Cat findCatByNameAndBreed(String name, Breed breed); <3>
-----
-<1> Query methods may return collections of entities
-<2> Or projections of a single column, even multiple columns with `Object[]` and `List<Object[]>` types
-<3> Queries can of course refer to method parameters.
-
-The beauty of generated finder and query methods is that they are type-checked at build time: they will be validated
-and guarantee that you did not make any typo in the entity names, their fields, the HQL/SQL syntax, or the name of
-their parameters.
-
-=== Using the repository
-
-Using the repository can be done by simply injecting it where you intend to use it:
-
-[source,java]
-----
-import jakarta.inject.Inject;
-import jakarta.transaction.Transactional;
-
-import java.time.LocalDate;
-import java.util.List;
-
-public class Code {
-
-    @Inject
-    Cat.Repo repo;
-
-    @Transactional
-    public void method() {
-        Cat cat = new Cat();
-        cat.name = "Lucky";
-        cat.birth = LocalDate.of(2015, 01, 12);
-        cat.breed = Cat.Breed.CUTE;
-
-        // Persist the cat
-        cat.persist();
-
-        // Make a change, no need to update it
-        cat.name = "Luckynou";
-
-        // Find our cat
-        cat = repo.findByName("Luckynou");
-
-        // Find cute cats
-        List<Cat> cuteCats = repo.findCute();
-
-        // Delete our cat
-        cat.delete();
-
-        // Delete queries
-        repo.deleteByName("Lucky");
-        repo.deleteHairless();
-    }
-}
-----
-
-Now, as an added benefit, you can also access the repository using a handy shortcut generated static method on the
-https://docs.jboss.org/hibernate/orm/7.1/introduction/html_single/Hibernate_Introduction.html#static-metamodel[generated Metamodel]
-of your entity, which is super useful for discovery of operations (just type `Cat_.repo().` and see all your methods)
-and to avoid making a detour outside of your method to add an injected field, such as in this startup code that
-will delete all your cats (don't do this in production!!):
-
-[source,java]
-----
-import io.quarkus.runtime.Startup;
-import jakarta.transaction.Transactional;
-
-public class OnStart {
-    @Startup
-    @Transactional
-    public void startupMethod() {
-        Cat_.repo().deleteAll();
-    }
-}
-----
-
-All the repositories you define as nested interfaces of your entity will be available under their generated metamodel
-class under accessor methods of the same name as the repository. This is strictly equivalent to injecting the repository
-type, and in fact uses CDI under the hood to look up the repository.
-
-== The `ManagedRepository` super type
-
-Just like in previous versions of Hibernate ORM and Hibernate Reactive with Panache, the `ManagedRepository` type comes
-packed with most of the operations you need to work on your entity, such as, out of the box:
-
-[source,java]
-----
-import io.quarkus.data.hibernate.blocking.BlockingDataQuery;
-import jakarta.data.Order;
-import jakarta.data.Sort;
-import jakarta.inject.Inject;
-import jakarta.transaction.Transactional;
-import org.hibernate.Session;
-
-import java.time.LocalDate;
-import java.util.List;
-import java.util.Optional;
-
-public class Code {
-
-    @Inject
-    Cat.Repo repo;
-
-    @Transactional
-    public void repositoryOperations(Cat cat) {
-        // entity operations
-        repo.persist(cat);
-        repo.delete(cat);
-        boolean isPersistent = repo.isPersistent(cat);
-        // operations on all entities
-        long count = repo.count();
-        long deleted = repo.deleteAll();
-        List<Cat> allCats = repo.listAll();
-        repo.streamAll().forEach(kitty -> kitty.name = kitty.name.toUpperCase());
-        PanacheBlockingQuery<Cat> catQuery = repo.findAll();
-        List<Cat> sortedCats = repo.findAll().sort(Sort.asc("name")).list();
-        // operations on the Hibernate session
-        repo.flush();
-        Session session = repo.getSession();
-        // ID-related operations
-        boolean wasDeleted = repo.deleteById(cat.id);
-        Cat foundCat = repo.findById(cat.id);
-        Optional<Cat> optionalCat = repo.findByIdOptional(cat.id);
-    }
-}
-----
-
-== Non-type-safe queries
-
-With generated finder and query methods, as we've previously shown, everything is validated at build-time, but if
-you want to write non-type-safe queries, you can always use the provided methods of `ManagedRepository`:
-
-[source,java]
-----
-import io.quarkus.data.hibernate.blocking.BlockingDataQuery;
-import jakarta.data.Order;
-import jakarta.data.Sort;
-import jakarta.inject.Inject;
-import jakarta.transaction.Transactional;
-import org.hibernate.Session;
-
-import java.time.LocalDate;
-import java.util.List;
-import java.util.Optional;
-
-public class Code {
-
-    @Inject
-    Cat.Repo repo;
-
-    @Transactional
-    public void nonTypeSafeQueries() {
-        // Find a cat by name
-        Cat cat = repo.find(Cat_.NAME, "Lucky").singleResult();
-        // All cute cats
-        List<Cat> cuteCats = repo.list(Cat_.BREED, Cat.Breed.CUTE);
-        // Cats with no known birth date
-        repo.stream(Cat_.BIRTH+" is null").forEach(kitty -> System.err.println(kitty));
-        // Get rid of non-cute cats
-        long deleted = repo.delete(Cat_.BREED, Cat.Breed.HAIRLESS);
-        // Count ugly cats with no name
-        repo.count("breed = ?1 and name is null", Cat.Breed.HAIRLESS);
-        // Make every cat cute
-        repo.update("breed = CUTE");
-        // Sort results using PanacheQuery
-        List<Cat> sortedByName = repo.findAll().sort(Sort.asc("name")).list();
-        List<Cat> sortedMatches = repo.find("breed = ?1", Cat.Breed.CUTE)
-                .sort(Sort.desc("name"))
-                .list();
-    }
-}
-----
-
-Sorting is applied on the `PanacheQuery` returned by `find()` and `findAll()`, not on the shortcut
-`list()`, `listAll()`, `stream()`, or `streamAll()` methods. For a single criterion, pass a `Sort`
-directly — there is no need to wrap it in `Order.by()`. Use `Order` only when you need multiple
-criteria, or when receiving an `Order` from a REST endpoint:
-
-[source,java]
-----
-List<Cat> byName = repo.findAll().sort(Sort.asc("name")).list();
-List<Cat> byNameThenBirth = repo.findAll()
-        .sort(Order.by(Sort.asc("name"), Sort.desc("birth")))
-        .list();
-----
+Instances of `ManagedEntity` are managed by Hibernate ORM. After an instance is persisted, changes to its fields are
+automatically sent to the database without an explicit `update` instruction.
 
 [[about-entity-identifiers]]
-== About entity identifiers
+=== Entity identifiers
 
-In the example above, we extended the `ManagedEntity` type, and did not define any database identifier, that's
-because `ManagedEntity` comes with a default generated database identifier, so you don't have to worry about it. It
-does this by extending the `WithId.AutoLong` class, which provides a generated database identifier of type `Long`.
+`ManagedEntity` comes with a default generated database identifier because it extends `WithId.AutoLong`, which
+provides a generated database identifier of type `Long`.
 
-You can choose to extend the `WithId.AutoString` for a `String` identifier, `WithId.AutoUUID` for a `UUID`
-identifier, or `WithId.AutoUUIDv7` for a Unique by time sortable `UUID`
-identifier to automatically get an attribute of the form:
+You can choose to extend `WithId.AutoString` for a `String` identifier, `WithId.AutoUUID` for a `UUID` identifier,
+or `WithId.AutoUUIDv7` for a unique, time-sortable `UUID` identifier. These types provide an attribute of the form:
 
 [source,java]
 ----
@@ -461,55 +92,29 @@ identifier to automatically get an attribute of the form:
 public IdType id;
 ----
 
-WARNING: The identifier will not be automatically generated in this case, so you will have to set its value manually
-on creation.
+WARNING: The identifier will not be automatically generated in this case, so you have to set its value manually on creation.
 
-Naturally, you can also provide your own database identifier explicitly and implement the `ManagedEntity.CustomId`
-interface in your entity, as well as use the `ManagedRepository.CustomId` interface for your repository, in order to
-specify you database identifier type:
+You can also provide your own database identifier explicitly and implement the `ManagedEntity.CustomId` interface in
+your entity, as well as use the `ManagedRepository.CustomId` interface for your repository, to specify the database
+identifier type:
 
 [source,java]
 ----
-import io.quarkus.data.hibernate.ManagedEntity;
-import io.quarkus.data.hibernate.ManagedRepository;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import org.hibernate.annotations.processing.Find;
-import org.hibernate.annotations.processing.HQL;
-
-import java.time.LocalDate;
-import java.util.List;
-
 @Entity
 public class CatWithId implements ManagedEntity.CustomId {
     @Id
     public String id;
     public String name;
-    public LocalDate birth;
-    public Breed breed;
-
-    public enum Breed {
-        CUTE, HAIRLESS;
-    }
 
     public interface Repo extends ManagedRepository.CustomId<CatWithId, String> {
         @Find
         CatWithId findByName(String name);
-
-        @HQL("where breed = CUTE")
-        List<CatWithId> findCute();
-
-        @HQL("delete from Cat where name = :name")
-        long deleteByName(String name);
-
-        @HQL("delete from Cat where breed = HAIRLESS")
-        long deleteHairless();
     }
 }
 ----
 
-Here is a list of entity supertypes you can use and the ID type they provide, but keep in mind you do not have to
-extend any of these types if you define you own ID:
+The following entity supertypes provide an identifier. You do not have to extend one of these types if you define your
+own identifier:
 
 [cols="1,1,1"]
 |===
@@ -537,31 +142,19 @@ extend any of these types if you define you own ID:
 
 |===
 
-== Use stateless sessions
+== Repositories
 
-Out of the box, your subtype of `ManagedEntity` will be managed by Hibernate ORM, and every change to the entity will
-be automatically sent to the database without requiring any explicit `update` operation.
+A Quarkus Data Hibernate repository is:
 
-If on the other hand, you wish to make every `update` operation explicit, then you need to use what Hibernate ORM calls
-a _stateless session_.
-
-In this case, you need to extend the `RecordEntity` class and extend the
-`RecordRepository` interface:
+- An interface nested in the entity (though it could be a top-level interface if you prefer)
+- Which extends the `ManagedRepository` interface, with the entity in question as type parameter
+- And contains query methods, annotated with either `@Find` or `@HQL` or even `@SQL` (for native queries), or
+`default` methods with implementation of queries
 
 [source,java]
 ----
-import io.quarkus.data.hibernate.RecordEntity;
-import io.quarkus.data.hibernate.RecordRepository;
-import io.quarkus.data.hibernate.WithId;
-import jakarta.persistence.Entity;
-import org.hibernate.annotations.processing.Find;
-import org.hibernate.annotations.processing.HQL;
-
-import java.time.LocalDate;
-import java.util.List;
-
 @Entity
-public class Cat extends RecordEntity {
+public class Cat extends ManagedEntity {
     public String name;
     public LocalDate birth;
     public Breed breed;
@@ -570,7 +163,7 @@ public class Cat extends RecordEntity {
         CUTE, HAIRLESS;
     }
 
-    public interface Repo extends RecordRepository<Cat, Long> {
+    public interface Repo extends ManagedRepository<Cat> {
         @Find
         Cat findByName(String name);
 
@@ -586,344 +179,224 @@ public class Cat extends RecordEntity {
 }
 ----
 
-As you can see, your entity definition is exactly the same, besides the two interfaces. But now, your entities will
-not be _managed_, so every update operation has to be explicit:
+=== Generated finder and query methods
+
+You can use `@Find` methods to find single instances or collections of entities by using the parameters of the method
+to build a query. The Hibernate documentation contains the complete
+link:https://docs.jboss.org/hibernate/orm/{hibernate-orm-version-major-minor}/introduction/html_single/Hibernate_Introduction.html#generated-finder-methods[generated finder method reference].
+
+.A few common examples
+[source,java]
+----
+@Find
+List<Cat> findAllCats(); <1>
+
+@Find
+long countAllCats(); <2>
+
+@Find
+Cat findCatByNameAndBreed(String name, Breed breed); <3>
+----
+<1> Finder methods may return collections of entities
+<2> Or generate `COUNT` queries
+<3> Or single entities, and any number of parameters which must all match the queried entities.
+
+Alternately, you can use `@HQL` or `@SQL` queries, which support HQL and SQL queries. The Hibernate documentation contains the complete
+link:https://docs.jboss.org/hibernate/orm/{hibernate-orm-version-major-minor}/introduction/html_single/Hibernate_Introduction.html#generated-query-methods[generated query method reference].
+
+.Examples of `@HQL` or `@SQL` usage
+[source,java]
+----
+@HQL("from Cat")
+List<Cat> findAllCats(); <1>
+
+@HQL("select min(birth) from Cat")
+LocalDate oldestCat(); <2>
+
+@HQL("where name = :name and breed = :breed")
+Cat findCatByNameAndBreed(String name, Breed breed); <3>
+----
+<1> Query methods may return collections of entities
+<2> Or projections of a single column, even multiple columns with `Object[]` and `List<Object[]>` types
+<3> Queries can of course refer to method parameters.
+
+Generated finder and HQL query methods are type-checked at build time. They are validated for entity names, fields,
+HQL syntax, and parameter names. Native SQL is validated by the database when the query is executed; see the
+xref:quarkus-data-hibernate-sql.adoc[native SQL tutorial].
+
+=== How to use a Repository
+
+Repositories are CDI beans and can be injected where you intend to use them:
 
 [source,java]
 ----
-import jakarta.inject.Inject;
-import jakarta.transaction.Transactional;
-import org.hibernate.StatelessSession;
+@Inject
+Cat.Repo repo;
 
-import java.time.LocalDate;
-import java.util.List;
+@Transactional
+public void method() {
+    Cat cat = new Cat();
+    cat.name = "Lucky";
+    cat.birth = LocalDate.of(2015, 01, 12);
+    cat.breed = Cat.Breed.CUTE;
 
-public class Code {
+    // Persist the cat
+    cat.persist();
 
-    @Inject
-    Cat.Repo repo;
+    // Make a change, no need to update it
+    cat.name = "Luckynou";
 
-    @Transactional
-    public void method() {
-        Cat cat = new Cat();
-        cat.name = "Lucky";
-        cat.birth = LocalDate.of(2015, 01, 12);
-        cat.breed = Cat.Breed.CUTE;
+    // Find our cat
+    cat = repo.findByName("Luckynou");
 
-        // Persist the cat
-        cat.insert();
+    // Find cute cats
+    List<Cat> cuteCats = repo.findCute();
 
-        // Make a change, we need to update it
-        cat.name = "Luckynou";
-        cat.update();
+    // Delete our cat
+    cat.delete();
 
-        // Find our cat
-        cat = repo.findByName("Luckynou");
-
-        // Find cute cats
-        List<Cat> cuteCats = repo.findCute();
-
-        // Delete our cat
-        cat.delete();
-
-        // Delete queries
-        repo.deleteByName("Lucky");
-        repo.deleteHairless();
-    }
+    // Delete queries
+    repo.deleteByName("Lucky");
+    repo.deleteHairless();
 }
 ----
 
-As you can see, the only differences with a managed entity are:
+You can also access a nested repository by using a generated static method on the
+link:https://docs.jboss.org/hibernate/orm/{hibernate-orm-version-major-minor}/introduction/html_single/Hibernate_Introduction.html#static-metamodel[generated metamodel]
+of your entity:
 
-- Any change to the entity instance fields must be explicitly pushed to the database by calling `update()` either on
-the entity or its repository
-- You need to call `insert()` instead of `persist()` to insert the entity in the database
-- Your session will be of type `StatelessSession` instead of `Session`.
+[source,java]
+----
+Cat_.repo().deleteAll();
+----
 
-But that's mostly it. Everything else stays the same, in particular for queries and how to obtain entities.
+All repositories defined as nested interfaces of an entity are available under their generated metamodel class through
+accessor methods with the same name as the repository. This is equivalent to injecting the repository type and uses CDI
+under the hood to look up the repository.
 
-TIP: If you're using stateless sessions, you can also use the <<Jakarta Data>> type of repositories.
+=== The `ManagedRepository` supertype
+
+The `ManagedRepository` type provides most of the operations needed to work with an entity, such as `persist()`,
+`delete()`, `isPersistent()`, and `listAll()`.
+
+Here is an example of how it can be used:
+
+[source,java]
+----
+@Inject
+Cat.Repo repo;
+
+@Transactional
+public void repositoryOperations(Cat cat) {
+    // entity operations
+    repo.persist(cat);
+    repo.delete(cat);
+    boolean isPersistent = repo.isPersistent(cat);
+    // operations on all entities
+    long count = repo.count();
+    long deleted = repo.deleteAll();
+    List<Cat> allCats = repo.listAll();
+    repo.streamAll().forEach(kitty -> kitty.name = kitty.name.toUpperCase());
+    BlockingDataQuery<Cat> catQuery = repo.findAll();
+    List<Cat> sortedCats = repo.findAll().sort(Sort.asc("name")).list();
+    // operations on the Hibernate session
+    repo.flush();
+    Session session = repo.getSession();
+    // ID-related operations
+    boolean wasDeleted = repo.deleteById(cat.id);
+    Cat foundCat = repo.findById(cat.id);
+    Optional<Cat> optionalCat = repo.findByIdOptional(cat.id);
+}
+----
+
+=== Dynamically built queries
+
+When defining finder and query operations on a repository, queries are validated and generated at build time. If you
+need to construct a query dynamically, use the query methods provided by `ManagedRepository`. These methods accept
+query strings, so they are not type-safe.
+
+[source,java]
+----
+@Inject
+Cat.Repo repo;
+
+@Transactional
+public void nonTypeSafeQueries() {
+    // Find a cat by name
+    Cat cat = repo.find(Cat_.NAME, "Lucky").singleResult();
+    // All cute cats
+    List<Cat> cuteCats = repo.list(Cat_.BREED, Cat.Breed.CUTE);
+    // Cats with no known birth date
+    repo.stream(Cat_.BIRTH + " is null").forEach(kitty -> System.err.println(kitty));
+    // Get rid of non-cute cats
+    long deleted = repo.delete(Cat_.BREED, Cat.Breed.HAIRLESS);
+    // Count ugly cats with no name
+    repo.count("breed = ?1 and name is null", Cat.Breed.HAIRLESS);
+    // Make every cat cute
+    repo.update("breed = CUTE");
+    // Sort results using BlockingDataQuery
+    List<Cat> sortedByName = repo.findAll().sort(Sort.asc("name")).list();
+    List<Cat> sortedMatches = repo.find("breed = ?1", Cat.Breed.CUTE)
+            .sort(Sort.desc("name"))
+            .list();
+}
+----
+
+Sorting is applied on the `BlockingDataQuery` returned by `find()` and `findAll()`, not on the shortcut `list()`,
+`listAll()`, `stream()`, or `streamAll()` methods. For a single criterion, pass a `Sort` directly. Use `Order` only
+when you need multiple criteria, or when receiving an `Order` from a REST endpoint:
+
+[source,java]
+----
+List<Cat> byName = repo.findAll().sort(Sort.asc("name")).list();
+List<Cat> byNameThenBirth = repo.findAll()
+        .sort(Order.by(Sort.asc("name"), Sort.desc("birth")))
+        .list();
+----
+
+== Session and access models
+
+Quarkus Data Hibernate supports managed and stateless sessions with blocking and reactive APIs.
+
+[[use-stateless-sessions]]
+=== Stateless sessions
+
+Subtypes of `ManagedEntity` are managed by Hibernate ORM, and changes to the entity are automatically sent to the
+database without requiring an explicit `update` operation.
+
+To make every update operation explicit, use a Hibernate ORM _stateless session_. Extend `RecordEntity` for the entity
+and `RecordRepository` for its repository. Compared with a managed entity:
+
+- Changes to entity fields must be explicitly pushed to the database by calling `update()` on the entity or repository.
+- Call `insert()` instead of `persist()` to insert the entity.
+- The session type is `StatelessSession` instead of `Session`.
+
+Queries and the way you obtain entities remain the same. Stateless sessions can also use <<jakarta-data,Jakarta Data repositories>>.
 
 [[lets-get-reactive]]
-== Let's get reactive
+=== Reactive access
 
-You want to start using your entities in a reactive application? Let's start by importing Hibernate Reactive in your
-`pom.xml` as well as a data source for your database:
+For reactive access:
 
-[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
-.pom.xml
-----
-<!-- Enable Hibernate Reactive support -->
-<dependency>
-    <groupId>io.quarkus</groupId>
-    <artifactId>quarkus-hibernate-reactive</artifactId>
-</dependency>
-<!-- Pick your database reactive driver -->
-<dependency>
-    <groupId>io.quarkus</groupId>
-    <artifactId>quarkus-reactive-pg-client</artifactId>
-</dependency>
-<!-- FIXME: this will not be required in the future -->
-<dependency>
-    <groupId>io.quarkus</groupId>
-    <artifactId>quarkus-hibernate-reactive-panache-common</artifactId>
-</dependency>
-----
+- The entity extends `ManagedEntity.Reactive`.
+- The repository extends `ManagedRepository.Reactive`.
+- Operations return `Uni<T>` instead of `T`, which is the standard Mutiny reactive type.
+- Use `@WithTransaction` in place of `@Transactional` and compose operations as usual with Mutiny.
 
-[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
-.build.gradle
-----
-// Enable Hibernate Reactive support
-implementation("io.quarkus:quarkus-hibernate-reactive")
-// Pick your database reactive driver
-implementation("io.quarkus:quarkus-reactive-pg-client")
-// FIXME: this will not be required in the future
-implementation("io.quarkus:quarkus-hibernate-reactive-panache-common")
-----
+[[reactive-and-stateless]]
+==== Reactive stateless sessions
 
-TIP: You can use any of the xref:hibernate-reactive.adoc#hr-getting-started[supported reactive drivers].
+Use `RecordEntity.Reactive` and `RecordRepository.Reactive` for reactive stateless sessions. Changes must be explicitly
+pushed by calling `update()`, and insertion uses `insert()` instead of `persist()`.
 
-Make sure you configure your reactive datasource in your `application.properties` (although you don't have to in DEV
-mode: if you don't, a dev service will be provided for you):
+The xref:quarkus-data-hibernate-getting-started.adoc#reactive[getting started tutorial] describes the
+required dependencies and reactive datasource configuration. You can use any of the
+xref:hibernate-reactive.adoc#hr-getting-started[supported reactive drivers].
 
-[source,properties]
-----
-quarkus.datasource.username = quarkus_test
-quarkus.datasource.password = quarkus_test
-quarkus.datasource.reactive.url = vertx-reactive:postgresql://localhost/quarkus_test
-----
+=== Alternative entity and repository accessors
 
-Now, in your code, the only differences with a regular managed session entity are:
-
-- Your entity extends `ManagedEntity.Reactive`
-- Your repository extends `ManagedRepository.Reactive`
-- All the operations return a `Uni<T>` instead of `T`, which is the standard Mutiny reactive type
-
-[source,java]
-----
-import io.quarkus.data.hibernate.ManagedEntity;
-import io.quarkus.data.hibernate.ManagedRepository;
-import io.quarkus.data.hibernate.WithId;
-import io.smallrye.mutiny.Uni;
-import jakarta.persistence.Entity;
-import org.hibernate.annotations.processing.Find;
-import org.hibernate.annotations.processing.HQL;
-
-import java.time.LocalDate;
-import java.util.List;
-
-@Entity
-public class Cat extends ManagedEntity.Reactive {
-    public String name;
-    public LocalDate birth;
-    public Breed breed;
-
-    public enum Breed {
-        CUTE, HAIRLESS;
-    }
-
-    public interface Repo extends ManagedRepository.Reactive<Cat> {
-        @Find
-        Uni<Cat> findByName(String name);
-
-        @HQL("where breed = CUTE")
-        Uni<List<Cat>> findCute();
-
-        @HQL("delete from Cat where name = :name")
-        Uni<Integer> deleteByName(String name);
-
-        @HQL("delete from Cat where breed = HAIRLESS")
-        Uni<Integer> deleteHairless();
-    }
-}
-----
-
-And now when you want to use your entity or its repository, besides using `@WithTransaction` in place of
-`@Transactional`, you have to compose operations as you normally do in reactive code with Mutiny, but the operations are
-exactly the same otherwise:
-
-[source,java]
-----
-import io.quarkus.hibernate.reactive.panache.common.WithTransaction;
-import io.smallrye.mutiny.Uni;
-import jakarta.inject.Inject;
-
-import java.time.LocalDate;
-import java.util.List;
-import java.util.Optional;
-
-public class Code {
-
-    @Inject
-    Cat.Repo repo;
-
-    @WithTransaction
-    public Uni<Void> method() {
-        Cat cat = new Cat();
-        cat.name = "Lucky";
-        cat.birth = LocalDate.of(2015, 01, 12);
-        cat.breed = Cat.Breed.CUTE;
-
-        // Persist the cat
-        return cat.persist()
-                // Make a change, no need to update it
-                .invoke(() -> cat.name = "Luckynou")
-                // Find our cat
-                .chain(() -> repo.findByName("Luckynou"))
-                // Find cute cats
-                .chain((Cat foundCat) -> repo.findCute())
-                // Delete our cat
-                .chain((List<Cat> cuteCats) -> cat.delete())
-                // Delete queries
-                .chain(v -> repo.deleteByName("Lucky"))
-                .chain((Integer deletedCount) -> repo.deleteHairless())
-                .replaceWithVoid();
-    }
-}
-----
-
-== Reactive and stateless
-
-If you want to manage manually your entity changes, then you can use a stateless session by switching to
-the `RecordEntity.Reactive` for your entity, and `RecordRepository.Reactive`:
-
-[source,java]
-----
-import io.quarkus.data.hibernate.RecordEntity;
-import io.quarkus.data.hibernate.RecordRepository;
-import io.quarkus.data.hibernate.WithId;
-import io.smallrye.mutiny.Uni;
-import jakarta.persistence.Entity;
-import org.hibernate.annotations.processing.Find;
-import org.hibernate.annotations.processing.HQL;
-
-import java.time.LocalDate;
-import java.util.List;
-
-@Entity
-public class Cat extends RecordEntity.Reactive {
-    public String name;
-    public LocalDate birth;
-    public Breed breed;
-
-    public enum Breed {
-        CUTE, HAIRLESS;
-    }
-
-    public interface Repo extends RecordRepository.Reactive<Cat> {
-        @Find
-        Uni<Cat> findByName(String name);
-
-        @HQL("where breed = CUTE")
-        Uni<List<Cat>> findCute();
-
-        @HQL("delete from Cat where name = :name")
-        Uni<Integer> deleteByName(String name);
-
-        @HQL("delete from Cat where breed = HAIRLESS")
-        Uni<Integer> deleteHairless();
-    }
-}
-----
-
-And for your usage code, the only change is the standard use of manually calling `update()`, and using `insert()`
-instead of `persist()`:
-
-[source,java]
-----
-import io.quarkus.hibernate.reactive.panache.common.WithTransaction;
-import io.smallrye.mutiny.Uni;
-import jakarta.inject.Inject;
-
-import java.time.LocalDate;
-import java.util.List;
-
-public class Code {
-
-    @Inject
-    Cat.Repo repo;
-
-    @WithTransaction
-    public Uni<Void> method() {
-        Cat cat = new Cat();
-        cat.name = "Lucky";
-        cat.birth = LocalDate.of(2015, 01, 12);
-        cat.breed = Cat.Breed.CUTE;
-
-        // Persist the cat
-        return cat.insert()
-                // Make a change, we need to update it
-                .chain(() -> {
-                    cat.name = "Luckynou";
-                    return cat.update();
-                })
-                // Find our cat
-                .chain(() -> repo.findByName("Luckynou"))
-                // Find cute cats
-                .chain((Cat foundCat) -> repo.findCute())
-                // Delete our cat
-                .chain((List<Cat> cuteCats) -> cat.delete())
-                // Delete queries
-                .chain(v -> repo.deleteByName("Lucky"))
-                .chain((Integer deletedCount) -> repo.deleteHairless())
-                .replaceWithVoid();
-    }
-}
-----
-
-TIP: If you're using stateless sessions, you can also use the <<Jakarta Data>> type of repositories.
-
-== Combining blocking, reactive, managed, stateless code
-
-Let's say you want to use an entity in a blocking managed session code, but also in a reactive stateless code: this
-is possible no matter which supertype of your entity you picked. You should pick the supertype that represents your
-majority of use-cases, but any one you pick, you can always obtain the alternative operations by using the
-`.statelessReactive()` method on the entity:
-
-[source,java]
-----
-import io.quarkus.hibernate.reactive.panache.common.WithTransaction;
-import io.smallrye.mutiny.Uni;
-import jakarta.transaction.Transactional;
-
-import java.time.LocalDate;
-
-public class Code {
-
-    @Transactional
-    public void blockingManagedMethod() {
-        Cat cat = new Cat();
-        cat.name = "Lucky";
-        cat.birth = LocalDate.of(2015, 01, 12);
-        cat.breed = Cat.Breed.CUTE;
-
-        // Persist the cat
-        cat.persist();
-
-        // Make a change, no need to update it
-        cat.name = "Luckynou";
-    }
-
-    @WithTransaction
-    public Uni<Void> reactiveStatelessMethod(Long catId) {
-        Cat cat = new Cat();
-        cat.name = "Lucky";
-        cat.birth = LocalDate.of(2015, 01, 12);
-        cat.breed = Cat.Breed.CUTE;
-
-        // Insert the cat
-        return cat.statelessReactive().insert()
-                .chain(() -> {
-                    // Make a change, we need to update it
-                    cat.name = "Luckynou";
-                    return cat.statelessReactive().update();
-                });
-
-    }
-}
-----
-
-All the alternative entity operations are available from these methods:
+You can access an entity using any supported session model, regardless of the entity supertype. Pick the supertype that
+represents the majority of your use cases and use the following accessors for alternative operations:
 
 [cols="1,1,1"]
 |===
@@ -947,8 +420,8 @@ All the alternative entity operations are available from these methods:
 
 |===
 
-Similarly, for all the repository operations, you can obtain alternate repositories for your entity from the
-generated metamodel accessors, or by injecting them with `@Inject`:
+For repository operations, obtain alternative repositories from the generated metamodel accessors, or inject them with
+`@Inject`:
 
 [cols="1,1,1"]
 |===
@@ -972,82 +445,13 @@ generated metamodel accessors, or by injecting them with `@Inject`:
 
 |===
 
-But you can also define any number of repositories for your custom operations within your entity:
+You can also define any number of repositories for custom operations within an entity. All nested repositories are
+available through generated metamodel accessors, such as `Cat_.repo()` and `Cat_.theOtherRepo()`.
 
-[source,java]
-----
-import io.quarkus.data.hibernate.ManagedEntity;
-import io.quarkus.data.hibernate.ManagedRepository;
-import io.quarkus.data.hibernate.RecordRepository;
-import io.smallrye.mutiny.Uni;
-import jakarta.persistence.Entity;
-import org.hibernate.annotations.processing.Find;
-import org.hibernate.annotations.processing.HQL;
+=== Entity and repository type matrix
 
-import java.time.LocalDate;
-import java.util.List;
-
-@Entity
-public class Cat extends ManagedEntity {
-    public String name;
-    public LocalDate birth;
-    public Breed breed;
-
-    public enum Breed {
-        CUTE, HAIRLESS;
-    }
-
-    public interface Repo extends ManagedRepository<Cat> {
-        @Find
-        Cat findByName(String name);
-    }
-
-    public interface TheOtherRepo extends RecordRepository<Cat> {
-        @Find
-        Uni<Cat> findByName(String name);
-    }
-}
-----
-
-And then you can inject both types of repositories:
-
-[source,java]
-----
-import io.quarkus.hibernate.reactive.panache.common.WithTransaction;
-import io.smallrye.mutiny.Uni;
-import jakarta.inject.Inject;
-import jakarta.transaction.Transactional;
-
-public class Code {
-
-    @Inject
-    Cat.Repo repo;
-
-    @Inject
-    Cat.TheOtherRepo theOtherRepo;
-
-    @Transactional
-    public void blockingManagedMethod() {
-        Cat cat = repo.findByName("Lucky");
-    }
-
-    @WithTransaction
-    public Uni<Void> reactiveStatelessMethod() {
-        return theOtherRepo.findByName("Lucky")
-                .invoke(cat -> System.err.println(cat))
-                .replaceWithVoid();
-    }
-}
-----
-
-NOTE: you can of course also use the generated metamodel accessors instead of injecting these repositories, with
-`Cat_.repo()` and `Cat_.theOtherRepo()`.
-
-== Recap
-
-Here is a table listing all the options you have for your entity and repository supertypes, depending on which
-model of operation you prefer, and which ID type you want. Remember you don't have to extend `WithId<Id>` if you
-define your own ID entity field:
+The following table lists the entity and repository supertypes for each operation model and identifier type. You do not
+have to extend `WithId<Id>` if you define your own entity identifier field:
 
 [cols="1,1,1,1,1"]
 |===
@@ -1105,83 +509,26 @@ define your own ID entity field:
 
 == Startup code
 
-For blocking operations, invoking startup code is pretty trivial:
+For startup code, use `@Transactional` for blocking operations and `@WithTransaction` for reactive operations. See the
+xref:lifecycle.adoc#startup_annotation[application lifecycle guide] for information about `@Startup`.
 
-[source,java]
-----
-import io.quarkus.runtime.Startup;
-import jakarta.transaction.Transactional;
-
-public class OnStart {
-    @Startup
-    @Transactional
-    public void startupMethod() {
-        Cat_.repo().deleteAll();
-    }
-}
-----
-
-For reactive operations, it is fairly similar:
-
-[source,java]
-----
-import io.quarkus.hibernate.reactive.panache.common.WithTransaction;
-import io.quarkus.runtime.Startup;
-import io.smallrye.mutiny.Uni;
-
-public class OnStart {
-    @Startup
-    @WithTransaction
-    Uni<Void> startupMethod(){
-        return Cat_.repo().deleteAll().replaceWithVoid();
-    }
-}
-----
-
+[[jakarta-data]]
 == Jakarta Data
 
-Naturally, you can also use link:{jakarta-data-spec-url}[Jakarta Data] to define your repositories. For this you need to import the module:
+Quarkus Data Hibernate builds on the link:{jakarta-data-spec-url}[Jakarta Data] repository model and supports its
+annotations directly. Entities can extend a variant of `ManagedEntity` or `RecordEntity`, or neither. The Jakarta Data
+API is provided by the `quarkus-data-hibernate` extension, so no additional dependency is required.
 
-[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
-.pom.xml
-----
-<dependency>
-    <groupId>jakarta.data</groupId>
-    <artifactId>jakarta.data-api</artifactId>
-</dependency>
-----
+Jakarta Data 1.0 defines stateless repository semantics. Use `RecordRepository` for this model, or `ManagedRepository`
+when repository operations should use a managed persistence context. Both repository types support Jakarta Data
+annotations and provide blocking and reactive variants.
 
-[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
-.build.gradle
-----
-implementation 'jakarta.data:jakarta.data-api'
-----
-
-And then you can write your entity as described before, extending a variant of `ManagedEntity` or `RecordEntity`
-or not, as you wish.
-
-As for the repositories, given that Jakarta Data 1.0 only supports the stateless variants (managed entities are
-being added to the upcoming 1.1 version), we recommend that you stick to the `ManagedRepository` or
-`RecordRepository` variants in order
-to support stateless or managed entities. Both blocking and reactive variants are supported, though.
-
-Otherwise, just replace `@HQL` with `@Query` and change the package import of `@Find`, and you can even write
-`@Delete` finder methods:
+For portable repository methods, use the Jakarta Data `@Find`, `@Query`, and `@Delete` annotations. Quarkus Data
+Hibernate also supports the Hibernate-specific `@Find`, `@HQL`, and `@SQL` annotations, which can be used alongside
+Jakarta Data annotations in the same repository. The following example uses only Jakarta Data annotations:
 
 [source,java]
 ----
-import io.quarkus.data.hibernate.RecordRepository;
-
-import jakarta.data.repository.Delete;
-import jakarta.data.repository.Find;
-import jakarta.data.repository.Query;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.Id;
-
-import java.time.LocalDate;
-import java.util.List;
-
 @Entity
 public class Cat {
     @Id
@@ -1210,30 +557,21 @@ public class Cat {
     }
 }
 ----
-<1> This is a regular finder method
-<2> Use `@Query` in place of `@HQL`, they're the same everything
-<3> You can write `delete` finder methods. Just like finder methods, except their action is to delete entities, optionally
-returning how many were deleted.
-<4> You can always explicitly write delete methods as query methods.
+<1> `@Find` defines a finder method from its parameters.
+<2> `@Query` defines a query using the Jakarta Data Query Language.
+<3> `@Delete` defines a finder-style delete method and can return the number of deleted entities.
+<4> A delete operation can also be written explicitly with `@Query`.
 
-But otherwise you can still make your entity extend `ManagedEntity` or `RecordEntity` or any of its variants,
-and you still get your repository injectable, or via the `Cat_.repo()` accessor.
+Repositories are CDI beans and are also available through generated metamodel accessors such as `Cat_.repo()`.
 
-Please refer to the corresponding https://hibernate.org/repositories/[Hibernate Data Repositories]
-and link:{jakarta-data-spec-url}[Jakarta Data]
-guides to learn what else they have to offer.
-
-TIP: You can also use the reactive variants by returning `Uni` types from your repository methods, or add other
-types of repositories in your entity to support managed entities.
-
-TIP: You can also use <<Use stateless sessions,Panache Stateless repositories>> or
-<<Reactive and stateless,Panache Stateless Reactive repositories>>.
+Refer to the link:https://hibernate.org/repositories/[Hibernate Data Repositories] and
+link:{jakarta-data-spec-url}[Jakarta Data] documentation for the complete repository API.
 
 == REST integration
 
-When your application uses both `quarkus-data-hibernate` and `quarkus-rest-jackson`, Quarkus automatically
-adds REST support for common Jakarta Data parameter types. This lets you declare Jakarta Data types directly as
-REST endpoint parameters, and they will be populated from HTTP query parameters without any manual parsing.
+When your application uses both `quarkus-data-hibernate` and `quarkus-rest-jackson`, Quarkus automatically adds REST
+support for common Jakarta Data parameter types. You can declare these types directly as REST endpoint parameters, and
+they are populated from HTTP query parameters without manual parsing.
 
 === Supported parameter types
 
@@ -1251,7 +589,7 @@ The following Jakarta Data types are automatically mapped from query parameters:
 |`Sort<Cat>`
 |`sort`
 |`null`
-|`?sort=name` (asc) or `?sort=-name` (desc)
+|`?sort=name` (ascending) or `?sort=-name` (descending)
 
 |`Order<Cat>`
 |`sort` (repeating)
@@ -1272,19 +610,17 @@ The following Jakarta Data types are automatically mapped from query parameters:
 
 For `Sort` and `Order`, prefix the property name with `-` to indicate descending order.
 
-When binding sort parameters from REST endpoints to `PanacheQuery`, prefer `Order<Cat>` over
-`Sort<Cat>`. A missing `sort` query parameter yields `null` for `Sort<Cat>` but an empty
-`Order.by()` for `Order<Cat>`. If you use `Sort<Cat>` and the parameter is `null`, you can
-safely call `.sort(null)` and it is a no-op; `Order` is still preferred when multiple columns
-may be requested.
+When binding sort parameters from REST endpoints to `BlockingDataQuery`, prefer `Order<Cat>` over `Sort<Cat>`. A
+missing `sort` query parameter yields `null` for `Sort<Cat>` but an empty `Order.by()` for `Order<Cat>`. If the
+`Sort<Cat>` parameter is `null`, `.sort(null)` is a no-op. `Order` is preferred when multiple columns can be requested.
 
-NOTE: Cursor-based pagination (`PageRequest.Mode.CURSOR_NEXT` / `CURSOR_PREVIOUS`) is not currently supported
-by this REST integration. Only offset-based pagination is available via query parameters.
+NOTE: Cursor-based pagination (`PageRequest.Mode.CURSOR_NEXT` and `CURSOR_PREVIOUS`) is not currently supported by this
+REST integration. Only offset-based pagination is available through query parameters.
 
 === Page serialization
 
-When a REST endpoint returns a `jakarta.data.page.Page`, it is serialized as a JSON object with pagination
-metadata, rather than as a plain array:
+When a REST endpoint returns a `jakarta.data.page.Page`, it is serialized as a JSON object with pagination metadata,
+rather than as a plain array:
 
 [source,json]
 ----
@@ -1297,7 +633,7 @@ metadata, rather than as a plain array:
 }
 ----
 
-The `totalElements` and `totalPages` fields are only included when the `PageRequest` was created with
+The `totalElements` and `totalPages` fields are included only when the `PageRequest` was created with
 `requestTotal=true`.
 
 === Example endpoint
@@ -1339,140 +675,78 @@ GET /cats?page=1&size=20&sort=name&sort=-birth
 
 This produces a `PageRequest.ofPage(1, 20, true)` and `Order.by(Sort.asc("name"), Sort.desc("birth"))`.
 
-== HQL, JD-QL, Jakarta-QL, Panache-QL
+== Query languages
 
-There are different query languages used in this API:
+There are multiple technologies to express queries in Quarkus Data Hibernate. They are related languages rather than
+separate query engines: each standard defines a different level of functionality or portability.
 
-- The link:https://docs.hibernate.org/orm/{hibernate-orm-version-major-minor}/querylanguage/html_single/[Hibernate Query Language] (HQL),
-which is the query language used by Hibernate, supported by the `@HQL` annotation.
-- The link:{jakarta-persistence-spec-url}#a4665[Jakarta Persistence Query Language] (JP-QL), which is a subset of the Hibernate
-Query Language. It is currently being moved to its own spec called
-link:https://jakarta.ee/specifications/query/1.0/jakarta-query-1.0-m1[Jakarta Query].
-- The link:{jakarta-data-spec-url}#_jakarta_data_query_language[Jakarta Data Query Language] (JD-QL), which is a subset of the
-Jakarta Persistence Query Language, supported by the `@Query` annotation.
-- The Panache Query Language, which is a superset of the Hibernate Query Language adding very few shortcuts, which
-is supported in all the `ManagedRepository` and `RecordRepository` queries.
+- The link:https://docs.hibernate.org/orm/{hibernate-orm-version-major-minor}/querylanguage/html_single/[Hibernate Query Language]
+  (HQL) is Hibernate's full query language. Use it with the Hibernate-specific `@HQL` annotation when you need
+  Hibernate features beyond the standard query languages.
+- The link:{jakarta-persistence-spec-url}#a4665[Jakarta Persistence Query Language] (JPQL) is the standard query language
+  defined by Jakarta Persistence and is a subset of HQL. A valid JPQL query is also a valid HQL query. This language is
+  evolving into the standalone link:https://jakarta.ee/specifications/query/1.0/jakarta-query-1.0-m1[Jakarta Query specification].
+- The link:{jakarta-data-spec-url}#_jakarta_data_query_language[Jakarta Data Query Language] (JDQL) is the portable
+  subset of JPQL used by Jakarta Data's `@Query` annotation. Prefer it when the repository should remain independent
+  of Hibernate-specific query features.
+- Panache Query Language adds concise forms for common HQL queries. It is accepted by query methods such as `find()`,
+  `list()`, `update()`, and `delete()` on `ManagedRepository` and `RecordRepository`, and is expanded to HQL before
+  execution.
 
 === Panache Query Language
 
-Normally, most HQL queries are of this form: `from EntityName [where ...] [order by ...]`, with optional elements
-at the end.
+Most HQL select queries have the form `from EntityName [where ...] [order by ...]`, with optional elements at the end.
 
-If your select query does not start with `from`, `select` or `with`, we support the following additional forms:
+If a select query does not start with `from`, `select`, or `with`, the following additional forms are supported:
 
-- `order by ...` which will expand to `from EntityName order by ...`
-- `<singleAttribute>` (and single parameter) which will expand to `from EntityName where <singleAttribute> = ?`
-- `where <query>` will expand to `from EntityName where <query>`
-- `<query>` will expand to `from EntityName where <query>`
+- `order by ...` expands to `from EntityName order by ...`.
+- `<singleAttribute>` with a single parameter expands to `from EntityName where <singleAttribute> = ?`.
+- `where <query>` expands to `from EntityName where <query>`.
+- `<query>` expands to `from EntityName where <query>`.
 
-If your update query does not start with `update`, we support the following additional forms:
+If an update query does not start with `update`, the following additional forms are supported:
 
-- `from EntityName ...` which will expand to `update EntityName ...`
-- `set? <singleAttribute>` (and single parameter) which will expand to `update EntityName set <singleAttribute> = ?`
-- `set? <update-query>` will expand to `update EntityName set <update-query>`
+- `from EntityName ...` expands to `update EntityName ...`.
+- `set? <singleAttribute>` with a single parameter expands to `update EntityName set <singleAttribute> = ?`.
+- `set? <update-query>` expands to `update EntityName set <update-query>`.
 
-If your delete query does not start with `delete`, we support the following additional forms:
+If a delete query does not start with `delete`, the following additional forms are supported:
 
-- `from EntityName ...` which will expand to `delete from EntityName ...`
-- `<singleAttribute>` (and single parameter) which will expand to `delete from EntityName where <singleAttribute> = ?`
-- `<query>` will expand to `delete from EntityName where <query>`
+- `from EntityName ...` expands to `delete from EntityName ...`.
+- `<singleAttribute>` with a single parameter expands to `delete from EntityName where <singleAttribute> = ?`.
+- `<query>` expands to `delete from EntityName where <query>`.
 
-==== Secure Panache repositories
+== Repository security
 
-Quarkus Security provides an initial support for securing Panache Repositories with security annotations.
+Quarkus Security provides initial support for securing repositories with security annotations. Security annotations can
+be placed on methods directly declared by a repository.
 
-.Example inner repository with method-level security annotations
 [source,java]
 ----
-@Entity
-public class Cat extends ManagedEntity.AutoLong {
-    public String name;
-
-    public interface SecuredRepo {
-        @PermissionsAllowed("cat:list")
-        @PermissionsAllowed("cat:read")
-        @Find
-        List<Cat> findByName(String name);
-    }
-}
+@PermissionsAllowed("cat:list")
+@PermissionsAllowed("cat:read")
+@Find
+List<Cat> findByName(String name);
 ----
 
-.Example standalone repository with class-level security annotation
+You can also place a security annotation on the repository interface:
+
 [source,java]
 ----
 @RolesAllowed("admin")
-public interface SecuredCatRepo extends ManagedRepository.AutoLong<Cat> {
-
+public interface SecuredCatRepo extends ManagedRepository<Cat> {
     @Find
     List<Cat> findByName(String name);
-
 }
 ----
 
-[WARNING]
-====
-In the example above, only methods directly declared on the `SecuredCatRepo` interface are secured.
-Methods inherited from `ManagedRepository`, such as `findById`, `persist`, or `deleteAll`, are not secured because type-level annotations only affect the type they annotate.
-====
+Only methods directly declared on an annotated repository interface are secured. Methods inherited from
+`ManagedRepository`, such as `findById`, `persist`, or `deleteAll`, are not secured because type-level annotations only
+affect the type they annotate.
 
-[IMPORTANT]
-====
-Currently, generic interface methods using type variables or wildcards cannot be secured reliably with standard security annotations.
-Therefore, you must not attempt to secure such methods and instead use two alternatives described below.
+Generic interface methods using type variables or wildcards cannot currently be secured reliably with standard security
+annotations. Apply the security annotation to the calling method, such as a REST endpoint, or redeclare the repository
+method with a concrete type.
 
-.Example repository with a generic method using a type variable
-[source,java]
-----
-@Entity
-public class Cat extends ManagedEntity {
-    public String name;
-
-    public interface ParentRepo<T extends Cat> {
-
-        @Find
-        List<T> findAll(Order<T> order);
-
-    }
-
-    public interface ChildRepo extends ParentRepo<Cat> {
-    }
-}
-----
-
-Alternative 1: Apply a security annotation to the calling method in your REST layer:
-
-[source,java]
-----
-@Path("cat")
-public class CatResource {
-
-    @Inject
-    Cat.ChildRepo childRepo;
-
-    @PermissionsAllowed("cat:list")
-    @GET
-    public List<Cat> findAll() {
-        return childRepo.findAll(Order.by());
-    }
-
-}
-----
-
-Alternative 2: Replace the type variable `T` with a concrete type in the repository interface:
-
-[source,java]
-----
-@Entity
-public class Cat extends ManagedEntity {
-    public String name;
-
-    public interface Repo {
-
-        @PermissionsAllowed("cat:list")
-        @Find
-        List<Cat> findAll(Order<Cat> order);
-
-    }
-}
-----
-====
+See the xref:security-authorize-web-endpoints-reference.adoc[authorization of web endpoints reference] for information
+about Quarkus Security annotations.

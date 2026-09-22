@@ -2147,9 +2147,9 @@ such as importing test data into the database.
 [source,properties]
 ----
 quarkus.native.resources.includes=version.txt
-%test.quarkus.native.resources.includes=version.txt,import-dev.sql
+%test.quarkus.native.resources.includes=version.txt,data-dev.sql
 %test.quarkus.hibernate-orm.schema-management.strategy=drop-and-create
-%test.quarkus.hibernate-orm.sql-load-script=import-dev.sql
+%test.quarkus.hibernate-orm.data-management.init-script=data-dev.sql
 ----
 
 With the aforementioned example in your `application.properties`, your Hibernate ORM managed database will be populated with test

@@ -5,12 +5,15 @@ import java.util.Objects;
 import io.quarkus.builder.item.MultiBuildItem;
 
 /**
- * Additional default for quarkus.hibernate-orm.sql-load-script for tests/dev, beyond the built-in "import.sql".
+ * Additional default for quarkus.hibernate-orm.data-management.init-script,
+ * beyond the built-in "data.sql".
  * <p>
  * Only applies to the default persistence unit, for historical reasons.
- * <p>
- * Used by the Spring Data modules in particular.
+ *
+ * @deprecated "data.sql" is now a built-in default of quarkus.hibernate-orm.data-management.init-script
+ *             for all persistence units, so this build item is no longer necessary.
  */
+@Deprecated(since = "4.0", forRemoval = true)
 public final class SqlLoadScriptDefaultBuildItem extends MultiBuildItem {
 
     private final String resourceName;

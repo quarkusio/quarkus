@@ -450,341 +450,166 @@ List<Cat> byNameThenBirth = repo.findAll()
         .list();
 ----
 
-== Use stateless sessions
+[[session-and-access-models]]
+== Session and access models
 
-Out of the box, your subtype of `ManagedEntity` will be managed by Hibernate ORM, and every change to the entity will
-be automatically sent to the database without requiring any explicit `update` operation.
+Quarkus Data Hibernate supports managed and stateless sessions with blocking and reactive APIs.
 
-If on the other hand, you wish to make every `update` operation explicit, then you need to use what Hibernate ORM calls
-a _stateless session_.
+[[use-stateless-sessions]]
+=== Record entities and stateless sessions
 
-In this case, you need to extend the `RecordEntity` class and extend the
-`RecordRepository` interface:
+Subtypes of `ManagedEntity` are managed by Hibernate ORM, and changes to the entity are automatically sent to the
+database without requiring an explicit `update` operation.
 
-[source,java]
-----
-import io.quarkus.data.hibernate.RecordEntity;
-import io.quarkus.data.hibernate.RecordRepository;
-import io.quarkus.data.hibernate.WithId;
-import jakarta.persistence.Entity;
-import org.hibernate.annotations.processing.Find;
-import org.hibernate.annotations.processing.HQL;
+To make every update operation explicit, use a Hibernate ORM _stateless session_. Extend `RecordEntity` for the entity
+and `RecordRepository` for its repository. Compared with a managed entity:
 
-import java.time.LocalDate;
-import java.util.List;
+- Changes to entity fields must be explicitly pushed to the database by calling `update()` on the entity or repository.
+- Call `insert()` instead of `persist()` to insert the entity.
+- The session type is `StatelessSession` instead of `Session`.
+- Accessing an unfetched lazy association does not trigger automatic loading. Fetch the associations you need as part
+of a repository query, using a `join fetch` clause in `@Query`. Alternatively, fetch an association explicitly with
+`repo.getSession().fetch(association)`. Managed blocking sessions can load lazy associations automatically while the
+session is open.
 
-@Entity
-public class Cat extends RecordEntity {
-    public String name;
-    public LocalDate birth;
-    public Breed breed;
-
-    public enum Breed {
-        CUTE, HAIRLESS;
-    }
-
-    public interface Repo extends RecordRepository<Cat, Long> {
-        @Find
-        Cat findByName(String name);
-
-        @HQL("where breed = CUTE")
-        List<Cat> findCute();
-
-        @HQL("delete from Cat where name = :name")
-        long deleteByName(String name);
-
-        @HQL("delete from Cat where breed = HAIRLESS")
-        long deleteHairless();
-    }
-}
-----
-
-As you can see, your entity definition is exactly the same, besides the two interfaces. But now, your entities will
-not be _managed_, so every update operation has to be explicit:
-
-[source,java]
-----
-import jakarta.inject.Inject;
-import jakarta.transaction.Transactional;
-import org.hibernate.StatelessSession;
-
-import java.time.LocalDate;
-import java.util.List;
-
-public class Code {
-
-    @Inject
-    Cat.Repo repo;
-
-    @Transactional
-    public void method() {
-        Cat cat = new Cat();
-        cat.name = "Lucky";
-        cat.birth = LocalDate.of(2015, 01, 12);
-        cat.breed = Cat.Breed.CUTE;
-
-        // Persist the cat
-        cat.insert();
-
-        // Make a change, we need to update it
-        cat.name = "Luckynou";
-        cat.update();
-
-        // Find our cat
-        cat = repo.findByName("Luckynou");
-
-        // Find cute cats
-        List<Cat> cuteCats = repo.findCute();
-
-        // Delete our cat
-        cat.delete();
-
-        // Delete queries
-        repo.deleteByName("Lucky");
-        repo.deleteHairless();
-    }
-}
-----
-
-As you can see, the only differences with a managed entity are:
-
-- Any change to the entity instance fields must be explicitly pushed to the database by calling `update()` either on
-the entity or its repository
-- You need to call `insert()` instead of `persist()` to insert the entity in the database
-- Your session will be of type `StatelessSession` instead of `Session`.
-
-But that's mostly it. Everything else stays the same, in particular for queries and how to obtain entities.
-
-TIP: If you're using stateless sessions, you can also use the <<Jakarta Data>> type of repositories.
+Queries and the way you obtain entities remain the same. Stateless sessions can also use <<jakarta-data,Jakarta Data repositories>>.
 
 [[lets-get-reactive]]
-== Let's get reactive
+=== Reactive access
 
-You want to start using your entities in a reactive application? Let's start by importing Hibernate Reactive in your
-`pom.xml` as well as a data source for your database:
+==== Reactive managed entities
 
-[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
-.pom.xml
-----
-<!-- Enable Hibernate Reactive support -->
-<dependency>
-    <groupId>io.quarkus</groupId>
-    <artifactId>quarkus-hibernate-reactive</artifactId>
-</dependency>
-<!-- Pick your database reactive driver -->
-<dependency>
-    <groupId>io.quarkus</groupId>
-    <artifactId>quarkus-reactive-pg-client</artifactId>
-</dependency>
-<!-- FIXME: this will not be required in the future -->
-<dependency>
-    <groupId>io.quarkus</groupId>
-    <artifactId>quarkus-hibernate-reactive-panache-common</artifactId>
-</dependency>
-----
+For reactive access:
 
-[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
-.build.gradle
-----
-// Enable Hibernate Reactive support
-implementation("io.quarkus:quarkus-hibernate-reactive")
-// Pick your database reactive driver
-implementation("io.quarkus:quarkus-reactive-pg-client")
-// FIXME: this will not be required in the future
-implementation("io.quarkus:quarkus-hibernate-reactive-panache-common")
-----
-
-TIP: You can use any of the xref:hibernate-reactive.adoc#hr-getting-started[supported reactive drivers].
-
-Make sure you configure your reactive datasource in your `application.properties` (although you don't have to in DEV
-mode: if you don't, a dev service will be provided for you):
-
-[source,properties]
-----
-quarkus.datasource.username = quarkus_test
-quarkus.datasource.password = quarkus_test
-quarkus.datasource.reactive.url = vertx-reactive:postgresql://localhost/quarkus_test
-----
-
-Now, in your code, the only differences with a regular managed session entity are:
-
-- Your entity extends `ManagedEntity.Reactive`
-- Your repository extends `ManagedRepository.Reactive`
-- All the operations return a `Uni<T>` instead of `T`, which is the standard Mutiny reactive type
+- The entity extends `ManagedEntity.Reactive`.
+- The repository extends `ManagedRepository.Reactive`.
+- Operations return `Uni<T>` instead of `T`, which is the standard Mutiny reactive type.
+- Use `jakarta.transaction.Transactional` for transaction boundaries and compose operations as usual with Mutiny.
 
 [source,java]
 ----
-import io.quarkus.data.hibernate.ManagedEntity;
-import io.quarkus.data.hibernate.ManagedRepository;
-import io.quarkus.data.hibernate.WithId;
-import io.smallrye.mutiny.Uni;
-import jakarta.persistence.Entity;
-import org.hibernate.annotations.processing.Find;
-import org.hibernate.annotations.processing.HQL;
-
-import java.time.LocalDate;
-import java.util.List;
-
 @Entity
-public class Cat extends ManagedEntity.Reactive {
+public class ReactiveCat extends ManagedEntity.Reactive {
     public String name;
-    public LocalDate birth;
-    public Breed breed;
 
-    public enum Breed {
-        CUTE, HAIRLESS;
-    }
-
-    public interface Repo extends ManagedRepository.Reactive<Cat> {
+    public interface Repo extends ManagedRepository.Reactive<ReactiveCat> {
         @Find
-        Uni<Cat> findByName(String name);
-
-        @HQL("where breed = CUTE")
-        Uni<List<Cat>> findCute();
-
-        @HQL("delete from Cat where name = :name")
-        Uni<Integer> deleteByName(String name);
-
-        @HQL("delete from Cat where breed = HAIRLESS")
-        Uni<Integer> deleteHairless();
+        Uni<ReactiveCat> findByName(String name);
     }
 }
 ----
 
-And now when you want to use your entity or its repository, besides using `@WithTransaction` in place of
-`@Transactional`, you have to compose operations as you normally do in reactive code with Mutiny, but the operations are
-exactly the same otherwise:
+With an injected `ReactiveCat.Repo repo`, operations are composed in a transaction:
 
 [source,java]
 ----
-import io.quarkus.hibernate.reactive.panache.common.WithTransaction;
-import io.smallrye.mutiny.Uni;
-import jakarta.inject.Inject;
-
-import java.time.LocalDate;
-import java.util.List;
-import java.util.Optional;
-
-public class Code {
-
-    @Inject
-    Cat.Repo repo;
-
-    @WithTransaction
-    public Uni<Void> method() {
-        Cat cat = new Cat();
-        cat.name = "Lucky";
-        cat.birth = LocalDate.of(2015, 01, 12);
-        cat.breed = Cat.Breed.CUTE;
-
-        // Persist the cat
-        return cat.persist()
-                // Make a change, no need to update it
-                .invoke(() -> cat.name = "Luckynou")
-                // Find our cat
-                .chain(() -> repo.findByName("Luckynou"))
-                // Find cute cats
-                .chain((Cat foundCat) -> repo.findCute())
-                // Delete our cat
-                .chain((List<Cat> cuteCats) -> cat.delete())
-                // Delete queries
-                .chain(v -> repo.deleteByName("Lucky"))
-                .chain((Integer deletedCount) -> repo.deleteHairless())
-                .replaceWithVoid();
-    }
+@Transactional
+public Uni<Void> renameCat(String name, String newName) {
+    return repo.findByName(name)
+            .invoke(cat -> cat.name = newName)
+            .replaceWithVoid();
 }
 ----
 
-== Reactive and stateless
+Changes to the managed entity are automatically flushed before the transaction commits. In reactive sessions, lazy associations
+must be fetched explicitly, even for managed entities; see xref:hibernate-reactive.adoc[Hibernate Reactive].
 
-If you want to manage manually your entity changes, then you can use a stateless session by switching to
-the `RecordEntity.Reactive` for your entity, and `RecordRepository.Reactive`:
+[[reactive-and-stateless]]
+==== Reactive record entities and stateless sessions
+
+Use `RecordEntity.Reactive` and `RecordRepository.Reactive` for reactive stateless sessions. Changes must be explicitly
+pushed by calling `update()`, and insertion uses `insert()` instead of `persist()`.
 
 [source,java]
 ----
-import io.quarkus.data.hibernate.RecordEntity;
-import io.quarkus.data.hibernate.RecordRepository;
-import io.quarkus.data.hibernate.WithId;
-import io.smallrye.mutiny.Uni;
-import jakarta.persistence.Entity;
-import org.hibernate.annotations.processing.Find;
-import org.hibernate.annotations.processing.HQL;
-
-import java.time.LocalDate;
-import java.util.List;
-
 @Entity
-public class Cat extends RecordEntity.Reactive {
+public class ReactiveCatRecord extends RecordEntity.Reactive {
     public String name;
-    public LocalDate birth;
-    public Breed breed;
 
-    public enum Breed {
-        CUTE, HAIRLESS;
-    }
-
-    public interface Repo extends RecordRepository.Reactive<Cat> {
+    public interface Repo extends RecordRepository.Reactive<ReactiveCatRecord> {
         @Find
-        Uni<Cat> findByName(String name);
-
-        @HQL("where breed = CUTE")
-        Uni<List<Cat>> findCute();
-
-        @HQL("delete from Cat where name = :name")
-        Uni<Integer> deleteByName(String name);
-
-        @HQL("delete from Cat where breed = HAIRLESS")
-        Uni<Integer> deleteHairless();
+        Uni<ReactiveCatRecord> findByName(String name);
     }
 }
 ----
 
-And for your usage code, the only change is the standard use of manually calling `update()`, and using `insert()`
-instead of `persist()`:
+With an injected `ReactiveCatRecord.Repo repo`, explicitly update the modified entity:
 
 [source,java]
 ----
-import io.quarkus.hibernate.reactive.panache.common.WithTransaction;
-import io.smallrye.mutiny.Uni;
-import jakarta.inject.Inject;
-
-import java.time.LocalDate;
-import java.util.List;
-
-public class Code {
-
-    @Inject
-    Cat.Repo repo;
-
-    @WithTransaction
-    public Uni<Void> method() {
-        Cat cat = new Cat();
-        cat.name = "Lucky";
-        cat.birth = LocalDate.of(2015, 01, 12);
-        cat.breed = Cat.Breed.CUTE;
-
-        // Persist the cat
-        return cat.insert()
-                // Make a change, we need to update it
-                .chain(() -> {
-                    cat.name = "Luckynou";
-                    return cat.update();
-                })
-                // Find our cat
-                .chain(() -> repo.findByName("Luckynou"))
-                // Find cute cats
-                .chain((Cat foundCat) -> repo.findCute())
-                // Delete our cat
-                .chain((List<Cat> cuteCats) -> cat.delete())
-                // Delete queries
-                .chain(v -> repo.deleteByName("Lucky"))
-                .chain((Integer deletedCount) -> repo.deleteHairless())
-                .replaceWithVoid();
-    }
+@Transactional
+public Uni<Void> renameCat(String name, String newName) {
+    return repo.findByName(name)
+            .chain(cat -> {
+                cat.name = newName;
+                return cat.update();
+            });
 }
 ----
 
-TIP: If you're using stateless sessions, you can also use the <<Jakarta Data>> type of repositories.
+The xref:quarkus-data-hibernate-getting-started.adoc#reactive[getting started tutorial] describes the
+required dependencies and reactive datasource configuration. You can use any of the
+xref:hibernate-reactive.adoc#hr-getting-started[supported reactive drivers].
+
+[[entity-and-repository-type-matrix]]
+=== Entity and repository type matrix
+
+The following table lists the entity and repository supertypes for each operation model and identifier type. You do not
+have to extend `WithId<Id>` if you define your own entity identifier field:
+
+[cols="1,1,1,1,1"]
+|===
+|Session type|ID type|Entity superclass|Entity superinterface|Repository supertype
+
+|`Session` (managed, blocking)
+|`Long`
+|`ManagedEntity`
+|
+|`ManagedRepository<Entity>`
+
+|`Session` (managed, blocking)
+|`Id`
+|`WithId<Id>`
+|`ManagedEntity.CustomId`
+|`ManagedRepository.CustomId<Entity, Id>`
+
+|`StatelessSession` (stateless, blocking)
+|`Long`
+|`RecordEntity`
+|
+|`RecordRepository<Entity>`
+
+|`StatelessSession` (stateless, blocking)
+|`Id`
+|`WithId<Id>`
+|`RecordEntity.CustomId`
+|`RecordRepository.CustomId<Entity, Id>`
+
+|`Mutiny.Session` (managed, reactive)
+|`Long`
+|`ManagedEntity.Reactive`
+|
+|`ManagedRepository.Reactive<Entity>`
+
+|`Mutiny.Session` (managed, reactive)
+|`Id`
+|`WithId<Id>`
+|`ManagedEntity.Reactive.CustomId`
+|`ManagedRepository.Reactive.CustomId<Entity, Id>`
+
+|`Mutiny.StatelessSession` (stateless, reactive)
+|`Long`
+|`RecordEntity.Reactive`
+|
+|`RecordRepository.Reactive<Entity>`
+
+|`Mutiny.StatelessSession` (stateless, reactive)
+|`Id`
+|`WithId<Id>`
+|`RecordEntity.Reactive.CustomId`
+|`RecordRepository.Reactive.CustomId<Entity, Id>`
+
+|===
 
 == Combining blocking, reactive, managed, stateless code
 
@@ -955,66 +780,6 @@ public class Code {
 
 NOTE: you can of course also use the generated metamodel accessors instead of injecting these repositories, with
 `Cat_.repo()` and `Cat_.theOtherRepo()`.
-
-== Recap
-
-Here is a table listing all the options you have for your entity and repository supertypes, depending on which
-model of operation you prefer, and which ID type you want. Remember you don't have to extend `WithId<Id>` if you
-define your own ID entity field:
-
-[cols="1,1,1,1,1"]
-|===
-|Session type|ID type|Entity superclass|Entity superinterface|Repository supertype
-
-|`Session` (managed, blocking)
-|`Long`
-|`ManagedEntity`
-|
-|`ManagedRepository<Entity>`
-
-|`Session` (managed, blocking)
-|`Id`
-|`WithId<Id>`
-|`ManagedEntity.CustomId`
-|`ManagedRepository.CustomId<Entity, Id>`
-
-|`StatelessSession` (stateless, blocking)
-|`Long`
-|`RecordEntity`
-|
-|`RecordRepository<Entity>`
-
-|`StatelessSession` (stateless, blocking)
-|`Id`
-|`WithId<Id>`
-|`RecordEntity.CustomId`
-|`RecordRepository.CustomId<Entity, Id>`
-
-|`Mutiny.Session` (managed, reactive)
-|`Long`
-|`ManagedEntity.Reactive`
-|
-|`ManagedRepository.Reactive<Entity>`
-
-|`Mutiny.Session` (managed, reactive)
-|`Id`
-|`WithId<Id>`
-|`ManagedEntity.Reactive.CustomId`
-|`ManagedRepository.Reactive.CustomId<Entity, Id>`
-
-|`Mutiny.StatelessSession` (stateless, reactive)
-|`Long`
-|`RecordEntity.Reactive`
-|
-|`RecordRepository.Reactive<Entity>`
-
-|`Mutiny.StatelessSession` (stateless, reactive)
-|`Id`
-|`WithId<Id>`
-|`RecordEntity.Reactive.CustomId`
-|`RecordRepository.Reactive.CustomId<Entity, Id>`
-
-|===
 
 == Startup code
 

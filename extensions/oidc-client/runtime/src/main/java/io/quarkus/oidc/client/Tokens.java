@@ -59,33 +59,16 @@ public class Tokens {
         return refreshTokenTimeSkew;
     }
 
-    public Long getMinRemainingAccessTokenLifespan() {
-        return minRemainingAccessTokenLifespan;
-    }
-
     /**
      * Whether this access token has enough of its lifespan left to still be worth sending while it is
      * being refreshed, so that it does not expire in transit or while the target service is processing
      * the request.
      */
     public boolean hasMinRemainingAccessTokenLifespan() {
-        if (minRemainingAccessTokenLifespan == null) {
+        if (minRemainingAccessTokenLifespan == null || accessTokenExpiresAt == null) {
             return false;
         }
-        if (accessTokenExpiresAt == null) {
-            return true;
-        }
-        final long nowSecs = System.currentTimeMillis() / 1000;
-        final long remaining = accessTokenExpiresAt - nowSecs;
-        final boolean reusable = remaining >= minRemainingAccessTokenLifespan;
-
-        if (!reusable) {
-            LOG.debugf("Access token being refreshed for client %s will not be reused because it expires in about"
-                    + " %d seconds which is less than the minimum remaining access token lifespan %d",
-                    clientId, remaining, minRemainingAccessTokenLifespan);
-        }
-
-        return reusable;
+        return accessTokenExpiresAt - now() >= minRemainingAccessTokenLifespan;
     }
 
     public boolean isAccessTokenExpired() {
@@ -100,7 +83,7 @@ public class Tokens {
         if (accessTokenExpiresAt == null || refreshTokenTimeSkew == null) {
             return false;
         }
-        final long nowSecs = System.currentTimeMillis() / 1000;
+        final long nowSecs = now();
         final boolean proactiveRefresh = nowSecs + refreshTokenTimeSkew > accessTokenExpiresAt;
 
         if (proactiveRefresh) {
@@ -117,7 +100,7 @@ public class Tokens {
         if (expiresAt == null) {
             return false;
         }
-        final long nowSecs = System.currentTimeMillis() / 1000;
+        final long nowSecs = now();
         final boolean expired = nowSecs > expiresAt;
 
         if (expired) {
@@ -136,5 +119,9 @@ public class Tokens {
         }
 
         return expired;
+    }
+
+    private static long now() {
+        return System.currentTimeMillis() / 1000;
     }
 }

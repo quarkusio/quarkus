@@ -320,6 +320,18 @@ class TokensHelperTest {
     }
 
     /**
+     * Tokens whose expiry the provider did not report cannot be shown to have the required lifespan left,
+     * so they are not reused while a refresh is in flight.
+     */
+    @Test
+    void testTokensWithUnknownExpiryAreNotReused() {
+        Tokens noExpiry = new Tokens("current", null, TIME_SKEW, null, null, new JsonObject(), "client",
+                MIN_REMAINING_LIFESPAN);
+        assertFalse(noExpiry.hasMinRemainingAccessTokenLifespan(),
+                "tokens with an unknown expiry must not be reused while they are being refreshed");
+    }
+
+    /**
      * An OidcClient whose token acquisition blocks until released, so that the in-flight refresh
      * window can be observed deterministically.
      */

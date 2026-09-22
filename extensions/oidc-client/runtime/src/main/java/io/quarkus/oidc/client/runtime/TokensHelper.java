@@ -51,9 +51,13 @@ public class TokensHelper {
             } else if (currentState.tokenUni != null) {
                 // Serve token getting refreshed if it has enough lifespan left
                 final Tokens tokensBeingRefreshed = currentState.tokensBeingRefreshed;
-                if (!forceNewTokens && tokensBeingRefreshed != null
-                        && tokensBeingRefreshed.hasMinRemainingAccessTokenLifespan()) {
-                    return Uni.createFrom().item(tokensBeingRefreshed);
+                if (tokensBeingRefreshed != null && !forceNewTokens) {
+                    if (tokensBeingRefreshed.hasMinRemainingAccessTokenLifespan()) {
+                        return Uni.createFrom().item(tokensBeingRefreshed);
+                    }
+                    LOG.debugf("Access token being refreshed for client %s will not be reused because too little"
+                            + " of its lifespan is left, waiting for the refreshed tokens instead",
+                            tokensBeingRefreshed.getClientId());
                 }
                 return currentState.tokenUni;
             } else if (forceNewTokens) {

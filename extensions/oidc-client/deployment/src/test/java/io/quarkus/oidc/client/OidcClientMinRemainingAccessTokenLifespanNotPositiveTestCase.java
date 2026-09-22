@@ -14,7 +14,8 @@ import io.quarkus.test.QuarkusExtensionTest;
 
 /**
  * A zero minimum remaining lifespan would allow an access token with nothing left to be reused, which is what
- * this feature exists to prevent, so it is rejected rather than treated as "no minimum".
+ * this feature exists to prevent, so it is rejected rather than treated as "no minimum". The minimum is compared
+ * in whole seconds, matching the access token expiry, so anything below a second is rejected the same way.
  */
 public class OidcClientMinRemainingAccessTokenLifespanNotPositiveTestCase {
 
@@ -35,7 +36,7 @@ public class OidcClientMinRemainingAccessTokenLifespanNotPositiveTestCase {
                 assertNotNull(te, "Expected ConfigurationException, but got: " + t);
                 assertTrue(
                         te.getMessage().contains(
-                                "'quarkus.oidc-client.min-remaining-access-token-lifespan' must be greater than zero"),
+                                "'quarkus.oidc-client.min-remaining-access-token-lifespan' must be at least 1 second"),
                         te.getMessage());
             });
 

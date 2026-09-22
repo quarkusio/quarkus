@@ -14,10 +14,19 @@ import io.vertx.core.net.PfxOptions;
 
 public class BadHostServiceTestResource implements QuarkusTestResourceLifecycleManager {
 
-    Vertx vertx = Vertx.vertx();
+    private Vertx vertx;
+    private boolean createdVertx;
 
     @Override
     public Map<String, String> start() {
+        // Reuse the ambient Vert.x instance if there is one, otherwise create (and later close) our own
+        var context = Vertx.currentContext();
+        if (context != null) {
+            vertx = context.owner();
+        } else {
+            vertx = Vertx.vertx();
+            createdVertx = true;
+        }
         File file = new File("target/certs");
         file.mkdirs();
         // Generate self-signed certificate
@@ -44,13 +53,15 @@ public class BadHostServiceTestResource implements QuarkusTestResourceLifecycleM
                         .setPassword("changeit"));
         var server = vertx.createHttpServer(options)
                 .requestHandler(req -> req.response().end("OK"))
-                .listen(-1).toCompletionStage().toCompletableFuture().join();
+                .listen(0).await();
 
         return Map.of("wrong-host/mp-rest/url", "https://localhost:" + server.actualPort() + "/");
     }
 
     @Override
     public void stop() {
-        vertx.close().toCompletionStage().toCompletableFuture().join();
+        if (createdVertx) {
+            vertx.close().toCompletionStage().toCompletableFuture().join();
+        }
     }
 }

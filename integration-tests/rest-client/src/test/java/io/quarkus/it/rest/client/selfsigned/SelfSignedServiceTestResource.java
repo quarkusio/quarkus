@@ -18,11 +18,20 @@ import io.vertx.core.net.PfxOptions;
 
 public class SelfSignedServiceTestResource implements QuarkusTestResourceLifecycleManager {
 
-    private Vertx vertx = Vertx.vertx();
-    private Map<String, String> originalProps = new HashMap<>();
+    private Vertx vertx;
+    private boolean createdVertx;
+    private final Map<String, String> originalProps = new HashMap<>();
 
     @Override
     public Map<String, String> start() {
+        // Reuse the ambient Vert.x instance if there is one, otherwise create (and later close) our own
+        var context = Vertx.currentContext();
+        if (context != null) {
+            vertx = context.owner();
+        } else {
+            vertx = Vertx.vertx();
+            createdVertx = true;
+        }
         File file = new File("target/certs");
         file.mkdirs();
         // Generate self-signed certificate
@@ -54,7 +63,7 @@ public class SelfSignedServiceTestResource implements QuarkusTestResourceLifecyc
                         .setPassword("changeit"));
         var server = vertx.createHttpServer(options)
                 .requestHandler(req -> req.response().end("Hello self-signed!"))
-                .listen(-2).toCompletionStage().toCompletableFuture().join();
+                .listen(0).await();
 
         setProperty("javax.net.ssl.trustStore", "target/certs/self-signed-truststore.p12");
         setProperty("javax.net.ssl.trustStoreType", "PKCS12");
@@ -98,7 +107,9 @@ public class SelfSignedServiceTestResource implements QuarkusTestResourceLifecyc
 
     @Override
     public void stop() {
-        vertx.close().toCompletionStage().toCompletableFuture().join();
+        if (createdVertx) {
+            vertx.close().toCompletionStage().toCompletableFuture().join();
+        }
         originalProps.keySet().forEach(this::restoreProperty);
     }
 }

@@ -870,9 +870,9 @@ link:{jakarta-data-spec-url}[Jakarta Data] documentation for the complete reposi
 
 == REST integration
 
-When your application uses both `quarkus-data-hibernate` and `quarkus-rest-jackson`, Quarkus automatically
-adds REST support for common Jakarta Data parameter types. This lets you declare Jakarta Data types directly as
-REST endpoint parameters, and they will be populated from HTTP query parameters without any manual parsing.
+When your application uses both `quarkus-data-hibernate` and `quarkus-rest-jackson`, Quarkus automatically adds REST
+support for common Jakarta Data parameter types. You can declare these types directly as REST endpoint parameters, and
+they are populated from HTTP query parameters without manual parsing.
 
 === Supported parameter types
 
@@ -890,7 +890,7 @@ The following Jakarta Data types are automatically mapped from query parameters:
 |`Sort<Cat>`
 |`sort`
 |`null`
-|`?sort=name` (asc) or `?sort=-name` (desc)
+|`?sort=name` (ascending) or `?sort=-name` (descending)
 
 |`Order<Cat>`
 |`sort` (repeating)
@@ -911,19 +911,17 @@ The following Jakarta Data types are automatically mapped from query parameters:
 
 For `Sort` and `Order`, prefix the property name with `-` to indicate descending order.
 
-When binding sort parameters from REST endpoints to `PanacheQuery`, prefer `Order<Cat>` over
-`Sort<Cat>`. A missing `sort` query parameter yields `null` for `Sort<Cat>` but an empty
-`Order.by()` for `Order<Cat>`. If you use `Sort<Cat>` and the parameter is `null`, you can
-safely call `.sort(null)` and it is a no-op; `Order` is still preferred when multiple columns
-may be requested.
+When binding sort parameters from REST endpoints to `BlockingDataQuery`, prefer `Order<Cat>` over `Sort<Cat>`. A
+missing `sort` query parameter yields `null` for `Sort<Cat>` but an empty `Order.by()` for `Order<Cat>`. If the
+`Sort<Cat>` parameter is `null`, `.sort(null)` is a no-op. `Order` is preferred when multiple columns can be requested.
 
-NOTE: Cursor-based pagination (`PageRequest.Mode.CURSOR_NEXT` / `CURSOR_PREVIOUS`) is not currently supported
-by this REST integration. Only offset-based pagination is available via query parameters.
+NOTE: Cursor-based pagination (`PageRequest.Mode.CURSOR_NEXT` and `CURSOR_PREVIOUS`) is not currently supported by this
+REST integration. Only offset-based pagination is available through query parameters.
 
 === Page serialization
 
-When a REST endpoint returns a `jakarta.data.page.Page`, it is serialized as a JSON object with pagination
-metadata, rather than as a plain array:
+When a REST endpoint returns a `jakarta.data.page.Page`, it is serialized as a JSON object with pagination metadata,
+rather than as a plain array:
 
 [source,json]
 ----
@@ -936,7 +934,7 @@ metadata, rather than as a plain array:
 }
 ----
 
-The `totalElements` and `totalPages` fields are only included when the `PageRequest` was created with
+The `totalElements` and `totalPages` fields are included only when the `PageRequest` was created with
 `requestTotal=true`.
 
 === Example endpoint

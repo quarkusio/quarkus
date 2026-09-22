@@ -2464,10 +2464,24 @@ TIP: A list element can be accessed directly via an index: `{list.10}` or even `
 ** `{str:builder('Qute').append("is").append("cool!")}` yields `Qute is cool!`
 ** `{str:builder('Qute') + "is" + whatisqute + "!"}` yields `Qute is cool!` if `whatisqute` resolves to `cool`
 
-* `str:eval`: Evaluates the string representation of the first argument as a template in the <<current_context_object,current context>>. 
+* `str:eval`: Evaluates the string representation of the first argument as a template in the <<current_context_object,current context>>.
 ** `{str:eval('Hello {name}!')` yields `Hello lovely!` if `name` resolves to `lovely`
 ** `{str:eval(myTemplate)}` yields `Hello lovely!` if `myTemplate` resolves to `Hello {name}!` and `name` resolves to `lovely`
 ** `{str:eval('/path/to/{fileName}')}` yields `/path/to/file.txt` if `fileName` resolves to `file.txt`
+** IMPORTANT: For security reasons, the `str:eval` namespace resolver is _not_ registered automatically. Evaluating an untrusted string as a template may result in a server-side template injection. If you need this functionality then you have to register the `io.quarkus.qute.StrEvalNamespaceResolver` manually, e.g. via <<engine-customization,`@Observes EngineBuilder`>>:
++
+[source,java]
+----
+import io.quarkus.qute.EngineBuilder;
+import io.quarkus.qute.StrEvalNamespaceResolver;
+
+class MyBean {
+
+    void configureEngine(@Observes EngineBuilder builder) {
+        builder.addNamespaceResolver(new StrEvalNamespaceResolver());
+    }
+}
+----
 
 ===== Config
 

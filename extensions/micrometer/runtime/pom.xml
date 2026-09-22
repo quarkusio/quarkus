@@ -28,6 +28,12 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-vertx-http</artifactId>
+    </dependency>
+
+        <dependency>
+            <groupId>io.vertx</groupId>
+            <artifactId>vertx-codegen</artifactId>
+            <optional>true</optional>
         </dependency>
 
         <!-- Needed for the JSON meter registry -->
@@ -45,7 +51,7 @@
             <artifactId>slf4j-jboss-logmanager</artifactId>
         </dependency>
 
-        <!-- Registry providers (optional) -->
+    <!-- Registry providers (optional) -->
 
         <dependency>
             <groupId>io.micrometer</groupId>

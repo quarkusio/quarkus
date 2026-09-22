@@ -38,7 +38,7 @@ final class QuarkusBeanContainerLifecycleOptions implements BeanContainer.Lifecy
         // (e.g. @Dependent, @ApplicationScoped), which doesn't seem wise.
         // What we do instead in Quarkus is:
         // 1. Disable JPA-compliant creation, so we look up CDI beans and fall back to reflection if there is none.
-        // 2. Add a default scope to relevant bean types -- see io.quarkus.hibernate.orm.deployment.HibernateOrmCdiProcessor.registerBeans
+        // 2. Add a default scope to relevant bean types -- see io.quarkus.hibernate.orm.deployment.cdi.HibernateOrmCdiProcessor.registerBeans
         // In effect, this gives us scope-compliant creation when classes are annotated with CDI scopes,
         // and spec-compliant creation when they are not.
         return false;

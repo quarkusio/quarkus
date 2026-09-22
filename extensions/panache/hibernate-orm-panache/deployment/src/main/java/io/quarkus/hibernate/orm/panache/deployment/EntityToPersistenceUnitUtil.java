@@ -7,7 +7,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.TreeMap;
 
-import io.quarkus.hibernate.orm.deployment.JpaModelPersistenceUnitMappingBuildItem;
+import io.quarkus.hibernate.orm.deployment.spi.JpaModelPersistenceUnitMappingBuildItem;
 
 public final class EntityToPersistenceUnitUtil {
 

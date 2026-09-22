@@ -8,8 +8,14 @@ import java.util.Optional;
 
 import io.quarkus.builder.item.MultiBuildItem;
 import io.quarkus.hibernate.orm.runtime.integration.HibernateOrmIntegrationStaticDescriptor;
-import io.quarkus.hibernate.orm.runtime.integration.HibernateOrmIntegrationStaticInitListener;
+import io.quarkus.hibernate.orm.runtime.spi.HibernateOrmIntegrationStaticInitListener;
 
+/**
+ * @deprecated Use
+ *             {@link io.quarkus.hibernate.orm.deployment.spi.HibernateOrmIntegrationStaticConfiguredBuildItem}
+ *             instead.
+ */
+@Deprecated(since = "4.0", forRemoval = true)
 public final class HibernateOrmIntegrationStaticConfiguredBuildItem extends MultiBuildItem {
 
     private final String integrationName;

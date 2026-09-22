@@ -18,8 +18,8 @@ import io.quarkus.hibernate.envers.HibernateEnversBuildTimeConfigPersistenceUnit
 import io.quarkus.hibernate.envers.HibernateEnversRecorder;
 import io.quarkus.hibernate.envers.runtime.graal.DisableLoggingFeature;
 import io.quarkus.hibernate.orm.deployment.PersistenceUnitDescriptorBuildItem;
-import io.quarkus.hibernate.orm.deployment.integration.HibernateOrmIntegrationStaticConfiguredBuildItem;
 import io.quarkus.hibernate.orm.deployment.spi.AdditionalJpaModelBuildItem;
+import io.quarkus.hibernate.orm.deployment.spi.HibernateOrmIntegrationStaticConfiguredBuildItem;
 import io.quarkus.hibernate.orm.deployment.spi.component.PersistenceUnitRequestBuildItem;
 import io.quarkus.runtime.util.ProgrammingParadigm;
 
@@ -90,9 +90,10 @@ public final class HibernateEnversProcessor {
         for (PersistenceUnitDescriptorBuildItem puDescriptor : persistenceUnitDescriptorBuildItems) {
             String puName = puDescriptor.getPersistenceUnitName();
             integrationProducer.produce(
-                    new HibernateOrmIntegrationStaticConfiguredBuildItem(HIBERNATE_ENVERS, puName)
-                            .setInitListener(recorder.createStaticInitListener(buildTimeConfig, puName))
-                            .setXmlMappingRequired(true));
+                    HibernateOrmIntegrationStaticConfiguredBuildItem.builder(HIBERNATE_ENVERS, puName)
+                            .initListener(recorder.createStaticInitListener(buildTimeConfig, puName))
+                            .xmlMappingRequired(true)
+                            .build());
         }
     }
 }

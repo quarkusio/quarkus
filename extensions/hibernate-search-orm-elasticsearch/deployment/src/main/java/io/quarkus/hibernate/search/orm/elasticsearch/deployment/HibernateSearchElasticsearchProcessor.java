@@ -44,12 +44,12 @@ import io.quarkus.deployment.util.JandexUtil;
 import io.quarkus.elasticsearch.restclient.common.deployment.DevservicesElasticsearchBuildItem;
 import io.quarkus.elasticsearch.restclient.common.deployment.ElasticsearchCommonBuildTimeConfig.ElasticsearchDevServicesBuildTimeConfig.Distribution;
 import io.quarkus.hibernate.orm.deployment.PersistenceUnitDescriptorBuildItem;
-import io.quarkus.hibernate.orm.deployment.integration.HibernateOrmIntegrationRuntimeConfiguredBuildItem;
-import io.quarkus.hibernate.orm.deployment.integration.HibernateOrmIntegrationStaticConfiguredBuildItem;
+import io.quarkus.hibernate.orm.deployment.spi.HibernateOrmIntegrationRuntimeConfiguredBuildItem;
+import io.quarkus.hibernate.orm.deployment.spi.HibernateOrmIntegrationStaticConfiguredBuildItem;
 import io.quarkus.hibernate.orm.deployment.spi.component.PersistenceUnitRequestBuildItem;
 import io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil;
-import io.quarkus.hibernate.orm.runtime.integration.HibernateOrmIntegrationRuntimeInitListener;
-import io.quarkus.hibernate.orm.runtime.integration.HibernateOrmIntegrationStaticInitListener;
+import io.quarkus.hibernate.orm.runtime.spi.HibernateOrmIntegrationRuntimeInitListener;
+import io.quarkus.hibernate.orm.runtime.spi.HibernateOrmIntegrationStaticInitListener;
 import io.quarkus.hibernate.search.backend.elasticsearch.common.deployment.HibernateSearchBackendElasticsearchEnabledBuildItem;
 import io.quarkus.hibernate.search.backend.elasticsearch.common.runtime.ElasticsearchVersionSubstitution;
 import io.quarkus.hibernate.search.orm.elasticsearch.runtime.HibernateSearchElasticsearchBuildTimeConfig;
@@ -142,13 +142,14 @@ class HibernateSearchElasticsearchProcessor {
             BuildProducer<HibernateOrmIntegrationRuntimeConfiguredBuildItem> runtimeIntegrations) {
         if (indexedAnnotationsForPU.isEmpty()) {
             // we don't have any indexed entity, we can disable Hibernate Search
-            staticIntegrations.produce(new HibernateOrmIntegrationStaticConfiguredBuildItem(HIBERNATE_SEARCH_ELASTICSEARCH,
-                    persistenceUnitName).setInitListener(recorder.createStaticInitInactiveListener()));
+            staticIntegrations.produce(HibernateOrmIntegrationStaticConfiguredBuildItem.builder(HIBERNATE_SEARCH_ELASTICSEARCH,
+                    persistenceUnitName).initListener(recorder.createStaticInitInactiveListener()).build());
             // we need a runtime listener even when Hibernate Search is disabled,
             // just to let Hibernate Search boot up until the point where it checks whether it's enabled or not
-            runtimeIntegrations.produce(new HibernateOrmIntegrationRuntimeConfiguredBuildItem(HIBERNATE_SEARCH_ELASTICSEARCH,
-                    persistenceUnitName)
-                    .setInitListener(recorder.createRuntimeInitInactiveListener()));
+            runtimeIntegrations.produce(HibernateOrmIntegrationRuntimeConfiguredBuildItem
+                    .builder(HIBERNATE_SEARCH_ELASTICSEARCH,
+                            persistenceUnitName)
+                    .initListener(recorder.createRuntimeInitInactiveListener()).build());
             return;
         }
 
@@ -218,14 +219,15 @@ class HibernateSearchElasticsearchProcessor {
                 }
             }
             staticConfigured.produce(
-                    new HibernateOrmIntegrationStaticConfiguredBuildItem(HIBERNATE_SEARCH_ELASTICSEARCH, puName)
-                            .setInitListener(
+                    HibernateOrmIntegrationStaticConfiguredBuildItem.builder(HIBERNATE_SEARCH_ELASTICSEARCH, puName)
+                            .initListener(
                                     // we cannot pass a config group to a recorder so passing the whole config
                                     recorder.createStaticInitListener(
                                             configuredPersistenceUnit.mapperContext,
                                             rootAnnotationMappedClassNames,
                                             integrationStaticInitListeners))
-                            .setXmlMappingRequired(xmlMappingRequired));
+                            .xmlMappingRequired(xmlMappingRequired)
+                            .build());
         }
     }
 
@@ -272,9 +274,10 @@ class HibernateSearchElasticsearchProcessor {
                 }
             }
             runtimeConfigured.produce(
-                    new HibernateOrmIntegrationRuntimeConfiguredBuildItem(HIBERNATE_SEARCH_ELASTICSEARCH, puName)
-                            .setInitListener(recorder.createRuntimeInitListener(configuredPersistenceUnit.mapperContext,
-                                    integrationRuntimeInitListeners)));
+                    HibernateOrmIntegrationRuntimeConfiguredBuildItem.builder(HIBERNATE_SEARCH_ELASTICSEARCH, puName)
+                            .initListener(recorder.createRuntimeInitListener(configuredPersistenceUnit.mapperContext,
+                                    integrationRuntimeInitListeners))
+                            .build());
         }
     }
 

@@ -46,8 +46,8 @@ import io.quarkus.hibernate.orm.deployment.PersistenceProviderSetUpBuildItem;
 import io.quarkus.hibernate.orm.deployment.PersistenceUnitDescriptorBuildItem;
 import io.quarkus.hibernate.orm.deployment.PersistenceXmlDescriptorBuildItem;
 import io.quarkus.hibernate.orm.deployment.component.PersistenceUnitDefinitionBuildItem;
-import io.quarkus.hibernate.orm.deployment.integration.HibernateOrmIntegrationRuntimeConfiguredBuildItem;
 import io.quarkus.hibernate.orm.deployment.spi.DatabaseKindDialectBuildItem;
+import io.quarkus.hibernate.orm.deployment.spi.HibernateOrmIntegrationRuntimeConfiguredBuildItem;
 import io.quarkus.hibernate.orm.deployment.spi.SqlLoadScriptDefaultBuildItem;
 import io.quarkus.hibernate.orm.deployment.util.HibernateProcessorUtil;
 import io.quarkus.hibernate.orm.runtime.boot.QuarkusPersistenceUnitDescriptor;
@@ -215,18 +215,21 @@ public final class HibernateReactiveProcessor {
         for (PersistenceUnitDescriptorBuildItem puDescriptor : persistenceUnitDescriptorBuildItems) {
             // Define a dependency on VertxPoolBuildItem to ensure that any Pool instances are available
             // when HibernateORM starts its persistence units
-            runtimeConfigured.produce(new HibernateOrmIntegrationRuntimeConfiguredBuildItem(HIBERNATE_REACTIVE,
-                    puDescriptor.getPersistenceUnitName()));
+            runtimeConfigured.produce(HibernateOrmIntegrationRuntimeConfiguredBuildItem.builder(HIBERNATE_REACTIVE,
+                    puDescriptor.getPersistenceUnitName())
+                    .build());
         }
     }
 
+    @SuppressWarnings("deprecation")
     @BuildStep
     @Record(RUNTIME_INIT)
     PersistenceProviderSetUpBuildItem setUpPersistenceProviderAndWaitForVertxPool(HibernateReactiveRecorder recorder,
-            List<HibernateOrmIntegrationRuntimeConfiguredBuildItem> integrationBuildItems,
+            List<io.quarkus.hibernate.orm.deployment.integration.HibernateOrmIntegrationRuntimeConfiguredBuildItem> integrationBuildItems,
             BuildProducer<RecorderBeanInitializedBuildItem> orderEnforcer) {
         recorder.initializePersistenceProvider(
-                HibernateOrmIntegrationRuntimeConfiguredBuildItem.collectDescriptors(integrationBuildItems));
+                io.quarkus.hibernate.orm.deployment.integration.HibernateOrmIntegrationRuntimeConfiguredBuildItem
+                        .collectDescriptors(integrationBuildItems));
         return new PersistenceProviderSetUpBuildItem();
     }
 

@@ -183,6 +183,85 @@
     <build>
         <plugins>
             <plugin>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <!--
+                These tests each build a Quarkus application and leak deployment ClassLoaders.
+                Running all of them in a single JVM accumulates enough of them to exhaust metaspace
+                (OOME: Metaspace in CI). We split them across several surefire executions, partitioned
+                by test package, so each runs in its own, shorter-lived JVM fork, keeping the number
+                of ClassLoaders alive at any one time low.
+                The 'default-test' execution is the catch-all: it excludes the packages handled by the
+                other executions, so any newly added test is picked up automatically.
+                -->
+                <executions>
+                    <execution>
+                        <id>default-test</id>
+                        <configuration>
+                            <excludes>
+                                <exclude>**/deployment/traces/**/*Test.java</exclude>
+                                <exclude>**/deployment/exporter/**/*Test.java</exclude>
+                                <exclude>**/deployment/instrumentation/**/*Test.java</exclude>
+                                <exclude>**/deployment/logs/**/*Test.java</exclude>
+                                <exclude>**/deployment/metrics/**/*Test.java</exclude>
+                                <exclude>**/deployment/interceptor/**/*Test.java</exclude>
+                                <exclude>**/deployment/propagation/**/*Test.java</exclude>
+                            </excludes>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>traces</id>
+                        <phase>test</phase>
+                        <goals>
+                            <goal>test</goal>
+                        </goals>
+                        <configuration>
+                            <includes>
+                                <include>**/deployment/traces/**/*Test.java</include>
+                            </includes>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>exporter-instrumentation</id>
+                        <phase>test</phase>
+                        <goals>
+                            <goal>test</goal>
+                        </goals>
+                        <configuration>
+                            <includes>
+                                <include>**/deployment/exporter/**/*Test.java</include>
+                                <include>**/deployment/instrumentation/**/*Test.java</include>
+                            </includes>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>logs-metrics</id>
+                        <phase>test</phase>
+                        <goals>
+                            <goal>test</goal>
+                        </goals>
+                        <configuration>
+                            <includes>
+                                <include>**/deployment/logs/**/*Test.java</include>
+                                <include>**/deployment/metrics/**/*Test.java</include>
+                            </includes>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>interceptor-propagation</id>
+                        <phase>test</phase>
+                        <goals>
+                            <goal>test</goal>
+                        </goals>
+                        <configuration>
+                            <includes>
+                                <include>**/deployment/interceptor/**/*Test.java</include>
+                                <include>**/deployment/propagation/**/*Test.java</include>
+                            </includes>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
                 <groupId>org.xolstice.maven.plugins</groupId>
                 <artifactId>protobuf-maven-plugin</artifactId>
                 <version>0.6.1</version>

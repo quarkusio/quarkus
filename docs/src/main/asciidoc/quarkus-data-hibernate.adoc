@@ -3,9 +3,9 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= Simplified Hibernate with Quarkus Data Hibernate
+= Quarkus Data Hibernate reference guide
 include::_attributes.adoc[]
-:summary: Hibernate is the de facto Jakarta Persistence implementation and offers you the full breadth of an Object Relational Mapper. It makes complex mappings possible, but it does not make simple and common mappings trivial. Quarkus Data Hibernate focuses on making your entities trivial and fun to write.
+:summary: Hibernate is the de facto Jakarta Persistence implementation and offers you the full breadth of an Object Relational Mapper. Quarkus Data Hibernate focuses on making simple and common mappings trivial.
 :config-file: application.properties
 :topics: data,hibernate-orm,hibernate-reactive,panache,sql,jdbc
 :extensions: io.quarkus:quarkus-data-hibernate,io.quarkus:quarkus-hibernate-orm,io.quarkus:quarkus-hibernate-reactive
@@ -14,6 +14,17 @@ include::_attributes.adoc[]
 
 Quarkus Data Hibernate is the perfect solution if you want to get started using Hibernate in Quarkus.
 
+If you are new to Quarkus Data Hibernate, start with the
+xref:quarkus-data-hibernate-getting-started.adoc[Quarkus Data Hibernate getting started tutorial].
+
+[NOTE]
+====
+This guide does not go into the specifics of using either
+xref:hibernate-orm.adoc[Hibernate ORM], or its underlying
+link:{jakarta-persistence-spec-url}[Jakarta Persistence specification].
+Refer to their documentation for more in-depth knowledge.
+====
+
 include::{includes}/extension-status.adoc[]
 
 WARNING: This extension is currently experimental, so its API may change, in particular names of
@@ -21,92 +32,18 @@ classes or packages may change, even the module name. We are in the process of m
 to obtain public feedback, so please report feedback either on link:https://quarkusio.zulipchat.com/#narrow/channel/187038-dev/topic/WG.20-.20Panache.2ENext/with/562916276[Zulip]
 or via link:https://github.com/orgs/quarkusio/projects/50/views/1[GitHub issues].
 
-== Walk-through
+== Installation
 
-Let's take a progressive approach to learning how to use Quarkus Data Hibernate, and start with a simple entity.
+Quarkus Data Hibernate uses an annotation processor to inspect your entities and repository interfaces at build time.
+It validates repository methods and queries, then generates the repository implementations that Quarkus makes
+available as CDI beans. This catches many mapping and query errors during the build instead of at runtime.
 
-This guide is not going to go into the specifics of using either
-xref:hibernate-orm.adoc[Hibernate], or its underlying
-link:{jakarta-persistence-spec-url}[Jakarta Persistence specification],
-because both already have great documentation that you can and should use for more in-depth knowledge.
+Enable the annotation processor in your build configuration:
 
-== Importing the extension, and configuration
+include::{includes}/quarkus-data-processor-config.adoc[]
 
-[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
-.pom.xml
-----
-<!-- Import the Quarkus Data Hibernate extension -->
-<dependency>
-    <groupId>io.quarkus</groupId>
-    <artifactId>quarkus-data-hibernate</artifactId>
-</dependency>
-<!-- Pick your database driver -->
-<dependency>
-    <groupId>io.quarkus</groupId>
-    <artifactId>quarkus-jdbc-postgresql</artifactId>
-</dependency>
-----
-
-[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
-.build.gradle
-----
-// Import the Quarkus Data Hibernate extension
-implementation("io.quarkus:quarkus-data-hibernate")
-
-// Pick your database driver
-implementation("io.quarkus:quarkus-jdbc-postgresql")
-----
-
-You also have to configure the Hibernate processor, which is required:
-
-[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
-.pom.xml
-----
-<plugin>
-    <artifactId>maven-compiler-plugin</artifactId>
-    <configuration>
-        <!-- This setting is required for the annotation processor dependencies to be managed by Quarkus.
-             More information is available in Maven compiler plugin documentation:
-             https://maven.apache.org/plugins/maven-compiler-plugin/compile-mojo.html#annotationProcessorPathsUseDepMgmt -->
-        <annotationProcessorPathsUseDepMgmt>true</annotationProcessorPathsUseDepMgmt>
-        <annotationProcessorPaths>
-            <path>
-                <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-data-processor</artifactId>
-                <!-- Note, no artifact version is required, it's managed by Quarkus.  -->
-            </path>
-            <!-- other processors that may be required by your app -->
-        </annotationProcessorPaths>
-        <!-- Other compiler plugin configuration options -->
-    </configuration>
-</plugin>
-----
-
-[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
-.build.gradle
-----
-// Enforce the version management of your annotation processor dependencies,
-// so that there's no need to define an explicit version of the quarkus-data-processor
-annotationProcessor enforcedPlatform("${quarkusPlatformGroupId}:${quarkusPlatformArtifactId}:${quarkusPlatformVersion}")
-annotationProcessor 'io.quarkus:quarkus-data-processor'
-----
-
-TIP: You can use any of the xref:hibernate-orm.adoc#setting-up-and-configuring-hibernate-orm[supported JDBC drivers].
-
-Add the relevant configuration properties in `{config-file}`.
-
-[source,properties]
-.Example `{config-file}`
-----
-quarkus.datasource.db-kind = postgresql <1>
-
-%prod.quarkus.datasource.username = hibernate
-%prod.quarkus.datasource.password = hibernate
-%prod.quarkus.datasource.jdbc.url = jdbc:postgresql://localhost:5432/hibernate_db
-%prod.quarkus.hibernate-orm.schema-management.strategy=create <2>
-----
-<1> xref:datasource.adoc[Configure the datasource] for production, relying on xref:datasource#dev-services[Dev Services] for connection information in tests / dev mode.
-<2> Configure Hibernate ORM to create the schema on startup in production, which is useful for experimentation, but rely on xref:hibernate-orm.adoc#dev-mode[convenient defaults in tests / dev mode].
+For step-by-step instructions, including the required extensions, database driver, and datasource configuration, see the
+xref:quarkus-data-hibernate-getting-started.adoc[Quarkus Data Hibernate getting started tutorial].
 
 == Our first entity
 

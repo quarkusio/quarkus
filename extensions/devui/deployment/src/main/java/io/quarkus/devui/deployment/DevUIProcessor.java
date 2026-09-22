@@ -587,7 +587,9 @@ public class DevUIProcessor {
                 .artifactKey(UI_JAR)
                 .root(DEVUI + SLASH).build());
 
-        devUIWebJarProducer.produce(new DevUIWebJarBuildItem(UI_JAR, DEVUI, getWebJarNamespace(UI_JAR)));
+        // The Dev UI's own resources are served from the Dev UI root, so they keep the empty namespace rather than
+        // the "devui" one used for build time data, otherwise everything under /q/dev-ui/ moves to /q/dev-ui/devui/
+        devUIWebJarProducer.produce(new DevUIWebJarBuildItem(UI_JAR, DEVUI, getNamespace(UI_JAR)));
 
         final boolean assistantIsAvailable = capabilities.isPresent(Capability.ASSISTANT);
 
@@ -1081,8 +1083,9 @@ public class DevUIProcessor {
     }
 
     /**
-     * The namespace a {@link DevUIWebJarBuildItem} is registered under, which is the internal one for the Dev UI's own
-     * resources rather than the empty string {@link #getNamespace(ArtifactKey)} returns for them.
+     * The namespace of an extension's web jar and build time data, which is the internal one for the Dev UI's own
+     * artifact rather than the empty string {@link #getNamespace(ArtifactKey)} returns for it. The Dev UI's own
+     * resources jar is not registered through this, as it is served from the Dev UI root.
      */
     private String getWebJarNamespace(ArtifactKey artifactKey) {
         String namespace = getNamespace(artifactKey);

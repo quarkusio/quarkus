@@ -435,9 +435,12 @@ public class OidcCommonUtils {
     }
 
     public static boolean isClientSecretBasicAuthRequired(Credentials creds) {
-        return creds.secret().isPresent() ||
-                ((creds.clientSecret().value().isPresent() || creds.clientSecret().provider().key().isPresent())
-                        && clientSecretMethod(creds) == Secret.Method.BASIC);
+        return hasClientSecret(creds) && clientSecretMethod(creds) == Secret.Method.BASIC;
+    }
+
+    private static boolean hasClientSecret(Credentials creds) {
+        return creds.secret().isPresent() || creds.clientSecret().value().isPresent()
+                || creds.clientSecret().provider().key().isPresent();
     }
 
     public static boolean isClientJwtAuthRequired(Credentials creds) {
@@ -449,8 +452,7 @@ public class OidcCommonUtils {
     }
 
     public static boolean isClientSecretPostAuthRequired(Credentials creds) {
-        return (creds.clientSecret().value().isPresent() || creds.clientSecret().provider().key().isPresent())
-                && clientSecretMethod(creds) == Secret.Method.POST;
+        return hasClientSecret(creds) && clientSecretMethod(creds) == Secret.Method.POST;
     }
 
     public static boolean isClientSecretPostJwtAuthRequired(Credentials creds) {

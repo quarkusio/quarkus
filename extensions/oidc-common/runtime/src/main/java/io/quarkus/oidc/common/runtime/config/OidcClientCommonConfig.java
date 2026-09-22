@@ -56,7 +56,8 @@ public interface OidcClientCommonConfig extends OidcCommonConfig {
     interface Credentials {
 
         /**
-         * The client secret used by the `client_secret_basic` authentication method.
+         * The client secret used by the `client_secret_basic` (default), `client_secret_post`, or `client_secret_jwt`
+         * authentication methods, as selected with `client-secret.method`.
          * Must be set unless a secret is set in {@link #clientSecret} or {@link #jwt} client authentication is required.
          * You can use `client-secret.value` instead, but both properties are mutually exclusive.
          */
@@ -136,8 +137,8 @@ public interface OidcClientCommonConfig extends OidcCommonConfig {
             Provider provider();
 
             /**
-             * The authentication method.
-             * If the `clientSecret.value` secret is set, this method is `basic` by default.
+             * The authentication method, applied to the secret set with either `secret` or `client-secret.value`.
+             * If a secret is set, this method is `basic` by default.
              */
             Optional<Method> method();
 

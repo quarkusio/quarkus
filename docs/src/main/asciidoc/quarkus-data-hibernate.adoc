@@ -166,26 +166,21 @@ You do not have to extend an identifier supertype if you define your own identif
 superclass with managed or record operations, implement the corresponding `CustomId` entity interface and extend the
 corresponding `CustomId<Entity, Id>` repository interface; see <<entity-and-repository-type-matrix,the type matrix>>.
 
-== Our first repository
+== Repositories
 
-Now that we know how to create, update and delete our entities, let's see how we can query our database to find them,
-or even run delete queries.
+A Quarkus Data Hibernate repository is an interface containing annotated finder, query, or lifecycle methods.
+The annotation processor generates its implementation. A repository may also declare `default` methods with custom
+implementations.
 
-Because query operations do not belong on instances of our entities, we will place these operations on another type
-called a `Repository`, and because those queries are intimately tied with the entities they operate on, we recommend
-placing them on an interface nested in the entity:
+A repository does not need to extend another interface, but Quarkus Data provides a few repository supertypes worth
+considering for convenience. The usual conventions are to nest the repository in its entity and extend
+`ManagedRepository<Entity>` for managed entities, or `RecordRepository<Entity>` for record entities. These supertypes
+provide ready-made persistence and query operations in addition to your declared methods.
+
+.Managed entity and repository
 
 [source,java]
 ----
-import io.quarkus.data.hibernate.ManagedEntity;
-import io.quarkus.data.hibernate.ManagedRepository;
-import jakarta.persistence.Entity;
-import org.hibernate.annotations.processing.Find;
-import org.hibernate.annotations.processing.HQL;
-
-import java.time.LocalDate;
-import java.util.List;
-
 @Entity
 public class Cat extends ManagedEntity {
     public String name;
@@ -200,235 +195,252 @@ public class Cat extends ManagedEntity {
         @Find
         Cat findByName(String name);
 
-        @HQL("where breed = CUTE")
+        @Query("where breed = CUTE")
         List<Cat> findCute();
 
-        @HQL("delete from Cat where name = :name")
+        @Query("delete from Cat where name = :name")
         long deleteByName(String name);
 
-        @HQL("delete from Cat where breed = HAIRLESS")
+        @Query("delete from Cat where breed = HAIRLESS")
         long deleteHairless();
     }
 }
 ----
 
-A Quarkus Data Hibernate repository is:
+.Record entity and repository
+[source,java]
+----
+@Entity
+public class CatRecord extends RecordEntity {
+    public String name;
 
-- An interface nested in the entity (though it could be a toplevel interface if you prefer)
-- Which extends the `ManagedRepository` interface, with the entity in question as type parameter
-- And contains query methods, annotated with either `@Find` or `@HQL` or even `@SQL` (for native queries), or
-  `default` methods with implementation of queries
+    public interface Repo extends RecordRepository<CatRecord> {
+        @Find
+        CatRecord findByName(String name);
+    }
+}
+----
 
-You can use `@Find` methods to find single instances, or collections of entities, by using the parameters of the
-method to build a query. The Hibernate documentation has
-https://docs.jboss.org/hibernate/orm/7.1/introduction/html_single/Hibernate_Introduction.html#generated-finder-methods[all the information you need about this].
+The examples use `jakarta.data.repository.Find` and `jakarta.data.repository.Query`.
+For the behavioral differences between managed and record entities, see
+<<session-and-access-models,Session and access models>>. For standalone repositories and entities without Quarkus Data
+supertypes, see <<alternative-repository-definitions,Advanced usage>>.
+
+=== Generated finder and query methods
+
+You can use `@Find` methods to find single instances or collections of entities by using the parameters of the method
+to build a query. The Hibernate documentation contains the complete
+link:https://docs.hibernate.org/orm/{hibernate-orm-version-major-minor}/introduction/html_single/#generated-finder-methods[generated finder method reference].
 
 .A few common examples
 [source,java]
 ----
 @Find
-public List<Cat> findAllCats(); <1>
+List<Cat> findAllCats(); <1>
 
 @Find
-public long countAllCats(); <2>
+long countAllCats(); <2>
 
 @Find
-public Cat findCatByNameAndBreed(String name, Breed breed); <3>
+Cat findCatByNameAndBreed(String name, Breed breed); <3>
 ----
 <1> Finder methods may return collections of entities
 <2> Or generate `COUNT` queries
 <3> Or single entities, and any number of parameters which must all match the queried entities.
 
-Alternately, you can use `@HQL` or `@SQL` queries, which support HQL and SQL queries. Once again
-the Hibernate documentation has https://docs.jboss.org/hibernate/orm/7.1/introduction/html_single/Hibernate_Introduction.html#generated-query-methods[all the information you need].
+Alternatively, use Jakarta Data's `@Query` for entity queries or Jakarta Persistence's
+`jakarta.persistence.query.NativeQuery` for native SQL. Jakarta Data's `@Query` supports JPQL and its portable
+Jakarta Data Query Language subset (JDQL). Hibernate also accepts HQL extensions in `@Query`. The Hibernate documentation contains the complete
+link:https://docs.hibernate.org/orm/{hibernate-orm-version-major-minor}/introduction/html_single/#generated-query-methods[generated query method reference].
 
-.A few common examples
+.Examples of `@Query` and `@NativeQuery` usage
 [source,java]
 ----
-@HQL("from Cat")
-public List<Cat> findAllCats(); <1>
+@Query("from Cat")
+List<Cat> findAllCats(); <1>
 
-@HQL("select min(birth) from Cat")
-public LocalDate oldestCat(); <2>
+@Query("select min(birth) from Cat")
+LocalDate oldestCat(); <2>
 
-@HQL("where name = :name and breed = :breed")
-public Cat findCatByNameAndBreed(String name, Breed breed); <3>
+@Query("where name = :name and breed = :breed")
+Cat findCatByNameAndBreed(String name, Breed breed); <3>
+
+@NativeQuery("select name from Cat where name = :name")
+List<String> findNames(String name); <4>
 ----
 <1> Query methods may return collections of entities
 <2> Or projections of a single column, even multiple columns with `Object[]` and `List<Object[]>` types
 <3> Queries can of course refer to method parameters.
+<4> Native queries refer to database tables and columns instead of entity names and fields.
 
-The beauty of generated finder and query methods is that they are type-checked at build time: they will be validated
-and guarantee that you did not make any typo in the entity names, their fields, the HQL/SQL syntax, or the name of
-their parameters.
+Generated finder and HQL query methods are type-checked at build time. They are validated for entity names, fields,
+HQL syntax, and parameter names. Native SQL is validated by the database when the query is executed.
 
-=== Using the repository
+=== Obtaining and using a repository
 
-Using the repository can be done by simply injecting it where you intend to use it:
+Repositories are CDI beans and can be injected where you intend to use them:
 
 [source,java]
 ----
-import jakarta.inject.Inject;
-import jakarta.transaction.Transactional;
+@Inject
+Cat.Repo repo;
 
-import java.time.LocalDate;
-import java.util.List;
-
-public class Code {
-
-    @Inject
-    Cat.Repo repo;
-
-    @Transactional
-    public void method() {
-        Cat cat = new Cat();
-        cat.name = "Lucky";
-        cat.birth = LocalDate.of(2015, 01, 12);
-        cat.breed = Cat.Breed.CUTE;
-
-        // Persist the cat
-        cat.persist();
-
-        // Make a change, no need to update it
-        cat.name = "Luckynou";
-
-        // Find our cat
-        cat = repo.findByName("Luckynou");
-
-        // Find cute cats
-        List<Cat> cuteCats = repo.findCute();
-
-        // Delete our cat
-        cat.delete();
-
-        // Delete queries
-        repo.deleteByName("Lucky");
-        repo.deleteHairless();
-    }
+@Transactional
+public Cat findCat(String name) {
+    return repo.findByName(name);
 }
 ----
 
-Now, as an added benefit, you can also access the repository using a handy shortcut generated static method on the
-https://docs.jboss.org/hibernate/orm/7.1/introduction/html_single/Hibernate_Introduction.html#static-metamodel[generated Metamodel]
-of your entity, which is super useful for discovery of operations (just type `Cat_.repo().` and see all your methods)
-and to avoid making a detour outside of your method to add an injected field, such as in this startup code that
-will delete all your cats (don't do this in production!!):
+You can also access a nested repository by using a generated static method on the
+link:https://docs.hibernate.org/orm/{hibernate-orm-version-major-minor}/introduction/html_single/#static-metamodel[generated metamodel]
+of your entity:
 
 [source,java]
 ----
-import io.quarkus.runtime.Startup;
-import jakarta.transaction.Transactional;
+Cat cat = Cat_.repo().findByName("Lucky");
+----
 
-public class OnStart {
-    @Startup
-    @Transactional
-    public void startupMethod() {
-        Cat_.repo().deleteAll();
-    }
+All repositories defined as nested interfaces of an entity are available under their generated metamodel class through
+accessor methods with the same name as the repository. This is equivalent to injecting the repository type and uses CDI
+under the hood to look up the repository.
+
+=== The `ManagedRepository` supertype
+
+The `ManagedRepository` type provides most of the operations needed to work with an entity, such as `persist()`,
+`delete()`, `isPersistent()`, and `listAll()`.
+
+Here is an example of how it can be used:
+
+[source,java]
+----
+@Inject
+Cat.Repo repo;
+
+@Transactional
+public void repositoryOperations(Cat cat) {
+    // entity operations
+    repo.persist(cat);
+    repo.delete(cat);
+    boolean isPersistent = repo.isPersistent(cat);
+    // operations on all entities
+    long count = repo.count();
+    long deleted = repo.deleteAll();
+    List<Cat> allCats = repo.listAll();
+    repo.streamAll().forEach(kitty -> kitty.name = kitty.name.toUpperCase());
+    BlockingDataQuery<Cat> catQuery = repo.findAll();
+    List<Cat> sortedCats = repo.findAll().sort(Sort.asc("name")).list();
+    // operations on the Hibernate session
+    repo.flush();
+    Session session = repo.getSession();
+    // ID-related operations
+    boolean wasDeleted = repo.deleteById(cat.id);
+    Cat foundCat = repo.findById(cat.id);
+    Optional<Cat> optionalCat = repo.findByIdOptional(cat.id);
 }
 ----
 
-All the repositories you define as nested interfaces of your entity will be available under their generated metamodel
-class under accessor methods of the same name as the repository. This is strictly equivalent to injecting the repository
-type, and in fact uses CDI under the hood to look up the repository.
+=== Dynamically built queries
 
-== The `ManagedRepository` super type
+When defining finder and query operations on a repository, queries are validated and generated at build time.
+For dynamic filtering and sorting, prefer type-safe restrictions and ordering before using query strings.
 
-Just like in previous versions of Hibernate ORM and Hibernate Reactive with Panache, the `ManagedRepository` type comes
-packed with most of the operations you need to work on your entity, such as, out of the box:
+==== Type-safe restrictions and ordering
+
+Jakarta Data 1.1 provides `Restriction` parameters for finder and query methods. For example, add this method to
+`Cat.Repo`:
 
 [source,java]
 ----
-import io.quarkus.data.hibernate.blocking.BlockingDataQuery;
 import jakarta.data.Order;
-import jakarta.data.Sort;
-import jakarta.inject.Inject;
-import jakarta.transaction.Transactional;
-import org.hibernate.Session;
+import jakarta.data.restrict.Restriction;
+import jakarta.data.repository.Find;
 
-import java.time.LocalDate;
-import java.util.List;
-import java.util.Optional;
-
-public class Code {
-
-    @Inject
-    Cat.Repo repo;
-
-    @Transactional
-    public void repositoryOperations(Cat cat) {
-        // entity operations
-        repo.persist(cat);
-        repo.delete(cat);
-        boolean isPersistent = repo.isPersistent(cat);
-        // operations on all entities
-        long count = repo.count();
-        long deleted = repo.deleteAll();
-        List<Cat> allCats = repo.listAll();
-        repo.streamAll().forEach(kitty -> kitty.name = kitty.name.toUpperCase());
-        PanacheBlockingQuery<Cat> catQuery = repo.findAll();
-        List<Cat> sortedCats = repo.findAll().sort(Sort.asc("name")).list();
-        // operations on the Hibernate session
-        repo.flush();
-        Session session = repo.getSession();
-        // ID-related operations
-        boolean wasDeleted = repo.deleteById(cat.id);
-        Cat foundCat = repo.findById(cat.id);
-        Optional<Cat> optionalCat = repo.findByIdOptional(cat.id);
-    }
-}
+@Find
+List<Cat> search(Restriction<Cat> restriction, Order<Cat> order);
 ----
 
-== Non-type-safe queries
+The annotation processor generates two different metamodels for `Cat`:
 
-With generated finder and query methods, as we've previously shown, everything is validated at build-time, but if
-you want to write non-type-safe queries, you can always use the provided methods of `ManagedRepository`:
+- `_Cat`, with a leading underscore, is the Jakarta Data metamodel. Its typed attributes build restrictions and sort criteria.
+- `Cat_`, with a trailing underscore, is the Jakarta Persistence metamodel. Its string attribute constants are used in the next subsection.
+
+Both are generated in the same package as `Cat`; the examples below assume `org.acme`.
+Use `_Cat` for type-safe restrictions and ordering:
 
 [source,java]
 ----
-import io.quarkus.data.hibernate.blocking.BlockingDataQuery;
-import jakarta.data.Order;
-import jakarta.data.Sort;
-import jakarta.inject.Inject;
-import jakarta.transaction.Transactional;
-import org.hibernate.Session;
+import jakarta.data.restrict.Restrict;
+import org.acme._Cat; // Automatically generated Jakarta Data metamodel (leading underscore)
 
-import java.time.LocalDate;
-import java.util.List;
-import java.util.Optional;
+@Inject
+Cat.Repo repo;
 
-public class Code {
-
-    @Inject
-    Cat.Repo repo;
-
-    @Transactional
-    public void nonTypeSafeQueries() {
-        // Find a cat by name
-        Cat cat = repo.find(Cat_.NAME, "Lucky").singleResult();
-        // All cute cats
-        List<Cat> cuteCats = repo.list(Cat_.BREED, Cat.Breed.CUTE);
-        // Cats with no known birth date
-        repo.stream(Cat_.BIRTH+" is null").forEach(kitty -> System.err.println(kitty));
-        // Get rid of non-cute cats
-        long deleted = repo.delete(Cat_.BREED, Cat.Breed.HAIRLESS);
-        // Count ugly cats with no name
-        repo.count("breed = ?1 and name is null", Cat.Breed.HAIRLESS);
-        // Make every cat cute
-        repo.update("breed = CUTE");
-        // Sort results using PanacheQuery
-        List<Cat> sortedByName = repo.findAll().sort(Sort.asc("name")).list();
-        List<Cat> sortedMatches = repo.find("breed = ?1", Cat.Breed.CUTE)
-                .sort(Sort.desc("name"))
-                .list();
-    }
+@Transactional
+public List<Cat> typeSafeQueries() {
+    return repo.search(
+            Restrict.all(_Cat.name.startsWith("Luck"), _Cat.breed.equalTo(Cat.Breed.CUTE)),
+            Order.by(_Cat.name.asc(), _Cat.birth.desc()));
 }
 ----
 
-Sorting is applied on the `PanacheQuery` returned by `find()` and `findAll()`, not on the shortcut
-`list()`, `listAll()`, `stream()`, or `streamAll()` methods. For a single criterion, pass a `Sort`
-directly — there is no need to wrap it in `Order.by()`. Use `Order` only when you need multiple
-criteria, or when receiving an `Order` from a REST endpoint:
+The attribute types determine which comparisons are available and which values they accept. Restrictions can be
+combined conditionally to build a query from user-supplied search criteria. See the Hibernate documentation on
+link:https://docs.hibernate.org/orm/{hibernate-orm-version-major-minor}/introduction/html_single/#restrictions-and-ordering[restrictions and ordering]
+and the link:{jakarta-data-spec-url}[Jakarta Data specification] for the full APIs.
+
+==== Queries using metamodel attribute constants
+
+The query methods provided by `ManagedRepository` and `RecordRepository` can use attribute constants from the
+generated Jakarta Persistence metamodel `Cat_`. These constants contain attribute names as strings; unlike the
+typed attributes of `_Cat`, they do not make query parameters or expressions type-safe.
+
+[source,java]
+----
+import org.acme.Cat_; // Automatically generated Jakarta Persistence metamodel (trailing underscore)
+
+@Inject
+Cat.Repo repo;
+
+@Transactional
+public void metamodelAttributeQueries() {
+    // Find a cat by name
+    Cat cat = repo.find(Cat_.NAME, "Lucky").singleResult();
+    // All cute cats
+    List<Cat> cuteCats = repo.list(Cat_.BREED, Cat.Breed.CUTE);
+    // Cats with no known birth date
+    repo.stream(Cat_.BIRTH + " is null").forEach(kitty -> System.err.println(kitty));
+    // Get rid of non-cute cats
+    long deleted = repo.delete(Cat_.BREED, Cat.Breed.HAIRLESS);
+}
+----
+
+==== String-based queries
+
+For queries that cannot be expressed with restrictions, use the query methods provided by `ManagedRepository` or
+`RecordRepository`. These methods accept query strings, so they are not type-safe.
+
+[source,java]
+----
+@Inject
+Cat.Repo repo;
+
+@Transactional
+public void nonTypeSafeQueries() {
+    // Count ugly cats with no name
+    repo.count("breed = ?1 and name is null", Cat.Breed.HAIRLESS);
+    // Make every cat cute
+    repo.update("breed = CUTE");
+    // Sort results using BlockingDataQuery
+    List<Cat> sortedByName = repo.findAll().sort(Sort.asc("name")).list();
+    List<Cat> sortedMatches = repo.find("breed = ?1", Cat.Breed.CUTE)
+            .sort(Sort.desc("name"))
+            .list();
+}
+----
+
+Sorting is applied on the `BlockingDataQuery` returned by `find()` and `findAll()`, not on the shortcut `list()`,
+`listAll()`, `stream()`, or `streamAll()` methods. For a single criterion, pass a `Sort` directly. Use `Order` only
+when you need multiple criteria, or when receiving an `Order` from a REST endpoint:
 
 [source,java]
 ----

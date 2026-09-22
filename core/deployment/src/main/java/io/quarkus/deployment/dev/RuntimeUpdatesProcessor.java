@@ -1523,6 +1523,7 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
         if (testClassChangeTimer != null) {
             testClassChangeTimer.cancel();
         }
+        lastStartIndex = null;
     }
 
     public boolean toggleInstrumentation() {

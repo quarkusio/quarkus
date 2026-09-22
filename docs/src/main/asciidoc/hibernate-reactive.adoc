@@ -175,11 +175,14 @@ public class Gift {
 }
 ----
 
-To load SQL statements when Hibernate Reactive starts, add an `import.sql` file in your `src/main/resources/` directory.
+To load SQL statements when Hibernate Reactive starts, add a `data.sql` file in your `src/main/resources/` directory.
 This script can contain any SQL DML statements.
 Make sure to terminate each statement with a semicolon.
 
 This is useful to have a data set ready for your tests or demos.
+
+See xref:hibernate-orm.adoc#sql-init-scripts[the corresponding section of the Hibernate ORM guide] for more details,
+in particular about `import.sql`, which is only executed when Hibernate Reactive creates the schema.
 
 === Using `@Transactional` with Hibernate Reactive
 

@@ -44,6 +44,18 @@ public interface HibernateOrmConfigPersistenceUnit {
     @ConfigDocSection
     HibernateOrmConfigPersistenceUnitDialect dialect();
 
+    /**
+     * Schema management configuration.
+     */
+    @ConfigDocSection
+    HibernateOrmConfigPersistenceUnitSchemaManagement schemaManagement();
+
+    /**
+     * Data management configuration.
+     */
+    @ConfigDocSection
+    HibernateOrmConfigPersistenceUnitDataManagement dataManagement();
+
     // @formatter:off
     /**
      * Paths to files containing the SQL statements to execute when Hibernate ORM starts.
@@ -51,15 +63,11 @@ public interface HibernateOrmConfigPersistenceUnit {
      * The files are retrieved from the classpath resources,
      * so they must be located in the resources directory (e.g. `src/main/resources`).
      *
-     * The default value for this setting differs depending on the Quarkus launch mode:
-     *
-     * * In dev and test modes, it defaults to `import.sql`.
-     *   Simply add an `import.sql` file in the root of your resources directory
-     *   and it will be picked up without having to set this property.
-     *   Pass `no-file` to force Hibernate ORM to ignore the SQL import file.
-     * * In production mode, it defaults to `no-file`.
-     *   It means Hibernate ORM won't try to execute any SQL import file by default.
-     *   Pass an explicit value to force Hibernate ORM to execute the SQL import file.
+     * When set, this property replaces both `quarkus.hibernate-orm.schema-management.init-script`
+     * and `quarkus.hibernate-orm.data-management.init-script`, defaults included:
+     * `import.sql` and `data.sql` are not picked up, and the scripts are only executed
+     * when Hibernate ORM creates the schema, in every launch mode.
+     * It cannot be combined with those properties, nor with `quarkus.hibernate-orm.data-management.strategy`.
      *
      * If you need different SQL statements between dev mode, test (`@QuarkusTest`) and in production, use Quarkus
      * https://quarkus.io/guides/config#configuration-profiles[configuration profiles facility].
@@ -79,10 +87,16 @@ public interface HibernateOrmConfigPersistenceUnit {
      * Each SQL statement must be terminated by a semicolon.
      * ====
      *
+     * @deprecated Use `quarkus.hibernate-orm.data-management.init-script` to load data
+     *             (executed regardless of how the schema is managed, see `quarkus.hibernate-orm.data-management.strategy`)
+     *             or `quarkus.hibernate-orm.schema-management.init-script` to complete the schema
+     *             (executed only when Hibernate ORM creates the schema).
+     *             Scripts configured with this deprecated property keep their historical behavior:
+     *             they are executed only when Hibernate ORM creates the schema.
      * @asciidoclet
      */
     // @formatter:on
-    @ConfigDocDefault("import.sql in dev and test modes ; no-file otherwise")
+    @Deprecated(since = "4.0", forRemoval = true)
     Optional<List<@WithConverter(TrimmedStringConverter.class) String>> sqlLoadScript();
 
     /**
@@ -779,6 +793,87 @@ public interface HibernateOrmConfigPersistenceUnit {
              */
             NONE
         }
+    }
+
+    @ConfigGroup
+    interface HibernateOrmConfigPersistenceUnitSchemaManagement {
+
+        // @formatter:off
+        /**
+         * Paths to files containing SQL statements to execute right after Hibernate ORM created the database schema,
+         * typically to complete the schema with objects Hibernate ORM cannot generate (constraints, views, ...).
+         *
+         * The scripts are only executed when Hibernate ORM creates the schema,
+         * i.e. when `quarkus.hibernate-orm.schema-management.strategy` is `create` or `drop-and-create`.
+         * To load data regardless of how the schema is managed, use `quarkus.hibernate-orm.data-management.init-script` instead.
+         *
+         * The files are retrieved from the classpath resources,
+         * so they must be located in the resources directory (e.g. `src/main/resources`).
+         *
+         * By default, an `import.sql` file in the root of your resources directory is picked up
+         * without having to set this property, in every launch mode:
+         * whether the script is executed only depends on `quarkus.hibernate-orm.schema-management.strategy`.
+         * Pass `no-file` to force Hibernate ORM to ignore the file.
+         *
+         * [NOTE]
+         * ====
+         * Quarkus supports files with SQL statements or comments spread over multiple lines.
+         * Each SQL statement must be terminated by a semicolon.
+         * ====
+         *
+         * @asciidoclet
+         */
+        // @formatter:on
+        @ConfigDocDefault("`import.sql` if it exists in the classpath; `no-file` otherwise")
+        Optional<List<@WithConverter(TrimmedStringConverter.class) String>> initScript();
+
+    }
+
+    @ConfigGroup
+    interface HibernateOrmConfigPersistenceUnitDataManagement {
+
+        // @formatter:off
+        /**
+         * Paths to files containing SQL statements to execute when Hibernate ORM starts, to load data into the database
+         * (reference data, test data, ...).
+         *
+         * The scripts are executed regardless of whether the schema is created by Hibernate ORM
+         * or managed by another tool such as Flyway or Liquibase,
+         * as long as `quarkus.hibernate-orm.data-management.strategy` is `create`
+         * (the default in dev and test modes, and whenever Hibernate ORM creates the schema).
+         *
+         * The files are retrieved from the classpath resources,
+         * so they must be located in the resources directory (e.g. `src/main/resources`).
+         *
+         * By default, a `data.sql` file in the root of your resources directory is picked up
+         * without having to set this property, in every launch mode:
+         * whether the script is executed only depends on `quarkus.hibernate-orm.data-management.strategy`.
+         * Pass `no-file` to force Hibernate ORM to ignore the file.
+         *
+         * If you need different SQL statements between dev mode, test (`@QuarkusTest`) and in production, use Quarkus
+         * https://quarkus.io/guides/config#configuration-profiles[configuration profiles facility].
+         *
+         * [source,property]
+         * .application.properties
+         * ----
+         * %dev.quarkus.hibernate-orm.data-management.init-script = data-dev.sql
+         * %test.quarkus.hibernate-orm.data-management.init-script = data-test.sql
+         * %prod.quarkus.hibernate-orm.data-management.init-script = no-file
+         * ----
+         *
+         * [NOTE]
+         * ====
+         * Quarkus supports files with SQL statements or comments spread over multiple lines,
+         * or `.zip` files containing those files.
+         * Each SQL statement must be terminated by a semicolon.
+         * ====
+         *
+         * @asciidoclet
+         */
+        // @formatter:on
+        @ConfigDocDefault("`data.sql` if it exists in the classpath; `no-file` otherwise")
+        Optional<List<@WithConverter(TrimmedStringConverter.class) String>> initScript();
+
     }
 
 }

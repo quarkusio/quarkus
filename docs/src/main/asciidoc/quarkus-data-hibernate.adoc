@@ -45,10 +45,20 @@ include::{includes}/quarkus-data-processor-config.adoc[]
 For step-by-step instructions, including the required extensions, database driver, and datasource configuration, see the
 xref:quarkus-data-hibernate-getting-started.adoc[Quarkus Data Hibernate getting started tutorial].
 
-== Our first entity
+== Entities
 
-What this guide will focus on is the basics of how to use Quarkus Data Hibernate, so let's start with how to
-create an entity:
+An entity is a Java class that represents data stored in a database. Typically, the class maps to a table, each entity
+instance maps to a row, and its fields map to columns. Quarkus Data Hibernate works with entities defined using
+Jakarta Persistence annotations.
+
+=== Defining an entity
+
+To map a Java class to a database table:
+
+- Write a class.
+- Annotate it with link:{jakarta-persistence-javadocs-url}/jakarta/persistence/entity[`@Entity`].
+- Optionally, make it extend `ManagedEntity` or `RecordEntity` (see <<session-and-access-models,Session and access models>>).
+- Make its fields `public`. <<entity-field-access,Getters and setters are not necessary thanks to bytecode enhancement>>.
 
 [source,java]
 ----
@@ -69,45 +79,92 @@ public class Cat extends ManagedEntity {
 }
 ----
 
-In order to map a Java class to a Database table, just:
+Instances of `ManagedEntity` are managed by Hibernate ORM. After an instance is persisted, changes to its fields are
+automatically sent to the database without an explicit `update` instruction.
 
-- Write a class
-- Annotate it with link:{jakarta-persistence-javadocs-url}/jakarta/persistence/entity[`@Entity`]
-- Make it extend `ManagedEntity`
-- Make its fields `public`
+[[entity-field-access]]
+=== Entity field access
 
-And that's it, now you can start creating instances of your entity, persist it to your database, after which point
-all changes to its fields will be automatically sent to the database (no need for any explicit `update` instruction),
-and even remove it from the database:
+Quarkus enhances entity bytecode at build time, so public fields can be accessed directly without writing getters and
+setters. This includes tracking changes to managed entities. See
+xref:hibernate-orm.adoc#automatic-build-time-enhancement[Automatic build time enhancement].
+Public fields are a convenience, not a requirement: private fields with accessors and Jakarta Persistence property
+access are also supported.
+
+[[about-entity-identifiers]]
+=== Entity identifiers
+
+`ManagedEntity` and `RecordEntity` come with a default generated database identifier because they extend `WithId.AutoLong`, which
+provides a generated database identifier of type `Long`.
+
+You can choose to extend `WithId.AutoString` for a `String` identifier, `WithId.AutoUUID` for a `UUID` identifier,
+or `WithId.AutoUUIDv7` for a time-sortable `UUID` identifier. The following table lists the identifier supertypes:
+
+[cols="1,1,1"]
+|===
+|ID type|Supertype|Generation
+
+|`Long`
+|`WithId.AutoLong`
+|`@GeneratedValue`
+
+|`String`
+|`WithId.AutoString`
+|`@UuidGenerator`
+
+|`UUID`
+|`WithId.AutoUUID`
+|`@UuidGenerator`
+
+|`UUID`
+|`WithId.AutoUUIDv7`
+|`@UuidGenerator(style = UuidGenerator.Style.VERSION_7)`
+
+|`Id`
+|`WithId<Id>`
+|Assigned by the application
+|===
+
+For example, extend `WithId.AutoUUIDv7` to use generated UUIDv7 identifiers:
 
 [source,java]
 ----
-import jakarta.transaction.Transactional;
+import io.quarkus.data.hibernate.WithId;
+import jakarta.persistence.Entity;
 
-import java.time.LocalDate;
-import java.util.List;
+@Entity
+public class CatWithUUID extends WithId.AutoUUIDv7 {
+    public String name;
+}
+----
 
-public class Code {
+The entity inherits an `id` field of type `java.util.UUID`. When the entity is persisted, Hibernate automatically
+generates a time-sortable version 7 UUID for this field. You do not need to declare or assign the identifier yourself.
 
-    @Transactional <1>
-    public void method() {
-        Cat cat = new Cat();
-        cat.name = "Lucky";
-        cat.birth = LocalDate.of(2015, 01, 12);
-        cat.breed = Cat.Breed.CUTE;
+You can also provide your own database identifier explicitly and implement the `ManagedEntity.CustomId` interface in
+your entity, as well as use the `ManagedRepository.CustomId` interface for your repository, to specify the database
+identifier type:
 
-        // Persist the cat
-        cat.persist();
+[source,java]
+----
+@Entity
+public class CatWithId implements ManagedEntity.CustomId {
+    @Id
+    public String id;
+    public String name;
 
-        // Make a change, no need to update it
-        cat.name = "Luckynou";
-
-        // Delete our cat
-        cat.delete();
+    public interface Repo extends ManagedRepository.CustomId<CatWithId, String> {
+        @Find
+        CatWithId findByName(String name);
     }
 }
 ----
-<1> This is required on any method which interacts with the database, in order to run the operations in a transaction.
+
+WARNING: The custom identifier in this example has no generator, so you must set its value before persisting the entity.
+
+You do not have to extend an identifier supertype if you define your own identifier. To combine a generated identifier
+superclass with managed or record operations, implement the corresponding `CustomId` entity interface and extend the
+corresponding `CustomId<Entity, Id>` repository interface; see <<entity-and-repository-type-matrix,the type matrix>>.
 
 == Our first repository
 
@@ -380,99 +437,6 @@ List<Cat> byNameThenBirth = repo.findAll()
         .sort(Order.by(Sort.asc("name"), Sort.desc("birth")))
         .list();
 ----
-
-[[about-entity-identifiers]]
-== About entity identifiers
-
-In the example above, we extended the `ManagedEntity` type, and did not define any database identifier, that's
-because `ManagedEntity` comes with a default generated database identifier, so you don't have to worry about it. It
-does this by extending the `WithId.AutoLong` class, which provides a generated database identifier of type `Long`.
-
-You can choose to extend the `WithId.AutoString` for a `String` identifier, `WithId.AutoUUID` for a `UUID`
-identifier, or `WithId.AutoUUIDv7` for a Unique by time sortable `UUID`
-identifier to automatically get an attribute of the form:
-
-[source,java]
-----
-@Id
-public IdType id;
-----
-
-WARNING: The identifier will not be automatically generated in this case, so you will have to set its value manually
-on creation.
-
-Naturally, you can also provide your own database identifier explicitly and implement the `ManagedEntity.CustomId`
-interface in your entity, as well as use the `ManagedRepository.CustomId` interface for your repository, in order to
-specify you database identifier type:
-
-[source,java]
-----
-import io.quarkus.data.hibernate.ManagedEntity;
-import io.quarkus.data.hibernate.ManagedRepository;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import org.hibernate.annotations.processing.Find;
-import org.hibernate.annotations.processing.HQL;
-
-import java.time.LocalDate;
-import java.util.List;
-
-@Entity
-public class CatWithId implements ManagedEntity.CustomId {
-    @Id
-    public String id;
-    public String name;
-    public LocalDate birth;
-    public Breed breed;
-
-    public enum Breed {
-        CUTE, HAIRLESS;
-    }
-
-    public interface Repo extends ManagedRepository.CustomId<CatWithId, String> {
-        @Find
-        CatWithId findByName(String name);
-
-        @HQL("where breed = CUTE")
-        List<CatWithId> findCute();
-
-        @HQL("delete from Cat where name = :name")
-        long deleteByName(String name);
-
-        @HQL("delete from Cat where breed = HAIRLESS")
-        long deleteHairless();
-    }
-}
-----
-
-Here is a list of entity supertypes you can use and the ID type they provide, but keep in mind you do not have to
-extend any of these types if you define you own ID:
-
-[cols="1,1,1"]
-|===
-|ID type|Supertype|Shortcut type
-
-|`Long`
-|`WithId.AutoLong`
-|`ManagedEntity`
-
-|`UUID`
-|`WithId.AutoUUID`
-|
-
-|`UUID`
-|`WithId.AutoUUIDv7`
-|
-
-|`String`
-|`WithId.String`
-|
-
-|`T`
-|`WithId<Id>`
-|
-
-|===
 
 == Use stateless sessions
 

@@ -301,8 +301,7 @@ The `quarkus-security-jpa` extension only initializes if a single entity is anno
 
 * Always pass plain text passwords to `BcryptUtil.bcryptHash()` - never pre-hash them.
 * The bcrypt hash includes the salt, so no separate salt storage is needed.
-* To verify a plain text password against a stored hash, use `BcryptUtil.matches(char[] plainPassword, String hashedPassword)`.
-* For custom iterations: `BcryptUtil.bcryptHash(char[] password, int iterationCount)` where higher iterations (12-14) provide more security but slower performance.
+* To verify passwords during authentication, the framework calculates a Bcrypt hash of the password provided in the request and compares it with the stored hash.
 ====
 
 - For more information about configuring passwords and roles, see xref:configure-the-application[Configure the application].

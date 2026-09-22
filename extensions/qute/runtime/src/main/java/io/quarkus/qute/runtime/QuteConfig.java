@@ -110,6 +110,15 @@ public interface QuteConfig {
     boolean altExprSyntax();
 
     /**
+     * The strategy used to map the keys found in localized message bundle files, such as `messages/msg_de.properties`, to
+     * the methods of the corresponding message bundle interface.
+     *
+     * @asciidoclet
+     */
+    @WithDefault("method-name")
+    LocalizedFileKeys localizedFileKeys();
+
+    /**
      * Development mode configuration.
      */
     QuteDevModeConfig devMode();
@@ -140,6 +149,21 @@ public interface QuteConfig {
          * Fail the build if multiple templates with the same path are found.
          */
         FAIL,
+
+    }
+
+    public enum LocalizedFileKeys {
+
+        /**
+         * A key is the name of a message bundle interface method, e.g. {@code helloName}.
+         */
+        METHOD_NAME,
+
+        /**
+         * A key is the message key of a message bundle interface method, i.e. the key used in templates and derived from
+         * {@code @MessageBundle#defaultKey()} and {@code @Message#key()}, e.g. {@code hello_name}.
+         */
+        MESSAGE_KEY,
 
     }
 

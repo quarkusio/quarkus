@@ -611,176 +611,6 @@ have to extend `WithId<Id>` if you define your own entity identifier field:
 
 |===
 
-== Combining blocking, reactive, managed, stateless code
-
-Let's say you want to use an entity in a blocking managed session code, but also in a reactive stateless code: this
-is possible no matter which supertype of your entity you picked. You should pick the supertype that represents your
-majority of use-cases, but any one you pick, you can always obtain the alternative operations by using the
-`.statelessReactive()` method on the entity:
-
-[source,java]
-----
-import io.quarkus.hibernate.reactive.panache.common.WithTransaction;
-import io.smallrye.mutiny.Uni;
-import jakarta.transaction.Transactional;
-
-import java.time.LocalDate;
-
-public class Code {
-
-    @Transactional
-    public void blockingManagedMethod() {
-        Cat cat = new Cat();
-        cat.name = "Lucky";
-        cat.birth = LocalDate.of(2015, 01, 12);
-        cat.breed = Cat.Breed.CUTE;
-
-        // Persist the cat
-        cat.persist();
-
-        // Make a change, no need to update it
-        cat.name = "Luckynou";
-    }
-
-    @WithTransaction
-    public Uni<Void> reactiveStatelessMethod(Long catId) {
-        Cat cat = new Cat();
-        cat.name = "Lucky";
-        cat.birth = LocalDate.of(2015, 01, 12);
-        cat.breed = Cat.Breed.CUTE;
-
-        // Insert the cat
-        return cat.statelessReactive().insert()
-                .chain(() -> {
-                    // Make a change, we need to update it
-                    cat.name = "Luckynou";
-                    return cat.statelessReactive().update();
-                });
-
-    }
-}
-----
-
-All the alternative entity operations are available from these methods:
-
-[cols="1,1,1"]
-|===
-|Session type|Entity accessor|Equivalent entity type
-
-|`Session`
-|`.managedBlocking()`
-|`ManagedEntity`
-
-|`StatelessSession`
-|`.statelessBlocking()`
-|`RecordEntity`
-
-|`Mutiny.Session`
-|`.managedReactive()`
-|`ManagedEntity.Reactive`
-
-|`Mutiny.StatelessSession`
-|`.statelessReactive()`
-|`RecordEntity.Reactive`
-
-|===
-
-Similarly, for all the repository operations, you can obtain alternate repositories for your entity from the
-generated metamodel accessors, or by injecting them with `@Inject`:
-
-[cols="1,1,1"]
-|===
-|Session type|Metamodel accessor|Repository type
-
-|`Session`
-|`Cat_.managedBlocking()`
-|`ManagedRepository<Cat>`
-
-|`StatelessSession`
-|`Cat_.statelessBlocking()`
-|`RecordRepository<Cat>`
-
-|`Mutiny.Session`
-|`Cat_.managedReactive()`
-|`ManagedRepository.Reactive<Cat>`
-
-|`Mutiny.StatelessSession`
-|`Cat_.statelessReactive()`
-|`RecordRepository.Reactive<Cat>`
-
-|===
-
-But you can also define any number of repositories for your custom operations within your entity:
-
-[source,java]
-----
-import io.quarkus.data.hibernate.ManagedEntity;
-import io.quarkus.data.hibernate.ManagedRepository;
-import io.quarkus.data.hibernate.RecordRepository;
-import io.smallrye.mutiny.Uni;
-import jakarta.persistence.Entity;
-import org.hibernate.annotations.processing.Find;
-import org.hibernate.annotations.processing.HQL;
-
-import java.time.LocalDate;
-import java.util.List;
-
-@Entity
-public class Cat extends ManagedEntity {
-    public String name;
-    public LocalDate birth;
-    public Breed breed;
-
-    public enum Breed {
-        CUTE, HAIRLESS;
-    }
-
-    public interface Repo extends ManagedRepository<Cat> {
-        @Find
-        Cat findByName(String name);
-    }
-
-    public interface TheOtherRepo extends RecordRepository<Cat> {
-        @Find
-        Uni<Cat> findByName(String name);
-    }
-}
-----
-
-And then you can inject both types of repositories:
-
-[source,java]
-----
-import io.quarkus.hibernate.reactive.panache.common.WithTransaction;
-import io.smallrye.mutiny.Uni;
-import jakarta.inject.Inject;
-import jakarta.transaction.Transactional;
-
-public class Code {
-
-    @Inject
-    Cat.Repo repo;
-
-    @Inject
-    Cat.TheOtherRepo theOtherRepo;
-
-    @Transactional
-    public void blockingManagedMethod() {
-        Cat cat = repo.findByName("Lucky");
-    }
-
-    @WithTransaction
-    public Uni<Void> reactiveStatelessMethod() {
-        return theOtherRepo.findByName("Lucky")
-                .invoke(cat -> System.err.println(cat))
-                .replaceWithVoid();
-    }
-}
-----
-
-NOTE: you can of course also use the generated metamodel accessors instead of injecting these repositories, with
-`Cat_.repo()` and `Cat_.theOtherRepo()`.
-
 == Startup code
 
 For startup code, use `jakarta.transaction.Transactional` for both blocking and reactive operations. See the
@@ -1056,3 +886,100 @@ method with a concrete type.
 
 See the xref:security-authorize-web-endpoints-reference.adoc[authorization of web endpoints reference] for information
 about Quarkus Security annotations.
+
+== Advanced usage
+
+[[alternative-repository-definitions]]
+=== Standalone repositories and entities without supertypes
+
+Neither an entity nor its repository has to extend a Quarkus Data supertype. This is useful when an entity already
+extends an application-specific superclass, or when the repository should expose only explicitly declared operations:
+
+[source,java]
+----
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.Id;
+
+@Entity
+public class PlainCat {
+    @Id
+    @GeneratedValue
+    public Long id;
+    public String name;
+}
+----
+
+A repository can also be a top-level interface. Annotate standalone repositories with `jakarta.data.repository.Repository`:
+
+[source,java]
+----
+import jakarta.data.repository.Find;
+import jakarta.data.repository.Repository;
+
+@Repository
+public interface PlainCatRepository {
+    @Find
+    PlainCat findByName(String name);
+}
+----
+
+The generated repository remains a CDI bean and can be injected as `PlainCatRepository`. It only exposes the declared
+finder, because it does not inherit persistence or query operations. A standalone repository can also extend
+`ManagedRepository<PlainCat>` or `RecordRepository<PlainCat>` to inherit those operations. Conversely, a nested repository
+can omit the supertype; nesting and inheritance are independent choices.
+
+=== Switching between managed and record models
+
+You can access an entity using any supported session model, regardless of the entity supertype. Pick the supertype that
+represents the majority of your use cases and use the following accessors for alternative operations:
+
+[cols="1,1,1"]
+|===
+|Session type|Entity accessor|Equivalent entity type
+
+|`Session`
+|`.managedBlocking()`
+|`ManagedEntity`
+
+|`StatelessSession`
+|`.statelessBlocking()`
+|`RecordEntity`
+
+|`Mutiny.Session`
+|`.managedReactive()`
+|`ManagedEntity.Reactive`
+
+|`Mutiny.StatelessSession`
+|`.statelessReactive()`
+|`RecordEntity.Reactive`
+
+|===
+
+For repository operations, obtain alternative repositories from the generated metamodel accessors, or inject them with
+`@Inject`:
+
+[cols="1,1,1"]
+|===
+|Session type|Metamodel accessor|Repository type
+
+|`Session`
+|`Cat_.managedBlocking()`
+|`ManagedRepository<Cat>`
+
+|`StatelessSession`
+|`Cat_.statelessBlocking()`
+|`RecordRepository<Cat>`
+
+|`Mutiny.Session`
+|`Cat_.managedReactive()`
+|`ManagedRepository.Reactive<Cat>`
+
+|`Mutiny.StatelessSession`
+|`Cat_.statelessReactive()`
+|`RecordRepository.Reactive<Cat>`
+
+|===
+
+You can also define any number of repositories for custom operations within an entity. All nested repositories are
+available through generated metamodel accessors, such as `Cat_.repo()` and `Cat_.theOtherRepo()`.

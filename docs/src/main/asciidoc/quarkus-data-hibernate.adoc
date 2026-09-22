@@ -1017,102 +1017,42 @@ If a delete query does not start with `delete`, the following additional forms a
 - `<singleAttribute>` with a single parameter expands to `delete from EntityName where <singleAttribute> = ?`.
 - `<query>` expands to `delete from EntityName where <query>`.
 
-==== Secure Panache repositories
+== Repository security
 
-Quarkus Security provides an initial support for securing Panache Repositories with security annotations.
+Quarkus Security provides initial support for securing repositories with security annotations. Security annotations can
+be placed on methods directly declared by a repository.
 
-.Example inner repository with method-level security annotations
 [source,java]
 ----
-@Entity
-public class Cat extends ManagedEntity.AutoLong {
-    public String name;
-
-    public interface SecuredRepo {
-        @PermissionsAllowed("cat:list")
-        @PermissionsAllowed("cat:read")
-        @Find
-        List<Cat> findByName(String name);
-    }
-}
+@PermissionsAllowed("cat:list")
+@PermissionsAllowed("cat:read")
+@Find
+List<Cat> findByName(String name);
 ----
 
-.Example standalone repository with class-level security annotation
+You can also place a security annotation on the repository interface:
+
 [source,java]
 ----
 @RolesAllowed("admin")
-public interface SecuredCatRepo extends ManagedRepository.AutoLong<Cat> {
-
+public interface SecuredCatRepo extends ManagedRepository<Cat> {
     @Find
     List<Cat> findByName(String name);
-
 }
 ----
 
 [WARNING]
 ====
-In the example above, only methods directly declared on the `SecuredCatRepo` interface are secured.
-Methods inherited from `ManagedRepository`, such as `findById`, `persist`, or `deleteAll`, are not secured because type-level annotations only affect the type they annotate.
+Only methods directly declared on an annotated repository interface are secured. Methods inherited from
+`ManagedRepository`, such as `findById`, `persist`, or `deleteAll`, are not secured because type-level annotations only
+affect the type they annotate.
+
+If you need security in the repository layer, consider <<alternative-repository-definitions,plain repository classes>> that do not extend Quarkus Data ones, or roll out your own repository super interfaces, adding security annotations wherever relevant for your security model.
 ====
 
-[IMPORTANT]
-====
-Currently, generic interface methods using type variables or wildcards cannot be secured reliably with standard security annotations.
-Therefore, you must not attempt to secure such methods and instead use two alternatives described below.
+Generic interface methods using type variables or wildcards cannot currently be secured reliably with standard security
+annotations. Apply the security annotation to the calling method, such as a REST endpoint, or redeclare the repository
+method with a concrete type.
 
-.Example repository with a generic method using a type variable
-[source,java]
-----
-@Entity
-public class Cat extends ManagedEntity {
-    public String name;
-
-    public interface ParentRepo<T extends Cat> {
-
-        @Find
-        List<T> findAll(Order<T> order);
-
-    }
-
-    public interface ChildRepo extends ParentRepo<Cat> {
-    }
-}
-----
-
-Alternative 1: Apply a security annotation to the calling method in your REST layer:
-
-[source,java]
-----
-@Path("cat")
-public class CatResource {
-
-    @Inject
-    Cat.ChildRepo childRepo;
-
-    @PermissionsAllowed("cat:list")
-    @GET
-    public List<Cat> findAll() {
-        return childRepo.findAll(Order.by());
-    }
-
-}
-----
-
-Alternative 2: Replace the type variable `T` with a concrete type in the repository interface:
-
-[source,java]
-----
-@Entity
-public class Cat extends ManagedEntity {
-    public String name;
-
-    public interface Repo {
-
-        @PermissionsAllowed("cat:list")
-        @Find
-        List<Cat> findAll(Order<Cat> order);
-
-    }
-}
-----
-====
+See the xref:security-authorize-web-endpoints-reference.adoc[authorization of web endpoints reference] for information
+about Quarkus Security annotations.

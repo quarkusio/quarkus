@@ -52,8 +52,8 @@ public class ExtensionMetadataSchemaDocGenerator {
         out.println("[[quarkus-extension-schema-reference]]");
         out.println("=== Extension descriptor schema reference");
         out.println();
-        out.println("The canonical definition of `META-INF/quarkus-extension.yaml` is the JSON Schema at");
-        out.println("link:" + SCHEMA_ID + "[" + SCHEMA_ID + "].");
+        out.println("The canonical definition of `META-INF/quarkus-extension.yaml` is the ");
+        out.println("link:https://github.com/quarkusio/quarkus/blob/{quarkus-branch}/" + SCHEMA_SOURCE_PATH + "[JSON schema].");
         out.println("The extension Maven and Gradle plugins validate the packaged descriptor against this schema.");
         out.println("The tables below are generated from that schema at documentation build time.");
         out.println();

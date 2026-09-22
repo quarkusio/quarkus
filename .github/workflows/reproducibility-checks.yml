@@ -66,7 +66,7 @@ jobs:
           echo "GE_TAGS=jdk-${{ steps.base-jdk.outputs.base-jdk-version }},reproducibility-check" >> "$GITHUB_ENV"
           echo "GE_CUSTOM_VALUES=gh-job-name=${{ matrix.name }}" >> "$GITHUB_ENV"
       - name: Setup Develocity Build Scan capture
-        uses: gradle/develocity-actions/setup-maven@0e1f30c14ab56d0c1ecf229a0ffc3eb3e40e4642 # v2.2
+        uses: gradle/develocity-actions/setup-maven@4b276bd81fb55e2fcbae724c48699de57e2156eb # v2.3
         with:
           capture-strategy: ON_DEMAND
           job-name: ${{ matrix.name }}

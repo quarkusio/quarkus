@@ -1,4 +1,5 @@
-<!-- content also visible in quarkusio/security
+<!-- content also visible at https://quarkus.io/security/
+     source: https://github.com/quarkusio/quarkusio.github.io/blob/main/security.adoc
      copy changes there too -->
 
 The canonical version of this document is hosted on the Quarkus website at [Quarkus security](https://quarkus.io/security/).
@@ -15,6 +16,10 @@ You can find our guidelines here regarding our policy and security disclosure.
 Please report any security issues you find in Quarkus to:
 
     security at quarkus.io
+
+The [Quarkus security model](https://github.com/quarkusio/quarkus/blob/main/SECURITY-MODEL.md)
+describes the proposed scope, trust boundaries, and information that can help us assess a report.
+You do not need to determine whether an issue fits the model before contacting us; if in doubt, report it privately.
 
 Anyone can post to this list. The subscribers are only trusted individuals from the Quarkus community who will handle the resolution of any reported security issues in confidence. In your report, please note how you would like to be credited for discovering the issue and the details of any embargo you would like to impose. Currently, the security response teams for the following distributions are subscribed to this list and will respond to your report:
 

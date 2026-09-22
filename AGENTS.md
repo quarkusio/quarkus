@@ -13,6 +13,11 @@ when performing that type of work.
   AssertJ for assertions.
 - **You are responsible for what you submit.** Validate all changes. Do not
   submit AI-generated code without human oversight.
+- **Security work.** Before assessing or proposing a security finding, read
+  [SECURITY.md](SECURITY.md) and [SECURITY-MODEL.md](SECURITY-MODEL.md).
+  Follow `SECURITY.md` for disclosure. Consult `SECURITY-MODEL.md` for the
+  scope and evidence guidance, but do not treat inferred statements or open
+  questions as accepted policy or use them to dismiss a report.
 
 ## Project Structure
 

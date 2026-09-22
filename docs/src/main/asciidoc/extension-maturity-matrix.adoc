@@ -180,4 +180,4 @@ Being Kubernetes-native implies being container-native. At a minimum, extensions
 
 - xref:writing-extensions.adoc[Writing your own extension] guide
 - xref:building-my-first-extension.adoc[Building your first extension]
-- link:https://hub.quarkiverse.io.adoc[The Quarkiverse Hub documentation]
+- link:https://hub.quarkiverse.io[The Quarkiverse Hub documentation]

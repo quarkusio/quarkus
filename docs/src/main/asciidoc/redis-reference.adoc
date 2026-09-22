@@ -18,7 +18,7 @@ include::{includes}/extension-status.adoc[]
 To use this extension, the user must be familiar with Redis, especially understanding the mechanism of commands and how they are organized.
 Typically, we recommend:
 
-1. The https://try.redis.io/[interactive tutorial] introducing Redis.
+1. The https://redis.io/try/sandbox/[interactive tutorial] introducing Redis.
 2. The https://redis.io/commands/[command references] explains Redis commands and contains links to reference documentation.
 
 This extension provides imperative and reactive APIs and low-level and high-level (type-safe) clients.

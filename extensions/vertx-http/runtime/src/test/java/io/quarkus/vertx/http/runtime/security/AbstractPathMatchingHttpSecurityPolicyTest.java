@@ -152,4 +152,19 @@ public class AbstractPathMatchingHttpSecurityPolicyTest {
         assertEquals("/secret/file.html", normalizePath("/secret%2Ffile.html\0"));
     }
 
+    @Test
+    public void testNormalizePathMatrixDotSegmentCollapse() {
+        assertEquals("/secret", normalizePath("/admin/..;/secret"));
+        assertEquals("/secret", normalizePath("/admin/..;x=1/secret"));
+        assertEquals("/", normalizePath("/admin/..;/"));
+        assertEquals("/secret", normalizePath("/admin/sub/..;/..;/secret"));
+        assertEquals("/secret", normalizePath("/a/b/c/..;/..;/..;/secret"));
+    }
+
+    @Test
+    public void testNormalizePathDoubleEncodedMatrixDotSegment() {
+        assertEquals("/secret", normalizePath("/admin/%252e%252e;/secret"));
+        assertEquals("/secret", normalizePath("/admin/%25252e%25252e;/secret"));
+    }
+
 }

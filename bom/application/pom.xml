@@ -16,7 +16,7 @@
     <properties>
         <angus-activation.version>2.0.3</angus-activation.version>
         <angus-mail.version>2.0.5</angus-mail.version> <!-- keep in sync with angus-activation (mail depends on activation) -->
-        <bouncycastle.version>1.85.2</bouncycastle.version>
+        <bouncycastle.version>1.86.1</bouncycastle.version>
         <bouncycastle.fips.version>2.1.3</bouncycastle.fips.version>
         <bouncycastle.tls.fips.version>2.1.24</bouncycastle.tls.fips.version>
         <cyclonedx.version>12.2.0</cyclonedx.version>
@@ -28,7 +28,7 @@
         <parsson.version>1.1.9</parsson.version>
         <resteasy-microprofile.version>3.0.1.Final</resteasy-microprofile.version>
         <resteasy-spring-web.version>3.2.0.Final</resteasy-spring-web.version>
-        <resteasy.version>6.2.18.Final</resteasy.version>
+        <resteasy.version>6.2.19.Final</resteasy.version>
         <opentelemetry-instrumentation.version>2.28.1-alpha</opentelemetry-instrumentation.version> <!-- OTel SDk 1.62.0-->
         <opentelemetry-semconv.version>1.40.0-alpha</opentelemetry-semconv.version>
         <quarkus-http.version>5.5.0</quarkus-http.version>
@@ -52,8 +52,8 @@
         <smallrye-modules.version>1.0.beta1</smallrye-modules.version>
         <smallrye-open-api.version>4.3.5</smallrye-open-api.version>
         <smallrye-graphql.version>2.18.5</smallrye-graphql.version>
-        <smallrye-fault-tolerance.version>6.11.2</smallrye-fault-tolerance.version>
-        <smallrye-jwt.version>4.6.3</smallrye-jwt.version>
+        <smallrye-fault-tolerance.version>6.11.4</smallrye-fault-tolerance.version>
+        <smallrye-jwt.version>4.6.4</smallrye-jwt.version>
         <smallrye-context-propagation.version>2.3.0</smallrye-context-propagation.version>
         <smallrye-reactive-streams-operators.version>1.0.13</smallrye-reactive-streams-operators.version>
         <smallrye-reactive-types-converter.version>3.0.3</smallrye-reactive-types-converter.version>

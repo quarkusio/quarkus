@@ -44,7 +44,7 @@ IMPORTANT: You'll need to implement the _service interface_ or extend the _base 
 
 To implement a gRPC service using the Mutiny API, create a class that implements the service interface.
 Then, implement the methods defined in the service interface.
-If you don't want to implement a service method just throw an `java.lang.UnsupportedOperationException` from the method body (the exception will be automatically converted to the appropriate gRPC exception).
+If you don't want to implement a service method just throw a `java.lang.UnsupportedOperationException` from the method body (the exception will be automatically converted to the appropriate gRPC exception).
 Finally, implement the service and add the `@GrpcService` annotation:
 
 [source, java]
@@ -528,7 +528,7 @@ The following table maps specific authentication requirements to a supported mec
 Do not forget to install at least one extension that provides an `IdentityProvider` based on selected authentication requirements.
 Please refer to the xref:security-basic-authentication-howto.adoc[Basic authentication guide] for example how to provide the `IdentityProvider` based on username and password.
 
-TIP: If you use separate HTTP server to serve gRPC requests, <<custom-auth-mechanism>> is your only option.
+TIP: If you use a separate HTTP server to serve gRPC requests, <<custom-auth-mechanism>> is your only option.
 Set the `quarkus.grpc.server.use-separate-server` configuration property to `false` so that you can use other mechanisms.
 
 === Secure gRPC service
@@ -556,7 +556,7 @@ public class HelloService implements Greeter {
 }
 ----
 
-Most of the examples of the supported mechanisms sends authentication headers, please refer to the xref:grpc-service-consumption.adoc[gRPC Headers]
+Most of the examples of the supported mechanisms send authentication headers, please refer to the xref:grpc-service-consumption.adoc[gRPC Headers]
 section of the Consuming a gRPC Service guide for more information about the gRPC headers.
 
 [[basic-auth-mechanism]]
@@ -652,7 +652,7 @@ testclient=admin <1>
 [[custom-auth-mechanism]]
 === Custom authentication
 
-You can always implement one or more `GrpcSecurityMechanism` bean if above-mentioned mechanisms provided by Quarkus do no meet your needs.
+You can always implement one or more `GrpcSecurityMechanism` beans if above-mentioned mechanisms provided by Quarkus do no meet your needs.
 
 .Example of custom `GrpcSecurityMechanism`
 [source, java]

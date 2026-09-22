@@ -9,8 +9,10 @@ import java.util.List;
 import java.util.Optional;
 
 import io.fabric8.kubernetes.api.model.HasMetadata;
+import io.fabric8.kubernetes.api.model.ObjectMeta;
 import io.fabric8.kubernetes.api.model.apps.Deployment;
 import io.fabric8.kubernetes.api.model.batch.v1.Job;
+import io.fabric8.kubernetes.api.model.rbac.Role;
 import io.fabric8.kubernetes.api.model.rbac.RoleBinding;
 
 public class KubernetesWithFlywayInitBase {
@@ -50,14 +52,19 @@ public class KubernetesWithFlywayInitBase {
             });
         });
 
+        ObjectMeta deploymentMetadata = deployment.get().getMetadata();
+        ObjectMeta deploymentTemplateMetadata = deployment.get().getSpec().getTemplate().getMetadata();
+
         Optional<Job> job = kubernetesList.stream()
                 .filter(j -> "Job".equals(j.getKind()) && jobName.equals(j.getMetadata().getName()))
                 .map(j -> (Job) j)
                 .findAny();
         assertThat(job).isPresent().get().satisfies(j -> {
+            assertSameLabelsAndAnnotations(j.getMetadata(), deploymentMetadata);
             assertThat(j.getSpec()).satisfies(jobSpec -> {
                 assertThat(jobSpec.getCompletionMode()).isEqualTo("NonIndexed");
                 assertThat(jobSpec.getTemplate()).satisfies(t -> {
+                    assertSameLabelsAndAnnotations(t.getMetadata(), deploymentTemplateMetadata);
                     assertThat(t.getSpec()).satisfies(podSpec -> {
                         assertThat(podSpec.getImagePullSecrets()).singleElement()
                                 .satisfies(s -> assertThat(s.getName()).isEqualTo(imagePullSecret));
@@ -84,5 +91,18 @@ public class KubernetesWithFlywayInitBase {
                 r -> r instanceof RoleBinding && (name + "-view-jobs").equals(r.getMetadata().getName()))
                 .map(r -> (RoleBinding) r).findFirst();
         assertTrue(roleBinding.isPresent());
+        assertSameLabelsAndAnnotations(roleBinding.get().getMetadata(), deploymentMetadata);
+
+        Optional<Role> role = kubernetesList.stream()
+                .filter(r -> r instanceof Role && "view-jobs".equals(r.getMetadata().getName()))
+                .map(r -> (Role) r)
+                .findFirst();
+        assertTrue(role.isPresent());
+        assertSameLabelsAndAnnotations(role.get().getMetadata(), deploymentMetadata);
+    }
+
+    private void assertSameLabelsAndAnnotations(ObjectMeta actual, ObjectMeta expected) {
+        assertThat(actual.getLabels()).containsAllEntriesOf(expected.getLabels());
+        assertThat(actual.getAnnotations()).containsAllEntriesOf(expected.getAnnotations());
     }
 }

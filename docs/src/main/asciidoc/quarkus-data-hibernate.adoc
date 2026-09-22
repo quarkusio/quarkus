@@ -976,43 +976,46 @@ GET /cats?page=1&size=20&sort=name&sort=-birth
 
 This produces a `PageRequest.ofPage(1, 20, true)` and `Order.by(Sort.asc("name"), Sort.desc("birth"))`.
 
-== HQL, JD-QL, Jakarta-QL, Panache-QL
+== Query languages
 
-There are different query languages used in this API:
+There are multiple technologies to express queries in Quarkus Data Hibernate. They are related languages rather than
+separate query engines: each standard defines a different level of functionality or portability.
 
-- The link:https://docs.hibernate.org/orm/{hibernate-orm-version-major-minor}/querylanguage/html_single/[Hibernate Query Language] (HQL),
-which is the query language used by Hibernate, supported by the `@HQL` annotation.
-- The link:{jakarta-persistence-spec-url}#a4665[Jakarta Persistence Query Language] (JP-QL), which is a subset of the Hibernate
-Query Language. It is currently being moved to its own spec called
-link:https://jakarta.ee/specifications/query/1.0/[Jakarta Query].
-- The link:{jakarta-data-spec-url}#_jakarta_data_query_language[Jakarta Data Query Language] (JD-QL), which is a subset of the
-Jakarta Persistence Query Language, supported by the `@Query` annotation.
-- The Panache Query Language, which is a superset of the Hibernate Query Language adding very few shortcuts, which
-is supported in all the `ManagedRepository` and `RecordRepository` queries.
+- The link:https://docs.hibernate.org/orm/{hibernate-orm-version-major-minor}/querylanguage/html_single/[Hibernate Query Language]
+  (HQL) is Hibernate's full query language. Hibernate ORM accepts HQL in Jakarta Data's `@Query`, including features
+  beyond the standard query languages.
+- The link:{jakarta-persistence-spec-url}#a4665[Jakarta Persistence Query Language] (JPQL) is the standard query language
+  defined by Jakarta Persistence and is a subset of HQL. A valid JPQL query is also a valid HQL query. This language is
+  evolving into the standalone link:https://jakarta.ee/specifications/query/1.0/[Jakarta Query specification].
+- The link:{jakarta-data-spec-url}#_jakarta_data_query_language[Jakarta Data Query Language] (JDQL) is the portable
+  subset of JPQL used by Jakarta Data's `@Query` annotation. Restrict queries to JDQL when the repository should remain
+  independent of Hibernate-specific query features.
+- Panache Query Language adds concise forms for common HQL queries. It is accepted by query methods such as `find()`,
+  `list()`, `update()`, and `delete()` on `ManagedRepository` and `RecordRepository`, and is expanded to HQL before
+  execution.
 
 === Panache Query Language
 
-Normally, most HQL queries are of this form: `from EntityName [where ...] [order by ...]`, with optional elements
-at the end.
+Most HQL select queries have the form `from EntityName [where ...] [order by ...]`, with optional elements at the end.
 
-If your select query does not start with `from`, `select` or `with`, we support the following additional forms:
+If a select query does not start with `from`, `select`, or `with`, the following additional forms are supported:
 
-- `order by ...` which will expand to `from EntityName order by ...`
-- `<singleAttribute>` (and single parameter) which will expand to `from EntityName where <singleAttribute> = ?`
-- `where <query>` will expand to `from EntityName where <query>`
-- `<query>` will expand to `from EntityName where <query>`
+- `order by ...` expands to `from EntityName order by ...`.
+- `<singleAttribute>` with a single parameter expands to `from EntityName where <singleAttribute> = ?`.
+- `where <query>` expands to `from EntityName where <query>`.
+- `<query>` expands to `from EntityName where <query>`.
 
-If your update query does not start with `update`, we support the following additional forms:
+If an update query does not start with `update`, the following additional forms are supported:
 
-- `from EntityName ...` which will expand to `update EntityName ...`
-- `set? <singleAttribute>` (and single parameter) which will expand to `update EntityName set <singleAttribute> = ?`
-- `set? <update-query>` will expand to `update EntityName set <update-query>`
+- `from EntityName ...` expands to `update EntityName ...`.
+- `set? <singleAttribute>` with a single parameter expands to `update EntityName set <singleAttribute> = ?`.
+- `set? <update-query>` expands to `update EntityName set <update-query>`.
 
-If your delete query does not start with `delete`, we support the following additional forms:
+If a delete query does not start with `delete`, the following additional forms are supported:
 
-- `from EntityName ...` which will expand to `delete from EntityName ...`
-- `<singleAttribute>` (and single parameter) which will expand to `delete from EntityName where <singleAttribute> = ?`
-- `<query>` will expand to `delete from EntityName where <query>`
+- `from EntityName ...` expands to `delete from EntityName ...`.
+- `<singleAttribute>` with a single parameter expands to `delete from EntityName where <singleAttribute> = ?`.
+- `<query>` expands to `delete from EntityName where <query>`.
 
 ==== Secure Panache repositories
 

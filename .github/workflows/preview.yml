@@ -117,7 +117,7 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           pr-number: ${{ steps.pr.outputs.id }}
           body: |
-            🎊 PR Preview ${{ github.sha }} has been successfully built and deployed to https://quarkus-pr-main-${{ steps.pr.outputs.id }}-preview.surge.sh/version/main/guides/
+            🎊 PR ${{ github.sha }} Documentation Preview has been successfully built and deployed to https://quarkus-pr-main-${{ steps.pr.outputs.id }}-preview.surge.sh/version/main/guides/
 
             - Images of blog posts older than 3 months are not available.
             - Newsletters older than 3 months are not available.
@@ -132,6 +132,6 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           pr-number: ${{ steps.pr.outputs.id }}
           body: |
-            😭 Deploy PR Preview failed.
+            😭 Deploy PR Documentation Preview failed.
             <img width="300" src="https://user-images.githubusercontent.com/507615/90250824-4e066700-de6f-11ea-8230-600ecc3d6a6b.png">
           body-marker: <!-- Preview status comment marker -->

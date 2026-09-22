@@ -783,8 +783,10 @@ NOTE: you can of course also use the generated metamodel accessors instead of in
 
 == Startup code
 
-For blocking operations, invoking startup code is pretty trivial:
+For startup code, use `jakarta.transaction.Transactional` for both blocking and reactive operations. See the
+xref:lifecycle.adoc#startup_annotation[application lifecycle guide] for information about `@Startup`.
 
+.Blocking startup
 [source,java]
 ----
 import io.quarkus.runtime.Startup;
@@ -799,19 +801,18 @@ public class OnStart {
 }
 ----
 
-For reactive operations, it is fairly similar:
-
+.Reactive startup
 [source,java]
 ----
-import io.quarkus.hibernate.reactive.panache.common.WithTransaction;
+import jakarta.transaction.Transactional;
 import io.quarkus.runtime.Startup;
 import io.smallrye.mutiny.Uni;
 
-public class OnStart {
+public class OnStartReactive {
     @Startup
-    @WithTransaction
-    Uni<Void> startupMethod(){
-        return Cat_.repo().deleteAll().replaceWithVoid();
+    @Transactional
+    public Uni<Void> startupMethod() {
+        return ReactiveCat_.repo().deleteAll().replaceWithVoid();
     }
 }
 ----

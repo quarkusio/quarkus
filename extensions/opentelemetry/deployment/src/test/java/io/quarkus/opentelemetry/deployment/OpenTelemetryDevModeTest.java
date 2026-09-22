@@ -29,7 +29,8 @@ public class OpenTelemetryDevModeTest {
                             "quarkus.otel.traces.exporter=test-span-exporter",
                             "quarkus.otel.metrics.exporter=none",
                             "quarkus.otel.logs.exporter=none",
-                            "quarkus.datasource.devservices.enabled=false")), "application.properties"));
+                            "quarkus.datasource.devservices.enabled=false",
+                            "quarkus.observability.enabled=false")), "application.properties"));
 
     @Test
     void testDevMode() {

@@ -40,6 +40,7 @@ public class OpenTelemetrySuppressNonAppUriManagementInterfaceTest {
                                     quarkus.management.enabled=true
                                     quarkus.management.port=9001
                                     quarkus.datasource.devservices.enabled=false
+                                    quarkus.observability.enabled=false
                                     """),
                             "application.properties"));
 

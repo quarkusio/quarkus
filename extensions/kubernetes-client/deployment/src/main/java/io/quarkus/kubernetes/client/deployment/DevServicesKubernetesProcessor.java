@@ -163,13 +163,13 @@ public class DevServicesKubernetesProcessor {
                 .serviceConfig(configuration)
                 .startable(() -> createQuarkusKubernetesContainer(configuration, clusterType,
                         useSharedNetwork, devServicesConfig.timeout()))
-                .configProvider(Map.of(
-                        KUBERNETES_CLIENT_MASTER_URL, c -> c.getCluster().getServer(),
-                        KUBERNETES_CLIENT_CA_CERT_DATA, c -> c.getCluster().getCertificateAuthorityData(),
-                        KUBERNETES_CLIENT_CLIENT_CERT_DATA, c -> c.getUser().getClientCertificateData(),
-                        KUBERNETES_CLIENT_CLIENT_KEY_DATA, c -> c.getUser().getClientKeyData(),
-                        KUBERNETES_CLIENT_CLIENT_KEY_ALGO, c -> Config.getKeyAlgorithm(null, c.getUser().getClientKeyData()),
-                        KUBERNETES_CLIENT_NAMESPACE, c -> "default"))
+                .configProvider(c -> Map.of(
+                        KUBERNETES_CLIENT_MASTER_URL, c.getCluster().getServer(),
+                        KUBERNETES_CLIENT_CA_CERT_DATA, c.getCluster().getCertificateAuthorityData(),
+                        KUBERNETES_CLIENT_CLIENT_CERT_DATA, c.getUser().getClientCertificateData(),
+                        KUBERNETES_CLIENT_CLIENT_KEY_DATA, c.getUser().getClientKeyData(),
+                        KUBERNETES_CLIENT_CLIENT_KEY_ALGO, Config.getKeyAlgorithm(null, c.getUser().getClientKeyData()),
+                        KUBERNETES_CLIENT_NAMESPACE, "default"))
                 .postStartHook(c -> {
                     log.info(
                             "Dev Services for Kubernetes started. Other Quarkus applications in dev mode will find the "

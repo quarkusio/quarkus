@@ -23,7 +23,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.StringTokenizer;
-import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -76,7 +75,7 @@ class OidcDevServicesProcessor {
                     .serviceName(Feature.OIDC.getName().toUpperCase())
                     .serviceConfig(getServiceConfigIdentifier(devServicesConfig))
                     .startable(new OidcServerSupplier(devServicesConfig))
-                    .configProvider(createApplicationConfigProvider())
+                    .configProvider(OidcDevServicesProcessor::resolveApplicationConfig)
                     .build());
             oidcDevServicesPreparedProducer.produce(new OidcDevServicesPreparedBuildItem());
         }
@@ -91,16 +90,16 @@ class OidcDevServicesProcessor {
                 + getOidcApplicationType();
     }
 
-    private static Map<String, Function<OidcServer, String>> createApplicationConfigProvider() {
-        var lazyConfigMap = new HashMap<String, Function<OidcServer, String>>();
-        lazyConfigMap.put(AUTH_SERVER_URL_CONFIG_KEY, s -> s.baseURI);
+    private static Map<String, String> resolveApplicationConfig(OidcServer server) {
+        Map<String, String> config = new HashMap<>();
+        config.put(AUTH_SERVER_URL_CONFIG_KEY, server.baseURI);
         if (getOptionalOidcClientSecret().isEmpty()) {
-            lazyConfigMap.put(CLIENT_SECRET_CONFIG_KEY, s -> s.oidcClientSecret);
+            config.put(CLIENT_SECRET_CONFIG_KEY, server.oidcClientSecret);
         }
         if (getOptionalOidcClientId().isEmpty()) {
-            lazyConfigMap.put(CLIENT_ID_CONFIG_KEY, s -> s.oidcClientId);
+            config.put(CLIENT_ID_CONFIG_KEY, server.oidcClientId);
         }
-        return Collections.unmodifiableMap(lazyConfigMap);
+        return config;
     }
 
     private static boolean shouldStartServer(OidcDevServicesConfig devServicesConfig,

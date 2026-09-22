@@ -191,7 +191,7 @@ public class KeycloakDevServicesProcessor {
                             }
                             LOG.info("Dev Services for Keycloak started.");
                         })
-                        .configProvider(createLazyConfigMap(devServicesConfigurator))
+                        .configProvider(wrapper -> resolveConfig(wrapper, devServicesConfigurator))
                         .build());
         devServicesResultProducer.produce(devServicesResultBuildItem);
 
@@ -214,14 +214,13 @@ public class KeycloakDevServicesProcessor {
         return serviceConfigIdentifier.toString();
     }
 
-    private static Map<String, Function<StartableContainer<QuarkusOidcContainer>, String>> createLazyConfigMap(
+    private static Map<String, String> resolveConfig(StartableContainer<QuarkusOidcContainer> wrapper,
             KeycloakDevServicesConfigurator devServicesConfigurator) {
-        return devServicesConfigurator
-                .getLazyConfigKeys()
-                .stream()
-                .map(configKey -> Map.<String, Function<StartableContainer<QuarkusOidcContainer>, String>> entry(configKey,
-                        wrapper -> wrapper.getContainer().getConfigValue(configKey)))
-                .collect(Collectors.toUnmodifiableMap(Map.Entry::getKey, Map.Entry::getValue));
+        Map<String, String> config = new HashMap<>();
+        for (String configKey : devServicesConfigurator.getLazyConfigKeys()) {
+            config.put(configKey, wrapper.getContainer().getConfigValue(configKey));
+        }
+        return config;
     }
 
     private static boolean oidcDevServicesEnabled() {

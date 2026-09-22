@@ -9,7 +9,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.Function;
 
 import org.jboss.logging.Logger;
 import org.opensearch.testcontainers.OpensearchContainer;
@@ -136,7 +135,7 @@ public class DevServicesElasticsearchProcessor {
                                 + "server automatically. For Quarkus applications in production mode, you can connect to"
                                 + " this by configuring your application to use %s",
                         containerWrapper.getConnectionInfo()))
-                .configProvider(buildConfigProviderMap(buildItemsConfig))
+                .configProvider(s -> buildPropertiesMap(buildItemsConfig, s.getConnectionInfo()))
                 .build());
     }
 
@@ -187,16 +186,6 @@ public class DevServicesElasticsearchProcessor {
         }
 
         return true;
-    }
-
-    @SuppressWarnings({ "unchecked", "rawtypes" })
-    private static Map buildConfigProviderMap(
-            DevservicesElasticsearchBuildItemsConfiguration buildItemConfig) {
-        Map<String, Function<StartableContainer<?>, String>> map = new HashMap<>();
-        for (String property : buildItemConfig.hostsConfigProperties()) {
-            map.put(property, StartableContainer::getConnectionInfo);
-        }
-        return map;
     }
 
     private CreatedContainer createElasticsearchContainer(ElasticsearchDevServicesBuildTimeConfig config,

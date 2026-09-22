@@ -90,9 +90,9 @@ public final class SpiffeDevServicesProcessor {
                         .feature(SpiffeClientProcessor.FEATURE)
                         .serviceConfig(config.devservices().hashCode())
                         .startable(() -> new SpiffeWorkloadApiDevServer(transport, config.devservices().httpPort()))
-                        .configProvider(Map.of(
-                                ENDPOINT_SOCKET_CONFIG_KEY, Startable::getConnectionInfo,
-                                BASE_URL_CONFIG_KEY, SpiffeWorkloadApiDevServer::baseUrl))
+                        .configProvider(s -> Map.of(
+                                ENDPOINT_SOCKET_CONFIG_KEY, s.getConnectionInfo(),
+                                BASE_URL_CONFIG_KEY, s.baseUrl()))
                         .postStartHook(server -> {
                             if (!server.errorMessages.isEmpty()) {
                                 for (String errorMessage : server.errorMessages) {

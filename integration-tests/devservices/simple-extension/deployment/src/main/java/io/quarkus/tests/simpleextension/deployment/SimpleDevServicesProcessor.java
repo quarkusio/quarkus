@@ -43,10 +43,10 @@ public class SimpleDevServicesProcessor {
                 .serviceConfig(Map.of(QUARKUS_SIMPLE_EXTENSION_DEVSERVICES_PORT,
                         fixedPort.map(String::valueOf).orElse("")))
                 .config(Map.of(QUARKUS_SIMPLE_EXTENSION_STATIC_THING, "some value"))
-                .configProvider(Map.of(QUARKUS_SIMPLE_EXTENSION_BASE_URL,
-                        StartableContainer::getConnectionInfo, SIMPLE_EXTENSION_CLASSLOADER_ON_SERVICE_START,
-                        c -> c.getContainer().getClassLoaderNameOnStart(), SIMPLE_EXTENSION_CONTAINER_ID,
-                        StartableContainer::getContainerId))
+                .configProvider(s -> Map.of(
+                        QUARKUS_SIMPLE_EXTENSION_BASE_URL, s.getConnectionInfo(),
+                        SIMPLE_EXTENSION_CLASSLOADER_ON_SERVICE_START, s.getContainer().getClassLoaderNameOnStart(),
+                        SIMPLE_EXTENSION_CONTAINER_ID, s.getContainerId()))
                 .build();
 
     }

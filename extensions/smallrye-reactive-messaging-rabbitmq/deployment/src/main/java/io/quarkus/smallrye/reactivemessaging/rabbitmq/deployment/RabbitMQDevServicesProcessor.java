@@ -120,10 +120,10 @@ public class RabbitMQDevServicesProcessor {
                         .config(Map.of(
                                 RABBITMQ_USERNAME_PROP, RABBITMQ_DEFAULT_USER_PASS,
                                 RABBITMQ_PASSWORD_PROP, RABBITMQ_DEFAULT_USER_PASS))
-                        .configProvider(Map.of(
-                                RABBITMQ_HOST_PROP, ConfiguredRabbitMQContainer::getEffectiveHost,
-                                RABBITMQ_PORT_PROP, s -> String.valueOf(s.getPort()),
-                                RABBITMQ_HTTP_PORT_PROP, s -> String.valueOf(s.getHttpPort())))
+                        .configProvider(s -> Map.of(
+                                RABBITMQ_HOST_PROP, s.getEffectiveHost(),
+                                RABBITMQ_PORT_PROP, String.valueOf(s.getPort()),
+                                RABBITMQ_HTTP_PORT_PROP, String.valueOf(s.getHttpPort())))
                         .build());
     }
 

@@ -138,9 +138,6 @@ class ObservabilityDevServiceProcessor {
             if (discovered != null) {
                 services.produce(discovered);
             } else {
-                Map<String, Function<ObservabilityStartable, String>> configProvider = dev
-                        .configProvider(ObservabilityStartable::getDevServiceConfig);
-
                 services.produce(
                         DevServicesResultBuildItem.owned()
                                 .feature(Feature.OBSERVABILITY)
@@ -148,7 +145,7 @@ class ObservabilityDevServiceProcessor {
                                 .serviceConfig(currentDevServicesConfiguration)
                                 .startable(() -> new ObservabilityStartable(dev, currentDevServicesConfiguration,
                                         configuration, devServicesConfig.timeout()))
-                                .configProvider(configProvider)
+                                .configProvider(ObservabilityStartable::getDevServiceConfig)
                                 .postStartHook(s -> {
                                     log.infof("Dev Service %s started, config: %s", devId, s.getDevServiceConfig());
                                     dev.logInfo();

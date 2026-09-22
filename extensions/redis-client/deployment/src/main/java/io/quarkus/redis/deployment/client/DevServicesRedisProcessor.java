@@ -96,8 +96,8 @@ public class DevServicesRedisProcessor {
                                             // Dev Service discovery works using a global dev service label applied in DevServicesCustomizerBuildItem
                                             // for backwards compatibility we still add the custom label
                                             .withSharedServiceLabel(launchMode.getLaunchMode(), redisConfig.serviceName()))
-                                    .configProvider(
-                                            Map.of(getPropertyName(name, HOSTS), s -> REDIS_SCHEME + s.getConnectionInfo()))
+                                    .configProvider(s -> Map.of(
+                                            getPropertyName(name, HOSTS), REDIS_SCHEME + s.getConnectionInfo()))
                                     .build());
                 }
             }

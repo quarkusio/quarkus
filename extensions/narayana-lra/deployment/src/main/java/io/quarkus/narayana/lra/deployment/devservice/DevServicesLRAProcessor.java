@@ -84,10 +84,11 @@ public class DevServicesLRAProcessor {
                         .serviceConfig(config)
                         .startable(() -> createContainer(compose, config, useSharedNetwork, launchMode))
                         .postStartHook(s -> logDevServiceStarted(s.getConnectionInfo()))
-                        .configProvider(Map.of(LRA_COORDINATOR_URL_PROPERTY, Startable::getConnectionInfo,
-                                "quarkus.http.host", s -> "0.0.0.0", // Required since the container needs to call the host application
+                        .configProvider(s -> Map.of(
+                                LRA_COORDINATOR_URL_PROPERTY, s.getConnectionInfo(),
+                                "quarkus.http.host", "0.0.0.0", // Required since the container needs to call the host application
                                 "quarkus.lra.base-uri",
-                                s -> "http://host.containers.internal:"
+                                "http://host.containers.internal:"
                                         + (launchMode.isTest() ? "${quarkus.http.test-port}" : "${quarkus.http.port}")))
                         .build());
     }

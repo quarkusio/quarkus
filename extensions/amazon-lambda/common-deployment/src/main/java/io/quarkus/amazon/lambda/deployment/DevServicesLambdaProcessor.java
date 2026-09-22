@@ -99,10 +99,9 @@ public class DevServicesLambdaProcessor {
                 .serviceConfig(config)
                 .startable(() -> new StartableEventServer(server, propName, isTest, overridePort))
                 .highPriorityConfig(Set.of(propName)) // Pass through the external config for the port, so that it can be overridden if it's an ephemeral port
-                .configProvider(
-                        Map.of(propName, s -> String.valueOf(s.getExposedPort()),
-                                AmazonLambdaApi.QUARKUS_INTERNAL_AWS_LAMBDA_TEST_API,
-                                StartableEventServer::getConnectionInfo))
+                .configProvider(s -> Map.of(
+                        propName, String.valueOf(s.getExposedPort()),
+                        AmazonLambdaApi.QUARKUS_INTERNAL_AWS_LAMBDA_TEST_API, s.getConnectionInfo()))
                 .build();
 
         devServicePropertiesProducer.produce(buildItem);

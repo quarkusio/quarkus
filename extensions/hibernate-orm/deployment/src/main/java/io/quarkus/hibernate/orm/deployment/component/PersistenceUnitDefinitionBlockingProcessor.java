@@ -2,7 +2,7 @@ package io.quarkus.hibernate.orm.deployment.component;
 
 import java.util.List;
 
-import io.quarkus.datasource.deployment.spi.component.DataSourceRequestBuildItem;
+import io.quarkus.datasource.deployment.spi.component.DataSourceLookupBuildItem;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -53,29 +53,17 @@ class PersistenceUnitDefinitionBlockingProcessor {
     @BuildStep
     void defineBlockingPersistenceUnits(HibernateOrmConfig hibernateOrmConfig,
             PersistenceUnitLookupBuildItem lookupBuildItem,
+            DataSourceLookupBuildItem dataSourceLookupBuildItem,
+            HibernateOrmClientLookupBuildItem clientLookupBuildItem,
             List<PersistenceUnitRequestBuildItem> puRequests,
             List<PersistenceXmlDescriptorBuildItem> persistenceXmlDescriptors,
             List<AdditionalPersistenceUnitBuildItem> additionalPersistenceUnits,
             BuildProducer<PersistenceUnitDefinitionBuildItem> persistenceUnitDefinitions) {
         PersistenceUnitDefinitionSupport.definePersistenceUnits(ProgrammingParadigm.BLOCKING, hibernateOrmConfig,
-                lookupBuildItem,
-                puRequests, persistenceXmlDescriptors, additionalPersistenceUnits, persistenceUnitDefinitions);
+                lookupBuildItem, dataSourceLookupBuildItem.getLookup(),
+                clientLookupBuildItem.getLookup(),
+                puRequests, persistenceXmlDescriptors, additionalPersistenceUnits,
+                persistenceUnitDefinitions);
     }
 
-    @BuildStep
-    public void produceBlockingDatasourceReferencesFromPersistenceUnits(
-            List<PersistenceUnitDefinitionBuildItem> puDefinitions,
-            BuildProducer<DataSourceRequestBuildItem> datasourceReferences) {
-        for (PersistenceUnitDefinitionBuildItem puDefinition : puDefinitions) {
-            if (!ProgrammingParadigm.BLOCKING.equals(puDefinition.getParadigm())
-                    || puDefinition.getDataSourceName().isEmpty()) {
-                continue;
-            }
-            Reason reason = new Reason(
-                    "Hibernate ORM persistence unit '" + puDefinition.getPersistenceUnitName() + "'",
-                    puDefinition.getReasons());
-            datasourceReferences.produce(new DataSourceRequestBuildItem(puDefinition.getDataSourceName().get(),
-                    ProgrammingParadigm.BLOCKING, reason));
-        }
-    }
 }

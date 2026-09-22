@@ -20,13 +20,13 @@ The sequential security validation process results in one of three outcomes:
 
 * The HTTP request gets authenticated and authorized, and access to the Quarkus application gets granted.
 * The HTTP request authentication fails, and the requester receives a challenge specific to the authentication mechanism, for example, a `401` error, a URL redirect to reauthenticate, or some other custom authentication challenge response.
-For practical examples of challenge responses, see the Quarkus xref:security-customization.adoc[Security Tips and Tricks] guide.
+For practical examples of challenge responses, see the Quarkus xref:security-customization.adoc[Security tips and tricks] guide.
 * The HTTP request authorization fails, and the requester gets denied access to the Quarkus application.
 
 The following diagram steps through the detailed process flow of the Quarkus Security architecture:
 
 .The Quarkus Security architecture and process flow
-image::security-architecture-overview.png[alt=Quarkus Security architecture process flow, width="60%", align=center]
+image::security-architecture-overview.png[alt="Flowchart of an HTTP request passing through the Quarkus Security manager, HttpAuthenticationMechanism, IdentityProvider, SecurityIdentityAugmentor, and Authorization to either access granted or access denied", width="60%", align=center]
 
 == Core components of the Quarkus Security architecture
 
@@ -51,7 +51,7 @@ For more information, see the Quarkus xref:security-identity-providers.adoc[Iden
 Because Quarkus Security is customizable, you can, for example, add authorization roles to `SecurityIdentity` and register and prioritize one or more `SecurityIdentityAugmentor` implementations.
 
 Registered instances of `SecurityIdentityAugmentor` are invoked during the final stage of the security authentication process.
-For more information, see the xref:security-customization.adoc#security-identity-customization[Security Identity Customization] section of the "Security Tips and Tricks" guide.
+For more information, see the xref:security-customization.adoc#security-identity-customization[Security Identity Customization] section of the "Security tips and tricks" guide.
 
 == Supported authentication mechanisms
 

@@ -133,9 +133,9 @@ public class DevServicesApicurioRegistryProcessor {
                                 useSharedNetwork,
                                 config.containerEnv(),
                                 timeout))
-                        .configProvider(Map.of(
-                                APICURIO_REGISTRY_URL_CONFIG, ApicurioRegistryContainer::getApicurioRegistryUrl,
-                                CONFLUENT_SCHEMA_REGISTRY_URL_CONFIG, ApicurioRegistryContainer::getConfluentRegistryUrl))
+                        .configProvider(s -> Map.of(
+                                APICURIO_REGISTRY_URL_CONFIG, s.getApicurioRegistryUrl(),
+                                CONFLUENT_SCHEMA_REGISTRY_URL_CONFIG, s.getConfluentRegistryUrl()))
                         .postStartHook(
                                 s -> log.infof("Dev Services for Apicurio Registry started. The registry is available at %s",
                                         s.getApicurioRegistryUrl()))

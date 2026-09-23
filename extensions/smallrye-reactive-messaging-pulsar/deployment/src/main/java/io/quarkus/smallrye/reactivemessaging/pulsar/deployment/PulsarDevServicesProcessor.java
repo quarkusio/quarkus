@@ -133,9 +133,9 @@ public class PulsarDevServicesProcessor {
                             .serviceConfig(config)
                             .startable(() -> container)
                             .postStartHook(this::logStarted)
-                            .configProvider(Map.of(
-                                    PULSAR_CLIENT_SERVICE_URL, PulsarContainer::getPulsarBrokerUrl,
-                                    PULSAR_ADMIN_SERVICE_URL, PulsarContainer::getHttpServiceUrl))
+                            .configProvider(s -> Map.of(
+                                    PULSAR_CLIENT_SERVICE_URL, s.getPulsarBrokerUrl(),
+                                    PULSAR_ADMIN_SERVICE_URL, s.getHttpServiceUrl()))
                             .build();
                 });
     }

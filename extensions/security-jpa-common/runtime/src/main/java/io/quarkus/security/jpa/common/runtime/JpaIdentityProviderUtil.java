@@ -79,7 +79,7 @@ public class JpaIdentityProviderUtil {
         if (type == PasswordType.CLEAR) {
             ClearPassword.createRaw(ClearPassword.ALGORITHM_CLEAR, uuid.toCharArray());
         } else {
-            BcryptUtil.bcryptHash(uuid);
+            BcryptUtil.bcryptHash(uuid.toCharArray());
         }
     }
 }

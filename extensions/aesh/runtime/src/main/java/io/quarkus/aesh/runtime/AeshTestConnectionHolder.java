@@ -5,6 +5,8 @@ import java.io.OutputStream;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Bridges test and runtime classloaders using the current thread's name
@@ -71,6 +73,45 @@ public final class AeshTestConnectionHolder {
         return (Queue<String>) getFieldFromThread("inputLineQueue");
     }
 
+    /**
+     * Retrieve the shared reader-death record from the current thread.
+     * Recorded by {@code AeshStreamConnection} when its reader thread dies
+     * unexpectedly; read by the test side to fail fast with the cause
+     * instead of hanging. {@code null} when not in test mode or when the
+     * thread predates reader-death support.
+     */
+    @SuppressWarnings("unchecked")
+    static AtomicReference<Throwable> getReaderDeath() {
+        return (AtomicReference<Throwable>) getFieldFromThread("readerDeath");
+    }
+
+    /**
+     * Retrieve the shared readline-arm timestamp from the current thread.
+     * Stamped (nanos) every time readline arms for input; 0 means never.
+     * {@code null} when not in test mode or the thread predates support.
+     */
+    static AtomicLong getLastReadlineArmNanos() {
+        return (AtomicLong) getFieldFromThread("lastReadlineArmNanos");
+    }
+
+    /**
+     * Retrieve the shared connection-close timestamp from the current thread.
+     * Stamped (nanos) if the connection is ever closed mid-session; 0 means
+     * it never ran — i.e. no shutdown path preempted readline re-arming.
+     * {@code null} when not in test mode or the thread predates support.
+     */
+    static AtomicLong getConnectionCloseNanos() {
+        return (AtomicLong) getFieldFromThread("connectionCloseNanos");
+    }
+
+    /**
+     * Retrieve the shared handler-replacement counter from the current thread.
+     * {@code null} when not in test mode or the thread predates support.
+     */
+    static AtomicLong getArmCount() {
+        return (AtomicLong) getFieldFromThread("armCount");
+    }
+
     private static Object getFieldFromThread(String fieldName) {
         Thread t = Thread.currentThread();
         if (!TEST_THREAD_NAME.equals(t.getName())) {
@@ -97,6 +138,20 @@ public final class AeshTestConnectionHolder {
         final LinkedBlockingQueue<Object> signalQueue;
         final OutputStream commandOutputCapture;
         final ConcurrentLinkedQueue<String> inputLineQueue;
+        // Sticky record of unexpected reader-thread death, shared with
+        // AeshStreamConnection. First death wins; read by the test side to
+        // fail fast with the cause instead of hanging on a dead session.
+        final AtomicReference<Throwable> readerDeath = new AtomicReference<>();
+        // Readline-arm timestamp (nanos, 0 = never), stamped every time
+        // readline arms for input. Compared against command timing to tell
+        // whether re-arming ran after the previous command completed.
+        final AtomicLong lastReadlineArmNanos = new AtomicLong();
+        // Connection-close timestamp (nanos, 0 = never). Any nonzero value
+        // proves the shutdown path ran instead of readline re-arming.
+        final AtomicLong connectionCloseNanos = new AtomicLong();
+        // Handler-replacement counter for the re-arm tripwire (see
+        // AeshLauncherImpl). Only ever increases.
+        final AtomicLong armCount = new AtomicLong();
 
         public AeshTestThread(Runnable target, String name, ClassLoader contextClassLoader,
                 InputStream testInput, OutputStream testOutput,
@@ -111,6 +166,38 @@ public final class AeshTestConnectionHolder {
             this.signalQueue = signalQueue;
             this.commandOutputCapture = commandOutputCapture;
             this.inputLineQueue = inputLineQueue;
+        }
+
+        /**
+         * Returns the shared reader-death record. Used by the test side
+         * (which holds the thread reference) to detect a dead session.
+         */
+        public AtomicReference<Throwable> readerDeath() {
+            return readerDeath;
+        }
+
+        /**
+         * Returns the shared readline-arm timestamp. Used by the test side
+         * (which holds the thread reference) for hang diagnostics.
+         */
+        public AtomicLong lastReadlineArmNanos() {
+            return lastReadlineArmNanos;
+        }
+
+        /**
+         * Returns the shared connection-close timestamp. Used by the test
+         * side (which holds the thread reference) for hang diagnostics.
+         */
+        public AtomicLong connectionCloseNanos() {
+            return connectionCloseNanos;
+        }
+
+        /**
+         * Returns the shared handler-replacement counter. Used by the test
+         * side (which holds the thread reference) for the re-arm tripwire.
+         */
+        public AtomicLong armCount() {
+            return armCount;
         }
     }
 }

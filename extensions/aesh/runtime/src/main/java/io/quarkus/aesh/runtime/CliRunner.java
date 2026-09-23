@@ -150,7 +150,11 @@ public class CliRunner implements QuarkusApplication {
         }
 
         LOG.debug("Test mode: using stream-based connection");
-        runner.connection(new AeshStreamConnection(testInput, testOutput));
+        runner.connection(new AeshStreamConnection(testInput, testOutput, signalQueue,
+                AeshTestConnectionHolder.getReaderDeath(),
+                AeshTestConnectionHolder.getLastReadlineArmNanos(),
+                AeshTestConnectionHolder.getConnectionCloseNanos(),
+                AeshTestConnectionHolder.getArmCount()));
 
         if (signalQueue != null) {
             // Create a PipelineExecutionListener that composes user listener
@@ -169,8 +173,9 @@ public class CliRunner implements QuarkusApplication {
 
                 // Collected per-pipeline, consumed by onCommandComplete.
                 // AtomicReference gives atomic read-and-clear. Event order
-                // (onPipelineComplete before onCommandComplete, same REPL thread)
-                // is guaranteed by ProcessManager.firePipelineEvents in aesh 3.18.0.
+                // (onPipelineComplete before onCommandComplete) is guaranteed
+                // by ProcessManager.firePipelineEvents in aesh 3.18.0,
+                // regardless of which thread fires the callbacks.
                 private final AtomicReference<List<Object[]>> pendingStages = new AtomicReference<>();
 
                 @Override
@@ -192,7 +197,7 @@ public class CliRunner implements QuarkusApplication {
                         }
                     } finally {
                         // Signal: {exitCode, error, stageData}
-                        // stageData is null for single commands, List<Object[]> for pipelines
+                        // stageData is null for single commands, List<Object[]> for pipelines.
                         signalQueue.offer(new Object[] { result.getExitCode(), error, stages });
                     }
                 }

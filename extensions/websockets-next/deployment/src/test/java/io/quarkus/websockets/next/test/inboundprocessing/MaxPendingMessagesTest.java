@@ -29,7 +29,6 @@ public class MaxPendingMessagesTest {
             .withApplicationRoot(root -> {
                 root.addClasses(Limited.class, LimitedMulti.class, WSClient.class);
             })
-            // .overrideConfigKey("quarkus.log.category.\"io.quarkus.websockets.next.runtime.Endpoints\".level", "DEBUG")
             .overrideConfigKey("quarkus.websockets-next.server.max-pending-messages", "2");
 
     @Inject

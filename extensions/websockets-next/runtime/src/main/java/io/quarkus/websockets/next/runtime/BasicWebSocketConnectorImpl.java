@@ -202,6 +202,19 @@ public class BasicWebSocketConnectorImpl extends WebSocketConnectorBase<BasicWeb
             }
             connectionManager.add(BasicWebSocketConnectorImpl.class.getName(), connection);
 
+            // Only text and binary messages count as pending messages, so back-pressure only makes sense
+            // if at least one of these handlers is set
+            int maxPendingMessages = config.maxPendingMessages();
+            boolean backpressure = maxPendingMessages > 0
+                    && (textMessageHandler != null || binaryMessageHandler != null);
+
+            if (backpressure) {
+                // Pause the stream before any handler is registered so that no message can be delivered until
+                // fetch(maxPendingMessages) is requested at the end of the initialization
+                LOG.debugf("Back-pressure enabled - pause the stream: %s", connection);
+                ws.pause();
+            }
+
             if (openHandler != null) {
                 doExecute(connection, null, (c, ignored) -> openHandler.accept(c));
             }
@@ -213,7 +226,8 @@ public class BasicWebSocketConnectorImpl extends WebSocketConnectorBase<BasicWeb
                         if (trafficLogger != null) {
                             trafficLogger.textMessageReceived(connection, message);
                         }
-                        doExecute(connection, message, textMessageHandler);
+                        doExecute(connection, message, textMessageHandler,
+                                backpressure ? () -> fetchOne(ws, connection) : null);
                     }
                 });
             }
@@ -226,7 +240,8 @@ public class BasicWebSocketConnectorImpl extends WebSocketConnectorBase<BasicWeb
                         if (trafficLogger != null) {
                             trafficLogger.binaryMessageReceived(connection, message);
                         }
-                        doExecute(connection, message, binaryMessageHandler);
+                        doExecute(connection, message, binaryMessageHandler,
+                                backpressure ? () -> fetchOne(ws, connection) : null);
                     }
                 });
             }
@@ -283,15 +298,28 @@ public class BasicWebSocketConnectorImpl extends WebSocketConnectorBase<BasicWeb
 
             });
 
+            if (backpressure) {
+                // All handlers are registered - allow up to maxPendingMessages to be delivered; each processed
+                // text/binary message then fetches one more, bounding the number of in-flight messages
+                LOG.debugf("Back-pressure - fetch %s pending messages: %s", maxPendingMessages, connection);
+                ws.fetch(maxPendingMessages);
+            }
+
             return connection;
         });
     }
 
     private <MESSAGE> void doExecute(WebSocketClientConnectionImpl connection, MESSAGE message,
             BiConsumer<WebSocketClientConnection, MESSAGE> consumer) {
+        doExecute(connection, message, consumer, null);
+    }
+
+    private <MESSAGE> void doExecute(WebSocketClientConnectionImpl connection, MESSAGE message,
+            BiConsumer<WebSocketClientConnection, MESSAGE> consumer, Runnable onComplete) {
         // We always invoke callbacks on a new duplicated context and offload if blocking/virtualThread is needed
         Context context = vertx.getOrCreateContext();
-        ContextSupport.createNewDuplicatedContext(context, connection).runOnContext(new Handler<Void>() {
+        Context duplicatedContext = ContextSupport.createNewDuplicatedContext(context, connection);
+        duplicatedContext.runOnContext(new Handler<Void>() {
             @Override
             public void handle(Void event) {
                 if (executionModel == ExecutionModel.VIRTUAL_THREAD) {
@@ -301,6 +329,11 @@ public class BasicWebSocketConnectorImpl extends WebSocketConnectorBase<BasicWeb
                                 consumer.accept(connection, message);
                             } catch (Exception e) {
                                 LOG.errorf(e, "Unable to call handler: " + connection);
+                            } finally {
+                                // fetch() must be called on the connection event loop, not the virtual thread
+                                if (onComplete != null) {
+                                    duplicatedContext.runOnContext(v -> onComplete.run());
+                                }
                             }
                         }
                     });
@@ -315,17 +348,31 @@ public class BasicWebSocketConnectorImpl extends WebSocketConnectorBase<BasicWeb
                             }
                             return null;
                         }
-                    }, false);
+                    }, false).onComplete(ar -> {
+                        // onComplete runs back on the calling event loop context
+                        if (onComplete != null) {
+                            onComplete.run();
+                        }
+                    });
                 } else {
                     // Non-blocking -> event loop
                     try {
                         consumer.accept(connection, message);
                     } catch (Exception e) {
                         LOG.errorf(e, "Unable to call handler: " + connection);
+                    } finally {
+                        if (onComplete != null) {
+                            onComplete.run();
+                        }
                     }
                 }
             }
         });
+    }
+
+    private void fetchOne(WebSocket ws, WebSocketClientConnectionImpl connection) {
+        LOG.debugf("Back-pressure - fetch one more message: %s", connection);
+        ws.fetch(1);
     }
 
     private String mergePath(String path1, String path2) {

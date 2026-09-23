@@ -44,11 +44,12 @@ public class UniFailureErrorTest {
 
     @Test
     void testError() throws InterruptedException {
-        WSClient client = WSClient.create(vertx).connect(testUri);
-        client.send(Buffer.buffer("1"));
-        client.waitForMessages(1);
-        assertEquals("Something went wrong", client.getLastMessage().toString());
-        assertTrue(RequestBean.DESTROYED_LATCH.await(5, TimeUnit.SECONDS));
+        try (WSClient client = WSClient.create(vertx).connect(testUri)) {
+            client.send(Buffer.buffer("1"));
+            client.waitForMessages(1);
+            assertEquals("Something went wrong", client.getLastMessage().toString());
+            assertTrue(RequestBean.DESTROYED_LATCH.await(5, TimeUnit.SECONDS));
+        }
     }
 
     @WebSocket(path = "/echo")

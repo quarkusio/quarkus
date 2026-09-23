@@ -1313,9 +1313,6 @@ jobs:
     needs: [configure, initial-build, calculate-test-jobs]
     if: needs.calculate-test-jobs.outputs.run_qetestsuite == 'true'
     continue-on-error: true
-    permissions:
-      contents: read
-      pull-requests: write
     env:
       COMMON_MAVEN_ARGS: ${{ needs.configure.outputs.common-maven-args }}
       RUNS_ON_ENABLED: ${{ fromJson(needs.configure.outputs.config).runners[matrix.java.os-name].runsOn && 'true' || 'false' }}
@@ -1407,18 +1404,6 @@ jobs:
           path: |
             build-reports.zip
           retention-days: 7
-      - name: Report QE Test Suite failure
-        if: failure() && github.event_name == 'pull_request'
-        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          script: |
-            await github.rest.issues.createComment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: context.issue.number,
-              body: '⚠️ **QE Test Suite failed.** This does not block merging — these tests are maintained by the QE team (@quarkus-qe). [View logs](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})'
-            });
 
   platform-tests:
     name: Platform Tests - JDK ${{matrix.java.name}}

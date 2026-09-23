@@ -60,6 +60,9 @@ public class ConfigurationCustomizer implements JsonMapperBuilderCustomizer {
         if (jacksonBuildTimeConfig.acceptCaseInsensitiveEnums()) {
             builder.enable(MapperFeature.ACCEPT_CASE_INSENSITIVE_ENUMS);
         }
+        if (jacksonBuildTimeConfig.propagateTransientMarker()) {
+            builder.enable(MapperFeature.PROPAGATE_TRANSIENT_MARKER);
+        }
         JsonInclude.Include serializationInclusion = jacksonBuildTimeConfig.serializationInclusion().orElse(null);
         if (serializationInclusion != null) {
             builder.changeDefaultPropertyInclusion(new UnaryOperator<>() {

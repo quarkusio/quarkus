@@ -114,6 +114,7 @@ public class HibernateValidatorTestResource
         ResultBuilder result = new ResultBuilder();
 
         result.append(formatViolations(validator.validate(new MyOtherBean(null))));
+        result.append(formatViolations(validator.validate(new MyOtherBean("fail"))));
         result.append(formatViolations(validator.validate(new MyOtherBean("name"))));
 
         return result.build();

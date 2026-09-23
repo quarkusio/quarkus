@@ -5,6 +5,10 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 
 import org.aesh.terminal.AbstractConnection;
 import org.aesh.terminal.Attributes;
@@ -14,6 +18,7 @@ import org.aesh.terminal.EventDecoder;
 import org.aesh.terminal.tty.Capability;
 import org.aesh.terminal.tty.Size;
 import org.aesh.terminal.utils.Parser;
+import org.jboss.logging.Logger;
 
 /**
  * A {@link org.aesh.terminal.Connection} backed by JDK {@link InputStream}/{@link OutputStream} pairs.
@@ -30,17 +35,39 @@ import org.aesh.terminal.utils.Parser;
  */
 class AeshStreamConnection extends AbstractConnection {
 
+    /**
+     * Marker for reader-death signals offered on the signal queue:
+     * {@code Object[] { READER_DEATH_MARKER, cause }}. Must stay in sync
+     * with the structural check in {@code AeshLauncherImpl} (separate
+     * classloader, literal intentionally duplicated there).
+     */
+    static final String READER_DEATH_MARKER = "aesh-test-reader-death";
+
+    private static final Logger LOG = Logger.getLogger(AeshStreamConnection.class);
+
     private final Device device = new BaseDevice("test");
     private final Size size = new Size(120, 40);
     private final InputStream input;
     private final OutputStream output;
+    private final LinkedBlockingQueue<Object> signalQueue;
+    private final AtomicReference<Throwable> readerDeath;
+    private final AtomicLong lastReadlineArmNanos;
+    private final AtomicLong connectionCloseNanos;
+    private final AtomicLong armCount;
 
     private volatile boolean closed = false;
     private Thread readerThread;
 
-    AeshStreamConnection(InputStream input, OutputStream output) {
+    AeshStreamConnection(InputStream input, OutputStream output,
+            LinkedBlockingQueue<Object> signalQueue, AtomicReference<Throwable> readerDeath,
+            AtomicLong lastReadlineArmNanos, AtomicLong connectionCloseNanos, AtomicLong armCount) {
         this.input = input;
         this.output = output;
+        this.signalQueue = signalQueue;
+        this.readerDeath = readerDeath;
+        this.lastReadlineArmNanos = lastReadlineArmNanos;
+        this.connectionCloseNanos = connectionCloseNanos;
+        this.armCount = armCount;
         this.attributes = new Attributes();
         this.eventDecoder = new EventDecoder(this.attributes);
         this.stdout = data -> {
@@ -67,6 +94,10 @@ class AeshStreamConnection extends AbstractConnection {
     @Override
     public void close() {
         closed = true;
+        if (connectionCloseNanos != null) {
+            connectionCloseNanos.compareAndSet(0, System.nanoTime());
+        }
+        LOG.infof("aesh-test: connection closed");
         // Close the input stream to unblock the reader thread
         try {
             input.close();
@@ -93,6 +124,30 @@ class AeshStreamConnection extends AbstractConnection {
     @Override
     public void openNonBlocking() {
         startReader();
+    }
+
+    @Override
+    public void setStdinHandler(Consumer<int[]> handler) {
+        super.setStdinHandler(handler);
+        // Count every handler replacement (re-arms, submit stubs, scoped
+        // replacements alike — all only inflate the count). The test side
+        // asserts the count advances per completed command, which catches a
+        // skipped post-completion re-arm at the command itself instead of as
+        // a hang on the next one.
+        if (armCount != null) {
+            armCount.incrementAndGet();
+        }
+        // Timestamp every arming so hang diagnostics can tell whether
+        // readline re-armed after the previous command completed. The
+        // clearing half is logged for cycle correlation in CI output.
+        if (handler != null) {
+            if (lastReadlineArmNanos != null) {
+                lastReadlineArmNanos.set(System.nanoTime());
+            }
+            LOG.infof("aesh-test: readline armed for input");
+        } else {
+            LOG.infof("aesh-test: readline disarmed (stdin handler cleared)");
+        }
     }
 
     @Override
@@ -144,6 +199,24 @@ class AeshStreamConnection extends AbstractConnection {
                 }
             } catch (IOException e) {
                 // Stream closed, exit reader
+            } catch (Throwable t) {
+                // Anything else kills input delivery silently and every later
+                // command hangs: record the cause where the test side can
+                // report it, and wake any waiter immediately.
+                if (t instanceof ThreadDeath) {
+                    throw (ThreadDeath) t;
+                }
+                if (readerDeath != null) {
+                    readerDeath.compareAndSet(null, t);
+                }
+                LOG.errorf(t, "aesh-test-reader died unexpectedly; REPL input will no longer be delivered");
+                if (signalQueue != null) {
+                    try {
+                        signalQueue.offer(new Object[] { READER_DEATH_MARKER, t });
+                    } catch (Throwable ignored) {
+                        // Best effort only; the sticky record above is authoritative
+                    }
+                }
             }
         }, "aesh-test-reader");
         readerThread.setDaemon(true);

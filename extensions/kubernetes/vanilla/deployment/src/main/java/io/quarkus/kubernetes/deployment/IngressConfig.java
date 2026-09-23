@@ -47,6 +47,15 @@ public interface IngressConfig {
      */
     Map<String, IngressRuleConfig> rules();
 
+    /**
+     * If true, Quarkus scans Jakarta REST {@code @Path} annotations and generates one Ingress rule path per
+     * discovered endpoint, using {@code Exact} for static paths and {@code Prefix} for paths with template
+     * parameters (e.g. {@code /users/{id}}).
+     * When explicit {@code quarkus.kubernetes.ingress.rules.*} are configured, this setting has no effect.
+     */
+    @WithDefault("false")
+    boolean exposeJaxrsPaths();
+
     interface IngressTlsConfig {
 
         /**

@@ -42,19 +42,25 @@ public final class QuarkusPathLocationScanner implements ResourceAndClassScanner
 
         FileSystemScanner fileSystemScanner = null;
         for (String migrationFile : applicationMigrationFiles) {
-            if (isClassPathResource(locations, migrationFile)) {
+            if (migrationFile.startsWith(CoreLocationPrefix.FILESYSTEM_PREFIX)) {
+                Location migrationLocation = LocationParser.parseLocation(migrationFile);
+                if (isFileSystemLocation(locations, migrationLocation)) {
+                    if (fileSystemScanner == null) {
+                        fileSystemScanner = new FileSystemScanner(configuration);
+                    }
+                    LOGGER.debugf("Checking %s for migration files", migrationFile);
+                    Collection<LoadableResource> resources = fileSystemScanner
+                            .scanForResources(migrationLocation);
+                    LOGGER.debugf("%s contains %d migration files", migrationFile, resources.size());
+                    scannedResources.addAll(resources);
+                } else {
+                    LOGGER.warnf("Migration location '%s' will be ignored because it is not in the configured locations",
+                            migrationFile);
+                }
+            } else if (isClassPathResource(locations, migrationFile)) {
                 LOGGER.debugf("Loading %s", migrationFile);
 
                 scannedResources.add(new ClassPathResource(null, migrationFile, classLoader, StandardCharsets.UTF_8));
-            } else if (migrationFile.startsWith(CoreLocationPrefix.FILESYSTEM_PREFIX)) {
-                if (fileSystemScanner == null) {
-                    fileSystemScanner = new FileSystemScanner(configuration);
-                }
-                LOGGER.debugf("Checking %s for migration files", migrationFile);
-                Collection<LoadableResource> resources = fileSystemScanner
-                        .scanForResources(LocationParser.parseLocation(migrationFile));
-                LOGGER.debugf("%s contains %d migration files", migrationFile, resources.size());
-                scannedResources.addAll(resources);
             }
         }
 
@@ -88,7 +94,7 @@ public final class QuarkusPathLocationScanner implements ResourceAndClassScanner
         for (Location location : locations) {
             String locationPath = location.getPath();
             if (!locationPath.endsWith(LOCATION_SEPARATOR)) {
-                locationPath += "/";
+                locationPath += LOCATION_SEPARATOR;
             }
 
             if (migrationFile.startsWith(locationPath)) {
@@ -96,6 +102,26 @@ public final class QuarkusPathLocationScanner implements ResourceAndClassScanner
             } else {
                 LOGGER.debugf("Migration file '%s' will be ignored because it does not start with '%s'", migrationFile,
                         locationPath);
+            }
+        }
+
+        return false;
+    }
+
+    private boolean isFileSystemLocation(Collection<Location> locations, Location migrationLocation) {
+        String migrationPath = migrationLocation.getPath();
+        if (!migrationPath.endsWith(LOCATION_SEPARATOR)) {
+            migrationPath += LOCATION_SEPARATOR;
+        }
+
+        for (Location location : locations) {
+            String locationPath = location.getPath();
+            if (!locationPath.endsWith(LOCATION_SEPARATOR)) {
+                locationPath += LOCATION_SEPARATOR;
+            }
+
+            if (migrationPath.equals(locationPath)) {
+                return true;
             }
         }
 

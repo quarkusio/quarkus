@@ -1,6 +1,7 @@
 package io.quarkus.test.junit.main;
 
 import java.util.List;
+import java.util.logging.LogRecord;
 
 /**
  * Contains information about a run (via {@link Launch} or {@link QuarkusMainLauncher}) of a command line application.
@@ -47,4 +48,9 @@ public interface LaunchResult {
      * Get the exit code of the application.
      */
     int exitCode();
+
+    /**
+     * Get the log records captured during the application run.
+     */
+    List<LogRecord> getLogRecords();
 }

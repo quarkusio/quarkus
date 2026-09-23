@@ -546,14 +546,15 @@ public class ResteasyReactiveJacksonProcessor {
     }
 
     private static ClassInfo getEffectiveClassInfo(Type type, IndexView indexView, Set<DotName> additionalUnwrapTypes) {
-        if (type.kind() == Type.Kind.VOID) {
-            return null;
-        }
         Type effectiveReturnType = getEffectiveType(type, additionalUnwrapTypes);
         return effectiveReturnType == null ? null : indexView.getClassByName(effectiveReturnType.name());
     }
 
     private static Type getEffectiveType(Type type, Set<DotName> additionalUnwrapTypes) {
+        if (type.kind() == Type.Kind.VOID) {
+            return null;
+        }
+
         Type effectiveReturnType = type;
         if (effectiveReturnType.name().equals(ResteasyReactiveDotNames.REST_RESPONSE) ||
                 effectiveReturnType.name().equals(ResteasyReactiveDotNames.UNI) ||

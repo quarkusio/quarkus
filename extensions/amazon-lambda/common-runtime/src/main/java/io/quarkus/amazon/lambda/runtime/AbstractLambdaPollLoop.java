@@ -56,7 +56,7 @@ public abstract class AbstractLambdaPollLoop {
 
     protected HttpURLConnection requestConnection = null;
 
-    private static final RuntimeKey<URI> LOCAL_BASE_URI = RuntimeKey.key("quarkus.http.local-base-uri");
+    private static final RuntimeKey<URI> LAMBDA_BASE_URI = RuntimeKey.key("quarkus.lambda.local-base-uri");
 
     /**
      * The path part of the local base URI, built like the one the Vert.x HTTP server registers so that tests
@@ -89,7 +89,7 @@ public abstract class AbstractLambdaPollLoop {
         final AtomicBoolean shouldInterrupt = new AtomicBoolean(true);
         String baseUrl = AmazonLambdaApi.baseUrl();
         URI lambdaBase = URI.create(AmazonLambdaApi.baseUrl());
-        valueRegistry.register(LOCAL_BASE_URI,
+        valueRegistry.register(LAMBDA_BASE_URI,
                 URI.create(lambdaBase.getScheme() + "://" + lambdaBase.getHost() + ":" + lambdaBase.getPort()
                         + localBasePath()));
         final Thread pollingThread = new Thread(new Runnable() {

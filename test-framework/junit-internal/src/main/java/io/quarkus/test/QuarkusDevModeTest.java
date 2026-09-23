@@ -1,7 +1,6 @@
 package io.quarkus.test;
 
 import static io.quarkus.runtime.configuration.ConfigSourceOrdinal.DEV_TEST;
-import static io.quarkus.test.common.ListeningAddress.LOCAL_BASE_URI;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -319,10 +318,7 @@ public class QuarkusDevModeTest
             ConfigInjector.inject(testInstance, newConfig);
             ThreadLocalConfigSourceProvider.set(newConfig);
             TestHTTPResourceManager.inject(testInstance, valueRegistry);
-
-            if (valueRegistry.containsKey(LOCAL_BASE_URI)) {
-                RestAssuredStateManager.setTestUri(valueRegistry.get(LOCAL_BASE_URI));
-            }
+            RestAssuredStateManager.setTestUri(valueRegistry);
 
         } catch (Exception e) {
             if (allowFailedStart) {
@@ -402,9 +398,9 @@ public class QuarkusDevModeTest
         }
 
         // Only reset if we actually set something. ValueRegistry can be null if Quarkus failed to start
-        if (Optional.ofNullable(ValueRegistryInjector.get(context))
-                .map(valueRegistry -> valueRegistry.containsKey(LOCAL_BASE_URI)).orElse(false)) {
-            RestAssuredStateManager.clearState();
+        ValueRegistry valueRegistry = ValueRegistryInjector.get(context);
+        if (valueRegistry != null) {
+            RestAssuredStateManager.clearState(valueRegistry);
         }
         ThreadLocalConfigSourceProvider.reset();
         ConfigInjector.clear(context);

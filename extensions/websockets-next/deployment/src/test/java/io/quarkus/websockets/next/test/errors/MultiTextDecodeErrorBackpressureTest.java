@@ -37,20 +37,21 @@ public class MultiTextDecodeErrorBackpressureTest {
 
     @Test
     void testDecodeErrorDoesNotStallStream() {
-        WSClient client = WSClient.create(vertx).connect(testUri);
-        // Send more messages that fail to decode than the configured max-pending-messages limit.
-        // A decoded item never reaches the Multi, so the emission-tied fetch(1) never fires; without the
-        // fix that requests one more message after a failed decode, the stream would stall after the first
-        // failure and the subsequent messages would never be delivered.
-        client.send("not a json 1");
-        client.send("not a json 2");
-        client.send("not a json 3");
-        client.waitForMessages(3);
-        // The @OnError responses may be delivered in any order
-        assertThat(client.getMessages().stream().map(Object::toString)).containsExactlyInAnyOrder(
-                "Problem decoding: not a json 1",
-                "Problem decoding: not a json 2",
-                "Problem decoding: not a json 3");
+        try (WSClient client = WSClient.create(vertx).connect(testUri)) {
+            // Send more messages that fail to decode than the configured max-pending-messages limit.
+            // A decoded item never reaches the Multi, so the emission-tied fetch(1) never fires; without the
+            // fix that requests one more message after a failed decode, the stream would stall after the first
+            // failure and the subsequent messages would never be delivered.
+            client.send("not a json 1");
+            client.send("not a json 2");
+            client.send("not a json 3");
+            client.waitForMessages(3);
+            // The @OnError responses may be delivered in any order
+            assertThat(client.getMessages().stream().map(Object::toString)).containsExactlyInAnyOrder(
+                    "Problem decoding: not a json 1",
+                    "Problem decoding: not a json 2",
+                    "Problem decoding: not a json 3");
+        }
     }
 
     @WebSocket(path = "/echo")

@@ -35,14 +35,15 @@ public class ConcurrentInboundProcessingTest {
 
     @Test
     void testSimultaneousExecution() {
-        WSClient client = WSClient.create(vertx).connect(simUri);
-        client.send("1");
-        client.send("2");
-        client.send("3");
-        client.send("4");
-        client.waitForMessages(4);
-        for (int i = 0; i < 4; i++) {
-            assertEquals("ok", client.getMessages().get(i).toString());
+        try (WSClient client = WSClient.create(vertx).connect(simUri)) {
+            client.send("1");
+            client.send("2");
+            client.send("3");
+            client.send("4");
+            client.waitForMessages(4);
+            for (int i = 0; i < 4; i++) {
+                assertEquals("ok", client.getMessages().get(i).toString());
+            }
         }
     }
 

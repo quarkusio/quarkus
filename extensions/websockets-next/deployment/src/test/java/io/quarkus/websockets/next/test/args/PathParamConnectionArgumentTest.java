@@ -36,8 +36,10 @@ public class PathParamConnectionArgumentTest {
     @Test
     void testArguments() {
         String header = "fool";
-        WSClient client = WSClient.create(vertx).connect(new WebSocketConnectOptions().addHeader("X-Test", header), testUri);
-        assertEquals("foo:python:monty:fool", client.sendAndAwaitReply("python").toString());
+        try (WSClient client = WSClient.create(vertx).connect(new WebSocketConnectOptions().addHeader("X-Test", header),
+                testUri)) {
+            assertEquals("foo:python:monty:fool", client.sendAndAwaitReply("python").toString());
+        }
     }
 
     @WebSocket(path = "/echo/{grail}/and/{life}")

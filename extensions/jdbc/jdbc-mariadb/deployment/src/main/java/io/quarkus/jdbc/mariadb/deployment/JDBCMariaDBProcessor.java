@@ -55,19 +55,6 @@ public class JDBCMariaDBProcessor {
     }
 
     @BuildStep
-    void registerAuthenticationPlugins(BuildProducer<ServiceProviderBuildItem> serviceProvider) {
-        // make sure that all plugins are available
-        serviceProvider
-                .produce(ServiceProviderBuildItem.allProvidersFromClassPath("org.mariadb.jdbc.plugin.AuthenticationPlugin"));
-    }
-
-    @BuildStep
-    void registerCodecs(BuildProducer<ServiceProviderBuildItem> serviceProvider) {
-        serviceProvider
-                .produce(ServiceProviderBuildItem.allProvidersFromClassPath("org.mariadb.jdbc.plugin.Codec"));
-    }
-
-    @BuildStep
     void addNativeImageResources(BuildProducer<NativeImageResourceBuildItem> resources) {
         // mariadb.properties is used by org.mariadb.jdbc.util.VersionFactory and is small enough.
         // driver.properties is not added because it only provides optional descriptions for

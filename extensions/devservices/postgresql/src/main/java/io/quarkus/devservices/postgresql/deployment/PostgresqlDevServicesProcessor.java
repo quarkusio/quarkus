@@ -133,19 +133,6 @@ public class PostgresqlDevServicesProcessor {
 
     static class QuarkusPostgreSQLContainer extends PostgreSQLContainer implements DatasourceStartable {
 
-        /**
-         * A reused container keeps its data, including the effect of the init scripts that ran when it was first
-         * started, so the scripts are not run again: a non-idempotent script would fail on the second run.
-         */
-        @Override
-        protected void containerIsStarted(InspectContainerResponse containerInfo, boolean reused) {
-            if (reused) {
-                LOG.info("Reusing existing container, not running the datasource Dev Service init scripts again");
-            } else {
-                super.containerIsStarted(containerInfo, reused);
-            }
-        }
-
         private static final String READY_REGEX = ".*database system is ready to accept connections.*\\s";
         private static final String SKIPPING_INITIALIZATION_REGEX = ".*PostgreSQL Database directory appears to contain a database; Skipping initialization:*\\s";
 
@@ -153,6 +140,8 @@ public class PostgresqlDevServicesProcessor {
         private final boolean useSharedNetwork;
 
         private final String hostName;
+
+        private boolean reused;
 
         public QuarkusPostgreSQLContainer(Optional<String> imageName, OptionalInt fixedExposedPort,
                 String defaultNetworkId, boolean useSharedNetwork) {
@@ -176,6 +165,23 @@ public class PostgresqlDevServicesProcessor {
                     .withStrategy(Wait.forListeningPort())
                     .withStartupTimeout(Duration.of(60L, ChronoUnit.SECONDS));
             this.hostName = ConfigureUtil.configureNetwork(this, defaultNetworkId, useSharedNetwork, "postgres");
+        }
+
+        @Override
+        protected void containerIsStarted(InspectContainerResponse containerInfo, boolean reused) {
+            this.reused = reused;
+            super.containerIsStarted(containerInfo, reused);
+        }
+
+        /**
+         * A reused container keeps its data, including the effect of the init scripts that ran when it was first
+         * started, so the scripts are not run again: a non-idempotent script would fail on the second run.
+         */
+        @Override
+        protected void runInitScriptIfRequired() {
+            if (!reused) {
+                super.runInitScriptIfRequired();
+            }
         }
 
         @Override

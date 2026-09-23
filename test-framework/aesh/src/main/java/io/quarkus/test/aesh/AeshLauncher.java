@@ -1,6 +1,7 @@
 package io.quarkus.test.aesh;
 
 import java.time.Duration;
+import java.util.List;
 
 import org.aesh.command.CommandResult;
 
@@ -158,6 +159,22 @@ public interface AeshLauncher extends AutoCloseable {
      */
     default Throwable getLastError() {
         return null;
+    }
+
+    /**
+     * Returns the per-stage results of the last executed pipeline command.
+     * <p>
+     * For a pipeline command ({@code cmd1 | cmd2 | cmd3}), returns one
+     * {@link StageResult} per stage in pipeline order. For a non-pipeline
+     * (single) command, returns an empty list.
+     * <p>
+     * Each {@link StageResult} carries the command name, stage index,
+     * exit code, error info, and duration — all classloader-safe types.
+     *
+     * @return an unmodifiable list of stage results, empty for non-pipeline commands
+     */
+    default List<StageResult> getStageResults() {
+        return List.of();
     }
 
     /**

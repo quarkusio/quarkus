@@ -409,3 +409,14 @@ The REPL auto-launches on the first `execute()` call and auto-closes after each 
 launcher.execute("slow-cmd", ExecuteOptions.defaults().timeout(Duration.ofMinutes(2)));
 ```
 
+For pipeline commands (`cmd1 | cmd2`), `getStageResults()` returns per-stage outcomes:
+
+```java
+launcher.execute("echo --text hello | upper");
+assertThat(launcher.getCommandOutput()).isEqualTo("HELLO\n");
+assertThat(launcher.getStageResults()).hasSize(2);
+assertThat(launcher.getStageResults().get(0).isSuccess()).isTrue();
+```
+
+Each `StageResult` carries the command's simple class name, stage index/count, exit code, error details (`errorMessage()`/`errorClass()`), and duration. For non-pipeline (single) commands, `getStageResults()` returns an empty list.
+

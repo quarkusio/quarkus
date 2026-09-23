@@ -17,6 +17,7 @@ public final class Constants {
     public static final String DEPLOYMENT_GROUP = "apps";
     public static final String DEPLOYMENT_VERSION = "v1";
     public static final String INGRESS = "Ingress";
+    public static final String SERVICE = "Service";
     public static final String BATCH_GROUP = "batch";
     public static final String BATCH_VERSION = "v1";
     public static final String JOB_API_VERSION = BATCH_GROUP + "/" + BATCH_VERSION;

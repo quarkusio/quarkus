@@ -38,19 +38,20 @@ public class HandshakeRequestTest {
     void testHandshake() {
         String header = "fool";
         String query = "name=Lu";
-        WSClient client = WSClient.create(vertx).connect(new WebSocketConnectOptions().addHeader("X-Test", header),
-                WSClient.toWS(baseUri, "/head?" + query));
-        JsonObject reply = client.sendAndAwaitReply("1").toJsonObject();
-        assertEquals(header, reply.getString("header"));
-        assertEquals(header, reply.getJsonObject("headers").getString("X-Test".toLowerCase()),
-                reply.getJsonObject("headers").toString());
-        assertEquals(baseUri.getScheme(), reply.getString("scheme"));
-        assertEquals(baseUri.getHost(), reply.getString("host"));
-        assertEquals(baseUri.getPort(), reply.getInteger("port"));
-        assertEquals("/head", reply.getString("path"));
-        assertEquals(query, reply.getString("query"));
-        assertEquals("127.0.0.1:8081", reply.getString("localAddress"));
-        assertTrue(reply.getString("remoteAddress").matches("127\\.0\\.0\\.1:\\d+"));
+        try (WSClient client = WSClient.create(vertx).connect(new WebSocketConnectOptions().addHeader("X-Test", header),
+                WSClient.toWS(baseUri, "/head?" + query))) {
+            JsonObject reply = client.sendAndAwaitReply("1").toJsonObject();
+            assertEquals(header, reply.getString("header"));
+            assertEquals(header, reply.getJsonObject("headers").getString("X-Test".toLowerCase()),
+                    reply.getJsonObject("headers").toString());
+            assertEquals(baseUri.getScheme(), reply.getString("scheme"));
+            assertEquals(baseUri.getHost(), reply.getString("host"));
+            assertEquals(baseUri.getPort(), reply.getInteger("port"));
+            assertEquals("/head", reply.getString("path"));
+            assertEquals(query, reply.getString("query"));
+            assertEquals("127.0.0.1:8081", reply.getString("localAddress"));
+            assertTrue(reply.getString("remoteAddress").matches("127\\.0\\.0\\.1:\\d+"));
+        }
     }
 
     @WebSocket(path = "/head")

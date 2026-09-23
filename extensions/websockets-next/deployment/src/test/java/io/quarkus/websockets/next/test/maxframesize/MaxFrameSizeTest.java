@@ -40,9 +40,10 @@ public class MaxFrameSizeTest {
 
     @Test
     void testMaxFrameSize() throws InterruptedException, ExecutionException, TimeoutException {
-        WSClient client = WSClient.create(vertx).connect(echoUri);
-        client.socket().writeFrame(WebSocketFrame.textFrame("foo".repeat(10), false));
-        assertTrue(Echo.CORRUPTED_LATCH.await(5, TimeUnit.SECONDS));
+        try (WSClient client = WSClient.create(vertx).connect(echoUri)) {
+            client.socket().writeFrame(WebSocketFrame.textFrame("foo".repeat(10), false));
+            assertTrue(Echo.CORRUPTED_LATCH.await(5, TimeUnit.SECONDS));
+        }
     }
 
     @WebSocket(path = "/echo")

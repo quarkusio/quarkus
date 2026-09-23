@@ -34,14 +34,15 @@ public class SerialInboundProcessingErrorTest {
 
     @Test
     void testSerialExecution() {
-        WSClient client = WSClient.create(vertx).connect(simUri);
-        int messages = 100;
-        for (int i = 0; i < messages; i++) {
-            client.send(i + "");
-        }
-        client.waitForMessages(messages);
-        for (int i = 0; i < messages; i++) {
-            assertEquals(i + "", client.getMessages().get(i).toString());
+        try (WSClient client = WSClient.create(vertx).connect(simUri)) {
+            int messages = 100;
+            for (int i = 0; i < messages; i++) {
+                client.send(i + "");
+            }
+            client.waitForMessages(messages);
+            for (int i = 0; i < messages; i++) {
+                assertEquals(i + "", client.getMessages().get(i).toString());
+            }
         }
     }
 

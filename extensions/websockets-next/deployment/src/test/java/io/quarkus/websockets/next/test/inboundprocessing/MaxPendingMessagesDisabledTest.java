@@ -41,16 +41,17 @@ public class MaxPendingMessagesDisabledTest {
 
     @Test
     void testBackpressureDisabled() {
-        WSClient client = WSClient.create(vertx).connect(unboundedUri);
-        // Send more messages than the default limit; with back-pressure disabled all of them are received and
-        // parked in flight at once - if any bound was applied, in-flight would cap below COUNT and this would time out
-        for (int i = 0; i < COUNT; i++) {
-            client.send("m" + i);
+        try (WSClient client = WSClient.create(vertx).connect(unboundedUri)) {
+            // Send more messages than the default limit; with back-pressure disabled all of them are received and
+            // parked in flight at once - if any bound was applied, in-flight would cap below COUNT and this would time out
+            for (int i = 0; i < COUNT; i++) {
+                client.send("m" + i);
+            }
+            Awaitility.await().until(() -> Unbounded.inFlight.get() == COUNT);
+            // Release all parked messages and make sure they are all processed
+            Unbounded.releaseAll();
+            client.waitForMessages(COUNT);
         }
-        Awaitility.await().until(() -> Unbounded.inFlight.get() == COUNT);
-        // Release all parked messages and make sure they are all processed
-        Unbounded.releaseAll();
-        client.waitForMessages(COUNT);
     }
 
     @WebSocket(path = "/unbounded", inboundProcessingMode = CONCURRENT)

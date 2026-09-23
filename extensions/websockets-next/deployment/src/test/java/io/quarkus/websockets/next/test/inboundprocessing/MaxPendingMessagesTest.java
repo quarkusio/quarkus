@@ -42,40 +42,42 @@ public class MaxPendingMessagesTest {
 
     @Test
     void testInFlightMessagesAreBounded() throws InterruptedException {
-        WSClient client = WSClient.create(vertx).connect(limitedUri);
-        // Send more messages than the configured limit
-        client.send("1");
-        client.send("2");
-        client.send("3");
-        client.send("4");
+        try (WSClient client = WSClient.create(vertx).connect(limitedUri)) {
+            // Send more messages than the configured limit
+            client.send("1");
+            client.send("2");
+            client.send("3");
+            client.send("4");
 
-        // Exactly two messages are allowed to be processed concurrently
-        assertTrue(Limited.twoStarted.await(5, TimeUnit.SECONDS), "Two messages should be processed concurrently");
-        // Give a potential (incorrectly unbounded) third message a chance to start before we release the gate
-        Thread.sleep(500);
-        assertEquals(2, Limited.inFlight.get(), "No more than max-pending-messages should be in flight");
-        assertEquals(2, Limited.peak.get(), "The peak number of in-flight messages must not exceed the limit");
+            // Exactly two messages are allowed to be processed concurrently
+            assertTrue(Limited.twoStarted.await(5, TimeUnit.SECONDS), "Two messages should be processed concurrently");
+            // Give a potential (incorrectly unbounded) third message a chance to start before we release the gate
+            Thread.sleep(500);
+            assertEquals(2, Limited.inFlight.get(), "No more than max-pending-messages should be in flight");
+            assertEquals(2, Limited.peak.get(), "The peak number of in-flight messages must not exceed the limit");
 
-        // Release the held messages - the remaining messages are fetched one at a time as the in-flight ones complete
-        Limited.releaseGate.countDown();
-        client.waitForMessages(4);
-        for (int i = 0; i < 4; i++) {
-            assertEquals("ok", client.getMessages().get(i).toString());
+            // Release the held messages - the remaining messages are fetched one at a time as the in-flight ones complete
+            Limited.releaseGate.countDown();
+            client.waitForMessages(4);
+            for (int i = 0; i < 4; i++) {
+                assertEquals("ok", client.getMessages().get(i).toString());
+            }
         }
     }
 
     @Test
     void testMultiStreamOfMessages() {
-        WSClient client = WSClient.create(vertx).connect(limitedMultiUri);
-        // Stream more messages than the configured limit; fetch(1) on each downstream emission must keep the
-        // stream flowing past the initial fetch(max-pending-messages) without stalling or dropping messages
-        int count = 10;
-        for (int i = 0; i < count; i++) {
-            client.send("m" + i);
-        }
-        client.waitForMessages(count);
-        for (int i = 0; i < count; i++) {
-            assertEquals("echo-m" + i, client.getMessages().get(i).toString());
+        try (WSClient client = WSClient.create(vertx).connect(limitedMultiUri)) {
+            // Stream more messages than the configured limit; fetch(1) on each downstream emission must keep the
+            // stream flowing past the initial fetch(max-pending-messages) without stalling or dropping messages
+            int count = 10;
+            for (int i = 0; i < count; i++) {
+                client.send("m" + i);
+            }
+            client.waitForMessages(count);
+            for (int i = 0; i < count; i++) {
+                assertEquals("echo-m" + i, client.getMessages().get(i).toString());
+            }
         }
     }
 

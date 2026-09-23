@@ -44,17 +44,18 @@ public class SignatureConsumingMultiTest {
 
     @Test
     void verifyExecutionOfOnMessageWhenConsumingAndReturningMultis() {
-        WSClient client = WSClient.create(vertx).connect(WSClient.toWS(uri, "/ws/%s/%d".formatted("bi-directional", 3)));
+        try (WSClient client = WSClient.create(vertx).connect(WSClient.toWS(uri, "/ws/%s/%d".formatted("bi-directional", 3)))) {
 
-        for (int i = 0; i < 10; i++) {
-            client.sendAndAwait("hello" + i);
+            for (int i = 0; i < 10; i++) {
+                client.sendAndAwait("hello" + i);
+            }
+
+            await().until(() -> client.getMessages().size() == 10);
+            assertThat(client.getMessages().stream().map(Buffer::toString).collect(Collectors.toList()))
+                    .containsExactlyInAnyOrderElementsOf(
+                            IntStream.range(0, 10).mapToObj(id -> "WS " + 3 + " received: hello" + id)
+                                    .collect(Collectors.toList()));
         }
-
-        await().until(() -> client.getMessages().size() == 10);
-        assertThat(client.getMessages().stream().map(Buffer::toString).collect(Collectors.toList()))
-                .containsExactlyInAnyOrderElementsOf(
-                        IntStream.range(0, 10).mapToObj(id -> "WS " + 3 + " received: hello" + id)
-                                .collect(Collectors.toList()));
     }
 
     @WebSocket(path = "/ws/bi-directional/{id}")

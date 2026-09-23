@@ -126,10 +126,11 @@ public class AmqpDevServicesProcessor {
                         .config(Map.of(
                                 AMQP_USER_PROP, DEFAULT_USER,
                                 AMQP_PASSWORD_PROP, DEFAULT_PASSWORD))
-                        .configProvider(s -> Map.of(
-                                AMQP_HOST_PROP, s.getEffectiveHost(),
-                                AMQP_PORT_PROP, String.valueOf(s.getPort()),
-                                AMQP_MAPPED_PORT_PROP, String.valueOf(s.getMappedConsolePort())))
+                        // keep the deprecated call until we remove it entirely
+                        .configProvider(Map.of(
+                                AMQP_HOST_PROP, ArtemisContainer::getEffectiveHost,
+                                AMQP_PORT_PROP, s -> String.valueOf(s.getPort()),
+                                AMQP_MAPPED_PORT_PROP, s -> String.valueOf(s.getMappedConsolePort())))
                         .build());
     }
 

@@ -94,6 +94,16 @@ public interface JacksonBuildTimeConfig {
     boolean acceptCaseInsensitiveEnums();
 
     /**
+     * If enabled, Jackson will treat the {@code transient} keyword on a field as an implicit
+     * {@code @JsonIgnore} for the whole logical property, so that a matching getter or setter
+     * is also ignored. When disabled, {@code transient} only prevents the field itself from
+     * being auto-detected, and an accessible getter/setter still exposes the property.
+     * This is disabled by default to match the default Jackson behavior.
+     */
+    @WithDefault("false")
+    boolean propagateTransientMarker();
+
+    /**
      * If set, Jackson will default to using the specified timezone when formatting dates.
      * Some examples values are "Asia/Jakarta" and "GMT+3".
      */

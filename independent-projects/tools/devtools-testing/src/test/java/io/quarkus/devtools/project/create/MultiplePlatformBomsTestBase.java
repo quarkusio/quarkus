@@ -11,6 +11,7 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.stream.Collectors;
 
 import org.apache.maven.model.Model;
@@ -196,7 +197,8 @@ public abstract class MultiplePlatformBomsTestBase {
 
         // TODO the order should be predictable
         assertThat(model.getDependencies().stream()
-                .map(d -> ArtifactCoords.of(d.getGroupId(), d.getArtifactId(), d.getClassifier(), d.getType(), d.getVersion()))
+                .map(d -> ArtifactCoords.of(d.getGroupId(), d.getArtifactId(), d.getClassifier(), d.getType(),
+                        d.getVersion()))
                 .collect(Collectors.toSet())).containsAll(expectedExtensions);
 
         assertThat(model.getProperties()).containsAllEntriesOf(expectedProperties);

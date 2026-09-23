@@ -9,7 +9,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.eclipse.microprofile.config.ConfigProvider;
@@ -124,10 +123,9 @@ public class DevServicesMongoProcessor {
                                 .startable(() -> createMongoContainer(captured, composeProjectBuildItem,
                                         useSharedNetwork, devServicesConfig.timeout(), launchMode.getLaunchMode(),
                                         serviceName))
-                                .configProvider(Map.of(
+                                .configProvider(container -> Map.of(
                                         configPrefix + "connection-string",
-                                        (Function<QuarkusMongoDBContainer, String>) container -> getEffectiveUrl(
-                                                configPrefix, container, captured)))
+                                        getEffectiveUrl(configPrefix, container, captured)))
                                 .build());
             }
         }

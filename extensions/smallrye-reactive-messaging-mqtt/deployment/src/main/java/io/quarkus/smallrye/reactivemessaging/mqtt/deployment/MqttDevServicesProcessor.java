@@ -110,9 +110,9 @@ public class MqttDevServicesProcessor {
                                 useSharedNetwork)
                                 .withEnv(config.containerEnv()))
                         .postStartHook(this::logStarted)
-                        .configProvider(Map.of(
-                                SMALLRYE_MQTT_HOST, ConfiguredMqttContainer::getEffectiveHost,
-                                SMALLRYE_MQTT_PORT, s -> String.valueOf(s.getPort())))
+                        .configProvider(s -> Map.of(
+                                SMALLRYE_MQTT_HOST, s.getEffectiveHost(),
+                                SMALLRYE_MQTT_PORT, String.valueOf(s.getPort())))
                         .build());
     }
 

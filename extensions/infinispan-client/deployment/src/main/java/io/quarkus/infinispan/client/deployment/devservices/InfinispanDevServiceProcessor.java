@@ -166,10 +166,10 @@ public class InfinispanDevServiceProcessor {
                                     composeProjectBuildItem.getDefaultNetworkId(),
                                     useSharedNetwork, devServicesConfig.timeout()))
                             .postStartHook(s -> logStarted(s.getConnectionInfo()))
-                            .configProvider(Map.of(
-                                    configPrefix + "hosts", Startable::getConnectionInfo,
-                                    configPrefix + "username", s -> DEFAULT_USERNAME,
-                                    configPrefix + "password", s -> DEFAULT_PASSWORD))
+                            .configProvider(s -> Map.of(
+                                    configPrefix + "hosts", s.getConnectionInfo(),
+                                    configPrefix + "username", DEFAULT_USERNAME,
+                                    configPrefix + "password", DEFAULT_PASSWORD))
                             .build());
         } catch (Throwable t) {
             throw new RuntimeException(t);

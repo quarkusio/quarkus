@@ -95,7 +95,7 @@ public class DevServicesKafkaProcessor {
                         .serviceConfig(config)
                         .startable(() -> createContainer(compose, config, useSharedNetwork, launchMode))
                         .postStartHook(s -> logStartedAndCreateTopicPartitions(s.getConnectionInfo(), config))
-                        .configProvider(Map.of(KAFKA_BOOTSTRAP_SERVERS, Startable::getConnectionInfo))
+                        .configProvider(s -> Map.of(KAFKA_BOOTSTRAP_SERVERS, s.getConnectionInfo()))
                         .build());
     }
 

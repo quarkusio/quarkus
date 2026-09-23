@@ -198,12 +198,12 @@ public class DevServicesDatasourceProcessor {
             DevServicesDatasourceContainerConfig containerConfig = getContainerConfig(dataSourceBuildTimeConfig,
                     dbName, requiredFeatures);
 
-            Map<String, Function<DatasourceStartable, String>> devDebProperties = new HashMap<>();
+            Map<String, Function<DatasourceStartable, String>> deferredConfigProviders = new HashMap<>();
             for (DevServicesDatasourceConfigurationHandlerBuildItem devDbConfigurationHandlerBuildItem : configHandlers) {
                 Map<String, Function<DatasourceStartable, String>> properties = devDbConfigurationHandlerBuildItem
                         .getDeferredConfigProviderFunction().apply(
                                 dbName);
-                processConfigMap(capabilities, properties, devDebProperties);
+                processConfigMap(capabilities, properties, deferredConfigProviders);
             }
 
             Optional<String> usernameFromConfig = ConfigUtils.getFirstOptionalValue(
@@ -236,7 +236,7 @@ public class DevServicesDatasourceProcessor {
                                 .serviceName(dbName)
                                 .serviceConfig(configForWhichChangesShouldTriggerARestart)
                                 .config(credentials)
-                                .configProvider(devDebProperties)
+                                .configProvider(s -> resolveDeferredConfig(s, deferredConfigProviders))
                                 .postStartHook((s) -> {
                                     String id = s.runningDevServicesDatasource().id();
                                     logStart(id, dataSourcePrettyName, defaultDbKind);
@@ -309,6 +309,15 @@ public class DevServicesDatasourceProcessor {
             setDataSourceProperties(devDebProperties, dbName, "password", datasource.password());
         }
         return devDebProperties;
+    }
+
+    private static Map<String, String> resolveDeferredConfig(DatasourceStartable startable,
+            Map<String, Function<DatasourceStartable, String>> deferredConfigProviders) {
+        Map<String, String> resolved = new HashMap<>();
+        for (Map.Entry<String, Function<DatasourceStartable, String>> entry : deferredConfigProviders.entrySet()) {
+            resolved.put(entry.getKey(), entry.getValue().apply(startable));
+        }
+        return resolved;
     }
 
     private static <T> void processConfigMap(Capabilities capabilities, Map<String, T> properties,

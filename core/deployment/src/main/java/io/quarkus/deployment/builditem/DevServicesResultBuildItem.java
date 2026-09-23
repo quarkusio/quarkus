@@ -1,6 +1,7 @@
 package io.quarkus.deployment.builditem;
 
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
@@ -12,7 +13,6 @@ import java.util.function.Supplier;
 
 import io.quarkus.builder.item.MultiBuildItem;
 import io.quarkus.deployment.Feature;
-import io.quarkus.deployment.SupplierMap;
 
 /**
  * BuildItem for discovered (running) or to be started dev services.
@@ -72,9 +72,9 @@ public final class DevServicesResultBuildItem extends MultiBuildItem {
     private final Consumer<Startable> postStartAction;
 
     /**
-     * A map of config keys to functions that resolve values from the started service.
+     * A function that resolves config dynamically from the started service.
      */
-    private final Map<String, Function<Startable, String>> applicationConfigProvider;
+    private final Function<Startable, Map<String, String>> applicationConfigProvider;
 
     private final Set<String> highPriorityConfig;
     private final Set<DevServiceConfigDependency<? extends Startable>> dependencies;
@@ -83,7 +83,8 @@ public final class DevServicesResultBuildItem extends MultiBuildItem {
     private DevServicesResultBuildItem(String name, String description, String containerId,
             String serviceName, Object serviceConfig,
             Map<String, String> config, Supplier<Startable> startableSupplier, Consumer<Startable> postStartAction,
-            Map<String, Function<Startable, String>> applicationConfigProvider, Set<String> highPriorityConfig,
+            Function<Startable, Map<String, String>> applicationConfigProvider,
+            Set<String> highPriorityConfig,
             Set<DevServiceConfigDependency<? extends Startable>> dependencies,
             Set<DevServiceConfigDependency<? extends Startable>> optionalDependencies) {
         this.name = name;
@@ -149,20 +150,14 @@ public final class DevServicesResultBuildItem extends MultiBuildItem {
         return postStartAction;
     }
 
-    public Map<String, Function<Startable, String>> getApplicationConfigProvider() {
-        return applicationConfigProvider;
-    }
-
     public Map<String, String> getConfig(Startable startable) {
-        SupplierMap<String, String> map = new SupplierMap<>();
+        Map<String, String> map = new HashMap<>();
         // To make sure static config does make it into a config source, include it here
         if (config != null && !config.isEmpty()) {
             map.putAll(config);
         }
         if (applicationConfigProvider != null) {
-            for (Map.Entry<String, Function<Startable, String>> entry : applicationConfigProvider.entrySet()) {
-                map.put(entry.getKey(), () -> entry.getValue().apply(startable));
-            }
+            map.putAll(applicationConfigProvider.apply(startable));
         }
         return map;
     }
@@ -172,12 +167,15 @@ public final class DevServicesResultBuildItem extends MultiBuildItem {
      */
     @Deprecated(since = "3.27", forRemoval = true)
     public Map<String, String> getOverrideConfig(Startable startable) {
+        Map<String, String> map = new HashMap<>();
 
-        SupplierMap<String, String> map = new SupplierMap<>();
-
-        if (highPriorityConfig != null) {
+        if (highPriorityConfig != null && applicationConfigProvider != null) {
+            Map<String, String> resolvedConfig = applicationConfigProvider.apply(startable);
             for (String key : highPriorityConfig) {
-                map.put(key, () -> applicationConfigProvider.get(key).apply(startable));
+                String value = resolvedConfig.get(key);
+                if (value != null) {
+                    map.put(key, value);
+                }
             }
         }
         return map;
@@ -254,7 +252,7 @@ public final class DevServicesResultBuildItem extends MultiBuildItem {
         private Object serviceConfig;
         private Supplier<? extends Startable> startableSupplier;
         private Consumer<? extends Startable> postStartAction;
-        private Map<String, Function<Startable, String>> applicationConfigProvider;
+        private Function<Startable, Map<String, String>> applicationConfigProvider;
         private Set<String> highPriorityConfig;
         private final Set<DevServiceConfigDependency<? extends Startable>> dependencies = new HashSet<>();
         private final Set<DevServiceConfigDependency<? extends Startable>> optionalDependencies = new HashSet<>();
@@ -435,10 +433,43 @@ public final class DevServicesResultBuildItem extends MultiBuildItem {
          *
          * @param applicationConfigProvider a map with config keys on the left side and lambdas on the right
          * @return the builder, for chaining
+         * @deprecated Use {@link #configProvider(Function)} instead, which returns the entire config map at once
+         *             and avoids potential null-value issues with per-key suppliers.
          */
+        @Deprecated(since = "4.0", forRemoval = true)
         @SuppressWarnings({ "unchecked", "rawtypes" })
         public OwnedServiceBuilder<T> configProvider(Map<String, Function<T, String>> applicationConfigProvider) {
-            this.applicationConfigProvider = (Map<String, Function<Startable, String>>) (Map) applicationConfigProvider;
+            Map<String, Function<Startable, String>> typedProvider = (Map<String, Function<Startable, String>>) (Map) applicationConfigProvider;
+            this.applicationConfigProvider = startable -> {
+                Map<String, String> result = new HashMap<>();
+                for (Map.Entry<String, Function<Startable, String>> entry : typedProvider.entrySet()) {
+                    String value = entry.getValue().apply(startable);
+                    if (value != null) {
+                        result.put(entry.getKey(), value);
+                    }
+                }
+                return result;
+            };
+            return this;
+        }
+
+        /**
+         * Provides a function that resolves config dynamically from the started service.
+         * <p>
+         * The function receives the started {@link Startable} and returns a map of config
+         * key-value pairs to inject into the config system.
+         * <p>
+         * Note that if a subclass of Startable is passed in on {@link #startable(Supplier)}, that same subclass will be used in
+         * the function. This avoids the need to cast.
+         * <p>
+         * Optional, but will be important in most cases. This can be used alongside {@link #config(Map)}.
+         *
+         * @param applicationConfigProvider a function that takes the started service and returns config entries
+         * @return the builder, for chaining
+         */
+        @SuppressWarnings({ "unchecked", "rawtypes" })
+        public OwnedServiceBuilder<T> configProvider(Function<T, Map<String, String>> applicationConfigProvider) {
+            this.applicationConfigProvider = (Function<Startable, Map<String, String>>) (Function) applicationConfigProvider;
             return this;
         }
 
@@ -448,7 +479,8 @@ public final class DevServicesResultBuildItem extends MultiBuildItem {
                     serviceName, serviceConfig, config,
                     (Supplier<Startable>) startableSupplier,
                     (Consumer<Startable>) postStartAction,
-                    applicationConfigProvider, highPriorityConfig, dependencies, optionalDependencies);
+                    applicationConfigProvider,
+                    highPriorityConfig, dependencies, optionalDependencies);
         }
     }
 

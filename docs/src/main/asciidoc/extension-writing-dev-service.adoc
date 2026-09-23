@@ -202,8 +202,8 @@ public DevServicesResultBuildItem createContainer(MyConfig config) {
                     config.imageName(),
                     config.port()))
             .configProvider(
-                    Map.of("some-service.base-url",
-                            s -> "http://" + s.getConnectionInfo()))
+                    s -> Map.of("some-service.base-url",
+                            "http://" + s.getConnectionInfo()))
             .build();
 }
 ----
@@ -213,8 +213,8 @@ With this code, you should be able to see your container starting if you add you
 To allow applications to connect to the service, the build step needs to provide configuration overrides.
 This is done lazily, since the actual service port is usually only known at runtime.
 To configure the port, use `.configProvider(
-Map.of("the-config-key-for-the-base-url",
-s -> "http://" + s.getConnectionInfo())`.
+s -> Map.of("the-config-key-for-the-base-url",
+"http://" + s.getConnectionInfo()))`.
 
 If you need to tell the application where the service is living without using Quarkus configuration,
 you can pass information about the service using
@@ -239,9 +239,9 @@ If the config has changed, the service is restarted; if it is the same, the runn
 `startable(Supplier<S>)`::
 A supplier that creates the `Startable` instance. The service is created at build time, but it is not started until the right point during Quarkus startup.
 
-`configProvider(Map<String, Function<T, String>>)`::
+`configProvider(Function<T, Map<String, String>>)`::
 Provides configuration values that are only known after the service is started, such as mapped ports.
-The key in the map is the config property name; the value is a function that receives the started `Startable` and returns the config value.
+The function receives the started `Startable` and returns a map of config property names to their values.
 +
 For config values that are known at build time, use `config(Map<String, String>)` instead.
 

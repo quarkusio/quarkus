@@ -9,6 +9,7 @@ import io.quarkus.deployment.IsLocalDevelopment;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.devui.deployment.InternalPageBuildItem;
+import io.quarkus.devui.spi.observability.MetricsBackendBuildItem;
 import io.quarkus.devui.spi.observability.ObservabilitySignalBuildItem;
 import io.quarkus.devui.spi.page.Page;
 
@@ -28,6 +29,7 @@ public class ObservabilitySectionProcessor {
 
     @BuildStep(onlyIf = IsLocalDevelopment.class)
     void observabilitySection(List<ObservabilitySignalBuildItem> signals,
+            List<MetricsBackendBuildItem> metricsBackends,
             BuildProducer<InternalPageBuildItem> menuProducer) {
         if (signals.isEmpty()) {
             return;
@@ -56,7 +58,30 @@ public class ObservabilitySectionProcessor {
 
         page.addBuildTimeData("observabilitySignals", signalData,
                 "The telemetry signals (e.g. traces) contributed by observability extensions");
+        // Null when the metrics of this application do not reach Prometheus under a naming known here, in
+        // which case the dashboard offers no Grafana export rather than an export with wrong queries.
+        page.addBuildTimeData("prometheusNaming", prometheusNaming(metricsBackends),
+                "How this application's metrics are named once exported to Prometheus, "
+                        + "used to export the dashboard for Grafana");
 
         menuProducer.produce(page);
+    }
+
+    /**
+     * The export naming shared by the metrics backends. With more than one backend answering differently
+     * there is no single set of names to query, so no export is offered.
+     */
+    private static String prometheusNaming(List<MetricsBackendBuildItem> backends) {
+        String naming = null;
+        for (MetricsBackendBuildItem backend : backends) {
+            if (backend.getPrometheusNaming() == null) {
+                return null;
+            }
+            if (naming != null && !naming.equals(backend.getPrometheusNaming())) {
+                return null;
+            }
+            naming = backend.getPrometheusNaming();
+        }
+        return naming;
     }
 }

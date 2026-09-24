@@ -42,6 +42,11 @@ public class PrometheusRegistryProcessor {
         MicrometerConfig mConfig;
 
         public boolean getAsBoolean() {
+            return isEnabled(mConfig);
+        }
+
+        /** The same check, for a build step that needs to know without being skipped. */
+        public static boolean isEnabled(MicrometerConfig mConfig) {
             return (REGISTRY_CLASS != null) && QuarkusClassLoader.isClassPresentAtRuntime(REGISTRY_CLASS_NAME)
                     && mConfig.checkRegistryEnabledWithDefault(mConfig.export().prometheus());
         }

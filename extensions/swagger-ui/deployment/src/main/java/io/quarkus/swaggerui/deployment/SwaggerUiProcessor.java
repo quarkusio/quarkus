@@ -3,6 +3,8 @@ package io.quarkus.swaggerui.deployment;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URI;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -25,8 +27,6 @@ import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.HotDeploymentWatchedFileBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
-import io.quarkus.devui.spi.Constants;
-import io.quarkus.devui.spi.DevContextBuildItem;
 import io.quarkus.maven.dependency.GACT;
 import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.smallrye.openapi.common.deployment.SmallRyeOpenApiConfig;
@@ -36,6 +36,7 @@ import io.quarkus.vertx.http.deployment.RouteBuildItem;
 import io.quarkus.vertx.http.deployment.webjar.WebJarBuildItem;
 import io.quarkus.vertx.http.deployment.webjar.WebJarResourcesFilter;
 import io.quarkus.vertx.http.deployment.webjar.WebJarResultsBuildItem;
+import io.quarkus.vertx.http.runtime.management.ManagementInterfaceBuildTimeConfig;
 import io.smallrye.openapi.ui.IndexHtmlCreator;
 import io.smallrye.openapi.ui.Option;
 import io.smallrye.openapi.ui.ThemeHref;
@@ -62,6 +63,7 @@ public class SwaggerUiProcessor {
     private static final String OIDC_CLIENT_ID = "quarkus.oidc.client-id";
 
     private static final String OIDC_NONCE_KEY = "nonce";
+    private static final String DEFAULT_SWAGGER_UI_PLUGIN = "SwaggerUIBundle.plugins.DownloadUrl";
 
     @BuildStep
     void feature(BuildProducer<FeatureBuildItem> feature,
@@ -86,11 +88,11 @@ public class SwaggerUiProcessor {
     @BuildStep
     public void getSwaggerUiFinalDestination(
             NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem,
-            Optional<DevContextBuildItem> devContextBuildItem,
             List<SwaggerUiUrlBuildItem> swaggerUiUrls,
             LaunchModeBuildItem launchMode,
             SwaggerUiConfig swaggerUiConfig,
             SmallRyeOpenApiConfig openapi,
+            ManagementInterfaceBuildTimeConfig managementInterface,
             Optional<DevServicesLauncherConfigResultBuildItem> devServicesLauncherConfig,
             BuildProducer<WebJarBuildItem> webJarBuildProducer) throws Exception {
 
@@ -101,13 +103,7 @@ public class SwaggerUiProcessor {
                         Set.of("quarkus.swagger-ui.path"));
             }
 
-            String devUIContextRoot;
-            if (devContextBuildItem.isPresent()) {
-                devUIContextRoot = devContextBuildItem.get().getDevUIContextRoot();
-            } else {
-                devUIContextRoot = "";
-            }
-
+            String swaggerUiPath = nonApplicationRootPathBuildItem.resolvePath(swaggerUiConfig.path());
             Map<String, String> urls = new HashMap<>();
             openapi.documents().forEach((documentName, documentConfig) -> {
                 String documentPath = documentConfig.path();
@@ -119,21 +115,18 @@ public class SwaggerUiProcessor {
                             Set.of(documentPath, "quarkus.swagger-ui.path"));
                 }
 
-                String openApiPath = devUIContextRoot
-                        + nonApplicationRootPathBuildItem.resolvePath(documentPath);
-                urls.put(documentName, openApiPath);
+                String openApiPath = nonApplicationRootPathBuildItem.resolvePath(documentPath);
+                urls.put(documentName, relativize(swaggerUiPath + "/", openApiPath));
             });
 
-            String swaggerUiPath = devUIContextRoot + nonApplicationRootPathBuildItem.resolvePath(swaggerUiConfig.path());
             ThemeHref theme = swaggerUiConfig.theme().orElse(ThemeHref.feeling_blue);
 
-            NonApplicationRootPathBuildItem indexRootPathBuildItem = null;
-
-            byte[] indexHtmlContent = generateIndexHtml(urls, swaggerUiPath, swaggerUiConfig,
-                    indexRootPathBuildItem,
+            byte[] indexHtmlContent = generateIndexHtml(urls, swaggerUiPath,
+                    nonApplicationRootPathBuildItem.getNormalizedHttpRootPath(), swaggerUiConfig,
                     launchMode,
                     devServicesLauncherConfig.orElse(null),
-                    swaggerUiUrls);
+                    swaggerUiUrls,
+                    managementInterface.enabled() && openapi.managementEnabled());
             webJarBuildProducer.produce(
                     WebJarBuildItem.builder().artifactKey(SWAGGER_UI_WEBJAR_ARTIFACT_KEY) //
                             .root(SWAGGER_UI_WEBJAR_STATIC_RESOURCES_PATH) //
@@ -192,20 +185,16 @@ public class SwaggerUiProcessor {
         }
     }
 
-    private byte[] generateIndexHtml(Map<String, String> urls, String swaggerUiPath, SwaggerUiConfig swaggerUiConfig,
-            NonApplicationRootPathBuildItem nonApplicationRootPath, LaunchModeBuildItem launchMode,
+    private byte[] generateIndexHtml(Map<String, String> urls, String swaggerUiPath, String httpRootPath,
+            SwaggerUiConfig swaggerUiConfig, LaunchModeBuildItem launchMode,
             DevServicesLauncherConfigResultBuildItem devServicesLauncherConfigResultBuildItem,
-            List<SwaggerUiUrlBuildItem> swaggerUiUrls)
+            List<SwaggerUiUrlBuildItem> swaggerUiUrls, boolean managementInterface)
             throws IOException {
         Map<Option, String> options = new HashMap<>();
         Map<String, String> urlsMap = new HashMap<>();
 
-        options.put(Option.selfHref, swaggerUiPath);
-        if (nonApplicationRootPath != null) {
-            options.put(Option.backHref, nonApplicationRootPath.resolvePath(Constants.DEV_UI) + "/");
-        } else {
-            options.put(Option.backHref, swaggerUiPath);
-        }
+        options.put(Option.selfHref, ".");
+        options.put(Option.backHref, ".");
 
         if (swaggerUiConfig.urls() != null && !swaggerUiConfig.urls().isEmpty()) {
             urlsMap.putAll(swaggerUiConfig.urls());
@@ -216,7 +205,8 @@ public class SwaggerUiProcessor {
         }
 
         // Only add urls for our own generated OpenAPI documentations if the user or other extensions did not specify urls
-        if (urlsMap.isEmpty()) {
+        boolean generatedOpenApiDocuments = urlsMap.isEmpty();
+        if (generatedOpenApiDocuments) {
             if (urls.size() > 1) {
                 urlsMap = urls;
             } else {
@@ -353,10 +343,12 @@ public class SwaggerUiProcessor {
             options.put(Option.layout, swaggerUiConfig.layout().get());
         }
 
-        if (swaggerUiConfig.plugins().isPresent()) {
-            String plugins = swaggerUiConfig.plugins().get().toString();
-            options.put(Option.plugins, plugins);
+        List<String> plugins = new ArrayList<>(swaggerUiConfig.plugins().orElse(List.of(DEFAULT_SWAGGER_UI_PLUGIN)));
+        if (!managementInterface && generatedOpenApiDocuments) {
+            String httpRootFromUi = relativize(swaggerUiPath + "/", httpRootPath);
+            plugins.add(relativeServerPlugin(httpRootFromUi));
         }
+        options.put(Option.plugins, plugins.toString());
 
         if (swaggerUiConfig.scripts().isPresent()) {
             String scripts = String.join(",", swaggerUiConfig.scripts().get());
@@ -463,7 +455,67 @@ public class SwaggerUiProcessor {
         return IndexHtmlCreator.createIndexHtml(urlsMap, swaggerUiConfig.urlsPrimaryName().orElse(null), options);
     }
 
+    private static String relativize(String sourceDirectory, String target) {
+        URI sourceUri = URI.create(sourceDirectory);
+        URI targetUri = URI.create(target);
+        List<String> sourceSegments = pathSegments(sourceUri.getRawPath());
+        List<String> targetSegments = pathSegments(targetUri.getRawPath());
+
+        int commonSegments = 0;
+        while (commonSegments < sourceSegments.size() && commonSegments < targetSegments.size()
+                && sourceSegments.get(commonSegments).equals(targetSegments.get(commonSegments))) {
+            commonSegments++;
+        }
+
+        StringBuilder relative = new StringBuilder();
+        for (int i = commonSegments; i < sourceSegments.size(); i++) {
+            relative.append("../");
+        }
+        for (int i = commonSegments; i < targetSegments.size(); i++) {
+            relative.append(targetSegments.get(i));
+            if (i < targetSegments.size() - 1) {
+                relative.append('/');
+            }
+        }
+        if (targetUri.getRawPath().endsWith("/") && !relative.isEmpty() && relative.charAt(relative.length() - 1) != '/') {
+            relative.append('/');
+        }
+        if (targetUri.getRawQuery() != null) {
+            relative.append('?').append(targetUri.getRawQuery());
+        }
+        if (targetUri.getRawFragment() != null) {
+            relative.append('#').append(targetUri.getRawFragment());
+        }
+        return relative.toString();
+    }
+
+    private static List<String> pathSegments(String path) {
+        List<String> segments = new ArrayList<>();
+        for (String segment : path.split("/")) {
+            if (!segment.isEmpty()) {
+                segments.add(segment);
+            }
+        }
+        return segments;
+    }
+
+    private static String relativeServerPlugin(String httpRootFromUi) {
+        return "function RelativeServerPlugin() {"
+                + " var base = new URL(\"" + httpRootFromUi
+                + "\", window.location.href).pathname.replace(/\\/$/, \"\");"
+                + " return { statePlugins: { spec: { wrapActions: { updateJsonSpec: function (ori) {"
+                + " return function (spec) {"
+                + " if (spec && (!spec.servers || spec.servers.length === 0)) {"
+                + " spec = Object.assign({}, spec, { servers: [{ url: base || \"/\" }] });"
+                + " }"
+                + " return ori(spec);"
+                + " };"
+                + " } } } } };"
+                + " }";
+    }
+
     private static boolean shouldInclude(LaunchModeBuildItem launchMode, SwaggerUiConfig swaggerUiConfig) {
         return launchMode.getLaunchMode().isDevOrTest() || swaggerUiConfig.alwaysInclude();
     }
+
 }

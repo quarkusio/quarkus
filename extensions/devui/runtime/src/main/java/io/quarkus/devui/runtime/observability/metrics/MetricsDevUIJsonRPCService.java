@@ -6,11 +6,15 @@ import java.util.TreeMap;
 
 import jakarta.inject.Inject;
 
+import org.eclipse.microprofile.config.ConfigProvider;
+
 import io.quarkus.devui.observability.store.metrics.MetricCatalogEntry;
 import io.quarkus.devui.observability.store.metrics.MetricDistribution;
 import io.quarkus.devui.observability.store.metrics.MetricSample;
 import io.quarkus.devui.observability.store.metrics.MetricSeriesSnapshot;
 import io.quarkus.devui.observability.store.metrics.MetricsTimeSeriesStore;
+import io.quarkus.devui.runtime.observability.metrics.grafana.GrafanaDashboardBuilder;
+import io.quarkus.devui.runtime.observability.metrics.grafana.PrometheusNaming;
 import io.smallrye.mutiny.Multi;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
@@ -87,6 +91,21 @@ public class MetricsDevUIJsonRPCService {
     public int meterCount() {
         // Advertises AVAILABILITY (catalog size), not the selected count — selection starts empty.
         return store.meterCount();
+    }
+
+    /**
+     * The cards of the Dev UI dashboard as a Grafana dashboard, so the same view can be opened against a
+     * real Grafana - the one the LGTM Dev Service starts, or any other reading the same data.
+     *
+     * @param cards the cards as shown, in dashboard order, each carrying the plot the Dev UI chose for it
+     * @param naming which export route the application's metrics take, as the build steps determined it
+     * @param title the dashboard title
+     */
+    public JsonObject exportGrafanaDashboard(List<Map<String, Object>> cards, String naming, String title) {
+        String applicationName = ConfigProvider.getConfig()
+                .getOptionalValue("quarkus.application.name", String.class).orElse("quarkus-application");
+        return new GrafanaDashboardBuilder(PrometheusNaming.fromId(naming), applicationName)
+                .build(cards == null ? List.of() : cards, title);
     }
 
     /** Discards the captured points; the selection and the catalog are left alone. */

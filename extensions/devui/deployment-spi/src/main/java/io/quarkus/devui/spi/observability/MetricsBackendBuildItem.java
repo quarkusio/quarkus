@@ -10,12 +10,29 @@ import io.quarkus.builder.item.MultiBuildItem;
 public final class MetricsBackendBuildItem extends MultiBuildItem {
 
     private final String source;
+    private final String prometheusNaming;
 
     public MetricsBackendBuildItem(String source) {
+        this(source, null);
+    }
+
+    /**
+     * @param source which backend captures the metrics for the Dev UI, {@code micrometer} or {@code otel}
+     * @param prometheusNaming how the same metrics are named once exported to Prometheus, which is a
+     *        different question: the Dev UI captures the meter's own name, while a Grafana dashboard has to
+     *        use the exported one. {@code micrometer-prometheus}, {@code otlp}, or {@code null} when the
+     *        application exports its metrics in some other way.
+     */
+    public MetricsBackendBuildItem(String source, String prometheusNaming) {
         this.source = source;
+        this.prometheusNaming = prometheusNaming;
     }
 
     public String getSource() {
         return source;
+    }
+
+    public String getPrometheusNaming() {
+        return prometheusNaming;
     }
 }

@@ -10,6 +10,7 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.devui.spi.observability.MetricsBackendBuildItem;
 import io.quarkus.micrometer.deployment.MicrometerProcessor;
+import io.quarkus.micrometer.runtime.config.MicrometerConfig;
 import io.quarkus.micrometer.runtime.devui.DevUiMetricsSampler;
 
 /**
@@ -24,9 +25,12 @@ public class MicrometerMetricsDevUIProcessor {
 
     // Presence of the bridge runtime recorder means the micrometer->OTel bridge is active.
     private static final String BRIDGE_RECORDER = "io.quarkus.micrometer.opentelemetry.runtime.MicrometerOtelBridgeRecorder";
+    // Same class PrometheusRegistryProcessor looks for; its constant is package private.
+    private static final String PROMETHEUS_REGISTRY = "io.micrometer.prometheusmetrics.PrometheusMeterRegistry";
 
     @BuildStep(onlyIf = { IsLocalDevelopment.class, MicrometerProcessor.MicrometerEnabled.class })
-    void registerMicrometerMetricsCapture(BuildProducer<AdditionalBeanBuildItem> additionalBeans,
+    void registerMicrometerMetricsCapture(MicrometerConfig micrometerConfig,
+            BuildProducer<AdditionalBeanBuildItem> additionalBeans,
             BuildProducer<MetricsBackendBuildItem> backends) {
         // The Dev UI metrics view is active whenever a metrics backend and the Dev UI are present
         // in dev mode — there is no separate build-time enable flag. It is dev-only via
@@ -49,6 +53,12 @@ public class MicrometerMetricsDevUIProcessor {
                 .setDefaultScope(DotNames.SINGLETON)
                 .setUnremovable()
                 .build());
-        backends.produce(new MetricsBackendBuildItem("micrometer"));
+        // Only the Prometheus registry gives an export whose naming is known here; with any other registry
+        // the meters may reach Prometheus under different names, so no Grafana dashboard is offered. The
+        // check is the registry's own, so that registry-enabled-default is honoured as it is there.
+        boolean prometheusRegistry = QuarkusClassLoader.isClassPresentAtRuntime(PROMETHEUS_REGISTRY)
+                && micrometerConfig.checkRegistryEnabledWithDefault(micrometerConfig.export().prometheus());
+        backends.produce(new MetricsBackendBuildItem("micrometer",
+                prometheusRegistry ? "micrometer-prometheus" : null));
     }
 }

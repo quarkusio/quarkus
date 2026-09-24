@@ -167,7 +167,9 @@ a card, which is what metrics does - meters are picked individually instead.
 Meters need no build item: everything registered with Micrometer or the
 OpenTelemetry SDK is offered in the dashboard's picker automatically. Only a new
 metrics *backend* (one that samples into `MetricsTimeSeriesStore`) produces a
-`MetricsBackendBuildItem`.
+`MetricsBackendBuildItem`, whose second argument says how those meters are named
+once exported to Prometheus (`micrometer-prometheus`, `otlp`, or null when that
+is unknown) so the dashboard can be exported for Grafana.
 
 Full documentation: `docs/src/main/asciidoc/dev-ui.adoc`, "Observability dashboard".
 

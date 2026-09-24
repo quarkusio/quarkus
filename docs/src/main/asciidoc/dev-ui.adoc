@@ -1836,7 +1836,7 @@ and its JSON-RPC calls, subscriptions and hot reload behave exactly as they do o
 Extend `ObservabilityCardBase` rather than `QwcHotReloadElement` in that component. Core Dev UI
 puts it in the import map under the bare specifier `observability-card-base`; it extends
 `QwcHotReloadElement` itself, so you keep `hotReload()`, and adds the affordances every signal
-component ends up wanting, currently `exportCsv(rows, filename)`:
+component ends up wanting, currently `exportCsv(rows, filename)` and `exportJson(value, filename)`:
 
 [source,javascript]
 ----
@@ -1863,6 +1863,27 @@ Writing a new metrics *backend* is the exception. A backend samples meters into 
 then registers the JSON-RPC service and the metrics signal once, no matter how many backends are
 active. See `DevUiMetricsSampler` (Micrometer) and `DevUiMetricsExporter` (OpenTelemetry) for the
 two existing implementations.
+
+A backend should also say how the same metrics are named once the application exports them, with
+the second argument of the build item (`micrometer-prometheus` or `otlp`). That is a different
+question from where the Dev UI captured them: the dashboard stores each meter's own name, while a
+Grafana dashboard has to query the name the meter carries after export, which the two routes spell
+differently. Leave it `null` when the export naming is not known, and the *Export Grafana* button
+below is simply not offered for those meters.
+
+==== Exporting the dashboard to Grafana
+
+The dashboard exports itself as a Grafana dashboard, for a Grafana that holds the same telemetry:
+the one xref:observability-devservices-lgtm.adoc[the LGTM Dev Service] starts, or any other
+reading the same Prometheus and Tempo. *Export Grafana* downloads a dashboard file, which Grafana
+imports under *Dashboards -> New -> Import*; it asks which data sources to use, so the file is not
+tied to one Grafana.
+
+Each card becomes the panel that draws the same statistic it draws in Dev UI: a counter becomes a
+rate, a gauge a Grafana gauge, a timer the mean of each interval with its maximum beside it, a
+meter with a histogram a heatmap over its buckets, and the traces card a Tempo panel for this
+application's service name. What the panels query depends on how the application exports its
+metrics, which is why a card whose meters take an export route Dev UI does not know is left out.
 
 === Advanced: Custom cards
 

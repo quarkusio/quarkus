@@ -1,12 +1,13 @@
 import { html, css } from 'lit';
 import { html as staticHtml, unsafeStatic } from 'lit/static-html.js';
 import { repeat } from 'lit/directives/repeat.js';
-import { observabilitySignals } from 'devui-data';
+import { observabilitySignals, prometheusNaming } from 'devui-data';
 import { devuiState } from 'devui-state';
 import { JsonRpc } from 'jsonrpc';
 import { StorageController } from 'storage-controller';
 import { RouterController } from 'router-controller';
 import { ObservabilityCardBase } from 'observability-card-base';
+import { notifier } from 'notifier';
 import 'echarts-line';
 import 'echarts-histogram';
 import 'echarts-gauge';
@@ -344,6 +345,19 @@ export class QwcObservabilityDashboard extends ObservabilityCardBase {
             this._tags.set(name, unsafeStatic(name));
         }
         return this._tags.get(name);
+    }
+
+    /**
+     * Whether a Grafana dashboard can be made of what is on this one. The export is answered by the metrics
+     * JSON-RPC service, which only exists when a metrics backend registered it, so an application with only
+     * traces has nothing to ask - and metric cards additionally need an export naming this build knows.
+     */
+    _exportableToGrafana() {
+        if (!this._metricsAvailable) {
+            return false;
+        }
+        return this._visibleCards().some(id => id.startsWith(SIGNAL_PREFIX)
+                || (prometheusNaming && id.startsWith(METRIC_PREFIX)));
     }
 
     _selectedMetricNames() {
@@ -1015,6 +1029,60 @@ export class QwcObservabilityDashboard extends ObservabilityCardBase {
         this.exportCsv(rows, 'metrics.csv');
     }
 
+    /**
+     * The dashboard as a Grafana dashboard, for the Grafana that holds the same telemetry - the one the
+     * LGTM Dev Service starts, or any other reading the same Prometheus and Tempo.
+     *
+     * The cards are sent as they are shown, each with the plot this page chose for it, so the exported
+     * panels draw the same statistic as the cards. The queries have to use the names the metrics carry
+     * once exported, which depends on how this application exports them: prometheusNaming says which,
+     * and is null when the export is not one whose naming is known, in which case only signal cards
+     * (traces, which are in Tempo under the application's service name) are exported.
+     */
+    _exportGrafana() {
+        const cards = [];
+        // The cards as shown: the stored list follows the developer between applications, so it can name
+        // meters this one never registered.
+        for (const id of this._visibleCards()) {
+            if (id.startsWith(SIGNAL_PREFIX)) {
+                const key = id.substring(SIGNAL_PREFIX.length);
+                const signal = this._signals.find(s => s.key === key);
+                cards.push({ kind: 'signal', id: key, title: signal?.title ?? key });
+            } else if (id.startsWith(METRIC_PREFIX) && prometheusNaming) {
+                const name = id.substring(METRIC_PREFIX.length);
+                const plot = this._plotFor(name);
+                const series = Object.values(this._sections[name] ?? {});
+                cards.push({
+                    kind: 'metric',
+                    name,
+                    plot: plot.kind,
+                    unit: plot.unit ?? '',
+                    // The meter type decides the names of a few series, e.g. a long task timer is published
+                    // per seconds active whatever unit it is captured with.
+                    type: series[0]?.type ?? this._metricMeta(name)?.type ?? '',
+                    // A maximum is only drawn where one is published: a function timer tracks totals only,
+                    // and over OTLP the maximum arrives as a meter of its own.
+                    maxCaptured: series.some(s => (s.distribution?.maxes ?? []).some(Number.isFinite))
+                            || this._metricMeta(`${name}.max`) !== null,
+                });
+            }
+        }
+        if (cards.length === 0) {
+            notifier.showWarningMessage('Nothing to export: this dashboard has no cards that Grafana can show');
+            return;
+        }
+        this.jsonRpc.exportGrafanaDashboard({
+            cards,
+            naming: prometheusNaming,
+            title: `Quarkus Dev UI - ${devuiState.applicationInfo.applicationName}`,
+        }).then(resp => {
+            this.exportJson(resp.result, 'quarkus-dev-ui-dashboard.json');
+            notifier.showInfoMessage('Dashboard exported. Import it in Grafana under Dashboards, New, Import.');
+        }).catch(error => {
+            notifier.showErrorMessage('The dashboard could not be exported: ' + error);
+        });
+    }
+
     // ---------------------------------------------------------------- render
 
     render() {
@@ -1090,6 +1158,12 @@ export class QwcObservabilityDashboard extends ObservabilityCardBase {
                     <vaadin-button theme="small" @click=${this._export}>
                         <vaadin-icon icon="font-awesome-solid:file-csv" slot="prefix"></vaadin-icon>
                         Export CSV
+                    </vaadin-button>` : ''}
+                ${this._exportableToGrafana() ? html`
+                    <vaadin-button theme="small" @click=${this._exportGrafana}
+                                   title="Download this dashboard as a Grafana dashboard, to import into the Grafana holding the same telemetry">
+                        <vaadin-icon icon="font-awesome-solid:chart-area" slot="prefix"></vaadin-icon>
+                        Export Grafana
                     </vaadin-button>` : ''}
                 <vaadin-button theme="small" @click=${this._edit}>
                     <vaadin-icon icon="font-awesome-solid:sliders" slot="prefix"></vaadin-icon>

@@ -33,6 +33,7 @@ public class OpenTelemetryMetricsDevUIProcessor {
                 .setDefaultScope(DotNames.SINGLETON)
                 .setUnremovable()
                 .build());
-        backends.produce(new MetricsBackendBuildItem("otel"));
+        // Captured from the SDK, and exported over OTLP, which is what Prometheus renames on receipt.
+        backends.produce(new MetricsBackendBuildItem("otel", "otlp"));
     }
 }

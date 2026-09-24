@@ -26,16 +26,15 @@ A build step that calls recorder methods must follow two rules:
 
 Collections are the most common way to break both rules.
 
-Any collection that is passed into a recorder can introduce unstable bytecode. This
-could happen in the following ways:
+A collection can introduce unstable recorded bytecode in two main ways:
 
-- A collection is wrapped in a build item that can be used by an unknown build step.
-- A collection is passed to a method annotated with `@Record`.
-- A collection is initialized inside a method annotated with `@Record` or any method
-  that is invoked from the recorded method.
+- A build step annotated with `@Record` iterates over the collection, so its iteration
+  order determines the order in which recorder methods are called.
+- The collection is passed to a recorder method, directly or as part of another object,
+  so its iteration order becomes part of the recorded bytecode.
 
-The above list is not exhaustive and should be treated as a general outline of **how**
-iterating over such collections may end up being recorded.
+The collection may be created locally or obtained from a build item, so always consider
+how it was populated.
 
 If a collection is not iterated over and is used only for operations such as
 `Set#contains(...)`, then its order is unlikely to matter.
@@ -108,6 +107,168 @@ for more information.
 Once the fixed timestamp has been configured with the build tool, you can consume
 `PackageConfig` in your build step and use its `outputTimestamp()` method to get
 the configured timestamp.
+
+## Examples
+
+### Unstable collection order
+
+The following build item and build step look harmless:
+
+```java
+public final class HandlerBuildItem extends MultiBuildItem implements Comparable<HandlerBuildItem> {
+
+    private final String name;
+    private final int priority;
+    private final Set<String> types;
+
+    // ...
+
+    @Override
+    public int compareTo(HandlerBuildItem other) {
+        return Integer.compare(priority, other.priority);
+    }
+}
+```
+
+```java
+@BuildStep
+@Record(STATIC_INIT)
+void registerHandlers(List<HandlerBuildItem> handlers, RecorderContext context, HandlerRecorder recorder) {
+    for (HandlerBuildItem handler : handlers) {
+        List<Class<?>> classes = handler.getTypes().stream().map(context::classProxy).toList();
+        Set<Class<?>> types = new HashSet<>(classes);
+        recorder.addHandler(handler.getName(), types);
+    }
+}
+```
+
+However, there are three problems:
+
+1. `compareTo()` only considers the priority. Two handlers with the same priority can
+   swap places between builds, so the recorder methods are called in an unstable order.
+2. `types` is a `HashSet` of `Class` objects, which have no stable hash code, so the
+   parameter passed to the recorder has an unstable iteration order.
+3. `handler.getTypes()` returns a `Set` whose order you don't control, so even an
+   ordered set would be filled in an unstable order.
+
+A stable version breaks ties by name, and builds the recorder parameter in a sorted
+order:
+
+```java
+@Override
+public int compareTo(HandlerBuildItem other) {
+    int result = Integer.compare(priority, other.priority);
+    return result != 0 ? result : name.compareTo(other.name);
+}
+```
+
+```java
+for (HandlerBuildItem handler : handlers) {
+    List<Class<?>> sortedClasses = handler.getTypes().stream().sorted().map(context::classProxy).toList();
+    Set<Class<?>> types = new LinkedHashSet<>(sortedClasses);
+    recorder.addHandler(handler.getName(), types);
+}
+```
+
+Alternatively, pass the class names to the recorder instead of `Class` objects.
+`String` has a stable hash code, so a plain `HashSet` works, and the recorder loads
+the classes at runtime:
+
+```java
+for (HandlerBuildItem handler : handlers) {
+    List<String> sortedTypes = handler.getTypes().stream().sorted().toList();
+    Set<String> types = new HashSet<>(sortedTypes);
+    recorder.addHandler(handler.getName(), types);
+}
+```
+
+### A defensive copy with `Set.copyOf()`
+
+The following build item makes a defensive copy of the configured media types:
+
+```java
+public final class CompressionBuildItem extends SimpleBuildItem {
+
+    private final Set<String> mediaTypes;
+
+    public CompressionBuildItem(List<String> mediaTypes) {
+        this.mediaTypes = Set.copyOf(mediaTypes);
+    }
+
+    // ...
+}
+```
+
+A consumer then passes the set to a recorder:
+
+```java
+recorder.configureCompression(compression.getMediaTypes());
+```
+
+The configured list has a stable order and `String` has a stable hash code, yet the
+recorded bytecode differs between builds. `Set.copyOf()` returns a JDK immutable set
+whose iteration order is randomized once per JVM. Because the order only changes
+between JVMs, the check that runs all augmentations in a single JVM does not catch
+this; the cross-JVM mode and the integration-test check do.
+
+To keep the copy immutable, wrap a regular set instead:
+
+```java
+this.mediaTypes = Collections.unmodifiableSet(new HashSet<>(mediaTypes));
+```
+
+### A global counter
+
+The following generator names a static field for each regular expression it
+encounters:
+
+```java
+private static final AtomicInteger COUNTER = new AtomicInteger();
+
+void generatePatternField(ClassCreator creator, String regex) {
+    String fieldName = "PATTERN_" + COUNTER.getAndIncrement();
+    // ...
+}
+```
+
+The generated field names depend on how many fields were generated before, in any
+class, by any thread, and in any earlier build in the same JVM. Scope the counter to
+the generated class instead, so the names only depend on that class's content:
+
+```java
+void generatePatternField(ClassCreator creator, AtomicInteger counter, String regex) {
+    String fieldName = "PATTERN_" + counter.getAndIncrement();
+    // ...
+}
+```
+
+The caller must create a new counter for each generated class and reuse it only
+while generating that class.
+
+### A build timestamp
+
+The following build step records the build time:
+
+```java
+@BuildStep
+@Record(RUNTIME_INIT)
+void buildInfo(InfoRecorder recorder) {
+    recorder.setBuildTime(Instant.now().toString());
+}
+```
+
+Use the configured output timestamp instead:
+
+```java
+@BuildStep
+@Record(RUNTIME_INIT)
+void buildInfo(PackageConfig packageConfig, InfoRecorder recorder) {
+    recorder.setBuildTime(packageConfig.outputTimestamp().toString());
+}
+```
+
+When no fixed timestamp is configured, `outputTimestamp()` defaults to the current
+time, so the output only becomes reproducible once the build tool provides one.
 
 ## Run reproducibility checks locally
 

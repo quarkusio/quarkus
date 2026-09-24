@@ -94,6 +94,13 @@ public final class QuarkusPersistenceUnitDescriptor implements PersistenceUnitDe
         if (toClone instanceof QuarkusPersistenceUnitDescriptor) {
             return (QuarkusPersistenceUnitDescriptor) toClone;
         }
+        return validateAndReadFrom(toClone,
+                toClone.getManagedClassNames(), Collections.emptyList());
+    }
+
+    @SuppressWarnings("deprecated")
+    public static QuarkusPersistenceUnitDescriptor validateAndReadFrom(PersistenceUnitDescriptor toClone,
+            List<String> managedClassNames, List<String> managedPackageNames) {
         Objects.requireNonNull(toClone);
         verifyIgnoredFields(toClone);
         return new QuarkusPersistenceUnitDescriptor(toClone.getName(),
@@ -101,7 +108,8 @@ public final class QuarkusPersistenceUnitDescriptor implements PersistenceUnitDe
                 toClone.getProviderClassName(),
                 toClone.isUseQuotedIdentifiers(),
                 toClone.getPersistenceUnitTransactionType(), toClone.getValidationMode(), toClone.getSharedCacheMode(),
-                Collections.unmodifiableList(toClone.getManagedClassNames()), Collections.emptyList(),
+                Collections.unmodifiableList(managedClassNames),
+                Collections.unmodifiableList(managedPackageNames),
                 toClone.getProperties(), false);
     }
 

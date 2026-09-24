@@ -137,8 +137,7 @@ public final class QuarkusPersistenceUnitDescriptor implements PersistenceUnitDe
 
     @Override
     public FetchType getDefaultToOneFetchType() {
-        // TODO Luca this is going to be discussed
-        return FetchType.LAZY;
+        return null;
     }
 
     @Override

@@ -7,7 +7,7 @@ import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 
 import org.hibernate.StatelessSession;
-import org.hibernate.UnknownEntityTypeException;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -71,12 +71,7 @@ public class MultiplePersistenceUnitsCdiStatelessSessionTest {
     @Transactional
     public void testUserInInventorySession() {
         User user = new User("gsmet");
-        // ORM 8.0 wraps UnknownEntityTypeException in IllegalArgumentException
-        // see org.hibernate.internal.StatelessSessionImpl.insert():363
         assertThatThrownBy(() -> inventorySession.insert(user))
-                .isInstanceOf(IllegalArgumentException.class)
-                .cause()
-                .isInstanceOf(UnknownEntityTypeException.class)
                 .hasMessageContaining(
                         "Unknown entity type 'io.quarkus.hibernate.orm.multiplepersistenceunits.model.config.user.User'");
 

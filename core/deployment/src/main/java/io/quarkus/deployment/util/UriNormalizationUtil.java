@@ -2,6 +2,7 @@ package io.quarkus.deployment.util;
 
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.Objects;
 
 /**
  * Common URI path resolution
@@ -115,5 +116,54 @@ public class UriNormalizationUtil {
         }
 
         return null;
+    }
+
+    /**
+     * Creates a relative URI from {@code source} to {@code target}.
+     *
+     * @return the relative URI, or {@code target} if the scheme, host, or port differs
+     */
+    public static URI relativize(URI source, URI target) {
+        if (!Objects.equals(source.getScheme(), target.getScheme())
+                || !Objects.equals(source.getHost(), target.getHost())
+                || source.getPort() != target.getPort()) {
+            return target;
+        }
+
+        String sourcePath = source.getRawPath();
+        String targetPath = target.getRawPath();
+        if (sourcePath == null && targetPath == null) {
+            return URI.create("");
+        } else if (sourcePath == null) {
+            return URI.create(targetPath);
+        } else if (targetPath == null) {
+            return target;
+        }
+
+        if (sourcePath.startsWith("/")) {
+            sourcePath = sourcePath.substring(1);
+        }
+        if (targetPath.startsWith("/")) {
+            targetPath = targetPath.substring(1);
+        }
+        String[] sourceSegments = sourcePath.split("/");
+        String[] targetSegments = targetPath.split("/");
+        int commonSegments = 0;
+        while (commonSegments < sourceSegments.length && commonSegments < targetSegments.length
+                && sourceSegments[commonSegments].equals(targetSegments[commonSegments])) {
+            commonSegments++;
+        }
+
+        StringBuilder relativePath = new StringBuilder();
+        for (int i = commonSegments; i < sourceSegments.length; i++) {
+            relativePath.append("../");
+        }
+        for (int i = commonSegments; i < targetSegments.length; i++) {
+            relativePath.append(targetSegments[i]);
+            if (i < targetSegments.length - 1) {
+                relativePath.append('/');
+            }
+        }
+        return URI.create(relativePath.toString());
     }
 }

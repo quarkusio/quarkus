@@ -49,10 +49,11 @@ public class ServiceConnectionScopeTest {
 
     @Test
     void verifyThatConnectionIsAccessibleInSessionScope() {
-        WSClient client = WSClient.create(vertx);
-        var resp = client.connect(WSClient.toWS(baseUri, "/ws"))
-                .sendAndAwaitReply("hello");
-        assertThat(resp.toString()).isEqualTo("HELLO");
+        try (WSClient client = WSClient.create(vertx)) {
+            var resp = client.connect(WSClient.toWS(baseUri, "/ws"))
+                    .sendAndAwaitReply("hello");
+            assertThat(resp.toString()).isEqualTo("HELLO");
+        }
     }
 
     @WebSocket(path = "/ws")

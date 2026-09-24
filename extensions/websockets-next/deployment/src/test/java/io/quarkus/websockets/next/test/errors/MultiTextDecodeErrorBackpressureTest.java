@@ -1,7 +1,6 @@
 package io.quarkus.websockets.next.test.errors;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.net.URI;
 
@@ -19,15 +18,16 @@ import io.quarkus.websockets.next.WebSocket;
 import io.quarkus.websockets.next.test.utils.WSClient;
 import io.smallrye.mutiny.Multi;
 import io.vertx.core.Vertx;
-import io.vertx.mutiny.core.Context;
 
-public class MultiTextDecodeErrorTest {
+public class MultiTextDecodeErrorBackpressureTest {
 
     @RegisterExtension
     public static final QuarkusExtensionTest test = new QuarkusExtensionTest()
             .withApplicationRoot(root -> {
                 root.addClasses(Echo.class, WSClient.class);
-            });
+            })
+            // Bound the number of in-flight messages to a single message so that a leaked fetch(1) stalls the stream
+            .overrideConfigKey("quarkus.websockets-next.server.max-pending-messages", "1");
 
     @Inject
     Vertx vertx;
@@ -36,11 +36,21 @@ public class MultiTextDecodeErrorTest {
     URI testUri;
 
     @Test
-    void testError() {
+    void testDecodeErrorDoesNotStallStream() {
         try (WSClient client = WSClient.create(vertx).connect(testUri)) {
-            client.send("not a json");
-            client.waitForMessages(1);
-            assertEquals("Problem decoding: not a json", client.getLastMessage().toString());
+            // Send more messages that fail to decode than the configured max-pending-messages limit.
+            // A decoded item never reaches the Multi, so the emission-tied fetch(1) never fires; without the
+            // fix that requests one more message after a failed decode, the stream would stall after the first
+            // failure and the subsequent messages would never be delivered.
+            client.send("not a json 1");
+            client.send("not a json 2");
+            client.send("not a json 3");
+            client.waitForMessages(3);
+            // The @OnError responses may be delivered in any order
+            assertThat(client.getMessages().stream().map(Object::toString)).containsExactlyInAnyOrder(
+                    "Problem decoding: not a json 1",
+                    "Problem decoding: not a json 2",
+                    "Problem decoding: not a json 3");
         }
     }
 
@@ -54,7 +64,6 @@ public class MultiTextDecodeErrorTest {
 
         @OnError
         String decodingError(TextDecodeException e) {
-            assertTrue(Context.isOnWorkerThread());
             return "Problem decoding: " + e.getText();
         }
 

@@ -35,8 +35,6 @@ import org.hibernate.service.Service;
 import org.hibernate.service.internal.ProvidedService;
 import org.hibernate.tool.schema.spi.SchemaManagementTool;
 import org.jboss.logging.Logger;
-import org.jspecify.annotations.NonNull;
-import org.jspecify.annotations.Nullable;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ClientProxy;
@@ -485,7 +483,7 @@ public final class FastBootHibernateReactivePersistenceProvider implements Persi
     }
 
     @Override
-    public @NonNull ClassTransformer getClassTransformer(@NonNull PersistenceUnitInfo info, @Nullable Map<?, ?> properties) {
+    public ClassTransformer getClassTransformer(PersistenceUnitInfo info, Map<?, ?> properties) {
         return null;
     }
 
@@ -504,11 +502,6 @@ public final class FastBootHibernateReactivePersistenceProvider implements Persi
     }
 
     @Override
-    public boolean generateSchema(@NonNull PersistenceConfiguration configuration) {
-        return false;
-    }
-
-    @Override
     public void generateSchema(PersistenceUnitInfo info, Map map) {
         getJdbcHibernatePersistenceProviderDelegate().generateSchema(info, map);
     }
@@ -516,6 +509,11 @@ public final class FastBootHibernateReactivePersistenceProvider implements Persi
     @Override
     public boolean generateSchema(String persistenceUnitName, Map map) {
         return getJdbcHibernatePersistenceProviderDelegate().generateSchema(persistenceUnitName, map);
+    }
+
+    @Override
+    public boolean generateSchema(PersistenceConfiguration configuration) {
+        return false;
     }
 
     private FastBootHibernatePersistenceProvider getJdbcHibernatePersistenceProviderDelegate() {

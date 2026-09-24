@@ -629,11 +629,6 @@ public class FastBootMetadataBuilder {
 
         ((MetadataBuilderImplementor) metamodelBuilder).getBootstrapContext().markAsJpaBootstrap();
 
-        //        metamodelBuilder.applyScanEnvironment(new StandardJpaScanEnvironmentImpl(persistenceUnit));
-        //        metamodelBuilder.applyScanOptions(new StandardScanOptions(
-        //                (String) buildTimeSettings.get(AvailableSettings.SCANNER_DISCOVERY),
-        //                persistenceUnit.isExcludeUnlistedClasses()));
-
         if (cacheRegionDefinitions != null) {
             cacheRegionDefinitions.forEach(metamodelBuilder::applyCacheRegionDefinition);
         }

@@ -148,7 +148,6 @@ public final class FastBootHibernatePersistenceProvider implements PersistencePr
 
     @Override
     public ClassTransformer getClassTransformer(PersistenceUnitInfo info, Map<?, ?> properties) {
-        // TODO shouldn't be supported in Quarkus
         return null;
     }
 

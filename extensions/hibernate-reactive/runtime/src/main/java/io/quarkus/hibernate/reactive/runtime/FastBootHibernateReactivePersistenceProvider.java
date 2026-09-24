@@ -505,7 +505,6 @@ public final class FastBootHibernateReactivePersistenceProvider implements Persi
 
     @Override
     public boolean generateSchema(@NonNull PersistenceConfiguration configuration) {
-        // TODO Luca Hibernate Reactive not ready yet
         return false;
     }
 

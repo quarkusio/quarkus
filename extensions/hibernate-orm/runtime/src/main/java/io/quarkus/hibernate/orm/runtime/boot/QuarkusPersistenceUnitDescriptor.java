@@ -209,7 +209,6 @@ public final class QuarkusPersistenceUnitDescriptor implements PersistenceUnitDe
 
     @Override
     public boolean isClassTransformerRegistrationDisabled() {
-        // TODO Luca discuss this
         return true;
     }
 

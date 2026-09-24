@@ -1,6 +1,5 @@
 package io.quarkus.it.rest.client.selfsigned;
 
-import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.io.Writer;
@@ -35,16 +34,8 @@ import io.vertx.core.http.RequestOptions;
 @Path("/self-signed")
 public class ExternalSelfSignedResource {
 
-    @Inject
     @RestClient
     ExternalSelfSignedClient externalSelfSignedClient;
-
-    @GET
-    @Path("/ExternalSelfSignedClient")
-    @Produces(MediaType.TEXT_PLAIN)
-    public Response perform(@PathParam("client") String client) throws IOException {
-        return externalSelfSignedClient.invoke();
-    }
 
     @Inject
     TlsConfigurationRegistry tlsConfigurationRegistry;
@@ -54,6 +45,13 @@ public class ExternalSelfSignedResource {
 
     @ConfigProperty(name = "self-signed.port", defaultValue = "-1")
     int serverPort;
+
+    @GET
+    @Path("/ExternalSelfSignedClient")
+    @Produces(MediaType.TEXT_PLAIN)
+    public Response perform() {
+        return externalSelfSignedClient.invoke();
+    }
 
     @GET
     @Path("/HttpClient/{tlsConfigName}")

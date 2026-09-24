@@ -335,7 +335,7 @@ public class VertxHttpRecorder {
             if (liveReloadConfig.password().isPresent()
                     && hotReplacementContext.getDevModeType() == DevModeType.REMOTE_SERVER_SIDE) {
                 root = remoteSyncHandler = new RemoteSyncHandler(liveReloadConfig.password().get(), root,
-                        hotReplacementContext, "/");
+                        hotReplacementContext, "/", httpConfig.limits().maxBodySize());
             }
             rootHandler = root;
 
@@ -591,7 +591,7 @@ public class VertxHttpRecorder {
         if (launchMode == LaunchMode.DEVELOPMENT && liveReloadConfig.password().isPresent()
                 && hotReplacementContext.getDevModeType() == DevModeType.REMOTE_SERVER_SIDE) {
             root = remoteSyncHandler = new RemoteSyncHandler(liveReloadConfig.password().get(), root, hotReplacementContext,
-                    rootPath);
+                    rootPath, httpConfig.limits().maxBodySize());
         }
         rootHandler = root;
 

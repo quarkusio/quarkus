@@ -6,6 +6,8 @@ import java.util.Optional;
 
 import org.eclipse.microprofile.config.ConfigProvider;
 
+import io.quarkus.value.registry.ValueRegistry;
+import io.quarkus.value.registry.ValueRegistry.RuntimeKey;
 import io.restassured.RestAssured;
 import io.restassured.config.HttpClientConfig;
 import io.restassured.path.json.JsonPath;
@@ -120,6 +122,21 @@ public class RestAssuredStateManager {
         }
     }
 
+    private static final RuntimeKey<URI> LOCAL_BASE_URI = RuntimeKey.key("quarkus.http.local-base-uri");
+    private static final RuntimeKey<URI> LAMBDA_BASE_URI = RuntimeKey.key("quarkus.lambda.local-base-uri");
+
+    public static void setTestUri(ValueRegistry valueRegister) {
+        setTestUri(valueRegister, null);
+    }
+
+    public static void setTestUri(ValueRegistry valueRegistry, String additionalPath) {
+        if (valueRegistry.containsKey(LAMBDA_BASE_URI)) {
+            setTestUri(valueRegistry.get(LAMBDA_BASE_URI), additionalPath);
+        } else if (valueRegistry.containsKey(LOCAL_BASE_URI)) {
+            setTestUri(valueRegistry.get(LOCAL_BASE_URI), additionalPath);
+        }
+    }
+
     public static void setTestUri(URI baseUri) {
         setTestUri(baseUri, null);
     }
@@ -175,5 +192,11 @@ public class RestAssuredStateManager {
             return;
         }
         JsonPath.config = null;
+    }
+
+    public static void clearState(ValueRegistry valueRegistry) {
+        if (valueRegistry.containsKey(LOCAL_BASE_URI) || valueRegistry.containsKey(LAMBDA_BASE_URI)) {
+            clearState();
+        }
     }
 }

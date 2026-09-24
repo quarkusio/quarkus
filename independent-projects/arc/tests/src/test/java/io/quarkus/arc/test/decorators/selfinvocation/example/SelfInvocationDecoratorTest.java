@@ -15,44 +15,41 @@ import jakarta.enterprise.inject.Any;
 import jakarta.enterprise.util.TypeLiteral;
 import jakarta.inject.Inject;
 
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.test.ArcTestContainer;
 
+// in this test, the iteration order of decorated types in `BeanInfo.findMatchingDecorators()` is:
+//
+// - io.quarkus.arc.test.decorators.selfinvocation.example.SelfInvocationDecoratorTest$EnvelopeHandler<T>
+// - io.quarkus.arc.test.decorators.selfinvocation.example.SelfInvocationDecoratorTest$PayloadHandler<T>
+//
+// there's a copy of this test in the `.acme` package where the iteration order is opposite
 public class SelfInvocationDecoratorTest {
 
     @RegisterExtension
     public ArcTestContainer container = new ArcTestContainer(GreetingHandler.class, LoggingDecorator.class,
             TestEnvelope.class);
 
-    @BeforeEach
-    void reset() {
+    @Test
+    public void test() {
         GreetingHandler.INVOCATIONS.set(0);
         LoggingDecorator.ENVELOPE_CALLS.set(0);
-    }
 
-    @Test
-    public void selfInvocationReachesConcreteHandler() {
         EnvelopeHandler<String> handler = Arc.container().instance(new TypeLiteral<EnvelopeHandler<String>>() {
         }).get();
 
-        assertThatCode(() -> handler.process(TestEnvelope.of("hello"))).doesNotThrowAnyException();
+        assertThatCode(() -> handler.process("hello", Instant.now())).doesNotThrowAnyException();
 
+        assertThat(LoggingDecorator.ENVELOPE_CALLS.get()).isEqualTo(0);
         assertThat(GreetingHandler.INVOCATIONS.get()).isEqualTo(1);
-    }
-
-    @Test
-    public void externalInvocationIsDecorated() {
-        EnvelopeHandler<String> handler = Arc.container().instance(new TypeLiteral<EnvelopeHandler<String>>() {
-        }).get();
 
         handler.process(TestEnvelope.of("hello"));
 
         assertThat(LoggingDecorator.ENVELOPE_CALLS.get()).isEqualTo(1);
-        assertThat(GreetingHandler.INVOCATIONS.get()).isEqualTo(1);
+        assertThat(GreetingHandler.INVOCATIONS.get()).isEqualTo(2);
     }
 
     interface PayloadHandler<T> {

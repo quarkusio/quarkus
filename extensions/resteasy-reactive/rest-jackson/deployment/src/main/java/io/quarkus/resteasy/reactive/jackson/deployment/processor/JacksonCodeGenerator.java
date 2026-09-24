@@ -68,6 +68,7 @@ import io.quarkus.gizmo.FieldDescriptor;
 import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
+import io.quarkus.resteasy.reactive.jackson.DisableReflectionFreeSerialization;
 import io.quarkus.resteasy.reactive.jackson.SecureField;
 import tools.jackson.databind.PropertyNamingStrategy;
 import tools.jackson.databind.annotation.JsonNaming;
@@ -78,6 +79,8 @@ public abstract class JacksonCodeGenerator {
 
     private static final String[] EMPTY_STRING_ARRAY = new String[0];
     private static final DotName KOTLIN_METADATA = DotName.createSimple("kotlin.Metadata");
+    private static final DotName DISABLE_REFLECTION_FREE_SERIALIZATION = DotName
+            .createSimple(DisableReflectionFreeSerialization.class);
 
     private static final Set<String> UNSUPPORTED_JAKARTA_PERSISTENCE_ANNOTATIONS = Set.of(
             "jakarta.persistence.Transient",
@@ -167,6 +170,14 @@ public abstract class JacksonCodeGenerator {
         if (vetoedClass(classInfo, beanClassName) || !generatedClassNames.add(beanClassName)) {
             return Optional.empty();
         }
+
+        if (classInfo.hasDeclaredAnnotation(DISABLE_REFLECTION_FREE_SERIALIZATION)) {
+            log.infof("Skipping generation of reflection-free Jackson serializer for class %s" +
+                    " because it is annotated with @%s", beanClassName,
+                    DisableReflectionFreeSerialization.class.getSimpleName());
+            return Optional.empty();
+        }
+
         Optional<String> unknownAnnotation = findUnknownAnnotation(classInfo);
         if (unknownAnnotation.isPresent()) {
             log.debugf("Skipping generation of reflection-free Jackson serializer for class %s" +

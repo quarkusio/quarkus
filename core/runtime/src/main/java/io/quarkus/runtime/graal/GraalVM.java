@@ -254,6 +254,18 @@ public final class GraalVM {
             return versions[0] + ".0";
         }
 
+        /**
+         * Returns a short, URL-safe name identifying the native-image builder distribution,
+         * e.g. {@code "Mandrel"}, {@code "Oracle-GraalVM"}, {@code "GraalVM-CE"} or
+         * {@code "Liberica-NIK"}.
+         * <p>
+         * Intended for use as an SBOM component name (paired with {@link #getVersionAsString()})
+         * so that the native-image builder that produced an executable can be identified.
+         */
+        public String getBuilderName() {
+            return distribution.getName();
+        }
+
         @Override
         public String toString() {
             return "Version{" +
@@ -272,10 +284,20 @@ public final class GraalVM {
     }
 
     public enum Distribution {
-        GRAALVM,
-        ORACLE,
-        LIBERICA,
-        MANDREL;
+        GRAALVM("GraalVM-CE"),
+        ORACLE("Oracle-GraalVM"),
+        LIBERICA("Liberica-NIK"),
+        MANDREL("Mandrel");
+
+        private final String name;
+
+        Distribution(String name) {
+            this.name = name;
+        }
+
+        private String getName() {
+            return name;
+        }
     }
 }
 

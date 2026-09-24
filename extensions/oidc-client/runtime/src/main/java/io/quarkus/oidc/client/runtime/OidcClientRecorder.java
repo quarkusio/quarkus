@@ -169,8 +169,8 @@ public class OidcClientRecorder {
         final long minRemainingLifespan = oidcConfig.minRemainingAccessTokenLifespan().get().getSeconds();
         if (minRemainingLifespan <= 0) {
             throw new ConfigurationException(String.format(
-                    "'quarkus.oidc-client.min-remaining-access-token-lifespan' must be greater than 0 seconds, consider setting it to at least 3 seconds"
-                            + " for the '%s' client",
+                    "'quarkus.oidc-client.min-remaining-access-token-lifespan' must be greater than 0 seconds"
+                            + " for the '%s' client, consider setting it to at least 3 seconds",
                     oidcClientId));
         }
         if (oidcConfig.refreshTokenTimeSkew().isEmpty()) {

@@ -4,13 +4,27 @@ Quarkus should produce the same build output when given the same sources, depend
 configuration, and build environment. This applies to generated and transformed classes,
 recorded bytecode, serialized build inputs, metadata, and packaged application files.
 A build that simply succeeds repeatedly is not necessarily reproducible - what makes it
-reproducible is that all builds should match bit by bit.
+reproducible is that the build output should match bit by bit.
 
 This guide is for contributors writing build steps, build items, recorders, and packaging
 code. The recurring rule is to fix all the sources of instability: collection order,
 timestamps, unique identifiers, and unique file paths are the common offenders.
 
+**TL;DR:** call recorders in a stable order with stable parameters, iterate over
+collections in a stable order, derive identifiers from stable content, and use the
+configured output timestamp instead of the current clock.
+
 ## Use collections with a stable iteration order
+
+A build step that calls recorder methods must follow two rules:
+
+1. Recorder methods must be called in the exact same order from one build to
+   another. For example, when a recorder method is called in a loop, the loop
+   iterations must be stable.
+2. Parameters passed to a recorder method must be fully stable from one build to
+   another.
+
+Collections are the most common way to break both rules.
 
 Any collection that is passed into a recorder can introduce unstable bytecode. This
 could happen in the following ways:
@@ -32,9 +46,9 @@ initialized in a way that made its internal order unstable. General rules of thu
 
 * It is fine to use `HashMap` and `HashSet` as long as their keys or elements produce
   stable hash codes. It's an implementation detail, but vanilla hash collections have
-  a deterministic iteration order as long as keys have stable hash codes. `Class<?>` and
-  objects inheriting `Object.hashCode()` are not suitable to use as keys in such
-  collections.
+  a deterministic iteration order as long as keys have stable hash codes **and** elements
+  are inserted into them in a stable order. `Class<?>` and objects inheriting
+  `Object.hashCode()` are not suitable to use as keys in such collections.
 
 * If you **need** to use a key with an unstable hash code, prefer using `LinkedHashMap`
   or `LinkedHashSet`.
@@ -76,8 +90,7 @@ unstable ordering.
 
 Derive generated class names, proxy keys, identifiers, and serial numbers from
 stable content. Avoid random UUIDs, identity hash codes, timestamps from the
-current clock, and mutable global counters. Recorder calls themselves must occur
-in a stable order when their order changes the emitted bytecode.
+current clock, and mutable global counters.
 
 Use the configured package output timestamp for values embedded in build
 artifacts, such as archive entries, generated build information, and SBOM
@@ -92,17 +105,17 @@ For a Gradle archive task, set `preserveFileTimestamps` to `false` and
 [this reference](https://docs.gradle.org/current/dsl/org.gradle.api.tasks.bundling/Jar.html)
 for more information.
 
+Once the fixed timestamp has been configured with the build tool, you can consume
+`PackageConfig` in your build step and use its `outputTimestamp()` method to get
+the configured timestamp.
+
 ## Run reproducibility checks locally
 
 ### JVM tests
 
-If your contributions include creating or modifying `deployment` modules, there
-is a significant chance that your changes affect code that is recorded. In this
-case, it is highly advisable to run the reproducibility check locally before
-pushing your code.
-
-Build the affected modules and their dependencies first. Then run the deployment
-tests, replacing the module name below:
+In order to run reproducibility checks locally, build the affected modules and
+their dependencies first. Then run the deployment tests, replacing the module name
+below:
 
 ```bash
 ./mvnw install -f extensions/<name> -DskipTests
@@ -197,13 +210,12 @@ The goal is to include them in PR checks once they are fast enough.
 
 For both the JVM and integration-test checks, CI uses five runs.
 
-After merging a PR, it would be great if you could check the
-[Quarkus status website](https://status.quarkus.io/) the next day to see if the
-reproducibility checks passed. Open the relevant workflow run to confirm that it
-tested a commit containing your change and inspect its failure artifacts or
-report. A green run from before your merge does not verify your change.
-Scheduled runs may start or finish later than expected, so check the run's
-timestamp and commit rather than relying only on the calendar day.
+If you wish to see the CI status of the reproducibility checks after you merged a PR,
+you can check the [Quarkus status website](https://status.quarkus.io/) the next day.
+From the status page, you can follow the relevant workflow run to confirm that it
+tested a commit containing your change and inspect its failure artifacts or report.
+Scheduled runs may start or finish later than expected, so check the run's timestamp
+and commit rather than relying only on the calendar day.
 
 If the checks failed, it would be great if you could investigate the failure and
 fix it.

@@ -13,8 +13,6 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget.Kind;
 import org.jboss.jandex.ClassInfo;
@@ -47,6 +45,7 @@ import io.quarkus.hibernate.orm.deployment.PersistenceUnitDescriptorBuildItem;
 import io.quarkus.hibernate.orm.deployment.spi.AdditionalJpaModelBuildItem;
 import io.quarkus.hibernate.orm.deployment.spi.AdditionalPersistenceUnitBuildItem;
 import io.quarkus.hibernate.orm.deployment.spi.PersistenceUnitDefinedBuildItem;
+import io.quarkus.hibernate.orm.deployment.spi.QuarkusDataModelBuildItem;
 import io.quarkus.hibernate.orm.runtime.HibernateOrmRuntimeConfig;
 import io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil;
 import io.quarkus.panache.hibernate.common.deployment.HibernateModelClassCandidatesForFieldAccessBuildItem;
@@ -215,7 +214,9 @@ final class JpaModelProcessor {
 
     @BuildStep
     public JpaModelPerPersistenceUnitBuildItem buildJpaModelPerPersistenceUnit(HibernateOrmConfig hibernateOrmConfig,
-            List<AdditionalJpaModelBuildItem> additionalJpaModelBuildItems, JpaModelBuildItem jpaModel,
+            List<AdditionalJpaModelBuildItem> additionalJpaModelBuildItems,
+            List<QuarkusDataModelBuildItem> quarkusDataModelBuildItems,
+            JpaModelBuildItem jpaModel,
             CombinedIndexBuildItem indexBuildItem) {
         IndexView index = indexBuildItem.getIndex();
         Map<String, JpaPersistenceUnitModel> modelPerPersistenceUnit = new HashMap<>();
@@ -295,12 +296,12 @@ final class JpaModelProcessor {
                         if (jpaModel.getEntityClassNames().contains(modelClassName)) {
                             model.entityClassNames().add(modelClassName);
                         }
-                        model.allModelClassAndPackageNames().add(modelClassName);
+                        model.allModelClassNames().add(modelClassName);
 
                         // also add the hierarchy to the persistence unit
                         // we would need to add all the underlying model to it but adding the hierarchy
                         // is necessary for Panache as we need to add PanacheEntity to the PU
-                        model.allModelClassAndPackageNames().addAll(relatedModelClassNames);
+                        model.allModelClassNames().addAll(relatedModelClassNames);
                     }
                 }
             }
@@ -328,7 +329,7 @@ final class JpaModelProcessor {
                 if (isEntity) {
                     model.entityClassNames().add(className);
                 }
-                model.allModelClassAndPackageNames().add(className);
+                model.allModelClassNames().add(className);
             }
         }
 
@@ -347,7 +348,7 @@ final class JpaModelProcessor {
             for (String persistenceUnitName : persistenceUnitNames) {
                 var model = modelPerPersistenceUnit.computeIfAbsent(persistenceUnitName,
                         ignored -> new JpaPersistenceUnitModel());
-                model.allModelClassAndPackageNames().add(modelPackageName);
+                model.modelPackageNames().add(modelPackageName);
             }
         }
 
@@ -359,18 +360,39 @@ final class JpaModelProcessor {
             model.xmlMappings().addAll(entry.getValue());
         }
 
+        for (QuarkusDataModelBuildItem quarkusDataModel : quarkusDataModelBuildItems) {
+            var className = quarkusDataModel.getClassName();
+            Set<String> persistenceUnits = findEnclosingEntityPersistenceUnits(
+                    quarkusDataModel.getEnclosingEntityClassName(), modelPerPersistenceUnit);
+            if (persistenceUnits.isEmpty()) {
+                persistenceUnits = Set.of(PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME);
+            }
+            assignedModelClassAndPackageNames.add(className);
+            for (String persistenceUnitName : persistenceUnits) {
+                modelPerPersistenceUnit.computeIfAbsent(persistenceUnitName,
+                        ignored -> new JpaPersistenceUnitModel())
+                        .allModelClassNames().add(className);
+            }
+        }
+
         assignedEntityClassNames.addAll(modelPerPersistenceUnit.values().stream()
                 .map(JpaPersistenceUnitModel::entityClassNames).flatMap(Set::stream).toList());
         assignedModelClassAndPackageNames.addAll(modelPerPersistenceUnit.values().stream()
-                .map(JpaPersistenceUnitModel::allModelClassAndPackageNames).flatMap(Set::stream).toList());
+                .map(JpaPersistenceUnitModel::allModelClassNames).flatMap(Set::stream).toList());
+        assignedModelClassAndPackageNames.addAll(modelPerPersistenceUnit.values().stream()
+                .map(JpaPersistenceUnitModel::modelPackageNames).flatMap(Set::stream).toList());
         Set<String> unaffectedEntityClassNames = jpaModel.getEntityClassNames().stream()
                 .filter(c -> !assignedEntityClassNames.contains(c))
                 .collect(Collectors.toCollection(TreeSet::new));
-        Set<String> unaffectedModelClassAndPackageNames = Stream.concat(
-                jpaModel.getAllModelClassNames().stream(),
-                jpaModel.getAllModelPackageNames().stream())
+        Set<String> unaffectedModelClassNames = jpaModel.getAllModelClassNames().stream()
                 .filter(c -> !assignedModelClassAndPackageNames.contains(c))
                 .collect(Collectors.toCollection(TreeSet::new));
+        Set<String> unaffectedModelPackageNames = jpaModel.getAllModelPackageNames().stream()
+                .filter(c -> !assignedModelClassAndPackageNames.contains(c))
+                .collect(Collectors.toCollection(TreeSet::new));
+        Set<String> unaffectedModelClassAndPackageNames = new TreeSet<>();
+        unaffectedModelClassAndPackageNames.addAll(unaffectedModelClassNames);
+        unaffectedModelClassAndPackageNames.addAll(unaffectedModelPackageNames);
         if (!unaffectedEntityClassNames.isEmpty() || !unaffectedModelClassAndPackageNames.isEmpty()) {
             if (!hasPackagesInQuarkusConfig && packageLevelPersistenceUnitAnnotations.isEmpty()) {
                 // No .packages configuration and no package-level persistence unit annotations:
@@ -378,7 +400,8 @@ final class JpaModelProcessor {
                 var model = modelPerPersistenceUnit.computeIfAbsent(PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME,
                         ignored -> new JpaPersistenceUnitModel());
                 model.entityClassNames().addAll(unaffectedEntityClassNames);
-                model.allModelClassAndPackageNames().addAll(unaffectedModelClassAndPackageNames);
+                model.allModelClassNames().addAll(unaffectedModelClassNames);
+                model.modelPackageNames().addAll(unaffectedModelPackageNames);
             } else {
                 // unaffectedEntityClassNames would necessarily be in unaffectedModelClassAndPackageNames
                 LOG.warnf("Could not find a suitable persistence unit for model classes/packages:\n\t- %s",
@@ -536,6 +559,17 @@ final class JpaModelProcessor {
             addRelatedModelClassNamesRecursively(index, knownModelClassNames, relatedModelClassNames,
                     index.getClassByName(interfaceName));
         }
+    }
+
+    private static Set<String> findEnclosingEntityPersistenceUnits(String enclosingClassName,
+            Map<String, JpaPersistenceUnitModel> modelPerPersistenceUnit) {
+        Set<String> result = new HashSet<>();
+        for (var entry : modelPerPersistenceUnit.entrySet()) {
+            if (entry.getValue().entityClassNames().contains(enclosingClassName)) {
+                result.add(entry.getKey());
+            }
+        }
+        return result;
     }
 
     private static String normalizePackage(String pakkage) {

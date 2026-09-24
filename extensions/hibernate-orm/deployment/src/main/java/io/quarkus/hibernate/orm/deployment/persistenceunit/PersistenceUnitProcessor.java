@@ -31,8 +31,6 @@ import javax.xml.namespace.QName;
 import jakarta.persistence.PersistenceUnitTransactionType;
 import jakarta.xml.bind.JAXBElement;
 
-import org.hibernate.boot.archive.scan.spi.ClassDescriptor;
-import org.hibernate.boot.archive.scan.spi.PackageDescriptor;
 import org.hibernate.cfg.MappingSettings;
 import org.hibernate.integrator.spi.Integrator;
 import org.jboss.logging.Logger;
@@ -89,7 +87,6 @@ import io.quarkus.hibernate.orm.runtime.HibernateOrmRecorder;
 import io.quarkus.hibernate.orm.runtime.HibernateOrmRuntimeConfig;
 import io.quarkus.hibernate.orm.runtime.boot.QuarkusPersistenceUnitDefinition;
 import io.quarkus.hibernate.orm.runtime.boot.QuarkusPersistenceUnitDescriptor;
-import io.quarkus.hibernate.orm.runtime.boot.scan.QuarkusScanner;
 import io.quarkus.hibernate.orm.runtime.boot.xml.JAXBElementSubstitution;
 import io.quarkus.hibernate.orm.runtime.boot.xml.QNameSubstitution;
 import io.quarkus.hibernate.orm.runtime.config.DialectVersions;
@@ -244,8 +241,6 @@ final class PersistenceUnitProcessor {
 
         recorder.enlistPersistenceUnit(jpaModel.getEntityClassNames());
 
-        final QuarkusScanner scanner = buildQuarkusScanner(jpaModel);
-
         ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
         // inspect service files for additional integrators
         Collection<Class<? extends Integrator>> integratorClasses = new LinkedHashSet<>();
@@ -281,7 +276,7 @@ final class PersistenceUnitProcessor {
 
         beanContainerListener
                 .produce(new BeanContainerListenerBuildItem(
-                        recorder.initMetadata(finalStagePUDescriptors, scanner, integratorClasses)));
+                        recorder.initMetadata(finalStagePUDescriptors, integratorClasses)));
         if (capabilities.isPresent(Capability.HIBERNATE_VALIDATOR) && hibernateOrmConfig.enabled()) {
             beanValidationTraversableResolver
                     .produce(new BeanValidationTraversableResolverBuildItem(recorder.attributeLoadedPredicate()));
@@ -431,24 +426,27 @@ final class PersistenceUnitProcessor {
         Properties descriptorProperties = new Properties();
         additionalPuConfig.ifPresent(c -> descriptorProperties.putAll(c.properties()));
 
+        // Previously we were pushing both class names and package names
+        // to getManagedClassNames(), which was a misnomer: it could actually
+        // return both class names and package names.
+        // ORM 7's ScanningCoordinator would sort them out at runtime.
+        // See for proof:
+        // - how org.hibernate.boot.archive.scan.internal.ScanResultCollector.isListedOrDetectable
+        //   was used for packages too, even though it relied (indirectly) on getManagedClassNames().
+        // - the comment at org/hibernate/boot/model/process/internal/ScanningCoordinator.java:246:
+        //   "IMPL NOTE : "explicitlyListedClassNames" can contain class or package names..."
+        // ORM 8.0 removed ScanningCoordinator (scanning is now the container's responsibility),
+        // so we now pass class names and package names separately.
         QuarkusPersistenceUnitDescriptor descriptor = new QuarkusPersistenceUnitDescriptor(
                 persistenceUnitName,
                 new HibernateOrmPersistenceUnitProviderHelper(),
                 PersistenceUnitTransactionType.JTA,
-                // That's right, we're pushing both class names and package names
-                // to a method called "addClasses".
-                // It's a misnomer: while the method populates the set that backs getManagedClasses(),
-                // that method is also poorly named because it can actually return both class names
-                // and package names.
-                // See for proof:
-                // - how org.hibernate.boot.archive.scan.internal.ScanResultCollector.isListedOrDetectable
-                //   is used for packages too, even it relies (indirectly) on getManagedClassNames().
-                // - the comment at org/hibernate/boot/model/process/internal/ScanningCoordinator.java:246:
-                //   "IMPL NOTE : "explicitlyListedClassNames" can contain class or package names..."
-                new ArrayList<>(model.allModelClassAndPackageNames()),
-                descriptorProperties,
+                new ArrayList<>(model.allModelClassNames()),
+                new ArrayList<>(model.modelPackageNames()),
+                new Properties(),
                 false);
-        Set<String> entityClassNames = model.entityClassNames();
+        Set<String> entityClassNames = new HashSet<>(descriptor.getManagedClassNames());
+        entityClassNames.retainAll(model.entityClassNames());
 
         MultiTenancyStrategy multiTenancyStrategy = HibernateProcessorUtil
                 .getMultiTenancyStrategy(persistenceUnitConfig.multitenant());
@@ -561,28 +559,4 @@ final class PersistenceUnitProcessor {
         return false;
     }
 
-    /**
-     * Set up the scanner, as this scanning has already been done we need to just tell it about the classes we
-     * have discovered. This scanner is bytecode serializable and is passed directly into the recorder
-     *
-     * @param jpaModel the previously discovered JPA model (domain objects, ...)
-     * @return a new QuarkusScanner with all domainObjects registered
-     */
-    public static QuarkusScanner buildQuarkusScanner(JpaModelBuildItem jpaModel) {
-        QuarkusScanner scanner = new QuarkusScanner();
-        Set<PackageDescriptor> packageDescriptors = new LinkedHashSet<>();
-        for (String packageName : jpaModel.getAllModelPackageNames()) {
-            QuarkusScanner.PackageDescriptorImpl desc = new QuarkusScanner.PackageDescriptorImpl(packageName);
-            packageDescriptors.add(desc);
-        }
-        scanner.setPackageDescriptors(packageDescriptors);
-        Set<ClassDescriptor> classDescriptors = new LinkedHashSet<>();
-        for (String className : jpaModel.getEntityClassNames()) {
-            QuarkusScanner.ClassDescriptorImpl desc = new QuarkusScanner.ClassDescriptorImpl(className,
-                    ClassDescriptor.Categorization.MODEL);
-            classDescriptors.add(desc);
-        }
-        scanner.setClassDescriptors(classDescriptors);
-        return scanner;
-    }
 }

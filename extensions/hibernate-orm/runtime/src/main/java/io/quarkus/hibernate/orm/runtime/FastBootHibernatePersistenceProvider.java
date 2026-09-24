@@ -14,6 +14,7 @@ import javax.sql.DataSource;
 import jakarta.persistence.EntityManagerFactory;
 import jakarta.persistence.PersistenceConfiguration;
 import jakarta.persistence.PersistenceException;
+import jakarta.persistence.spi.ClassTransformer;
 import jakarta.persistence.spi.PersistenceProvider;
 import jakarta.persistence.spi.PersistenceUnitInfo;
 
@@ -46,6 +47,7 @@ import io.quarkus.hibernate.orm.runtime.integration.HibernateOrmIntegrationRunti
 import io.quarkus.hibernate.orm.runtime.migration.MultiTenancyStrategy;
 import io.quarkus.hibernate.orm.runtime.recording.PrevalidatedQuarkusMetadata;
 import io.quarkus.hibernate.orm.runtime.recording.RecordedState;
+import io.quarkus.hibernate.orm.runtime.schema.SchemaManagementIntegrator;
 import io.quarkus.hibernate.orm.runtime.spi.HibernateOrmIntegrationRuntimeInitListener;
 
 /**
@@ -110,6 +112,12 @@ public final class FastBootHibernatePersistenceProvider implements PersistencePr
                         + " factory through CDI instead: `@Inject EntityManagerFactory emf`.");
     }
 
+    @Override
+    public boolean generateSchema(PersistenceConfiguration configuration) {
+        throw new UnsupportedOperationException(
+                "Schema is generated elsewehere in Quarkus see" + SchemaManagementIntegrator.class.getName());
+    }
+
     @SuppressWarnings("rawtypes")
     @Override
     public void generateSchema(PersistenceUnitInfo info, Map map) {
@@ -136,6 +144,12 @@ public final class FastBootHibernatePersistenceProvider implements PersistencePr
     @Override
     public ProviderUtil getProviderUtil() {
         return providerUtil;
+    }
+
+    @Override
+    public ClassTransformer getClassTransformer(PersistenceUnitInfo info, Map<?, ?> properties) {
+        // TODO shouldn't be supported in Quarkus
+        return null;
     }
 
     @SuppressWarnings("rawtypes")

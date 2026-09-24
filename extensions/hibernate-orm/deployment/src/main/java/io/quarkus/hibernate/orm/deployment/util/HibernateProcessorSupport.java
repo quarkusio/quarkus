@@ -37,6 +37,7 @@ import io.quarkus.deployment.builditem.HotDeploymentWatchedFileBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.hibernate.orm.deployment.HibernateOrmConfig;
 import io.quarkus.hibernate.orm.deployment.HibernateOrmConfigPersistenceUnit;
+import io.quarkus.hibernate.orm.deployment.HibernateOrmConfigPersistenceUnit.HibernateOrmConfigPersistenceValidation.ValidationMode;
 import io.quarkus.hibernate.orm.deployment.spi.DatabaseKindDialectBuildItem;
 import io.quarkus.hibernate.orm.deployment.spi.SqlLoadScriptDefaultBuildItem;
 import io.quarkus.hibernate.orm.runtime.HibernateOrmRuntimeConfig;
@@ -271,6 +272,14 @@ public final class HibernateProcessorSupport {
                 .setProperty(AvailableSettings.IMPLICIT_NAMING_STRATEGY, namingStrategy));
 
         // Mapping
+        // Keep the pre-ORM 8 behavior so quarkus.hibernate-orm.jdbc.timezone continues to apply to java.time values.
+        // Without this, these tests fail with Hibernate ORM 8 direct Java Time JDBC access:
+        // TimezoneDefaultStorageAutoTest
+        // TimezoneDefaultStorageDefaultTest
+        // TimezoneDefaultStorageNativeTest
+        // TimezoneDefaultStorageNormalizeTest
+        // TimezoneDefaultStorageNormalizeUtcTest
+        desc.getProperties().setProperty(AvailableSettings.JAVA_TIME_USE_DIRECT_JDBC, Boolean.FALSE.toString());
         if (config.mapping().timezone().timeZoneDefaultStorage().isPresent()) {
             desc.getProperties().setProperty(AvailableSettings.TIMEZONE_DEFAULT_STORAGE,
                     config.mapping().timezone().timeZoneDefaultStorage().get().name());
@@ -350,8 +359,11 @@ public final class HibernateProcessorSupport {
             desc.getProperties().setProperty(AvailableSettings.GENERATE_STATISTICS, "true");
             //When statistics are enabled, the default in Hibernate ORM is to also log them after each
             // session; turn that off by default as it's very noisy:
-            desc.getProperties().setProperty(AvailableSettings.LOG_SESSION_METRICS,
-                    String.valueOf(hibernateOrmConfig.logSessionMetrics().orElse(false)));
+            // TODO Luca LOG_SESSION_METRICS is no more in 8.0
+            //            desc.getProperties().setProperty(AvailableSettings.LOG_SESSION_METRICS,
+            //
+            //            desc.getProperties().setProperty(AvailableSettings.LOG_SESSION_METRICS,
+            //                    String.valueOf(hibernateOrmConfig.logSessionMetrics().orElse(false)));
         }
 
         // Caching
@@ -450,6 +462,11 @@ public final class HibernateProcessorSupport {
                         .stream()
                         .map(Enum::name)
                         .collect(Collectors.joining(",")));
+        // ORM 8 controls validation-derived DDL independently of lifecycle validation.
+        if (!config.validation().mode().contains(ValidationMode.AUTO)
+                && !config.validation().mode().contains(ValidationMode.DDL)) {
+            descriptor.getProperties().setProperty(AvailableSettings.APPLY_VALIDATION_CONSTRAINTS, "disabled");
+        }
     }
 
     private static void configureQuoting(QuarkusPersistenceUnitDescriptor desc,

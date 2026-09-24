@@ -331,6 +331,7 @@ public class CustomQueryMethodsAdder extends AbstractMethodsAdder {
                         // e.g. method.returnType() is a List that may contain non-entity elements
                         Type resultType = verifyQueryResultType(method.returnType(), index);
                         DotName customResultTypeName = resultType.name();
+                        DotName queryResultTypeName = resultType.name();
 
                         if (customResultTypeName.equals(entityClassInfo.name())
                                 || customResultTypeName.toString().equals(idTypeStr)
@@ -362,15 +363,18 @@ public class CustomQueryMethodsAdder extends AbstractMethodsAdder {
                         }
 
                         Expr panacheQuery;
+                        Expr resultTypeClass = Const.of(ClassDesc.of(queryResultTypeName.toString()));
                         if (!finalNamedParameterToIndex.isEmpty()) {
                             Expr parameters = generateParametersObject(finalNamedParameterToIndex, bc, params);
 
                             // call JpaOperations.find()
                             panacheQuery = bc.invokeStatic(
                                     MethodDesc.of(AdditionalJpaOperations.class, "find",
-                                            PanacheQuery.class, AbstractManagedJpaOperations.class, Class.class, String.class,
+                                            PanacheQuery.class, AbstractManagedJpaOperations.class, Class.class,
+                                            Class.class, String.class,
                                             String.class, io.quarkus.panache.common.Sort.class, Parameters.class),
                                     ops, entityClass,
+                                    resultTypeClass,
                                     Const.of(finalQueryString), Const.of(countQueryString),
                                     generateSort(finalSortParameterIndex, finalPageableParameterIndex, bc, params),
                                     parameters);
@@ -381,9 +385,11 @@ public class CustomQueryMethodsAdder extends AbstractMethodsAdder {
                             // call JpaOperations.find()
                             panacheQuery = bc.invokeStatic(
                                     MethodDesc.of(AdditionalJpaOperations.class, "find",
-                                            PanacheQuery.class, AbstractManagedJpaOperations.class, Class.class, String.class,
+                                            PanacheQuery.class, AbstractManagedJpaOperations.class, Class.class,
+                                            Class.class, String.class,
                                             String.class, io.quarkus.panache.common.Sort.class, Object[].class),
                                     ops, entityClass,
+                                    resultTypeClass,
                                     Const.of(finalQueryString), Const.of(countQueryString),
                                     generateSort(finalSortParameterIndex, finalPageableParameterIndex, bc, params),
                                     paramsArray);

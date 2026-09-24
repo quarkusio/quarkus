@@ -19,6 +19,7 @@ import java.util.TreeSet;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import jakarta.data.repository.Repository;
 import jakarta.persistence.EntityManager;
 
 import org.geolatte.geom.codec.WkbEncoder;
@@ -48,6 +49,7 @@ public class ClassNamesTest {
     private static final DotName TARGET = DotName.createSimple(Target.class.getName());
 
     private static Index jpaIndex;
+    private static Index jakartaDataIndex;
     private static Index hibernateIndex;
     private static Index geolatteGeomIndex;
     private static Index hibernateVectorIndex;
@@ -55,6 +57,7 @@ public class ClassNamesTest {
     @BeforeAll
     public static void index() throws IOException, ClassNotFoundException {
         jpaIndex = IndexingUtil.indexJar(determineJpaJarLocation());
+        jakartaDataIndex = IndexingUtil.indexJar(determineJakartaDataJarLocation());
         hibernateIndex = IndexingUtil.indexJar(determineHibernateJarLocation());
         geolatteGeomIndex = IndexingUtil.indexJar(determineGeolatteGeomLocation());
         hibernateVectorIndex = IndexingUtil.indexJar(determineHibernateVectorLocation());
@@ -144,6 +147,22 @@ public class ClassNamesTest {
     }
 
     @Test
+    public void testRepositoryMethodAnnotations() {
+        Set<DotName> repositoryAnnotations = findAnnotationsByTargetType(jakartaDataIndex, ElementType.METHOD).stream()
+                .filter(name -> name.toString().startsWith("jakarta.data.repository."))
+                .collect(Collectors.toSet());
+        // These customize a query method but do not define one on their own.
+        repositoryAnnotations.removeIf(name -> Set.of("jakarta.data.repository.First", "jakarta.data.repository.OrderBy",
+                "jakarta.data.repository.OrderBy$List", "jakarta.data.repository.Select", "jakarta.data.repository.Select$List")
+                .contains(name.toString()));
+        repositoryAnnotations.add(DotName.createSimple("org.hibernate.annotations.processing.HQL"));
+        repositoryAnnotations.add(DotName.createSimple("org.hibernate.annotations.processing.SQL"));
+
+        assertThat(ClassNames.REPOSITORY_METHOD_ANNOTATIONS)
+                .containsExactlyInAnyOrderElementsOf(repositoryAnnotations);
+    }
+
+    @Test
     public void testNoMissingJpaListenerAnnotation() {
         Set<DotName> jpaMappingAnnotations = findRuntimeAnnotations(jpaIndex);
         Pattern listenerAnnotationNamePattern = Pattern.compile(".*\\.(Pre|Post)[^.]+");
@@ -171,6 +190,7 @@ public class ClassNamesTest {
         annotationSet.removeIf(name -> name.toString().equals("org.hibernate.cfg.Unsafe"));
         annotationSet.removeIf(name -> name.toString().equals("org.hibernate.Incubating"));
         annotationSet.removeIf(name -> name.toString().equals("org.hibernate.Internal"));
+        annotationSet.removeIf(name -> name.toString().equals("org.hibernate.SPI"));
         annotationSet.removeIf(name -> name.toString().equals("org.hibernate.Remove"));
         annotationSet.removeIf(name -> name.toString().equals("org.hibernate.service.JavaServiceLoadable"));
     }
@@ -241,6 +261,17 @@ public class ClassNamesTest {
         return annotations;
     }
 
+    private Set<DotName> findAnnotationsByTargetType(Index index, ElementType targetType) {
+        Set<DotName> annotations = new TreeSet<>();
+        for (AnnotationInstance targetAnnotation : index.getAnnotations(TARGET)) {
+            ClassInfo annotation = targetAnnotation.target().asClass();
+            if (allowsTargetType(annotation, targetType)) {
+                annotations.add(annotation.name());
+            }
+        }
+        return annotations;
+    }
+
     private Set<DotName> findClassesWithMethodsAnnotatedWith(Index index, DotName annotationName) {
         Set<DotName> classes = new TreeSet<>();
         for (AnnotationInstance annotation : index.getAnnotations(annotationName)) {
@@ -276,6 +307,14 @@ public class ClassNamesTest {
         URL url = EntityManager.class.getProtectionDomain().getCodeSource().getLocation();
         if (!url.getProtocol().equals("file")) {
             throw new IllegalStateException("JPA JAR is not a local file? " + url);
+        }
+        return new File(url.getPath());
+    }
+
+    private static File determineJakartaDataJarLocation() {
+        URL url = Repository.class.getProtectionDomain().getCodeSource().getLocation();
+        if (!url.getProtocol().equals("file")) {
+            throw new IllegalStateException("Jakarta Data JAR is not a local file? " + url);
         }
         return new File(url.getPath());
     }

@@ -122,6 +122,14 @@ public final class QuarkusDataHibernateProcessor {
     }
 
     @BuildStep
+    void addInnerRepositoryInterfacesToJpaModel(CombinedIndexBuildItem index,
+            BuildProducer<AdditionalJpaModelBuildItem> quarkusDataModel) {
+        collectEntityInnerInterfaces(index.getIndex(),
+                (memberClass, implementingBean) -> quarkusDataModel.produce(new AdditionalJpaModelBuildItem(
+                        memberClass.name().toString(), Set.of())));
+    }
+
+    @BuildStep
     UnremovableBeanBuildItem ensureBeanLookupAvailable() {
         // FIXME: look for mutiny sessions too?
         return new UnremovableBeanBuildItem(new UnremovableBeanBuildItem.BeanTypeExclusion(DOTNAME_SESSION));

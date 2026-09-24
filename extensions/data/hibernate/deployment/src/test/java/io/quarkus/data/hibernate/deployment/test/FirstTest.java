@@ -16,8 +16,9 @@ public class FirstTest {
     static QuarkusExtensionTest runner = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addAsResource("application-test.properties", "application.properties")
-                    .addClasses(MyEntity.class, MyEntity_.class, MyEntity_.ManagedBlockingQueries_.class,
-                            MyEntity_.FindOnlyRepo_.class));
+                    .addClasses(MyEntity.class, MyEntity_.class, _MyEntity.class,
+                            _MyEntity._ManagedBlockingQueries.class,
+                            _MyEntity._FindOnlyRepo.class));
 
     @Transactional
     void createOne() {

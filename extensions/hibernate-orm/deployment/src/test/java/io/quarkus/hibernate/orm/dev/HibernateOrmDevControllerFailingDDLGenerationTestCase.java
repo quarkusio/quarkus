@@ -18,6 +18,8 @@ public class HibernateOrmDevControllerFailingDDLGenerationTestCase {
                     .addClasses(MyEntityWithFailingDDLGeneration.class,
                             TypeWithUnsupportedSqlCode.class,
                             H2CustomDialect.class,
+                            H2CustomDialect.NoOpMutationStrategy.class,
+                            H2CustomDialect.NoOpInsertStrategy.class,
                             HibernateOrmDevInfoServiceTestResource.class)
                     .addAsResource("application-generation-none-customh2.properties", "application.properties")
                     .addAsResource("import-custom-table-name.sql", "import.sql"));

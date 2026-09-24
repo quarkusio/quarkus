@@ -18,7 +18,6 @@ import jakarta.transaction.TransactionSynchronizationRegistry;
 
 import org.hibernate.LockMode;
 import org.hibernate.LockOptions;
-import org.hibernate.ReplicationMode;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.Transaction;
@@ -64,7 +63,6 @@ public class TransactionScopedSession extends SessionLazyDelegator {
             boolean requestScopedSessionEnabled,
             Instance<RequestScopedSessionHolder> requestScopedSessions,
             TransactionScopedSession[] holder) {
-        super(() -> holder[0].acquireSession());
         this.transactionManager = transactionManager;
         this.transactionSynchronizationRegistry = transactionSynchronizationRegistry;
         this.sessionFactory = sessionFactory;
@@ -198,6 +196,11 @@ public class TransactionScopedSession extends SessionLazyDelegator {
     }
 
     @Override
+    public Session delegate() {
+        return acquireSession();
+    }
+
+    @Override
     public SessionFactory getFactory() {
         return sessionFactory;
     }
@@ -253,18 +256,6 @@ public class TransactionScopedSession extends SessionLazyDelegator {
         getDelegateForMutation().remove(entity);
     }
 
-    @Deprecated
-    @Override
-    public void replicate(Object object, ReplicationMode replicationMode) {
-        getDelegateForMutation().replicate(object, replicationMode);
-    }
-
-    @Deprecated
-    @Override
-    public void replicate(String entityName, Object object, ReplicationMode replicationMode) {
-        getDelegateForMutation().replicate(entityName, object, replicationMode);
-    }
-
     @Override
     public void lock(Object object, LockMode lockMode) {
         getDelegateForMutation().lock(object, lockMode);
@@ -308,11 +299,6 @@ public class TransactionScopedSession extends SessionLazyDelegator {
     @Override
     public void refresh(Object entity, Map<String, Object> properties) {
         getDelegateForMutation().refresh(entity, properties);
-    }
-
-    @Override
-    public void refresh(Object entity, LockModeType lockMode) {
-        getDelegateForMutation().refresh(entity, lockMode);
     }
 
     @Override

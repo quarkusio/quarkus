@@ -25,13 +25,14 @@ import org.hibernate.boot.spi.MetadataBuildingOptions;
 import org.hibernate.boot.spi.MetadataImplementor;
 import org.hibernate.engine.spi.FilterDefinition;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
+import org.hibernate.jpa.boot.spi.PersistenceUnitCallbackDefinition;
 import org.hibernate.mapping.Component;
 import org.hibernate.mapping.FetchProfile;
 import org.hibernate.mapping.MappedSuperclass;
 import org.hibernate.mapping.PersistentClass;
 import org.hibernate.mapping.Table;
 import org.hibernate.metamodel.mapping.DiscriminatorType;
-import org.hibernate.query.named.NamedObjectRepository;
+import org.hibernate.query.named.spi.NamedObjectRepository;
 import org.hibernate.query.sqm.function.SqmFunctionDescriptor;
 import org.hibernate.query.sqm.function.SqmFunctionRegistry;
 import org.hibernate.type.Type;
@@ -268,6 +269,11 @@ public final class PrevalidatedQuarkusMetadata implements MetadataImplementor {
     @Override
     public NamedObjectRepository buildNamedQueryRepository() {
         return metadata.buildNamedQueryRepository();
+    }
+
+    @Override
+    public List<PersistenceUnitCallbackDefinition> getPersistenceUnitLifecycleCallbackDefinitions() {
+        return metadata.getPersistenceUnitLifecycleCallbackDefinitions();
     }
 
     @Override

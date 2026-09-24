@@ -17,17 +17,18 @@ public class OfflineDialectDescriptor {
     }
 
     private static String determineStorageEngine(MariaDBDialect dialect) {
-        return dialect.getTableTypeString().toLowerCase(Locale.ROOT).replace("engine=", "").trim();
+        return dialect.getTableCreationSupport().tableCreationOptions().toLowerCase(Locale.ROOT).replace("engine=", "").trim();
     }
 
     private static Integer determineBytesPerCharacter(MariaDBDialect dialect) {
-        if (dialect.getMaxVarcharLength() == 65_535) {
+        int maxVarcharLength = dialect.getTypeSizingProfile().maxVarcharLength();
+        if (maxVarcharLength == 65_535) {
             return 1;
         }
-        if (dialect.getMaxVarcharLength() == 32_767) {
+        if (maxVarcharLength == 32_767) {
             return 2;
         }
-        if (dialect.getMaxVarcharLength() == 21_844) {
+        if (maxVarcharLength == 21_844) {
             return 3;
         }
         return 4;

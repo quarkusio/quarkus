@@ -246,6 +246,23 @@ public final class PanacheJpaCommonResourceProcessor {
             }
         }
 
+        List<AnnotationInstance> namedStatementInstances = classInfo.annotationsMap().get(DotNames.DOTNAME_NAMED_STATEMENT);
+        if (namedStatementInstances != null) {
+            for (AnnotationInstance namedStatementInstance : namedStatementInstances) {
+                namedQueries.put(namedStatementInstance.value("name").asString(),
+                        namedStatementInstance.value("statement").asString());
+            }
+        }
+
+        List<AnnotationInstance> namedStatementsInstances = classInfo.annotationsMap().get(DotNames.DOTNAME_NAMED_STATEMENTS);
+        if (namedStatementsInstances != null) {
+            for (AnnotationInstance namedStatementsInstance : namedStatementsInstances) {
+                for (AnnotationInstance nested : namedStatementsInstance.value().asNestedArray()) {
+                    namedQueries.put(nested.value("name").asString(), nested.value("statement").asString());
+                }
+            }
+        }
+
         // climb up the hierarchy of types
         if (!classInfo.superClassType().name().equals(JandexUtil.DOTNAME_OBJECT)) {
             Type superType = classInfo.superClassType();

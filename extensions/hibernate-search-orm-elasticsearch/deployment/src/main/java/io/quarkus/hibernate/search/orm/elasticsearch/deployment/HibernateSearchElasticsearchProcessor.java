@@ -20,7 +20,6 @@ import java.util.Set;
 
 import org.hibernate.search.backend.elasticsearch.ElasticsearchVersion;
 import org.hibernate.search.engine.reporting.FailureHandler;
-import org.hibernate.search.mapper.orm.automaticindexing.session.AutomaticIndexingSynchronizationStrategy;
 import org.hibernate.search.mapper.pojo.work.IndexingPlanSynchronizationStrategy;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationValue;
@@ -185,8 +184,8 @@ class HibernateSearchElasticsearchProcessor {
         }
 
         // Some user-injectable beans are retrieved programmatically and shouldn't be removed
-        unremovableBean.produce(UnremovableBeanBuildItem.beanTypes(FailureHandler.class,
-                AutomaticIndexingSynchronizationStrategy.class, IndexingPlanSynchronizationStrategy.class));
+        unremovableBean
+                .produce(UnremovableBeanBuildItem.beanTypes(FailureHandler.class, IndexingPlanSynchronizationStrategy.class));
     }
 
     @BuildStep

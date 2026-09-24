@@ -5,6 +5,8 @@ import java.util.function.BiFunction;
 import org.hibernate.bytecode.enhance.internal.bytebuddy.CoreTypePool;
 import org.hibernate.bytecode.enhance.internal.bytebuddy.EnhancerClassLocator;
 import org.hibernate.bytecode.enhance.internal.bytebuddy.ModelTypePool;
+import org.hibernate.bytecode.enhance.spi.DefaultEnhancementModel;
+import org.hibernate.bytecode.enhance.spi.EnhancementSession;
 import org.hibernate.bytecode.enhance.spi.Enhancer;
 import org.hibernate.bytecode.internal.bytebuddy.BytecodeProviderImpl;
 import org.objectweb.asm.ClassReader;
@@ -105,7 +107,9 @@ public final class HibernateEntityEnhancer implements BiFunction<String, ClassVi
                     if (actualEnhancer == null) {
                         EnhancerClassLocator enhancerClassLocator = ModelTypePool
                                 .buildModelTypePool(QuarkusClassFileLocator.INSTANCE, CORE_TYPE_POOL);
-                        actualEnhancer = PROVIDER.getEnhancer(QuarkusEnhancementContext.INSTANCE, enhancerClassLocator);
+                        EnhancementSession session = PROVIDER.createEnhancementSession(
+                                new DefaultEnhancementModel(), enhancerClassLocator);
+                        actualEnhancer = session.createEnhancer(QuarkusEnhancementContext.INSTANCE);
                     }
                 }
             }

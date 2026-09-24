@@ -10,6 +10,7 @@ import org.assertj.core.api.AbstractObjectAssert;
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
+import org.hibernate.id.GenericGeneratorGeneration;
 import org.hibernate.id.OptimizableGenerator;
 import org.hibernate.id.enhanced.Optimizer;
 import org.hibernate.id.enhanced.PooledLoOptimizer;
@@ -62,6 +63,8 @@ public abstract class AbstractIdOptimizerDefaultTest {
     AbstractObjectAssert<?, Optimizer> assertOptimizer(Class<?> entityType) {
         return assertThat(SchemaUtil.getGenerator(sessionFactory, entityType))
                 .as("ID generator for entity type " + entityType.getSimpleName())
+                // ORM 8.0: @GenericGenerator now produces a GenericGeneratorGeneration wrapper
+                .extracting(g -> g instanceof GenericGeneratorGeneration gg ? gg.getDelegate() : g)
                 .asInstanceOf(InstanceOfAssertFactories.type(OptimizableGenerator.class))
                 .extracting(OptimizableGenerator::getOptimizer)
                 .as("ID optimizer for entity type " + entityType.getSimpleName());

@@ -17,6 +17,8 @@ import java.util.function.Supplier;
 
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
+import org.hibernate.accessor.AccessorFactory;
+import org.hibernate.accessor.spi.AccessorConfiguration;
 import org.hibernate.boot.Metadata;
 import org.hibernate.boot.registry.StandardServiceInitiator;
 import org.hibernate.boot.spi.BootstrapContext;
@@ -32,7 +34,6 @@ import org.hibernate.search.mapper.orm.mapping.HibernateOrmSearchMappingConfigur
 import org.hibernate.search.mapper.orm.mapping.SearchMapping;
 import org.hibernate.search.mapper.orm.session.SearchSession;
 import org.hibernate.search.mapper.pojo.work.IndexingPlanSynchronizationStrategy;
-import org.hibernate.search.util.common.reflect.spi.ValueHandleFactory;
 
 import io.quarkus.arc.ActiveResult;
 import io.quarkus.arc.Arc;
@@ -40,6 +41,7 @@ import io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil;
 import io.quarkus.hibernate.orm.runtime.spi.HibernateOrmIntegrationRuntimeInitListener;
 import io.quarkus.hibernate.orm.runtime.spi.HibernateOrmIntegrationStaticInitListener;
 import io.quarkus.hibernate.search.backend.elasticsearch.common.runtime.HibernateSearchBackendElasticsearchConfigHandler;
+import io.quarkus.hibernate.search.backend.elasticsearch.common.runtime.QuarkusAccessContext;
 import io.quarkus.hibernate.search.orm.elasticsearch.runtime.bean.HibernateSearchBeanUtil;
 import io.quarkus.hibernate.search.orm.elasticsearch.runtime.management.HibernateSearchManagementHandler;
 import io.quarkus.hibernate.search.orm.elasticsearch.runtime.mapping.QuarkusHibernateOrmSearchMappingConfigurer;
@@ -256,9 +258,13 @@ public class HibernateSearchElasticsearchRecorder {
         @Override
         public void onMetadataInitialized(Metadata metadata, BootstrapContext bootstrapContext,
                 BiConsumer<String, Object> propertyCollector) {
-            HibernateOrmIntegrationBooter booter = HibernateOrmIntegrationBooter.builder(metadata, bootstrapContext)
+            HibernateOrmIntegrationBooter booter = HibernateOrmIntegrationBooter.builder(
+                    metadata,
+                    bootstrapContext.getServiceRegistry(),
+                    bootstrapContext.getModelsContext().getClassDetailsRegistry())
                     // MethodHandles don't work at all in GraalVM 20 and below, and seem unreliable on GraalVM 21
-                    .valueReadHandleFactory(ValueHandleFactory.usingJavaLangReflect())
+                    .accessorFactory(
+                            AccessorFactory.reflection(new AccessorConfiguration(new QuarkusAccessContext(), Map.of())))
                     .build();
             booter.preBoot(propertyCollector);
 

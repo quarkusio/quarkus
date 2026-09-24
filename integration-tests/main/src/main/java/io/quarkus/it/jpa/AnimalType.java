@@ -5,7 +5,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Types;
 
-import org.hibernate.engine.spi.SharedSessionContractImplementor;
+import org.hibernate.type.descriptor.WrapperOptions;
 
 public class AnimalType extends AbstractCustomUserType<Animal> {
 
@@ -19,7 +19,7 @@ public class AnimalType extends AbstractCustomUserType<Animal> {
     }
 
     @Override
-    public Animal nullSafeGet(ResultSet result, int position, SharedSessionContractImplementor session, Object owner)
+    public Animal nullSafeGet(ResultSet result, int position, WrapperOptions options)
             throws SQLException {
         double weight = result.getDouble(position);
         Animal animal = new Animal();
@@ -29,7 +29,7 @@ public class AnimalType extends AbstractCustomUserType<Animal> {
 
     @Override
     public void nullSafeSet(PreparedStatement preparedStatement, Animal value, int index,
-            SharedSessionContractImplementor session)
+            WrapperOptions options)
             throws SQLException {
         if (value == null) {
             preparedStatement.setNull(index, Types.BIGINT);

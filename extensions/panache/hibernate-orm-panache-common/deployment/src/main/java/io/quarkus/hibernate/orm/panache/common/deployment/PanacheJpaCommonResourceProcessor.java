@@ -6,6 +6,8 @@ import java.util.Map;
 
 import jakarta.persistence.NamedQueries;
 import jakarta.persistence.NamedQuery;
+import jakarta.persistence.NamedStatement;
+import jakarta.persistence.NamedStatements;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationValue;
@@ -29,6 +31,8 @@ public final class PanacheJpaCommonResourceProcessor {
 
     private static final DotName DOTNAME_NAMED_QUERY = DotName.createSimple(NamedQuery.class.getName());
     private static final DotName DOTNAME_NAMED_QUERIES = DotName.createSimple(NamedQueries.class.getName());
+    private static final DotName DOTNAME_NAMED_STATEMENT = DotName.createSimple(NamedStatement.class.getName());
+    private static final DotName DOTNAME_NAMED_STATEMENTS = DotName.createSimple(NamedStatements.class.getName());
 
     @BuildStep
     void lookupNamedQueries(CombinedIndexBuildItem index,
@@ -74,6 +78,23 @@ public final class PanacheJpaCommonResourceProcessor {
                 AnnotationInstance[] nestedInstances = value.asNestedArray();
                 for (AnnotationInstance nested : nestedInstances) {
                     namedQueries.put(nested.value("name").asString(), nested.value("query").asString());
+                }
+            }
+        }
+
+        List<AnnotationInstance> namedStatementInstances = classInfo.annotationsMap().get(DOTNAME_NAMED_STATEMENT);
+        if (namedStatementInstances != null) {
+            for (AnnotationInstance namedStatementInstance : namedStatementInstances) {
+                namedQueries.put(namedStatementInstance.value("name").asString(),
+                        namedStatementInstance.value("statement").asString());
+            }
+        }
+
+        List<AnnotationInstance> namedStatementsInstances = classInfo.annotationsMap().get(DOTNAME_NAMED_STATEMENTS);
+        if (namedStatementsInstances != null) {
+            for (AnnotationInstance namedStatementsInstance : namedStatementsInstances) {
+                for (AnnotationInstance nested : namedStatementsInstance.value().asNestedArray()) {
+                    namedQueries.put(nested.value("name").asString(), nested.value("statement").asString());
                 }
             }
         }

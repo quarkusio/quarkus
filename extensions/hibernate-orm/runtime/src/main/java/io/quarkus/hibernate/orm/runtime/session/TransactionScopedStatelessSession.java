@@ -184,8 +184,8 @@ public class TransactionScopedStatelessSession extends StatelessSessionLazyDeleg
     }
 
     @Override
-    public Object insert(Object entity) {
-        return getDelegateForMutation().insert(entity);
+    public void insert(Object entity) {
+        getDelegateForMutation().insert(entity);
     }
 
     @Override

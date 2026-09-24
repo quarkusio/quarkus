@@ -3,6 +3,7 @@ package io.quarkus.hibernate.orm.runtime.cdi;
 import org.hibernate.resource.beans.container.spi.BeanContainer;
 import org.hibernate.resource.beans.container.spi.ContainedBean;
 import org.hibernate.resource.beans.internal.FallbackBeanInstanceProducer;
+import org.hibernate.resource.beans.spi.BeanInstanceCaching;
 import org.hibernate.resource.beans.spi.BeanInstanceProducer;
 import org.hibernate.resource.beans.spi.ManagedBean;
 import org.hibernate.resource.beans.spi.ManagedBeanRegistry;
@@ -57,6 +58,21 @@ public class QuarkusManagedBeanRegistry implements ManagedBeanRegistry {
         return new ContainedBeanManagedBeanAdapter<>(beanContract,
                 beanContainer.getBean(beanName, beanContract, QuarkusBeanContainerLifecycleOptions.DEFAULT,
                         fallbackBeanInstanceProducer));
+    }
+
+    @Override
+    public <T> ManagedBean<T> getBootstrapSafeBean(Class<T> beanClass) {
+        return getBean(beanClass);
+    }
+
+    @Override
+    public <T> ManagedBean<T> getBean(Class<T> beanClass, BeanInstanceCaching beanInstanceCaching) {
+        return getBean(beanClass, FallbackBeanInstanceProducer.INSTANCE);
+    }
+
+    @Override
+    public void releaseBean(ManagedBean<?> bean) {
+        // No-op: we leave the release of beans to QuarkusArcBeanContainer
     }
 
     private static class ContainedBeanManagedBeanAdapter<B> implements ManagedBean<B> {

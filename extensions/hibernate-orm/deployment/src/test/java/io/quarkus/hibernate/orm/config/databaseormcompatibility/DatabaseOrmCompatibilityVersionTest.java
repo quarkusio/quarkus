@@ -56,14 +56,14 @@ public class DatabaseOrmCompatibilityVersionTest {
                                 "Quarkus will attempt to change the behavior and expected schema of Hibernate ORM"
                                         + " to match those of Hibernate ORM 5.6.",
                                 "This is an inherently best-effort feature",
-                                "may stop working in future versions of Quarkus",
+                                "deprecated and will be removed in a future version of Quarkus",
                                 "Consider migrating your application",
                                 "https://github.com/quarkusio/quarkus/wiki/Migration-Guide-3.0:-Hibernate-ORM-5-to-6-migration"));
                 assertion.anySatisfy(record -> assertThat(LOG_FORMATTER.formatMessage(record))
                         .contains(
                                 "Persistence-unit [<default>] - 5.6 compatibility: setting 'hibernate.timezone.default_storage=NORMALIZE'.",
                                 "affects Hibernate ORM's behavior and schema compatibility",
-                                "may stop working in future versions of Quarkus"));
+                                "will be removed in a future version of Quarkus"));
             });
 
     @Inject

@@ -3,13 +3,17 @@ package io.quarkus.gradle.dependency;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.Dependency;
+import org.gradle.api.artifacts.DependencyArtifact;
+import org.gradle.api.artifacts.ModuleDependency;
 import org.gradle.api.artifacts.ResolvedConfiguration;
 import org.gradle.api.artifacts.ResolvedDependency;
 import org.gradle.api.artifacts.component.ProjectComponentIdentifier;
@@ -67,7 +71,7 @@ public class DeploymentConfigurationResolver {
             Collection<Dependency> directDeps = directDeploymentDeps.get();
             if (directDeps == null) {
                 if (!baseRuntimeConfig.getIncoming().getDependencies().isEmpty()) {
-                    directDeps = collectDirectDeploymentDeps(baseRuntimeConfig.getResolvedConfiguration());
+                    directDeps = collectDirectDeploymentDeps(baseRuntimeConfig);
                 } else {
                     directDeps = List.of();
                 }
@@ -78,8 +82,21 @@ public class DeploymentConfigurationResolver {
         QuarkusComponentVariants.setDeploymentAndConditionalAttributes(deploymentConfig, project, mode);
     }
 
-    private Collection<Dependency> collectDirectDeploymentDeps(ResolvedConfiguration baseConfig) {
-        return collectDirectDeploymentDeps(processRuntimeDeps(baseConfig));
+    private Collection<Dependency> collectDirectDeploymentDeps(Configuration baseConfig) {
+        final Map<ArtifactKey, ProcessedDependency> runtimeDeps = processRuntimeDeps(baseConfig.getResolvedConfiguration());
+        final Set<ArtifactKey> declaredDeps = new HashSet<>();
+        for (var dep : baseConfig.getAllDependencies()) {
+            if (dep instanceof ModuleDependency moduleDep && !moduleDep.getArtifacts().isEmpty()) {
+                for (DependencyArtifact artifact : moduleDep.getArtifacts()) {
+                    declaredDeps.add(ArtifactKey.of(dep.getGroup(), dep.getName(),
+                            artifact.getClassifier() == null ? ArtifactCoords.DEFAULT_CLASSIFIER : artifact.getClassifier(),
+                            artifact.getType() == null ? ArtifactCoords.TYPE_JAR : artifact.getType()));
+                }
+            } else {
+                declaredDeps.add(ArtifactKey.of(dep.getGroup(), dep.getName()));
+            }
+        }
+        return collectDirectDeploymentDeps(runtimeDeps, declaredDeps);
     }
 
     private Map<ArtifactKey, ProcessedDependency> processRuntimeDeps(ResolvedConfiguration baseConfig) {
@@ -135,11 +152,13 @@ public class DeploymentConfigurationResolver {
         }
     }
 
-    private Collection<Dependency> collectDirectDeploymentDeps(Map<ArtifactKey, ProcessedDependency> allRuntimeDeps) {
+    private Collection<Dependency> collectDirectDeploymentDeps(Map<ArtifactKey, ProcessedDependency> allRuntimeDeps,
+            Set<ArtifactKey> declaredDeps) {
         final List<Dependency> directDeploymentDeps = new ArrayList<>();
-        for (var processedDep : allRuntimeDeps.values()) {
+        for (var entry : allRuntimeDeps.entrySet()) {
+            final ProcessedDependency processedDep = entry.getValue();
             if (processedDep.ext != null &&
-                    processedDep.hasLocalParent() &&
+                    (processedDep.hasLocalParent() || declaredDeps.contains(entry.getKey())) &&
                     // if it's an extension and its deployment artifact is not a runtime dependency (e.g. deployment tests)
                     !allRuntimeDeps.containsKey(
                             ArtifactKey.of(processedDep.ext.getDeploymentGroup(), processedDep.ext.getDeploymentName(),

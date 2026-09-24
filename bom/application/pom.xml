@@ -5770,6 +5770,10 @@
                         <groupId>net.bytebuddy</groupId>
                         <artifactId>byte-buddy</artifactId>
                     </exclusion>
+                    <exclusion>
+                        <groupId>org.hibernate.accessor</groupId>
+                        <artifactId>hibernate-accessor-bytebuddy</artifactId>
+                    </exclusion>
                 </exclusions>
             </dependency>
             <dependency>
@@ -5814,6 +5818,11 @@
                 <groupId>org.hibernate.models</groupId>
                 <artifactId>hibernate-models</artifactId>
                 <version>${hibernate-models.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.hibernate.accessor</groupId>
+                <artifactId>hibernate-accessor</artifactId>
+                <version>${hibernate-accessor.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.hibernate.orm</groupId>
@@ -7030,6 +7039,14 @@
                                         </dependency>
                                         <dependency>
                                             <artifact>org.hibernate.models:hibernate-models</artifact>
+                                        </dependency>
+                                    </dependencies>
+                                </dependencyAlignmentRule>
+                                <dependencyAlignmentRule>
+                                    <referenceArtifact>org.hibernate.orm:hibernate-core:${hibernate-orm.version}</referenceArtifact>
+                                    <dependencies>
+                                        <dependency>
+                                            <artifact>org.hibernate.accessor:hibernate-accessor</artifact>
                                         </dependency>
                                     </dependencies>
                                 </dependencyAlignmentRule>

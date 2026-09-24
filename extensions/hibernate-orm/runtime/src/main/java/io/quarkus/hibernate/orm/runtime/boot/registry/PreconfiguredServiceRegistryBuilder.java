@@ -52,6 +52,7 @@ import io.quarkus.hibernate.orm.runtime.service.QuarkusRuntimeInitDialectFactory
 import io.quarkus.hibernate.orm.runtime.service.QuarkusRuntimeInitDialectResolverInitiator;
 import io.quarkus.hibernate.orm.runtime.service.bytecodeprovider.QuarkusRuntimeBytecodeProviderInitiator;
 import io.quarkus.hibernate.orm.runtime.service.internalcache.QuarkusInternalCacheFactoryInitiator;
+import io.quarkus.hibernate.orm.runtime.service.propertyaccessor.QuarkusPropertyAccessorServiceInitiator;
 
 /**
  * Helps to instantiate a ServiceRegistryBuilder from a previous state. This
@@ -184,6 +185,9 @@ public class PreconfiguredServiceRegistryBuilder {
 
         // TODO (optional): assume entities are already enhanced?
         serviceInitiators.add(PropertyAccessStrategyResolverInitiator.INSTANCE);
+
+        // Default implementation
+        serviceInitiators.add(QuarkusPropertyAccessorServiceInitiator.INSTANCE);
 
         // Custom one!
         serviceInitiators.add(QuarkusImportSqlCommandExtractorInitiator.INSTANCE);

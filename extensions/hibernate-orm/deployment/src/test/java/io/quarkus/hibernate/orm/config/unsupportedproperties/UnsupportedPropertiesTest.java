@@ -20,9 +20,9 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 
 import org.hibernate.Session;
+import org.hibernate.SessionEventListener;
 import org.hibernate.annotations.GenericGenerator;
 import org.hibernate.cfg.AvailableSettings;
-import org.hibernate.SessionEventListener;
 import org.jboss.logmanager.formatters.PatternFormatter;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;

@@ -11,7 +11,9 @@ import jakarta.persistence.PersistenceUnitTransactionType;
 import jakarta.persistence.SharedCacheMode;
 import jakarta.persistence.ValidationMode;
 
-import org.hibernate.bytecode.enhance.spi.EnhancementContext;
+import org.hibernate.bytecode.enhance.spi.EnhancementModel;
+import org.hibernate.bytecode.enhance.spi.EnhancementOptions;
+import org.hibernate.bytecode.spi.BytecodeProvider;
 import org.hibernate.bytecode.spi.ClassTransformer;
 import org.hibernate.jpa.boot.spi.PersistenceUnitDescriptor;
 
@@ -217,7 +219,8 @@ public final class QuarkusPersistenceUnitDescriptor implements PersistenceUnitDe
     }
 
     @Override
-    public ClassTransformer pushClassTransformer(final EnhancementContext enhancementContext) {
+    public ClassTransformer pushClassTransformer(final EnhancementModel enhancementModel,
+            final EnhancementOptions enhancementOptions, final BytecodeProvider bytecodeProvider) {
         throw new UnsupportedOperationException("has never been supported");
     }
 

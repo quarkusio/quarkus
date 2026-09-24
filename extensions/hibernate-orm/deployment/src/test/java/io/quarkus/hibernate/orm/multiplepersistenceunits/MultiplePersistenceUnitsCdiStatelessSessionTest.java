@@ -7,7 +7,6 @@ import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 
 import org.hibernate.StatelessSession;
-
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 

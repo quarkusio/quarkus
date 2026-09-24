@@ -48,7 +48,7 @@ public interface OidcClientConfig extends OidcClientCommonConfig {
     /**
      * Minimum remaining lifespan required to reuse the access token being refreshed in the background,
      * instead of waiting for the refresh to complete. Its value must be less than
-     * {@link #refreshTokenTimeSkew()}, which must itself be configured. Not reused when this property is not set.
+     * {@link #refreshTokenTimeSkew()}.
      */
     Optional<Duration> minRemainingAccessTokenLifespan();
 

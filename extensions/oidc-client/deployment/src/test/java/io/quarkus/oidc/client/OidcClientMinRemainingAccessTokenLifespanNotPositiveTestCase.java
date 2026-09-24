@@ -36,7 +36,7 @@ public class OidcClientMinRemainingAccessTokenLifespanNotPositiveTestCase {
                 assertNotNull(te, "Expected ConfigurationException, but got: " + t);
                 assertTrue(
                         te.getMessage().contains(
-                                "'quarkus.oidc-client.min-remaining-access-token-lifespan' must be at least 1 second"),
+                                "'quarkus.oidc-client.min-remaining-access-token-lifespan' must be greater than 0 seconds"),
                         te.getMessage());
             });
 

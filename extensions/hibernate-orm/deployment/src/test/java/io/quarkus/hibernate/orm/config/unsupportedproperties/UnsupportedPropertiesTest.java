@@ -22,7 +22,7 @@ import jakarta.persistence.OneToMany;
 import org.hibernate.Session;
 import org.hibernate.annotations.GenericGenerator;
 import org.hibernate.cfg.AvailableSettings;
-import org.hibernate.engine.internal.SessionEventListenerManagerImpl;
+import org.hibernate.SessionEventListener;
 import org.jboss.logmanager.formatters.PatternFormatter;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -144,7 +144,7 @@ public class UnsupportedPropertiesTest {
         assertThat(listener.batchCount).isEqualTo(2);
     }
 
-    private static class BatchCountSpyingEventListener extends SessionEventListenerManagerImpl {
+    private static class BatchCountSpyingEventListener implements SessionEventListener {
         private long batchCount = 0;
 
         @Override

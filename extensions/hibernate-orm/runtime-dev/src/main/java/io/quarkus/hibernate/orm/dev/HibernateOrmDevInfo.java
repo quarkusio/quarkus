@@ -200,7 +200,7 @@ public class HibernateOrmDevInfo {
 
         private static boolean hintAsBoolean(Map<String, Object> hints, String key) {
             Object value = hints.get(key);
-            return value != null && Boolean.parseBoolean(String.valueOf(value));
+            return value != null && ((Boolean) value).booleanValue();
         }
 
         private static String hintAsString(Map<String, Object> hints, String key) {

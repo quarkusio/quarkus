@@ -25,6 +25,7 @@ guidance before starting work:
   when preparing a pull request, writing commit messages, or choosing labels.
 - **Building docs** — Read `.agents/skills/building-docs/SKILL.md`
   when building, previewing, or testing documentation changes locally.
-- **Deprecation cleanup** — Read `.agents/skills/deprecation-cleanup/SKILL.md`
-  when removing code that has been deprecated for over 12 months, or adding
-  `@Deprecated` annotations that were missed on companions of a deprecated element.
+- **Manage deprecations** — Read `.agents/skills/manage-deprecations/SKILL.md`
+  when removing code that has been deprecated for over 12 months, adding
+  `@Deprecated` annotations that were missed on companions of a deprecated
+  element, or applying a new deprecation the user requests.

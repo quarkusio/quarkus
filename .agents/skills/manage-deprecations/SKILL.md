@@ -1,20 +1,24 @@
 ---
-name: deprecation-cleanup
+name: manage-deprecations
 description: >
   Maintain @Deprecated code in the Quarkus codebase: remove code that has been
-  deprecated for more than 12 months, and add the @Deprecated annotations that
+  deprecated for more than 12 months, add the @Deprecated annotations that
   were missed when a related element was deprecated (e.g. a field is deprecated
-  but its getters/setters/constructors are not). Use this skill whenever the
-  user asks to clean up deprecations, remove old/long-deprecated code, purge
-  deprecated APIs, "remove code deprecated for over a year", audit @Deprecated
-  usage, or fix inconsistent/incomplete deprecation annotations — even if they
-  don't name a specific class or module.
+  but its getters/setters/constructors are not), and apply new @Deprecated
+  annotations the user requests (e.g. "deprecate constructors of classes that
+  have a builder"). Use this skill whenever the user asks to clean up
+  deprecations, remove old/long-deprecated code, purge deprecated APIs, "remove
+  code deprecated for over a year", audit @Deprecated usage, fix
+  inconsistent/incomplete deprecation annotations, or deprecate any element
+  (method, constructor, field, class) — even if they don't name a specific
+  class or module.
 ---
 
 # Deprecation Cleanup
 
-Quarkus accumulates `@Deprecated` code over time. This skill covers two
-workflows, sharing one discovery tool and the same commit conventions:
+Quarkus accumulates `@Deprecated` code over time. This skill covers three
+workflows, sharing one discovery tool and the same commit/annotation
+conventions:
 
 - **Removal** — code deprecated for **at least 12 months** (the project's
   convention) is safe to delete; keeping it forever defeats the point of
@@ -23,6 +27,10 @@ workflows, sharing one discovery tool and the same commit conventions:
   to serve it should be deprecated too. A common miss: a field is marked
   `@Deprecated` but its getter, setter, constructor parameter, or builder method
   is not, so callers using the accessors get no warning.
+- **New deprecation** — the user asks to deprecate some category of element
+  outright, e.g. "deprecate constructors of classes with a builder". This is a
+  fresh deprecation, not a gap-fill, but it uses the same annotation
+  conventions as Completion (see below).
 
 ## The discovery tool
 
@@ -152,6 +160,36 @@ public GeneratedResourceBuildItem(String name, byte[] data, boolean excludeFromD
 Build the module (Workflow A, step 4) and commit — message form
 *"Code deprecation in `X`"* (see below).
 
+## Workflow C — Apply a new deprecation
+
+Use this when the user asks to deprecate a category of element that isn't
+currently deprecated at all — e.g. "deprecate constructors of classes that
+have a builder", "deprecate the `Foo` class in favor of `Bar`", "deprecate the
+`getX()` method".
+
+### 1. Find every matching element
+
+Grep/search for the pattern the user described (e.g. classes with a builder:
+look for a `builder()` static method or nested `Builder` class, then check
+whether that class also exposes public constructors). Don't rely on
+`find-deprecated.sh` here — it only finds *existing* `@Deprecated` entries, not
+candidates for new ones. List every matching element before annotating so
+scope is clear up front; if the match criteria are ambiguous (e.g. does
+"classes with a builder" include package-private or test-only classes?),
+confirm scope with the user before proceeding rather than guessing.
+
+### 2. Annotate each element
+
+Same conventions as Workflow B step 2: `@Deprecated(since = "<version>")` plus
+a javadoc `@deprecated` tag naming the replacement. See **Choosing `since`**
+below for a brand-new deprecation.
+
+### 3. Build and commit
+
+Build the module (Workflow A, step 4) and commit — message form
+*"Deprecate `X`"*, body explaining what to use instead, one class per commit
+(see **Commit conventions**).
+
 ## `@Deprecated` annotation conventions
 
 - Prefer the form **`@Deprecated(since = "<version>")`** over a bare
@@ -165,9 +203,16 @@ Build the module (Workflow A, step 4) and commit — message form
     judgement call, ask the user if in doubt.
   - For a brand-new deprecation, use the **current in-development release**
     version. The main branch carries `999-SNAPSHOT`, so the real version isn't in
-    `pom.xml` — determine it from recent release branches/tags (recent work used
-    `4.0`). If you can't determine it confidently, ask the user rather than
-    inventing a number.
+    `pom.xml` — determine it from the project's GitHub milestones: find the open
+    milestone whose title ends in `- main` and use the version prefix (strip the
+    suffix). For example, a milestone titled `4.0 - main` means `since = "4.0"`.
+
+    ```bash
+    gh api repos/quarkusio/quarkus/milestones --jq '.[].title' | grep -- '- main$'
+    ```
+
+    If no milestone matches, or more than one does, ask the user rather than
+    guessing.
 
 ## Commit conventions
 

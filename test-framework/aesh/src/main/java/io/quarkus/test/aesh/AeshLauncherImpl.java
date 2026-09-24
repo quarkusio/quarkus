@@ -9,6 +9,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
@@ -40,6 +41,17 @@ public class AeshLauncherImpl implements AeshLauncher {
     private volatile Throwable lastError;
     private volatile List<StageResult> lastStageResults = List.of();
     private volatile String lastCommandOutput;
+    // Last readline-arm timestamp observed right after the previous command
+    // completed (-1 when no command completed yet). Compared against the live
+    // value on timeout: an unchanged value proves re-arming never ran after
+    // the previous command, as opposed to running without effect.
+    private volatile long armNanosAtLastCompletion = -1;
+    // Baselines for the re-arm tripwire: handler-replacement count and close
+    // timestamp at the previous acceptance. Every completed command advances
+    // the count by at least two (submit stub plus re-arm) unless the console
+    // closed instead.
+    private volatile long armCountAtLastCompletion;
+    private volatile long closeNanosAtLastCompletion;
     private final StringBuilder accumulatedOutput = new StringBuilder();
 
     public AeshLauncherImpl(QuarkusMainLauncher mainLauncher) {
@@ -82,7 +94,8 @@ public class AeshLauncherImpl implements AeshLauncher {
         try {
             Object signal = signalQueue.poll(DEFAULT_TIMEOUT.toMillis(), TimeUnit.MILLISECONDS);
             if (signal == null) {
-                throw new RuntimeException("REPL did not start within " + DEFAULT_TIMEOUT);
+                throw new RuntimeException("REPL did not start within " + DEFAULT_TIMEOUT + ". "
+                        + diagnoseTimeout("waiting for REPL ready signal"));
             }
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
@@ -93,6 +106,14 @@ public class AeshLauncherImpl implements AeshLauncher {
     public String execute(String command, ExecuteOptions options) {
         if (!launched) {
             launch();
+        }
+        // Fail fast if the REPL input reader died in an earlier command:
+        // anything written now would never be delivered.
+        Throwable readerDeath = ((AeshTestThread) replThread).readerDeath().get();
+        if (readerDeath != null) {
+            throw new RuntimeException(
+                    "Cannot execute '" + command + "': the REPL input reader thread died",
+                    readerDeath);
         }
         // Clear the output buffers, signal queue, and last result
         stdoutCapture.reset();
@@ -116,11 +137,12 @@ public class AeshLauncherImpl implements AeshLauncher {
         }
 
         try {
-            Object signal = signalQueue.poll(options.timeout().toMillis(), TimeUnit.MILLISECONDS);
-            if (signal == null) {
-                throw new RuntimeException(
-                        "Command '" + command + "' did not complete within " + options.timeout());
-            }
+            Object signal = pollForSignal(command, options.timeout());
+            // Snapshot the arm time at acceptance: comparing it with the live
+            // value on a later timeout tells whether re-arming ran after this
+            // command completed. (Snapshotting at send time would be useless —
+            // the previous re-arm already ran before the signal arrived.)
+            armNanosAtLastCompletion = ((AeshTestThread) replThread).lastReadlineArmNanos().get();
             // Extract exit code, error, and stage data from the signal.
             // The signal is Object[] { exitCode, error, stageData } from CliRunner.
             // stageData is null for single commands, List<Object[]> for pipelines.
@@ -155,6 +177,28 @@ public class AeshLauncherImpl implements AeshLauncher {
             }
             throw new AssertionError(msg);
         }
+
+        // Re-arm tripwire, only for commands that actually succeeded: every
+        // command submitted as a line installs its submit stub, and a
+        // completed command is followed by either a re-arm or a console
+        // close — so the handler-replacement count must advance by at least
+        // two since the previous acceptance (or the close timestamp must
+        // have advanced instead). A skipped post-completion re-arm would
+        // otherwise surface one command later as an undebuggable hang
+        // (see https://github.com/aeshell/aesh/issues/634).
+        AeshTestThread testThread = (AeshTestThread) replThread;
+        long armNow = testThread.armCount().get();
+        long closeNow = testThread.connectionCloseNanos().get();
+        if (lastExitCode == 0 && armNow - armCountAtLastCompletion < 2
+                && closeNow == closeNanosAtLastCompletion) {
+            throw new AssertionError(
+                    "Command '" + command + "' completed but readline was not re-armed afterwards: "
+                            + (armNow - armCountAtLastCompletion)
+                            + " handler replacement(s) since last completion (expected >= 2 or console close). "
+                            + diagnoseTimeout("re-arm tripwire"));
+        }
+        armCountAtLastCompletion = armNow;
+        closeNanosAtLastCompletion = closeNow;
 
         return stripAnsi(stdoutCapture.toString(StandardCharsets.UTF_8));
     }
@@ -253,6 +297,119 @@ public class AeshLauncherImpl implements AeshLauncher {
                 }
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
+            }
+        }
+    }
+
+    /**
+     * Waits for the completion signal of the in-flight command.
+     *
+     * @throws RuntimeException with thread/queue diagnostics on timeout
+     */
+    private Object pollForSignal(String command, Duration timeout) throws InterruptedException {
+        Object signal = signalQueue.poll(timeout.toMillis(), TimeUnit.MILLISECONDS);
+        if (signal == null) {
+            throw new RuntimeException(
+                    "Command '" + command + "' did not complete within " + timeout + ". "
+                            + diagnoseTimeout("waiting for completion signal"));
+        }
+        Throwable death = readerDeathCause(signal);
+        if (death != null) {
+            // The input reader died while delivering this command: fail
+            // immediately with the cause instead of hanging on the timeout.
+            throw new RuntimeException(
+                    "Command '" + command + "' cannot complete: the REPL input reader thread died",
+                    death);
+        }
+        return signal;
+    }
+
+    /**
+     * Marker for reader-death signals offered by {@code AeshStreamConnection}.
+     * Duplicated here because the runtime class is not visible across the
+     * split classloader boundary; must stay identical to the runtime literal.
+     */
+    private static final String READER_DEATH_MARKER = "aesh-test-reader-death";
+
+    /**
+     * Extracts the reader-death cause from a death-marker signal, or
+     * {@code null} for ordinary completion signals.
+     */
+    private static Throwable readerDeathCause(Object signal) {
+        if (signal instanceof Object[] arr && arr.length >= 2
+                && READER_DEATH_MARKER.equals(arr[0]) && arr[1] instanceof Throwable t) {
+            return t;
+        }
+        return null;
+    }
+
+    /**
+     * Describes the REPL state for timeout failure messages: whether the
+     * REPL thread is alive and what it is doing, pending signals, and any
+     * other aesh-related threads that might be stuck (pipe stages, reader).
+     */
+    private String diagnoseTimeout(String context) {
+        StringBuilder sb = new StringBuilder("Diagnostics (").append(context).append("): ");
+        Thread repl = replThread;
+        sb.append("replAlive=").append(repl != null && repl.isAlive());
+        if (repl != null) {
+            sb.append(", replState=").append(repl.getState());
+        }
+        sb.append(", queuedSignals=").append(signalQueue != null ? signalQueue.size() : -1);
+        Map<Thread, StackTraceElement[]> all = Thread.getAllStackTraces();
+        if (repl instanceof AeshTestThread testThread) {
+            sb.append(", readerDeath=").append(testThread.readerDeath().get());
+            long armNow = testThread.lastReadlineArmNanos().get();
+            sb.append(", lastArmNanos=").append(armNow);
+            sb.append(", closeNanos=").append(testThread.connectionCloseNanos().get());
+            if (armNanosAtLastCompletion >= 0) {
+                sb.append(", rearmedSinceLastCompletion=").append(armNow > armNanosAtLastCompletion);
+            }
+        }
+        // Thread stacks come last: CI truncates long failure lines, so the
+        // verdict and scalars above must survive. The REPL thread is always
+        // included; other aesh threads follow within a hard length budget.
+        sb.append(", threads=").append(all.size()).append(" [");
+        if (repl != null && all.containsKey(repl)) {
+            appendThreadStack(sb, repl, all.get(repl), 8);
+        }
+        int others = 0;
+        for (Map.Entry<Thread, StackTraceElement[]> entry : all.entrySet()) {
+            Thread thread = entry.getKey();
+            if (thread == repl) {
+                continue;
+            }
+            String name = thread.getName();
+            if (!name.contains("aesh") && !name.contains("Aesh")) {
+                continue;
+            }
+            if (others++ > 0) {
+                sb.append("; ");
+            }
+            appendThreadStack(sb, thread, entry.getValue(), 4);
+            if (others >= 3 || sb.length() > 850) {
+                sb.append("...[truncated]");
+                break;
+            }
+        }
+        sb.append(']');
+        return sb.toString();
+    }
+
+    /**
+     * Appends one thread's name, state, and top stack frames using simple
+     * class names to conserve failure-message space.
+     */
+    private static void appendThreadStack(StringBuilder sb, Thread thread, StackTraceElement[] stack, int maxFrames) {
+        sb.append(thread.getName()).append('(').append(thread.getState()).append("): ");
+        if (stack != null) {
+            for (int i = 0; i < Math.min(stack.length, maxFrames); i++) {
+                if (i > 0) {
+                    sb.append(" <- ");
+                }
+                String className = stack[i].getClassName();
+                sb.append(className.substring(className.lastIndexOf('.') + 1))
+                        .append('#').append(stack[i].getMethodName());
             }
         }
     }

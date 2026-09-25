@@ -107,6 +107,7 @@ updates:
       # Caffeine
       - dependency-name: com.github.ben-manes.caffeine:caffeine
       # Jackson
+      - dependency-name: tools.jackson:jackson-bom
       - dependency-name: com.fasterxml.jackson:jackson-bom
       - dependency-name: com.fasterxml:classmate
       # Yasson
@@ -247,6 +248,10 @@ updates:
         update-types: ["version-update:semver-major", "version-update:semver-minor"]
       # Jakarta Data is managed by the Hibernate team
       - dependency-name: jakarta.data:jakarta.data-api
+      - dependency-name: tools.jackson:jackson-bom
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
+      - dependency-name: com.fasterxml.jackson:jackson-bom
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
     rebase-strategy: disabled
   - package-ecosystem: maven
     directory: "/"

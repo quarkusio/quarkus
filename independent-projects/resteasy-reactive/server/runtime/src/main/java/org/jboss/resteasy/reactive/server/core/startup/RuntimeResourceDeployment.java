@@ -306,13 +306,15 @@ public class RuntimeResourceDeployment {
             // the list is walked backwards because we remove by index as we go, so the matches come out reversed and
             // have to be flipped back before they are appended
             List<ServerRestHandler> readBodyRequestFilters = new ArrayList<>(1);
-            for (int i = handlers.size() - 2; i >= 0; i--) {
+            for (int i = 0; i < handlers.size() - 1;) {
                 var serverRestHandler = handlers.get(i);
                 if (serverRestHandler instanceof ResourceRequestFilterHandler resourceRequestFilterHandler) {
                     if (resourceRequestFilterHandler.isWithFormRead()) {
                         readBodyRequestFilters.add(handlers.remove(i));
+                        continue;
                     }
                 }
+                i++;
             }
             Collections.reverse(readBodyRequestFilters);
             handlers.addAll(readBodyRequestFilters);

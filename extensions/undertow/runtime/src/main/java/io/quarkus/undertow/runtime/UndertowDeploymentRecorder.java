@@ -27,7 +27,6 @@ import jakarta.servlet.MultipartConfigElement;
 import jakarta.servlet.Servlet;
 import jakarta.servlet.ServletContainerInitializer;
 import jakarta.servlet.ServletContext;
-import jakarta.servlet.ServletException;
 import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletResponse;
 import jakarta.servlet.SessionTrackingMode;
@@ -356,24 +355,16 @@ public class UndertowDeploymentRecorder {
         info.getValue().addInitParameter(name, value);
     }
 
-    public void setupSecurity(DeploymentManager manager) {
+    public static void setupSecurity(DeploymentManager manager) {
 
         CDI.current().select(ServletHttpSecurityPolicy.class).get().setDeployment(manager.getDeployment());
     }
 
-    public Handler<RoutingContext> startUndertow(ShutdownContext shutdown, ExecutorService executorService,
-            DeploymentManager manager, List<HandlerWrapper> wrappers) throws Exception {
-        shutdown.addShutdownTask(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    manager.stop();
-                } catch (ServletException e) {
-                    log.error("Failed to stop deployment", e);
-                }
-                manager.undeploy();
-            }
-        });
+    public static UndertowVertxHandler startUndertow(ExecutorService executorService,
+            DeploymentManager manager, List<HandlerWrapper> wrappers,
+            ServletRuntimeConfig servletRuntimeConfig,
+            VertxHttpBuildTimeConfig httpBuildTimeConfig,
+            VertxHttpConfig httpRuntimeConfig) throws Exception {
         HttpHandler main = manager.getDeployment().getHandler();
         for (HandlerWrapper i : wrappers) {
             main = i.wrap(main);
@@ -389,14 +380,14 @@ public class UndertowDeploymentRecorder {
         DefaultExchangeHandler defaultHandler = new DefaultExchangeHandler(ROOT_HANDLER);
 
         UndertowBufferAllocator allocator = new UndertowBufferAllocator(
-                servletRuntimeConfig.getValue().directBuffers().orElse(DEFAULT_DIRECT_BUFFERS),
-                servletRuntimeConfig.getValue().bufferSize()
+                servletRuntimeConfig.directBuffers().orElse(DEFAULT_DIRECT_BUFFERS),
+                servletRuntimeConfig.bufferSize()
                         .orElse(MemorySize.of(DEFAULT_BUFFER_SIZE)).asIntValue());
 
         UndertowOptionMap.Builder undertowOptions = UndertowOptionMap.builder();
-        undertowOptions.set(UndertowOptions.MAX_PARAMETERS, servletRuntimeConfig.getValue().maxParameters());
+        undertowOptions.set(UndertowOptions.MAX_PARAMETERS, servletRuntimeConfig.maxParameters());
         undertowOptions.set(UndertowOptions.RECORD_REQUEST_START_TIME,
-                servletRuntimeConfig.getValue().recordRequestStartTime());
+                servletRuntimeConfig.recordRequestStartTime());
         UndertowOptionMap undertowOptionMap = undertowOptions.getMap();
 
         Set<String> compressMediaTypes = httpBuildTimeConfig.enableCompression()
@@ -404,7 +395,7 @@ public class UndertowDeploymentRecorder {
                 : Collections.emptySet();
 
         Set<String> disallowedMethods;
-        Optional<Set<String>> configured = servletRuntimeConfig.getValue().disallowedMethods();
+        Optional<Set<String>> configured = servletRuntimeConfig.disallowedMethods();
         if (configured.isPresent()) {
             Set<String> normalized = new HashSet<>();
             for (String method : configured.get()) {
@@ -417,7 +408,7 @@ public class UndertowDeploymentRecorder {
             disallowedMethods = Collections.emptySet();
         }
 
-        return new Handler<RoutingContext>() {
+        return new UndertowVertxHandler() {
             @Override
             public void handle(RoutingContext event) {
                 if (!event.request().isEnded()) {
@@ -457,11 +448,11 @@ public class UndertowDeploymentRecorder {
                     });
                 }
 
-                Optional<MemorySize> maxBodySize = httpRuntimeConfig.getValue().limits().maxBodySize();
+                Optional<MemorySize> maxBodySize = httpRuntimeConfig.limits().maxBodySize();
                 if (maxBodySize.isPresent()) {
                     exchange.setMaxEntitySize(maxBodySize.get().asLongValue());
                 }
-                Duration readTimeout = httpRuntimeConfig.getValue().readTimeout();
+                Duration readTimeout = httpRuntimeConfig.readTimeout();
                 exchange.setReadTimeout(readTimeout.toMillis());
 
                 exchange.setUndertowOptions(undertowOptionMap);

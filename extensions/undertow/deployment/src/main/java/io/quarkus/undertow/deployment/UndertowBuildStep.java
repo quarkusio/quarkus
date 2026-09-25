@@ -1,6 +1,5 @@
 package io.quarkus.undertow.deployment;
 
-import static io.quarkus.deployment.annotations.ExecutionTime.RUNTIME_INIT;
 import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
 import static io.undertow.servlet.api.SecurityInfo.EmptyRoleSemantic.AUTHENTICATE;
 import static io.undertow.servlet.api.SecurityInfo.EmptyRoleSemantic.DENY;
@@ -17,6 +16,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
@@ -28,6 +28,7 @@ import jakarta.enterprise.inject.Typed;
 import jakarta.inject.Inject;
 import jakarta.servlet.ServletContainerInitializer;
 import jakarta.servlet.ServletContext;
+import jakarta.servlet.ServletException;
 import jakarta.servlet.SessionTrackingMode;
 import jakarta.servlet.annotation.HandlesTypes;
 import jakarta.servlet.annotation.MultipartConfig;
@@ -89,6 +90,9 @@ import io.quarkus.arc.deployment.ContextRegistrationPhaseBuildItem.ContextConfig
 import io.quarkus.arc.deployment.CustomScopeBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.arc.processor.AnnotationsTransformer;
+import io.quarkus.arc.runtime.BeanContainer;
+import io.quarkus.core.Phase;
+import io.quarkus.core.deployment.action.ActionBuilder;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.Feature;
@@ -118,15 +122,19 @@ import io.quarkus.undertow.runtime.HttpSessionContext;
 import io.quarkus.undertow.runtime.QuarkusIdentityManager;
 import io.quarkus.undertow.runtime.ServletHttpSecurityPolicy;
 import io.quarkus.undertow.runtime.ServletProducer;
+import io.quarkus.undertow.runtime.ServletRuntimeConfig;
 import io.quarkus.undertow.runtime.ServletSecurityInfoProxy;
 import io.quarkus.undertow.runtime.ServletSecurityInfoSubstitution;
 import io.quarkus.undertow.runtime.UndertowDeploymentRecorder;
 import io.quarkus.undertow.runtime.UndertowHandlersConfServletExtension;
+import io.quarkus.undertow.runtime.UndertowVertxHandler;
 import io.quarkus.vertx.http.deployment.DefaultRouteBuildItem;
 import io.quarkus.vertx.http.deployment.HttpRootPathBuildItem;
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
 import io.quarkus.vertx.http.runtime.VertxHttpBuildTimeConfig;
+import io.quarkus.vertx.http.runtime.VertxHttpConfig;
 import io.undertow.servlet.api.DeploymentInfo;
+import io.undertow.servlet.api.DeploymentManager;
 import io.undertow.servlet.api.FilterInfo;
 import io.undertow.servlet.api.HttpMethodSecurityInfo;
 import io.undertow.servlet.api.SecurityConstraint;
@@ -135,8 +143,6 @@ import io.undertow.servlet.api.ServletSecurityInfo;
 import io.undertow.servlet.api.ServletSessionConfig;
 import io.undertow.servlet.api.WebResourceCollection;
 import io.undertow.servlet.handlers.DefaultServlet;
-import io.vertx.core.Handler;
-import io.vertx.ext.web.RoutingContext;
 
 //TODO: break this up, it is getting too big
 public class UndertowBuildStep {
@@ -179,24 +185,55 @@ public class UndertowBuildStep {
     }
 
     @BuildStep
-    @Record(RUNTIME_INIT)
     public ServiceStartBuildItem boot(
-            UndertowDeploymentRecorder recorder,
+            ActionBuilder action,
             ServletDeploymentManagerBuildItem servletDeploymentManagerBuildItem,
             List<HttpHandlerWrapperBuildItem> wrappers,
-            ShutdownContextBuildItem shutdown,
             Consumer<DefaultRouteBuildItem> undertowProducer,
             BuildProducer<RouteBuildItem> routeProducer,
             ExecutorBuildItem executorBuildItem,
             ServletContextPathBuildItem servletContextPathBuildItem,
             Capabilities capabilities) throws Exception {
 
-        if (capabilities.isPresent(Capability.SECURITY)) {
-            recorder.setupSecurity(servletDeploymentManagerBuildItem.getDeploymentManager());
-        }
-        Handler<RoutingContext> ut = recorder.startUndertow(shutdown, executorBuildItem.getExecutorProxy(),
-                servletDeploymentManagerBuildItem.getDeploymentManager(),
-                wrappers.stream().map(HttpHandlerWrapperBuildItem::getValue).collect(Collectors.toList()));
+        boolean hasSecurity = capabilities.isPresent(Capability.SECURITY);
+        var deploymentManager = servletDeploymentManagerBuildItem.getDeploymentManager();
+        var handlerWrappers = wrappers.stream()
+                .map(HttpHandlerWrapperBuildItem::getValue)
+                .toList();
+
+        action.forService(UndertowVertxHandler.class, "undertow")
+                .require(DeploymentManager.class)
+                .require(BeanContainer.class)
+                .require(ScheduledExecutorService.class)
+                .require(ServletRuntimeConfig.class)
+                .require(VertxHttpBuildTimeConfig.class)
+                .require(VertxHttpConfig.class)
+                .after("io.quarkus.arc.shutdown-gateway")
+                .action((ctx, manager, beanContainer, executor, servletRuntimeConfig, httpBuildTimeConfig,
+                        httpRuntimeConfig) -> {
+                    if (hasSecurity) {
+                        UndertowDeploymentRecorder.setupSecurity(manager);
+                    }
+
+                    ctx.onStop(() -> {
+                        try {
+                            manager.stop();
+                        } catch (ServletException e) {
+                            // ignore / log
+                        }
+                        manager.undeploy();
+                    });
+
+                    return UndertowDeploymentRecorder.startUndertow(
+                            executor,
+                            manager,
+                            handlerWrappers,
+                            servletRuntimeConfig,
+                            httpBuildTimeConfig,
+                            httpRuntimeConfig);
+                });
+
+        UndertowVertxHandler ut = action.getRecorderProxy(UndertowVertxHandler.class, "undertow");
 
         if (servletContextPathBuildItem.getServletContextPath().equals("/")) {
             undertowProducer.accept(new DefaultRouteBuildItem(ut));
@@ -345,7 +382,7 @@ public class UndertowBuildStep {
     public void addTypedAnnotations(
             BuildProducer<AnnotationsTransformerBuildItem> annotationsTransformer) {
 
-        annotationsTransformer.produce(new io.quarkus.arc.deployment.AnnotationsTransformerBuildItem(
+        annotationsTransformer.produce(new AnnotationsTransformerBuildItem(
                 new AnnotationsTransformer() {
 
                     @Override
@@ -377,7 +414,9 @@ public class UndertowBuildStep {
 
     @Record(STATIC_INIT)
     @BuildStep()
-    public ServletDeploymentManagerBuildItem build(List<ServletBuildItem> servlets,
+    public ServletDeploymentManagerBuildItem build(
+            ActionBuilder action,
+            List<ServletBuildItem> servlets,
             List<FilterBuildItem> filters,
             List<ListenerBuildItem> listeners,
             List<ServletInitParamBuildItem> initParams,
@@ -696,14 +735,17 @@ public class UndertowBuildStep {
             knownClasses = loggingDecorateBuildItem.get().getKnowClasses();
         }
 
-        return new ServletDeploymentManagerBuildItem(
-                recorder.bootServletContainer(deployment,
-                        bc.getValue(),
-                        launchMode.getLaunchMode(),
-                        shutdownContext,
-                        logBuildTimeConfig.decorateStacktraces(),
-                        scrMainJava,
-                        knownClasses));
+        DeploymentManager deploymentManager = recorder.bootServletContainer(deployment,
+                bc.getValue(),
+                launchMode.getLaunchMode(),
+                shutdownContext,
+                logBuildTimeConfig.decorateStacktraces(),
+                scrMainJava,
+                knownClasses);
+
+        action.aliasRecorderValue(DeploymentManager.class, deploymentManager, Phase.STATIC_INIT);
+
+        return new ServletDeploymentManagerBuildItem(deploymentManager);
 
     }
 

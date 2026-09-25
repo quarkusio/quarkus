@@ -12,8 +12,11 @@ Refer to the https://docs.hibernate.org/orm/8.0/migration-guide/[Hibernate ORM 8
 * https://docs.hibernate.org/orm/8.0/migration-guide/#session-replicate[`Session.replicate()` and `ReplicationMode` were removed]. Consider `StatelessSession.upsert()` where appropriate.
 * https://docs.hibernate.org/orm/8.0/migration-guide/#stateless[`StatelessSession.insert()` no longer returns an identifier, and `fetch()` now returns the fetched value] to comply with Jakarta Persistence's `EntityAgent` API.
 * https://docs.hibernate.org/orm/8.0/migration-guide/#query-api[Query APIs now distinguish selection queries from mutation statements]. Mutation queries should use `@NamedStatement` or `@NamedNativeStatement` instead of `@NamedQuery` or `@NamedNativeQuery`.
+* https://docs.hibernate.org/orm/8.0/migration-guide/#api-changes[Hibernate ORM 8 removed the deprecated `org.hibernate.jpa.QueryHints` class]. Replace Hibernate-specific constants such as `QueryHints.HINT_CACHEABLE` with `org.hibernate.jpa.HibernateHints.HINT_CACHEABLE`; use `org.hibernate.jpa.SpecHints` for Jakarta Persistence hints. To list supported hint names, use `AvailableHints.getDefinedHints()` instead of `QueryHints.getDefinedHints()`.
 * https://docs.hibernate.org/orm/8.0/migration-guide/#generic-generator[`@GenericGenerator` has changed]: existing declarations using `name` or `strategy` must be updated to the new form.
 * https://docs.hibernate.org/orm/8.0/migration-guide/#transform-removal[The deprecated `org.hibernate.transform` package was removed]. Migrate result transformations to `TupleTransformer`, constructor expressions, or `@ConstructorResult` as appropriate.
+
+TODO: Add an automatic `QueryHints` migration recipe to https://github.com/quarkusio/quarkus-updates/[quarkus-updates] and https://github.com/hibernate/hibernate-migration-recipes[hibernate-migration-recipes].
 
 === Behavioral changes
 

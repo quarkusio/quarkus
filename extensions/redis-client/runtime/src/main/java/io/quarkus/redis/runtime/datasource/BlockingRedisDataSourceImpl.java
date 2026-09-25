@@ -75,14 +75,25 @@ public class BlockingRedisDataSourceImpl implements RedisDataSource {
                 new ReactiveTransactionalRedisDataSourceImpl(dataSource, th), timeout);
 
         try {
-            connection.send(Request.cmd(Command.MULTI)).await().atMost(timeout);
+            try {
+                connection.send(Request.cmd(Command.MULTI)).await().atMost(timeout);
+            } catch (Throwable e) {
+                // `MULTI` may fail, in which case we can just send `DISCARD` unconditionally
+                try {
+                    connection.send(Request.cmd(Command.DISCARD)).await().atMost(timeout);
+                } catch (Throwable e2) {
+                    e.addSuppressed(e2);
+                }
+                throw e;
+            }
+
             try {
                 tx.accept(source);
-            } catch (Exception e) {
+            } catch (Throwable e) {
                 if (!source.discarded()) {
                     try {
                         connection.send(Request.cmd(Command.DISCARD)).await().atMost(timeout);
-                    } catch (Exception e2) {
+                    } catch (Throwable e2) {
                         e.addSuppressed(e2);
                     }
                 }
@@ -112,19 +123,42 @@ public class BlockingRedisDataSourceImpl implements RedisDataSource {
                 new ReactiveTransactionalRedisDataSourceImpl(dataSource, th), timeout);
 
         try {
-            Request cmd = Request.cmd(Command.WATCH);
-            for (String watchedKey : watchedKeys) {
-                cmd.arg(watchedKey);
+            try {
+                Request cmd = Request.cmd(Command.WATCH);
+                for (String watchedKey : watchedKeys) {
+                    cmd.arg(watchedKey);
+                }
+                connection.send(cmd).await().atMost(timeout);
+            } catch (Throwable e) {
+                // `WATCH` may fail, in which case we can just send `UNWATCH` unconditionally
+                try {
+                    connection.send(Request.cmd(Command.UNWATCH)).await().atMost(timeout);
+                } catch (Throwable e2) {
+                    e.addSuppressed(e2);
+                }
+                throw e;
             }
-            connection.send(cmd).await().atMost(timeout);
-            connection.send(Request.cmd(Command.MULTI)).await().atMost(timeout);
+
+            try {
+                connection.send(Request.cmd(Command.MULTI)).await().atMost(timeout);
+            } catch (Exception e) {
+                // `MULTI` may fail, in which case we can just send `DISCARD` unconditionally
+                // (it automatically unwatches all watched keys)
+                try {
+                    connection.send(Request.cmd(Command.DISCARD)).await().atMost(timeout);
+                } catch (Throwable e2) {
+                    e.addSuppressed(e2);
+                }
+                throw e;
+            }
+
             try {
                 tx.accept(source);
-            } catch (Exception e) {
+            } catch (Throwable e) {
                 if (!source.discarded()) {
                     try {
                         connection.send(Request.cmd(Command.DISCARD)).await().atMost(timeout);
-                    } catch (Exception e2) {
+                    } catch (Throwable e2) {
                         e.addSuppressed(e2);
                     }
                 }
@@ -156,24 +190,48 @@ public class BlockingRedisDataSourceImpl implements RedisDataSource {
                 new ReactiveTransactionalRedisDataSourceImpl(dataSource, th), timeout);
 
         try {
-            Request cmd = Request.cmd(Command.WATCH);
-            for (String watchedKey : watchedKeys) {
-                cmd.arg(watchedKey);
-            }
-            connection.send(cmd).await().atMost(timeout);
-            I input = null;
             try {
-                input = preTx.apply(
-                        new BlockingRedisDataSourceImpl(reactive.getVertx(), reactive.redis, connection, timeout));
-            } catch (Exception e) {
+                Request cmd = Request.cmd(Command.WATCH);
+                for (String watchedKey : watchedKeys) {
+                    cmd.arg(watchedKey);
+                }
+                connection.send(cmd).await().atMost(timeout);
+            } catch (Throwable e) {
+                // `WATCH` may fail, in which case we can just send `UNWATCH` unconditionally
                 try {
                     connection.send(Request.cmd(Command.UNWATCH)).await().atMost(timeout);
-                } catch (Exception e2) {
+                } catch (Throwable e2) {
                     e.addSuppressed(e2);
                 }
                 throw e;
             }
-            connection.send(Request.cmd(Command.MULTI)).await().atMost(timeout);
+
+            I input = null;
+            try {
+                input = preTx.apply(
+                        new BlockingRedisDataSourceImpl(reactive.getVertx(), reactive.redis, connection, timeout));
+            } catch (Throwable e) {
+                try {
+                    connection.send(Request.cmd(Command.UNWATCH)).await().atMost(timeout);
+                } catch (Throwable e2) {
+                    e.addSuppressed(e2);
+                }
+                throw e;
+            }
+
+            try {
+                connection.send(Request.cmd(Command.MULTI)).await().atMost(timeout);
+            } catch (Throwable e) {
+                // `MULTI` may fail, in which case we can just send `DISCARD` unconditionally
+                // (it automatically unwatches all watched keys)
+                try {
+                    connection.send(Request.cmd(Command.DISCARD)).await().atMost(timeout);
+                } catch (Throwable e2) {
+                    e.addSuppressed(e2);
+                }
+                throw e;
+            }
+
             try {
                 tx.accept(input, source);
             } catch (Exception e) {

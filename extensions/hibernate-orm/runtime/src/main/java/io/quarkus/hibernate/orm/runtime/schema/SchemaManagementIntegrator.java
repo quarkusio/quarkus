@@ -114,15 +114,6 @@ public class SchemaManagementIntegrator implements Integrator, DatabaseSchemaPro
         evictCaches(holder);
     }
 
-    public static void populatePersistenceUnits() {
-        if (!LaunchMode.current().isDevOrTest()) {
-            throw new IllegalStateException("Can only be used in dev or test mode");
-        }
-        for (String val : metadataMap.keySet()) {
-            populatePersistenceUnit(val);
-        }
-    }
-
     /**
      * Executes the data init script again, for persistence units whose schema is managed by another framework
      * (e.g. Flyway) and thus was not recreated by {@link #recreateDatabase(String)}.
@@ -227,11 +218,6 @@ public class SchemaManagementIntegrator implements Integrator, DatabaseSchemaPro
             return;
         }
         populatePersistenceUnit(name);
-    }
-
-    @Override
-    public void populateAllDatabases() {
-        populatePersistenceUnits();
     }
 
     static class Holder {

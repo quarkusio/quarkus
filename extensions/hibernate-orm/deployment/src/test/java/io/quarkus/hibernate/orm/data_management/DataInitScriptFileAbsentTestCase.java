@@ -14,7 +14,7 @@ public class DataInitScriptFileAbsentTestCase {
             .setExpectedException(ConfigurationException.class)
             .withApplicationRoot((jar) -> jar
                     .addClasses(MyEntity.class)
-                    .addAsResource("application-other-load-script-test.properties", "application.properties"));
+                    .addAsResource("application-other-data-init-script-test.properties", "application.properties"));
 
     @Test
     public void testDataInitScriptFileAbsent() {

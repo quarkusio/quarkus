@@ -18,11 +18,4 @@ public interface DatabaseSchemaProvider {
      */
     default void populateDatabase(String dbName) {
     }
-
-    /**
-     * Loads data into all databases, once every provider had a chance to reset the schemas
-     * through {@link #resetAllDatabases()}.
-     */
-    default void populateAllDatabases() {
-    }
 }

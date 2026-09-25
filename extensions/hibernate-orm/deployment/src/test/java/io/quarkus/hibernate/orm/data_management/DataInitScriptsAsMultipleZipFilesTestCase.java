@@ -14,7 +14,7 @@ public class DataInitScriptsAsMultipleZipFilesTestCase {
     static QuarkusExtensionTest runner = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(MyEntity.class, InitScriptTestResource.class)
-                    .addAsResource("application-load-scripts-as-multiple-zip-files-test.properties",
+                    .addAsResource("application-data-init-scripts-as-multiple-zip-files-test.properties",
                             "application.properties")
                     .addAsResource("import-multiple-load-scripts-1.zip")
                     .addAsResource("import-multiple-load-scripts-2.zip"));

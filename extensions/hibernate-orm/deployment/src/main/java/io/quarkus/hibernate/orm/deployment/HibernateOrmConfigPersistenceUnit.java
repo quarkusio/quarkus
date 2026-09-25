@@ -840,7 +840,7 @@ public interface HibernateOrmConfigPersistenceUnit {
          * The scripts are executed regardless of whether the schema is created by Hibernate ORM
          * or managed by another tool such as Flyway or Liquibase,
          * as long as `quarkus.hibernate-orm.data-management.strategy` is `create`
-         * (the default in dev and test modes, and whenever Hibernate ORM creates the schema).
+         * (the default in dev and test modes only).
          *
          * The files are retrieved from the classpath resources,
          * so they must be located in the resources directory (e.g. `src/main/resources`).

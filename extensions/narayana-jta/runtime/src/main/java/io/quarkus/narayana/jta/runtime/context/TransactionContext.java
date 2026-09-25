@@ -21,6 +21,8 @@ import jakarta.transaction.TransactionManager;
 import jakarta.transaction.TransactionScoped;
 import jakarta.transaction.TransactionSynchronizationRegistry;
 
+import org.jboss.logging.Logger;
+
 import com.arjuna.ats.internal.jta.transaction.arjunacore.TransactionSynchronizationRegistryImple;
 
 import io.quarkus.arc.ContextInstanceHandle;
@@ -33,6 +35,7 @@ import io.quarkus.arc.impl.LazyValue;
  * {@link jakarta.enterprise.context.spi.Context} class which defines the {@link TransactionScoped} context.
  */
 public class TransactionContext implements InjectableContext {
+    private static final Logger LOG = Logger.getLogger(TransactionContext.class);
     // marker object to be put as a key for SynchronizationRegistry to gather all beans created in the scope
     private static final Object TRANSACTION_CONTEXT_MARKER = new Object();
 
@@ -202,9 +205,21 @@ public class TransactionContext implements InjectableContext {
 
         private final ConcurrentMap<Contextual<?>, ContextInstanceHandle<?>> mapBeanToInstanceHandle = new ConcurrentHashMap<>();
 
+        /**
+         * The context state registers itself as a synchronization so that the beans of the context are destroyed
+         * when the transaction completes. A transaction that is already completing (typically marked for rollback,
+         * with the {@code @BeforeDestroyed(TransactionScoped.class)} event instantiating a bean for the first time)
+         * no longer accepts synchronizations; in that case the beans created in the context are simply discarded
+         * with the transaction.
+         */
         TransactionContextState(Transaction transaction) {
             try {
-                transaction.registerSynchronization(this);
+                if (transaction.getStatus() == Status.STATUS_ACTIVE) {
+                    transaction.registerSynchronization(this);
+                } else {
+                    LOG.debugf("Transaction %s is no longer active, the transaction scoped beans created from now on"
+                            + " will not be destroyed when it completes", transaction);
+                }
             } catch (RollbackException | SystemException e) {
                 throw new RuntimeException("Cannot register synchronization", e);
             }

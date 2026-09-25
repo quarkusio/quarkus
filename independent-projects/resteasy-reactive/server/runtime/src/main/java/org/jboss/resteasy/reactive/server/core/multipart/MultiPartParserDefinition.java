@@ -323,7 +323,7 @@ public class MultiPartParserDefinition implements FormParserFactory.ParserDefini
                 data.deleteFiles();
                 throw new WebApplicationException(Response.Status.REQUEST_ENTITY_TOO_LARGE);
             }
-            if (this.maxIndividualFileSize > 0 && this.currentFileSize > this.maxIndividualFileSize) {
+            if (filePart && this.maxIndividualFileSize > 0 && this.currentFileSize > this.maxIndividualFileSize) {
                 data.deleteFiles();
                 throw new WebApplicationException(Response.Status.REQUEST_ENTITY_TOO_LARGE);
             }

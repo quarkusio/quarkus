@@ -1,0 +1,16 @@
+---
+artifact: ${project.groupId}:${project.artifactId}:${project.version}
+name: "OIDC Token Propagation for GraphQL client"
+metadata:
+  keywords:
+  - "oauth2"
+  - "openid-connect"
+  - "oidc"
+  - "token-propagation"
+  - "graphql-client"
+  guide: "https://quarkus.io/guides/security-openid-connect-client-reference"
+  categories:
+  - "security"
+  status: "preview"
+  config:
+  - "quarkus.smallrye-graphql-client-oidc-token-propagation."

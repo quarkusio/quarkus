@@ -15,10 +15,12 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.devjsonrpc.spi.JsonRPCProvidersBuildItem;
 import io.quarkus.devui.spi.page.CardPageBuildItem;
 import io.quarkus.devui.spi.page.Page;
+import io.quarkus.produi.spi.page.ProdUIPageBuildItem;
 import io.quarkus.smallrye.reactivemessaging.deployment.ReactiveMessagingDotNames;
 import io.quarkus.smallrye.reactivemessaging.runtime.dev.ui.Connectors;
 import io.quarkus.smallrye.reactivemessaging.runtime.dev.ui.DevConsoleRecorder;
 import io.quarkus.smallrye.reactivemessaging.runtime.dev.ui.ReactiveMessagingJsonRpcService;
+import io.quarkus.smallrye.reactivemessaging.runtime.produi.ReactiveMessagingProdUIService;
 
 public class ReactiveMessagingDevUIProcessor {
 
@@ -67,5 +69,20 @@ public class ReactiveMessagingDevUIProcessor {
     @BuildStep(onlyIf = IsLocalDevelopment.class)
     JsonRPCProvidersBuildItem createJsonRPCServiceForCache() {
         return new JsonRPCProvidersBuildItem(ReactiveMessagingJsonRpcService.class);
+    }
+
+    @BuildStep
+    JsonRPCProvidersBuildItem createProdUIJsonRPCService() {
+        return new JsonRPCProvidersBuildItem(ReactiveMessagingProdUIService.class);
+    }
+
+    @BuildStep
+    ProdUIPageBuildItem createProdUI() {
+        ProdUIPageBuildItem page = new ProdUIPageBuildItem();
+        page.addPage(Page.webComponentPageBuilder()
+                .title("Channels")
+                .icon("font-awesome-solid:diagram-project")
+                .componentLink("qwc-smallrye-reactive-messaging-channels.js"));
+        return page;
     }
 }

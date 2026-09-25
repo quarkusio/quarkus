@@ -3,6 +3,7 @@ package io.quarkus.swaggerui.deployment;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URI;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -25,6 +26,7 @@ import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.HotDeploymentWatchedFileBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
+import io.quarkus.deployment.util.UriNormalizationUtil;
 import io.quarkus.devui.spi.Constants;
 import io.quarkus.devui.spi.DevContextBuildItem;
 import io.quarkus.maven.dependency.GACT;
@@ -108,6 +110,7 @@ public class SwaggerUiProcessor {
                 devUIContextRoot = "";
             }
 
+            String swaggerUiPath = devUIContextRoot + nonApplicationRootPathBuildItem.resolvePath(swaggerUiConfig.path());
             Map<String, String> urls = new HashMap<>();
             openapi.documents().forEach((documentName, documentConfig) -> {
                 String documentPath = documentConfig.path();
@@ -121,10 +124,10 @@ public class SwaggerUiProcessor {
 
                 String openApiPath = devUIContextRoot
                         + nonApplicationRootPathBuildItem.resolvePath(documentPath);
-                urls.put(documentName, openApiPath);
+                urls.put(documentName,
+                        UriNormalizationUtil.relativize(URI.create(swaggerUiPath), URI.create(openApiPath)).toString());
             });
 
-            String swaggerUiPath = devUIContextRoot + nonApplicationRootPathBuildItem.resolvePath(swaggerUiConfig.path());
             ThemeHref theme = swaggerUiConfig.theme().orElse(ThemeHref.feeling_blue);
 
             NonApplicationRootPathBuildItem indexRootPathBuildItem = null;
@@ -466,4 +469,5 @@ public class SwaggerUiProcessor {
     private static boolean shouldInclude(LaunchModeBuildItem launchMode, SwaggerUiConfig swaggerUiConfig) {
         return launchMode.getLaunchMode().isDevOrTest() || swaggerUiConfig.alwaysInclude();
     }
+
 }

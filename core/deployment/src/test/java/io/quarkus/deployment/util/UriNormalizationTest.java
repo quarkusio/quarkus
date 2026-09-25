@@ -1,5 +1,7 @@
 package io.quarkus.deployment.util;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import java.net.URI;
 
 import org.junit.jupiter.api.Assertions;
@@ -58,5 +60,17 @@ public class UriNormalizationTest {
                 () -> UriNormalizationUtil.normalizeWithBase(root, "junk/../../example", false));
         Assertions.assertThrows(IllegalArgumentException.class,
                 () -> UriNormalizationUtil.normalizeWithBase(root, "../example", false));
+    }
+
+    @Test
+    void testRelativize() {
+        assertThat(UriNormalizationUtil.relativize(URI.create("/q/swagger-ui"), URI.create("/q/openapi")).toString())
+                .isEqualTo("../openapi");
+        assertThat(UriNormalizationUtil.relativize(URI.create("/custom/ui"), URI.create("/q/openapi")).toString())
+                .isEqualTo("../../q/openapi");
+        assertThat(UriNormalizationUtil.relativize(URI.create("/q"), URI.create("/q/openapi")).toString())
+                .isEqualTo("openapi");
+        assertThat(UriNormalizationUtil.relativize(URI.create("https://quarkus.io/swagger-ui"),
+                URI.create("https://example.org/openapi")).toString()).isEqualTo("https://example.org/openapi");
     }
 }

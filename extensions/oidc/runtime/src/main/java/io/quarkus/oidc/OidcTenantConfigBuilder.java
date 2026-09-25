@@ -53,6 +53,7 @@ public final class OidcTenantConfigBuilder extends OidcClientCommonConfigBuilder
     private static final class OidcTenantConfigImpl extends OidcClientCommonConfigImpl implements OidcTenantConfig {
         private final Optional<String> tenantId;
         private final boolean tenantEnabled;
+        private final Duration initializationRetryInterval;
         private final Optional<ApplicationType> applicationType;
         private final Optional<String> authorizationPath;
         private final Optional<String> userInfoPath;
@@ -82,6 +83,7 @@ public final class OidcTenantConfigBuilder extends OidcClientCommonConfigBuilder
             super(builder);
             this.tenantId = builder.tenantId;
             this.tenantEnabled = builder.tenantEnabled;
+            this.initializationRetryInterval = builder.initializationRetryInterval;
             this.applicationType = builder.applicationType;
             this.authorizationPath = builder.authorizationPath;
             this.userInfoPath = builder.userInfoPath;
@@ -116,6 +118,11 @@ public final class OidcTenantConfigBuilder extends OidcClientCommonConfigBuilder
         @Override
         public boolean tenantEnabled() {
             return tenantEnabled;
+        }
+
+        @Override
+        public Duration initializationRetryInterval() {
+            return initializationRetryInterval;
         }
 
         @Override
@@ -241,6 +248,7 @@ public final class OidcTenantConfigBuilder extends OidcClientCommonConfigBuilder
 
     private Optional<String> tenantId;
     private boolean tenantEnabled;
+    private Duration initializationRetryInterval;
     private Optional<ApplicationType> applicationType;
     private Optional<String> authorizationPath;
     private Optional<String> userInfoPath;
@@ -275,6 +283,7 @@ public final class OidcTenantConfigBuilder extends OidcClientCommonConfigBuilder
         super(Objects.requireNonNull(mapping));
         this.tenantId = mapping.tenantId();
         this.tenantEnabled = mapping.tenantEnabled();
+        this.initializationRetryInterval = mapping.initializationRetryInterval();
         this.applicationType = mapping.applicationType();
         this.authorizationPath = mapping.authorizationPath();
         this.userInfoPath = mapping.userInfoPath();
@@ -341,6 +350,15 @@ public final class OidcTenantConfigBuilder extends OidcClientCommonConfigBuilder
      */
     public OidcTenantConfigBuilder tenantEnabled(boolean tenantEnabled) {
         this.tenantEnabled = tenantEnabled;
+        return this;
+    }
+
+    /**
+     * @param initializationRetryInterval {@link OidcTenantConfig#initializationRetryInterval()}
+     * @return this builder
+     */
+    public OidcTenantConfigBuilder initializationRetryInterval(Duration initializationRetryInterval) {
+        this.initializationRetryInterval = initializationRetryInterval;
         return this;
     }
 

@@ -62,9 +62,15 @@ public class AmazonLambdaHttpProcessor {
 
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
-    public void setupConfig(LambdaHttpRecorder recorder) {
+    public void setupConfig(LambdaHttpRecorder recorder, LaunchModeBuildItem launchMode) {
         // force config to be set as static var in the recorder - TODO - rewrite this, it shouldn't use static vars
         recorder.setConfig();
+
+        // Register the mock event server port to ValueRegistry in test mode
+        // so that @TestHTTPResource and @TestHTTPEndpoint annotations can use it
+        if (launchMode.getLaunchMode() == LaunchMode.TEST) {
+            recorder.registerMockEventServerPort();
+        }
     }
 
     @BuildStep

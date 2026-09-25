@@ -15,12 +15,20 @@ public final class PersistenceUnitDefinedBuildItem extends MultiBuildItem {
 
     private final String persistenceUnitName;
     private final Optional<String> dataSourceName;
+    private final Optional<String> clientName;
     private final Set<ProgrammingParadigm> paradigms;
 
     public PersistenceUnitDefinedBuildItem(String persistenceUnitName,
             Optional<String> dataSourceName, Set<ProgrammingParadigm> paradigms) {
+        this(persistenceUnitName, dataSourceName, Optional.empty(), paradigms);
+    }
+
+    public PersistenceUnitDefinedBuildItem(String persistenceUnitName,
+            Optional<String> dataSourceName, Optional<String> clientName,
+            Set<ProgrammingParadigm> paradigms) {
         this.persistenceUnitName = persistenceUnitName;
         this.dataSourceName = dataSourceName;
+        this.clientName = clientName;
         this.paradigms = paradigms;
     }
 
@@ -30,6 +38,10 @@ public final class PersistenceUnitDefinedBuildItem extends MultiBuildItem {
 
     public Optional<String> getDataSourceName() {
         return dataSourceName;
+    }
+
+    public Optional<String> getClientName() {
+        return clientName;
     }
 
     public Set<ProgrammingParadigm> getParadigms() {

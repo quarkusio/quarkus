@@ -49,6 +49,12 @@ public interface EnvVarHolder {
                                 target, extractConfigmapPrefix(cm, prefixMap).orElse(null)))));
         c.secrets().ifPresent(sl -> sl.forEach(s -> validator.process(KubernetesEnvBuildItem.createFromSecret(s,
                 target, extractSecretPrefix(s, prefixMap).orElse(null)))));
+        c.optionalConfigmaps()
+                .ifPresent(
+                        cl -> cl.forEach(cm -> validator.process(KubernetesEnvBuildItem.createFromConfigMap(cm,
+                                target, extractConfigmapPrefix(cm, prefixMap).orElse(null), true))));
+        c.optionalSecrets().ifPresent(sl -> sl.forEach(s -> validator.process(KubernetesEnvBuildItem.createFromSecret(s,
+                target, extractSecretPrefix(s, prefixMap).orElse(null), true))));
         c.mapping().forEach(
                 (varName, config) -> validator.process(KubernetesEnvBuildItem.createFromResourceKey(varName, config.withKey(),
                         config.fromSecret().orElse(null), config.fromConfigmap().orElse(null), target)));

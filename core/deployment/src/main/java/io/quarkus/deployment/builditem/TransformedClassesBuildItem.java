@@ -11,10 +11,6 @@ import io.quarkus.builder.item.SimpleBuildItem;
 
 /**
  * The results of applying bytecode transformation to a class.
- *
- * Note that this has also been abused somewhat to also represent removed
- * resources, as the logic is the same, and it avoids having two separate mechanisms
- * that essentially do the same thing.
  */
 public final class TransformedClassesBuildItem extends SimpleBuildItem {
 

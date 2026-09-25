@@ -10,6 +10,8 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.function.BiConsumer;
 
+import io.quarkus.maven.dependency.ArtifactKey;
+
 /**
  * We used to have a full index of the resources present in the classpath stored in ClassLoaderState of QuarkusClassLoader.
  * <p>
@@ -66,18 +68,32 @@ public class ClassPathResourceIndex {
     private final Set<String> relodableClasses;
     private final Set<String> parentFirstResources;
     private final Set<String> bannedResources;
+    private final Map<ArtifactKey, Set<String>> removedResourcesByArtifact;
+    private final Set<String> removedResources;
 
     private ClassPathResourceIndex(Map<String, ClassPathElement[]> resourceMapping,
             Map<String, ClassPathElement> transformedClasses,
             Set<String> reloadableClasses,
             Set<String> parentFirstResources,
-            Set<String> bannedResources) {
+            Set<String> bannedResources,
+            Map<ArtifactKey, Set<String>> removedResourcesByArtifact) {
         this.resourceMapping = resourceMapping.isEmpty() ? Map.of() : Collections.unmodifiableMap(resourceMapping);
         this.transformedClasses = transformedClasses.isEmpty() ? Map.of() : transformedClasses;
         this.relodableClasses = reloadableClasses.isEmpty() ? Set.of() : Collections.unmodifiableSet(reloadableClasses);
         this.parentFirstResources = parentFirstResources.isEmpty() ? Set.of()
                 : Collections.unmodifiableSet(parentFirstResources);
         this.bannedResources = bannedResources.isEmpty() ? Set.of() : Collections.unmodifiableSet(bannedResources);
+        this.removedResourcesByArtifact = removedResourcesByArtifact.isEmpty() ? Map.of()
+                : Collections.unmodifiableMap(removedResourcesByArtifact);
+        if (removedResourcesByArtifact.isEmpty()) {
+            this.removedResources = Set.of();
+        } else {
+            Set<String> flat = new HashSet<>();
+            for (Set<String> resources : removedResourcesByArtifact.values()) {
+                flat.addAll(resources);
+            }
+            this.removedResources = Collections.unmodifiableSet(flat);
+        }
     }
 
     public Set<String> getReloadableClasses() {
@@ -90,6 +106,19 @@ public class ClassPathResourceIndex {
 
     public boolean isBanned(String resource) {
         return bannedResources.contains(resource);
+    }
+
+    public boolean isRemovedResource(String resource) {
+        return removedResources.contains(resource);
+    }
+
+    private boolean isRemovedFromElement(ClassPathElement element, String resource) {
+        ArtifactKey dependencyKey = element.getDependencyKey();
+        if (dependencyKey == null) {
+            return false;
+        }
+        Set<String> removed = removedResourcesByArtifact.get(dependencyKey);
+        return removed != null && removed.contains(resource);
     }
 
     // it's tempting to use an Optional here but let's avoid the additional allocation
@@ -105,7 +134,8 @@ public class ClassPathResourceIndex {
         }
 
         for (int i = 0; i < candidates.length; i++) {
-            if (candidates[i].getProvidedResources().contains(resource)) {
+            if (candidates[i].getProvidedResources().contains(resource)
+                    && !isRemovedFromElement(candidates[i], resource)) {
                 return candidates[i];
             }
         }
@@ -125,7 +155,8 @@ public class ClassPathResourceIndex {
         }
 
         if (candidates.length == 1) {
-            if (candidates[0].getProvidedResources().contains(resource)) {
+            if (candidates[0].getProvidedResources().contains(resource)
+                    && !isRemovedFromElement(candidates[0], resource)) {
                 return List.of(candidates[0]);
             }
 
@@ -134,7 +165,8 @@ public class ClassPathResourceIndex {
 
         List<ClassPathElement> classPathElements = new ArrayList<>(candidates.length);
         for (int i = 0; i < candidates.length; i++) {
-            if (candidates[i].getProvidedResources().contains(resource)) {
+            if (candidates[i].getProvidedResources().contains(resource)
+                    && !isRemovedFromElement(candidates[i], resource)) {
                 classPathElements.add(candidates[i]);
             }
         }
@@ -204,6 +236,8 @@ public class ClassPathResourceIndex {
         private final Set<String> parentFirstResources = new HashSet<>();
         private final Set<String> bannedResources = new HashSet<>();
 
+        private Map<ArtifactKey, Set<String>> removedResources = Map.of();
+
         public void scanClassPathElement(ClassPathElement classPathElement,
                 BiConsumer<ClassPathElement, String> consumer) {
             for (String resource : classPathElement.getProvidedResources()) {
@@ -215,7 +249,19 @@ public class ClassPathResourceIndex {
             transformedClassCandidates.put(resource, classPathElement);
         }
 
+        public void setRemovedResources(Map<ArtifactKey, Set<String>> removedResources) {
+            this.removedResources = removedResources;
+        }
+
         public void addResourceMapping(ClassPathElement classPathElement, String resource) {
+            ArtifactKey dependencyKey = classPathElement.getDependencyKey();
+            if (dependencyKey != null) {
+                Set<String> removed = removedResources.get(dependencyKey);
+                if (removed != null && removed.contains(resource)) {
+                    return;
+                }
+            }
+
             if (classPathElement.containsReloadableResources() && resource.endsWith(CLASS_SUFFIX)) {
                 reloadableClasses.add(resource);
             }
@@ -256,7 +302,8 @@ public class ClassPathResourceIndex {
             }
 
             return new ClassPathResourceIndex(compactedResourceMapping, transformedClasses,
-                    reloadableClasses, parentFirstResources, bannedResources);
+                    reloadableClasses, parentFirstResources, bannedResources,
+                    removedResources);
         }
     }
 }

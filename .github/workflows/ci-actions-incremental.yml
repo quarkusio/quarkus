@@ -1838,6 +1838,7 @@ jobs:
       - name: Build
         env:
           # Begin OTP setup
+          ADDITIONAL_REPO_URL: "https://${{ env.API_HOST }}/ords/testpilot/repository"
           TESTPILOT_USERNAME: quarkus_test_${{ github.run_number }}
           TESTPILOT_PASSWORD: ${{ steps.create_database.outputs.database_password }}
           TESTPILOT_CONNECTION_STRING_SUFFIX: ${{ steps.create_database.outputs.connection_string_suffix }}
@@ -1860,7 +1861,7 @@ jobs:
             -Doracle.username=${TESTPILOT_USERNAME} \
             -Doracle.password=${TESTPILOT_PASSWORD} \
             -Doracle.db-version=${{matrix.db-version}} \
-            -f integration-tests -pl "$TEST_MODULES" \
+            -Pojdbc-ea -f integration-tests -pl "$TEST_MODULES" \
             clean install
       - name: Delete Oracle Test Pilot Database
         id: delete_database
@@ -1958,6 +1959,7 @@ jobs:
       - name: Build
         env:
           # Begin OTP setup
+          ADDITIONAL_REPO_URL: "https://${{ env.API_HOST }}/ords/testpilot/repository"
           TESTPILOT_USERNAME: quarkus_test_native_${{ github.run_number }}
           TESTPILOT_PASSWORD: ${{ steps.create_database.outputs.database_password }}
           TESTPILOT_CONNECTION_STRING_SUFFIX: ${{ steps.create_database.outputs.connection_string_suffix }}
@@ -1983,7 +1985,7 @@ jobs:
             -Doracle.password=${TESTPILOT_PASSWORD} \
             -Doracle.db-version=${{matrix.db-version}} \
             $NATIVE_TEST_MAVEN_ARGS -Dquarkus.native.container-build=false -Dquarkus.native.native-image-xmx=16g \
-            -f integration-tests -pl "$TEST_MODULES"
+            -Pojdbc-ea -f integration-tests -pl "$TEST_MODULES"
       - name: Delete Oracle Test Pilot Database
         id: delete_database
         if: always() && steps.create_database.outcome == 'success'

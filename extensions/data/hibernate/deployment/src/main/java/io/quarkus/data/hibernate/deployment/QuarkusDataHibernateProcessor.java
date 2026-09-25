@@ -102,6 +102,26 @@ public final class QuarkusDataHibernateProcessor {
 
     private static final DotName DOTNAME_ID = DotName.createSimple(Id.class.getName());
 
+    // Repository interfaces whose private doGetEntityClass()/getEntityClass() methods need
+    // bytecode transformation -- see RepositoryInterfaceEnhancer javadoc for the full explanation.
+    private static final List<String> REPOSITORY_LEAF_INTERFACES = List.of(
+            "io.quarkus.data.hibernate.managed.blocking.BlockingManagedRepositoryOperations",
+            "io.quarkus.data.hibernate.managed.blocking.BlockingManagedRepositoryQueries",
+            "io.quarkus.data.hibernate.managed.reactive.ReactiveManagedRepositoryOperations",
+            "io.quarkus.data.hibernate.managed.reactive.ReactiveManagedRepositoryQueries",
+            "io.quarkus.data.hibernate.stateless.blocking.BlockingRecordRepositoryOperations",
+            "io.quarkus.data.hibernate.stateless.blocking.BlockingRecordRepositoryQueries",
+            "io.quarkus.data.hibernate.stateless.reactive.ReactiveRecordRepositoryOperations",
+            "io.quarkus.data.hibernate.stateless.reactive.ReactiveRecordRepositoryQueries");
+
+    // Base interfaces that extend both an Operations and a Queries interface -- they need
+    // a doGetEntityClass() override to resolve the diamond created by the leaf transforms.
+    private static final List<String> REPOSITORY_BASE_INTERFACES = List.of(
+            "io.quarkus.data.hibernate.managed.blocking.BlockingManagedRepositoryBase",
+            "io.quarkus.data.hibernate.managed.reactive.ReactiveManagedRepositoryBase",
+            "io.quarkus.data.hibernate.stateless.blocking.BlockingRecordRepositoryBase",
+            "io.quarkus.data.hibernate.stateless.reactive.ReactiveRecordRepositoryBase");
+
     @BuildStep
     FeatureBuildItem featureBuildItem() {
         return new FeatureBuildItem(Feature.QUARKUS_DATA_HIBERNATE);
@@ -194,6 +214,27 @@ public final class QuarkusDataHibernateProcessor {
             List<org.jboss.jandex.Type> typeParameters = JandexUtil
                     .resolveTypeParameters(classInfo.name(), DOTNAME_PANACHE_REPOSITORY_SWITCHER, index.getIndex());
             panacheEntities.add(typeParameters.get(0).name().toString());
+
+            // Register a bytecode transformer to add doGetEntityClass() to each concrete
+            // repository implementation. This overrides the default (throwing) version made
+            // public by RepositoryInterfaceEnhancer, returning the actual entity class.
+            if (!classInfo.isInterface() && typeParameters.get(0).kind() == Kind.CLASS) {
+                String entityInternalName = typeParameters.get(0).name().toString().replace('.', '/');
+                transformers.produce(new BytecodeTransformerBuildItem(classInfo.name().toString(),
+                        new EntityClassMethodEnhancer(entityInternalName)));
+            }
+        }
+
+        // Transform the leaf repository interfaces: make doGetEntityClass() public and
+        // rewrite getEntityClass() to use invokeinterface for virtual dispatch.
+        for (String iface : REPOSITORY_LEAF_INTERFACES) {
+            transformers.produce(new BytecodeTransformerBuildItem(iface, RepositoryInterfaceEnhancer.INSTANCE));
+        }
+
+        // Transform the base interfaces to resolve the doGetEntityClass() diamond
+        // inherited from their Operations and Queries parents.
+        for (String iface : REPOSITORY_BASE_INTERFACES) {
+            transformers.produce(new BytecodeTransformerBuildItem(iface, RepositoryBaseDiamondResolver.INSTANCE));
         }
 
         Set<String> modelClasses = new HashSet<>();
@@ -226,24 +267,6 @@ public final class QuarkusDataHibernateProcessor {
                         // This happens if there is no persistence unit, in which case we definitely know this metadata is complete.
                         .orElse(false),
                 capabilities.isPresent(Capability.HIBERNATE_REACTIVE));
-        // Panache 2 repos
-        Map<String, String> repositoryClassesToEntityClasses = new HashMap<>();
-        for (ClassInfo classInfo : index.getIndex().getAllKnownImplementations(DOTNAME_PANACHE_REPOSITORY_SWITCHER)) {
-            // Only keep concrete classes
-            if (classInfo.isInterface() || classInfo.isAbstract()) {
-                continue;
-            }
-            List<org.jboss.jandex.Type> typeParameters = JandexUtil
-                    .resolveTypeParameters(classInfo.name(), DOTNAME_PANACHE_REPOSITORY_SWITCHER, index.getIndex());
-            if (typeParameters.get(0).kind() == Kind.CLASS) {
-                String entityClassName = typeParameters.get(0).name().toString();
-                repositoryClassesToEntityClasses.put(classInfo.name().toString(), entityClassName);
-            } else {
-                throw new RuntimeException("Failed to find entity linked to repository: " + classInfo + ", it appears to be: "
-                        + typeParameters.get(0) + " but we don't know what to do with it, it should be an entity type");
-            }
-        }
-        recorder.setRepositoryClassesToEntityClasses(repositoryClassesToEntityClasses);
     }
 
     @BuildStep

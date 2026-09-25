@@ -401,7 +401,8 @@ quarkus.http.filter.static.methods=GET,HEAD
 quarkus.http.filter.static.matches=/static/.*
 ----
 
-In case of overlapping paths in the configuration, you can specify an order (higher values take precedence).
+The configured headers are added to the response; a value that is already present, for example set by the endpoint or by the CORS filter, is never replaced.
+When several filters match the same path, the values of all of them are sent, and the `order` decides in which order the filters run and therefore in which order the values are added (filters with a lower order run first).
 For example, having the following configuration:
 
 [source,properties]
@@ -415,7 +416,9 @@ quarkus.http.filter.any-order.header."Cache-Control"=max-age=1
 quarkus.http.filter.any-order.matches=/paths/order.*
 ----
 
-Will include the `Cache-Control: max-age=1` header when `/paths/order` is requested.
+A request for `/paths/order` gets two `Cache-Control` headers, `max-age=5000` first and `max-age=1` second.
+
+IMPORTANT: A header that must have a single value, such as `Cache-Control`, cannot be overridden by another filter. Make the `matches` patterns of such filters disjoint, for example `/paths/order` and `/paths/order/.+`, so that a request matches only one of them.
 
 When using aggressive cache headers (for example, for static assets behind a CDN), you can set `apply-on-success=true`
 to apply headers only on successful (2xx) responses.

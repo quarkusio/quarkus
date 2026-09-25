@@ -8,6 +8,7 @@ import java.util.stream.Stream;
 import jakarta.persistence.LockModeType;
 import jakarta.persistence.NoResultException;
 import jakarta.persistence.NonUniqueResultException;
+import jakarta.persistence.criteria.JoinType;
 
 import org.hibernate.Session;
 import org.hibernate.annotations.FilterDef;
@@ -59,6 +60,32 @@ public interface PanacheQuery<Entity> {
      * @throws PanacheQueryException if this represents an already-projected query
      */
     public <T> PanacheQuery<T> project(Class<T> type);
+
+    /**
+     * Same as {@link #project(Class)}, but lets you choose how associations navigated by the projection are joined.
+     * <p>
+     * By default (and with {@link JoinType#INNER}) a projection that navigates an association (e.g. a
+     * {@link ProjectedFieldName} of <code>owner.name</code>) uses an implicit inner join, so entities whose association is
+     * <code>null</code> are filtered out of the results. Passing {@link JoinType#LEFT} instead generates explicit
+     * <code>LEFT JOIN</code>s for the single-valued associations ({@code @ManyToOne}/{@code @OneToOne}) navigated by the
+     * projection, so those entities are still returned with a <code>null</code> value for the missing association.
+     * <p>
+     * This currently applies to the auto-generated <code>from…</code> query (e.g. {@code findAll().project(...)}); when the
+     * query cannot be rewritten safely (a custom <code>select</code>/<code>from</code> clause, or a path crossing a to-many
+     * association) it falls back to the default behavior. {@link JoinType#RIGHT} is not supported.
+     *
+     * @param type the projected class type
+     * @param joinType how associations navigated by the projection should be joined
+     * @return a new query with the same state as the previous one but a projected result of the type <code>type</code>
+     * @throws PanacheQueryException if this represents an already-projected query, or for an unsupported join type
+     */
+    default <T> PanacheQuery<T> project(Class<T> type, JoinType joinType) {
+        if (joinType == JoinType.INNER) {
+            return project(type);
+        }
+        throw new UnsupportedOperationException(
+                "project(Class, JoinType) with " + joinType + " is not supported by this PanacheQuery implementation");
+    }
 
     /**
      * Sets the current page.

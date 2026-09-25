@@ -47,6 +47,7 @@ public class PanacheFunctionalityTest {
         RestAssured.when().get("/test/model1").then().body(is("OK"));
         RestAssured.when().get("/test/model2").then().body(is("OK"));
         RestAssured.when().get("/test/projection").then().body(is("OK"));
+        RestAssured.when().get("/test/projection-left-join").then().body(is("OK"));
         RestAssured.when().get("/test/projection-nested").then().body(is("OK"));
         RestAssured.when().get("/test/projection-constructor-annotation").then().body(is("OK"));
         RestAssured.when().get("/test/projection-projected-field-name").then().body(is("OK"));

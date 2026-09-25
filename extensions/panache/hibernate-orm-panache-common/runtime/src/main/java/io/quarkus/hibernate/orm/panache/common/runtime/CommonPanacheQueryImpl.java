@@ -1,16 +1,25 @@
 package io.quarkus.hibernate.orm.panache.common.runtime;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
+import java.util.function.UnaryOperator;
 import java.util.stream.Stream;
 
 import jakarta.persistence.LockModeType;
+import jakarta.persistence.criteria.JoinType;
+import jakarta.persistence.metamodel.Attribute;
+import jakarta.persistence.metamodel.Attribute.PersistentAttributeType;
+import jakarta.persistence.metamodel.ManagedType;
+import jakarta.persistence.metamodel.SingularAttribute;
+import jakarta.persistence.metamodel.Type;
 
 import org.hibernate.Filter;
 import org.hibernate.SharedSessionContract;
@@ -126,6 +135,15 @@ public class CommonPanacheQueryImpl<Entity> {
     }
 
     public <T> CommonPanacheQueryImpl<T> project(Class<T> type) {
+        return project(type, JoinType.INNER);
+    }
+
+    public <T> CommonPanacheQueryImpl<T> project(Class<T> type, JoinType joinType) {
+        if (joinType == JoinType.RIGHT) {
+            throw new PanacheQueryException(
+                    "Only INNER and LEFT join types are supported for projections, got: " + joinType);
+        }
+
         String selectQuery = query;
         if (PanacheJpaUtil.isNamedQuery(query)) {
             SelectionQuery<?> q = session.createNamedSelectionQuery(query.substring(1));
@@ -144,6 +162,17 @@ public class CommonPanacheQueryImpl<Entity> {
             return new CommonPanacheQueryImpl<>(this, query, customCountQueryForSpring, type);
         }
 
+        // When the caller opts into LEFT join semantics, try to generate explicit LEFT JOINs for the single-valued
+        // associations navigated by the projection, so entities with a null association are still returned (with a null
+        // value) instead of being filtered out by the implicit inner join. This only applies to the auto-generated
+        // `FROM <entity>` query; anything else falls through to the default (implicit inner join) behavior below.
+        if (joinType == JoinType.LEFT) {
+            CommonPanacheQueryImpl<T> leftJoined = buildLeftJoinProjection(type, selectQuery);
+            if (leftJoined != null) {
+                return leftJoined;
+            }
+        }
+
         // FIXME: this assumes the query starts with "FROM " probably?
 
         // build select clause with a constructor expression
@@ -156,11 +185,224 @@ public class CommonPanacheQueryImpl<Entity> {
         return new CommonPanacheQueryImpl<>(this, selectClause + selectQuery, customCountQueryForSpring, null);
     }
 
+    /**
+     * Builds a projection query that navigates single-valued associations via explicit {@code LEFT JOIN}s.
+     * <p>
+     * Returns {@code null} (so the caller falls back to the default implicit-inner-join behavior) when the rewrite cannot
+     * be applied safely: the query is not the auto-generated {@code FROM <entity>} form, the projection navigates no
+     * association, or a path cannot be resolved / crosses a to-many association (which a LEFT JOIN would multiply).
+     */
+    private <T> CommonPanacheQueryImpl<T> buildLeftJoinProjection(Class<T> type, String selectQuery) {
+        if (entityClass == null) {
+            return null;
+        }
+        String entityName = PanacheJpaUtil.getEntityName(entityClass);
+        // Only the auto-generated query (findAll / sort-only) is a bare `FROM <entity>` with no alias, where, or join.
+        if (!selectQuery.trim().equalsIgnoreCase("FROM " + entityName)) {
+            return null;
+        }
+
+        ManagedType<?> rootType;
+        try {
+            rootType = session.getFactory().getMetamodel().managedType(entityClass);
+        } catch (RuntimeException e) {
+            return null;
+        }
+
+        ProjectionJoins joins = new ProjectionJoins(rootType);
+        String constructorExpression;
+        String orderByClause;
+        try {
+            constructorExpression = getParametersFromClass(type, null, joins::qualifyPath).toString();
+            // The generated joins add extra roots, so any sort must be qualified with the root alias to avoid an
+            // "ambiguous unqualified attribute" error. We bake it into the query and clear the sort below.
+            orderByClause = qualifiedOrderBy(sort, joins);
+        } catch (UnsupportedProjectionJoinException e) {
+            return null;
+        }
+        if (!joins.hasJoins()) {
+            // The projection does not navigate any association, so the default behavior already returns every row.
+            return null;
+        }
+
+        String newQuery = "SELECT " + constructorExpression + "FROM " + entityName + " " + ProjectionJoins.ROOT_ALIAS
+                + joins.joinClause() + orderByClause;
+        CommonPanacheQueryImpl<T> projected = new CommonPanacheQueryImpl<>(this, newQuery, customCountQueryForSpring, null);
+        if (!orderByClause.isEmpty()) {
+            // The sort is now part of the query; prevent it from being appended again (unqualified) at execution.
+            projected.sort = null;
+        }
+        return projected;
+    }
+
+    /**
+     * Renders a {@code Sort} as an {@code ORDER BY} whose columns are qualified with the projection's aliases, so it can
+     * be embedded in a left-join projection query without triggering ambiguous-attribute errors.
+     */
+    private static String qualifiedOrderBy(Sort sort, ProjectionJoins joins) {
+        if (sort == null || sort.getColumns().isEmpty()) {
+            return "";
+        }
+        StringBuilder sb = new StringBuilder(" ORDER BY ");
+        for (int i = 0; i < sort.getColumns().size(); i++) {
+            Sort.Column column = sort.getColumns().get(i);
+            if (i > 0) {
+                sb.append(" , ");
+            }
+            String columnRef = joins.qualifyPath(column.getName());
+            if (sort.isEscapingEnabled()) {
+                columnRef = escapeQualifiedColumn(columnRef);
+            }
+            if (column.isIgnoreCase()) {
+                sb.append("LOWER(").append(columnRef).append(")");
+            } else {
+                sb.append(columnRef);
+            }
+            if (column.getDirection() != Sort.Direction.Ascending) {
+                sb.append(" DESC");
+            }
+            if (column.getNullPrecedence() != null) {
+                sb.append(column.getNullPrecedence() == Sort.NullPrecedence.NULLS_FIRST ? " NULLS FIRST" : " NULLS LAST");
+            }
+        }
+        return sb.toString();
+    }
+
+    /**
+     * Backtick-escapes the attribute segments of an already alias-qualified path (e.g. {@code panache_e.name}), leaving
+     * the leading alias untouched.
+     */
+    private static String escapeQualifiedColumn(String qualifiedPath) {
+        String[] segments = qualifiedPath.split("\\.");
+        StringBuilder sb = new StringBuilder(segments[0]);
+        for (int i = 1; i < segments.length; i++) {
+            sb.append(".`").append(segments[i]).append('`');
+        }
+        return sb.toString();
+    }
+
     private static StringBuilder getParametersFromClass(Class<?> type, String parentParameter) {
+        return getParametersFromClass(type, parentParameter, UnaryOperator.identity());
+    }
+
+    private static StringBuilder getParametersFromClass(Class<?> type, String parentParameter,
+            UnaryOperator<String> pathQualifier) {
         BiFunction<Class<?>, String, String> nestedProjectionBuilder = (nestedType, parameterName) -> getParametersFromClass(
-                nestedType, parameterName).toString();
+                nestedType, parameterName, pathQualifier).toString();
         return new StringBuilder(
-                ProjectionConstructorUtil.buildConstructorExpression(type, parentParameter, nestedProjectionBuilder));
+                ProjectionConstructorUtil.buildConstructorExpression(type, parentParameter, nestedProjectionBuilder,
+                        pathQualifier));
+    }
+
+    /**
+     * Thrown when a projection path cannot be safely turned into a LEFT JOIN (unresolvable attribute or a to-many
+     * association, which would multiply rows). It makes {@link #buildLeftJoinProjection} bail out and fall back to the
+     * default projection behavior.
+     */
+    private static final class UnsupportedProjectionJoinException extends RuntimeException {
+        UnsupportedProjectionJoinException() {
+            super(null, null, false, false);
+        }
+    }
+
+    /**
+     * Collects the explicit LEFT JOINs required by a projection and rewrites each bare entity path into an alias-qualified
+     * path. Single-valued associations ({@code @ManyToOne}/{@code @OneToOne}) are joined; embeddable and basic segments
+     * are navigated on the current alias without a join.
+     */
+    private static final class ProjectionJoins {
+
+        static final String ROOT_ALIAS = "panache_e";
+
+        private final ManagedType<?> rootType;
+        // key: `<sourceAlias>.<memberPath>` of the association, value: the alias assigned to the joined entity
+        private final Map<String, String> aliasByJoin = new LinkedHashMap<>();
+        private final List<String> joins = new ArrayList<>();
+        private int aliasCounter = 0;
+
+        ProjectionJoins(ManagedType<?> rootType) {
+            this.rootType = rootType;
+        }
+
+        boolean hasJoins() {
+            return !joins.isEmpty();
+        }
+
+        String joinClause() {
+            return String.join("", joins);
+        }
+
+        /**
+         * Rewrites a bare projection path (e.g. {@code owner.name}) into an alias-qualified path (e.g.
+         * {@code panache_e_j0.name}), registering any LEFT JOIN needed along the way.
+         */
+        String qualifyPath(String path) {
+            String[] segments = path.split("\\.");
+            ManagedType<?> currentType = rootType;
+            String currentAlias = ROOT_ALIAS;
+            // dotted path within the current alias accumulated while navigating embeddables (no join needed)
+            String memberPath = "";
+
+            for (int i = 0; i < segments.length; i++) {
+                String segment = segments[i];
+                Attribute<?, ?> attribute;
+                try {
+                    attribute = currentType.getAttribute(segment);
+                } catch (IllegalArgumentException e) {
+                    // Not a mapped attribute (function call, computed alias, ...): cannot rewrite safely.
+                    throw new UnsupportedProjectionJoinException();
+                }
+
+                PersistentAttributeType attributeType = attribute.getPersistentAttributeType();
+                boolean isLastSegment = i == segments.length - 1;
+
+                if (attributeType == PersistentAttributeType.MANY_TO_ONE
+                        || attributeType == PersistentAttributeType.ONE_TO_ONE) {
+                    String source = memberPath.isEmpty() ? currentAlias + "." + segment
+                            : currentAlias + "." + memberPath + "." + segment;
+                    String alias = aliasByJoin.computeIfAbsent(source, s -> {
+                        String newAlias = ROOT_ALIAS + "_j" + (aliasCounter++);
+                        joins.add(" LEFT JOIN " + s + " " + newAlias);
+                        return newAlias;
+                    });
+                    currentAlias = alias;
+                    memberPath = "";
+                    currentType = managedTypeOf(attribute);
+                    if (currentType == null && !isLastSegment) {
+                        throw new UnsupportedProjectionJoinException();
+                    }
+                } else if (attributeType == PersistentAttributeType.EMBEDDED) {
+                    memberPath = memberPath.isEmpty() ? segment : memberPath + "." + segment;
+                    currentType = managedTypeOf(attribute);
+                    if (currentType == null && !isLastSegment) {
+                        throw new UnsupportedProjectionJoinException();
+                    }
+                } else if (attributeType == PersistentAttributeType.BASIC) {
+                    if (!isLastSegment) {
+                        // A basic attribute cannot be navigated further.
+                        throw new UnsupportedProjectionJoinException();
+                    }
+                    return memberPath.isEmpty() ? currentAlias + "." + segment
+                            : currentAlias + "." + memberPath + "." + segment;
+                } else {
+                    // ONE_TO_MANY / MANY_TO_MANY / ELEMENT_COLLECTION: a LEFT JOIN over a collection multiplies rows.
+                    throw new UnsupportedProjectionJoinException();
+                }
+            }
+
+            // The path terminated on an association or embeddable (i.e. the projected value is that managed type itself).
+            return memberPath.isEmpty() ? currentAlias : currentAlias + "." + memberPath;
+        }
+
+        private static ManagedType<?> managedTypeOf(Attribute<?, ?> attribute) {
+            if (attribute instanceof SingularAttribute) {
+                Type<?> type = ((SingularAttribute<?, ?>) attribute).getType();
+                if (type instanceof ManagedType) {
+                    return (ManagedType<?>) type;
+                }
+            }
+            return null;
+        }
     }
 
     public void filter(String filterName, Map<String, Object> parameters) {

@@ -23,10 +23,7 @@ public class TimezoneDefaultStorageAutoTest extends AbstractTimezoneDefaultStora
     public void schema() throws Exception {
         assertThat(SchemaUtil.getColumnNames(sessionFactory, EntityWithTimezones.class))
                 .doesNotContain("zonedDateTime_tz", "offsetDateTime_tz", "offsetTime_tz");
-        assertThat(SchemaUtil.getColumnTypeName(sessionFactory, EntityWithTimezones.class, "zonedDateTime"))
-                .isEqualTo("TIMESTAMP_WITH_TIMEZONE");
-        assertThat(SchemaUtil.getColumnTypeName(sessionFactory, EntityWithTimezones.class, "offsetDateTime"))
-                .isEqualTo("TIMESTAMP_WITH_TIMEZONE");
+        assertDirectJdbcAccess();
     }
 
     @Test

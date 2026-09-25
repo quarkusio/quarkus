@@ -57,7 +57,6 @@ import io.quarkus.hibernate.orm.deployment.HibernateOrmProcessor;
 import io.quarkus.hibernate.orm.deployment.PersistenceUnitDescriptorBuildItem;
 import io.quarkus.hibernate.orm.deployment.spi.AdditionalJpaModelBuildItem;
 import io.quarkus.hibernate.orm.deployment.spi.JpaModelPersistenceUnitMappingBuildItem;
-import io.quarkus.hibernate.orm.deployment.spi.QuarkusDataModelBuildItem;
 import io.quarkus.panache.common.deployment.PanacheMethodCustomizerBuildItem;
 import io.quarkus.panache.hibernate.common.deployment.HibernateEnhancersRegisteredBuildItem;
 import io.quarkus.security.spi.SecuredInterfaceAnnotationBuildItem;
@@ -124,11 +123,10 @@ public final class QuarkusDataHibernateProcessor {
 
     @BuildStep
     void addInnerRepositoryInterfacesToJpaModel(CombinedIndexBuildItem index,
-            BuildProducer<QuarkusDataModelBuildItem> quarkusDataModel) {
+            BuildProducer<AdditionalJpaModelBuildItem> quarkusDataModel) {
         collectEntityInnerInterfaces(index.getIndex(),
-                (memberClass, implementingBean) -> quarkusDataModel.produce(new QuarkusDataModelBuildItem(
-                        memberClass.name().toString(),
-                        memberClass.enclosingClass().toString())));
+                (memberClass, implementingBean) -> quarkusDataModel.produce(new AdditionalJpaModelBuildItem(
+                        memberClass.enclosingClass().toString(), new HashSet<>())));
     }
 
     @BuildStep

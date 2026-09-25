@@ -46,7 +46,6 @@ import io.quarkus.hibernate.orm.deployment.PersistenceUnitDescriptorBuildItem;
 import io.quarkus.hibernate.orm.deployment.spi.AdditionalJpaModelBuildItem;
 import io.quarkus.hibernate.orm.deployment.spi.AdditionalPersistenceUnitBuildItem;
 import io.quarkus.hibernate.orm.deployment.spi.PersistenceUnitDefinedBuildItem;
-import io.quarkus.hibernate.orm.deployment.spi.QuarkusDataModelBuildItem;
 import io.quarkus.hibernate.orm.runtime.HibernateOrmRuntimeConfig;
 import io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil;
 import io.quarkus.panache.hibernate.common.deployment.HibernateModelClassCandidatesForFieldAccessBuildItem;
@@ -216,7 +215,7 @@ final class JpaModelProcessor {
     @BuildStep
     public JpaModelPerPersistenceUnitBuildItem buildJpaModelPerPersistenceUnit(HibernateOrmConfig hibernateOrmConfig,
             List<AdditionalJpaModelBuildItem> additionalJpaModelBuildItems,
-            List<QuarkusDataModelBuildItem> quarkusDataModelBuildItems,
+            List<AdditionalJpaModelBuildItem> quarkusDataModelBuildItems,
             JpaModelBuildItem jpaModel,
             CombinedIndexBuildItem indexBuildItem) {
         IndexView index = indexBuildItem.getIndex();
@@ -361,10 +360,10 @@ final class JpaModelProcessor {
             model.xmlMappings().addAll(entry.getValue());
         }
 
-        for (QuarkusDataModelBuildItem quarkusDataModel : quarkusDataModelBuildItems) {
+        for (AdditionalJpaModelBuildItem quarkusDataModel : quarkusDataModelBuildItems) {
             var className = quarkusDataModel.getClassName();
             Set<String> persistenceUnits = findEnclosingEntityPersistenceUnits(
-                    quarkusDataModel.getEnclosingEntityClassName(), modelPerPersistenceUnit);
+                    quarkusDataModel.getClassName(), modelPerPersistenceUnit);
             if (persistenceUnits.isEmpty()) {
                 persistenceUnits = Set.of(PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME);
             }

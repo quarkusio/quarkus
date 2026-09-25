@@ -677,11 +677,12 @@ public abstract class BaseKubeProcessor<P, C extends PlatformConfiguration> {
                         ? managementPort
                         : containerPort;
 
+                final String scrapeScheme = config.prometheus().scrapeScheme();
                 if (config.prometheus().generateServiceMonitor()) {
                     context.add(new AddServiceMonitorResourceDecorator(
-                            config.prometheus().scheme().orElse("http"),
+                            scrapeScheme,
                             String.valueOf(prometheusPort),
-                            config.prometheus().path().orElse(path),
+                            path,
                             10,
                             true));
                 }
@@ -696,7 +697,7 @@ public abstract class BaseKubeProcessor<P, C extends PlatformConfiguration> {
                             config.prometheus().port().orElse(prefix + "/port"), "" + prometheusPort,
                             PROMETHEUS_ANNOTATION_TARGETS));
                     context.add(new AddAnnotationDecorator(name,
-                            config.prometheus().scheme().orElse(prefix + "/scheme"), "http",
+                            config.prometheus().scheme().orElse(prefix + "/scheme"), scrapeScheme,
                             PROMETHEUS_ANNOTATION_TARGETS));
                 }
             }

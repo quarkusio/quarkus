@@ -329,7 +329,7 @@ public final class FastBootHibernatePersistenceProvider implements PersistencePr
                     + " to match those of Hibernate ORM %3$s."
                     + " This is an inherently best-effort feature that cannot address all "
                     + " backwards-incompatible changes of Hibernate ORM 6."
-                    + " It is also inherently unstable and may stop working in future versions of Quarkus."
+                    + " This setting is deprecated and will be removed in a future version of Quarkus."
                     + " Consider migrating your application to native Hibernate ORM 6 behavior;"
                     + " see https://github.com/quarkusio/quarkus/wiki/Migration-Guide-3.0:-Hibernate-ORM-5-to-6-migration for more information.",
                     persistenceUnitName,
@@ -343,7 +343,7 @@ public final class FastBootHibernatePersistenceProvider implements PersistencePr
             if (!runtimeSettingsBuilder.isConfigured(key)) {
                 log.warnf("Persistence-unit [%1$s] - %2$s compatibility: setting '%3$s=%4$s'."
                         + " This affects Hibernate ORM's behavior and schema compatibility"
-                        + " and may stop working in future versions of Quarkus.",
+                        + " and will be removed in a future version of Quarkus.",
                         persistenceUnitName,
                         databaseOrmCompatibilityVersion.externalRepresentation,
                         key, value);

@@ -176,8 +176,11 @@ public interface HibernateOrmConfig {
          * link:https://github.com/quarkusio/quarkus/wiki/Migration-Guide-3.0:-Hibernate-ORM-5-to-6-migration[the Quarkus 3
          * migration guide from Hibernate ORM 5 to 6].
          *
+         * @deprecated This setting will be removed in a future version of Quarkus. Migrate your schema
+         *             to native Hibernate ORM 6 behavior.
          * @asciidoclet
          */
+        @Deprecated(since = "4.0", forRemoval = true)
         @WithName("orm-compatibility.version")
         @WithDefault("latest")
         @WithConverter(DatabaseOrmCompatibilityVersion.Converter.class)

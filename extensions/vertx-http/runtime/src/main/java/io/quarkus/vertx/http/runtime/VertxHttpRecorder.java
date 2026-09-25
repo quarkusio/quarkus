@@ -4,6 +4,7 @@ import static io.quarkus.vertx.core.runtime.context.VertxContextSafetyToggle.set
 import static io.quarkus.vertx.http.HttpServer.HTTPS_PORT;
 import static io.quarkus.vertx.http.HttpServer.HTTPS_TEST_PORT;
 import static io.quarkus.vertx.http.HttpServer.HTTP_PORT;
+import static io.quarkus.vertx.http.HttpServer.HTTP_SERVER;
 import static io.quarkus.vertx.http.HttpServer.HTTP_TEST_PORT;
 import static io.quarkus.vertx.http.HttpServer.LOCAL_BASE_URI;
 import static io.quarkus.vertx.http.HttpServer.LOCAL_MANAGEMENT_BASE_URI;
@@ -89,6 +90,7 @@ import io.quarkus.vertx.http.HttpServerConfigCustomizer;
 import io.quarkus.vertx.http.HttpServerStart;
 import io.quarkus.vertx.http.HttpsServerStart;
 import io.quarkus.vertx.http.ManagementInterface;
+import io.quarkus.vertx.http.VertxHttpServiceConfig;
 import io.quarkus.vertx.http.runtime.VertxHttpConfig.InsecureRequests;
 import io.quarkus.vertx.http.runtime.cors.CORSFilter;
 import io.quarkus.vertx.http.runtime.devmode.RemoteSyncHandler;
@@ -111,6 +113,8 @@ import io.smallrye.common.vertx.VertxContext;
 import io.smallrye.config.SmallRyeConfig;
 import io.smallrye.config.SmallRyeConfigBuilder;
 import io.smallrye.config.SmallRyeConfigBuilderCustomizer;
+import io.smallrye.stork.Stork;
+import io.smallrye.stork.api.ServiceDefinition;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Context;
@@ -1514,6 +1518,13 @@ public class VertxHttpRecorder {
                                     valueRegistry.register(RuntimeKey.key("test.url"), localBaseUri.toString());
                                 }
                             }
+                        }
+
+                        // TODO - Need to ensure that StorkRecorder runs before VertxHttpRecorder
+                        Stork stork = Stork.getInstance();
+                        if (stork != null) {
+                            stork.defineIfAbsent("vertx-http", ServiceDefinition.of(
+                                    new VertxHttpServiceConfig(valueRegistry.get(HTTP_SERVER))));
                         }
 
                         if (https && (httpConfig.ssl().certificate().reloadPeriod().isPresent())) {

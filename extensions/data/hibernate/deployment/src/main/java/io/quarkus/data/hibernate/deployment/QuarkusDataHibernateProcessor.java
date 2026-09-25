@@ -126,7 +126,7 @@ public final class QuarkusDataHibernateProcessor {
             BuildProducer<AdditionalJpaModelBuildItem> quarkusDataModel) {
         collectEntityInnerInterfaces(index.getIndex(),
                 (memberClass, implementingBean) -> quarkusDataModel.produce(new AdditionalJpaModelBuildItem(
-                        memberClass.enclosingClass().toString(), new HashSet<>())));
+                        memberClass.name().toString(), Set.of())));
     }
 
     @BuildStep

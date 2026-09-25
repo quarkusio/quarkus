@@ -215,7 +215,6 @@ final class JpaModelProcessor {
     @BuildStep
     public JpaModelPerPersistenceUnitBuildItem buildJpaModelPerPersistenceUnit(HibernateOrmConfig hibernateOrmConfig,
             List<AdditionalJpaModelBuildItem> additionalJpaModelBuildItems,
-            List<AdditionalJpaModelBuildItem> quarkusDataModelBuildItems,
             JpaModelBuildItem jpaModel,
             CombinedIndexBuildItem indexBuildItem) {
         IndexView index = indexBuildItem.getIndex();
@@ -360,10 +359,18 @@ final class JpaModelProcessor {
             model.xmlMappings().addAll(entry.getValue());
         }
 
-        for (AdditionalJpaModelBuildItem quarkusDataModel : quarkusDataModelBuildItems) {
-            var className = quarkusDataModel.getClassName();
+        // Nested repository interfaces have no explicit PU: use the PU of their enclosing entity.
+        for (AdditionalJpaModelBuildItem nestedRepository : additionalJpaModelBuildItems) {
+            if (nestedRepository.getPersistenceUnits() == null || !nestedRepository.getPersistenceUnits().isEmpty()) {
+                continue;
+            }
+            var className = nestedRepository.getClassName();
+            var nestedInterface = index.getClassByName(DotName.createSimple(className));
+            if (nestedInterface == null || !nestedInterface.isInterface() || nestedInterface.enclosingClass() == null) {
+                continue;
+            }
             Set<String> persistenceUnits = findEnclosingEntityPersistenceUnits(
-                    quarkusDataModel.getClassName(), modelPerPersistenceUnit);
+                    nestedInterface.enclosingClass().toString(), modelPerPersistenceUnit);
             if (persistenceUnits.isEmpty()) {
                 persistenceUnits = Set.of(PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME);
             }

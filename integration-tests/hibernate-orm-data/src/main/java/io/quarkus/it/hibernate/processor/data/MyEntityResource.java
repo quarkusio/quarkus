@@ -6,6 +6,7 @@ import jakarta.data.Order;
 import jakarta.data.Sort;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import jakarta.persistence.EntityManager;
 import jakarta.transaction.Transactional;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.DELETE;
@@ -30,6 +31,9 @@ public class MyEntityResource {
     @Inject
     MyRepository repository;
 
+    @Inject
+    EntityManager entityManager;
+
     @POST
     @Transactional
     public void create(MyEntity entity) {
@@ -50,6 +54,14 @@ public class MyEntityResource {
             throw new NotFoundException();
         }
         return entities.get(0);
+    }
+
+    @GET
+    @Path("/unannotated/by/name/{name}")
+    public List<MyEntity> getByNameFromUnannotatedRepository(@RestPath String name) {
+        return entityManager.createNamedQuery(
+                "io.quarkus.it.hibernate.processor.data.pudefault.UnannotatedMyRepository#findByName(java.lang.String)",
+                MyEntity.class).setParameter("name", name).getResultList();
     }
 
     @POST

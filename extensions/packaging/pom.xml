@@ -23,5 +23,6 @@
 
         <!-- Packaging types (alphabetical) -->
         <module>jlink</module>
+        <module>uberjar</module>
     </modules>
 </project>

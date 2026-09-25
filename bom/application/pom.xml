@@ -46,10 +46,10 @@
         <microprofile-jwt.version>2.1</microprofile-jwt.version>
         <microprofile-lra.version>2.0.2</microprofile-lra.version>
         <microprofile-openapi.version>4.1.1</microprofile-openapi.version>
-        <smallrye-common.version>2.20.0</smallrye-common.version>
+        <smallrye-common.version>2.21.1</smallrye-common.version>
         <smallrye-config.version>4.0.0</smallrye-config.version> <!-- keep in sync with microprofile-config-api -->
         <smallrye-health.version>4.3.0</smallrye-health.version>
-        <smallrye-modules.version>1.0.beta1</smallrye-modules.version>
+        <smallrye-modules.version>1.0.beta2</smallrye-modules.version>
         <smallrye-open-api.version>4.3.5</smallrye-open-api.version>
         <smallrye-graphql.version>3.0.0.Beta7</smallrye-graphql.version>
         <smallrye-fault-tolerance.version>7.0.0</smallrye-fault-tolerance.version>
@@ -1877,6 +1877,26 @@
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-jlink-spi</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-uberjar</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-uberjar-deployment</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-uberjar-launcher</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-uberjar-spi</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
@@ -4475,6 +4495,11 @@
             <dependency>
                 <groupId>io.smallrye.modules</groupId>
                 <artifactId>smallrye-modules</artifactId>
+                <version>${smallrye-modules.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.smallrye.modules</groupId>
+                <artifactId>smallrye-modules-boot</artifactId>
                 <version>${smallrye-modules.version}</version>
             </dependency>
             <dependency>

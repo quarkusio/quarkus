@@ -72,6 +72,7 @@ import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.gizmo.TryBlock;
+import io.quarkus.modular.spi.items.AddDependencyBuildItem;
 import io.quarkus.netty.BossEventLoopGroup;
 import io.quarkus.netty.MainEventLoopGroup;
 import io.quarkus.netty.runtime.EmptyByteBufStub;
@@ -79,6 +80,7 @@ import io.quarkus.netty.runtime.MachineIdGenerator;
 import io.quarkus.netty.runtime.NettyRecorder;
 import io.quarkus.netty.runtime.NettySharable;
 import io.quarkus.runtime.util.JavaVersionGreaterOrEqual25;
+import io.smallrye.modules.desc.Dependency;
 
 class NettyProcessor {
 
@@ -1716,6 +1718,16 @@ class NettyProcessor {
         if (QuarkusClassLoader.isClassPresentAtRuntime("io.netty.channel.uring.IoUring")) {
             nativeAccess.produce(new ModuleEnableNativeAccessBuildItem("io.netty.transport.classes.io_uring"));
         }
+    }
+
+    @BuildStep
+    AddDependencyBuildItem addedDependencies() {
+        // This one must be READ and LINKED because an ArC synthetic bean requires it
+        return new AddDependencyBuildItem("io.netty.transport", "io.quarkus.netty",
+                Dependency.Modifier.Set.of(
+                        Dependency.Modifier.SERVICES,
+                        Dependency.Modifier.READ,
+                        Dependency.Modifier.LINKED));
     }
 
     @BuildStep

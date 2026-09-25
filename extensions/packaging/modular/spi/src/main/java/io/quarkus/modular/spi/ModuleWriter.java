@@ -3,7 +3,6 @@ package io.quarkus.modular.spi;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.io.Writer;
 import java.lang.constant.ClassDesc;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -18,6 +17,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.jar.Manifest;
 import java.util.stream.Collectors;
@@ -81,121 +81,15 @@ public final class ModuleWriter {
         Assert.checkNotNullParam("manifest", manifest);
         log.debugf("Writing module %s", moduleInfo.name());
         ResolvedDependency artifact = moduleInfo.resolvedArtifact();
-        // get an index of all generated/transformed resources
-        Map<String, Resource> generated = moduleInfo.generated().stream().collect(
-                Collectors.toMap(Resource::pathName, Function.identity()));
         // compute the file name from the artifact info
         final String fileName = artifact.getArtifactId() + "-" + artifact.getVersion() + "-patched.jar";
         // Create the artifact
         Files.createDirectories(outputDirectory);
-        PathTree contentTree = artifact.getContentTree();
-        Set<String> directories = new HashSet<>();
-        directories.add("META-INF");
         Path outputPath = outputDirectory.resolve(fileName);
-        try (ArchiveBuilder ab = ArchiveBuilder.open(outputPath, StandardOpenOption.TRUNCATE_EXISTING)) {
-            PathCollection resolvedPaths = artifact.getResolvedPaths();
-            FileAttribute<?>[] defaultAttrs;
-            if (resolvedPaths.isSinglePath()) {
-                Path path = resolvedPaths.getSinglePath();
-                BasicFileAttributes attrs = Files.getFileAttributeView(path, BasicFileAttributeView.class)
-                        .readAttributes();
-                defaultAttrs = new FileAttribute[] {
-                        FileAttributes.creationTime(attrs.creationTime()),
-                        FileAttributes.lastModifiedTime(attrs.lastModifiedTime()),
-                        FileAttributes.lastAccessTime(attrs.lastAccessTime())
-                };
-            } else {
-                defaultAttrs = new FileAttribute<?>[0];
-            }
-            ab.addDirectory("META-INF/", defaultAttrs);
-            try (OutputStream os = ab.addEntry("META-INF/MANIFEST.MF", Set.of(ZipOption.STORED), defaultAttrs)) {
-                manifest.write(os);
-            }
-            // next, write module descriptor
-            if (bootModule) {
-                // descriptor for "normal" module
-                ab.addEntry("module-info.class", getModuleInfoClass(moduleInfo), Set.of(ZipOption.STORED), defaultAttrs);
-            } else {
-                // write XML for automatic module
-                try (Writer w = ab.addEntry("module.xml", StandardCharsets.UTF_8)) {
-                    XMLOutputFactory xmlOutputFactory = XMLOutputFactory.newDefaultFactory();
-                    xmlOutputFactory.setProperty(XMLOutputFactory.IS_REPAIRING_NAMESPACES, Boolean.TRUE);
-                    XMLStreamWriter xml = xmlOutputFactory.createXMLStreamWriter(w);
-                    try (XmlCloser ignored = xml::close) {
-                        writeModuleXml(new FormattingXMLStreamWriter(xml), moduleInfo);
-                    }
-                } catch (XMLStreamException e) {
-                    throw new IOException(e);
-                }
-            }
-            // write all resources
-            for (Resource resource : moduleInfo.generated()) {
-                if (resource.isDirectory()) {
-                    continue;
-                }
-                int idx = resource.pathName().lastIndexOf('/');
-                if (idx != -1) {
-                    addDirectoryRecursive(ab, resource.pathName().substring(0, idx), directories);
-                }
-                try (InputStream is = resource.openStream()) {
-                    ab.addEntry(resource.pathName(), is, Set.of(ZipOption.STORED), defaultAttrs);
-                }
-            }
-            // now, find and process all files using our own walker
-            contentTree.walk(visited -> {
-                String rp = visited.getResourceName();
-                if (generated.containsKey(rp)) {
-                    // skip it until the end
-                    return;
-                }
-                BasicFileAttributes attr;
-                try {
-                    attr = Files.getFileAttributeView(visited.getPath(), BasicFileAttributeView.class).readAttributes();
-                } catch (IOException e) {
-                    throw sneak(e);
-                }
-                if (attr.isDirectory()) {
-                    if (rp.isEmpty()) {
-                        // skip base directory entry
-                        return;
-                    }
-                    if (directories.add(rp)) {
-                        try {
-                            ab.addDirectory(rp,
-                                    FileAttributes.creationTime(attr.creationTime()),
-                                    FileAttributes.lastModifiedTime(attr.lastModifiedTime()),
-                                    FileAttributes.lastAccessTime(attr.lastAccessTime()));
-                        } catch (IOException e) {
-                            throw sneak(e);
-                        }
-                    }
-                } else {
-                    if (rp.equals("META-INF/MANIFEST.MF") || rp.equals("module-info.class")
-                            || rp.endsWith("/module-info.class")) {
-                        // skip
-                        return;
-                    }
-                    int idx = rp.lastIndexOf('/');
-                    if (idx != -1) {
-                        // make sure the directory exists
-                        String dirName = rp.substring(0, idx);
-                        try {
-                            addDirectoryRecursive(ab, dirName, directories);
-                        } catch (IOException e) {
-                            throw sneak(e);
-                        }
-                    }
-                    // copy the content
-                    try {
-                        ab.addEntry(rp, visited.getPath(), Set.of(ZipOption.STORED),
-                                FileAttributes.creationTime(attr.creationTime()),
-                                FileAttributes.lastModifiedTime(attr.lastModifiedTime()),
-                                FileAttributes.lastAccessTime(attr.lastAccessTime()));
-                    } catch (IOException ioe) {
-                        throw sneak(ioe);
-                    }
-                }
-            });
+        try (ArchiveBuilder ab = ArchiveBuilder.open(outputPath, Set.of(
+                StandardOpenOption.CREATE,
+                StandardOpenOption.TRUNCATE_EXISTING), FileAttributes.posixPermissions(0_644))) {
+            writeModule(moduleInfo, ab, manifest, bootModule, null);
         } catch (Throwable t) {
             // don't leave a half-written file around
             try {
@@ -206,6 +100,173 @@ public final class ModuleWriter {
             throw t;
         }
         return outputPath;
+    }
+
+    /**
+     * Write a patched module directly to an existing ArchiveBuilder.
+     *
+     * @param moduleInfo the module information (must not be {@code null})
+     * @param ab the target ArchiveBuilder (must not be {@code null})
+     * @param manifest the JAR manifest (must not be {@code null})
+     * @param bootModule {@code true} if this module is a boot module
+     * @throws IOException if writing fails
+     */
+    public static void writeModule(ModuleInfo moduleInfo, ArchiveBuilder ab, Manifest manifest, final boolean bootModule)
+            throws IOException {
+        writeModule(moduleInfo, ab, manifest, bootModule, null);
+    }
+
+    /**
+     * Write a patched module directly to an existing ArchiveBuilder, notifying a listener of each written entry.
+     *
+     * @param moduleInfo the module information (must not be {@code null})
+     * @param ab the target ArchiveBuilder (must not be {@code null})
+     * @param manifest the JAR manifest (must not be {@code null})
+     * @param bootModule {@code true} if this module is a boot module
+     * @param listener the listener notified after each entry is written, or {@code null}
+     * @throws IOException if writing fails
+     */
+    public static void writeModule(ModuleInfo moduleInfo, ArchiveBuilder ab, Manifest manifest, final boolean bootModule,
+            BiConsumer<String, ArchiveBuilder> listener)
+            throws IOException {
+        Assert.checkNotNullParam("moduleInfo", moduleInfo);
+        Assert.checkNotNullParam("ab", ab);
+        Assert.checkNotNullParam("manifest", manifest);
+
+        Set<String> directories = new HashSet<>();
+        directories.add("META-INF");
+
+        ResolvedDependency artifact = moduleInfo.resolvedArtifact();
+        Map<String, Resource> generated = moduleInfo.generated().stream().collect(
+                Collectors.toMap(Resource::pathName, Function.identity()));
+        PathTree contentTree = artifact.getContentTree();
+
+        PathCollection resolvedPaths = artifact.getResolvedPaths();
+        FileAttribute<?>[] defaultAttrs;
+        if (resolvedPaths.isSinglePath()) {
+            Path path = resolvedPaths.getSinglePath();
+            BasicFileAttributes attrs = Files.getFileAttributeView(path, BasicFileAttributeView.class)
+                    .readAttributes();
+            defaultAttrs = new FileAttribute[] {
+                    FileAttributes.creationTime(attrs.creationTime()),
+                    FileAttributes.lastModifiedTime(attrs.lastModifiedTime()),
+                    FileAttributes.lastAccessTime(attrs.lastAccessTime()),
+                    FileAttributes.posixPermissions(0_644)
+            };
+        } else {
+            defaultAttrs = new FileAttribute<?>[] {
+                    FileAttributes.posixPermissions(0_644)
+            };
+        }
+
+        ab.addDirectory("META-INF/", defaultAttrs);
+        try (OutputStream os = ab.addEntry("META-INF/MANIFEST.MF", Set.of(ZipOption.STORED), defaultAttrs)) {
+            manifest.write(os);
+        }
+        if (listener != null) {
+            listener.accept("META-INF/MANIFEST.MF", ab);
+        }
+        // next, write module descriptor
+        if (bootModule) {
+            // descriptor for "normal" module
+            ab.addEntry("module-info.class", getModuleInfoClass(moduleInfo), Set.of(ZipOption.STORED), defaultAttrs);
+            if (listener != null) {
+                listener.accept("module-info.class", ab);
+            }
+        } else {
+            // write XML for automatic module
+            java.io.StringWriter sw = new java.io.StringWriter();
+            try {
+                XMLOutputFactory xmlOutputFactory = XMLOutputFactory.newDefaultFactory();
+                xmlOutputFactory.setProperty(XMLOutputFactory.IS_REPAIRING_NAMESPACES, Boolean.TRUE);
+                XMLStreamWriter xml = xmlOutputFactory.createXMLStreamWriter(sw);
+                try (XmlCloser ignored = xml::close) {
+                    writeModuleXml(new FormattingXMLStreamWriter(xml), moduleInfo);
+                }
+            } catch (XMLStreamException e) {
+                throw new IOException(e);
+            }
+            ab.addEntry("module.xml", sw.toString().getBytes(StandardCharsets.UTF_8), Set.of(ZipOption.STORED), defaultAttrs);
+            if (listener != null) {
+                listener.accept("module.xml", ab);
+            }
+        }
+        // write all resources
+        for (Resource resource : moduleInfo.generated()) {
+            if (resource.isDirectory()) {
+                continue;
+            }
+            int idx = resource.pathName().lastIndexOf('/');
+            if (idx != -1) {
+                addDirectoryRecursive(ab, resource.pathName().substring(0, idx), directories);
+            }
+            try (InputStream is = resource.openStream()) {
+                ab.addEntry(resource.pathName(), is, Set.of(ZipOption.STORED), defaultAttrs);
+            }
+            if (listener != null) {
+                listener.accept(resource.pathName(), ab);
+            }
+        }
+        // now, find and process all files using our own walker
+        contentTree.walk(visited -> {
+            String rp = visited.getResourceName();
+            if (generated.containsKey(rp)) {
+                // skip it until the end
+                return;
+            }
+            BasicFileAttributes attr;
+            try {
+                attr = Files.getFileAttributeView(visited.getPath(), BasicFileAttributeView.class).readAttributes();
+            } catch (IOException e) {
+                throw sneak(e);
+            }
+            if (attr.isDirectory()) {
+                if (rp.isEmpty()) {
+                    // skip base directory entry
+                    return;
+                }
+                if (directories.add(rp)) {
+                    try {
+                        ab.addDirectory(rp,
+                                FileAttributes.creationTime(attr.creationTime()),
+                                FileAttributes.lastModifiedTime(attr.lastModifiedTime()),
+                                FileAttributes.lastAccessTime(attr.lastAccessTime()),
+                                FileAttributes.posixPermissions(0_644));
+                    } catch (IOException e) {
+                        throw sneak(e);
+                    }
+                }
+            } else {
+                if (rp.equals("META-INF/MANIFEST.MF") || rp.equals("module-info.class")
+                        || rp.endsWith("/module-info.class")) {
+                    // skip
+                    return;
+                }
+                int idx = rp.lastIndexOf('/');
+                if (idx != -1) {
+                    // make sure the directory exists
+                    String dirName = rp.substring(0, idx);
+                    try {
+                        addDirectoryRecursive(ab, dirName, directories);
+                    } catch (IOException e) {
+                        throw sneak(e);
+                    }
+                }
+                // copy the content
+                try {
+                    ab.addEntry(rp, visited.getPath(), Set.of(ZipOption.STORED),
+                            FileAttributes.creationTime(attr.creationTime()),
+                            FileAttributes.lastModifiedTime(attr.lastModifiedTime()),
+                            FileAttributes.lastAccessTime(attr.lastAccessTime()),
+                            FileAttributes.posixPermissions(0_644));
+                } catch (IOException ioe) {
+                    throw sneak(ioe);
+                }
+                if (listener != null) {
+                    listener.accept(rp, ab);
+                }
+            }
+        });
     }
 
     private static void addDirectoryRecursive(final ArchiveBuilder ab, final String dirName, final Set<String> directories)

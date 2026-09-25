@@ -922,6 +922,21 @@ The default precedence rules (higher precedence wins) can be overridden by paren
 {/if}
 ----
 
+An operand can be a value expression that uses the <<virtual_methods,infix notation>>, with or without parentheses.
+
+.Infix notation operands example
+[source,html]
+----
+{#if item_index == items.size - 1}
+  This is the last item.
+{/if}
+{#if (item.name ?: 'unknown') == 'unknown'}
+  The item has no name.
+{/if}
+----
+
+NOTE: Inside the `if` section, `or`, `and`, `is`, `eq`, `ne`, `gt`, `ge`, `lt` and `le` are always the operators of the section, so `{#if (item.name or 'unknown') == 'unknown'}` is not an infix call of the `or` virtual method. Use `?:` instead.
+
 
 You can also add any number of `else` blocks:
 

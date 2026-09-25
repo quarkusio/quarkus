@@ -14,7 +14,7 @@ public class InvalidMultilineDataInitScriptTestCase {
     static QuarkusExtensionTest runner = new QuarkusExtensionTest()
             .setExpectedException(PersistenceException.class)
             .withApplicationRoot((jar) -> jar
-                    .addAsResource("application-invalid-multiline-test.properties", "application.properties")
+                    .addAsResource("application-invalid-multiline-data-init-script-test.properties", "application.properties")
                     .addAsResource("invalid-multiline.sql")
                     .addClasses(MyEntity.class));
 

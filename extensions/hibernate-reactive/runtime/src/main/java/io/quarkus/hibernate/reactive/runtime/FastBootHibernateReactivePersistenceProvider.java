@@ -183,6 +183,8 @@ public final class FastBootHibernateReactivePersistenceProvider implements Persi
             final IntegrationSettings integrationSettings = recordedState.getIntegrationSettings();
             RuntimeSettings.Builder runtimeSettingsBuilder = new RuntimeSettings.Builder(buildTimeSettings,
                     integrationSettings);
+            SchemaToolingUtil.PreparedImportScripts importScripts = unzipZipFilesAndReplaceZipsInImportFiles(
+                    runtimeSettingsBuilder);
 
             HibernateOrmRuntimeConfigPersistenceUnit persistenceUnitConfig = hibernateOrmRuntimeConfig.persistenceUnits()
                     .get(persistenceUnit.getName());
@@ -197,10 +199,6 @@ public final class FastBootHibernateReactivePersistenceProvider implements Persi
                 populateAfterBoot = injectRuntimeConfiguration(persistenceUnitName, persistenceUnitConfig,
                         runtimeSettingsBuilder);
             }
-
-            // Only after runtime configuration decided whether the data init script gets executed at all
-            SchemaToolingUtil.PreparedImportScripts importScripts = unzipZipFilesAndReplaceZipsInImportFiles(
-                    runtimeSettingsBuilder);
 
             for (HibernateOrmIntegrationRuntimeDescriptor descriptor : integrationRuntimeDescriptors
                     .getOrDefault(persistenceUnitName, Collections.emptyList())) {

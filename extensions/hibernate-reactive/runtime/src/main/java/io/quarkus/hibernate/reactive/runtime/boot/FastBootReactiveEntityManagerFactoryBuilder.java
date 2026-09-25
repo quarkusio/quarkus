@@ -36,9 +36,8 @@ public final class FastBootReactiveEntityManagerFactoryBuilder extends FastBootE
             SessionFactoryOptions options = optionsBuilder.buildOptions();
             return new ReactiveSessionFactoryImpl(metadata, options, metadata.getBootstrapContext());
         } catch (Exception e) {
-            throw persistenceException("Unable to build Hibernate Reactive SessionFactory", e);
-        } finally {
             closeImportScripts();
+            throw persistenceException("Unable to build Hibernate Reactive SessionFactory", e);
         }
     }
 }

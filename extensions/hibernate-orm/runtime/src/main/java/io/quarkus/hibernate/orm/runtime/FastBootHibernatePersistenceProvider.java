@@ -244,6 +244,8 @@ public final class FastBootHibernatePersistenceProvider implements PersistencePr
         final BuildTimeSettings buildTimeSettings = recordedState.getBuildTimeSettings();
         final IntegrationSettings integrationSettings = recordedState.getIntegrationSettings();
         Builder runtimeSettingsBuilder = new Builder(buildTimeSettings, integrationSettings);
+        SchemaToolingUtil.PreparedImportScripts importScripts = unzipZipFilesAndReplaceZipsInImportFiles(
+                runtimeSettingsBuilder);
 
         Optional<String> dataSourceName = recordedState.getBuildTimeSettings().getSource().getDataSource();
         if (dataSourceName.isPresent()) {
@@ -258,10 +260,6 @@ public final class FastBootHibernatePersistenceProvider implements PersistencePr
             populateAfterBoot = injectRuntimeConfiguration(persistenceUnitName, persistenceUnitConfig,
                     runtimeSettingsBuilder);
         }
-
-        // Only after runtime configuration decided whether the data init script gets executed at all
-        SchemaToolingUtil.PreparedImportScripts importScripts = unzipZipFilesAndReplaceZipsInImportFiles(
-                runtimeSettingsBuilder);
 
         for (HibernateOrmIntegrationRuntimeDescriptor descriptor : integrationRuntimeDescriptors
                 .getOrDefault(persistenceUnitName, Collections.emptyList())) {

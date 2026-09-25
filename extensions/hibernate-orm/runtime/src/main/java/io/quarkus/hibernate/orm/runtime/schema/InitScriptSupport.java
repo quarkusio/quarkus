@@ -120,7 +120,8 @@ public final class InitScriptSupport {
                     "Persistence unit '%s': not executing the data init script since Hibernate ORM starts offline (`%s=true`)",
                     persistenceUnitName,
                     HibernateOrmRuntimeConfig.puPropertyKey(persistenceUnitName, "database.start-offline"));
-            runtimeSettingsBuilder.put(AvailableSettings.JAKARTA_HBM2DDL_LOAD_SCRIPT_SOURCE, null);
+            // As with the "none" strategy, the script stays available to explicit SchemaManager calls
+            runtimeSettingsBuilder.put(DATA_INIT_SCRIPT_ON_START, false);
             return false;
         }
 

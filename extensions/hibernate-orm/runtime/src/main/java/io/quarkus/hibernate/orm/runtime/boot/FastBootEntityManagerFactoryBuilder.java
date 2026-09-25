@@ -94,9 +94,8 @@ public class FastBootEntityManagerFactoryBuilder implements EntityManagerFactory
             return new SessionFactoryImpl(metadata, optionsBuilder.buildOptions(),
                     metadata.getTypeConfiguration().getMetadataBuildingContext().getBootstrapContext());
         } catch (Exception e) {
-            throw persistenceException("Unable to build Hibernate SessionFactory", e);
-        } finally {
             closeImportScripts();
+            throw persistenceException("Unable to build Hibernate SessionFactory", e);
         }
     }
 
@@ -172,6 +171,10 @@ public class FastBootEntityManagerFactoryBuilder implements EntityManagerFactory
         }
 
         options.addSessionFactoryObservers(new ServiceRegistryCloser());
+
+        // The data init script can still be executed after startup (SchemaManager, Dev UI reset),
+        // so unzipped import scripts are only deleted once the session factory is closed
+        options.addSessionFactoryObservers(new ImportScriptsCloser(importScripts));
 
         //New in ORM 6.2:
         options.addSessionFactoryObservers(new SessionFactoryObserverForNamedQueryValidation(metadata));
@@ -254,6 +257,20 @@ public class FastBootEntityManagerFactoryBuilder implements EntityManagerFactory
             sfi.getServiceRegistry().destroy();
             ServiceRegistry basicRegistry = sfi.getServiceRegistry().getParentServiceRegistry();
             ((ServiceRegistryImplementor) basicRegistry).destroy();
+        }
+    }
+
+    private static class ImportScriptsCloser implements SessionFactoryObserver {
+
+        private final SchemaToolingUtil.PreparedImportScripts importScripts;
+
+        ImportScriptsCloser(SchemaToolingUtil.PreparedImportScripts importScripts) {
+            this.importScripts = importScripts;
+        }
+
+        @Override
+        public void sessionFactoryClosed(SessionFactory sessionFactory) {
+            importScripts.close();
         }
     }
 

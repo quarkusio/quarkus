@@ -463,11 +463,12 @@ public final class HibernateProcessorSupport {
      * Configures the SQL init scripts of a persistence unit:
      * <ul>
      * <li>the data init scripts ({@code quarkus.hibernate-orm.data-management.init-script},
-     * {@code data.sql} by default in dev/test mode), executed to load data regardless of how the schema is managed;
+     * {@code data.sql} by default if it exists in the classpath), executed to load data regardless of how the schema
+     * is managed;
      * their execution is decided at runtime based on {@code quarkus.hibernate-orm.data-management.strategy},
      * see {@link InitScriptSupport#configureDataManagement};</li>
      * <li>the schema init scripts ({@code quarkus.hibernate-orm.schema-management.init-script},
-     * {@code import.sql} by default in dev/test mode), executed right after Hibernate ORM created the schema.</li>
+     * {@code import.sql} by default if it exists in the classpath), executed right after Hibernate ORM created the schema.</li>
      * </ul>
      * Scripts configured through the deprecated {@code quarkus.hibernate-orm.sql-load-script} property
      * keep their historical behavior: they are only executed when Hibernate ORM creates the schema.

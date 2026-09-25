@@ -14,7 +14,7 @@ public class DataInitScriptAsZipFileTestCase {
     static QuarkusExtensionTest runner = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(MyEntity.class, InitScriptTestResource.class)
-                    .addAsResource("application-load-script-as-zip-file-test.properties", "application.properties")
+                    .addAsResource("application-data-init-script-as-zip-file-test.properties", "application.properties")
                     .addAsResource("load-script-test.zip"));
 
     @Test

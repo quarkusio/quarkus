@@ -1568,8 +1568,10 @@ public class VertxHttpRecorder {
                 private URI localBaseUri(String scheme, int actualPort) {
                     SmallRyeConfig smallRyeConfig = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
                     String host = config.getTcpHost();
-                    if (host.equals("0.0.0.0")) {
+                    if (host.equals("0.0.0.0") || host.equals("::") || host.equals("[::]")) {
                         host = "localhost";
+                    } else if (host.indexOf(':') >= 0 && !host.startsWith("[")) {
+                        host = "[" + host + "]";
                     }
                     String rootPath = httpBuildTimeConfig.rootPath();
                     Optional<String> contextPath = smallRyeConfig.getOptionalValue("quarkus.servlet.context-path",

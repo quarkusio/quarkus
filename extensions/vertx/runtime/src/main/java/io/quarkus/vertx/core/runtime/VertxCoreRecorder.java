@@ -185,6 +185,7 @@ public class VertxCoreRecorder {
                             try {
                                 latch.await();
                             } catch (InterruptedException e) {
+                                Thread.currentThread().interrupt();
                                 LOGGER.error("Failed waiting for verticle undeploy", e);
                             }
                         }

@@ -385,6 +385,7 @@ public class VertxHttpRecorder {
                 try {
                     virtualBootstrapChannel.channel().close().sync();
                 } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
                     LOGGER.warn("Unable to close virtualBootstrapChannel");
                 } finally {
                     virtualBootstrapChannel = null;
@@ -1111,6 +1112,7 @@ public class VertxHttpRecorder {
                         try {
                             latch.await();
                         } catch (InterruptedException e) {
+                            Thread.currentThread().interrupt();
                             throw new RuntimeException(e);
                         }
                     }
@@ -1121,7 +1123,10 @@ public class VertxHttpRecorder {
                     }
                 }
             };
-        } catch (InterruptedException | ExecutionException e) {
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new RuntimeException("Unable to start HTTP server", e);
+        } catch (ExecutionException e) {
             throw new RuntimeException("Unable to start HTTP server", e);
         }
 
@@ -1719,7 +1724,8 @@ public class VertxHttpRecorder {
         try {
             virtualBootstrapChannel = virtualBootstrap.bind(VIRTUAL_HTTP).sync();
         } catch (InterruptedException e) {
-            throw new RuntimeException("failed to bind virtual http");
+            Thread.currentThread().interrupt();
+            throw new RuntimeException("failed to bind virtual http", e);
         }
 
     }

@@ -63,6 +63,7 @@ public class ShutdownRecorder {
             try {
                 Thread.sleep(shutdownConfig.getValue().delay().get().toMillis());
             } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
                 log.error("Interrupted while waiting for delay, continuing to shutdown immediately");
             }
         }

@@ -53,6 +53,7 @@ public class KafkaStreamsTopicsHealthCheck implements HealthCheck {
                     builder.down().withData("missing_topics", String.join(",", missingTopics));
                 }
             } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
                 LOGGER.error("error when retrieving missing topics", e);
                 builder.down().withData("technical_error", e.getMessage());
             }

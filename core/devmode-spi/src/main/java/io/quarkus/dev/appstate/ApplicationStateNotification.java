@@ -51,7 +51,8 @@ public class ApplicationStateNotification {
             try {
                 ApplicationStateNotification.class.wait();
             } catch (InterruptedException e) {
-                //ignore
+                Thread.currentThread().interrupt();
+                return;
             }
         }
         if (startupProblem != null) {
@@ -69,7 +70,8 @@ public class ApplicationStateNotification {
             try {
                 ApplicationStateNotification.class.wait();
             } catch (InterruptedException e) {
-                //ignore
+                Thread.currentThread().interrupt();
+                return;
             }
         }
     }

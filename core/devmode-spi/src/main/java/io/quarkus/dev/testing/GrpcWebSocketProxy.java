@@ -38,6 +38,7 @@ public class GrpcWebSocketProxy {
                 System.err.println("Failed to close all the websockets in 5 seconds");
             }
         } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
             System.err.println("Interrupted while waiting for websockets to be closed");
         }
     }

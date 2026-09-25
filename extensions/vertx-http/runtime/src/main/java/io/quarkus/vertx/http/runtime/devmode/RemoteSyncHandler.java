@@ -99,6 +99,7 @@ public class RemoteSyncHandler implements Handler<HttpServerRequest> {
             try {
                 RemoteSyncHandler.class.wait(30000);
             } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
                 log.debug("interrupted", e);
             }
         }

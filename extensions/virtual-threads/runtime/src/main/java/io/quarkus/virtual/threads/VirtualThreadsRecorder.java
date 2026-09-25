@@ -82,6 +82,7 @@ public class VirtualThreadsRecorder {
                                         return;
                                     }
                                 } catch (InterruptedException ignored) {
+                                    Thread.currentThread().interrupt();
                                 }
                             }
                         }

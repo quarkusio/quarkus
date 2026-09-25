@@ -154,6 +154,7 @@ public class ExecutorRecorder {
                             return;
                         }
                     } catch (InterruptedException ignored) {
+                        Thread.currentThread().interrupt();
                     }
                 }
             }

@@ -40,6 +40,7 @@ public class InitializationTaskRecorder {
         try {
             latch.await(waitSeconds, TimeUnit.SECONDS);
         } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
             System.err.println(waitErrorMessage);
         }
         throw supplier.get();

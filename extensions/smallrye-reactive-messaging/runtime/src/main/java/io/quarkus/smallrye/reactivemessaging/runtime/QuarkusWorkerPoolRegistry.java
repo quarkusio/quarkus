@@ -115,6 +115,7 @@ public class QuarkusWorkerPoolRegistry extends WorkerPoolRegistry {
                             }
                         }
                     } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
                         log.warnf(e,
                                 "Interrupted while waiting for worker pools to terminate, forcing shutdown of all remaining pools");
                         // Force shutdown all remaining worker pools

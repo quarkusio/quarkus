@@ -76,6 +76,7 @@ public class JPAConfig {
             try {
                 i.get();
             } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
                 throw new RuntimeException(e);
             } catch (ExecutionException e) {
                 throw e.getCause() instanceof RuntimeException ? (RuntimeException) e.getCause()

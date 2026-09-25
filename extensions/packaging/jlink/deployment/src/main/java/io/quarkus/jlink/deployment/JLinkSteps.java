@@ -15,6 +15,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.BooleanSupplier;
 import java.util.jar.Manifest;
 import java.util.spi.ToolProvider;
 
@@ -280,9 +281,10 @@ public final class JLinkSteps {
      * @param imageItem the jlink image item (must not be {@code null})
      * @return the artifact result item (not {@code null})
      */
-    @BuildStep
+    @BuildStep(onlyIf = JLinkRequired.class)
     public ArtifactResultBuildItem produceArtifactResult(JLinkImageBuildItem imageItem) {
-        return new ArtifactResultBuildItem(imageItem.imagePath().toAbsolutePath(), "jlink", Map.of());
+        return new ArtifactResultBuildItem(imageItem.imagePath().toAbsolutePath(), "jlink",
+                Map.of("launcher-name", config.launcherName()));
     }
 
     // todo: we should have a central Duration formatter
@@ -323,5 +325,19 @@ public final class JLinkSteps {
             }
         }
         return b;
+    }
+
+    static class JLinkRequired implements BooleanSupplier {
+
+        private final JLinkConfig config;
+
+        JLinkRequired(JLinkConfig config) {
+            this.config = config;
+        }
+
+        @Override
+        public boolean getAsBoolean() {
+            return config.enabled();
+        }
     }
 }

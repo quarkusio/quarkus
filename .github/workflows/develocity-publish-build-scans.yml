@@ -21,7 +21,7 @@ jobs:
     steps:
       - name: Setup Build Scan link capture
         id: setup
-        uses: gradle/develocity-actions/setup-maven@0e1f30c14ab56d0c1ecf229a0ffc3eb3e40e4642 # v2.2
+        uses: gradle/develocity-actions/setup-maven@4b276bd81fb55e2fcbae724c48699de57e2156eb # v2.3
         with:
           add-pr-comment: false
           add-job-summary: true

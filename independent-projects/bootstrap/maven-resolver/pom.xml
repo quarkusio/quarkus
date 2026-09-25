@@ -146,6 +146,22 @@
             <artifactId>assertj-core</artifactId>
             <scope>test</scope>
         </dependency>
+        <!-- Maven 4 settings API: needed at test time to verify
+             Maven4SettingsSupport parsing of top-level repositories.
+             At runtime, Maven 4 provides these classes on the classpath;
+             under Maven 3, Maven4SettingsSupport is a no-op (NoClassDefFoundError). -->
+        <dependency>
+            <groupId>org.apache.maven</groupId>
+            <artifactId>maven-support</artifactId>
+            <version>4.0.0-rc-5</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.maven</groupId>
+            <artifactId>maven-api-settings</artifactId>
+            <version>4.0.0-rc-5</version>
+            <scope>test</scope>
+        </dependency>
 
         <dependency>
             <groupId>io.quarkus</groupId>

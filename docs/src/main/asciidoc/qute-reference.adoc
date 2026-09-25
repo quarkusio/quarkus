@@ -1255,6 +1255,10 @@ In other words, the argument value `foo` is resolved and can be accessed using `
 
 NOTE: If an argument does not have a name and the value is a single word string literal , such as `"foo"`, then the name is defaulted and quotation marks are removed, e.g. `{#myTag "foo" /}` becomes `{#myTag foo="foo" /}`.
 
+If the tag template declares the type of a parameter with a <<typesafe_expressions,parameter declaration>>, such as `{@org.acme.User it}` or `{@java.lang.Integer size=10}`, then the arguments passed by the callers of the tag are validated against these declarations at build time.
+The build fails if the type of an argument is known and it is not assignable to the declared type; a widening numeric conversion, e.g. an `int` argument for a `java.lang.Long` parameter, is accepted.
+Arguments whose type cannot be determined, arguments that are not declared in the tag template and declared parameters that are not passed by the caller are not validated.
+
 `io.quarkus.qute.UserTagSectionHelper.Arguments` metadata are accessible in a tag using the `_args` alias.
 
 * `_args.size` - returns the actual number of arguments passed to a tag

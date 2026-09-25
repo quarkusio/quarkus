@@ -2455,6 +2455,14 @@ By default, methods annotated with `@ServerExceptionMapper` do **not** run CDI i
 Users however can opt into interceptors by adding the corresponding annotations to the method.
 ====
 
+[NOTE]
+====
+When an exception is thrown, the mapper registered for the closest type in the exception hierarchy is selected first.
+The priority of a mapper only decides between the mappers registered for the same exception type: the mapper with the lowest priority value wins, and the mapper registered first wins when the priorities are equal.
+A mapper for `Throwable` therefore never replaces a mapper registered for a more specific exception type, such as the builtin mappers provided by extensions, whatever its priority is.
+Such a builtin mapper can be disabled with `quarkus.rest.exception-mapping.disable-mapper-for`.
+====
+
 [TIP]
 ====
 When mapping an exception to a `@ServerExceptionMapper` method, the cause of the exception normally does not come into play.

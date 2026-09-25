@@ -155,7 +155,7 @@ public class FunctionZipProcessor {
 
             // See https://github.com/oracle/graal/issues/4921
             try (DirectoryStream<Path> sharedLibs = Files.newDirectoryStream(nativeImage.getPath().getParent(),
-                    "*.{so,dll}")) {
+                    "*.{so,dll,dylib}")) {
                 sharedLibs.forEach(src -> {
                     try {
                         // In this use case, we can force all libs to be non-executable.

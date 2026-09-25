@@ -1845,6 +1845,14 @@ public interface MultipartService {
 
 More information about this class and supported methods can be found on the javadoc of link:https://javadoc.io/doc/io.quarkus.resteasy.reactive/resteasy-reactive-client/latest/org/jboss/resteasy/reactive/client/api/ClientMultipartForm.html[`ClientMultipartForm`].
 
+This is also the way to send content held in memory, for example a `byte[]` read from a database, as a file part whose name is only known at runtime, which the declarative `@PartFilename` annotation cannot express:
+
+[source, java]
+----
+ClientMultipartForm form = ClientMultipartForm.create()
+        .binaryFileUpload("file", fileName, Buffer.buffer(bytes), MediaType.APPLICATION_OCTET_STREAM);
+----
+
 ===== Converting a received multipart object into a client request
 
 A good example of creating `ClientMultipartForm` is one where it is created from the server's `MultipartFormDataInput` (which represents a multipart request received by xref:rest.adoc#multipart[Quarkus REST]) - the purpose being to propagate the request downstream while allowing for arbitrary modifications:

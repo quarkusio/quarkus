@@ -214,7 +214,15 @@ An example of such a report could be:
 }
 ----
 
-This response is produced by Quarkus via a builtin implementation of `jakarta.ws.rs.ext.ExceptionMapper`. If the application code needs to handle `ValidationException` in some custom way,
+This response is produced by Quarkus via a builtin implementation of `jakarta.ws.rs.ext.ExceptionMapper`.
+The violations of such a rejected request are not logged, since they are a client error, but they can be seen in the console by enabling the debug logs of the builtin mappers, which is useful in dev mode:
+
+[source,properties]
+----
+quarkus.log.category."io.quarkus.hibernate.validator".level=DEBUG
+----
+
+If the application code needs to handle `ValidationException` in some custom way,
 it can provide an implementation of `jakarta.ws.rs.ext.ExceptionMapper` like so:
 
 [source, java]

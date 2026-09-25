@@ -12,7 +12,6 @@ import org.jboss.jandex.Type;
 import io.quarkus.gizmo2.ClassOutput;
 import io.quarkus.gizmo2.Expr;
 import io.quarkus.gizmo2.Gizmo;
-import io.quarkus.gizmo2.LambdaStrategy;
 import io.quarkus.gizmo2.LocalVar;
 import io.quarkus.gizmo2.creator.BlockCreator;
 import io.quarkus.gizmo2.creator.ClassCreator;
@@ -27,7 +26,6 @@ public abstract class AbstractGenerator {
         this.generatedTypes = new HashSet<>();
         this.index = index;
         this.gizmo = Gizmo.create(classOutput)
-                .withLambdaStrategy(LambdaStrategy.ANONYMOUS_CLASS)
                 .withDebugInfo(false)
                 .withParameters(false);
     }

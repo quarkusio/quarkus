@@ -14,13 +14,13 @@ import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
 import io.quarkus.deployment.builditem.GeneratedServiceProviderBuildItem;
 import io.quarkus.deployment.builditem.PreInitBuildItem;
 import io.quarkus.deployment.builditem.PreInitRunnableBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ConstantBootstrapBuildItem;
 import io.quarkus.deployment.pkg.AotJarEnabled;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo2.ClassOutput;
 import io.quarkus.gizmo2.Const;
 import io.quarkus.gizmo2.Expr;
 import io.quarkus.gizmo2.Gizmo;
-import io.quarkus.gizmo2.LambdaStrategy;
 import io.quarkus.gizmo2.desc.ClassMethodDesc;
 import io.quarkus.gizmo2.desc.ConstructorDesc;
 import io.quarkus.gizmo2.desc.MethodDesc;
@@ -43,11 +43,11 @@ public class PreInitBuildStep {
     PreInitBuildItem executePreInitTasks(List<PreInitRunnableBuildItem> preInitRunnables,
             BuildProducer<GeneratedClassBuildItem> generatedClasses,
             BuildProducer<GeneratedResourceBuildItem> generatedResources,
-            BuildProducer<GeneratedServiceProviderBuildItem> generatedServiceProviders) {
+            BuildProducer<GeneratedServiceProviderBuildItem> generatedServiceProviders,
+            BuildProducer<ConstantBootstrapBuildItem> constantBootstraps) {
         ClassOutput output = new GeneratedClassGizmo2Adaptor(generatedClasses, generatedResources, generatedServiceProviders,
-                false);
+                constantBootstraps, false);
         Gizmo gizmo = Gizmo.create(output)
-                .withLambdaStrategy(LambdaStrategy.ANONYMOUS_CLASS)
                 .withDebugInfo(false)
                 .withParameters(false);
 

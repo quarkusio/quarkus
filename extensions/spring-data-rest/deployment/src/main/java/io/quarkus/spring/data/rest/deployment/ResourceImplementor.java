@@ -6,7 +6,6 @@ import org.jboss.logging.Logger;
 
 import io.quarkus.gizmo2.ClassOutput;
 import io.quarkus.gizmo2.Gizmo;
-import io.quarkus.gizmo2.LambdaStrategy;
 import io.quarkus.rest.data.panache.RestDataResource;
 import io.quarkus.runtime.util.HashUtil;
 
@@ -28,7 +27,7 @@ public class ResourceImplementor {
         String className = resourceType + "ResourceImpl_" + HashUtil.sha1(resourceType);
         LOGGER.tracef("Starting generation of '%s'", className);
 
-        Gizmo.create(classOutput).withLambdaStrategy(LambdaStrategy.ANONYMOUS_CLASS).class_(className, cc -> {
+        Gizmo.create(classOutput).class_(className, cc -> {
             cc.implements_(RestDataResource.class);
             cc.addAnnotation(ApplicationScoped.class);
             cc.defaultConstructor();

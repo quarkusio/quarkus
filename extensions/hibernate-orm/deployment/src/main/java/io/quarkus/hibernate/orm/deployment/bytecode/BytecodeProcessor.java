@@ -34,13 +34,13 @@ import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
 import io.quarkus.deployment.builditem.GeneratedServiceProviderBuildItem;
 import io.quarkus.deployment.builditem.LiveReloadBuildItem;
 import io.quarkus.deployment.builditem.TransformedClassesBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ConstantBootstrapBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageProxyDefinitionBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.pkg.AotJarEnabled;
 import io.quarkus.deployment.pkg.steps.NativeOrNativeSourcesBuild;
 import io.quarkus.deployment.util.IoUtil;
 import io.quarkus.gizmo2.Gizmo;
-import io.quarkus.gizmo2.LambdaStrategy;
 import io.quarkus.hibernate.orm.deployment.ClassNames;
 import io.quarkus.hibernate.orm.deployment.HibernateOrmEnabled;
 import io.quarkus.hibernate.orm.deployment.JpaModelBuildItem;
@@ -184,7 +184,8 @@ final class BytecodeProcessor {
             List<ApplicationClassPredicateBuildItem> predicates,
             BuildProducer<GeneratedClassBuildItem> generatedClasses,
             BuildProducer<GeneratedResourceBuildItem> generatedResources,
-            BuildProducer<GeneratedServiceProviderBuildItem> generatedServiceProviders) {
+            BuildProducer<GeneratedServiceProviderBuildItem> generatedServiceProviders,
+            BuildProducer<ConstantBootstrapBuildItem> constantBootstraps) {
 
         IndexView index = combinedIndex.getIndex();
 
@@ -214,8 +215,7 @@ final class BytecodeProcessor {
 
         Gizmo gizmo = Gizmo
                 .create(new GeneratedClassGizmo2Adaptor(generatedClasses, generatedResources, generatedServiceProviders,
-                        appClassPredicate))
-                .withLambdaStrategy(LambdaStrategy.ANONYMOUS_CLASS)
+                        constantBootstraps, appClassPredicate))
                 .withDebugInfo(false)
                 .withParameters(false);
 

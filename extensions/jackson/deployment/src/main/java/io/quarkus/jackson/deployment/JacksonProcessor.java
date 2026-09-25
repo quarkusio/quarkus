@@ -52,7 +52,6 @@ import io.quarkus.gizmo2.ClassOutput;
 import io.quarkus.gizmo2.Const;
 import io.quarkus.gizmo2.Expr;
 import io.quarkus.gizmo2.Gizmo;
-import io.quarkus.gizmo2.LambdaStrategy;
 import io.quarkus.gizmo2.LocalVar;
 import io.quarkus.gizmo2.ParamVar;
 import io.quarkus.gizmo2.Reflection2Gizmo;
@@ -359,7 +358,6 @@ public class JacksonProcessor {
 
         ClassOutput classOutput = new GeneratedBeanGizmo2Adaptor(generatedBeans);
         Gizmo g = Gizmo.create(classOutput)
-                .withLambdaStrategy(LambdaStrategy.ANONYMOUS_CLASS)
                 .withDebugInfo(false)
                 .withParameters(false);
         g.class_("io.quarkus.jackson.customizer.RegisterSerializersAndDeserializersCustomizer", cc -> {

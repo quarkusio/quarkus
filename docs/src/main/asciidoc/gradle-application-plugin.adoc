@@ -1,0 +1,1824 @@
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
+////
+[id="gradle-application-plugin"]
+= The io.quarkus.application Gradle plugin
+include::_attributes.adoc[]
+:diataxis-type: reference
+:categories: tooling, native
+:extension-status: preview
+:summary: Build, test, run, and publish multiple Quarkus application outputs with the configuration-cache-compatible Gradle plugin.
+:topics: gradle,tooling
+
+The preview `io.quarkus.application` Gradle plugin is designed for Gradle's configuration cache and Isolated Projects.
+It lets one project declare several independently configured application packages or native executables and gives each one its own build, test, run, image, deployment, and publication integration where applicable.
+This avoids changing one project-wide package type when different consumers need different application forms.
+See <<gradle-application-plugin-gradle-model,How the plugin works with Gradle's performance features>> for the Gradle concepts behind this design.
+
+include::{includes}/extension-status.adoc[]
+
+This plugin is different from the `io.quarkus` plugin used by currently generated projects.
+Use this page for `io.quarkus.application`.
+See xref:gradle-tooling.adoc[Quarkus and Gradle] for `io.quarkus`.
+For direct migration and temporary legacy-first coexistence procedures, see xref:gradle-application-plugin-migration.adoc[Migrate to the `io.quarkus.application` Gradle plugin].
+
+The plugin does not choose an application package for you.
+Declaring a build registers its task family lazily, but does not run the build or add it to `assemble`.
+
+[[gradle-application-plugin-prerequisites]]
+== Prerequisites and plugin application
+
+Quarkus 4 requires Java 21.
+The Gradle plugins require Gradle 9.6 or later.
+The repository wrapper, and the version used to verify this guide, is Gradle {gradle-version}.
+
+Apply version {quarkus-version} of the plugin to the application project.
+The plugin also applies Gradle's Java plugin.
+
+[role="primary asciidoc-tabs-sync-groovy"]
+.Groovy DSL
+****
+[source,groovy]
+----
+include::{generated-dir}/examples/gradle-application-plugin-basic.gradle[tag=plugin-application]
+----
+****
+
+[role="secondary asciidoc-tabs-sync-kotlin"]
+.Kotlin DSL
+****
+[source,kotlin]
+----
+include::{generated-dir}/examples/gradle-application-plugin-basic.gradle.kts[tag=plugin-application]
+----
+****
+
+Declare repositories, the Quarkus platform, and application extensions through the normal Gradle dependency-management conventions used by your build.
+The examples on this page focus on `io.quarkus.application`; your application still needs its normal sources and dependencies.
+Most displayed examples are also executable configuration and task-graph fixtures.
+
+[NOTE]
+====
+Project names, coordinates, image references, deployment names, ports, paths, URLs, JVM options, environment variables, and credentials shown in examples illustrate the DSL or command syntax.
+Unless a value is explicitly identified as a default or requirement, choose one appropriate for your application and environment instead of treating the example as a recommendation.
+====
+
+[[gradle-application-plugin-named-builds]]
+== Define named application builds
+
+Each _named build_ describes one application output: its package type, output location and name, manifest, image settings, deployments, and other output-specific choices.
+Names let several outputs coexist without a mutable global package setting and provide stable task and configuration names that other projects and automation can select.
+For example, the same application can expose a fast JAR for a server distribution, an uber JAR for a command-line download, and a native executable for a container image.
+
+Register named builds in `quarkusApplication.builds`.
+For example, the following declaration creates a fast-JAR build named `production`.
+
+[role="primary asciidoc-tabs-sync-groovy"]
+.Groovy DSL
+****
+[source,groovy]
+----
+include::{generated-dir}/examples/gradle-application-plugin-basic.gradle[tag=minimal-named-build]
+----
+****
+
+[role="secondary asciidoc-tabs-sync-kotlin"]
+.Kotlin DSL
+****
+[source,kotlin]
+----
+include::{generated-dir}/examples/gradle-application-plugin-basic.gradle.kts[tag=minimal-named-build]
+----
+****
+
+A build name must:
+
+* start with a letter;
+* contain only letters, digits, hyphens, or underscores;
+* not contain an empty segment, such as two adjacent separators; and
+* derive a task-name segment that is unique, ignoring case, among the named builds.
+
+Hyphens and underscores start a new capitalized task-name segment.
+For example, `production-linux` becomes `ProductionLinux`.
+Configuration fails if a derived name collides with another generated or existing task.
+
+[[gradle-application-plugin-build-types]]
+=== Build types and capabilities
+
+The following table separates registration from execution.
+Native, container-image, deployment, and startup-archive operations still require the corresponding toolchain, extension, credentials, or external service.
+
+[cols="2,1,1,1,1,1,1,1,1"]
+|===
+|Build declaration |Run |Manifest |Package variants |Package-backed tests |Named native test |Image tasks |Deployment tasks |Startup archive
+
+|`fastJar`
+|Yes
+|Yes
+|Yes
+|Yes
+|No
+|Yes
+|When configured
+|No
+
+|`aotJar`
+|Yes
+|Yes
+|Yes
+|Yes
+|No
+|Yes
+|When configured
+|Optional; optimized-image tasks are conditional
+
+|`legacyJar`
+|Yes
+|Yes
+|Yes
+|Yes
+|No
+|Yes
+|When configured
+|No
+
+|`mutableJar`
+|Yes
+|Yes
+|Yes
+|Yes
+|No
+|Yes
+|When configured
+|No
+
+|`uberJar`
+|Yes
+|Yes
+|Yes
+|Yes
+|No
+|Yes
+|When configured
+|No
+
+|`nativeExecutable`
+|No
+|No
+|No
+|Yes
+|Yes
+|Yes
+|When configured
+|No
+
+|`nativeSources`
+|No
+|No
+|No
+|No: it is not runnable
+|No
+|Yes
+|When configured
+|No
+|===
+
+Every build type can opt in to `assemble` and to additional offline preparation.
+Image tasks are registered for every named build; whether a provider can execute a particular package shape is provider- and environment-dependent.
+The testing columns assume that `io.quarkus.application` owns Gradle test integration.
+In legacy-first coexistence mode, `io.quarkus` retains that ownership, so named native-test suites and package-backed integration tests targeting `io.quarkus.application` native builds are unavailable.
+
+[[gradle-application-plugin-build-run]]
+== Build and run named outputs
+
+For a build named `production`, run:
+
+[source,shell]
+----
+./gradlew quarkusProductionBuild
+----
+
+JAR builds also register:
+
+[source,shell]
+----
+./gradlew quarkusProductionRun
+----
+
+The run task starts the package in the foreground and always executes.
+It accepts `--jvm-args` and `--quarkus-args`.
+Its working directory defaults to the project directory, and its optional run target uses the `quarkus.run.target` system property.
+Run tasks are not configuration-cache compatible or build-cacheable because they own a foreground process.
+
+The common generated task prefix is `quarkus<NameSegment>`.
+See <<gradle-application-plugin-task-reference,the task reference>> for the complete suffix table.
+
+[[gradle-application-plugin-assemble]]
+== Integrate selected builds with `assemble`
+
+Named builds do not participate in `assemble` by default.
+Opt in each build that should participate:
+
+[role="primary asciidoc-tabs-sync-groovy"]
+.Groovy DSL
+****
+[source,groovy]
+----
+include::{generated-dir}/examples/gradle-application-plugin-basic.gradle[tag=assemble-integration]
+----
+****
+
+[role="secondary asciidoc-tabs-sync-kotlin"]
+.Kotlin DSL
+****
+[source,kotlin]
+----
+include::{generated-dir}/examples/gradle-application-plugin-basic.gradle.kts[tag=assemble-integration]
+----
+****
+
+The opt-in adds only that build's primary package or native task.
+It does not add run, image, push, deployment, integration-test, or native-test work.
+Named native tests are also not added to `check` automatically.
+
+[[gradle-application-plugin-package-output]]
+== Configure package output
+
+The default output directory for a build named `production` is:
+
+[source,text]
+----
+build/quarkus-builds/production/package
+----
+
+The default `outputName` combines:
+
+1. `archiveBaseName`, which defaults to `project.name`;
+2. `archiveBaseNameSuffix`, which defaults to an empty string; and
+3. `archiveVersion`, which defaults to `project.version` and is prefixed with `-` when non-empty.
+
+If `project.version` is `unspecified`, configure `project.version`, `archiveVersion`, or `outputName`.
+Setting `outputName` explicitly bypasses assembly of the three archive-name components.
+Legacy-JAR, uber-JAR, native-executable, and native-sources outputs additionally default to `archiveRunnerSuffix="-runner"` and `archiveAddRunnerSuffix=true`.
+
+The root `packageOutputTimestamp` convention is `1970-01-02T00:00:00Z`, which makes generated package-entry timestamps deterministic.
+Call `unsetConvention()` on the property when timestamps must not be normalized.
+An explicit `quarkus.package.output-timestamp` configuration value has normal Quarkus configuration precedence over the convention.
+
+JAR builds expose a typed, per-output manifest model.
+It contains a main attributes map and named sections, each with its own attributes map.
+It is not Gradle's `org.gradle.api.java.archives.Manifest`: it has no `from` or merge API, and all keys and values are strings.
+
+[role="primary asciidoc-tabs-sync-groovy"]
+.Groovy DSL
+****
+[source,groovy]
+----
+include::{generated-dir}/examples/gradle-application-plugin-basic.gradle[tag=package-customization]
+----
+****
+
+[role="secondary asciidoc-tabs-sync-kotlin"]
+.Kotlin DSL
+****
+[source,kotlin]
+----
+include::{generated-dir}/examples/gradle-application-plugin-basic.gradle.kts[tag=package-customization]
+----
+****
+
+Root `quarkusBuildProperties` provide the common baseline.
+A named build's `quarkusBuildProperties` replace same-named root entries.
+Typed operation-owned values, such as the selected package type and native arguments, have higher precedence.
+
+[[gradle-application-plugin-package-variants]]
+== Consume, archive, and publish packages
+
+Every named JAR build publishes two outgoing configurations:
+
+Use `quarkus<Name>PackageElements` when the consumer needs a distributable application.
+Its single directory artifact represents the complete package, including the files next to a fast-, AOT-, legacy-, or mutable-JAR launcher that are required at runtime.
+Copy, archive, or publish that directory as one unit.
+
+Use `quarkus<Name>LauncherJarElements` only when the consumer deliberately needs the primary JAR at its existing producer-owned location, for example to launch it from an integration test elsewhere in the same Gradle build tree.
+The consumer can be another project with its own build script or a project in an included build; it need not be the producing project.
+Resolving this variant does not copy required sibling files, so the launcher of a layout-based package is not a portable distribution by itself.
+
+[cols="2,2,3"]
+|===
+|Configuration |Artifact |Contract
+
+|`quarkus<Name>PackageElements`
+|One directory
+|The complete relocatable package tree.
+
+|`quarkus<Name>LauncherJarElements`
+|One JAR at its producer-owned location
+|The primary launcher only. Fast-, AOT-, legacy-, and mutable-JAR launchers can require sibling package files.
+An uber JAR is independently runnable.
+|===
+
+The variants intentionally do not publish Java usage, target-JVM, or bundling attributes.
+They use the following public attributes:
+
+[cols="2,3"]
+|===
+|Attribute |Value
+
+|Category
+|`quarkus-application-package` or `quarkus-application-launcher`
+
+|Library elements
+|`quarkus-application-package-directory` or `quarkus-application-launcher-jar`
+
+|Artifact type
+|`directory` or `jar`
+
+|`io.quarkus.application.build-name`
+|The original named-build name
+
+|`io.quarkus.application.build-type`
+|`fast-jar`, `aot-jar`, `legacy-jar`, `mutable-jar`, or `uber-jar`
+|===
+
+Use the producer's configuration name directly in a tightly coupled build, as the following example does.
+This selects that exact outgoing configuration; the consumer does not also need matching attributes.
+It remains compatible with configuration cache and Isolated Projects: the project dependency selects a published configuration by name without reading the producer project's model, and the consumer treats its own resolvable configuration as a lazy file collection.
+The trade-off is coupling to the producer's generated configuration name.
+To remain decoupled from the producer's configuration name, use ordinary variant-aware project or included-build dependency selection and set all five attributes in the table on the resolvable consumer configuration, as shown below.
+
+Resolving either configuration as a task input automatically adds the producing `quarkus<Name>Build` task to the task graph.
+You do not need an additional `dependsOn` for the package build.
+
+The tested example is a Gradle multi-project build.
+Project `app` produces a named fast-JAR package called `server`, while project `distribution` consumes and archives it:
+
+[role="primary asciidoc-tabs-sync-groovy"]
+.Groovy DSL
+****
+[source,groovy]
+----
+include::{generated-dir}/examples/gradle-application-plugin-package-consumer-settings.gradle[tag=package-consumer-settings]
+----
+
+[source,groovy]
+----
+include::{generated-dir}/examples/gradle-application-plugin-package-producer.gradle[tag=package-producer]
+----
+****
+
+[role="secondary asciidoc-tabs-sync-kotlin"]
+.Kotlin DSL
+****
+[source,kotlin]
+----
+include::{generated-dir}/examples/gradle-application-plugin-package-consumer-settings.gradle.kts[tag=package-consumer-settings]
+----
+
+[source,kotlin]
+----
+include::{generated-dir}/examples/gradle-application-plugin-package-producer.gradle.kts[tag=package-producer]
+----
+****
+
+The `distribution` project declares two resolvable configurations of its own and connects them to the two outgoing `server` configurations from `app`:
+
+[role="primary asciidoc-tabs-sync-groovy"]
+.Groovy DSL
+****
+[source,groovy]
+----
+include::{generated-dir}/examples/gradle-application-plugin-package-consumer.gradle[tag=package-variants]
+----
+****
+
+[role="secondary asciidoc-tabs-sync-kotlin"]
+.Kotlin DSL
+****
+[source,kotlin]
+----
+include::{generated-dir}/examples/gradle-application-plugin-package-consumer.gradle.kts[tag=package-variants]
+----
+****
+
+The following alternative selects the same complete package by its five attributes rather than by the producer's generated configuration name:
+
+[role="primary asciidoc-tabs-sync-groovy"]
+.Groovy DSL
+****
+[source,groovy]
+----
+include::{generated-dir}/examples/gradle-application-plugin-package-consumer.gradle[tag=attribute-selected-package]
+----
+****
+
+[role="secondary asciidoc-tabs-sync-kotlin"]
+.Kotlin DSL
+****
+[source,kotlin]
+----
+include::{generated-dir}/examples/gradle-application-plugin-package-consumer.gradle.kts[tag=attribute-selected-package]
+----
+****
+
+The plugin deliberately does not impose an archive format.
+Use a Gradle `Zip` or `Tar` task, enable ZIP64 where required, and choose compression according to the distribution's needs.
+Archive the complete package-directory variant, not a layout launcher in isolation.
+The example also disables preserved timestamps and enables reproducible file order so that Gradle can produce a reproducible archive from reproducible package inputs.
+
+[role="primary asciidoc-tabs-sync-groovy"]
+.Groovy DSL
+****
+[source,groovy]
+----
+include::{generated-dir}/examples/gradle-application-plugin-package-consumer.gradle[tag=archive-package]
+----
+****
+
+[role="secondary asciidoc-tabs-sync-kotlin"]
+.Kotlin DSL
+****
+[source,kotlin]
+----
+include::{generated-dir}/examples/gradle-application-plugin-package-consumer.gradle.kts[tag=archive-package]
+----
+****
+
+A user-owned archive can also be attached to a Maven publication.
+The example uses the `distribution` classifier:
+
+[role="primary asciidoc-tabs-sync-groovy"]
+.Groovy DSL
+****
+[source,groovy]
+----
+include::{generated-dir}/examples/gradle-application-plugin-package-consumer.gradle[tag=publish-package]
+----
+****
+
+[role="secondary asciidoc-tabs-sync-kotlin"]
+.Kotlin DSL
+****
+[source,kotlin]
+----
+include::{generated-dir}/examples/gradle-application-plugin-package-consumer.gradle.kts[tag=publish-package]
+----
+****
+
+Attaching an archive creates an ordinary Maven artifact.
+It does not publish the Quarkus variant attributes or create a rich Gradle Module Metadata contract automatically.
+
+[[gradle-application-plugin-testing]]
+== Test applications
+
+`io.quarkus.application` applies Gradle's Java plugin, which also makes the JVM Test Suite model and `testing` extension available.
+You do not need to apply `jvm-test-suite` separately.
+
+The standard Gradle `test` task receives Quarkus finite-test setup automatically.
+Select additional finite `Test` tasks individually with `quarkusApplication.tests.task(provider)`, select all current and future `Test` tasks with `allGradleTestTasks()`, or call `forQuarkusTests()` on a JVM Test Suite.
+Selections are lazy and idempotent.
+
+[role="primary asciidoc-tabs-sync-groovy"]
+.Groovy DSL
+****
+[source,groovy]
+----
+include::{generated-dir}/examples/gradle-application-plugin-testing.gradle[tag=standard-and-custom-tests]
+----
+****
+
+[role="secondary asciidoc-tabs-sync-kotlin"]
+.Kotlin DSL
+****
+[source,kotlin]
+----
+include::{generated-dir}/examples/gradle-application-plugin-testing.gradle.kts[tag=standard-and-custom-tests]
+----
+****
+
+=== Package-backed integration tests
+
+Call `forQuarkusIntegrationTests(build)` on a JVM Test Suite to run it against one named JAR or native-executable build.
+The build argument can be a non-empty build name, a `QuarkusApplicationBuild`, or a provider of either.
+The plugin wires the selected package task and the required launch metadata lazily.
+Native-sources outputs are rejected because they do not produce a runnable artifact.
+When both application plugins are applied for migration, `io.quarkus` retains test ownership.
+In that coexistence mode, a suite cannot target a named native build created by `io.quarkus.application`.
+
+[role="primary asciidoc-tabs-sync-groovy"]
+.Groovy DSL
+****
+[source,groovy]
+----
+include::{generated-dir}/examples/gradle-application-plugin-testing.gradle[tag=package-backed-tests]
+----
+****
+
+[role="secondary asciidoc-tabs-sync-kotlin"]
+.Kotlin DSL
+****
+[source,kotlin]
+----
+include::{generated-dir}/examples/gradle-application-plugin-testing.gradle.kts[tag=package-backed-tests]
+----
+****
+
+=== Named native tests
+
+When `io.quarkus.application` owns test integration, each `nativeExecutable` build creates one JVM Test Suite and test task named `quarkus<Name>NativeTest`.
+The generated suite has native-test mode fixed.
+Use `includeTestsFrom` to add compiled tests and runtime dependencies from another JVM suite in the same project.
+Self-inclusion, another generated native suite, or a suite from another project is rejected.
+
+[role="primary asciidoc-tabs-sync-groovy"]
+.Groovy DSL
+****
+[source,groovy]
+----
+include::{generated-dir}/examples/gradle-application-plugin-testing.gradle[tag=native-tests]
+----
+****
+
+[role="secondary asciidoc-tabs-sync-kotlin"]
+.Kotlin DSL
+****
+[source,kotlin]
+----
+include::{generated-dir}/examples/gradle-application-plugin-testing.gradle.kts[tag=native-tests]
+----
+****
+
+Running a native test requires a supported native-image toolchain.
+The generated task is not added to `check` or `assemble`.
+See xref:building-native-image.adoc[Building a native executable] for native prerequisites.
+
+[[gradle-application-plugin-dev-mode]]
+== Develop with Gradle continuous build
+
+Run dev mode with:
+
+[source,shell]
+----
+./gradlew quarkusApplicationDev --continuous --no-configuration-cache
+----
+
+The `--continuous` option is mandatory.
+It tells Gradle to watch the task's declared source, resource, generated-source, and dependency inputs and rerun the task graph after a change.
+The plugin retains the Quarkus process between those executions and sends it each successful set of new build outputs.
+Without Gradle continuous build there can be no later iteration, so the task rejects the invocation instead of starting a session that cannot receive changes.
+Pass `--no-configuration-cache` explicitly because these long-lived plugin tasks deliberately opt out of configuration-cache reuse.
+The flag also avoids the current Gradle 9.6 Kotlin DSL continuous-build failures tracked in
+link:https://github.com/gradle/gradle/issues/34013[Gradle issue 34013] and
+link:https://github.com/gradle/gradle/issues/38482[Gradle issue 38482].
+
+Gradle owns compilation, resource processing, code generation, and continuous-build cancellation.
+The long-lived Quarkus process receives successful output changes.
+Compilation failures are reported to the running application without replacing the last successful baseline; a later successful iteration clears the failure.
+When a precise change set is too large, the plugin sends a complete output rebaseline.
+If live reload is disabled, successful changes are retained and replayed automatically after it is re-enabled.
+
+When continuous testing is enabled, the task logs a browser Dev UI URL after Quarkus reports its main HTTP listen address.
+For example:
+
+[source,text]
+----
+Continuous Testing Dev UI: http://localhost:8080/q/dev-ui
+----
+
+The current log parser deliberately ignores the management listener.
+If the Dev UI is exposed on a separately configured management interface, use its actual management address instead of the logged main-interface URL.
+Browser-based continuous-testing controls remain available through Dev UI.
+Console stdin controls are not inherited because Gradle owns stdin.
+For a broader comparison of Quarkus development modes, see
+xref:dev-mode-differences.adoc[Differences between Quarkus dev mode and a production application].
+
+Configure both dev and dedicated continuous-test launches in the `dev` block:
+
+[role="primary asciidoc-tabs-sync-groovy"]
+.Groovy DSL
+****
+[source,groovy]
+----
+include::{generated-dir}/examples/gradle-application-plugin-advanced.gradle[tag=dev-and-continuous-test]
+----
+****
+
+[role="secondary asciidoc-tabs-sync-kotlin"]
+.Kotlin DSL
+****
+[source,kotlin]
+----
+include::{generated-dir}/examples/gradle-application-plugin-advanced.gradle.kts[tag=dev-and-continuous-test]
+----
+****
+
+The working directory defaults to the project directory.
+`continuousTesting` defaults to `false`.
+The dev build-property and child-environment maps are empty by default.
+The extension JVM-option filter enables all contributions by default; its coordinate patterns use Quarkus artifact-coordinate matching.
+
+Command-line options override corresponding DSL values for one invocation.
+For example, enable continuous testing and debugging temporarily with:
+
+[source,shell]
+----
+./gradlew quarkusApplicationDev --continuous --no-configuration-cache \
+    --continuous-testing \
+    --quarkus-debug \
+    --debug-port=5005
+----
+
+The task also accepts JVM and application arguments, compiler arguments, test filters, a working directory, child-process environment entries, debug mode and host, and controls for extension-contributed JVM options.
+Run `./gradlew help --task quarkusApplicationDev` to see the options supported by the plugin version in the build.
+See <<gradle-application-plugin-option-reference,the option table>> for debugging, compiler, test-filter, environment, and extension-JVM controls.
+
+[[gradle-application-plugin-continuous-testing]]
+== Run dedicated continuous testing
+
+Run the default test suite continuously with:
+
+[source,shell]
+----
+./gradlew quarkusApplicationContinuousTest --continuous --no-configuration-cache
+----
+
+The dedicated task fixes continuous testing to `true` and prevents the ordinary `test` task from running concurrently when the dedicated task is selected explicitly.
+It runs without dev mode, so Dev UI and its browser controls are not available.
+It accepts the dev/continuous-test command-line options in <<gradle-application-plugin-option-reference,the option table>>, except that continuous testing cannot be disabled.
+Run `./gradlew help --task quarkusApplicationContinuousTest` to inspect the options supplied by the plugin version in the build.
+For continuous-testing behavior and the controls available while using dev mode, see xref:continuous-testing.adoc[Continuous Testing].
+
+Dev and continuous-test tasks are intentionally not configuration-cache compatible or build-cacheable.
+With `--no-configuration-cache`, Gradle does not attempt to store or reuse a configuration-cache entry during the continuous session.
+Cancellation stops the retained Quarkus process and releases the output tree.
+
+[[gradle-application-plugin-remote-dev]]
+== Use remote development
+
+Remote development has two sides:
+
+* a remote application started from a mutable-JAR package with remote-development server mode enabled; and
+* the local `quarkusApplicationRemoteDev` continuous task, which rebuilds and synchronizes the package.
+
+Configure the local side:
+
+[role="primary asciidoc-tabs-sync-groovy"]
+.Groovy DSL
+****
+[source,groovy]
+----
+include::{generated-dir}/examples/gradle-application-plugin-advanced.gradle[tag=remote-development]
+----
+****
+
+[role="secondary asciidoc-tabs-sync-kotlin"]
+.Kotlin DSL
+****
+[source,kotlin]
+----
+include::{generated-dir}/examples/gradle-application-plugin-advanced.gradle.kts[tag=remote-development]
+----
+****
+
+Start a named mutable-JAR output as the remote server side:
+
+[source,shell]
+----
+./gradlew quarkusRemoteRun \
+    --enable-remote-dev \
+    --live-reload-password=change-me
+----
+
+Then start the local synchronization loop:
+
+[source,shell]
+----
+./gradlew quarkusApplicationRemoteDev \
+    --continuous \
+    --no-configuration-cache \
+    --live-reload-url=https://remote.example.test \
+    --live-reload-password=change-me
+----
+
+The URL and password task options override `quarkus.live-reload.url` and `quarkus.live-reload.password` for that invocation.
+The password is transient task state and is not persisted by the plugin, but command lines and build logs still require normal credential-handling care.
+If the remote application exposes management endpoints separately, use the live-reload endpoint on the interface where it is actually exposed.
+
+[TIP]
+====
+In Bash, when `HISTCONTROL` contains `ignorespace` or `ignoreboth`, prefixing a command with a space keeps it out of the shell history.
+Verify your shell configuration before relying on this behavior; other shells differ.
+This only reduces shell-history exposure and does not hide arguments from process listings or logs.
+====
+
+The session reconnects automatically when the server reports a stale session, using a fresh complete package snapshot; no extra source edit is required.
+Files that change after the local snapshot are rejected instead of uploading different bytes.
+
+[WARNING]
+====
+Remote development is for development environments.
+Do not expose its live-reload endpoint as a production application-management interface.
+====
+
+[[gradle-application-plugin-dependencies-codegen]]
+== Manage dependencies and generated sources
+
+Use the declarable `quarkusDev` configuration only for dependencies that must be added in development mode but must not be present in normal application runtime or finite-test classpaths.
+The development classpath already includes the project's normal compile and runtime dependencies; do not repeat them in `quarkusDev`.
+The dedicated continuous-test classpath also inherits `quarkusDev` in addition to the normal test runtime dependencies.
+It is not a task; the development task is named `quarkusApplicationDev`.
+When both application plugins are used during migration, `io.quarkus.application` reuses the existing configuration owner.
+
+[role="primary asciidoc-tabs-sync-groovy"]
+.Groovy DSL
+****
+[source,groovy]
+----
+include::{generated-dir}/examples/gradle-application-plugin-advanced.gradle[tag=development-dependencies]
+----
+****
+
+[role="secondary asciidoc-tabs-sync-kotlin"]
+.Kotlin DSL
+****
+[source,kotlin]
+----
+include::{generated-dir}/examples/gradle-application-plugin-advanced.gradle.kts[tag=development-dependencies]
+----
+****
+
+The plugin wires generated sources into Java and Kotlin compilation, including KAPT and KSP when present, and exposes them to Gradle IDE models.
+The default code-generator providers are `grpc`, `avdl`, `avpr`, and `avsc`.
+The default source input names are `proto` and `avro`.
+Use the `codegen` block to add or replace those conventions.
+
+[role="primary asciidoc-tabs-sync-groovy"]
+.Groovy DSL
+****
+[source,groovy]
+----
+include::{generated-dir}/examples/gradle-application-plugin-advanced.gradle[tag=code-generation]
+----
+****
+
+[role="secondary asciidoc-tabs-sync-kotlin"]
+.Kotlin DSL
+****
+[source,kotlin]
+----
+include::{generated-dir}/examples/gradle-application-plugin-advanced.gradle.kts[tag=code-generation]
+----
+****
+
+Local project and composite-build Quarkus extensions are resolved through Gradle variants.
+No application task needs to reach into another project's task or output model directly.
+
+[[gradle-application-plugin-offline]]
+== Prepare dependencies for offline work
+
+Run:
+
+[source,shell]
+----
+./gradlew quarkusApplicationPrepareOffline
+----
+
+The aggregate resolves the normal, development, test, code-generation, annotation-processor, and dev-launcher inputs.
+It also prepares the recursive Maven POM closure used by the application model, including direct module POMs, parent POMs, dependency-management BOMs, and imported BOMs.
+
+Named builds do not contribute their additional configurations by default.
+Set `prepareForOffline=true` on each named build whose package, native, image, deployment, integration-test, or startup-training inputs must be included.
+
+[role="primary asciidoc-tabs-sync-groovy"]
+.Groovy DSL
+****
+[source,groovy]
+----
+include::{generated-dir}/examples/gradle-application-plugin-advanced.gradle[tag=offline-preparation]
+----
+****
+
+[role="secondary asciidoc-tabs-sync-kotlin"]
+.Kotlin DSL
+****
+[source,kotlin]
+----
+include::{generated-dir}/examples/gradle-application-plugin-advanced.gradle.kts[tag=offline-preparation]
+----
+****
+
+Run preparation while all required repositories are reachable, then use Gradle's normal `--offline` option.
+Completeness is bounded by the repositories, credentials, metadata, and dependency selectors visible during preparation.
+Changing dependencies, dynamic versions, or repository metadata can require another online preparation.
+
+[[gradle-application-plugin-images-deployments]]
+== Build images and deploy
+
+Every named build registers `quarkus<Name>ImageBuild` and `quarkus<Name>ImagePush`.
+Configure a complete `imageReference`, or configure `repository` and optional `tag`; do not combine a complete reference with repository or tag components.
+When a repository is present without a tag, the tag defaults to `project.version`, which must not be `unspecified`.
+
+The selectable builders are `JIB`, `DOCKER`, `PODMAN`, `OPENSHIFT`, and `BUILDPACK`.
+The corresponding Quarkus container-image extension and its environment are still required.
+
+A build can declare named deployments for Kubernetes, OpenShift, Knative, Kind, and Minikube.
+Each declaration registers `quarkus<Name>DeployTo<DeploymentName>`.
+Deployment names follow the same lexical rules as build names and must derive case-insensitively unique task-name segments within that build.
+The default image source is `NORMAL_IMAGE_PUSH`.
+`EXISTING_IMAGE` requires an explicit image reference; AOT-JAR deployments can also select `STARTUP_OPTIMIZED_IMAGE_PUSH`.
+
+[role="primary asciidoc-tabs-sync-groovy"]
+.Groovy DSL
+****
+[source,groovy]
+----
+include::{generated-dir}/examples/gradle-application-plugin-advanced.gradle[tag=images-and-deployments]
+----
+****
+
+[role="secondary asciidoc-tabs-sync-kotlin"]
+.Kotlin DSL
+****
+[source,kotlin]
+----
+include::{generated-dir}/examples/gradle-application-plugin-advanced.gradle.kts[tag=images-and-deployments]
+----
+****
+
+Each selected image operation resolves and claims its reference before that operation performs externally visible work.
+The preflight rejects a reference already claimed by an unrelated operation, but it is not a global barrier across every selected image task.
+Image build, push, and deployment tasks always execute because they mutate external state.
+
+See xref:container-image.adoc[Container Images] for provider setup and credentials, and xref:deploying-to-kubernetes.adoc[Deploying to Kubernetes] for deployment environments.
+
+[[gradle-application-plugin-startup-archives]]
+== Optimize JVM startup
+
+The `aotJar` DSL name describes Quarkus's historical AOT-JAR package layout.
+It does not restrict the concrete startup archive to OpenJDK AOT.
+
+[cols="2,2,2,2"]
+|===
+|DSL value |Runtime |Shape |Default name
+
+|`AOT`
+|OpenJDK/HotSpot
+|File
+|`app.aot`
+
+|`SCC`
+|OpenJ9/Semeru
+|Directory
+|`app-scc`
+
+|`APP_CDS`
+|HotSpot
+|File
+|`app-cds.jsa`
+|===
+
+Select a concrete type, then use exactly one archive source:
+
+* a matching user-supplied `file` or `directory`;
+* `fromPackageBuild()`; or
+* one package-backed integration-test suite with `startupArchiveTraining`.
+
+Integration-test training requires an explicit `HOST_JVM` or `BASE_IMAGE` target.
+It supports AOT and SCC, but not AppCDS.
+Archive compatibility depends on the JVM implementation and version, application bytecode, JVM options, target platform, and, for base-image training, the container image.
+
+Calling `startupOptimizedImage {}` registers the build and push tasks.
+The optimized reference uses a non-empty suffix derived from the archive type by default: `-aot`, `-scc`, or `-app-cds`.
+It is built from the actual normal base-image result, not from an unverified configured reference.
+
+[role="primary asciidoc-tabs-sync-groovy"]
+.Groovy DSL
+****
+[source,groovy]
+----
+include::{generated-dir}/examples/gradle-application-plugin-advanced.gradle[tag=startup-archives]
+----
+****
+
+[role="secondary asciidoc-tabs-sync-kotlin"]
+.Kotlin DSL
+****
+[source,kotlin]
+----
+include::{generated-dir}/examples/gradle-application-plugin-advanced.gradle.kts[tag=startup-archives]
+----
+****
+
+See xref:aot.adoc[Ahead-of-Time Compilation] for supported JVMs, training workflows, and container-provider details.
+
+[[gradle-application-plugin-config-inputs]]
+== Declare configuration inputs
+
+The plugin fingerprints selected Gradle project properties, JVM system properties, and environment variables instead of treating the entire ambient process as an input.
+
+The default project- and system-property prefixes are:
+
+* `quarkus.`
+* `platform.quarkus.`
+* `smallrye.config.`
+
+The environment-variable equivalents are `QUARKUS_`, `PLATFORM_QUARKUS_`, and `SMALLRYE_CONFIG_`.
+Exact-name sets are empty by default.
+Extend or replace the `prefixes` and `names` sets for each source when application-specific inputs use other names.
+
+[role="primary asciidoc-tabs-sync-groovy"]
+.Groovy DSL
+****
+[source,groovy]
+----
+include::{generated-dir}/examples/gradle-application-plugin-advanced.gradle[tag=configuration-inputs]
+----
+****
+
+[role="secondary asciidoc-tabs-sync-kotlin"]
+.Kotlin DSL
+****
+[source,kotlin]
+----
+include::{generated-dir}/examples/gradle-application-plugin-advanced.gradle.kts[tag=configuration-inputs]
+----
+****
+
+For build operations, effective precedence from highest to lowest is:
+
+1. operation-forced properties;
+2. task or command-line properties;
+3. selected system properties;
+4. selected environment variables;
+5. root plus concern- or named-build `quarkusBuildProperties`;
+6. selected Gradle project properties;
+7. application configuration sources; and
+8. defaults and platform fallbacks.
+
+Within the build-property layer, concern-specific or named-build entries replace same-named root entries.
+See xref:config-reference.adoc[Configuration Reference] for Quarkus configuration-source and profile behavior.
+
+The `legacyAmbientConfigCapture` switch is an escape hatch for builds that previously relied on any Gradle project property, JVM system property, or environment variable being visible to Quarkus without declaring it as a task input.
+It defaults from the Gradle property `quarkusBuildLegacyAmbientConfigCapture`, or to `false` when absent.
+
+When enabled, affected tasks capture all three ambient property maps instead of the selected prefixes and names.
+That broad snapshot can include unrelated or machine-specific values, and it prevents Gradle from safely reusing the configuration cache, build cache, or an up-to-date result for those tasks.
+Use it only to keep a migration working while identifying the missing inputs.
+Then add stable application-specific prefixes or exact names under `configInputs`, move build-owned values to `quarkusBuildProperties`, and disable the escape hatch again.
+
+[[gradle-application-plugin-workers]]
+== Configure build workers
+
+Application builds and code generation use separate process-isolated Gradle worker settings.
+Collections are empty by default; assertions and debugging are disabled; minimum/maximum heap size and character encoding are unset.
+
+[role="primary asciidoc-tabs-sync-groovy"]
+.Groovy DSL
+****
+[source,groovy]
+----
+include::{generated-dir}/examples/gradle-application-plugin-advanced.gradle[tag=fork-options]
+----
+****
+
+[role="secondary asciidoc-tabs-sync-kotlin"]
+.Kotlin DSL
+****
+[source,kotlin]
+----
+include::{generated-dir}/examples/gradle-application-plugin-advanced.gradle.kts[tag=fork-options]
+----
+****
+
+Build-worker options include JVM arguments, system properties, environment entries, heap sizes, assertions, debugging, and default character encoding.
+Dev and remote-dev use their own lighter fork model with JVM arguments and system properties.
+All configured values are modeled inputs to the operation that consumes them.
+
+[[gradle-application-plugin-diagnostics]]
+== Inspect effective configuration and models
+
+Every named build registers `quarkus<Name>ShowEffectiveConfig`.
+By default it logs effective keys and safe source labels without values.
+System-property and environment winners are omitted from diagnostic capture.
+
+The `--show-values` option displays captured non-ambient values and logs a warning first.
+
+[WARNING]
+====
+`--show-values` output can contain credentials or other sensitive values and can be retained in local or CI build logs.
+Use it only for a deliberate diagnostic invocation.
+====
+
+`quarkus<Name>ShowEffectiveConfig` does not write a report file; its disclosure risk is retained console or CI log output.
+The fixed `quarkusApplicationShowModel`, `quarkusApplicationShowDevModel`, and `quarkusApplicationShowTestModel` tasks display and write the corresponding generated application-model report.
+Those persisted reports do not contain the effective Quarkus configuration values shown by `--show-values`.
+They do contain dependency coordinates and project-specific or external file paths, so review them before sharing them outside the build's intended audience.
+
+[role="primary asciidoc-tabs-sync-groovy"]
+.Groovy DSL
+****
+[source,groovy]
+----
+include::{generated-dir}/examples/gradle-application-plugin-advanced.gradle[tag=diagnostics]
+----
+****
+
+[role="secondary asciidoc-tabs-sync-kotlin"]
+.Kotlin DSL
+****
+[source,kotlin]
+----
+include::{generated-dir}/examples/gradle-application-plugin-advanced.gradle.kts[tag=diagnostics]
+----
+****
+
+[[gradle-application-plugin-compatibility]]
+== Compatibility, caching, and limitations
+
+Finite `io.quarkus.application` configuration and task graphs are designed for Gradle configuration cache and Isolated Projects.
+Finite build, package, model, and code-generation tasks declare inputs and outputs for Gradle up-to-date checks.
+They are not currently reusable through Gradle's build cache.
+Configuration-cache compatibility does not imply build-cacheability.
+
+An up-to-date check compares a task's declared inputs and existing outputs in the current workspace and can skip execution when neither changed.
+The build cache stores reusable task outputs and can restore them after a clean build or in another workspace.
+These are separate mechanisms: a task can support up-to-date checks without publishing or restoring its outputs through the build cache.
+
+The following tasks are intentionally outside configuration-cache reuse:
+
+* `quarkus<Name>Run`;
+* `quarkusApplicationDev`;
+* `quarkusApplicationContinuousTest`; and
+* `quarkusApplicationRemoteDev`.
+
+Run, dev, continuous-test, and remote-dev tasks own foreground processes or live sessions rather than producing a finite file result that a later invocation could restore.
+Container-image, push, deployment, and startup-optimized image actions mutate external engines, registries, or platforms.
+Replaying cached local files would not reproduce those process lifecycles or external side effects, so these tasks deliberately do not use up-to-date or build-cache shortcuts for that work.
+
+The plugin supplies the standard Quarkus application model and a Gradle sidecar used to distinguish `io.quarkus.application` and existing-plugin builds.
+This does not mean every current IDE, project generator, or CLI command already selects `io.quarkus.application`.
+Currently generated Gradle projects continue to use `io.quarkus`.
+
+[[gradle-application-plugin-coexistence]]
+=== Migrate with both application plugins
+
+Applying both plugins is a migration-only shape with these boundaries:
+
+* apply `io.quarkus` first;
+* apply `io.quarkus.application` second;
+* the existing plugin retains Gradle test and tooling ownership; and
+* applying `io.quarkus.application` first and `io.quarkus` later is rejected.
+
+For the task-by-task mapping, ownership restrictions, and final legacy-removal step, see xref:gradle-application-plugin-migration.adoc#gradle-application-plugin-migration-staged[Perform a legacy-first staged migration].
+The `io.quarkus.application` plugin deliberately does not provide extension discovery/mutation or project/platform inspection/update tasks.
+Use the xref:cli-tooling.adoc[Quarkus CLI] for listing, adding, and removing extensions and for project update workflows.
+
+Registered task names, DSL behavior, options, configurations, and consumed variants are public user contracts for this preview.
+The public Java task/model classes are also needed by Gradle and tooling boundaries, but this page does not promise that users can construct, subclass, or depend on their binary shape.
+
+=== Environment requirements
+
+[cols="2,4"]
+|===
+|Operation |Additional requirement
+
+|JVM build, run, and finite test
+|Reachable dependency repositories during resolution; Java 21
+
+|Native executable, native sources, or native test
+|A supported native-image toolchain or container-based native build environment
+
+|Image build or push
+|The selected container-image extension and provider, plus any required daemon, registry, and credentials
+
+|Deployment
+|A resolvable image source, the corresponding deployment extension, and access to the target cluster or service
+
+|AOT, SCC, or AppCDS
+|A compatible JVM and archive source; integration-test training additionally requires its selected host or base-image environment
+
+|Dev or continuous test
+|Gradle `--continuous --no-configuration-cache`
+
+|Remote development
+|Gradle `--continuous --no-configuration-cache`, a reachable development endpoint, a matching password, and mutable-JAR server-side packaging
+|===
+
+=== Troubleshooting
+
+[cols="2,4"]
+|===
+|Symptom |Check
+
+|No application build task exists
+|Declare a named build; the plugin creates none implicitly.
+
+|`assemble` does not build a named output
+|Set `participatesInAssemble=true` on that named build.
+
+|A package fails because the version is `unspecified`
+|Set `project.version`, `archiveVersion`, or an explicit `outputName`.
+
+|A copied layout launcher does not start
+|Consume or archive the complete package-directory variant. Only an uber-JAR launcher is portable by itself.
+
+|An extra Gradle property, system property, or environment variable does not affect a finite task
+|Declare its exact name or prefix under `configInputs`; use ambient capture only as a temporary diagnostic bridge.
+
+|A dev, continuous-test, or remote-dev task rejects the invocation, or a later iteration reports a configuration-cache serialization failure
+|Add Gradle's `--continuous --no-configuration-cache` options.
+
+|A native-test task is absent
+|Declare a `nativeExecutable` build. Native-sources builds are not runnable.
+
+|Image work fails before the provider starts
+|Check for incomplete or conflicting image components and for another selected operation claiming the same image reference.
+|===
+
+[[gradle-application-plugin-reference]]
+== DSL and task reference
+
+=== Root DSL
+
+The root extension has the following shape in both Gradle DSLs; the tables below retain the complete property and default-value reference.
+
+[role="primary asciidoc-tabs-sync-groovy"]
+.Groovy DSL
+****
+[source,groovy]
+----
+quarkusApplication {
+    quarkusBuildProperties.put 'quarkus.log.level', 'INFO'
+    builds { }
+    configInputs { }
+    codegen { }
+    dev { }
+    remoteDev { }
+    tests { }
+    buildForkOptions { }
+    codeGenForkOptions { }
+}
+----
+****
+
+[role="secondary asciidoc-tabs-sync-kotlin"]
+.Kotlin DSL
+****
+[source,kotlin]
+----
+quarkusApplication {
+    quarkusBuildProperties.put("quarkus.log.level", "INFO")
+    builds { }
+    configInputs { }
+    codegen { }
+    dev { }
+    remoteDev { }
+    tests { }
+    buildForkOptions { }
+    codeGenForkOptions { }
+}
+----
+****
+
+[cols="2,3,2"]
+|===
+|Property or block |Purpose |Default
+
+|`quarkusBuildProperties`
+|Common Quarkus build configuration
+|Empty map
+
+|`packageOutputTimestamp`
+|Reference timestamp for generated package entries
+|`1970-01-02T00:00:00Z`
+
+|`builds`
+|Named package/native outputs
+|Empty
+
+|`configInputs`
+|Selected project/system/environment inputs
+|Standard prefixes; exact names empty
+
+|`codegen`
+|Code-generator providers and source input names
+|`[grpc,avdl,avpr,avsc]`, `[proto,avro]`
+
+|`dev`
+|Dev and dedicated continuous-test launch configuration
+|Collections empty; continuous testing false; project working directory
+
+|`remoteDev`
+|Remote-dev build properties and JVM fork options
+|Empty
+
+|`tests`
+|Additional finite Gradle test selection
+|Standard `test` only
+
+|`buildForkOptions`
+|Worker JVM for package/native/image/deploy work
+|Empty/disabled/unset
+
+|`codeGenForkOptions`
+|Worker JVM for code generation
+|Empty/disabled/unset
+|===
+
+=== Named-build DSL
+
+A named build is configured inside the `builds` container.
+The available nested blocks depend on its build type:
+
+[role="primary asciidoc-tabs-sync-groovy"]
+.Groovy DSL
+****
+[source,groovy]
+----
+quarkusApplication {
+    builds {
+        fastJar('production') {
+            manifest { }
+            image { }
+            deployments { }
+        }
+    }
+}
+----
+****
+
+[role="secondary asciidoc-tabs-sync-kotlin"]
+.Kotlin DSL
+****
+[source,kotlin]
+----
+quarkusApplication {
+    builds {
+        fastJar("production") {
+            manifest { }
+            image { }
+            deployments { }
+        }
+    }
+}
+----
+****
+
+[cols="2,3,2"]
+|===
+|Property or block |Purpose |Default
+
+|`name`, `buildType`
+|Immutable identity fixed at registration
+|Required/fixed by method
+
+|`outputDirectory`
+|Package/native output root
+|`build/quarkus-builds/<name>/package`
+
+|`outputName`
+|Base name passed to Quarkus packaging
+|Assembled archive name
+
+|`archiveBaseName`
+|First output-name component
+|`project.name`
+
+|`archiveBaseNameSuffix`
+|Suffix appended to base name
+|Empty
+
+|`archiveVersion`
+|Version appended after `-`
+|`project.version`
+
+|`archiveRunnerSuffix`
+|Legacy-JAR, uber-JAR, native-executable, and native-sources suffix
+|`-runner`
+
+|`archiveAddRunnerSuffix`
+|Whether that runner/native suffix is added
+|`true`
+
+|`participatesInAssemble`
+|Adds the primary build task to `assemble`
+|`false`
+
+|`prepareForOffline`
+|Adds named-build dependency inputs to aggregate preparation
+|`false`
+
+|`quarkusBuildProperties`
+|Named-build configuration over the root map
+|Empty
+
+|`nativeArguments`
+|Native-operation forced configuration
+|Empty
+
+|`manifest`
+|Main attributes and named sections
+|Empty; JAR builds only
+
+|`image`
+|Image reference/builder/properties
+|Unset/empty
+
+|`deployments`
+|Named target deployments
+|Empty
+
+|`startupArchive`, `startupOptimizedImage`
+|AOT-JAR startup optimization
+|Type/source unset; optimized action not selected
+|===
+
+=== Build registration and package DSL
+
+[cols="2,3"]
+|===
+|Method or block |Contract
+
+|`fastJar(name)`, `legacyJar(name)`, `mutableJar(name)`, `uberJar(name)`
+|Register the corresponding named JAR output, with an optional configuration action.
+
+|`aotJar(name)`
+|Register an AOT-JAR output, with an optional configuration action.
+
+|`aotJar(name, archiveType)`
+|Register an AOT-JAR and fix its startup-archive type, with an optional configuration action.
+
+|`nativeExecutable(name)`, `nativeSources(name)`
+|Register the corresponding native output, with an optional configuration action.
+
+|`register(name, type)`
+|Advanced generic registration by a concrete `QuarkusApplicationBuild` subtype, with an optional action.
+
+|`all(action)`
+|Configure every present and future named build.
+
+|`configure(action)`
+|Configure the builds container itself.
+|===
+
+For `aotJar(name, archiveType)`, `archiveType` is one of `QuarkusApplicationJvmStartupArchiveType.AOT`, `SCC`, or `APP_CDS`.
+The same values are accepted by `startupArchive.type`; they select an OpenJDK/HotSpot AOT cache, an OpenJ9 shared class cache, or a HotSpot AppCDS archive respectively.
+
+For advanced `register(name, type)` calls, `type` is a class literal for one of the supported concrete build DSL types: `QuarkusFastJarOutput`, `QuarkusAotJarOutput`, `QuarkusLegacyJarOutput`, `QuarkusMutableJarOutput`, `QuarkusUberJarOutput`, `QuarkusNativeOutput`, or `QuarkusNativeSourcesOutput`.
+Prefer the named convenience methods unless generic registration is needed by shared build logic.
+
+The typed JAR manifest DSL is:
+
+[cols="2,3,2"]
+|===
+|Property or method |Purpose |Default
+
+|`attributes`
+|Main manifest attributes
+|Empty string map
+
+|`sections`
+|Named manifest-section container
+|Empty
+
+|`sections.section(name)`
+|Register a named section, optionally with an action
+|Section attributes empty
+
+|`sections.all(action)`
+|Configure every present and future section
+|Not applicable
+|===
+
+=== Configuration, code-generation, and worker DSL
+
+[cols="2,3,2"]
+|===
+|Property or method |Purpose |Default
+
+|`configInputs.projectProperties`
+|Select Gradle project properties by `prefixes` and exact `names`
+|Standard lower-case prefixes; names empty
+
+|`configInputs.systemProperties`
+|Select JVM system properties by `prefixes` and exact `names`
+|Standard lower-case prefixes; names empty
+
+|`configInputs.environmentVariables`
+|Select environment variables by `prefixes` and exact `names`
+|Standard upper-case prefixes; names empty
+
+|`configInputs.legacyAmbientConfigCapture`
+|Temporarily capture undeclared ambient configuration
+|Gradle property `quarkusBuildLegacyAmbientConfigCapture`, otherwise `false`
+
+|`codegen.providers`
+|Code-generator provider identifiers
+|`[grpc,avdl,avpr,avsc]`
+
+|`codegen.inputNames`
+|Generated-source input directory names
+|`[proto,avro]`
+|===
+
+Both `buildForkOptions` and `codeGenForkOptions` expose:
+
+[cols="2,3,2"]
+|===
+|Property or helper |Purpose |Default
+
+|`jvmArgs`, `jvmArgs(...)`
+|Worker JVM arguments
+|Empty
+
+|`systemProperties`, `systemProperty(...)`, `systemProperties(...)`
+|Worker system properties
+|Empty
+
+|`environment`, `environment(...)`
+|Worker environment entries
+|Empty
+
+|`minHeapSize`, `maxHeapSize`
+|Worker heap bounds
+|Unset
+
+|`enableAssertions`
+|Enable JVM assertions
+|`false`
+
+|`debug`
+|Enable worker debugging
+|`false`
+
+|`defaultCharacterEncoding`
+|Worker default character encoding
+|Unset
+|===
+
+=== Development and remote-development DSL
+
+[cols="2,3,2"]
+|===
+|Property or block |Purpose |Default
+
+|`dev.quarkusBuildProperties`
+|Dev and continuous-test Quarkus configuration
+|Empty
+
+|`dev.continuousTesting`
+|Enable continuous testing inside ordinary dev mode
+|`false`
+
+|`dev.workingDirectory`
+|Child-process working directory
+|Project directory
+
+|`dev.environmentVariables`
+|Child-process environment additions and overrides
+|Empty
+
+|`dev.debug`, `debugMode`, `debugHost`, `debugPort`, `suspend`, `forceC2`
+|Dev JVM debugging and compiler controls
+|Unset
+
+|`dev.forkOptions`
+|Dev JVM arguments and system properties
+|Empty
+
+|`dev.extensionJvmOptions.disableAll`
+|Disable every extension-contributed dev JVM option
+|`false`
+
+|`dev.extensionJvmOptions.disableFor`
+|Disable contributions matching artifact-coordinate patterns
+|Empty
+
+|`remoteDev.quarkusBuildProperties`
+|Local remote-development Quarkus configuration
+|Empty
+
+|`remoteDev.forkOptions`
+|Remote-development build JVM arguments and system properties
+|Empty
+|===
+
+The dev and remote-dev fork blocks expose `jvmArgs`, `systemProperties`,
+`jvmArgs(...)`, and `systemProperty(name, value)`.
+Per-invocation command-line overrides are listed in
+<<gradle-application-plugin-option-reference,the option table>>.
+
+=== Image, deployment, and startup-optimization DSL
+
+[cols="2,3,2"]
+|===
+|Property or method |Purpose |Default
+
+|`image.imageReference`
+|Complete normal-image reference
+|Unset
+
+|`image.repository`, `image.tag`
+|Normal-image reference components
+|Unset; tag derives from `project.version` when only the repository is set
+
+|`image.builder`
+|Image provider: `JIB`, `DOCKER`, `PODMAN`, `OPENSHIFT`, or `BUILDPACK`
+|Unset
+
+|`image.quarkusBuildProperties`
+|Image-operation Quarkus configuration over the named build
+|Empty
+
+|`deployments.kubernetes(name)`, `openshift(name)`, `knative(name)`, `kind(name)`, `minikube(name)`
+|Register a deployment with the corresponding fixed target, optionally with an action
+|No deployments
+
+|`deployments.all(action)`
+|Configure every present and future deployment
+|Not applicable
+
+|`deployment.imageSource`
+|Select `NORMAL_IMAGE_PUSH`, `EXISTING_IMAGE`, or, for AOT JAR, `STARTUP_OPTIMIZED_IMAGE_PUSH`
+|`NORMAL_IMAGE_PUSH`
+
+|`deployment.imageReference`
+|Reference required by `EXISTING_IMAGE`
+|Unset
+
+|`startupArchive.type`
+|Select `AOT`, `SCC`, or `APP_CDS`
+|Unset
+
+|`startupArchive.file`, `startupArchive.directory`
+|Supply an archive of the shape required by its type
+|Unset
+
+|`startupArchive.fromPackageBuild()`
+|Use the archive produced while building the AOT-JAR package
+|Not selected
+
+|`startupOptimizedImage.imageSuffix`
+|Suffix appended to the normal base-image reference
+|Derived from archive type
+
+|`startupArchiveTraining.executionTarget`
+|Select `HOST_JVM` or `BASE_IMAGE` for integration-test training
+|Required when training is selected
+|===
+
+=== Test DSL
+
+[cols="2,3"]
+|===
+|Method |Contract
+
+|`tests.task(taskProvider)`
+|Opt one additional Gradle `Test` task into finite Quarkus test setup.
+
+|`tests.allGradleTestTasks()`
+|Opt every present and future Gradle `Test` task into finite Quarkus test setup.
+
+|`JvmTestSuite.forQuarkusTests()`
+|Select finite Quarkus test mode for the suite.
+
+|`JvmTestSuite.forQuarkusIntegrationTests(build)`
+|Run the suite against one named JAR or native-executable build.
+
+|`JvmTestSuite.startupArchiveTraining(action)`
+|Use a package-backed integration suite to train the selected AOT-JAR startup archive.
+
+|`JvmTestSuite.includeTestsFrom(suiteProvider)`
+|Add compiled tests and runtime dependencies to a generated named native-test suite.
+|===
+
+[[gradle-application-plugin-task-reference]]
+=== User task names
+
+[cols="3,2,3"]
+|===
+|Task |Registration |Purpose
+
+|`quarkusApplicationDev`
+|Always
+|Gradle-owned dev mode; invoke with `--continuous --no-configuration-cache`
+
+|`quarkusApplicationContinuousTest`
+|Always
+|Dedicated default-suite continuous testing; invoke with `--continuous --no-configuration-cache`
+
+|`quarkusApplicationRemoteDev`
+|Always
+|Mutable-package synchronization; invoke with `--continuous --no-configuration-cache`
+
+|`quarkusApplicationPrepareOffline`
+|Always
+|Resolve base and selected named-build inputs
+
+|`quarkusApplicationShowModel`
+|Always
+|Normal application-model diagnostic
+
+|`quarkusApplicationShowDevModel`
+|Always
+|Development model diagnostic
+
+|`quarkusApplicationShowTestModel`
+|Always
+|Test model diagnostic
+
+|`quarkus<Name>Build`
+|Every named build
+|Build the selected package/native output
+
+|`quarkus<Name>Run`
+|JAR builds
+|Run the packaged application
+
+|`quarkus<Name>ShowEffectiveConfig`
+|Every named build
+|Show effective configuration safely
+
+|`quarkus<Name>ImageBuild`
+|Every named build
+|Build a container image
+
+|`quarkus<Name>ImagePush`
+|Every named build
+|Build and push a container image
+
+|`quarkus<Name>DeployTo<Deployment>`
+|Configured deployment
+|Deploy from the selected image source
+
+|`quarkus<Name>StartupOptimizedImageBuild`
+|Selected AOT-JAR optimized-image action
+|Build the image containing the archive
+
+|`quarkus<Name>StartupOptimizedImagePush`
+|Selected AOT-JAR optimized-image action
+|Build and push the image containing the archive
+
+|`quarkus<Name>NativeTest`
+|Native-executable build when `io.quarkus.application` owns tests
+|Generated native test suite/task
+|===
+
+Other model, dependency-resolution, code-generation, metadata, and lifecycle-coordination tasks are automatic implementation helpers, even when Gradle displays them in a task graph.
+Do not invoke or configure them as application commands.
+
+[[gradle-application-plugin-option-reference]]
+=== Command-line task options
+
+The first two rows below are Gradle invocation options rather than task-specific options.
+The remaining options are supplied by the indicated Quarkus task family and override corresponding DSL values for one invocation.
+
+[cols="2,2,4"]
+|===
+|Task family |Option |Meaning
+
+|Dev/continuous test/remote dev
+|Gradle `--continuous`
+|Keep the Gradle invocation alive and rerun the task graph after declared inputs change; required for these task families
+
+|Dev/continuous test/remote dev
+|Gradle `--no-configuration-cache`
+|Explicitly disable configuration-cache reuse for these long-lived tasks and avoid current Gradle 9.6 Kotlin DSL continuous-build failures
+
+|Run/dev/continuous test
+|`--jvm-args`
+|Replace child JVM arguments for this invocation
+
+|Run/dev/continuous test
+|`--quarkus-args`
+|Replace application arguments for this invocation
+
+|Run
+|`--enable-remote-dev`
+|Start a mutable JAR as the remote-development server side
+
+|Run
+|`--live-reload-password`
+|Set the server-side live-reload password; requires `--enable-remote-dev`
+
+|Dev/continuous test
+|`--modules`
+|Add application modules
+
+|Dev/continuous test
+|`--open-lang-package`
+|Open `java.lang` to the development JVM
+
+|Dev/continuous test
+|`--compiler-args`
+|Pass additional changed-source compiler arguments
+
+|Dev/continuous test
+|`--tests`
+|Set continuous-test class/method filters; `*` is supported
+
+|Dev
+|`--continuous-testing`, `--no-continuous-testing`
+|Enable or disable continuous testing in dev mode for this invocation
+
+|Dev/continuous test
+|`--working-directory`
+|Set an existing child-process working directory
+
+|Dev/continuous test
+|`--environment`
+|Add or override `NAME=VALUE` child environment entries
+
+|Dev/continuous test
+|`--quarkus-debug`, `--no-quarkus-debug`
+|Enable or disable JVM debugging for this invocation
+
+|Dev/continuous test
+|`--debug-mode`
+|Select `LISTEN` or `CONNECT`
+
+|Dev/continuous test
+|`--debug-host`
+|Set a non-blank debug host
+
+|Dev/continuous test
+|`--debug-port`
+|Set a port; zero or negative selects a random port
+
+|Dev/continuous test
+|`--suspend`, `--no-suspend`
+|Enable or disable waiting for a debugger before starting
+
+|Dev/continuous test
+|`--force-c2`, `--no-force-c2`
+|Enable or disable forcing the C2 compiler in dev mode
+
+|Dev/continuous test
+|`--disable-all-extension-jvm-options`, `--no-disable-all-extension-jvm-options`
+|Disable or retain extension-contributed dev JVM options for this invocation
+
+|Dev/continuous test
+|`--disable-extension-jvm-options-for`
+|Disable contributions matching artifact-coordinate patterns
+
+|Remote dev
+|`--live-reload-url`
+|Override the remote live-reload URL
+
+|Remote dev
+|`--live-reload-password`
+|Override the remote live-reload password
+
+|Effective config
+|`--show-values`
+|Display captured non-ambient values with a credential/log-retention warning
+|===
+
+=== Public configurations and variants
+
+[cols="3,2,4"]
+|===
+|Name |Kind |Contract
+
+|`quarkusDev`
+|Declarable
+|Development-only dependencies; not resolvable or consumable
+
+|`quarkus<Name>PackageElements`
+|Consumable
+|One complete relocatable package directory for a named JAR build
+
+|`quarkus<Name>LauncherJarElements`
+|Consumable
+|One producer-local primary JAR for a named JAR build
+|===
+
+[[gradle-application-plugin-gradle-model]]
+== How the plugin works with Gradle's performance features
+
+Gradle can avoid configuration and execution work only when a plugin describes that work without relying on hidden mutable state.
+The `io.quarkus.application` plugin follows these rules for finite work such as packaging, code generation, model generation, and tests:
+
+* Tasks declare the files and values that affect their results as inputs and declare the files they create as outputs.
+  Gradle snapshots those inputs and outputs for up-to-date checks.
+* A task-input value is _snapshottable_ when Gradle can capture a stable representation and compare it with a later invocation.
+  Configuration-cache state must also be serializable without retaining a live `Project`, configuration, or other mutable Gradle object.
+* The plugin wires task inputs and dependencies through `Provider` and `Property` values.
+  This keeps values lazy: Gradle can construct the task graph without resolving a dependency, reading an output, or running work before that value is needed.
+* Tasks do not reach back into a project model while they execute.
+  This separation matters because the configuration cache stores the configured task graph for reuse by another invocation.
+* Projects exchange artifacts through dependencies and variants instead of inspecting another project's mutable model.
+  That boundary is what allows Gradle Isolated Projects to configure projects independently and, where possible, in parallel.
+
+The same distinction matters in user build logic.
+Prefer Gradle-managed paths such as `layout.buildDirectory.dir("packages")`, `layout.projectDirectory.file("config/application.properties")`, and `layout.settingsDirectory.file("shared/config")` over eagerly calculated files from `project.*` or `rootProject`.
+The layout APIs preserve the location as a Gradle file value or provider that can be wired into task properties and tracked without retaining a live project model.
+Accessing the current `Project` during configuration is not inherently incompatible, but capturing a `Project` or `rootProject` in a task action or provider, reading another project's model, or eagerly calculating execution-time inputs through those objects violates configuration-cache or Isolated Projects boundaries.
+Pass the required value into the task through a declared `Property`, `RegularFileProperty`, `DirectoryProperty`, or file collection instead of making the task reach back into a project.
+
+The configuration cache and Isolated Projects optimize configuration; up-to-date checks and the build cache optimize task execution.
+Supporting one does not automatically provide the others.
+The plugin's finite tasks declare inputs and outputs and support up-to-date checks, but are not currently reusable through Gradle's build cache.
+Tasks that own a foreground process or an external mutation deliberately have different behavior, as described in <<gradle-application-plugin-compatibility,Compatibility, caching, and limitations>>.

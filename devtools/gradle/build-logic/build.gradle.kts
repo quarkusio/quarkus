@@ -4,6 +4,13 @@ plugins {
 
 dependencies {
     implementation(plugin("com.gradle.plugin-publish", "1.2.0"))
+
+    val libs = project.the<VersionCatalogsExtension>().named("libs")
+    testImplementation(platform(libs.findLibrary("junit-bom").get()))
+    testImplementation(libs.findLibrary("junit-api").get())
+    testImplementation(libs.findLibrary("assertj").get())
+    testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine")
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 
 java { toolchain {
@@ -16,3 +23,7 @@ java { toolchain {
 
 fun DependencyHandler.plugin(id: String, version: String) =
     create("$id:$id.gradle.plugin:$version")
+
+tasks.test {
+    useJUnitPlatform()
+}

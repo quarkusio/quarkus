@@ -1,0 +1,1 @@
+This resource is excluded from the migrated uber JAR.

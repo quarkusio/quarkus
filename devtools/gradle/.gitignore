@@ -4,6 +4,8 @@
 ### Gradle ###
 .gradle
 build/
+/build-logic/.gradle
+/build-logic/.kotlin
 
 # Ignore Gradle GUI config
 gradle-app.setting

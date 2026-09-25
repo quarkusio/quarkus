@@ -33,16 +33,16 @@ public class JavaPlatformWithEagerResolutionTest extends QuarkusGradleWrapperTes
         var initScript = projectDir.toPath().resolve("log-resolution.init.gradle.kts");
         Files.writeString(initScript, """
                 allprojects {
-                	configurations.configureEach {
-                		incoming.beforeResolve {
-                			println("QUARKUS_TEST_RESOLVED:${project.path}:${name}")
-                		}
-                	}
+                    configurations.configureEach {
+                        incoming.beforeResolve {
+                            println("QUARKUS_TEST_RESOLVED:${project.path}:${name}")
+                        }
+                    }
                 }
                 """);
 
-        var result = runGradleWrapper(projectDir, "test", "--dry-run", "--no-configuration-cache",
-                "-I", initScript.toString());
+        var result = runGradleWrapper(projectDir, "test", "--dry-run", "--no-configuration-cache", "-I",
+                initScript.toString());
 
         assertThat(result.getOutput())
                 .contains(":quarkusGenerateAppModel SKIPPED")
@@ -51,5 +51,19 @@ public class JavaPlatformWithEagerResolutionTest extends QuarkusGradleWrapperTes
                 .contains(":quarkusGenerateCodeTests SKIPPED")
                 .doesNotContain("QUARKUS_TEST_RESOLVED:::quarkusProdRuntimeClasspathConfigurationDeployment")
                 .doesNotContain("QUARKUS_TEST_RESOLVED:::quarkusTestRuntimeClasspathConfigurationDeployment");
+
+        result = runGradleWrapper(projectDir, "test", "--dry-run", "-I", initScript.toString());
+
+        assertThat(result.getOutput())
+                .contains(":quarkusGenerateAppModel SKIPPED")
+                .contains(":quarkusGenerateCode SKIPPED")
+                .contains(":quarkusGenerateTestAppModel SKIPPED")
+                .contains(":quarkusGenerateCodeTests SKIPPED")
+                .contains("Configuration cache entry stored");
+
+        result = runGradleWrapper(projectDir, "test", "-I", initScript.toString());
+
+        assertThat(result.getOutput())
+                .contains("BUILD SUCCESSFUL");
     }
 }

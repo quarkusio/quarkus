@@ -200,7 +200,8 @@ public class HibernateOrmDevInfo {
 
         private static boolean hintAsBoolean(Map<String, Object> hints, String key) {
             Object value = hints.get(key);
-            return value != null && ((Boolean) value).booleanValue();
+            // Hints declared through @QueryHint have String values even for boolean settings.
+            return value != null && Boolean.parseBoolean(String.valueOf(value));
         }
 
         private static String hintAsString(Map<String, Object> hints, String key) {

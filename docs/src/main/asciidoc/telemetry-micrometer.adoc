@@ -893,6 +893,61 @@ The Prometheus metrics will be available from `http://0.0.0.0:9000/q/metrics/pro
 
 Refer to the xref:./management-interface-reference.adoc[management interface reference] for more information.
 
+[[dev-ui-metrics]]
+== Metrics in the Dev UI
+
+In dev mode, when a metrics backend is present, your application metrics become
+available as cards on the Dev UI *Observability* dashboard. Each card charts one metric
+name and carries a reading of its latest value in the header.
+Pick which metrics to add from the grouped catalog the first time you open the dashboard,
+and change your mind later with *Edit dashboard*; only the metrics on the dashboard are
+captured, to save resources. Drag a card by its header to arrange the dashboard in
+whatever order suits you, and use the expand icon in a card's header to give that one
+metric the whole dashboard area when a chart needs more room than a tile allows; press
+*Escape* to go back. A maximized metric card also offers a *Data* tab, listing the
+captured samples as they were recorded, before the card derives a rate or a mean from
+them and before a histogram's buckets are merged to fit the chart. Your choice of cards
+and their order is kept in browser local storage and is shared by every application you
+run.
+
+How a card is drawn depends on what the meter measures:
+
+Counters:: A per-second rate, because the raw value only ever climbs. One line per tag
+combination.
+Gauges:: A dial showing the current reading, with the history beside it. Where the dial's full
+scale comes from is stated in the caption: a gauge that is already a ratio reads out of 100%; one
+whose ceiling is published as a separate meter, such as `jvm.memory.used` against `jvm.memory.max`,
+is scaled to that meter, which the dashboard captures alongside it; anything else is scaled to the
+highest reading in the retention window. A gauge split across several tag combinations keeps a
+plain line chart, since a dial can only show one reading. A gauge that moves in whole steps, such
+as a long task timer's active task count, is drawn as a staircase rather than a sloped line.
+Timers and distribution summaries:: The mean and the maximum per sample interval, derived
+from the recorded total and count rather than from the recording count alone. Durations
+are labeled in the unit that fits (µs, ms, s, min) and sizes in binary units (KiB, MiB).
+Histograms:: A bar per bucket, showing how the recordings were spread. Buckets accumulate
+from the moment capture starts, empty buckets at either end are dropped, and neighboring
+buckets are merged when a meter publishes more of them than a card can label. Published
+percentiles, if the meter has any, are summarized above the bars.
+
+The charts are available automatically whenever a metrics backend and the Dev UI are
+present; they are dev-mode only and add nothing to production or native builds. You can
+tune the capture with:
+
+[source,properties]
+----
+quarkus.dev-ui.observability.metrics.sample-interval=5s <1>
+quarkus.dev-ui.observability.metrics.retention=10m      <2>
+quarkus.dev-ui.observability.metrics.max-points-per-series=720 <3>
+----
+<1> How often meters are sampled.
+<2> Rolling time window kept per series.
+<3> Hard cap on points retained per series.
+
+These charts work with the Prometheus registry, the Micrometer OpenTelemetry bridge,
+and native OpenTelemetry metrics. When the bridge forwards Micrometer meters into the
+OpenTelemetry SDK, the metrics are captured once (from OpenTelemetry), avoiding
+duplicates.
+
 == Configuration Reference
 
 include::{generated-dir}/config/quarkus-micrometer.adoc[opts=optional, leveloffset=+1]

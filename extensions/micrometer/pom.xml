@@ -32,6 +32,7 @@
 
     <modules>
         <module>runtime</module>
+        <module>runtime-dev</module>
         <module>deployment</module>
     </modules>
 </project>

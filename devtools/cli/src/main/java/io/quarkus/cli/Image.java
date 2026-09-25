@@ -8,7 +8,6 @@ import io.quarkus.cli.common.OutputOptionMixin;
 import io.quarkus.cli.image.Build;
 import io.quarkus.cli.image.Push;
 import picocli.CommandLine;
-import picocli.CommandLine.ParseResult;
 import picocli.CommandLine.Unmatched;
 
 @CommandLine.Command(name = "image", sortOptions = false, mixinStandardHelpOptions = false, header = "Build or push project container image.", subcommands = {
@@ -29,8 +28,6 @@ public class Image implements Callable<Integer> {
     List<String> unmatchedArgs;
 
     public Integer call() throws Exception {
-        ParseResult result = spec.commandLine().getParseResult();
-        CommandLine buildCommand = spec.subcommands().get("build");
-        return buildCommand.execute(result.originalArgs().stream().filter(x -> !"image".equals(x)).toArray(String[]::new));
+        return DefaultSubcommand.forward(spec, output, "build", null);
     }
 }

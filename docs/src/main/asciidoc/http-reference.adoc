@@ -905,6 +905,29 @@ When the header is absent or contains only empty values, the selector is not inv
 NOTE: At most one such bean may exist, and it cannot be combined with `quarkus.http.proxy.x-forwarded-for-index` or `quarkus.http.proxy.allow-forwarded`.
 
 [[same-site-cookie]]
+=== Using the PROXY protocol
+
+When the proxy in front of Quarkus supports the link:https://www.haproxy.org/download/1.8/doc/proxy-protocol.txt[PROXY protocol], enable it so that the remote address of a connection is the address of the actual client rather than the address of the proxy:
+
+[source,properties]
+----
+quarkus.http.proxy.use-proxy-protocol=true
+----
+
+The PROXY protocol is then expected on every listener: HTTP, HTTPS and the Unix domain socket.
+A connection that does not start with a PROXY protocol header is rejected.
+If only some of the listeners are reached through the proxy, for example when the load balancer passes TLS traffic through with a PROXY header while plain HTTP traffic comes from inside the cluster, restrict the protocol to those listeners:
+
+[source,properties]
+----
+quarkus.http.proxy.use-proxy-protocol=true
+quarkus.http.proxy.proxy-protocol-listeners=https
+----
+
+The accepted values are `http`, `https` and `domain-socket`.
+
+IMPORTANT: A listener that expects the PROXY protocol trusts the client address carried by the header. Do not expose such a listener to clients other than the proxy.
+
 == SameSite cookies
 
 One can easily add a https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Set-Cookie/SameSite[SameSite] cookie property to any of the cookies set by a Quarkus endpoint by listing a cookie name and a `SameSite` attribute, for example:

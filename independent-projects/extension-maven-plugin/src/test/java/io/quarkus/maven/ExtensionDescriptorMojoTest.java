@@ -1,6 +1,6 @@
 package io.quarkus.maven;
 
-import static io.quarkus.maven.ExtensionDescriptorMojo.getCodestartArtifact;
+import static io.quarkus.maven.ExtensionDescriptorGenerator.getCodestartArtifact;
 
 import java.io.File;
 import java.io.IOException;

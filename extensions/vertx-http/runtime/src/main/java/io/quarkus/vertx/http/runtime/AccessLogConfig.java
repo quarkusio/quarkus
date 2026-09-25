@@ -1,6 +1,7 @@
 package io.quarkus.vertx.http.runtime;
 
 import java.util.Optional;
+import java.util.OptionalInt;
 import java.util.Set;
 
 import io.smallrye.config.WithDefault;
@@ -88,6 +89,14 @@ public interface AccessLogConfig {
      */
     @WithDefault("true")
     boolean rotate();
+
+    /**
+     * The maximum number of rotated access log files to keep when rotation is enabled: after each rotation, the oldest
+     * rotated files beyond this number are deleted.
+     * <p>
+     * If not set, rotated files are never deleted.
+     */
+    OptionalInt maxBackupIndex();
 
     /**
      * If rerouted requests should be consolidated into one log entry

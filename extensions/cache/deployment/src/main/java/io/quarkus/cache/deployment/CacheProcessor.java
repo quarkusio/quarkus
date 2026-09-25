@@ -21,10 +21,14 @@ import static org.jboss.jandex.AnnotationTarget.Kind.METHOD;
 
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.function.Supplier;
 
 import jakarta.enterprise.context.ApplicationScoped;
@@ -36,6 +40,7 @@ import org.jboss.jandex.AnnotationTarget.Kind;
 import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
+import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.Type;
 import org.jboss.logging.Logger;
@@ -180,6 +185,8 @@ class CacheProcessor {
             throwables.addAll(validateKeyGenerators(combinedIndex, beanDiscoveryFinished, keyGenerators));
         }
 
+        warnAboutCacheAnnotationsOnProducedInstances(combinedIndex.getIndex(), beanDiscoveryFinished);
+
         validationErrors.produce(new ValidationErrorBuildItem(throwables.toArray(new Throwable[0])));
     }
 
@@ -236,6 +243,82 @@ class CacheProcessor {
             }
         }
         return Optional.empty();
+    }
+
+    /**
+     * CDI does not apply interceptors to the value of a producer method or field, so cache annotations on the methods
+     * of such an instance never run. This cannot be fixed at runtime; the build points it out instead.
+     */
+    private void warnAboutCacheAnnotationsOnProducedInstances(IndexView index,
+            BeanDiscoveryFinishedBuildItem beanDiscoveryFinished) {
+        Map<DotName, Set<String>> cachedMethodsByClass = new HashMap<>();
+        for (DotName bindingName : INTERCEPTOR_BINDINGS) {
+            for (AnnotationInstance binding : index.getAnnotations(bindingName)) {
+                if (binding.target().kind() == METHOD) {
+                    MethodInfo method = binding.target().asMethod();
+                    cachedMethodsByClass.computeIfAbsent(method.declaringClass().name(), k -> new TreeSet<>())
+                            .add(method.name());
+                }
+            }
+        }
+        if (cachedMethodsByClass.isEmpty()) {
+            return;
+        }
+        for (BeanInfo bean : beanDiscoveryFinished.beanStream().producers().collect()) {
+            ClassInfo producedClass = bean.getImplClazz();
+            if (producedClass == null) {
+                continue;
+            }
+            Set<DotName> candidates = new LinkedHashSet<>();
+            collectSuperTypes(index, producedClass, candidates);
+            if (Modifier.isInterface(producedClass.flags())) {
+                for (ClassInfo implementor : index.getAllKnownImplementors(producedClass.name())) {
+                    collectSuperTypes(index, implementor, candidates);
+                }
+            } else {
+                for (ClassInfo subclass : index.getAllKnownSubclasses(producedClass.name())) {
+                    collectSuperTypes(index, subclass, candidates);
+                }
+            }
+            for (DotName candidate : candidates) {
+                Set<String> methods = cachedMethodsByClass.get(candidate);
+                if (methods != null) {
+                    for (String method : methods) {
+                        LOGGER.warnf(
+                                "The instances of %s produced by %s are not intercepted by CDI, so the cache annotations on %s#%s"
+                                        + " are ignored on them. Make the cached class a CDI bean instead of producing it,"
+                                        + " or move the cached method to a CDI bean.",
+                                producedClass.name(), describeProducer(bean), candidate, method);
+                    }
+                }
+            }
+        }
+    }
+
+    private static void collectSuperTypes(IndexView index, ClassInfo clazz, Set<DotName> types) {
+        ClassInfo current = clazz;
+        while (current != null && types.add(current.name())) {
+            for (DotName interfaceName : current.interfaceNames()) {
+                ClassInfo interfaceClass = index.getClassByName(interfaceName);
+                if (interfaceClass != null) {
+                    collectSuperTypes(index, interfaceClass, types);
+                }
+            }
+            DotName superName = current.superName();
+            current = superName == null ? null : index.getClassByName(superName);
+        }
+    }
+
+    private static String describeProducer(BeanInfo bean) {
+        AnnotationTarget target = bean.getTarget().orElse(null);
+        if (target == null) {
+            return bean.toString();
+        }
+        return switch (target.kind()) {
+            case METHOD -> target.asMethod().declaringClass().name() + "#" + target.asMethod().name();
+            case FIELD -> target.asField().declaringClass().name() + "#" + target.asField().name();
+            default -> target.toString();
+        };
     }
 
     private List<Throwable> validateKeyGenerators(CombinedIndexBuildItem combinedIndex,

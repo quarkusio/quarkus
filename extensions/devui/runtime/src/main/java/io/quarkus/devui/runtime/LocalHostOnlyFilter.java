@@ -22,47 +22,75 @@ public class LocalHostOnlyFilter implements Handler<RoutingContext> {
 
     private final List<String> hosts;
     private final List<Pattern> hostsPatterns;
+    private final boolean allowLoopbackHostnames;
+    private final LoopbackHostnameResolver loopbackHostnameResolver;
 
     public LocalHostOnlyFilter(List<String> hosts) {
+        this(hosts, false);
+    }
+
+    public LocalHostOnlyFilter(List<String> hosts, boolean allowLoopbackHostnames) {
         this.hosts = hosts;
         this.hostsPatterns = DevUIFilterHelper.detectPatterns(this.hosts);
+        this.allowLoopbackHostnames = allowLoopbackHostnames;
+        this.loopbackHostnameResolver = allowLoopbackHostnames ? new LoopbackHostnameResolver() : null;
     }
 
     @Override
     public void handle(RoutingContext event) {
-        HttpServerResponse response = event.response();
-        if (hostIsValid(event)) {
+        String host = requestHost(event);
+        if (host != null && hostIsValid(host)) {
             event.next();
+        } else if (host != null && allowLoopbackHostnames) {
+            loopbackHostnameResolver.isLoopback(host, event.vertx(), new Handler<Boolean>() {
+                @Override
+                public void handle(Boolean loopback) {
+                    if (loopback) {
+                        event.next();
+                    } else {
+                        reject(event, host);
+                    }
+                }
+            });
         } else {
-            response.setStatusCode(403);
-            response.setStatusMessage("Dev UI: Only localhost is allowed - Invalid host");
-            response.end();
+            reject(event, host);
         }
     }
 
-    private boolean hostIsValid(RoutingContext event) {
+    private static void reject(RoutingContext event, String host) {
+        if (host != null) {
+            LOG.errorf("Dev UI: Only localhost is allowed, unexpected host: %s", host);
+        }
+        HttpServerResponse response = event.response();
+        response.setStatusCode(403);
+        response.setStatusMessage("Dev UI: Only localhost is allowed - Invalid host");
+        response.end();
+    }
+
+    private static String requestHost(RoutingContext event) {
         try {
             URI uri = new URI(event.request().absoluteURI());
             URL url = uri.toURL();
-            String host = url.getHost();
-
-            if (host.equals(LOCAL_HOST) || host.equals(LOCAL_HOST_IP)) {
-                return true;
-            } else if (this.hosts != null && this.hosts.contains(host)) {
-                return true;
-            } else if (this.hostsPatterns != null && !this.hostsPatterns.isEmpty()) {
-                // Regex
-                for (Pattern pat : this.hostsPatterns) {
-                    Matcher matcher = pat.matcher(host);
-                    if (matcher.matches()) {
-                        return true;
-                    }
-                }
-            }
-            LOG.errorf("Dev UI: Only localhost is allowed, unexpected host: %s", host);
-            return false;
+            return url.getHost();
         } catch (MalformedURLException | URISyntaxException e) {
             LOG.error("Error while checking if Dev UI is localhost", e);
+            return null;
+        }
+    }
+
+    private boolean hostIsValid(String host) {
+        if (host.equals(LOCAL_HOST) || host.equals(LOCAL_HOST_IP)) {
+            return true;
+        } else if (this.hosts != null && this.hosts.contains(host)) {
+            return true;
+        } else if (this.hostsPatterns != null && !this.hostsPatterns.isEmpty()) {
+            // Regex
+            for (Pattern pat : this.hostsPatterns) {
+                Matcher matcher = pat.matcher(host);
+                if (matcher.matches()) {
+                    return true;
+                }
+            }
         }
         return false;
     }

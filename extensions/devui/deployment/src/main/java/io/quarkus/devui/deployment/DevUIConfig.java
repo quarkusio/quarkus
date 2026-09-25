@@ -45,6 +45,17 @@ public interface DevUIConfig {
     Optional<List<String>> hosts();
 
     /**
+     * Also allow host names that resolve to a loopback address, for example the name of the machine as mapped in the
+     * hosts file, as the request host and as the CORS origin of Dev UI. The name is resolved on a worker thread and
+     * the result is cached.
+     *
+     * Note: the HTTP host validation of the server ({@code quarkus.http.host-validation.*}) has to accept the host name
+     * as well.
+     */
+    @WithDefault("false")
+    boolean allowLoopbackHostnames();
+
+    /**
      * Set a context root for dev-ui. This is useful for remote environments or online IDEs
      *
      * @return The dev-ui context root

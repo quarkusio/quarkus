@@ -5825,6 +5825,11 @@
                 <version>${hibernate-accessor.version}</version>
             </dependency>
             <dependency>
+                <groupId>org.hibernate.accessor</groupId>
+                <artifactId>hibernate-accessor-bytebuddy</artifactId>
+                <version>${hibernate-accessor.version}</version>
+            </dependency>
+            <dependency>
                 <groupId>org.hibernate.orm</groupId>
                 <artifactId>hibernate-community-dialects</artifactId>
                 <version>${hibernate-orm.version}</version>
@@ -7045,8 +7050,10 @@
                                 <dependencyAlignmentRule>
                                     <referenceArtifact>org.hibernate.orm:hibernate-core:${hibernate-orm.version}</referenceArtifact>
                                     <dependencies>
+                                        <!-- Both accessor implementations use the same version. Core depends on the
+                                             ByteBuddy variant, while Quarkus uses the reflection-based variant. -->
                                         <dependency>
-                                            <artifact>org.hibernate.accessor:hibernate-accessor</artifact>
+                                            <artifact>org.hibernate.accessor:hibernate-accessor-bytebuddy</artifact>
                                         </dependency>
                                     </dependencies>
                                 </dependencyAlignmentRule>

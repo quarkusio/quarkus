@@ -223,7 +223,6 @@ public class ReflectiveHierarchyStep {
                         .constructors(reflectiveHierarchyBuildItem.isConstructors())
                         .methods(reflectiveHierarchyBuildItem.isMethods())
                         .fields(reflectiveHierarchyBuildItem.isFields())
-                        .classes()
                         .serialization(reflectiveHierarchyBuildItem.isSerialization())
                         .unsafeAllocated(reflectiveHierarchyBuildItem.isUnsafeAllocated())
                         .reason(source)

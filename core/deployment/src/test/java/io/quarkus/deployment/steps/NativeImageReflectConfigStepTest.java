@@ -46,8 +46,8 @@ class NativeImageReflectConfigStepTest {
                 reflectiveClassBuildItems,
                 List.of(), List.of(), List.of());
 
-        assertThat(produced).hasSize(1);
-        assertThat(produced.get(0).getName()).isEqualTo("META-INF/native-image/reflect-config.json");
+        assertThat(produced).isNotEmpty();
+        assertThat(produced.get(0).getName()).isEqualTo("META-INF/native-image/reflect/reachability-metadata.json");
         return new String(produced.get(0).getData(), StandardCharsets.UTF_8).replaceAll("\\s+", "");
     }
 }

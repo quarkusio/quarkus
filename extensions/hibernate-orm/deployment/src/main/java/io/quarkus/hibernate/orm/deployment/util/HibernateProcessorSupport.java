@@ -345,19 +345,6 @@ public final class HibernateProcessorSupport {
                 fetchSize -> desc.getProperties().setProperty(AvailableSettings.STATEMENT_BATCH_SIZE,
                         String.valueOf(fetchSize)));
 
-        // Statistics
-        if (hibernateOrmConfig.metrics().enabled()
-                || (hibernateOrmConfig.statistics().isPresent() && hibernateOrmConfig.statistics().get())) {
-            desc.getProperties().setProperty(AvailableSettings.GENERATE_STATISTICS, "true");
-            //When statistics are enabled, the default in Hibernate ORM is to also log them after each
-            // session; turn that off by default as it's very noisy:
-            // TODO Luca LOG_SESSION_METRICS is no more in 8.0
-            //            desc.getProperties().setProperty(AvailableSettings.LOG_SESSION_METRICS,
-            //
-            //            desc.getProperties().setProperty(AvailableSettings.LOG_SESSION_METRICS,
-            //                    String.valueOf(hibernateOrmConfig.logSessionMetrics().orElse(false)));
-        }
-
         // Caching
         configureCaching(desc, config);
 

@@ -40,7 +40,7 @@ import io.quarkus.qute.TemplateNode.Origin;
 /**
  * Simple non-reusable parser.
  */
-class Parser implements ParserHelper, ParserDelegate, WithOrigin, ErrorInitializer {
+class Parser implements ParserHelper, ParserDelegate, WithOrigin {
 
     private static final Logger LOGGER = Logger.getLogger(Parser.class);
     static final String ROOT_HELPER_NAME = "$root";
@@ -80,11 +80,12 @@ class Parser implements ParserHelper, ParserDelegate, WithOrigin, ErrorInitializ
     private final Deque<ParametersInfo> paramsStack;
     private final Deque<Scope> scopeStack;
     private int sectionBlockIdx;
-    private boolean ignoreContent;
     private int cdataPipeCount;
     private AtomicInteger expressionIdGenerator;
     private final List<Function<String, String>> contentFilters;
     private boolean hasLineSeparator;
+    private String rawContentSectionName;
+    private int rawContentSectionDepth;
 
     private TemplateImpl template;
 
@@ -163,6 +164,12 @@ class Parser implements ParserHelper, ParserDelegate, WithOrigin, ErrorInitializ
             while ((val = r.read()) != -1) {
                 processCharacter((char) val);
                 lineCharacter++;
+            }
+
+            if (state == State.RAW_CONTENT) {
+                // Flush the raw content as text; the unterminated section check below will report the error
+                flushText();
+                state = State.TAG_INSIDE;
             }
 
             if (buffer.length() > 0) {
@@ -274,6 +281,9 @@ class Parser implements ParserHelper, ParserDelegate, WithOrigin, ErrorInitializ
             case LINE_SEPARATOR:
                 lineSeparator(character);
                 break;
+            case RAW_CONTENT:
+                rawContent(character);
+                break;
             default:
                 throw error(ParserError.GENERAL_ERROR, "unknown parsing state: {state}").argument("state", state).build();
         }
@@ -357,6 +367,91 @@ class Parser implements ParserHelper, ParserDelegate, WithOrigin, ErrorInitializ
         return true;
     }
 
+    /**
+     * All characters are appended to the buffer as raw text. The only special character is the {@code END_DELIMITER} which
+     * may signal the end of a section tag. If the buffer ends with {@code {/sectionName}} (with optional trailing whitespace)
+     * and the depth is zero then we found the real end tag - remove it from the buffer, flush the raw content as a text node,
+     * and close the section. Nested occurrences of the same section tag (including parameterized ones like
+     * {@code {#raw param}}) are tracked with a depth counter. CRLF sequences are counted as a single line break.
+     */
+    private void rawContent(char character) {
+        if (character == END_DELIMITER && buffer.length() > 0) {
+            int endTagStart = findRawContentTag(Tag.SECTION_END.command);
+            if (endTagStart != -1) {
+                if (rawContentSectionDepth == 0) {
+                    buffer.delete(endTagStart, buffer.length());
+                    flushText();
+                    closeSection();
+                    state = State.TEXT;
+                    rawContentSectionName = null;
+                    return;
+                } else {
+                    rawContentSectionDepth--;
+                }
+            } else if (findRawContentTag(Tag.SECTION.command) != -1) {
+                rawContentSectionDepth++;
+            }
+        } else if (character == LINE_SEPARATOR_CR) {
+            line++;
+            lineCharacter = 1;
+        } else if (character == LINE_SEPARATOR_LF) {
+            // Don't increment for the LF part of a CRLF sequence
+            if (buffer.length() == 0 || buffer.charAt(buffer.length() - 1) != LINE_SEPARATOR_CR) {
+                line++;
+            }
+            lineCharacter = 1;
+        }
+        buffer.append(character);
+    }
+
+    /**
+     * @return the start position of the tag in the buffer, or {@code -1} if no match is found
+     */
+    private int findRawContentTag(char command) {
+        int bufLen = buffer.length();
+        int nameLen = rawContentSectionName.length();
+        if (bufLen < nameLen + 2) {
+            return -1;
+        }
+        // Scan backward for the last START_DELIMITER
+        int tagStart = -1;
+        for (int i = bufLen - 1; i >= 0; i--) {
+            if (buffer.charAt(i) == START_DELIMITER) {
+                tagStart = i;
+                break;
+            }
+        }
+        if (tagStart == -1 || tagStart + 1 >= bufLen) {
+            return -1;
+        }
+        if (buffer.charAt(tagStart + 1) != command) {
+            return -1;
+        }
+        int nameStart = tagStart + 2;
+        if (nameStart + nameLen > bufLen) {
+            return -1;
+        }
+        for (int i = 0; i < nameLen; i++) {
+            if (buffer.charAt(nameStart + i) != rawContentSectionName.charAt(i)) {
+                return -1;
+            }
+        }
+        // After the name: for end tags allow only whitespace; for start tags allow whitespace or end of buffer
+        int afterName = nameStart + nameLen;
+        if (afterName < bufLen) {
+            if (command == Tag.SECTION_END.command) {
+                for (int i = afterName; i < bufLen; i++) {
+                    if (!Character.isWhitespace(buffer.charAt(i))) {
+                        return -1;
+                    }
+                }
+            } else if (!Character.isWhitespace(buffer.charAt(afterName))) {
+                return -1;
+            }
+        }
+        return tagStart;
+    }
+
     private void tag(char character) {
         if (LiteralSupport.isStringLiteralSeparator(character)) {
             state = LiteralSupport.isStringLiteralSeparatorSingle(character) ? State.TAG_INSIDE_STRING_LITERAL_SINGLE
@@ -425,7 +520,7 @@ class Parser implements ParserHelper, ParserDelegate, WithOrigin, ErrorInitializ
     }
 
     private void flushText() {
-        if (buffer.length() > 0 && !ignoreContent) {
+        if (buffer.length() > 0) {
             SectionBlock.Builder block = sectionStack.peek().currentBlock();
             block.addNode(new TextNode(buffer.toString(), origin(0)));
         }
@@ -433,7 +528,7 @@ class Parser implements ParserHelper, ParserDelegate, WithOrigin, ErrorInitializ
     }
 
     private void flushNextLine() {
-        if (buffer.length() > 0 && !ignoreContent) {
+        if (buffer.length() > 0) {
             SectionBlock.Builder block = sectionStack.peek().currentBlock();
             block.addNode(new LineSeparatorNode(buffer.toString(), origin(0)));
         }
@@ -530,6 +625,11 @@ class Parser implements ParserHelper, ParserDelegate, WithOrigin, ErrorInitializ
             } else {
                 scopeStack.addFirst(newScope);
                 sectionStack.addFirst(sectionNode);
+                if (factory.rawContent()) {
+                    state = State.RAW_CONTENT;
+                    rawContentSectionName = sectionName;
+                    rawContentSectionDepth = 0;
+                }
             }
         }
     }
@@ -549,6 +649,7 @@ class Parser implements ParserHelper, ParserDelegate, WithOrigin, ErrorInitializ
                         .argument("tagName", block.getLabel()).build();
             }
             section.endBlock();
+            scopeStack.pop();
         } else {
             // Section end, e.g. {/if} or {/}
             if (section.helperName.equals(ROOT_HELPER_NAME)) {
@@ -568,12 +669,13 @@ class Parser implements ParserHelper, ParserDelegate, WithOrigin, ErrorInitializ
                             .build();
                 }
             }
-            // Pop the section and its main block
-            section = sectionStack.pop();
-            sectionStack.peek().currentBlock().addNode(section.build(this::currentTemplate));
+            closeSection();
         }
+    }
 
-        // Remove the last type info map from the stack
+    private void closeSection() {
+        SectionNode.Builder section = sectionStack.pop();
+        sectionStack.peek().currentBlock().addNode(section.build(this::currentTemplate));
         scopeStack.pop();
     }
 
@@ -585,9 +687,7 @@ class Parser implements ParserHelper, ParserDelegate, WithOrigin, ErrorInitializ
     private SectionNode.Builder handleOptionalEngTags(SectionNode.Builder section, String name) {
         while (section != null && !section.helperName.equals(name)) {
             if (section.factory.missingEndTagStrategy() == MissingEndTagStrategy.BIND_TO_PARENT) {
-                section = sectionStack.pop();
-                sectionStack.peek().currentBlock().addNode(section.build(this::currentTemplate));
-                scopeStack.pop();
+                closeSection();
                 section = sectionStack.peek();
             } else {
                 return section;
@@ -1012,6 +1112,7 @@ class Parser implements ParserHelper, ParserDelegate, WithOrigin, ErrorInitializ
         ESCAPE,
         CDATA,
         LINE_SEPARATOR,
+        RAW_CONTENT,
 
     }
 

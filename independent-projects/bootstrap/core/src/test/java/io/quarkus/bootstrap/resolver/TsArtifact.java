@@ -8,8 +8,10 @@ import java.util.List;
 import java.util.Properties;
 
 import org.apache.maven.model.DependencyManagement;
+import org.apache.maven.model.DistributionManagement;
 import org.apache.maven.model.Model;
 import org.apache.maven.model.Profile;
+import org.apache.maven.model.Relocation;
 
 import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.maven.dependency.ArtifactKey;
@@ -82,6 +84,7 @@ public class TsArtifact {
 
     protected Properties pomProps;
     protected List<Profile> pomProfiles = List.of();
+    private TsArtifact relocationTarget;
 
     private boolean installed;
 
@@ -221,6 +224,11 @@ public class TsArtifact {
         return this;
     }
 
+    public TsArtifact setRelocation(TsArtifact target) {
+        this.relocationTarget = target;
+        return this;
+    }
+
     public TsArtifact addProfile(Profile profile) {
         if (pomProfiles.isEmpty()) {
             pomProfiles = new ArrayList<>(1);
@@ -281,6 +289,17 @@ public class TsArtifact {
 
         if (!pomProfiles.isEmpty()) {
             model.setProfiles(pomProfiles);
+        }
+        if (relocationTarget != null) {
+            DistributionManagement dm = new DistributionManagement();
+            Relocation relocation = new Relocation();
+            relocation.setGroupId(relocationTarget.groupId);
+            relocation.setArtifactId(relocationTarget.artifactId);
+            if (relocationTarget.version != null) {
+                relocation.setVersion(relocationTarget.version);
+            }
+            dm.setRelocation(relocation);
+            model.setDistributionManagement(dm);
         }
         return model;
     }

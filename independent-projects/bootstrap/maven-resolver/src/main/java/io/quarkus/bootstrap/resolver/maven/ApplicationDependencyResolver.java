@@ -98,6 +98,7 @@ public class ApplicationDependencyResolver {
     private MavenArtifactResolver resolver;
     private Map<ArtifactKey, Dependency> managedDeps;
     private ApplicationModelBuilder appBuilder;
+    private final Map<ArtifactKey, ArtifactKey> relocationCache = new HashMap<>();
     private boolean collectReloadableModules;
     private DependencyLoggingConfig depLogging;
     private List<Dependency> collectCompileOnly;
@@ -237,7 +238,11 @@ public class ApplicationDependencyResolver {
                     .setType(DependencyUtils.getType(a))
                     .setVersion(a.getVersion())
                     .setScope(dep.getScope());
-            var appDep = appBuilder.getDependency(depBuilder.getKey());
+            var depKey = depBuilder.getKey();
+            var appDep = appBuilder.getDependency(depKey);
+            if (appDep == null && !dep.isOptional()) {
+                appDep = resolveRelocation(a, depBuilder);
+            }
             if (appDep == null) {
                 depBuilder.setFlags(DependencyFlags.MISSING_FROM_APPLICATION);
             } else {
@@ -254,6 +259,56 @@ public class ApplicationDependencyResolver {
         }
         builder.setDependencies(depCoords)
                 .setDirectDependencies(directDeps);
+    }
+
+    /**
+     * When a dependency is not found in the application model, check if it was relocated
+     * by resolving its artifact descriptor. If a relocation is found and the relocation target
+     * exists in the application model, update the dependency builder coordinates and return
+     * the target dependency.
+     */
+    private ResolvedDependencyBuilder resolveRelocation(Artifact artifact, DependencyBuilder depBuilder) {
+        var artifactKey = getKey(artifact);
+        if (relocationCache.containsKey(artifactKey)) {
+            var cachedKey = relocationCache.get(artifactKey);
+            if (cachedKey != null) {
+                var appDep = appBuilder.getDependency(cachedKey);
+                if (appDep != null) {
+                    depBuilder.setGroupId(appDep.getGroupId())
+                            .setArtifactId(appDep.getArtifactId());
+                }
+                return appDep;
+            }
+            return null;
+        }
+        try {
+            var managed = managedDeps != null ? managedDeps.get(artifactKey) : null;
+            Artifact toResolve = artifact;
+            if (managed != null && managed.getArtifact().getVersion() != null
+                    && !managed.getArtifact().getVersion().equals(artifact.getVersion())) {
+                toResolve = new DefaultArtifact(artifact.getGroupId(), artifact.getArtifactId(),
+                        artifact.getClassifier(), artifact.getExtension(), managed.getArtifact().getVersion());
+            }
+            var descriptorResult = resolver.resolveDescriptor(toResolve);
+            var relocations = descriptorResult.getRelocations();
+            if (!relocations.isEmpty()) {
+                var targetArtifact = descriptorResult.getArtifact();
+                var relocatedKey = getKey(targetArtifact);
+                relocationCache.put(artifactKey, relocatedKey);
+                var appDep = appBuilder.getDependency(relocatedKey);
+                if (appDep != null) {
+                    depBuilder.setGroupId(appDep.getGroupId())
+                            .setArtifactId(appDep.getArtifactId());
+                }
+                return appDep;
+            }
+            relocationCache.put(artifactKey, null);
+        } catch (Exception e) {
+            relocationCache.put(artifactKey, null);
+            log.debugf("Failed to resolve descriptor for %s:%s:%s: %s",
+                    artifact.getGroupId(), artifact.getArtifactId(), artifact.getVersion(), e.getMessage());
+        }
+        return null;
     }
 
     private static ArtifactCoords toPlainArtifactCoords(io.quarkus.maven.dependency.Dependency dep) {

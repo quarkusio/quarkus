@@ -38,9 +38,7 @@ public class SseUtil extends CommonSseUtil {
         try {
             data = serialiseEvent(context, event);
         } catch (IOException e) {
-            CompletableFuture<Void> ret = new CompletableFuture<>();
-            ret.completeExceptionally(e);
-            return ret;
+            return CompletableFuture.failedFuture(e);
         }
         setHeaders(context, response, customizers);
         return response.write(data.getBytes(StandardCharsets.UTF_8));

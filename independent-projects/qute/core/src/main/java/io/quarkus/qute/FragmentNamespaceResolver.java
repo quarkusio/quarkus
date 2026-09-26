@@ -2,7 +2,7 @@ package io.quarkus.qute;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutionException;
 
@@ -68,54 +68,39 @@ public class FragmentNamespaceResolver implements NamespaceResolver, EngineListe
         }
         Fragment fragment = template.getFragment(id);
         if (fragment != null) {
-            CompletableFuture<Object> ret = new CompletableFuture<>();
             if (!context.getParams().isEmpty()) {
                 EvaluatedParams params = EvaluatedParams.evaluate(context);
-                params.stage.whenComplete((r, t) -> {
-                    if (t != null) {
-                        ret.completeExceptionally(t);
-                    } else {
-                        Map<String, Object> args = new HashMap<>();
-                        for (int i = 0; i < context.getParams().size(); i++) {
-                            try {
-                                Object result = params.getResult(i);
-                                if (result instanceof NamedArgument arg) {
-                                    args.put(arg.getName(), arg.getValue());
-                                } else {
-                                    ret.completeExceptionally(
-                                            new TemplateException("Named argument expected: " + result.getClass()));
-                                    break;
-                                }
-                            } catch (InterruptedException | ExecutionException e) {
-                                ret.completeExceptionally(e);
+                return params.stage.thenCompose(r -> {
+                    Map<String, Object> args = new HashMap<>();
+                    for (int i = 0; i < context.getParams().size(); i++) {
+                        try {
+                            Object result = params.getResult(i);
+                            if (result instanceof NamedArgument arg) {
+                                args.put(arg.getName(), arg.getValue());
+                            } else {
+                                throw new TemplateException("Named argument expected: " + result.getClass());
                             }
+                        } catch (InterruptedException | ExecutionException e) {
+                            throw new CompletionException(e);
                         }
-                        ResolutionContext child = context.resolutionContext().createChild(Mapper.wrap(args), null);
-                        fragment.getRootNode().resolve(child, Map.of(Template.Fragment.ATTRIBUTE, true))
-                                .whenComplete((r2, t2) -> {
-                                    if (t2 != null) {
-                                        ret.completeExceptionally(t2);
-                                    } else {
-                                        StringBuilder sb = new StringBuilder();
-                                        r2.process(sb::append);
-                                        ret.complete(sb.toString());
-                                    }
-                                });
                     }
+                    ResolutionContext child = context.resolutionContext().createChild(Mapper.wrap(args), null);
+                    return fragment.getRootNode().resolve(child, Map.of(Template.Fragment.ATTRIBUTE, true))
+                            .thenApply(r2 -> {
+                                StringBuilder sb = new StringBuilder();
+                                r2.process(sb::append);
+                                return (Object) sb.toString();
+                            });
                 });
             } else {
-                fragment.getRootNode().resolve(context.resolutionContext(), Map.of(Template.Fragment.ATTRIBUTE, true))
-                        .whenComplete((r, t) -> {
-                            if (t != null) {
-                                ret.completeExceptionally(t);
-                            } else {
-                                StringBuilder sb = new StringBuilder();
-                                r.process(sb::append);
-                                ret.complete(sb.toString());
-                            }
+                return fragment.getRootNode().resolve(context.resolutionContext(),
+                        Map.of(Template.Fragment.ATTRIBUTE, true))
+                        .thenApply(r -> {
+                            StringBuilder sb = new StringBuilder();
+                            r.process(sb::append);
+                            return (Object) sb.toString();
                         });
             }
-            return ret;
         }
         return Results.notFound(context);
     }

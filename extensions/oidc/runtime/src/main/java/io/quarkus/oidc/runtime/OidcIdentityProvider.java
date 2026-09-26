@@ -88,12 +88,7 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
                 .transformToUni(new Function<TenantConfigContext, Uni<? extends SecurityIdentity>>() {
                     @Override
                     public Uni<SecurityIdentity> apply(TenantConfigContext tenantConfigContext) {
-                        return Uni.createFrom().deferred(new Supplier<Uni<? extends SecurityIdentity>>() {
-                            @Override
-                            public Uni<SecurityIdentity> get() {
-                                return authenticate(request, getRequestData(request), tenantConfigContext);
-                            }
-                        });
+                        return authenticate(request, getRequestData(request), tenantConfigContext);
                     }
                 });
     }

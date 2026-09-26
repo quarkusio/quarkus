@@ -4,7 +4,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.function.BiConsumer;
 import java.util.function.Supplier;
@@ -50,13 +49,9 @@ public class IncludeSectionHelper implements SectionHelper {
             }
             return root.resolve(resolutionContext, template.isFragment() ? FRAGMENT_PARAMS : null);
         } else {
-            CompletableFuture<ResultNode> result = new CompletableFuture<>();
-            context.evaluate(parameters).whenComplete((evaluatedParams, t1) -> {
-                if (t1 != null) {
-                    result.completeExceptionally(t1);
-                } else {
-                    addAdditionalEvaluatedParams(context, evaluatedParams);
-                    try {
+            return context.evaluate(parameters)
+                    .thenCompose(evaluatedParams -> {
+                        addAdditionalEvaluatedParams(context, evaluatedParams);
                         ResolutionContext resolutionContext;
                         Object data = Mapper.wrap(evaluatedParams);
                         if (isIsolated) {
@@ -69,20 +64,8 @@ public class IncludeSectionHelper implements SectionHelper {
                         SectionNode root = template.getRootNode();
 
                         // Execute the template with the params as the root context object
-                        root.resolve(resolutionContext, template.isFragment() ? FRAGMENT_PARAMS : null)
-                                .whenComplete((resultNode, t2) -> {
-                                    if (t2 != null) {
-                                        result.completeExceptionally(t2);
-                                    } else {
-                                        result.complete(resultNode);
-                                    }
-                                });
-                    } catch (Throwable e) {
-                        result.completeExceptionally(e);
-                    }
-                }
-            });
-            return result;
+                        return root.resolve(resolutionContext, template.isFragment() ? FRAGMENT_PARAMS : null);
+                    });
         }
     }
 

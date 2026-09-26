@@ -7,6 +7,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutionException;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 public final class Futures {
@@ -60,29 +61,22 @@ public final class Futures {
                 });
             } else {
                 // multiple non-literal params
-                CompletableFuture<Map<String, Object>> result = new CompletableFuture<>();
-                CompletableFuture.allOf(asyncResults.values().toArray(CompletableFuture[]::new))
-                        .whenComplete((v, t1) -> {
-                            if (t1 != null) {
-                                result.completeExceptionally(t1);
-                            } else {
+                return CompletableFuture.allOf(asyncResults.values().toArray(CompletableFuture[]::new))
+                        .thenApply(new Function<Void, Map<String, Object>>() {
+                            @Override
+                            public Map<String, Object> apply(Void v) {
                                 // IMPL NOTE: Keep the map mutable - it can be modified in UserTagSectionHelper
                                 Map<String, Object> values = new HashMap<>();
-                                try {
-                                    for (Entry<String, Expression> entry : parameters.entrySet()) {
-                                        if (entry.getValue().isLiteral()) {
-                                            values.put(entry.getKey(), entry.getValue().getLiteral());
-                                        } else {
-                                            values.put(entry.getKey(), asyncResults.get(entry.getKey()).get());
-                                        }
+                                for (Entry<String, Expression> entry : parameters.entrySet()) {
+                                    if (entry.getValue().isLiteral()) {
+                                        values.put(entry.getKey(), entry.getValue().getLiteral());
+                                    } else {
+                                        values.put(entry.getKey(), asyncResults.get(entry.getKey()).getNow(null));
                                     }
-                                    result.complete(values);
-                                } catch (Throwable e) {
-                                    result.completeExceptionally(e);
                                 }
+                                return values;
                             }
                         });
-                return result;
             }
         }
     }

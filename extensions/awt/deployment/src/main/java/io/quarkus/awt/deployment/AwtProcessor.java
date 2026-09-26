@@ -53,9 +53,21 @@ class AwtProcessor {
     @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
     void supportCheck(BuildProducer<UnsupportedOSBuildItem> unsupported,
             NativeImageRunnerBuildItem nativeImageRunnerBuildItem) {
-        unsupported.produce(new UnsupportedOSBuildItem(OS.MAC,
-                "MacOS AWT integration is not ready in Quarkus native-image and would result in " +
-                        "java.lang.UnsatisfiedLinkError: Can't load library: awt | java.library.path = [.]."));
+        final GraalVM.Version v;
+        if (nativeImageRunnerBuildItem.getBuildRunner() instanceof NoopNativeImageBuildRunner) {
+            v = CURRENT;
+            log.warnf("native-image is not installed. " +
+                    "Using the default %s version as a reference to build native-sources step.", v.getVersionAsString());
+        } else {
+            v = nativeImageRunnerBuildItem.getBuildRunner().getGraalVMVersion();
+        }
+        if (v.compareTo(GraalVM.Version.VERSION_25_1_0) < 0) {
+            // Since GraalVM 25.1.3 (25 Innovation 1, the first 25.1 release) native-image copies the Darwin AWT
+            // libraries next to the executable like on Linux and Windows, oracle/graal@2b3ac81
+            unsupported.produce(new UnsupportedOSBuildItem(OS.MAC,
+                    "MacOS AWT integration requires GraalVM or Mandrel 25.1 or newer, older versions would result in " +
+                            "java.lang.UnsatisfiedLinkError: Can't load library: awt | java.library.path = [.]."));
+        }
     }
 
     @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
@@ -110,6 +122,7 @@ class AwtProcessor {
             BuildProducer<JniRuntimeAccessFieldBuildItem> jf,
             NativeImageRunnerBuildItem nativeImageRunnerBuildItem) {
         final boolean isWindowsTarget = OS.WINDOWS.isCurrent() && !nativeImageRunnerBuildItem.isContainerBuild();
+        final boolean isMacTarget = OS.MAC.isCurrent() && !nativeImageRunnerBuildItem.isContainerBuild();
         // Dynamically loading shared objects instead
         // of baking in static libs: https://github.com/oracle/graal/issues/4921
         jm.produce(new JniRuntimeAccessMethodBuildItem("java.lang.System", "load", "java.lang.String"));
@@ -175,6 +188,14 @@ class AwtProcessor {
             jf.produce(new JniRuntimeAccessFieldBuildItem("java.awt.AWTEvent", "consumed"));
             // java.desktop/windows/native/libawt/windows/awt_InputEvent.cpp
             jf.produce(new JniRuntimeAccessFieldBuildItem("java.awt.event.InputEvent", "modifiers"));
+        }
+        if (isMacTarget) {
+            // Mac headless only, LWCToolkit#initAppkit is substituted, see JDKSubstitutions.
+            // java.desktop/macosx/native/libawt_lwawt/font/AWTFont.m, CoreText system fonts
+            jm.produce(new JniRuntimeAccessMethodBuildItem("sun.font.CFontManager", "registerFont", "java.lang.String",
+                    "java.lang.String"));
+            // CFont#getCascadeList, font fallback
+            jm.produce(new JniRuntimeAccessMethodBuildItem("java.util.ArrayList", "add", "java.lang.Object"));
         }
     }
 

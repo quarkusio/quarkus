@@ -8,6 +8,7 @@ metadata:
     - "tracing"
     - "metrics"
     - "monitoring"
+  guide: "https://quarkus.io/guides/telemetry-micrometer-observation"
   categories:
     - "observability"
   status: "preview"

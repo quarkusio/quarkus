@@ -46,7 +46,6 @@ import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.ParameterContext;
 import org.junit.jupiter.api.extension.ParameterResolutionException;
 import org.junit.jupiter.api.extension.ParameterResolver;
-import org.junit.jupiter.api.extension.TestInstancePostProcessor;
 import org.opentest4j.TestAbortedException;
 
 import io.quarkus.bootstrap.app.CuratedApplication;
@@ -81,7 +80,7 @@ import io.smallrye.config.SmallRyeConfigBuilder;
 
 public class QuarkusIntegrationTestExtension extends AbstractQuarkusTestWithContextExtension
         implements BeforeTestExecutionCallback, AfterTestExecutionCallback, BeforeEachCallback, AfterEachCallback,
-        BeforeAllCallback, AfterAllCallback, TestInstancePostProcessor, ParameterResolver {
+        BeforeAllCallback, AfterAllCallback, ParameterResolver {
 
     private static final int APP_LOG_TAIL_LINES = 50;
 
@@ -130,15 +129,20 @@ public class QuarkusIntegrationTestExtension extends AbstractQuarkusTestWithCont
         if (failedBoot) {
             throwBootFailureException();
         } else {
+            ensureStarted(context);
             if (!isBeforeEachCallbacksEmpty()) {
                 invokeBeforeEachCallbacks(createQuarkusTestMethodContext(context));
             }
 
             // Inject of ValueRegistry and Config done IntegrationTestUtil.doProcessTestInstance
+
             ValueRegistry valueRegistry = ValueRegistryInjector.get(context);
             Optional<ListeningResult> registeredListeningServer = valueRegistry.get(SERVER_LISTENING_RESULT);
             registeredListeningServer.ifPresent(server -> RestAssuredStateManager.setTestUri(valueRegistry,
                     QuarkusTestExtension.getEndpointPath(context, testHttpEndpointProviders)));
+
+            doProcessTestInstance(context.getRequiredTestInstance(), context);
+
             TestScopeManager.setup(true);
         }
     }
@@ -393,14 +397,6 @@ public class QuarkusIntegrationTestExtension extends AbstractQuarkusTestWithCont
                 e.addSuppressed(ex);
             }
             throw e;
-        }
-    }
-
-    @Override
-    public void postProcessTestInstance(Object testInstance, ExtensionContext context) {
-        ensureStarted(context);
-        if (!failedBoot) {
-            doProcessTestInstance(testInstance, context);
         }
     }
 

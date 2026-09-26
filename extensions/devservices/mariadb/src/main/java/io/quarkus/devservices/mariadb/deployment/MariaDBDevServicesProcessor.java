@@ -13,6 +13,8 @@ import org.jboss.logging.Logger;
 import org.testcontainers.mariadb.MariaDBContainer;
 import org.testcontainers.utility.DockerImageName;
 
+import com.github.dockerjava.api.command.InspectContainerResponse;
+
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
 import io.quarkus.datasource.common.runtime.DatabaseKind;
 import io.quarkus.deployment.Feature;
@@ -104,10 +106,13 @@ public class MariaDBDevServicesProcessor {
     }
 
     private static class QuarkusMariaDBContainer extends MariaDBContainer implements DatasourceStartable {
+
         private final OptionalInt fixedExposedPort;
         private final boolean useSharedNetwork;
 
         private final String hostName;
+
+        private boolean reused;
 
         public QuarkusMariaDBContainer(Optional<String> imageName, OptionalInt fixedExposedPort,
                 String defaultNetworkId,
@@ -118,6 +123,23 @@ public class MariaDBDevServicesProcessor {
             this.fixedExposedPort = fixedExposedPort;
             this.useSharedNetwork = useSharedNetwork;
             this.hostName = ConfigureUtil.configureNetwork(this, defaultNetworkId, useSharedNetwork, "mariadb");
+        }
+
+        @Override
+        protected void containerIsStarted(InspectContainerResponse containerInfo, boolean reused) {
+            this.reused = reused;
+            super.containerIsStarted(containerInfo, reused);
+        }
+
+        /**
+         * A reused container keeps its data, including the effect of the init scripts that ran when it was first
+         * started, so the scripts are not run again: a non-idempotent script would fail on the second run.
+         */
+        @Override
+        protected void runInitScriptIfRequired() {
+            if (!reused) {
+                super.runInitScriptIfRequired();
+            }
         }
 
         @Override

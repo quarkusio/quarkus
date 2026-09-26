@@ -95,6 +95,11 @@ public abstract class AbstractLambdaPollLoop {
         final Thread pollingThread = new Thread(new Runnable() {
             @Override
             public void run() {
+                // Store reference to the application instance this poll loop is serving.
+                // In dev mode with hot replacement, a restart creates a new Application instance,
+                // so we can detect if we're an old poll loop thread trying to stop a new application.
+                final Application ourApplication = Application.currentApplication();
+
                 try {
                     if (!LambdaHotReplacementRecorder.enabled
                             && (launchMode.isDev() || launchMode.isProduction())) {
@@ -146,7 +151,15 @@ public abstract class AbstractLambdaPollLoop {
                                             // so we requeue the request as quarkus will restart
                                             // and the message will not be processed
                                             // FYI: this requeue endpoint is something only the mock event server implements
-                                            requeue(baseUrl, requestId);
+                                            try {
+                                                requeue(baseUrl, requestId);
+                                            } catch (IOException e) {
+                                                // After hot replacement, the mock event server has been replaced,
+                                                // so requeue will fail with 404. This is expected - just exit gracefully.
+                                                log.debug(
+                                                        "Requeue failed after hot replacement (expected), exiting old poll loop",
+                                                        e);
+                                            }
                                             return;
                                         }
                                     } finally {
@@ -190,8 +203,21 @@ public abstract class AbstractLambdaPollLoop {
                                     log.error("Failed to run lambda (" + launchMode + ")", e);
                                 }
 
-                                postError(AmazonLambdaApi.invocationError(baseUrl, requestId),
-                                        new FunctionError(e.getClass().getName(), e.getMessage()));
+                                try {
+                                    postError(AmazonLambdaApi.invocationError(baseUrl, requestId),
+                                            new FunctionError(e.getClass().getName(), e.getMessage()));
+                                } catch (Exception postErrorException) {
+                                    // postError failed (e.g., after hot replacement when mock server is replaced).
+                                    // In dev mode, this is expected after hot reload. Continue to next request
+                                    // instead of propagating to outer catch which would log ERROR and potentially stop app.
+                                    if (launchMode == LaunchMode.DEVELOPMENT) {
+                                        log.debug("postError failed (likely after hot replacement), continuing",
+                                                postErrorException);
+                                    } else {
+                                        // In production, re-throw to trigger proper error handling
+                                        throw postErrorException;
+                                    }
+                                }
                                 continue;
                             }
 
@@ -201,10 +227,21 @@ public abstract class AbstractLambdaPollLoop {
                                 // SocketException here is expected (e.g. with Lambda extension layers)
                                 return;
                             }
-                            if (!abortGracefully(e))
-                                log.error("Error running lambda (" + launchMode + ")", e);
+                            if (abortGracefully(e))
+                                return;
+
+                            log.error("Error running lambda (" + launchMode + ")", e);
                             Application app = Application.currentApplication();
                             if (app != null) {
+                                // In dev mode with hot replacement, this poll loop thread may outlive its application.
+                                // After hot reload, currentApplication() returns the NEW application instance.
+                                // Don't stop the new application if we're the old poll loop thread.
+                                // Only skip stopping if both ourApplication and app are non-null and different.
+                                if (ourApplication != null && app != ourApplication) {
+                                    log.debug("Not stopping application - this poll loop thread belongs to a previous "
+                                            + "application instance (hot reload occurred)");
+                                    return;
+                                }
                                 try {
                                     app.stop();
                                 } catch (Exception ignored) {

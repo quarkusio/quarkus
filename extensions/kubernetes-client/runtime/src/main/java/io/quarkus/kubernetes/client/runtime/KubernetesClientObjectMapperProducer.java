@@ -6,12 +6,12 @@ import jakarta.annotation.Priority;
 import jakarta.enterprise.inject.Produces;
 import jakarta.inject.Singleton;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import io.quarkus.arc.All;
 import io.quarkus.arc.DefaultBean;
+import io.quarkus.kubernetes.client.KubernetesClientJsonMapperBuilderCustomizer;
 import io.quarkus.kubernetes.client.KubernetesClientObjectMapper;
-import io.quarkus.kubernetes.client.KubernetesClientObjectMapperCustomizer;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 
 @Singleton
 public class KubernetesClientObjectMapperProducer {
@@ -21,11 +21,11 @@ public class KubernetesClientObjectMapperProducer {
     @Priority(Integer.MIN_VALUE)
     @Singleton
     @Produces
-    public ObjectMapper kubernetesClientObjectMapper(@All List<KubernetesClientObjectMapperCustomizer> customizers) {
-        final var result = new ObjectMapper();
+    public ObjectMapper kubernetesClientObjectMapper(@All List<KubernetesClientJsonMapperBuilderCustomizer> customizers) {
+        final var builder = JsonMapper.builder();
         for (var customizer : customizers) {
-            customizer.customize(result);
+            customizer.customize(builder);
         }
-        return result;
+        return builder.build();
     }
 }

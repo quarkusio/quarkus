@@ -1,67 +1,40 @@
 package io.quarkus.hibernate.orm.dev;
 
+import java.util.Properties;
+
+import org.hibernate.cfg.QuerySettings;
 import org.hibernate.dialect.H2Dialect;
-import org.hibernate.metamodel.mapping.EntityMappingType;
-import org.hibernate.metamodel.spi.RuntimeModelCreationContext;
 import org.hibernate.query.spi.DomainQueryExecutionContext;
 import org.hibernate.query.sqm.internal.DomainParameterXref;
 import org.hibernate.query.sqm.mutation.spi.MultiTableHandlerBuildResult;
 import org.hibernate.query.sqm.mutation.spi.SqmMultiTableInsertStrategy;
 import org.hibernate.query.sqm.mutation.spi.SqmMultiTableMutationStrategy;
-import org.hibernate.query.sqm.tree.SqmDeleteOrUpdateStatement;
-import org.hibernate.query.sqm.tree.delete.SqmDeleteStatement;
-import org.hibernate.query.sqm.tree.insert.SqmInsertStatement;
-import org.hibernate.query.sqm.tree.update.SqmUpdateStatement;
+import org.hibernate.query.sqm.tree.spi.SqmDeleteOrUpdateStatement;
+import org.hibernate.query.sqm.tree.spi.insert.SqmInsertStatement;
 
 public class H2CustomDialect extends H2Dialect {
 
     @Override
-    public SqmMultiTableMutationStrategy getFallbackSqmMutationStrategy(
-            EntityMappingType entityDescriptor,
-            RuntimeModelCreationContext runtimeModelCreationContext) {
-        return new SqmMultiTableMutationStrategy() {
-            @Override
-            public MultiTableHandlerBuildResult buildHandler(SqmDeleteOrUpdateStatement<?> sqmDeleteOrUpdateStatement,
-                    DomainParameterXref domainParameterXref, DomainQueryExecutionContext domainQueryExecutionContext) {
-                return null;
-            }
-
-            @Override
-            public int executeUpdate(
-                    SqmUpdateStatement<?> sqmUpdateStatement,
-                    DomainParameterXref domainParameterXref,
-                    DomainQueryExecutionContext domainQueryExecutionContext) {
-                return 0;
-            }
-
-            @Override
-            public int executeDelete(
-                    SqmDeleteStatement<?> sqmDeleteStatement,
-                    DomainParameterXref domainParameterXref,
-                    DomainQueryExecutionContext domainQueryExecutionContext) {
-                return 0;
-            }
-        };
+    protected void contributeDefaultProperties(Properties properties) {
+        super.contributeDefaultProperties(properties);
+        // Avoid resolving the deliberately invalid SQL type during temporary-table setup.
+        properties.setProperty(QuerySettings.QUERY_MULTI_TABLE_MUTATION_STRATEGY, NoOpMutationStrategy.class.getName());
+        properties.setProperty(QuerySettings.QUERY_MULTI_TABLE_INSERT_STRATEGY, NoOpInsertStrategy.class.getName());
     }
 
-    @Override
-    public SqmMultiTableInsertStrategy getFallbackSqmInsertStrategy(
-            EntityMappingType entityDescriptor,
-            RuntimeModelCreationContext runtimeModelCreationContext) {
-        return new SqmMultiTableInsertStrategy() {
-            @Override
-            public MultiTableHandlerBuildResult buildHandler(SqmInsertStatement<?> sqmInsertStatement,
-                    DomainParameterXref domainParameterXref, DomainQueryExecutionContext context) {
-                return null;
-            }
+    public static class NoOpMutationStrategy implements SqmMultiTableMutationStrategy {
+        @Override
+        public MultiTableHandlerBuildResult buildHandler(SqmDeleteOrUpdateStatement<?> sqmStatement,
+                DomainParameterXref domainParameterXref, DomainQueryExecutionContext context) {
+            return null;
+        }
+    }
 
-            @Override
-            public int executeInsert(
-                    SqmInsertStatement<?> sqmInsertStatement,
-                    DomainParameterXref domainParameterXref,
-                    DomainQueryExecutionContext domainQueryExecutionContext) {
-                return 0;
-            }
-        };
+    public static class NoOpInsertStrategy implements SqmMultiTableInsertStrategy {
+        @Override
+        public MultiTableHandlerBuildResult buildHandler(SqmInsertStatement<?> sqmInsertStatement,
+                DomainParameterXref domainParameterXref, DomainQueryExecutionContext context) {
+            return null;
+        }
     }
 }

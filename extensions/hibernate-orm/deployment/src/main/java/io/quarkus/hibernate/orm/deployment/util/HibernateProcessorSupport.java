@@ -37,6 +37,7 @@ import io.quarkus.deployment.builditem.HotDeploymentWatchedFileBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.hibernate.orm.deployment.HibernateOrmConfig;
 import io.quarkus.hibernate.orm.deployment.HibernateOrmConfigPersistenceUnit;
+import io.quarkus.hibernate.orm.deployment.HibernateOrmConfigPersistenceUnit.HibernateOrmConfigPersistenceValidation.ValidationMode;
 import io.quarkus.hibernate.orm.deployment.spi.DatabaseKindDialectBuildItem;
 import io.quarkus.hibernate.orm.deployment.spi.SqlLoadScriptDefaultBuildItem;
 import io.quarkus.hibernate.orm.runtime.HibernateOrmRuntimeConfig;
@@ -344,16 +345,6 @@ public final class HibernateProcessorSupport {
                 fetchSize -> desc.getProperties().setProperty(AvailableSettings.STATEMENT_BATCH_SIZE,
                         String.valueOf(fetchSize)));
 
-        // Statistics
-        if (hibernateOrmConfig.metrics().enabled()
-                || (hibernateOrmConfig.statistics().isPresent() && hibernateOrmConfig.statistics().get())) {
-            desc.getProperties().setProperty(AvailableSettings.GENERATE_STATISTICS, "true");
-            //When statistics are enabled, the default in Hibernate ORM is to also log them after each
-            // session; turn that off by default as it's very noisy:
-            desc.getProperties().setProperty(AvailableSettings.LOG_SESSION_METRICS,
-                    String.valueOf(hibernateOrmConfig.logSessionMetrics().orElse(false)));
-        }
-
         // Caching
         configureCaching(desc, config);
 
@@ -450,6 +441,11 @@ public final class HibernateProcessorSupport {
                         .stream()
                         .map(Enum::name)
                         .collect(Collectors.joining(",")));
+        // ORM 8 controls validation-derived DDL independently of lifecycle validation.
+        if (!config.validation().mode().contains(ValidationMode.AUTO)
+                && !config.validation().mode().contains(ValidationMode.DDL)) {
+            descriptor.getProperties().setProperty(AvailableSettings.APPLY_VALIDATION_CONSTRAINTS, "disabled");
+        }
     }
 
     private static void configureQuoting(QuarkusPersistenceUnitDescriptor desc,

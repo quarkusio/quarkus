@@ -5,10 +5,9 @@ import jakarta.enterprise.inject.spi.BeanManager;
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 
-import org.hibernate.resource.beans.container.spi.AbstractCdiBeanContainer;
-import org.hibernate.resource.beans.container.spi.BeanLifecycleStrategy;
+import org.hibernate.resource.beans.container.internal.AbstractCdiBeanContainer;
+import org.hibernate.resource.beans.container.internal.BeanLifecycleStrategy;
 import org.hibernate.resource.beans.container.spi.ContainedBean;
-import org.hibernate.resource.beans.container.spi.ContainedBeanImplementor;
 import org.hibernate.resource.beans.spi.BeanInstanceProducer;
 
 /**
@@ -59,17 +58,17 @@ public class QuarkusArcBeanContainer extends AbstractCdiBeanContainer {
     }
 
     @Override
-    protected <B> ContainedBeanImplementor<B> createBean(Class<B> beanType,
+    protected <B> ContainedBean<B> createBean(Class<B> beanType,
             BeanLifecycleStrategy lifecycleStrategy, BeanInstanceProducer fallbackProducer) {
-        ContainedBeanImplementor<B> bean = lifecycleStrategy.createBean(beanType, fallbackProducer, this);
+        ContainedBean<B> bean = lifecycleStrategy.createBean(beanType, fallbackProducer, this);
         bean.initialize();
         return bean;
     }
 
     @Override
-    protected <B> ContainedBeanImplementor<B> createBean(String name, Class<B> beanType,
+    protected <B> ContainedBean<B> createBean(String name, Class<B> beanType,
             BeanLifecycleStrategy lifecycleStrategy, BeanInstanceProducer fallbackProducer) {
-        ContainedBeanImplementor<B> bean = lifecycleStrategy.createBean(name, beanType,
+        ContainedBean<B> bean = lifecycleStrategy.createBean(name, beanType,
                 fallbackProducer, this);
         bean.initialize();
         return bean;

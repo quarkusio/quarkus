@@ -5,6 +5,7 @@ import static io.quarkus.hibernate.orm.deployment.util.HibernateProcessorUtil.is
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -27,6 +28,7 @@ import io.quarkus.deployment.annotations.BuildSteps;
 import io.quarkus.deployment.builditem.HotDeploymentWatchedFileBuildItem;
 import io.quarkus.hibernate.orm.deployment.HibernateOrmConfig;
 import io.quarkus.hibernate.orm.deployment.HibernateOrmEnabled;
+import io.quarkus.hibernate.orm.deployment.JpaModelBuildItem;
 import io.quarkus.hibernate.orm.deployment.JpaModelPerPersistenceUnitBuildItem;
 import io.quarkus.hibernate.orm.deployment.JpaPersistenceUnitModel;
 import io.quarkus.hibernate.orm.deployment.PersistenceUnitDescriptorBuildItem;
@@ -94,6 +96,7 @@ final class PersistenceXmlProcessor {
             List<PersistenceXmlDescriptorBuildItem> persistenceXmlDescriptors,
             List<JdbcDataSourceBuildItem> jdbcDataSources,
             List<AdditionalPersistenceUnitBuildItem> additionalPersistenceUnits,
+            JpaModelBuildItem globalJpaModel,
             JpaModelPerPersistenceUnitBuildItem jpaModel,
             Capabilities capabilities,
             BuildProducer<PersistenceUnitDescriptorBuildItem> persistenceUnitDescriptors,
@@ -132,9 +135,21 @@ final class PersistenceXmlProcessor {
                 model = new JpaPersistenceUnitModel();
             }
             collectDialectConfigForPersistenceXml(puName, xmlDescriptor, defaultDbVersions);
+            List<String> managedClassNames;
+            List<String> managedPackageNames;
+            if (!xmlDescriptor.isExcludeUnlistedClasses()) {
+                Set<String> merged = new LinkedHashSet<>(xmlDescriptor.getManagedClassNames());
+                merged.addAll(globalJpaModel.getAllModelClassNames());
+                managedClassNames = List.copyOf(merged);
+                managedPackageNames = List.copyOf(globalJpaModel.getAllModelPackageNames());
+            } else {
+                managedClassNames = xmlDescriptor.getManagedClassNames();
+                managedPackageNames = Collections.emptyList();
+            }
             persistenceUnitDescriptors
                     .produce(new PersistenceUnitDescriptorBuildItem(
-                            QuarkusPersistenceUnitDescriptor.validateAndReadFrom(xmlDescriptor),
+                            QuarkusPersistenceUnitDescriptor.validateAndReadFrom(xmlDescriptor,
+                                    managedClassNames, managedPackageNames),
                             new RecordedConfig(
                                     Optional.of(DataSourceUtil.DEFAULT_DATASOURCE_NAME),
                                     jdbcDataSource.map(JdbcDataSourceBuildItem::getDbKind),

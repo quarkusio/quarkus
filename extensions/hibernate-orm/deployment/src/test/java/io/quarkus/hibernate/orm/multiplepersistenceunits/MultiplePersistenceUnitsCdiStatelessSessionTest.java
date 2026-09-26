@@ -7,7 +7,6 @@ import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 
 import org.hibernate.StatelessSession;
-import org.hibernate.UnknownEntityTypeException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -71,6 +70,9 @@ public class MultiplePersistenceUnitsCdiStatelessSessionTest {
     @Transactional
     public void testUserInInventorySession() {
         User user = new User("gsmet");
-        assertThatThrownBy(() -> inventorySession.insert(user)).isInstanceOf(UnknownEntityTypeException.class);
+        assertThatThrownBy(() -> inventorySession.insert(user))
+                .hasMessageContaining(
+                        "Unknown entity type 'io.quarkus.hibernate.orm.multiplepersistenceunits.model.config.user.User'");
+
     }
 }

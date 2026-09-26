@@ -171,6 +171,7 @@ public class ClassNamesTest {
         annotationSet.removeIf(name -> name.toString().equals("org.hibernate.cfg.Unsafe"));
         annotationSet.removeIf(name -> name.toString().equals("org.hibernate.Incubating"));
         annotationSet.removeIf(name -> name.toString().equals("org.hibernate.Internal"));
+        annotationSet.removeIf(name -> name.toString().equals("org.hibernate.SPI"));
         annotationSet.removeIf(name -> name.toString().equals("org.hibernate.Remove"));
         annotationSet.removeIf(name -> name.toString().equals("org.hibernate.service.JavaServiceLoadable"));
     }

@@ -14,6 +14,7 @@ import java.util.Set;
 import jakarta.persistence.EntityManagerFactory;
 import jakarta.persistence.PersistenceConfiguration;
 import jakarta.persistence.PersistenceException;
+import jakarta.persistence.spi.ClassTransformer;
 import jakarta.persistence.spi.PersistenceProvider;
 import jakarta.persistence.spi.PersistenceUnitInfo;
 import jakarta.persistence.spi.ProviderUtil;
@@ -482,6 +483,11 @@ public final class FastBootHibernateReactivePersistenceProvider implements Persi
     }
 
     @Override
+    public ClassTransformer getClassTransformer(PersistenceUnitInfo info, Map<?, ?> properties) {
+        return null;
+    }
+
+    @Override
     public EntityManagerFactory createContainerEntityManagerFactory(PersistenceUnitInfo info, Map map) {
         //Not supported by Hibernate Reactive: this should always delegate to Hibernate ORM, which will do its own
         //persistence provider name checks and possibly reject if it's not a suitable.
@@ -503,6 +509,11 @@ public final class FastBootHibernateReactivePersistenceProvider implements Persi
     @Override
     public boolean generateSchema(String persistenceUnitName, Map map) {
         return getJdbcHibernatePersistenceProviderDelegate().generateSchema(persistenceUnitName, map);
+    }
+
+    @Override
+    public boolean generateSchema(PersistenceConfiguration configuration) {
+        return false;
     }
 
     private FastBootHibernatePersistenceProvider getJdbcHibernatePersistenceProviderDelegate() {

@@ -1,0 +1,55 @@
+== Hibernate ORM
+
+=== Upgrade to Hibernate ORM 8.0
+
+The Quarkus extension for Hibernate ORM was upgraded from Hibernate ORM 7.4 to 8.0, which uses Jakarta Persistence 4.0.
+The following changes are most likely to affect existing applications.
+
+Refer to the https://docs.hibernate.org/orm/8.0/migration-guide/[Hibernate ORM 8.0 migration guide] for more information.
+
+=== API changes
+
+* https://docs.hibernate.org/orm/8.0/migration-guide/#session-replicate[`Session.replicate()` and `ReplicationMode` were removed]. Consider `StatelessSession.upsert()` where appropriate.
+* https://docs.hibernate.org/orm/8.0/migration-guide/#stateless[`StatelessSession.insert()` no longer returns an identifier, and `fetch()` now returns the fetched value] to comply with Jakarta Persistence's `EntityAgent` API.
+* https://docs.hibernate.org/orm/8.0/migration-guide/#query-api[Query APIs now distinguish selection queries from mutation statements]. Mutation queries should use `@NamedStatement` or `@NamedNativeStatement` instead of `@NamedQuery` or `@NamedNativeQuery`.
+* https://docs.hibernate.org/orm/8.0/migration-guide/#api-changes[Hibernate ORM 8 removed the deprecated `org.hibernate.jpa.QueryHints` class]. Replace Hibernate-specific constants such as `QueryHints.HINT_CACHEABLE` with `org.hibernate.jpa.HibernateHints.HINT_CACHEABLE`; use `org.hibernate.jpa.SpecHints` for Jakarta Persistence hints. To list supported hint names, use `AvailableHints.getDefinedHints()` instead of `QueryHints.getDefinedHints()`.
+* https://docs.hibernate.org/orm/8.0/migration-guide/#generic-generator[`@GenericGenerator` has changed]: existing declarations using `name` or `strategy` must be updated to the new form.
+* https://docs.hibernate.org/orm/8.0/migration-guide/#transform-removal[The deprecated `org.hibernate.transform` package was removed]. Migrate result transformations to `TupleTransformer`, constructor expressions, or `@ConstructorResult` as appropriate.
+
+TODO: Add an automatic `QueryHints` migration recipe to https://github.com/quarkusio/quarkus-updates/[quarkus-updates] and https://github.com/hibernate/hibernate-migration-recipes[hibernate-migration-recipes].
+
+=== Behavioral changes
+
+* https://docs.hibernate.org/orm/8.0/migration-guide/#java-time-direct-jdbc[Hibernate ORM now passes `java.time` values directly to JDBC by default] where supported. In particular, `quarkus.hibernate-orm.jdbc.timezone` will not adjust directly handled values, and `OffsetDateTime`, `OffsetTime`, or supported `ZonedDateTime` mappings may retain their offsets even when timezone storage is set to `normalize` or `normalize-utc`. Check existing temporal data and mappings before upgrading; `hibernate.type.java_time_use_direct_jdbc=false` restores the legacy conversion path if needed.
+* https://docs.hibernate.org/orm/8.0/migration-guide/#validation-lifecycle[Jakarta Persistence 4.0 changes the lifecycle events that trigger automatic validation]. In particular, applications relying on `jakarta.persistence.validation.group.pre-persist` for insert-time validation should use `jakarta.persistence.validation.group.pre-insert` instead.
+* https://docs.hibernate.org/orm/8.0/migration-guide/#validation-ddl-influence[Jakarta Validation constraints now affect generated DDL by default]. Review the schema generated from annotations such as `@NotNull` and `@Size`; set `hibernate.tooling.schema.apply_validation_constraints=disabled` if the old behavior is required.
+* https://docs.hibernate.org/orm/8.0/migration-guide/#graph-flushing-behavior[Graph-based flushing can change the order or shape of SQL statements]. Applications relying on a particular statement order should review their mappings and tests.
+* https://docs.hibernate.org/orm/8.0/migration-guide/#query-type-mismatch[Query result types are checked more strictly]; correct projections or the result class supplied to query creation if a query now fails.
+* https://docs.hibernate.org/orm/8.0/migration-guide/#_final_fields_of_entities[Final entity fields are no longer dirty-checked], and attempts to change them through `merge()` are rejected. Make fields non-final if they are intended to be mutable.
+* https://docs.hibernate.org/orm/8.0/migration-guide/#session-get[The new Jakarta Persistence `EntityHandler.get()` semantics differ from the former Hibernate `Session.get()` behavior]: missing entities cause `EntityNotFoundException` rather than returning `null`.
+
+=== Session metrics logging
+
+The `quarkus.hibernate-orm.log-session-metrics` property has been removed. Remove it from your configuration.
+Hibernate ORM controls per-session metrics logging with the `org.hibernate.session.metrics` log category instead.
+To enable it, add the following to `application.properties`:
+
+[source,properties]
+----
+quarkus.log.category."org.hibernate.session.metrics".level=DEBUG
+----
+
+Per-session metrics are not logged at the default log level. This log category is independent of `quarkus.hibernate-orm.statistics`, which controls statistics collection.
+The former Hibernate ORM setting `hibernate.session.events.log` was already ignored in Hibernate ORM 7.4.
+
+=== DDL changes
+
+* https://docs.hibernate.org/orm/8.0/migration-guide/#set-null-uniqueness[Unique constraints for sets with nullable elements may change]. Review generated schema changes before applying them to an existing database.
+
+== Hibernate Reactive
+
+Hibernate Reactive has not been upgraded on this branch; it remains at 4.5.5.Final. The integration with Hibernate ORM 8.0 is still in progress.
+
+== Hibernate Search
+
+Hibernate Search has not been upgraded on this branch; it remains at 8.4.0.Final.

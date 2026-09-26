@@ -19,8 +19,8 @@ import jakarta.persistence.Id;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 
-import org.hibernate.BaseSessionEventListener;
 import org.hibernate.Session;
+import org.hibernate.SessionEventListener;
 import org.hibernate.annotations.GenericGenerator;
 import org.hibernate.cfg.AvailableSettings;
 import org.jboss.logmanager.formatters.PatternFormatter;
@@ -144,7 +144,7 @@ public class UnsupportedPropertiesTest {
         assertThat(listener.batchCount).isEqualTo(2);
     }
 
-    private static class BatchCountSpyingEventListener extends BaseSessionEventListener {
+    private static class BatchCountSpyingEventListener implements SessionEventListener {
         private long batchCount = 0;
 
         @Override
@@ -221,7 +221,7 @@ public class UnsupportedPropertiesTest {
     public static class SpyingIdentifierGeneratorEntity {
         @Id
         @GeneratedValue(generator = "spying-generator")
-        @GenericGenerator(name = "spying-generator", strategy = "io.quarkus.hibernate.orm.config.SettingsSpyingIdentifierGenerator")
+        @GenericGenerator(type = io.quarkus.hibernate.orm.config.SettingsSpyingIdentifierGenerator.class)
         private Long id;
 
         public SpyingIdentifierGeneratorEntity() {

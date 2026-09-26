@@ -95,6 +95,12 @@ They will often map to Hibernate ORM configuration properties but could have dif
 
 Also, Quarkus will set many Hibernate ORM configuration settings automatically, and will often use more modern defaults.
 
+With Hibernate ORM 8, Java Time values use direct JDBC access by default when the database driver supports it.
+In particular, `quarkus.hibernate-orm.jdbc.timezone` does not adjust values handled through direct JDBC access:
+`OffsetDateTime`, `OffsetTime`, and supported `ZonedDateTime` mappings may retain their offsets even with
+`quarkus.hibernate-orm.mapping.timezone.default-storage` set to `normalize` or `normalize-utc`.
+When upgrading an application with existing temporal data, verify how the new mappings read that data and migrate it if necessary.
+
 For a list of the items that you can set in `{config-file}`, see <<configuration-reference>>.
 
 A persistence unit (and its `SessionFactory`) will be created when Quarkus detects that one is needed.
@@ -2056,6 +2062,8 @@ and as `none` otherwise.
 - `callback` -- Hibernate Validator will perform the lifecycle event validation.
 - `ddl` -- Hibernate Validator constraints will be considered for the <<dev-mode,DDL operations>>
 - `none` -- Hibernate Validator integration will be disabled.
+
+With `none` or `callback` alone, validation constraints do not affect the generated DDL.
 
 While all constraints with corresponding Jakarta Validation rules will apply during the `callback` validation,
 in the `ddl` mode, only a subset of constraints is used to influence the DDL.

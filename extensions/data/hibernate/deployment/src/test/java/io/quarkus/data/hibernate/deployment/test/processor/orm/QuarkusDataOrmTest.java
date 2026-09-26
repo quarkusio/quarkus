@@ -88,7 +88,7 @@ public class QuarkusDataOrmTest {
         Assertions.assertTrue(Modifier.isStatic(method.getModifiers()));
         Assertions.assertEquals(QuarkusDataBookCustomId.StatelessQueries.class, method.getReturnType());
 
-        Class<?> managedQueriesClass = QuarkusDataBookCustomId_.ManagedQueries_.class;
+        Class<?> managedQueriesClass = _QuarkusDataBookCustomId._ManagedQueries.class;
         Assertions.assertNotNull(managedQueriesClass);
         // make sure it's a repository
         Assertions.assertFalse(Modifier.isAbstract(managedQueriesClass.getModifiers()));
@@ -99,7 +99,7 @@ public class QuarkusDataOrmTest {
         Constructor<?> constructor = managedQueriesClass.getConstructor(Session.class);
         Assertions.assertNotNull(constructor);
 
-        Class<?> statelessQueriesClass = QuarkusDataBookCustomId_.StatelessQueries_.class;
+        Class<?> statelessQueriesClass = _QuarkusDataBookCustomId._StatelessQueries.class;
         Assertions.assertNotNull(statelessQueriesClass);
         // make sure it's a repository
         Assertions.assertFalse(Modifier.isAbstract(statelessQueriesClass.getModifiers()));

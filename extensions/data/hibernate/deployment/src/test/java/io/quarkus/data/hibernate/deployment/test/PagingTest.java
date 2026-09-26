@@ -24,7 +24,7 @@ public class PagingTest {
             .withApplicationRoot((jar) -> jar
                     .addAsResource("application-test.properties", "application.properties")
                     .addClasses(MyEntity.class, MyEntity_.class, _MyEntity.class,
-                            MyEntity_.ManagedBlockingQueries_.class, MyEntity_.FindOnlyRepo_.class));
+                            _MyEntity._ManagedBlockingQueries.class, _MyEntity._FindOnlyRepo.class));
 
     @Inject
     MyEntity.ManagedBlockingQueries repo;

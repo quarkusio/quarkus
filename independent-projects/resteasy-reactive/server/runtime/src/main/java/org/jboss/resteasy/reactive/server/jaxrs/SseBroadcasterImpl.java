@@ -181,7 +181,9 @@ public class SseBroadcasterImpl implements SseBroadcaster {
         for (Consumer<SseEventSink> listener : closeConsumers) {
             listener.accept(sseEventSink);
         }
-        if (!closed.get())
-            outputQueue.remove(sseEventSink);
+        // Always remove the sink from the queue, even while the broadcaster is closing. Otherwise
+        // the enclosing close() loop's notifyOnCloseListeners() removes it afterwards and fires the
+        // close listeners a second time for the same sink.
+        outputQueue.remove(sseEventSink);
     }
 }

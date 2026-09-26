@@ -5,25 +5,35 @@ import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 
 import org.jboss.logging.Logger;
-import org.jboss.threads.ContextHandler;
 
-import io.quarkus.runtime.ShutdownContext;
-import io.quarkus.runtime.annotations.Recorder;
 import io.smallrye.mutiny.infrastructure.Infrastructure;
 
-@Recorder
+/**
+ * Utility methods for configuring the Mutiny {@link Infrastructure} during application startup.
+ */
 public class MutinyInfrastructure {
 
+    /**
+     * The prefix used by Vert.x event loop thread names.
+     */
     public static final String VERTX_EVENT_LOOP_THREAD_PREFIX = "vert.x-eventloop-thread-";
 
-    public void configureMutinyInfrastructure(ScheduledExecutorService executor, ShutdownContext shutdownContext,
-            ContextHandler<Object> contextHandler) {
+    /**
+     * Configure the Mutiny infrastructure to use the given executor as the default executor.
+     * The default worker pool is shut down first to prevent a leak.
+     *
+     * @param executor the executor to use as the default executor (must not be {@code null})
+     */
+    public static void configureMutinyInfrastructure(ScheduledExecutorService executor) {
         // Mutiny leaks a ScheduledExecutorService if we don't do this
         Infrastructure.getDefaultWorkerPool().shutdown();
         Infrastructure.setDefaultExecutor(executor);
     }
 
-    public void configureDroppedExceptionHandler() {
+    /**
+     * Configure the dropped exception handler to log exceptions that Mutiny could not deliver.
+     */
+    public static void configureDroppedExceptionHandler() {
         Logger logger = Logger.getLogger(MutinyInfrastructure.class);
         Infrastructure.setDroppedExceptionHandler(new Consumer<Throwable>() {
             @Override
@@ -33,7 +43,10 @@ public class MutinyInfrastructure {
         });
     }
 
-    public void configureThreadBlockingChecker() {
+    /**
+     * Configure the thread blocking checker to prevent blocking on Vert.x event loop threads.
+     */
+    public static void configureThreadBlockingChecker() {
         Infrastructure.setCanCallerThreadBeBlockedSupplier(new BooleanSupplier() {
             @Override
             public boolean getAsBoolean() {
@@ -50,7 +63,10 @@ public class MutinyInfrastructure {
         });
     }
 
-    public void configureOperatorLogger() {
+    /**
+     * Configure the operator logger for Mutiny pipeline debugging.
+     */
+    public static void configureOperatorLogger() {
         Logger logger = Logger.getLogger(MutinyInfrastructure.class);
         Infrastructure.setOperatorLogger(new Infrastructure.OperatorLogger() {
             @Override

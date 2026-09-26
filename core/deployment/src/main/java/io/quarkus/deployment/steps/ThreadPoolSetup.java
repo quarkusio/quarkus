@@ -1,33 +1,44 @@
 package io.quarkus.deployment.steps;
 
-import java.util.Optional;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ThreadFactory;
 
+import io.quarkus.core.Phase;
+import io.quarkus.core.deployment.action.ActionBuilder;
 import io.quarkus.deployment.annotations.BuildStep;
-import io.quarkus.deployment.annotations.ExecutionTime;
-import io.quarkus.deployment.annotations.Record;
-import io.quarkus.deployment.builditem.ContextHandlerBuildItem;
 import io.quarkus.deployment.builditem.ExecutorBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
-import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
-import io.quarkus.deployment.builditem.ThreadFactoryBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
 import io.quarkus.runtime.ExecutorRecorder;
+import io.quarkus.runtime.LaunchMode;
+import io.quarkus.runtime.QuarkusContextHandler;
+import io.quarkus.runtime.ThreadPoolConfig;
 
 /**
- *
+ * Registers the main thread pool as a service.
  */
 public class ThreadPoolSetup {
 
     @BuildStep
-    @Record(value = ExecutionTime.RUNTIME_INIT)
-    public ExecutorBuildItem createExecutor(ExecutorRecorder recorder, ShutdownContextBuildItem shutdownContextBuildItem,
-            LaunchModeBuildItem launchModeBuildItem,
-            Optional<ThreadFactoryBuildItem> threadFactoryBuildItem,
-            Optional<ContextHandlerBuildItem> contextBuildItem) {
-        return new ExecutorBuildItem(
-                recorder.setupRunTime(shutdownContextBuildItem, launchModeBuildItem.getLaunchMode(),
-                        threadFactoryBuildItem.map(ThreadFactoryBuildItem::getThreadFactory).orElse(null),
-                        contextBuildItem.map(ContextHandlerBuildItem::contextHandler).orElse(null)));
+    public ExecutorBuildItem createExecutor(ActionBuilder action,
+            LaunchModeBuildItem launchModeBuildItem) {
+        LaunchMode launchMode = launchModeBuildItem.getLaunchMode();
+        action
+                .forService(ScheduledExecutorService.class)
+                .atPhase(Phase.INFRASTRUCTURE)
+                .require(ThreadPoolConfig.class)
+                .request(ThreadFactory.class)
+                .request(QuarkusContextHandler.class)
+                .action((ctx, config, threadFactoryOpt, contextHandlerOpt) -> {
+                    ScheduledExecutorService executor = ExecutorRecorder.setupRunTime(
+                            config,
+                            launchMode,
+                            threadFactoryOpt.orElse(null),
+                            contextHandlerOpt.orElse(null));
+                    ctx.onStop(() -> ExecutorRecorder.shutdownExecutor(config, launchMode));
+                    return executor;
+                });
+        return new ExecutorBuildItem(action.getRecorderProxy(ScheduledExecutorService.class));
     }
 
     @BuildStep

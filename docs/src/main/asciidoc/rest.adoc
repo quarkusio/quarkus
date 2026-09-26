@@ -3217,6 +3217,35 @@ NOTE: The `@RestQuery` annotation must not specify a name (i.e. use `@RestQuery`
 `@RestQuery("name")`) for this collection behavior to apply, since it is meant to
 gather every query parameter rather than a single named one.
 
+==== Collecting all header parameters
+
+Instead of binding a single header, you can annotate a
+`jakarta.ws.rs.core.MultivaluedMap<String, String>` parameter with a bare `@RestHeader`
+(without specifying a name) to collect all the headers of the request.
+Each entry in the map corresponds to one header name, and its value is the list of
+all the values given for that name.
+
+[source,java]
+----
+@Path("hello")
+public static class HelloResource {
+
+    @GET
+    public String hello(@RestHeader MultivaluedMap<String, String> headers) {
+        return headers.toString();
+    }
+}
+----
+
+Given a request with the headers `X-Name: foo` and `X-City: bar`, the `headers` map
+will contain `X-Name=[foo]` and `X-City=[bar]`. If the same header is repeated, such
+as `X-Name: foo` and `X-Name: bar`, then `headers` will contain a single `X-Name`
+entry with both values: `X-Name=[foo, bar]`.
+
+NOTE: The `@RestHeader` annotation must not specify a name (i.e. use `@RestHeader`, not
+`@RestHeader("name")`) for this collection behavior to apply, since it is meant to
+gather every header rather than a single named one.
+
 ==== Handling dates
 
 Quarkus REST supports the use of the implementations of `java.time.Temporal` (like `java.time.LocalDateTime`) as query, path, or form params.

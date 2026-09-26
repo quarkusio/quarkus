@@ -46,6 +46,7 @@ import io.quarkus.hibernate.orm.runtime.integration.HibernateOrmIntegrationRunti
 import io.quarkus.hibernate.orm.runtime.migration.MultiTenancyStrategy;
 import io.quarkus.hibernate.orm.runtime.recording.PrevalidatedQuarkusMetadata;
 import io.quarkus.hibernate.orm.runtime.recording.RecordedState;
+import io.quarkus.hibernate.orm.runtime.schema.InitScriptSupport;
 import io.quarkus.hibernate.orm.runtime.spi.HibernateOrmIntegrationRuntimeInitListener;
 
 /**
@@ -227,14 +228,15 @@ public final class FastBootHibernatePersistenceProvider implements PersistencePr
                     runtimeSettingsResult.settings(),
                     validatorFactory, cdiBeanManager, recordedState.getMultiTenancyStrategy(),
                     true,
-                    runtimeSettingsResult.importScripts());
+                    runtimeSettingsResult.importScripts(), runtimeSettingsResult.populateAfterBoot());
         }
 
         log.debug("Found no matching persistence units");
         return null;
     }
 
-    private record RuntimeSettingsResult(RuntimeSettings settings, SchemaToolingUtil.PreparedImportScripts importScripts) {
+    private record RuntimeSettingsResult(RuntimeSettings settings, SchemaToolingUtil.PreparedImportScripts importScripts,
+            boolean populateAfterBoot) {
     }
 
     private RuntimeSettingsResult buildRuntimeSettings(String persistenceUnitName, RecordedState recordedState,
@@ -253,8 +255,10 @@ public final class FastBootHibernatePersistenceProvider implements PersistencePr
         }
 
         // Inject runtime configuration if the persistence unit was defined by Quarkus configuration
+        boolean populateAfterBoot = false;
         if (!recordedState.isFromPersistenceXml()) {
-            injectRuntimeConfiguration(persistenceUnitConfig, runtimeSettingsBuilder);
+            populateAfterBoot = injectRuntimeConfiguration(persistenceUnitName, persistenceUnitConfig,
+                    runtimeSettingsBuilder);
         }
 
         for (HibernateOrmIntegrationRuntimeDescriptor descriptor : integrationRuntimeDescriptors
@@ -351,7 +355,7 @@ public final class FastBootHibernatePersistenceProvider implements PersistencePr
             }
         }
 
-        return new RuntimeSettingsResult(runtimeSettingsBuilder.build(), importScripts);
+        return new RuntimeSettingsResult(runtimeSettingsBuilder.build(), importScripts, populateAfterBoot);
     }
 
     public static boolean isPostgresOrDB2(BuildTimeSettings buildTimeSettings) {
@@ -493,7 +497,12 @@ public final class FastBootHibernatePersistenceProvider implements PersistencePr
         runtimeSettingsBuilder.put(AvailableSettings.DATASOURCE, dataSource);
     }
 
-    private static void injectRuntimeConfiguration(HibernateOrmRuntimeConfigPersistenceUnit persistenceUnitConfig,
+    /**
+     * @return whether the data init script must be executed once the session factory is built,
+     *         see {@link InitScriptSupport#configureDataManagement}
+     */
+    private static boolean injectRuntimeConfiguration(String persistenceUnitName,
+            HibernateOrmRuntimeConfigPersistenceUnit persistenceUnitConfig,
             Builder runtimeSettingsBuilder) {
 
         HibernateOrmRuntimeConfigPersistenceUnit.HibernateGenerationStrategy generationStrategy = persistenceUnitConfig
@@ -568,6 +577,10 @@ public final class FastBootHibernatePersistenceProvider implements PersistencePr
 
         runtimeSettingsBuilder.put(HibernateHints.HINT_FLUSH_MODE,
                 persistenceUnitConfig.flush().mode().getHibernateFlushMode());
+
+        // Data management; must come after the schema management strategy has been applied
+        return InitScriptSupport.configureDataManagement(persistenceUnitName, persistenceUnitConfig, generationStrategy,
+                runtimeSettingsBuilder);
     }
 
 }

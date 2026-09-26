@@ -40,6 +40,12 @@ public interface HibernateOrmRuntimeConfigPersistenceUnit {
     HibernateOrmConfigPersistenceUnitSchemaManagement schemaManagement();
 
     /**
+     * Data management configuration.
+     */
+    @ConfigDocSection
+    HibernateOrmConfigPersistenceUnitDataManagement dataManagement();
+
+    /**
      * Database related configuration.
      */
     @ConfigDocSection
@@ -234,6 +240,66 @@ public interface HibernateOrmRuntimeConfigPersistenceUnit {
         @Override
         public String toString() {
             return schemaGenerationString;
+        }
+    }
+
+    @ConfigGroup
+    interface HibernateOrmConfigPersistenceUnitDataManagement {
+
+        // @formatter:off
+        /**
+         * Select whether the data init script is executed when Hibernate ORM starts.
+         *
+         * The data init script is configured with `quarkus.hibernate-orm.data-management.init-script`
+         * and defaults to `data.sql` if it exists in the classpath.
+         *
+         * With `create` (the default in dev and test modes), the script is executed regardless of how the database schema is managed:
+         *
+         * * if `quarkus.hibernate-orm.schema-management.strategy` creates the schema,
+         *   the script is executed right after the schema has been created;
+         * * otherwise (`none`, `update`, `validate`), for example when the schema is managed by Flyway or Liquibase,
+         *   the script is executed once Hibernate ORM has started.
+         *
+         * With `none` (the default in other modes, e.g. in production), the script is not executed on start,
+         * even when Hibernate ORM creates the schema.
+         *
+         * Regardless of this setting, the data init script can still be executed on demand
+         * through Hibernate ORM's `SchemaManager` (`populate()`, or `truncate()` which reimports the data).
+         *
+         * Accepted values: `none`, `create`.
+         *
+         * @asciidoclet
+         */
+        // @formatter:on
+        @ConfigDocDefault("`create` in dev and test modes, `none` otherwise")
+        Optional<DataManagementStrategy> strategy();
+
+    }
+
+    enum DataManagementStrategy {
+        /**
+         * Do not execute the data init script on start.
+         * It can still be executed on demand through the `SchemaManager`.
+         *
+         * @asciidoclet
+         */
+        NONE("none"),
+        /**
+         * Execute the data init script when Hibernate ORM starts.
+         *
+         * @asciidoclet
+         */
+        CREATE("create");
+
+        private final String externalName;
+
+        DataManagementStrategy(String externalName) {
+            this.externalName = externalName;
+        }
+
+        @Override
+        public String toString() {
+            return externalName;
         }
     }
 

@@ -33,7 +33,8 @@ public class LoggingFrameworkTest {
                                     "META-INF/services/io.opentelemetry.sdk.autoconfigure.spi.logs.ConfigurableLogRecordExporterProvider")
                             .add(new StringAsset(
                                     "quarkus.otel.traces.enabled=false\n" +
-                                            "quarkus.datasource.devservices.enabled=false\n"),
+                                            "quarkus.datasource.devservices.enabled=false\n" +
+                                            "quarkus.devservices.enabled=false\n"),
                                     "application.properties"));
 
     @Inject

@@ -10,6 +10,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 import java.util.function.BiFunction;
+import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 
 import io.quarkus.panache.common.exception.PanacheQueryException;
@@ -48,9 +49,20 @@ public final class ProjectionConstructorUtil {
 
     public static String buildConstructorExpression(Class<?> type, String parentParameter,
             BiFunction<Class<?>, String, String> nestedProjectionBuilder) {
+        return buildConstructorExpression(type, parentParameter, nestedProjectionBuilder, UnaryOperator.identity());
+    }
+
+    /**
+     * Same as {@link #buildConstructorExpression(Class, String, BiFunction)} but applies {@code pathQualifier} to each
+     * leaf entity path before it is emitted. This is used to rewrite bare association paths (e.g. {@code owner.name}) into
+     * alias-qualified paths (e.g. {@code panache_e_j0.name}) when generating explicit joins for a projection.
+     */
+    public static String buildConstructorExpression(Class<?> type, String parentParameter,
+            BiFunction<Class<?>, String, String> nestedProjectionBuilder, UnaryOperator<String> pathQualifier) {
         Constructor<?> constructor = getProjectionConstructor(type);
         String parametersListStr = getProjectionParameters(constructor).stream()
-                .map(parameter -> getProjectionParameterName(type, parentParameter, parameter, nestedProjectionBuilder))
+                .map(parameter -> getProjectionParameterName(type, parentParameter, parameter, nestedProjectionBuilder,
+                        pathQualifier))
                 .collect(Collectors.joining(","));
         return "new " + type.getName() + " (" + parametersListStr + ") ";
     }
@@ -103,6 +115,12 @@ public final class ProjectionConstructorUtil {
 
     public static String getProjectionParameterName(Class<?> parentType, String parentParameter, Parameter parameter,
             BiFunction<Class<?>, String, String> nestedProjectionBuilder) {
+        return getProjectionParameterName(parentType, parentParameter, parameter, nestedProjectionBuilder,
+                UnaryOperator.identity());
+    }
+
+    public static String getProjectionParameterName(Class<?> parentType, String parentParameter, Parameter parameter,
+            BiFunction<Class<?>, String, String> nestedProjectionBuilder, UnaryOperator<String> pathQualifier) {
         String parameterName;
         if (hasProjectedFieldName(parameter)) {
             parameterName = getNameFromProjectedFieldName(parameter);
@@ -126,7 +144,7 @@ public final class ProjectionConstructorUtil {
         if (hasNestedProjectedClass(parameter.getType())) {
             return nestedProjectionBuilder.apply(parameter.getType(), parameterName);
         }
-        return wrapInlineValueClass(parameter.getType(), parameterName);
+        return wrapInlineValueClass(parameter.getType(), pathQualifier.apply(parameterName));
     }
 
     private static String wrapInlineValueClass(Class<?> parameterType, String entityPath) {

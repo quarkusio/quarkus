@@ -6,6 +6,7 @@ import static io.quarkus.opentelemetry.runtime.config.build.OTelBuildConfig.INST
 
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.context.propagation.TextMapGetter;
+import io.opentelemetry.context.propagation.TextMapPropagator;
 import io.opentelemetry.instrumentation.api.incubator.semconv.messaging.MessagingAttributesExtractor;
 import io.opentelemetry.instrumentation.api.incubator.semconv.messaging.MessagingAttributesGetter;
 import io.opentelemetry.instrumentation.api.incubator.semconv.messaging.MessagingSpanNameExtractor;
@@ -14,15 +15,18 @@ import io.opentelemetry.instrumentation.api.instrumenter.InstrumenterBuilder;
 import io.quarkus.opentelemetry.runtime.config.runtime.OTelRuntimeConfig;
 import io.vertx.core.eventbus.Message;
 import io.vertx.core.spi.tracing.TagExtractor;
+import io.vertx.core.tracing.TracingPolicy;
 
 @SuppressWarnings("rawtypes")
 public class EventBusInstrumenterVertxTracer implements InstrumenterVertxTracer<Message, Message> {
     private final Instrumenter<Message, Message> consumerInstrumenter;
     private final Instrumenter<Message, Message> producerInstrumenter;
+    private final TextMapPropagator propagator;
 
     public EventBusInstrumenterVertxTracer(final OpenTelemetry openTelemetry, final OTelRuntimeConfig runtimeConfig) {
         this.consumerInstrumenter = getConsumerInstrumenter(openTelemetry, runtimeConfig);
         this.producerInstrumenter = getProducerInstrumenter(openTelemetry, runtimeConfig);
+        this.propagator = openTelemetry.getPropagators().getTextMapPropagator();
     }
 
     @Override
@@ -48,6 +52,21 @@ public class EventBusInstrumenterVertxTracer implements InstrumenterVertxTracer<
     @Override
     public Instrumenter<Message, Message> getReceiveResponseInstrumenter() {
         return producerInstrumenter;
+    }
+
+    @Override
+    public TextMapPropagator getPropagator() {
+        return propagator;
+    }
+
+    /**
+     * The event bus carries intra-application messages, so a message sent outside a trace should join nothing
+     * rather than open a new trace of its own. That differs from an outgoing HTTP or database call, where the
+     * client boundary is expected to start one.
+     */
+    @Override
+    public TracingPolicy getDefaultTracingPolicy() {
+        return TracingPolicy.PROPAGATE;
     }
 
     private static Instrumenter<Message, Message> getConsumerInstrumenter(final OpenTelemetry openTelemetry,

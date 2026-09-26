@@ -23,6 +23,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.TreeMap;
 import java.util.concurrent.CompletableFuture;
@@ -41,6 +42,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.regex.Pattern;
+import java.util.stream.Stream;
 
 import jakarta.enterprise.event.Event;
 import jakarta.enterprise.inject.Default;
@@ -778,13 +780,88 @@ public class VertxHttpRecorder {
         return managementInterfaceDomainSocketFuture;
     }
 
+    private static class ManagementVerticle extends CheckpointableVerticle {
+        private final static CompletableFuture<HttpServer> FAILED = CompletableFuture
+                .failedFuture(new Exception("Management interface setup failed"));
+
+        private final Handler<HttpServerRequest> managementRouter;
+        private final ManagementInterfaceBuildTimeConfig managementBuildTimeConfig;
+        private final ManagementConfig managementConfig;
+        private final LaunchMode launchMode;
+        private final List<String> websocketSubProtocols;
+        private final TlsConfigurationRegistry registry;
+
+        private final AtomicBoolean updateValueRegistry = new AtomicBoolean(true);
+        private volatile CompletableFuture<HttpServer[]> managementFuture = new CompletableFuture<>();
+
+        public ManagementVerticle(Handler<HttpServerRequest> managementRouter,
+                ManagementInterfaceBuildTimeConfig managementBuildTimeConfig,
+                ManagementConfig managementConfig,
+                LaunchMode launchMode,
+                List<String> websocketSubProtocols,
+                TlsConfigurationRegistry registry) {
+            this.managementRouter = managementRouter;
+            this.managementBuildTimeConfig = managementBuildTimeConfig;
+            this.managementConfig = managementConfig;
+            this.launchMode = launchMode;
+            this.websocketSubProtocols = websocketSubProtocols;
+            this.registry = registry;
+        }
+
+        @Override
+        public void start(Promise<Void> startFuture) {
+            assert Context.isOnEventLoopThread();
+            try {
+                CompletableFuture<HttpServer> managementServerFuture = initializeManagementInterface(vertx, managementRouter,
+                        managementBuildTimeConfig,
+                        managementConfig, launchMode, websocketSubProtocols, registry, updateValueRegistry.getAndSet(false));
+                CompletableFuture<HttpServer> managementServerDomainSocketFuture = initializeManagementInterfaceWithDomainSocket(
+                        vertx,
+                        managementBuildTimeConfig, managementRouter, managementConfig, websocketSubProtocols);
+                CompletableFuture.allOf(managementServerFuture, managementServerDomainSocketFuture).whenComplete((nil, t) -> {
+                    if (t != null) {
+                        managementFuture.completeExceptionally(t);
+                        startFuture.fail(t);
+                    } else {
+                        managementFuture.complete(
+                                new HttpServer[] { managementServerFuture.join(), managementServerDomainSocketFuture.join() });
+                        startFuture.complete();
+                    }
+                });
+            } catch (IOException e) {
+                managementFuture.completeExceptionally(e);
+                startFuture.fail(e);
+            }
+        }
+
+        @Override
+        public void stop(Promise<Void> stopPromise) throws Exception {
+            // If checkpoint is called before the verticle starts the first time, this method will be blocked.
+            // Later there could be double stop by undeploying the verticle and checkpoint - restore would
+            // start the servers again. That's pre-existing issue, though.
+            var servers = Stream.of(managementFuture.get()).filter(Objects::nonNull).toList();
+            if (servers.isEmpty()) {
+                return;
+            }
+            var latch = new AtomicInteger(servers.size());
+            servers.forEach(s -> s.close().onComplete(event -> {
+                if (latch.decrementAndGet() == 0) {
+                    stopPromise.complete();
+                }
+            }));
+            managementFuture = new CompletableFuture<>();
+        }
+    };
+
     private static CompletableFuture<HttpServer> initializeManagementInterface(
             Vertx vertx,
             Handler<HttpServerRequest> managementRouter,
             ManagementInterfaceBuildTimeConfig managementBuildTimeConfig,
             ManagementConfig managementConfig,
             LaunchMode launchMode,
-            List<String> websocketSubProtocols, TlsConfigurationRegistry registry) throws IOException {
+            List<String> websocketSubProtocols,
+            TlsConfigurationRegistry registry,
+            boolean updateValueRegistry) throws IOException {
         httpManagementServerConfig = null;
         httpManagementSslOptions = null;
         httpManagementSslEngineOptions = null;
@@ -868,24 +945,26 @@ public class VertxHttpRecorder {
                             }
 
                             actualManagementPort = ar.result().actualPort();
-                            valueRegistry.getValue().register(MANAGEMENT_PORT, actualManagementPort);
-                            if (launchMode.isDevOrTest()) {
-                                valueRegistry.getValue().register(MANAGEMENT_TEST_PORT, actualManagementPort);
+                            if (updateValueRegistry) {
+                                valueRegistry.getValue().register(MANAGEMENT_PORT, actualManagementPort);
+                                if (launchMode.isDevOrTest()) {
+                                    valueRegistry.getValue().register(MANAGEMENT_TEST_PORT, actualManagementPort);
+                                }
+                                String mgmtScheme = httpManagementSslOptions != null ? "https" : "http";
+                                String mgmtHost = httpManagementServerConfig.getTcpHost();
+                                if ("0.0.0.0".equals(mgmtHost)) {
+                                    mgmtHost = "localhost";
+                                }
+                                String mgmtRootPath = managementBuildTimeConfig.rootPath();
+                                if (!mgmtRootPath.startsWith("/")) {
+                                    mgmtRootPath = "/" + mgmtRootPath;
+                                }
+                                if (mgmtRootPath.length() > 1 && mgmtRootPath.endsWith("/")) {
+                                    mgmtRootPath = mgmtRootPath.substring(0, mgmtRootPath.length() - 1);
+                                }
+                                valueRegistry.getValue().register(LOCAL_MANAGEMENT_BASE_URI,
+                                        URI.create(mgmtScheme + "://" + mgmtHost + ":" + actualManagementPort + mgmtRootPath));
                             }
-                            String mgmtScheme = httpManagementSslOptions != null ? "https" : "http";
-                            String mgmtHost = httpManagementServerConfig.getTcpHost();
-                            if ("0.0.0.0".equals(mgmtHost)) {
-                                mgmtHost = "localhost";
-                            }
-                            String mgmtRootPath = managementBuildTimeConfig.rootPath();
-                            if (!mgmtRootPath.startsWith("/")) {
-                                mgmtRootPath = "/" + mgmtRootPath;
-                            }
-                            if (mgmtRootPath.length() > 1 && mgmtRootPath.endsWith("/")) {
-                                mgmtRootPath = mgmtRootPath.substring(0, mgmtRootPath.length() - 1);
-                            }
-                            valueRegistry.getValue().register(LOCAL_MANAGEMENT_BASE_URI,
-                                    URI.create(mgmtScheme + "://" + mgmtHost + ":" + actualManagementPort + mgmtRootPath));
                             managementInterfaceFuture.complete(ar.result());
                         }
                     });
@@ -1033,25 +1112,17 @@ public class VertxHttpRecorder {
 
         var mainServerFuture = initializeMainHttpServer(vertx, httpBuildTimeConfig, httpConfig, launchMode,
                 eventLoops, websocketSubProtocols, insecureRequestStrategy, registry);
-        var managementInterfaceFuture = initializeManagementInterface(vertx, managementRouter, managementBuildTimeConfig,
+
+        ManagementVerticle managementVerticle = new ManagementVerticle(managementRouter, managementBuildTimeConfig,
                 managementConfig, launchMode, websocketSubProtocols, registry);
-        var managementInterfaceDomainSocketFuture = initializeManagementInterfaceWithDomainSocket(vertx,
-                managementBuildTimeConfig, managementRouter, managementConfig, websocketSubProtocols);
+        var managementFuture = vertx.deployVerticle(managementVerticle).toCompletionStage().toCompletableFuture();
 
         try {
-            String deploymentIdIfAny = mainServerFuture.get();
-
-            HttpServer tmpManagementServer = null;
-            HttpServer tmpManagementServerUsingDomainSocket = null;
-            if (managementRouter != null) {
-                tmpManagementServer = managementInterfaceFuture.get();
-                tmpManagementServerUsingDomainSocket = managementInterfaceDomainSocketFuture.get();
+            String mainWebDeploymentId = mainServerFuture.get();
+            if (mainWebDeploymentId != null) {
+                VertxCoreRecorder.setWebDeploymentId(mainWebDeploymentId);
             }
-            HttpServer managementServer = tmpManagementServer;
-            HttpServer managementServerDomainSocket = tmpManagementServerUsingDomainSocket;
-            if (deploymentIdIfAny != null) {
-                VertxCoreRecorder.setWebDeploymentId(deploymentIdIfAny);
-            }
+            final String managementDeploymentId = managementFuture.get();
 
             closeTask = new Runnable() {
                 @Override
@@ -1060,13 +1131,10 @@ public class VertxHttpRecorder {
                     if (closeTask == this) {
                         boolean isVertxClose = ((VertxInternal) vertx).closeFuture().future().isComplete();
                         int count = 0;
-                        if (deploymentIdIfAny != null && vertx.deploymentIDs().contains(deploymentIdIfAny)) {
+                        if (mainWebDeploymentId != null && vertx.deploymentIDs().contains(mainWebDeploymentId)) {
                             count++;
                         }
-                        if (managementServer != null && !isVertxClose) {
-                            count++;
-                        }
-                        if (managementServerDomainSocket != null && !isVertxClose) {
+                        if (managementDeploymentId != null && vertx.deploymentIDs().contains(managementDeploymentId)) {
                             count++;
                         }
 
@@ -1079,9 +1147,9 @@ public class VertxHttpRecorder {
                         };
 
                         // shutdown main HTTP server
-                        if (deploymentIdIfAny != null) {
+                        if (mainWebDeploymentId != null) {
                             try {
-                                vertx.undeploy(deploymentIdIfAny).onComplete(handler);
+                                vertx.undeploy(mainWebDeploymentId).onComplete(handler);
                             } catch (Exception e) {
                                 if (e instanceof RejectedExecutionException) {
                                     // Shutting down
@@ -1098,14 +1166,16 @@ public class VertxHttpRecorder {
                             for (Long id : refresTaskIds) {
                                 TlsCertificateReloader.unschedule(vertx, id);
                             }
-                            if (managementServer != null && !isVertxClose) {
-                                managementServer.close().onComplete(handler);
-                            }
-                            if (managementServerDomainSocket != null && !isVertxClose) {
-                                managementServerDomainSocket.close().onComplete(handler);
+                            if (managementDeploymentId != null) {
+                                vertx.undeploy(managementDeploymentId).onComplete(handler);
                             }
                         } catch (Exception e) {
-                            LOGGER.warn("Unable to shutdown the management interface quietly", e);
+                            if (e instanceof RejectedExecutionException) {
+                                // Shutting down
+                                LOGGER.debug("Failed to undeploy deployment because a task was rejected (due to shutdown)", e);
+                            } else {
+                                LOGGER.warn("Unable to shutdown the management interface quietly", e);
+                            }
                         }
 
                         try {
@@ -1266,7 +1336,42 @@ public class VertxHttpRecorder {
         return vertx.createHttpServer(config, sslOptions);
     }
 
-    private static class WebDeploymentVerticle extends AbstractVerticle implements Resource {
+    private static abstract class CheckpointableVerticle extends AbstractVerticle implements Resource {
+
+        public CheckpointableVerticle() {
+            if (CracSupport.isEnabled()) {
+                org.crac.Core.getGlobalContext().register(this);
+            }
+        }
+
+        @Override
+        public void start(Promise<Void> startPromise) {
+            try {
+                super.start(startPromise);
+            } catch (Exception e) {
+                startPromise.fail(e);
+            }
+        }
+
+        @Override
+        public void beforeCheckpoint(org.crac.Context<? extends Resource> context) throws Exception {
+            Promise<Void> p = Promise.promise();
+            stop(p);
+            p.future().toCompletionStage().toCompletableFuture().get();
+        }
+
+        @Override
+        public void afterRestore(org.crac.Context<? extends Resource> context) throws Exception {
+            Promise<Void> p = Promise.promise();
+            // The verticle must be started by the event-loop thread; the thread calling
+            // afterRestore will likely do so for all suspended verticles, and had we called
+            // this directly the verticles would all share the same context (run on the same thread).
+            this.context.runOnContext(nil -> start(p));
+            p.future().toCompletionStage().toCompletableFuture().get();
+        }
+    }
+
+    private static class WebDeploymentVerticle extends CheckpointableVerticle {
         private final TlsConfigurationRegistry registry;
         private HttpServer httpServer;
         private HttpServer httpsServer;
@@ -1319,9 +1424,6 @@ public class VertxHttpRecorder {
             this.registerHttpsServer = registerHttpsServer;
             this.valueRegistry = VertxHttpRecorder.valueRegistry != null ? VertxHttpRecorder.valueRegistry.getValue()
                     : ValueRegistryImpl.builder().build();
-            if (CracSupport.isEnabled()) {
-                org.crac.Core.getGlobalContext().register(this);
-            }
         }
 
         @Override
@@ -1626,24 +1728,6 @@ public class VertxHttpRecorder {
                 domainSocketServer.close().onComplete(handleClose);
             }
         }
-
-        @Override
-        public void beforeCheckpoint(org.crac.Context<? extends Resource> context) throws Exception {
-            Promise<Void> p = Promise.promise();
-            stop(p);
-            p.future().toCompletionStage().toCompletableFuture().get();
-        }
-
-        @Override
-        public void afterRestore(org.crac.Context<? extends Resource> context) throws Exception {
-            Promise<Void> p = Promise.promise();
-            // The verticle must be started by the event-loop thread; the thread calling
-            // afterRestore will likely do so for all suspended verticles, and had we called
-            // this directly the verticles would all share the same context (run on the same thread).
-            this.context.runOnContext(nil -> start(p));
-            p.future().toCompletionStage().toCompletableFuture().get();
-        }
-
     }
 
     protected static ServerBootstrap virtualBootstrap;

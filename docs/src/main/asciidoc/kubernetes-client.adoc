@@ -90,17 +90,17 @@ The Fabric8 Kubernetes Client uses its own `ObjectMapper` instance for serializa
 This mapper is provided to the client through a `KubernetesSerialization` instance that's injected into
 the `KubernetesClient` bean.
 
-If for some reason you must customize the default `ObjectMapper` bean provided by this extension and used by the Kubernetes Client, you can do so by declaring a bean that implements the `KubernetesClientObjectMapperCustomizer` interface.
+If for some reason you must customize the default `ObjectMapper` bean provided by this extension and used by the Kubernetes Client, you can do so by declaring a bean that implements the `KubernetesClientJsonMapperBuilderCustomizer` interface.
 
-The following code snippet contains an example of a `KubernetesClientObjectMapperCustomizer` to set the `ObjectMapper` locale:
+The following code snippet contains an example of a `KubernetesClientJsonMapperBuilderCustomizer` to set the `ObjectMapper` locale:
 
 [source,java]
 ----
 @Singleton
-public static class Customizer implements KubernetesClientObjectMapperCustomizer {
+public static class Customizer implements KubernetesClientJsonMapperBuilderCustomizer {
     @Override
-    public void customize(ObjectMapper objectMapper) {
-        objectMapper.setLocale(Locale.ROOT);
+    public void customize(JsonMapper.Builder builder) {
+        builder.defaultLocale(Locale.ROOT);
     }
 }
 ----
@@ -123,7 +123,7 @@ public class KubernetesObjectMapperProducer {
 
 
 WARNING: The static `io.fabric8.kubernetes.client.utils.Serialization` utils class is deprecated and should not be used.
-Access to `Serialization.jsonMapper()` should be replaced by the usage of `@KubernetesClientObjectMapperCustomizer` declared beans.
+Access to `Serialization.jsonMapper()` should be replaced by the usage of `KubernetesClientJsonMapperBuilderCustomizer` declared beans.
 
 == Testing
 

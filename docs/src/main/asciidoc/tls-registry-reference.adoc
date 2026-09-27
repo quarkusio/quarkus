@@ -423,7 +423,7 @@ For keystore types that require custom loading logic beyond `KeyStore.getInstanc
 ----
 import io.quarkus.tls.KeyStoreAndKeyCertOptions;
 import io.quarkus.tls.KeyStoreFactory;
-import io.quarkus.tls.OtherKeyStoreConfigurationuration;
+import io.quarkus.tls.OtherKeyStoreConfiguration;
 import io.smallrye.common.annotation.Identifier;
 import io.vertx.core.Vertx;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -456,17 +456,16 @@ quarkus.tls.key-store.other.params.config-file=/etc/pkcs11/provider.cfg
 
 [source,java]
 ----
-import java.io.FileInputStream;
 import java.security.KeyStore;
 import java.security.Provider;
 import java.security.Security;
 
 import io.quarkus.tls.KeyStoreAndKeyCertOptions;
 import io.quarkus.tls.KeyStoreFactory;
-import io.quarkus.tls.OtherKeyStoreConfigurationuration;
+import io.quarkus.tls.OtherKeyStoreConfiguration;
 import io.smallrye.common.annotation.Identifier;
 import io.vertx.core.Vertx;
-import io.vertx.core.net.KeyStoreOptionsBase;
+import io.vertx.core.net.KeyStoreOptions;
 import jakarta.enterprise.context.ApplicationScoped;
 
 @ApplicationScoped
@@ -484,9 +483,9 @@ public class Pkcs11KeyStoreFactory implements KeyStoreFactory {
             char[] pin = config.password().map(String::toCharArray).orElse(null);
             ks.load(null, pin); // <3>
 
-            var options = new KeyStoreOptionsBase() {} // <4>
-                    .setKeyStoreType("PKCS11")
-                    .setProviderName(provider.getName())
+            KeyStoreOptions options = new KeyStoreOptions() // <4>
+                    .setType("PKCS11")
+                    .setProvider(provider.getName())
                     .setPassword(config.password().orElse(null));
 
             return new KeyStoreAndKeyCertOptions(ks, options);
@@ -499,7 +498,7 @@ public class Pkcs11KeyStoreFactory implements KeyStoreFactory {
 <1> The `@Identifier` value must match the `type` in the configuration.
 <2> Arbitrary parameters from `quarkus.tls.key-store.other.params.*` are available via `config.params()`.
 <3> PKCS#11 keystores are loaded with `null` — the provider manages the underlying storage.
-<4> Use `KeyStoreOptionsBase` to let Vert.x create a `KeyManagerFactory` from the provider-backed keystore.
+<4> Use `KeyStoreOptions` with the type and the provider name, and no path, to let Vert.x create a `KeyManagerFactory` from the provider-backed keystore.
 
 [[sni]]
 ==== SNI

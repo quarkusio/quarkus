@@ -1,0 +1,184 @@
+////
+This guide is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
+////
+[id="gitlab-ci"]
+= Building Quarkus applications with GitLab CI/CD
+include::_attributes.adoc[]
+:diataxis-type: howto
+:summary: Test, package, and publish JVM and native Quarkus applications with GitLab CI/CD.
+:topics: devops,tooling,native,deployment
+:extensions: io.quarkus:quarkus-container-image-jib
+
+Use https://docs.gitlab.com/ee/ci/[GitLab CI/CD] to test your Quarkus application, build it in JVM and native mode, and push the resulting container images to the https://docs.gitlab.com/ee/user/packages/container_registry/[GitLab container registry].
+
+The pipeline in this guide does not require Docker to build the container images: it uses the `quarkus-container-image-jib` extension, which pushes the images directly to the registry.
+
+[NOTE]
+====
+This guide uses a Quarkus project with Maven and the Maven wrapper (`mvnw`) as the example project.
+For Gradle projects, replace the Maven commands with the equivalent `./gradlew` commands, for example `./gradlew build -Dquarkus.native.enabled=true`.
+====
+
+== Prerequisites
+
+* A Quarkus project hosted in a GitLab project, with the Maven wrapper committed to the repository.
+* GitLab runners that use the Docker or Kubernetes executor.
+* The container registry is enabled for the GitLab project.
+* The `quarkus-container-image-jib` extension added to your project:
++
+:add-extension-extensions: quarkus-container-image-jib
+include::{includes}/devtools/extension-add.adoc[]
+
+== Create the pipeline
+
+. Create a `.gitlab-ci.yml` file at the root of your repository:
++
+[source,yaml]
+----
+variables:
+  # Keep the Maven wrapper distribution and the local repository inside the project directory,
+  # so that GitLab can cache them between jobs.
+  MAVEN_USER_HOME: "$CI_PROJECT_DIR/.m2"
+  MAVEN_OPTS: "-Dmaven.repo.local=$CI_PROJECT_DIR/.m2/repository"
+  MAVEN_CLI_OPTS: "--batch-mode --errors --show-version"
+  # Configuration of the Quarkus container image extension, shared by the packaging jobs
+  QUARKUS_CONTAINER_IMAGE_USERNAME: "$CI_REGISTRY_USER"
+  QUARKUS_CONTAINER_IMAGE_PASSWORD: "$CI_REGISTRY_PASSWORD"
+
+cache:
+  key: maven
+  paths:
+    - .m2/
+
+stages:
+  - test
+  - package
+
+# Shared configuration of the JVM jobs
+.jvm-build:
+  image: eclipse-temurin:21-jdk
+  before_script:
+    # The Maven wrapper needs `unzip` to validate the checksum of the Maven distribution.
+    - apt-get update -qq && apt-get install -y -qq unzip
+
+test:
+  extends: .jvm-build
+  stage: test
+  script:
+    - ./mvnw $MAVEN_CLI_OPTS verify
+  artifacts:
+    when: always
+    reports:
+      junit:
+        - target/surefire-reports/TEST-*.xml
+        - target/failsafe-reports/TEST-*.xml
+
+package-jvm:
+  extends: .jvm-build
+  stage: package
+  variables:
+    QUARKUS_CONTAINER_IMAGE_BUILD: "true"
+    QUARKUS_CONTAINER_IMAGE_PUSH: "true"
+    QUARKUS_CONTAINER_IMAGE_IMAGE: "$CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA"
+  script:
+    - ./mvnw $MAVEN_CLI_OPTS package -DskipTests
+
+package-native:
+  stage: package
+  image:
+    name: quay.io/quarkus/ubi9-quarkus-mandrel-builder-image:jdk-25
+    # The builder image uses `native-image` as its entrypoint, which must be reset to run the job script.
+    entrypoint: [""]
+  variables:
+    QUARKUS_CONTAINER_IMAGE_BUILD: "true"
+    QUARKUS_CONTAINER_IMAGE_PUSH: "true"
+    QUARKUS_CONTAINER_IMAGE_IMAGE: "$CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA-native"
+  script:
+    - ./mvnw $MAVEN_CLI_OPTS package -Dnative -DskipTests
+  artifacts:
+    paths:
+      - target/*-runner
+    expire_in: 1 week
+  rules:
+    # Native builds are slow and resource intensive: only run them on the default branch.
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+----
++
+This pipeline contains the following jobs:
++
+--
+`.jvm-build`:: A hidden job that holds the image and the `before_script` shared by the `test` and `package-jvm` jobs.
+`test`:: Runs the unit tests and the integration tests of the application in JVM mode, and publishes the test reports to GitLab.
+`package-jvm`:: Packages the application in JVM mode, builds a container image with Jib, and pushes it to the GitLab container registry.
+`package-native`:: Compiles the application to a native executable with Mandrel, builds a container image with Jib, and pushes it to the GitLab container registry.
+The job also keeps the native executable as a job artifact.
+--
++
+The `CI_REGISTRY_IMAGE`, `CI_REGISTRY_USER`, `CI_REGISTRY_PASSWORD`, `CI_COMMIT_SHORT_SHA`, `CI_COMMIT_BRANCH`, and `CI_DEFAULT_BRANCH` variables are https://docs.gitlab.com/ee/ci/variables/predefined_variables.html[predefined by GitLab].
+The `QUARKUS_CONTAINER_IMAGE_*` variables are mapped to the `quarkus.container-image.*` configuration properties.
+For more information, see xref:config-reference.adoc#with-environment-variables[Environment variables] and xref:container-image.adoc[Container images].
+
+. Align the JDK version of the `eclipse-temurin` image with the Java version of your project.
++
+The Mandrel builder image tag must match the Mandrel version supported by Quarkus, which is independent of the Java version of your project.
+If the tag is too old, the `package-native` job fails with an `Out of date version of GraalVM or Mandrel detected` error.
+For the available Mandrel builder image tags, see the https://quay.io/repository/quarkus/ubi9-quarkus-mandrel-builder-image?tab=tags[quay.io repository].
+
+. Commit and push the `.gitlab-ci.yml` file to start the pipeline.
+
+[NOTE]
+====
+When `unzip` is not available, the Maven wrapper downloads the `.tar.gz` Maven distribution instead of the `.zip` one, but still validates it against the `distributionSha256Sum` of the `.zip` distribution declared in `.mvn/wrapper/maven-wrapper.properties`.
+The job then fails with `Failed to validate Maven distribution SHA-256`.
+This is why the `.jvm-build` job installs `unzip`, which is not included in the `eclipse-temurin` images.
+The Mandrel builder image already provides it.
+====
+
+[IMPORTANT]
+====
+Native compilation requires a significant amount of memory and CPU.
+If the `package-native` job fails with an out-of-memory error, run it on a larger runner, or limit the memory used by the native image builder with the `quarkus.native.native-image-xmx` configuration property.
+For more information, see xref:building-native-image.adoc[Building a native executable].
+====
+
+== Run tests that use Dev Services
+
+xref:dev-services.adoc[Dev Services] and `@QuarkusIntegrationTest` tests that start containers use Testcontainers, which requires access to a Docker daemon.
+On GitLab, you can provide one with the https://docs.gitlab.com/ee/ci/docker/using_docker_build.html#use-docker-in-docker[Docker-in-Docker (`docker:dind`) service].
+
+. Add the `docker:dind` service to the `test` job, and point Testcontainers to it:
++
+[source,yaml]
+----
+test:
+  extends: .jvm-build
+  stage: test
+  services:
+    - name: docker:dind
+      alias: docker
+  variables:
+    # Use the Docker daemon of the docker:dind service
+    DOCKER_HOST: "tcp://docker:2375"
+    # Disable TLS, which is not needed to communicate with the service
+    DOCKER_TLS_CERTDIR: ""
+  script:
+    - ./mvnw $MAVEN_CLI_OPTS verify
+----
+
+[NOTE]
+====
+The `docker:dind` service requires runners with privileged mode enabled.
+The GitLab.com hosted runners on Linux support it.
+For self-managed runners, see the https://docs.gitlab.com/runner/executors/docker.html#use-docker-in-docker-with-privileged-mode[GitLab Runner documentation].
+====
+
+To also run the integration tests against the native executable, use the same service configuration in the `package-native` job and replace `package -Dnative -DskipTests` with `verify -Dnative`.
+
+== References
+
+* xref:container-image.adoc[Container images]
+* xref:building-native-image.adoc[Building a native executable]
+* xref:getting-started-testing.adoc[Testing your application]
+* https://docs.gitlab.com/ee/ci/yaml/[GitLab CI/CD YAML syntax reference]

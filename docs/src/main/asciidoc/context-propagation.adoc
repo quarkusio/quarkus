@@ -196,19 +196,19 @@ their extensions:
 |Context Name|Name Constant|Description
 
 |`None`
-|https://javadoc.io/static/org.eclipse.microprofile.context-propagation/microprofile-context-propagation-api/1.2/org/eclipse/microprofile/context/ThreadContext.html#NONE[`ThreadContext.NONE`]
+|https://javadoc.io/doc/org.eclipse.microprofile.context-propagation/microprofile-context-propagation-api/1.3/org/eclipse/microprofile/context/ThreadContext.html#NONE[`ThreadContext.NONE`]
 |Can be used to specify an empty set of contexts, but setting the value to empty works too
 
 |`Remaining`
-|https://javadoc.io/static/org.eclipse.microprofile.context-propagation/microprofile-context-propagation-api/1.2/org/eclipse/microprofile/context/ThreadContext.html#ALL_REMAINING[`ThreadContext.ALL_REMAINING`]
+|https://javadoc.io/doc/org.eclipse.microprofile.context-propagation/microprofile-context-propagation-api/1.3/org/eclipse/microprofile/context/ThreadContext.html#ALL_REMAINING[`ThreadContext.ALL_REMAINING`]
 |All the contexts that are not explicitly listed in other sets
 
 |`Transaction`
-|https://javadoc.io/static/org.eclipse.microprofile.context-propagation/microprofile-context-propagation-api/1.2/org/eclipse/microprofile/context/ThreadContext.html#TRANSACTION[`ThreadContext.TRANSACTION`]
+|https://javadoc.io/doc/org.eclipse.microprofile.context-propagation/microprofile-context-propagation-api/1.3/org/eclipse/microprofile/context/ThreadContext.html#TRANSACTION[`ThreadContext.TRANSACTION`]
 |The JTA transaction context
 
 |`CDI`
-|https://javadoc.io/static/org.eclipse.microprofile.context-propagation/microprofile-context-propagation-api/1.2/org/eclipse/microprofile/context/ThreadContext.html#CDI[`ThreadContext.CDI`]
+|https://javadoc.io/doc/org.eclipse.microprofile.context-propagation/microprofile-context-propagation-api/1.3/org/eclipse/microprofile/context/ThreadContext.html#CDI[`ThreadContext.CDI`]
 |The CDI (ArC) context
 
 |`Servlet`
@@ -220,7 +220,7 @@ their extensions:
 |The Quarkus REST or RESTEasy Classic context
 
 |`Application`
-|https://javadoc.io/static/org.eclipse.microprofile.context-propagation/microprofile-context-propagation-api/1.2/org/eclipse/microprofile/context/ThreadContext.html#APPLICATION[`ThreadContext.APPLICATION`]
+|https://javadoc.io/doc/org.eclipse.microprofile.context-propagation/microprofile-context-propagation-api/1.3/org/eclipse/microprofile/context/ThreadContext.html#APPLICATION[`ThreadContext.APPLICATION`]
 |The current `ThreadContextClassLoader`
 |===
 

@@ -83,7 +83,7 @@ and connect without configuration.
 If you want to run the server yourself using Docker, check out the 5-minute https://infinispan.org/get-started/[Getting stated with Infinispan]
 tutorial to run Infinispan Server
 
-You can also https://infinispan.org/download/[download] {infinispan-version} Server bare metal distribution and run the following command
+You can also https://infinispan.org/downloads/releases[download] {infinispan-version} Server bare metal distribution and run the following command
 from the distribution folder.
 [source,bash]
 ----
@@ -104,7 +104,7 @@ $ ./bin/cli.sh user create admin -p password
 
 In Kubernetes, we recommend the https://infinispan.org/docs/infinispan-operator/main/operator.html[Infinispan Operator].
 Additionally, grab a look to
-the https://infinispan.org/tutorials/simple/simple_tutorials.html#cross-site-replication_remote-cache-tutorials[Cross Site Replication]
+the https://infinispan.org/tutorials/remote-cross-site-replication/[Cross Site Replication]
 tutorial. You will learn how to run two separate Infinispan Clusters with docker compose (for local dev) and the Operator.
 
 === Configuring the connection

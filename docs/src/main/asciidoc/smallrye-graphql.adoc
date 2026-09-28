@@ -1102,13 +1102,13 @@ public class Phone {
 }
 ----
 
-See more about the `@AdaptToScalar` feature in the https://javadoc.io/static/io.smallrye/smallrye-graphql-api/1.5.0/io/smallrye/graphql/api/AdaptToScalar.html[JavaDoc].
+See more about the `@AdaptToScalar` feature in the https://javadoc.io/doc/io.smallrye/smallrye-graphql-api/2.18.5/io/smallrye/graphql/api/AdaptToScalar.html[JavaDoc].
 
 === Adapt with
 
 Another option for more complex cases is to provide an Adapter. You can then do the mapping yourself in the adapter.
 
-See more about the `AdaptWith` feature in the https://javadoc.io/static/io.smallrye/smallrye-graphql-api/1.5.0/io/smallrye/graphql/api/AdaptWith.html[JavaDoc].
+See more about the `AdaptWith` feature in the https://javadoc.io/doc/io.smallrye/smallrye-graphql-api/2.18.5/io/smallrye/graphql/api/AdaptWith.html[JavaDoc].
 
 For example:
 

@@ -64,10 +64,14 @@ public abstract class AbstractDevBuildItem extends MultiBuildItem {
         return this.artifactKey;
     }
 
+    /**
+     * @return the namespace of the extension that created this build item: the artifactId of its runtime artifact,
+     *         resolved from the deployment artifact the caller class belongs to
+     */
     public String getExtensionPathName(CurateOutcomeBuildItem curateOutcomeBuildItem) {
         if (this.extensionIdentifier == null) {
             ArtifactKey ak = getArtifactKey(curateOutcomeBuildItem);
-            this.extensionIdentifier = ak.getArtifactId();
+            this.extensionIdentifier = ExtensionNamespaces.runtimeArtifactId(curateOutcomeBuildItem, ak);
         }
 
         return this.extensionIdentifier;

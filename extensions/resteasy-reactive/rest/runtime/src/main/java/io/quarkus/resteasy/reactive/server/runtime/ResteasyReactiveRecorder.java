@@ -60,6 +60,7 @@ import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
+import io.quarkus.runtime.annotations.StaticInit;
 import io.quarkus.runtime.rest.DisabledRestEndpoints;
 import io.quarkus.security.AuthenticationCompletionException;
 import io.quarkus.security.AuthenticationException;
@@ -79,6 +80,7 @@ import io.quarkus.virtual.threads.VirtualThreadsRecorder;
 import io.vertx.core.Handler;
 import io.vertx.ext.web.RoutingContext;
 
+@SuppressWarnings("unused")
 @Recorder
 public class ResteasyReactiveRecorder extends ResteasyReactiveCommonRecorder implements EndpointInvokerFactory {
 
@@ -105,6 +107,7 @@ public class ResteasyReactiveRecorder extends ResteasyReactiveCommonRecorder imp
         return currentDeployment;
     }
 
+    @StaticInit
     public RuntimeValue<Deployment> createDeployment(String applicationPath, DeploymentInfo info,
             BeanContainer beanContainer,
             ShutdownContext shutdownContext,
@@ -183,11 +186,13 @@ public class ResteasyReactiveRecorder extends ResteasyReactiveCommonRecorder imp
         }
     }
 
+    @StaticInit
     public RuntimeValue<RestInitialHandler> restInitialHandler(RuntimeValue<Deployment> deploymentRuntimeValue) {
         Deployment deployment = deploymentRuntimeValue.getValue();
         return new RuntimeValue<>(new RestInitialHandler(deployment));
     }
 
+    @StaticInit
     public Handler<RoutingContext> handler(RuntimeValue<RestInitialHandler> restInitialHandlerRuntimeValue) {
         RestInitialHandler initialHandler = restInitialHandlerRuntimeValue.getValue();
 
@@ -206,6 +211,7 @@ public class ResteasyReactiveRecorder extends ResteasyReactiveCommonRecorder imp
         return new ResteasyReactiveVertxHandler(eventCustomizer, initialHandler);
     }
 
+    @StaticInit
     public Handler<RoutingContext> failureHandler(RuntimeValue<RestInitialHandler> restInitialHandlerRuntimeValue,
             boolean noCustomAuthCompletionExMapper, boolean noCustomAuthFailureExMapper, boolean noCustomAuthRedirectExMapper,
             boolean proactive) {
@@ -274,11 +280,8 @@ public class ResteasyReactiveRecorder extends ResteasyReactiveCommonRecorder imp
      * <p>
      * We have a strategy around handling the Application class and build time init, that allows for the singletons
      * to still work.
-     *
-     * @param applicationClass
-     * @param singletonClassesEmpty
-     * @return
      */
+    @StaticInit
     public Supplier<Application> handleApplication(final Class<? extends Application> applicationClass,
             final boolean singletonClassesEmpty) {
         Supplier<Application> applicationSupplier;
@@ -332,6 +335,7 @@ public class ResteasyReactiveRecorder extends ResteasyReactiveCommonRecorder imp
         };
     }
 
+    @StaticInit
     public Function<Class<?>, BeanFactory<?>> factoryCreator(BeanContainer container) {
         return new Function<>() {
             @Override
@@ -359,10 +363,12 @@ public class ResteasyReactiveRecorder extends ResteasyReactiveCommonRecorder imp
         };
     }
 
+    @StaticInit
     public ServerSerialisers createServerSerialisers() {
         return new ServerSerialisers();
     }
 
+    @StaticInit
     public Handler<RoutingContext> defaultAuthFailureHandler(
             RuntimeValue<Deployment> deployment, boolean setTemplatePath) {
         return new Handler<>() {
@@ -381,6 +387,7 @@ public class ResteasyReactiveRecorder extends ResteasyReactiveCommonRecorder imp
         };
     }
 
+    @StaticInit
     public Supplier<Boolean> beanUnavailable(String className) {
         return new Supplier<>() {
             @Override

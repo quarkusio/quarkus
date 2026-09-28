@@ -12,6 +12,7 @@ import org.jboss.resteasy.reactive.server.spi.RuntimeConfiguration;
 
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.annotations.Recorder;
+import io.quarkus.runtime.annotations.RuntimeInit;
 import io.quarkus.vertx.http.runtime.VertxHttpConfig;
 
 @Recorder
@@ -27,6 +28,7 @@ public class ResteasyReactiveRuntimeRecorder {
         this.httpRuntimeConfig = httpRuntimeConfig;
     }
 
+    @RuntimeInit
     public Supplier<RuntimeConfiguration> runtimeConfiguration(RuntimeValue<Deployment> deployment) {
         ResteasyReactiveServerRuntimeConfig runtimeConfig = this.runtimeConfig.getValue();
         VertxHttpConfig httpRuntimeConfig = this.httpRuntimeConfig.getValue();
@@ -62,6 +64,7 @@ public class ResteasyReactiveRuntimeRecorder {
     }
 
     @SuppressWarnings({ "unchecked", "rawtypes", "ForLoopReplaceableByForEach" })
+    @RuntimeInit
     public void configureHandlers(RuntimeValue<Deployment> deployment, Map<String, Supplier<?>> runtimeConfigMap) {
         List<GenericRuntimeConfigurableServerRestHandler<?>> runtimeConfigurableServerRestHandlers = deployment.getValue()
                 .getRuntimeConfigurableServerRestHandlers();

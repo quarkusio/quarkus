@@ -49,7 +49,7 @@
         <smallrye-common.version>2.20.0</smallrye-common.version>
         <smallrye-config.version>4.0.0</smallrye-config.version> <!-- keep in sync with microprofile-config-api -->
         <smallrye-health.version>4.3.0</smallrye-health.version>
-        <smallrye-modules.version>1.0.beta1</smallrye-modules.version>
+        <smallrye-modules.version>1.0.beta2</smallrye-modules.version>
         <smallrye-open-api.version>4.4.0-alpha3</smallrye-open-api.version>
         <smallrye-graphql.version>3.0.0.Beta7</smallrye-graphql.version>
         <smallrye-fault-tolerance.version>7.0.0</smallrye-fault-tolerance.version>

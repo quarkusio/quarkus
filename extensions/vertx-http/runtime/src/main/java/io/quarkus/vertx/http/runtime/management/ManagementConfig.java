@@ -110,8 +110,8 @@ public interface ManagementConfig {
      * Whether the HTTP server should treat the semicolon ({@code ;}) as a query parameter
      * delimiter, in addition to the ampersand ({@code &}).
      * <p>
-     * When set to {@code true} (the default), a request like {@code /path?a=1;b=2} is parsed
-     * as two parameters ({@code a=1} and {@code b=2}). When set to {@code false}, the
+     * When set to {@code true}, a request like {@code /path?a=1;b=2} is parsed
+     * as two parameters ({@code a=1} and {@code b=2}). When set to {@code false} (the default), the
      * semicolon is treated as a literal character and the request yields a single parameter
      * ({@code a=1;b=2}).
      */

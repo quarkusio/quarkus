@@ -22,11 +22,6 @@ public class ExchangeAttributeParser {
     private final List<ExchangeAttributeBuilder> builders;
     private final List<ExchangeAttributeWrapper> wrappers;
 
-    @Deprecated(forRemoval = true, since = "3.32")
-    public ExchangeAttributeParser(List<ExchangeAttributeWrapper> wrappers) {
-        this(ExchangeAttributeParser.class.getClassLoader(), wrappers);
-    }
-
     public ExchangeAttributeParser(final ClassLoader classLoader, List<ExchangeAttributeWrapper> wrappers) {
         this.wrappers = wrappers;
         ServiceLoader<ExchangeAttributeBuilder> loader = ServiceLoader.load(ExchangeAttributeBuilder.class, classLoader);

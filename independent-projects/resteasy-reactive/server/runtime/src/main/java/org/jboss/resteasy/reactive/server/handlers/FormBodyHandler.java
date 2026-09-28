@@ -47,6 +47,7 @@ public class FormBodyHandler implements GenericRuntimeConfigurableServerRestHand
                         .setFileSizeThreshold(configuration.body().multiPart().fileSizeThreshold())
                         .setMaxAttributeSize(configuration.limits().maxFormAttributeSize())
                         .setMaxEntitySize(configuration.limits().maxBodySize().orElse(-1L))
+                        .setMaxIndividualFileSize(configuration.limits().maxMultipartFileSize().orElse(-1L))
                         .setMaxParameters(configuration.limits().maxParameters())
                         .setMaxPartHeaderSize(configuration.limits().maxMultipartPartHeaderSize())
                         .setMaxHeaderCount(configuration.limits().maxMultipartHeaderCount())

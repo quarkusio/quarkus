@@ -19,9 +19,8 @@ public final class WebJarResultsBuildItem extends SimpleBuildItem {
      */
     public record Key(GACT artifactKey, String root) {
 
-        public Key(GACT artifactKey, String root) {
-            this.artifactKey = artifactKey;
-            this.root = normalizeRoot(root);
+        public Key {
+            root = normalizeRoot(root);
         }
 
         private static String normalizeRoot(String root) {

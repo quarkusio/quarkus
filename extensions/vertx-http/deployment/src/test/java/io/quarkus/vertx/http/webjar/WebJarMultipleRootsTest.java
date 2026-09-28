@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 import java.util.function.Consumer;
 
 import org.junit.jupiter.api.Test;
@@ -64,7 +65,9 @@ public class WebJarMultipleRootsTest {
     static void assertRoot(WebJarResultsBuildItem results, String root) {
         WebJarResultsBuildItem.WebJarResult result = results.byArtifactKeyAndRoot(ARTIFACT, root);
         assertThat(result).as("result for root " + root).isNotNull();
-        assertThat(result.getFinalDestination()).endsWith(root.substring(0, root.length() - 1));
+        // A path, not a string: the destination is a file system path, so on Windows it is separated by
+        // backslashes, while the root is always written with forward slashes.
+        assertThat(Path.of(result.getFinalDestination())).endsWithRaw(Path.of(root));
         assertThat(result.getWebRootConfigurations())
                 .extracting(FileSystemStaticHandler.StaticWebRootConfiguration::getWebRoot)
                 .contains(root);

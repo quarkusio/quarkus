@@ -7,6 +7,7 @@ import java.util.logging.Level;
 import java.util.logging.LogRecord;
 
 import org.jboss.logmanager.ExtHandler;
+import org.jboss.logmanager.ExtLogRecord;
 
 import io.smallrye.common.constraint.Assert;
 
@@ -23,6 +24,10 @@ public class InMemoryLogHandler extends ExtHandler {
     @Override
     public void publish(LogRecord record) {
         if (predicate.test(record)) {
+            if (record instanceof ExtLogRecord extLogRecord) {
+                // the records are inspected from the test thread, whose MDC is not the one of the logging thread
+                extLogRecord.copyMdc();
+            }
             records.add(record);
         }
     }

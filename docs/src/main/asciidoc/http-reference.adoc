@@ -672,7 +672,10 @@ include::{generated-dir}/config/quarkus-vertx-http_quarkus.http.access-log.adoc[
 |Response header                                                              |          | `%{o,response_header_name}`
 |Vert.x Routing Context Internal Data                                         |          | `%{d,map_key}`
 |Vert.x MDC data (e.g. 'traceId' for OpenTelemetry)                           |          | `%{X,mdc-key}`
+|Connection status: 'X' if the client closed the connection before the response was completed, '-' otherwise |          | `%{CONNECTION_STATUS}`
 |===
+
+NOTE: When a request is logged with the connection status `X`, the response was never sent, so the status code (`%s`) and the bytes sent (`%b`, `%B`) describe the response as it was when the connection closed, and the response time (`%D`, `%T`) is the time until the connection closed.
 
 Set `quarkus.http.access-log.consolidate-rerouted-requests=true` to enable support for the modifier `<`. This modifier can be used for requests that have been internally redirected to consult the original request.
 The following attributes support this modifier:

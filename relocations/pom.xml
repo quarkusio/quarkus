@@ -21,6 +21,7 @@
         upgrade to 4.0. New relocations introduced during the 4.x line should be added below.
     -->
     <modules>
+        <module>quarkus-junit5</module>
     </modules>
 
 </project>

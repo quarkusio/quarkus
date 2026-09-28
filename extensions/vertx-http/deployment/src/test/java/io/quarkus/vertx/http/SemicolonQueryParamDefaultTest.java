@@ -12,18 +12,31 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.test.QuarkusExtensionTest;
 import io.vertx.ext.web.Router;
 
+/**
+ * Tests that semicolons are treated as literal characters when
+ * {@code quarkus.http.use-semicolon-as-query-param-delimiter} is not set.
+ */
 public class SemicolonQueryParamDefaultTest {
 
     @RegisterExtension
     static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
-                    .addClasses(Routes.class));
+                    .addClasses(SemicolonQueryParamEnabledTest.Routes.class));
 
     @Test
-    public void testSemicolonIsTreatedAsDelimiterByDefault() {
+    public void testSemicolonIsLiteralWhenDisabled() {
         given()
                 .urlEncodingEnabled(false)
                 .get("/echo?a=1;b=2")
+                .then()
+                .statusCode(200)
+                .body(is("a=1;b=2|b=null"));
+    }
+
+    @Test
+    public void testAmpersandStillWorksAsDelimiter() {
+        given().urlEncodingEnabled(false)
+                .get("/echo?a=1&b=2")
                 .then()
                 .statusCode(200)
                 .body(is("a=1|b=2"));

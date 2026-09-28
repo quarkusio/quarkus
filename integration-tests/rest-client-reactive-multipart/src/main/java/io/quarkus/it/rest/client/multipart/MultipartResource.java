@@ -8,6 +8,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
+import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -56,6 +57,7 @@ public class MultipartResource {
 
     public static final String HELLO_WORLD = "HELLO WORLD";
     public static final String GREETING_TXT = "greeting.txt";
+    public static final OffsetDateTime OFFSET_DATE_TIME = OffsetDateTime.parse("2023-02-21T10:15:30+01:00");
     public static final int NUMBER = 12342;
     @RestClient
     MultipartClient client;
@@ -83,6 +85,7 @@ public class MultipartResource {
         data.file = HELLO_WORLD.getBytes(UTF_8);
         data.setFileName(GREETING_TXT);
         data.setUuid(UUID.randomUUID());
+        data.setOffsetDateTime(OFFSET_DATE_TIME);
         if (withPojo) {
             Pojo pojo = new Pojo();
             pojo.setName("some-name");
@@ -425,12 +428,13 @@ public class MultipartResource {
     @Path("/echo/with-pojo")
     @Consumes(MediaType.MULTIPART_FORM_DATA)
     public String consumeBinaryWithPojo(@MultipartForm MultipartBodyWithBinaryFileAndPojo fileWithPojo) {
-        return String.format("fileOk:%s,nameOk:%s,pojoOk:%s,uuidNull:%s",
+        return String.format("fileOk:%s,nameOk:%s,pojoOk:%s,uuidNull:%s,offsetDateTimeOk:%s",
                 containsHelloWorld(fileWithPojo.file),
                 GREETING_TXT.equals(fileWithPojo.fileName),
                 fileWithPojo.pojo == null ? "null"
                         : "some-name".equals(fileWithPojo.pojo.getName()) && "some-value".equals(fileWithPojo.pojo.getValue()),
-                fileWithPojo.uuid == null);
+                fileWithPojo.uuid == null,
+                fileWithPojo.offsetDateTime == null ? "null" : OFFSET_DATE_TIME.toString().equals(fileWithPojo.offsetDateTime));
     }
 
     @GET
@@ -526,6 +530,10 @@ public class MultipartResource {
         @FormParam("uuid")
         @PartType(MediaType.TEXT_PLAIN)
         public String uuid;
+
+        @FormParam("offsetDateTime")
+        @PartType(MediaType.TEXT_PLAIN)
+        public String offsetDateTime;
     }
 
 }

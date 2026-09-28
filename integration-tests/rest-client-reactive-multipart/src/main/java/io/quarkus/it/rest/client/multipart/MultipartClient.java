@@ -1,6 +1,7 @@
 package io.quarkus.it.rest.client.multipart;
 
 import java.io.File;
+import java.time.OffsetDateTime;
 import java.util.UUID;
 
 import jakarta.ws.rs.Consumes;
@@ -183,6 +184,18 @@ public interface MultipartClient {
         @FormParam("uuid")
         @PartType(MediaType.TEXT_PLAIN)
         private UUID uuid;
+
+        @FormParam("offsetDateTime")
+        @PartType(MediaType.TEXT_PLAIN)
+        private OffsetDateTime offsetDateTime;
+
+        public OffsetDateTime getOffsetDateTime() {
+            return offsetDateTime;
+        }
+
+        public void setOffsetDateTime(OffsetDateTime offsetDateTime) {
+            this.offsetDateTime = offsetDateTime;
+        }
 
         public String getFileName() {
             return fileName;

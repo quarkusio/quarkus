@@ -907,6 +907,33 @@ When the header is absent or contains only empty values, the selector is not inv
 
 NOTE: At most one such bean may exist, and it cannot be combined with `quarkus.http.proxy.x-forwarded-for-index` or `quarkus.http.proxy.allow-forwarded`.
 
+=== Using the PROXY protocol
+
+When the proxy in front of Quarkus supports the link:https://www.haproxy.org/download/1.8/doc/proxy-protocol.txt[PROXY protocol], enable it so that the remote address of a connection is the address of the actual client rather than the address of the proxy:
+
+[source,properties]
+----
+quarkus.http.proxy.use-proxy-protocol=true
+----
+
+The PROXY protocol is then expected on every listener: HTTP, HTTPS and the Unix domain socket.
+A connection that does not start with a PROXY protocol header is rejected.
+If only some of the listeners are reached through the proxy, for example when the load balancer passes TLS traffic through with a PROXY header while plain HTTP traffic comes from inside the cluster, restrict the protocol to those listeners:
+
+[source,properties]
+----
+quarkus.http.proxy.use-proxy-protocol=true
+quarkus.http.proxy.proxy-protocol-listeners=https
+----
+
+The accepted values are `http`, `https` and `domain-socket`.
+When none of the selected listeners is started, for example `https` without a TLS configuration, the PROXY protocol is not used and a warning is logged at startup.
+The management interface has the same properties under `quarkus.management.proxy`.
+
+IMPORTANT: The PROXY protocol header is not authenticated: a listener that expects it uses the client address sent by whoever opens the connection.
+Make sure that only the proxy can connect to such a listener, for example with firewall rules or a network policy.
+The trusted proxy checks described in <<reverse-proxy>> apply to the forwarded headers, they do not restrict who can send a PROXY protocol header.
+
 [[same-site-cookie]]
 == SameSite cookies
 

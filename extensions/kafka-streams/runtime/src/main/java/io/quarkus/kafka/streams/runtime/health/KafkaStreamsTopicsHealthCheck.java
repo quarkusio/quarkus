@@ -22,16 +22,19 @@ public class KafkaStreamsTopicsHealthCheck implements HealthCheck {
 
     private static final Logger LOGGER = Logger.getLogger(KafkaStreamsTopicsHealthCheck.class.getName());
 
-    @Inject
-    KafkaStreamsTopologyManager manager;
+    private final KafkaStreamsTopologyManager manager;
 
     private final List<String> checkedTopics;
 
+    /**
+     * @param manager the topology manager, {@code null} when the application declares no {@code Topology} and Kafka
+     *        Streams is not started
+     */
     @Inject
     public KafkaStreamsTopicsHealthCheck(KafkaStreamsTopologyManager manager) {
         this.manager = manager;
         this.checkedTopics = new ArrayList<>();
-        if (manager.isTopicsCheckEnabled()) {
+        if (isTopicsCheckEnabled()) {
             checkedTopics.addAll(manager.getSourceTopics());
             checkedTopics.addAll(manager.getSourcePatterns().stream().map(Pattern::pattern).toList());
         }
@@ -40,7 +43,7 @@ public class KafkaStreamsTopicsHealthCheck implements HealthCheck {
     @Override
     public HealthCheckResponse call() {
         HealthCheckResponseBuilder builder = HealthCheckResponse.named("Kafka Streams topics health check").up();
-        if (manager.isTopicsCheckEnabled()) {
+        if (isTopicsCheckEnabled()) {
             try {
                 Set<String> missingTopics = manager.getMissingTopics();
                 List<String> availableTopics = new ArrayList<>(checkedTopics);
@@ -58,5 +61,9 @@ public class KafkaStreamsTopicsHealthCheck implements HealthCheck {
             }
         }
         return builder.build();
+    }
+
+    private boolean isTopicsCheckEnabled() {
+        return manager != null && manager.isTopicsCheckEnabled();
     }
 }

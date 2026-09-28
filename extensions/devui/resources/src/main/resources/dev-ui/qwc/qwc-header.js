@@ -340,7 +340,7 @@ export class QwcHeader extends observeState(QwcHotReloadElement) {
 
         var subMenu = this.routerController.getCurrentSubMenu();
         if(subMenu){
-            this._rightSideNav = html`<vaadin-tabs selected="${subMenu.index}">
+            this._rightSideNav = html`<vaadin-tabs selected="${subMenu.index}" @selected-changed="${this._onSubMenuTabSelected}">
                                     ${subMenu.links.map(link =>
                                         html`${this._renderTab(subMenu.index, link)}`
                                     )}
@@ -367,10 +367,19 @@ export class QwcHeader extends observeState(QwcHotReloadElement) {
                     ${this._renderSubMenuLink(index, link)}
                     `;
             }else{
-                return html`<vaadin-tab>
+                return html`<vaadin-tab .page="${link.page}">
                     ${this._renderSubMenuLink(index, link)}
                 </vaadin-tab>`;
             }
+        }
+    }
+
+    // The link inside a tab does not fill the tab, so selecting the tab (clicking its padding, or using the keyboard)
+    // must navigate too, otherwise the tab shows as selected while the previous page stays open
+    _onSubMenuTabSelected(event){
+        const tab = event.target.items?.[event.detail.value];
+        if(tab?.page && this.routerController.getPageUrlFor(tab.page) !== window.location.pathname){
+            this.routerController.go(tab.page);
         }
     }
 

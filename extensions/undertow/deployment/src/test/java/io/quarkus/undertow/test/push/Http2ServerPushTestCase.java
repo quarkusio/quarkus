@@ -41,6 +41,7 @@ public class Http2ServerPushTestCase {
     @Test
     public void testServerPush() throws Exception {
         Vertx vertx = Vertx.vertx();
+        HttpClient client = null;
         try {
             HttpClientOptions options = new HttpClientOptions().setSsl(true).setUseAlpn(true)
                     .setProtocolVersion(HttpVersion.HTTP_2).setVerifyHost(false).setTrustAll(true);
@@ -87,7 +88,7 @@ public class Http2ServerPushTestCase {
             //            });
             //            request.end();
 
-            HttpClient client = vertx.createHttpClient(options);
+            client = vertx.createHttpClient(options);
             client.request(HttpMethod.GET, sslUrl.getPort(), sslUrl.getHost(), sslUrl.getPath())
                     .toCompletionStage()
                     .thenAccept(new Consumer<HttpClientRequest>() {
@@ -130,6 +131,9 @@ public class Http2ServerPushTestCase {
             Assertions.assertEquals("pushed-body", pushedBody.get(10, TimeUnit.SECONDS));
 
         } finally {
+            if (client != null) {
+                client.close().await(5, TimeUnit.SECONDS);
+            }
             vertx.close();
         }
 

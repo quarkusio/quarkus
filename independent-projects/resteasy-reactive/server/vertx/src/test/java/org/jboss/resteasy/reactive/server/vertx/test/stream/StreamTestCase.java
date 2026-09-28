@@ -8,6 +8,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
 import jakarta.ws.rs.client.Client;
 import jakarta.ws.rs.client.ClientBuilder;
@@ -47,18 +48,22 @@ public class StreamTestCase {
     @Test
     public void testStreamingDoesNotCloseConnection() throws Exception {
         Vertx v = Vertx.vertx();
+        AtomicReference<HttpClient> client = new AtomicReference<>();
         try {
             final CompletableFuture<Object> latch = new CompletableFuture<>();
-            HttpClient client = v
+            client.set(v
                     .createHttpClient(
-                            new HttpClientOptions().setKeepAlive(true).setIdleTimeout(10).setIdleTimeoutUnit(TimeUnit.SECONDS));
-            sendRequest(latch, client, () -> sendRequest(latch, client, () -> latch.complete(null)));
+                            new HttpClientOptions().setKeepAlive(true).setIdleTimeout(10)
+                                    .setIdleTimeoutUnit(TimeUnit.SECONDS)));
+            sendRequest(latch, client.get(), () -> sendRequest(latch, client.get(), () -> latch.complete(null)));
 
             //should not have been closed
             latch.get();
 
         } finally {
-            v.close().toCompletionStage().toCompletableFuture().get();
+            client.get().close().await(5, TimeUnit.SECONDS);
+            client.set(null);
+            v.close().await(10, TimeUnit.SECONDS);
         }
     }
 

@@ -13,5 +13,4 @@ metadata:
   - "security"
   status: "stable"
   config:
-  - "quarkus.resteasy-client-token-propagation."
-  - "quarkus.oidc-token-propagation."
+  - "quarkus.resteasy-client-oidc-token-propagation."

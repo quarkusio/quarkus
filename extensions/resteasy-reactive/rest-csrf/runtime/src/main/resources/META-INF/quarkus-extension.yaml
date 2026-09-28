@@ -9,4 +9,3 @@ metadata:
   status: "stable"
   config:
   - "quarkus.rest-csrf."
-  - "quarkus.csrf-reactive."

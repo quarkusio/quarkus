@@ -14,4 +14,3 @@ metadata:
   status: "stable"
   config:
   - "quarkus.rest-client-oidc-token-propagation."
-  - "quarkus.oidc-token-propagation-reactive."

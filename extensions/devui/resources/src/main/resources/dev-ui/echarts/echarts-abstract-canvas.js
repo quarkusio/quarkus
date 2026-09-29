@@ -31,17 +31,20 @@ class EchartsAbstractCanvas extends LitElement {
 
     connectedCallback() {
         super.connectedCallback();
-        this._rh = (e) => this._handleResize(e);
-        window.addEventListener('resize', this._rh);
+        // Observe the element rather than the window: a chart can be resized without the window
+        // being touched at all - a card maximized, a panel expanded, a layout column collapsed -
+        // and the canvas is sized in pixels, so it has to be told.
+        this._resizeObserver = new ResizeObserver(() => this._handleResize());
+        this._resizeObserver.observe(this);
 
         this.themeStateObserver = () => this.reload();
         themeState.addObserver(this.themeStateObserver);
     }
-      
+
     disconnectedCallback() {
-        window.removeEventListener('resize', this._rh);
+        this._resizeObserver.disconnect();
         themeState.removeObserver(this.themeStateObserver);
-        super.disconnectedCallback();      
+        super.disconnectedCallback();
     }
 
     render() {
@@ -67,7 +70,10 @@ class EchartsAbstractCanvas extends LitElement {
         this._width = parseFloat(getComputedStyle(this).getPropertyValue('width'), 10) - 20;
         this._height = parseFloat(getComputedStyle(this).getPropertyValue('height'), 10) - 20;
 
-        this._chart.resize();
+        // The observer delivers an initial measurement before firstUpdated has built the chart.
+        if(this._chart){
+            this._chart.resize({width: this._width, height: this._height});
+        }
     }
 
     firstUpdated(){

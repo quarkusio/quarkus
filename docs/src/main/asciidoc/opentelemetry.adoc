@@ -489,4 +489,5 @@ adding the usual `quarkus.*` prefix.
 
 Quarkus OpenTelemetry configuration properties now have the `quarkus.otel.*` prefix.
 
-include::{generated-dir}/config/quarkus-opentelemetry.adoc[leveloffset=+1, opts=optional]
+// So the bare quarkus-opentelemetry.adoc is only created when the extension has exactly one top-level config prefix. The OTel extension now emits two — quarkus.otel and quarkus.dev-ui
+include::{generated-dir}/config/quarkus-opentelemetry_quarkus.otel.adoc[leveloffset=+1, opts=optional]

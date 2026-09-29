@@ -8,6 +8,7 @@ import java.util.function.Function;
 
 import org.jboss.logging.Logger;
 
+@Deprecated(forRemoval = true, since = "4.0")
 public class OutputFilter implements Function<InputStream, Runnable> {
     private final StringBuilder builder = new StringBuilder();
     private static final Logger log = Logger.getLogger(OutputFilter.class);

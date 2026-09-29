@@ -237,6 +237,10 @@ public class VertxCoreRecorder {
                 throw new RuntimeException(e);
             } finally {
                 synchronized (devModeThreads) {
+                    ClassLoader systemCl = ClassLoader.getSystemClassLoader();
+                    for (Thread t : devModeThreads) {
+                        t.setContextClassLoader(systemCl);
+                    }
                     devModeThreads.clear();
                     currentDevModeNewThreadCreationClassLoader = null;
                 }

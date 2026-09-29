@@ -443,7 +443,7 @@ final class PersistenceUnitProcessor {
                 PersistenceUnitTransactionType.JTA,
                 new ArrayList<>(model.allModelClassNames()),
                 new ArrayList<>(model.modelPackageNames()),
-                new Properties(),
+                descriptorProperties,
                 false);
         Set<String> entityClassNames = new HashSet<>(descriptor.getManagedClassNames());
         entityClassNames.retainAll(model.entityClassNames());

@@ -19,8 +19,8 @@ import io.vertx.core.json.JsonObject;
  * JSON-RPC backend for the Dev UI metrics page: a grouped catalog, a mutable selection, a
  * snapshot of the selected series' history, a live stream of new samples, the meter count,
  * and a clear action. Does ALL Vert.x JSON shaping here (the store lib is Vert.x-free),
- * mirroring how {@code SpanRecord.toJson}/{@code OpenTelemetryDevUIJsonRPCService} shape the
- * traces JSON in the OTel runtime.
+ * mirroring how {@code SpanRecord.toJson}/{@code TracesDevUIJsonRPCService} shape the
+ * traces JSON.
  *
  * NOTE: NO class-level scope annotation on purpose (see {@code MetricsStoreProducer} and the
  * traces service): registered as a bean only by the dev-only build step via

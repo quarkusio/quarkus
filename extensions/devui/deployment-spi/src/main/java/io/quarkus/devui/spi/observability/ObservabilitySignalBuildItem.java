@@ -25,7 +25,7 @@ public final class ObservabilitySignalBuildItem extends MultiBuildItem {
      * @param key unique signal key, e.g. "traces"
      * @param title display title, e.g. "Traces"
      * @param icon Dev UI icon name, e.g. "font-awesome-solid:diagram-project"
-     * @param pageId the Dev UI page id backing this signal, e.g. "quarkus-opentelemetry/traces";
+     * @param pageId the Dev UI page id backing this signal, e.g. "quarkus-myextension/messages";
      *        null when the signal has no page of its own to embed or link to
      * @param countJsonRpcMethod name of a JSON-RPC method returning a live count (forward-looking;
      *        not yet rendered on the signal tile in the POC), may be null

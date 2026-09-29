@@ -3,13 +3,17 @@ package io.quarkus.opentelemetry.runtime.devui;
 import java.time.Duration;
 import java.util.function.BiFunction;
 
+import jakarta.enterprise.event.Event;
 import jakarta.inject.Inject;
+
+import org.eclipse.microprofile.config.ConfigProvider;
 
 import io.opentelemetry.sdk.autoconfigure.AutoConfiguredOpenTelemetrySdkBuilder;
 import io.opentelemetry.sdk.autoconfigure.spi.ConfigProperties;
 import io.opentelemetry.sdk.metrics.SdkMeterProviderBuilder;
 import io.opentelemetry.sdk.metrics.export.PeriodicMetricReader;
-import io.quarkus.devui.observability.store.metrics.MetricsTimeSeriesStore;
+import io.quarkus.dev.telemetry.TelemetryEvent;
+import io.quarkus.dev.telemetry.TelemetryEvents;
 import io.quarkus.opentelemetry.runtime.AutoConfiguredOpenTelemetrySdkBuilderCustomizer;
 
 /**
@@ -22,19 +26,18 @@ import io.quarkus.opentelemetry.runtime.AutoConfiguredOpenTelemetrySdkBuilderCus
  */
 public class DevUiMetricsSdkBuilderCustomizer implements AutoConfiguredOpenTelemetrySdkBuilderCustomizer {
 
-    // Produced by MetricsStoreProducer in the quarkus-devui runtime; the sampling interval is
-    // carried on the store, so this customizer needs no config dependency.
     @Inject
-    MetricsTimeSeriesStore store;
+    Event<TelemetryEvent> telemetry;
 
     @Override
     public void customize(AutoConfiguredOpenTelemetrySdkBuilder builder) {
-        Duration interval = Duration.ofMillis(store.sampleIntervalMillis());
+        // The interval the Dev UI dashboard samples at, read from config: this extension does not depend on Dev UI.
+        Duration interval = TelemetryEvents.metricsSampleInterval(ConfigProvider.getConfig()::getOptionalValue);
         builder.addMeterProviderCustomizer(
                 new BiFunction<SdkMeterProviderBuilder, ConfigProperties, SdkMeterProviderBuilder>() {
                     @Override
                     public SdkMeterProviderBuilder apply(SdkMeterProviderBuilder mpBuilder, ConfigProperties cfg) {
-                        mpBuilder.registerMetricReader(PeriodicMetricReader.builder(new DevUiMetricsExporter(store))
+                        mpBuilder.registerMetricReader(PeriodicMetricReader.builder(new DevUiMetricsExporter(telemetry))
                                 .setInterval(interval)
                                 .build());
                         return mpBuilder;

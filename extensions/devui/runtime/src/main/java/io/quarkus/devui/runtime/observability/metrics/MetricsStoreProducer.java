@@ -9,7 +9,7 @@ import io.quarkus.devui.runtime.observability.metrics.config.MetricsDevUiRuntime
 
 /**
  * Produces the single dev-mode metrics store, sized from runtime config and reused across
- * live reloads via {@link MetricsStoreHolder}. Directly mirrors {@code DevUiTracesStoreProducer}.
+ * live reloads via {@link MetricsStoreHolder}. Directly mirrors {@code TracesStoreProducer}.
  *
  * NOTE: NO class-level bean-defining annotation on purpose. {@code quarkus-devui} runtime is
  * a jandex bean archive, so a scoped class here would be auto-discovered in ALL modes and leak

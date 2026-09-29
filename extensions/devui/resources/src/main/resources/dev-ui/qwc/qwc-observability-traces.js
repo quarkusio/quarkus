@@ -13,9 +13,11 @@ import { dialogRenderer } from '@vaadin/dialog/lit.js';
  * timing waterfall bar per span. Seeds from getSnapshot(), then live-updates via
  * streamSpans(). Extends ObservabilityCardBase for the shared CSV export.
  */
-export class QwcOtelTraces extends ObservabilityCardBase {
+export class QwcObservabilityTraces extends ObservabilityCardBase {
 
-    jsonRpc = new JsonRpc(this);
+    // A core component rather than an extension page, so it names its JSON-RPC namespace itself instead of taking
+    // it from the router. The spans come from whichever tracer the application uses.
+    jsonRpc = new JsonRpc('devui-observability-traces');
 
     static styles = css`
         :host { display: flex; flex-direction: column; height: 100%; }
@@ -254,4 +256,4 @@ export class QwcOtelTraces extends ObservabilityCardBase {
         this.exportCsv(rows, 'traces.csv');
     }
 }
-customElements.define('qwc-otel-traces', QwcOtelTraces);
+customElements.define('qwc-observability-traces', QwcObservabilityTraces);

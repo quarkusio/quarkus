@@ -2,6 +2,7 @@ package io.quarkus.devui.runtime.observability.metrics.config;
 
 import java.time.Duration;
 
+import io.quarkus.dev.telemetry.TelemetryEvents;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
 import io.smallrye.config.ConfigMapping;
@@ -14,8 +15,13 @@ import io.smallrye.config.WithDefault;
 @ConfigRoot(phase = ConfigPhase.RUN_TIME)
 public interface MetricsDevUiRuntimeConfig {
 
-    /** How often meters are sampled. */
-    @WithDefault("5s")
+    /**
+     * How often meters are sampled.
+     * <p>
+     * The metrics backends read it without depending on Dev UI, through
+     * {@link TelemetryEvents#metricsSampleInterval}, which is where the default comes from.
+     */
+    @WithDefault(TelemetryEvents.DEFAULT_METRICS_SAMPLE_INTERVAL)
     Duration sampleInterval();
 
     /** Rolling time window kept per series (120 points at the 5s default). */

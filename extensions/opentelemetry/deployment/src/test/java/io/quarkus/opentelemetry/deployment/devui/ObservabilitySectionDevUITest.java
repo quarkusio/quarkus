@@ -38,16 +38,27 @@ public class ObservabilitySectionDevUITest extends DevUIBuildTimeDataTest {
         assertThat(signals).isNotNull();
         assertThat(signals.isArray()).isTrue();
 
-        boolean hasTraces = false;
+        String pageId = null;
         for (JsonNode signal : signals) {
             if ("traces".equals(signal.get("key").asText())) {
-                hasTraces = true;
                 assertThat(signal.get("title").asText()).isEqualTo("OpenTelemetry Traces");
-                assertThat(signal.get("pageId").asText()).isEqualTo("quarkus-opentelemetry/traces");
+                pageId = signal.get("pageId").asText();
             }
         }
-        assertThat(hasTraces)
-                .as("OpenTelemetry should contribute a 'traces' signal to the Observability section")
-                .isTrue();
+        assertThat(pageId)
+                .as("OpenTelemetry should contribute a 'traces' signal, with a page, to the Observability section")
+                .isNotBlank();
+
+        // The core traces view is an unlisted page, which the dashboard embeds in the card and opens full page.
+        JsonNode unlistedPages = super.getBuildTimeData("unlistedPages");
+        JsonNode tracesPage = null;
+        for (JsonNode page : unlistedPages) {
+            if (pageId.equals(page.get("id").asText())) {
+                tracesPage = page;
+            }
+        }
+        assertThat(tracesPage).as("the traces signal's page %s should be an unlisted page", pageId).isNotNull();
+        assertThat(tracesPage.get("componentName").asText()).isEqualTo("qwc-observability-traces");
+        assertThat(tracesPage.get("componentRef").asText()).endsWith("/qwc/qwc-observability-traces.js");
     }
 }

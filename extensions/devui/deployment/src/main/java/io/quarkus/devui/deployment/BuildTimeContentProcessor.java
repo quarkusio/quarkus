@@ -560,7 +560,7 @@ public class BuildTimeContentProcessor {
         addMenuSectionBuildTimeData(internalBuildTimeData, internalPages, extensionsBuildItem);
         addFooterTabBuildTimeData(internalBuildTimeData, extensionsBuildItem, devUIConfig);
         addSettingTabBuildTimeData(internalBuildTimeData, extensionsBuildItem);
-        addUnlistedPageBuildTimeData(internalBuildTimeData, extensionsBuildItem);
+        addUnlistedPageBuildTimeData(internalBuildTimeData, internalPages, extensionsBuildItem);
         addApplicationInfoBuildTimeData(internalBuildTimeData, curateOutcomeBuildItem, nonApplicationRootPathBuildItem);
         addIdeBuildTimeData(internalBuildTimeData, effectiveIdeBuildItem, launchModeBuildItem);
         buildTimeConstProducer.produce(internalBuildTimeData);
@@ -644,9 +644,14 @@ public class BuildTimeContentProcessor {
     }
 
     private void addUnlistedPageBuildTimeData(BuildTimeConstBuildItem internalBuildTimeData,
+            List<InternalPageBuildItem> internalPages,
             ExtensionsBuildItem extensionsBuildItem) {
 
         List<Page> unlistedPages = new ArrayList<>();
+        // Our own unlisted pages
+        for (InternalPageBuildItem internalPageBuildItem : internalPages) {
+            unlistedPages.addAll(internalPageBuildItem.getUnlistedPages());
+        }
         // Unlisted pages from extensions
         for (Extension e : extensionsBuildItem.getUnlistedExtensions()) {
             List<Page> pagesFromExtension = e.getUnlistedPages();

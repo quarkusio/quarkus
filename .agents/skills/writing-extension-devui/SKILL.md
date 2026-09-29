@@ -152,11 +152,11 @@ next to the page it refers to:
 
 ```java
 signals.produce(new ObservabilitySignalBuildItem(
-        "traces",                                  // unique key, identifies the stored card
-        "OpenTelemetry Traces",                    // title (name the backend, not just the signal)
-        "font-awesome-solid:diagram-project",      // icon
-        "quarkus-opentelemetry/traces",            // page id: <namespace>/<dashed-title>, or null
-        "spanCount"));                             // JSON-RPC live count, or null
+        "messages",                                // unique key, identifies the stored card
+        "My Extension Messages",                   // title (name the backend, not just the signal)
+        "font-awesome-solid:envelope",             // icon
+        "quarkus-myextension/messages",            // page id: <namespace>/<dashed-title>, or null
+        "messageCount"));                          // JSON-RPC live count, or null
 ```
 
 The dashboard imports that page's web component and renders it inline in a card,
@@ -166,8 +166,12 @@ a card, which is what metrics does - meters are picked individually instead.
 
 Meters need no build item: everything registered with Micrometer or the
 OpenTelemetry SDK is offered in the dashboard's picker automatically. Only a new
-metrics *backend* (one that samples into `MetricsTimeSeriesStore`) produces a
-`MetricsBackendBuildItem`.
+metrics or tracing *backend* needs work: it fires `TelemetryEvent`s
+(`io.quarkus.dev.telemetry`, in quarkus-core's dev mode SPI - no Dev UI
+dependency), built with `TelemetryEvent.metric(...)` / `TelemetryEvent.span(...)`
+and guarded by `TelemetryEvents.isEnabled()`, and produces a
+`MetricsBackendBuildItem` or `TracesBackendBuildItem`. Core Dev UI owns the stores
+and the views.
 
 Full documentation: `docs/src/main/asciidoc/dev-ui.adoc`, "Observability dashboard".
 

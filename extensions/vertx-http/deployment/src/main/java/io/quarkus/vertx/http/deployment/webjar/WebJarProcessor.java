@@ -35,7 +35,7 @@ public class WebJarProcessor {
             Optional<ReproducibilityCheckBuildItem> reproducibilityCheckBuildItem,
             ApplicationConfig applicationConfig) throws IOException {
 
-        Map<GACT, WebJarResultsBuildItem.WebJarResult> results = new HashMap<>();
+        Map<WebJarResultsBuildItem.Key, WebJarResultsBuildItem.WebJarResult> results = new HashMap<>();
 
         Path deploymentBasePath = getDeploymentBasePath(applicationConfig, reproducibilityCheckBuildItem.isPresent());
         recorder.shutdownTask(shutdownContext, deploymentBasePath.toString());
@@ -58,7 +58,7 @@ public class WebJarProcessor {
                                 webJar.getRoot()));
             }
 
-            results.put(webJar.getArtifactKey(),
+            results.put(new WebJarResultsBuildItem.Key(webJar.getArtifactKey(), webJar.getRoot()),
                     new WebJarResultsBuildItem.WebJarResult(dependency, staticResourcesPath.toAbsolutePath().toString(),
                             webRootConfigurations));
         }
@@ -89,7 +89,7 @@ public class WebJarProcessor {
             BuildProducer<NativeImageResourceBuildItem> nativeImageResourceBuildItemBuildProducer,
             ApplicationConfig applicationConfig) {
 
-        Map<GACT, WebJarResultsBuildItem.WebJarResult> results = new HashMap<>();
+        Map<WebJarResultsBuildItem.Key, WebJarResultsBuildItem.WebJarResult> results = new HashMap<>();
 
         for (WebJarBuildItem webJar : webJars) {
 
@@ -113,7 +113,7 @@ public class WebJarProcessor {
                     new FileSystemStaticHandler.StaticWebRootConfiguration(finalDestination,
                             ""));
 
-            results.put(webJar.getArtifactKey(),
+            results.put(new WebJarResultsBuildItem.Key(webJar.getArtifactKey(), webJar.getRoot()),
                     new WebJarResultsBuildItem.WebJarResult(dependency, finalDestination, webRootConfigurations));
         }
 

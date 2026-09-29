@@ -116,6 +116,9 @@ public class DevUIProcessor {
     private static final String INTERNAL_NAMESPACE = "devui";
     private static final String UNDERSCORE = "_";
     private static final String SLASH = "/";
+    // Where Dev UI's files sit inside every web jar it deploys, and so also the root its web jar results are
+    // looked up by: the same artifact can be deployed with other roots by other extensions.
+    private static final String WEB_JAR_ROOT = DEVUI + SLASH;
     private static final String SLASH_ALL = SLASH + "*";
     private static final String JSONRPC = "json-rpc-ws";
 
@@ -585,7 +588,7 @@ public class DevUIProcessor {
         // First create the static resources for our own internal components
         webJarBuildProducer.produce(WebJarBuildItem.builder()
                 .artifactKey(UI_JAR)
-                .root(DEVUI + SLASH).build());
+                .root(WEB_JAR_ROOT).build());
 
         // The Dev UI's own resources are served from the Dev UI root, so they keep the empty namespace rather than
         // the "devui" one used for build time data, otherwise everything under /q/dev-ui/ moves to /q/dev-ui/devui/
@@ -1032,7 +1035,7 @@ public class DevUIProcessor {
         final GACT deploymentKey = getDeploymentKey(runtimeExt);
         webJarBuildProducer.produce(WebJarBuildItem.builder()
                 .artifactKey(deploymentKey)
-                .root(DEVUI + SLASH)
+                .root(WEB_JAR_ROOT)
                 .filter(new WebJarResourcesFilter() {
                     @Override
                     public WebJarResourcesFilter.FilterResult apply(String fileName, InputStream file) throws IOException {
@@ -1073,7 +1076,7 @@ public class DevUIProcessor {
 
         for (DevUIWebJarBuildItem devUIWebJarBuiltItem : devUIWebJarBuiltItems) {
             WebJarResultsBuildItem.WebJarResult result = webJarResultsBuildItem
-                    .byArtifactKey(devUIWebJarBuiltItem.getArtifactKey());
+                    .byArtifactKeyAndRoot(devUIWebJarBuiltItem.getArtifactKey(), WEB_JAR_ROOT);
             if (result != null) {
                 String namespace = devUIWebJarBuiltItem.getNamespace();
                 devUIRoutesProducer.produce(new DevUIRoutesBuildItem(namespace, devUIWebJarBuiltItem.getPath(),

@@ -219,5 +219,43 @@ final class Target_sun_awt_im_CompositionAreaHandler {
     }
 }
 
+/**
+ * We get rid of ResourceBundle.getBundle(...) for
+ * sun.awt.resources.awt
+ * sun/awt/resources/awt.properties
+ * sun.awt.resources.awt_en
+ * sun/awt/resources/awt_en.properties
+ * sun.awt.resources.awt_en_US
+ * sun/awt/resources/awt_en_US.properties
+ * we don't include those bundles anyway, so the search is in vain,
+ * and we don't need those as they contain strings for GUI elements,
+ * useless in our exclusively headless setup.
+ * See https://github.com/quarkusio/quarkus/issues/44622
+ */
+@TargetClass(className = "java.awt.Toolkit$4")
+final class Target_java_awt_Toolkit$4 {
+    @Substitute
+    public Void run() {
+        return null;
+    }
+}
+
+/**
+ * TODO: This is perhaps too harsh, is it needed?
+ * See See https://github.com/quarkusio/quarkus/issues/44622
+ */
+@TargetClass(className = "javax.imageio.spi.IIORegistry")
+final class Target_javax_imageio_spi_IIORegistry {
+    @Substitute
+    private void registerInstalledProviders() {
+        // Do nothing. We don't support ImageIO plugins via META-INF/services anyway.
+    }
+
+    @Substitute
+    private void registerApplicationClasspathSpis() {
+        // Do nothing. We don't support ImageIO plugins found on classpath.
+    }
+}
+
 public class JDKSubstitutions {
 }

@@ -20,10 +20,12 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -89,6 +91,7 @@ import io.quarkus.vertx.http.HttpServerConfigCustomizer;
 import io.quarkus.vertx.http.HttpServerStart;
 import io.quarkus.vertx.http.HttpsServerStart;
 import io.quarkus.vertx.http.ManagementInterface;
+import io.quarkus.vertx.http.runtime.ProxyConfig.ProxyProtocolListener;
 import io.quarkus.vertx.http.runtime.VertxHttpConfig.InsecureRequests;
 import io.quarkus.vertx.http.runtime.cors.CORSFilter;
 import io.quarkus.vertx.http.runtime.devmode.RemoteSyncHandler;
@@ -822,6 +825,16 @@ public class VertxHttpRecorder {
             httpManagementServerConfig = httpConfigForManagement;
         }
 
+        Set<ProxyProtocolListener> startedListeners = EnumSet.noneOf(ProxyProtocolListener.class);
+        if (httpManagementServerConfig != null) {
+            startedListeners.add(httpManagementSslOptions != null ? ProxyProtocolListener.HTTPS : ProxyProtocolListener.HTTP);
+        }
+        if (managementConfig.domainSocketEnabled()) {
+            startedListeners.add(ProxyProtocolListener.DOMAIN_SOCKET);
+        }
+        HttpServerOptionsUtils.warnIfProxyProtocolIsNotUsed("quarkus.management", managementConfig.proxy(),
+                startedListeners);
+
         // In Vert.x 5.1, if the configured port is 0, we need to switch to a socket address.
         SocketAddress address;
         if (httpManagementServerConfig != null && httpManagementServerConfig.getTcpPort() <= 0) {
@@ -967,6 +980,18 @@ public class VertxHttpRecorder {
                 && httpMainSslOptions == null) {
             throw new IllegalStateException("Cannot set quarkus.http.insecure-requests without enabling SSL.");
         }
+
+        Set<ProxyProtocolListener> startedListeners = EnumSet.noneOf(ProxyProtocolListener.class);
+        if (httpMainServerConfig != null && insecureRequestStrategy != InsecureRequests.DISABLED) {
+            startedListeners.add(ProxyProtocolListener.HTTP);
+        }
+        if (httpMainSslServerConfig != null) {
+            startedListeners.add(ProxyProtocolListener.HTTPS);
+        }
+        if (httpMainDomainSocketConfig != null) {
+            startedListeners.add(ProxyProtocolListener.DOMAIN_SOCKET);
+        }
+        HttpServerOptionsUtils.warnIfProxyProtocolIsNotUsed("quarkus.http", httpConfig.proxy(), startedListeners);
 
         int eventLoopCount = eventLoops.get();
         final int ioThreads;

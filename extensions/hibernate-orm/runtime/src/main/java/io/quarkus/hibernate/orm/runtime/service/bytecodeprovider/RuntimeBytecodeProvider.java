@@ -24,6 +24,6 @@ final class RuntimeBytecodeProvider implements BytecodeProvider {
     @Override
     public EnhancementSession createEnhancementSession(EnhancementModel enhancementModel,
             EnhancementEnvironment enhancementEnvironment) {
-        return null;
+        throw new UnsupportedOperationException("Enhancement is not supported at runtime");
     }
 }

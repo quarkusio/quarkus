@@ -1,4 +1,4 @@
-package io.quarkus.cli.plugin;
+package io.quarkus.devtools.plugin;
 
 import java.io.File;
 import java.net.MalformedURLException;

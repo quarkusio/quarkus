@@ -1,6 +1,10 @@
 package io.quarkus.test.common.http;
 
+import static io.quarkus.test.common.ListeningAddress.LOCAL_BASE_URI;
+import static io.quarkus.test.common.ListeningAddress.LOCAL_MANAGEMENT_BASE_URI;
+
 import java.lang.reflect.Field;
+import java.net.URI;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -14,10 +18,13 @@ import org.eclipse.microprofile.config.ConfigProvider;
 import io.quarkus.runtime.test.TestHttpEndpointProvider;
 import io.quarkus.test.common.ListeningAddress;
 import io.quarkus.value.registry.ValueRegistry;
+import io.quarkus.value.registry.ValueRegistry.RuntimeKey;
 import io.smallrye.config.Config;
 import io.smallrye.config.SmallRyeConfig;
 
 public class TestHTTPResourceManager {
+
+    private static final RuntimeKey<URI> LAMBDA_BASE_URI = RuntimeKey.key("quarkus.lambda.local-base-uri");
 
     public static void inject(Object testCase, ValueRegistry valueRegistry) {
         inject(testCase, valueRegistry, Config.get(), TestHttpEndpointProvider.load());
@@ -122,6 +129,15 @@ public class TestHTTPResourceManager {
     }
 
     public static String testUrl(ValueRegistry valueRegistry, Config config, String... paths) {
+        // Check if Lambda base URI is registered (for Lambda tests)
+        if (valueRegistry.containsKey(LAMBDA_BASE_URI)) {
+            return appendPaths(valueRegistry.get(LAMBDA_BASE_URI), paths);
+        }
+        // Check if local base URI is registered (for regular HTTP tests)
+        if (valueRegistry.containsKey(LOCAL_BASE_URI)) {
+            return appendPaths(valueRegistry.get(LOCAL_BASE_URI), paths);
+        }
+        // Fall back to constructing URL from config (for compatibility)
         String host = host(config, "quarkus.http.host");
         int port = valueRegistry.getOrDefault(ListeningAddress.HTTP_TEST_PORT, 8081);
         String rootPath = rootPath(config, paths);
@@ -129,6 +145,11 @@ public class TestHTTPResourceManager {
     }
 
     public static String testManagementUrl(ValueRegistry valueRegistry, Config config, String... paths) {
+        // Check if local management base URI is registered
+        if (valueRegistry.containsKey(LOCAL_MANAGEMENT_BASE_URI)) {
+            return appendPaths(valueRegistry.get(LOCAL_MANAGEMENT_BASE_URI), paths);
+        }
+        // Fall back to constructing URL from config (for compatibility)
         String host = host(config, "quarkus.management.host");
         int port = valueRegistry.getOrDefault(ListeningAddress.MANAGEMENT_TEST_PORT, 9001);
         String managementRootPath = managementRootPath(config, paths);
@@ -136,6 +157,23 @@ public class TestHTTPResourceManager {
     }
 
     public static String testUrlSsl(ValueRegistry valueRegistry, Config config, String... paths) {
+        // Check if Lambda base URI is registered (for Lambda tests)
+        if (valueRegistry.containsKey(LAMBDA_BASE_URI)) {
+            URI baseUri = valueRegistry.get(LAMBDA_BASE_URI);
+            // Use https if the base URI is https, otherwise use the registered base as-is
+            if ("https".equals(baseUri.getScheme())) {
+                return appendPaths(baseUri, paths);
+            }
+        }
+        // Check if local base URI is registered (for regular HTTP tests)
+        if (valueRegistry.containsKey(LOCAL_BASE_URI)) {
+            URI baseUri = valueRegistry.get(LOCAL_BASE_URI);
+            // Use https if the base URI is https, otherwise use the registered base as-is
+            if ("https".equals(baseUri.getScheme())) {
+                return appendPaths(baseUri, paths);
+            }
+        }
+        // Fall back to constructing URL from config (for compatibility)
         String host = host(config, "quarkus.http.host");
         int port = valueRegistry.getOrDefault(ListeningAddress.HTTPS_TEST_PORT, 8444);
         String rootPath = rootPath(config, paths);
@@ -143,6 +181,15 @@ public class TestHTTPResourceManager {
     }
 
     public static String testManagementUrlSsl(ValueRegistry valueRegistry, Config config, String... paths) {
+        // Check if local management base URI is registered
+        if (valueRegistry.containsKey(LOCAL_MANAGEMENT_BASE_URI)) {
+            URI baseUri = valueRegistry.get(LOCAL_MANAGEMENT_BASE_URI);
+            // Use https if the base URI is https, otherwise use the registered base as-is
+            if ("https".equals(baseUri.getScheme())) {
+                return appendPaths(baseUri, paths);
+            }
+        }
+        // Fall back to constructing URL from config (for compatibility)
         String host = host(config, "quarkus.management.host");
         int port = valueRegistry.getOrDefault(ListeningAddress.MANAGEMENT_TEST_PORT, 9001);
         String managementRootPath = managementRootPath(config, paths);
@@ -196,5 +243,23 @@ public class TestHTTPResourceManager {
             path.append(relativePath);
         }
         return path.toString();
+    }
+
+    private static String appendPaths(URI baseUri, String... paths) {
+        String baseUrl = baseUri.toString();
+        if (paths.length == 0) {
+            return baseUrl;
+        }
+        StringBuilder url = new StringBuilder(baseUrl);
+        if (!baseUrl.endsWith("/")) {
+            url.append("/");
+        }
+        for (String path : paths) {
+            if (path != null && !path.isEmpty()) {
+                String relativePath = path.startsWith("/") ? path.substring(1) : path;
+                url.append(relativePath);
+            }
+        }
+        return url.toString();
     }
 }

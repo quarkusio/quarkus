@@ -53,18 +53,20 @@ class Http3AutoTlsTest {
                 .setHostnameVerificationAlgorithm("");
         HttpClientAgent client = vertx.httpClientBuilder().with(clientConfig).with(sslOptions).build();
 
-        int port = tlsUrl.getPort();
-        var response = client.request(HttpMethod.GET, port, "localhost", "/hello")
-                .compose(HttpClientRequest::send)
-                .compose(resp -> resp.body()
-                        .map(body -> new ResponseStruct(resp.version().name(), body.toString(), resp.statusCode())))
-                .await(10, TimeUnit.SECONDS);
+        try {
+            int port = tlsUrl.getPort();
+            var response = client.request(HttpMethod.GET, port, "localhost", "/hello")
+                    .compose(HttpClientRequest::send)
+                    .compose(resp -> resp.body()
+                            .map(body -> new ResponseStruct(resp.version().name(), body.toString(), resp.statusCode())))
+                    .await(10, TimeUnit.SECONDS);
 
-        assertThat(response.version()).isEqualTo("HTTP_3");
-        assertThat(response.status()).isEqualTo(200);
-        assertThat(response.body()).isEqualTo("hello");
-
-        client.close().await(5, TimeUnit.SECONDS);
+            assertThat(response.version()).isEqualTo("HTTP_3");
+            assertThat(response.status()).isEqualTo(200);
+            assertThat(response.body()).isEqualTo("hello");
+        } finally {
+            client.close().await(5, TimeUnit.SECONDS);
+        }
     }
 
     @Test
@@ -78,17 +80,19 @@ class Http3AutoTlsTest {
                         .setPassword("http3-dev-password"));
         HttpClientAgent client = vertx.httpClientBuilder().with(clientConfig).with(sslOptions).build();
 
-        int port = tlsUrl.getPort();
-        var response = client.request(HttpMethod.GET, port, "localhost", "/version")
-                .compose(HttpClientRequest::send)
-                .compose(resp -> resp.body()
-                        .map(body -> new ResponseStruct(resp.version().name(), body.toString(), resp.statusCode())))
-                .await(10, TimeUnit.SECONDS);
+        try {
+            int port = tlsUrl.getPort();
+            var response = client.request(HttpMethod.GET, port, "localhost", "/version")
+                    .compose(HttpClientRequest::send)
+                    .compose(resp -> resp.body()
+                            .map(body -> new ResponseStruct(resp.version().name(), body.toString(), resp.statusCode())))
+                    .await(10, TimeUnit.SECONDS);
 
-        assertThat(response.version()).isEqualTo("HTTP_3");
-        assertThat(response.status()).isEqualTo(200);
-        assertThat(response.body()).isEqualTo("HTTP_3");
-
-        client.close().await(5, TimeUnit.SECONDS);
+            assertThat(response.version()).isEqualTo("HTTP_3");
+            assertThat(response.status()).isEqualTo(200);
+            assertThat(response.body()).isEqualTo("HTTP_3");
+        } finally {
+            client.close().await(5, TimeUnit.SECONDS);
+        }
     }
 }

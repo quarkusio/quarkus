@@ -44,15 +44,17 @@ class Http3AutoTlsInsecureEnabledTest {
         HttpClientConfig clientConfig = new HttpClientConfig();
         HttpClientAgent client = vertx.httpClientBuilder().with(clientConfig).build();
 
-        var response = client.request(HttpMethod.GET, httpUrl.getPort(), "localhost", "/hello")
-                .compose(HttpClientRequest::send)
-                .compose(resp -> resp.body().map(body -> new Result(resp.statusCode(), body.toString())))
-                .await(10, TimeUnit.SECONDS);
+        try {
+            var response = client.request(HttpMethod.GET, httpUrl.getPort(), "localhost", "/hello")
+                    .compose(HttpClientRequest::send)
+                    .compose(resp -> resp.body().map(body -> new Result(resp.statusCode(), body.toString())))
+                    .await(10, TimeUnit.SECONDS);
 
-        assertThat(response.status).isEqualTo(200);
-        assertThat(response.body).isEqualTo("insecure-ok");
-
-        client.close().await(5, TimeUnit.SECONDS);
+            assertThat(response.status).isEqualTo(200);
+            assertThat(response.body).isEqualTo("insecure-ok");
+        } finally {
+            client.close().await(5, TimeUnit.SECONDS);
+        }
     }
 
     record Result(int status, String body) {

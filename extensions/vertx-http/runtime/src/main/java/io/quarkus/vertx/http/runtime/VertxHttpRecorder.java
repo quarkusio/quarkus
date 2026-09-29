@@ -1447,10 +1447,7 @@ public class VertxHttpRecorder {
                                 validateHttpPorts(actualHttpPort, actualHttpsPort);
                                 valueRegistry.register(HTTPS_PORT, actualPort);
                                 URI localBaseUri = localBaseUri("https", actualPort);
-                                // Someone else may register the local base uri first (lambda extension)
-                                // The implemented behaviour is that lambda has priority, but we may want to review that
-                                if (!insecureRequests.equals(InsecureRequests.ENABLED)
-                                        && !valueRegistry.containsKey(LOCAL_BASE_URI)) {
+                                if (!insecureRequests.equals(InsecureRequests.ENABLED)) {
                                     valueRegistry.register(LOCAL_BASE_URI, localBaseUri);
                                 }
                                 if (launchMode.isDevOrTest()) {
@@ -1466,10 +1463,7 @@ public class VertxHttpRecorder {
                                 validateHttpPorts(actualHttpPort, actualHttpsPort);
                                 valueRegistry.register(HTTP_PORT, actualPort);
                                 URI localBaseUri = localBaseUri("http", actualPort);
-                                // Someone else may register the local base uri first (lambda extension)
-                                // The implemented behaviour is that lambda has priority, but we may want to review that
-                                if (insecureRequests.equals(InsecureRequests.ENABLED)
-                                        && !valueRegistry.containsKey(LOCAL_BASE_URI)) {
+                                if (insecureRequests.equals(InsecureRequests.ENABLED)) {
                                     valueRegistry.register(LOCAL_BASE_URI, localBaseUri);
                                 }
                                 if (launchMode.isDevOrTest()) {

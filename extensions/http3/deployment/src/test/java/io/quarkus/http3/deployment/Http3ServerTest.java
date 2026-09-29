@@ -64,17 +64,19 @@ class Http3ServerTest {
 
         HttpClientAgent client = vertx.httpClientBuilder().with(clientConfig).with(sslOptions).build();
 
-        var response = client.request(HttpMethod.GET, port, "localhost", "/hello")
-                .compose(HttpClientRequest::send)
-                .compose(resp -> resp.body()
-                        .map(body -> new ResponseStruct(resp.version().name(), body.toString(), resp.statusCode())))
-                .await(10, TimeUnit.SECONDS);
+        try {
+            var response = client.request(HttpMethod.GET, port, "localhost", "/hello")
+                    .compose(HttpClientRequest::send)
+                    .compose(resp -> resp.body()
+                            .map(body -> new ResponseStruct(resp.version().name(), body.toString(), resp.statusCode())))
+                    .await(10, TimeUnit.SECONDS);
 
-        assertThat(response.version).isEqualTo("HTTP_3");
-        assertThat(response.status).isEqualTo(200);
-        assertThat(response.body).isEqualTo(HttpVersion.HTTP_3 + "-hello");
-
-        client.close().await(5, TimeUnit.SECONDS);
+            assertThat(response.version).isEqualTo("HTTP_3");
+            assertThat(response.status).isEqualTo(200);
+            assertThat(response.body).isEqualTo(HttpVersion.HTTP_3 + "-hello");
+        } finally {
+            client.close().await(5, TimeUnit.SECONDS);
+        }
     }
 
     @Test
@@ -90,18 +92,20 @@ class Http3ServerTest {
 
         HttpClientAgent client = vertx.httpClientBuilder().with(clientConfig).with(sslOptions).build();
 
-        String requestBody = "{\"message\":\"hello from http3\"}";
-        var response = client.request(HttpMethod.POST, port, "localhost", "/echo")
-                .compose(req -> req.send(Buffer.buffer(requestBody)))
-                .compose(resp -> resp.body()
-                        .map(body -> new ResponseStruct(resp.version().name(), body.toString(), resp.statusCode())))
-                .await(10, TimeUnit.SECONDS);
+        try {
+            String requestBody = "{\"message\":\"hello from http3\"}";
+            var response = client.request(HttpMethod.POST, port, "localhost", "/echo")
+                    .compose(req -> req.send(Buffer.buffer(requestBody)))
+                    .compose(resp -> resp.body()
+                            .map(body -> new ResponseStruct(resp.version().name(), body.toString(), resp.statusCode())))
+                    .await(10, TimeUnit.SECONDS);
 
-        assertThat(response.version).isEqualTo("HTTP_3");
-        assertThat(response.status).isEqualTo(200);
-        assertThat(response.body).isEqualTo(requestBody);
-
-        client.close().await(5, TimeUnit.SECONDS);
+            assertThat(response.version).isEqualTo("HTTP_3");
+            assertThat(response.status).isEqualTo(200);
+            assertThat(response.body).isEqualTo(requestBody);
+        } finally {
+            client.close().await(5, TimeUnit.SECONDS);
+        }
     }
 
     @Test
@@ -117,18 +121,20 @@ class Http3ServerTest {
 
         HttpClientAgent client = vertx.httpClientBuilder().with(clientConfig).with(sslOptions).build();
 
-        var response = client.request(HttpMethod.GET, port, "localhost", "/large")
-                .compose(HttpClientRequest::send)
-                .compose(resp -> resp.body()
-                        .map(body -> new ResponseStruct(resp.version().name(), body.toString(), resp.statusCode())))
-                .await(15, TimeUnit.SECONDS);
+        try {
+            var response = client.request(HttpMethod.GET, port, "localhost", "/large")
+                    .compose(HttpClientRequest::send)
+                    .compose(resp -> resp.body()
+                            .map(body -> new ResponseStruct(resp.version().name(), body.toString(), resp.statusCode())))
+                    .await(15, TimeUnit.SECONDS);
 
-        assertThat(response.version).isEqualTo("HTTP_3");
-        assertThat(response.status).isEqualTo(200);
-        assertThat(response.body).hasSize(100 * 1024);
-        assertThat(response.body).matches("A+");
-
-        client.close().await(5, TimeUnit.SECONDS);
+            assertThat(response.version).isEqualTo("HTTP_3");
+            assertThat(response.status).isEqualTo(200);
+            assertThat(response.body).hasSize(100 * 1024);
+            assertThat(response.body).matches("A+");
+        } finally {
+            client.close().await(5, TimeUnit.SECONDS);
+        }
     }
 
     @ApplicationScoped

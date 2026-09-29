@@ -40,6 +40,8 @@ public class MaxFrameSizeTest {
 
     @Test
     void testMaxFrameSize() throws InterruptedException, ExecutionException, TimeoutException {
+        // No try-with-resources needed here: the corrupted frame makes the server close the connection automatically,
+        // so closing the already-closed client would just fail with a ClosedChannelException
         WSClient client = WSClient.create(vertx).connect(echoUri);
         client.socket().writeFrame(WebSocketFrame.textFrame("foo".repeat(10), false));
         assertTrue(Echo.CORRUPTED_LATCH.await(5, TimeUnit.SECONDS));

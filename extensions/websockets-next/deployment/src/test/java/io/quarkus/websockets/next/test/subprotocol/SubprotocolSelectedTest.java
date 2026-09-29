@@ -37,8 +37,9 @@ public class SubprotocolSelectedTest {
 
     @Test
     void testSubprotocol() throws InterruptedException, ExecutionException {
-        WSClient client = new WSClient(vertx).connect(new WebSocketConnectOptions().addSubProtocol("oak"), endUri);
-        assertEquals("ok", client.waitForNextMessage().toString());
+        try (WSClient client = new WSClient(vertx).connect(new WebSocketConnectOptions().addSubProtocol("oak"), endUri)) {
+            assertEquals("ok", client.waitForNextMessage().toString());
+        }
     }
 
     @WebSocket(path = "/endpoint")

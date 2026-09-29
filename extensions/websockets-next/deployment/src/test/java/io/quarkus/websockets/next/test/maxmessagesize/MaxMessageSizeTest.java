@@ -35,11 +35,12 @@ public class MaxMessageSizeTest {
 
     @Test
     void testMaxMessageSize() {
-        WSClient client = WSClient.create(vertx).connect(echoUri);
-        String msg = "foo".repeat(10);
-        String reply = client.sendAndAwaitReply(msg).toString();
-        assertNotEquals(msg, reply);
-        assertTrue(Echo.ISE_THROWN.get());
+        try (WSClient client = WSClient.create(vertx).connect(echoUri)) {
+            String msg = "foo".repeat(10);
+            String reply = client.sendAndAwaitReply(msg).toString();
+            assertNotEquals(msg, reply);
+            assertTrue(Echo.ISE_THROWN.get());
+        }
     }
 
     @WebSocket(path = "/echo")

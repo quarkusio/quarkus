@@ -33,8 +33,9 @@ public class PathParamArgumentExplicitNameTest {
 
     @Test
     void testArgument() {
-        WSClient client = WSClient.create(vertx).connect(testUri);
-        assertEquals("python:monty", client.sendAndAwaitReply("python").toString());
+        try (WSClient client = WSClient.create(vertx).connect(testUri)) {
+            assertEquals("python:monty", client.sendAndAwaitReply("python").toString());
+        }
     }
 
     @WebSocket(path = "/echo/{grail}")

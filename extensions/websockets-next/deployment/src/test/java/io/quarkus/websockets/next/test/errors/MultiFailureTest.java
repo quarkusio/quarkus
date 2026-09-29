@@ -34,11 +34,12 @@ public class MultiFailureTest {
 
     @Test
     void testError() {
-        WSClient client = WSClient.create(vertx).connect(testUri);
-        client.sendAndAwait("bar,foo,baz");
-        client.waitForMessages(2);
-        assertEquals("bar", client.getMessages().get(0).toString());
-        assertEquals("foo detected", client.getMessages().get(1).toString());
+        try (WSClient client = WSClient.create(vertx).connect(testUri)) {
+            client.sendAndAwait("bar,foo,baz");
+            client.waitForMessages(2);
+            assertEquals("bar", client.getMessages().get(0).toString());
+            assertEquals("foo detected", client.getMessages().get(1).toString());
+        }
     }
 
     @WebSocket(path = "/echo")

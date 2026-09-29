@@ -40,10 +40,11 @@ public class RuntimeGlobalErrorTest {
 
     @Test
     void testError() {
-        WSClient client = WSClient.create(vertx).connect(testUri);
-        client.send(Buffer.buffer("1"));
-        client.waitForMessages(1);
-        assertEquals("Global: Something went wrong", client.getLastMessage().toString());
+        try (WSClient client = WSClient.create(vertx).connect(testUri)) {
+            client.send(Buffer.buffer("1"));
+            client.waitForMessages(1);
+            assertEquals("Global: Something went wrong", client.getLastMessage().toString());
+        }
     }
 
     @WebSocket(path = "/echo")

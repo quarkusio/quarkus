@@ -180,6 +180,10 @@ class Endpoints {
                     textBroadcastProcessor.onNext(endpoint.decodeTextMultiItem(m));
                     LOG.debugf("Text message >> Multi: %s", connection);
                 } catch (Throwable throwable) {
+                    if (backpressure) {
+                        // The item was not emitted to the Multi, so the emission-tied fetch(1) won't fire
+                        fetchOne(ws, connection);
+                    }
                     endpoint.doOnError(throwable).subscribe().with(
                             v -> LOG.debugf("Text message >> Multi: %s", connection),
                             t -> handleFailure(unhandledFailureStrategy, t, "Unable to send text message to Multi",
@@ -219,6 +223,10 @@ class Endpoints {
                     binaryBroadcastProcessor.onNext(endpoint.decodeBinaryMultiItem(m));
                     LOG.debugf("Binary message >> Multi: %s", connection);
                 } catch (Throwable throwable) {
+                    if (backpressure) {
+                        // The item was not emitted to the Multi, so the emission-tied fetch(1) won't fire
+                        fetchOne(ws, connection);
+                    }
                     endpoint.doOnError(throwable).subscribe().with(
                             v -> LOG.debugf("Binary message >> Multi: %s", connection),
                             t -> handleFailure(unhandledFailureStrategy, t, "Unable to send binary message to Multi",

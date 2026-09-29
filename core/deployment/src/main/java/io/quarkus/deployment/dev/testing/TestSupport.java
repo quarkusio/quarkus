@@ -316,6 +316,7 @@ public class TestSupport implements TestController {
     public synchronized void close() {
         closed = true;
         stop();
+        testListeners.clear();
     }
 
     public synchronized void stop() {

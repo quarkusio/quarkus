@@ -90,7 +90,8 @@ public class PanacheStatelessReactiveQueryImpl<Entity> implements ReactiveDataQu
 
         @Override
         public ReactiveDataQuery<Entity> cursor(long pageIndex, int pageSize) {
-            throw new UnsupportedOperationException("Cursor-based pagination is not supported by Hibernate Reactive");
+            delegate.cursor((int) pageIndex, pageSize);
+            return PanacheStatelessReactiveQueryImpl.this;
         }
 
         @Override

@@ -319,7 +319,7 @@ public class NativeImageBuildStep {
                 }
 
                 // See https://github.com/oracle/graal/issues/4921
-                try (DirectoryStream<Path> sharedLibs = Files.newDirectoryStream(outputDir, "*.{so,dll}")) {
+                try (DirectoryStream<Path> sharedLibs = Files.newDirectoryStream(outputDir, "*.{so,dll,dylib}")) {
                     sharedLibs.forEach(src -> {
                         Path dst = null;
                         try {

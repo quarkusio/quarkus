@@ -803,20 +803,10 @@ Use this when you want post-quantum key exchange where available without breakin
 Clients that do not negotiate a post-quantum group are rejected.
 Use this when all clients are known to support post-quantum cryptography.
 
-[IMPORTANT]
-====
-`pqc-enforcement-policy` does more than enforce post-quantum key exchange: it controls which SSL engine Vert.x selects.
-Setting `pqc-enforcement-policy` to `client-negotiated` or `strict` activates the native OpenSSL engine (requires OpenSSL 3.5+), which negotiates post-quantum key exchange groups.
-With the default `relaxed` policy, Vert.x uses the JDK SSL engine, which ignores any post-quantum key-exchange groups before JDK 27 — meaning that configuring post-quantum groups without also setting the enforcement policy results in no post-quantum key exchange at all.
-On JDK 27+, the JDK natively supports `X25519MLKEM768` and post-quantum key exchange works without changing the enforcement policy.
-
-Quarkus logs a warning at startup if you configure a post-quantum group with `relaxed` policy to help catch this misconfiguration.
-====
-
 [NOTE]
 ====
-When using `client-negotiated` or `strict`, `quarkus.tls.key-exchange-groups` must include at least one post-quantum-capable group such as `X25519MLKEM768`.
-Vert.x validates this at startup and throws an exception if no compatible engine or group is configured.
+When using `client-negotiated` or `strict`, `quarkus.tls.key-exchange-groups` must respectively include at least one or only post-quantum-capable group such as `X25519MLKEM768`.
+Vert.x validates this at startup and overrides the specified set of groups if this condition is not respected.
 ====
 
 [WARNING]
@@ -825,30 +815,23 @@ Vert.x validates this at startup and throws an exception if no compatible engine
 Ensure all clients are upgraded before enabling this mode.
 ====
 
-[NOTE]
-====
-Policy enforcement (`strict` and `client-negotiated`) is not supported when using the JDK SSL engine.
-If you are running on JDK 27+, or on JDK 25+ once the post-quantum backport ships (expected October 2026), you can still enable post-quantum key exchange by setting `quarkus.tls.key-exchange-groups` — the negotiation will work correctly without policy enforcement.
-For full enforcement, OpenSSL 3.5+ via the native SSL engine is required.
-====
-
 [IMPORTANT]
 ====
-Post-quantum enforcement (`client-negotiated` and `strict`) relies on a native OpenSSL 3.5+ library.
-Quarkus bundles this library only for **Linux x86_64** and **Linux aarch64**.
-In addition, `libapr-1` must be installed on the host OS (see link:https://netty.io/wiki/forked-tomcat-native.html[netty-tcnative prerequisites]).
-Other operating systems and architectures (macOS, Windows, Alpine Linux, Linux on RISC-V, etc.) are *not supported*: attempting to use `client-negotiated` or `strict` on an unsupported platform will fail at runtime because the native OpenSSL engine is unavailable.
-On those platforms, use `relaxed` with JDK 27+ for post-quantum key exchange.
+`pqc-enforcement-policy` does more than enforce post-quantum key exchange: it also controls which SSL engine Vert.x selects.
+When `pqc-enforcement-policy` is set to `client-negotiated` or `strict`, Quarkus first checks whether the JDK SSL engine supports post-quantum key exchange.
+If it does (JDK 27+), the JDK engine is used; otherwise Quarkus falls back to the native OpenSSL 3.5+ engine.
+With the default `relaxed` policy, Vert.x uses the JDK SSL engine, which ignores any post-quantum key-exchange groups before JDK 27.
+Thus, configuring post-quantum groups without also setting the enforcement policy may result in no post-quantum key exchange at all.
+Quarkus logs a warning at startup if you configure a post-quantum group with `relaxed` policy to help catch this misconfiguration.
+
+For platform requirements when OpenSSL is used as fallback, see <<openssl-engine-classical-tls,Using the OpenSSL engine for classical TLS>>.
+For a full overview of which engine is used in each configuration, see the <<pqc-availability-summary,PQC availability summary>>.
 ====
 
+[[pqc-ssl-engine-override]]
 ===== SSL engine override
 
-By default, Vert.x selects the SSL engine automatically based on the enforcement policy:
-
-- `client-negotiated` or `strict` activates the native OpenSSL engine (requires OpenSSL 3.5+).
-- `relaxed` uses the JDK SSL engine.
-
-You can override this selection with the `ssl-engine` property:
+You can override the automatic engine selection with the `ssl-engine` property:
 
 [source,properties]
 ----
@@ -856,18 +839,61 @@ quarkus.tls.ssl-engine=openssl
 ----
 
 The supported values are `openssl` (requires netty-tcnative on the classpath) and `jdkssl` (the standard JDK SSL engine).
-This property is useful for testing or when you need explicit control over the engine — for example, forcing `jdkssl` on JDK 27+ where the JDK natively supports post-quantum groups.
+This property is useful for testing or when you need explicit control over the engine.
+
+For using the OpenSSL engine on classical (non-PQC) TLS paths, see <<openssl-engine-classical-tls,Using the OpenSSL engine for classical TLS>>.
 
 ===== PQC and native mode
-In native mode, quantum-safe TLS is not available using OpenSSL. Thus, the only way to leverage PQC-compliant key exchange groups is to use a JDK SSL engine that supports them. This are not yet available in GraalVM/Mandrel, but should be available in the near future.
+The OpenSSL engine is unavailable in native mode (see <<openssl-engine-classical-tls,Native mode>>).
+The only way to leverage PQC-compliant key exchange groups in native images is to use a JDK SSL engine that supports them; these are not yet available in GraalVM/Mandrel but should be in the near future.
 
 ===== PQC in containerized environments
 
-When running in a container with a UBI image as the base, `libapr-1` isn't installed by default. 
-So you need to install it explicitly.
-Without it, netty-tcnative cannot load the native OpenSSL engine at runtime, and PQC enforcement will fail even if OpenSSL 3.5+ is present.
+The `libapr-1` requirement and container setup are identical whether OpenSSL is used for PQC or classical TLS.
+See <<openssl-engine-prerequisites,Container setup>> for installation instructions.
 
-Install `apr` explicitly in your `Containerfile`:
+[[pqc-availability-summary]]
+===== PQC availability summary
+
+[cols="1,1,1,1,1,2", options="header"]
+|===
+| Mode   | Java Runtime | SSL Engine               | PQC support | PQC enforcement available | Prerequisites
+
+| JVM    | Any          | OpenSSL (netty-tcnative) | Yes         | Yes                       | OpenSSL 3.5+; `libapr-1` (`microdnf install apr` on UBI)
+| JVM    | < 27 (25*)         | JDK SSL                  | No          | No                        | —
+| JVM    | 27+ (25+*)   | JDK SSL                  | Yes         | Yes                       | JDK 27+ (or 25+ after backport)
+| Native | Any          | OpenSSL (netty-tcnative) | —           | No                        | Engine unavailable in native mode
+|===
+
+_{asterisk} JDK 25 support pending backport (expected October 2026)._
+
+[[openssl-engine-classical-tls]]
+==== Using the OpenSSL engine for classical TLS
+
+The SSL Engine used by Quarkus can be automatically selected due Post-Quantic Cryptography configuration (see <<pqc-ssl-engine-override,SSL engine override>>). However, even without post-quantum cryptography, you can configure Quarkus to use the native OpenSSL engine (via netty-tcnative) instead of the JDK SSL engine on classical TLS paths.
+The native engine can offer improved handshake throughput and hardware-accelerated cryptography on supported platforms.
+
+To force the OpenSSL engine for all TLS connections:
+
+[source,properties]
+----
+quarkus.tls.ssl-engine=openssl
+----
+
+===== Prerequisites
+
+The native OpenSSL engine has the same platform requirements whether it is used for PQC or classical TLS:
+
+* **Supported platforms only:** Linux x86_64 and Linux aarch64.
+  macOS, Windows, Alpine Linux, and other architectures are not supported.
+  Quarkus bundles netty-tcnative only for the two platforms listed above; the property is silently ignored on unsupported platforms.
+* **`libapr-1` must be installed on the host OS.**
+  Without `libapr-1`, netty-tcnative cannot load the native OpenSSL library at runtime and the engine will not be available.
+
+[[openssl-engine-prerequisites]]
+====== Container setup
+
+On UBI-based container images, `libapr-1` is not installed by default. Add it explicitly in your `Containerfile`:
 
 [source,dockerfile]
 ----
@@ -902,19 +928,11 @@ ENV JAVA_APP_JAR="/deployments/quarkus-run.jar"
 ENTRYPOINT [ "/opt/jboss/container/java/run/run-java.sh" ]
 ----
 
-===== PQC availability summary
+===== Native mode
 
-[cols="1,1,1,1,1,2", options="header"]
-|===
-| Mode   | Java Runtime | SSL Engine               | PQC support | PQC enforcement available | Prerequisites
-
-| JVM    | Any          | OpenSSL (netty-tcnative) | Yes         | Yes                       | OpenSSL 3.5+; `libapr-1` (`microdnf install apr` on UBI)
-| JVM    | < 27 (25*)         | JDK SSL                  | No          | No                        | —
-| JVM    | 27+ (25+*)   | JDK SSL                  | Yes         | Yes                       | JDK 27+ (or 25+ after backport)
-| Native | Any          | OpenSSL (netty-tcnative) | —           | No                        | Engine unavailable in native mode
-|===
-
-_{asterisk} JDK 25 support pending backport (expected October 2026)._
+The OpenSSL engine is *not supported in native (GraalVM/Mandrel) mode*.
+netty-tcnative cannot be loaded inside a native image, so setting `ssl-engine=openssl` in a native application will cause a startup failure.
+In native mode, use the JDK SSL engine (the default) or leave `ssl-engine` unset.
 
 ==== Certificate Revocation List (CRL)
 

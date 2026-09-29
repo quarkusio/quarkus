@@ -11,6 +11,7 @@ import java.util.regex.Pattern;
 
 import org.jboss.logging.Logger;
 
+import io.quarkus.runtime.LaunchMode;
 import io.vertx.core.Handler;
 import io.vertx.core.http.HttpHeaders;
 import io.vertx.core.http.HttpMethod;
@@ -38,6 +39,17 @@ public class CORSFilter implements Handler<RoutingContext> {
     public CORSFilter(CORSConfig corsConfig) {
         this.corsConfig = corsConfig;
         this.wildcardOrigin = isOriginConfiguredWithWildcard(this.corsConfig.origins());
+        if (this.wildcardOrigin) {
+            if (LaunchMode.current().isProduction()) {
+                LOG.warn("CORS is configured with a wildcard origin, which lets any website send cross-origin "
+                        + "requests to this application. Configure the trusted origins explicitly.");
+            }
+            if (this.corsConfig.accessControlAllowCredentials().orElse(false)) {
+                LOG.warn("Allowing credentials when CORS is configured with a wildcard origin lets any website send "
+                        + "cookies and authorization headers to this application on behalf of your users. "
+                        + "Configure the trusted origins explicitly to allow credentials.");
+            }
+        }
         this.wildcardMethod = isConfiguredWithWildcard(corsConfig.methods());
         this.allowedOriginsRegex = this.wildcardOrigin ? List.of() : parseAllowedOriginsRegex(this.corsConfig.origins());
         this.configuredHttpMethods = createConfiguredHttpMethods(this.corsConfig.methods());

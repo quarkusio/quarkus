@@ -19,6 +19,7 @@ The Quarkus CLI is available in several developer-oriented package managers such
 * https://sdkman.io[SDKMAN!]
 * https://brew.sh[Homebrew]
 * https://community.chocolatey.org/packages/quarkus[Chocolatey]
+* https://mise-versions.jdx.dev/tools/quarkus[Mise]
 * https://scoop.sh[Scoop]
 
 If you already use (or want to use) one of these tools, it is the simplest way to install the Quarkus CLI and keep it updated.

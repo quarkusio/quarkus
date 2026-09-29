@@ -15,6 +15,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 import org.jboss.logging.Logger;
 import org.junit.platform.engine.TestExecutionResult;
@@ -35,8 +36,33 @@ public class TestConsoleHandler implements TestListener {
 
     public static final ConsoleCommand TOGGLE_TEST_OUTPUT = new ConsoleCommand('o', "Toggle test output", "Toggle test output",
             1000,
-            new ConsoleCommand.HelpState(TestSupport.instance().get()::isDisplayTestOutput),
-            () -> TestSupport.instance().get().toggleTestOutput());
+            new ConsoleCommand.HelpState(new DisplayTestOutputSupplier()),
+            new ToggleTestOutputRunnable());
+
+    /**
+     * Resolves the current {@link TestSupport} on every invocation.
+     * <p>
+     * {@link #TOGGLE_TEST_OUTPUT} is static so it must not capture a {@link TestSupport} instance: it would be retained
+     * forever, together with the class loaders it references.
+     */
+    private static class DisplayTestOutputSupplier implements Supplier<Boolean> {
+
+        @Override
+        public Boolean get() {
+            return TestSupport.instance().get().isDisplayTestOutput();
+        }
+    }
+
+    /**
+     * Resolves the current {@link TestSupport} on every invocation, see {@link DisplayTestOutputSupplier}.
+     */
+    private static class ToggleTestOutputRunnable implements Runnable {
+
+        @Override
+        public void run() {
+            TestSupport.instance().get().toggleTestOutput();
+        }
+    }
 
     final DevModeType devModeType;
 

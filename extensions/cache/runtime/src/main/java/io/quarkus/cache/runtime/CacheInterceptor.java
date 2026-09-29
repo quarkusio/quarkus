@@ -30,6 +30,8 @@ import io.quarkus.cache.CacheException;
 import io.quarkus.cache.CacheKey;
 import io.quarkus.cache.CacheKeyGenerator;
 import io.quarkus.cache.CacheManager;
+import io.quarkus.cache.CacheResult;
+import io.quarkus.cache.CacheResultPredicate;
 import io.quarkus.cache.CompositeCacheKey;
 import io.smallrye.mutiny.Uni;
 
@@ -48,6 +50,10 @@ public abstract class CacheInterceptor {
     @Inject
     @Any // this means that qualifiers defined on a CacheKeyGenerator are effectively ignored
     Instance<CacheKeyGenerator> keyGenerator;
+
+    @Inject
+    @Any
+    Instance<CacheResultPredicate> resultPredicate;
 
     /*
      * The interception is almost always managed by Arc in a Quarkus application. In such a case, we want to retrieve the
@@ -246,6 +252,43 @@ public abstract class CacheInterceptor {
             } catch (InstantiationException | IllegalAccessException | InvocationTargetException e) {
                 throw new CacheException("Cache key generator instantiation failed", e);
             }
+        }
+    }
+
+    /**
+     * Applies the {@link CacheResult#unless()} predicate to a value that has just been computed and stored, removing it
+     * from the cache when the predicate rejects it.
+     */
+    protected Uni<Void> evictIfRejected(Class<? extends CacheResultPredicate> predicateClass, Cache cache, Object key,
+            Object value) {
+        if (predicateClass == UndefinedCacheResultPredicate.class || !testPredicate(predicateClass, value)) {
+            return Uni.createFrom().voidItem();
+        }
+        LOGGER.debugf("Removing entry with key [%s] from cache [%s], rejected by [%s]", key, cache.getName(),
+                predicateClass.getName());
+        return cache.invalidate(key);
+    }
+
+    private <T extends CacheResultPredicate> boolean testPredicate(Class<T> predicateClass, Object value) {
+        Instance<T> predicateInstance = resultPredicate.select(predicateClass);
+        if (predicateInstance.isResolvable()) {
+            Handle<T> predicate = predicateInstance.getHandle();
+            try {
+                return predicate.get().test(value);
+            } finally {
+                Bean<T> bean = predicate.getBean();
+                if (bean != null && Dependent.class.equals(bean.getScope())) {
+                    predicate.destroy();
+                }
+            }
+        }
+        try {
+            return predicateClass.getConstructor().newInstance().test(value);
+        } catch (NoSuchMethodException e) {
+            throw new CacheException("No default constructor found in cache result predicate [class="
+                    + predicateClass.getName() + "]", e);
+        } catch (InstantiationException | IllegalAccessException | InvocationTargetException e) {
+            throw new CacheException("Cache result predicate instantiation failed", e);
         }
     }
 

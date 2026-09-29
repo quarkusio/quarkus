@@ -1,6 +1,7 @@
 package io.quarkus.cache.runtime;
 
 import java.time.Duration;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -57,12 +58,14 @@ public class CacheResultInterceptor extends CacheInterceptor {
             }
 
             ReturnType returnType = determineReturnType(invocationContext.getMethod().getReturnType());
+            AtomicBoolean computed = new AtomicBoolean();
             if (returnType != ReturnType.NonAsync) {
                 Uni<Object> cacheValue = cache.getAsync(key, new Function<Object, Uni<Object>>() {
                     @SuppressWarnings("unchecked")
                     @Override
                     public Uni<Object> apply(Object key) {
                         try {
+                            computed.set(true);
                             return (Uni<Object>) asyncInvocationResultToUni(invocationContext.proceed(), returnType);
                         } catch (CacheException e) {
                             throw e;
@@ -71,6 +74,17 @@ public class CacheResultInterceptor extends CacheInterceptor {
                         }
                     }
                 });
+                if (binding.unless() != UndefinedCacheResultPredicate.class) {
+                    cacheValue = cacheValue.call(new Function<Object, Uni<?>>() {
+                        @Override
+                        public Uni<?> apply(Object value) {
+                            if (!computed.get()) {
+                                return Uni.createFrom().voidItem();
+                            }
+                            return evictIfRejected(binding.unless(), cache, key, value);
+                        }
+                    });
+                }
 
                 if (binding.lockTimeout() <= 0) {
                     return createAsyncResult(cacheValue, returnType);
@@ -97,6 +111,7 @@ public class CacheResultInterceptor extends CacheInterceptor {
                         try {
                             LOGGER.debugf("Adding entry with key [%s] into cache [%s]",
                                     key, binding.cacheName());
+                            computed.set(true);
                             return invocationContext.proceed();
                         } catch (CacheException e) {
                             throw e;
@@ -120,6 +135,9 @@ public class CacheResultInterceptor extends CacheInterceptor {
                         // TODO: Add statistics here to monitor the timeout.
                         return invocationContext.proceed();
                     }
+                }
+                if (computed.get()) {
+                    evictIfRejected(binding.unless(), cache, key, value).await().indefinitely();
                 }
                 return value;
             }

@@ -278,6 +278,9 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
                             TestClassIndexer.removeIndex(requiredTestClass);
                         } catch (Exception ignored) {
                         }
+                        actualTestClass = null;
+                        actualTestInstance = null;
+                        outerInstances.clear();
                     }
                 }
             };

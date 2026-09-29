@@ -160,7 +160,7 @@
         <kotlin-serialization.version>1.11.0</kotlin-serialization.version>
         <kotlin-metadata.version>0.9.0</kotlin-metadata.version>
         <azure.toolkit-lib.version>0.56.0</azure.toolkit-lib.version>
-        <dekorate.version>4.1.11</dekorate.version> <!-- Please check with Java Operator SDK team before updating -->
+        <dekorate.version>5.0.0</dekorate.version> <!-- Please check with Java Operator SDK team before updating -->
         <maven-invoker.version>3.2.0</maven-invoker.version>
         <awaitility.version>4.3.0</awaitility.version>
         <jboss-logmanager.version>3.2.2.Final</jboss-logmanager.version>
@@ -170,6 +170,8 @@
         <liquibase.version>4.33.0</liquibase.version>
         <liquibase-mongodb.version>4.33.0.1</liquibase-mongodb.version>
         <snakeyaml.version>2.7</snakeyaml.version>
+        <!-- Aligns the conflicting versions brought in by kubernetes-client-api and jackson-dataformat-yaml -->
+        <snakeyaml-engine.version>3.1.1</snakeyaml-engine.version>
         <osgi.version>6.0.0</osgi.version>
         <mongo-client.version>5.6.5</mongo-client.version>
         <proton-j.version>0.35.0</proton-j.version>
@@ -6472,6 +6474,11 @@
                 <groupId>org.yaml</groupId>
                 <artifactId>snakeyaml</artifactId>
                 <version>${snakeyaml.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.snakeyaml</groupId>
+                <artifactId>snakeyaml-engine</artifactId>
+                <version>${snakeyaml-engine.version}</version>
             </dependency>
 
             <dependency>

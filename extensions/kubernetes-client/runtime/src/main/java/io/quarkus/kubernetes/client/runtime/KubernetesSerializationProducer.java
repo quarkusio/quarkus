@@ -3,12 +3,11 @@ package io.quarkus.kubernetes.client.runtime;
 import jakarta.enterprise.inject.Produces;
 import jakarta.inject.Singleton;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import io.fabric8.kubernetes.client.utils.KubernetesSerialization;
 import io.quarkus.arc.DefaultBean;
 import io.quarkus.kubernetes.client.KubernetesClientObjectMapper;
 import io.quarkus.kubernetes.client.KubernetesResources;
+import tools.jackson.databind.ObjectMapper;
 
 @Singleton
 public class KubernetesSerializationProducer {

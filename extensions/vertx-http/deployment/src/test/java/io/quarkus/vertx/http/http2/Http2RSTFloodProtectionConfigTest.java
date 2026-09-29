@@ -7,11 +7,14 @@ import java.io.File;
 import java.net.URL;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
+import jakarta.inject.Inject;
 
 import org.jboss.shrinkwrap.api.asset.StringAsset;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledOnOs;
@@ -20,10 +23,10 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.common.http.TestHTTPResource;
-import io.quarkus.vertx.core.runtime.VertxCoreRecorder;
 import io.smallrye.certs.Format;
 import io.smallrye.certs.junit5.Certificate;
 import io.smallrye.certs.junit5.Certificates;
+import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpClientAgent;
 import io.vertx.core.http.HttpClientOptions;
 import io.vertx.core.http.HttpClientRequest;
@@ -53,12 +56,29 @@ public class Http2RSTFloodProtectionConfigTest {
     @TestHTTPResource(value = "/ping")
     URL url;
 
+    @Inject
+    Vertx vertx;
+
+    private HttpClientAgent client;
+
     @RegisterExtension
     static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(MyBean.class)
                     .addAsResource(new StringAsset(configuration), "application.properties")
                     .addAsResource(new File("target/certs/ssl-test-keystore.jks"), "server-keystore.jks"));
+
+    @AfterEach
+    public void closeClient() {
+        if (client != null) {
+            try {
+                client.close().await(5, TimeUnit.SECONDS);
+            } catch (TimeoutException ignored) {
+
+            }
+            client = null;
+        }
+    }
 
     @Test
     void testRstFloodProtectionWithTlsEnabled() throws Exception {
@@ -70,7 +90,7 @@ public class Http2RSTFloodProtectionConfigTest {
                 .setTrustOptions(new JksOptions().setPath(new File("target/certs/ssl-test-truststore.jks").getAbsolutePath())
                         .setPassword("secret"));
 
-        var client = VertxCoreRecorder.getVertx().get().httpClientBuilder()
+        client = vertx.httpClientBuilder()
                 .with(options)
                 .withConnectHandler(conn -> conn.goAwayHandler(ga -> {
                     Assertions.assertEquals(11, ga.getErrorCode());
@@ -82,12 +102,12 @@ public class Http2RSTFloodProtectionConfigTest {
     }
 
     @Test
-    public void testRstFloodProtection() throws InterruptedException {
+    public void testRstFloodProtection() throws InterruptedException, TimeoutException {
         CountDownLatch latch = new CountDownLatch(1);
         HttpClientOptions options = new HttpClientOptions()
                 .setProtocolVersion(HttpVersion.HTTP_2)
                 .setHttp2ClearTextUpgrade(true);
-        var client = VertxCoreRecorder.getVertx().get().httpClientBuilder()
+        client = vertx.httpClientBuilder()
                 .with(options)
                 .withConnectHandler(conn -> conn.goAwayHandler(ga -> {
                     Assertions.assertEquals(11, ga.getErrorCode());
@@ -97,7 +117,8 @@ public class Http2RSTFloodProtectionConfigTest {
         run(client, latch, url.getPort(), true);
     }
 
-    void run(HttpClientAgent client, CountDownLatch latch, int port, boolean plain) throws InterruptedException {
+    void run(HttpClientAgent client, CountDownLatch latch, int port, boolean plain)
+            throws InterruptedException, TimeoutException {
 
         if (plain) {
             // Emit a first request to establish a connection.

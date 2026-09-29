@@ -50,7 +50,7 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
 
     protected static final String META_INF_SERVICES = "META-INF/services/";
 
-    private final CuratedApplication curatedApplication;
+    private CuratedApplication curatedApplication;
     private StartupAction startupAction;
 
     static {
@@ -826,6 +826,8 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
         closeClassPathElements(bannedElements);
 
         ResourceBundle.clearCache(this);
+
+        curatedApplication = null;
 
         status = STATUS_CLOSED;
     }

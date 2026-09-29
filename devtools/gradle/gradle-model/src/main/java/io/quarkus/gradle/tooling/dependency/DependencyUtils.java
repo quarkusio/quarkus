@@ -35,8 +35,6 @@ import org.jetbrains.annotations.Nullable;
 import io.quarkus.bootstrap.BootstrapConstants;
 import io.quarkus.bootstrap.util.BootstrapUtils;
 import io.quarkus.fs.util.ZipUtils;
-import io.quarkus.gradle.extension.ConfigurationUtils;
-import io.quarkus.gradle.extension.ExtensionConstants;
 import io.quarkus.gradle.tooling.ToolingUtils;
 import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.maven.dependency.ArtifactKey;

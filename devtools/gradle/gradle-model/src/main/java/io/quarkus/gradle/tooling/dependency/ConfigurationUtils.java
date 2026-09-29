@@ -1,4 +1,4 @@
-package io.quarkus.gradle.extension;
+package io.quarkus.gradle.tooling.dependency;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;

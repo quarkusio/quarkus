@@ -379,8 +379,10 @@ public interface RestClientsConfig {
          */
         @ConfigDocIgnore
         @WithName("url")
+        @Deprecated(forRemoval = true)
         ConfigValue urlValue();
 
+        @Deprecated(forRemoval = true)
         default Optional<String> urlReload() {
             SmallRyeConfig config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
             return config.getOptionalValue(urlValue().getName(), String.class);
@@ -399,8 +401,10 @@ public interface RestClientsConfig {
          */
         @ConfigDocIgnore
         @WithName("uri")
+        @Deprecated(forRemoval = true)
         ConfigValue uriValue();
 
+        @Deprecated(forRemoval = true)
         default Optional<String> uriReload() {
             SmallRyeConfig config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
             return config.getOptionalValue(uriValue().getName(), String.class);

@@ -7,7 +7,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.InvocationTargetException;
 import java.net.MalformedURLException;
-import java.net.URL;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
@@ -31,6 +30,8 @@ import io.quarkus.proxy.ProxyConfigurationRegistry;
 import io.quarkus.restclient.NoopHostnameVerifier;
 import io.quarkus.restclient.config.RestClientsConfig;
 import io.quarkus.restclient.config.RestClientsConfig.RestClientConfig;
+import io.quarkus.runtime.service.Address;
+import io.quarkus.runtime.service.Services;
 import io.smallrye.config.SmallRyeConfig;
 
 public class RestClientBase {
@@ -280,7 +281,7 @@ public class RestClientBase {
     }
 
     protected void configureBaseUrl(RestClientBuilder builder) {
-        Optional<String> baseUrlOptional = oneOf(restClientConfig.uriReload(), restClientConfig.urlReload());
+        Optional<String> baseUrlOptional = oneOf(restClientConfig.uri(), restClientConfig.url());
         if (((baseUriFromAnnotation == null) || baseUriFromAnnotation.isEmpty()) && baseUrlOptional.isEmpty()) {
             String propertyPrefix = configKey != null ? configKey : proxyType.getName();
             throw new IllegalArgumentException(
@@ -295,7 +296,8 @@ public class RestClientBase {
         String baseUrl = baseUrlOptional.orElse(baseUriFromAnnotation);
 
         try {
-            builder.baseUrl(new URL(baseUrl));
+            Address address = Services.resolve(baseUrl);
+            builder.baseUrl(address.uri().toURL());
         } catch (MalformedURLException e) {
             if (e.getMessage().contains(
                     "It must be enabled by adding the --enable-url-protocols=https option to the native-image command")) {

@@ -43,17 +43,15 @@ public class ProxyTest {
     // When running as integration test, we cannot easily spy on logs.
     @DisabledOnIntegrationTest
     public void testProxyWarningsOnStartup() {
+        // ORM 8 bytecode enhancement strips final from entity classes (HHH-20512),
+        // so CompanyCustomer is no longer final at runtime and gets a proxy.
+        // HHH006596 is expected from the separate preferred-types persistence unit,
+        // where H2 falls back from the explicitly requested INSTANT JDBC type.
         assertThat(LogCollectingTestResource.current().getRecords())
-                // There shouldn't be any warning or error
                 .as("Startup logs (warning or higher)")
                 .extracting(LogCollectingTestResource::format)
-                .satisfiesExactlyInAnyOrder(
-                        // Final classes cannot be proxied
-                        m -> assertThat(m).contains(
-                                "Could not create proxy factory", CompanyCustomer.class.getName(),
-                                "this class is final", "Your application might perform better if this class was non-final.")
-                // Importantly, we don't expect any other warning about proxies!
-                );
+                .filteredOn(message -> !message.contains("HHH006596"))
+                .isEmpty();
     }
 
 }

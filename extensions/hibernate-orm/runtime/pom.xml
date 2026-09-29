@@ -54,6 +54,10 @@
             <groupId>org.hibernate.orm</groupId>
             <artifactId>hibernate-core</artifactId>
         </dependency>
+        <dependency>
+            <groupId>org.hibernate.accessor</groupId>
+            <artifactId>hibernate-accessor</artifactId>
+        </dependency>
 
         <!--
         Pull in the optional GraalVM Feature of Hibernate ORM as it contains the static list of classes

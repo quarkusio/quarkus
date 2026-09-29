@@ -23,7 +23,7 @@ public class SortOnPanacheQueryTest {
             .withApplicationRoot((jar) -> jar
                     .addAsResource("application-test.properties", "application.properties")
                     .addClasses(MyEntity.class, MyEntity_.class, _MyEntity.class,
-                            MyEntity_.ManagedBlockingQueries_.class));
+                            _MyEntity._ManagedBlockingQueries.class));
 
     @Transactional
     void createEntities() {

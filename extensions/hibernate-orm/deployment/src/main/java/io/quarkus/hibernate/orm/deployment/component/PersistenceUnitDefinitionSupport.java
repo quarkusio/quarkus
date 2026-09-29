@@ -78,7 +78,7 @@ public final class PersistenceUnitDefinitionSupport {
             }
 
             puRequests.produce(new PersistenceUnitRequestBuildItem(name, paradigm,
-                    "JPA model including classes/packages " + entry.getValue().allModelClassAndPackageNames()));
+                    "JPA model including classes/packages " + entry.getValue().allModelClassNames()));
         }
     }
 

@@ -87,6 +87,32 @@ public class HibernateOrmDataTest {
     }
 
     @Test
+    public void testUnannotatedRepository() {
+        given()
+                .body(new MyEntity("unannotated-repository"))
+                .contentType(ContentType.JSON)
+                .when().post("/data")
+                .then()
+                .statusCode(204);
+
+        try {
+            given()
+                    .pathParam("name", "unannotated-repository")
+                    .when().get("/data/unannotated/by/name/{name}")
+                    .then()
+                    .statusCode(200)
+                    .body("size()", equalTo(1))
+                    .body("[0].name", equalTo("unannotated-repository"));
+        } finally {
+            given()
+                    .pathParam("name", "unannotated-repository")
+                    .when().delete("/data/by/name/{name}")
+                    .then()
+                    .statusCode(204);
+        }
+    }
+
+    @Test
     public void testSqlOnly() {
         given()
                 .pathParam("name", "admin")

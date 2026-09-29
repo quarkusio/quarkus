@@ -2,6 +2,8 @@ package io.quarkus.hibernate.reactive.panache.common.deployment;
 
 import jakarta.persistence.NamedQueries;
 import jakarta.persistence.NamedQuery;
+import jakarta.persistence.NamedStatement;
+import jakarta.persistence.NamedStatements;
 
 import org.jboss.jandex.DotName;
 
@@ -15,6 +17,8 @@ final class DotNames {
 
     static final DotName DOTNAME_NAMED_QUERY = DotName.createSimple(NamedQuery.class.getName());
     static final DotName DOTNAME_NAMED_QUERIES = DotName.createSimple(NamedQueries.class.getName());
+    static final DotName DOTNAME_NAMED_STATEMENT = DotName.createSimple(NamedStatement.class.getName());
+    static final DotName DOTNAME_NAMED_STATEMENTS = DotName.createSimple(NamedStatements.class.getName());
     static final DotName REACTIVE_TRANSACTIONAL = DotName.createSimple(ReactiveTransactional.class.getName());
     static final DotName WITH_SESSION_ON_DEMAND = DotName.createSimple(WithSessionOnDemand.class.getName());
     static final DotName WITH_SESSION = DotName.createSimple(WithSession.class.getName());

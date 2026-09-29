@@ -14,6 +14,7 @@ import java.util.function.BooleanSupplier;
 import jakarta.inject.Singleton;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.Query;
+import jakarta.persistence.StatementOrTypedQuery;
 
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
@@ -246,7 +247,7 @@ class QuarkusSecurityJpaProcessor {
             String hql = "FROM " + jpaSecurityDefinition.annotatedClass.simpleName() + " WHERE "
                     + jpaSecurityDefinition.username.name() + " = :name";
             Expr query = bc.invokeInterface(
-                    MethodDesc.of(EntityManager.class, "createQuery", Query.class, String.class),
+                    MethodDesc.of(EntityManager.class, "createQuery", StatementOrTypedQuery.class, String.class),
                     emParam, Const.of(hql));
             // query.setParameter("name", request.getUsername())
             Expr query2 = bc.invokeInterface(

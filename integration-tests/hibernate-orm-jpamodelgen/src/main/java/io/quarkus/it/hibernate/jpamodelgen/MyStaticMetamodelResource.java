@@ -50,7 +50,7 @@ public class MyStaticMetamodelResource {
         // Cast to work around https://hibernate.atlassian.net/browse/HHH-17682
         var e = (JpaRoot<MyStaticMetamodelEntity>) query.getRoot();
         query.where(e.get(MyStaticMetamodelEntity_.name).equalTo(before));
-        query.set(e.get(MyStaticMetamodelEntity_.name), after);
+        query.set(MyStaticMetamodelEntity_.name, after);
         session.createMutationQuery(query).executeUpdate();
     }
 

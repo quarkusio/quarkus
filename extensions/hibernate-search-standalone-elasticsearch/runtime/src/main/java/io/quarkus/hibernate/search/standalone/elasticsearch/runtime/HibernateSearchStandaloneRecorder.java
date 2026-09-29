@@ -16,6 +16,8 @@ import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+import org.hibernate.accessor.AccessorFactory;
+import org.hibernate.accessor.spi.AccessorConfiguration;
 import org.hibernate.search.engine.cfg.EngineSettings;
 import org.hibernate.search.engine.environment.bean.BeanReference;
 import org.hibernate.search.engine.reporting.FailureHandler;
@@ -25,12 +27,12 @@ import org.hibernate.search.mapper.pojo.standalone.cfg.spi.StandalonePojoMapperS
 import org.hibernate.search.mapper.pojo.standalone.mapping.SearchMapping;
 import org.hibernate.search.mapper.pojo.standalone.mapping.StandalonePojoMappingConfigurer;
 import org.hibernate.search.mapper.pojo.work.IndexingPlanSynchronizationStrategy;
-import org.hibernate.search.util.common.reflect.spi.ValueHandleFactory;
 
 import io.quarkus.arc.ActiveResult;
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.SyntheticCreationalContext;
 import io.quarkus.hibernate.search.backend.elasticsearch.common.runtime.HibernateSearchBackendElasticsearchConfigHandler;
+import io.quarkus.hibernate.search.backend.elasticsearch.common.runtime.QuarkusAccessContext;
 import io.quarkus.hibernate.search.standalone.elasticsearch.runtime.bean.ArcBeanProvider;
 import io.quarkus.hibernate.search.standalone.elasticsearch.runtime.bean.HibernateSearchBeanUtil;
 import io.quarkus.hibernate.search.standalone.elasticsearch.runtime.management.HibernateSearchStandaloneManagementHandler;
@@ -70,7 +72,7 @@ public class HibernateSearchStandaloneRecorder {
         StandalonePojoIntegrationBooter booter = StandalonePojoIntegrationBooter.builder()
                 .properties(bootProperties)
                 // MethodHandles don't work at all in GraalVM 20 and below, and seem unreliable on GraalVM 21
-                .valueReadHandleFactory(ValueHandleFactory.usingJavaLangReflect())
+                .accessorFactory(AccessorFactory.reflection(new AccessorConfiguration(new QuarkusAccessContext(), Map.of())))
                 // Integrate CDI
                 .property(StandalonePojoMapperSpiSettings.BEAN_PROVIDER, new ArcBeanProvider(Arc.container()))
                 .build();

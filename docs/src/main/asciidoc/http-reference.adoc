@@ -31,6 +31,30 @@ was chosen as it is the standard location for resources in `jar` files as define
 Quarkus can be used without Servlet, following this convention allows existing code that places its resources in this
 location to function correctly.
 
+For `GET` and `HEAD` requests, static resources take precedence over Jakarta REST endpoints: if a request path matches both a static resource and an endpoint, the static resource is served and the endpoint is not invoked.
+Therefore, the security annotations of the endpoint, such as `@RolesAllowed`, do not protect the static resource.
+To secure static resources, use xref:security-authorize-web-endpoints-reference.adoc#authorization-using-configuration[authorization using configuration].
+Quarkus logs a warning at startup about the shadowed endpoints that it detects.
+If the shadowing is intended, for example, when an endpoint is a fallback for the paths without a static resource, you can disable the warning by setting the level of its log category to `ERROR`.
+This disables the warning for all endpoints.
+
+If you use Quarkus REST, set the following configuration property:
+
+[source,properties]
+----
+quarkus.log.category."io.quarkus.resteasy.reactive.server.runtime.StaticResourceShadowingCheck".level=ERROR
+----
+
+If you use RESTEasy Classic, set the following configuration property:
+
+[source,properties]
+----
+quarkus.log.category."io.quarkus.resteasy.runtime.StaticResourceShadowingCheck".level=ERROR
+----
+
+NOTE: With Servlet support, which the `quarkus-undertow` extension provides, Jakarta REST endpoints take precedence over static resources, except for RESTEasy Classic endpoints when the RESTEasy Classic path is `/`, which is the default.
+You can change the RESTEasy Classic path with the `quarkus.resteasy.path` configuration property or the `@ApplicationPath` annotation.
+
 === From web dependencies like webjars or mvnpm
 
 Look at the xref:web-dependency-locator.adoc[Web dependency locator] guide for details on how to use https://www.webjars.org[WebJars], https://mvnpm.org[mvnpm] and https://developer.mozilla.org/en-US/docs/Web/HTML/Element/script/type/importmap[importmaps]

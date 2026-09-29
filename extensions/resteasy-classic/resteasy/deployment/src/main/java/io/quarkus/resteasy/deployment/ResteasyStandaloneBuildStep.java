@@ -4,8 +4,11 @@ import static io.quarkus.deployment.annotations.ExecutionTime.RUNTIME_INIT;
 import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
 
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
+import java.util.TreeSet;
 
 import jakarta.ws.rs.ext.ExceptionMapper;
 
@@ -25,6 +28,7 @@ import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.ExecutorBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
+import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.resteasy.common.deployment.ResteasyInjectionReadyBuildItem;
 import io.quarkus.resteasy.runtime.AuthenticationCompletionExceptionMapper;
@@ -41,6 +45,8 @@ import io.quarkus.vertx.http.deployment.FilterBuildItem;
 import io.quarkus.vertx.http.deployment.HttpRootPathBuildItem;
 import io.quarkus.vertx.http.deployment.RequireVirtualHttpBuildItem;
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
+import io.quarkus.vertx.http.deployment.spi.GeneratedStaticResourceBuildItem;
+import io.quarkus.vertx.http.deployment.spi.StaticResourcesBuildItem;
 import io.quarkus.vertx.http.runtime.RouteConstants;
 import io.quarkus.vertx.http.runtime.VertxHttpBuildTimeConfig;
 import io.quarkus.vertx.http.runtime.security.SecurityHandlerPriorities;
@@ -154,6 +160,32 @@ public class ResteasyStandaloneBuildStep {
                 .handler(handler).build());
 
         recorder.start(shutdown, requireVirtual.isPresent());
+    }
+
+    @BuildStep
+    @Record(RUNTIME_INIT)
+    void checkStaticResourceShadowing(ResteasyStandaloneRecorder recorder,
+            Optional<ResteasyStandaloneBuildItem> standalone,
+            LaunchModeBuildItem launchMode,
+            Optional<StaticResourcesBuildItem> staticResources,
+            List<GeneratedStaticResourceBuildItem> generatedStaticResources,
+            HttpRootPathBuildItem httpRootPath) {
+        // without the servlet container, the static resources are served before RESTEasy
+        if (standalone.isEmpty()) {
+            return;
+        }
+        Set<String> staticFilePaths = new TreeSet<>();
+        staticResources.ifPresent(resources -> staticFilePaths.addAll(resources.getPaths()));
+        if (!launchMode.getLaunchMode().isProduction()) {
+            // outside production, the generated static resources are served by their own route instead of being part
+            // of the static resources, see GeneratedStaticResourcesProcessor
+            for (GeneratedStaticResourceBuildItem resource : generatedStaticResources) {
+                staticFilePaths.add(resource.getEndpoint());
+            }
+        }
+        if (!staticFilePaths.isEmpty()) {
+            recorder.checkStaticResourceShadowing(httpRootPath.getRootPath(), staticFilePaths);
+        }
     }
 
     private static boolean notFoundCustomExMapper(String exSignatureStr, String exMapperSignatureStr, IndexView index) {

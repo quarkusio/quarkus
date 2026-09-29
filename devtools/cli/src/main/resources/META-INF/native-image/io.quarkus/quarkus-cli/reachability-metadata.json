@@ -1,7 +1,7 @@
 {
   "reflection": [
     {
-      "type" : "io.quarkus.cli.plugin.Plugin",
+      "type" : "io.quarkus.devtools.plugin.Plugin",
       "allDeclaredConstructors" : true,
       "allPublicConstructors" : true,
       "allDeclaredMethods" : true,
@@ -10,7 +10,7 @@
       "allPublicFields" : true
     },
     {
-      "type" : "io.quarkus.cli.plugin.PluginCatalog",
+      "type" : "io.quarkus.devtools.plugin.PluginCatalog",
       "allDeclaredConstructors" : true,
       "allPublicConstructors" : true,
       "allDeclaredMethods" : true,
@@ -19,7 +19,7 @@
       "allPublicFields" : true
     },
     {
-      "type" : "io.quarkus.cli.plugin.JBangAlias",
+      "type" : "io.quarkus.devtools.plugin.JBangAlias",
       "allDeclaredConstructors" : true,
       "allPublicConstructors" : true,
       "allDeclaredMethods" : true,
@@ -28,7 +28,7 @@
       "allPublicFields" : true
     },
     {
-      "type" : "io.quarkus.cli.plugin.JBangCatalog",
+      "type" : "io.quarkus.devtools.plugin.JBangCatalog",
       "allDeclaredConstructors" : true,
       "allPublicConstructors" : true,
       "allDeclaredMethods" : true,

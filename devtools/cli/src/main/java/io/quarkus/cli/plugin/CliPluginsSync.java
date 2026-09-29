@@ -7,6 +7,8 @@ import java.util.concurrent.Callable;
 import java.util.stream.Collectors;
 
 import io.quarkus.cli.common.RunModeOption;
+import io.quarkus.devtools.plugin.Plugin;
+import io.quarkus.devtools.plugin.PluginManager;
 import picocli.CommandLine;
 
 @CommandLine.Command(name = "sync", header = "Sync (discover / purge) CLI Plugins.")

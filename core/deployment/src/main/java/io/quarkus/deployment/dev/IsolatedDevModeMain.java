@@ -20,6 +20,7 @@ import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 
+import org.aesh.command.metadata.MetadataProviderRegistry;
 import org.jboss.logging.Logger;
 import org.jboss.logmanager.formatters.ColorPatternFormatter;
 import org.jboss.logmanager.handlers.ConsoleHandler;
@@ -354,6 +355,7 @@ public class IsolatedDevModeMain implements BiConsumer<CuratedApplication, Map<S
             }
         }
         ConsoleCliManager.setCommands(List.of());
+        MetadataProviderRegistry.reset();
     }
 
     public void close() {

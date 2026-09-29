@@ -11,6 +11,7 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
@@ -47,7 +48,7 @@ public class GracefulShutdownFilterTest {
     Vertx vertx;
 
     @Test
-    public void test() throws URISyntaxException, IOException, InterruptedException {
+    public void test() throws URISyntaxException, IOException, InterruptedException, TimeoutException {
         get("/").then().statusCode(200)
                 .header(HttpHeaders.CONNECTION.toString(), is(not((HttpHeaderValues.CLOSE.toString()))))
                 .body(is("http/1.1"));
@@ -67,7 +68,7 @@ public class GracefulShutdownFilterTest {
                 .body(is("http/1.1"));
     }
 
-    private void testWithVertxHttpClientAndHttp2AfterShutdown() throws InterruptedException {
+    private void testWithVertxHttpClientAndHttp2AfterShutdown() throws InterruptedException, TimeoutException {
         HttpClient client = vertx.createHttpClient(new HttpClientOptions()
                 .setProtocolVersion(HttpVersion.HTTP_2)
                 .setDefaultHost("localhost")
@@ -89,7 +90,7 @@ public class GracefulShutdownFilterTest {
             throw new RuntimeException("The request should have failed after the server shutdown was triggered");
         }
 
-        client.close();
+        client.close().await(5, TimeUnit.SECONDS);
     }
 
     private void testWithJdkHttpClientAndHttp2AfterShutdown()

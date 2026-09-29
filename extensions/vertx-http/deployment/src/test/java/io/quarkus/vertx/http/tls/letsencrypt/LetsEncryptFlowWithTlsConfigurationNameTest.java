@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 import java.util.UUID;
+import java.util.concurrent.TimeoutException;
 
 import jakarta.inject.Inject;
 
@@ -89,7 +90,7 @@ public class LetsEncryptFlowWithTlsConfigurationNameTest extends LetsEncryptFlow
     String challenge;
 
     @Test
-    void testFlow() throws IOException {
+    void testFlow() throws IOException, TimeoutException {
         initFlow(vertx, "http");
         testLetsEncryptFlow();
     }

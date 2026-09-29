@@ -112,7 +112,7 @@ public class MainHttpServerTlsPemTrustStoreCertificateReloadTest {
 
             assertThat(response1).startsWith("Hello ");
         } finally {
-            httpClient.close().await();
+            httpClient.close().await(5, TimeUnit.SECONDS);
         }
 
         // Update certs
@@ -141,7 +141,7 @@ public class MainHttpServerTlsPemTrustStoreCertificateReloadTest {
 
             assertThat(response1).isNotEqualTo(response2);
         } finally {
-            client.close().await();
+            client.close().await(5, TimeUnit.SECONDS);
         }
     }
 

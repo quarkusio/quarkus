@@ -11,6 +11,8 @@ import java.io.FileOutputStream;
 import java.net.URL;
 import java.nio.file.Files;
 import java.security.KeyStore;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import jakarta.inject.Inject;
 
@@ -139,7 +141,7 @@ class TrustedProxyTruststoreReloadTest {
         }
     }
 
-    private String requestWithClientAlias(String alias) {
+    private String requestWithClientAlias(String alias) throws TimeoutException {
         var options = new HttpClientOptions()
                 .setSsl(true)
                 .setDefaultPort(tlsUrl.getPort())
@@ -164,7 +166,7 @@ class TrustedProxyTruststoreReloadTest {
                     .map(Buffer::toString)
                     .toCompletionStage().toCompletableFuture().join();
         } finally {
-            client.close().toCompletionStage().toCompletableFuture().join();
+            client.close().await(5, TimeUnit.SECONDS);
         }
     }
 }

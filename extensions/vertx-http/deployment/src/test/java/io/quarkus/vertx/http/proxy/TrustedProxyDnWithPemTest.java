@@ -10,6 +10,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.io.File;
 import java.net.URL;
 import java.security.cert.X509Certificate;
+import java.util.concurrent.TimeoutException;
 
 import jakarta.inject.Inject;
 
@@ -69,13 +70,13 @@ class TrustedProxyDnWithPemTest {
                     }));
 
     @Test
-    void trustedProxyForwardedHeadersHonored() {
+    void trustedProxyForwardedHeadersHonored() throws TimeoutException {
         String body = requestWithClientKeystore(vertx, tlsUrl, CLIENT1_KEYSTORE, CLIENT_TRUSTSTORE);
         assertThat(body).isEqualTo("https|somehost|backend:4444|true");
     }
 
     @Test
-    void impostorWithSameDnButWrongCaForwardedHeadersIgnored() {
+    void impostorWithSameDnButWrongCaForwardedHeadersIgnored() throws TimeoutException {
         String body = requestWithClientKeystore(vertx, tlsUrl, CLIENT2_KEYSTORE, CLIENT_TRUSTSTORE);
         assertThat(body).startsWith("https|localhost").endsWith("|false");
     }

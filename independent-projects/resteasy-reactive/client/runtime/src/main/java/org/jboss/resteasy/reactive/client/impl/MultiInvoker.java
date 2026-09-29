@@ -1,7 +1,6 @@
 package org.jboss.resteasy.reactive.client.impl;
 
 import java.io.ByteArrayInputStream;
-import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
@@ -26,16 +25,14 @@ import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.helpers.Subscriptions;
 import io.smallrye.mutiny.subscription.MultiEmitter;
-import io.vertx.core.AsyncResult;
 import io.vertx.core.Context;
 import io.vertx.core.Handler;
-import io.vertx.core.Promise;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpClientResponse;
 import io.vertx.core.net.impl.ConnectionBase;
 import io.vertx.core.parsetools.RecordParser;
-import io.vertx.core.parsetools.impl.RecordParserImpl;
+import io.vertx.core.streams.ReadStream;
 
 public class MultiInvoker extends AbstractRxInvoker<Multi<?>> {
 
@@ -164,7 +161,6 @@ public class MultiInvoker extends AbstractRxInvoker<Multi<?>> {
                                 && isNewlineDelimited(response)) {
                             registerForJsonStream(multiRequest, restClientRequestContext, responseType, response,
                                     vertxResponse);
-                            vertxResponse.resume();
                         } else {
                             registerForChunks(multiRequest, restClientRequestContext, responseType, response, vertxResponse);
                         }
@@ -352,19 +348,19 @@ public class MultiInvoker extends AbstractRxInvoker<Multi<?>> {
     private static class DemandDrivenFetch {
 
         private final MultiEmitter<?> emitter;
-        private final HttpClientResponse response;
+        private final ReadStream<Buffer> stream;
         private final Context context;
         final AtomicLong emitted = new AtomicLong();
         private long fetched;
 
-        DemandDrivenFetch(MultiEmitter<?> emitter, HttpClientResponse response, Context context) {
+        DemandDrivenFetch(MultiEmitter<?> emitter, ReadStream<Buffer> stream, Context context) {
             this.emitter = emitter;
-            this.response = response;
+            this.stream = stream;
             this.context = context;
         }
 
         void start() {
-            response.pause();
+            stream.pause();
             emitter.onRequest(new LongConsumer() {
                 @Override
                 public void accept(long n) {
@@ -374,7 +370,9 @@ public class MultiInvoker extends AbstractRxInvoker<Multi<?>> {
             fetchRequested();
         }
 
-        private synchronized void fetchRequested() {
+        // the end of the response is delivered through the same demand as its items, so when the demand is met
+        // exactly at the end of the body, completion is only signalled once the subscriber requests more
+        synchronized void fetchRequested() {
             if (fetched == Long.MAX_VALUE) {
                 return;
             }
@@ -393,12 +391,12 @@ public class MultiInvoker extends AbstractRxInvoker<Multi<?>> {
 
         private void fetch(long amount) {
             if (context == null || Vertx.currentContext() == context) {
-                response.fetch(amount);
+                stream.fetch(amount);
             } else {
                 context.runOnContext(new Handler<Void>() {
                     @Override
                     public void handle(Void v) {
-                        response.fetch(amount);
+                        stream.fetch(amount);
                     }
                 });
             }
@@ -410,69 +408,56 @@ public class MultiInvoker extends AbstractRxInvoker<Multi<?>> {
             GenericType<R> responseType,
             ResponseImpl response,
             HttpClientResponse vertxClientResponse) {
-        Buffer delimiter = RecordParserImpl.latin1StringToBytes("\n");
-        RecordParser parser = RecordParser.newDelimited(delimiter);
-        AtomicReference<Promise> finalDelimiterHandled = new AtomicReference<>();
+        // built over the response, the parser is a stream of records that drives the response itself: it resumes it
+        // while it needs bytes for a requested record, pauses it once the requested records have been emitted, and
+        // emits the last record and signals its end when the response ends
+        RecordParser parser = RecordParser.newDelimited("\n", vertxClientResponse);
+        DemandDrivenFetch fetch = new DemandDrivenFetch(multiRequest.emitter, parser, Vertx.currentContext());
         parser.handler(new Handler<>() {
             @Override
             public void handle(Buffer chunk) {
-
+                // every record fetched from the parser is accounted for, whether or not it becomes an item
+                fetch.emitted.incrementAndGet();
+                if (chunk.length() == 0) {
+                    // an empty line consumed one unit of the demand without meeting any of the subscriber's, so
+                    // the next record has to be fetched right away
+                    fetch.fetchRequested();
+                    return;
+                }
                 ByteArrayInputStream in = new ByteArrayInputStream(chunk.getBytes());
                 try {
-                    if (chunk.length() > 0) {
-                        R item = restClientRequestContext.readEntity(in,
-                                responseType,
-                                response.getMediaType(),
-                                restClientRequestContext.getMethodDeclaredAnnotationsSafe(),
-                                response.getMetadata());
-                        multiRequest.emit(item);
-                    }
-                } catch (IOException e) {
-                    multiRequest.fail(e);
-                } finally {
-                    if (finalDelimiterHandled.get() != null) {
-                        // in this case we know that we have handled the last event, so we need to
-                        // signal completion so the Multi can be closed
-                        finalDelimiterHandled.get().complete();
-                    }
+                    R item = restClientRequestContext.readEntity(in,
+                            responseType,
+                            response.getMediaType(),
+                            restClientRequestContext.getMethodDeclaredAnnotationsSafe(),
+                            response.getMetadata());
+                    multiRequest.emit(item);
+                } catch (Throwable t) {
+                    // a line that cannot be read fails the Multi; letting the exception escape would skip the
+                    // parser's end handler when the line is the last one, and the Multi would never complete
+                    multiRequest.fail(t);
                 }
             }
         });
-        vertxClientResponse.exceptionHandler(t -> {
+        parser.exceptionHandler(t -> {
             if (t == ConnectionBase.CLOSED_EXCEPTION) {
                 // we can ignore this one since we registered a closeHandler
             } else {
                 multiRequest.fail(t);
             }
         });
-        vertxClientResponse.endHandler(new Handler<>() {
+        parser.endHandler(new Handler<>() {
             @Override
             public void handle(Void c) {
-                // Before closing the Multi, we need to make sure that the parser has emitted the last event.
-                // Recall that the parser is delimited, which means that won't emit an event until the delimiter is reached
-                // To force the parser to emit the last event we push a delimiter value and when we are sure that the Multi
-                // has pushed it down the pipeline, only then do we close it
-                Promise<Object> promise = Promise.promise();
-                promise.future().onComplete(new Handler<>() {
-                    @Override
-                    public void handle(AsyncResult<Object> event) {
-                        multiRequest.complete();
-                    }
-                });
-                finalDelimiterHandled.set(promise);
-
-                // this needs to happen after the promise has been set up, otherwise, the parser's handler could complete
-                // before the finalDelimiterHandled has been populated
-                parser.handle(delimiter);
+                multiRequest.complete();
             }
         });
-
-        vertxClientResponse.handler(parser);
 
         // watch for user cancelling
         multiRequest.onCancel(() -> {
             vertxClientResponse.request().connection().close();
         });
+        fetch.start();
     }
 
 }

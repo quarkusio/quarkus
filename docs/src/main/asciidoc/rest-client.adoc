@@ -432,6 +432,7 @@ Symmetrically, the REST Client can receive arbitrarily large HTTP bodies without
 
 * `InputStream`, read on a worker thread
 * `Multi<byte[]>`, each item being a chunk of the body as it is received
+* `Multi` of any type when the response is `application/x-ndjson` or `application/stream+json`, each item being one line of the body
 
 [source,java]
 ----
@@ -453,7 +454,7 @@ public interface FilesService {
 }
 ----
 
-The body is read according to the demand of the subscriber of the `Multi`: a subscriber that consumes the chunks slowly, for example by writing them to disk one at a time, slows down the reading of the response instead of causing its remaining content to accumulate in memory.
+The body is read according to the demand of the subscriber of the `Multi`: a subscriber that consumes the items slowly, for example by writing them to disk one at a time, slows down the reading of the response instead of causing its remaining content to accumulate in memory.
 
 === Getting other response properties
 

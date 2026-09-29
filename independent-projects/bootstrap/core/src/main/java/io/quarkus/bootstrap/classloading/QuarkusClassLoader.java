@@ -828,6 +828,7 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
         ResourceBundle.clearCache(this);
 
         curatedApplication = null;
+        startupAction = null;
 
         status = STATUS_CLOSED;
     }

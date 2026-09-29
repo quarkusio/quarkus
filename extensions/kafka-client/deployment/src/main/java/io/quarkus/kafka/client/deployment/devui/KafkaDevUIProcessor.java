@@ -8,6 +8,8 @@ import io.quarkus.devjsonrpc.spi.JsonRPCProvidersBuildItem;
 import io.quarkus.devui.spi.page.CardPageBuildItem;
 import io.quarkus.devui.spi.page.Page;
 import io.quarkus.kafka.client.runtime.dev.ui.KafkaJsonRPCService;
+import io.quarkus.kafka.client.runtime.produi.KafkaProdUIService;
+import io.quarkus.produi.spi.page.ProdUIPageBuildItem;
 
 /**
  * Kafka Dev UI (v2)
@@ -53,5 +55,20 @@ public class KafkaDevUIProcessor {
     @BuildStep(onlyIf = IsLocalDevelopment.class)
     JsonRPCProvidersBuildItem createJsonRPCService() {
         return new JsonRPCProvidersBuildItem(KafkaJsonRPCService.class);
+    }
+
+    @BuildStep
+    JsonRPCProvidersBuildItem createProdUIJsonRPCService() {
+        return new JsonRPCProvidersBuildItem(KafkaProdUIService.class);
+    }
+
+    @BuildStep
+    ProdUIPageBuildItem createProdUI() {
+        ProdUIPageBuildItem page = new ProdUIPageBuildItem();
+        page.addPage(Page.webComponentPageBuilder()
+                .title("Kafka")
+                .icon("font-awesome-solid:folder-tree")
+                .componentLink("pwc-kafka.js"));
+        return page;
     }
 }

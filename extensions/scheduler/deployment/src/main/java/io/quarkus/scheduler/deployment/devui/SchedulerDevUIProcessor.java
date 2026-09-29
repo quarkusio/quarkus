@@ -12,8 +12,10 @@ import io.quarkus.devui.spi.page.CardPageBuildItem;
 import io.quarkus.devui.spi.page.FooterPageBuildItem;
 import io.quarkus.devui.spi.page.Page;
 import io.quarkus.devui.spi.page.WebComponentPageBuilder;
+import io.quarkus.produi.spi.page.ProdUIPageBuildItem;
 import io.quarkus.scheduler.deployment.ScheduledBusinessMethodItem;
 import io.quarkus.scheduler.runtime.dev.ui.SchedulerJsonRPCService;
+import io.quarkus.scheduler.runtime.produi.SchedulerProdUIService;
 
 public class SchedulerDevUIProcessor {
 
@@ -76,6 +78,25 @@ public class SchedulerDevUIProcessor {
     @BuildStep(onlyIf = IsLocalDevelopment.class)
     JsonRPCProvidersBuildItem rpcProvider() {
         return new JsonRPCProvidersBuildItem(SchedulerJsonRPCService.class);
+    }
+
+    @BuildStep
+    JsonRPCProvidersBuildItem createProdUIJsonRPCService() {
+        return new JsonRPCProvidersBuildItem(SchedulerProdUIService.class);
+    }
+
+    @BuildStep
+    ProdUIPageBuildItem createProdUI() {
+        // A bespoke read-only component is used rather than reusing the Dev UI
+        // qwc-scheduler-scheduled-methods.js: the Dev UI component imports dev-only
+        // modules (notifier) and offers pause/resume/trigger actions that must not
+        // be exposed in production.
+        ProdUIPageBuildItem page = new ProdUIPageBuildItem();
+        page.addPage(Page.webComponentPageBuilder()
+                .title("Scheduled Methods")
+                .icon("font-awesome-solid:clock")
+                .componentLink("pwc-scheduler-scheduled-methods.js"));
+        return page;
     }
 
     private static final String INTERPRET_CRON = """

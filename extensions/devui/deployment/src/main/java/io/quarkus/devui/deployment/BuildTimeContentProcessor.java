@@ -156,6 +156,7 @@ public class BuildTimeContentProcessor {
         internalImportMapBuildItem.add("router-controller", contextRoot + "controller/router-controller.js");
         internalImportMapBuildItem.add("notifier", contextRoot + "controller/notifier.js");
         internalImportMapBuildItem.add("jsonrpc", contextRoot + "controller/jsonrpc.js");
+        internalImportMapBuildItem.add("ui-context", contextRoot + "controller/ui-context.js");
         // State
         internalImportMapBuildItem.add("state/", contextRoot + "state/");
         internalImportMapBuildItem.add("theme-state", contextRoot + "state/theme-state.js");

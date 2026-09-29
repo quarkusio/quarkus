@@ -7,6 +7,8 @@ import io.quarkus.devjsonrpc.spi.JsonRPCProvidersBuildItem;
 import io.quarkus.devui.spi.page.CardPageBuildItem;
 import io.quarkus.devui.spi.page.Page;
 import io.quarkus.kafka.streams.runtime.dev.ui.KafkaStreamsJsonRPCService;
+import io.quarkus.kafka.streams.runtime.produi.KafkaStreamsProdUIService;
+import io.quarkus.produi.spi.page.ProdUIPageBuildItem;
 
 public class KafkaStreamsDevUIProcessor {
 
@@ -28,5 +30,20 @@ public class KafkaStreamsDevUIProcessor {
     @BuildStep(onlyIf = IsLocalDevelopment.class)
     public void createJsonRPCService(BuildProducer<JsonRPCProvidersBuildItem> jsonRPCServiceProducer) {
         jsonRPCServiceProducer.produce(new JsonRPCProvidersBuildItem(KafkaStreamsJsonRPCService.class));
+    }
+
+    @BuildStep
+    JsonRPCProvidersBuildItem createProdUIJsonRPCService() {
+        return new JsonRPCProvidersBuildItem(KafkaStreamsProdUIService.class);
+    }
+
+    @BuildStep
+    ProdUIPageBuildItem createProdUI() {
+        ProdUIPageBuildItem page = new ProdUIPageBuildItem();
+        page.addPage(Page.webComponentPageBuilder()
+                .title("Topology")
+                .icon("font-awesome-solid:diagram-project")
+                .componentLink("pwc-kafka-streams-topology.js"));
+        return page;
     }
 }

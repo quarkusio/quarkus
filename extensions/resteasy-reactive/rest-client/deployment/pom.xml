@@ -25,6 +25,10 @@
             <artifactId>quarkus-rest-client-jaxrs-deployment</artifactId>
         </dependency>
         <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-produi-deployment-spi</artifactId>
+        </dependency>
+        <dependency>
             <groupId>io.netty</groupId>
             <artifactId>netty-tcnative-classes</artifactId>
             <scope>test</scope>

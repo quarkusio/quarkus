@@ -12,6 +12,8 @@ import io.quarkus.devui.spi.page.Page;
 import io.quarkus.devui.spi.page.PageBuilder;
 import io.quarkus.infinispan.client.runtime.dev.ui.InfinispanClientsContainer;
 import io.quarkus.infinispan.client.runtime.dev.ui.InfinispanJsonRPCService;
+import io.quarkus.infinispan.client.runtime.produi.InfinispanProdUIService;
+import io.quarkus.produi.spi.page.ProdUIPageBuildItem;
 
 public class InfinispanDevUIProcessor {
 
@@ -54,5 +56,20 @@ public class InfinispanDevUIProcessor {
     @BuildStep(onlyIf = IsLocalDevelopment.class)
     public AdditionalBeanBuildItem beans() {
         return AdditionalBeanBuildItem.unremovableOf(InfinispanClientsContainer.class);
+    }
+
+    @BuildStep
+    public JsonRPCProvidersBuildItem createProdUIJsonRPCService() {
+        return new JsonRPCProvidersBuildItem(InfinispanProdUIService.class);
+    }
+
+    @BuildStep
+    public ProdUIPageBuildItem createProdUI() {
+        ProdUIPageBuildItem page = new ProdUIPageBuildItem();
+        page.addPage(Page.webComponentPageBuilder()
+                .title("Caches")
+                .icon("font-awesome-solid:database")
+                .componentLink("pwc-infinispan-caches.js"));
+        return page;
     }
 }

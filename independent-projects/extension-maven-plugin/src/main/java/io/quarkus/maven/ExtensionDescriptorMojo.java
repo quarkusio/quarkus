@@ -577,6 +577,12 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
         String[] versionItems = version.split("-");
         versionItems = versionItems[0].split("\\.");
 
+        // Pre-release qualifier e.g. 4.0.0.Beta1: use the full version as the lower bound
+        // because Maven considers pre-release versions lower than the release (4.0.0.Beta1 < 4.0)
+        if (!versionItems[versionItems.length - 1].chars().allMatch(Character::isDigit)) {
+            return "[" + version + ",)";
+        }
+
         return "[" + versionItems[0] + "." + (versionItems.length > 1 ? versionItems[1] : "0") + ",)";
     }
 

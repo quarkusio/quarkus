@@ -528,6 +528,7 @@ categories:
     description: Extension development for Quarkus
     guides:
       - writing-extensions.adoc
+      - recorders-to-services-migration.adoc
       - building-my-first-extension.adoc
       - extension-metadata.adoc
       - capabilities.adoc

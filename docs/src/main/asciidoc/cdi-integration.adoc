@@ -306,9 +306,30 @@ You can:
 
 1. Generate the bytecode of the `Contextual#create(CreationalContext<T>)` method directly via `ExtendedBeanConfigurator.creator(Consumer<MethodCreator>)`.
 2. Pass a subclass of `io.quarkus.arc.BeanCreator` via `ExtendedBeanConfigurator#creator(Class<? extends BeanCreator<U>>)`, and possibly specify some build-time parameters via `ExtendedBeanConfigurator#param()` and synthetic injection points via `ExtendedBeanConfigurator#addInjectionPoint()`.
-3. Produce the runtime instance through a proxy returned from a <<writing-extensions.adoc#bytecode-recording,`@Recorder` method>> and set it via `ExtendedBeanConfigurator#runtimeValue(RuntimeValue<?>)`, `ExtendedBeanConfigurator#runtimeProxy(Object)`,  `ExtendedBeanConfigurator#supplier(Supplier<?>)` or `ExtendedBeanConfigurator#createWith(Function<SyntheticCreationalContext<?>, <?>)`.
+3. Produce the runtime instance through a service using the <<writing-extensions.adoc#bytecode-recording,`ServiceRegistrar` service system>> and set it via `SyntheticBeanBuildItem.configure(Class).serviceValue(Class, String)`. (Or, for legacy/deprecated extensions, produce a proxy returned from a legacy <<writing-extensions.adoc#legacy-bytecode-recording,`@Recorder` method>> and set it via `ExtendedBeanConfigurator#runtimeValue(RuntimeValue<?>)`, `ExtendedBeanConfigurator#runtimeProxy(Object)`, `ExtendedBeanConfigurator#supplier(Supplier<?>)` or `ExtendedBeanConfigurator#createWith(Function<SyntheticCreationalContext<?>, <?>)`).
 
-.`SyntheticBeanBuildItem` Example 2
+.`SyntheticBeanBuildItem` Example 2 (Modern - using Services)
+[source,java]
+----
+@BuildStep
+SyntheticBeanBuildItem syntheticBean(ServiceRegistrar reg) {
+   reg.forService(Foo.class, "foo-service")
+      .onStart(ctx -> new Foo()); <1>
+
+   return SyntheticBeanBuildItem.configure(Foo.class).scope(Singleton.class)
+                .serviceValue(Foo.class, "foo-service") <2>
+                .done();
+}
+----
+<1> Define a service that constructs the `Foo` bean at startup.
+<2> Bind the synthetic bean to the value produced by the service.
+
+[NOTE]
+====
+For legacy extensions, synthetic beans can also be initialized using deprecated bytecode recorders as shown in the example below.
+====
+
+.`SyntheticBeanBuildItem` Example 3 (Legacy - using Deprecated Recorders)
 [source,java]
 ----
 @BuildStep
@@ -324,7 +345,7 @@ SyntheticBeanBuildItem syntheticBean(TestRecorder recorder) {
 
 It is also possible to create a generic synthetic bean `Foo<Bar>`.
 
-.`SyntheticBeanBuildItem` Example 3
+.`SyntheticBeanBuildItem` Example 4
 [source,java]
 ----
 @BuildStep

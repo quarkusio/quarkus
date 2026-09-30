@@ -157,11 +157,11 @@ It's started during the <<bootstrap-three-phases,Static init bootstrap phase>>.
 
 TIP: `BUILD_AND_RUN_TIME_FIXED` and `RUN_TIME` config roots can be injected in any bean. `RUN_TIME` config roots should only be injected after the bootstrap though.
 
-It is possible to invoke a bean method from a <<bytecode-recording,recorder method>> though.
-If you need to access a bean in a `@Record(STATIC_INIT)` build step then is must either depend on the `BeanContainerBuildItem` or wrap the logic in a `BeanContainerListenerBuildItem`.
+It is possible to invoke a bean method from a <<bytecode-recording,startup service>> or a legacy <<legacy-bytecode-recording,recorder method>>.
+If you need to access a bean in a static-init service (`Phase.STATIC_INIT`) or legacy `@Record(STATIC_INIT)` build step, then it must depend on `.require(BeanContainer.class)` (for services), or depend on the `BeanContainerBuildItem` / wrap the logic in a `BeanContainerListenerBuildItem` (for legacy recorders).
 The reason is simple - we need to make sure the CDI container is fully initialized and started.
-However, it is safe to expect that the CDI container is fully initialized and running in a `@Record(RUNTIME_INIT)` build step.
-You can obtain a reference to the container via `CDI.current()` or Quarkus-specific `Arc.container()`.
+However, it is safe to expect that the CDI container is fully initialized and running in a runtime-init service (`Phase.APPLICATION`) or legacy `@Record(RUNTIME_INIT)` build step.
+For services, prefer using `.require(BeanContainer.class)` and `.beanInstance(BeanType.class)`; for legacy recorders, you can obtain a reference to the container via `CDI.current()` or Quarkus-specific `Arc.container()`.
 
 IMPORTANT: Don't forget to make sure the bean state guarantees the visibility, e.g. via the `volatile` keyword.
 
@@ -281,10 +281,28 @@ In this chapter, we will cover a use case that can be used to initialize extensi
 
 The `SyntheticBeanBuildItem` can be used to register a synthetic bean:
 
-* whose instance can be easily produced through a <<bytecode-recording,recorder>>,
+* whose instance can be easily produced through a <<bytecode-recording,startup service>> (or, for legacy code, a <<legacy-bytecode-recording,recorder>>),
 * to provide a "context" bean that holds all the information collected during augmentation so that the real components do not need any "late initialization" because they can inject the context bean directly.
 
-.Instance Produced Through Recorder
+.Instance Produced Through Service (Recommended)
+[source%nowrap,java]
+----
+@BuildStep
+SyntheticBeanBuildItem syntheticBean(ServiceRegistrar reg) {
+   reg.forService(Foo.class, "foo-service")
+      .onStart(ctx -> new Foo("parameters are recorded at build time")); <1>
+
+   return SyntheticBeanBuildItem.configure(Foo.class).scope(Singleton.class)
+                .serviceValue(Foo.class, "foo-service") <2>
+                .done();
+}
+----
+<1> Define a service that constructs the `Foo` bean at startup.
+<2> Bind the synthetic bean to the value produced by the service.
+
+[NOTE]
+====
+.Instance Produced Through Recorder (Legacy)
 [source%nowrap,java]
 ----
 @BuildStep
@@ -296,8 +314,25 @@ SyntheticBeanBuildItem syntheticBean(TestRecorder recorder) {
 }
 ----
 <1> The string value is recorded in the bytecode and used to initialize the instance of `Foo`.
+====
 
-."Context" Holder
+.Context Holder Produced Through Service (Recommended)
+[source%nowrap,java]
+----
+@BuildStep
+SyntheticBeanBuildItem syntheticBean(ServiceRegistrar reg) {
+   reg.forService(TestContext.class, "test-context")
+      .onStart(ctx -> new TestContext("parameters are recorded at build time"));
+
+   return SyntheticBeanBuildItem.configure(TestContext.class).scope(Singleton.class)
+                .serviceValue(TestContext.class, "test-context")
+                .done();
+}
+----
+
+[NOTE]
+====
+."Context" Holder Produced Through Recorder (Legacy)
 [source%nowrap,java]
 ----
 @BuildStep
@@ -309,6 +344,7 @@ SyntheticBeanBuildItem syntheticBean(TestRecorder recorder) {
 }
 ----
 <1> The "real" components can inject the `TestContext` directly.
+====
 
 === Some types of extensions
 
@@ -873,7 +909,7 @@ The types of values that can be injected include:
 - <<build-items,Build items>> produced by previous build steps
 - <<producing-values,Build producers>> to produce items for subsequent build steps
 - <<configuration,Configuration Mapping>> types
-- Template objects for <<bytecode-recording,bytecode recording>>
+- `ServiceRegistrar` (for defining startup services) or legacy `@Recorder` template objects (for <<bytecode-recording,bytecode recording>>)
 
 WARNING: Objects which are injected into a build step method or its class _must not_ be used outside that method's
 execution.
@@ -959,10 +995,10 @@ process.
 In the example above, `GeneratedClassBuildItem` would only be produced if `ExecutorClassBuildItem` is consumed by
 some other build step.
 
-Note that when using <<bytecode-recording,bytecode recording>>, the implicitly generated class can be declared to be weak by
-using the `optional` attribute of the `@io.quarkus.deployment.annotations.Record` annotation.
+Note that when using legacy <<legacy-bytecode-recording,bytecode recording>>, the implicitly generated class can be declared to be weak by
+using the `optional` attribute of the `@io.quarkus.deployment.annotations.Record` annotation. (For modern startup services, use the `.optional()` builder method instead).
 
-.Example of using a bytecode recorder where the generated class is weakly produced
+.Example of using a legacy bytecode recorder where the generated class is weakly produced
 [source%nowrap,java]
 ----
 /**
@@ -985,7 +1021,7 @@ ExecutorBuildItem createExecutor( // <2>
 }
 ----
 <1> Note the `optional` attribute.
-<2> This example is using recorder proxies; see the section on <<bytecode-recording,bytecode recording>> for more information.
+<2> This example is using legacy recorder proxies; see the section on <<legacy-bytecode-recording,bytecode recording>> for more information.
 
 ==== Application Archives
 
@@ -1457,7 +1493,244 @@ class MyDevModeProcessor {
 <3> The other build step will only be executed in dev mode.
 
 [id='bytecode-recording']
-=== Generating Bytecode
+=== Application Startup and Services
+
+Quarkus uses a compile-time built, runtime-executed dependency graph of lightweight startup services instead of executing build steps directly at runtime. This allows for explicit dependency declarations, deterministic initialization ordering, and skipping boot-time reflection and proxy-creation overhead.
+
+==== Services and the ServiceRegistrar API
+
+The main entry point for defining startup services is `io.quarkus.core.deployment.service.ServiceRegistrar`. An instance of `ServiceRegistrar` can be injected directly into any `@BuildStep` method:
+
+[source%nowrap,java]
+----
+@BuildStep
+ServiceStartBuildItem setup(ServiceRegistrar reg) {
+    reg.forService("io.quarkus.hello")
+       .onStart(ctx -> System.out.println("Hello World"));
+    return new ServiceStartBuildItem("hello");
+}
+----
+
+===== Service Types
+
+Services can be typed (producing a value at startup) or void (producing no value, identified by a unique name):
+
+* *Typed Services*: Defined via `reg.forService(Class<T>)` or `reg.forService(Class<T>, String name)`.
+* *Void Services*: Defined via `reg.forService(String name)` or `reg.forService(List<String> nameParts)`. By convention, void service names use hierarchical dot-separated names, e.g., `"io.quarkus.<extension>.<purpose>"`.
+
+===== Synchronous and Asynchronous Start Actions
+
+Services can be started either synchronously or asynchronously, depending on which method is called on the service builder:
+
+* *Synchronous Start* (`onStart`): The service is considered started when the action returns. The action receives a `StartContext` (for void services) or returns the service value directly (for typed services).
+
+* *Asynchronous Start* (`onStartAsync`): The action is initially invoked in the calling thread, but the service is not considered started until a completion method is called. The action receives an `AsyncVoidStartContext` (for void services) or `AsyncStartContext<T>` (for typed services). The completion method can be called from the same thread or from a different thread, allowing the action to schedule asynchronous work.
+
+.Example of synchronous start
+[source%nowrap,java]
+----
+reg.forService(MyService.class)
+   .onStart(ctx -> new MyService());  // Service is started when this returns
+----
+
+.Example of asynchronous start for a typed service
+[source%nowrap,java]
+----
+reg.forService(MyService.class)
+   .require(ExecutorService.class)
+   .onStartAsync((ctx, executor) -> {
+       // Action runs in the calling thread initially
+       executor.execute(() -> {
+           MyService service = new MyService();
+           // Complete from a different thread
+           ctx.startComplete(service);
+       });
+   });
+----
+
+.Example of asynchronous start for a void service
+[source%nowrap,java]
+----
+reg.forService("io.quarkus.my-async-service")
+   .onStartAsync(ctx -> {
+       // Action runs in the calling thread initially
+       asyncOperation.whenComplete((result, error) -> {
+           if (error != null) {
+               ctx.startFailed(error);
+           } else {
+               // Complete when the async operation finishes
+               ctx.startComplete();
+           }
+       });
+   });
+----
+
+The async start context provides three completion methods:
+
+* `startComplete()` or `startComplete(T value)`: Indicates successful completion
+* `startFailed(Throwable)`: Indicates the service failed to start
+* `startCanceled()`: Indicates the service start was canceled
+
+==== Service Startup Phases
+
+Services execute in defined, ordered phases of application startup. The default phase is `Phase.APPLICATION`. You can customize the phase using `.atPhase(Phase)` on the service builder:
+
+[source%nowrap,java]
+----
+reg.forService("io.quarkus.my-service")
+   .atPhase(Phase.INIT)
+   .onStart(ctx -> { ... });
+----
+
+The available startup phases (defined in `io.quarkus.core.Phase`) in execution order are:
+
+1. `STATIC_INIT`: Runs during static initialization of the generated application class. Results are baked into the native image heap.
+2. `CONFIG`: Registers configuration property classes, validates configuration, and reports deprecations.
+3. `LOGGING`: Reconfigures the log manager with real runtime configuration (log levels, handlers, formatters).
+4. `INFRASTRUCTURE`: Creates foundational infrastructure (event loops, executors, TLS registries, transaction managers).
+5. `BINDING`: Binds server sockets, reserves ports, and establishes transport endpoints.
+6. `DATA`: Establishes connections to external data systems (connection pools, client connections, directory services).
+7. `INIT`: Performs one-time initialization tasks such as database migrations and schema validation.
+8. `APPLICATION`: Registers the application's request-handling and event-processing logic (CDI beans, routes, filters).
+9. `SERVING`: Transitions the application to actively processing requests (accepting connections, polling brokers).
+
+[IMPORTANT]
+.Phases are not Barriers
+====
+The runtime does not wait for all services in phase _N_ to complete before starting services in phase _N+1_. Services start as soon as their individual dependencies are satisfied.
+====
+
+==== Declaring Dependencies and Ordering
+
+Every service dependency and execution ordering constraint must be explicitly declared on the service itself. **Build step graph dependencies (e.g. `@Consume`/`@Produce` or method parameter ordering) have zero influence on service execution order.**
+
+===== Service Values via `require()`
+
+To depend on and consume the value produced by another service, use `require(Class<T>)` or `require(Class<T>, String name)`:
+
+[source%nowrap,java]
+----
+reg.forService("io.quarkus.my-service")
+   .require(ArcContainer.class)
+   .onStart((ctx, container) -> {
+       // 'container' is the value produced by the ArcContainer service
+   });
+----
+
+===== Execution Ordering via `after()` and `before()`
+
+To order services without consuming their values:
+
+* `after(...)`: Declares that this service must run after the specified service class or name.
+* `before(...)`: Declares that this service must run before the specified service class or name. This is particularly useful for cleanup services that must outlive their dependents.
+
+[source%nowrap,java]
+----
+reg.forService("io.quarkus.vertx.netty-cleanup")
+   .atPhase(Phase.STATIC_INIT)
+   .before(IOThreadDetector.class)
+   .before(ArcContainer.class)
+   .onStart(ctx -> {
+       ctx.onStop(() -> InternalThreadLocalMap.remove());
+   });
+----
+
+==== Lambda Capture Rules
+
+Because the action lambda bytecode (defined inside `.onStart()`) is executed at runtime, values from the build step can be captured inside the lambda under strict rules.
+
+===== Supported Captures
+* Primitives, `String`, `Class`, and enum values.
+* Immutable collections (e.g., via `List.of()`, `Set.copyOf()`, `Map.copyOf()`).
+* Configuration mappings from `BUILD_AND_RUN_TIME_FIXED` and `RUN_TIME` phases.
+* `Constable` values (any type implementing `java.lang.constant.Constable` with `describeConstable()`).
+* Record values, provided all their components are recursively capturable.
+
+===== Unsupported Captures (Build Errors)
+* Mutable collections (always copy them via `List.copyOf()` or `Set.copyOf()` before the lambda).
+* `BUILD_TIME` configuration objects (extract the specific values into local variables first).
+* Arbitrary runtime objects (obtain them via `.require()` instead).
+
+==== Critical Pitfalls & Best Practices
+
+===== 1. Never Reference Deployment Classes in Service Lambdas
+Because service lambda bodies run at runtime, they must never reference, instantiate, or invoke methods on any deployment classes (such as your `@BuildStep` processor classes). Doing so will compile successfully but will throw a `ClassNotFoundException` or `NoClassDefFoundError` at runtime.
+
+* *The Anonymous Inner Class Trap*: Writing an anonymous inner class (e.g. `new MyInterface() {}`) inside an instance-method lambda forces `javac` to generate a constructor that captures `EnclosingProcessor.this`. This causes a build-time `TransliterationException`.
+* *The Static Helper Method Trap*: Moving the anonymous class instantiation to a `private static` helper method inside your processor class solves the instance capture, but the compiled lambda still references the processor class, causing `NoClassDefFoundError` at runtime.
+* *Solution*: Always place helper methods, custom interfaces, or static factory methods inside your **runtime** module classes (which are present on both classpaths).
+
+===== 2. Package-Private Visibility
+Lambda bytecode runs at runtime but references runtime classes directly. Package-private classes can become inaccessible from the generated consolidated class. Make classes public or move them to public subpackages.
+
+===== 3. Use `require()` instead of direct class queries
+Always access CDI beans through `.require(BeanContainer.class)` instead of direct `Arc.container()` calls to ensure proper dependency graph tracking and teardown ordering.
+
+==== Synthetic Beans with Services
+
+Synthetic beans can easily consume or be produced by services. Use `.serviceValue()` on the synthetic bean builder:
+
+[source%nowrap,java]
+----
+reg.forService(MyBean.class, "my-bean-service")
+   .onStart(ctx -> new MyBean());
+
+SyntheticBeanBuildItem.configure(MyBean.class)
+   .serviceValue(MyBean.class, "my-bean-service")
+   .done();
+----
+
+==== Teardown & Shutdown Handlers
+
+Services can register cleanup actions inside the `onStart` or `onStartAsync` action. Stop handlers run in the exact reverse of the service dependency order, ensuring reliable teardown.
+
+===== Synchronous and Asynchronous Stop Handlers
+
+Similar to start actions, stop handlers can be either synchronous or asynchronous:
+
+* *Synchronous Stop* (`ctx.onStop(Runnable)`): The service is considered stopped when the runnable returns.
+
+* *Asynchronous Stop* (`ctx.onStopAsync(Consumer<AsyncStopContext>)`): The stop handler is initially invoked in the calling thread, but the service is not considered stopped until `AsyncStopContext.stopComplete()` is called. The completion method can be called from the same thread or from a different thread, allowing the handler to schedule asynchronous cleanup work.
+
+.Example of synchronous stop
+[source%nowrap,java]
+----
+reg.forService(MyService.class)
+   .onStart(ctx -> {
+       MyService service = new MyService();
+       ctx.onStop(() -> {
+           service.shutdown();  // Service is stopped when this returns
+       });
+       return service;
+   });
+----
+
+.Example of asynchronous stop
+[source%nowrap,java]
+----
+reg.forService(MyService.class)
+   .onStart(ctx -> {
+       MyService service = new MyService();
+       ctx.onStopAsync(stopCtx -> {
+           // Handler runs in the calling thread initially
+           service.shutdownAsync().whenComplete((result, error) -> {
+               // Complete from a different thread when async shutdown finishes
+               stopCtx.stopComplete();
+           });
+       });
+       return service;
+   });
+----
+
+NOTE: The `AsyncStopContext.stopComplete()` method is idempotent. Calling it multiple times has no additional effect beyond the first call.
+
+[id='legacy-bytecode-recording']
+=== Legacy Bytecode Recorders (Deprecated)
+
+[WARNING]
+====
+Bytecode recorders (the `@Record` and `@Recorder` API) are **deprecated** and will be removed in a future release. All new extensions must use the new `ServiceRegistrar` service model. Existing recorders should be migrated to services using the xref:recorders-to-services-migration.adoc[Recorders-to-Services Migration Guide].
+====
 
 ==== Bytecode Recording
 

@@ -58,8 +58,7 @@ public class OverriddenPreferredTypesResource {
                 .isEqualTo(SqlTypes.CHAR);
         assertThat(metamodel.getAttributeMapping(metamodel.getPropertyIndex("createdAt")).getSingleJdbcMapping().getJdbcType()
                 .getDefaultSqlTypeCode())
-                // H2 does not support direct JDBC access for Instant, so ORM falls back to TIMESTAMP_UTC.
-                .isEqualTo(SqlTypes.TIMESTAMP_UTC);
+                .isEqualTo(SqlTypes.TIMESTAMP);
 
         assertThat(metamodel.getAttributeMapping(metamodel.getPropertyIndex("overridenDuration")).getSingleJdbcMapping()
                 .getJdbcType()

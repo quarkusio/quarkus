@@ -11,6 +11,8 @@ import java.util.function.Supplier;
 import jakarta.persistence.LockModeType;
 
 import org.hibernate.Filter;
+import org.hibernate.query.KeyedPage;
+import org.hibernate.query.KeyedResultList;
 import org.hibernate.reactive.mutiny.Mutiny;
 
 import io.quarkus.panache.common.Page;
@@ -41,10 +43,14 @@ public abstract class CommonAbstractPanacheQueryImpl<Entity, SessionType extends
     protected String customCountQueryForSpring;
     private Sort sort;
 
+    // We can only have one of page|range|keyedPage set at the same time, they're mutually exclusive
     private Page page;
     private Uni<Long> count;
 
     private Range range;
+
+    private KeyedPage<?> keyedPage;
+    private KeyedResultList<?> lastKeyedResult;
 
     private LockModeType lockModeType;
     private Map<String, Object> hints;
@@ -79,6 +85,8 @@ public abstract class CommonAbstractPanacheQueryImpl<Entity, SessionType extends
         this.page = previousQuery.page;
         this.count = previousQuery.count;
         this.range = previousQuery.range;
+        this.keyedPage = previousQuery.keyedPage;
+        this.lastKeyedResult = previousQuery.lastKeyedResult;
         this.lockModeType = previousQuery.lockModeType;
         this.hints = previousQuery.hints;
         this.filters = previousQuery.filters;
@@ -140,30 +148,70 @@ public abstract class CommonAbstractPanacheQueryImpl<Entity, SessionType extends
 
     public void page(Page page) {
         this.page = page;
-        this.range = null; // reset the range to be able to switch from range to page
+        this.range = null;
+        this.keyedPage = null;
+        this.lastKeyedResult = null;
     }
 
     public void page(int pageIndex, int pageSize) {
         page(Page.of(pageIndex, pageSize));
     }
 
+    @SuppressWarnings("unchecked")
+    public void cursor(int pageIndex, int pageSize) {
+        if (sort == null || sort.getColumns().isEmpty()) {
+            throw new UnsupportedOperationException(
+                    "Cannot use cursor-based pagination without sort criteria: use find(entityClass, query, sort) or findAll(entityClass, sort)");
+        }
+        List orders = PanacheJpaUtil.toHibernateOrders(entityClass, sort);
+        this.keyedPage = org.hibernate.query.Page.page(pageSize, pageIndex).keyedBy(orders);
+        this.lastKeyedResult = null;
+        this.page = null;
+        this.range = null;
+    }
+
     public void nextPage() {
         checkPagination();
-        page(page.next());
+        if (keyedPage != null) {
+            checkKeyedResult();
+            keyedPage = lastKeyedResult.getNextPage();
+            lastKeyedResult = null;
+        } else {
+            page(page.next());
+        }
     }
 
     public void previousPage() {
         checkPagination();
-        page(page.previous());
+        if (keyedPage != null) {
+            checkKeyedResult();
+            KeyedPage<?> prev = lastKeyedResult.getPreviousPage();
+            if (prev != null) {
+                keyedPage = prev;
+            }
+            lastKeyedResult = null;
+        } else {
+            page(page.previous());
+        }
     }
 
+    @SuppressWarnings("unchecked")
     public void firstPage() {
         checkPagination();
-        page(page.first());
+        if (keyedPage != null) {
+            keyedPage = keyedPage.getPage().first().keyedBy((List) keyedPage.getKeyDefinition());
+            lastKeyedResult = null;
+        } else {
+            page(page.first());
+        }
     }
 
     public Uni<Void> lastPage() {
         checkPagination();
+        if (keyedPage != null) {
+            throw new UnsupportedOperationException(
+                    "Cannot navigate to last page in cursor-based pagination");
+        }
         return pageCount().map(count -> {
             page(page.index(count - 1));
             return null;
@@ -172,11 +220,19 @@ public abstract class CommonAbstractPanacheQueryImpl<Entity, SessionType extends
 
     public Uni<Boolean> hasNextPage() {
         checkPagination();
+        if (keyedPage != null) {
+            checkKeyedResult();
+            return Uni.createFrom().item(!lastKeyedResult.isLastPage());
+        }
         return pageCount().map(pageCount -> page.index < (pageCount - 1));
     }
 
     public boolean hasPreviousPage() {
         checkPagination();
+        if (keyedPage != null) {
+            checkKeyedResult();
+            return !lastKeyedResult.isFirstPage();
+        }
         return page.index > 0;
     }
 
@@ -185,7 +241,8 @@ public abstract class CommonAbstractPanacheQueryImpl<Entity, SessionType extends
         return count().map(count -> {
             if (count == 0)
                 return 1; // a single page of zero results
-            return (int) Math.ceil((double) count / (double) page.size);
+            int pageSize = keyedPage != null ? keyedPage.getPage().getSize() : page.size;
+            return (int) Math.ceil((double) count / (double) pageSize);
         });
     }
 
@@ -196,13 +253,20 @@ public abstract class CommonAbstractPanacheQueryImpl<Entity, SessionType extends
 
     private void checkPagination() {
         // FIXME: turn into Uni
-        if (page == null) {
+        if (page == null && keyedPage == null) {
             throw new UnsupportedOperationException("Cannot call a page related method, " +
                     "call page(Page) or page(int, int) to initiate pagination first");
         }
         if (range != null) {
             throw new UnsupportedOperationException("Cannot call a page related method in a ranged query, " +
                     "call page(Page) or page(int, int) to initiate pagination first");
+        }
+    }
+
+    private void checkKeyedResult() {
+        if (lastKeyedResult == null) {
+            throw new UnsupportedOperationException(
+                    "Cannot call this method before fetching results with list()");
         }
     }
 
@@ -213,8 +277,9 @@ public abstract class CommonAbstractPanacheQueryImpl<Entity, SessionType extends
 
     public void range(int startIndex, int lastIndex) {
         this.range = Range.of(startIndex, lastIndex);
-        // reset the page to its default to be able to switch from page to range
         this.page = null;
+        this.keyedPage = null;
+        this.lastKeyedResult = null;
     }
 
     private void checkRange() {
@@ -266,6 +331,16 @@ public abstract class CommonAbstractPanacheQueryImpl<Entity, SessionType extends
 
     @SuppressWarnings({ "unchecked", "rawtypes" })
     public <T extends Entity> Uni<List<T>> list() {
+        if (keyedPage != null) {
+            return em.flatMap(session -> {
+                Mutiny.SelectionQuery hibernateQuery = createBaseQuery(session);
+                return applyFilters(session, () -> hibernateQuery.getReactiveKeyedResultList((KeyedPage) keyedPage)
+                        .map(keyedResult -> {
+                            lastKeyedResult = (KeyedResultList<?>) keyedResult;
+                            return (List<T>) ((KeyedResultList<?>) keyedResult).getResultList();
+                        }));
+            });
+        }
         return em.flatMap(session -> {
             Mutiny.SelectionQuery<?> hibernateQuery = createQuery(session);
             return (Uni) applyFilters(session, () -> hibernateQuery.getResultList());
@@ -273,9 +348,6 @@ public abstract class CommonAbstractPanacheQueryImpl<Entity, SessionType extends
     }
 
     public <T extends Entity> Multi<T> stream() {
-        // FIXME: requires Hibernate support
-        //        Mutiny.Query<?> jpaQuery = createQuery();
-        //        return applyFilters(jpaQuery.getResultStream());
         Uni<List<T>> results = list();
         return (Multi<T>) results.toMulti().flatMap(list -> {
             return Multi.createFrom().iterable(list);

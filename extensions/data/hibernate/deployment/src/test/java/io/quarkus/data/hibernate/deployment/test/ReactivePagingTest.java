@@ -161,16 +161,114 @@ public class ReactivePagingTest {
         });
     }
 
-    // Cursor-based paging (unsupported in Hibernate Reactive)
+    // Cursor-based paging
 
     @WithTransaction
-    Uni<Void> cursorPageThrows() {
+    Uni<Void> cursorPageBasic() {
         ReactiveDataQuery<MyReactiveEntity> query = repo.findAll().sort(Order.by(_MyReactiveEntity.foo.asc()));
+
+        return query.pages().cursor(0, 10).list().map(page0 -> {
+            assertThat(page0).hasSize(10);
+            assertThat(page0.get(0).foo).isEqualTo("foo00");
+            assertThat(page0.get(9).foo).isEqualTo("foo09");
+            return null;
+        });
+    }
+
+    @WithTransaction
+    Uni<Void> cursorPageNavigation() {
+        ReactiveDataQuery<MyReactiveEntity> query = repo.findAll().sort(Order.by(_MyReactiveEntity.foo.asc()));
+
+        return query.pages().cursor(0, 10).list().flatMap(page0 -> {
+            assertThat(page0).hasSize(10);
+            return query.pages().hasNext();
+        }).flatMap(hasNext -> {
+            assertThat(hasNext).isTrue();
+            return query.pages().hasPrevious();
+        }).flatMap(hasPrev -> {
+            assertThat(hasPrev).isFalse();
+
+            query.pages().next();
+            return query.list();
+        }).flatMap(page1 -> {
+            assertThat(page1).hasSize(10);
+            assertThat(page1.get(0).foo).isEqualTo("foo10");
+            return query.pages().hasNext();
+        }).flatMap(hasNext -> {
+            assertThat(hasNext).isTrue();
+            return query.pages().hasPrevious();
+        }).flatMap(hasPrev -> {
+            assertThat(hasPrev).isTrue();
+
+            query.pages().next();
+            return query.list();
+        }).flatMap(page2 -> {
+            assertThat(page2).hasSize(5);
+            return query.pages().hasNext();
+        }).flatMap(hasNext -> {
+            assertThat(hasNext).isFalse();
+
+            query.pages().previous();
+            return query.list();
+        }).flatMap(back -> {
+            assertThat(back).hasSize(10);
+            assertThat(back.get(0).foo).isEqualTo("foo10");
+
+            query.pages().first();
+            return query.list();
+        }).map(first -> {
+            assertThat(first).hasSize(10);
+            assertThat(first.get(0).foo).isEqualTo("foo00");
+            return null;
+        });
+    }
+
+    @WithTransaction
+    Uni<Void> cursorPageIterateAll() {
+        ReactiveDataQuery<MyReactiveEntity> query = repo.findAll().sort(Order.by(_MyReactiveEntity.foo.asc()));
+
+        int[] totalResults = { 0 };
+        return query.pages().cursor(0, 10).list().flatMap(list -> {
+            totalResults[0] += list.size();
+            return iterateCursorPages(query, totalResults);
+        }).map(v -> {
+            assertThat(totalResults[0]).isEqualTo(25);
+            return null;
+        });
+    }
+
+    private Uni<Void> iterateCursorPages(ReactiveDataQuery<MyReactiveEntity> query, int[] totalResults) {
+        return query.pages().hasNext().flatMap(hasNext -> {
+            if (!hasNext) {
+                return Uni.createFrom().voidItem();
+            }
+            query.pages().next();
+            return query.list().flatMap(list -> {
+                totalResults[0] += list.size();
+                return iterateCursorPages(query, totalResults);
+            });
+        });
+    }
+
+    @WithTransaction
+    Uni<Void> cursorPageWithoutSortThrows() {
+        ReactiveDataQuery<MyReactiveEntity> query = repo.findAll();
 
         assertThatThrownBy(() -> query.pages().cursor(0, 10))
                 .isInstanceOf(UnsupportedOperationException.class)
-                .hasMessageContaining("Hibernate Reactive");
+                .hasMessageContaining("sort");
         return Uni.createFrom().voidItem();
+    }
+
+    @WithTransaction
+    Uni<Void> cursorPageLastThrows() {
+        ReactiveDataQuery<MyReactiveEntity> query = repo.findAll().sort(Order.by(_MyReactiveEntity.foo.asc()));
+
+        return query.pages().cursor(0, 10).list().map(page0 -> {
+            assertThatThrownBy(() -> query.pages().last())
+                    .isInstanceOf(UnsupportedOperationException.class);
+            return null;
+        });
     }
 
     // Limiting
@@ -359,8 +457,12 @@ public class ReactivePagingTest {
         asserter.execute(() -> offsetPageCount());
         asserter.execute(() -> offsetPageIterateAll());
 
-        // Cursor-based paging (unsupported in Hibernate Reactive)
-        asserter.execute(() -> cursorPageThrows());
+        // Cursor-based paging
+        asserter.execute(() -> cursorPageBasic());
+        asserter.execute(() -> cursorPageNavigation());
+        asserter.execute(() -> cursorPageIterateAll());
+        asserter.execute(() -> cursorPageWithoutSortThrows());
+        asserter.execute(() -> cursorPageLastThrows());
 
         // Limiting
         asserter.execute(() -> limitBasic());

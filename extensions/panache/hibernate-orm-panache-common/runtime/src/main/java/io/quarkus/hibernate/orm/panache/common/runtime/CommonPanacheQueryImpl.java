@@ -195,10 +195,7 @@ public class CommonPanacheQueryImpl<Entity> {
     public void nextPage() {
         checkPagination();
         if (keyedPage != null) {
-            if (lastKeyedResult == null) {
-                throw new UnsupportedOperationException(
-                        "Cannot call nextPage() before fetching results with list()");
-            }
+            checkKeyedResult();
             keyedPage = lastKeyedResult.getNextPage();
             lastKeyedResult = null;
         } else {
@@ -209,10 +206,7 @@ public class CommonPanacheQueryImpl<Entity> {
     public void previousPage() {
         checkPagination();
         if (keyedPage != null) {
-            if (lastKeyedResult == null) {
-                throw new UnsupportedOperationException(
-                        "Cannot call previousPage() before fetching results with list()");
-            }
+            checkKeyedResult();
             KeyedPage<?> prev = lastKeyedResult.getPreviousPage();
             if (prev != null) {
                 keyedPage = prev;
@@ -246,10 +240,7 @@ public class CommonPanacheQueryImpl<Entity> {
     public boolean hasNextPage() {
         checkPagination();
         if (keyedPage != null) {
-            if (lastKeyedResult == null) {
-                throw new UnsupportedOperationException(
-                        "Cannot call hasNextPage() before fetching results with list()");
-            }
+            checkKeyedResult();
             return !lastKeyedResult.isLastPage();
         }
         return page.index < (pageCount() - 1);
@@ -258,10 +249,7 @@ public class CommonPanacheQueryImpl<Entity> {
     public boolean hasPreviousPage() {
         checkPagination();
         if (keyedPage != null) {
-            if (lastKeyedResult == null) {
-                throw new UnsupportedOperationException(
-                        "Cannot call hasPreviousPage() before fetching results with list()");
-            }
+            checkKeyedResult();
             return !lastKeyedResult.isFirstPage();
         }
         return page.index > 0;
@@ -289,6 +277,13 @@ public class CommonPanacheQueryImpl<Entity> {
         if (range != null) {
             throw new UnsupportedOperationException("Cannot call a page related method in a ranged query, " +
                     "call page(Page) or page(int, int) to initiate pagination first");
+        }
+    }
+
+    private void checkKeyedResult() {
+        if (lastKeyedResult == null) {
+            throw new UnsupportedOperationException(
+                    "Cannot call this method before fetching results with list()");
         }
     }
 

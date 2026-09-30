@@ -163,6 +163,27 @@ The settings page is a dialog that contains settings for Dev UI:
 - Dev MCP (Enable your Dev Mode to expose a MCP Server)
 - ... and more... (Other extensions might add to this)
 
+[[dev-ui-hosts]]
+=== Accessing Dev UI through another host name
+
+Dev UI only answers requests that are addressed to `localhost` or `127.0.0.1`, and only accepts these as the origin of a cross-origin request.
+This protects it against DNS rebinding, where a page from another site makes the browser call a local port under a host name that the attacker controls.
+
+To open Dev UI through another name, for example the name of your machine, two settings are needed.
+The HTTP server has to accept the host name, see xref:http-reference.adoc#host-header-validation[HTTP Host header validation], and Dev UI has to accept it as well:
+
+[source,properties]
+----
+%dev.quarkus.http.host-validation.allowed-hosts=localhost,127.0.0.1,my-machine
+%dev.quarkus.dev-ui.hosts=my-machine
+----
+
+Setting `quarkus.http.host-validation.allowed-hosts` replaces the built-in local names, so `localhost` and `127.0.0.1` have to be listed again to keep Dev UI reachable through them.
+
+`quarkus.dev-ui.hosts` takes a comma-separated list of host names.
+Only list names that you control.
+Host names are compared as text and are never resolved, so that a name which merely resolves to a local address is not accepted.
+
 == Guide for Extension Developers
 
 Quarkus extensions can enhance the developer experience by contributing to the Dev UI. The rest of this guide outlines how to integrate your extension into the Dev UI, covering metadata configuration, adding pages to the card, menu, and footer, and best practices for dynamic content.

@@ -9,7 +9,12 @@ include::_attributes.adoc[]
 :topics: security,authentication,authorization,keycloak,sso
 :extensions: io.quarkus:quarkus-keycloak-admin-rest-client,io.quarkus:quarkus-keycloak-admin-resteasy-client
 
-The Quarkus Keycloak Admin Client and its reactive twin support Keycloak Admin Client which can be used to configure a running Keycloak server.
+Quarkus provides two Keycloak Admin Client extensions, which can be used to configure a running Keycloak server:
+
+* *For Quarkus REST*: If you are using `quarkus-rest`, `quarkus-rest-client`, or both, use the `quarkus-keycloak-admin-rest-client` extension. This extension is also recommended if no REST layer is explicitly used.
+* *For RESTEasy Classic*: If you are using `quarkus-resteasy`, `quarkus-resteasy-client`, or both, use the `quarkus-keycloak-admin-resteasy-client` extension.
+
+This guide uses the `quarkus-keycloak-admin-rest-client` extension in its examples. Both extensions share the same configuration properties.
 
 This guide demonstrates how you can leverage the xref:cdi-reference.adoc[Quarkus ArC] and inject the admin client to your Quarkus application, as well as how to create it directly in the application code.
 
@@ -58,6 +63,28 @@ This will add the following to your build file:
 ----
 implementation("io.quarkus:quarkus-keycloak-admin-rest-client")
 implementation("io.quarkus:quarkus-rest-jackson")
+----
+
+If you are using RESTEasy Classic, add the `quarkus-keycloak-admin-resteasy-client` and `quarkus-resteasy-jackson` extensions instead:
+
+[source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-keycloak-admin-resteasy-client</artifactId>
+</dependency>
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-resteasy-jackson</artifactId>
+</dependency>
+----
+
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation("io.quarkus:quarkus-keycloak-admin-resteasy-client")
+implementation("io.quarkus:quarkus-resteasy-jackson")
 ----
 
 We also are going to need a simple resource with a `Keycloak` injected as request scoped CDI bean.

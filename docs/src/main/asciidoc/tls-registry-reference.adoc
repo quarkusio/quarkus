@@ -805,8 +805,9 @@ Use this when all clients are known to support post-quantum cryptography.
 
 [NOTE]
 ====
-When using `client-negotiated` or `strict`, `quarkus.tls.key-exchange-groups` must respectively include at least one or only post-quantum-capable group such as `X25519MLKEM768`.
-Vert.x validates this at startup and overrides the specified set of groups if this condition is not respected.
+When using `client-negotiated`, `quarkus.tls.key-exchange-groups` must include at least one post-quantum-capable group such as `X25519MLKEM768`.
+When using `strict`, `quarkus.tls.key-exchange-groups` must include only post-quantum-capable groups.
+Vert.x validates this at startup and overrides the specified set of groups if this condition is not respected. It will throw an exception if no compatible engine is available (see <<pqc-availability-summary,PQC availability summary>>).
 ====
 
 [WARNING]
@@ -844,7 +845,7 @@ This property is useful for testing or when you need explicit control over the e
 For using the OpenSSL engine on classical (non-PQC) TLS paths, see <<openssl-engine-classical-tls,Using the OpenSSL engine for classical TLS>>.
 
 ===== PQC and native mode
-The OpenSSL engine is unavailable in native mode (see <<openssl-engine-classical-tls,Native mode>>).
+The OpenSSL engine is unavailable in native mode (see <<openssl-engine-native-mode,Native mode>>).
 The only way to leverage PQC-compliant key exchange groups in native images is to use a JDK SSL engine that supports them; these are not yet available in GraalVM/Mandrel but should be in the near future.
 
 ===== PQC in containerized environments
@@ -928,6 +929,7 @@ ENV JAVA_APP_JAR="/deployments/quarkus-run.jar"
 ENTRYPOINT [ "/opt/jboss/container/java/run/run-java.sh" ]
 ----
 
+[[openssl-engine-native-mode]]
 ===== Native mode
 
 The OpenSSL engine is *not supported in native (GraalVM/Mandrel) mode*.

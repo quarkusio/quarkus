@@ -79,24 +79,49 @@ public final class SecuritySupport {
                     }
                 }
 
-                this.identity = resolvedIdentity;
-                this.onClose = closeConnectionWhenIdentityExpired(routingContext, connection, resolvedIdentity);
+                return setSecurityIdentityIfAbsentAndGet(resolvedIdentity);
             }
             return resolvedIdentity;
         });
     }
 
+    private synchronized SecurityIdentity setSecurityIdentityIfAbsentAndGet(SecurityIdentity resolvedIdentity) {
+        if (this.identity == null) {
+            this.identity = resolvedIdentity;
+            this.onClose = closeConnectionWhenIdentityExpired(routingContext, connection, resolvedIdentity);
+        }
+        return this.identity;
+    }
+
     CompletionStage<SecurityIdentity> updateSecurityIdentity(String accessToken, WebSocketConnectionImpl connection,
             IdentityProviderManager identityProviderManager) {
-        var authenticationRequest = new WebSocketIdentityUpdateRequest(new TokenCredential(accessToken, "bearer"),
-                this.identity);
-        return identityProviderManager
-                .authenticate(setRoutingContextAttribute(authenticationRequest, routingContext))
-                .onItem().ifNull().failWith(AuthenticationFailedException::new)
-                .invoke(newIdentity -> this.updateSecurityIdentity(newIdentity, connection))
-                .onFailure().invoke(throwable -> LOG.debug(
-                        "Failed to update SecurityIdentity attached to the WebSocket connection with id " + connection.id(),
-                        throwable))
+        final Uni<SecurityIdentity> currentSecurityIdentity;
+        if (this.identity == null) {
+            currentSecurityIdentity = getDeferredIdentity();
+            if (currentSecurityIdentity == null) {
+                Uni<SecurityIdentity> failure = Uni.createFrom().failure(new IllegalStateException(
+                        "Failed to update SecurityIdentity because current SecurityIdentity is null"));
+                return failure.convert().toCompletionStage();
+            }
+        } else {
+            currentSecurityIdentity = Uni.createFrom().item(this.identity);
+        }
+        return currentSecurityIdentity
+                .flatMap(identity -> {
+                    if (identity == null || identity.isAnonymous()) {
+                        return Uni.createFrom().failure(new AuthenticationFailedException(
+                                "Failed to update SecurityIdentity because current SecurityIdentity is anonymous"));
+                    }
+                    var authenticationRequest = new WebSocketIdentityUpdateRequest(new TokenCredential(accessToken, "bearer"),
+                            identity);
+                    return identityProviderManager
+                            .authenticate(setRoutingContextAttribute(authenticationRequest, routingContext))
+                            .invoke(newIdentity -> this.updateSecurityIdentity(newIdentity, connection))
+                            .onFailure().invoke(throwable -> LOG.debug(
+                                    "Failed to update SecurityIdentity attached to the WebSocket connection with id "
+                                            + connection.id(),
+                                    throwable));
+                })
                 .convert().toCompletionStage();
     }
 

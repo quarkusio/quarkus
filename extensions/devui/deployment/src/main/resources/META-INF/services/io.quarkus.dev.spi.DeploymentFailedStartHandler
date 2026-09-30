@@ -1,1 +1,1 @@
-io.quarkus.vertx.http.deployment.devmode.DevModeFailedStartHandler
+io.quarkus.devui.deployment.DevModeFailedStartHandler

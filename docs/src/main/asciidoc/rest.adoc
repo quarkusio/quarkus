@@ -3176,13 +3176,13 @@ GET /hello?name=foo,bar HTTP/1.1
 
 then the response will be `hello foo bar`.
 
-==== Collecting all query parameters
+==== Collecting all query parameters and headers
 
-Instead of binding a single query parameter, you can annotate a
+Instead of binding a single query parameter or header, you can annotate a
 `jakarta.ws.rs.core.MultivaluedMap<String, String>` parameter with a bare `@RestQuery`
-(without specifying a name) to collect all the query parameters of the request. 
-Each entry in the map corresponds to one query parameter name, and its value is the list of
-all the values given for that name.
+or `@RestHeader` (without specifying a name) to collect, respectively, all the query
+parameters or all the headers of the request. Each entry in the map corresponds to one
+parameter name, and its value is the list of all the values given for that name.
 
 [source,java]
 ----
@@ -3190,8 +3190,9 @@ all the values given for that name.
 public static class HelloResource {
 
     @GET
-    public String hello(@RestQuery MultivaluedMap<String, String> queryParams) {
-        return queryParams.toString();
+    public String hello(@RestQuery MultivaluedMap<String, String> queryParams,
+            @RestHeader MultivaluedMap<String, String> headers) {
+        return queryParams.toString() + " " + headers.toString();
     }
 }
 ----
@@ -3201,50 +3202,28 @@ Given the following request:
 [source,http]
 ----
 GET /hello?name=foo&city=bar HTTP/1.1
+X-Name: foo
+X-City: bar
 ----
 
-the `queryParams` map will contain `name=[foo]` and `city=[bar]`. If the same
-query parameter is repeated, such as in:
+the `queryParams` map will contain `name=[foo]` and `city=[bar]`, and the `headers`
+map will contain `X-Name=[foo]` and `X-City=[bar]`. If the same query parameter or
+header is repeated, such as in:
 
 [source,http]
 ----
 GET /hello?name=foo&name=bar HTTP/1.1
+X-Name: foo
+X-Name: bar
 ----
 
-then `queryParams` will contain a single `name` entry with both values: `name=[foo, bar]`.
+then `queryParams` will contain a single `name` entry with both values: `name=[foo, bar]`,
+and `headers` will contain a single `X-Name` entry with both values: `X-Name=[foo, bar]`.
 
-NOTE: The `@RestQuery` annotation must not specify a name (i.e. use `@RestQuery`, not
-`@RestQuery("name")`) for this collection behavior to apply, since it is meant to
-gather every query parameter rather than a single named one.
-
-==== Collecting all header parameters
-
-Instead of binding a single header, you can annotate a
-`jakarta.ws.rs.core.MultivaluedMap<String, String>` parameter with a bare `@RestHeader`
-(without specifying a name) to collect all the headers of the request.
-Each entry in the map corresponds to one header name, and its value is the list of
-all the values given for that name.
-
-[source,java]
-----
-@Path("hello")
-public static class HelloResource {
-
-    @GET
-    public String hello(@RestHeader MultivaluedMap<String, String> headers) {
-        return headers.toString();
-    }
-}
-----
-
-Given a request with the headers `X-Name: foo` and `X-City: bar`, the `headers` map
-will contain `X-Name=[foo]` and `X-City=[bar]`. If the same header is repeated, such
-as `X-Name: foo` and `X-Name: bar`, then `headers` will contain a single `X-Name`
-entry with both values: `X-Name=[foo, bar]`.
-
-NOTE: The `@RestHeader` annotation must not specify a name (i.e. use `@RestHeader`, not
-`@RestHeader("name")`) for this collection behavior to apply, since it is meant to
-gather every header rather than a single named one.
+NOTE: The `@RestQuery` or `@RestHeader` annotation must not specify a name (i.e. use
+`@RestQuery`/`@RestHeader`, not `@RestQuery("name")`/`@RestHeader("name")`) for this
+collection behavior to apply, since it is meant to gather every query parameter or
+header rather than a single named one.
 
 ==== Handling dates
 

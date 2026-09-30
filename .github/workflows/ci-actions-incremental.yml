@@ -389,6 +389,8 @@ jobs:
           key: develocity-cache-Initial Build-${{ github.event.pull_request.number || github.event.ref }}-${{ github.event.pull_request.head.sha || github.event.head }}
           restore-keys: |
             develocity-cache-Initial Build-${{ github.event.pull_request.number || github.event.ref }}-
+      - name: Verify split packages
+        run: ./.github/verify-split-packages.sh
       - name: Verify native-tests.json
         run: ./.github/verify-tests-json.sh native-tests.json integration-tests/
       - name: Verify virtual-threads-tests.json

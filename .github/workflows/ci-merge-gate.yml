@@ -1,0 +1,100 @@
+name: CI Merge Gate
+
+on:
+  workflow_run:
+    workflows:
+      - "Quarkus CI"
+      - "Quarkus CI Sanity Check"
+      - "Quarkus Documentation CI"
+      - "quarkus-github-bot.yml lint"
+    types:
+      - completed
+
+permissions:
+  statuses: write
+  actions: read
+
+jobs:
+  merge-gate:
+    runs-on: ubuntu-latest
+    if: github.event.workflow_run.event == 'pull_request'
+    steps:
+      - name: Update merge gate status
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const sha = context.payload.workflow_run.head_sha;
+            const gateContext = 'CI Merge Gate';
+
+            const watchedWorkflows = [
+              'Quarkus CI',
+              'Quarkus CI Sanity Check',
+              'Quarkus Documentation CI',
+              'quarkus-github-bot.yml lint',
+            ];
+
+            const { data } = await github.rest.actions.listWorkflowRunsForRepo({
+              owner,
+              repo,
+              head_sha: sha,
+              per_page: 100,
+            });
+
+            const relevant = data.workflow_runs.filter(
+              wr => watchedWorkflows.includes(wr.name) && wr.event === 'pull_request'
+            );
+
+            // Keep only the latest run per workflow
+            const latestByWorkflow = new Map();
+            for (const wr of relevant) {
+              const existing = latestByWorkflow.get(wr.name);
+              if (!existing || new Date(wr.created_at) > new Date(existing.created_at)) {
+                latestByWorkflow.set(wr.name, wr);
+              }
+            }
+            const runs = Array.from(latestByWorkflow.values());
+
+            console.log(`Found ${runs.length} relevant workflow runs for SHA ${sha}:`);
+            for (const wr of runs) {
+              console.log(`  - ${wr.name}: status=${wr.status}, conclusion=${wr.conclusion}`);
+            }
+
+            const pending = runs.filter(wr => wr.status !== 'completed');
+            if (pending.length > 0) {
+              const desc = `Waiting on: ${pending.map(wr => wr.name).join(', ')}`;
+              console.log(desc);
+              await github.rest.repos.createCommitStatus({
+                owner, repo, sha,
+                state: 'pending',
+                context: gateContext,
+                description: desc.substring(0, 140),
+              });
+              return;
+            }
+
+            const failed = runs.filter(wr =>
+              wr.conclusion === 'failure' ||
+              wr.conclusion === 'cancelled' ||
+              wr.conclusion === 'timed_out'
+            );
+
+            if (failed.length > 0) {
+              const desc = `Failed: ${failed.map(wr => wr.name).join(', ')}`;
+              console.log(desc);
+              await github.rest.repos.createCommitStatus({
+                owner, repo, sha,
+                state: 'failure',
+                context: gateContext,
+                description: desc.substring(0, 140),
+              });
+            } else {
+              console.log('All CI checks passed');
+              await github.rest.repos.createCommitStatus({
+                owner, repo, sha,
+                state: 'success',
+                context: gateContext,
+                description: 'All CI checks passed',
+              });
+            }

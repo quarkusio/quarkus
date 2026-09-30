@@ -59,6 +59,13 @@ public final class Json {
     }
 
     /**
+     * @return the new sorted JSON array builder, empty builders are not ignored
+     */
+    public static SortedJsonArrayBuilder sortedArray() {
+        return new SortedJsonArrayBuilder(false);
+    }
+
+    /**
      * @param ignoreEmptyBuilders
      * @return the new JSON array builder
      * @see JsonBuilder#ignoreEmptyBuilders
@@ -166,6 +173,37 @@ public final class Json {
         public void transform(JsonMultiValue value, JsonTransform transform) {
             final ResolvedTransform resolved = new ResolvedTransform(this, transform);
             value.forEach(resolved);
+        }
+    }
+
+    public static class SortedJsonArrayBuilder extends JsonArrayBuilder {
+
+        private SortedJsonArrayBuilder(boolean ignoreEmptyBuilders) {
+            super(ignoreEmptyBuilders);
+        }
+
+        @Override
+        public void appendTo(Appendable appendable) throws IOException {
+            final List<String> values = new ArrayList<>(size());
+            final StringBuilder sb = new StringBuilder();
+            for (Object value : this) {
+                if (isIgnored(value)) {
+                    continue;
+                }
+                sb.setLength(0);
+                appendValue(sb, value);
+                values.add(sb.toString());
+            }
+            values.sort(String::compareTo);
+            appendable.append(ARRAY_START);
+            int idx = 0;
+            for (String s : values) {
+                if (++idx > 1) {
+                    appendable.append(ENTRY_SEPARATOR);
+                }
+                appendable.append(s);
+            }
+            appendable.append(ARRAY_END);
         }
     }
 

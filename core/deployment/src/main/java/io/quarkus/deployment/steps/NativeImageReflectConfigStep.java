@@ -85,11 +85,12 @@ public class NativeImageReflectConfigStep {
             return;
         }
 
-        final JsonArrayBuilder reflectionArray = Json.array();
+        // We use sorted array so as the order of elements remains the same between builds.
+        final JsonArrayBuilder reflectionArray = Json.sortedArray();
         for (Map.Entry<String, ReflectionInfo> entry : reflectiveClasses.entrySet()) {
             final JsonObjectBuilder json = Json.object().put("type", entry.getKey());
             final ReflectionInfo info = entry.getValue();
-            final JsonArrayBuilder methodsArray = Json.array();
+            final JsonArrayBuilder methodsArray = Json.sortedArray();
             if (info.typeReached != null) {
                 json.put("condition", Json.object().put("typeReached", info.typeReached));
             }
@@ -125,7 +126,7 @@ public class NativeImageReflectConfigStep {
             }
             if (nativeConfig.includeReasonsInConfigFiles() && info.reasons != null
                     && !info.reasons.isEmpty()) {
-                final JsonArrayBuilder reasonsArray = Json.array();
+                final JsonArrayBuilder reasonsArray = Json.sortedArray();
                 reasonsArray.addAll(info.reasons);
                 json.put("reason", reasonsArray);
             }
@@ -151,7 +152,7 @@ public class NativeImageReflectConfigStep {
         if (fields) {
             json.put("allDeclaredFields", true);
         } else if (!fieldSet.isEmpty()) {
-            final JsonArrayBuilder fieldsArray = Json.array();
+            final JsonArrayBuilder fieldsArray = Json.sortedArray();
             for (String fieldName : fieldSet) {
                 fieldsArray.add(Json.object().put("name", fieldName));
             }

@@ -32,8 +32,11 @@ public class NativeImageProxyConfigStep {
         }
 
         try (StringWriter writer = new StringWriter()) {
-            final JsonArrayBuilder reflectionArray = Json.array();
+            // We use sorted array so as the order of elements remains the same between builds.
+            final JsonArrayBuilder reflectionArray = Json.sortedArray();
             for (NativeImageProxyDefinitionBuildItem proxy : proxies) {
+                // The order of interfaces for a dynamic proxy class is significant:
+                // https://docs.oracle.com/javase/8/docs/technotes/guides/reflection/proxy.html
                 final JsonArrayBuilder interfaces = Json.array();
                 interfaces.addAll(proxy.getClasses());
                 final JsonObjectBuilder proxyTypeObj = Json.object();

@@ -667,7 +667,8 @@ public interface RestClientsConfig {
         /**
          * The path to a Unix domain socket. When set, the client connects to the server
          * using a Unix domain socket instead of a network connection. The {@code url} or {@code uri}
-         * property is still required for the request path and HTTP {@code Host} header.
+         * property is optional in this case: when set, it provides the scheme, the request path prefix
+         * and the HTTP {@code Host} header, otherwise {@code http://localhost} is used.
          * <p>
          * Unix domain sockets are not available on Windows.
          * <p>

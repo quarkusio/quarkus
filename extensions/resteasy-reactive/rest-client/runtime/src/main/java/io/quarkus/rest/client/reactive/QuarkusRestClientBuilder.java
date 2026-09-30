@@ -342,8 +342,9 @@ public interface QuarkusRestClientBuilder extends Configurable<QuarkusRestClient
 
     /**
      * Specifies the path to a Unix domain socket. When set, the client connects to the server
-     * using a Unix domain socket instead of a network connection. The {@code url} or {@code uri}
-     * property is still required for the request path and HTTP {@code Host} header.
+     * using a Unix domain socket instead of a network connection. The base URI is optional in this case:
+     * when set, it provides the scheme, the request path prefix and the HTTP {@code Host} header,
+     * otherwise {@code http://localhost} is used.
      *
      * @param path the path to the Unix domain socket
      * @return the current builder with the domain socket path set

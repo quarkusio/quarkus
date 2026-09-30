@@ -6,7 +6,7 @@
     <parent>
         <groupId>io.quarkus</groupId>
         <artifactId>quarkus-spiffe-client-parent</artifactId>
-        <version>999-SNAPSHOT</version>
+        <version>4.0.0.Beta1</version>
     </parent>
     <artifactId>quarkus-spiffe-client-api</artifactId>
     <name>Quarkus - SPIFFE Workload API client - Runtime API</name>

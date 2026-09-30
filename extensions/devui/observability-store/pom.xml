@@ -6,7 +6,7 @@
     <parent>
         <groupId>io.quarkus</groupId>
         <artifactId>quarkus-devui-parent</artifactId>
-        <version>999-SNAPSHOT</version>
+        <version>4.0.0.Beta1</version>
     </parent>
     <artifactId>quarkus-devui-observability-store</artifactId>
     <name>Quarkus - Dev UI - Observability Store</name>

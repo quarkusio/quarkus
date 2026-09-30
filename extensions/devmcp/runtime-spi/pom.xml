@@ -4,7 +4,7 @@
     <parent>
         <artifactId>quarkus-devmcp-parent</artifactId>
         <groupId>io.quarkus</groupId>
-        <version>999-SNAPSHOT</version>
+        <version>4.0.0.Beta1</version>
     </parent>
 
     <artifactId>quarkus-devmcp-spi</artifactId>

@@ -870,7 +870,7 @@ _{asterisk} JDK 25 support pending backport (expected October 2026)._
 [[openssl-engine-classical-tls]]
 ==== Using the OpenSSL engine for classical TLS
 
-The SSL Engine used by Quarkus can be automatically selected due Post-Quantic Cryptography configuration (see <<pqc-ssl-engine-override,SSL engine override>>). However, even without post-quantum cryptography, you can configure Quarkus to use the native OpenSSL engine (via netty-tcnative) instead of the JDK SSL engine on classical TLS paths.
+Quarkus can automatically select the SSL engine based on the Post-Quantum Cryptography configuration (see <<pqc-ssl-engine-override,SSL engine override>>). However, even without post-quantum cryptography, you can configure Quarkus to use the native OpenSSL engine (via netty-tcnative) instead of the JDK SSL engine on classical TLS paths.
 The native engine can offer improved handshake throughput and hardware-accelerated cryptography on supported platforms.
 
 To force the OpenSSL engine for all TLS connections:

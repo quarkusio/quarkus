@@ -25,7 +25,7 @@ import io.quarkus.qute.debug.agent.frames.RemoteStackFrame;
  * {@link #isCollectProperty()} and {@link #isCollectMethod()}.
  * </p>
  */
-public interface ValueResolverContext {
+public interface ValueResolverContext<T> {
 
     /** Returns the base object being inspected. */
     Object getBase();
@@ -34,16 +34,16 @@ public interface ValueResolverContext {
     RemoteStackFrame getStackFrame();
 
     /** Registers a method to the context (for completion or variable tracking). */
-    void addMethod(Method method);
+    T addMethod(Method method);
 
     /** Registers a field as a property in the context. */
-    void addProperty(Field field);
+    T addProperty(Field field);
 
     /** Registers a property by name. */
-    void addProperty(String property);
+    T addProperty(String property);
 
     /** Registers a method by name. */
-    void addMethod(String method);
+    T addMethod(String method);
 
     /** Returns true if the context is collecting properties. */
     boolean isCollectProperty();

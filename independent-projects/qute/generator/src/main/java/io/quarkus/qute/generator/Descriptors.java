@@ -1,6 +1,7 @@
 package io.quarkus.qute.generator;
 
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -107,9 +108,9 @@ public final class Descriptors {
             "matchClass", boolean.class, EvalContext.class, Class.class);
     public static final MethodDesc VALUE_RESOLVERS_HAS_NO_PARAMS = MethodDesc.of(ValueResolvers.class,
             "hasNoParams", boolean.class, EvalContext.class);
+    public static final MethodDesc SET_ADD = MethodDesc.of(HashSet.class, "add", boolean.class, Object.class);
 
     public static final FieldDesc EVALUATED_PARAMS_STAGE = FieldDesc.of(EvaluatedParams.class, "stage");
-
     public static final FieldDesc RESULTS_TRUE = FieldDesc.of(Results.class, "TRUE");
     public static final FieldDesc RESULTS_FALSE = FieldDesc.of(Results.class, "FALSE");
     public static final FieldDesc RESULTS_NULL = FieldDesc.of(Results.class, "NULL");

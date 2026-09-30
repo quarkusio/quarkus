@@ -33,6 +33,8 @@ triage:
   discussions:
     monitoredCategories: [33575230]
   guardedBranches:
+    - ref: "3.40"
+      notify: [jmartisk, gsmet, rsvoboda, aloubyansky]
     - ref: '3.33'
       notify: [jmartisk, gsmet, rsvoboda, aloubyansky]
     - ref: '3.27'
@@ -289,7 +291,7 @@ triage:
     - id: data
       labels: [area/data]
       title: "(quarkus.data(?!source)|jakarta data)"
-      notify: [FroMage]  # yrodiere/lucamolteni use the lottery instead
+      notify: [FroMage] # yrodiere/lucamolteni use the lottery instead
       directories:
         - extensions/data/
         - integration-tests/data/
@@ -443,10 +445,10 @@ triage:
     - id: awt
       labels: [area/graphics]
       expression: |
-              matches("sun.font", titleBody)
-              || matches("sun.java2d", titleBody)
-              || matches("javax.imageio", titleBody)
-              || matches("sun.awt", titleBody)
+        matches("sun.font", titleBody)
+        || matches("sun.java2d", titleBody)
+        || matches("javax.imageio", titleBody)
+        || matches("sun.awt", titleBody)
       notify: [galderz, Karm]
       notifyInPullRequest: true
       directories:
@@ -456,10 +458,10 @@ triage:
     - id: securepipeline
       labels: [area/securepipeline]
       expression: |
-              matches("FIPS", titleBody)
-              || matches("SunPKCS11-NSS-FIPS", titleBody)
-              || matches("NSS module", titleBody)
-              || matches("libnss", titleBody)
+        matches("FIPS", titleBody)
+        || matches("SunPKCS11-NSS-FIPS", titleBody)
+        || matches("NSS module", titleBody)
+        || matches("libnss", titleBody)
       notify: [jerboaa, Karm]
       notifyInPullRequest: true
     - id: artemis
@@ -657,7 +659,6 @@ triage:
       notify: [geoand, FroMage]
       directories:
         - extensions/resteasy-reactive/
-
     - id: vault
       labels: [area/vault]
       title: vault
@@ -724,7 +725,7 @@ triage:
       title: "optaplanner"
       notify: [ge0ffrey, rsynek, Christopher-Chianelli]
     - id: extension-proposal
-      labels: [kind/extension-proposal,area/quarkiverse]
+      labels: [kind/extension-proposal, area/quarkiverse]
       title: "Extension Proposal"
       notify: [gastaldi, gsmet, aloubyansky]
     - id: mailer
@@ -759,7 +760,7 @@ triage:
     - id: reactive-sql-clients
       labels: [area/reactive-sql-clients]
       title: "(reactive sql|reactive pool|pgpool|mysqlpool|db2pool)"
-      notify: [tsegismont,vietj]
+      notify: [tsegismont, vietj]
       directories:
         - extensions/reactive-db2-client/
         - extensions/reactive-mysql-client/

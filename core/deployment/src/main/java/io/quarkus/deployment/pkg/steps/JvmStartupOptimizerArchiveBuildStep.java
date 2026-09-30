@@ -91,12 +91,14 @@ public class JvmStartupOptimizerArchiveBuildStep {
                     // when the phase was explicitly set to build, we build no matter what the archive type
                     return true;
                 } else if (phase == PackageConfig.JarConfig.AotConfig.AotPhase.AUTO) {
-                    // when the phase is auto, then we default to creating the file only for AppCDS
-                    return type == JvmStartupOptimizerArchiveType.AppCDS;
+                    // when the phase is auto, then we default to creating the file only for AppCDS or SCC
+                    return type == JvmStartupOptimizerArchiveType.AppCDS
+                            || type == JvmStartupOptimizerArchiveType.SCC;
                 }
             } else {
-                // when the phase is not set, then we default to creating the file only for AppCDS
-                return type == JvmStartupOptimizerArchiveType.AppCDS;
+                // when the phase is not set, then we default to creating the file only for AppCDS or SCC
+                return type == JvmStartupOptimizerArchiveType.AppCDS
+                        || type == JvmStartupOptimizerArchiveType.SCC;
             }
         }
 

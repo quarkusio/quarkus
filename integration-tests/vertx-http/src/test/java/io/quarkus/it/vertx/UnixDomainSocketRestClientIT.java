@@ -35,11 +35,20 @@ public class UnixDomainSocketRestClientIT {
 
     @Test
     public void testRestClientOverDomainSocket() {
+        assertResponse("/uds-client-test");
+    }
+
+    @Test
+    public void testRestClientOverDomainSocketWithoutUrl() {
+        assertResponse("/uds-client-test/no-url");
+    }
+
+    private void assertResponse(String path) {
         String address = ConfigProvider.getConfig().getValue("quarkus.http.domain-socket", String.class);
         SocketAddress socketAddress = SocketAddress.domainSocketAddress(address);
 
         RequestOptions requestOptions = new RequestOptions()
-                .setAbsoluteURI("http://localhost:8080/uds-client-test")
+                .setAbsoluteURI("http://localhost:8080" + path)
                 .setServer(socketAddress);
 
         HttpClientResponse response = httpClient.request(requestOptions).onItem().transformToUni(req -> {

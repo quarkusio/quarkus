@@ -527,8 +527,13 @@ public class RestClientBuilderImpl implements RestClientBuilder, VertxRequestCus
         }
 
         if (uri == null) {
-            // mandated by the spec
-            throw new IllegalStateException("No URL specified. Cannot build a rest client without URL");
+            if (domainSocketPath != null) {
+                // the connection goes over the socket, so the URL only needs to provide a scheme and a Host header
+                uri = RestClientCDIDelegateBuilder.DEFAULT_DOMAIN_SOCKET_URI;
+            } else {
+                // mandated by the spec
+                throw new IllegalStateException("No URL specified. Cannot build a rest client without URL");
+            }
         }
 
         RestClientListeners.get().forEach(listener -> listener.onNewClient(aClass, this));

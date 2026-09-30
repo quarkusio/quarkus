@@ -45,6 +45,8 @@ import io.vertx.core.http.HttpClientOptions;
 
 public class RestClientCDIDelegateBuilder<T> {
 
+    static final URI DEFAULT_DOMAIN_SOCKET_URI = URI.create("http://localhost");
+
     private static final String REST_URL_FORMAT = "quarkus.rest-client.%s.url";
     private static final String REST_URI_FORMAT = "quarkus.rest-client.%s.uri";
     private static final String NONE = "none";
@@ -424,6 +426,11 @@ public class RestClientCDIDelegateBuilder<T> {
         Optional<String> propertyOptional = oneOf(restClientConfig.uriReload(), restClientConfig.urlReload());
         if (((baseUriFromAnnotation == null) || baseUriFromAnnotation.isEmpty())
                 && propertyOptional.isEmpty()) {
+            if (restClientConfig.domainSocket().isPresent()) {
+                // the connection goes over the socket, so the URL only needs to provide a scheme and a Host header
+                builder.baseUri(DEFAULT_DOMAIN_SOCKET_URI);
+                return;
+            }
             String propertyPrefix = configKey != null ? configKey : "\"" + jaxrsInterface.getName() + "\"";
             String message = String.format(
                     "Unable to determine the proper baseUrl/baseUri. " +

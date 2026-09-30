@@ -2102,16 +2102,15 @@ Started HTTP proxy server on http://localhost:38227 for REST Client 'org.acme.So
 The REST client can connect to a server listening on a Unix domain socket instead of using a network connection.
 This is useful when communicating with services co-located on the same host (for example, a local daemon or sidecar) without going through the network stack.
 
-To use a domain socket, set the `domain-socket` property to the path of the socket file.
-The `url` (or `uri`) property is still required — it provides the HTTP `Host` header and request path:
+To use a domain socket, set the `domain-socket` property to the path of the socket file:
 
 [source,properties]
 ----
-quarkus.rest-client.my-client.url=http://localhost
 quarkus.rest-client.my-client.domain-socket=/var/run/my-service.sock
 ----
 
-The network connection is replaced by the socket; `host` and `port` from the URL are used only for the HTTP `Host` header.
+The `url` (or `uri`) property is optional in this case, and defaults to `http://localhost`.
+If you set it, the connection still goes through the socket; the URL only provides the request path prefix and the HTTP `Host` header.
 
 NOTE: Unix domain sockets are not available on Windows.
 

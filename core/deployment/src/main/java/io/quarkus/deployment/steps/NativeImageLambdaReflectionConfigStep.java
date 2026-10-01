@@ -66,7 +66,8 @@ public class NativeImageLambdaReflectionConfigStep {
 
     private JsonArrayBuilder buildReflectionArray(
             Map<String, Set<LambdaReflectionBuildItem>> lambdasByDeclaringClass) {
-        final JsonArrayBuilder reflectionArray = Json.array();
+        // We use sorted array so as the order of elements remains the same between builds.
+        final JsonArrayBuilder reflectionArray = Json.sortedArray();
         // lambda metadata for each declaring class
         for (Map.Entry<String, Set<LambdaReflectionBuildItem>> entry : lambdasByDeclaringClass.entrySet()) {
             final String declaringClass = entry.getKey();
@@ -74,9 +75,10 @@ public class NativeImageLambdaReflectionConfigStep {
             // Why? https://github.com/oracle/graal/issues/13665
             reflectionArray.add(Json.object()
                     .put("type", declaringClass)
-                    .put("methods", Json.array()
+                    .put("methods", Json.sortedArray()
                             .add(Json.object()
                                     .put("name", "$deserializeLambda$")
+                                    // We don't sort parameter types, order matters.
                                     .put("parameterTypes", Json.array()
                                             .add("java.lang.invoke.SerializedLambda")))));
             // add lambda descriptor for each lambda
@@ -93,7 +95,7 @@ public class NativeImageLambdaReflectionConfigStep {
                 lambdaDescriptor.put("declaringMethod", declaringMethodObj);
                 final Set<String> interfaces = new HashSet<>(Arrays.asList(lambda.getInterfaces()));
                 interfaces.add(JAVA_IO_SERIALIZABLE);
-                final JsonArrayBuilder interfacesArray = Json.array();
+                final JsonArrayBuilder interfacesArray = Json.sortedArray();
                 interfacesArray.addAll(interfaces);
                 lambdaDescriptor.put("interfaces", interfacesArray);
                 lambdaObj.put("lambda", lambdaDescriptor);

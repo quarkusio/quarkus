@@ -36,7 +36,8 @@ public class NativeImageFFMConfigStep {
         }
         final JsonObjectBuilder foreignJson = Json.object();
         if (!downcalls.isEmpty()) {
-            final JsonArrayBuilder downcallsArray = Json.array();
+            // We use sorted array so as the order of elements remains the same between builds.
+            final JsonArrayBuilder downcallsArray = Json.sortedArray();
             downcalls.stream().distinct().forEach(downcall -> {
                 final JsonObjectBuilder dcb = Json.object();
                 dcb.put("returnType", downcall.getReturnType());
@@ -63,7 +64,7 @@ public class NativeImageFFMConfigStep {
             foreignJson.put("downcalls", downcallsArray);
         }
         if (!upcalls.isEmpty()) {
-            final JsonArrayBuilder upcallsArray = Json.array();
+            final JsonArrayBuilder upcallsArray = Json.sortedArray();
             upcalls.stream().distinct().forEach(upcall -> {
                 final JsonObjectBuilder ucb = Json.object();
                 ucb.put("returnType", upcall.getReturnType());

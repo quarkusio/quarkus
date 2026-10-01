@@ -37,7 +37,9 @@ public class NativeImageResourceConfigStep {
             List<NativeImageResourceBuildItem> resources,
             List<ServiceProviderBuildItem> serviceProviderBuildItems) {
 
-        final JsonArrayBuilder resourcesArray = Json.array();
+        // We use sorted array so as the order of elements remains the same between builds.
+        final JsonArrayBuilder resourcesArray = Json.sortedArray();
+
         for (NativeImageResourceBuildItem i : resources) {
             for (String path : i.getResources()) {
                 resourcesArray.add(Json.object().put("glob", escapeGlob(path)));

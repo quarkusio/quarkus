@@ -49,24 +49,20 @@ public class NativeImageJNIConfigStep {
         jniRuntimeAccessibleFields.forEach(f -> addJniField(jniClasses, f));
         jniRuntimeAccessibleMethods.forEach(m -> addJniMethod(jniClasses, m));
 
-        final JsonArrayBuilder reflectionArray = Json.array();
+        // We use sorted array so as the order of elements remains the same between builds.
+        final JsonArrayBuilder reflectionArray = Json.sortedArray();
 
         for (Map.Entry<String, JniInfo> entry : jniClasses.entrySet()) {
             final JsonObjectBuilder json = Json.object();
             json.put("type", entry.getKey());
             json.put("jniAccessible", true);
             final JniInfo info = entry.getValue();
-            final JsonArrayBuilder methodsArray = Json.array();
+            final JsonArrayBuilder methodsArray = Json.sortedArray();
             if (info.constructors) {
                 json.put("allDeclaredConstructors", true);
             } else if (!info.ctorSet.isEmpty()) {
                 for (JniRuntimeAccessMethodBuildItem ctor : info.ctorSet) {
-                    final JsonObjectBuilder methodObject = Json.object();
-                    methodObject.put("name", ctor.getName());
-                    final JsonArrayBuilder paramsArray = Json.array();
-                    Collections.addAll(paramsArray, ctor.getParams());
-                    methodObject.put("parameterTypes", paramsArray);
-                    methodsArray.add(methodObject);
+                    methodInfo(methodsArray, ctor);
                 }
             }
 
@@ -74,12 +70,7 @@ public class NativeImageJNIConfigStep {
                 json.put("allDeclaredMethods", true);
             } else if (!info.methodSet.isEmpty()) {
                 for (JniRuntimeAccessMethodBuildItem method : info.methodSet) {
-                    final JsonObjectBuilder methodObject = Json.object();
-                    methodObject.put("name", method.getName());
-                    final JsonArrayBuilder paramsArray = Json.array();
-                    Collections.addAll(paramsArray, method.getParams());
-                    methodObject.put("parameterTypes", paramsArray);
-                    methodsArray.add(methodObject);
+                    methodInfo(methodsArray, method);
                 }
             }
             addMethodsAndAllDeclaredFields(info.fields, info.fieldSet, methodsArray, json);
@@ -94,6 +85,15 @@ public class NativeImageJNIConfigStep {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    private void methodInfo(JsonArrayBuilder methodsArray, JniRuntimeAccessMethodBuildItem method) {
+        final JsonObjectBuilder methodObject = Json.object();
+        methodObject.put("name", method.getName());
+        final JsonArrayBuilder paramsArray = Json.array();
+        Collections.addAll(paramsArray, method.getParams());
+        methodObject.put("parameterTypes", paramsArray);
+        methodsArray.add(methodObject);
     }
 
     private void addJniClass(Map<String, JniInfo> jniClasses, JniRuntimeAccessBuildItem jniRuntimeAccessBuildItem) {

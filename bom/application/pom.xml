@@ -29,8 +29,8 @@
         <resteasy-microprofile.version>3.0.1.Final</resteasy-microprofile.version>
         <resteasy-spring-web.version>3.2.0.Final</resteasy-spring-web.version>
         <resteasy.version>7.0.5.Final</resteasy.version>
-        <opentelemetry-instrumentation.version>2.29.0-alpha</opentelemetry-instrumentation.version> <!-- OTel SDK 1.63.0-->
-        <opentelemetry-semconv.version>1.40.0-alpha</opentelemetry-semconv.version>
+        <opentelemetry-instrumentation.version>2.31.1-alpha</opentelemetry-instrumentation.version> <!-- OTel SDK 1.65.0-->
+        <opentelemetry-semconv.version>1.43.0-alpha</opentelemetry-semconv.version>
         <quarkus-http.version>6.0.0.Alpha4</quarkus-http.version>
         <micrometer.version>1.17.1</micrometer.version><!-- keep in sync with hdrhistogram: https://central.sonatype.com/artifact/io.micrometer/micrometer-core -->
         <hdrhistogram.version>2.2.2</hdrhistogram.version><!-- keep in sync with micrometer -->
@@ -3779,6 +3779,11 @@
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-test-common</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-test-opentelemetry</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>

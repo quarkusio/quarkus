@@ -23,7 +23,7 @@ public class MultiplePersistenceUnitsClassLevelAnnotationTest {
     static QuarkusExtensionTest runner = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClass(EntityWithClassLevelPersistenceUnit.class)
-                    .addAsResource("application-multiple-persistence-units.properties",
+                    .addAsResource("application-multiple-persistence-units-class-level.properties",
                             "application.properties"));
 
     @Inject

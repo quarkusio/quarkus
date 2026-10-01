@@ -238,7 +238,8 @@ public interface PackageConfig {
              * <p>
              * For Leyden AOT, {@code auto} means {@code integration-tests}.
              * <p>
-             * For AppCDS, {@code auto} means {@code build} (and an error will be thrown if set to {@code integration-tests}).
+             * For AppCDS and SCC, {@code auto} means {@code build} (and an error will be thrown if AppCDS is set
+             * to {@code integration-tests}).
              */
             Optional<AotPhase> phase();
 

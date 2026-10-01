@@ -65,7 +65,8 @@ public class WebJarStaticHandler implements Handler<RoutingContext>, Closeable {
 
         if (event.normalizedPath().length() == path.length()) {
             event.response().setStatusCode(302);
-            event.response().headers().set(HttpHeaders.LOCATION, path + "/");
+            String relativePath = path.substring(path.lastIndexOf('/') + 1);
+            event.response().headers().set(HttpHeaders.LOCATION, relativePath + "/");
             event.response().end();
             return;
         } else if (event.normalizedPath().length() == path.length() + 1) {

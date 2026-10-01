@@ -11,6 +11,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.gradle.api.Project;
@@ -31,6 +32,7 @@ import org.gradle.api.attributes.java.TargetJvmEnvironment;
 import org.gradle.api.model.ObjectFactory;
 import org.gradle.api.provider.ListProperty;
 import org.gradle.api.provider.Property;
+import org.gradle.api.provider.Provider;
 
 import io.quarkus.gradle.tooling.dependency.DependencyUtils;
 import io.quarkus.gradle.tooling.dependency.ExtensionDependency;
@@ -168,13 +170,61 @@ public class QuarkusComponentVariants {
 
     /**
      * Analyzes project configurations and adds the necessary component attributes for a specific launch mode.
+     * Returns a provider for direct deployment dependencies that should be added to the deployment configuration.
      *
      * @param project project
      * @param mode launch mode
+     * @return direct deployment dependencies provider
      */
-    public static void addVariants(Project project, LaunchMode mode,
+    public static Provider<List<Dependency>> configureVariants(Project project, LaunchMode mode,
             Property<PlatformSpec> platformSpecProperty) {
-        new QuarkusComponentVariants(project, mode, platformSpecProperty).configureAndAddVariants();
+        final VariantsConfigurator configurator = new VariantsConfigurator(project, mode, platformSpecProperty);
+
+        project.getConfigurations().resolvable(
+                getConditionalConfigurationName(mode),
+                config -> {
+                    config.setCanBeConsumed(false);
+                    config.extendsFrom(project.getConfigurations()
+                            .getByName(ApplicationDeploymentClasspathBuilder.getBaseRuntimeConfigName(mode)));
+                    setConditionalAttributes(config, project, mode);
+                    final ListProperty<Dependency> dependencyProperty = project.getObjects().listProperty(Dependency.class);
+                    config.getDependencies().addAllLater(dependencyProperty.value(project.provider(() -> {
+                        configurator.ensureConfigured();
+                        return Set.of();
+                    })));
+                });
+
+        return project.provider(configurator::getDirectDeploymentDeps);
+    }
+
+    private static class VariantsConfigurator {
+        private final Project project;
+        private final LaunchMode mode;
+        private final Property<PlatformSpec> platformSpecProperty;
+        private final AtomicBoolean executed = new AtomicBoolean();
+        private List<Dependency> directDeploymentDeps;
+
+        private VariantsConfigurator(Project project, LaunchMode mode, Property<PlatformSpec> platformSpecProperty) {
+            this.project = project;
+            this.mode = mode;
+            this.platformSpecProperty = platformSpecProperty;
+        }
+
+        // Variant configuration may be triggered either when the conditional configuration's
+        // dependencies are resolved (e.g. for runtime classpath tasks) or when the deployment
+        // configuration's direct dependencies are queried (e.g. for build/model tasks).
+        // The configurator ensures configuration runs exactly once on demand and allows QuarkusComponentVariants
+        // and its graph traversal data structures to be garbage collected immediately after execution.
+        private void ensureConfigured() {
+            if (executed.compareAndSet(false, true)) {
+                directDeploymentDeps = new QuarkusComponentVariants(project, mode, platformSpecProperty).configure();
+            }
+        }
+
+        private List<Dependency> getDirectDeploymentDeps() {
+            ensureConfigured();
+            return directDeploymentDeps;
+        }
     }
 
     private final Attribute<String> quarkusDepAttr;
@@ -196,6 +246,11 @@ public class QuarkusComponentVariants {
         project.getDependencies().getAttributesSchema().attribute(getDeploymentDependencyAttribute(project.getName(), mode));
     }
 
+    private List<Dependency> configure() {
+        addConditionalVariants(getBaseConfiguration());
+        return addDeploymentVariants();
+    }
+
     /**
      * Configuration that should be used as the base for conditional and deployment dependency analysis.
      *
@@ -203,29 +258,6 @@ public class QuarkusComponentVariants {
      */
     private Configuration getBaseConfiguration() {
         return project.getConfigurations().getByName(ApplicationDeploymentClasspathBuilder.getBaseRuntimeConfigName(mode));
-    }
-
-    /**
-     * Registers a runtime configuration with enabled conditional dependencies.
-     * It also adds deployment variants to the corresponding components but does not select them in this configuration.
-     */
-    private void configureAndAddVariants() {
-        project.getConfigurations().resolvable(
-                getConditionalConfigurationName(mode),
-                config -> {
-                    config.setCanBeConsumed(false);
-                    config.extendsFrom(getBaseConfiguration());
-                    setConditionalAttributes(config, project, mode);
-                    final ListProperty<Dependency> dependencyProperty = project.getObjects().listProperty(Dependency.class);
-                    final AtomicInteger invocations = new AtomicInteger();
-                    config.getDependencies().addAllLater(dependencyProperty.value(project.provider(() -> {
-                        if (invocations.getAndIncrement() == 0) {
-                            addConditionalVariants(getBaseConfiguration());
-                            addDeploymentVariants();
-                        }
-                        return Set.of();
-                    })));
-                });
     }
 
     /**
@@ -303,7 +335,7 @@ public class QuarkusComponentVariants {
                 });
     }
 
-    private void addDeploymentVariants() {
+    private List<Dependency> addDeploymentVariants() {
         final Map<String, List<ExtensionDependency<?>>> deploymentDeps = new HashMap<>();
         for (var satisfiedDeps : satisfiedExtensionDeps.values()) {
             project.getDependencies().getComponents().withModule(
@@ -312,13 +344,16 @@ public class QuarkusComponentVariants {
             satisfiedDeps.collectExtensionDeps(deploymentDeps);
         }
 
+        final List<Dependency> directDeps = new ArrayList<>();
         for (var pd : processedDeps.values()) {
-            pd.addDeploymentDependency(deploymentDeps);
+            pd.addDeploymentDependency(deploymentDeps, directDeps);
         }
 
         for (var deployment : deploymentDeps.entrySet()) {
             addDeploymentVariant(deployment.getKey(), deployment.getValue());
         }
+
+        return directDeps;
     }
 
     private void addDeploymentVariant(String parentModule, List<ExtensionDependency<?>> extDeps) {
@@ -545,6 +580,10 @@ public class QuarkusComponentVariants {
             this.local = local;
         }
 
+        private boolean hasLocalParent() {
+            return parent == null || parent.local;
+        }
+
         private void queueConditionalDeps() {
             if (extension == null) {
                 return;
@@ -559,18 +598,29 @@ public class QuarkusComponentVariants {
             }
         }
 
-        private void addDeploymentDependency(Map<String, List<ExtensionDependency<?>>> deploymentDeps) {
-            if (extension == null || parent == null || parent.local || parent.extension != null && !topLevelExt) {
+        private void addDeploymentDependency(Map<String, List<ExtensionDependency<?>>> deploymentDeps,
+                List<Dependency> directDeploymentDeps) {
+            if (extension == null || parent != null && parent.extension != null && !topLevelExt) {
                 return;
             }
-            final String parentModule;
-            if (parent.extension == null) {
-                parentModule = parent.artifact.getModuleVersion().getId().getGroup() + ":"
-                        + parent.artifact.getModuleVersion().getId().getName();
+            if (hasLocalParent()) {
+                // if it's an extension with a local parent and its deployment artifact is not a runtime dependency
+                // (e.g. deployment tests), it must be added as a direct dependency of the deployment configuration
+                if (!processedDeps.containsKey(
+                        ArtifactKey.of(extension.getDeploymentGroup(), extension.getDeploymentName()))) {
+                    directDeploymentDeps.add(
+                            DependencyUtils.createDeploymentDependency(project.getDependencies(), extension));
+                }
             } else {
-                parentModule = parent.extension.getDeploymentGroup() + ":" + parent.extension.getDeploymentName();
+                final String parentModule;
+                if (parent.extension == null) {
+                    parentModule = parent.artifact.getModuleVersion().getId().getGroup() + ":"
+                            + parent.artifact.getModuleVersion().getId().getName();
+                } else {
+                    parentModule = parent.extension.getDeploymentGroup() + ":" + parent.extension.getDeploymentName();
+                }
+                deploymentDeps.computeIfAbsent(parentModule, k -> new ArrayList<>(1)).add(extension);
             }
-            deploymentDeps.computeIfAbsent(parentModule, k -> new ArrayList<>(1)).add(extension);
         }
     }
 

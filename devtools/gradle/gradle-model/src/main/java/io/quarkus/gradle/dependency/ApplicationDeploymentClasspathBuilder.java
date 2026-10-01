@@ -29,6 +29,7 @@ import org.gradle.api.internal.artifacts.dependencies.DefaultExternalModuleDepen
 import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.provider.ListProperty;
 import org.gradle.api.provider.Property;
+import org.gradle.api.provider.Provider;
 
 import io.quarkus.bootstrap.BootstrapConstants;
 import io.quarkus.bootstrap.model.PlatformImports;
@@ -169,6 +170,7 @@ public class ApplicationDeploymentClasspathBuilder {
     private final String platformConfigurationName;
     private final String deploymentConfigurationName;
     private final String compileOnlyConfigurationName;
+    private Provider<List<Dependency>> directDeploymentDeps;
 
     /**
      * The platform configuration updates the PlatformImports, but since the PlatformImports don't
@@ -300,7 +302,7 @@ public class ApplicationDeploymentClasspathBuilder {
             } else {
                 Property<PlatformSpec> platformSpecProperty = project.getObjects()
                         .property(PlatformSpec.class);
-                QuarkusComponentVariants.addVariants(project, mode,
+                this.directDeploymentDeps = QuarkusComponentVariants.configureVariants(project, mode,
                         platformSpecProperty.value(project.provider(this::resolvePlatformSpec)));
                 baseConfig = QuarkusComponentVariants.getConditionalConfigurationName(mode);
             }
@@ -359,7 +361,8 @@ public class ApplicationDeploymentClasspathBuilder {
                     })));
                 });
             } else {
-                DeploymentConfigurationResolver.registerDeploymentConfiguration(project, mode, deploymentConfigurationName);
+                DeploymentConfigurationResolver.registerDeploymentConfiguration(project, mode, deploymentConfigurationName,
+                        directDeploymentDeps);
             }
         }
     }

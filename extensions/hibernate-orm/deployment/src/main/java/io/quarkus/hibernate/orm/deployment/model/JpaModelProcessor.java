@@ -228,6 +228,7 @@ final class JpaModelProcessor {
 
         Set<String> persistenceUnitsConfiguredThroughQuarkusConfiguration = new LinkedHashSet<>();
         Set<String> persistenceUnitsConfiguredThroughPackageLevelAnnotations = new LinkedHashSet<>();
+        Set<String> persistenceUnitsConfiguredThroughClassLevelAnnotations = new LinkedHashSet<>();
 
         if (hasPackagesInQuarkusConfig) {
             // Config based packages have priorities over annotations.
@@ -274,16 +275,55 @@ final class JpaModelProcessor {
             }
         }
 
-        Set<String> modelClassesWithPersistenceUnitAnnotations = new TreeSet<>();
+        Map<String, Set<String>> classLevelPersistenceUnitAssignments = new HashMap<>();
 
         for (String modelClassName : jpaModel.getAllModelClassNames()) {
             ClassInfo modelClassInfo = index.getClassByName(DotName.createSimple(modelClassName));
             Set<String> relatedModelClassNames = getRelatedModelClassNames(index, jpaModel.getAllModelClassNames(),
                     modelClassInfo);
 
-            if (modelClassInfo != null && (modelClassInfo.declaredAnnotation(ClassNames.QUARKUS_PERSISTENCE_UNIT) != null
-                    || modelClassInfo.declaredAnnotation(ClassNames.QUARKUS_PERSISTENCE_UNIT_REPEATABLE_CONTAINER) != null)) {
-                modelClassesWithPersistenceUnitAnnotations.add(modelClassInfo.name().toString());
+            // Check for class-level @PersistenceUnit annotations
+            if (modelClassInfo != null) {
+                Set<String> classPersistenceUnits = new HashSet<>();
+                AnnotationInstance singleAnnotation = modelClassInfo.declaredAnnotation(ClassNames.QUARKUS_PERSISTENCE_UNIT);
+                AnnotationInstance containerAnnotation = modelClassInfo
+                        .declaredAnnotation(ClassNames.QUARKUS_PERSISTENCE_UNIT_REPEATABLE_CONTAINER);
+
+                if (singleAnnotation != null) {
+                    String persistenceUnitName = singleAnnotation.value().asString();
+                    if (persistenceUnitName != null && !persistenceUnitName.isEmpty()) {
+                        classPersistenceUnits.add(persistenceUnitName);
+                    }
+                }
+
+                if (containerAnnotation != null) {
+                    AnnotationInstance[] annotations = containerAnnotation.value().asNestedArray();
+                    for (AnnotationInstance annotation : annotations) {
+                        String persistenceUnitName = annotation.value().asString();
+                        if (persistenceUnitName != null && !persistenceUnitName.isEmpty()) {
+                            classPersistenceUnits.add(persistenceUnitName);
+                        }
+                    }
+                }
+
+                if (!classPersistenceUnits.isEmpty()) {
+                    classLevelPersistenceUnitAssignments.put(modelClassName, classPersistenceUnits);
+                    persistenceUnitsConfiguredThroughClassLevelAnnotations.addAll(classPersistenceUnits);
+                    for (String persistenceUnitName : classPersistenceUnits) {
+                        var model = modelPerPersistenceUnit.computeIfAbsent(persistenceUnitName,
+                                ignored -> new JpaPersistenceUnitModel());
+
+                        if (jpaModel.getEntityClassNames().contains(modelClassName)) {
+                            model.entityClassNames().add(modelClassName);
+                        }
+                        model.allModelClassNames().add(modelClassName);
+
+                        // also add the hierarchy to the persistence unit
+                        // we would need to add all the underlying model to it but adding the hierarchy
+                        // is necessary for Panache as we need to add PanacheEntity to the PU
+                        model.allModelClassNames().addAll(relatedModelClassNames);
+                    }
+                }
             }
 
             for (Entry<String, Set<String>> packageRuleEntry : packageRules.entrySet()) {
@@ -308,6 +348,13 @@ final class JpaModelProcessor {
 
         Set<String> assignedEntityClassNames = new HashSet<>();
         Set<String> assignedModelClassAndPackageNames = new HashSet<>();
+
+        // Track classes assigned via class-level annotations
+        assignedEntityClassNames.addAll(classLevelPersistenceUnitAssignments.keySet().stream()
+                .filter(jpaModel.getEntityClassNames()::contains)
+                .toList());
+        assignedModelClassAndPackageNames.addAll(classLevelPersistenceUnitAssignments.keySet());
+
         List<ClassInfo> nestedRepositories = new ArrayList<>();
         for (AdditionalJpaModelBuildItem additionalJpaModel : additionalJpaModelBuildItems) {
             var className = additionalJpaModel.getClassName();
@@ -338,12 +385,6 @@ final class JpaModelProcessor {
                 }
                 model.allModelClassNames().add(className);
             }
-        }
-
-        if (!modelClassesWithPersistenceUnitAnnotations.isEmpty()) {
-            throw new IllegalStateException(String.format(Locale.ROOT,
-                    "@PersistenceUnit annotations are not supported at the class level on model classes:\n\t- %s\nUse the `.packages` configuration property or package-level annotations instead.",
-                    String.join("\n\t- ", modelClassesWithPersistenceUnitAnnotations)));
         }
 
         for (String modelPackageName : jpaModel.getAllModelPackageNames()) {
@@ -418,7 +459,8 @@ final class JpaModelProcessor {
 
         return new JpaModelPerPersistenceUnitBuildItem(modelPerPersistenceUnit,
                 persistenceUnitsConfiguredThroughQuarkusConfiguration,
-                persistenceUnitsConfiguredThroughPackageLevelAnnotations);
+                persistenceUnitsConfiguredThroughPackageLevelAnnotations,
+                persistenceUnitsConfiguredThroughClassLevelAnnotations);
     }
 
     @SuppressWarnings("deprecation")
@@ -476,6 +518,8 @@ final class JpaModelProcessor {
         var pusWithPackageQuarkusConfig = jpaModelPerPersistenceUnit.getPersistenceUnitsConfiguredThroughQuarkusConfiguration();
         var pusWithPackageLevelAnnotations = jpaModelPerPersistenceUnit
                 .getPersistenceUnitsConfiguredThroughPackageLevelAnnotations();
+        var pusWithClassLevelAnnotations = jpaModelPerPersistenceUnit
+                .getPersistenceUnitsConfiguredThroughClassLevelAnnotations();
 
         Set<String> pusWithoutPackageQuarkusConfig = new HashSet<>(puNames);
         pusWithoutPackageQuarkusConfig.removeAll(pusWithPackageQuarkusConfig);
@@ -492,11 +536,13 @@ final class JpaModelProcessor {
                                 missingPackagePropertyKeys)));
             }
         }
-        if (pusWithPackageLevelAnnotations.isEmpty() && pusWithPackageQuarkusConfig.isEmpty()) {
+        if (pusWithPackageLevelAnnotations.isEmpty() && pusWithPackageQuarkusConfig.isEmpty()
+                && pusWithClassLevelAnnotations.isEmpty()) {
             validationErrors.produce(new ValidationErrorBuildItem(new ConfigurationException(
                     """
                             Named persistence units are defined but the entities are not mapped to them. \
-                            You should either use the .packages Quarkus configuration property or package-level @PersistenceUnit annotations.\
+                            You should either use the .packages Quarkus configuration property, package-level @PersistenceUnit annotations, \
+                            or class-level @PersistenceUnit annotations.\
                             Refer to https://quarkus.io/guides/hibernate-orm#multiple-persistence-units for guidance.
                             """,
                     missingPackagePropertyKeys)));

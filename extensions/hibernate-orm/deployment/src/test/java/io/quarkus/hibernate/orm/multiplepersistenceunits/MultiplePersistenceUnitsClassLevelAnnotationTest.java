@@ -1,11 +1,16 @@
 package io.quarkus.hibernate.orm.multiplepersistenceunits;
 
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+import jakarta.inject.Inject;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EntityManager;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.transaction.Transactional;
 
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -16,16 +21,33 @@ public class MultiplePersistenceUnitsClassLevelAnnotationTest {
 
     @RegisterExtension
     static QuarkusExtensionTest runner = new QuarkusExtensionTest()
-            .setExpectedException(IllegalStateException.class)
             .withApplicationRoot((jar) -> jar
                     .addClass(EntityWithClassLevelPersistenceUnit.class)
                     .addAsResource("application-multiple-persistence-units.properties",
                             "application.properties"));
 
+    @Inject
+    @PersistenceUnit("inventory")
+    EntityManager inventoryEntityManager;
+
+    @Inject
+    @PersistenceUnit("users")
+    EntityManager usersEntityManager;
+
     @Test
-    public void testInvalidConfiguration() {
-        // deployment exception should happen first
-        Assertions.fail();
+    @Transactional
+    public void testClassLevelAnnotation() {
+        EntityWithClassLevelPersistenceUnit entity = new EntityWithClassLevelPersistenceUnit("test-entity");
+        inventoryEntityManager.persist(entity);
+
+        EntityWithClassLevelPersistenceUnit savedEntity = inventoryEntityManager.find(
+                EntityWithClassLevelPersistenceUnit.class, entity.getId());
+        assertEquals(entity.getName(), savedEntity.getName());
+
+        // Entity should not be accessible from users PU
+        assertThatThrownBy(() -> usersEntityManager.find(EntityWithClassLevelPersistenceUnit.class, entity.getId()))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Unknown entity type");
     }
 
     @Entity
@@ -37,6 +59,10 @@ public class MultiplePersistenceUnitsClassLevelAnnotationTest {
         private String name;
 
         public EntityWithClassLevelPersistenceUnit() {
+        }
+
+        public EntityWithClassLevelPersistenceUnit(String name) {
+            this.name = name;
         }
 
         @Id

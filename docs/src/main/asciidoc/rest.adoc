@@ -3176,7 +3176,7 @@ GET /hello?name=foo,bar HTTP/1.1
 
 then the response will be `hello foo bar`.
 
-==== Collecting all query parameters and headers
+==== Collecting all query parameters or headers
 
 Instead of binding a single query parameter or header, you can annotate a
 `jakarta.ws.rs.core.MultivaluedMap<String, String>` parameter with a bare `@RestQuery`

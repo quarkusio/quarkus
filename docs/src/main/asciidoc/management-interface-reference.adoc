@@ -325,6 +325,12 @@ quarkus.management.auth.permission.health.auth-mechanism=bearer <2>
 <2> If the Quarkus OIDC extension is present, the health endpoints will be authenticated
 by the xref:security-oidc-bearer-token-authentication.adoc[OIDC Bearer token authentication].
 
+[IMPORTANT]
+====
+The `quarkus.management.root-path` property is prepended to the configured policy paths that do not start with a forward slash, in the same way as the `quarkus.http.root-path` property is prepended to the main HTTP server policy paths.
+For more information, see the xref:security-authorize-web-endpoints-reference.adoc#permission-paths-and-root-paths[Permission paths and HTTP root path] section of the Authorization of web endpoints guide.
+====
+
 [[basic-auth]]
 === Basic authentication
 

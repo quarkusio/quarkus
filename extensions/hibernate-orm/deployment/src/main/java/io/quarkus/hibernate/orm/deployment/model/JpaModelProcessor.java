@@ -330,6 +330,12 @@ final class JpaModelProcessor {
                 }
             }
 
+            // A class-level @PersistenceUnit annotation takes precedence over a package-level one:
+            // skip package rules entirely for classes that already got an explicit class-level assignment.
+            if (classLevelPersistenceUnitAssignments.containsKey(modelClassName)) {
+                continue;
+            }
+
             for (Entry<String, Set<String>> packageRuleEntry : packageRules.entrySet()) {
                 if (modelClassName.startsWith(packageRuleEntry.getKey())) {
                     for (String persistenceUnitName : packageRuleEntry.getValue()) {

@@ -17,6 +17,7 @@ import io.quarkus.oidc.common.runtime.OidcCommonUtils;
 import io.quarkus.oidc.common.runtime.OidcConstants;
 import io.quarkus.vertx.http.runtime.security.ImmutablePathMatcher;
 import io.vertx.core.Handler;
+import io.vertx.core.http.HttpHeaders;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.Router;
@@ -136,8 +137,10 @@ public class ResourceMetadataHandler implements Handler<RoutingContext> {
         @Override
         public void handle(RoutingContext context) {
             LOG.debugf("Resource metadata request for the tenant %s received", oidcConfig.tenantId().get());
-            context.response().setStatusCode(200);
-            context.response().end(prepareMetadata(context));
+            context.response()
+                    .putHeader(HttpHeaders.CONTENT_TYPE, "application/json")
+                    .setStatusCode(200)
+                    .end(prepareMetadata(context));
         }
 
         private String prepareMetadata(RoutingContext context) {

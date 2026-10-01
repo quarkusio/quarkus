@@ -1263,6 +1263,7 @@ public class CodeFlowAuthorizationTest {
         Response metadataResponse = RestAssured.when()
                 .get("http://localhost:8081" + OidcConstants.RESOURCE_METADATA_WELL_KNOWN_PATH
                         + (resource == null ? "" : "/" + resource));
+        assertEquals("application/json", metadataResponse.contentType());
         JsonObject jsonMetadata = new JsonObject(metadataResponse.asString());
         assertEquals("https://localhost:8081" + (resource == null ? "" : "/" + resource),
                 jsonMetadata.getString(OidcConstants.RESOURCE_METADATA_RESOURCE));

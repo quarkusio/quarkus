@@ -380,7 +380,7 @@ public class BasicWebSocketConnectorImpl extends WebSocketConnectorBase<BasicWeb
         if (path1 != null) {
             ret.append(path1);
         }
-        if (path2 != null) {
+        if (path2 != null && !path2.isEmpty()) {
             if (path1.endsWith("/")) {
                 if (path2.startsWith("/")) {
                     ret.append(path2.substring(1));
@@ -394,6 +394,9 @@ public class BasicWebSocketConnectorImpl extends WebSocketConnectorBase<BasicWeb
                     ret.append("/").append(path2);
                 }
             }
+        }
+        if (ret.isEmpty()) {
+            ret.append("/");
         }
         return ret.toString();
     }

@@ -235,6 +235,17 @@ public class GradleRunner implements BuildSystemRunner {
     @Override
     public List<Supplier<BuildCommandArgs>> prepareDevTestMode(boolean devMode, DevOptions commonOptions,
             DebugOptions debugOptions, List<String> params) {
+        return prepareDevMode(devMode ? "quarkusDev" : "quarkusTest", devMode, commonOptions, debugOptions, params);
+    }
+
+    @Override
+    public List<Supplier<BuildCommandArgs>> prepareRemoteDevMode(DevOptions commonOptions, DebugOptions debugOptions,
+            List<String> params) {
+        return prepareDevMode("quarkusRemoteDev", true, commonOptions, debugOptions, params);
+    }
+
+    private List<Supplier<BuildCommandArgs>> prepareDevMode(String task, boolean devMode, DevOptions commonOptions,
+            DebugOptions debugOptions, List<String> params) {
         ArrayDeque<String> args = new ArrayDeque<>();
         List<String> jvmArgs = new ArrayList<>();
 
@@ -244,7 +255,7 @@ public class GradleRunner implements BuildSystemRunner {
             args.add("clean");
         }
 
-        args.add(devMode ? "quarkusDev" : "quarkusTest");
+        args.add(task);
 
         if (commonOptions.offline) {
             args.add("--offline");

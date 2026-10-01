@@ -12,8 +12,8 @@ import jakarta.inject.Singleton;
 import io.opentelemetry.sdk.testing.exporter.InMemorySpanExporter;
 import io.opentelemetry.sdk.trace.data.SpanData;
 import io.quarkus.runtime.StartupEvent;
-import io.vertx.core.json.Json;
 import io.vertx.ext.web.Router;
+import tools.jackson.databind.ObjectMapper;
 
 @ApplicationScoped
 public class ExporterRouter {
@@ -21,6 +21,10 @@ public class ExporterRouter {
     Router router;
     @Inject
     InMemorySpanExporter exporter;
+    // The managed mapper is customized by SpanAttributesJsonMapperCustomizer so that a SpanData's
+    // attributes are serialized as a flat {key: value} map (see that class for the why).
+    @Inject
+    ObjectMapper mapper;
 
     public void register(@Observes StartupEvent ev) {
         router.get("/reset").handler(rc -> {
@@ -37,7 +41,7 @@ public class ExporterRouter {
 
             rc.response()
                     .putHeader("content-type", "application/json; charset=utf-8")
-                    .end(Json.encodePrettily(export));
+                    .end(mapper.writeValueAsString(export));
         });
     }
 

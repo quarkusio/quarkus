@@ -30,6 +30,7 @@ import org.gradle.api.attributes.Usage;
 import org.gradle.api.attributes.java.TargetJvmEnvironment;
 import org.gradle.api.model.ObjectFactory;
 import org.gradle.api.provider.Property;
+import org.gradle.api.provider.Provider;
 
 import io.quarkus.gradle.tooling.dependency.DependencyUtils;
 import io.quarkus.gradle.tooling.dependency.ExtensionDependency;
@@ -167,20 +168,101 @@ public class QuarkusComponentVariants {
 
     /**
      * Analyzes project configurations and adds the necessary component attributes for a specific launch mode.
+     * Returns a configurator that exposes the direct deployment dependencies and the variant registration
+     * hook that has to be attached to the resolution root.
      *
      * @param project project
      * @param mode launch mode
+     * @return variants configurator
      */
-    public static void addVariants(Project project, LaunchMode mode,
+    static VariantsConfigurator configureVariants(Project project, LaunchMode mode,
             Property<PlatformSpec> platformSpecProperty) {
-        create(project, mode, platformSpecProperty);
+        final VariantsConfigurator configurator = new VariantsConfigurator(project, mode, platformSpecProperty);
+
+        project.getConfigurations().resolvable(
+                getConditionalConfigurationName(mode),
+                config -> {
+                    config.setCanBeConsumed(false);
+                    config.extendsFrom(project.getConfigurations()
+                            .getByName(ApplicationDeploymentClasspathBuilder.getBaseRuntimeConfigName(mode)));
+                    setConditionalAttributes(config, project, mode);
+                });
+
+        return configurator;
     }
 
-    static QuarkusComponentVariants create(Project project, LaunchMode mode,
-            Property<PlatformSpec> platformSpecProperty) {
-        QuarkusComponentVariants variants = new QuarkusComponentVariants(project, mode, platformSpecProperty);
-        variants.configureAndAddVariants();
-        return variants;
+    /**
+     * Triggers the Quarkus component variant registration on demand and exposes the deployment dependencies
+     * that could not be added as variants.
+     */
+    static class VariantsConfigurator {
+        private final Project project;
+        private final LaunchMode mode;
+        private final Property<PlatformSpec> platformSpecProperty;
+        private boolean configured;
+        private List<Dependency> directDeploymentDeps;
+
+        private VariantsConfigurator(Project project, LaunchMode mode, Property<PlatformSpec> platformSpecProperty) {
+            this.project = project;
+            this.mode = mode;
+            this.platformSpecProperty = platformSpecProperty;
+        }
+
+        /**
+         * Prepares the metadata variants that make Quarkus conditional and deployment dependencies selectable.
+         * <p>
+         * Preparing the variants requires resolving and analyzing the base runtime configuration first. It therefore has to
+         * remain lazy, but it must complete before Gradle starts resolving the configuration that selects the variants.
+         * Gradle 9.8 snapshots component metadata rules at the beginning of resolution, immediately after the
+         * {@code beforeResolve} callbacks of the resolution root. Registering the variants later means that they are not
+         * considered for that resolution.
+         * <p>
+         * The listener is deliberately attached to the actual resolution root rather than to an inherited configuration:
+         * Gradle does not invoke an inherited configuration's {@code beforeResolve} callbacks when resolving its child.
+         *
+         * @param config the configuration whose resolution needs the variants
+         */
+        void prepareVariantsBeforeResolve(Configuration config) {
+            config.getIncoming().beforeResolve(ignored -> ensureConfigured());
+        }
+
+        /**
+         * Deployment dependencies that could not be added using variants and therefore have to be added as
+         * direct dependencies of the deployment configuration.
+         *
+         * @return direct deployment dependencies provider
+         */
+        Provider<List<Dependency>> getDirectDeploymentDepsProvider() {
+            return project.provider(this::getDirectDeploymentDeps);
+        }
+
+        /**
+         * Configures the component variants at most once, on demand.
+         * <p>
+         * Variant configuration may be triggered either before the resolution root is resolved (e.g. for runtime
+         * classpath tasks) or when the deployment configuration's direct dependencies are queried (e.g. for
+         * build/model tasks).
+         * <p>
+         * Only a successful attempt is remembered. Should the configuration fail, the failure is propagated to the
+         * caller and a subsequent invocation will attempt to configure the variants again, instead of silently
+         * leaving the direct deployment dependencies unresolved.
+         * <p>
+         * Configuring from here also allows {@link QuarkusComponentVariants} and its graph traversal data structures
+         * to be garbage collected immediately after execution.
+         */
+        private synchronized void ensureConfigured() {
+            if (!configured) {
+                directDeploymentDeps = new QuarkusComponentVariants(project, mode, platformSpecProperty).configure();
+                configured = true;
+            }
+        }
+
+        private List<Dependency> getDirectDeploymentDeps() {
+            // the read does not have to be synchronized: entering the monitor in ensureConfigured() establishes
+            // the happens-before edge that makes the configured value visible to this thread
+            ensureConfigured();
+            return directDeploymentDeps;
+        }
     }
 
     private final Attribute<String> quarkusDepAttr;
@@ -191,7 +273,6 @@ public class QuarkusComponentVariants {
     private final List<ConditionalDependencyVariant> dependencyVariantQueue = new ArrayList<>();
     private final Map<String, SatisfiedExtensionDeps> satisfiedExtensionDeps = new HashMap<>();
     private final LaunchMode mode;
-    private final AtomicInteger variantRegistrationInvocations = new AtomicInteger();
 
     private QuarkusComponentVariants(Project project, LaunchMode mode,
             Property<PlatformSpec> platformSpecProperty) {
@@ -203,6 +284,11 @@ public class QuarkusComponentVariants {
         project.getDependencies().getAttributesSchema().attribute(getDeploymentDependencyAttribute(project.getName(), mode));
     }
 
+    private List<Dependency> configure() {
+        addConditionalVariants(getBaseConfiguration());
+        return addDeploymentVariants();
+    }
+
     /**
      * Configuration that should be used as the base for conditional and deployment dependency analysis.
      *
@@ -210,43 +296,6 @@ public class QuarkusComponentVariants {
      */
     private Configuration getBaseConfiguration() {
         return project.getConfigurations().getByName(ApplicationDeploymentClasspathBuilder.getBaseRuntimeConfigName(mode));
-    }
-
-    /**
-     * Registers a runtime configuration with enabled conditional dependencies.
-     * It also adds deployment variants to the corresponding components but does not select them in this configuration.
-     */
-    private void configureAndAddVariants() {
-        project.getConfigurations().resolvable(
-                getConditionalConfigurationName(mode),
-                config -> {
-                    config.setCanBeConsumed(false);
-                    config.extendsFrom(getBaseConfiguration());
-                    setConditionalAttributes(config, project, mode);
-                });
-    }
-
-    /**
-     * Prepares the metadata variants that make Quarkus conditional and deployment dependencies selectable.
-     * <p>
-     * Preparing the variants requires resolving and analyzing the base runtime configuration first. It therefore has to
-     * remain lazy, but it must complete before Gradle starts resolving the configuration that selects the variants.
-     * Gradle 9.8 snapshots component metadata rules at the beginning of resolution, immediately after the
-     * {@code beforeResolve} callbacks of the resolution root. Registering the variants later means that they are not
-     * considered for that resolution.
-     * <p>
-     * The listener is deliberately attached to the actual resolution root rather than to an inherited configuration:
-     * Gradle does not invoke an inherited configuration's {@code beforeResolve} callbacks when resolving its child.
-     *
-     * @param config the configuration whose resolution needs the variants
-     */
-    void prepareVariantsBeforeResolve(Configuration config) {
-        config.getIncoming().beforeResolve(ignored -> {
-            if (variantRegistrationInvocations.getAndIncrement() == 0) {
-                addConditionalVariants(getBaseConfiguration());
-                addDeploymentVariants();
-            }
-        });
     }
 
     /**
@@ -324,7 +373,7 @@ public class QuarkusComponentVariants {
                 });
     }
 
-    private void addDeploymentVariants() {
+    private List<Dependency> addDeploymentVariants() {
         final Map<String, List<ExtensionDependency<?>>> deploymentDeps = new HashMap<>();
         for (var satisfiedDeps : satisfiedExtensionDeps.values()) {
             project.getDependencies().getComponents().withModule(
@@ -333,13 +382,16 @@ public class QuarkusComponentVariants {
             satisfiedDeps.collectExtensionDeps(deploymentDeps);
         }
 
+        final List<Dependency> directDeps = new ArrayList<>();
         for (var pd : processedDeps.values()) {
-            pd.addDeploymentDependency(deploymentDeps);
+            pd.addDeploymentDependency(deploymentDeps, directDeps);
         }
 
         for (var deployment : deploymentDeps.entrySet()) {
             addDeploymentVariant(deployment.getKey(), deployment.getValue());
         }
+
+        return directDeps;
     }
 
     private void addDeploymentVariant(String parentModule, List<ExtensionDependency<?>> extDeps) {
@@ -566,6 +618,10 @@ public class QuarkusComponentVariants {
             this.local = local;
         }
 
+        private boolean hasLocalParent() {
+            return parent == null || parent.local;
+        }
+
         private void queueConditionalDeps() {
             if (extension == null) {
                 return;
@@ -580,18 +636,29 @@ public class QuarkusComponentVariants {
             }
         }
 
-        private void addDeploymentDependency(Map<String, List<ExtensionDependency<?>>> deploymentDeps) {
-            if (extension == null || parent == null || parent.local || parent.extension != null && !topLevelExt) {
+        private void addDeploymentDependency(Map<String, List<ExtensionDependency<?>>> deploymentDeps,
+                List<Dependency> directDeploymentDeps) {
+            if (extension == null || parent != null && parent.extension != null && !topLevelExt) {
                 return;
             }
-            final String parentModule;
-            if (parent.extension == null) {
-                parentModule = parent.artifact.getModuleVersion().getId().getGroup() + ":"
-                        + parent.artifact.getModuleVersion().getId().getName();
+            if (hasLocalParent()) {
+                // if it's an extension with a local parent and its deployment artifact is not a runtime dependency
+                // (e.g. deployment tests), it must be added as a direct dependency of the deployment configuration
+                if (!processedDeps.containsKey(
+                        ArtifactKey.of(extension.getDeploymentGroup(), extension.getDeploymentName()))) {
+                    directDeploymentDeps.add(
+                            DependencyUtils.createDeploymentDependency(project.getDependencies(), extension));
+                }
             } else {
-                parentModule = parent.extension.getDeploymentGroup() + ":" + parent.extension.getDeploymentName();
+                final String parentModule;
+                if (parent.extension == null) {
+                    parentModule = parent.artifact.getModuleVersion().getId().getGroup() + ":"
+                            + parent.artifact.getModuleVersion().getId().getName();
+                } else {
+                    parentModule = parent.extension.getDeploymentGroup() + ":" + parent.extension.getDeploymentName();
+                }
+                deploymentDeps.computeIfAbsent(parentModule, k -> new ArrayList<>(1)).add(extension);
             }
-            deploymentDeps.computeIfAbsent(parentModule, k -> new ArrayList<>(1)).add(extension);
         }
     }
 

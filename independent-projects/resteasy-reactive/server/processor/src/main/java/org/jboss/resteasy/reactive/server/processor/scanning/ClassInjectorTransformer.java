@@ -822,8 +822,9 @@ public class ClassInjectorTransformer implements BiFunction<String, ClassVisitor
                 break;
             case HEADER:
                 methodDesc = MethodDescriptor.ofMethod(ResteasyReactiveInjectionContext.class, "getHeader",
-                        Object.class, String.class, boolean.class);
-                value = method.invokeInterfaceMethod(methodDesc, ctx, paramName, method.load(param.isSingle()));
+                        Object.class, String.class, boolean.class, boolean.class);
+                value = method.invokeInterfaceMethod(methodDesc, ctx, paramName,
+                        method.load(param.isSingle()), method.load(param.getRestHeaderMap()));
                 break;
             case MATRIX:
                 methodDesc = MethodDescriptor.ofMethod(ResteasyReactiveInjectionContext.class, "getMatrixParameter",

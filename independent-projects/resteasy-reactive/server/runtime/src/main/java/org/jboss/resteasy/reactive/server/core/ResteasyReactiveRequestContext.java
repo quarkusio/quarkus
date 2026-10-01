@@ -882,8 +882,20 @@ public abstract class ResteasyReactiveRequestContext
         return producesChecked;
     }
 
-    @Override
     public Object getHeader(String name, boolean single) {
+        return getHeader(name, single, false);
+    }
+
+    @Override
+    public Object getHeader(String name, boolean single, boolean restHeaderMap) {
+        if (restHeaderMap) {
+            QuarkusMultivaluedHashMap<String, String> allHeaders = new QuarkusMultivaluedHashMap<>();
+            for (Map.Entry<String, List<String>> entry : getHttpHeaders().getMutableHeaders().entrySet()) {
+                allHeaders.addAll(entry.getKey(), filterEmpty(entry.getValue()));
+            }
+            return allHeaders;
+        }
+
         if (httpHeaders == null) {
             if (single) {
                 String header = serverRequest().getRequestHeader(name);

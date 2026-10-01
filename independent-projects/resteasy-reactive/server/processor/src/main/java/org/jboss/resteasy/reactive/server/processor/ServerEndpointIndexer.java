@@ -491,7 +491,7 @@ public class ServerEndpointIndexer
                 type, single, signature,
                 converter, defaultValue, parameterResult.isObtainedAsCollection(), parameterResult.isOptional(), encoded,
                 parameterResult.getCustomParameterExtractor(), mimeType, parameterResult.getSeparator(),
-                parameterResult.getRestQueryMap());
+                parameterResult.getRestQueryMap(), parameterResult.getRestHeaderMap());
     }
 
     @Override

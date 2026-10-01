@@ -655,7 +655,7 @@ public class RuntimeResourceDeployment {
         ParameterExtractor extractor;
         switch (param.parameterType) {
             case HEADER:
-                return new HeaderParamExtractor(param.name, param.isSingle());
+                return new HeaderParamExtractor(param.name, param.isSingle(), param.restHeaderMap);
             case COOKIE:
                 return new CookieParamExtractor(param.name, param.type);
             case FORM:

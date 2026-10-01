@@ -1278,7 +1278,8 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
                 .setHasRuntimeConverters(hasRuntimeConverters)
                 .setPathParameters(pathParameters)
                 .setSourceName(sourceName)
-                .setRestQueryMap(false);
+                .setRestQueryMap(false)
+                .setRestHeaderMap(false);
 
         AnnotationInstance beanParam = anns.get(BEAN_PARAM);
         AnnotationInstance multiPartFormParam = anns.get(MULTI_PART_FORM_PARAM);
@@ -1471,6 +1472,14 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
                 handleMapParam(existingConverters, errorLocation, hasRuntimeConverters, builder,
                         elementType,
                         currentMethodInfo);
+            } else if (isEligibleForMultivaluedMapAsHeader(anns, pt)) {
+                typeHandled = true;
+                builder.setSingle(false);
+                elementType = String.class.getName();
+                builder.setRestHeaderMap(true);
+                handleMapParam(existingConverters, errorLocation, hasRuntimeConverters, builder,
+                        elementType,
+                        currentMethodInfo);
             } else if (convertible) {
                 typeHandled = true;
                 elementType = toClassName(pt, currentClassInfo, actualEndpointInfo, index);
@@ -1559,6 +1568,14 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
 
     private boolean isEligibleForMultivaluedMapAsQuery(Map<DotName, AnnotationInstance> annotations, ParameterizedType type) {
         AnnotationInstance annotation = annotations.get(REST_QUERY_PARAM);
+        return type.name().equals(MULTI_VALUED_MAP) && annotation != null &&
+                (annotation.value() == null || annotation.value().asString().isBlank())
+                &&
+                isAValidMultivaluedMapOfStringString(type);
+    }
+
+    private boolean isEligibleForMultivaluedMapAsHeader(Map<DotName, AnnotationInstance> annotations, ParameterizedType type) {
+        AnnotationInstance annotation = annotations.get(REST_HEADER_PARAM);
         return type.name().equals(MULTI_VALUED_MAP) && annotation != null &&
                 (annotation.value() == null || annotation.value().asString().isBlank())
                 &&

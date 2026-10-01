@@ -12,6 +12,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.gradle.api.GradleException;
+import org.gradle.api.NamedDomainObjectProvider;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.ConfigurationContainer;
@@ -29,6 +30,7 @@ import org.gradle.api.internal.artifacts.dependencies.DefaultExternalModuleDepen
 import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.provider.ListProperty;
 import org.gradle.api.provider.Property;
+import org.gradle.api.provider.Provider;
 
 import io.quarkus.bootstrap.BootstrapConstants;
 import io.quarkus.bootstrap.model.PlatformImports;
@@ -169,6 +171,7 @@ public class ApplicationDeploymentClasspathBuilder {
     private final String platformConfigurationName;
     private final String deploymentConfigurationName;
     private final String compileOnlyConfigurationName;
+    private Provider<List<Dependency>> directDeploymentDeps;
 
     /**
      * The platform configuration updates the PlatformImports, but since the PlatformImports don't
@@ -293,29 +296,30 @@ public class ApplicationDeploymentClasspathBuilder {
 
     private void setUpRuntimeConfiguration() {
         if (!project.getConfigurations().getNames().contains(this.runtimeConfigurationName)) {
-            final String baseConfig;
             final boolean disableComponentVariants = isDisableComponentVariants(project);
-            final QuarkusComponentVariants componentVariants;
-            if (disableComponentVariants) {
-                baseConfig = ApplicationDeploymentClasspathBuilder.getBaseRuntimeConfigName(mode);
-                componentVariants = null;
-            } else {
-                Property<PlatformSpec> platformSpecProperty = project.getObjects()
+            final String baseConfig = disableComponentVariants
+                    ? ApplicationDeploymentClasspathBuilder.getBaseRuntimeConfigName(mode)
+                    : QuarkusComponentVariants.getConditionalConfigurationName(mode);
+
+            // This configuration is the resolution root used by the application tasks. It is registered before the
+            // variants are configured, so that the metadata rules backing its conditional and deployment variants
+            // can be registered from its beforeResolve hook. Looking up the base configuration happens lazily, when
+            // this configuration is realized, by which time the conditional one has been registered.
+            final NamedDomainObjectProvider<Configuration> runtimeConfig = project.getConfigurations()
+                    .register(this.runtimeConfigurationName, configuration -> {
+                        configuration.setCanBeConsumed(false);
+                        configuration.extendsFrom(project.getConfigurations().getByName(baseConfig));
+                        if (!disableComponentVariants) {
+                            QuarkusComponentVariants.setConditionalAttributes(configuration, project, mode);
+                        }
+                    });
+
+            if (!disableComponentVariants) {
+                final Property<PlatformSpec> platformSpecProperty = project.getObjects()
                         .property(PlatformSpec.class);
-                componentVariants = QuarkusComponentVariants.create(project, mode,
-                        platformSpecProperty.value(project.provider(this::resolvePlatformSpec)));
-                baseConfig = QuarkusComponentVariants.getConditionalConfigurationName(mode);
+                this.directDeploymentDeps = QuarkusComponentVariants.configureVariants(project, mode,
+                        platformSpecProperty.value(project.provider(this::resolvePlatformSpec)), runtimeConfig);
             }
-            project.getConfigurations().register(this.runtimeConfigurationName, configuration -> {
-                configuration.setCanBeConsumed(false);
-                configuration.extendsFrom(project.getConfigurations().getByName(baseConfig));
-                if (!disableComponentVariants) {
-                    QuarkusComponentVariants.setConditionalAttributes(configuration, project, mode);
-                    // This configuration is the resolution root used by the application tasks. The metadata rules
-                    // backing its conditional and deployment variants must be registered from its beforeResolve hook.
-                    componentVariants.prepareVariantsBeforeResolve(configuration);
-                }
-            });
         }
     }
 
@@ -364,7 +368,16 @@ public class ApplicationDeploymentClasspathBuilder {
                     })));
                 });
             } else {
-                DeploymentConfigurationResolver.registerDeploymentConfiguration(project, mode, deploymentConfigurationName);
+                if (directDeploymentDeps == null) {
+                    // the provider is initialized when the runtime configuration is registered, which is expected
+                    // to happen before the deployment configuration is set up
+                    throw new IllegalStateException(
+                            "Direct deployment dependencies have not been initialized by configuration "
+                                    + runtimeConfigurationName + " that is required to register configuration "
+                                    + deploymentConfigurationName);
+                }
+                DeploymentConfigurationResolver.registerDeploymentConfiguration(project, mode, deploymentConfigurationName,
+                        directDeploymentDeps);
             }
         }
     }

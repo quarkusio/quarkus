@@ -40,7 +40,13 @@ public class TransactionSynchronizationRegistryWrapper implements TransactionSyn
                 .getResource(key);
 
         if (agroalOrderedLastSynchronization == null) {
-            synchronized (key) {
+            // The list is a per-transaction resource, so only registrations within the same transaction can race here.
+            // Lock on the transaction key rather than on a lock shared by every transaction in the application.
+            Object txnKey = tsr.getTransactionKey();
+            if (txnKey == null) {
+                throw new IllegalStateException("No transaction is active");
+            }
+            synchronized (txnKey) {
                 agroalOrderedLastSynchronization = (AgroalOrderedLastSynchronizationList) tsr.getResource(key);
                 if (agroalOrderedLastSynchronization == null) {
                     agroalOrderedLastSynchronization = new AgroalOrderedLastSynchronizationList(this);

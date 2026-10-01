@@ -128,29 +128,9 @@ public interface ResolvedDependency extends Dependency {
                 case "quarkus-arc" -> "io.quarkus.arc.runtime";
                 default -> null;
             };
-            case "io.smallrye.config" -> switch (artifactId) {
-                case "smallrye-config-core" -> "io.smallrye.config";
-                case "smallrye-config" -> "io.smallrye.config.inject";
-                default -> null;
-            };
-            case "io.smallrye.certs" -> switch (artifactId) {
-                // https://github.com/smallrye/smallrye-certificate-generator/issues/41
-                case "smallrye-private-key-pem-parser" -> "io.smallrye.certs.pem.private_keys";
-                default -> null;
-            };
-            case "org.jboss.logging" -> switch (artifactId) {
-                // https://github.com/jboss-logging/commons-logging-jboss-logging/issues/20
-                case "commons-logging-jboss-logging" -> "org.apache.commons.logging";
-                default -> null;
-            };
             case "org.jboss.slf4j" -> switch (artifactId) {
                 // https://github.com/jboss-logging/slf4j-jboss-logmanager/issues/69
                 case "slf4j-jboss-logmanager" -> "org.jboss.logmanager.slf4j";
-                default -> null;
-            };
-            case "org.eclipse.microprofile.config" -> switch (artifactId) {
-                // https://github.com/microprofile/microprofile-config/issues/768
-                case "microprofile-config-api" -> "org.eclipse.microprofile.config";
                 default -> null;
             };
             case "org.eclipse.microprofile.rest.client" -> switch (artifactId) {

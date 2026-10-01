@@ -35,6 +35,10 @@
             <groupId>io.opentelemetry</groupId>
             <artifactId>opentelemetry-sdk-testing</artifactId>
         </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-test-opentelemetry</artifactId>
+        </dependency>
 
         <!-- Test Dependencies -->
         <dependency>

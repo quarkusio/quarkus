@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.net.UnknownHostException;
 import java.util.Collections;
 import java.util.Map;
+import java.util.logging.Level;
 
 import org.junit.jupiter.api.Test;
 
@@ -67,8 +68,12 @@ public class PicocliTest {
         org.jboss.logging.Logger.getLogger("test").error("error");
         LaunchResult result = launcher.launch("with-method-sub-command", "loggingHello", "-n", "World!");
         assertThat(result.exitCode()).isZero();
-        assertThat(result.getOutput()).contains("ERROR [io.quarkus.it.picocli.WithMethodSubCommand] (main) Hello World!");
-        assertThat(result.getOutput()).doesNotContain("ERROR [test] (main) error");
+        assertThat(result.getLogRecords())
+                .anyMatch(r -> r.getLevel().intValue() == Level.SEVERE.intValue()
+                        && r.getLoggerName().equals("io.quarkus.it.picocli.WithMethodSubCommand")
+                        && r.getMessage().contains("Hello World!"));
+        assertThat(result.getLogRecords())
+                .noneMatch(r -> r.getLoggerName().equals("test"));
     }
 
     @Test

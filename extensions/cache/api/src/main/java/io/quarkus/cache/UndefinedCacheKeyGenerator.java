@@ -1,11 +1,9 @@
-package io.quarkus.cache.runtime;
+package io.quarkus.cache;
 
 import java.lang.reflect.Method;
 
-import io.quarkus.cache.CacheKeyGenerator;
-
 /**
- * This {@link CacheKeyGenerator} implementation is ignored by {@link CacheInterceptor} when a cache key is computed.
+ * This {@link CacheKeyGenerator} implementation is ignored when a cache key is computed.
  */
 public class UndefinedCacheKeyGenerator implements CacheKeyGenerator {
 

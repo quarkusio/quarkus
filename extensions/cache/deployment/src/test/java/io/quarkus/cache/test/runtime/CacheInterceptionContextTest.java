@@ -9,8 +9,8 @@ import org.junit.jupiter.api.Test;
 
 import io.quarkus.cache.CacheKeyGenerator;
 import io.quarkus.cache.CacheResult;
+import io.quarkus.cache.UndefinedCacheKeyGenerator;
 import io.quarkus.cache.runtime.CacheInterceptionContext;
-import io.quarkus.cache.runtime.UndefinedCacheKeyGenerator;
 
 public class CacheInterceptionContextTest {
 

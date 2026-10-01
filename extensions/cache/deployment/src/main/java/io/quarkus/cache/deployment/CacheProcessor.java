@@ -69,6 +69,7 @@ import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
+import io.quarkus.deployment.builditem.IndexDependencyBuildItem;
 import io.quarkus.deployment.metrics.MetricsCapabilityBuildItem;
 import io.quarkus.rest.client.reactive.spi.RestClientAnnotationsTransformerBuildItem;
 
@@ -79,6 +80,11 @@ class CacheProcessor {
     @BuildStep
     FeatureBuildItem feature() {
         return new FeatureBuildItem(Feature.CACHE);
+    }
+
+    @BuildStep
+    IndexDependencyBuildItem indexCacheApi() {
+        return new IndexDependencyBuildItem("io.quarkus", "quarkus-cache-api");
     }
 
     @BuildStep

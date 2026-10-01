@@ -107,6 +107,10 @@
             <artifactId>maven-embedder</artifactId>
         </dependency>
         <dependency>
+            <groupId>org.apache.maven.shared</groupId>
+            <artifactId>maven-shared-utils</artifactId>
+        </dependency>
+        <dependency>
             <groupId>org.eclipse.sisu</groupId>
             <artifactId>org.eclipse.sisu.plexus</artifactId>
         </dependency>
@@ -124,7 +128,7 @@
         </dependency>
         <dependency>
             <groupId>org.apache.maven.resolver</groupId>
-            <artifactId>maven-resolver-transport-http</artifactId>
+            <artifactId>maven-resolver-transport-apache</artifactId>
             <exclusions>
                 <exclusion>
                     <groupId>org.slf4j</groupId>

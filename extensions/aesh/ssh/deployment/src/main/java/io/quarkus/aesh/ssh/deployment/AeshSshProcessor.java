@@ -10,6 +10,7 @@ import io.quarkus.aesh.deployment.AeshRemoteTransportBuildItem;
 import io.quarkus.aesh.ssh.runtime.SshServerLifecycle;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.AnnotationsTransformerBuildItem;
+import io.quarkus.core.deployment.builditem.AlwaysResultBuildItem;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.Feature;
@@ -21,7 +22,6 @@ import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageProxyDefinitionBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
-import io.quarkus.deployment.pkg.builditem.ArtifactResultBuildItem;
 import io.quarkus.deployment.pkg.steps.NativeOrNativeSourcesBuild;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.smallrye.health.deployment.spi.HealthBuildItem;
@@ -137,7 +137,7 @@ class AeshSshProcessor {
     }
 
     @BuildStep
-    @Produce(ArtifactResultBuildItem.class)
+    @Produce(AlwaysResultBuildItem.class)
     void warnIfInsecureInProduction(AeshSshBuildTimeConfig config, LaunchModeBuildItem launchMode) {
         if (config.enabled() && launchMode.getLaunchMode() == LaunchMode.NORMAL) {
             LOG.warn("Aesh SSH extension is included in a production build. " +

@@ -14,10 +14,12 @@ public class DataInitScriptsAsMultipleZipFilesTestCase {
     static QuarkusExtensionTest runner = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(MyEntity.class, InitScriptTestResource.class)
-                    .addAsResource("application-data-init-scripts-as-multiple-zip-files-test.properties",
-                            "application.properties")
                     .addAsResource("import-multiple-load-scripts-1.zip")
-                    .addAsResource("import-multiple-load-scripts-2.zip"));
+                    .addAsResource("import-multiple-load-scripts-2.zip"))
+            .withConfiguration(
+                    """
+                            quarkus.hibernate-orm.data-management.init-script=import-multiple-load-scripts-1.zip, import-multiple-load-scripts-2.zip
+                            """);
 
     @Test
     public void testDataInitScriptsAsMultipleZipFiles() {

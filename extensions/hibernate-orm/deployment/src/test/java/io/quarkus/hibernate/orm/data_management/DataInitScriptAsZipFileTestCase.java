@@ -14,8 +14,10 @@ public class DataInitScriptAsZipFileTestCase {
     static QuarkusExtensionTest runner = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(MyEntity.class, InitScriptTestResource.class)
-                    .addAsResource("application-data-init-script-as-zip-file-test.properties", "application.properties")
-                    .addAsResource("load-script-test.zip"));
+                    .addAsResource("load-script-test.zip"))
+            .withConfiguration("""
+                    quarkus.hibernate-orm.data-management.init-script=load-script-test.zip
+                    """);
 
     @Test
     public void testDataInitScriptAsZipFile() {

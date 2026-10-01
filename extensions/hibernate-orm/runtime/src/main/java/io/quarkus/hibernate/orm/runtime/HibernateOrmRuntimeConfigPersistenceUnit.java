@@ -260,8 +260,8 @@ public interface HibernateOrmRuntimeConfigPersistenceUnit {
          * * otherwise (`none`, `update`, `validate`), for example when the schema is managed by Flyway or Liquibase,
          *   the script is executed once Hibernate ORM has started.
          *
-         * With `none` (the default in other modes, e.g. in production), the script is not executed on start,
-         * even when Hibernate ORM creates the schema.
+         * With `none` (the default in other modes, e.g. in production, and when Hibernate ORM starts offline),
+         * the script is not executed on start, even when Hibernate ORM creates the schema.
          *
          * Regardless of this setting, the data init script can still be executed on demand
          * through Hibernate ORM's `SchemaManager` (`populate()`, or `truncate()` which reimports the data).
@@ -271,7 +271,7 @@ public interface HibernateOrmRuntimeConfigPersistenceUnit {
          * @asciidoclet
          */
         // @formatter:on
-        @ConfigDocDefault("`create` in dev and test modes, `none` otherwise")
+        @ConfigDocDefault("`create` in dev and test modes unless starting offline (see `database.start-offline`), `none` otherwise")
         Optional<DataManagementStrategy> strategy();
 
     }

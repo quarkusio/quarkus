@@ -14,9 +14,9 @@ import io.quarkus.test.QuarkusProdModeTest;
 import io.restassured.RestAssured;
 
 /**
- * In production mode, when the schema is managed by another tool (schema management strategy "none"),
+ * In production mode, when the schema is managed by another tool (schema management strategy "none", the default),
  * neither the schema init script nor the data init script is executed by default:
- * the data management strategy defaults to "none" when Hibernate ORM does not create the schema.
+ * the data management strategy defaults to "none" in production.
  */
 public class ProdModeDefaultInitScriptsWithSchemaManagementNoneTestCase {
 
@@ -34,7 +34,6 @@ public class ProdModeDefaultInitScriptsWithSchemaManagementNoneTestCase {
             .overrideConfigKey("quarkus.datasource.db-kind", "h2")
             .overrideConfigKey("quarkus.datasource.jdbc.url",
                     PreexistingSchemaH2Database.jdbcUrl("prod-default-init-scripts-schema-none"))
-            .overrideConfigKey("quarkus.hibernate-orm.schema-management.strategy", "none")
             .setRun(true);
 
     @Test

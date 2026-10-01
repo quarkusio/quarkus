@@ -1,19 +1,15 @@
 package io.quarkus.hibernate.orm.data_management;
 
-import jakarta.inject.Inject;
-import jakarta.persistence.EntityManagerFactory;
-import jakarta.ws.rs.POST;
-import jakarta.ws.rs.Path;
+import static org.assertj.core.api.Assertions.assertThat;
 
-import org.hamcrest.Matchers;
+import jakarta.inject.Inject;
+
 import org.hibernate.SessionFactory;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.hibernate.orm.InitScriptTestResource;
 import io.quarkus.hibernate.orm.MyEntity;
 import io.quarkus.test.QuarkusExtensionTest;
-import io.restassured.RestAssured;
 
 /**
  * With the "none" data management strategy, the data init script (data.sql) is not executed on startup,
@@ -28,29 +24,24 @@ public class DataManagementStrategyNoneWithSchemaManagementUpdateTestCase {
             .withApplicationRoot((jar) -> jar
                     .addAsResource("application.properties")
                     .addAsResource("data.sql")
-                    .addClasses(InitScriptTestResource.class, PopulateTestResource.class, MyEntity.class))
+                    .addClasses(MyEntity.class))
             .overrideConfigKey("quarkus.hibernate-orm.schema-management.strategy", "update")
             .overrideRuntimeConfigKey("quarkus.hibernate-orm.data-management.strategy", "none");
 
+    @Inject
+    SessionFactory sessionFactory;
+
     @Test
     public void dataInitScriptNotExecutedOnStartupButAvailableToSchemaManager() {
-        RestAssured.when().get("/orm-init-script/10").then()
-                .body(Matchers.is(InitScriptTestResource.NO_ENTITY_MESSAGE));
+        assertThat(entityName(10)).isNull();
 
-        RestAssured.when().post("/orm-populate").then().statusCode(204);
+        sessionFactory.getSchemaManager().populate();
 
-        RestAssured.when().get("/orm-init-script/10").then()
-                .body(Matchers.is("data.sql data init script entity"));
+        assertThat(entityName(10)).isEqualTo("data.sql data init script entity");
     }
 
-    @Path("/orm-populate")
-    public static class PopulateTestResource {
-        @Inject
-        EntityManagerFactory entityManagerFactory;
-
-        @POST
-        public void populate() {
-            entityManagerFactory.unwrap(SessionFactory.class).getSchemaManager().populate();
-        }
+    private String entityName(long id) {
+        MyEntity entity = sessionFactory.fromTransaction(session -> session.find(MyEntity.class, id));
+        return entity == null ? null : entity.getName();
     }
 }

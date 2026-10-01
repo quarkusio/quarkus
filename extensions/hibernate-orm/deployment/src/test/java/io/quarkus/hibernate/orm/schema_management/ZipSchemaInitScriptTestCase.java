@@ -12,6 +12,9 @@ import io.quarkus.test.QuarkusExtensionTest;
 
 /**
  * Unlike data init scripts, schema init scripts cannot be packaged as zip files.
+ * <p>
+ * Hibernate ORM cannot read zip files, and Quarkus only unzips data init scripts on startup,
+ * since zip support (https://github.com/quarkusio/quarkus/issues/46789) was added for large data files.
  */
 public class ZipSchemaInitScriptTestCase {
     @RegisterExtension

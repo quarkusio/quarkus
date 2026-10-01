@@ -28,6 +28,6 @@ public class DataManagementStrategyStartOfflineTestCase {
 
     @Test
     public void applicationStarts() {
-        Assertions.fail("Startup has failed");
+        Assertions.fail("Startup should have failed");
     }
 }

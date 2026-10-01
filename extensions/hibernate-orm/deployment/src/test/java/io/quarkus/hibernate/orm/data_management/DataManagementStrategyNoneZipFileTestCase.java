@@ -1,13 +1,15 @@
 package io.quarkus.hibernate.orm.data_management;
 
-import org.hamcrest.Matchers;
+import static org.assertj.core.api.Assertions.assertThat;
+
+import jakarta.inject.Inject;
+
+import org.hibernate.SessionFactory;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.hibernate.orm.InitScriptTestResource;
 import io.quarkus.hibernate.orm.MyEntity;
 import io.quarkus.test.QuarkusExtensionTest;
-import io.restassured.RestAssured;
 
 /**
  * With the "none" data management strategy, a data init script packaged as a zip file
@@ -18,19 +20,26 @@ public class DataManagementStrategyNoneZipFileTestCase {
     @RegisterExtension
     static QuarkusExtensionTest runner = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
-                    .addClasses(MyEntity.class, InitScriptTestResource.class,
-                            DataManagementStrategyNoneTestCase.SchemaManagerTestResource.class)
-                    .addAsResource("application-data-init-script-as-zip-file-test.properties", "application.properties")
+                    .addClasses(MyEntity.class)
                     .addAsResource("load-script-test.zip"))
+            .withConfiguration("""
+                    quarkus.hibernate-orm.data-management.init-script=load-script-test.zip
+                    """)
             .overrideRuntimeConfigKey("quarkus.hibernate-orm.data-management.strategy", "none");
+
+    @Inject
+    SessionFactory sessionFactory;
 
     @Test
     public void zipDataInitScriptAvailableToSchemaManager() {
-        RestAssured.when().get("/orm-init-script/3").then()
-                .body(Matchers.is(InitScriptTestResource.NO_ENTITY_MESSAGE));
+        assertThat(entityName(3)).isNull();
 
-        RestAssured.when().post("/orm-schema-manager/populate").then().statusCode(204);
-        RestAssured.when().get("/orm-init-script/3").then()
-                .body(Matchers.is("other-load-script sql load script entity"));
+        sessionFactory.getSchemaManager().populate();
+        assertThat(entityName(3)).isEqualTo("other-load-script sql load script entity");
+    }
+
+    private String entityName(long id) {
+        MyEntity entity = sessionFactory.fromTransaction(session -> session.find(MyEntity.class, id));
+        return entity == null ? null : entity.getName();
     }
 }

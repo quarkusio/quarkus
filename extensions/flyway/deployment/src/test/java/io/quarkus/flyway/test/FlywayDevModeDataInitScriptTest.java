@@ -12,6 +12,7 @@ import jakarta.ws.rs.Path;
 
 import org.hamcrest.CoreMatchers;
 import org.hamcrest.Matchers;
+import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -37,7 +38,11 @@ public class FlywayDevModeDataInitScriptTest extends DevUIJsonRPCTest {
                     .addClasses(Endpoint.class, Fruit.class)
                     .addAsResource("db/data-init-script/V1.0.0__Fruit.sql")
                     .addAsResource("data-init-script-data.sql", "data.sql")
-                    .addAsResource("data-init-script-config.properties", "application.properties"));
+                    .addAsResource(new StringAsset("""
+                            quarkus.flyway.migrate-at-start=true
+                            quarkus.flyway.locations=db/data-init-script
+                            quarkus.hibernate-orm.schema-management.strategy=none
+                            """), "application.properties"));
 
     @Test
     public void testDataInitScriptExecutedOnStartupAndOnReset() throws Exception {

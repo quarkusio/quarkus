@@ -507,8 +507,8 @@ public final class HibernateProcessorSupport {
             // (see InitScriptSupport).
             descriptor.getProperties().setProperty(InitScriptSupport.LEGACY_SQL_LOAD_SCRIPT, "true");
             if (dataScripts.scripts.isEmpty()) {
-                LOG.warnf("Persistence unit '%s' uses the deprecated configuration property '%s'."
-                        + " To ignore the default init scripts, set '%s' and '%s' to '%s' instead.",
+                LOG.warnf("Persistence unit '%1$s' sets the deprecated configuration property '%2$s' to '%5$s'."
+                        + " To ignore the default init scripts, set '%3$s' and '%4$s' to '%5$s' instead.",
                         persistenceUnitName,
                         HibernateOrmRuntimeConfig.puPropertyKey(persistenceUnitName, SQL_LOAD_SCRIPT_PROPERTY),
                         HibernateOrmRuntimeConfig.puPropertyKey(persistenceUnitName, SCHEMA_INIT_SCRIPT_PROPERTY),
@@ -533,6 +533,8 @@ public final class HibernateProcessorSupport {
             if (schemaInitScript.isPresent()) {
                 schemaScripts = InitScriptConfig.explicit(SCHEMA_INIT_SCRIPT_PROPERTY, schemaInitScript.get());
                 for (String script : schemaScripts.scripts) {
+                    // Hibernate ORM cannot read zip files, and on startup the persistence providers
+                    // only unzip data init scripts (see SchemaToolingUtil#unzipZipFilesAndReplaceZips)
                     if (script.toLowerCase(Locale.ROOT).endsWith(".zip")) {
                         throw new ConfigurationException(String.format(Locale.ROOT,
                                 "Zip files are not supported in '%s=%s'. Reference the SQL files directly.",
@@ -542,6 +544,15 @@ public final class HibernateProcessorSupport {
                 }
             } else {
                 schemaScripts = InitScriptConfig.defaults(SCHEMA_INIT_SCRIPT_PROPERTY, List.of(DEFAULT_SCHEMA_INIT_SCRIPT));
+            }
+            // An explicitly configured script is not picked up by the other property's default as well,
+            // otherwise e.g. 'data-management.init-script=import.sql' would execute 'import.sql' twice
+            // when Hibernate ORM creates the schema.
+            // When both properties are set explicitly, they are used as is.
+            if (dataScripts.explicit && !schemaScripts.explicit) {
+                schemaScripts = schemaScripts.without(dataScripts.scripts);
+            } else if (schemaScripts.explicit && !dataScripts.explicit) {
+                dataScripts = dataScripts.without(schemaScripts.scripts);
             }
         }
 
@@ -684,6 +695,15 @@ public final class HibernateProcessorSupport {
 
         static InitScriptConfig defaults(String propertyName, List<String> scripts) {
             return new InitScriptConfig(propertyName, scripts, new ArrayList<>(scripts), false);
+        }
+
+        /**
+         * @return These default scripts, except those in the given list.
+         */
+        InitScriptConfig without(List<String> excluded) {
+            List<String> remaining = new ArrayList<>(scripts);
+            remaining.removeAll(excluded);
+            return defaults(propertyName, remaining);
         }
     }
 

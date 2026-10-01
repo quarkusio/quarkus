@@ -814,6 +814,7 @@ public interface HibernateOrmConfigPersistenceUnit {
          * without having to set this property, in every launch mode:
          * whether the script is executed only depends on `quarkus.hibernate-orm.schema-management.strategy`.
          * Pass `no-file` to force Hibernate ORM to ignore the file.
+         * A file set in `quarkus.hibernate-orm.data-management.init-script` is not picked up by default here.
          *
          * [NOTE]
          * ====
@@ -849,6 +850,7 @@ public interface HibernateOrmConfigPersistenceUnit {
          * without having to set this property, in every launch mode:
          * whether the script is executed only depends on `quarkus.hibernate-orm.data-management.strategy`.
          * Pass `no-file` to force Hibernate ORM to ignore the file.
+         * A file set in `quarkus.hibernate-orm.schema-management.init-script` is not picked up by default here.
          *
          * If you need different SQL statements between dev mode, test (`@QuarkusTest`) and in production, use Quarkus
          * https://quarkus.io/guides/config#configuration-profiles[configuration profiles facility].

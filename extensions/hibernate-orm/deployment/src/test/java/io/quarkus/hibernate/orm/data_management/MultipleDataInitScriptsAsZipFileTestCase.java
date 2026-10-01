@@ -14,9 +14,10 @@ public class MultipleDataInitScriptsAsZipFileTestCase {
     static QuarkusExtensionTest runner = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(MyEntity.class, InitScriptTestResource.class)
-                    .addAsResource("application-multiple-data-init-script-files-as-zip-file-test.properties",
-                            "application.properties")
-                    .addAsResource("multiple-load-script-files.zip"));
+                    .addAsResource("multiple-load-script-files.zip"))
+            .withConfiguration("""
+                    quarkus.hibernate-orm.data-management.init-script=multiple-load-script-files.zip
+                    """);
 
     @Test
     public void testMultipleLoadScriptFilesAsZipFile() {

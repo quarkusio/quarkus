@@ -14,11 +14,14 @@ public class DataInitScriptsAsZipFilesAndSqlFileTestCase {
     static QuarkusExtensionTest runner = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(MyEntity.class, InitScriptTestResource.class)
-                    .addAsResource("application-data-init-scripts-as-multiple-zip-files-and-sql-file-test.properties",
-                            "application.properties")
                     .addAsResource("load-script-test.sql")
                     .addAsResource("import-multiple-load-scripts-1.zip")
-                    .addAsResource("import-multiple-load-scripts-2.zip"));
+                    .addAsResource("import-multiple-load-scripts-2.zip"))
+            .withConfiguration(
+                    """
+                            quarkus.hibernate-orm.schema-management.strategy=drop-and-create
+                            quarkus.hibernate-orm.data-management.init-script=load-script-test.sql, import-multiple-load-scripts-1.zip, import-multiple-load-scripts-2.zip
+                            """);
 
     @Test
     public void testDataInitScriptsAsZipFilesAndSqlFile() {

@@ -27,10 +27,12 @@ public class DeprecatedSqlLoadScriptAndDataManagementStrategyTestCase {
                     .hasMessageContaining(
                             "'quarkus.hibernate-orm.sql-load-script' is deprecated and cannot be used together with"
                                     + " 'quarkus.hibernate-orm.data-management.strategy'."
-                                    + " Remove it and use 'quarkus.hibernate-orm.data-management.init-script' instead."));
+                                    + " Remove it and split the script between"
+                                    + " 'quarkus.hibernate-orm.schema-management.init-script'"
+                                    + " and 'quarkus.hibernate-orm.data-management.init-script' instead."));
 
     @Test
     public void applicationStarts() {
-        Assertions.fail("Startup has failed");
+        Assertions.fail("Startup should have failed");
     }
 }

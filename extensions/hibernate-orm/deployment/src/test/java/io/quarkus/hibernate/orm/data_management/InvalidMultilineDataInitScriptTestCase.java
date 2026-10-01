@@ -14,9 +14,12 @@ public class InvalidMultilineDataInitScriptTestCase {
     static QuarkusExtensionTest runner = new QuarkusExtensionTest()
             .setExpectedException(PersistenceException.class)
             .withApplicationRoot((jar) -> jar
-                    .addAsResource("application-invalid-multiline-data-init-script-test.properties", "application.properties")
                     .addAsResource("invalid-multiline.sql")
-                    .addClasses(MyEntity.class));
+                    .addClasses(MyEntity.class))
+            .withConfiguration("""
+                    quarkus.hibernate-orm.schema-management.halt-on-error=true
+                    quarkus.hibernate-orm.data-management.init-script=invalid-multiline.sql
+                    """);
 
     @Test
     public void testInvalidMultilineDataInitScript() {

@@ -127,6 +127,17 @@ public class SchemaManagementIntegrator implements Integrator, DatabaseSchemaPro
 
         ServiceRegistry serviceRegistry = holder.sessionFactory.getServiceRegistry();
         SimpleExecutionOptions executionOptions = new SimpleExecutionOptions(serviceRegistry);
+        // The reset loads data the same way a start on an empty database would.
+        // This is not a guess about what manages the schema: the database action is computed by Quarkus
+        // from the schema and data management strategies (see InitScriptSupport#configureDataManagement),
+        // and it is "populate" only when another tool manages the schema, the data management strategy is "create"
+        // and there is a data init script. Otherwise:
+        // - when Hibernate ORM manages the schema, recreateDatabase() already executed the data init script
+        //   (with "create") as part of the schema creation, so populating again would insert the data twice;
+        // - with the "none" data management strategy, the data init script is not executed on start,
+        //   so it is not executed on reset either;
+        // - scripts set through the deprecated sql-load-script property are only executed
+        //   when Hibernate ORM creates the schema.
         if (Action.POPULATE.equals(databaseAction(executionOptions))) {
             SchemaManagementTool schemaManagementTool = serviceRegistry
                     .getService(SchemaManagementTool.class);

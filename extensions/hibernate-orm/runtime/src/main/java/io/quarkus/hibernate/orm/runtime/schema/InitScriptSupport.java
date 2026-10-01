@@ -52,6 +52,7 @@ public final class InitScriptSupport {
     public static final String CREATE_SOURCE_METADATA_THEN_SCRIPT = "metadata-then-script";
 
     private static final String SQL_LOAD_SCRIPT_PROPERTY = "sql-load-script";
+    private static final String SCHEMA_INIT_SCRIPT_PROPERTY = "schema-management.init-script";
     private static final String DATA_INIT_SCRIPT_PROPERTY = "data-management.init-script";
     private static final String DATA_MANAGEMENT_STRATEGY_PROPERTY = "data-management.strategy";
 
@@ -83,9 +84,11 @@ public final class InitScriptSupport {
         if (legacy) {
             if (configuredStrategy.isPresent()) {
                 throw new ConfigurationException(String.format(Locale.ROOT,
-                        "'%s' is deprecated and cannot be used together with '%s'. Remove it and use '%s' instead.",
+                        "'%s' is deprecated and cannot be used together with '%s'."
+                                + " Remove it and split the script between '%s' and '%s' instead.",
                         HibernateOrmRuntimeConfig.puPropertyKey(persistenceUnitName, SQL_LOAD_SCRIPT_PROPERTY),
                         HibernateOrmRuntimeConfig.puPropertyKey(persistenceUnitName, DATA_MANAGEMENT_STRATEGY_PROPERTY),
+                        HibernateOrmRuntimeConfig.puPropertyKey(persistenceUnitName, SCHEMA_INIT_SCRIPT_PROPERTY),
                         HibernateOrmRuntimeConfig.puPropertyKey(persistenceUnitName, DATA_INIT_SCRIPT_PROPERTY)));
             }
             // Scripts set through the deprecated 'quarkus.hibernate-orm.sql-load-script' keep their historical behavior:
@@ -98,29 +101,22 @@ public final class InitScriptSupport {
             return false;
         }
 
-        DataManagementStrategy strategy = configuredStrategy.orElseGet(InitScriptSupport::defaultDataManagementStrategy);
+        boolean startOffline = persistenceUnitConfig.database().startOffline();
+        DataManagementStrategy strategy = configuredStrategy
+                .orElseGet(() -> defaultDataManagementStrategy(startOffline));
+        if (startOffline && DataManagementStrategy.CREATE.equals(strategy)) {
+            // Only possible when set explicitly: the default is `none` when starting offline
+            throw new PersistenceException(String.format(Locale.ROOT,
+                    "When using offline mode with `%s=true`, the data management strategy `%s` must be unset or set to `none`",
+                    HibernateOrmRuntimeConfig.puPropertyKey(persistenceUnitName, "database.start-offline"),
+                    HibernateOrmRuntimeConfig.puPropertyKey(persistenceUnitName, DATA_MANAGEMENT_STRATEGY_PROPERTY)));
+        }
         if (DataManagementStrategy.NONE.equals(strategy)) {
             LOG.debugf("Persistence unit '%s': not executing the data init script on start (`%s` is `none`)",
                     persistenceUnitName,
                     HibernateOrmRuntimeConfig.puPropertyKey(persistenceUnitName, DATA_MANAGEMENT_STRATEGY_PROPERTY));
             // The script stays in the settings so that it remains available to explicit SchemaManager calls
             // (populate(), truncate()); only the schema management triggered by Quarkus ignores it.
-            runtimeSettingsBuilder.put(DATA_INIT_SCRIPT_ON_START, false);
-            return false;
-        }
-
-        if (persistenceUnitConfig.database().startOffline()) {
-            if (configuredStrategy.isPresent()) {
-                throw new PersistenceException(String.format(Locale.ROOT,
-                        "When using offline mode with `%s=true`, the data management strategy `%s` must be unset or set to `none`",
-                        HibernateOrmRuntimeConfig.puPropertyKey(persistenceUnitName, "database.start-offline"),
-                        HibernateOrmRuntimeConfig.puPropertyKey(persistenceUnitName, DATA_MANAGEMENT_STRATEGY_PROPERTY)));
-            }
-            LOG.warnf(
-                    "Persistence unit '%s': not executing the data init script since Hibernate ORM starts offline (`%s=true`)",
-                    persistenceUnitName,
-                    HibernateOrmRuntimeConfig.puPropertyKey(persistenceUnitName, "database.start-offline"));
-            // As with the "none" strategy, the script stays available to explicit SchemaManager calls
             runtimeSettingsBuilder.put(DATA_INIT_SCRIPT_ON_START, false);
             return false;
         }
@@ -174,8 +170,11 @@ public final class InitScriptSupport {
      * The data init script is executed by default in dev and test modes only.
      * It is not executed by default in other modes (e.g. in production), even when Hibernate ORM creates the schema:
      * loading data there is an explicit choice, like creating the schema is.
+     * It is not executed by default either when Hibernate ORM starts offline, since that requires a connection.
      */
-    public static DataManagementStrategy defaultDataManagementStrategy() {
-        return LaunchMode.current().isDevOrTest() ? DataManagementStrategy.CREATE : DataManagementStrategy.NONE;
+    public static DataManagementStrategy defaultDataManagementStrategy(boolean startOffline) {
+        return LaunchMode.current().isDevOrTest() && !startOffline
+                ? DataManagementStrategy.CREATE
+                : DataManagementStrategy.NONE;
     }
 }

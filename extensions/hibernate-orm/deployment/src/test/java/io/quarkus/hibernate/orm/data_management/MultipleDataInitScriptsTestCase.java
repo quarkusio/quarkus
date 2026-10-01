@@ -14,9 +14,11 @@ public class MultipleDataInitScriptsTestCase {
     static QuarkusExtensionTest runner = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(MyEntity.class, InitScriptTestResource.class)
-                    .addAsResource("application-multiple-data-init-scripts-test.properties", "application.properties")
                     .addAsResource("import-multiple-load-scripts-1.sql", "import-1.sql")
-                    .addAsResource("import-multiple-load-scripts-2.sql", "import-2.sql"));
+                    .addAsResource("import-multiple-load-scripts-2.sql", "import-2.sql"))
+            .withConfiguration("""
+                    quarkus.hibernate-orm.data-management.init-script=import-1.sql,import-2.sql
+                    """);
 
     @Test
     public void testMultipleDataInitScripts() {

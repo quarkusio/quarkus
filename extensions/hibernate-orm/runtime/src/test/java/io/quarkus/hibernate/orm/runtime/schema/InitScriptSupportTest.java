@@ -17,6 +17,7 @@ class InitScriptSupportTest {
     @Test
     void defaultStrategy_outsideDevAndTestModes() {
         assertThat(LaunchMode.current()).isEqualTo(LaunchMode.NORMAL);
-        assertThat(InitScriptSupport.defaultDataManagementStrategy()).isEqualTo(DataManagementStrategy.NONE);
+        assertThat(InitScriptSupport.defaultDataManagementStrategy(false)).isEqualTo(DataManagementStrategy.NONE);
+        assertThat(InitScriptSupport.defaultDataManagementStrategy(true)).isEqualTo(DataManagementStrategy.NONE);
     }
 }

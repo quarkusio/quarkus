@@ -14,8 +14,10 @@ public class DataInitScriptPresentTestCase {
     static QuarkusExtensionTest runner = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClasses(MyEntity.class, InitScriptTestResource.class)
-                    .addAsResource("application-other-data-init-script-test.properties", "application.properties")
-                    .addAsResource("load-script-test.sql"));
+                    .addAsResource("load-script-test.sql"))
+            .withConfiguration("""
+                    quarkus.hibernate-orm.data-management.init-script=load-script-test.sql
+                    """);
 
     @Test
     public void testDataInitScriptPresent() {

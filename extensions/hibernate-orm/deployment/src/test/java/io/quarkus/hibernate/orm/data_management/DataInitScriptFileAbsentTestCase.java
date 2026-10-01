@@ -13,8 +13,10 @@ public class DataInitScriptFileAbsentTestCase {
     static QuarkusExtensionTest runner = new QuarkusExtensionTest()
             .setExpectedException(ConfigurationException.class)
             .withApplicationRoot((jar) -> jar
-                    .addClasses(MyEntity.class)
-                    .addAsResource("application-other-data-init-script-test.properties", "application.properties"));
+                    .addClasses(MyEntity.class))
+            .withConfiguration("""
+                    quarkus.hibernate-orm.data-management.init-script=load-script-test.sql
+                    """);
 
     @Test
     public void testDataInitScriptFileAbsent() {

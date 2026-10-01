@@ -19,7 +19,8 @@ import io.quarkus.test.vertx.UniAsserter;
  * With the "none" schema management strategy, e.g. when the schema is managed by Flyway or Liquibase,
  * the data init script (data.sql) is still executed on startup.
  * <p>
- * The script creates the table itself, standing in for the tool managing the schema.
+ * The script creates the table itself, standing in for the tool managing the schema,
+ * with a column the entity does not map, so that the test fails if Hibernate ORM created the table instead.
  */
 public class DataInitScriptWithSchemaManagementNoneTestCase {
 
@@ -41,6 +42,10 @@ public class DataInitScriptWithSchemaManagementNoneTestCase {
                 .createQuery("from Hero h where h.name = :name", Hero.class).setParameter("name", "Galadriel")
                 .getResultList()),
                 list -> assertThat(list).hasSize(1));
+        asserter.assertThat(() -> sessionFactory.withSession(s -> s
+                .createNativeQuery("select created_by_script from " + Hero.TABLE + " where id = 1", Boolean.class)
+                .getSingleResult()),
+                createdByScript -> assertThat(createdByScript).isTrue());
     }
 
     @Entity(name = "Hero")

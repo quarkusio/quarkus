@@ -223,6 +223,8 @@ final class JpaModelProcessor {
         boolean hasPackagesInQuarkusConfig = hasPackagesInQuarkusConfig(hibernateOrmConfig);
         Collection<AnnotationInstance> packageLevelPersistenceUnitAnnotations = getPackageLevelPersistenceUnitAnnotations(
                 index);
+        Collection<AnnotationInstance> classLevelPersistenceUnitAnnotations = getClassLevelPersistenceUnitAnnotations(
+                index);
 
         Map<String, Set<String>> packageRules = new HashMap<>();
 
@@ -233,10 +235,10 @@ final class JpaModelProcessor {
         if (hasPackagesInQuarkusConfig) {
             // Config based packages have priorities over annotations.
             // As long as there is one defined, annotations are ignored.
-            if (!packageLevelPersistenceUnitAnnotations.isEmpty()) {
+            if (!packageLevelPersistenceUnitAnnotations.isEmpty() || !classLevelPersistenceUnitAnnotations.isEmpty()) {
                 // TODO shouldn't this be an error?
                 LOG.warn(
-                        "Mixing Quarkus configuration and @PersistenceUnit annotations to define the persistence units is not supported. Ignoring the annotations.");
+                        "Mixing Quarkus configuration and @PersistenceUnit annotations (package-level or class-level) to define the persistence units is not supported. Ignoring the annotations.");
             }
 
             for (Entry<String, HibernateOrmConfigPersistenceUnit> candidatePersistenceUnitEntry : hibernateOrmConfig
@@ -283,7 +285,9 @@ final class JpaModelProcessor {
                     modelClassInfo);
 
             // Check for class-level @PersistenceUnit annotations
-            if (modelClassInfo != null) {
+            // Config based packages have priority: when .packages is configured, class-level
+            // annotations are ignored (see warning above).
+            if (!hasPackagesInQuarkusConfig && modelClassInfo != null) {
                 Set<String> classPersistenceUnits = new HashSet<>();
                 AnnotationInstance singleAnnotation = modelClassInfo.declaredAnnotation(ClassNames.QUARKUS_PERSISTENCE_UNIT);
                 AnnotationInstance containerAnnotation = modelClassInfo
@@ -660,5 +664,24 @@ final class JpaModelProcessor {
         }
 
         return packageLevelPersistenceUnitAnnotations;
+    }
+
+    private static Collection<AnnotationInstance> getClassLevelPersistenceUnitAnnotations(IndexView index) {
+        Collection<AnnotationInstance> persistenceUnitAnnotations = index
+                .getAnnotationsWithRepeatable(ClassNames.QUARKUS_PERSISTENCE_UNIT, index);
+        Collection<AnnotationInstance> classLevelPersistenceUnitAnnotations = new ArrayList<>();
+
+        for (AnnotationInstance persistenceUnitAnnotation : persistenceUnitAnnotations) {
+            if (persistenceUnitAnnotation.target().kind() != Kind.CLASS) {
+                continue;
+            }
+
+            if ("package-info".equals(persistenceUnitAnnotation.target().asClass().simpleName())) {
+                continue;
+            }
+            classLevelPersistenceUnitAnnotations.add(persistenceUnitAnnotation);
+        }
+
+        return classLevelPersistenceUnitAnnotations;
     }
 }

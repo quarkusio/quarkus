@@ -145,6 +145,10 @@ public class ImmutablePathMatcher<T> {
          * @return ImmutablePathMatcherBuilder
          */
         public ImmutablePathMatcherBuilder<T> rootPath(String rootPath) {
+            // the root path is not always normalized to contain the trailing forward slash
+            if (rootPath != null && !rootPath.endsWith(STRING_PATH_SEPARATOR)) {
+                rootPath += STRING_PATH_SEPARATOR;
+            }
             this.rootPath = rootPath;
             return this;
         }

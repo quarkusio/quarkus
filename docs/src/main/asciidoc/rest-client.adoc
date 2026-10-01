@@ -124,8 +124,8 @@ CDI injection as a REST Client
 
 [NOTE]
 ====
-When the `quarkus-rest-client-jackson` extension is installed, Quarkus will use the `application/json` media type
-by default for most return values, unless the media type is explicitly set via `@Produces` or `@Consumes` annotations.
+Quarkus uses the `application/json` media type by default for most return values,
+unless the media type is explicitly set via `@Produces` or `@Consumes` annotations.
 
 If you don't rely on the JSON default, it is heavily recommended to annotate your endpoints with the `@Produces` and `@Consumes` annotations to define precisely the expected content-types.
 It will allow to narrow down the number of Jakarta REST providers (which can be seen as converters) included in the native executable.

@@ -99,6 +99,7 @@ public interface ContainerConfig extends EnvVarHolder {
         return convertToBuildItems().stream()
                 .map(kebi -> new Env(EnvConverter.convertName(kebi.getName()), kebi.getValue(), kebi.getSecret(),
                         kebi.getConfigMap(), kebi.getField(), null, kebi.getPrefix()))
+                .sorted((e1, e2) -> EnvConverter.convertName(e1.getName()).compareTo(EnvConverter.convertName(e2.getName())))
                 .collect(Collectors.toList());
     }
 
@@ -128,6 +129,7 @@ public interface ContainerConfig extends EnvVarHolder {
                             type == KubernetesEnvBuildItem.EnvType.var ? kebi.getValue() : null,
                             sourceBuilder.build());
                 })
+                .sorted((e1, e2) -> e1.getName().compareTo(e2.getName()))
                 .toList();
     }
 
@@ -143,6 +145,13 @@ public interface ContainerConfig extends EnvVarHolder {
                     }
                     envFromBuilder.withPrefix(kebi.getPrefix());
                     return envFromBuilder.build();
+                })
+                .sorted((e1, e2) -> {
+                    String name1 = e1.getSecretRef() != null ? e1.getSecretRef().getName()
+                            : e1.getConfigMapRef() != null ? e1.getConfigMapRef().getName() : "";
+                    String name2 = e2.getSecretRef() != null ? e2.getSecretRef().getName()
+                            : e2.getConfigMapRef() != null ? e2.getConfigMapRef().getName() : "";
+                    return name1.compareTo(name2);
                 })
                 .toList();
     }
@@ -163,8 +172,12 @@ public interface ContainerConfig extends EnvVarHolder {
         }
         b.addAllToEnv(getEnvVars());
         b.addAllToEnvFrom(getEnvFroms());
-        b.addAllToPorts(ports().entrySet().stream().map(e -> e.getValue().toContainerPort(e.getKey())).toList());
-        b.addAllToVolumeMounts(mounts().entrySet().stream().map(esm -> esm.getValue().toVolumeMount(esm.getKey())).toList());
+        b.addAllToPorts(ports().entrySet().stream()
+                .sorted(Map.Entry.comparingByKey())
+                .map(e -> e.getValue().toContainerPort(e.getKey())).toList());
+        b.addAllToVolumeMounts(mounts().entrySet().stream()
+                .sorted(Map.Entry.comparingByKey())
+                .map(esm -> esm.getValue().toVolumeMount(esm.getKey())).toList());
 
         resources().applyToContainer(b);
 

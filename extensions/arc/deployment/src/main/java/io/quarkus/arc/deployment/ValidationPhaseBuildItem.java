@@ -43,7 +43,7 @@ public final class ValidationPhaseBuildItem extends SimpleBuildItem {
         return beanProcessor.getBeanDeployment().getBeanResolver();
     }
 
-    BeanProcessor getBeanProcessor() {
+    public BeanProcessor getBeanProcessor() {
         return beanProcessor;
     }
 

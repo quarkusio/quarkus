@@ -121,7 +121,7 @@ You can disable those using:
 quarkus.kafka.devservices.redpanda.transaction-enabled=false
 ----
 
-NOTE: Redpanda transactions does not support exactly-once processing.
+NOTE: Redpanda transactions do not support exactly-once processing.
 
 [[Compose]]
 == Compose

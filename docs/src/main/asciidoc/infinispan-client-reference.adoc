@@ -80,7 +80,7 @@ You need at least one running instance of the Infinispan Server.
 If you are running a Docker instance, you can use xref:infinispan-dev-services.adoc[Infinispan Dev Services]
 and connect without configuration.
 
-If you want to run the server yourself using Docker, check out the 5-minute https://infinispan.org/get-started/[Getting stated with Infinispan]
+If you want to run the server yourself using Docker, check out the 5-minute https://infinispan.org/get-started/[Getting started with Infinispan]
 tutorial to run Infinispan Server
 
 You can also https://infinispan.org/download/[download] {infinispan-version} Server bare metal distribution and run the following command
@@ -190,7 +190,7 @@ Learn more in the link:https://infinispan.org/docs/stable/titles/xsite/xsite.htm
 ====
 
 === Default and named connections
-This extension lets you configure a _default_ Infinispan client connections and _named_ ones.
+This extension lets you configure a _default_ Infinispan client connection and _named_ ones.
 Named connections are essential to connect to multiple Infinispan clusters.
 
 The default connection is configured using the `quarkus.infinispan-client.*` properties as seen above.
@@ -256,7 +256,7 @@ the same Quarkus profile, `configuration-uri` gets the highest preference, over 
 
 [WARNING]
 ====
-The `configuration-resource` is build time property and the file will be included in the native build automatically.
+The `configuration-resource` is a build time property and the file will be included in the native build automatically.
 `configuration-uri` can also point to a file under the `resources` folder. However, the file won't be automatically included
 in the native executable, unless you configure the property `quarkus.native.resources.includes`.
 ====
@@ -342,7 +342,7 @@ called https://github.com/infinispan/protostream[Protostream].
 
 [TIP]
 ====
-Infinispan caches can store keys and values in different encodings, but recommend using https://developers.google.com/protocol-buffers[Protocol Buffers (Protobuf)].
+Infinispan caches can store keys and values in different encodings, but we recommend using https://developers.google.com/protocol-buffers[Protocol Buffers (Protobuf)].
 
 For more information see our https://infinispan.org/docs/stable/titles/encoding/encoding.html[Cache Encoding and Marshalling] guide.
 ====
@@ -393,7 +393,7 @@ public record Book(@Text String title, //<2>
 ----
 <1> Indicates that the entity will be indexed. Necessary to perform distributed full-text query operations.
 <2> Indicates the `title` should be indexed as text
-<3> Indicates the `description` field field should be indexed as a Keyword.
+<3> Indicates the `description` field should be indexed as a Keyword.
 <4> Collections are supported
 <5> Protostream provides default Protobuf mappers for commonly used types as `BigDecimal`, included in the `org.infinispan.protostream.types` package.
 
@@ -445,7 +445,7 @@ message Book {
   required string description = 2;
   required int32 publicationYear = 3; // no native Date type available in Protobuf
   repeated Author authors = 4;
-  requited double price = 5; // no native BigDecimal type available in Protobuf but you can use the adapter
+  required double price = 5; // no native BigDecimal type available in Protobuf but you can use the adapter
 }
 
 message Author {
@@ -856,7 +856,7 @@ List<Book> list = query.execute().list();
 
 This code won't work anymore since `RemoteCache` is now an `@ApplicationScoped` proxy bean.
 `Search.getQueryFactory` will raise a ClassCastException.
-Remove the unecessary indirection by using the `query` method in the `RemoteCache` API as follows.
+Remove the unnecessary indirection by using the `query` method in the `RemoteCache` API as follows.
 
 [source,java]
 ----
@@ -884,7 +884,7 @@ You can read more about https://infinispan.org/docs/stable/titles/developing/dev
 
 == Near Caching
 
-Near caching is disabled by default, but you can enable it on a per cache basic by configuring the following properties:
+Near caching is disabled by default, but you can enable it on a per cache basis by configuring the following properties:
 
 [source,properties]
 ----
@@ -945,7 +945,7 @@ know if you need these added!
 == Dev Services for Infinispan
 
 When you use the infinispan-client extension in dev mode or in test, Quarkus automatically starts an Infinispan server
-and configure your application.
+and configures your application.
 
 === Enabling / Disabling Dev Services for Infinispan
 

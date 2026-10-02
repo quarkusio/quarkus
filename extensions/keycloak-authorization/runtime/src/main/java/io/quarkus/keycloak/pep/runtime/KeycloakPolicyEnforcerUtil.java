@@ -62,19 +62,8 @@ public final class KeycloakPolicyEnforcerUtil {
         }
         adapterConfig.setConnectionPoolSize(keycloakPolicyEnforcerConfig.connectionPoolSize());
 
-        if (oidcConfig.proxy().proxyConfigurationName().isPresent()) {
-            ProxyConfiguration proxyConfig = proxyConfigurationRegistry
-                    .get(oidcConfig.proxy().proxyConfigurationName())
-                    .orElseThrow(() -> new ConfigurationException(
-                            "Cannot find the Proxy registry configuration '%s'"
-                                    .formatted(oidcConfig.proxy().proxyConfigurationName().get())))
-                    .assertHttpType();
-            String host = proxyConfig.host();
-            if (!host.startsWith("http://") && !host.startsWith("https://")) {
-                host = URI.create(authServerUrl).getScheme() + "://" + host;
-            }
-            adapterConfig.setProxyUrl(host + ":" + proxyConfig.port());
-        }
+        getProxyUrl(oidcConfig.proxy().proxyConfigurationName(), authServerUrl, proxyConfigurationRegistry)
+                .ifPresent(adapterConfig::setProxyUrl);
 
         PolicyEnforcerConfig enforcerConfig = getPolicyEnforcerConfig(keycloakPolicyEnforcerConfig);
 
@@ -89,6 +78,33 @@ public final class KeycloakPolicyEnforcerUtil {
                 .enforcerConfig(enforcerConfig)
                 .httpClient(new HttpClientBuilder().sslContext(tlsConfigSupport.getSslContext()).build(adapterConfig))
                 .build();
+    }
+
+    static Optional<String> getProxyUrl(Optional<String> proxyConfigurationName, String authServerUrl,
+            ProxyConfigurationRegistry proxyConfigurationRegistry) {
+        if (proxyConfigurationName.isEmpty() || ProxyConfigurationRegistry.NONE.equals(proxyConfigurationName.get())) {
+            return Optional.empty();
+        }
+        String name = proxyConfigurationName.get();
+        Optional<ProxyConfiguration> maybeProxyConfig;
+        try {
+            maybeProxyConfig = proxyConfigurationRegistry.get(proxyConfigurationName);
+        } catch (IllegalStateException e) {
+            throw new ConfigurationException("Cannot find the Proxy registry configuration '%s'".formatted(name), e);
+        }
+        ProxyConfiguration proxyConfig = maybeProxyConfig
+                .orElseThrow(() -> new ConfigurationException(
+                        "Cannot find the Proxy registry configuration '%s'".formatted(name)))
+                .assertHttpType();
+        if (proxyConfig.nonProxyHosts().filter(hosts -> !hosts.isEmpty()).isPresent()) {
+            throw new ConfigurationException(("The Proxy registry configuration '%s' sets 'quarkus.proxy.%s.non-proxy-hosts',"
+                    + " which is not supported by Keycloak Authorization").formatted(name, name));
+        }
+        String host = proxyConfig.host();
+        if (!host.startsWith("http://") && !host.startsWith("https://")) {
+            host = URI.create(authServerUrl).getScheme() + "://" + host;
+        }
+        return Optional.of(host + ":" + proxyConfig.port());
     }
 
     private static Map<String, Object> getCredentials(OidcTenantConfig oidcConfig) {

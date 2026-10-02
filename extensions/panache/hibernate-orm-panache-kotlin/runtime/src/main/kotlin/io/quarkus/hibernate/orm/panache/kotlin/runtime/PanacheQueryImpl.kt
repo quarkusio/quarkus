@@ -6,6 +6,7 @@ import io.quarkus.panache.common.Page
 import io.quarkus.panache.common.Parameters
 import io.quarkus.panache.common.Sort
 import jakarta.persistence.LockModeType
+import jakarta.persistence.criteria.JoinType
 import java.util.stream.Stream
 import org.hibernate.Session
 
@@ -38,6 +39,13 @@ class PanacheQueryImpl<Entity : Any> : PanacheQuery<Entity> {
     // Builder
     override fun <NewEntity : Any> project(type: Class<NewEntity>): PanacheQuery<NewEntity> {
         return PanacheQueryImpl(delegate.project(type))
+    }
+
+    override fun <NewEntity : Any> project(
+        type: Class<NewEntity>,
+        joinType: JoinType,
+    ): PanacheQuery<NewEntity> {
+        return PanacheQueryImpl(delegate.project(type, joinType))
     }
 
     override fun page(page: Page): PanacheQuery<Entity> {

@@ -905,6 +905,22 @@ PanacheQuery<DogDto> query = Dog.findAll().project(DogDto.class);
 ----
 <1> The `ownerName` DTO constructor's parameter will be loaded from the `owner.name` HQL property.
 
+[NOTE]
+====
+When a projection navigates an association (such as `owner.name` above), it uses an implicit inner join, so entities whose
+association is `null` are excluded from the results. If you want those entities to be returned instead — with a `null` value
+for the missing association — opt into a left join with `project(Class, JoinType)`:
+
+[source,java]
+----
+PanacheQuery<DogDto> query = Dog.findAll().project(DogDto.class, JoinType.LEFT);
+----
+
+This generates explicit `LEFT JOIN` clauses for the single-valued associations (`@ManyToOne`/`@OneToOne`) navigated by the
+projection. It applies to the auto-generated `find`/`findAll` query; a custom `select`/`from` query, or a path crossing a
+to-many association, keeps the default behavior.
+====
+
 The `@ProjectedFieldName` annotation also supports HQL expressions, including aggregate functions.
 This is particularly useful for GROUP BY queries:
 

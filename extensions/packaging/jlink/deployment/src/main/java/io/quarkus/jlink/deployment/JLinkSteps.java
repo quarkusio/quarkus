@@ -21,7 +21,9 @@ import java.util.spi.ToolProvider;
 import org.jboss.logging.Logger;
 
 import io.quarkus.builder.BuildException;
+import io.quarkus.core.deployment.builditem.ProductionResultBuildItem;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.annotations.Produce;
 import io.quarkus.deployment.pkg.builditem.ArtifactResultBuildItem;
 import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
 import io.quarkus.gizmo2.Const;
@@ -162,6 +164,7 @@ public final class JLinkSteps {
      * @throws IOException if there is a filesystem problem
      */
     @BuildStep
+    @Produce(ProductionResultBuildItem.class)
     public JLinkImageBuildItem jlink(
             JLinkStagedOutputItem stagedOutput,
             ApplicationModuleInfoBuildItem moduleInfoItem) throws BuildException, IOException {

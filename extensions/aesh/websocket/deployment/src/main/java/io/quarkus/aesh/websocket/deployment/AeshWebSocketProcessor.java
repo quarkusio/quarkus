@@ -16,6 +16,7 @@ import io.quarkus.aesh.websocket.runtime.AeshWebSocketSecurityCheck;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.AnnotationsTransformerBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
+import io.quarkus.core.deployment.builditem.AlwaysResultBuildItem;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.Feature;
@@ -26,7 +27,6 @@ import io.quarkus.deployment.annotations.Produce;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
-import io.quarkus.deployment.pkg.builditem.ArtifactResultBuildItem;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.smallrye.health.deployment.spi.HealthBuildItem;
 import io.quarkus.websockets.next.HttpUpgradeCheck;
@@ -160,7 +160,7 @@ class AeshWebSocketProcessor {
     }
 
     @BuildStep
-    @Produce(ArtifactResultBuildItem.class)
+    @Produce(AlwaysResultBuildItem.class)
     void warnIfInsecureInProduction(AeshWebSocketConfig config,
             LaunchModeBuildItem launchMode) {
         if (config.enabled() && launchMode.getLaunchMode() == LaunchMode.NORMAL) {

@@ -1,0 +1,28 @@
+plugins {
+    id 'java'
+    id 'io.quarkus.application'
+}
+
+group = 'org.acme'
+version = '1.0.0-SNAPSHOT'
+
+repositories {
+    mavenLocal {
+        content {
+            includeGroupByRegex 'io.quarkus.*'
+        }
+    }
+    mavenCentral()
+}
+
+dependencies {
+    implementation enforcedPlatform("${quarkusPlatformGroupId}:${quarkusPlatformArtifactId}:${quarkusPlatformVersion}")
+    implementation 'io.quarkus:quarkus-grpc'
+    testImplementation 'io.quarkus:quarkus-grpc'
+}
+
+quarkusApplication {
+    builds {
+        fastJar('app')
+    }
+}

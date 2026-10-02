@@ -39,6 +39,27 @@ public class DevModeMediator {
         }
     }
 
+    public static void cancelDelete(Path deletedPath) {
+        synchronized (removedFiles) {
+            removedFiles.remove(deletedPath);
+        }
+    }
+
+    static void deleteScheduledFiles() throws IOException {
+        synchronized (removedFiles) {
+            var removedFilesIterator = removedFiles.iterator();
+            while (removedFilesIterator.hasNext()) {
+                final Path removedFile = removedFilesIterator.next();
+                removedFilesIterator.remove();
+                var sb = new StringBuilder().append("Deleting ").append(removedFile);
+                if (!Files.deleteIfExists(removedFile)) {
+                    sb.append(" didn't succeed");
+                }
+                LOGGER.info(sb.toString());
+            }
+        }
+    }
+
     static void doDevMode(Path appRoot) throws IOException, ClassNotFoundException, IllegalAccessException,
             InvocationTargetException, NoSuchMethodException {
         Path deploymentClassPath = appRoot.resolve(QuarkusEntryPoint.LIB_DEPLOYMENT_DEPLOYMENT_CLASS_PATH_DAT);
@@ -132,18 +153,7 @@ public class DevModeMediator {
                     if (closeable != null) {
                         closeable.close();
                     }
-                    synchronized (removedFiles) {
-                        var removedFilesIterator = removedFiles.iterator();
-                        while (removedFilesIterator.hasNext()) {
-                            final Path removedFile = removedFilesIterator.next();
-                            removedFilesIterator.remove();
-                            var sb = new StringBuilder().append("Deleting ").append(removedFile);
-                            if (!Files.deleteIfExists(removedFile)) {
-                                sb.append(" didn't succeed");
-                            }
-                            LOGGER.info(sb.toString());
-                        }
-                    }
+                    deleteScheduledFiles();
                     try {
                         closeable = doStart(appRoot, deploymentClassPath);
                     } catch (Exception e) {

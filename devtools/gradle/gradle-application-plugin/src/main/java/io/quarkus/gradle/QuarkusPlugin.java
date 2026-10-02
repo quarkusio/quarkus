@@ -87,6 +87,7 @@ public class QuarkusPlugin implements Plugin<Project> {
 
     public static final String ID = "io.quarkus";
     public static final String DEFAULT_OUTPUT_DIRECTORY = "quarkus-app";
+    private static final String APPLICATION_PLUGIN_ID = "io.quarkus.application";
 
     public static final String EXTENSION_NAME = "quarkus";
     public static final String LIST_EXTENSIONS_TASK_NAME = "listExtensions";
@@ -143,6 +144,13 @@ public class QuarkusPlugin implements Plugin<Project> {
 
     @Override
     public void apply(Project project) {
+        if (project.getPlugins().hasPlugin(APPLICATION_PLUGIN_ID)) {
+            throw new GradleException("Legacy plugin 'io.quarkus' must be applied before 'io.quarkus.application' "
+                    + "when both plugins are used in migration mode. Apply 'io.quarkus' first so it owns legacy "
+                    + "Gradle Test task instrumentation, then apply 'io.quarkus.application' for Gradle-native "
+                    + "application tasks.");
+        }
+
         GradleVersionSupport.requireMinimumGradleVersion();
 
         // Apply the `java` plugin

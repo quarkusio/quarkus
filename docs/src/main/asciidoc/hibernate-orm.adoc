@@ -377,12 +377,19 @@ It is perfectly valid to have several persistence units pointing to the same dat
 [[multiple-persistence-units-attaching-model-classes]]
 ==== Attaching model classes to persistence units
 
-There are two ways to attach model classes to persistence units, and they should not be mixed:
+There are three ways to attach model classes to persistence units:
 
 * Via the `packages` configuration property;
-* Via the `@io.quarkus.hibernate.orm.PersistenceUnit` package-level annotation.
+* Via the `@io.quarkus.hibernate.orm.PersistenceUnit` package-level annotation;
+* Via the `@io.quarkus.hibernate.orm.PersistenceUnit` class-level annotation.
 
-If both are mixed, the annotations are ignored and only the `packages` configuration properties are taken into account.
+The `packages` configuration property and the annotations (package-level or class-level) should not be mixed:
+if the `packages` configuration property is used for at least one persistence unit, all `@PersistenceUnit` annotations are ignored
+and only the `packages` configuration properties are taken into account.
+
+The package-level and class-level annotations, on the other hand, can be combined:
+a class-level `@PersistenceUnit` annotation always takes precedence over a package-level one for that particular class,
+which makes it convenient to assign a whole package to a persistence unit while moving a few specific classes to another one.
 
 Using the `packages` configuration property is simple:
 
@@ -429,7 +436,7 @@ contact us on the link:{quarkus-mailing-list-index}[quarkus-dev mailing list].
 ====
 
 The second approach to attach model classes to a persistence unit is to use package-level `@io.quarkus.hibernate.orm.PersistenceUnit` annotations.
-Again, the two approaches cannot be mixed.
+This approach cannot be mixed with the `packages` configuration property.
 
 To obtain a configuration similar to the one above with the `packages` configuration property, create a `package-info.java` file with the following content:
 
@@ -442,13 +449,57 @@ import io.quarkus.hibernate.orm.PersistenceUnit;
 ----
 <1> Be careful, use the `@io.quarkus.hibernate.orm.PersistenceUnit` annotation, not the Jakarta Persistence one.
 
-[CAUTION]
-====
-We only support defining the `@PersistenceUnit` for model classes at the package level,
-using the `@PersistenceUnit` annotation at the class level is not supported in this case.
-====
-
 Note that, similarly to what we do with the configuration property, we take into account the annotated package but also all its subpackages.
+
+The third approach is to annotate the model class itself with `@io.quarkus.hibernate.orm.PersistenceUnit`.
+This approach also cannot be mixed with the `packages` configuration property.
+
+[source,java]
+----
+@Entity
+@PersistenceUnit("users") <1>
+public class User {
+    // ...
+}
+----
+<1> Be careful, use the `@io.quarkus.hibernate.orm.PersistenceUnit` annotation, not the Jakarta Persistence one.
+
+A model class can be attached to several persistence units by repeating the annotation:
+
+[source,java]
+----
+@Entity
+@PersistenceUnit("users")
+@PersistenceUnit("inventory")
+public class SharedEntity {
+    // ...
+}
+----
+
+As mentioned above, a class-level annotation takes precedence over a package-level one.
+This is useful when most classes of a package belong to one persistence unit,
+but a few classes need to be attached to a different one.
+
+All classes in the `org.acme.model.user` package are attached to the `users` persistence unit by default:
+
+[source,java]
+----
+@PersistenceUnit("users")
+package org.acme.model.user;
+
+import io.quarkus.hibernate.orm.PersistenceUnit;
+----
+
+Except for `Warehouse`, which is explicitly attached to the `inventory` persistence unit instead, overriding the package-level annotation:
+
+[source,java]
+----
+@Entity
+@PersistenceUnit("inventory")
+public class Warehouse {
+    // ...
+}
+----
 
 [[persistence-unit-detection]]
 === Conditions for persistence unit configuration

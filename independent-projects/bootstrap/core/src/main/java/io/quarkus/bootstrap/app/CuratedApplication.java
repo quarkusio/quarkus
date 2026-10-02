@@ -181,7 +181,7 @@ public class CuratedApplication implements Serializable, AutoCloseable {
      */
     private synchronized void processCpElement(ResolvedDependency artifact, Consumer<ClassPathElement> consumer,
             boolean useCpeCache) {
-        if (!artifact.isJar()) {
+        if (!artifact.isJarOrZip()) {
             //avoid the need for this sort of check in multiple places
             consumer.accept(ClassPathElement.EMPTY);
             return;
@@ -404,7 +404,7 @@ public class CuratedApplication implements Serializable, AutoCloseable {
     }
 
     private boolean isReloadableRuntimeDependency(ResolvedDependency dependency) {
-        return dependency.isRuntimeCp() && dependency.isJar() &&
+        return dependency.isRuntimeCp() && dependency.isJarOrZip() &&
                 (dependency.isReloadable() && appModel.getReloadableWorkspaceDependencies().contains(dependency.getKey()) ||
                         configuredClassLoading.isReloadableArtifact(dependency.getKey()));
     }

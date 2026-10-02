@@ -8,6 +8,9 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 
+import jakarta.inject.Inject;
+import jakarta.persistence.EntityAgent;
+
 import org.hibernate.Session;
 import org.hibernate.StatelessSession;
 import org.junit.jupiter.api.Assertions;
@@ -109,5 +112,60 @@ public class QuarkusDataOrmTest {
 
         constructor = statelessQueriesClass.getConstructor(StatelessSession.class);
         Assertions.assertNotNull(constructor);
+    }
+
+    @Test
+    public void testPlainInterfaceRepository() throws Exception {
+        Class<?> repositoryClass = _PlainBookRepository.class;
+        Assertions.assertFalse(Modifier.isAbstract(repositoryClass.getModifiers()));
+
+        Class<?>[] interfaces = repositoryClass.getInterfaces();
+        Assertions.assertEquals(1, interfaces.length);
+        Assertions.assertEquals(PlainBookRepository.class.getName(), interfaces[0].getName());
+
+        // Annotated methods generate instance methods
+        Method method = repositoryClass.getDeclaredMethod("hqlBook", String.class);
+        Assertions.assertFalse(Modifier.isStatic(method.getModifiers()));
+        method = repositoryClass.getDeclaredMethod("findBook", String.class);
+        Assertions.assertFalse(Modifier.isStatic(method.getModifiers()));
+
+        // The default blocking session is injected
+        Constructor<?> constructor = repositoryClass.getDeclaredConstructor(Session.class);
+        Assertions.assertTrue(constructor.isAnnotationPresent(Inject.class));
+    }
+
+    @Test
+    public void testJakartaDataRepository() throws Exception {
+        Class<?> repositoryClass = _BookJakartaDataRepository.class;
+        Assertions.assertFalse(Modifier.isAbstract(repositoryClass.getModifiers()));
+
+        Class<?>[] interfaces = repositoryClass.getInterfaces();
+        Assertions.assertEquals(1, interfaces.length);
+        Assertions.assertEquals(BookJakartaDataRepository.class.getName(), interfaces[0].getName());
+
+        // Annotated methods generate instance methods
+        Method method = repositoryClass.getDeclaredMethod("hqlBook", String.class);
+        Assertions.assertFalse(Modifier.isStatic(method.getModifiers()));
+        method = repositoryClass.getDeclaredMethod("findBook", String.class);
+        Assertions.assertFalse(Modifier.isStatic(method.getModifiers()));
+
+        // Jakarta Data repositories get an EntityAgent injected
+        Constructor<?> constructor = repositoryClass.getDeclaredConstructor(EntityAgent.class);
+        Assertions.assertTrue(constructor.isAnnotationPresent(Inject.class));
+    }
+
+    @Test
+    public void testInheritedEntityDoesNotRedeclareRepositoryAccessors() throws Exception {
+        // The parent declares the default repository accessors...
+        Class<?> parentClass = InheritedParentEntity_.class;
+        Assertions.assertNotNull(parentClass.getDeclaredMethod("managed"));
+        Assertions.assertNotNull(parentClass.getDeclaredMethod("record"));
+
+        // ...and the child metamodel extends the parent one, so it must not redeclare them with
+        // an entity-specific return type, which would be an invalid static method hiding
+        Class<?> childClass = InheritedChildEntity_.class;
+        Assertions.assertEquals(parentClass, childClass.getSuperclass());
+        Assertions.assertThrows(NoSuchMethodException.class, () -> childClass.getDeclaredMethod("managed"));
+        Assertions.assertThrows(NoSuchMethodException.class, () -> childClass.getDeclaredMethod("record"));
     }
 }

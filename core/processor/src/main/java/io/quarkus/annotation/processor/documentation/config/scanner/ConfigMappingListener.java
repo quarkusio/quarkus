@@ -77,7 +77,7 @@ public class ConfigMappingListener implements ConfigAnnotationListener {
         final Map<? extends ExecutableElement, ? extends AnnotationValue> elementValues = configRootAnnotation
                 .getElementValues();
         for (Map.Entry<? extends ExecutableElement, ? extends AnnotationValue> entry : elementValues.entrySet()) {
-            if ("phase()".equals(entry.getKey().toString())) {
+            if (entry.getKey().getSimpleName().contentEquals("phase")) {
                 configPhase = ConfigPhase.valueOf(entry.getValue().getValue().toString());
             }
         }
@@ -86,7 +86,7 @@ public class ConfigMappingListener implements ConfigAnnotationListener {
 
         for (Map.Entry<? extends ExecutableElement, ? extends AnnotationValue> entry : configMappingAnnotion.getElementValues()
                 .entrySet()) {
-            if ("prefix()".equals(entry.getKey().toString())) {
+            if (entry.getKey().getSimpleName().contentEquals("prefix")) {
                 prefix = entry.getValue().getValue().toString();
             }
         }
@@ -96,7 +96,7 @@ public class ConfigMappingListener implements ConfigAnnotationListener {
             for (Map.Entry<? extends ExecutableElement, ? extends AnnotationValue> entry : configDocPrefixAnnotation
                     .getElementValues()
                     .entrySet()) {
-                if ("value()".equals(entry.getKey().toString())) {
+                if (entry.getKey().getSimpleName().contentEquals("value")) {
                     overriddenDocPrefix = entry.getValue().getValue().toString();
                     break;
                 }
@@ -108,7 +108,7 @@ public class ConfigMappingListener implements ConfigAnnotationListener {
             for (Map.Entry<? extends ExecutableElement, ? extends AnnotationValue> entry : configDocFileNameAnnotation
                     .getElementValues()
                     .entrySet()) {
-                if ("value()".equals(entry.getKey().toString())) {
+                if (entry.getKey().getSimpleName().contentEquals("value")) {
                     overriddenDocFileName = entry.getValue().getValue().toString();
                     break;
                 }

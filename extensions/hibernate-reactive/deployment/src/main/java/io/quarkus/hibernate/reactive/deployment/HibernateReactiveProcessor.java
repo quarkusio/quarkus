@@ -35,6 +35,7 @@ import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
 import io.quarkus.deployment.builditem.HotDeploymentWatchedFileBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.LogCategoryBuildItem;
+import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
@@ -231,6 +232,12 @@ public final class HibernateReactiveProcessor {
                 io.quarkus.hibernate.orm.deployment.integration.HibernateOrmIntegrationRuntimeConfiguredBuildItem
                         .collectDescriptors(integrationBuildItems));
         return new PersistenceProviderSetUpBuildItem();
+    }
+
+    @BuildStep
+    @Record(RUNTIME_INIT)
+    void clearOpenedSessionsStateOnShutdown(HibernateReactiveRecorder recorder, ShutdownContextBuildItem shutdownContext) {
+        recorder.clearOpenedSessionsStateOnShutdown(shutdownContext);
     }
 
     @BuildStep

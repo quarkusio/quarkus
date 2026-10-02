@@ -44,13 +44,15 @@ export class QwcRoutes extends LitElement {
     `;
 
     static properties = {
-        _routes: {state: true}
+        _routes: {state: true},
+        _loadFailed: {state: true}
     }
 
     constructor() {
         super();
         updateWhenLocaleChanges(this);
         this._routes = null;
+        this._loadFailed = false;
     }
 
     async connectedCallback() {
@@ -60,11 +62,17 @@ export class QwcRoutes extends LitElement {
         
     async load() {
         const response = await fetch(basepath + "/endpoints/routes.json");
-        const data = await response.json();
-        this._routes = data.filter(item => item.contextHandlers);;
+        if (!response.ok) {
+            this._loadFailed = true;
+            return;
+        }
+        this._routes = await response.json();
     }
 
     render() {
+        if (this._loadFailed) {
+            return html`<div style="color: var(--lumo-error-text-color);">${msg('Could not load the routes. See the log file for details', { id: 'endpoints-routes-failed' })}</div>`;
+        }
         if (this._routes) {
             return html`<vaadin-grid .items="${this._routes}" class="infogrid">
                         <vaadin-grid-sort-column resizable
@@ -99,42 +107,20 @@ export class QwcRoutes extends LitElement {
     }
     
     _pathRenderer(route){
-        let path = route.path.replace(/^'|'$/g, '');
-        
-        if(path === "null"){
-            return "";
-        }
-        return path;
+        return route.path ?? "";
     }
     
     _contextHandlersRenderer(route){
-        const contextHandler = this._extractClassName(route.contextHandlers);
+        const contextHandler = route.contextHandlers?.[0];
         if(contextHandler){
             return html`<code title="${msg('Context Handler', { id: 'endpoints-context-handler' })}" class="contextHandler">${contextHandler}</code>`;
         }else{
-            const failureHandler = this._extractClassName(route.failureHandlers);
+            const failureHandler = route.failureHandlers?.[0];
             if(failureHandler){
                 return html`<code title="${msg('Failure Handler', { id: 'endpoints-failure-handler' })}" class="failureHandler">${failureHandler}</code>`;
             }
         }
         return html`<code>${msg('Unknown (could not detect)', { id: 'endpoints-unknown' })}</code>`;
-    }
-    
-    _extractClassName(handler){
-        const regex = /([^$]+)*/;
-        const match = handler.match(regex);
-        let className = match ? match[1] : handler;
-        if(className.startsWith("[")){
-            className = className.substring(1);
-        }
-        if(className.endsWith("]")){
-            className = className.substring(0, className.length-1);
-        }
-        if(className === "null"){
-            return null;
-        }
-        
-        return className;
     }
     
 }

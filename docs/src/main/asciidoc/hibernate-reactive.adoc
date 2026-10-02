@@ -300,7 +300,7 @@ By adding the second extension, you can use the reactive API in another part of 
 
 NOTE: Hibernate ORM and Hibernate Reactive won't share the same persistence context, so it's recommended you stick to one or the other in a given method. For example use Hibernate ORM in blocking REST endpoints, and use Hibernate Reactive in reactive REST endpoints.
 
-* To use the both extension simultaneously, add both extension to the `pom.xml` file:
+* To use both extensions simultaneously, add both extensions to the `pom.xml` file:
 +
 [source,xml]
 ----
@@ -325,7 +325,7 @@ NOTE: Hibernate ORM and Hibernate Reactive won't share the same persistence cont
         </dependency>
 ----
 
-* Also update the `applications.properties` file:
+* Also update the `application.properties` file:
 [source,properties]
 ----
 %prod.quarkus.datasource.reactive.url=postgresql:///your_database
@@ -526,7 +526,7 @@ With the introduction of the `quarkus-reactive-transactions` extension, you now 
 
 You must choose one approach and use it consistently throughout your application.
 Mixing both transaction management styles in the same reactive pipeline is not supported and will result in an `UnsupportedOperationException`.
-In the future, we'll deprecate the previous annotations provided by Panache and and support only `@Transactional`.
+In the future, we'll deprecate the previous annotations provided by Panache and support only `@Transactional`.
 
 You can inject either `Mutiny.Session` or `Mutiny.StatelessSession`.
 Mixing both session types in the same transaction should work, but should be reserved for exotic use cases implemented by advanced users, as the (stateful) session will not be aware of changes operated through the stateless session, which could thus conflict or be silently erased by (stateful) session writes.
@@ -541,7 +541,7 @@ For this reason, **avoid using declarative transactional management with those m
 [[transactional-others]]
 === Other Declarative Transactional Management limitations
 
-Reactive transactions does not use `TransactionManager`, thus they are local only and do not support XA transactions. Every parameter defined on the `TransactionManager` (such as `quarkus.transaction-manager.default-transaction-timeout`) will be ignored. Only a single datasource can participate in a transaction.
+Reactive transactions do not use `TransactionManager`, thus they are local only and do not support XA transactions. Every parameter defined on the `TransactionManager` (such as `quarkus.transaction-manager.default-transaction-timeout`) will be ignored. Only a single datasource can participate in a transaction.
 
 Reactive transactions also work exclusively within the reactive pipeline.
 If blocking code is executed (for example on a worker thread) as part of that pipeline, it will not be able to participate in the transaction.

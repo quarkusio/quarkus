@@ -86,7 +86,7 @@ If you build the project with:
 
 include::{includes}/devtools/build.adoc[]
 
-the `movies.avsc` will get compiled to a `Movie.java` file
+the `movie.avsc` will get compiled to a `Movie.java` file
 placed in the `target/generated-sources/avsc` directory.
 
 Take a look at the https://avro.apache.org/docs/current/specification/#schemas[Avro specification] to learn more about

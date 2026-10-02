@@ -791,14 +791,6 @@ jobs:
             tag: "maven-jdk-${{ needs.configure.outputs.base-jdk-version }}-windows",
             runs-on: false
           }
-          - {
-            name: "25 Semeru",
-            java-version: 25,
-            java-distribution: "semeru",
-            os-name: "ubuntu-latest",
-            tag: "maven-jdk-25-semeru",
-            runs-on: false
-          }
     steps:
       - uses: runs-on/action@efac073ea2507ec18797de3a81704201ade11d9d # v2.3.1
       - name: Gradle Enterprise environment
@@ -1010,14 +1002,6 @@ jobs:
             tag: "devtools-jdk-${{ needs.configure.outputs.base-jdk-version }}-windows",
             runs-on: false
           }
-          - {
-            name: "25 Semeru",
-            java-version: 25,
-            java-distribution: "semeru",
-            os-name: "ubuntu-latest",
-            tag: "devtools-jdk-25-semeru",
-            runs-on: false
-          }
     steps:
       - uses: runs-on/action@efac073ea2507ec18797de3a81704201ade11d9d # v2.3.1
       - name: Gradle Enterprise environment
@@ -1110,14 +1094,6 @@ jobs:
             os-name: "ubuntu-latest",
             tag: "kubernetes-jdk-25",
             runs-on: true
-          }
-          - {
-            name: "25 Semeru",
-            java-version: 25,
-            java-distribution: "semeru",
-            os-name: "ubuntu-latest",
-            tag: "kubernetes-jdk-25-semeru",
-            runs-on: false
           }
     steps:
       - uses: runs-on/action@efac073ea2507ec18797de3a81704201ade11d9d # v2.3.1

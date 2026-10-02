@@ -884,9 +884,28 @@ See the main xref:opentelemetry.adoc#exporters[OpenTelemetry Guide exporters] se
 ** RabbitMQ
 ** Kafka
 ** Pulsar
-* https://quarkus.io/guides/vertx[`quarkus-vertx`] (http requests)
+* https://quarkus.io/guides/vertx[`quarkus-vertx`] (http requests and the event bus)
 * xref:websockets-next-reference.adoc[`websockets-next`]
 
+=== Vert.x event bus
+
+For the event bus, the `TracingPolicy` set on the `DeliveryOptions` decides whether a message is traced:
+
+* `PROPAGATE`, the default, traces a message only while a trace is already in progress, so the message joins
+that trace. A message sent outside a trace, from a scheduled job or a startup task for instance, does not open
+a trace of its own.
+* `ALWAYS` traces the message either way, starting a new trace when none is active.
+* `IGNORE` never traces the message.
+
+[source,java]
+----
+eventBus.publish("greetings", "hello",
+        new DeliveryOptions().setTracingPolicy(TracingPolicy.ALWAYS));
+----
+
+This differs from a client boundary such as an HTTP or database call, which starts a span even when no trace
+is active, because the event bus carries messages inside a single application rather than across a service
+boundary.
 
 === Disable parts of the automatic tracing
 

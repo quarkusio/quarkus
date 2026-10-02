@@ -48,6 +48,11 @@
             <groupId>org.jboss.logging</groupId>
             <artifactId>commons-logging-jboss-logging</artifactId>
         </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-junit-internal</artifactId>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>

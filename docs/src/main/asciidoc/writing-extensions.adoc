@@ -1265,9 +1265,9 @@ A more detailed example:
  * [source,property]
  * .application.properties
  * ----
- * %dev.quarkus.hibernate-orm.sql-load-script = import-dev.sql
- * %test.quarkus.hibernate-orm.sql-load-script = import-test.sql
- * %prod.quarkus.hibernate-orm.sql-load-script = no-file
+ * %dev.quarkus.hibernate-orm.data-management.init-script = data-dev.sql
+ * %test.quarkus.hibernate-orm.data-management.init-script = data-test.sql
+ * %prod.quarkus.hibernate-orm.data-management.init-script = no-file
  * ----
  *
  * [NOTE]

@@ -8,6 +8,8 @@ import org.hibernate.service.spi.ServiceRegistryImplementor;
 import org.hibernate.tool.schema.spi.DelayedDropAction;
 import org.hibernate.tool.schema.spi.SchemaManagementToolCoordinator;
 
+import io.quarkus.hibernate.orm.runtime.schema.InitScriptSupport;
+
 public final class SessionFactoryObserverForSchemaExport implements SessionFactoryObserver {
     private final MetadataImplementor metadata;
     private DelayedDropAction delayedDropAction;
@@ -21,7 +23,7 @@ public final class SessionFactoryObserverForSchemaExport implements SessionFacto
         SchemaManagementToolCoordinator.process(
                 metadata,
                 getRegistry(factory),
-                factory.getProperties(),
+                InitScriptSupport.schemaManagementSettings(factory.getProperties()),
                 action -> delayedDropAction = action);
     }
 

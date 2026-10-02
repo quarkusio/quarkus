@@ -13,7 +13,10 @@ import java.lang.annotation.Target;
  *
  * TODO: move this out of Quarkus core and into a tiny annotation-only module
  * that could then be used outside of Quarkus (for example in RESTEasy Reactive)
+ *
+ * @deprecated The recorder infrastructure is being replaced by a lambda-based service mechanism.
  */
+@Deprecated(since = "4.0")
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.CONSTRUCTOR)
 public @interface RecordableConstructor {

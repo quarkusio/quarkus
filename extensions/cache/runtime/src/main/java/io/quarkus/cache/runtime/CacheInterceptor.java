@@ -31,6 +31,7 @@ import io.quarkus.cache.CacheKey;
 import io.quarkus.cache.CacheKeyGenerator;
 import io.quarkus.cache.CacheManager;
 import io.quarkus.cache.CompositeCacheKey;
+import io.quarkus.cache.UndefinedCacheKeyGenerator;
 import io.smallrye.mutiny.Uni;
 
 public abstract class CacheInterceptor {

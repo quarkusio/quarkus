@@ -14,8 +14,8 @@ import io.quarkus.cache.CacheKeyGenerator;
 import io.quarkus.cache.CaffeineCache;
 import io.quarkus.cache.CompositeCacheKey;
 import io.quarkus.cache.DefaultCacheKey;
+import io.quarkus.cache.UndefinedCacheKeyGenerator;
 import io.quarkus.cache.runtime.CacheInterceptor;
-import io.quarkus.cache.runtime.UndefinedCacheKeyGenerator;
 import io.quarkus.cache.runtime.caffeine.CaffeineCacheImpl;
 import io.quarkus.cache.runtime.caffeine.CaffeineCacheInfo;
 

@@ -49,6 +49,11 @@ public abstract class OpenedSessionsState<T extends Mutiny.Closeable> {
     private final ComputingCache<String, Mutiny.SessionFactory> sessionFactories = new ComputingCache<>(
             k -> createSessionFactory(k));
 
+    void clearCaches() {
+        sessionKeys.clear();
+        sessionFactories.clear();
+    }
+
     protected OpenedSessionsState() {
         sessionOnDemandKey = "hibernate.reactive.openedSessionState." + getSessionType().getName();
     }

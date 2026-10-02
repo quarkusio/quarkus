@@ -33,6 +33,12 @@ public class TransactionalTestEndpoint {
         return service.persistAndCheckTransaction();
     }
 
+    @GET
+    @Path("panache-session")
+    public Uni<String> testPanacheSession() {
+        return Panache.withTransaction(() -> Person.count()).replaceWith("OK");
+    }
+
     @ApplicationScoped
     public static class TransactionalService {
 

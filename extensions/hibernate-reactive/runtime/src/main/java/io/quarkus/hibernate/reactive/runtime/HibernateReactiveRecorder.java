@@ -25,6 +25,7 @@ import io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil;
 import io.quarkus.hibernate.orm.runtime.integration.HibernateOrmIntegrationRuntimeDescriptor;
 import io.quarkus.reactive.datasource.runtime.ReactiveDataSourceUtil;
 import io.quarkus.runtime.RuntimeValue;
+import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
 import io.smallrye.common.vertx.ContextLocals;
 import io.vertx.core.Context;
@@ -42,6 +43,14 @@ public class HibernateReactiveRecorder {
 
     public static final OpenedSessionsState<Mutiny.Session> OPENED_SESSIONS_STATE = new OpenedSessionsStateStatefulImpl();
     public static final OpenedSessionsState<Mutiny.StatelessSession> OPENED_SESSIONS_STATE_STATELESS = new OpenedSessionsStateStatelessImpl();
+
+    public void clearOpenedSessionsStateOnShutdown(ShutdownContext shutdownContext) {
+        // Recorder state is static and can outlive an application restart, so release proxies bound to the old Arc container.
+        shutdownContext.addLastShutdownTask(() -> {
+            OPENED_SESSIONS_STATE.clearCaches();
+            OPENED_SESSIONS_STATE_STATELESS.clearCaches();
+        });
+    }
 
     private static String noSessionFoundErrorMessage() {
         return "No current Mutiny.Session found"

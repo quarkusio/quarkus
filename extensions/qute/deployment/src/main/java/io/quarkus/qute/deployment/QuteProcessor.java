@@ -131,6 +131,7 @@ import io.quarkus.qute.RenderedResults;
 import io.quarkus.qute.ResultNode;
 import io.quarkus.qute.SectionHelper;
 import io.quarkus.qute.SectionHelperFactory;
+import io.quarkus.qute.SectionNode;
 import io.quarkus.qute.SetSectionHelper;
 import io.quarkus.qute.Template;
 import io.quarkus.qute.TemplateContents;
@@ -140,6 +141,7 @@ import io.quarkus.qute.TemplateExtension;
 import io.quarkus.qute.TemplateGlobal;
 import io.quarkus.qute.TemplateInstance;
 import io.quarkus.qute.TemplateLocator;
+import io.quarkus.qute.TemplateNode;
 import io.quarkus.qute.UserTagSectionHelper;
 import io.quarkus.qute.ValueResolver;
 import io.quarkus.qute.Variant;
@@ -1019,6 +1021,122 @@ public class QuteProcessor {
         }
 
         return builder.toString();
+    }
+
+    /**
+     * Validates the arguments of user tag calls against the parameter declarations of the tag templates, unless
+     * {@code quarkus.qute.validate-user-tag-arguments} is set to {@code false}.
+     * <p>
+     * Only declared parameters that are passed by the caller and whose argument type is known are validated. A widening
+     * numeric conversion of the argument is accepted. When a tag has several variants, e.g. {@code tags/item.html} and
+     * {@code tags/item.txt}, an argument is incorrect only if no variant accepts it.
+     */
+    @BuildStep
+    void validateUserTagArguments(QuteConfig config, TemplatesAnalysisBuildItem templatesAnalysis,
+            List<TemplateExpressionMatchesBuildItem> expressionMatches,
+            BeanArchiveIndexBuildItem beanArchiveIndex,
+            BuildProducer<IncorrectExpressionBuildItem> incorrectExpressions) {
+
+        if (!config.validateUserTagArguments()) {
+            return;
+        }
+
+        // all variants of a tag, e.g. tags/item.html and tags/item.txt, keyed by the name used to call it
+        Map<String, List<TemplateAnalysis>> tagsWithDeclarations = new HashMap<>();
+        for (TemplateAnalysis analysis : templatesAnalysis.getAnalysis()) {
+            if (analysis.path != null && analysis.path.startsWith(EngineProducer.TAGS)) {
+                String tagName = analysis.path.substring(EngineProducer.TAGS.length());
+                for (String suffix : config.suffixes()) {
+                    if (tagName.endsWith("." + suffix)) {
+                        tagName = tagName.substring(0, tagName.length() - suffix.length() - 1);
+                        break;
+                    }
+                }
+                tagsWithDeclarations.computeIfAbsent(tagName, k -> new ArrayList<>()).add(analysis);
+            }
+        }
+        tagsWithDeclarations.values()
+                .removeIf(variants -> variants.stream().allMatch(variant -> variant.parameterDeclarations.isEmpty()));
+        if (tagsWithDeclarations.isEmpty()) {
+            return;
+        }
+
+        IndexView index = beanArchiveIndex.getIndex();
+        AssignabilityCheck assignabilityCheck = new AssignabilityCheck(index);
+        Function<String, String> templateIdToPathFun = new Function<String, String>() {
+            @Override
+            public String apply(String id) {
+                return findTemplatePath(templatesAnalysis, id);
+            }
+        };
+        Map<String, Map<Integer, MatchResult>> templateIdToMatches = new HashMap<>();
+        for (TemplateExpressionMatchesBuildItem matches : expressionMatches) {
+            templateIdToMatches.put(matches.templateGeneratedId, matches.getGeneratedIdsToMatches());
+        }
+
+        for (TemplateAnalysis caller : templatesAnalysis.getAnalysis()) {
+            Map<Integer, MatchResult> callerMatches = templateIdToMatches.getOrDefault(caller.generatedId,
+                    Collections.emptyMap());
+            for (TemplateNode node : caller.findNodes(QuteProcessor::isUserTagCall)) {
+                SectionNode call = node.asSection();
+                List<TemplateAnalysis> tagTemplates = tagsWithDeclarations.get(call.getName());
+                if (tagTemplates == null) {
+                    continue;
+                }
+                Map<String, Expression> arguments = ((UserTagSectionHelper) call.getHelper()).getParameters();
+                for (Entry<String, Expression> entry : arguments.entrySet()) {
+                    Expression argument = entry.getValue();
+                    MatchResult match;
+                    if (argument.isLiteral()) {
+                        if (argument.getLiteral() == null) {
+                            continue;
+                        }
+                        match = new MatchResult(assignabilityCheck);
+                        setMatchValues(match, argument, callerMatches, index);
+                    } else {
+                        match = callerMatches.get(argument.getGeneratedId());
+                    }
+                    if (match == null || match.isEmpty()) {
+                        continue;
+                    }
+                    // the argument is incorrect only if no variant of the tag accepts it
+                    List<Type> declaredTypes = new ArrayList<>();
+                    for (TemplateAnalysis tagTemplate : tagTemplates) {
+                        Type declaredType = getDeclaredType(tagTemplate, entry.getKey(), index, templateIdToPathFun);
+                        if (declaredType == null || assignabilityCheck.isAssignableFrom(declaredType, match.type())
+                                || Types.isWideningNumericConversion(match.type(), declaredType)) {
+                            declaredTypes = null;
+                            break;
+                        }
+                        declaredTypes.add(declaredType);
+                    }
+                    if (declaredTypes != null) {
+                        incorrectExpressions.produce(new IncorrectExpressionBuildItem(argument.toOriginalString(),
+                                "The type of the argument [" + entry.getKey() + "] of the user tag [" + call.getName()
+                                        + "] is [" + match.type() + "] but the tag template declares "
+                                        + declaredTypes.stream().map(Object::toString).distinct()
+                                                .collect(Collectors.joining("] or [", "[", "]")),
+                                argument.getOrigin()));
+                    }
+                }
+            }
+        }
+    }
+
+    private static Type getDeclaredType(TemplateAnalysis tagTemplate, String key, IndexView index,
+            Function<String, String> templateIdToPathFun) {
+        for (ParameterDeclaration declaration : tagTemplate.parameterDeclarations) {
+            if (declaration.getKey().equals(key)) {
+                Info info = TypeInfos.create(declaration.getTypeInfo(), null, index, templateIdToPathFun,
+                        declaration.getOrigin());
+                return info.isTypeInfo() ? info.asTypeInfo().resolvedType : null;
+            }
+        }
+        return null;
+    }
+
+    private static boolean isUserTagCall(TemplateNode node) {
+        return node.isSection() && node.asSection().getHelper() instanceof UserTagSectionHelper;
     }
 
     @BuildStep

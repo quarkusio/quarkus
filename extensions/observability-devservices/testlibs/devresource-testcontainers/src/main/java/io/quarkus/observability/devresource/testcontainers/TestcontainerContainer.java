@@ -6,9 +6,11 @@ import java.util.Objects;
 
 import org.testcontainers.containers.GenericContainer;
 
+import io.quarkus.devservices.common.ConfigureUtil;
 import io.quarkus.devservices.common.ContainerShutdownCloseable;
 import io.quarkus.observability.common.config.ContainerConfig;
 import io.quarkus.observability.devresource.Container;
+import io.quarkus.runtime.LaunchMode;
 
 /**
  * Container impl / wrapper for Testcontainer's GenericContainer
@@ -38,6 +40,11 @@ public class TestcontainerContainer<C extends GenericContainer<C>, T extends Con
     @Override
     public void withStartupTimeout(Duration duration) {
         container.withStartupTimeout(duration);
+    }
+
+    @Override
+    public void configureDevServicesLabels(LaunchMode launchMode) {
+        ConfigureUtil.configureLabels(container, launchMode);
     }
 
     @Override

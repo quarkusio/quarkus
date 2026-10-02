@@ -144,7 +144,7 @@ class ObservabilityDevServiceProcessor {
                                 .serviceName(devId)
                                 .serviceConfig(currentDevServicesConfiguration)
                                 .startable(() -> new ObservabilityStartable(dev, currentDevServicesConfiguration,
-                                        configuration, devServicesConfig.timeout()))
+                                        configuration, devServicesConfig.timeout(), launchMode.getLaunchMode()))
                                 .configProvider(ObservabilityStartable::getDevServiceConfig)
                                 .postStartHook(s -> {
                                     log.infof("Dev Service %s started, config: %s", devId, s.getDevServiceConfig());
@@ -212,21 +212,24 @@ class ObservabilityDevServiceProcessor {
         private final ContainerConfig config;
         private final ModulesConfiguration root;
         private final Optional<Duration> timeout;
+        private final LaunchMode launchMode;
 
         private Container<?> container;
         private Map<String, String> devServiceConfig;
 
         ObservabilityStartable(DevResourceLifecycleManager<ContainerConfig> dev,
-                ContainerConfig config, ModulesConfiguration root, Optional<Duration> timeout) {
+                ContainerConfig config, ModulesConfiguration root, Optional<Duration> timeout, LaunchMode launchMode) {
             this.dev = dev;
             this.config = config;
             this.root = root;
             this.timeout = timeout;
+            this.launchMode = launchMode;
         }
 
         @Override
         public void start() {
             container = dev.container(config, root);
+            container.configureDevServicesLabels(launchMode);
             timeout.ifPresent(container::withStartupTimeout);
             devServiceConfig = dev.start();
         }

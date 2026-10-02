@@ -7,6 +7,7 @@ import static io.quarkus.gradle.QuarkusPlugin.QUARKUS_BUILD_TASK_NAME;
 import static io.quarkus.gradle.QuarkusPlugin.QUARKUS_GENERATE_CODE_DEV_TASK_NAME;
 import static io.quarkus.gradle.QuarkusPlugin.QUARKUS_GENERATE_CODE_TASK_NAME;
 import static io.quarkus.gradle.QuarkusPlugin.QUARKUS_GENERATE_CODE_TESTS_TASK_NAME;
+import static io.quarkus.gradle.QuarkusPlugin.QUARKUS_RUN_TASK_NAME;
 import static io.quarkus.gradle.QuarkusPlugin.QUARKUS_SHOW_EFFECTIVE_CONFIG_TASK_NAME;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -45,6 +46,15 @@ public class TasksConfigurationCacheCompatibilityTest {
                 "build");
     }
 
+    /**
+     * Tasks that start the application and therefore never return on their own. They cannot be executed from a test,
+     * but a dry run still calculates and stores the task graph, which is what configuration cache compatibility
+     * means for them.
+     */
+    private static Stream<String> compatibleApplicationStartingTasks() {
+        return Stream.of(QUARKUS_RUN_TASK_NAME);
+    }
+
     private static Stream<String> nonCompatibleQuarkusBuildTasks() {
         return Stream.of(DEPLOY_TASK_NAME);
     }
@@ -79,6 +89,23 @@ public class TasksConfigurationCacheCompatibilityTest {
         assertTrue(firstBuild.getOutput().contains("Configuration cache entry stored"));
 
         BuildResult secondBuild = buildResult(taskName, "--configuration-cache", "-Dorg.gradle.unsafe.isolated-projects=true");
+        assertTrue(secondBuild.getOutput().contains("Reusing configuration cache."));
+    }
+
+    @ParameterizedTest
+    @MethodSource("compatibleApplicationStartingTasks")
+    public void configurationCacheIsReusedForApplicationStartingTasksTest(String taskName)
+            throws IOException, URISyntaxException {
+        URL url = getClass().getClassLoader().getResource("io/quarkus/gradle/tasks/configurationcache/main");
+        FileUtils.copyDirectory(new File(url.toURI()), testProjectDir.toFile());
+        FileUtils.copyFile(new File("../gradle.properties"), testProjectDir.resolve("gradle.properties").toFile());
+
+        buildResult(":help", "--configuration-cache");
+
+        BuildResult firstBuild = buildResult(taskName, Arrays.asList("--configuration-cache", "--dry-run"));
+        assertTrue(firstBuild.getOutput().contains("Configuration cache entry stored"));
+
+        BuildResult secondBuild = buildResult(taskName, Arrays.asList("--configuration-cache", "--dry-run"));
         assertTrue(secondBuild.getOutput().contains("Reusing configuration cache."));
     }
 

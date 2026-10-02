@@ -7,6 +7,7 @@ import jakarta.enterprise.context.Destroyed;
 import jakarta.enterprise.context.Initialized;
 import jakarta.enterprise.event.Event;
 import jakarta.transaction.SystemException;
+import jakarta.transaction.Transaction;
 import jakarta.transaction.TransactionScoped;
 
 import com.arjuna.ats.internal.jta.transaction.arjunacore.TransactionImple;
@@ -41,6 +42,14 @@ public abstract class TransactionScopedNotifier {
                     .select(TransactionId.class, Destroyed.Literal.of(TransactionScoped.class));
         }
         destroyed.fire(transactionId);
+    }
+
+    Transaction currentTransaction() {
+        try {
+            return TransactionImple.getTransaction();
+        } catch (Exception e) {
+            return null;
+        }
     }
 
     TransactionId getTransactionId() throws SystemException {

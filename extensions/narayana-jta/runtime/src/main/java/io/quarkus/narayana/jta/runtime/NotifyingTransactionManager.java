@@ -19,6 +19,7 @@ import jakarta.transaction.TransactionScoped;
 import org.jboss.logging.Logger;
 
 import io.quarkus.narayana.jta.runtime.TransactionScopedNotifier.TransactionId;
+import io.quarkus.narayana.jta.runtime.context.TransactionContext;
 
 /**
  * A delegating transaction manager which receives an instance of Narayana transaction manager
@@ -65,11 +66,16 @@ public class NotifyingTransactionManager extends TransactionScopedNotifier imple
     public void commit() throws RollbackException, HeuristicMixedException, HeuristicRollbackException, SecurityException,
             IllegalStateException, SystemException {
         TransactionId id = getTransactionId();
+        Transaction transaction = currentTransaction();
         beforeDestroyed(id);
         try {
             delegate.commit();
         } finally {
-            destroyed(id);
+            try {
+                TransactionContext.destroyState(transaction);
+            } finally {
+                destroyed(id);
+            }
         }
     }
 
@@ -85,6 +91,7 @@ public class NotifyingTransactionManager extends TransactionScopedNotifier imple
     @Override
     public void rollback() throws IllegalStateException, SecurityException, SystemException {
         TransactionId id = getTransactionId();
+        Transaction transaction = currentTransaction();
         try {
             beforeDestroyed(id);
         } catch (Throwable t) {
@@ -93,8 +100,12 @@ public class NotifyingTransactionManager extends TransactionScopedNotifier imple
         try {
             delegate.rollback();
         } finally {
-            //we don't need a catch block here, if this one fails we just let the exception propagate
-            destroyed(id);
+            try {
+                TransactionContext.destroyState(transaction);
+            } finally {
+                //we don't need a catch block here, if this one fails we just let the exception propagate
+                destroyed(id);
+            }
         }
     }
 

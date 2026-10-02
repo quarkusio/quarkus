@@ -184,6 +184,22 @@ public class TransactionContext implements InjectableContext {
         }
     }
 
+    /**
+     * Destroys the beans of the context of a transaction that has completed. The beans are normally destroyed by the
+     * synchronization the context state registers, but a state created once the transaction was no longer active could
+     * not register one.
+     *
+     * @param transaction the completed transaction, may be {@code null}
+     */
+    public static void destroyState(Transaction transaction) {
+        if (transaction instanceof com.arjuna.ats.jta.transaction.Transaction narayanaTransaction) {
+            Object contextState = narayanaTransaction.getTxLocalResource(TRANSACTION_CONTEXT_MARKER);
+            if (contextState instanceof TransactionContextState transactionContextState) {
+                transactionContextState.destroy();
+            }
+        }
+    }
+
     private Transaction getCurrentTransaction() {
         try {
             return transactionManager.get().getTransaction();
@@ -202,9 +218,18 @@ public class TransactionContext implements InjectableContext {
 
         private final ConcurrentMap<Contextual<?>, ContextInstanceHandle<?>> mapBeanToInstanceHandle = new ConcurrentHashMap<>();
 
+        /**
+         * The context state registers itself as a synchronization so that the beans of the context are destroyed
+         * when the transaction completes. A transaction that is already completing, typically one marked for
+         * rollback whose {@code @BeforeDestroyed(TransactionScoped.class)} event instantiates a bean for the first
+         * time, no longer accepts synchronizations. The state is still stored with the transaction, and
+         * {@link TransactionContext#destroyState(Transaction)} destroys the beans once the transaction has completed.
+         */
         TransactionContextState(Transaction transaction) {
             try {
-                transaction.registerSynchronization(this);
+                if (transaction.getStatus() == Status.STATUS_ACTIVE) {
+                    transaction.registerSynchronization(this);
+                }
             } catch (RollbackException | SystemException e) {
                 throw new RuntimeException("Cannot register synchronization", e);
             }

@@ -4,6 +4,7 @@ import static javax.lang.model.util.ElementFilter.methodsIn;
 import static org.hibernate.processor.util.StringUtil.decapitalize;
 import static org.hibernate.processor.util.TypeUtils.containsAnnotation;
 import static org.hibernate.processor.util.TypeUtils.extendsClass;
+import static org.hibernate.processor.util.TypeUtils.hasAnnotation;
 import static org.hibernate.processor.util.TypeUtils.implementsInterface;
 
 import java.util.ArrayList;
@@ -33,6 +34,9 @@ public class QuarkusDataHibernateExtension implements HibernateProcessorExtensio
     private static final String PANACHE_ORM_ENTITY_BASE = "io.quarkus.hibernate.orm.panache.PanacheEntityBase";
     private static final String PANACHE_REACTIVE_REPOSITORY_BASE = "io.quarkus.hibernate.reactive.panache.PanacheRepositoryBase";
     private static final String PANACHE_REACTIVE_ENTITY_BASE = "io.quarkus.hibernate.reactive.panache.PanacheEntityBase";
+
+    private static final String ENTITY = "jakarta.persistence.Entity";
+    private static final String PERSISTENCE_UNIT = "io.quarkus.hibernate.orm.PersistenceUnit";
 
     // Quarkus Data constants
     private static final String ENTITY_MARKER = "io.quarkus.data.hibernate.EntitySwitcher";
@@ -98,13 +102,16 @@ public class QuarkusDataHibernateExtension implements HibernateProcessorExtensio
     }
 
     @Override
-    public boolean isInjectionAvailable() {
-        return injectionAvailable;
+    public @Nullable String sessionQualifier(@Nullable String dataStore, AnnotationMetaEntityContext context) {
+        if (!injectionAvailable || dataStore == null) {
+            return null;
+        }
+        return "@" + context.metamodel().importType(PERSISTENCE_UNIT) + "(\"" + dataStore + "\")";
     }
 
     @Override
-    public @Nullable String qualifierAnnotation() {
-        return injectionAvailable ? "io.quarkus.hibernate.orm.PersistenceUnit" : null;
+    public boolean usesConstructorInjection(AnnotationMetaEntityContext context) {
+        return injectionAvailable;
     }
 
     // --- Type classification ---
@@ -143,6 +150,18 @@ public class QuarkusDataHibernateExtension implements HibernateProcessorExtensio
                 || implementsInterface(type, RECORD_BLOCKING_REPOSITORY_BASE)
                 || implementsInterface(type, MANAGED_REACTIVE_REPOSITORY_BASE)
                 || implementsInterface(type, RECORD_REACTIVE_REPOSITORY_BASE);
+    }
+
+    private boolean hasQuarkusDataEntitySuperType(TypeElement element) {
+        var superClass = element.getSuperclass();
+        while (superClass.getKind() == TypeKind.DECLARED) {
+            final var superType = (TypeElement) ((DeclaredType) superClass).asElement();
+            if (hasAnnotation(superType, ENTITY) && isQuarkusDataType(superType)) {
+                return true;
+            }
+            superClass = superType.getSuperclass();
+        }
+        return false;
     }
 
     private boolean isQuarkusDataBlockingRepository(TypeElement type) {
@@ -188,7 +207,11 @@ public class QuarkusDataHibernateExtension implements HibernateProcessorExtensio
             }
         }
 
-        if (injectionAvailable) {
+        // Entity metamodels in an inheritance hierarchy extend the parent metamodel.
+        // Quarkus Data default repository accessors have fixed names, but their generated
+        // repository return types are entity-specific, so emitting them on subclasses
+        // would produce invalid static method hiding.
+        if (injectionAvailable && !hasQuarkusDataEntitySuperType(element)) {
             final var idType = context.findIdType();
             addAccessor(context, managedRepository, idType, "managed",
                     MANAGED_BLOCKING_REPOSITORY_BASE, nestedRepositories);
@@ -314,10 +337,10 @@ public class QuarkusDataHibernateExtension implements HibernateProcessorExtensio
         } else {
             context.metamodel().importType(QUARKUS_SESSION_OPERATIONS);
             if (element != null && isRecordReactiveRepository(element)) {
-                context.setSessionGetter("SessionOperations.getStatelessSession()");
+                context.setSessionExpression("SessionOperations.getStatelessSession()");
                 return UNI_MUTINY_STATELESS_SESSION;
             } else {
-                context.setSessionGetter("SessionOperations.getSession()");
+                context.setSessionExpression("SessionOperations.getSession()");
                 return UNI_MUTINY_SESSION;
             }
         }

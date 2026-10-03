@@ -177,6 +177,7 @@ import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.LogCategoryBuildItem;
 import io.quarkus.deployment.builditem.RecordableConstructorBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ConstantBootstrapBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyBuildItem;
 import io.quarkus.deployment.pkg.builditem.CompiledJavaVersionBuildItem;
@@ -187,7 +188,6 @@ import io.quarkus.gizmo.Gizmo;
 import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo2.Const;
-import io.quarkus.gizmo2.LambdaStrategy;
 import io.quarkus.gizmo2.ParamVar;
 import io.quarkus.gizmo2.desc.ClassMethodDesc;
 import io.quarkus.gizmo2.desc.MethodDesc;
@@ -541,7 +541,9 @@ public class ResteasyReactiveProcessor {
             ResteasyReactiveConfig config,
             Optional<ResourceScanningResultBuildItem> resourceScanningResultBuildItem,
             BuildProducer<GeneratedClassBuildItem> generatedClassBuildItemBuildProducer,
+            BuildProducer<GeneratedResourceBuildItem> generatedResourcesBuildProducer,
             BuildProducer<BytecodeTransformerBuildItem> bytecodeTransformerBuildItemBuildProducer,
+            BuildProducer<ConstantBootstrapBuildItem> constantBootstraps,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClassBuildItemBuildProducer,
             ResteasyReactiveRecorder recorder,
             List<ServerDefaultProducesHandlerBuildItem> serverDefaultProducesHandlers,
@@ -631,7 +633,7 @@ public class ResteasyReactiveProcessor {
                     .setFactoryCreator(new QuarkusFactoryCreator(recorder, beanContainerBuildItem.getValue()))
                     .setEndpointInvokerFactory(
                             new QuarkusInvokerFactory(applicationClassPredicate, generatedClassBuildItemBuildProducer,
-                                    recorder))
+                                    generatedResourcesBuildProducer, constantBootstraps, recorder))
                     .setGeneratedClassBuildItemBuildProducer(generatedClassBuildItemBuildProducer)
                     .setExistingConverters(existingConverters)
                     .setScannedResourcePaths(scannedResourcePaths)
@@ -1603,8 +1605,7 @@ public class ResteasyReactiveProcessor {
         MethodDesc handleMethod = MethodDesc.of(ServerRestHandler.class, "handle", void.class,
                 ResteasyReactiveRequestContext.class);
         io.quarkus.gizmo2.Gizmo gizmo = io.quarkus.gizmo2.Gizmo
-                .create(new GeneratedClassGizmo2Adaptor(generatedClass, generatedResource, true))
-                .withLambdaStrategy(LambdaStrategy.ANONYMOUS_CLASS);
+                .create(new GeneratedClassGizmo2Adaptor(generatedClass, generatedResource, true));
         gizmo.class_(HANDLER_DISPATCHER_CLASS, cc -> {
             cc.final_();
             cc.extends_(ServerRestHandlerDispatcher.class);

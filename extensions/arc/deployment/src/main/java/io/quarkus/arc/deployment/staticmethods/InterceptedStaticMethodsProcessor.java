@@ -64,6 +64,7 @@ import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
 import io.quarkus.deployment.builditem.GeneratedServiceProviderBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ConstantBootstrapBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveMethodBuildItem;
 import io.quarkus.gizmo.AnnotatedElement;
 import io.quarkus.gizmo.ClassTransformer;
@@ -74,7 +75,6 @@ import io.quarkus.gizmo2.ClassOutput;
 import io.quarkus.gizmo2.Const;
 import io.quarkus.gizmo2.Expr;
 import io.quarkus.gizmo2.Gizmo;
-import io.quarkus.gizmo2.LambdaStrategy;
 import io.quarkus.gizmo2.LocalVar;
 import io.quarkus.gizmo2.ParamVar;
 import io.quarkus.gizmo2.Reflection2Gizmo;
@@ -185,6 +185,7 @@ public class InterceptedStaticMethodsProcessor {
             BuildProducer<GeneratedClassBuildItem> generatedClasses,
             BuildProducer<GeneratedResourceBuildItem> generatedResources,
             BuildProducer<GeneratedServiceProviderBuildItem> generatedServiceProviders,
+            BuildProducer<ConstantBootstrapBuildItem> constantBootstraps,
             BuildProducer<BytecodeTransformerBuildItem> transformers,
             BuildProducer<ReflectiveMethodBuildItem> reflectiveMethods) {
 
@@ -196,7 +197,7 @@ public class InterceptedStaticMethodsProcessor {
         Map<DotName, String> baseToGeneratedInitializer = new HashMap<>();
 
         ClassOutput classOutput = new GeneratedClassGizmo2Adaptor(generatedClasses, generatedResources,
-                generatedServiceProviders, new Predicate<String>() {
+                generatedServiceProviders, constantBootstraps, new Predicate<String>() {
                     @Override
                     public boolean test(String name) {
                         if (InterceptedStaticMethodsRecorder.INITIALIZER_CLASS_NAME.equals(name)) {
@@ -217,8 +218,7 @@ public class InterceptedStaticMethodsProcessor {
                         return applicationClassPredicate.test(base);
                     }
                 });
-        Gizmo gizmo = Gizmo.create(classOutput)
-                .withLambdaStrategy(LambdaStrategy.ANONYMOUS_CLASS);
+        Gizmo gizmo = Gizmo.create(classOutput);
 
         // declaring class -> intercepted static methods
         Map<DotName, List<InterceptedStaticMethodBuildItem>> interceptedStaticMethodsMap = new HashMap<>();

@@ -39,7 +39,6 @@ import io.quarkus.gizmo2.ClassOutput;
 import io.quarkus.gizmo2.Const;
 import io.quarkus.gizmo2.Expr;
 import io.quarkus.gizmo2.Gizmo;
-import io.quarkus.gizmo2.LambdaStrategy;
 import io.quarkus.gizmo2.LocalVar;
 import io.quarkus.gizmo2.creator.BlockCreator;
 import io.quarkus.gizmo2.creator.ClassCreator;
@@ -110,8 +109,7 @@ final class ClassConfigurationPropertiesUtil {
      */
     static void generateStartupObserverThatInjectsConfigClass(ClassOutput classOutput,
             Set<DotName> configClasses) {
-        Gizmo gizmo = Gizmo.create(classOutput)
-                .withLambdaStrategy(LambdaStrategy.ANONYMOUS_CLASS);
+        Gizmo gizmo = Gizmo.create(classOutput);
         gizmo.class_(ConfigurationPropertiesUtil.PACKAGE_TO_PLACE_GENERATED_CLASSES + ".ConfigPropertiesObserver", cc -> {
             cc.addAnnotation(Dependent.class);
 

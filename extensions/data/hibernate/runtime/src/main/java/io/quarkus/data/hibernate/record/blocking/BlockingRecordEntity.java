@@ -1,8 +1,8 @@
-package io.quarkus.data.hibernate.stateless.blocking;
+package io.quarkus.data.hibernate.record.blocking;
 
+import io.quarkus.data.hibernate.record.RecordEntityOperations;
 import io.quarkus.data.hibernate.runtime.spi.PanacheBlockingOperations;
 import io.quarkus.data.hibernate.runtime.spi.PanacheOperations;
-import io.quarkus.data.hibernate.stateless.RecordEntityOperations;
 
 public interface BlockingRecordEntity extends RecordEntityOperations<Void, Boolean> {
 

@@ -1,12 +1,12 @@
-package io.quarkus.data.hibernate.stateless.reactive;
+package io.quarkus.data.hibernate.record.reactive;
 
 import java.util.stream.Stream;
 
 import org.hibernate.reactive.mutiny.Mutiny;
 
+import io.quarkus.data.hibernate.record.RecordRepositoryOperations;
 import io.quarkus.data.hibernate.runtime.spi.PanacheOperations;
 import io.quarkus.data.hibernate.runtime.spi.PanacheReactiveOperations;
-import io.quarkus.data.hibernate.stateless.RecordRepositoryOperations;
 import io.quarkus.hibernate.orm.panache.common.runtime.AbstractJpaOperations;
 import io.smallrye.mutiny.Uni;
 

@@ -2,15 +2,15 @@ package io.quarkus.data.hibernate;
 
 import io.quarkus.data.hibernate.managed.blocking.BlockingManagedEntity;
 import io.quarkus.data.hibernate.managed.reactive.ReactiveManagedEntity;
+import io.quarkus.data.hibernate.record.blocking.BlockingRecordEntity;
+import io.quarkus.data.hibernate.record.reactive.ReactiveRecordEntity;
 import io.quarkus.data.hibernate.runtime.spi.PanacheBlockingOperations;
 import io.quarkus.data.hibernate.runtime.spi.PanacheOperations;
 import io.quarkus.data.hibernate.runtime.spi.PanacheReactiveOperations;
-import io.quarkus.data.hibernate.stateless.blocking.BlockingRecordEntity;
-import io.quarkus.data.hibernate.stateless.reactive.ReactiveRecordEntity;
 import io.smallrye.mutiny.Uni;
 
 public interface EntitySwitcher {
-    default BlockingManagedEntity managedBlocking() {
+    default BlockingManagedEntity managed() {
         if (this instanceof BlockingManagedEntity) {
             return (BlockingManagedEntity) this;
         } else {
@@ -26,7 +26,7 @@ public interface EntitySwitcher {
         }
     }
 
-    default ReactiveRecordEntity statelessReactive() {
+    default ReactiveRecordEntity recordReactive() {
         if (this instanceof ReactiveRecordEntity) {
             return (ReactiveRecordEntity) this;
         } else {
@@ -34,7 +34,7 @@ public interface EntitySwitcher {
         }
     }
 
-    default BlockingRecordEntity statelessBlocking() {
+    default BlockingRecordEntity record() {
         if (this instanceof BlockingRecordEntity) {
             return (BlockingRecordEntity) this;
         } else {

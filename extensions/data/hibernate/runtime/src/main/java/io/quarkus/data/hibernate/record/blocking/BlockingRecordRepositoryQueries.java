@@ -1,4 +1,4 @@
-package io.quarkus.data.hibernate.stateless.blocking;
+package io.quarkus.data.hibernate.record.blocking;
 
 import java.util.List;
 import java.util.Map;

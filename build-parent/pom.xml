@@ -58,7 +58,7 @@
         <supported-maven-versions>[3.9.0,)</supported-maven-versions>
 
         <!-- These 2 properties are used by CreateProjectMojo to add the Maven Wrapper -->
-        <proposed-maven-version>3.9.16</proposed-maven-version>
+        <proposed-maven-version>3.10.0</proposed-maven-version>
         <maven-wrapper.version>3.3.4</maven-wrapper.version>
         <!-- Supported Gradle versions, interpreted as a version range -->
         <minimum-gradle-version>9.6</minimum-gradle-version>

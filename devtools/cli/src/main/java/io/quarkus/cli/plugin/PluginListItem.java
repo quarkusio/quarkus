@@ -1,5 +1,7 @@
 package io.quarkus.cli.plugin;
 
+import io.quarkus.devtools.plugin.Plugin;
+
 public class PluginListItem {
 
     private final boolean installed;

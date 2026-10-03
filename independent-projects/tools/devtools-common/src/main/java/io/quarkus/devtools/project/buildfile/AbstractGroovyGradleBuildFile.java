@@ -21,12 +21,12 @@ public abstract class AbstractGroovyGradleBuildFile extends AbstractGradleBuildF
     }
 
     @Override
-    String getSettingsGradlePath() {
+    protected String getSettingsGradlePath() {
         return SETTINGS_GRADLE_PATH;
     }
 
     @Override
-    String getBuildGradlePath() {
+    protected String getBuildGradlePath() {
         return BUILD_GRADLE_PATH;
     }
 

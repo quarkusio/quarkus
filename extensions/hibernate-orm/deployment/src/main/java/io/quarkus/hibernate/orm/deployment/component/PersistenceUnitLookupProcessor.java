@@ -2,7 +2,6 @@ package io.quarkus.hibernate.orm.deployment.component;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
 import java.util.Optional;
 
 import org.jboss.logging.Logger;
@@ -38,8 +37,10 @@ class PersistenceUnitLookupProcessor {
     PersistenceUnitLookupBuildItem defineLookup(HibernateOrmConfig config,
             Capabilities capabilities,
             List<AdditionalPersistenceUnitBuildItem> additionalPersistenceUnits,
+            HibernateOrmClientLookupBuildItem clientLookupBuildItem,
             DataSourceLookupBuildItem dataSourceLookupBuildItem) {
         var dataSourceLookup = dataSourceLookupBuildItem.getLookup();
+        var clientLookup = clientLookupBuildItem.getLookup();
         var blockingEnabled = config.blocking();
         if (!blockingEnabled) {
             LOG.infof("Hibernate ORM was disabled explicitly by quarkus.hibernate-orm.blocking=false."
@@ -59,7 +60,8 @@ class PersistenceUnitLookupProcessor {
                             checkReactiveDisabled(name, config, hibernateReactivePresent));
                 }
                 unavailableReasons.addAll(
-                        checkDataSourceUnavailable(name, paradigm, dataSourceLookup, config, additionalPersistenceUnits));
+                        checkBackendUnavailable(name, paradigm, dataSourceLookup, config,
+                                additionalPersistenceUnits, clientLookup));
                 return unavailableReasons;
             }
         });
@@ -68,12 +70,12 @@ class PersistenceUnitLookupProcessor {
     private static List<Reason> checkBlockingDisabled(String name, HibernateOrmConfig config, boolean blockingEnabled) {
         var reasons = new ArrayList<Reason>();
         if (!blockingEnabled) {
-            reasons.add(new Reason(String.format(Locale.ROOT,
+            reasons.add(new Reason(String.format(java.util.Locale.ROOT,
                     "Hibernate ORM was disabled explicitly by setting '%s' to 'false'",
                     HibernateOrmRuntimeConfig.puPropertyKey(name, "blocking"))));
         }
         if (!config.persistenceUnits().get(name).jdbc().enabled().orElse(true)) {
-            reasons.add(new Reason(String.format(Locale.ROOT,
+            reasons.add(new Reason(String.format(java.util.Locale.ROOT,
                     "Hibernate ORM was disabled explicitly by setting '%s' to 'false'",
                     HibernateOrmRuntimeConfig.puPropertyKey(name, "jdbc.enabled"))));
         }
@@ -87,51 +89,71 @@ class PersistenceUnitLookupProcessor {
             reasons.add(new Reason("Hibernate Reactive extension is absent"));
         }
         if (!config.persistenceUnits().get(name).reactive().enabled().orElse(true)) {
-            reasons.add(new Reason(String.format(Locale.ROOT,
+            reasons.add(new Reason(String.format(java.util.Locale.ROOT,
                     "Hibernate Reactive was disabled explicitly by setting '%s' to 'false'",
                     HibernateOrmRuntimeConfig.puPropertyKey(name, "reactive.enabled"))));
         }
         return reasons;
     }
 
-    private static List<Reason> checkDataSourceUnavailable(String name, ProgrammingParadigm paradigm,
+    private static List<Reason> checkBackendUnavailable(String name, ProgrammingParadigm paradigm,
             ComponentLookup dataSourceLookup, HibernateOrmConfig config,
-            List<AdditionalPersistenceUnitBuildItem> additionalPersistenceUnits) {
-        var reasons = new ArrayList<Reason>();
-        Optional<String> dataSourceName = additionalPersistenceUnits.stream()
+            List<AdditionalPersistenceUnitBuildItem> additionalPersistenceUnits,
+            ComponentLookup clientLookup) {
+        Optional<AdditionalPersistenceUnitBuildItem> additionalPu = additionalPersistenceUnits.stream()
                 .filter(item -> item.getPersistenceUnitName().equals(name))
-                .findFirst()
-                .flatMap(AdditionalPersistenceUnitBuildItem::getDataSourceName)
-                .or(() -> HibernateProcessorUtil.getDataSourceName(config, name));
-        if (dataSourceName.isPresent()) {
-            List<Reason> dataSourceUnavailableReason = dataSourceLookup.unavailableReasons(dataSourceName.get(),
-                    paradigm);
-            if (!dataSourceUnavailableReason.isEmpty()) {
-                reasons.add(new Reason(
-                        String.format(Locale.ROOT, "%s datasource '%s' cannot be created",
+                .findFirst();
+        PersistenceUnitDefinitionBuildItem.AdditionalConfig additionalConfig = additionalPu
+                .map(item -> new PersistenceUnitDefinitionBuildItem.AdditionalConfig(
+                        item.getDataSourceName(), item.getClientName(),
+                        item.getExplicitDialect(), item.getProperties()))
+                .orElse(null);
+
+        var backend = PersistenceUnitDefinitionSupport.resolveBackend(
+                config, name, additionalConfig, dataSourceLookup, clientLookup);
+
+        // Ambiguous: both datasource and client available. Available if either works for this paradigm.
+        if (backend.dataSourceName().isPresent() && backend.clientName().isPresent()) {
+            if (dataSourceLookup.unavailableReasons(backend.dataSourceName().get(), paradigm).isEmpty()) {
+                return List.of();
+            }
+            List<Reason> clientReasons = clientLookup.unavailableReasons(backend.clientName().get(), paradigm);
+            if (clientReasons.isEmpty()) {
+                return List.of();
+            }
+            return clientReasons;
+        }
+
+        if (backend.clientName().isPresent()) {
+            return clientLookup.unavailableReasons(backend.clientName().get(), paradigm);
+        }
+
+        if (backend.dataSourceName().isPresent()) {
+            List<Reason> dsReasons = dataSourceLookup.unavailableReasons(backend.dataSourceName().get(), paradigm);
+            if (!dsReasons.isEmpty()) {
+                return List.of(new Reason(
+                        String.format(java.util.Locale.ROOT, "%s datasource '%s' cannot be created",
                                 switch (paradigm) {
                                     case BLOCKING -> "JDBC";
                                     case REACTIVE -> "Reactive";
                                 },
-                                dataSourceName.get()),
-                        dataSourceUnavailableReason));
+                                backend.dataSourceName().get()),
+                        dsReasons));
             }
-        } else {
-            reasons.addAll(checkMissingDataSource(name, paradigm, config));
+            return List.of();
         }
-        return reasons;
+
+        return checkMissingDataSource(name, paradigm, config);
     }
 
     private static List<Reason> checkMissingDataSource(String name, ProgrammingParadigm paradigm,
             HibernateOrmConfig config) {
         MultiTenancyStrategy multiTenancyStrategy = HibernateProcessorUtil.getMultiTenancyStrategy(
                 config.persistenceUnits().get(name).multitenant());
-        // Reactive does not support multitenancy so we always require a datasource (explicit or implied)
-        // See https://github.com/quarkusio/quarkus/issues/15959
         boolean reactive = ProgrammingParadigm.REACTIVE.equals(paradigm);
         if (reactive || multiTenancyStrategy != MultiTenancyStrategy.DATABASE) {
             String dsConfigProperty = HibernateOrmRuntimeConfig.puPropertyKey(name, "datasource");
-            return List.of(new Reason(String.format(Locale.ROOT,
+            return List.of(new Reason(String.format(java.util.Locale.ROOT,
                     "Datasource must be defined for persistence unit '%s'. "
                             + "Set the datasource via the '%s' property. "
                             + (reactive ? ""

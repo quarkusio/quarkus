@@ -660,6 +660,15 @@ To exclude only a particular datasource from the health check:
 quarkus.datasource."datasource-name".health-exclude=true
 ----
 
+The health check validates a connection of the pool.
+When all connections of the pool are in use, no connection is available for the validation and the datasource is reported as `DOWN`, even if the database is reachable.
+To let the health check open a new connection in that case, which may temporarily exceed `quarkus.datasource.jdbc.max-size`, set:
+
+[source,properties]
+----
+quarkus.datasource.jdbc.health-check-new-connection=true
+----
+
 === Datasource metrics
 
 When you add the xref:telemetry-micrometer.adoc[`quarkus-micrometer`] extension, `quarkus-agroal` can publish datasource metrics to the metrics registry.

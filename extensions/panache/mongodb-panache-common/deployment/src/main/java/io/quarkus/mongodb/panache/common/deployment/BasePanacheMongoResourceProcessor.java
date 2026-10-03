@@ -40,6 +40,7 @@ import io.quarkus.deployment.bean.JavaBeanUtil;
 import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
 import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
+import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyIgnoreWarningBuildItem;
@@ -50,6 +51,7 @@ import io.quarkus.jsonb.spi.JsonbDeserializerBuildItem;
 import io.quarkus.jsonb.spi.JsonbSerializerBuildItem;
 import io.quarkus.mongodb.deployment.MongoUnremovableClientsBuildItem;
 import io.quarkus.mongodb.deployment.spi.MongoClientBuildItem;
+import io.quarkus.mongodb.deployment.spi.MongoClientSchemaReadyBuildItem;
 import io.quarkus.mongodb.panache.common.PanacheMongoRecorder;
 import io.quarkus.mongodb.panache.common.jackson.ObjectIdDeserializer;
 import io.quarkus.mongodb.panache.common.jackson.ObjectIdSerializer;
@@ -446,5 +448,11 @@ public abstract class BasePanacheMongoResourceProcessor {
             }
         }
         return null;
+    }
+
+    @BuildStep
+    public ServiceStartBuildItem waitForMongoSchema(
+            @SuppressWarnings("unused") List<MongoClientSchemaReadyBuildItem> schemaReady) {
+        return new ServiceStartBuildItem("mongodb-panache");
     }
 }

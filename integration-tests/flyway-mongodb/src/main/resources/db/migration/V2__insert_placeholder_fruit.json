@@ -1,0 +1,6 @@
+{
+  "insert": "fruits",
+  "documents": [
+    { "name": "placeholder-fruit", "color": "${fruit-color}" }
+  ]
+}

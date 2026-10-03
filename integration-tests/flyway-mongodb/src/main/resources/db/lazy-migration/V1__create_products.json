@@ -1,0 +1,6 @@
+{
+  "insert": "products",
+  "documents": [
+    { "name": "widget", "price": 9.99 }
+  ]
+}

@@ -1,0 +1,6 @@
+{
+  "insert": "vegetables",
+  "documents": [
+    { "name": "carrot", "color": "orange" }
+  ]
+}

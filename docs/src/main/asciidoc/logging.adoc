@@ -1087,6 +1087,7 @@ As a result, you can still access the MDC data in various scenarios:
 
 * After asynchronous calls, for example, when a REST client returns a Uni.
 * In code submitted to `org.eclipse.microprofile.context.ManagedExecutor`.
+* In code contextualized with `org.eclipse.microprofile.context.ThreadContext` and run on a thread without a Vert.x context, for example a `contextualRunnable()` submitted to your own executor, or a stage created with `withContextCapture()` that continues on it. The MDC is registered as the `MDC` context type, so it can be excluded with `@ThreadContextConfig(cleared = "MDC")` or `ThreadContext.builder().cleared("MDC")`.
 * In code executed with `vertx.executeBlocking()`.
 
 NOTE: If applicable, Quarkus stores MDC data in a Vert.x duplicated context, which isolates processing for a single task or request.

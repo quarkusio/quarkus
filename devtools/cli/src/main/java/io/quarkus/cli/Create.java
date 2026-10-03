@@ -6,7 +6,6 @@ import java.util.concurrent.Callable;
 import io.quarkus.cli.common.HelpOption;
 import io.quarkus.cli.common.OutputOptionMixin;
 import picocli.CommandLine;
-import picocli.CommandLine.ParseResult;
 import picocli.CommandLine.Unmatched;
 
 @CommandLine.Command(name = "create", header = "Create a new project.", subcommands = {
@@ -28,10 +27,6 @@ public class Create implements Callable<Integer> {
     List<String> unmatchedArgs;
 
     public Integer call() throws Exception {
-        output.info("Creating an app (default project type, see --help).");
-
-        ParseResult result = spec.commandLine().getParseResult();
-        CommandLine appCommand = spec.subcommands().get("app");
-        return appCommand.execute(result.originalArgs().stream().filter(x -> !"create".equals(x)).toArray(String[]::new));
+        return DefaultSubcommand.forward(spec, output, "app", "Creating an app (default project type, see --help).");
     }
 }

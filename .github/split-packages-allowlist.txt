@@ -1,0 +1,20 @@
+# Packages that are known to be split across modules, tracked in https://github.com/quarkusio/quarkus/issues/44710.
+# Remove a package from this list once it is no longer split; do not add to it.
+io.quarkus.amazon.lambda.deployment
+io.quarkus.amazon.lambda.http
+io.quarkus.amazon.lambda.http.deployment
+io.quarkus.amazon.lambda.http.model
+io.quarkus.amazon.lambda.runtime
+io.quarkus.apicurio.registry.binding
+io.quarkus.bootstrap
+io.quarkus.bootstrap.resolver
+io.quarkus.bootstrap.resolver.maven
+io.quarkus.bootstrap.util
+io.quarkus.cli.plugin
+io.quarkus.devtools.codestarts
+io.quarkus.devtools.project.buildfile
+io.quarkus.gradle
+io.quarkus.gradle.extension
+io.quarkus.maven
+io.quarkus.test
+io.quarkus.undertow.deployment

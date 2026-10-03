@@ -1,4 +1,4 @@
-package io.quarkus.vertx.http.deployment.devmode;
+package io.quarkus.devui.deployment;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -22,6 +22,7 @@ import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.vertx.http.deployment.NonApplicationRootPathBuildItem;
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
+import io.quarkus.vertx.http.deployment.devmode.NotFoundPageDisplayableEndpointBuildItem;
 import io.quarkus.vertx.http.runtime.devmode.ArcDevRecorder;
 
 public class ArcDevProcessor {

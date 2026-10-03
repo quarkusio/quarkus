@@ -250,9 +250,7 @@ public final class VertxHttpRequest extends BaseHttpRequest {
                 try {
                     f.run();
                 } catch (Exception e) {
-                    CompletableFuture<Void> ret = new CompletableFuture<>();
-                    ret.completeExceptionally(e);
-                    return ret;
+                    return CompletableFuture.failedFuture(e);
                 }
                 return CompletableFuture.completedFuture(null);
             } else if (!hasInterceptors) {
@@ -279,11 +277,9 @@ public final class VertxHttpRequest extends BaseHttpRequest {
                 });
                 return ret;
             } else {
-                CompletableFuture<Void> ret = new CompletableFuture<>();
-                ret.completeExceptionally(
+                return CompletableFuture.failedFuture(
                         new BlockingOperationNotAllowedException(
                                 "Cannot use blocking IO with interceptors when we're on the IO thread"));
-                return ret;
             }
         }
 

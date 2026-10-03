@@ -6,8 +6,7 @@ import java.io.IOException;
 import java.net.SocketException;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Consumer;
+import java.util.function.Function;
 
 import jakarta.json.JsonObjectBuilder;
 
@@ -29,7 +28,6 @@ import io.quarkus.oidc.common.runtime.OidcWebClient;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.groups.UniOnItem;
-import io.smallrye.mutiny.subscription.MultiEmitter;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpHeaders;
 import io.vertx.core.json.JsonObject;
@@ -104,32 +102,25 @@ public class OidcClientRegistrationImpl implements OidcClientRegistration {
         LOG.debugf("Register clients");
         checkClosed();
         OidcRequestContextProperties requestProps = getRequestProps();
-        return Multi.createFrom().emitter(new Consumer<MultiEmitter<? super RegisteredClient>>() {
-            @Override
-            public void accept(MultiEmitter<? super RegisteredClient> multiEmitter) {
-                try {
-                    AtomicInteger emitted = new AtomicInteger();
-                    for (ClientMetadata metadata : metadataList) {
-                        postRequest(requestProps, client, registrationUri, oidcConfig, requestFilters,
-                                metadata.getMetadataString())
-                                .transformToUni(
-                                        resp -> newRegisteredClient(resp, client, oidcConfig, requestFilters,
-                                                responseFilters, requestProps))
-                                .subscribe().with(new Consumer<RegisteredClient>() {
-                                    @Override
-                                    public void accept(RegisteredClient client) {
-                                        multiEmitter.emit(client);
-                                        if (emitted.incrementAndGet() == metadataList.size()) {
-                                            multiEmitter.complete();
-                                        }
-                                    }
-                                });
-                    }
-                } catch (Exception ex) {
-                    multiEmitter.fail(ex);
-                }
-            }
-        });
+        return Multi.createFrom().iterable(metadataList)
+                .onItem().transformToUniAndMerge(
+                        new Function<ClientMetadata, Uni<? extends RegisteredClient>>() {
+                            @Override
+                            public Uni<? extends RegisteredClient> apply(ClientMetadata metadata) {
+                                return postRequest(requestProps, client, registrationUri, oidcConfig, requestFilters,
+                                        metadata.getMetadataString())
+                                        .transformToUni(
+                                                new Function<HttpResponse<Buffer>, Uni<? extends RegisteredClient>>() {
+                                                    @Override
+                                                    public Uni<? extends RegisteredClient> apply(
+                                                            HttpResponse<Buffer> resp) {
+                                                        return newRegisteredClient(resp, client, oidcConfig,
+                                                                requestFilters,
+                                                                responseFilters, requestProps);
+                                                    }
+                                                });
+                            }
+                        });
     }
 
     private OidcRequestContextProperties getRequestProps() {

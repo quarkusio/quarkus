@@ -219,10 +219,15 @@ public class BasicWebSocketConnectorImpl extends WebSocketConnectorBase<BasicWeb
                 doExecute(connection, null, (c, ignored) -> openHandler.accept(c));
             }
 
-            if (textMessageHandler != null) {
+            if (textMessageHandler != null || backpressure) {
                 ws.textMessageHandler(new Handler<String>() {
                     @Override
                     public void handle(String message) {
+                        if (textMessageHandler == null) {
+                            // No handler set but the stream must be drained to replenish the final frame's credit
+                            fetchOne(ws, connection);
+                            return;
+                        }
                         if (trafficLogger != null) {
                             trafficLogger.textMessageReceived(connection, message);
                         }
@@ -232,11 +237,16 @@ public class BasicWebSocketConnectorImpl extends WebSocketConnectorBase<BasicWeb
                 });
             }
 
-            if (binaryMessageHandler != null) {
+            if (binaryMessageHandler != null || backpressure) {
                 ws.binaryMessageHandler(new Handler<Buffer>() {
 
                     @Override
                     public void handle(Buffer message) {
+                        if (binaryMessageHandler == null) {
+                            // No handler set but the stream must be drained to replenish the final frame's credit
+                            fetchOne(ws, connection);
+                            return;
+                        }
                         if (trafficLogger != null) {
                             trafficLogger.binaryMessageReceived(connection, message);
                         }
@@ -246,12 +256,20 @@ public class BasicWebSocketConnectorImpl extends WebSocketConnectorBase<BasicWeb
                 });
             }
 
-            if (pingMessageHandler != null) {
+            if (pingMessageHandler != null || backpressure) {
+                // The frame handler receives every frame, not just pings. It also replenishes demand for non-final
+                // data frames so that fragmented messages can be assembled before the message callback runs.
                 ws.frameHandler(new Handler<WebSocketFrame>() {
 
                     @Override
                     public void handle(WebSocketFrame frame) {
-                        if (frame.type() == WebSocketFrameType.PING) {
+                        if (backpressure && Endpoints.isNonFinalDataFrame(frame)) {
+                            // Vert.x demand counts frames; only the final frame waits for message processing.
+                            // PING/PONG frames are not replenished here on purpose - Vert.x returns their demand
+                            // itself (see io.vertx.core.http.impl.websocket.WebSocketImplBase#receiveFrame).
+                            fetchOne(ws, connection);
+                        }
+                        if (frame.type() == WebSocketFrameType.PING && pingMessageHandler != null) {
                             doExecute(connection, frame.binaryData(), pingMessageHandler);
                         }
                     }
@@ -298,8 +316,9 @@ public class BasicWebSocketConnectorImpl extends WebSocketConnectorBase<BasicWeb
             });
 
             if (backpressure) {
-                // All handlers are registered - allow up to maxPendingMessages to be delivered; each processed
-                // text/binary message then fetches one more, bounding the number of in-flight messages
+                // All handlers are registered - grant the initial frame demand; non-final data frames immediately
+                // return their credit while the final frame returns its credit after message processing, which bounds
+                // the number of in-flight messages even though Vert.x fetch() counts frames
                 LOG.debugf("Back-pressure - fetch %s pending messages: %s", maxPendingMessages, connection);
                 ws.fetch(maxPendingMessages);
             }

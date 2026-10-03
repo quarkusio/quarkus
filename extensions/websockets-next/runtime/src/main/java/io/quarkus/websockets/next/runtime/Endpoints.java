@@ -237,7 +237,7 @@ class Endpoints {
             }, false);
         }
 
-        pingMessageHandler(connection, endpoint, ws, onOpenContext, m -> {
+        frameHandler(connection, endpoint, ws, onOpenContext, m -> {
             endpoint.onPingMessage(m).onComplete(r -> {
                 if (r.succeeded()) {
                     LOG.debugf("@OnPingMessage callback consumed application message: %s", connection);
@@ -246,7 +246,7 @@ class Endpoints {
                             "Unable to consume application message in @OnPingMessage callback", connection);
                 }
             });
-        });
+        }, backpressure);
 
         pongMessageHandler(connection, endpoint, ws, onOpenContext, m -> {
             endpoint.onPongMessage(m).onComplete(r -> {
@@ -322,8 +322,9 @@ class Endpoints {
         });
 
         if (backpressure) {
-            // All handlers are registered - allow up to maxPendingMessages to be delivered; each processed
-            // message then fetches one more, bounding the number of in-flight messages
+            // All handlers are registered - grant the initial frame demand; non-final data frames immediately
+            // return their credit while the final frame returns its credit after message processing, which bounds
+            // the number of in-flight messages even though Vert.x fetch() counts frames
             LOG.debugf("Back-pressure - fetch %s pending messages: %s", maxPendingMessages, connection);
             ws.fetch(maxPendingMessages);
         }
@@ -447,11 +448,24 @@ class Endpoints {
         });
     }
 
-    private static void pingMessageHandler(WebSocketConnectionBase connection, WebSocketEndpoint endpoint, WebSocketBase ws,
-            Context context, Consumer<Buffer> pingAction) {
+    static boolean isNonFinalDataFrame(WebSocketFrame frame) {
+        return !frame.isFinal() && (frame.type() == WebSocketFrameType.TEXT
+                || frame.type() == WebSocketFrameType.BINARY || frame.type() == WebSocketFrameType.CONTINUATION);
+    }
+
+    private static void frameHandler(WebSocketConnectionBase connection, WebSocketEndpoint endpoint, WebSocketBase ws,
+            Context context, Consumer<Buffer> pingAction, boolean backpressure) {
+        // The frame handler receives every frame, not just pings. It also replenishes demand for non-final data
+        // frames so that fragmented messages can be assembled before the message callback runs.
         ws.frameHandler(new Handler<WebSocketFrame>() {
             @Override
             public void handle(WebSocketFrame frame) {
+                if (backpressure && isNonFinalDataFrame(frame)) {
+                    // Vert.x demand counts frames; only the final frame waits for message processing.
+                    // PING/PONG frames are not replenished here on purpose - Vert.x returns their demand itself
+                    // (see io.vertx.core.http.impl.websocket.WebSocketImplBase#receiveFrame).
+                    fetchOne(ws, connection);
+                }
                 if (frame.type() == WebSocketFrameType.PING) {
                     Context duplicatedContext = ContextSupport.createNewDuplicatedContext(context, connection);
                     duplicatedContext.runOnContext(new Handler<Void>() {

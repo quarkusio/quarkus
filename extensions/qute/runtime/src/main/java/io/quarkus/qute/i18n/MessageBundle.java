@@ -78,6 +78,9 @@ public @interface MessageBundle {
     /**
      * The value may be one of the following: {@link Message#ELEMENT_NAME}, {@link Message#HYPHENATED_ELEMENT_NAME} and
      * {@link Message#UNDERSCORED_ELEMENT_NAME}.
+     * <p>
+     * The strategy affects the keys used in templates. By default, the keys in localized files are the method names, unless
+     * the {@code quarkus.qute.localized-file-keys} configuration property is set to {@code message-key}.
      *
      * @return the default key strategy
      * @see Message#key()

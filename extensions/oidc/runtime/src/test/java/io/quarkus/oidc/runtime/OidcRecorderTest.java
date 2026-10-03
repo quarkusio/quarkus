@@ -4,7 +4,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import org.junit.jupiter.api.Test;
 
-import io.quarkus.oidc.common.runtime.OidcCommonConfig.Proxy;
+import io.quarkus.oidc.OidcTenantConfig;
 import io.quarkus.oidc.common.runtime.OidcCommonUtils;
 import io.vertx.core.http.HttpClientOptions;
 
@@ -12,9 +12,9 @@ public class OidcRecorderTest {
 
     @Test
     public void testWithoutProxyConfigurationNameCheckNonPresent() {
-        Proxy proxy = new Proxy();
+        OidcTenantConfig config = OidcTenantConfig.builder().build();
         HttpClientOptions options = new HttpClientOptions();
-        OidcCommonUtils.configureProxy(proxy, options, null);
+        OidcCommonUtils.configureProxy(config.proxy(), options, null);
         assertNull(options.getProxyOptions());
     }
 

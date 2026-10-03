@@ -46,6 +46,15 @@ public class VertxHttpServerMetricsTest {
     }
 
     @Test
+    public void testQueryStringIsNotPartOfTheInitialPath() {
+        // The initial path is compared with the measured path to tell a templated path apart from
+        // a raw one, so it carries no query string either
+        HttpRequestMetric metric = new HttpRequestMetric("/ws?room=lobby&user=alice", new LongAdder());
+
+        Assertions.assertEquals("/ws", metric.getInitialPath());
+    }
+
+    @Test
     public void testReturnTemplatedPathFromRoutingContext() {
         // Emulate a Vert.x Route containing templated values
         requestMetric.appendCurrentRoutePath("/item/:id");

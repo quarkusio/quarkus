@@ -100,13 +100,14 @@ public class FilterTestCase {
 
     @Test
     void testPathOrder() {
-        given()
+        List<String> cacheControl = given()
                 .get("/filter/order")
                 .then()
                 .statusCode(200)
-                .header("Cache-Control", is("max-age=1"))
-                .body(is("ok"));
-
+                .body(is("ok"))
+                .extract()
+                .headers().getValues("Cache-Control");
+        Assertions.assertThat(cacheControl).containsExactly("max-age=5000", "max-age=1");
     }
 
     @Test

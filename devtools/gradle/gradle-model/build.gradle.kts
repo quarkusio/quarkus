@@ -56,11 +56,11 @@ abstract class GenerateGradleVersionSupport : DefaultTask() {
         val properties = readProperties()
         val minimumGradleVersion = required(properties, "minimum-gradle-version")
         val supportedGradleVersions = required(properties, "supported-gradle-versions")
-        val packageDirectory = outputDirectory.dir("io/quarkus/gradle").get().asFile
+        val packageDirectory = outputDirectory.dir("io/quarkus/gradle/tooling").get().asFile
         packageDirectory.mkdirs()
         packageDirectory.resolve("GeneratedGradleVersionSupport.java").writeText(
             """
-            package io.quarkus.gradle;
+            package io.quarkus.gradle.tooling;
 
             final class GeneratedGradleVersionSupport {
 

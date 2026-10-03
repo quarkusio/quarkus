@@ -75,14 +75,19 @@ public class ClientRequestContextImpl implements ResteasyReactiveClientRequestCo
         this.context = VertxContext.createNewDuplicatedContext(current);
         ContextInternal ctx = (ContextInternal) this.context;
         if (VertxContext.isDuplicatedContext(current)) {
-            // Copy old-style locals from the caller context so they remain visible
+            // Copy old-style locals from the caller context so they remain visible.
+            // The caller may not have any: context locals start unset, so a duplicated context
+            // that nobody wrote a local to carries no data map at all.
             ContextInternal curCtx = (ContextInternal) current;
-            ConcurrentHashMap<String, Object> map = ctx.getLocal(VertxContext.DATA_MAP_LOCAL);
-            if (map == null) {
-                map = new ConcurrentHashMap<>();
-                ctx.putLocal(VertxContext.DATA_MAP_LOCAL, map);
+            ConcurrentHashMap<String, Object> curMap = curCtx.getLocal(VertxContext.DATA_MAP_LOCAL);
+            if (curMap != null) {
+                ConcurrentHashMap<String, Object> map = ctx.getLocal(VertxContext.DATA_MAP_LOCAL);
+                if (map == null) {
+                    map = new ConcurrentHashMap<>();
+                    ctx.putLocal(VertxContext.DATA_MAP_LOCAL, map);
+                }
+                map.putAll(curMap);
             }
-            map.putAll(curCtx.getLocal(VertxContext.DATA_MAP_LOCAL));
         }
         ctx.putLocal(VertxContext.PARENT_CONTEXT_LOCAL, current);
         restClientRequestContext.properties.put(VERTX_CONTEXT_PROPERTY, context);

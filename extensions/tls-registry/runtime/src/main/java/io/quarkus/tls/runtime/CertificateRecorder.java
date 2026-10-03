@@ -14,9 +14,11 @@ import org.jboss.logging.Logger;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.InstanceHandle;
+import io.quarkus.runtime.ImageMode;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
+import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.tls.KeyStoreAndKeyCertOptions;
 import io.quarkus.tls.KeyStoreFactory;
 import io.quarkus.tls.KeyStoreProvider;
@@ -25,6 +27,7 @@ import io.quarkus.tls.TlsConfigurationRegistry;
 import io.quarkus.tls.TrustStoreAndTrustOptions;
 import io.quarkus.tls.TrustStoreFactory;
 import io.quarkus.tls.TrustStoreProvider;
+import io.quarkus.tls.runtime.config.SslEngineType;
 import io.quarkus.tls.runtime.config.TlsBucketConfig;
 import io.quarkus.tls.runtime.config.TlsConfig;
 import io.quarkus.tls.runtime.keystores.JKSKeyStores;
@@ -98,6 +101,7 @@ public class CertificateRecorder implements TlsConfigurationRegistry {
     }
 
     private void verifyCertificateConfig(TlsBucketConfig config, Vertx vertx, String name) {
+        verifySslEngineSupportedInNativeImage(config, name);
         final TlsConfiguration tlsConfig = verifyCertificateConfigInternal(config, vertx, name);
         certificates.put(name, tlsConfig);
 
@@ -108,6 +112,29 @@ public class CertificateRecorder implements TlsConfigurationRegistry {
             }
             reloader.add(name, certificates.get(name), config.reloadPeriod().get());
         }
+    }
+
+    /**
+     * The OpenSSL engine (netty-tcnative) is disabled by the Quarkus GraalVM substitutions, so a bucket that requests
+     * it is rejected when running as a native executable, with a message that names native mode as the cause.
+     * Without this, Vert.x fails at listen time ({@code SslContextManager.resolveEngineOptions}) with "OpenSSL is not
+     * available", which does not mention the mode.
+     */
+    static void verifySslEngineSupportedInNativeImage(TlsBucketConfig config, String name) {
+        verifySslEngineSupportedInNativeImage(config, name, ImageMode.current().isNativeImage());
+    }
+
+    // Visible for testing
+    static void verifySslEngineSupportedInNativeImage(TlsBucketConfig config, String name, boolean nativeImage) {
+        if (!nativeImage || config.sslEngine().isEmpty() || config.sslEngine().get() != SslEngineType.OPENSSL) {
+            return;
+        }
+        String key = (TlsConfig.DEFAULT_NAME.equals(name) ? "quarkus.tls." : "quarkus.tls." + name + ".") + "ssl-engine";
+        throw new ConfigurationException(
+                "TLS configuration '" + name + "' sets '" + key + "=openssl', but the OpenSSL engine "
+                        + "(netty-tcnative) is not supported in Quarkus native executables. "
+                        + "Remove the property or set it to 'jdkssl', or run the application in JVM mode.",
+                Set.of(key));
     }
 
     private static TlsConfiguration verifyCertificateConfigInternal(TlsBucketConfig config, Vertx vertx, String name) {

@@ -34,6 +34,7 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
         super(mapping);
         tenantId = mapping.tenantId();
         tenantEnabled = mapping.tenantEnabled();
+        initializationRetryInterval = mapping.initializationRetryInterval();
         applicationType = mapping.applicationType().map(Enum::toString).map(ApplicationType::valueOf);
         authorizationPath = mapping.authorizationPath();
         userInfoPath = mapping.userInfoPath();
@@ -81,6 +82,8 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
      */
     @Deprecated(since = "3.18", forRemoval = true)
     public boolean tenantEnabled = true;
+
+    private Duration initializationRetryInterval = Duration.ZERO;
 
     /**
      * The application type, which can be one of the following {@link ApplicationType} values.
@@ -3081,6 +3084,11 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
     @Override
     public boolean tenantEnabled() {
         return tenantEnabled;
+    }
+
+    @Override
+    public Duration initializationRetryInterval() {
+        return initializationRetryInterval;
     }
 
     @Override

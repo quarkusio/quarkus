@@ -20,12 +20,15 @@ import jakarta.ws.rs.ext.ExceptionMapper;
 import jakarta.ws.rs.ext.Provider;
 
 import org.hibernate.validator.path.RandomAccessPath;
+import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.common.util.ServerMediaType;
 import org.jboss.resteasy.reactive.server.core.CurrentRequestManager;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 
 @Provider
 public class ResteasyReactiveViolationExceptionMapper implements ExceptionMapper<ValidationException> {
+
+    private static final Logger LOG = Logger.getLogger(ResteasyReactiveViolationExceptionMapper.class);
 
     private static final String VALIDATION_HEADER = "validation-exception";
 
@@ -74,6 +77,20 @@ public class ResteasyReactiveViolationExceptionMapper implements ExceptionMapper
         return secondNode.getKind() == ElementKind.RETURN_VALUE;
     }
 
+    /**
+     * @return the violations as {@code path: message} pairs, for the debug log
+     */
+    private static String describe(Set<ConstraintViolation<?>> violations) {
+        StringBuilder builder = new StringBuilder();
+        for (ConstraintViolation<?> violation : violations) {
+            if (builder.length() > 0) {
+                builder.append(", ");
+            }
+            builder.append(violation.getPropertyPath()).append(": ").append(violation.getMessage());
+        }
+        return builder.toString();
+    }
+
     private Response buildViolationReportResponse(ConstraintViolationException cve) {
         Status status = Status.BAD_REQUEST;
         Response.ResponseBuilder builder = Response.status(status);
@@ -91,6 +108,10 @@ public class ResteasyReactiveViolationExceptionMapper implements ExceptionMapper
         List<ViolationReport.Violation> violationsInReport = new ArrayList<>(cve.getConstraintViolations().size());
         for (ConstraintViolation<?> cv : cve.getConstraintViolations()) {
             violationsInReport.add(new ViolationReport.Violation(cv.getPropertyPath().toString(), cv.getMessage()));
+        }
+        if (LOG.isDebugEnabled()) {
+            LOG.debugf("Request rejected with status %d because of constraint violations: %s", status.getStatusCode(),
+                    describe(cve.getConstraintViolations()));
         }
         builder.entity(new ViolationReport("Constraint Violation", status, violationsInReport));
         builder.type(mediaType);

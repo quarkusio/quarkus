@@ -217,6 +217,10 @@ An example of such a report could be:
 This response is produced by Quarkus via a builtin implementation of `jakarta.ws.rs.ext.ExceptionMapper`. If the application code needs to handle `ValidationException` in some custom way,
 it can provide an implementation of `jakarta.ws.rs.ext.ExceptionMapper` like so:
 
+NOTE: An exception mapper is selected by the closest exception type first, and the priority only decides between the mappers of the same exception type.
+A mapper for a super type, such as an `ExceptionMapper<Throwable>` or a `@ServerExceptionMapper` method that takes a `Throwable`, does not replace the builtin `ValidationException` mapper, whatever its priority is.
+Declare a mapper for `ValidationException`, as shown below, or disable the builtin mapper with `quarkus.rest.exception-mapping.disable-mapper-for`.
+
 [source, java]
 ----
 import jakarta.validation.ValidationException;

@@ -81,11 +81,11 @@ public class ServerExceptionMappingFeature implements FeatureScanner {
             for (Map.Entry<String, String> entry : generatedClassNames.entrySet().stream().sorted(Entry.comparingByKey())
                     .toList()) {
                 ResourceExceptionMapper<Throwable> mapper = new ResourceExceptionMapper<>().setClassName(entry.getValue());
-                scannedApplication.getExceptionMappers().addExceptionMapper(entry.getKey(), mapper);
                 AnnotationValue priorityValue = instance.value("priority");
                 if (priorityValue != null) {
                     mapper.setPriority(priorityValue.asInt());
                 }
+                scannedApplication.getExceptionMappers().addExceptionMapper(entry.getKey(), mapper);
             }
         }
         return new FeatureScanResult(classOutput.getOutput());

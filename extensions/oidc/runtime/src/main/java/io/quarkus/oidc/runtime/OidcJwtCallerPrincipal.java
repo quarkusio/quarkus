@@ -1,7 +1,10 @@
 package io.quarkus.oidc.runtime;
 
+import java.util.LinkedHashSet;
 import java.util.Optional;
+import java.util.Set;
 
+import org.eclipse.microprofile.jwt.Claims;
 import org.jose4j.jwt.JwtClaims;
 
 import io.quarkus.security.credential.TokenCredential;
@@ -42,5 +45,24 @@ public class OidcJwtCallerPrincipal extends DefaultJWTCallerPrincipal {
         } else {
             return super.getName();
         }
+    }
+
+    /**
+     * Returns the {@code groups} claim. MicroProfile JWT requires an array, but some providers issue a single
+     * space-separated string; that form is split here, the same way SmallRye JWT does for its own principals.
+     */
+    @Override
+    public Set<String> getGroups() {
+        Object groups = claims.getClaimValue(Claims.groups.name());
+        if (groups instanceof String groupsString) {
+            Set<String> result = new LinkedHashSet<>();
+            for (String group : groupsString.split(" ")) {
+                if (!group.isBlank()) {
+                    result.add(group);
+                }
+            }
+            return result;
+        }
+        return super.getGroups();
     }
 }

@@ -282,18 +282,17 @@ public class BasicWebSocketConnectorImpl extends WebSocketConnectorBase<BasicWeb
 
                 @Override
                 public void handle(Void event) {
-                    if (trafficLogger != null) {
-                        trafficLogger.connectionClosed(connection);
-                    }
-                    if (closeHandler != null) {
-                        CloseReason reason = CloseReason.INTERNAL_SERVER_ERROR;
-                        if (ws.closeStatusCode() != null) {
-                            reason = new CloseReason(ws.closeStatusCode(), ws.closeReason());
+                    try {
+                        if (trafficLogger != null) {
+                            trafficLogger.connectionClosed(connection);
                         }
-                        doExecute(connection, reason, closeHandler);
+                        if (closeHandler != null) {
+                            doExecute(connection, connection.closeReason(), closeHandler);
+                        }
+                    } finally {
+                        connectionManager.remove(BasicWebSocketConnectorImpl.class.getName(), connection);
+                        client.get().close();
                     }
-                    connectionManager.remove(BasicWebSocketConnectorImpl.class.getName(), connection);
-                    client.get().close();
                 }
 
             });

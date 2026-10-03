@@ -1,4 +1,4 @@
-package io.quarkus.opentelemetry.runtime.config.runtime;
+package io.quarkus.devui.runtime.observability.traces.config;
 
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;

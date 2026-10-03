@@ -22,8 +22,8 @@ import '@vaadin/grid';
  *  - a signal card, for any signal that carries a pageId. The backing page is looked up in
  *    devuiState.unlisted, its component dynamically imported and rendered inline, with a link
  *    out to the full page. That keeps the contract build-time-data only, so a signal
- *    contributed by another extension (traces, from quarkus-opentelemetry) needs no extra
- *    plumbing here.
+ *    contributed by another extension needs no extra plumbing here - and neither does the core
+ *    traces view, whose unlisted page is registered by Dev UI itself.
  *  - a metric chart, one per meter. Metrics is core-owned and has no page of its own; its
  *    signal only advertises that the "devui-observability" JSON-RPC service is available.
  *    How a meter is drawn depends on what was captured for it, not just on its type: see

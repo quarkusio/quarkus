@@ -1,20 +1,19 @@
-package io.quarkus.opentelemetry.runtime.devui;
+package io.quarkus.devui.runtime.observability.traces;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-import io.opentelemetry.api.common.AttributeKey;
-import io.opentelemetry.sdk.trace.data.EventData;
-import io.opentelemetry.sdk.trace.data.SpanData;
-import io.opentelemetry.semconv.ServiceAttributes;
+import io.quarkus.dev.telemetry.TelemetryAttributes;
+import io.quarkus.dev.telemetry.TelemetryEvent;
+import io.quarkus.devui.runtime.observability.telemetry.StringValues;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 
 /**
  * Immutable, serialization-friendly view of a finished span, captured for the Dev UI.
- * Deliberately decoupled from the OTel SDK types so it can be buffered and streamed.
+ * Built from a span {@link TelemetryEvent}, so it knows nothing of the tracer that produced the span.
  */
 public record SpanRecord(
         String traceId,
@@ -32,42 +31,37 @@ public record SpanRecord(
         Map<String, String> attributes,
         List<String> events) {
 
-    // NOTE: from() runs on the span-completion path (often the request thread), so it
-    // deliberately avoids streams/lambdas to keep the capture path lean (both footprint
-    // and per-span allocation). Plain loops only here.
-    public static SpanRecord from(SpanData data) {
-        Map<String, String> attrs = new LinkedHashMap<>();
-        for (Map.Entry<AttributeKey<?>, Object> entry : data.getAttributes().asMap().entrySet()) {
-            attrs.put(entry.getKey().getKey(), String.valueOf(entry.getValue()));
-        }
-
-        List<EventData> spanEvents = data.getEvents();
-        List<String> events = new ArrayList<>(spanEvents.size());
-        for (EventData event : spanEvents) {
-            events.add(describeEvent(event));
-        }
-
-        String serviceName = data.getResource().getAttribute(ServiceAttributes.SERVICE_NAME);
-
+    /**
+     * Reads a span back out of the event its tracer fired. The event's attributes are JSON by contract, so each one
+     * is read defensively: a sender that left one out gets an empty value rather than a failure.
+     */
+    public static SpanRecord from(TelemetryEvent event) {
+        Map<String, Object> a = event.attributes();
+        long start = number(a.get(TelemetryAttributes.START_EPOCH_NANOS));
+        long end = number(a.get(TelemetryAttributes.END_EPOCH_NANOS));
         return new SpanRecord(
-                data.getTraceId(),
-                data.getSpanId(),
-                data.getParentSpanId(),
-                data.getName(),
-                data.getKind().name(),
-                data.getStartEpochNanos(),
-                data.getEndEpochNanos(),
-                data.getEndEpochNanos() - data.getStartEpochNanos(),
-                data.getStatus().getStatusCode().name(),
-                data.getStatus().getDescription(),
-                data.getInstrumentationScopeInfo().getName(),
-                serviceName == null ? "" : serviceName,
-                attrs,
-                events);
+                text(a.get(TelemetryAttributes.TRACE_ID)),
+                text(a.get(TelemetryAttributes.SPAN_ID)),
+                text(a.get(TelemetryAttributes.PARENT_SPAN_ID)),
+                event.name(),
+                text(a.get(TelemetryAttributes.KIND)),
+                start,
+                end,
+                end - start,
+                text(a.get(TelemetryAttributes.STATUS_CODE)),
+                text(a.get(TelemetryAttributes.STATUS_DESCRIPTION)),
+                text(a.get(TelemetryAttributes.SCOPE)),
+                text(a.get(TelemetryAttributes.SERVICE_NAME)),
+                StringValues.map(a.get(TelemetryAttributes.SPAN_ATTRIBUTES)),
+                StringValues.list(a.get(TelemetryAttributes.EVENTS)));
     }
 
-    private static String describeEvent(EventData e) {
-        return e.getName() + " @" + e.getEpochNanos();
+    private static String text(Object value) {
+        return value == null ? "" : value.toString();
+    }
+
+    private static long number(Object value) {
+        return value instanceof Number n ? n.longValue() : 0L;
     }
 
     public JsonObject toJson() {

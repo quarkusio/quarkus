@@ -1,4 +1,4 @@
-package io.quarkus.opentelemetry.deployment.devui;
+package io.quarkus.devui.runtime.observability.traces;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -7,7 +7,6 @@ import java.util.Map;
 
 import org.junit.jupiter.api.Test;
 
-import io.quarkus.opentelemetry.runtime.devui.SpanRecord;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 

@@ -6,6 +6,7 @@ module io.quarkus.dev.spi {
     exports io.quarkus.dev.console;
     exports io.quarkus.dev.io;
     exports io.quarkus.dev.spi;
+    exports io.quarkus.dev.telemetry;
     exports io.quarkus.dev.testing;
     exports io.quarkus.dev.testing.results;
 

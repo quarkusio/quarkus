@@ -1782,7 +1782,8 @@ want the first time they open it, change their mind later with *Edit dashboard*,
 cards into the order that suits them. The choice is kept in the browser's local storage rather
 than per application, so it follows the developer from one application to the next.
 
-Extensions contribute to that dashboard in two ways.
+Extensions contribute to that dashboard in two ways: with a card of their own, or by sending
+telemetry to the views Dev UI already has.
 
 ==== Contributing a signal card
 
@@ -1793,22 +1794,22 @@ it. The dashboard then offers that page as a card, so there is no second compone
 [source,java]
 ----
 @BuildStep(onlyIf = IsLocalDevelopment.class)
-void tracesPage(BuildProducer<UnlistedPageBuildItem> unlistedPages,
+void messagesPage(BuildProducer<UnlistedPageBuildItem> unlistedPages,
         BuildProducer<ObservabilitySignalBuildItem> signals) {
 
     UnlistedPageBuildItem page = new UnlistedPageBuildItem(); // <1>
     page.addPage(Page.webComponentPageBuilder()
-            .icon("font-awesome-solid:diagram-project")
-            .title("Traces")
-            .componentLink("qwc-otel-traces.js"));
+            .icon("font-awesome-solid:envelope")
+            .title("Messages")
+            .componentLink("qwc-myextension-messages.js"));
     unlistedPages.produce(page);
 
     signals.produce(new ObservabilitySignalBuildItem(
-            "traces", // <2>
-            "OpenTelemetry Traces", // <3>
-            "font-awesome-solid:diagram-project", // <4>
-            "quarkus-opentelemetry/traces", // <5>
-            "spanCount")); // <6>
+            "messages", // <2>
+            "My Extension Messages", // <3>
+            "font-awesome-solid:envelope", // <4>
+            "quarkus-myextension/messages", // <5>
+            "messageCount")); // <6>
 }
 ----
 <1> The page that backs the card. It has to be an unlisted page: the dashboard resolves the page
@@ -1817,7 +1818,7 @@ dropped without an error, leaving you with a signal that never shows up as a car
 <2> A key unique among all signals. It identifies the card in the stored dashboard, so changing
 it drops the card from dashboards that already have it.
 <3> The title shown on the card and in the picker. Name the backend here, not just the signal:
-the picker lists every extension's signals together, so a bare "Traces" is ambiguous.
+the picker lists every extension's signals together, so a bare "Messages" is ambiguous.
 <4> The icon, from the Dev UI icon set.
 <5> The id of the page above. Dev UI derives it as `<namespace>/<title-in-lowercase-with-dashes>`,
 where the namespace defaults to your extension's name. Pass `null` if the signal has no page of
@@ -1842,27 +1843,62 @@ component ends up wanting, currently `exportCsv(rows, filename)`:
 ----
 import { ObservabilityCardBase } from 'observability-card-base';
 
-export class QwcOtelTraces extends ObservabilityCardBase {
+export class QwcMyextensionMessages extends ObservabilityCardBase {
     // ...
 }
 ----
 
-==== Contributing metrics
+==== Sending metrics and traces
 
-Meters need no work at all. Every meter registered with Micrometer or with the OpenTelemetry SDK
-is listed in the dashboard's picker automatically, and the dashboard chooses how to draw the ones
-the user adds. That choice follows what was actually captured rather than the declared meter
-type: a rate for a counter, a dial for a gauge, and mean and max per interval for a timer or a
-distribution summary, joined by percentiles when the meter publishes them and replaced by bucket
-bars when it publishes a histogram. If your extension exposes metrics, simply register them as
-usual.
+Metrics and traces have views of their own in core Dev UI - the charts and the traces tree - and
+the extensions that capture them only send the data. Meters need no work at all: every meter
+registered with Micrometer or with the OpenTelemetry SDK is listed in the dashboard's picker
+automatically, and the dashboard chooses how to draw the ones the user adds. That choice follows
+what was actually captured rather than the declared meter type: a rate for a counter, a dial for a
+gauge, and mean and max per interval for a timer or a distribution summary, joined by percentiles
+when the meter publishes them and replaced by bucket bars when it publishes a histogram. If your
+extension exposes metrics, simply register them as usual.
 
-Writing a new metrics *backend* is the exception. A backend samples meters into the shared
-`MetricsTimeSeriesStore` and tells the core Dev UI it did so by producing a
-`MetricsBackendBuildItem` naming itself (`new MetricsBackendBuildItem("micrometer")`); the core
-then registers the JSON-RPC service and the metrics signal once, no matter how many backends are
-active. See `DevUiMetricsSampler` (Micrometer) and `DevUiMetricsExporter` (OpenTelemetry) for the
-two existing implementations.
+Writing a new metrics or tracing *backend* is the exception. A backend sends what it captures as
+`TelemetryEvent`s, plain CDI events from the dev mode SPI in `quarkus-core`
+(`io.quarkus.dev.telemetry`), so it needs no dependency on Dev UI or on its stores:
+
+[source,java]
+----
+@Inject
+Event<TelemetryEvent> telemetry;
+
+void sample() {
+    if (TelemetryEvents.isEnabled()) { // <1>
+        telemetry.fire(TelemetryEvent.metric("queue.depth") // <2>
+                .value(queue.size())
+                .type("GAUGE")
+                .source("my-backend")
+                .build());
+    }
+}
+----
+<1> Only Dev UI receives these events, and only in dev mode. The check makes an event cost a single
+volatile read everywhere else; firing without it is still correct, just not free.
+<2> `TelemetryEvent.metric(...)` builds one reading of a meter, with its distribution (total, max,
+percentiles, histogram buckets) when it has one; `TelemetryEvent.span(...)` builds one finished span.
+
+An event is a generic envelope: a _signal_ (`metric` or `span`), a name, a timestamp and
+JSON-compatible attributes, whose keys are listed in `TelemetryAttributes`. Dev UI observes the
+events synchronously, which keeps a meter's readings in order, and hands each one to the view for
+its signal. Sample at the interval the dashboard is configured with,
+`quarkus.dev-ui.observability.metrics.sample-interval`, which
+`TelemetryEvents.metricsSampleInterval(ConfigProvider.getConfig()::getOptionalValue)` reads with its
+default. Capture runs on the application's own paths - a span ends on the request thread - so do not
+let one reading that cannot be sent fail the application, or cost the other readings theirs.
+
+Then tell core Dev UI that the backend is there, from a dev-only build step:
+`new MetricsBackendBuildItem("my-backend")` for metrics, or
+`new TracesBackendBuildItem("my-backend", "My Backend Traces")` for traces. Core Dev UI registers
+the store, the JSON-RPC service and the dashboard card - for traces, with the full-page view the
+card opens - once, no matter how many backends are active. Without any backend, telemetry events
+stay switched off. See `DevUiMetricsSampler` (Micrometer), and `DevUiMetricsExporter` and
+`DevUiTracesSpanProcessor` (OpenTelemetry), for the existing implementations.
 
 === Advanced: Custom cards
 

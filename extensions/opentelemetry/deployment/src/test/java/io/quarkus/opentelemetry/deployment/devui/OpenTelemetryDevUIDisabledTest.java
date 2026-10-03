@@ -30,7 +30,7 @@ public class OpenTelemetryDevUIDisabledTest extends DevUIJsonRPCTest {
                             "application.properties"));
 
     public OpenTelemetryDevUIDisabledTest() {
-        super("quarkus-opentelemetry");
+        super("devui-observability-traces"); // the core Dev UI traces view the spans are sent to
     }
 
     @Test

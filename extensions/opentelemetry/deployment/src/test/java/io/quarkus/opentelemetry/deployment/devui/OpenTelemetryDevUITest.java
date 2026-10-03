@@ -37,7 +37,7 @@ public class OpenTelemetryDevUITest extends DevUIJsonRPCTest {
     static final QuarkusDevModeTest config = new QuarkusDevModeTest()
             .withApplicationRoot((JavaArchive jar) -> jar
                     .addClasses(NestedResource.class, BoomResource.class, ReactiveResource.class,
-                            MultiResource.class)
+                            MultiResource.class, UnnamedResource.class)
                     .addAsResource(new StringAsset(
                             // Exporter none: spans are still generated and delivered to our
                             // custom dev SpanProcessor; only OTLP export is disabled.
@@ -52,7 +52,7 @@ public class OpenTelemetryDevUITest extends DevUIJsonRPCTest {
                             "application.properties"));
 
     public OpenTelemetryDevUITest() {
-        super("quarkus-opentelemetry");
+        super("devui-observability-traces"); // the core Dev UI traces view the spans are sent to
     }
 
     @Test
@@ -118,6 +118,21 @@ public class OpenTelemetryDevUITest extends DevUIJsonRPCTest {
         });
     }
 
+    @Test
+    public void aSpanRenamedToNothingDoesNotFailTheRequest() throws Exception {
+        // A telemetry event needs a name, but the tracer lets a span be renamed to a blank one. The capture must not
+        // throw out of span.end() into the application's request.
+        RestAssured.when().get("/unnamed").then().statusCode(200);
+        Awaitility.await().atMost(Duration.ofSeconds(5)).untilAsserted(() -> {
+            JsonNode snapshot = super.executeJsonRPCMethod("getSnapshot");
+            JsonNode span = firstSpanMatching(snapshot,
+                    s -> "<unspecified span name>".equals(s.get("name").asText()));
+            assertThat(span)
+                    .as("the span without a name should be captured under the tracer's placeholder name")
+                    .isNotNull();
+        });
+    }
+
     /** Returns the first span (across all traces) matching the predicate, or {@code null}. */
     private static JsonNode firstSpanMatching(JsonNode snapshot, Predicate<JsonNode> predicate) {
         JsonNode traces = snapshot.get("traces");
@@ -148,6 +163,21 @@ public class OpenTelemetryDevUITest extends DevUIJsonRPCTest {
             } finally {
                 child.end();
             }
+        }
+    }
+
+    @Path("/unnamed")
+    public static class UnnamedResource {
+        @Inject
+        Tracer tracer;
+
+        @GET
+        @Produces(MediaType.TEXT_PLAIN)
+        public String unnamed() {
+            Span span = tracer.spanBuilder("named-for-now").startSpan();
+            span.updateName(" ");
+            span.end();
+            return "ok";
         }
     }
 

@@ -18,6 +18,7 @@ public final class InternalPageBuildItem extends MultiBuildItem {
     private final String namespaceLabel;
     private final int position;
     private final List<Page> pages = new ArrayList<>();
+    private final List<Page> unlistedPages = new ArrayList<>();
     private final Map<String, BuildTimeData> buildTimeData = new HashMap<>();
     private final String menuActionComponent;
     private String headlessComponentLink = null;
@@ -35,6 +36,15 @@ public final class InternalPageBuildItem extends MultiBuildItem {
     public void addPage(PageBuilder page) {
         page = (PageBuilder) page.internal(this.namespaceLabel);
         this.pages.add(page.build());
+    }
+
+    /**
+     * Adds a page that is not in the menu, reachable only by its URL - or from another page that links to it, the way
+     * an extension's {@code UnlistedPageBuildItem} is.
+     */
+    public void addUnlistedPage(PageBuilder page) {
+        page = (PageBuilder) page.internal(this.namespaceLabel);
+        this.unlistedPages.add(page.build());
     }
 
     public void addBuildTimeData(String key, Object value) {
@@ -56,6 +66,10 @@ public final class InternalPageBuildItem extends MultiBuildItem {
 
     public List<Page> getPages() {
         return pages;
+    }
+
+    public List<Page> getUnlistedPages() {
+        return unlistedPages;
     }
 
     public String getMenuActionComponent() {

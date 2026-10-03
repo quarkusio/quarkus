@@ -22,8 +22,8 @@ import tools.jackson.databind.JsonNode;
 
 /**
  * Verifies that captured traces survive a dev-mode live reload. The store is kept in a
- * static holder in the (base-classloader-loaded) OpenTelemetry runtime jar, so a reload
- * that recreates the app's beans does not clear the ring buffer.
+ * static field of {@code TracesStoreProducer} in the (base-classloader-loaded) Dev UI runtime
+ * jar, so a reload that recreates the app's beans does not clear the ring buffer.
  */
 @DisabledOnOs(OS.WINDOWS)
 public class OpenTelemetryDevUIReloadTest extends DevUIJsonRPCTest {
@@ -40,7 +40,7 @@ public class OpenTelemetryDevUIReloadTest extends DevUIJsonRPCTest {
                             "application.properties"));
 
     public OpenTelemetryDevUIReloadTest() {
-        super("quarkus-opentelemetry");
+        super("devui-observability-traces"); // the core Dev UI traces view the spans are sent to
     }
 
     @Test

@@ -532,6 +532,26 @@ The `accessLog` object contains the following fields:
 {"timestamp":"...","level":"INFO","loggerName":"io.quarkus.http.access-log","message":"GET /hello HTTP/1.1 200 512 12","accessLog":{"method":"GET","uri":"/hello","status":200,"responseTimeMs":12,"bytesSent":512,"remoteIp":"127.0.0.1","protocol":"HTTP/1.1"}}
 ----
 +
+When `log-format` is set to `ecs`, the fields are written as top-level ECS fields instead of the `accessLog` object:
++
+[cols="1,2",options="header"]
+|===
+|Access log field |ECS field
+|`method` |`http.request.method`
+|`uri` |`url.path`, plus `url.query` when the URI has a query string
+|`status` |`http.response.status_code`
+|`responseTimeMs` |`event.duration`, converted to nanoseconds
+|`bytesSent` |`http.response.body.bytes`
+|`remoteIp` |`client.ip`
+|`protocol` |`http.version`, holding the version alone (e.g. `1.1`)
+|===
++
+.Example: access log with `structured-access-log=true` and `log-format=ecs`
+[source,json]
+----
+{"@timestamp":"...","log.level":"INFO","log.logger":"io.quarkus.http.access-log","message":"GET /hello HTTP/1.1 200 512 12","http.request.method":"GET","url.path":"/hello","http.response.status_code":200,"event.duration":12000000,"http.response.body.bytes":512,"client.ip":"127.0.0.1","http.version":"1.1"}
+----
++
 The option is available for all handler types: `quarkus.log.console.json.access-log.structured`, `quarkus.log.file.json.access-log.structured`, `quarkus.log.syslog.json.access-log.structured`, `quarkus.log.socket.json.access-log.structured`, and named handlers such as `quarkus.log.handler.console.<name>.json.access-log.structured`.
 +
 TIP: To add custom fields beyond the standard access log fields, use the <<json-provider,JsonProvider SPI>>.

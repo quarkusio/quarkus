@@ -10,6 +10,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.logging.json.runtime.JsonFormatter;
+import io.quarkus.logging.json.runtime.JsonLogConfig.JsonConfig.LogFormat;
 import io.quarkus.test.QuarkusExtensionTest;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
@@ -37,6 +38,51 @@ public class ConsoleJsonFormatterStructuredAccessLogTest {
     public void structuredAccessLogEnabledConfigTest() {
         JsonFormatter jsonFormatter = getJsonFormatter();
         assertThat(jsonFormatter.isStructuredAccessLog()).isTrue();
+    }
+
+    @Test
+    public void ecsAccessLogRecordProducesEcsFieldsTest() throws Exception {
+        JsonNode node = formatEcsAccessLogRecord("/api/health");
+
+        assertThat(node.has("accessLog")).isFalse();
+        assertThat(node.get("http.request.method").asText()).isEqualTo("GET");
+        assertThat(node.get("url.path").asText()).isEqualTo("/api/health");
+        assertThat(node.has("url.query")).isFalse();
+        assertThat(node.get("client.ip").asText()).isEqualTo("10.0.0.1");
+        // ECS expects the version alone, not HTTP/1.1
+        assertThat(node.get("http.version").asText()).isEqualTo("1.1");
+
+        assertThat(node.get("http.response.status_code").isNumber()).isTrue();
+        assertThat(node.get("http.response.status_code").asInt()).isEqualTo(200);
+        assertThat(node.get("http.response.body.bytes").asLong()).isEqualTo(512L);
+        // ECS defines event.duration in nanoseconds
+        assertThat(node.get("event.duration").asLong()).isEqualTo(12_000_000L);
+    }
+
+    @Test
+    public void ecsAccessLogRecordSplitsQueryFromPathTest() throws Exception {
+        JsonNode node = formatEcsAccessLogRecord("/api/health?full=true&verbose=1");
+
+        assertThat(node.get("url.path").asText()).isEqualTo("/api/health");
+        assertThat(node.get("url.query").asText()).isEqualTo("full=true&verbose=1");
+    }
+
+    private static JsonNode formatEcsAccessLogRecord(String uri) throws Exception {
+        JsonFormatter formatter = new JsonFormatter();
+        formatter.setStructuredAccessLog(true);
+        formatter.setLogFormat(LogFormat.ECS);
+
+        ExtLogRecord record = new ExtLogRecord(Level.INFO, "GET " + uri + " 200", ACCESS_LOG_LOGGER);
+        record.setLoggerName(ACCESS_LOG_LOGGER);
+        record.putMdc("__access__method", "GET");
+        record.putMdc("__access__uri", uri);
+        record.putMdc("__access__status", "200");
+        record.putMdc("__access__responseTimeMs", "12");
+        record.putMdc("__access__bytesSent", "512");
+        record.putMdc("__access__remoteIp", "10.0.0.1");
+        record.putMdc("__access__protocol", "HTTP/1.1");
+
+        return MAPPER.readTree(formatter.format(record));
     }
 
     @Test

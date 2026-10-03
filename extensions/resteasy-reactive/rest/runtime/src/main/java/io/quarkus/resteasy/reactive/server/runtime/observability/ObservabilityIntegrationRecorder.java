@@ -2,15 +2,11 @@ package io.quarkus.resteasy.reactive.server.runtime.observability;
 
 import static io.quarkus.resteasy.reactive.server.runtime.observability.ObservabilityUtil.*;
 
-import jakarta.ws.rs.HttpMethod;
-
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.common.util.PathHelper;
 import org.jboss.resteasy.reactive.server.core.Deployment;
-import org.jboss.resteasy.reactive.server.handlers.ClassRoutingHandler;
-import org.jboss.resteasy.reactive.server.handlers.RestInitialHandler;
-import org.jboss.resteasy.reactive.server.mapping.RequestMapper;
 
+import io.quarkus.resteasy.reactive.server.runtime.RuntimeResourceMatcher;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.security.AuthenticationException;
@@ -53,71 +49,11 @@ public class ObservabilityIntegrationRecorder {
     }
 
     public static void setTemplatePath(RoutingContext rc, Deployment deployment) {
-        // do what RestInitialHandler does
-        var initMappers = new RequestMapper<>(deployment.getClassMappers());
-        var path = getPathWithoutPrefix(rc, deployment);
-        var requestMatch = initMappers.map(path);
-
-        // try each class-level match until we find one whose method-level mapper also matches
-        // this mirrors what ClassRoutingHandler does with restartWithNextInitialMatch()
-        while (requestMatch != null) {
-            var templatePath = tryMatchTemplatePath(rc, requestMatch);
-            if (templatePath != null) {
-                if (templatePath.endsWith("/")) {
-                    templatePath = templatePath.substring(0, templatePath.length() - 1);
-                }
-                setUrlPathTemplate(rc, templatePath);
-                return;
-            }
-            requestMatch = initMappers.continueMatching(path, requestMatch);
+        RuntimeResourceMatcher.Match match = new RuntimeResourceMatcher(deployment)
+                .match(getPathWithoutPrefix(rc, deployment), rc.request().method().name());
+        if (match != null) {
+            setUrlPathTemplate(rc, match.template());
         }
-    }
-
-    private static String tryMatchTemplatePath(RoutingContext rc,
-            RequestMapper.RequestMatch<RestInitialHandler.InitialMatch> requestMatch) {
-        var remaining = requestMatch.remaining.isEmpty() ? "/" : requestMatch.remaining;
-
-        var serverRestHandlers = requestMatch.value.handlers;
-        if (serverRestHandlers == null || serverRestHandlers.length < 1) {
-            return null;
-        }
-        var firstHandler = serverRestHandlers[0];
-        if (!(firstHandler instanceof ClassRoutingHandler classRoutingHandler)) {
-            return null;
-        }
-
-        var mappers = classRoutingHandler.getMappers();
-
-        var requestMethod = rc.request().method().name();
-
-        // do what ClassRoutingHandler does
-        var mapper = mappers.get(requestMethod);
-        if (mapper == null) {
-            if (requestMethod.equals(HttpMethod.HEAD) || requestMethod.equals(HttpMethod.OPTIONS)) {
-                mapper = mappers.get(HttpMethod.GET);
-            }
-            if (mapper == null) {
-                mapper = mappers.get(null);
-            }
-            if (mapper == null) {
-                return null;
-            }
-        }
-        var target = mapper.map(remaining);
-        if (target == null) {
-            if (requestMethod.equals(HttpMethod.HEAD)) {
-                mapper = mappers.get(HttpMethod.GET);
-                if (mapper != null) {
-                    target = mapper.map(remaining);
-                }
-            }
-
-            if (target == null) {
-                return null;
-            }
-        }
-
-        return requestMatch.template.template + target.template.template;
     }
 
     private static String getPathWithoutPrefix(RoutingContext rc, Deployment deployment) {

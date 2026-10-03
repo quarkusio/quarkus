@@ -577,81 +577,94 @@ public final class OidcUtils {
             // OidcRecorder sets it before the merge operation
             throw new IllegalStateException();
         }
+        var builder = OidcTenantConfig.builder(tenant);
         // root properties
-        if (tenant.authServerUrl().isEmpty()) {
-            tenant.authServerUrl = provider.authServerUrl();
+        if (tenant.authServerUrl().isEmpty() && provider.authServerUrl().isPresent()) {
+            builder.authServerUrl(provider.authServerUrl().get());
         }
-        if (tenant.applicationType().isEmpty()) {
-            tenant.applicationType = provider.applicationType;
+        if (tenant.applicationType().isEmpty() && provider.applicationType().isPresent()) {
+            builder.applicationType(provider.applicationType().get());
         }
-        if (tenant.discoveryEnabled().isEmpty()) {
-            tenant.discoveryEnabled = provider.discoveryEnabled();
+        if (tenant.discoveryEnabled().isEmpty() && provider.discoveryEnabled().isPresent()) {
+            builder.discoveryEnabled(provider.discoveryEnabled().get());
         }
-        if (tenant.authorizationPath().isEmpty()) {
-            tenant.authorizationPath = provider.authorizationPath();
+        if (tenant.authorizationPath().isEmpty() && provider.authorizationPath().isPresent()) {
+            builder.authorizationPath(provider.authorizationPath().get());
         }
-        if (tenant.jwksPath().isEmpty()) {
-            tenant.jwksPath = provider.jwksPath();
+        if (tenant.jwksPath().isEmpty() && provider.jwksPath().isPresent()) {
+            builder.jwksPath(provider.jwksPath().get());
         }
-        if (tenant.tokenPath().isEmpty()) {
-            tenant.tokenPath = provider.tokenPath();
+        if (tenant.tokenPath().isEmpty() && provider.tokenPath().isPresent()) {
+            builder.tokenPath(provider.tokenPath().get());
         }
-        if (tenant.userInfoPath().isEmpty()) {
-            tenant.userInfoPath = provider.userInfoPath();
+        if (tenant.userInfoPath().isEmpty() && provider.userInfoPath().isPresent()) {
+            builder.userInfoPath(provider.userInfoPath().get());
         }
 
         // authentication
-        if (tenant.authentication().idTokenRequired().isEmpty()) {
-            tenant.authentication.idTokenRequired = provider.authentication().idTokenRequired();
+        var authentication = builder.authentication();
+        if (tenant.authentication().idTokenRequired().isEmpty() && provider.authentication().idTokenRequired().isPresent()) {
+            authentication.idTokenRequired(provider.authentication().idTokenRequired().get());
         }
-        if (tenant.authentication().userInfoRequired().isEmpty()) {
-            tenant.authentication.userInfoRequired = provider.authentication().userInfoRequired();
+        if (tenant.authentication().userInfoRequired().isEmpty() && provider.authentication().userInfoRequired().isPresent()) {
+            authentication.userInfoRequired(provider.authentication().userInfoRequired().get());
         }
-        if (tenant.authentication().pkceRequired().isEmpty()) {
-            tenant.authentication.pkceRequired = provider.authentication().pkceRequired();
+        if (tenant.authentication().pkceRequired().isEmpty() && provider.authentication().pkceRequired().isPresent()) {
+            authentication.pkceRequired(provider.authentication().pkceRequired().get());
         }
-        if (tenant.authentication().scopes().isEmpty()) {
-            tenant.authentication.scopes = provider.authentication().scopes();
+        if (tenant.authentication().scopes().isEmpty() && provider.authentication().scopes().isPresent()) {
+            authentication.scopes(provider.authentication().scopes().get());
         }
-        if (tenant.authentication().scopeSeparator().isEmpty()) {
-            tenant.authentication.scopeSeparator = provider.authentication().scopeSeparator();
+        if (tenant.authentication().scopeSeparator().isEmpty() && provider.authentication().scopeSeparator().isPresent()) {
+            authentication.scopeSeparator(provider.authentication().scopeSeparator().get());
         }
-        if (tenant.authentication().addOpenidScope().isEmpty()) {
-            tenant.authentication.addOpenidScope = provider.authentication().addOpenidScope();
+        if (tenant.authentication().addOpenidScope().isEmpty() && provider.authentication().addOpenidScope().isPresent()) {
+            authentication.addOpenidScope(provider.authentication().addOpenidScope().get());
         }
-        if (tenant.authentication().forceRedirectHttpsScheme().isEmpty()) {
-            tenant.authentication.forceRedirectHttpsScheme = provider.authentication().forceRedirectHttpsScheme();
+        if (tenant.authentication().forceRedirectHttpsScheme().isEmpty()
+                && provider.authentication().forceRedirectHttpsScheme().isPresent()) {
+            authentication.forceRedirectHttpsScheme(provider.authentication().forceRedirectHttpsScheme().get());
         }
-        if (tenant.authentication().responseMode().isEmpty()) {
-            tenant.authentication.responseMode = provider.authentication.responseMode;
+        if (tenant.authentication().responseMode().isEmpty() && provider.authentication().responseMode().isPresent()) {
+            authentication.responseMode(provider.authentication().responseMode().get());
         }
-        if (tenant.authentication().redirectPath().isEmpty()) {
-            tenant.authentication.redirectPath = provider.authentication().redirectPath();
+        if (tenant.authentication().redirectPath().isEmpty() && provider.authentication().redirectPath().isPresent()) {
+            authentication.redirectPath(provider.authentication().redirectPath().get());
         }
+        authentication.end();
 
         // credentials
-        if (tenant.credentials().clientSecret().method().isEmpty()) {
-            tenant.credentials.clientSecret.method = provider.credentials.clientSecret.method;
+        var credentials = builder.credentials();
+        if (tenant.credentials().clientSecret().method().isEmpty()
+                && provider.credentials().clientSecret().method().isPresent()) {
+            credentials.clientSecret().method(provider.credentials().clientSecret().method().get()).end();
         }
-        if (tenant.credentials().jwt().audience().isEmpty()) {
-            tenant.credentials.jwt.audience = provider.credentials().jwt().audience();
+        var jwt = credentials.jwt();
+        if (tenant.credentials().jwt().audience().isEmpty() && provider.credentials().jwt().audience().isPresent()) {
+            jwt.audience(provider.credentials().jwt().audience().get());
         }
-        if (tenant.credentials().jwt().signatureAlgorithm().isEmpty()) {
-            tenant.credentials.jwt.signatureAlgorithm = provider.credentials().jwt().signatureAlgorithm();
+        if (tenant.credentials().jwt().signatureAlgorithm().isEmpty()
+                && provider.credentials().jwt().signatureAlgorithm().isPresent()) {
+            jwt.signatureAlgorithm(provider.credentials().jwt().signatureAlgorithm().get());
         }
+        jwt.end();
+        credentials.end();
 
         // token
-        if (tenant.token().issuer().isEmpty()) {
-            tenant.token.issuer = provider.token().issuer();
+        var token = builder.token();
+        if (tenant.token().issuer().isEmpty() && provider.token().issuer().isPresent()) {
+            token.issuer(provider.token().issuer().get());
         }
-        if (tenant.token().principalClaim().isEmpty()) {
-            tenant.token.principalClaim = provider.token().principalClaim();
+        if (tenant.token().principalClaim().isEmpty() && provider.token().principalClaim().isPresent()) {
+            token.principalClaim(provider.token().principalClaim().get());
         }
-        if (tenant.token().verifyAccessTokenWithUserInfo().isEmpty()) {
-            tenant.token.verifyAccessTokenWithUserInfo = provider.token().verifyAccessTokenWithUserInfo();
+        if (tenant.token().verifyAccessTokenWithUserInfo().isEmpty()
+                && provider.token().verifyAccessTokenWithUserInfo().isPresent()) {
+            token.verifyAccessTokenWithUserInfo(provider.token().verifyAccessTokenWithUserInfo().get());
         }
+        token.end();
 
-        return tenant;
+        return builder.build();
     }
 
     static OidcTenantConfig resolveProviderConfig(OidcTenantConfig oidcTenantConfig) {

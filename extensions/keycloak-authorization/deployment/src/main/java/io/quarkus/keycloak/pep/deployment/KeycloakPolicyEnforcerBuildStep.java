@@ -11,7 +11,6 @@ import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.ExtensionSslNativeSupportBuildItem;
 import io.quarkus.keycloak.pep.runtime.DefaultPolicyEnforcerResolver;
 import io.quarkus.keycloak.pep.runtime.KeycloakPolicyEnforcerAuthorizer;
-import io.quarkus.keycloak.pep.runtime.KeycloakPolicyEnforcerBuildTimeConfig;
 import io.quarkus.keycloak.pep.runtime.KeycloakPolicyEnforcerRecorder;
 import io.quarkus.oidc.deployment.OidcBuildTimeConfig;
 import io.quarkus.vertx.http.deployment.RequireBodyHandlerBuildItem;

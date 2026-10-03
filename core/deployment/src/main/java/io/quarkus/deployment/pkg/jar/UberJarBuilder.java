@@ -72,6 +72,7 @@ public class UberJarBuilder extends AbstractJarBuilder<JarBuildItem> {
             MainClassBuildItem mainClass,
             ApplicationArchivesBuildItem applicationArchives,
             TransformedClassesBuildItem transformedClasses,
+            Map<ArtifactKey, Set<String>> removedResources,
             List<GeneratedClassBuildItem> generatedClasses,
             List<GeneratedResourceBuildItem> generatedResources,
             List<GeneratedServiceProviderBuildItem> generatedServiceProviders,
@@ -82,8 +83,8 @@ public class UberJarBuilder extends AbstractJarBuilder<JarBuildItem> {
             ResolvedJVMRequirements jvmRequirements,
             JarTreeShakeBuildItem treeShakeResult) {
         super(curateOutcome, outputTarget, applicationInfo, packageConfig, mainClass, applicationArchives, transformedClasses,
-                generatedClasses, generatedResources, generatedServiceProviders, removedArtifactKeys, executorService,
-                jvmRequirements);
+                removedResources, generatedClasses, generatedResources, generatedServiceProviders, removedArtifactKeys,
+                executorService, jvmRequirements);
 
         this.mergedResources = mergedResources;
         this.ignoredResources = ignoredResources;
@@ -244,6 +245,8 @@ public class UberJarBuilder extends AbstractJarBuilder<JarBuildItem> {
             Predicate<String> ignoredEntriesPredicate, ResolvedDependency appDep,
             Set<String> mergeResourcePaths) throws IOException {
 
+        Set<String> removedFromThisDep = removedResources.get(appDep.getKey());
+
         // The reason opening and closing a path tree right away works, unlike creating and closing a ZipFileSystem,
         // is that we are actually using a SharedOpenArchivePathTree here, which simply increments and decrements
         // the user count of the cached shared open path tree instance. This open path tree instance will remain open
@@ -256,6 +259,10 @@ public class UberJarBuilder extends AbstractJarBuilder<JarBuildItem> {
                         if (!relativePath.isEmpty()) {
                             archiveCreator.addDirectory(relativePath);
                         }
+                        return;
+                    }
+
+                    if (removedFromThisDep != null && removedFromThisDep.contains(relativePath)) {
                         return;
                     }
 

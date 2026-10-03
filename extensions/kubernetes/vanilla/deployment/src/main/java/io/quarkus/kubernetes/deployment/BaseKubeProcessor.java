@@ -315,6 +315,10 @@ public abstract class BaseKubeProcessor<P, C extends PlatformConfiguration> {
 
         config.sidecars().entrySet()
                 .forEach(e -> context.add(new AddSidecarDecorator(context.name, ContainerConverter.convert(e))));
+        config.sidecars().entrySet().stream()
+                .filter(e -> e.getValue().startupProbe() != null && e.getValue().startupProbe().hasUserSuppliedAction())
+                .forEach(e -> context.add(new AddSidecarStartupProbeDecorator(context.name, e.getKey(),
+                        ProbeConverter.convert(e.getKey(), e.getValue().startupProbe()))));
 
         // Handle Pull Secrets
         if (config.generateImagePullSecret()) {

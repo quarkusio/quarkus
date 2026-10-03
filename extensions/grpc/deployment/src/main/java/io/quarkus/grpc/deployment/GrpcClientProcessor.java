@@ -86,6 +86,7 @@ import io.quarkus.grpc.runtime.stork.VertxStorkMeasuringGrpcInterceptor;
 import io.quarkus.grpc.runtime.supports.Channels;
 import io.quarkus.grpc.runtime.supports.GrpcClientConfigProvider;
 import io.quarkus.grpc.runtime.supports.IOThreadClientInterceptor;
+import io.quarkus.grpc.runtime.supports.exc.ExceptionCausePropagationConfigurator;
 
 public class GrpcClientProcessor {
 
@@ -101,7 +102,8 @@ public class GrpcClientProcessor {
         // @GrpcClient is a CDI qualifier
         beans.produce(new AdditionalBeanBuildItem(GrpcClient.class, RegisterClientInterceptor.class));
         beans.produce(AdditionalBeanBuildItem.builder().setUnremovable().addBeanClasses(GrpcClientConfigProvider.class,
-                GrpcClientInterceptorContainer.class, IOThreadClientInterceptor.class).build());
+                GrpcClientInterceptorContainer.class, IOThreadClientInterceptor.class,
+                ExceptionCausePropagationConfigurator.class).build());
     }
 
     @BuildStep

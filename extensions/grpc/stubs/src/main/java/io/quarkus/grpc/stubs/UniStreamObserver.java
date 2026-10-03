@@ -5,6 +5,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import io.grpc.stub.ClientCallStreamObserver;
 import io.grpc.stub.ClientResponseObserver;
+import io.quarkus.grpc.ExceptionCauseSupport;
 import io.smallrye.mutiny.subscription.UniEmitter;
 
 public class UniStreamObserver<I, O> implements ClientResponseObserver<I, O> {
@@ -54,6 +55,7 @@ public class UniStreamObserver<I, O> implements ClientResponseObserver<I, O> {
 
     @Override
     public void onError(Throwable failure) {
+        failure = ExceptionCauseSupport.restoreCauses(failure);
         if (terminated.compareAndSet(false, true)) {
             emitter.fail(failure);
         } else {

@@ -105,7 +105,8 @@ public interface GrpcClientConfiguration {
     Optional<String> compression();
 
     /**
-     * The deadline used for each call.
+     * The deadline used for each call. It is computed when the call starts, and a call that sets its own deadline
+     * keeps it.
      */
     Optional<Duration> deadline();
 

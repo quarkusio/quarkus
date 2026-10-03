@@ -20,7 +20,6 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.TreeSet;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Predicate;
 
@@ -73,17 +72,13 @@ public class ClientRequestContextImpl implements ResteasyReactiveClientRequestCo
         // to avoid creating a chain of parent references that prevents GC of previous calls' contexts.
         Context current = client.vertx.getOrCreateContext();
         this.context = VertxContext.createNewDuplicatedContext(current);
-        ContextInternal ctx = (ContextInternal) this.context;
         if (VertxContext.isDuplicatedContext(current)) {
-            // Copy old-style locals from the caller context so they remain visible
-            ContextInternal curCtx = (ContextInternal) current;
-            ConcurrentHashMap<String, Object> map = ctx.getLocal(VertxContext.DATA_MAP_LOCAL);
-            if (map == null) {
-                map = new ConcurrentHashMap<>();
-                ctx.putLocal(VertxContext.DATA_MAP_LOCAL, map);
-            }
-            map.putAll(curCtx.getLocal(VertxContext.DATA_MAP_LOCAL));
+            // Copy old-style locals from the caller context so they remain visible.
+            // Go through the VertxContext accessor: context locals start unset, so a duplicated
+            // context that nobody wrote a local to carries no data map at all.
+            VertxContext.localContextData(this.context).putAll(VertxContext.localContextData(current));
         }
+        ContextInternal ctx = (ContextInternal) this.context;
         ctx.putLocal(VertxContext.PARENT_CONTEXT_LOCAL, current);
         restClientRequestContext.properties.put(VERTX_CONTEXT_PROPERTY, context);
     }

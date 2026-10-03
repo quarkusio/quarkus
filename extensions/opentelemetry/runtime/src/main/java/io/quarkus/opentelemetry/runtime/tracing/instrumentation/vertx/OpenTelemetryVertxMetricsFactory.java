@@ -42,7 +42,7 @@ public class OpenTelemetryVertxMetricsFactory implements VertxMetricsFactory {
         public void requestRouted(final MetricRequest requestMetric, final String route) {
             if (route != null) {
                 requestMetric.getContext()
-                        .ifPresent(context -> context.getLocal(VertxContext.DATA_MAP_LOCAL).put("VertxRoute", route));
+                        .ifPresent(context -> VertxContext.localContextData(context).put("VertxRoute", route));
             }
         }
     }

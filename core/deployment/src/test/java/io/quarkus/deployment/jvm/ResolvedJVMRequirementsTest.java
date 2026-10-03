@@ -42,6 +42,17 @@ public class ResolvedJVMRequirementsTest {
     }
 
     @Test
+    public void modulesOutsideTheJdkAreNotRenderedAsJvmArguments() throws BuildException {
+        ResolvedJVMRequirements requirements = new ResolvedJVMRequirements(
+                List.of(new ModuleOpenBuildItem("io.vertx.core", "io.quarkus.vertx.utils", "io.vertx.core.impl")),
+                List.of(new ModuleExportBuildItem("io.vertx.core", "io.quarkus.vertx.utils", "io.vertx.core.impl.buffer"),
+                        new ModuleExportBuildItem("java.base", "io.netty.common", "java.nio")),
+                List.of());
+
+        assertThat(requirements.renderAsJvmArguments()).containsExactly("--add-exports=java.base/java.nio=ALL-UNNAMED");
+    }
+
+    @Test
     public void nativeAccessIsRenderedAsJvmArgument() throws BuildException {
         ResolvedJVMRequirements requirements = new ResolvedJVMRequirements(
                 List.of(new ModuleOpenBuildItem("java.base", "org.jboss.threads", "java.lang")),

@@ -173,7 +173,7 @@
         <!-- Aligns the conflicting versions brought in by kubernetes-client-api and jackson-dataformat-yaml -->
         <snakeyaml-engine.version>3.1.1</snakeyaml-engine.version>
         <osgi.version>6.0.0</osgi.version>
-        <mongo-client.version>5.6.5</mongo-client.version>
+        <mongo-client.version>5.13.0</mongo-client.version>
         <proton-j.version>0.35.0</proton-j.version>
         <javaparser.version>3.28.2</javaparser.version>
         <flapdoodle.mongo.version>4.33.0</flapdoodle.mongo.version>

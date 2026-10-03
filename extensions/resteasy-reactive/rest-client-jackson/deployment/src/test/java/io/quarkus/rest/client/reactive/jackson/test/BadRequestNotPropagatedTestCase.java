@@ -15,6 +15,7 @@ import jakarta.ws.rs.core.Response;
 
 import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
+import org.jboss.resteasy.reactive.ClientWebApplicationException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -61,6 +62,12 @@ public class BadRequestNotPropagatedTestCase {
         Assertions.assertEquals(999, data.getStatus());
     }
 
+    @Test
+    public void testBadRequestWithClientProblemMapper() {
+        Response data = client.target(url.toExternalForm() + "/bad-server/with-client-problem-mapper").request().get();
+        Assertions.assertEquals(500, data.getStatus());
+    }
+
     @Path("/bad")
     public static class Bad {
 
@@ -94,6 +101,19 @@ public class BadRequestNotPropagatedTestCase {
         }
     }
 
+    @Path("/bad")
+    @RegisterRestClient(baseUri = "http://localhost:8081")
+    public interface BadClientWithClientProblemMapper extends BadClient {
+
+        @ClientExceptionMapper
+        static RuntimeException toException(Response response) {
+            if (response.getStatus() == 400) {
+                return new ClientWebApplicationException(response);
+            }
+            return null;
+        }
+    }
+
     static class JsonObject {
         String name;
     }
@@ -106,6 +126,9 @@ public class BadRequestNotPropagatedTestCase {
 
         @RestClient
         BadClientWithCustomMapper badClientWithCustomMapper;
+
+        @RestClient
+        BadClientWithClientProblemMapper badClientWithClientProblemMapper;
 
         @GET
         public JsonObject get() {
@@ -130,6 +153,12 @@ public class BadRequestNotPropagatedTestCase {
         @Path("with-custom-mapper")
         public JsonObject getWithCustomMapper() {
             return badClientWithCustomMapper.get("{name:foo}");
+        }
+
+        @GET
+        @Path("with-client-problem-mapper")
+        public JsonObject getWithClientProblemMapper() {
+            return badClientWithClientProblemMapper.get("{name:foo}");
         }
 
     }

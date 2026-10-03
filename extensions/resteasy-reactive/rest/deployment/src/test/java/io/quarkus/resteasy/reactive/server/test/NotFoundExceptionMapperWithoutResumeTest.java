@@ -4,7 +4,6 @@ import static io.restassured.RestAssured.get;
 
 import java.util.function.Supplier;
 
-import jakarta.enterprise.context.RequestScoped;
 import jakarta.enterprise.event.Observes;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
@@ -21,7 +20,11 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.test.QuarkusExtensionTest;
 import io.vertx.ext.web.Router;
 
-public class ResumeOn404ConfigTest {
+/**
+ * Without {@code quarkus.rest.resume-on404}, a global exception mapper that matches {@code NotFoundException}
+ * handles the paths that are not matched by any resource.
+ */
+public class NotFoundExceptionMapperWithoutResumeTest {
 
     @RegisterExtension
     static QuarkusExtensionTest test = new QuarkusExtensionTest()
@@ -31,8 +34,7 @@ public class ResumeOn404ConfigTest {
                     return ShrinkWrap.create(JavaArchive.class)
                             .addClasses(Resource.class, CustomRoute.class, ThrowableExceptionMapper.class);
                 }
-            })
-            .overrideConfigKey("quarkus.rest.resume-on404", "true");
+            });
 
     @Test
     public void matchingFromResteasyReactive() {
@@ -48,25 +50,21 @@ public class ResumeOn404ConfigTest {
                 .statusCode(200);
     }
 
-    /**
-     * A route with a lower priority than the REST routes, such as the welcome page in dev mode.
-     */
     @Test
-    public void matchingFromLateCustomRoute() {
+    public void lateCustomRouteIsHandledByTheMapper() {
         get("/late")
                 .then()
-                .statusCode(200);
+                .statusCode(418);
     }
 
     @Test
-    public void missing() {
+    public void missingIsHandledByTheMapper() {
         get("/dummy")
                 .then()
-                .statusCode(404);
+                .statusCode(418);
     }
 
     @Path("/test")
-    @RequestScoped
     public static class Resource {
         @GET
         @Produces(MediaType.TEXT_PLAIN)
@@ -84,9 +82,6 @@ public class ResumeOn404ConfigTest {
         }
     }
 
-    /**
-     * A global mapper that also matches {@code NotFoundException} must not prevent the resume.
-     */
     public static class ThrowableExceptionMapper {
 
         @ServerExceptionMapper

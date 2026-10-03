@@ -79,7 +79,10 @@ public interface ResteasyReactiveConfig {
     /**
      * An advanced option that can be set when they RESTEasy Reactive should NOT reply with 404 when it does not match the URL
      * path
-     * and instead just pass control onto the next Vert.x handler (if any)
+     * and instead just pass control onto the next Vert.x handler (if any).
+     * <p>
+     * When set, an exception mapper that handles {@code NotFoundException} (including a mapper for a super type such as
+     * {@code Throwable}) is not invoked for the unmatched request.
      */
     @WithDefault("false")
     boolean resumeOn404();

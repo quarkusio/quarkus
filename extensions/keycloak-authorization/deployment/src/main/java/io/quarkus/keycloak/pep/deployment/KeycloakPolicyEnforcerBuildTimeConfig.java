@@ -1,4 +1,4 @@
-package io.quarkus.keycloak.pep.runtime;
+package io.quarkus.keycloak.pep.deployment;
 
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigRoot;

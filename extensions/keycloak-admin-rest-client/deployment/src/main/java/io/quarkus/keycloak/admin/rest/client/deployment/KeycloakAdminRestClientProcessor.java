@@ -10,7 +10,6 @@ import org.keycloak.json.StringListMapDeserializer;
 import org.keycloak.json.StringOrArrayDeserializer;
 import org.keycloak.json.StringOrArraySerializer;
 
-import io.quarkus.arc.BeanDestroyer;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -82,10 +81,11 @@ public class KeycloakAdminRestClientProcessor {
                 // use @RequestScoped as we don't want to keep client connection open too long
                 .scope(RequestScoped.class)
                 .setRuntimeInit()
-                .defaultBean()
+                .reserve(true)
+                .priority(0)
                 .unremovable()
                 .supplier(recorder.createAdminClient())
-                .destroyer(BeanDestroyer.AutoCloseableDestroyer.class)
+                .autoClose(true)
                 .done());
     }
 }

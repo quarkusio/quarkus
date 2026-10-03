@@ -82,6 +82,17 @@ public final class KeycloakPolicyEnforcerUtil {
 
     static Optional<String> getProxyUrl(Optional<String> proxyConfigurationName, String authServerUrl,
             ProxyConfigurationRegistry proxyConfigurationRegistry) {
+        return getAndValidateProxyConfiguration(proxyConfigurationName, proxyConfigurationRegistry).map(proxyConfig -> {
+            String host = proxyConfig.host();
+            if (!host.startsWith("http://") && !host.startsWith("https://")) {
+                host = URI.create(authServerUrl).getScheme() + "://" + host;
+            }
+            return host + ":" + proxyConfig.port();
+        });
+    }
+
+    static Optional<ProxyConfiguration> getAndValidateProxyConfiguration(Optional<String> proxyConfigurationName,
+            ProxyConfigurationRegistry proxyConfigurationRegistry) {
         if (proxyConfigurationName.isEmpty() || ProxyConfigurationRegistry.NONE.equals(proxyConfigurationName.get())) {
             return Optional.empty();
         }
@@ -100,11 +111,7 @@ public final class KeycloakPolicyEnforcerUtil {
             throw new ConfigurationException(("The Proxy registry configuration '%s' sets 'quarkus.proxy.%s.non-proxy-hosts',"
                     + " which is not supported by Keycloak Authorization").formatted(name, name));
         }
-        String host = proxyConfig.host();
-        if (!host.startsWith("http://") && !host.startsWith("https://")) {
-            host = URI.create(authServerUrl).getScheme() + "://" + host;
-        }
-        return Optional.of(host + ":" + proxyConfig.port());
+        return Optional.of(proxyConfig);
     }
 
     private static Map<String, Object> getCredentials(OidcTenantConfig oidcConfig) {

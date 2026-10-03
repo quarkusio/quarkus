@@ -1,5 +1,5 @@
 plugins {
-    id 'java'
+    id 'java-library'
     id 'io.quarkus'
 }
 
@@ -19,6 +19,8 @@ dependencies {
 
     implementation 'io.quarkus:quarkus-rest'
 
+    // Keep this api dependency before the directly declared extension to verify that the extension remains top-level.
+    api 'org.acme:extension-transitive-dependency:1.0-SNAPSHOT'
     implementation 'org.acme:ext-a:1.0-SNAPSHOT'
     implementation 'org.acme:ext-c:1.0-SNAPSHOT'
     implementation 'org.acme:ext-t:1.0-SNAPSHOT'

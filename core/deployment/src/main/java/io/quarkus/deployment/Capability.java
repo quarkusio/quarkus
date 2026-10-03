@@ -121,8 +121,12 @@ public interface Capability {
     String CONTAINER_IMAGE_OPENSHIFT = QUARKUS_PREFIX + ".container.image.openshift";
     String CONTAINER_IMAGE_BUILDPACK = QUARKUS_PREFIX + ".container.image.buildpack";
     String HIBERNATE_ORM = QUARKUS_PREFIX + ".hibernate.orm";
+    String HIBERNATE_ORM_PANACHE = HIBERNATE_ORM + ".panache";
+    String HIBERNATE_ORM_PANACHE_KOTLIN = HIBERNATE_ORM_PANACHE + ".kotlin";
     String HIBERNATE_ENVERS = QUARKUS_PREFIX + ".hibernate.envers";
     String HIBERNATE_REACTIVE = QUARKUS_PREFIX + ".hibernate.reactive";
+    String HIBERNATE_REACTIVE_PANACHE = HIBERNATE_REACTIVE + ".panache";
+    String HIBERNATE_REACTIVE_PANACHE_KOTLIN = HIBERNATE_REACTIVE_PANACHE + ".kotlin";
     String HIBERNATE_VALIDATOR = QUARKUS_PREFIX + ".hibernate.validator";
     String OPENTELEMETRY_TRACER = QUARKUS_PREFIX + ".opentelemetry.tracer";
     String OPENTELEMETRY_METRICS = QUARKUS_PREFIX + ".opentelemetry.metrics";

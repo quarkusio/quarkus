@@ -10,3 +10,6 @@ metadata:
   categories:
   - "data"
   status: "preview"
+  capabilities:
+    provides:
+    - "io.quarkus.hibernate.reactive.panache"

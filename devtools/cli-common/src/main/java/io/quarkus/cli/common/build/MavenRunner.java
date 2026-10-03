@@ -240,6 +240,17 @@ public class MavenRunner implements BuildSystemRunner {
     @Override
     public List<Supplier<BuildCommandArgs>> prepareDevTestMode(boolean devMode, DevOptions commonOptions,
             DebugOptions debugOptions, List<String> params) {
+        return prepareDevMode(devMode ? "quarkus:dev" : "quarkus:test", commonOptions, debugOptions, params);
+    }
+
+    @Override
+    public List<Supplier<BuildCommandArgs>> prepareRemoteDevMode(DevOptions commonOptions, DebugOptions debugOptions,
+            List<String> params) {
+        return prepareDevMode("quarkus:remote-dev", commonOptions, debugOptions, params);
+    }
+
+    private List<Supplier<BuildCommandArgs>> prepareDevMode(String goal, DevOptions commonOptions,
+            DebugOptions debugOptions, List<String> params) {
         ArrayDeque<String> args = new ArrayDeque<>();
         List<String> jvmArgs = new ArrayList<>();
 
@@ -253,7 +264,7 @@ public class MavenRunner implements BuildSystemRunner {
         if (commonOptions.clean) {
             args.add("clean");
         }
-        args.add(devMode ? "quarkus:dev" : "quarkus:test");
+        args.add(goal);
 
         if (commonOptions.offline) {
             args.add("--offline");

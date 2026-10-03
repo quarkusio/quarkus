@@ -13,8 +13,12 @@ import jakarta.websocket.Extension;
 import org.jboss.logging.Logger;
 
 import io.netty.channel.EventLoopGroup;
+import io.netty.handler.codec.http.HttpHeaderNames;
+import io.quarkus.arc.Arc;
+import io.quarkus.arc.ManagedContext;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.annotations.Recorder;
+import io.quarkus.vertx.http.runtime.CurrentVertxRequest;
 import io.quarkus.vertx.http.runtime.security.QuarkusHttpUser;
 import io.quarkus.websockets.client.runtime.ServerWebSocketContainerFactory;
 import io.quarkus.websockets.client.runtime.WebSocketPrincipal;
@@ -39,6 +43,28 @@ public class WebsocketServerRecorder {
     public Handler<RoutingContext> createHandler(RuntimeValue<WebSocketDeploymentInfo> info,
             RuntimeValue<ServerWebSocketContainer> container) throws DeploymentException {
         return new VertxWebSocketHandler(container.getValue(), info.getValue()) {
+            @Override
+            public void handle(RoutingContext event) {
+                if (event.request().getHeader(HttpHeaderNames.UPGRADE) == null) {
+                    super.handle(event);
+                    return;
+                }
+                ManagedContext requestContext = Arc.container().requestContext();
+                boolean activated = false;
+                if (!requestContext.isActive()) {
+                    requestContext.activate();
+                    activated = true;
+                }
+                try {
+                    Arc.container().instance(CurrentVertxRequest.class).get().setCurrent(event);
+                    super.handle(event);
+                } finally {
+                    if (activated) {
+                        requestContext.terminate();
+                    }
+                }
+            }
+
             @Override
             protected VertxWebSocketHttpExchange createHttpExchange(RoutingContext event) {
                 return new QuarkusVertxWebSocketHttpExchange(executor, event);

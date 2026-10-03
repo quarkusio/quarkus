@@ -13,17 +13,21 @@ import jakarta.websocket.Extension;
 import org.jboss.logging.Logger;
 
 import io.netty.channel.EventLoopGroup;
+import io.netty.handler.codec.http.HttpHeaderNames;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.vertx.http.runtime.security.QuarkusHttpUser;
 import io.quarkus.websockets.client.runtime.ServerWebSocketContainerFactory;
 import io.quarkus.websockets.client.runtime.WebSocketPrincipal;
 import io.quarkus.websockets.client.runtime.WebsocketCoreRecorder;
+import io.smallrye.common.vertx.ContextLocals;
+import io.smallrye.common.vertx.VertxContext;
 import io.undertow.websockets.ServerWebSocketContainer;
 import io.undertow.websockets.WebSocketDeploymentInfo;
 import io.undertow.websockets.WebSocketReconnectHandler;
 import io.undertow.websockets.util.ContextSetupHandler;
 import io.undertow.websockets.util.ObjectIntrospecter;
+import io.undertow.websockets.util.WebsocketPathMatcher.PathMatchResult;
 import io.undertow.websockets.vertx.VertxServerWebSocketContainer;
 import io.undertow.websockets.vertx.VertxWebSocketHandler;
 import io.undertow.websockets.vertx.VertxWebSocketHttpExchange;
@@ -36,9 +40,46 @@ public class WebsocketServerRecorder {
 
     private static final Logger log = Logger.getLogger(WebsocketCoreRecorder.class);
 
+    private static final String URL_PATH_TEMPLATE = "UrlPathTemplate";
+
     public Handler<RoutingContext> createHandler(RuntimeValue<WebSocketDeploymentInfo> info,
             RuntimeValue<ServerWebSocketContainer> container) throws DeploymentException {
         return new VertxWebSocketHandler(container.getValue(), info.getValue()) {
+            @Override
+            public void handle(RoutingContext event) {
+                if (event.request().getHeader(HttpHeaderNames.UPGRADE) != null) {
+                    publishUrlPathTemplate(event);
+                }
+                super.handle(event);
+            }
+
+            /**
+             * Publishes the endpoint path template the same way Quarkus REST does, so that metrics and tracing tag
+             * the upgrade request with the template (for example {@code /chat/{room}}) instead of the concrete path.
+             */
+            private void publishUrlPathTemplate(RoutingContext event) {
+                String path;
+                if (event.mountPoint() == null) {
+                    path = event.normalizedPath();
+                } else {
+                    path = event.normalizedPath().substring(
+                            event.mountPoint().endsWith("/") ? event.mountPoint().length() - 1 : event.mountPoint().length());
+                }
+                if (!path.startsWith("/")) {
+                    path = "/" + path;
+                }
+                PathMatchResult<?> match = pathTemplateMatcher.match(path);
+                if (match == null) {
+                    return;
+                }
+                String template = match.getMatchedTemplate();
+                if (VertxContext.isOnDuplicatedContext()) {
+                    ContextLocals.put(URL_PATH_TEMPLATE, template);
+                } else {
+                    event.put(URL_PATH_TEMPLATE, template);
+                }
+            }
+
             @Override
             protected VertxWebSocketHttpExchange createHttpExchange(RoutingContext event) {
                 return new QuarkusVertxWebSocketHttpExchange(executor, event);

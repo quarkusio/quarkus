@@ -13,7 +13,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.test.QuarkusExtensionTest;
 import io.restassured.RestAssured;
 
-public class CustomHttpRootTest {
+public class ReverseProxyPathTest {
 
     private static final Pattern URL_PATTERN = Pattern.compile("\\burl: '([^']+)'");
     private static final Pattern SERVER_BASE_PATTERN = Pattern.compile("var base = new URL\\(\"([^\"]+)\"");
@@ -21,13 +21,13 @@ public class CustomHttpRootTest {
     @RegisterExtension
     static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withEmptyApplication()
-            .overrideConfigKey("quarkus.http.root-path", "/foo");
+            .overrideConfigKey("quarkus.http.non-application-root-path", "/");
 
     @Test
-    public void shouldUseCustomConfig() {
-        String indexHtml = RestAssured.when().get("/q/swagger-ui/index.html").then().statusCode(200).extract().asString();
-        assertResolvedPath(indexHtml, URL_PATTERN, "http://h/prefix/foo/q/swagger-ui/", "/prefix/foo/q/openapi");
-        assertResolvedPath(indexHtml, SERVER_BASE_PATTERN, "http://h/prefix/foo/q/swagger-ui/", "/prefix/foo/");
+    public void shouldUseRelativeOpenApiUrl() {
+        String indexHtml = RestAssured.when().get("/swagger-ui/index.html").then().statusCode(200).extract().asString();
+        assertResolvedPath(indexHtml, URL_PATTERN, "http://h/prefix/swagger-ui/", "/prefix/openapi");
+        assertResolvedPath(indexHtml, SERVER_BASE_PATTERN, "http://h/prefix/swagger-ui/", "/prefix/");
     }
 
     private static void assertResolvedPath(String indexHtml, Pattern pattern, String pageUrl, String expectedPath) {

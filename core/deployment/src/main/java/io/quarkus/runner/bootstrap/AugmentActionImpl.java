@@ -42,19 +42,11 @@ import io.quarkus.builder.BuildExecutionBuilder;
 import io.quarkus.builder.BuildResult;
 import io.quarkus.builder.item.BuildItem;
 import io.quarkus.deployment.QuarkusAugmentor;
-import io.quarkus.deployment.builditem.ApplicationClassNameBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
-import io.quarkus.deployment.builditem.GeneratedFileSystemResourceHandledBuildItem;
-import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
-import io.quarkus.deployment.builditem.GeneratedServiceProviderBuildItem;
 import io.quarkus.deployment.builditem.LiveReloadBuildItem;
-import io.quarkus.deployment.builditem.MainClassBuildItem;
 import io.quarkus.deployment.builditem.RuntimeClassTransformerBuildItem;
-import io.quarkus.deployment.builditem.TransformedClassesBuildItem;
-import io.quarkus.deployment.jvm.ResolvedJVMRequirements;
 import io.quarkus.deployment.pkg.builditem.ArtifactResultBuildItem;
 import io.quarkus.deployment.pkg.builditem.BuildSystemTargetBuildItem;
-import io.quarkus.deployment.pkg.builditem.DeploymentResultBuildItem;
 import io.quarkus.deployment.pkg.builditem.JarBuildItem;
 import io.quarkus.deployment.pkg.builditem.NativeImageBuildItem;
 import io.quarkus.deployment.pkg.steps.NativeImageBuildStep;
@@ -68,13 +60,6 @@ import io.quarkus.runtime.LaunchMode;
 public class AugmentActionImpl implements AugmentAction {
 
     private static final Logger log = Logger.getLogger(AugmentActionImpl.class);
-
-    private static final Class[] NON_NORMAL_MODE_OUTPUTS = { GeneratedClassBuildItem.class,
-            GeneratedResourceBuildItem.class, GeneratedServiceProviderBuildItem.class,
-            ApplicationClassNameBuildItem.class,
-            MainClassBuildItem.class, GeneratedFileSystemResourceHandledBuildItem.class,
-            TransformedClassesBuildItem.class, RuntimeClassTransformerBuildItem.class,
-            ResolvedJVMRequirements.class };
 
     private final QuarkusBootstrap quarkusBootstrap;
     private final CuratedApplication curatedApplication;
@@ -187,8 +172,7 @@ public class AugmentActionImpl implements AugmentAction {
             throw new IllegalStateException("Can only create a production application when using NORMAL launch mode");
         }
         try (QuarkusClassLoader classLoader = curatedApplication.createDeploymentClassLoader()) {
-            BuildResult result = runAugment(true, Collections.emptySet(), null, classLoader, ArtifactResultBuildItem.class,
-                    DeploymentResultBuildItem.class, SbomBuildItem.class);
+            BuildResult result = runAugment(true, Collections.emptySet(), null, classLoader);
 
             writeDebugSourceFile(result);
 
@@ -347,8 +331,7 @@ public class AugmentActionImpl implements AugmentAction {
             throw new IllegalStateException("Cannot launch a runtime application with NORMAL launch mode");
         }
         try (QuarkusClassLoader classLoader = curatedApplication.createDeploymentClassLoader()) {
-            @SuppressWarnings("unchecked")
-            BuildResult result = runAugment(true, Collections.emptySet(), null, classLoader, NON_NORMAL_MODE_OUTPUTS);
+            BuildResult result = runAugment(true, Collections.emptySet(), null, classLoader);
             updateClassTransformer(result);
             return new StartupActionImpl(curatedApplication, result);
         }
@@ -362,9 +345,7 @@ public class AugmentActionImpl implements AugmentAction {
         }
 
         try (QuarkusClassLoader classLoader = curatedApplication.createDeploymentClassLoader()) {
-            @SuppressWarnings("unchecked")
-            BuildResult result = runAugment(!hasStartedSuccessfully, changedResources, classChangeInformation, classLoader,
-                    NON_NORMAL_MODE_OUTPUTS);
+            BuildResult result = runAugment(!hasStartedSuccessfully, changedResources, classChangeInformation, classLoader);
             updateClassTransformer(result);
             return new StartupActionImpl(curatedApplication, result);
         }

@@ -17,6 +17,7 @@ import org.jboss.jandex.IndexView;
 import org.jboss.resteasy.reactive.common.util.RestMediaType;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
+import io.quarkus.core.deployment.builditem.AlwaysResultBuildItem;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.Feature;
@@ -28,7 +29,6 @@ import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
-import io.quarkus.deployment.pkg.builditem.ArtifactResultBuildItem;
 import io.quarkus.gizmo.ClassOutput;
 import io.quarkus.resteasy.reactive.common.deployment.JaxRsResourceIndexBuildItem;
 import io.quarkus.resteasy.reactive.links.RestLinkId;
@@ -86,7 +86,7 @@ final class LinksProcessor {
     }
 
     @BuildStep
-    @Produce(ArtifactResultBuildItem.class)
+    @Produce(AlwaysResultBuildItem.class)
     void validateJsonNeededForHal(Capabilities capabilities,
             ResteasyReactiveResourceMethodEntriesBuildItem resourceMethodEntriesBuildItem) {
         boolean isHalSupported = capabilities.isPresent(Capability.HAL);

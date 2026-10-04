@@ -25,6 +25,11 @@ import io.quarkus.builder.BuildExecutionBuilder;
 import io.quarkus.builder.BuildMetrics;
 import io.quarkus.builder.BuildResult;
 import io.quarkus.builder.item.BuildItem;
+import io.quarkus.core.deployment.builditem.DevResultBuildItem;
+import io.quarkus.core.deployment.builditem.ProductionResultBuildItem;
+import io.quarkus.core.deployment.builditem.TestResultBuildItem;
+import io.quarkus.core.deployment.service.impl.ServiceMetadataBuildItem;
+import io.quarkus.core.deployment.service.impl.StaticServiceMetadataBuildItem;
 import io.quarkus.deployment.builditem.AdditionalApplicationArchiveBuildItem;
 import io.quarkus.deployment.builditem.AppModelProviderBuildItem;
 import io.quarkus.deployment.builditem.ArchiveRootBuildItem;
@@ -34,7 +39,6 @@ import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.LiveReloadBuildItem;
 import io.quarkus.deployment.builditem.QuarkusBuildCloseablesBuildItem;
 import io.quarkus.deployment.builditem.RawCommandLineArgumentsBuildItem;
-import io.quarkus.deployment.builditem.RuntimeApplicationShutdownBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.logging.LoggingSetupBuildItem;
 import io.quarkus.deployment.logging.StaticInitLoggingSetupBuildItem;
@@ -140,11 +144,15 @@ public class QuarkusAugmentor {
             for (Class<? extends BuildItem> i : finalResults) {
                 chainBuilder.addFinal(i);
             }
+            if (launchMode == LaunchMode.NORMAL) {
+                chainBuilder.addFinal(ProductionResultBuildItem.class);
+            } else if (test) {
+                chainBuilder.addFinal(TestResultBuildItem.class);
+            } else {
+                chainBuilder.addFinal(DevResultBuildItem.class);
+            }
             for (Consumer<BuildChainBuilder> i : buildChainCustomizers) {
                 i.accept(chainBuilder);
-            }
-            if (launchMode.isDevOrTest()) {
-                chainBuilder.addFinal(RuntimeApplicationShutdownBuildItem.class);
             }
             if (System.getProperty(BuildMetrics.BUILDER_METRICS_ENABLED) == null
                     && launchMode.isDev()

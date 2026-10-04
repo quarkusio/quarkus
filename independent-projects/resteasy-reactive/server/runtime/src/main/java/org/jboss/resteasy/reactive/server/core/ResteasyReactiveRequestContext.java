@@ -438,7 +438,27 @@ public abstract class ResteasyReactiveRequestContext
         } catch (IOException e) {
             log.debug("Failed to close stream", e);
         }
+        if (connectionClosed) {
+            closeResponseEntityIfNeeded();
+        }
         super.close();
+    }
+
+    private void closeResponseEntityIfNeeded() {
+        Object entity = responseEntity();
+        if (entity instanceof AutoCloseable c) {
+            try {
+                c.close();
+            } catch (Exception e) {
+                log.debug("Failed to close response entity", e);
+            }
+        } else if (result instanceof AutoCloseable c) {
+            try {
+                c.close();
+            } catch (Exception e) {
+                log.debug("Failed to close response", e);
+            }
+        }
     }
 
     public LazyResponse getResponse() {

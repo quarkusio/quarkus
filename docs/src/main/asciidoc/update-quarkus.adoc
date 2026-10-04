@@ -65,7 +65,6 @@ ifdef::devtools-wrapped[+]
 ----
 Optional: To specify a particular stream, use the `-Dstream` option; for example: `-Dstream=3.2`
 endif::[]
-ifndef::devtools-no-gradle[]
 ifdef::devtools-wrapped[+]
 ****
 

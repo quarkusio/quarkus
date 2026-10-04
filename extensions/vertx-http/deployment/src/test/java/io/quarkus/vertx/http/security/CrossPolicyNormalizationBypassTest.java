@@ -24,8 +24,11 @@ import io.quarkus.security.test.utils.TestIdentityController;
 import io.quarkus.security.test.utils.TestIdentityProvider;
 import io.quarkus.test.QuarkusUnitTest;
 import io.quarkus.test.common.http.TestHTTPResource;
+import io.quarkus.vertx.http.runtime.security.HttpSecurityPolicy;
 import io.vertx.core.Vertx;
+import io.vertx.core.buffer.Buffer;
 import io.vertx.ext.web.Router;
+import io.vertx.ext.web.client.HttpResponse;
 import io.vertx.ext.web.client.WebClient;
 
 /**
@@ -55,7 +58,8 @@ public class CrossPolicyNormalizationBypassTest {
     @RegisterExtension
     static QuarkusUnitTest test = new QuarkusUnitTest().setArchiveProducer(() -> ShrinkWrap
             .create(JavaArchive.class)
-            .addClasses(TestIdentityController.class, TestIdentityProvider.class, RouteHandler.class)
+            .addClasses(TestIdentityController.class, TestIdentityProvider.class, RouteHandler.class,
+                    CountingPolicySetup.class)
             .addAsResource(new StringAsset(APP_PROPS), "application.properties"));
 
     private static WebClient client;
@@ -129,7 +133,20 @@ public class CrossPolicyNormalizationBypassTest {
         assurePath(path, 401, null);
     }
 
-    private void assurePath(String path, int expectedStatusCode, String auth) {
+    @Test
+    void testPolicyRegisteredUnderTwoPathsRunsOncePerRequest() {
+        HttpResponse<Buffer> response = assurePath("/alpha/..;/beta/data", 200, null);
+        String policyInvocationCount = response.getHeader(CountingPolicySetup.POLICY_INVOCATION_COUNT_HEADER);
+        assertEquals("ok", response.bodyAsString());
+        assertEquals("1", policyInvocationCount, "A security policy registered under two paths must run once per request");
+
+        response = assurePath("/beta/..;/gama/data", 200, null);
+        policyInvocationCount = response.getHeader(CountingPolicySetup.POLICY_INVOCATION_COUNT_HEADER);
+        assertEquals("ok", response.bodyAsString());
+        assertEquals("1", policyInvocationCount, "A security policy registered under two paths must run once per request");
+    }
+
+    private HttpResponse<Buffer> assurePath(String path, int expectedStatusCode, String auth) {
         var req = getClient().get(url.getPort(), url.getHost(), path);
         if (auth != null) {
             req.basicAuthentication(auth, auth);
@@ -138,6 +155,31 @@ public class CrossPolicyNormalizationBypassTest {
         await().atMost(REQUEST_TIMEOUT).until(result::isComplete);
         assertEquals(expectedStatusCode, result.result().statusCode(),
                 "Path: " + path + " (auth=" + auth + ")");
+        return result.result();
+    }
+
+    @ApplicationScoped
+    static class CountingPolicySetup {
+
+        private static final String POLICY_INVOCATION_COUNT_HEADER = "X-Policy-Invocation-Count";
+        private static final String INVOCATION_COUNT_KEY = "io.quarkus.vertx.http.security.policy-invocation-count";
+        private static final HttpSecurityPolicy COUNTING_POLICY = (routingContext, identity, requestContext) -> {
+            int invocationCount = routingContext.<Integer> get(INVOCATION_COUNT_KEY, 0) + 1;
+            routingContext.put(INVOCATION_COUNT_KEY, invocationCount);
+            routingContext.response().putHeader(POLICY_INVOCATION_COUNT_HEADER, Integer.toString(invocationCount));
+            return HttpSecurityPolicy.CheckResult.permit();
+        };
+
+        void registerSharedPolicy(@Observes HttpSecurity httpSecurity) {
+            httpSecurity.path("/alpha/*", "/beta/*").policy(COUNTING_POLICY);
+            httpSecurity.path("/gama/*").policy(COUNTING_POLICY);
+        }
+
+        void registerRoute(@Observes Router router) {
+            router.route("/alpha/*").order(-1).handler(rc -> rc.response().end("ok"));
+            router.route("/beta/*").order(-1).handler(rc -> rc.response().end("ok"));
+            router.route("/gama/*").order(-1).handler(rc -> rc.response().end("ok"));
+        }
     }
 
     @ApplicationScoped

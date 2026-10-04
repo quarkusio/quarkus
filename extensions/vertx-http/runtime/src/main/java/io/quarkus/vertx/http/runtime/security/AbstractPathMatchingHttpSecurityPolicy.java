@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.stream.Stream;
 
 import jakarta.enterprise.inject.Instance;
 
@@ -222,8 +223,10 @@ public class AbstractPathMatchingHttpSecurityPolicy {
                 toCheck = routerCheck;
             } else if (routerCheck.getValue() != null && !routerCheck.getValue().isEmpty()
                     && !toCheck.getMatched().equals(routerCheck.getMatched())) {
-                List<HttpMatcher> merged = new ArrayList<>(toCheck.getValue());
-                merged.addAll(routerCheck.getValue());
+                List<HttpMatcher> merged = Stream.concat(
+                        toCheck.getValue().stream(),
+                        routerCheck.getValue().stream())
+                        .distinct().toList();
                 toCheck = new PathMatch<>(toCheck.getMatched(), merged);
             }
         }

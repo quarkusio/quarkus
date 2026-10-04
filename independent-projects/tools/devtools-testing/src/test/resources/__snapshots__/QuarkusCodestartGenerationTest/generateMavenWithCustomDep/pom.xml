@@ -7,10 +7,12 @@
     <packaging>quarkus</packaging>
 
     <properties>
+        <commons-io.version>2.5</commons-io.version>
         <compiler-plugin.version>3.8.1-MOCK</compiler-plugin.version>
         <maven.compiler.release>17</maven.compiler.release>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+        <quarkus-resteasy.version>1.8</quarkus-resteasy.version>
         <quarkus.platform.artifact-id>quarkus-mock-bom</quarkus.platform.artifact-id>
         <quarkus.platform.group-id>io.quarkus</quarkus.platform.group-id>
         <quarkus.platform.version>999-MOCK</quarkus.platform.version>
@@ -34,12 +36,12 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-resteasy</artifactId>
-            <version>1.8</version>
+            <version>${quarkus-resteasy.version}</version>
         </dependency>
         <dependency>
             <groupId>commons-io</groupId>
             <artifactId>commons-io</artifactId>
-            <version>2.5</version>
+            <version>${commons-io.version}</version>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>

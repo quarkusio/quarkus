@@ -124,10 +124,8 @@ public final class OidcUtils {
     private static final String APPLICATION_JWT = "application/jwt";
 
     // Browsers enforce that the total Set-Cookie expression such as
-    // `q_session_tenant-a=<value>,Path=/somepath,Expires=...` does not exceed 4096
-    // Setting the max cookie value length to 4056 gives extra 40 bytes to cover for the name, path, expires attributes in most cases
-    // and can be tuned further if necessary.
-    public static final Integer MAX_COOKIE_VALUE_LENGTH = 4056;
+    // `q_session_tenant-a=<value>,Path=/somepath,Expires=...` does not exceed 4096 (cookie name + <value> length)
+    public static final Integer MAX_COOKIE_LENGTH = 4096;
     public static final String POST_LOGOUT_COOKIE_NAME = "q_post_logout";
     public static final String DEFAULT_SCOPE_SEPARATOR = " ";
     public static final String ANNOTATION_BASED_TENANT_RESOLUTION_ENABLED = "io.quarkus.oidc.runtime.select-tenants-with-annotation";
@@ -176,12 +174,12 @@ public final class OidcUtils {
 
     public static String getSessionCookie(Map<String, Object> context, Map<String, Cookie> cookies,
             OidcTenantConfig oidcTenantConfig) {
-        return getSessionCookie(context, cookies, oidcTenantConfig, SESSION_COOKIE_NAME,
+        return getSessionCookie(context, cookies, SESSION_COOKIE_NAME,
                 getSessionCookieName(oidcTenantConfig));
     }
 
     public static String getSessionCookie(Map<String, Object> context, Map<String, Cookie> cookies,
-            OidcTenantConfig oidcTenantConfig, String defaultSessionCookieName, String sessionCookieName) {
+                                          String defaultSessionCookieName, String sessionCookieName) {
         if (cookies.isEmpty()) {
             return null;
         }
@@ -1069,17 +1067,23 @@ public final class OidcUtils {
 
     static void createChunkedCookie(RoutingContext context, OidcTenantConfig oidcConfig, String baseCookieName,
             String cookieValue, long maxAge) {
+        String cookiePrefix = baseCookieName + SESSION_COOKIE_CHUNK;
         for (int chunkIndex = 1, currentPos = 0; currentPos < cookieValue.length(); chunkIndex++) {
-            int nextPos = currentPos + MAX_COOKIE_VALUE_LENGTH;
+            // q_session_session_chunk_1, etc
+            String nextName = cookiePrefix + chunkIndex;
+            int nextPos = currentPos + getMaxCookieValueLength(nextName);
             int nextValueUpperPos = nextPos < cookieValue.length() ? nextPos
                     : cookieValue.length();
             String nextValue = cookieValue.substring(currentPos, nextValueUpperPos);
-            // q_session_session_chunk_1, etc
-            String nextName = baseCookieName + SESSION_COOKIE_CHUNK + chunkIndex;
             LOG.debugf("Creating the %s cookie chunk, size: %d", nextName, nextValue.length());
             createSessionCookie(context, oidcConfig, nextName, nextValue, maxAge);
             currentPos = nextPos;
         }
+    }
+
+    static int getMaxCookieValueLength(String cookieName) {
+        // The cookie name is included in the cookie size limit, so we need to subtract it from the max length
+        return MAX_COOKIE_LENGTH - cookieName.length();
     }
 
     public static String encryptToken(String token, RoutingContext context, OidcTenantConfig oidcConfig) {

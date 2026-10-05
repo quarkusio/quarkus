@@ -1035,9 +1035,6 @@ public class NativeImageBuildStep {
 
                 addExperimentalVMOption(nativeImageArgs, "-H:+AllowFoldMethods");
 
-                // Netty 4.2's CleanerJava25 uses Arena.ofShared() for direct buffer cleanup
-                addExperimentalVMOption(nativeImageArgs, "-H:+SharedArenaSupport");
-
                 if (nativeConfig.headless()) {
                     nativeImageArgs.add("-J-Djava.awt.headless=true");
                 }

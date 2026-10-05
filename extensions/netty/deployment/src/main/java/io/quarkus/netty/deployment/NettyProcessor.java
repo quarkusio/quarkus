@@ -60,6 +60,7 @@ import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildI
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedPackageBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.UnsafeAccessedFieldBuildItem;
 import io.quarkus.deployment.logging.LogCleanupFilterBuildItem;
+import io.quarkus.deployment.pkg.NativeConfig;
 import io.quarkus.deployment.pkg.builditem.CompiledJavaVersionBuildItem;
 import io.quarkus.gizmo.AssignableResultHandle;
 import io.quarkus.gizmo.BranchResult;
@@ -579,15 +580,16 @@ class NettyProcessor {
      */
     @BuildStep
     void transformPlatformDependent0(CompiledJavaVersionBuildItem compiledJavaVersion,
+            NativeConfig nativeConfig,
             BuildProducer<BytecodeTransformerBuildItem> producer) {
         String className = "io.netty.util.internal.PlatformDependent0";
 
-        boolean isJava25OrHigher = compiledJavaVersion.getJavaVersion()
+        boolean isNativeOrJava25OrHigher = nativeConfig.enabled() || compiledJavaVersion.getJavaVersion()
                 .isJava25OrHigher() == CompiledJavaVersionBuildItem.JavaVersion.Status.TRUE;
 
         Set<String> fieldsToSkip;
         Set<String> knownUnhandledFields;
-        if (isJava25OrHigher) {
+        if (isNativeOrJava25OrHigher) {
             fieldsToSkip = Set.of(
                     "ALIGN_SLICE", "OFFSET_SLICE", "ABSOLUTE_PUT_BUFFER",
                     "ABSOLUTE_PUT_ARRAY", "SPLITTABLE_RANDOM_NEXT_BYTES",
@@ -729,13 +731,13 @@ class NettyProcessor {
                                 generateReadBitsMaxDirectMemory(transformer, className);
 
                                 // --- Java 25+ specific transforms ---
-                                if (isJava25OrHigher) {
+                                if (isNativeOrJava25OrHigher) {
                                     replaceWithReturnTrue(transformer, className, "hasMemorySegmentAddressOfBuffer");
                                     generateDirectBufferAddress(transformer, className);
                                 }
 
                                 ClassVisitor downstream = classVisitor;
-                                if (isJava25OrHigher) {
+                                if (isNativeOrJava25OrHigher) {
                                     downstream = new ClassVisitor(Gizmo.ASM_API_VERSION, downstream) {
                                         @Override
                                         public void visit(int version, int access, String name, String signature,
@@ -1109,8 +1111,9 @@ class NettyProcessor {
      */
     @BuildStep
     void transformCleanerJava24Linker(CompiledJavaVersionBuildItem compiledJavaVersion,
+            NativeConfig nativeConfig,
             BuildProducer<BytecodeTransformerBuildItem> producer) {
-        if (compiledJavaVersion.getJavaVersion()
+        if (!nativeConfig.enabled() && compiledJavaVersion.getJavaVersion()
                 .isJava25OrHigher() != CompiledJavaVersionBuildItem.JavaVersion.Status.TRUE) {
             return;
         }
@@ -1522,8 +1525,9 @@ class NettyProcessor {
      */
     @BuildStep
     void transformCleanerJava25(CompiledJavaVersionBuildItem compiledJavaVersion,
+            NativeConfig nativeConfig,
             BuildProducer<BytecodeTransformerBuildItem> producer) {
-        if (compiledJavaVersion.getJavaVersion()
+        if (!nativeConfig.enabled() && compiledJavaVersion.getJavaVersion()
                 .isJava25OrHigher() != CompiledJavaVersionBuildItem.JavaVersion.Status.TRUE) {
             return;
         }

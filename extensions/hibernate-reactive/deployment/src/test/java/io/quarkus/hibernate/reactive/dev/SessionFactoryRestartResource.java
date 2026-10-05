@@ -24,7 +24,7 @@ public class SessionFactoryRestartResource {
     @Inject
     Mutiny.StatelessSession statelessSession;
 
-    @ConfigProperty(name = "restart.counter")
+    @ConfigProperty(name = "restart.counter", defaultValue = "0")
     int restartCounter;
 
     @POST

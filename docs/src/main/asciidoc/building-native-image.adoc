@@ -312,7 +312,7 @@ Compiling fully static binaries is done by statically linking https://musl.libc.
 
 == Testing the native executable
 
-Producing a native executable can lead to a few issues, and so it's also a good idea to run some tests against the application running in the native file. The reasoning is explained in the link:getting-started-testing#quarkus-integration-test[Testing Guide].
+Producing a native executable can lead to a few issues, and so it's also a good idea to run some tests against the application running in the native file. The reasoning is explained in the xref:getting-started-testing#quarkus-integration-test[Testing Guide].
 
 To see the `GreetingResourceIT` run against the native executable, use `./mvnw verify -Dnative`:
 [source,shell,subs=attributes+]

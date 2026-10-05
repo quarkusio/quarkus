@@ -96,6 +96,12 @@ public class GrpcClientProcessor {
     private static final Pattern CERTIFICATE_PATTERN = Pattern.compile(SSL_PREFIX + "certificate");
     private static final Pattern TRUST_STORE_PATTERN = Pattern.compile(SSL_PREFIX + "trust-store");
 
+    // The `tls.*` counterparts of the legacy `ssl.*` properties above. Values that do not resolve to a
+    // classpath resource, such as passwords or aliases, are ignored by the registration.
+    private static final String TLS_PREFIX = "quarkus\\.grpc\\.clients\\..*.tls\\.";
+    private static final Pattern TLS_KEY_CERTIFICATE_PATTERN = Pattern.compile(TLS_PREFIX + "key-certificate-.*");
+    private static final Pattern TLS_TRUST_CERTIFICATE_PATTERN = Pattern.compile(TLS_PREFIX + "trust-certificate-.*");
+
     @BuildStep
     void registerBeans(BuildProducer<AdditionalBeanBuildItem> beans) {
         // @GrpcClient is a CDI qualifier
@@ -293,7 +299,8 @@ public class GrpcClientProcessor {
     @BuildStep
     void registerSslResources(BuildProducer<NativeImageResourceBuildItem> resourceBuildItem) {
         Config config = ConfigProvider.getConfig();
-        registerResourcesForProperties(config, resourceBuildItem, TRUST_STORE_PATTERN, CERTIFICATE_PATTERN, KEY_PATTERN);
+        registerResourcesForProperties(config, resourceBuildItem, TRUST_STORE_PATTERN, CERTIFICATE_PATTERN, KEY_PATTERN,
+                TLS_TRUST_CERTIFICATE_PATTERN, TLS_KEY_CERTIFICATE_PATTERN);
     }
 
     @BuildStep

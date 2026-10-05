@@ -7,6 +7,7 @@ import io.quarkus.runtime.ObjectSubstitution;
 /**
  * Used to capture object substitution information for non-serializable classes.
  */
+@Deprecated(since = "4.0")
 public final class ObjectSubstitutionBuildItem extends MultiBuildItem {
     /**
      * Holder to keep type info around for compiler.
@@ -14,6 +15,7 @@ public final class ObjectSubstitutionBuildItem extends MultiBuildItem {
      * @param <F> - from class
      * @param <T> - to class
      */
+    @Deprecated(since = "4.0")
     public static final class Holder<F, T> {
         public final Class<F> from;
 

@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.fail;
 
 import java.io.BufferedReader;
@@ -12,6 +13,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -21,6 +23,9 @@ import java.util.stream.Collectors;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 
+import io.vertx.core.http.HttpServerResponse;
+import io.vertx.core.http.impl.HttpServerRequestInternal;
+import io.vertx.ext.web.RoutingContext;
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.oidc.OIDCException;
@@ -30,6 +35,7 @@ import io.smallrye.jwt.build.Jwt;
 import io.vertx.core.http.Cookie;
 import io.vertx.core.http.impl.CookieImpl;
 import io.vertx.core.json.JsonObject;
+import org.mockito.Mockito;
 
 public class OidcUtilsTest {
 
@@ -77,14 +83,14 @@ public class OidcUtilsTest {
         StringBuilder expectedCookieValue = new StringBuilder();
         Map<String, Cookie> cookies = new HashMap<>();
         for (int i = 0; i < alphabet.length; i++) {
-            char[] data = new char[OidcUtils.MAX_COOKIE_VALUE_LENGTH];
+            char[] data = new char[OidcUtils.MAX_COOKIE_LENGTH];
             Arrays.fill(data, alphabet[i]);
             String cookieName = "q_session_test_chunk_" + (i + 1);
             String nextChunk = new String(data);
             expectedCookieValue.append(nextChunk);
             cookies.put(cookieName, new CookieImpl(cookieName, nextChunk));
         }
-        String lastChunk = String.valueOf("tokens");
+        String lastChunk = "tokens";
         expectedCookieValue.append(lastChunk);
         String lastCookieName = "q_session_test_chunk_" + (alphabet.length + 1);
         cookies.put(lastCookieName, new CookieImpl(lastCookieName, lastChunk));
@@ -99,6 +105,41 @@ public class OidcUtilsTest {
         for (int i = 0; i < names.size(); i++) {
             assertEquals("q_session_test_chunk_" + (i + 1), names.get(i));
         }
+    }
+
+
+    @Test
+    public void testCookieChunkSize() throws Exception {
+
+        OidcTenantConfig oidcConfig = new OidcTenantConfig();
+        oidcConfig.setTenantId("test");
+
+        char[] data = new char[OidcUtils.MAX_COOKIE_LENGTH];
+        Arrays.fill(data, 'a');
+        String cookieName = "q_session_test";
+        String expectedCookieValue = new String(data);
+        RoutingContext routingContext = Mockito.mock(RoutingContext.class);
+        HttpServerRequestInternal request = Mockito.mock(HttpServerRequestInternal.class);
+        HttpServerResponse response = Mockito.mock(HttpServerResponse.class);
+        List<Cookie> cookies = new ArrayList<>();
+        Mockito.when(routingContext.request()).thenReturn(request);
+        Mockito.when(routingContext.response()).thenReturn(response);
+        Mockito.when(response.addCookie(Mockito.any(Cookie.class))).then(invocation -> {
+            Cookie cookie = invocation.getArgument(0);
+            cookies.add(cookie);
+            return null;
+        });
+        OidcUtils.createChunkedCookie(routingContext,oidcConfig,cookieName,expectedCookieValue,1000l);
+        assertEquals(2, cookies.size());
+        Cookie cookie = cookies.get(0);
+        int expectedFirstCookieLength = OidcUtils.MAX_COOKIE_LENGTH - "q_session_test_chunk_1".length();
+        assertNotNull(cookie);
+        assertEquals("q_session_test_chunk_1", cookie.getName());
+        assertEquals(expectedFirstCookieLength, cookie.getValue().length());
+        cookie = cookies.get(1);
+        assertNotNull(cookie);
+        assertEquals("q_session_test_chunk_2", cookie.getName());
+        assertEquals(expectedCookieValue.length() - expectedFirstCookieLength, cookie.getValue().length());
     }
 
     @Test

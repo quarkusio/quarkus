@@ -172,6 +172,44 @@ You can obtain more information about AOT cache usage with the `-Xlog:aot` optio
 You can collect even more information in an `aot.log` file with `-Xlog:class+load=info,aot+codecache=debug:file=aot.log:level,tags`.
 ====
 
+[[aot-add-modules]]
+=== Options that add modules, such as Flight Recorder
+
+The JVM only uses an AOT cache if the application runs with the same `--add-modules` as the training run.
+Otherwise it reports an error such as the following and starts the application without the cache:
+
+[source,text]
+----
+[error][aot] Mismatched values for property jdk.module.addmods: jdk.jfr specified during runtime but not during dump time
+----
+
+Some JVM options add a module implicitly.
+The most common one is `-XX:StartFlightRecording`, which adds `jdk.jfr`; enabling the Vector API with `--add-modules=jdk.incubator.vector` has the same effect.
+
+If the application is always started with such an option, pass the corresponding `--add-modules` to the training run with `quarkus.package.jar.aot.additional-recording-args`:
+
+[source, bash, subs=attributes+, role="primary asciidoc-tabs-sync-maven"]
+.Maven
+----
+./mvnw verify -Dquarkus.package.jar.aot.enabled=true -Dquarkus.package.jar.aot.additional-recording-args=--add-modules=jdk.jfr
+----
+
+[source, bash, subs=attributes+, role="secondary asciidoc-tabs-sync-gradle"]
+.Gradle
+----
+./gradlew build quarkusIntTest -Dquarkus.package.jar.aot.enabled=true -Dquarkus.package.jar.aot.additional-recording-args=--add-modules=jdk.jfr
+----
+
+The check works both ways: a cache generated this way is only used when the application is started with `-XX:StartFlightRecording` or `--add-modules=jdk.jfr`, and is rejected otherwise.
+A single cache cannot serve both kinds of runs.
+
+To record only occasionally, keep the default cache and start the recording on the running application instead, which does not affect the cache:
+
+[source,bash]
+----
+jcmd <pid> JFR.start
+----
+
 == Manual AOT file generation
 
 As explained above, Quarkus takes care of all the heavy lifting when coming to the AOT file generation. However, in cases where more control is needed, users can perform the necessary steps manually.

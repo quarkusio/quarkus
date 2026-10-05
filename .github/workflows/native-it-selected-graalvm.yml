@@ -117,7 +117,7 @@ jobs:
           job-name: "Initial JDK ${{ steps.base-jdk.outputs.base-jdk-version }} Build"
           add-pr-comment: false
           add-job-summary: false
-          develocity-access-key: ${{ secrets.GRADLE_ENTERPRISE_ACCESS_KEY }}
+          develocity-access-key: ${{ secrets.DEVELOCITY_ACCESS_KEY }}
           develocity-token-expiry: 6
       - name: Build
         env:
@@ -280,7 +280,7 @@ jobs:
           job-name: "Native Tests - Virtual Thread - ${{matrix.category}}"
           add-pr-comment: false
           add-job-summary: false
-          develocity-access-key: ${{ secrets.GRADLE_ENTERPRISE_ACCESS_KEY }}
+          develocity-access-key: ${{ secrets.DEVELOCITY_ACCESS_KEY }}
           develocity-token-expiry: 6
       - name: Build
         env:
@@ -367,7 +367,7 @@ jobs:
           job-name: "Native Tests - ${{matrix.category}}"
           add-pr-comment: false
           add-job-summary: false
-          develocity-access-key: ${{ secrets.GRADLE_ENTERPRISE_ACCESS_KEY }}
+          develocity-access-key: ${{ secrets.DEVELOCITY_ACCESS_KEY }}
           develocity-token-expiry: 6
       - name: Cache Quarkus metadata
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0

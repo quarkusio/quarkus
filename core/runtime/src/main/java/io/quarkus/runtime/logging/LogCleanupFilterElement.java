@@ -1,7 +1,12 @@
 package io.quarkus.runtime.logging;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.logging.Level;
+
+import org.jboss.logmanager.LogContext;
+
+import io.quarkus.runtime.ObjectSubstitution;
 
 public class LogCleanupFilterElement {
     private String loggerName;
@@ -46,5 +51,17 @@ public class LogCleanupFilterElement {
 
     public void setTargetLevel(Level targetLevel) {
         this.targetLevel = targetLevel;
+    }
+
+    public static class LevelSubstitution implements ObjectSubstitution<Level, String> {
+        @Override
+        public String serialize(Level obj) {
+            return obj.getName();
+        }
+
+        @Override
+        public Level deserialize(String obj) {
+            return LogContext.getLogContext().getLevelForName(obj.toUpperCase(Locale.ROOT));
+        }
     }
 }

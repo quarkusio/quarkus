@@ -179,4 +179,6 @@ public interface Capability {
     String GRPC = QUARKUS_PREFIX + ".grpc";
 
     String WEBSOCKETS_NEXT = QUARKUS_PREFIX + ".websockets.next";
+
+    String TLS_REGISTRY = QUARKUS_PREFIX + ".tls.registry";
 }

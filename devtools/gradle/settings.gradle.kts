@@ -7,7 +7,7 @@ develocity {
 		.map(String::isNotEmpty)
 		.getOrElse(false)
     if(isAuthenticated) {
-        server = "https://ge.quarkus.io"
+        server = "https://develocity.quarkus.io"
     }
 
     buildScan {

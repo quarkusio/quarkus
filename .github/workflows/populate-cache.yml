@@ -22,7 +22,7 @@ defaults:
 jobs:
   configure:
     name: "Configure jobs"
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
     outputs:
       m2-monthly-branch-cache-key: ${{ steps.cache-key.outputs.m2-monthly-branch-cache-key }}
       m2-monthly-cache-key: ${{ steps.cache-key.outputs.m2-monthly-cache-key }}

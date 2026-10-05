@@ -16,7 +16,7 @@ permissions:
 
 jobs:
   merge-gate:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
     if: github.event.workflow_run.event == 'pull_request'
     steps:
       - name: Update merge gate status

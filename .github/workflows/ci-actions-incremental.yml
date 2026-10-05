@@ -136,7 +136,7 @@ defaults:
 jobs:
   approval:
     name: "Wait for approval if Dependabot"
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
     # For Dependabot, we require a manual approval before running the CI build
     environment:
       name: ${{ github.actor == 'dependabot[bot]' && 'dependabot' || 'ci' }}
@@ -150,7 +150,7 @@ jobs:
   # For more details, see
   # https://github.community/t/pull-request-attribute-empty-in-workflow-run-event-object-for-pr-from-forked-repo/154682
   attach-pr-number:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
     needs: [ approval ]
     name: Attach pull request number
     if: github.event_name == 'pull_request'
@@ -167,7 +167,7 @@ jobs:
   ci-sanity-check:
     name: "CI Sanity Check"
     needs: [ approval ]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
     # Skip main in forks
     if: github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/main')
     steps:
@@ -176,7 +176,7 @@ jobs:
   configure:
     name: "Configure jobs"
     needs: [ approval ]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
     # Skip main in forks
     # Skip draft PRs, rerun as soon as its removed
     if: (github.repository == 'quarkusio/quarkus' || !endsWith(github.ref, '/main')) && (
@@ -517,7 +517,7 @@ jobs:
 
   calculate-test-jobs:
     name: Calculate Test Jobs
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
     needs: initial-build
     env:
       SCALPEL_IMPACTED_MODULES: ${{ needs.initial-build.outputs.scalpel_impacted }}
@@ -1700,7 +1700,7 @@ jobs:
     if: ${{ always() && github.repository == 'quarkusio/quarkus' && endsWith(github.ref, '/main') && github.event_name != 'pull_request' && needs.native-tests.result != 'skipped' && needs.native-tests.result != 'cancelled' }}
     needs:
       - native-tests
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
     steps:
       - uses: runs-on/action@efac073ea2507ec18797de3a81704201ade11d9d # v2.3.1
       - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
@@ -2059,7 +2059,7 @@ jobs:
           retention-days: 7
 
   build-report:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
     name: Build report
     # needs: [configure,initial-build,jvm-tests,maven-tests,gradle-tests,devtools-tests,kubernetes-tests,quickstarts-tests,platform-tests,tcks-test,native-tests,virtual-thread-native-tests,oracle-test-pilot-jvm-tests,oracle-test-pilot-native-tests]
     needs: [configure,initial-build,jvm-tests,maven-tests,gradle-tests,devtools-tests,kubernetes-tests,platform-tests,tcks-test,native-tests,virtual-thread-native-tests,oracle-test-pilot-jvm-tests,oracle-test-pilot-native-tests,pqc-tests]

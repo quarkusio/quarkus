@@ -17,9 +17,10 @@ jobs:
     runs-on: ubuntu-slim
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      # do not use apt-get, it can't find the yamllint package on ubuntu-slim
       - name: install yamllint
         shell: bash
-        run: sudo apt-get install -y yamllint
+        run: pipx install yamllint
       - name: run yamllint for quarkus-github-bot.yml
         shell: bash
         run: yamllint -c .github/yamllint.conf .github/quarkus-github-bot.yml

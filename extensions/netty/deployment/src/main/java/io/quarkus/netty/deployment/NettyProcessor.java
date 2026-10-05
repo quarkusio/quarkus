@@ -179,6 +179,9 @@ class NettyProcessor {
         // It's potentially problematic regarding build-time and run-time inited JDK parts.
         moduleOpenBuildItem.produce(
                 new ModuleOpenBuildItem("java.base", "io.netty.common", "java.nio", "jdk.internal.misc"));
+        // Enable io.netty.channel.nio.NioIoHandler to set sun.nio.ch.SelectorImpl.selectedKeys as accessible
+        moduleOpenBuildItem.produce(
+                new ModuleOpenBuildItem("java.base", "io.netty.transport", "sun.nio.ch"));
 
         final NativeImageConfigBuildItem.Builder builder = NativeImageConfigBuildItem.builder()
                 .addNativeImageSystemProperty("io.netty.tryReflectionSetAccessible", "true")

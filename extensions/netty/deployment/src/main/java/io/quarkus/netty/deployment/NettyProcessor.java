@@ -232,7 +232,6 @@ class NettyProcessor {
                 .addRuntimeInitializedClass("io.netty.internal.tcnative.SSL")
                 // Runtime initialize to respect io.netty.handler.ssl.conscrypt.useBufferAllocator
                 .addRuntimeInitializedClass("io.netty.handler.ssl.ConscryptAlpnSslEngine")
-                .addRuntimeInitializedClass("io.netty.util.internal.CleanerJava24Linker")
                 // Runtime initialize due to the use of tcnative in the static initializers?
                 .addRuntimeInitializedClass("io.netty.handler.ssl.ReferenceCountedOpenSslEngine")
                 // Runtime initialize to respect run-time provided values of the following properties:
@@ -1052,13 +1051,18 @@ class NettyProcessor {
      * on Java 25+, the Foreign Function &amp; Memory API is stable and can be called directly,
      * eliminating ~20 reflective lookups and MethodHandle chain constructions.
      * <p>
-     * {@code INVOKE_MALLOC} and {@code INVOKE_FREE} must remain {@code MethodHandle}s because
+     * On the JVM, {@code INVOKE_MALLOC} and {@code INVOKE_FREE} remain {@code MethodHandle}s because
      * FFM's {@code Linker.downcallHandle()} always returns a {@code MethodHandle} to bridge
      * Java to native code. But {@code INVOKE_CREATE_BYTEBUFFER} wraps plain Java methods
      * ({@code MemorySegment.ofAddress/reinterpret/asByteBuffer}) and can be replaced with
      * direct calls in the inner class constructor.
      * <p>
-     * We replace the static initializer with:
+     * In native images, malloc/free are substituted with {@code UnmanagedMemory} operations.
+     * We remove the static initializer entirely and substitute {@code isSupported()} to return
+     * true: Quarkus requires GraalVM 25+ and enables native access for the buffer wrapper.
+     * This avoids requiring symbol lookup, downcall registrations, or runtime initialization.
+     * <p>
+     * On the JVM, we replace the static initializer with:
      *
      * <pre>{@code
      * static {
@@ -1142,10 +1146,11 @@ class NettyProcessor {
                                 className, "<clinit>", void.class);
                         transformer.removeMethod(clinitDescriptor);
 
-                        MethodCreator clinit = transformer.addMethod(clinitDescriptor)
-                                .setModifiers(Modifier.STATIC);
-
-                        generateCleanerJava24LinkerClinit(clinit, className);
+                        if (!nativeConfig.enabled()) {
+                            MethodCreator clinit = transformer.addMethod(clinitDescriptor)
+                                    .setModifiers(Modifier.STATIC);
+                            generateCleanerJava24LinkerClinit(clinit, className);
+                        }
 
                         return transformer.applyTo(updateBytecodeVersion);
                     }

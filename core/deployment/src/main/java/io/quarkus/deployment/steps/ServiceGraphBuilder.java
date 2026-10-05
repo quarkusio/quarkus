@@ -237,7 +237,7 @@ final class ServiceGraphBuilder {
                         // LambdaTransliterator's graphDepIndex
                         MutableNode absent = new MutableNode(
                                 "<<absent:" + dep.key() + ">>", node.stepId,
-                                NodeKind.SENTINEL, null, null);
+                                NodeKind.ABSENT, null, null);
                         nodeIter.add(absent);
                         node.actionDeps.add(absent);
                     } else if (dep.injected()) {
@@ -561,6 +561,8 @@ final class ServiceGraphBuilder {
     enum NodeKind {
         /** Top or bottom sentinel. */
         SENTINEL,
+        /** Absent-placeholder sentinel for an optional dependency with no matching service. */
+        ABSENT,
         /** Legacy bytecode recorder chunk (one or more recorders from the same step). */
         LEGACY_RECORDER,
         /** New-style service with a transliterated lambda body. */

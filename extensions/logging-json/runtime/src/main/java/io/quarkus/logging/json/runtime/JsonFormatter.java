@@ -210,7 +210,11 @@ public class JsonFormatter extends org.jboss.logmanager.formatters.JsonFormatter
         }
 
         if (structuredAccessLog && isAccessLogRecord(record)) {
-            writeAccessLogObject(generator, record);
+            if (logFormat == LogFormat.ECS) {
+                writeEcsAccessLogFields(generator, record);
+            } else {
+                writeAccessLogObject(generator, record);
+            }
         }
 
         JsonLogGenerator jsonLogGenerator = new JsonLogGenerator(generator, this.excludedKeys);
@@ -253,6 +257,74 @@ public class JsonFormatter extends org.jboss.logmanager.formatters.JsonFormatter
         if (started) {
             generator.endObject();
         }
+    }
+
+    /**
+     * Writes the access-log fields as top-level ECS fields rather than as the nested {@code accessLog} object, so
+     * that they line up with the rest of the record in ECS mode.
+     */
+    private void writeEcsAccessLogFields(final Generator generator, final ExtLogRecord record) throws Exception {
+        final Map<String, String> mdc = record.getMdcCopy();
+        if (mdc == null || mdc.isEmpty()) {
+            return;
+        }
+        for (Map.Entry<String, String> entry : mdc.entrySet()) {
+            if (!entry.getKey().startsWith(ACCESS_LOG_MDC_PREFIX)) {
+                continue;
+            }
+            final String fieldName = entry.getKey().substring(ACCESS_LOG_MDC_PREFIX.length());
+            final String value = entry.getValue();
+            if (value == null || value.isEmpty()) {
+                continue;
+            }
+            switch (fieldName) {
+                case "method" -> generator.add("http.request.method", value);
+                case "uri" -> addUrl(generator, value);
+                case "status" -> addLong(generator, "http.response.status_code", value);
+                case "responseTimeMs" -> addEventDuration(generator, value);
+                case "bytesSent" -> addLong(generator, "http.response.body.bytes", value);
+                case "remoteIp" -> generator.add("client.ip", value);
+                case "protocol" -> generator.add("http.version", stripProtocolName(value));
+                default -> generator.add(fieldName, value);
+            }
+        }
+    }
+
+    private static void addUrl(final Generator generator, final String uri) throws Exception {
+        final int queryStart = uri.indexOf('?');
+        if (queryStart < 0) {
+            generator.add("url.path", uri);
+            return;
+        }
+        generator.add("url.path", uri.substring(0, queryStart));
+        if (queryStart < uri.length() - 1) {
+            generator.add("url.query", uri.substring(queryStart + 1));
+        }
+    }
+
+    private static void addLong(final Generator generator, final String key, final String value) throws Exception {
+        try {
+            generator.add(key, Long.parseLong(value));
+        } catch (NumberFormatException ignored) {
+            generator.add(key, value);
+        }
+    }
+
+    private static void addEventDuration(final Generator generator, final String responseTimeMs) throws Exception {
+        try {
+            // ECS defines event.duration in nanoseconds
+            generator.add("event.duration", Long.parseLong(responseTimeMs) * 1_000_000L);
+        } catch (NumberFormatException ignored) {
+            generator.add("event.duration", responseTimeMs);
+        }
+    }
+
+    /**
+     * ECS expects {@code http.version} to hold the version alone, while the access log reports it as HTTP/1.1.
+     */
+    private static String stripProtocolName(final String protocol) {
+        final int slash = protocol.indexOf('/');
+        return slash < 0 ? protocol : protocol.substring(slash + 1);
     }
 
     private static boolean isNumericAccessField(final String fieldName) {

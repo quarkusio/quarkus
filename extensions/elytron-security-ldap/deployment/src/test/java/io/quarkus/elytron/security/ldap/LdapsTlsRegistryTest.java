@@ -26,9 +26,9 @@ import io.smallrye.certs.junit5.Certificate;
 import io.smallrye.certs.junit5.Certificates;
 
 /**
- * The LDAP server listens over LDAPS with a certificate signed by a private CA, trusted through a named TLS
- * configuration of the TLS registry. The LDAPS server is started here rather than through a test resource because
- * the module-wide {@code LdapServerTestResource} also sets the dir-context URL.
+ * The LDAP server listens over LDAPS with a self-signed certificate, trusted through a named TLS configuration of
+ * the TLS registry. The server is started here and not by a test resource because the module-wide
+ * {@code LdapServerTestResource} sets the same dir-context URL.
  */
 @Certificates(baseDir = "target/certs", certificates = @Certificate(name = "ldap", password = "secret", formats = {
         Format.PKCS12, Format.PEM }))

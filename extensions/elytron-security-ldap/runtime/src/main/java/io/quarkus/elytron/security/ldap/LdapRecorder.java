@@ -6,7 +6,6 @@ import java.util.Optional;
 
 import javax.naming.NamingException;
 import javax.naming.directory.DirContext;
-import javax.net.SocketFactory;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -72,29 +71,21 @@ public class LdapRecorder {
                 dirContext.password().orElse(null),
                 dirContext.connectTimeout(),
                 dirContext.readTimeout(),
-                createSocketFactory(dirContext, tlsRegistry));
+                configureTls(dirContext, tlsRegistry));
         return () -> dirContextFactory.obtainDirContext(dirContext.referralMode());
     }
 
-    /**
-     * @return the socket factory of the configured TLS configuration, or {@code null} when none is configured
-     */
-    private static SocketFactory createSocketFactory(DirContextConfig dirContext,
-            TlsConfigurationRegistry tlsRegistry) {
+    private static boolean configureTls(DirContextConfig dirContext, TlsConfigurationRegistry tlsRegistry) {
         if (dirContext.tlsConfigurationName().isEmpty()) {
-            return null;
+            return false;
         }
         String name = dirContext.tlsConfigurationName().get();
         TlsConfiguration tlsConfiguration = TlsConfiguration.from(tlsRegistry, Optional.of(name))
                 .orElseThrow(() -> new IllegalArgumentException("Unable to find the TLS configuration '" + name
                         + "' set with 'quarkus.security.ldap.dir-context.tls-configuration-name': "
                         + "check that 'quarkus.tls." + name + ".*' is configured"));
-        try {
-            return tlsConfiguration.createSSLContext().getSocketFactory();
-        } catch (Exception e) {
-            throw new IllegalStateException("Unable to create the SSL context of the TLS configuration '" + name
-                    + "' for the LDAP connections", e);
-        }
+        QuarkusLdapSocketFactory.configure(name, tlsConfiguration);
+        return true;
     }
 
     private static AttributeMapping[] createAttributeMappings(IdentityMappingConfig identityMappingConfig) {

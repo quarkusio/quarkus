@@ -202,6 +202,9 @@ quarkus.security.ldap.dir-context.url=ldaps://ldap.server.local
 quarkus.security.ldap.dir-context.tls-configuration-name=ldap
 ----
 
+The TLS configuration is used for every connection of the security realm, including the ones opened to follow referrals when `quarkus.security.ldap.dir-context.referral-mode` is `follow`.
+Its protocols and cipher suites are applied, and when the TLS configuration is reloaded, for example with `quarkus.tls.ldap.reload-period`, new connections use the reloaded certificates.
+
 Without `quarkus.security.ldap.dir-context.tls-configuration-name`, the connections use the default SSL context of the JVM.
 
 === Map LDAP groups to `SecurityIdentity` roles

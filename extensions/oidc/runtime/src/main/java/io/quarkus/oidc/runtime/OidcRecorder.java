@@ -199,4 +199,7 @@ public class OidcRecorder {
         return beanContainer.beanInstance(ClientIdMetadataHandler.class);
     }
 
+    public Handler<RoutingContext> getAttestationJwksHandler(BeanContainer beanContainer) {
+        return beanContainer.beanInstance(AttestationJwksHandler.class);
+    }
 }

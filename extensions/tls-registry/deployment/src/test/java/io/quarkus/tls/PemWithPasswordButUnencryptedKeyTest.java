@@ -18,15 +18,14 @@ import io.smallrye.certs.junit5.Certificate;
 import io.smallrye.certs.junit5.Certificates;
 
 @Certificates(baseDir = "target/certs", certificates = {
-        @Certificate(name = "test-formats-encrypted-pem", password = "password", formats = { Format.JKS, Format.ENCRYPTED_PEM,
-                Format.PKCS12 })
+        @Certificate(name = "test-formats", password = "password", formats = { Format.JKS, Format.PEM, Format.PKCS12 })
 })
-public class EncryptedPemWithWrongPasswordTest {
+public class PemWithPasswordButUnencryptedKeyTest {
 
     private static final String configuration = """
-            quarkus.tls.key-store.pem.foo.cert=target/certs/test-formats-encrypted-pem.crt
-            quarkus.tls.key-store.pem.foo.key=target/certs/test-formats-encrypted-pem.key
-            quarkus.tls.key-store.pem.foo.password=wrong
+            quarkus.tls.key-store.pem.foo.cert=target/certs/test-formats.crt
+            quarkus.tls.key-store.pem.foo.key=target/certs/test-formats.key
+            quarkus.tls.key-store.pem.foo.password=password
             """;
 
     @RegisterExtension
@@ -35,7 +34,7 @@ public class EncryptedPemWithWrongPasswordTest {
                     .add(new StringAsset(configuration), "application.properties"))
             .assertException(t -> {
                 assertThat(t.getMessage()).contains("key/certificate pair", "default");
-                assertThat(t).hasStackTraceContaining("the secret is probably wrong");
+                assertThat(t).hasStackTraceContaining("Not an encrypted PKCS#8 key");
             });
 
     @Test

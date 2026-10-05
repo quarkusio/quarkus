@@ -1,8 +1,12 @@
 package io.quarkus.elytron.security.ldap;
 
-import java.net.InetAddress;
+import static org.awaitility.Awaitility.await;
 
-import javax.net.ssl.SSLServerSocketFactory;
+import java.net.InetAddress;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
+import java.util.concurrent.TimeUnit;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -26,13 +30,15 @@ import io.smallrye.certs.junit5.Certificate;
 import io.smallrye.certs.junit5.Certificates;
 
 /**
- * The LDAP server listens over LDAPS with a self-signed certificate, trusted through a named TLS configuration of
- * the TLS registry. The server is started here and not by a test resource because the module-wide
- * {@code LdapServerTestResource} sets the same dir-context URL.
+ * The trust store of the TLS configuration first holds a certificate that is not the one of the LDAPS server, and
+ * is then replaced by the right one. New connections must use the reloaded TLS configuration.
  */
-@Certificates(baseDir = "target/certs", certificates = @Certificate(name = "ldap", password = "secret", formats = {
-        Format.PKCS12, Format.PEM }))
-public class LdapsTlsRegistryTest {
+@Certificates(baseDir = "target/certs", certificates = {
+        @Certificate(name = "ldap-reload-server", password = "secret", formats = { Format.PKCS12, Format.PEM }),
+        @Certificate(name = "ldap-reload-other", password = "secret", formats = { Format.PEM }) })
+public class LdapsTlsRegistryReloadTest {
+
+    private static final Path TRUSTED = Path.of("target/certs/ldap-reload-trusted.crt");
 
     private static InMemoryDirectoryServer ldapsServer;
 
@@ -41,18 +47,19 @@ public class LdapsTlsRegistryTest {
             .withApplicationRoot((jar) -> jar
                     .addClasses(SingleRoleSecuredServlet.class, TestApplication.class, RolesEndpointClassLevel.class,
                             ParametrizedPathsResource.class, SubjectExposingResource.class)
-                    .addAsResource("ldaps-config/application.properties", "application.properties"))
-            .setBeforeAllCustomizer(LdapsTlsRegistryTest::startLdapsServer)
-            .setAfterAllCustomizer(LdapsTlsRegistryTest::stopLdapsServer);
+                    .addAsResource("ldaps-reload/application.properties", "application.properties"))
+            .setBeforeAllCustomizer(LdapsTlsRegistryReloadTest::startLdapsServer)
+            .setAfterAllCustomizer(LdapsTlsRegistryReloadTest::stopLdapsServer);
 
     private static void startLdapsServer() {
         try {
+            Files.copy(Path.of("target/certs/ldap-reload-other.crt"), TRUSTED, StandardCopyOption.REPLACE_EXISTING);
             SSLUtil sslUtil = new SSLUtil(
-                    new KeyStoreKeyManager("target/certs/ldap-keystore.p12", "secret".toCharArray(), "PKCS12", null),
+                    new KeyStoreKeyManager("target/certs/ldap-reload-server-keystore.p12", "secret".toCharArray(), "PKCS12",
+                            null),
                     null);
-            SSLServerSocketFactory serverSocketFactory = sslUtil.createSSLServerSocketFactory();
             InMemoryListenerConfig listenerConfig = InMemoryListenerConfig.createLDAPSConfig("ldaps",
-                    InetAddress.getLoopbackAddress(), 0, serverSocketFactory, null);
+                    InetAddress.getLoopbackAddress(), 0, sslUtil.createSSLServerSocketFactory(), null);
             InMemoryDirectoryServerConfig serverConfig = new InMemoryDirectoryServerConfig("dc=quarkus,dc=io");
             serverConfig.setListenerConfigs(listenerConfig);
             serverConfig.addAdditionalBindCredentials("uid=admin,ou=system", "secret");
@@ -74,21 +81,17 @@ public class LdapsTlsRegistryTest {
     }
 
     @Test
-    public void testSecureAccessFailure() {
-        RestAssured.given().redirects().follow(false).get("/servlet-secured").then().statusCode(401);
-    }
-
-    @Test
-    public void testSecureAccessSuccessOverLdaps() {
+    public void testReloadedTrustStoreIsUsedForNewConnections() throws Exception {
         RestAssured.given().auth().preemptive().basic("standardUser", "standardUserPassword")
                 .when().get("/servlet-secured").then()
-                .statusCode(200);
-    }
+                .statusCode(500);
 
-    @Test
-    public void testJaxrsGetRoleSuccessOverLdaps() {
-        RestAssured.given().auth().preemptive().basic("standardUser", "standardUserPassword")
-                .when().get("/jaxrs-secured/roles-class").then()
-                .statusCode(200);
+        Files.copy(Path.of("target/certs/ldap-reload-server.crt"), TRUSTED, StandardCopyOption.REPLACE_EXISTING);
+
+        await().atMost(15, TimeUnit.SECONDS)
+                .pollInterval(500, TimeUnit.MILLISECONDS)
+                .untilAsserted(() -> RestAssured.given().auth().preemptive().basic("standardUser", "standardUserPassword")
+                        .when().get("/servlet-secured").then()
+                        .statusCode(200));
     }
 }

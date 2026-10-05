@@ -1,8 +1,8 @@
 package io.quarkus.elytron.security.ldap.deployment;
 
-import org.wildfly.security.auth.realm.ldap.ThreadLocalSSLSocketFactory;
 import org.wildfly.security.auth.server.SecurityRealm;
 
+import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -15,7 +15,9 @@ import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.elytron.security.deployment.ElytronPasswordMarkerBuildItem;
 import io.quarkus.elytron.security.deployment.SecurityRealmBuildItem;
 import io.quarkus.elytron.security.ldap.LdapRecorder;
+import io.quarkus.elytron.security.ldap.LdapTlsConfigurationObserver;
 import io.quarkus.elytron.security.ldap.QuarkusDirContextFactory;
+import io.quarkus.elytron.security.ldap.QuarkusLdapSocketFactory;
 import io.quarkus.elytron.security.ldap.deployment.config.LdapSecurityRealmBuildTimeConfig;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.tls.deployment.spi.TlsRegistryBuildItem;
@@ -53,6 +55,11 @@ class ElytronSecurityLdapProcessor {
     }
 
     @BuildStep
+    AdditionalBeanBuildItem tlsConfigurationObserver() {
+        return new AdditionalBeanBuildItem(LdapTlsConfigurationObserver.class);
+    }
+
+    @BuildStep
     ElytronPasswordMarkerBuildItem marker(LdapSecurityRealmBuildTimeConfig ldapSecurityRealmBuildTimeConfig) {
         if (!ldapSecurityRealmBuildTimeConfig.enabled()) {
             return null;
@@ -70,6 +77,6 @@ class ElytronSecurityLdapProcessor {
                 ReflectiveClassBuildItem.builder("com.sun.jndi.dns.DnsContextFactory").build());
         reflection.produce(ReflectiveClassBuildItem.builder("com.sun.jndi.rmi.registry.RegistryContextFactory")
                 .build());
-        reflection.produce(ReflectiveClassBuildItem.builder(ThreadLocalSSLSocketFactory.class).methods().build());
+        reflection.produce(ReflectiveClassBuildItem.builder(QuarkusLdapSocketFactory.class).methods().build());
     }
 }

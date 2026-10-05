@@ -7,14 +7,12 @@ import javax.naming.NamingException;
 import javax.naming.directory.DirContext;
 import javax.naming.directory.InitialDirContext;
 import javax.naming.ldap.InitialLdapContext;
-import javax.net.SocketFactory;
 import javax.security.auth.callback.Callback;
 import javax.security.auth.callback.CallbackHandler;
 import javax.security.auth.callback.NameCallback;
 import javax.security.auth.callback.PasswordCallback;
 
 import org.wildfly.security.auth.realm.ldap.DirContextFactory;
-import org.wildfly.security.auth.realm.ldap.ThreadLocalSSLSocketFactory;
 
 public class QuarkusDirContextFactory implements DirContextFactory {
     //    private static final ElytronMessages log = Logger.getMessageLogger(ElytronMessages.class, "org.wildfly.security");
@@ -30,25 +28,25 @@ public class QuarkusDirContextFactory implements DirContextFactory {
     private final String securityCredential;
     private final Duration connectTimeout;
     private final Duration readTimeout;
-    private final SocketFactory socketFactory;
+    private final boolean tlsRegistrySocketFactory;
     private final ClassLoader targetClassLoader;
 
     public QuarkusDirContextFactory(String providerUrl, String securityPrincipal, String securityCredential,
             Duration connectTimeout, Duration readTimeout) {
-        this(providerUrl, securityPrincipal, securityCredential, connectTimeout, readTimeout, null);
+        this(providerUrl, securityPrincipal, securityCredential, connectTimeout, readTimeout, false);
     }
 
     /**
-     * @param socketFactory the socket factory used for the connections to the server, or {@code null} for the default one
+     * @param tlsRegistrySocketFactory whether the connections use {@link QuarkusLdapSocketFactory}
      */
     public QuarkusDirContextFactory(String providerUrl, String securityPrincipal, String securityCredential,
-            Duration connectTimeout, Duration readTimeout, SocketFactory socketFactory) {
+            Duration connectTimeout, Duration readTimeout, boolean tlsRegistrySocketFactory) {
         this.providerUrl = providerUrl;
         this.securityPrincipal = securityPrincipal;
         this.securityCredential = securityCredential;
         this.connectTimeout = connectTimeout;
         this.readTimeout = readTimeout;
-        this.socketFactory = socketFactory;
+        this.tlsRegistrySocketFactory = tlsRegistrySocketFactory;
         this.targetClassLoader = getClass().getClassLoader();
     }
 
@@ -108,9 +106,8 @@ public class QuarkusDirContextFactory implements DirContextFactory {
             env.put(InitialDirContext.REFERRAL, mode == null ? ReferralMode.IGNORE.getValue() : mode.getValue());
             env.put(CONNECT_TIMEOUT, "" + connectTimeout.toMillis());
             env.put(READ_TIMEOUT, "" + readTimeout.toMillis());
-            if (socketFactory != null) {
-                env.put(SOCKET_FACTORY, ThreadLocalSSLSocketFactory.class.getName());
-                ThreadLocalSSLSocketFactory.set(socketFactory);
+            if (tlsRegistrySocketFactory) {
+                env.put(SOCKET_FACTORY, QuarkusLdapSocketFactory.class.getName());
             }
 
             //            if (log.isDebugEnabled()) {
@@ -126,15 +123,11 @@ public class QuarkusDirContextFactory implements DirContextFactory {
             } catch (NamingException ne) {
                 //                log.debugf(ne, "Could not create [%s]. Failed to connect to LDAP server.", InitialLdapContext.class);
                 throw ne;
-            } finally {
-                if (socketFactory != null) {
-                    ThreadLocalSSLSocketFactory.unset();
-                }
             }
 
             //            log.debugf("[%s] successfully created. Connection established to LDAP server.", initialContext);
 
-            return new DelegatingLdapContext(initialContext, this::returnContext, socketFactory);
+            return new DelegatingLdapContext(initialContext, this::returnContext, null);
         } finally {
             setClassLoaderTo(oldClassLoader);
         }

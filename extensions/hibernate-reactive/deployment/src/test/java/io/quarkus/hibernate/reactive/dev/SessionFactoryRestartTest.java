@@ -2,7 +2,6 @@ package io.quarkus.hibernate.reactive.dev;
 
 import static org.hamcrest.Matchers.is;
 
-import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -20,9 +19,7 @@ public class SessionFactoryRestartTest {
     static final QuarkusDevModeTest runner = new QuarkusDevModeTest()
             .withApplicationRoot(jar -> jar
                     .addClasses(Fruit.class, SessionFactoryRestartResource.class)
-                    .addAsResource(new StringAsset("quarkus.datasource.db-kind=postgresql\n"
-                            + "quarkus.hibernate-orm.schema-management.strategy=drop-and-create\n"
-                            + "restart.counter=0\n"), "application.properties"));
+                    .addAsResource("application.properties"));
 
     @Test
     void testSessionFactoriesAfterRestart() {
@@ -30,7 +27,7 @@ public class SessionFactoryRestartTest {
         assertSessions(0);
 
         runner.modifyResourceFile("application.properties",
-                s -> s.replace("restart.counter=0", "restart.counter=1"));
+                s -> s + "\nrestart.counter=1\n");
         assertSessions(1);
 
         runner.modifyResourceFile("application.properties",

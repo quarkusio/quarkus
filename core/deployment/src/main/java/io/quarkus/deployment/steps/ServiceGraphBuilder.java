@@ -154,9 +154,14 @@ final class ServiceGraphBuilder {
             for (TransliteratedAction action : actions) {
                 MutableNode serviceNode = new MutableNode(action.serviceKey(), stepId,
                         kindForAction(action), null, action);
-                // no implicit intra-step ordering: services are independent from
-                // recorders in the same step. Use afterBuildItem(), after(), or
-                // require() to declare explicit ordering dependencies.
+                // Pure SERVICE nodes are independent from recorders in the same step
+                // (they get values from the graph, not the values map).
+                // ALIAS and RV_WRAPPER nodes read from the StartupContext values map
+                // that the recorder writes to, so they must depend on the recorder.
+                if (recorderNode != null && (serviceNode.kind == NodeKind.ALIAS
+                        || serviceNode.kind == NodeKind.RV_WRAPPER)) {
+                    serviceNode.stepDeps.add(recorderNode);
+                }
                 nodes.add(serviceNode);
                 stepToNodes.computeIfAbsent(stepId, k -> new ArrayList<>()).add(serviceNode);
                 serviceKeyToNode.put(action.serviceKey(), serviceNode);

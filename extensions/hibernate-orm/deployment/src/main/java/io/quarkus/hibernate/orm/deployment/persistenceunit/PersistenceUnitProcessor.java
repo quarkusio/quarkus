@@ -305,14 +305,20 @@ final class PersistenceUnitProcessor {
     @BuildStep
     @Consume(SyntheticBeansRuntimeInitBuildItem.class)
     @Consume(JdbcDataSourceBuildItem.class)
-    @Consume(JdbcDataSourceSchemaReadyBuildItem.class)
     @Consume(PersistenceProviderSetUpBuildItem.class)
     @Record(RUNTIME_INIT)
     // Producing ServiceStartBuildItem ensures this will get called before any CDI bean gets initialized
     public ServiceStartBuildItem startPersistenceUnits(HibernateOrmRecorder recorder, BeanContainerBuildItem beanContainer,
             List<PersistenceUnitDescriptorBuildItem> persistenceUnitDescriptors,
+            List<JdbcDataSourceSchemaReadyBuildItem> schemaReadyBuildItems,
             ShutdownContextBuildItem shutdownContextBuildItem) {
         if (!persistenceUnitDescriptors.isEmpty()) {
+            // Datasources whose schema Flyway or Liquibase manage, and reset when resetting the database from the Dev UI
+            Set<String> datasourcesWithMigratedSchema = new HashSet<>();
+            for (JdbcDataSourceSchemaReadyBuildItem schemaReadyBuildItem : schemaReadyBuildItems) {
+                datasourcesWithMigratedSchema.addAll(schemaReadyBuildItem.getDatasourceNames());
+            }
+            recorder.setDatasourcesWithMigratedSchema(datasourcesWithMigratedSchema);
             recorder.startAllPersistenceUnits(beanContainer.getValue(), shutdownContextBuildItem);
         }
 

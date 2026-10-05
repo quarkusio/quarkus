@@ -981,6 +981,7 @@ you could also use `validate` to have Hibernate verify the schema matches its ex
 Note that `data.sql` is still executed on every startup with this approach, once the schema has been migrated,
 and executed again when resetting the database from the Dev UI, once Flyway or Liquibase have reset the schema:
 set `quarkus.hibernate-orm.data-management.strategy=none` if that is not what you want.
+Without Flyway or Liquibase, resetting the database from the Dev UI leaves both the schema and the data untouched.
 
 WARNING: Do not set `quarkus.hibernate-orm.schema-management.strategy` to `drop-and-create` or `update` in your production environment.
 

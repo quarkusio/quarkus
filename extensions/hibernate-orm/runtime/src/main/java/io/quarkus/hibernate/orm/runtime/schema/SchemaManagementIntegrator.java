@@ -3,10 +3,12 @@ package io.quarkus.hibernate.orm.runtime.schema;
 import static org.hibernate.cfg.AvailableSettings.PERSISTENCE_UNIT_NAME;
 
 import java.io.StringWriter;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.IdentityHashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.hibernate.boot.Metadata;
@@ -44,6 +46,8 @@ public class SchemaManagementIntegrator implements Integrator, DatabaseSchemaPro
 
     private static final Map<String, Holder> metadataMap = new ConcurrentHashMap<>();
     private static final Map<String, String> datasourceToPuMap = new ConcurrentHashMap<>();
+    // Datasources whose schema is reset by Flyway or Liquibase when the database is reset from the Dev UI
+    private static final Set<String> datasourcesWithMigratedSchema = ConcurrentHashMap.newKeySet();
     private static final Map<SessionFactoryImplementor, String> nameCache = Collections
             .synchronizedMap(new IdentityHashMap<>());
 
@@ -69,6 +73,11 @@ public class SchemaManagementIntegrator implements Integrator, DatabaseSchemaPro
 
     public static void mapDatasource(String datasource, String pu) {
         datasourceToPuMap.put(datasource, pu);
+    }
+
+    public static void setDatasourcesWithMigratedSchema(Collection<String> datasources) {
+        datasourcesWithMigratedSchema.clear();
+        datasourcesWithMigratedSchema.addAll(datasources);
     }
 
     static String defaultName(SessionFactoryImplementor sf) {
@@ -126,12 +135,12 @@ public class SchemaManagementIntegrator implements Integrator, DatabaseSchemaPro
         Holder holder = metadataMap.get(name);
 
         ServiceRegistry serviceRegistry = holder.sessionFactory.getServiceRegistry();
-        SimpleExecutionOptions executionOptions = new SimpleExecutionOptions(serviceRegistry);
+        SimpleExecutionOptions executionOptions = new SimpleExecutionOptions(serviceRegistry,
+                "Failed to execute the data init script");
         // The reset loads data the same way a start on an empty database would.
-        // This is not a guess about what manages the schema: the database action is computed by Quarkus
-        // from the schema and data management strategies (see InitScriptSupport#configureDataManagement),
-        // and it is "populate" only when another tool manages the schema, the data management strategy is "create"
-        // and there is a data init script. Otherwise:
+        // The database action is computed by Quarkus from the schema and data management strategies
+        // (see InitScriptSupport#configureDataManagement): it is "populate" only when Hibernate ORM doesn't manage
+        // the schema, the data management strategy is "create" and there is a data init script. Otherwise:
         // - when Hibernate ORM manages the schema, recreateDatabase() already executed the data init script
         //   (with "create") as part of the schema creation, so populating again would insert the data twice;
         // - with the "none" data management strategy, the data init script is not executed on start,
@@ -228,6 +237,14 @@ public class SchemaManagementIntegrator implements Integrator, DatabaseSchemaPro
             //not an hibernate DS
             return;
         }
+        if (!datasourcesWithMigratedSchema.contains(dbName)) {
+            // Neither Flyway nor Liquibase reset this database: either Hibernate ORM recreated the schema
+            // (and loaded the data along with it), or nothing did, and loading the data again
+            // would apply it on top of the existing data.
+            // Flyway only reports datasources with SQL migrations: a datasource migrated only by Java migrations
+            // is reset by Flyway, but the data init script is not executed again (same limitation as Dev Services).
+            return;
+        }
         populatePersistenceUnit(name);
     }
 
@@ -245,10 +262,16 @@ public class SchemaManagementIntegrator implements Integrator, DatabaseSchemaPro
 
     private static class SimpleExecutionOptions implements ExecutionOptions {
         private final Map<String, Object> configurationValues;
+        private final String errorMessage;
 
         public SimpleExecutionOptions(ServiceRegistry serviceRegistry) {
+            this(serviceRegistry, "Failed to recreate schema");
+        }
+
+        public SimpleExecutionOptions(ServiceRegistry serviceRegistry, String errorMessage) {
             configurationValues = InitScriptSupport.schemaManagementSettings(
                     serviceRegistry.getService(ConfigurationService.class).getSettings());
+            this.errorMessage = errorMessage;
         }
 
         @Override
@@ -266,7 +289,7 @@ public class SchemaManagementIntegrator implements Integrator, DatabaseSchemaPro
             return new ExceptionHandler() {
                 @Override
                 public void handleException(CommandAcceptanceException exception) {
-                    log.error("Failed to recreate schema", exception);
+                    log.error(errorMessage, exception);
                 }
             };
         }

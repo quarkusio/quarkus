@@ -103,6 +103,37 @@ dependencies. A Quarkus quickstart will be provided to show how to do this, or y
 take a look at one of the https://github.com/jbosstm/quickstart/tree/master/rts/lra-examples/lra-coordinator[Narayana quickstarts].
 Another option would be to run it managed inside a WildFly application server.
 
+== Securing LRA with JWT
+
+Narayana LRA can forward a JWT bearer token on the Jakarta REST invocations that
+flow between participants and the coordinator. This is useful when the services
+taking part in an LRA are protected and require an `Authorization: Bearer`
+header.
+
+The feature is opt-in. To propagate the bearer token that arrived on an incoming
+request, annotate the `@LRA` method (or its class) with
+`io.narayana.lra.PropagateToken`:
+
+[source,java]
+----
+@LRA(LRA.Type.REQUIRES_NEW) // a new LRA is created on method entry
+@PropagateToken // forward the inbound bearer token on outgoing LRA calls
+@Path("/work")
+@PUT
+public void doInNewLongRunningAction(@HeaderParam(LRA_HTTP_CONTEXT_HEADER) URI lraId)
+{
+    ...
+}
+----
+
+For the token to be available, your service must authenticate the incoming
+request with a JWT security extension such as `quarkus-smallrye-jwt`. Once
+authenticated, the inbound bearer token is propagated automatically on the
+outgoing LRA calls; no further configuration is required.
+
+Issuing a service token to authenticate the services themselves is a
+coordinator-side concern and is not handled by the participant extension.
+
 == Handling failures
 
 When an LRA is told to finish, i.e. when a method annotated with `@LRA(end = true, ...)`

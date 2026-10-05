@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.function.BiFunction;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -131,6 +132,8 @@ public class GrpcServerProcessor {
             }
             DotName serviceInterface = delegateField.type().name();
             Collection<ClassInfo> serviceCandidates = index.getIndex().getAllKnownImplementors(serviceInterface);
+            failOnDuplicateImplementations(index.getIndex(), generatedBean, serviceInterface, serviceCandidates,
+                    excludedPackages);
             if (serviceCandidates.isEmpty()) {
                 // No user-defined bean that implements the generated interface
                 continue;
@@ -217,6 +220,40 @@ public class GrpcServerProcessor {
                     }
                 }
             }));
+        }
+    }
+
+    /**
+     * A service can be implemented by implementing the generated Mutiny interface, by extending the generated Mutiny
+     * ImplBase or by extending the plain grpc-java ImplBase. Only one of them may be used per service: otherwise one
+     * implementation is silently dropped, or the server fails at startup with a "Duplicated name" error that names no
+     * class.
+     */
+    private static void failOnDuplicateImplementations(IndexView index, ClassInfo generatedBean, DotName serviceInterface,
+            Collection<ClassInfo> serviceCandidates, String[] excludedPackages) {
+        DotName mutinyImplBase = generatedBean.superName();
+        String mutinyImplBaseName = mutinyImplBase.toString();
+        for (String excludedPackage : excludedPackages) {
+            if (mutinyImplBaseName.startsWith(excludedPackage)) {
+                return;
+            }
+        }
+        DotName implBase = DotName.createSimple(mutinyImplBaseName.replace(MutinyGrpcGenerator.CLASS_PREFIX, ""));
+        Set<String> implementations = new TreeSet<>();
+        addGrpcServiceBeans(implementations, serviceCandidates);
+        addGrpcServiceBeans(implementations, index.getAllKnownSubclasses(mutinyImplBase));
+        addGrpcServiceBeans(implementations, index.getAllKnownSubclasses(implBase));
+        if (implementations.size() > 1) {
+            throw new DeploymentException("Multiple implementations of the gRPC service " + serviceInterface + " were found: "
+                    + implementations + ". A service must be implemented by a single @GrpcService bean.");
+        }
+    }
+
+    private static void addGrpcServiceBeans(Set<String> target, Collection<ClassInfo> classes) {
+        for (ClassInfo clazz : classes) {
+            if (!Modifier.isAbstract(clazz.flags()) && clazz.declaredAnnotation(GrpcDotNames.GRPC_SERVICE) != null) {
+                target.add(clazz.name().toString());
+            }
         }
     }
 

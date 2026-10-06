@@ -18,7 +18,6 @@ import java.util.function.Supplier;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.accessor.AccessorFactory;
-import org.hibernate.accessor.spi.AccessorConfiguration;
 import org.hibernate.boot.Metadata;
 import org.hibernate.boot.registry.StandardServiceInitiator;
 import org.hibernate.boot.spi.BootstrapContext;
@@ -41,7 +40,6 @@ import io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil;
 import io.quarkus.hibernate.orm.runtime.spi.HibernateOrmIntegrationRuntimeInitListener;
 import io.quarkus.hibernate.orm.runtime.spi.HibernateOrmIntegrationStaticInitListener;
 import io.quarkus.hibernate.search.backend.elasticsearch.common.runtime.HibernateSearchBackendElasticsearchConfigHandler;
-import io.quarkus.hibernate.search.backend.elasticsearch.common.runtime.QuarkusAccessContext;
 import io.quarkus.hibernate.search.orm.elasticsearch.runtime.bean.HibernateSearchBeanUtil;
 import io.quarkus.hibernate.search.orm.elasticsearch.runtime.management.HibernateSearchManagementHandler;
 import io.quarkus.hibernate.search.orm.elasticsearch.runtime.mapping.QuarkusHibernateOrmSearchMappingConfigurer;
@@ -66,7 +64,8 @@ public class HibernateSearchElasticsearchRecorder {
     public HibernateOrmIntegrationStaticInitListener createStaticInitListener(
             HibernateSearchOrmElasticsearchMapperContext mapperContext,
             Set<String> rootAnnotationMappedClassNames,
-            List<HibernateOrmIntegrationStaticInitListener> integrationStaticInitListeners) {
+            List<HibernateOrmIntegrationStaticInitListener> integrationStaticInitListeners,
+            RuntimeValue<AccessorFactory> accessorFactory) {
         Set<Class<?>> rootAnnotationMappedClasses = new LinkedHashSet<>();
         ClassLoader tccl = Thread.currentThread().getContextClassLoader();
         for (String className : rootAnnotationMappedClassNames) {
@@ -79,7 +78,8 @@ public class HibernateSearchElasticsearchRecorder {
         return new HibernateSearchIntegrationStaticInitListener(mapperContext,
                 buildTimeConfig.persistenceUnits().get(mapperContext.persistenceUnitName),
                 rootAnnotationMappedClasses,
-                integrationStaticInitListeners);
+                integrationStaticInitListeners,
+                accessorFactory);
     }
 
     public HibernateOrmIntegrationStaticInitListener createStaticInitInactiveListener() {
@@ -198,16 +198,19 @@ public class HibernateSearchElasticsearchRecorder {
         private final HibernateSearchElasticsearchBuildTimeConfigPersistenceUnit buildTimeConfig;
         private final Set<Class<?>> rootAnnotationMappedClasses;
         private final List<HibernateOrmIntegrationStaticInitListener> integrationStaticInitListeners;
+        private final RuntimeValue<AccessorFactory> accessorFactory;
 
         private HibernateSearchIntegrationStaticInitListener(HibernateSearchOrmElasticsearchMapperContext mapperContext,
                 HibernateSearchElasticsearchBuildTimeConfigPersistenceUnit buildTimeConfig,
                 Set<Class<?>> rootAnnotationMappedClasses,
-                List<HibernateOrmIntegrationStaticInitListener> integrationStaticInitListeners) {
+                List<HibernateOrmIntegrationStaticInitListener> integrationStaticInitListeners,
+                RuntimeValue<AccessorFactory> accessorFactory) {
             this.mapperContext = mapperContext;
             this.persistenceUnitName = mapperContext.persistenceUnitName;
             this.buildTimeConfig = buildTimeConfig;
             this.rootAnnotationMappedClasses = rootAnnotationMappedClasses;
             this.integrationStaticInitListeners = integrationStaticInitListeners;
+            this.accessorFactory = accessorFactory;
         }
 
         @Override
@@ -262,9 +265,8 @@ public class HibernateSearchElasticsearchRecorder {
                     metadata,
                     bootstrapContext.getServiceRegistry(),
                     bootstrapContext.getModelsContext().getClassDetailsRegistry())
-                    // MethodHandles don't work at all in GraalVM 20 and below, and seem unreliable on GraalVM 21
-                    .accessorFactory(
-                            AccessorFactory.reflection(new AccessorConfiguration(new QuarkusAccessContext(), Map.of())))
+                    // Accessors are generated at build time by the Hibernate Accessor extension
+                    .accessorFactory(accessorFactory.getValue())
                     .build();
             booter.preBoot(propertyCollector);
 

@@ -19,6 +19,7 @@ import jakarta.persistence.spi.LoadState;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.StatelessSession;
+import org.hibernate.accessor.AccessorFactory;
 import org.hibernate.engine.spi.SessionLazyDelegator;
 import org.hibernate.engine.spi.StatelessSessionLazyDelegator;
 import org.hibernate.integrator.spi.Integrator;
@@ -36,6 +37,8 @@ import io.quarkus.hibernate.orm.runtime.integration.HibernateOrmIntegrationRunti
 import io.quarkus.hibernate.orm.runtime.migration.MultiTenancyStrategy;
 import io.quarkus.hibernate.orm.runtime.proxies.PreGeneratedProxies;
 import io.quarkus.hibernate.orm.runtime.schema.SchemaManagementIntegrator;
+import io.quarkus.hibernate.orm.runtime.service.propertyaccessor.QuarkusPropertyAccessorIntegration;
+import io.quarkus.hibernate.orm.runtime.spi.HibernateOrmIntegrationStaticInitListener;
 import io.quarkus.hibernate.orm.runtime.tenant.DataSourceTenantConnectionResolver;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.ShutdownContext;
@@ -73,6 +76,11 @@ public class HibernateOrmRecorder {
     public void setupPersistenceProvider(
             Map<String, List<HibernateOrmIntegrationRuntimeDescriptor>> integrationRuntimeDescriptors) {
         PersistenceProviderSetup.registerRuntimePersistenceProvider(runtimeConfig.getValue(), integrationRuntimeDescriptors);
+    }
+
+    public HibernateOrmIntegrationStaticInitListener propertyAccessorIntegration(
+            RuntimeValue<AccessorFactory> accessorFactory) {
+        return new QuarkusPropertyAccessorIntegration(accessorFactory);
     }
 
     public BeanContainerListener initMetadata(List<QuarkusPersistenceUnitDefinition> parsedPersistenceXmlDescriptors,

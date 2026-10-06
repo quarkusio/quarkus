@@ -305,7 +305,7 @@ public class ConfigGenerationBuildStep {
             // In that case, it would generate duplicates.
             for (Class<?> type : configItem.getReadResult().getAllMappingsByClass().keySet()) {
                 if (type.getName().equals(configClass.name().toString())) {
-                    break outer;
+                    continue outer;
                 }
             }
 

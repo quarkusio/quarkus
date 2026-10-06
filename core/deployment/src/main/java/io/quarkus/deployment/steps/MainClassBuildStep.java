@@ -109,7 +109,6 @@ import io.quarkus.runtime.Application;
 import io.quarkus.runtime.ExecutionModeManager;
 import io.quarkus.runtime.JVMUnsafeWarningsControl;
 import io.quarkus.runtime.LaunchMode;
-import io.quarkus.runtime.NativeImageRuntimePropertiesRecorder;
 import io.quarkus.runtime.PreventFurtherStepsException;
 import io.quarkus.runtime.Quarkus;
 import io.quarkus.runtime.QuarkusApplication;
@@ -232,8 +231,6 @@ public class MainClassBuildStep {
             "setHandlers", Handler[].class, Handler[].class);
     private static final MethodDesc MD_ApplicationStateNotification_notifyStartupFailed = MethodDesc
             .of(ApplicationStateNotification.class, "notifyStartupFailed", void.class, Throwable.class);
-    private static final MethodDesc MD_NativeImageRuntimePropertiesRecorder_doRuntime = MethodDesc
-            .of(NativeImageRuntimePropertiesRecorder.class, "doRuntime", void.class);
     private static final MethodDesc MD_ServiceGraph_stop = MethodDesc.of(ServiceGraph.class, "stop", void.class);
     private static final MethodDesc MD_ServiceGraph_start = MethodDesc.of(ServiceGraph.class, "start", void.class);
     private static final MethodDesc MD_ServiceGraph_setTop = MethodDesc.of(ServiceGraph.class, "setTop", void.class,
@@ -465,7 +462,6 @@ public class MainClassBuildStep {
                                 b0.invokeVirtual(ClassMethodDesc.of(ClassDesc.of(i.getGeneratorClass()), "get", String.class),
                                         b0.new_(ConstructorDesc.of(ClassDesc.of(i.getGeneratorClass())))));
                     }
-                    b0.invokeStatic(MD_NativeImageRuntimePropertiesRecorder_doRuntime);
                     b0.invokeStatic(MD_ExecutionModeManager_runtimeInit);
 
                     // Set the SSL system properties

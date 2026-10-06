@@ -12,6 +12,8 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import io.quarkus.cli.common.RunModeOption;
+import io.quarkus.devtools.plugin.Plugin;
+import io.quarkus.devtools.plugin.PluginManager;
 import io.quarkus.devtools.project.BuildTool;
 import io.quarkus.runtime.util.StringUtil;
 import picocli.CommandLine;

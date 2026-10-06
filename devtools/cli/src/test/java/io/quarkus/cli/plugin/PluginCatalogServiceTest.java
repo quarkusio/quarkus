@@ -19,6 +19,11 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.cli.CliDriver;
+import io.quarkus.devtools.plugin.Plugin;
+import io.quarkus.devtools.plugin.PluginCatalog;
+import io.quarkus.devtools.plugin.PluginCatalogService;
+import io.quarkus.devtools.plugin.PluginType;
+import io.quarkus.devtools.plugin.PluginUtil;
 
 public class PluginCatalogServiceTest {
 

@@ -10,6 +10,9 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import io.quarkus.cli.common.OutputOptionMixin;
+import io.quarkus.devtools.plugin.Plugin;
+import io.quarkus.devtools.plugin.PluginCatalog;
+import io.quarkus.devtools.plugin.PluginUtil;
 import io.quarkus.maven.dependency.GACTV;
 import io.quarkus.runtime.util.StringUtil;
 import picocli.CommandLine;

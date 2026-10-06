@@ -1,6 +1,6 @@
 package io.quarkus.devtools.codestarts.jbang;
 
-import static io.quarkus.devtools.codestarts.CodestartResourceLoader.loadCodestartsFromResources;
+import static io.quarkus.devtools.project.CodestartResourceLoader.loadCodestartsFromResources;
 import static io.quarkus.devtools.project.CodestartResourceLoadersBuilder.getCodestartResourceLoaders;
 
 import java.io.IOException;

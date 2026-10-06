@@ -59,12 +59,15 @@ else
   if [ "$QUARKUS_RELEASE" == "true" ]; then
     if [ ! -f ${TARGET_GUIDES}/_attributes-local.adoc ]; then
       cat <<EOF > ${TARGET_GUIDES}/_attributes-local.adoc
+:idprefix:
+:idseparator: -
 // tag::xref-attributes[]
 :doc-examples: ./_examples
-:generated-dir: ../../../../_generated-doc/${BRANCH}
+:generated-dir: ../../../_generated-doc/${BRANCH}
 :code-examples: {generated-dir}/examples
-:imagesdir: ./images
+:imagesdir: /version/${BRANCH}/guides/images
 :includes: ./_includes
+:sectanchors:
 //
 :quickstarts-clone-url: -b ${BRANCH} https://github.com/quarkusio/quarkus-quickstarts.git
 :quickstarts-archive-url: https://github.com/quarkusio/quarkus-quickstarts/archive/${BRANCH}.zip
@@ -131,10 +134,13 @@ done
 
 # Ensure index.html files exist in resource directories
 echo "Ensuring index.html exists in resource directories..."
-for subdir in images javascript assets; do
+for subdir in images javascript assets stylesheet; do
   dir="$TARGET_GUIDES/$subdir"
   if [ -d "$dir" ] && [ ! -f "$dir/index.html" ]; then
     rel_path=$(echo "$dir" | sed "s|${TARGET_DIR}/content/||")
+    # The on-disk "versions" directory is served under the singular "version"
+    # collection link (site.collections.versions.link=/version/:dir[1]/:name/).
+    rel_path=$(echo "$rel_path" | sed 's|^versions/|version/|')
     printf '%s\n' '---' "link: /${rel_path}/" '---' '<html><body></body></html>' > "$dir/index.html"
     echo "Created index.html for $subdir/"
   fi

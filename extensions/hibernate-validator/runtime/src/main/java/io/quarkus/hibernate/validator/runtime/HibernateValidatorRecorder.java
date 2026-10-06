@@ -26,6 +26,7 @@ import jakarta.validation.Validator;
 import jakarta.validation.ValidatorFactory;
 import jakarta.validation.valueextraction.ValueExtractor;
 
+import org.hibernate.accessor.AccessorFactory;
 import org.hibernate.validator.HibernateValidatorFactory;
 import org.hibernate.validator.PredefinedScopeHibernateValidator;
 import org.hibernate.validator.PredefinedScopeHibernateValidatorConfiguration;
@@ -43,6 +44,7 @@ import io.quarkus.hibernate.validator.runtime.clockprovider.RuntimeReinitialized
 import io.quarkus.hibernate.validator.runtime.jaxrs.ResteasyConfigSupport;
 import io.quarkus.hibernate.validator.runtime.locale.LocaleResolversWrapper;
 import io.quarkus.runtime.LocalesBuildTimeConfig;
+import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
 
@@ -89,7 +91,8 @@ public class HibernateValidatorRecorder {
             boolean hasXmlConfiguration,
             Optional<BiPredicate<Object, String>> attributeLoadedPredicate,
             LocalesBuildTimeConfig localesBuildTimeConfig,
-            HibernateValidatorBuildTimeConfig hibernateValidatorBuildTimeConfig) {
+            HibernateValidatorBuildTimeConfig hibernateValidatorBuildTimeConfig,
+            RuntimeValue<AccessorFactory> accessorFactory) {
         return new Function<>() {
             @Override
             public HibernateValidatorFactory apply(SyntheticCreationalContext<HibernateValidatorFactory> context) {
@@ -209,6 +212,10 @@ public class HibernateValidatorRecorder {
                         .<ValueExtractor<?>> uniqueBeanInstances(valueExtractorClasses)) {
                     configuration.addValueExtractor(valueExtractor);
                 }
+
+                // TODO: re-enable once Hibernate Validator accepts an accessor factory again;
+                // the build time generated accessors are available through accessorFactory.getValue().
+                // configuration.accessorFactory(accessorFactory.getValue());
 
                 Instance<ValidatorFactoryCustomizer> validatorFactoryCustomizers = context
                         .getInjectedReference(INSTANCE_VALIDATOR_FACTORY_CUSTOMER_TYPE_LITERAL);

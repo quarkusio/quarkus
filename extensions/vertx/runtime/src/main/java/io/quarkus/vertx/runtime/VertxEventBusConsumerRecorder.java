@@ -129,7 +129,7 @@ public class VertxEventBusConsumerRecorder {
                                                 } catch (Exception e) {
                                                     if (m.replyAddress() == null) {
                                                         // No reply handler
-                                                        throw wrapIfNecessary(e);
+                                                        context.reportException(wrapIfNecessary(e));
                                                     } else {
                                                         m.fail(ConsumeEvent.FAILURE_CODE, e.toString());
                                                     }
@@ -161,7 +161,7 @@ public class VertxEventBusConsumerRecorder {
                                     } catch (Exception e) {
                                         if (m.replyAddress() == null) {
                                             // No reply handler
-                                            throw wrapIfNecessary(e);
+                                            context.reportException(wrapIfNecessary(e));
                                         } else {
                                             m.fail(ConsumeEvent.FAILURE_CODE, e.toString());
                                         }

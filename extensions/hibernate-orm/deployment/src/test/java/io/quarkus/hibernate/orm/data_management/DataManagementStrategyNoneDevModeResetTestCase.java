@@ -19,9 +19,9 @@ import io.restassured.RestAssured;
 import tools.jackson.databind.JsonNode;
 
 /**
- * With the "none" data management strategy, the data init script (data.sql) is not executed
- * when the database is reset from the Dev UI either, even though the reset recreates the schema:
- * the reset behaves like a start.
+ * With the "none" data management strategy, the data init script (data.sql) is not executed on start,
+ * but it is executed when the database is reset from the Dev UI, since a reset is an explicit request
+ * for a fresh database.
  */
 @Tag(TestTags.DEVMODE)
 public class DataManagementStrategyNoneDevModeResetTestCase extends DevUIJsonRPCTest {
@@ -41,7 +41,7 @@ public class DataManagementStrategyNoneDevModeResetTestCase extends DevUIJsonRPC
     }
 
     @Test
-    public void dataInitScriptNotExecutedOnReset() throws Exception {
+    public void dataInitScriptExecutedOnResetOnly() throws Exception {
         // Not executed on start
         RestAssured.when().get("/my-entity/count").then().body(is("0"));
         RestAssured.when().get("/my-entity/add").then().body(is("MyEntity:added"));
@@ -50,7 +50,8 @@ public class DataManagementStrategyNoneDevModeResetTestCase extends DevUIJsonRPC
         JsonNode success = super.executeJsonRPCMethod("reset", Map.of("ds", "<default>"));
         assertTrue(success.asBoolean());
 
-        // The reset recreated the schema without executing the script
-        RestAssured.when().get("/my-entity/count").then().body(is("0"));
+        // The reset recreated the schema and executed the script
+        RestAssured.when().get("/my-entity/10").then().body(is("MyEntity:data.sql data init script entity"));
+        RestAssured.when().get("/my-entity/count").then().body(is("1"));
     }
 }

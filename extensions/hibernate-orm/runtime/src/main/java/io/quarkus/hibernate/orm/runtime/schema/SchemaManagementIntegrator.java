@@ -108,7 +108,10 @@ public class SchemaManagementIntegrator implements Integrator, DatabaseSchemaPro
         Holder holder = metadataMap.get(name);
 
         ServiceRegistry serviceRegistry = holder.sessionFactory.getServiceRegistry();
-        SimpleExecutionOptions executionOptions = new SimpleExecutionOptions(serviceRegistry);
+        // A reset is an explicit request for a fresh database: the data init script is executed
+        // even with the "none" data management strategy, which only applies on startup
+        SimpleExecutionOptions executionOptions = new SimpleExecutionOptions(serviceRegistry,
+                "Failed to recreate schema", true);
         Action schemaGenerationDatabaseAction = databaseAction(executionOptions);
         if (!Action.NONE.equals(schemaGenerationDatabaseAction) && !Action.POPULATE.equals(schemaGenerationDatabaseAction)) {
             //if this is none (or populate, which doesn't touch the schema) we assume another framework is doing this (e.g. flyway)
@@ -136,18 +139,19 @@ public class SchemaManagementIntegrator implements Integrator, DatabaseSchemaPro
 
         ServiceRegistry serviceRegistry = holder.sessionFactory.getServiceRegistry();
         SimpleExecutionOptions executionOptions = new SimpleExecutionOptions(serviceRegistry,
-                "Failed to execute the data init script");
-        // The reset loads data the same way a start on an empty database would.
-        // The database action is computed by Quarkus from the schema and data management strategies
-        // (see InitScriptSupport#configureDataManagement): it is "populate" only when Hibernate ORM doesn't manage
-        // the schema, the data management strategy is "create" and there is a data init script. Otherwise:
+                "Failed to execute the data init script", true);
+        // The data init script is executed again when Hibernate ORM doesn't manage the schema
+        // (database action "none", or "populate" which Quarkus computes for the "create" data management strategy,
+        // see InitScriptSupport#configureDataManagement), whatever the data management strategy,
+        // since a reset is an explicit request for a fresh database. Otherwise:
         // - when Hibernate ORM manages the schema, recreateDatabase() already executed the data init script
-        //   (with "create") as part of the schema creation, so populating again would insert the data twice;
-        // - with the "none" data management strategy, the data init script is not executed on start,
-        //   so it is not executed on reset either;
+        //   as part of the schema creation, so populating again would insert the data twice;
         // - scripts set through the deprecated sql-load-script property are only executed
-        //   when Hibernate ORM creates the schema.
-        if (Action.POPULATE.equals(databaseAction(executionOptions))) {
+        //   when Hibernate ORM creates the schema (they never get the "populate" action,
+        //   and the data management strategy does not apply to them).
+        Action databaseAction = databaseAction(executionOptions);
+        if (Action.POPULATE.equals(databaseAction) || (Action.NONE.equals(databaseAction)
+                && InitScriptSupport.isDataInitScriptSkippedOnStart(executionOptions.getConfigurationValues()))) {
             SchemaManagementTool schemaManagementTool = serviceRegistry
                     .getService(SchemaManagementTool.class);
             SchemaManagementToolCoordinator.performDatabaseAction(Action.POPULATE, holder.metadata, schemaManagementTool,
@@ -265,12 +269,15 @@ public class SchemaManagementIntegrator implements Integrator, DatabaseSchemaPro
         private final String errorMessage;
 
         public SimpleExecutionOptions(ServiceRegistry serviceRegistry) {
-            this(serviceRegistry, "Failed to recreate schema");
+            this(serviceRegistry, "Failed to recreate schema", false);
         }
 
-        public SimpleExecutionOptions(ServiceRegistry serviceRegistry, String errorMessage) {
-            configurationValues = InitScriptSupport.schemaManagementSettings(
-                    serviceRegistry.getService(ConfigurationService.class).getSettings());
+        /**
+         * @param keepDataInitScript Whether to keep the data init script even when it is not executed on startup.
+         */
+        public SimpleExecutionOptions(ServiceRegistry serviceRegistry, String errorMessage, boolean keepDataInitScript) {
+            Map<String, Object> settings = serviceRegistry.getService(ConfigurationService.class).getSettings();
+            configurationValues = keepDataInitScript ? settings : InitScriptSupport.schemaManagementSettings(settings);
             this.errorMessage = errorMessage;
         }
 

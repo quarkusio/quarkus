@@ -263,8 +263,10 @@ public interface HibernateOrmRuntimeConfigPersistenceUnit {
          * With `none` (the default in other modes, e.g. in production, and when Hibernate ORM starts offline),
          * the script is not executed on start, even when Hibernate ORM creates the schema.
          *
-         * Regardless of this setting, the data init script can still be executed on demand
-         * through Hibernate ORM's `SchemaManager` (`populate()`, or `truncate()` which reimports the data).
+         * Regardless of this setting, the data init script is executed again when the database is reset from the Dev UI,
+         * once its schema has been recreated (by Hibernate ORM, Flyway or Liquibase),
+         * and it can be executed on demand through Hibernate ORM's `SchemaManager`
+         * (`populate()`, or `truncate()` which reimports the data).
          *
          * Accepted values: `none`, `create`.
          *
@@ -279,7 +281,8 @@ public interface HibernateOrmRuntimeConfigPersistenceUnit {
     enum DataManagementStrategy {
         /**
          * Do not execute the data init script on start.
-         * It can still be executed on demand through the `SchemaManager`.
+         * It is still executed when the database is reset from the Dev UI,
+         * and can be executed on demand through the `SchemaManager`.
          *
          * @asciidoclet
          */

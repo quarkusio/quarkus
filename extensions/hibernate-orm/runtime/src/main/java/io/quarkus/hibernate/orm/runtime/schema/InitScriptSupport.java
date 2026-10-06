@@ -39,9 +39,9 @@ public final class InitScriptSupport {
 
     /**
      * Persistence unit property set to {@code false} when the data init script must not be executed
-     * by the schema management that Quarkus triggers itself (on startup, and on reset from the Dev UI).
-     * The script stays in the settings so that explicit {@code SchemaManager} calls can still execute it,
-     * see {@link #schemaManagementSettings(Map)}.
+     * by the schema management that Quarkus triggers itself on startup.
+     * The script stays in the settings so that explicit {@code SchemaManager} calls
+     * and resets from the Dev UI can still execute it, see {@link #schemaManagementSettings(Map)}.
      */
     public static final String DATA_INIT_SCRIPT_ON_START = "hibernate.quarkus.data_init_script.on_start";
 
@@ -146,8 +146,7 @@ public final class InitScriptSupport {
     }
 
     /**
-     * The settings to use for the schema management that Quarkus triggers itself:
-     * on startup, and on reset from the Dev UI.
+     * The settings to use for the schema management that Quarkus triggers itself on startup.
      * <p>
      * Hibernate ORM executes the data init script as part of schema creation, truncation and population alike,
      * reading it from the same settings.
@@ -164,6 +163,16 @@ public final class InitScriptSupport {
         // The only setting Quarkus uses for the data init script
         copy.remove(AvailableSettings.JAKARTA_HBM2DDL_LOAD_SCRIPT_SOURCE);
         return copy;
+    }
+
+    /**
+     * @return {@code true} if a data init script is configured but not executed on startup,
+     *         because of the data management strategy (see {@link #DATA_INIT_SCRIPT_ON_START}).
+     */
+    public static boolean isDataInitScriptSkippedOnStart(Map<String, Object> settings) {
+        Object onStart = settings.get(DATA_INIT_SCRIPT_ON_START);
+        return onStart != null && !Boolean.parseBoolean(String.valueOf(onStart))
+                && settings.get(AvailableSettings.JAKARTA_HBM2DDL_LOAD_SCRIPT_SOURCE) != null;
     }
 
     /**

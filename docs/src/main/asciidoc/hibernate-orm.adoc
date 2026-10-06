@@ -978,10 +978,12 @@ Or if you use a database schema migration tool like xref:flyway.adoc[Flyway] or 
 With this approach when making changes to an entity, make sure to adapt the database schema accordingly;
 you could also use `validate` to have Hibernate verify the schema matches its expectations.
 +
-Note that `data.sql` is still executed on every startup with this approach, once the schema has been migrated,
-and executed again when resetting the database from the Dev UI, once Flyway or Liquibase have reset the schema:
+Note that `data.sql` is still executed on every startup with this approach, once the schema has been migrated:
 set `quarkus.hibernate-orm.data-management.strategy=none` if that is not what you want.
-Without Flyway or Liquibase, resetting the database from the Dev UI leaves both the schema and the data untouched.
+Resetting the database from the Dev UI executes it again once Flyway or Liquibase have reset the schema,
+whatever the data management strategy
+(set `%dev.quarkus.hibernate-orm.data-management.init-script=no-file` to keep it away from the dev database);
+without Flyway or Liquibase, the reset leaves both the schema and the data untouched.
 
 WARNING: Do not set `quarkus.hibernate-orm.schema-management.strategy` to `drop-and-create` or `update` in your production environment.
 

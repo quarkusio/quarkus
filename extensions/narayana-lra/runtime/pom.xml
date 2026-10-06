@@ -69,6 +69,17 @@
             <groupId>org.eclipse.microprofile.lra</groupId>
             <artifactId>microprofile-lra-api</artifactId>
         </dependency>
+        <!--
+            Narayana LRA's BearerTokenResolver (in lra-service-base) references
+            org.eclipse.microprofile.jwt.JsonWebToken. The API must be on the
+            classpath so native image build-time linking can resolve the type;
+            the actual JWT bearer-token propagation is opt-in and only activates
+            when a JsonWebToken producer (e.g. quarkus-smallrye-jwt) is present.
+        -->
+        <dependency>
+            <groupId>org.eclipse.microprofile.jwt</groupId>
+            <artifactId>microprofile-jwt-auth-api</artifactId>
+        </dependency>
         <dependency>
             <groupId>org.eclipse.angus</groupId>
             <artifactId>angus-activation</artifactId>

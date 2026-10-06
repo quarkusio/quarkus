@@ -15,11 +15,10 @@ import org.hibernate.property.access.spi.PropertyAccessorService;
 
 final class QuarkusPropertyAccessorService implements PropertyAccessorService {
 
-    static final QuarkusPropertyAccessorService INSTANCE = new QuarkusPropertyAccessorService();
+    private final AccessorFactory accessorFactory;
 
-    private final AccessorFactory accessorFactory = new ReflectionAccessorFactory();
-
-    private QuarkusPropertyAccessorService() {
+    QuarkusPropertyAccessorService(AccessorFactory accessorFactory) {
+        this.accessorFactory = new QuarkusAccessorFactory(accessorFactory);
     }
 
     @Override
@@ -27,9 +26,13 @@ final class QuarkusPropertyAccessorService implements PropertyAccessorService {
         return accessorFactory;
     }
 
-    private static final class ReflectionAccessorFactory implements AccessorFactory {
+    private static final class QuarkusAccessorFactory implements AccessorFactory {
 
-        private final AccessorFactory delegate = AccessorFactory.reflection();
+        private final AccessorFactory delegate;
+
+        public QuarkusAccessorFactory(AccessorFactory accessorFactory) {
+            delegate = accessorFactory;
+        }
 
         @Override
         public <T> Instantiator<T> instantiator(Constructor<T> constructor) {
@@ -58,13 +61,15 @@ final class QuarkusPropertyAccessorService implements PropertyAccessorService {
 
         @Override
         public MultiValueReader multiValueReader(Class<?> declaringClass, Member... members) {
-            // The reflection bulk reader does not preserve UNFETCHED_PROPERTY for lazy fields.
+            // Multi-value accessors are not generated at build time yet,
+            // and the reflection bulk reader does not preserve UNFETCHED_PROPERTY for lazy fields.
             return null;
         }
 
         @Override
         public MultiValueWriter multiValueWriter(Class<?> declaringClass, Member... members) {
-            // The reflection bulk writer cannot assign UNFETCHED_PROPERTY to lazy fields.
+            // Multi-value accessors are not generated at build time yet,
+            // and the reflection bulk writer cannot assign UNFETCHED_PROPERTY to lazy fields.
             return null;
         }
     }

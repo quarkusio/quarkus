@@ -646,6 +646,31 @@
                 <configuration>
                     <escapeString>\</escapeString>
                 </configuration>
+                <executions>
+                    <!-- copy the Maven wrapper to make sure we don't inherit the configuration from the root .mvn in the nested projects -->
+                    <execution>
+                        <id>copy-maven-wrapper</id>
+                        <phase>process-resources</phase>
+                        <goals>
+                            <goal>copy-resources</goal>
+                        </goals>
+                        <configuration>
+                            <propertiesEncoding>UTF-8</propertiesEncoding>
+                            <outputDirectory>${project.build.directory}/</outputDirectory>
+                            <resources>
+                                <resource>
+                                    <directory>${maven.multiModuleProjectDirectory}/</directory>
+                                    <includes>
+                                        <include>.mvn/wrapper/**</include>
+                                        <include>mvnw</include>
+                                        <include>mvnw.cmd</include>
+                                    </includes>
+                                    <filtering>false</filtering>
+                                </resource>
+                            </resources>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>

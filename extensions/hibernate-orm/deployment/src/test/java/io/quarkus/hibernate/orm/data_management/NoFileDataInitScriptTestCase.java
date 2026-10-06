@@ -1,13 +1,15 @@
 package io.quarkus.hibernate.orm.data_management;
 
-import org.hamcrest.Matchers;
+import static org.assertj.core.api.Assertions.assertThat;
+
+import jakarta.inject.Inject;
+
+import org.hibernate.SessionFactory;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.hibernate.orm.InitScriptTestResource;
 import io.quarkus.hibernate.orm.MyEntity;
 import io.quarkus.test.QuarkusExtensionTest;
-import io.restassured.RestAssured;
 
 /**
  * Setting the data init script to "no-file" disables the default one (data.sql).
@@ -19,18 +21,24 @@ public class NoFileDataInitScriptTestCase {
                     .addAsResource("application.properties")
                     .addAsResource("import.sql")
                     .addAsResource("data.sql")
-                    .addClasses(InitScriptTestResource.class, MyEntity.class))
+                    .addClasses(MyEntity.class))
             .overrideConfigKey("quarkus.hibernate-orm.data-management.init-script", "no-file");
+
+    @Inject
+    SessionFactory sessionFactory;
 
     @Test
     public void dataInitScriptNotExecuted() {
-        RestAssured.when().get("/orm-init-script/10").then()
-                .body(Matchers.is(InitScriptTestResource.NO_ENTITY_MESSAGE));
+        assertThat(entityName(10)).isNull();
     }
 
     @Test
     public void schemaInitScriptExecuted() {
-        RestAssured.when().get("/orm-init-script/1").then()
-                .body(Matchers.is("default sql load script entity"));
+        assertThat(entityName(1)).isEqualTo("default sql load script entity");
+    }
+
+    private String entityName(long id) {
+        MyEntity entity = sessionFactory.fromTransaction(session -> session.find(MyEntity.class, id));
+        return entity == null ? null : entity.getName();
     }
 }

@@ -6,7 +6,6 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.hibernate.orm.InitScriptTestResource;
 import io.quarkus.hibernate.orm.MyEntity;
 import io.quarkus.test.QuarkusExtensionTest;
 
@@ -19,7 +18,7 @@ public class DeprecatedSqlLoadScriptAndDataManagementStrategyTestCase {
     @RegisterExtension
     static QuarkusExtensionTest runner = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
-                    .addClasses(MyEntity.class, InitScriptTestResource.class)
+                    .addClasses(MyEntity.class)
                     .addAsResource("application-import-load-script-test.properties", "application.properties")
                     .addAsResource("import.sql"))
             .overrideRuntimeConfigKey("quarkus.hibernate-orm.data-management.strategy", "none")

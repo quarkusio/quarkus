@@ -52,10 +52,8 @@ public class OpenTelemetrySignalsTest {
     static final QuarkusExtensionTest test = new QuarkusExtensionTest()
             .withApplicationRoot(root -> root
                     .addClasses(PingReceivers.class, Ping.class, Urgent.class, InMemorySpanExporterProducer.class)
-                    // always_on: record and export every span so the assertions can find them; the short batch
-                    // processor delays make exported spans show up quickly in the in-memory exporter
+                    // the short batch processor delays make exported spans show up quickly in the in-memory exporter
                     .addAsResource(new StringAsset("""
-                            quarkus.otel.traces.sampler=always_on
                             quarkus.otel.bsp.export.timeout=1s
                             quarkus.otel.bsp.schedule.delay=50
                             """), "application.properties"))

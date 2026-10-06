@@ -135,22 +135,26 @@ public class TracerProcessor {
     }
 
     /**
-     * Checks the {@link LaunchModeBuildItem} to see if we are in {@linkplain LaunchMode#DEVELOPMENT development mode}.
+     * Checks the {@link LaunchModeBuildItem} to see if we are in {@linkplain LaunchMode#DEVELOPMENT development mode} or
+     * {@linkplain LaunchMode#TEST test mode}.
      * <p>
      * Checks the {@link TracesBuildConfig#sampler()} for a value of {@code parentbased_traceidratio} or
      * {@code traceidration}. If set to one of those values, the {@code quarkus.otel.traces.sampler.arg} is defaulted
-     * to 100% (1.0d) in dev mode.
+     * to 100% (1.0d) in dev and test mode.
      * </p>
      *
      * @param launchMode the current launch mode
-     * @param buildConfig the build configuration used to determine if the sampler arg needs to be overridden in dev mode
+     * @param buildConfig the build configuration used to determine if the sampler arg needs to be overridden
      *
-     * @return a new build item setting the sampler argument to 100% if we are in dev mode, otherwise returns {@code null}
+     * @return a new build item setting the sampler argument to 100% if we are in dev or test mode, otherwise returns
+     *         {@code null}
      */
     @BuildStep
-    RunTimeConfigurationDefaultBuildItem setDevModeSamplerDefault(LaunchModeBuildItem launchMode, OTelBuildConfig buildConfig) {
-        // In dev mode, use 100% sampling for better debugging experience
-        if (launchMode.getLaunchMode() == LaunchMode.DEVELOPMENT) {
+    RunTimeConfigurationDefaultBuildItem setDevAndTestModeSamplerDefault(LaunchModeBuildItem launchMode,
+            OTelBuildConfig buildConfig) {
+        // In dev and test mode, use 100% sampling for better debugging and deterministic test assertions
+        final LaunchMode mode = launchMode.getLaunchMode();
+        if (mode == LaunchMode.DEVELOPMENT || mode == LaunchMode.TEST) {
             final String sampler = buildConfig.traces().sampler();
             if (SamplerType.PARENT_BASED_TRACE_ID_RATIO.getValue().equals(sampler)
                     || SamplerType.TRACE_ID_RATIO.getValue().equals(sampler)) {

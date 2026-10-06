@@ -881,7 +881,7 @@ public class ConfigGenerationBuildStep {
                 Deprecated deprecated = entry.getValue().getMethod().getAnnotation(Deprecated.class);
                 if (deprecated != null) {
                     // TODO - add javadoc message
-                    deprecatedProperties.put(entry.getKey(), null);
+                    deprecatedProperties.put(entry.getKey(), "");
                 }
             }
         }

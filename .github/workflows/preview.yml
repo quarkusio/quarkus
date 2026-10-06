@@ -86,7 +86,7 @@ jobs:
           restore-keys: ${{ runner.os }}-npm-
 
       - name: Build with Maven
-        run: QUARKUS_ROQ_GENERATOR_BATCH=true QUARKUS_PROFILE=only-latest-guides mvn -B package quarkus:run -DskipTests
+        run: QUARKUS_ROQ_GENERATOR_BATCH=true QUARKUS_PROFILE=only-latest-guides ./mvnw -B package quarkus:run -DskipTests
 
       - name: Reduce the size of the website to be compatible with surge
         run: |

@@ -2,7 +2,20 @@ def isWindows() {
     System.getProperty('os.name').toLowerCase().contains('win')
 }
 
+def findMvnw() {
+    def dir = projectDir
+    while (dir != null) {
+        def wrapper = new File(dir, isWindows() ? 'mvnw.cmd' : 'mvnw')
+        if (wrapper.exists()) {
+            return wrapper.absolutePath
+        }
+        dir = dir.parentFile
+    }
+    throw new GradleException('Could not find mvnw in any parent directory of ' + projectDir)
+}
+
 tasks.register('publishToMavenLocal', Exec) {
-    commandLine = isWindows() ? ['cmd', '/c', 'mvn', '-q', 'clean', 'install']
-                              : ['mvn', '-q', 'clean', 'install']
+    def mvnw = findMvnw()
+    commandLine = isWindows() ? ['cmd', '/c', mvnw, '-q', 'clean', 'install']
+                              : [mvnw, '-q', 'clean', 'install']
 }

@@ -1,0 +1,19 @@
+// Source: {{source}}
+// tag::four-x-plugin-management[]
+pluginManagement {
+    plugins {
+        id 'io.quarkus.extension' version "${quarkusPluginVersion}"
+        id 'io.quarkus.extension.deployment' version "${quarkusPluginVersion}"
+    }
+}
+// end::four-x-plugin-management[]
+
+dependencyResolutionManagement {
+    repositories {
+        mavenCentral()
+        mavenLocal()
+    }
+}
+
+rootProject.name = 'acme-extension'
+include 'runtime', 'deployment'

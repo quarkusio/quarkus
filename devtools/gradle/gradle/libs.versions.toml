@@ -2,13 +2,17 @@
 plugin-publish = "2.2.0"
 
 kotlin = "2.4.10"
+ksp = "2.3.9"
 smallrye-config = "4.0.0"
 json-schema-validator = "2.0.1"
+
+maven-xml = "4.0.0-rc-5"
 
 junit = "6.1.3"
 assertj = "3.27.7"
 
 [plugins]
+kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
 plugin-publish = { id = "com.gradle.plugin-publish", version.ref = "plugin-publish" }
 
 [libraries]
@@ -19,6 +23,9 @@ quarkus-core-deployment = { module = "io.quarkus:quarkus-core-deployment" }
 quarkus-devtools-common = { module = "io.quarkus:quarkus-devtools-common" }
 quarkus-devtools-testing = { module = "io.quarkus:quarkus-devtools-testing" }
 quarkus-project-core-extension-codestarts = { module = "io.quarkus:quarkus-project-core-extension-codestarts" }
+
+# Plexus XML 4, pulled in by Quarkus devtools dependencies, uses Maven 4's XmlService.
+maven-xml = { module = "org.apache.maven:maven-xml", version.ref = "maven-xml" }
 
 kotlin-gradle-plugin-api = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin-api", version.ref = "kotlin" }
 smallrye-config-yaml = { module = "io.smallrye.config:smallrye-config-source-yaml", version.ref = "smallrye-config" }

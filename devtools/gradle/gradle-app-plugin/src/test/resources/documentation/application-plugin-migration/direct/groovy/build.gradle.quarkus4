@@ -1,0 +1,130 @@
+// Source: {{source}}
+
+// tag::direct-standalone-plugins[]
+plugins {
+    id 'io.quarkus.application'
+}
+
+group = 'org.acme'
+version = '1.0.0'
+
+def quarkusPlatformVersion = providers.gradleProperty('quarkusPlatformVersion').get()
+def quarkusPlatformGroupId = providers.gradleProperty('quarkusPlatformGroupId')
+    .orElse('io.quarkus.platform').get()
+
+dependencies {
+    implementation enforcedPlatform("${quarkusPlatformGroupId}:quarkus-bom:${quarkusPlatformVersion}")
+    implementation 'io.quarkus:quarkus-rest'
+    quarkusDev 'io.quarkus:quarkus-jdbc-h2'
+
+    testImplementation 'io.quarkus:quarkus-junit'
+    testImplementation 'io.rest-assured:rest-assured'
+}
+// end::direct-standalone-plugins[]
+
+// tag::direct-named-builds[]
+quarkusApplication {
+    builds {
+        fastJar('service') {
+            outputName.set('acme-service')
+            participatesInAssemble.set(true)
+            manifest {
+                attributes.put('Implementation-Title', 'Acme service')
+                sections {
+                    section('Specification') {
+                        attributes.put('Specification-Version', '1.0')
+                    }
+                }
+            }
+        }
+        uberJar('ignoredEntries') {
+            outputName.set('acme-ignored-entries')
+            quarkusBuildProperties.put(
+                'quarkus.package.jar.user-configured-ignored-entries',
+                'META-INF/migration-ignored.txt'
+            )
+        }
+        nativeExecutable('native') {
+            nativeArguments.put('quarkus.native.container-build', 'true')
+        }
+    }
+}
+// end::direct-named-builds[]
+
+// tag::direct-tests[]
+// The standard test task receives Quarkus test setup automatically.
+testing {
+    suites {
+        integrationTest(org.gradle.api.plugins.jvm.JvmTestSuite) {
+            forQuarkusIntegrationTests 'service'
+        }
+    }
+}
+// end::direct-tests[]
+
+// tag::direct-config-and-forks[]
+quarkusApplication {
+    quarkusBuildProperties.put('quarkus.http.test-port', '0')
+    configInputs {
+        projectProperties {
+            names.add('deploymentTarget')
+        }
+        systemProperties {
+            prefixes.add('quarkus.')
+        }
+        environmentVariables {
+            names.add('CI')
+        }
+    }
+    codegen {
+        providers.add('openapi')
+        inputNames.add('openapi')
+    }
+    buildForkOptions {
+        maxHeapSize.set('512m')
+        systemProperty 'user.language', 'en'
+    }
+    codeGenForkOptions {
+        maxHeapSize.set('256m')
+    }
+}
+// end::direct-config-and-forks[]
+
+if (providers.gradleProperty('verifyMigrationDocumentation').isPresent()) {
+    def serviceConfig = tasks.named('quarkusServiceShowEffectiveConfig').get()
+    assert serviceConfig.outputName.get() == 'acme-service'
+    assert serviceConfig.manifestConfigProperties.get()[
+        'quarkus.package.jar.manifest.attributes."Implementation-Title"'
+    ] == 'Acme service'
+    assert serviceConfig.manifestConfigProperties.get()[
+        'quarkus.package.jar.manifest.sections."Specification"."Specification-Version"'
+    ] == '1.0'
+
+    def ignoredConfig = tasks.named('quarkusIgnoredEntriesShowEffectiveConfig').get()
+    assert ignoredConfig.quarkusBuildProperties.get()[
+        'quarkus.package.jar.user-configured-ignored-entries'
+    ] == 'META-INF/migration-ignored.txt'
+
+    assert tasks.findByName('assemble') != null
+    assert tasks.findByName('quarkusServiceBuild') != null
+    assert tasks.findByName('quarkusIgnoredEntriesBuild') != null
+    assert tasks.findByName('quarkusNativeBuild') != null
+    assert tasks.findByName('quarkusServiceRun') != null
+    assert tasks.findByName('quarkusServiceIntegrationTestMetadata') != null
+    assert tasks.findByName('integrationTest') != null
+    assert tasks.findByName('quarkusNativeNativeTest') != null
+
+    def assemble = tasks.named('assemble').get()
+    def assembleDependencies = assemble.taskDependencies.getDependencies(assemble)*.name as Set
+    assert assembleDependencies.contains('quarkusServiceBuild')
+    assert !assembleDependencies.contains('quarkusIgnoredEntriesBuild')
+    assert !assembleDependencies.contains('quarkusNativeBuild')
+
+    def integrationTest = tasks.named('integrationTest').get()
+    def integrationTestDependencies = integrationTest.taskDependencies.getDependencies(integrationTest)*.name as Set
+    assert integrationTestDependencies.contains('quarkusServiceIntegrationTestMetadata')
+
+    def serviceRun = tasks.named('quarkusServiceRun').get()
+    def serviceRunDependencies = serviceRun.taskDependencies.getDependencies(serviceRun)*.name as Set
+    assert serviceRunDependencies.contains('quarkusServiceBuild')
+}

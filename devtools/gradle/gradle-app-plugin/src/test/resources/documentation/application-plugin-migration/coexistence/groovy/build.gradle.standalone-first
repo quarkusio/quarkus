@@ -1,0 +1,7 @@
+// Source: {{source}}
+// tag::standalone-first-rejected[]
+plugins {
+    id 'io.quarkus.application'
+    id 'io.quarkus'
+}
+// end::standalone-first-rejected[]

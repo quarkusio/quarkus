@@ -17,7 +17,6 @@ public class JandexMultiModuleTest extends QuarkusGradleWrapperTestBase {
 
     @Test
     public void testBasicMultiModuleBuildJandex() throws Exception {
-        gradleConfigurationCache(true);
         jandexTest("jandex-basic-multi-module-project-vlsi", ":common:processJandexIndex");
     }
 

@@ -19,6 +19,7 @@
     <properties>
         <artifactFilePrefix>gradle-extension-plugin</artifactFilePrefix>
         <maven.deploy.skip>true</maven.deploy.skip>
+        <skip.gradle.implementation.publication>false</skip.gradle.implementation.publication>
     </properties>
 
     <dependencies>

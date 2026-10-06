@@ -3,6 +3,10 @@ plugins {
     id 'io.quarkus.extension'
 }
 
+quarkusExtension {
+    deploymentArtifact = 'org.acme:deployment:0.0.1-SNAPSHOT'
+}
+
 dependencies {
     implementation platform("${quarkusPlatformGroupId}:${quarkusPlatformArtifactId}:${quarkusPlatformVersion}")
     implementation 'io.quarkus:quarkus-arc'

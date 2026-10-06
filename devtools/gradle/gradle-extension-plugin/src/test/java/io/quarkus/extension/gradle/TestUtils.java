@@ -1,11 +1,10 @@
 package io.quarkus.extension.gradle;
 
+import static io.quarkus.gradle.testing.BaseGradleTest.defaultGradleArguments;
+import static io.quarkus.gradle.testing.BaseGradleTest.writeFile;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
@@ -24,6 +23,8 @@ import tools.jackson.databind.node.ObjectNode;
 import tools.jackson.dataformat.yaml.YAMLMapper;
 
 public class TestUtils {
+
+    private static final String GENERATED_EXTENSION_RESOURCES = "build/generated/resources/quarkus-extension/main";
 
     public static String getDefaultGradleBuildFileContent(boolean disableValidation, List<String> implementationDependencies,
             String customPluginConfiguration)
@@ -61,7 +62,7 @@ public class TestUtils {
         }
 
         return "plugins {\n" +
-                "id 'java'\n" +
+                "id 'io.quarkus.extension.deployment'\n" +
                 "}\n" +
                 "group = 'org.acme'\n" +
                 "version = '1.0.0'\n" +
@@ -77,11 +78,11 @@ public class TestUtils {
                 "}\n";
     }
 
-    public static BuildResult runExtensionDescriptorTask(File testProjectDir) {
+    public static BuildResult runExtensionDescriptorTask(Path testProjectDir) {
         BuildResult extensionDescriptorResult = GradleRunner.create()
                 .withPluginClasspath()
-                .withProjectDir(testProjectDir)
-                .withArguments(QuarkusExtensionPlugin.EXTENSION_DESCRIPTOR_TASK_NAME, "-S")
+                .withProjectDir(testProjectDir.toFile())
+                .withArguments(defaultGradleArguments(QuarkusExtensionPlugin.EXTENSION_DESCRIPTOR_TASK_NAME, "-S"))
                 .build();
 
         assertThat(extensionDescriptorResult.task(":" + QuarkusExtensionPlugin.EXTENSION_DESCRIPTOR_TASK_NAME).getOutcome())
@@ -89,37 +90,39 @@ public class TestUtils {
         return extensionDescriptorResult;
     }
 
-    public static void createExtensionProject(File testProjectDir, boolean disableValidation, List<String> runtimeDependencies,
-            List<String> deploymentDependencies) throws IOException {
-        File runtimeModule = new File(testProjectDir, "runtime");
-        runtimeModule.mkdir();
-        writeFile(new File(runtimeModule, "build.gradle"),
-                getDefaultGradleBuildFileContent(disableValidation, runtimeDependencies, ""));
-        File runtimeTestFile = new File(runtimeModule, "src/main/java/runtime/Test.java");
-        runtimeTestFile.getParentFile().mkdirs();
-        writeFile(runtimeTestFile, "package runtime; public class Test {}");
-
-        File deploymentModule = new File(testProjectDir, "deployment");
-        deploymentModule.mkdir();
-        writeFile(new File(deploymentModule, "build.gradle"), getDefaultDeploymentBuildFileContent(deploymentDependencies));
-        File deploymentTestFile = new File(deploymentModule, "src/main/java/deployment/Test.java");
-        deploymentTestFile.getParentFile().mkdirs();
-        writeFile(deploymentTestFile, "package deployment; public class Test {}");
-
-        writeFile(new File(testProjectDir, "settings.gradle"), "include 'runtime', 'deployment'");
-
+    public static Path generatedExtensionResources(Path testProjectDir) {
+        return testProjectDir.resolve(GENERATED_EXTENSION_RESOURCES);
     }
 
-    public static void writeFile(File destination, String content) throws IOException {
-        BufferedWriter output = null;
-        try {
-            output = new BufferedWriter(new FileWriter(destination));
-            output.write(content);
-        } finally {
-            if (output != null) {
-                output.close();
-            }
-        }
+    public static void createExtensionProject(Path testProjectDir, boolean disableValidation, List<String> runtimeDependencies,
+            List<String> deploymentDependencies) throws IOException {
+        createExtensionProject(testProjectDir, disableValidation, runtimeDependencies, deploymentDependencies,
+                "deploymentArtifact = 'org.acme:test-deployment:1.0.0'\n");
+    }
+
+    public static void createExtensionProjectWithLocalDeployment(Path testProjectDir, boolean disableValidation,
+            List<String> runtimeDependencies, List<String> deploymentDependencies) throws IOException {
+        createExtensionProject(testProjectDir, disableValidation, runtimeDependencies, deploymentDependencies, "");
+    }
+
+    private static void createExtensionProject(Path testProjectDir, boolean disableValidation,
+            List<String> runtimeDependencies, List<String> deploymentDependencies, String customPluginConfiguration)
+            throws IOException {
+        var runtimeModule = testProjectDir.resolve("runtime");
+        var runtimeTestFile = runtimeModule.resolve("src/main/java/runtime/Test.java");
+        var deploymentModule = testProjectDir.resolve("deployment");
+        var deploymentTestFile = deploymentModule.resolve("src/main/java/deployment/Test.java");
+        Files.createDirectories(runtimeTestFile.getParent());
+        Files.createDirectories(deploymentTestFile.getParent());
+
+        writeFile(runtimeModule.resolve("build.gradle"),
+                getDefaultGradleBuildFileContent(disableValidation, runtimeDependencies, customPluginConfiguration));
+        writeFile(runtimeTestFile, "package runtime; public class Test {}");
+
+        writeFile(deploymentModule.resolve("build.gradle"), getDefaultDeploymentBuildFileContent(deploymentDependencies));
+        writeFile(deploymentTestFile, "package deployment; public class Test {}");
+
+        writeFile(testProjectDir.resolve("settings.gradle"), "include 'runtime', 'deployment'");
     }
 
     public static Properties readPropertyFile(Path propertyFile) throws IOException {

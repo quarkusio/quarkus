@@ -51,7 +51,8 @@ final class QuarkusPropertyAccessorService implements PropertyAccessorService {
 
         @Override
         public ValueWriter valueWriter(Field field) {
-            return delegate.valueWriter(field);
+            // TODO: Remove this with the next Hibernate ORM 8.0.0.Beta3 release
+            return field.getDeclaringClass().isRecord() ? null : delegate.valueWriter(field);
         }
 
         @Override

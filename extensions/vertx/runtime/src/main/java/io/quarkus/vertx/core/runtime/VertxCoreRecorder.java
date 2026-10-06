@@ -249,6 +249,8 @@ public class VertxCoreRecorder {
                 // classloader pins the per-session runtime QuarkusClassLoader), leaking a classloader
                 // per dev-mode test class and eventually exhausting metaspace on JDK 21.
                 vertx = null;
+                VertxMDC.INSTANCE.clear();
+                LateBoundMDCProvider.setMDCProviderDelegate(null);
             }
         }
     }

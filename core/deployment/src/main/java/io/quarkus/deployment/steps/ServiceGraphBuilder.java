@@ -10,6 +10,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Stream;
 
 import io.quarkus.core.deployment.service.impl.TransliteratedAction;
 import io.quarkus.deployment.builditem.MainBytecodeRecorderBuildItem;
@@ -539,15 +540,16 @@ final class ServiceGraphBuilder {
                 return actionDeps;
             }
             if (actionDeps.isEmpty()) {
-                return new ArrayList<>(stepDeps);
+                return stepDeps.stream()
+                        .sorted(Comparator.comparing(n -> n.name))
+                        .toList();
             }
-            List<MutableNode> result = new ArrayList<>(actionDeps);
-            for (MutableNode sd : stepDeps) {
-                if (!actionDeps.contains(sd)) {
-                    result.add(sd);
-                }
-            }
-            return result;
+            return Stream.concat(
+                    actionDeps.stream(),
+                    stepDeps.stream()
+                            .sorted(Comparator.comparing(n -> n.name))
+                            .filter(n -> !actionDeps.contains(n)))
+                    .toList();
         }
     }
 

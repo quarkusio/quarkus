@@ -48,7 +48,7 @@ public final class ConfigDiagnostic {
     }
 
     static void deprecated(ConfigValue configValue, String javadoc) {
-        if (javadoc != null) {
+        if (javadoc != null && !javadoc.isEmpty()) {
             log.warnf("""
                     Deprecated configuration property %s provided in %s; \
                     this property is deprecated and should not be used anymore; Deprecated message: %s""",

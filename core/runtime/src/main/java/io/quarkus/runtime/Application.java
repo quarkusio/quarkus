@@ -10,7 +10,6 @@ import org.wildfly.common.lock.Locks;
 
 import io.quarkus.bootstrap.runner.Timing;
 import io.quarkus.dev.appstate.ApplicationStateNotification;
-import io.quarkus.runtime.shutdown.ShutdownRecorder;
 import io.quarkus.value.registry.ValueRegistry;
 import io.smallrye.common.constraint.Assert;
 
@@ -215,7 +214,6 @@ public abstract class Application implements Closeable {
         }
         Timing.staticInitStopped(auxiliaryApplication);
         try {
-            ShutdownRecorder.runShutdown();
             doStop();
         } finally {
             if (!auxiliaryApplication) {

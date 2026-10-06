@@ -37,4 +37,72 @@ public interface StartContext {
      * @param stopper the stop handler (must not be {@code null})
      */
     void onStopAsync(Consumer<AsyncStopContext> stopper);
+
+    /**
+     * Register a synchronous graceful pre-shutdown handler.
+     * During the pre-shutdown phase the application should continue to function
+     * normally, but notify external systems (such as readiness probes) that it
+     * is about to shut down.
+     * The handler is considered complete when it returns.
+     * If an exception is thrown, it will be logged and the handler will be
+     * considered complete.
+     *
+     * @param handler the pre-shutdown handler (must not be {@code null})
+     */
+    default void onGracefulPreShutdown(Runnable handler) {
+        onGracefulPreShutdownAsync(ctxt -> {
+            try {
+                handler.run();
+            } finally {
+                ctxt.done();
+            }
+        });
+    }
+
+    /**
+     * Register an asynchronous graceful pre-shutdown handler.
+     * During the pre-shutdown phase the application should continue to function
+     * normally, but notify external systems (such as readiness probes) that it
+     * is about to shut down.
+     * The context passed to the handler must be used to signal completion via
+     * {@link AsyncGracefulShutdownContext#done()}.
+     * The handler must not throw exceptions, because any thrown exceptions
+     * cannot be captured.
+     *
+     * @param handler the pre-shutdown handler (must not be {@code null})
+     */
+    void onGracefulPreShutdownAsync(Consumer<AsyncGracefulShutdownContext> handler);
+
+    /**
+     * Register a synchronous graceful shutdown handler.
+     * During the shutdown phase the application should reject new external
+     * requests but allow existing in-flight requests to complete.
+     * The handler is considered complete when it returns.
+     * If an exception is thrown, it will be logged and the handler will be
+     * considered complete.
+     *
+     * @param handler the shutdown handler (must not be {@code null})
+     */
+    default void onGracefulShutdown(Runnable handler) {
+        onGracefulShutdownAsync(ctxt -> {
+            try {
+                handler.run();
+            } finally {
+                ctxt.done();
+            }
+        });
+    }
+
+    /**
+     * Register an asynchronous graceful shutdown handler.
+     * During the shutdown phase the application should reject new external
+     * requests but allow existing in-flight requests to complete.
+     * The context passed to the handler must be used to signal completion via
+     * {@link AsyncGracefulShutdownContext#done()}.
+     * The handler must not throw exceptions, because any thrown exceptions
+     * cannot be captured.
+     *
+     * @param handler the shutdown handler (must not be {@code null})
+     */
+    void onGracefulShutdownAsync(Consumer<AsyncGracefulShutdownContext> handler);
 }

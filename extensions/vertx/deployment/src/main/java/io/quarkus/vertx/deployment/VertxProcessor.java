@@ -37,7 +37,6 @@ import io.quarkus.arc.processor.InvokerBuilder;
 import io.quarkus.arc.processor.InvokerInfo;
 import io.quarkus.arc.processor.KotlinUtils;
 import io.quarkus.arc.spi.NonBlockingProvider;
-import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.core.Phase;
 import io.quarkus.core.deployment.service.ServiceRegistrar;
 import io.quarkus.deployment.Capabilities;
@@ -279,11 +278,9 @@ class VertxProcessor {
         NativeImageConfigBuildItem.Builder builder = NativeImageConfigBuildItem.builder();
 
         builder.addRuntimeInitializedClass("io.vertx.core.http.impl.http1.Http1ServerResponse")
-                .addRuntimeInitializedClass("io.vertx.core.parsetools.impl.RecordParserImpl");
-
-        if (QuarkusClassLoader.isClassPresentAtRuntime("io.vertx.ext.web.client.impl.MultipartFormUpload")) {
-            builder.addRuntimeInitializedClass("io.vertx.ext.web.client.impl.MultipartFormUpload");
-        }
+                .addRuntimeInitializedClass("io.vertx.core.parsetools.impl.RecordParserImpl")
+                // Holds a static UnpooledByteBufAllocator which must not end up in the image heap
+                .addRuntimeInitializedClass("io.vertx.core.http.impl.ClientMultipartFormUpload");
 
         return builder.build();
     }

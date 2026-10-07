@@ -281,11 +281,12 @@ public class ResteasyReactiveScanner {
         // handle abstract classes
         var abstractClasses = scannedResources.values().stream().filter(ClassInfo::isAbstract).toList();
         abstractClasses.forEach(abstractScannedResource -> {
-            Collection<ClassInfo> allSubclasses = index.getAllKnownSubclasses(abstractScannedResource.name());
-            if (allSubclasses.size() != 1) {
+            List<ClassInfo> concreteSubclasses = index.getAllKnownSubclasses(abstractScannedResource.name()).stream()
+                    .filter(c -> !c.isAbstract()).toList();
+            if (concreteSubclasses.size() != 1) {
                 return; // don't do anything with this case as it's not evident how it's supposed to be handled
             }
-            ClassInfo subclass = allSubclasses.iterator().next();
+            ClassInfo subclass = concreteSubclasses.get(0);
             if (!scannedResources.containsKey(subclass.name())) {
                 scannedResources.put(subclass.name(), subclass);
                 scannedResources.remove(abstractScannedResource.name());

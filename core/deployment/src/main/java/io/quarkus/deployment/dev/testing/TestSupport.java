@@ -446,39 +446,8 @@ public class TestSupport implements TestController {
         final AtomicLong testCount = new AtomicLong();
         List<TestRunResults> allResults = new ArrayList<>();
         for (var module : moduleRunners) {
-            runnables.add(module.prepare(classScanResult, reRunFailures, runId, new TestRunListener() {
-                @Override
-                public void runStarted(long toRun) {
-                    testCount.addAndGet(toRun);
-                }
-
-                @Override
-                public void testComplete(TestResult result) {
-                    for (var i : testRunListeners) {
-                        i.testComplete(result);
-                    }
-                }
-
-                @Override
-                public void runComplete(TestRunResults results) {
-                    allResults.add(results);
-                }
-
-                @Override
-                public void runAborted() {
-                    for (var i : testRunListeners) {
-                        i.runAborted();
-                    }
-                }
-
-                @Override
-                public void testStarted(TestIdentifier testIdentifier, String className) {
-                    for (var i : testRunListeners) {
-                        i.testStarted(testIdentifier, className);
-                    }
-                }
-
-            }));
+            runnables.add(module.prepare(classScanResult, reRunFailures, runId,
+                    new ModuleRunListener(testCount, testRunListeners, allResults)));
         }
         for (var i : testRunListeners) {
             i.runStarted(testCount.get());
@@ -559,39 +528,8 @@ public class TestSupport implements TestController {
         final AtomicLong testCount = new AtomicLong();
         List<TestRunResults> allResults = new ArrayList<>();
         for (var module : moduleRunners) {
-            runnables.add(module.prepare(effectiveScanResult, false, runId, new TestRunListener() {
-                @Override
-                public void runStarted(long toRun) {
-                    testCount.addAndGet(toRun);
-                }
-
-                @Override
-                public void testComplete(TestResult result) {
-                    for (var i : testRunListeners) {
-                        i.testComplete(result);
-                    }
-                }
-
-                @Override
-                public void runComplete(TestRunResults results) {
-                    allResults.add(results);
-                }
-
-                @Override
-                public void runAborted() {
-                    for (var i : testRunListeners) {
-                        i.runAborted();
-                    }
-                }
-
-                @Override
-                public void testStarted(TestIdentifier testIdentifier, String className) {
-                    for (var i : testRunListeners) {
-                        i.testStarted(testIdentifier, className);
-                    }
-                }
-
-            }, specificSelection));
+            runnables.add(module.prepare(effectiveScanResult, false, runId,
+                    new ModuleRunListener(testCount, testRunListeners, allResults), specificSelection));
         }
         for (var i : testRunListeners) {
             i.runStarted(testCount.get());
@@ -927,6 +865,61 @@ public class TestSupport implements TestController {
 
         public long getRunning() {
             return running;
+        }
+    }
+
+    /**
+     * Aggregates the run of one module: counts the tests to run, collects the results and forwards the events to the
+     * listeners registered for the whole run.
+     */
+    static final class ModuleRunListener implements TestRunListener {
+
+        private final AtomicLong testCount;
+        private final List<TestRunListener> testRunListeners;
+        private final List<TestRunResults> allResults;
+
+        ModuleRunListener(AtomicLong testCount, List<TestRunListener> testRunListeners, List<TestRunResults> allResults) {
+            this.testCount = testCount;
+            this.testRunListeners = testRunListeners;
+            this.allResults = allResults;
+        }
+
+        @Override
+        public void runStarted(long toRun) {
+            testCount.addAndGet(toRun);
+        }
+
+        @Override
+        public void testComplete(TestResult result) {
+            for (var i : testRunListeners) {
+                i.testComplete(result);
+            }
+        }
+
+        @Override
+        public void runComplete(TestRunResults results) {
+            allResults.add(results);
+        }
+
+        @Override
+        public void runAborted() {
+            for (var i : testRunListeners) {
+                i.runAborted();
+            }
+        }
+
+        @Override
+        public void testStarted(TestIdentifier testIdentifier, String className) {
+            for (var i : testRunListeners) {
+                i.testStarted(testIdentifier, className);
+            }
+        }
+
+        @Override
+        public void dynamicTestRegistered(TestIdentifier testIdentifier) {
+            for (var i : testRunListeners) {
+                i.dynamicTestRegistered(testIdentifier);
+            }
         }
     }
 

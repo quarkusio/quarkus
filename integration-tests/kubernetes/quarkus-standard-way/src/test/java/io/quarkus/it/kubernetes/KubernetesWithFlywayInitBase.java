@@ -11,6 +11,7 @@ import java.util.Optional;
 import io.fabric8.kubernetes.api.model.HasMetadata;
 import io.fabric8.kubernetes.api.model.apps.Deployment;
 import io.fabric8.kubernetes.api.model.batch.v1.Job;
+import io.fabric8.kubernetes.api.model.rbac.Role;
 import io.fabric8.kubernetes.api.model.rbac.RoleBinding;
 
 public class KubernetesWithFlywayInitBase {
@@ -24,6 +25,7 @@ public class KubernetesWithFlywayInitBase {
         List<HasMetadata> kubernetesList = DeserializationUtil.deserializeAsList(kubernetesDir.resolve("kubernetes.yml"));
 
         String jobName = name + "-" + taskName + "-init";
+        String roleName = name + "-view-jobs";
         Optional<Deployment> deployment = kubernetesList.stream()
                 .filter(d -> "Deployment".equals(d.getKind())
                         && name.equals(d.getMetadata().getName()))
@@ -80,9 +82,21 @@ public class KubernetesWithFlywayInitBase {
             });
         });
 
+        Optional<Role> role = kubernetesList.stream()
+                .filter(r -> r instanceof Role && roleName.equals(r.getMetadata().getName()))
+                .map(r -> (Role) r).findFirst();
+        assertTrue(role.isPresent());
+        assertThat(role.get().getRules()).singleElement().satisfies(rule -> {
+            assertThat(rule.getApiGroups()).containsExactly("batch");
+            assertThat(rule.getResources()).containsExactly("jobs");
+            assertThat(rule.getVerbs()).containsExactly("get");
+        });
+
         Optional<RoleBinding> roleBinding = kubernetesList.stream().filter(
-                r -> r instanceof RoleBinding && (name + "-view-jobs").equals(r.getMetadata().getName()))
+                r -> r instanceof RoleBinding && roleName.equals(r.getMetadata().getName()))
                 .map(r -> (RoleBinding) r).findFirst();
         assertTrue(roleBinding.isPresent());
+        assertThat(roleBinding.get().getRoleRef().getName()).isEqualTo(roleName);
+        assertThat(roleBinding.get().getRoleRef().getKind()).isEqualTo("Role");
     }
 }

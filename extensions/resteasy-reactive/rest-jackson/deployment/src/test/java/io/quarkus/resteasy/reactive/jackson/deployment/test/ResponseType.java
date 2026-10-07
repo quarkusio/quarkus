@@ -16,8 +16,7 @@ public enum ResponseType {
     /**
      * Returns {@link Multi} with DTOs.
      */
-    // TODO: enable when https://github.com/quarkusio/quarkus/issues/40447 gets fixed
-    //MULTI(true, "multi"),
+    MULTI(true, "multi"),
     /**
      * Returns {@link Uni} with DTOs.
      */

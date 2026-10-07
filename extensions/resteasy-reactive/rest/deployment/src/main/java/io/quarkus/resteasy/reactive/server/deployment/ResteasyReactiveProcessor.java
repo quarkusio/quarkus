@@ -92,7 +92,6 @@ import org.jboss.resteasy.reactive.common.processor.AdditionalWriters;
 import org.jboss.resteasy.reactive.common.processor.DefaultProducesHandler;
 import org.jboss.resteasy.reactive.common.processor.EndpointIndexer;
 import org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames;
-import org.jboss.resteasy.reactive.common.processor.TargetJavaVersion;
 import org.jboss.resteasy.reactive.common.processor.scanning.ApplicationScanningResult;
 import org.jboss.resteasy.reactive.common.processor.scanning.ResourceScanningResult;
 import org.jboss.resteasy.reactive.common.processor.scanning.ResteasyReactiveParameterContainerScanner;
@@ -179,7 +178,6 @@ import io.quarkus.deployment.builditem.RecordableConstructorBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyBuildItem;
-import io.quarkus.deployment.pkg.builditem.CompiledJavaVersionBuildItem;
 import io.quarkus.deployment.recording.RecorderContext;
 import io.quarkus.deployment.util.ServiceUtil;
 import io.quarkus.gizmo.ClassCreator;
@@ -234,7 +232,6 @@ import io.quarkus.resteasy.reactive.server.spi.MethodScannerBuildItem;
 import io.quarkus.resteasy.reactive.server.spi.NonBlockingReturnTypeBuildItem;
 import io.quarkus.resteasy.reactive.server.spi.PreExceptionMapperHandlerBuildItem;
 import io.quarkus.resteasy.reactive.server.spi.ResumeOn404BuildItem;
-import io.quarkus.resteasy.reactive.server.spi.TargetJavaVersionBuildItem;
 import io.quarkus.resteasy.reactive.spi.CustomExceptionMapperBuildItem;
 import io.quarkus.resteasy.reactive.spi.DynamicFeatureBuildItem;
 import io.quarkus.resteasy.reactive.spi.EndpointValidationPredicatesBuildItem;
@@ -556,13 +553,11 @@ public class ResteasyReactiveProcessor {
             List<MethodScannerBuildItem> methodScanners,
             List<AnnotationsTransformerBuildItem> annotationTransformerBuildItems,
             List<ContextTypeBuildItem> contextTypeBuildItems,
-            CompiledJavaVersionBuildItem compiledJavaVersionBuildItem,
             ResourceInterceptorsBuildItem resourceInterceptorsBuildItem,
             Capabilities capabilities,
             Optional<AllowNotRestParametersBuildItem> allowNotRestParametersBuildItem,
             List<EndpointValidationPredicatesBuildItem> validationPredicatesBuildItems,
-            List<GeneratedJaxRsResourceBuildItem> generatedJaxRsResourcesBuildItems,
-            Optional<TargetJavaVersionBuildItem> maybeTargetJavaVersionBuildItem) {
+            List<GeneratedJaxRsResourceBuildItem> generatedJaxRsResourcesBuildItems) {
 
         if (resourceScanningResultBuildItem.isEmpty()) {
             // no detected @Path, bail out
@@ -748,8 +743,6 @@ public class ResteasyReactiveProcessor {
                     .setApplicationClassPredicate(applicationClassPredicate)
                     .setValidateEndpoint(validationPredicatesBuildItems.stream().map(item -> item.getPredicate())
                             .toList())
-                    .setTargetJavaVersion(
-                            determineTargetJavaVersion(compiledJavaVersionBuildItem, maybeTargetJavaVersionBuildItem))
                     .setIsDisabledCreator(new Function<>() {
                         @Override
                         public Supplier<Boolean> apply(ClassInfo classInfo) {
@@ -1004,35 +997,6 @@ public class ResteasyReactiveProcessor {
         }
 
         handleDateFormatReflection(reflectiveClassBuildItemBuildProducer, index);
-    }
-
-    private static TargetJavaVersion determineTargetJavaVersion(CompiledJavaVersionBuildItem compiledJavaVersionBuildItem,
-            Optional<TargetJavaVersionBuildItem> maybeTargetJavaVersionBuildItem) {
-        if (maybeTargetJavaVersionBuildItem.isPresent()) {
-            return maybeTargetJavaVersionBuildItem.get().getTargetJavaVersion();
-        } else {
-            return new TargetJavaVersion() {
-
-                private final Status result;
-
-                {
-                    CompiledJavaVersionBuildItem.JavaVersion.Status status = compiledJavaVersionBuildItem
-                            .getJavaVersion().isJava19OrHigher();
-                    if (status == CompiledJavaVersionBuildItem.JavaVersion.Status.FALSE) {
-                        result = Status.FALSE;
-                    } else if (status == CompiledJavaVersionBuildItem.JavaVersion.Status.TRUE) {
-                        result = Status.TRUE;
-                    } else {
-                        result = Status.UNKNOWN;
-                    }
-                }
-
-                @Override
-                public Status isJava19OrHigher() {
-                    return result;
-                }
-            };
-        }
     }
 
     // TODO: this is really just a hackish way of allowing the use of @Mock so we might need something better

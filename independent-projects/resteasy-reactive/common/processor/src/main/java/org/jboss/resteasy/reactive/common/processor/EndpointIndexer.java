@@ -228,7 +228,6 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
     private final Set<DotName> contextTypes;
     private final Set<DotName> parameterContainerTypes;
     private final MultipartReturnTypeIndexerExtension multipartReturnTypeIndexerExtension;
-    private final TargetJavaVersion targetJavaVersion;
     private final Function<ClassInfo, Supplier<Boolean>> isDisabledCreator;
 
     private final Predicate<Map<DotName, AnnotationInstance>> skipMethodParameter;
@@ -258,7 +257,6 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
         this.contextTypes = builder.contextTypes;
         this.parameterContainerTypes = builder.parameterContainerTypes;
         this.multipartReturnTypeIndexerExtension = builder.multipartReturnTypeIndexerExtension;
-        this.targetJavaVersion = builder.targetJavaVersion;
         this.isDisabledCreator = builder.isDisabledCreator;
         this.skipMethodParameter = builder.skipMethodParameter;
         this.skipNotRestParameters = builder.skipNotRestParameters;
@@ -1844,7 +1842,6 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
                 return false;
             }
         };
-        private TargetJavaVersion targetJavaVersion = new TargetJavaVersion.Unknown();
         private Function<ClassInfo, Supplier<Boolean>> isDisabledCreator = null;
 
         private Predicate<Map<DotName, AnnotationInstance>> skipMethodParameter = null;
@@ -1971,11 +1968,6 @@ public abstract class EndpointIndexer<T extends EndpointIndexer<T, PARAM, METHOD
 
         public B setApplicationScanningResult(ApplicationScanningResult applicationScanningResult) {
             this.applicationScanningResult = applicationScanningResult;
-            return (B) this;
-        }
-
-        public B setTargetJavaVersion(TargetJavaVersion targetJavaVersion) {
-            this.targetJavaVersion = targetJavaVersion;
             return (B) this;
         }
 

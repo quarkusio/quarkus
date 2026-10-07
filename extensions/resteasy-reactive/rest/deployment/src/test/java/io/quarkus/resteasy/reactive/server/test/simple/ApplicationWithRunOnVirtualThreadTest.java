@@ -11,13 +11,11 @@ import jakarta.ws.rs.Path;
 import jakarta.ws.rs.core.Application;
 
 import org.hamcrest.Matchers;
-import org.jboss.resteasy.reactive.common.processor.TargetJavaVersion;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.resteasy.reactive.server.spi.TargetJavaVersionBuildItem;
 import io.quarkus.test.QuarkusExtensionTest;
 import io.restassured.RestAssured;
 import io.smallrye.common.annotation.Blocking;
@@ -27,10 +25,6 @@ public class ApplicationWithRunOnVirtualThreadTest {
 
     @RegisterExtension
     static QuarkusExtensionTest test = new QuarkusExtensionTest()
-            // we need this to make sure that the build doesn't fail because of the target bytecode version being JDK 17
-            .addBuildChainCustomizer(buildChainBuilder -> buildChainBuilder.addBuildStep(context -> {
-                context.produce(new TargetJavaVersionBuildItem(new DummyTargetJavaVersion()));
-            }).produces(TargetJavaVersionBuildItem.class).build())
             .setLogRecordPredicate(record -> record.getLevel().equals(Level.SEVERE)
                     && record.getLoggerName()
                             .equals("org.jboss.resteasy.reactive.server.core.startup.RuntimeResourceDeployment"))
@@ -81,14 +75,6 @@ public class ApplicationWithRunOnVirtualThreadTest {
         @GET
         public String virtual() {
             return Thread.currentThread().getName();
-        }
-    }
-
-    public static class DummyTargetJavaVersion implements TargetJavaVersion {
-
-        @Override
-        public Status isJava19OrHigher() {
-            return Status.TRUE;
         }
     }
 

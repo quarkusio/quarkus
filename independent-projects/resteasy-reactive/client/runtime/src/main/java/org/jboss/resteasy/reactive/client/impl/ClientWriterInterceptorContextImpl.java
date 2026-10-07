@@ -79,7 +79,6 @@ public class ClientWriterInterceptorContextImpl extends AbstractClientIntercepto
             }
 
             outputStream.close();
-            result = Buffer.buffer(baos.toByteArray());
             done = true;
         } else {
             interceptors[index++].aroundWriteTo(this);
@@ -113,6 +112,9 @@ public class ClientWriterInterceptorContextImpl extends AbstractClientIntercepto
     }
 
     public Buffer getResult() {
+        if (result == null && done) {
+            result = Buffer.buffer(baos.toByteArray());
+        }
         return result;
     }
 

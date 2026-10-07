@@ -15,7 +15,10 @@ public interface FilterConfig {
     String matches();
 
     /**
-     * Additional HTTP Headers always sent in the response
+     * Additional HTTP Headers always sent in the response.
+     * <p>
+     * The headers are added to the response; a value that is already present is never replaced. When several filters
+     * match a path, the values of all of them are sent.
      */
     @ConfigDocMapKey("header-name")
     Map<String, String> header();
@@ -26,7 +29,9 @@ public interface FilterConfig {
     Optional<List<String>> methods();
 
     /**
-     * Order in which this path config is applied. Higher priority takes precedence
+     * Order in which this path config is applied when several of them match a path. Filters with a lower order run
+     * first, so their header values are added first; the order does not make one filter override the values of
+     * another.
      */
     OptionalInt order();
 

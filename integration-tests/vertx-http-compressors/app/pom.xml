@@ -26,6 +26,12 @@
             <artifactId>snappy-java</artifactId>
             <scope>test</scope>
         </dependency>
+        <!-- Brotli4J is an optional dependency of quarkus-vertx-http, the shared test flow needs it explicitly -->
+        <dependency>
+            <groupId>com.aayushatharva.brotli4j</groupId>
+            <artifactId>brotli4j</artifactId>
+            <scope>test</scope>
+        </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-rest</artifactId>

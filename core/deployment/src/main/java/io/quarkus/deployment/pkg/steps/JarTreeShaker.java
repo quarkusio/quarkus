@@ -780,7 +780,7 @@ class JarTreeShaker {
     /**
      * Extracts all class references from bytecode using ASM: superclass, interfaces,
      * field/method descriptors, generic signatures, annotations, method body instructions
-     * (type insns, field/method owners, LDC class constants, invokedynamic handles),
+     * (type insns, field/method owners, LDC class constants, invokedynamic call site types and handles),
      * and {@code Class.forName()}/{@code ClassLoader.loadClass()} calls with string constants.
      */
     private Set<String> extractReferencesFromBytecode(byte[] bytecode) {
@@ -1051,6 +1051,9 @@ class JarTreeShaker {
         public void visitInvokeDynamicInsn(String iname, String idescriptor,
                 Handle bootstrapMethodHandle, Object... bootstrapMethodArguments) {
             lastStringConstant = null;
+            // The call site type can be the only place a class is mentioned, e.g. a lambda
+            // cast to a functional sub-interface: (Sub) () -> ... has the descriptor ()LSub;
+            addMethodDescriptorTypes(idescriptor, refs);
             addHandleType(bootstrapMethodHandle, refs);
             if (bootstrapMethodArguments != null) {
                 for (Object arg : bootstrapMethodArguments) {

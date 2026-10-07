@@ -161,6 +161,16 @@ public class TreeShakeCheck {
     }
 
     /**
+     * Verifies that a class referenced only from an invokedynamic call site descriptor
+     * (a lambda cast to a functional sub-interface) is preserved.
+     */
+    @Test
+    void testInvokeDynamicCallSiteType() {
+        given().when().get("/tree-shake/invokedynamic-call-site-type")
+                .then().statusCode(200).body(is("tagged"));
+    }
+
+    /**
      * Verifies that sisu named components ({@code META-INF/sisu/javax.inject.Named})
      * are preserved when a reachable class loads the sisu resource via
      * {@code ClassLoader.getResources()}.

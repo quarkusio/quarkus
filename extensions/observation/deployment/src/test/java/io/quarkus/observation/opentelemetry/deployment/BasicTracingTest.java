@@ -34,7 +34,6 @@ public class BasicTracingTest {
                                     "services/io.opentelemetry.sdk.autoconfigure.spi.traces.ConfigurableSpanExporterProvider")
                             .addAsResource(new StringAsset(
                                     "quarkus.otel.traces.exporter=test-span-exporter\n" +
-                                            "quarkus.otel.traces.sampler.arg=1.0d\n" +
                                             "quarkus.otel.bsp.schedule.delay=50ms\n" +
                                             "quarkus.observation.print-out=true\n" +
                                             "quarkus.otel.metrics.exporter=none\n" +

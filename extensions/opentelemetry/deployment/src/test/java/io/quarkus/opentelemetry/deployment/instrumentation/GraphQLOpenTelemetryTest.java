@@ -66,7 +66,6 @@ public class GraphQLOpenTelemetryTest {
                                             smallrye.graphql.printDataFetcherException=true
                                             smallrye.graphql.events.enabled=true
                                             quarkus.otel.traces.exporter=test-span-exporter
-                                            quarkus.otel.traces.sampler.arg=1.0d
                                             quarkus.otel.metrics.enabled=false
                                             quarkus.otel.logs.enabled=false
                                             quarkus.log.category."io.opentelemetry.usage".min-level=ALL

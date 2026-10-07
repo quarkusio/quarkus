@@ -37,7 +37,6 @@ public class TracesDisabledSignalsTest {
                     .addClasses(PingReceiver.class, Ping.class, InMemorySpanExporterProducer.class)
                     .addAsResource(new StringAsset("""
                             quarkus.signals.telemetry.traces.enabled=false
-                            quarkus.otel.traces.sampler=always_on
                             quarkus.otel.bsp.export.timeout=1s
                             quarkus.otel.bsp.schedule.delay=50
                             """), "application.properties"))

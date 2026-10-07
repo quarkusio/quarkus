@@ -1031,6 +1031,11 @@ public class MainClassBuildStep {
                 boolean isTop = (nodeIndex == 0);
                 generateSentinelMethod(file, methodName, isTop);
             }
+            case ABSENT -> {
+                methodName = phaseName + "$absent$" + nodeIndex;
+                targetClass = Application.APP_CLASS_NAME;
+                generateAbsentSentinelMethod(file, methodName);
+            }
             case LEGACY_RECORDER -> {
                 methodName = phaseName + "$legacy$" + nodeIndex;
                 targetClass = Application.APP_CLASS_NAME;
@@ -1075,6 +1080,24 @@ public class MainClassBuildStep {
                         MethodType.class),
                 lookup, targetClass, Const.of(methodName), methodType);
         return code.localVar("mh$" + className.replace('.', '_').replace('/', '_') + "$" + methodName, mh);
+    }
+
+    /**
+     * Generate a method for an absent-placeholder sentinel (for optional dependencies).
+     * These sentinels simply signal void completion; they do not signal start-done or register stop handlers.
+     *
+     * @param classCreator the Application class creator
+     * @param methodName the method name to generate
+     */
+    private static void generateAbsentSentinelMethod(ClassCreator classCreator, String methodName) {
+        classCreator.staticMethod(methodName, MethodTypeDesc.of(ConstantDescs.CD_void, CD_ServiceNode), mc -> {
+            mc.private_();
+            ParamVar node = mc.parameter("node");
+            mc.body(b0 -> {
+                b0.invokeVirtual(MD_ServiceNode_startComplete, node);
+                b0.return_();
+            });
+        });
     }
 
     /**

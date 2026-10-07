@@ -92,8 +92,8 @@ ServiceStartBuildItem setup(MyRecorder recorder, SomeBuildItem item) {
 **After:**
 ```java
 @BuildStep
-ServiceStartBuildItem setup(ServiceRegistrar reg, SomeBuildItem item) {
-    reg
+ServiceStartBuildItem setup(ServiceRegistrar serviceRegistrar, SomeBuildItem item) {
+    serviceRegistrar
         .forService("io.quarkus.my-feature.setup")
         .onStart(ctx -> MyRecorder.initialize());
     return new ServiceStartBuildItem("my-feature");
@@ -102,7 +102,7 @@ ServiceStartBuildItem setup(ServiceRegistrar reg, SomeBuildItem item) {
 
 Key changes:
 - Remove `@Record(ExecutionTime.*)` annotation.
-- Replace recorder parameter with `ServiceRegistrar reg`.
+- Replace recorder parameter with `ServiceRegistrar serviceRegistrar`.
 - Use `.atPhase(Phase.STATIC_INIT)` for static-init services (default
   is runtime-init / `Phase.APPLICATION`).
 - For void services, use hierarchical dot-separated names:
@@ -127,7 +127,7 @@ synthetic beans must be initialized), declare the dependency via
 `afterBuildItem()`:
 
 ```java
-reg
+serviceRegistrar
     .forService("io.quarkus.arc.lifecycle")
     .afterBuildItem(SyntheticBeansRuntimeInitBuildItem.class)
     .onStart(ctx -> ArcRecorder.fireLifecycleEvent(new StartupEvent()));
@@ -149,13 +149,13 @@ via `retainServiceValues()`).
 
 ```java
 // static-init service
-reg.forService(ArcContainer.class)
+serviceRegistrar.forService(ArcContainer.class)
     .atPhase(Phase.STATIC_INIT)
     .afterBuildItem(ResourcesGeneratedPhaseBuildItem.class)
     .onStart(ctx -> Arc.initialize());
 
 // runtime service that depends on it
-reg.forService("io.quarkus.my-ext.setup")
+serviceRegistrar.forService("io.quarkus.my-ext.setup")
     .require(ArcContainer.class)  // cross-phase: resolved via proxy
     .onStart((ctx, container) -> { ... });
 ```
@@ -174,7 +174,7 @@ and stops after X. Use it for cleanup services that must outlive their
 dependents:
 
 ```java
-reg
+serviceRegistrar
     .forService("io.quarkus.vertx.netty-thread-local-cleanup")
     .atPhase(Phase.STATIC_INIT)
     .before(IOThreadDetector.class)
@@ -190,8 +190,8 @@ Build items consumed by unconverted extensions need bridge proxies:
 
 | Build Item Stores | Bridge Method |
 |-------------------|---------------|
-| `RuntimeValue<T>` | `reg.staticInitServiceAsRuntimeValue(T.class)` or `reg.serviceAsRuntimeValue(T.class)` |
-| Bare `T` (interface) | `reg.staticInitServiceAsRecorderValue(T.class)` or `reg.serviceAsRecorderValue(T.class)` |
+| `RuntimeValue<T>` | `serviceRegistrar.staticInitServiceAsRuntimeValue(T.class)` or `serviceRegistrar.serviceAsRuntimeValue(T.class)` |
+| Bare `T` (interface) | `serviceRegistrar.staticInitServiceAsRecorderValue(T.class)` or `serviceRegistrar.serviceAsRecorderValue(T.class)` |
 | Bare `T` (concrete) | Use `RuntimeValue` variant — concrete classes may not be proxyable |
 
 Recorder proxies resolve via `startupContext.getServiceValue()` (for
@@ -209,7 +209,7 @@ SyntheticBeanBuildItem.configure(MyBean.class).supplier(supplier).done();
 
 **After:**
 ```java
-reg.forService(MyBean.class, "my-bean-name")
+serviceRegistrar.forService(MyBean.class, "my-bean-name")
     .onStart(ctx -> new MyBean(args));
 
 SyntheticBeanBuildItem.configure(MyBean.class)
@@ -239,7 +239,7 @@ flips the service's return type from `T` to `Optional<T>`; returning
 effects) instead of failing.
 
 ```java
-reg.forService(Handler.class, "file")
+serviceRegistrar.forService(Handler.class, "file")
     .atPhase(Phase.LOGGING)
     .require(LogRuntimeConfig.class)
     .optional()

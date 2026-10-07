@@ -121,6 +121,7 @@ public class ServerWebSocketProcessor {
                 .forService(RouteHandler.class, "io.quarkus.websocket.filter")
                 .require(WebSocketDeploymentInfo.class)
                 .require(ServerWebSocketContainer.class)
+                .after("io.quarkus.websocket.worker-setup")
                 .onStart((ctx, info, container) -> WebsocketServerRecorder.createHandler(info, container)::handle);
 
         int priority = 1 + SecurityHandlerPriorities.AUTHORIZATION;

@@ -681,7 +681,7 @@ public final class ServiceNode implements Runnable, AsyncStartContext<Object>, A
             old = wit;
         }
         if (shouldStop) {
-            runStopHandler();
+            graph.executor().execute(this::runStopHandler);
         }
     }
 
@@ -713,7 +713,7 @@ public final class ServiceNode implements Runnable, AsyncStartContext<Object>, A
             }
             old = wit;
         }
-        runStopHandler();
+        graph.executor().execute(this::runStopHandler);
     }
 
     /**
@@ -743,7 +743,7 @@ public final class ServiceNode implements Runnable, AsyncStartContext<Object>, A
             }
             old = wit;
         }
-        runStopHandler();
+        graph.executor().execute(this::runStopHandler);
     }
 
     /**

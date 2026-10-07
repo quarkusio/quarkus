@@ -10,6 +10,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Stream;
 
 import io.quarkus.core.deployment.service.impl.TransliteratedAction;
 import io.quarkus.deployment.builditem.MainBytecodeRecorderBuildItem;
@@ -154,9 +155,14 @@ final class ServiceGraphBuilder {
             for (TransliteratedAction action : actions) {
                 MutableNode serviceNode = new MutableNode(action.serviceKey(), stepId,
                         kindForAction(action), null, action);
-                // no implicit intra-step ordering: services are independent from
-                // recorders in the same step. Use afterBuildItem(), after(), or
-                // require() to declare explicit ordering dependencies.
+                // Pure SERVICE nodes are independent from recorders in the same step
+                // (they get values from the graph, not the values map).
+                // ALIAS and RV_WRAPPER nodes read from the StartupContext values map
+                // that the recorder writes to, so they must depend on the recorder.
+                if (recorderNode != null && (serviceNode.kind == NodeKind.ALIAS
+                        || serviceNode.kind == NodeKind.RV_WRAPPER)) {
+                    serviceNode.stepDeps.add(recorderNode);
+                }
                 nodes.add(serviceNode);
                 stepToNodes.computeIfAbsent(stepId, k -> new ArrayList<>()).add(serviceNode);
                 serviceKeyToNode.put(action.serviceKey(), serviceNode);
@@ -232,7 +238,7 @@ final class ServiceGraphBuilder {
                         // LambdaTransliterator's graphDepIndex
                         MutableNode absent = new MutableNode(
                                 "<<absent:" + dep.key() + ">>", node.stepId,
-                                NodeKind.SENTINEL, null, null);
+                                NodeKind.ABSENT, null, null);
                         nodeIter.add(absent);
                         node.actionDeps.add(absent);
                     } else if (dep.injected()) {
@@ -534,15 +540,16 @@ final class ServiceGraphBuilder {
                 return actionDeps;
             }
             if (actionDeps.isEmpty()) {
-                return new ArrayList<>(stepDeps);
+                return stepDeps.stream()
+                        .sorted(Comparator.comparing(n -> n.name))
+                        .toList();
             }
-            List<MutableNode> result = new ArrayList<>(actionDeps);
-            for (MutableNode sd : stepDeps) {
-                if (!actionDeps.contains(sd)) {
-                    result.add(sd);
-                }
-            }
-            return result;
+            return Stream.concat(
+                    actionDeps.stream(),
+                    stepDeps.stream()
+                            .sorted(Comparator.comparing(n -> n.name))
+                            .filter(n -> !actionDeps.contains(n)))
+                    .toList();
         }
     }
 
@@ -556,6 +563,8 @@ final class ServiceGraphBuilder {
     enum NodeKind {
         /** Top or bottom sentinel. */
         SENTINEL,
+        /** Absent-placeholder sentinel for an optional dependency with no matching service. */
+        ABSENT,
         /** Legacy bytecode recorder chunk (one or more recorders from the same step). */
         LEGACY_RECORDER,
         /** New-style service with a transliterated lambda body. */

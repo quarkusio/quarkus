@@ -56,7 +56,7 @@ public final class SortedNullSafeMap {
     public static <V> Map<String, V> of(String k1, V v1, String k2, V v2) {
         return v1 == null ? of(k2, v2) :
                v2 == null ? Map.of(k1, v1) :
-               ofEntries(k1, k2, v1, v2);
+               ofEntries(k1, v1, k2, v2);
     }
     //@formatter:on
 

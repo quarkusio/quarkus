@@ -4,6 +4,7 @@ name: "gRPC"
 metadata:
   keywords:
     - "gRPC"
+  guide: "https://quarkus.io/guides/grpc"
   categories:
     - "web"
     - "serialization"

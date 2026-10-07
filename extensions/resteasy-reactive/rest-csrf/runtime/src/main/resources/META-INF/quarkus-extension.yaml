@@ -4,6 +4,7 @@ name: "REST - Cross-Site Request Forgery Prevention Filter"
 metadata:
   keywords:
   - "csrf"
+  guide: "https://quarkus.io/guides/security-csrf-prevention"
   categories:
   - "security"
   status: "stable"

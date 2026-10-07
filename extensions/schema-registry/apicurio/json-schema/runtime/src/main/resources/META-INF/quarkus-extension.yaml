@@ -6,7 +6,7 @@ metadata:
   - "apicurio"
   - "json-schema"
   - "kafka"
-  guide: ""
+  guide: "https://quarkus.io/guides/kafka-schema-registry-json-schema"
   categories:
   - "serialization"
   status: "experimental"

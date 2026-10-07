@@ -2,6 +2,7 @@
 artifact: ${project.groupId}:${project.artifactId}:${project.version}
 name: "JLink"
 metadata:
+  guide: "https://quarkus.io/guides/jlink"
   categories:
   - "packaging"
   status: "experimental"

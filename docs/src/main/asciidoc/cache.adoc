@@ -284,6 +284,13 @@ Caching annotations are not allowed on private methods.
 They will work fine with any other access modifier including package-private (no explicit modifier).
 ====
 
+[WARNING]
+====
+Caching annotations only work on CDI managed beans.
+CDI does not apply interceptors to the value of a `@Produces` method or field, so caching annotations on the methods of an instance created by a producer are ignored; the build logs a warning in that case.
+Make the class a CDI bean (for example with `@ApplicationScoped`) instead of producing it, or move the cached method to a CDI bean.
+====
+
 === @CacheResult
 
 Loads a method result from the cache without executing the method body whenever possible.

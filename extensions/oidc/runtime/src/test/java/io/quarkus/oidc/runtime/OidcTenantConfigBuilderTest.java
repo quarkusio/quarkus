@@ -9,6 +9,7 @@ import static io.quarkus.oidc.runtime.OidcTenantConfig.SignatureAlgorithm.PS384;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.nio.file.Path;
@@ -440,7 +441,7 @@ public class OidcTenantConfigBuilderTest {
         assertTrue(config.allowTokenIntrospectionCache());
         assertTrue(config.allowUserInfoCache());
         assertTrue(config.cacheUserInfoInIdtoken().orElseThrow());
-        assertEquals(Provider.FACEBOOK, config.provider().orElse(null));
+        assertNull(config.provider().orElse(null));
         assertEquals(Duration.ofSeconds(20), config.dpop().proofAge());
 
         var introspectionCredentials = config.introspectionCredentials();
@@ -744,7 +745,7 @@ public class OidcTenantConfigBuilderTest {
         assertFalse(newConfig.allowTokenIntrospectionCache());
         assertFalse(newConfig.allowUserInfoCache());
         assertFalse(newConfig.cacheUserInfoInIdtoken().orElseThrow());
-        assertEquals(Provider.GOOGLE, newConfig.provider().orElse(null));
+        assertNull(newConfig.provider().orElse(null));
         assertEquals(Duration.ofMinutes(4), newConfig.dpop().proofAge());
     }
 

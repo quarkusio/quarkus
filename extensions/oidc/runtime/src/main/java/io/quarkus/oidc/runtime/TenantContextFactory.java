@@ -168,9 +168,8 @@ final class TenantContextFactory {
     }
 
     @SuppressWarnings("resource")
-    private Uni<TenantConfigContext> createTenantContext(OidcTenantConfig oidcTenantConfig,
+    private Uni<TenantConfigContext> createTenantContext(OidcTenantConfig oidcConfig,
             boolean checkNamedTenants, String tenantId) {
-        final OidcTenantConfig oidcConfig = OidcUtils.resolveProviderConfig(oidcTenantConfig);
 
         if (!oidcConfig.tenantEnabled()) {
             LOG.debugf("'%s' tenant configuration is disabled", tenantId);
@@ -199,7 +198,7 @@ final class TenantContextFactory {
                         LOG.debugf("Default tenant is not configured and will be disabled"
                                 + " because either 'TenantConfigResolver' which will resolve tenant configurations is registered"
                                 + " or named tenants are configured.");
-                        oidcConfig.tenantEnabled = false;
+                        oidcConfig.setTenantEnabled(false);
                         return TenantConfigContext.createReady(new OidcProvider(null, null, null), oidcConfig);
                     }
                 }
@@ -309,7 +308,7 @@ final class TenantContextFactory {
             }
         } else {
             if (oidcConfig.token().refreshTokenTimeSkew().isPresent()) {
-                oidcConfig.token.setRefreshExpired(true);
+                oidcConfig.getToken().setRefreshExpired(true);
             }
             if (oidcConfig.authentication().sessionAgeExtension().isPresent()
                     && !oidcConfig.token().refreshExpired()) {
@@ -534,7 +533,7 @@ final class TenantContextFactory {
                 return false;
             }
         } else {
-            oidcConfig.authentication.setUserInfoRequired(true);
+            oidcConfig.getAuthentication().setUserInfoRequired(true);
         }
         return true;
     }

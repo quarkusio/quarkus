@@ -188,9 +188,8 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
         quarkusTestProfile = profileClass;
         Class<?> requiredTestClass = context.getRequiredTestClass();
         Closeable testResourceManager = null;
+        final LinkedBlockingDeque<Runnable> shutdownTasks = new LinkedBlockingDeque<>();
         try {
-            final LinkedBlockingDeque<Runnable> shutdownTasks = new LinkedBlockingDeque<>();
-
             testHttpEndpointProviders = TestHttpEndpointProvider.load();
 
             StartupAction startupAction = getClassLoaderFromTestClass(requiredTestClass).getStartupAction();
@@ -269,7 +268,11 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
                         TracingHandler.quarkusStopped();
                         try {
                             while (!shutdownTasks.isEmpty()) {
-                                shutdownTasks.pop().run();
+                                try {
+                                    shutdownTasks.pop().run();
+                                } catch (Throwable t) {
+                                    log.error("Error running shutdown task", t);
+                                }
                             }
                         } finally {
                             shutdownHangDetection();
@@ -296,6 +299,18 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
                 }
             } catch (Exception ex) {
                 effectiveException.addSuppressed(determineEffectiveException(ex));
+            } finally {
+                try {
+                    while (!shutdownTasks.isEmpty()) {
+                        try {
+                            shutdownTasks.pop().run();
+                        } catch (Throwable t) {
+                            effectiveException.addSuppressed(t);
+                        }
+                    }
+                } finally {
+                    shutdownHangDetection();
+                }
             }
 
             throw effectiveException;

@@ -47,19 +47,25 @@ public interface ComposeDevServicesBuildTimeConfig {
     boolean startServices();
 
     /**
-     * Whether to run compose down and stop containers at shutdown
+     * Whether to run compose down and stop containers at shutdown.
+     * When disabled, the Ryuk resource reaper is not used either, as it would stop the containers.
      */
     @WithDefault("true")
     boolean stopServices();
 
     /**
-     * Whether to use test containers Ryuk resource reaper to clean up containers
+     * Whether to use the Testcontainers Ryuk resource reaper to clean up the containers, networks, volumes and images
+     * of the project if the application exits without running compose down.
+     * Ryuk is only used when both `stop-services` and `remove-volumes` are enabled, as it removes all of these.
+     *
+     * @asciidoclet
      */
     @WithDefault("true")
     boolean ryukEnabled();
 
     /**
-     * Whether to remove volumes on compose down
+     * Whether to remove volumes on compose down.
+     * When disabled, the Ryuk resource reaper is not used either, as it would remove the volumes.
      */
     @WithDefault("true")
     boolean removeVolumes();

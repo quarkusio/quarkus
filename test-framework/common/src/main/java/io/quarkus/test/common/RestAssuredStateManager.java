@@ -25,6 +25,9 @@ public class RestAssuredStateManager {
     private static final int DEFAULT_HTTP_PORT = 8081;
     private static final int DEFAULT_HTTPS_PORT = 8444;
 
+    private static final RuntimeKey<URI> LOCAL_BASE_URI = RuntimeKey.key("quarkus.http.local-base-uri");
+    private static final RuntimeKey<URI> LAMBDA_BASE_URI = RuntimeKey.key("quarkus.lambda.local-base-uri");
+
     private static final boolean REST_ASSURED_PRESENT;
 
     static {
@@ -121,9 +124,6 @@ public class RestAssuredStateManager {
             RestAssured.enableLoggingOfRequestAndResponseIfValidationFails();
         }
     }
-
-    private static final RuntimeKey<URI> LOCAL_BASE_URI = RuntimeKey.key("quarkus.http.local-base-uri");
-    private static final RuntimeKey<URI> LAMBDA_BASE_URI = RuntimeKey.key("quarkus.lambda.local-base-uri");
 
     public static void setTestUri(ValueRegistry valueRegister) {
         setTestUri(valueRegister, null);

@@ -7,6 +7,7 @@ import io.quarkus.runtime.annotations.Recorder;
 
 @Recorder
 public class LambdaHttpRecorder {
+
     /**
      * @deprecated Properly use the config object
      */

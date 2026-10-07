@@ -152,8 +152,10 @@ public class TestHTTPResourceManager {
     public static String host(Config config, String name) {
         String host = config.getOptionalValue(name, String.class).orElse("localhost");
         // for test, the host default is localhost, but if using WSL is 0.0.0.0 which shouldn't be used when determining the test url
-        if (host.equals("0.0.0.0")) {
+        if (host.equals("0.0.0.0") || host.equals("::") || host.equals("[::]")) {
             host = "localhost";
+        } else if (host.indexOf(':') >= 0 && !host.startsWith("[")) {
+            host = "[" + host + "]";
         }
         return host;
     }

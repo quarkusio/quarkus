@@ -7,7 +7,7 @@ import java.util.stream.Collectors;
 import org.eclipse.microprofile.health.HealthCheckResponse;
 import org.eclipse.microprofile.health.spi.HealthCheckResponseProvider;
 
-import io.quarkus.arc.Arc;
+import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
@@ -20,17 +20,13 @@ import io.vertx.ext.web.RoutingContext;
 
 @Recorder
 public class SmallRyeHealthRecorder {
-    private final SmallRyeHealthBuildFixedConfig buildFixedConfig;
     private final RuntimeValue<SmallRyeHealthRuntimeConfig> runtimeConfig;
 
-    public SmallRyeHealthRecorder(
-            final SmallRyeHealthBuildFixedConfig buildFixedConfig,
-            final RuntimeValue<SmallRyeHealthRuntimeConfig> runtimeConfig) {
-        this.buildFixedConfig = buildFixedConfig;
+    public SmallRyeHealthRecorder(final RuntimeValue<SmallRyeHealthRuntimeConfig> runtimeConfig) {
         this.runtimeConfig = runtimeConfig;
     }
 
-    public void registerHealthCheckResponseProvider(Class<? extends HealthCheckResponseProvider> providerClass) {
+    public static void registerHealthCheckResponseProvider(Class<? extends HealthCheckResponseProvider> providerClass) {
         try {
             HealthCheckResponse.setResponseProvider(providerClass.getConstructor().newInstance());
         } catch (Exception e) {
@@ -52,11 +48,12 @@ public class SmallRyeHealthRecorder {
         }
     }
 
-    public void processSmallRyeHealthRuntimeConfiguration() {
-        SmallRyeHealthReporter reporter = Arc.container().select(SmallRyeHealthReporter.class).get();
-        reporter.setAdditionalProperties(runtimeConfig.getValue().additionalProperties());
+    public static void processSmallRyeHealthRuntimeConfiguration(BeanContainer container,
+            SmallRyeHealthRuntimeConfig runtimeConfig, SmallRyeHealthBuildFixedConfig buildFixedConfig) {
+        SmallRyeHealthReporter reporter = container.beanInstance(SmallRyeHealthReporter.class);
+        reporter.setAdditionalProperties(runtimeConfig.additionalProperties());
 
-        reporter.setHealthChecksConfigs(runtimeConfig.getValue().check().entrySet().stream()
+        reporter.setHealthChecksConfigs(runtimeConfig.check().entrySet().stream()
                 .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().enabled())));
 
         SmallRyeHealthHandlerBase.problemDetails = buildFixedConfig.includeProblemDetails();

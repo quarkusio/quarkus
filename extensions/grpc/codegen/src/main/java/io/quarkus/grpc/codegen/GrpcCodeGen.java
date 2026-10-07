@@ -59,6 +59,9 @@ public class GrpcCodeGen implements CodeGenProvider {
     private static final String SCAN_DEPENDENCIES_FOR_PROTO = "quarkus.generate-code.grpc.scan-for-proto";
     private static final String SCAN_DEPENDENCIES_FOR_PROTO_INCLUDE_PATTERN = "quarkus.generate-code.grpc.scan-for-proto-include.\"%s\"";
     private static final String SCAN_DEPENDENCIES_FOR_PROTO_EXCLUDE_PATTERN = "quarkus.generate-code.grpc.scan-for-proto-exclude.\"%s\"";
+    private static final List<String> SCAN_DEPENDENCIES_FOR_PROTO_FILTER_PREFIXES = List.of(
+            "quarkus.generate-code.grpc.scan-for-proto-include.\"",
+            "quarkus.generate-code.grpc.scan-for-proto-exclude.\"");
     private static final String SCAN_FOR_IMPORTS = "quarkus.generate-code.grpc.scan-for-imports";
 
     private static final String POST_PROCESS_SKIP = "quarkus.generate.code.grpc-post-processing.skip";
@@ -300,6 +303,7 @@ public class GrpcCodeGen implements CodeGenProvider {
             return Collections.emptyList();
         }
         Config properties = context.config();
+        checkScanForProtoPropertyNames(properties.getPropertyNames());
         String scanDependencies = properties.getOptionalValue(SCAN_DEPENDENCIES_FOR_PROTO, String.class)
                 .orElse("none");
 
@@ -332,6 +336,24 @@ public class GrpcCodeGen implements CodeGenProvider {
             }
         }
         return protoFilesFromDependencies;
+    }
+
+    /**
+     * The include and exclude patterns are keyed by {@code "groupId:artifactId"}. In the properties format an
+     * unescaped {@code :} ends the key, which leaves a key such as
+     * {@code quarkus.generate-code.grpc.scan-for-proto-include."com.acme} whose patterns are silently ignored.
+     */
+    static void checkScanForProtoPropertyNames(Iterable<String> propertyNames) throws CodeGenException {
+        for (String name : propertyNames) {
+            for (String prefix : SCAN_DEPENDENCIES_FOR_PROTO_FILTER_PREFIXES) {
+                int start = name.indexOf(prefix);
+                if (start >= 0 && !name.endsWith("\"")) {
+                    throw new CodeGenException("Invalid property name '" + name + "': the ':' between the group id"
+                            + " and the artifact id must be escaped as '\\:' in application.properties, for example "
+                            + name.substring(0, start) + prefix + "com.acme\\:protos\"=...");
+                }
+            }
+        }
     }
 
     @Override

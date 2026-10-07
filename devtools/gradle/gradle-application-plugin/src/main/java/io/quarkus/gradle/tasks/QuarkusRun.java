@@ -42,7 +42,9 @@ import io.smallrye.common.process.ProcessBuilder;
 @DisableCachingByDefault(because = "Not cacheable")
 public abstract class QuarkusRun extends QuarkusBuildTask {
     private final Property<File> workingDirectory;
-    private final SourceSet mainSourceSet;
+    // Resolved from the main source set at configuration time: a SourceSet cannot be serialized into the
+    // configuration cache, while the FileCollection it produces can.
+    private final FileCollection compilationOutput;
     private final ListProperty<String> jvmArgs;
 
     @Inject
@@ -51,10 +53,11 @@ public abstract class QuarkusRun extends QuarkusBuildTask {
     }
 
     public QuarkusRun(String description) {
-        super(description, false);
+        super(description, true);
         final ObjectFactory objectFactory = getProject().getObjects();
-        mainSourceSet = getProject().getExtensions().getByType(SourceSetContainer.class)
-                .getByName(SourceSet.MAIN_SOURCE_SET_NAME);
+        compilationOutput = getProject().getExtensions().getByType(SourceSetContainer.class)
+                .getByName(SourceSet.MAIN_SOURCE_SET_NAME)
+                .getOutput().getClassesDirs();
 
         workingDirectory = objectFactory.property(File.class);
         workingDirectory.convention(projectDir);
@@ -69,7 +72,7 @@ public abstract class QuarkusRun extends QuarkusBuildTask {
     @InputFiles
     @PathSensitive(PathSensitivity.RELATIVE)
     public FileCollection getCompilationOutput() {
-        return mainSourceSet.getOutput().getClassesDirs();
+        return compilationOutput;
     }
 
     @Input

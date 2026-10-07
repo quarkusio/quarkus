@@ -78,6 +78,11 @@ public interface ContainerConfig extends EnvVarHolder {
     ProbeConfig readinessProbe();
 
     /**
+     * The startup probe.
+     */
+    ProbeConfig startupProbe();
+
+    /**
      * Volume mounts.
      */
     Map<String, MountConfig> mounts();
@@ -160,6 +165,9 @@ public interface ContainerConfig extends EnvVarHolder {
         }
         if (livenessProbe() != null && livenessProbe().hasUserSuppliedAction()) {
             b.withLivenessProbe(livenessProbe().toProbe(name));
+        }
+        if (startupProbe() != null && startupProbe().hasUserSuppliedAction()) {
+            b.withStartupProbe(startupProbe().toProbe(name));
         }
         b.addAllToEnv(getEnvVars());
         b.addAllToEnvFrom(getEnvFroms());

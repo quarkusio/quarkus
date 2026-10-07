@@ -49,6 +49,7 @@ import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
 import io.quarkus.deployment.builditem.GeneratedServiceProviderBuildItem;
 import io.quarkus.deployment.builditem.LiveReloadBuildItem;
 import io.quarkus.deployment.builditem.MainClassBuildItem;
+import io.quarkus.deployment.builditem.RemovedResourcesBuildItem;
 import io.quarkus.deployment.builditem.RuntimeClassTransformerBuildItem;
 import io.quarkus.deployment.builditem.TransformedClassesBuildItem;
 import io.quarkus.deployment.jvm.ResolvedJVMRequirements;
@@ -73,7 +74,8 @@ public class AugmentActionImpl implements AugmentAction {
             GeneratedResourceBuildItem.class, GeneratedServiceProviderBuildItem.class,
             ApplicationClassNameBuildItem.class,
             MainClassBuildItem.class, GeneratedFileSystemResourceHandledBuildItem.class,
-            TransformedClassesBuildItem.class, RuntimeClassTransformerBuildItem.class,
+            TransformedClassesBuildItem.class, RemovedResourcesBuildItem.class,
+            RuntimeClassTransformerBuildItem.class,
             ResolvedJVMRequirements.class };
 
     private final QuarkusBootstrap quarkusBootstrap;

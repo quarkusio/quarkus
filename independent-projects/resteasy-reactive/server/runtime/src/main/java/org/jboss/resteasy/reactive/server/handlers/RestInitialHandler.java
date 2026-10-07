@@ -65,7 +65,7 @@ public class RestInitialHandler implements ServerRestHandler {
             ProvidersImpl providers = requestContext.getProviders();
             ExceptionMapper<NotFoundException> exceptionMapper = providers.getExceptionMapper(NotFoundException.class);
 
-            if (exceptionMapper != null && !deployment.isServletPresent()) {
+            if (exceptionMapper != null && !deployment.isServletPresent() && !deployment.isResumeOn404()) {
                 // the NotFoundExceptionMapper needs access to the headers so we need to activate the scope
                 requestContext.requireCDIRequestScope();
                 // we want to engage the NotFoundExceptionMapper when nothing is found

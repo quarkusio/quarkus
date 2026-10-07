@@ -30,12 +30,14 @@ import io.quarkus.arc.deployment.BeanDefiningAnnotationBuildItem;
 import io.quarkus.arc.deployment.ExcludedTypeBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeansRuntimeInitBuildItem;
 import io.quarkus.arc.processor.BuiltinScope;
+import io.quarkus.arc.runtime.BeanContainer;
+import io.quarkus.core.Phase;
+import io.quarkus.core.deployment.service.ServiceRegistrar;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.BuildSteps;
-import io.quarkus.deployment.annotations.Consume;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.HotDeploymentWatchedFileBuildItem;
@@ -55,9 +57,11 @@ import io.quarkus.smallrye.health.deployment.spi.HealthBuildItem;
 import io.quarkus.smallrye.health.runtime.QuarkusAsyncHealthCheckFactory;
 import io.quarkus.smallrye.health.runtime.ShutdownReadinessCheck;
 import io.quarkus.smallrye.health.runtime.ShutdownReadinessListener;
+import io.quarkus.smallrye.health.runtime.SmallRyeHealthBuildFixedConfig;
 import io.quarkus.smallrye.health.runtime.SmallRyeHealthGroupHandler;
 import io.quarkus.smallrye.health.runtime.SmallRyeHealthHandler;
 import io.quarkus.smallrye.health.runtime.SmallRyeHealthRecorder;
+import io.quarkus.smallrye.health.runtime.SmallRyeHealthRuntimeConfig;
 import io.quarkus.smallrye.health.runtime.SmallRyeIndividualHealthGroupHandler;
 import io.quarkus.smallrye.health.runtime.SmallRyeLivenessHandler;
 import io.quarkus.smallrye.health.runtime.SmallRyeReadinessHandler;
@@ -152,9 +156,8 @@ class SmallRyeHealthProcessor {
     }
 
     @BuildStep
-    @Record(ExecutionTime.STATIC_INIT)
     @SuppressWarnings("unchecked")
-    void build(SmallRyeHealthRecorder recorder,
+    void build(ServiceRegistrar serviceRegistrar,
             BuildProducer<ExcludedTypeBuildItem> excludedTypes,
             BuildProducer<AdditionalBeanBuildItem> additionalBean,
             BuildProducer<BeanDefiningAnnotationBuildItem> beanDefiningAnnotation)
@@ -191,7 +194,10 @@ class SmallRyeHealthProcessor {
         final String provider = providers.iterator().next();
         final Class<? extends HealthCheckResponseProvider> responseProvider = (Class<? extends HealthCheckResponseProvider>) Class
                 .forName(provider, true, Thread.currentThread().getContextClassLoader());
-        recorder.registerHealthCheckResponseProvider(responseProvider);
+        serviceRegistrar
+                .forService("io.quarkus.smallrye-health.response-provider")
+                .atPhase(Phase.STATIC_INIT)
+                .onStart(ctx -> SmallRyeHealthRecorder.registerHealthCheckResponseProvider(responseProvider));
     }
 
     @BuildStep
@@ -447,10 +453,15 @@ class SmallRyeHealthProcessor {
     }
 
     @BuildStep
-    @Record(ExecutionTime.RUNTIME_INIT)
-    @Consume(SyntheticBeansRuntimeInitBuildItem.class)
-    void processSmallRyeHealthRuntimeConfig(SmallRyeHealthRecorder recorder) {
-        recorder.processSmallRyeHealthRuntimeConfiguration();
+    void processSmallRyeHealthRuntimeConfig(ServiceRegistrar serviceRegistrar) {
+        serviceRegistrar
+                .forService("io.quarkus.smallrye-health.runtime-config")
+                .require(BeanContainer.class)
+                .require(SmallRyeHealthRuntimeConfig.class)
+                .require(SmallRyeHealthBuildFixedConfig.class)
+                .afterBuildItem(SyntheticBeansRuntimeInitBuildItem.class)
+                .onStart((ctx, container, runtimeConfig, buildFixedConfig) -> SmallRyeHealthRecorder
+                        .processSmallRyeHealthRuntimeConfiguration(container, runtimeConfig, buildFixedConfig));
     }
 
     // Replace health URL in static files

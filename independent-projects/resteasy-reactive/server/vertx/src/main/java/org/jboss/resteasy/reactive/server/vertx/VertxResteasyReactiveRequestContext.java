@@ -97,7 +97,9 @@ public class VertxResteasyReactiveRequestContext extends ResteasyReactiveRequest
                 });
             }
         };
-        request.pause();
+        if (!request.isEnded()) {
+            request.pause();
+        }
     }
 
     @Override
@@ -305,7 +307,9 @@ public class VertxResteasyReactiveRequestContext extends ResteasyReactiveRequest
 
     @Override
     public ServerHttpResponse pauseRequestInput() {
-        request.pause();
+        if (!request.isEnded()) {
+            request.pause();
+        }
         return this;
     }
 
@@ -315,7 +319,9 @@ public class VertxResteasyReactiveRequestContext extends ResteasyReactiveRequest
             continueState = ContinueState.SENT;
             response.writeContinue();
         }
-        request.resume();
+        if (!request.isEnded()) {
+            request.resume();
+        }
         return this;
     }
 
@@ -323,6 +329,15 @@ public class VertxResteasyReactiveRequestContext extends ResteasyReactiveRequest
     public ServerHttpResponse setReadListener(ReadCallback callback) {
         if (context.body().buffer() != null) {
             callback.data(((BufferInternal) context.body().buffer()).getByteBuf().nioBuffer());
+            callback.done();
+            return this;
+        }
+        /*
+         * The request can have been read already without its body being buffered in the routing context, by a route
+         * that consumed it before handing the request over. There is nothing left to read, and neither the data
+         * handler nor the end handler registered below would ever be called, so the read is completed right away.
+         */
+        if (request.isEnded()) {
             callback.done();
             return this;
         }

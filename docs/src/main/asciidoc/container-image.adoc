@@ -267,6 +267,8 @@ quarkus.container-image.image=${CI_REGISTRY_IMAGE}
 
 NOTE: See xref:config-reference.adoc#with-environment-variables[this] for more information on how to combine properties with environment variables.
 
+For a complete GitLab CI/CD pipeline that tests, packages, and pushes JVM and native container images, see xref:gitlab-ci.adoc[Building Quarkus applications with GitLab CI/CD].
+
 === Jib Options
 
 In addition to the generic container image options, the `container-image-jib` also provides the following options:

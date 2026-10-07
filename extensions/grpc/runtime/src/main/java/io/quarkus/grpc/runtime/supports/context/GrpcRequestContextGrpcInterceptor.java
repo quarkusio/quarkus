@@ -38,12 +38,15 @@ public class GrpcRequestContextGrpcInterceptor implements ServerInterceptor, Pri
         Context capturedVertxContext = Vertx.currentContext();
         if (capturedVertxContext != null) {
             InjectableContext.ContextState state;
+            boolean activatedHere;
             if (!reqContext.isActive()) {
                 reqContext.activate();
                 state = reqContext.getState();
+                activatedHere = true;
             } else {
                 state = null;
-                log.warn("Request context already active when gRPC request started");
+                activatedHere = false;
+                log.debug("Request context already active when gRPC request started, leaving it to its owner");
             }
 
             // a gRPC service can return a StreamObserver<Messages.StreamingInputCallRequest> and instead of doing the work
@@ -132,7 +135,9 @@ public class GrpcRequestContextGrpcInterceptor implements ServerInterceptor, Pri
                     }
                 };
             } finally {
-                reqContext.deactivate();
+                if (activatedHere) {
+                    reqContext.deactivate();
+                }
             }
         } else {
             log.warn("Unable to activate the request scope - interceptor not called on the Vert.x event loop");

@@ -14,7 +14,7 @@ include::{includes}/extension-status.adoc[]
 == Overview
 
 Sometimes you need full control over the SQL sent to the database, or need to use database-specific SQL syntax that is not portable across databases.
-This guide shows you how to write native SQL queries in Quarkus using `@SQL` annotations and Java records, with compile-time generated implementations and no entity mapping required.
+This guide shows you how to write native SQL queries in Quarkus using `@NativeQuery` annotations and Java records, with compile-time generated implementations and no entity mapping required.
 
 If you're looking for entity mapping and compile-time validated queries, see the xref:quarkus-data-hibernate-getting-started.adoc[Getting Started with Quarkus Data Hibernate] guide instead.
 
@@ -133,7 +133,7 @@ The simplest thing you can do to access your database is to write native SQL que
 ----
 package org.acme;
 
-import org.hibernate.annotations.processing.SQL;
+import jakarta.persistence.NativeQuery;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -142,19 +142,17 @@ public interface BookQueries { // <1>
 
     record BookRecord(Long id, String title, String isbn, BigDecimal price) {} // <2>
 
-    @SQL("SELECT id, title, isbn, price FROM Book WHERE title = :title") // <3>
+    @NativeQuery("SELECT id, title, isbn, price FROM Book WHERE title = :title") // <3>
     List<BookRecord> findByTitle(String title); // <4>
 
-    @SQL("SELECT id, title, isbn, price FROM Book WHERE proce < :maxPrice")
+    @NativeQuery("SELECT id, title, isbn, price FROM Book WHERE proce < :maxPrice")
     List<BookRecord> cheaperThan(BigDecimal maxPrice);
 }
 ----
 <1> A repository interface that groups all your query methods for books. The annotation processor generates the implementation for you.
 <2> A Java record that maps to the columns returned by the SQL query. Each field name must match a column name in the result set.
-<3> `@SQL` sends raw SQL to the database. The `:title` syntax is a named parameter, it avoids SQL injection attacks.
+<3> `@NativeQuery` sends raw SQL to the database. The `:title` syntax is a named parameter, it avoids SQL injection attacks.
 <4> The method signature defines the parameters.
-
-// TODO Replace @SQL with Jakarta Persistence 4.0's standard https://github.com/jakartaee/persistence/pull/992[`@NativeQuery`] equivalent.
 
 We can now create a test in `src/test/java/org/acme/BookQueriesTest.java` that will check everything is working correctly:
 
@@ -231,7 +229,7 @@ You can fix the test by modifying the `BookQueries.java` file:
 
 [source,java]
 ----
-    @SQL("SELECT id, title, isbn, price FROM Book WHERE price < :maxPrice") // <1>
+    @NativeQuery("SELECT id, title, isbn, price FROM Book WHERE price < :maxPrice") // <1>
     List<BookRecord> cheaperThan(BigDecimal maxPrice);
 ----
 <1> Change `proce` to `price` here

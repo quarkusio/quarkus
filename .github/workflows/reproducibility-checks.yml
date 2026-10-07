@@ -72,7 +72,7 @@ jobs:
           job-name: ${{ matrix.name }}
           add-pr-comment: false
           add-job-summary: false
-          develocity-access-key: ${{ secrets.GRADLE_ENTERPRISE_ACCESS_KEY }}
+          develocity-access-key: ${{ secrets.DEVELOCITY_ACCESS_KEY }}
           develocity-token-expiry: 6
       - name: Build Quarkus
         run: ./mvnw $COMMON_MAVEN_ARGS $QUICK_INSTALL_MAVEN_ARGS -pl '!docs' clean install

@@ -7,7 +7,7 @@ similarGitHubHandleCheck:
   teams: [quarkus-push, quarkus-admin]
 develocity:
   enabled: true
-  url: "https://ge.quarkus.io/"
+  url: "https://develocity.quarkus.io/"
 workflows:
   rules:
     - allow:

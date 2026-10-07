@@ -29,8 +29,8 @@ jobs:
         id: publish
         uses: gradle/develocity-actions/maven-publish-build-scan@4b276bd81fb55e2fcbae724c48699de57e2156eb # v2.3
         with:
-          develocity-url: 'https://ge.quarkus.io'
-          develocity-access-key: ${{ secrets.GRADLE_ENTERPRISE_ACCESS_KEY }}
+          develocity-url: 'https://develocity.quarkus.io'
+          develocity-access-key: ${{ secrets.DEVELOCITY_ACCESS_KEY }}
       - name: Upload JSON file
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:

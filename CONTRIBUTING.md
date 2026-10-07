@@ -659,9 +659,9 @@ For more details see the `Get GIB arguments` step in `.github/workflows/ci-actio
 
 ###### Getting set up
 
-Quarkus has a Develocity instance set up at <https://ge.quarkus.io> that can be used to analyze the build performance of the Quarkus project and also provides build cache services.
+Quarkus has a Develocity instance set up at <https://develocity.quarkus.io> that can be used to analyze the build performance of the Quarkus project and also provides build cache services.
 
-If you have an account on <https://ge.quarkus.io>, this can speed up your local builds significantly.
+If you have an account on <https://develocity.quarkus.io>, this can speed up your local builds significantly.
 
 If you have a need or interest to share your build scans and use the build cache, you will need to get an account for the Develocity instance.
 It is only relevant for members of the Quarkus team and you should contact either Guillaume Smet or Max Andersen to set up your account.
@@ -679,7 +679,7 @@ From then your build scans will be sent to the Develocity instance and you will 
 You can alternatively also generate an API key from the Develocity UI and then use an environment variable like this:
 
 ```shell
-export DEVELOCITY_ACCESS_KEY=ge.quarkus.io=a_secret_key
+export DEVELOCITY_ACCESS_KEY=develocity.quarkus.io=a_secret_key
 ```
 
 When debugging a test (and especially flaky tests), you might want to temporarily disable the build cache.

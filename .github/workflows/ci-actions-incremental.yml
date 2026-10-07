@@ -406,7 +406,7 @@ jobs:
           job-name: "Initial JDK ${{ needs.configure.outputs.base-jdk-version }} Build"
           add-pr-comment: false
           add-job-summary: false
-          develocity-access-key: ${{ secrets.GRADLE_ENTERPRISE_ACCESS_KEY }}
+          develocity-access-key: ${{ secrets.DEVELOCITY_ACCESS_KEY }}
           develocity-token-expiry: 6
       - name: Build
         env:
@@ -696,7 +696,7 @@ jobs:
           job-name: "${{ matrix.java.name }}"
           add-pr-comment: false
           add-job-summary: false
-          develocity-access-key: ${{ secrets.GRADLE_ENTERPRISE_ACCESS_KEY }}
+          develocity-access-key: ${{ secrets.DEVELOCITY_ACCESS_KEY }}
           develocity-token-expiry: 6
       - name: Build
         env:
@@ -833,7 +833,7 @@ jobs:
           job-name: "Maven Tests - JDK ${{matrix.java.name}}"
           add-pr-comment: false
           add-job-summary: false
-          develocity-access-key: ${{ secrets.GRADLE_ENTERPRISE_ACCESS_KEY }}
+          develocity-access-key: ${{ secrets.DEVELOCITY_ACCESS_KEY }}
           develocity-token-expiry: 6
       - name: Build
         env:
@@ -947,7 +947,7 @@ jobs:
           job-name: "Gradle Tests - JDK ${{matrix.java.name}}"
           add-pr-comment: false
           add-job-summary: false
-          develocity-access-key: ${{ secrets.GRADLE_ENTERPRISE_ACCESS_KEY }}
+          develocity-access-key: ${{ secrets.DEVELOCITY_ACCESS_KEY }}
           develocity-token-expiry: 6
       - name: Build
         env:
@@ -1039,7 +1039,7 @@ jobs:
           job-name: "Devtools Tests - JDK ${{matrix.java.name}}"
           add-pr-comment: false
           add-job-summary: false
-          develocity-access-key: ${{ secrets.GRADLE_ENTERPRISE_ACCESS_KEY }}
+          develocity-access-key: ${{ secrets.DEVELOCITY_ACCESS_KEY }}
           develocity-token-expiry: 6
       - name: Build
         env:
@@ -1132,7 +1132,7 @@ jobs:
           job-name: "Kubernetes Tests - JDK ${{matrix.java.name}}"
           add-pr-comment: false
           add-job-summary: false
-          develocity-access-key: ${{ secrets.GRADLE_ENTERPRISE_ACCESS_KEY }}
+          develocity-access-key: ${{ secrets.DEVELOCITY_ACCESS_KEY }}
           develocity-token-expiry: 6
       - name: Build
         env:
@@ -1221,7 +1221,7 @@ jobs:
           job-name: "Quickstarts - JDK ${{matrix.java.name}}"
           add-pr-comment: false
           add-job-summary: false
-          develocity-access-key: ${{ secrets.GRADLE_ENTERPRISE_ACCESS_KEY }}
+          develocity-access-key: ${{ secrets.DEVELOCITY_ACCESS_KEY }}
           develocity-token-expiry: 6
       - uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         id: get-quickstarts-branch
@@ -1337,7 +1337,7 @@ jobs:
           job-name: "Platform Tests - JDK ${{matrix.java.name}}"
           add-pr-comment: false
           add-job-summary: false
-          develocity-access-key: ${{ secrets.GRADLE_ENTERPRISE_ACCESS_KEY }}
+          develocity-access-key: ${{ secrets.DEVELOCITY_ACCESS_KEY }}
           develocity-token-expiry: 6
       - uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         id: get-platform-branch
@@ -1436,7 +1436,7 @@ jobs:
           job-name: "Native Tests - Virtual Thread - ${{matrix.category}}"
           add-pr-comment: false
           add-job-summary: false
-          develocity-access-key: ${{ secrets.GRADLE_ENTERPRISE_ACCESS_KEY }}
+          develocity-access-key: ${{ secrets.DEVELOCITY_ACCESS_KEY }}
           develocity-token-expiry: 6
       - name: Build
         env:
@@ -1513,7 +1513,7 @@ jobs:
           job-name: "MicroProfile TCKs Tests"
           add-pr-comment: false
           add-job-summary: false
-          develocity-access-key: ${{ secrets.GRADLE_ENTERPRISE_ACCESS_KEY }}
+          develocity-access-key: ${{ secrets.DEVELOCITY_ACCESS_KEY }}
           develocity-token-expiry: 6
       - name: Verify
         env:
@@ -1634,7 +1634,7 @@ jobs:
           job-name: "Native Tests - ${{matrix.category}}"
           add-pr-comment: false
           add-job-summary: false
-          develocity-access-key: ${{ secrets.GRADLE_ENTERPRISE_ACCESS_KEY }}
+          develocity-access-key: ${{ secrets.DEVELOCITY_ACCESS_KEY }}
           develocity-token-expiry: 6
       - name: Cache Quarkus metadata
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
@@ -1804,7 +1804,7 @@ jobs:
           job-name: "Oracle Test Pilot ${{matrix.category}} - JDK ${{matrix.java-version}}"
           add-pr-comment: false
           add-job-summary: false
-          develocity-access-key: ${{ secrets.GRADLE_ENTERPRISE_ACCESS_KEY }}
+          develocity-access-key: ${{ secrets.DEVELOCITY_ACCESS_KEY }}
           develocity-token-expiry: 6
       - name: Create Oracle Test Pilot Database
         id: create_database
@@ -1923,7 +1923,7 @@ jobs:
           job-name: "Oracle Test Pilot ${{matrix.category}} - Native"
           add-pr-comment: false
           add-job-summary: false
-          develocity-access-key: ${{ secrets.GRADLE_ENTERPRISE_ACCESS_KEY }}
+          develocity-access-key: ${{ secrets.DEVELOCITY_ACCESS_KEY }}
           develocity-token-expiry: 6
       - name: Create Oracle Test Pilot Database
         id: create_database

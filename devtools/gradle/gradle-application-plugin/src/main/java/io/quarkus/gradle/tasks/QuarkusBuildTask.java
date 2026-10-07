@@ -216,7 +216,7 @@ public abstract class QuarkusBuildTask extends QuarkusTaskWithExtensionView {
 
     ApplicationModel resolveAppModelForBuild() {
         try {
-            return ToolingUtils.deserializeAppModel(getApplicationModel().get().getAsFile().toPath());
+            return ToolingUtils.deserializeAppModel(getApplicationModel().get().getAsFile().toPath(), relocationRoots());
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

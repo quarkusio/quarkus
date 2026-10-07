@@ -14,9 +14,11 @@ include::{includes}/extension-status.adoc[]
 == Overview
 
 Sometimes you need full control over the SQL sent to the database, or need to use database-specific SQL syntax that is not portable across databases.
-This guide shows you how to write native SQL queries in Quarkus using `@NativeQuery` annotations and Java records, with compile-time generated implementations and no entity mapping required.
+This guide shows you how to write native SQL queries in Quarkus using `@NativeQuery` annotations and Java records, with compile-time generated implementations.
+The examples work directly with query results and do not require entity classes.
 
-If you're looking for entity mapping and compile-time validated queries, see the xref:quarkus-data-hibernate-getting-started.adoc[Getting Started with Quarkus Data Hibernate] guide instead.
+You can also use native SQL with mapped entities.
+See the xref:quarkus-data-hibernate.adoc#our-first-repository[Quarkus Data Hibernate reference guide] for repository queries with entities, or the xref:quarkus-data-hibernate-getting-started.adoc[Getting Started with Quarkus Data Hibernate] guide to learn about entity mapping.
 
 == Prerequisites
 

@@ -439,19 +439,24 @@ public final class HibernateProcessorSupport {
         return new QuarkusPersistenceUnitCacheConfiguration(caches);
     }
 
+    @SuppressWarnings("deprecation")
     private static void configureValidation(QuarkusPersistenceUnitDescriptor descriptor,
             HibernateOrmConfigPersistenceUnit config) {
-        descriptor.getProperties().setProperty(
-                AvailableSettings.JAKARTA_VALIDATION_MODE,
-                config.validation().mode()
-                        .stream()
-                        .map(Enum::name)
-                        .collect(Collectors.joining(",")));
-        // ORM 8 controls validation-derived DDL independently of lifecycle validation.
-        if (!config.validation().mode().contains(ValidationMode.AUTO)
-                && !config.validation().mode().contains(ValidationMode.DDL)) {
-            descriptor.getProperties().setProperty(AvailableSettings.APPLY_VALIDATION_CONSTRAINTS, "disabled");
+        ValidationMode mode = config.validation().mode();
+
+        if (mode == ValidationMode.DDL) {
+            LOG.warnf("Persistence unit '%s': the 'ddl' validation mode is deprecated."
+                    + " Use 'quarkus.hibernate-orm.validation.ddl-influence' instead.",
+                    descriptor.getName());
+            mode = ValidationMode.NONE;
         }
+
+        descriptor.getProperties().setProperty(
+                AvailableSettings.JAKARTA_VALIDATION_MODE, mode.name());
+
+        descriptor.getProperties().setProperty(
+                AvailableSettings.APPLY_VALIDATION_CONSTRAINTS,
+                config.validation().ddlInfluence().name().toLowerCase(Locale.ROOT));
     }
 
     private static void configureQuoting(QuarkusPersistenceUnitDescriptor desc,

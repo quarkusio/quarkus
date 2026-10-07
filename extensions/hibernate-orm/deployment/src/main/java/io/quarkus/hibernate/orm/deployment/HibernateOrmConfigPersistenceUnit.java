@@ -747,37 +747,57 @@ public interface HibernateOrmConfigPersistenceUnit {
     interface HibernateOrmConfigPersistenceValidation {
 
         /**
-         * Defines how the Bean Validation integration behaves.
+         * Defines how the Bean Validation integration behaves for lifecycle event validation.
          */
         @WithDefault("auto")
-        Set<ValidationMode> mode();
+        ValidationMode mode();
+
+        /**
+         * Controls whether Jakarta Validation constraints (such as `@NotNull`, `@Size`, `@Digits` and others)
+         * influence the generated DDL schema.
+         */
+        @WithDefault("auto")
+        DdlInfluence ddlInfluence();
 
         enum ValidationMode {
             /**
-             * If a Bean Validation provider is present then behaves as if both `ValidationMode#CALLBACK` and
-             * `ValidationMode#DDL` modes are configured. Otherwise, same as `ValidationMode#NONE`.
-             *
-             * @asciidoclet
+             * If a Bean Validation provider is present then behaves as if `ValidationMode#CALLBACK` is configured
+             * and DDL influence is enabled. Otherwise, same as `ValidationMode#NONE`.
              */
             AUTO,
             /**
              * Bean Validation will perform the lifecycle event validation.
-             *
-             * @asciidoclet
              */
             CALLBACK,
             /**
              * Bean Validation constraints will be considered for the DDL operations.
              *
-             * @asciidoclet
+             * @deprecated Use `ddl-influence` instead. This value is deprecated following the deprecation
+             *             of `org.hibernate.boot.beanvalidation.ValidationMode.DDL` in Hibernate ORM 8.
              */
+            @Deprecated(since = "3.22", forRemoval = true)
             DDL,
             /**
              * Bean Validation integration will be disabled.
-             *
-             * @asciidoclet
              */
             NONE
+        }
+
+        enum DdlInfluence {
+            /**
+             * Apply validation constraints to the DDL schema if a Jakarta Validation provider is available
+             * on the classpath; silently skip otherwise.
+             */
+            AUTO,
+            /**
+             * Apply validation constraints to the DDL schema, failing with an error
+             * if no Jakarta Validation provider is available.
+             */
+            REQUIRED,
+            /**
+             * Do not apply validation constraints to the DDL schema.
+             */
+            DISABLED
         }
     }
 

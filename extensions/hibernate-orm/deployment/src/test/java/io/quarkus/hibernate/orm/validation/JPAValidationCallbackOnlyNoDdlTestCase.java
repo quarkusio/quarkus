@@ -9,7 +9,11 @@ import io.quarkus.hibernate.orm.MyEntity;
 import io.quarkus.test.QuarkusExtensionTest;
 import io.restassured.RestAssured;
 
-public class JPAValidationModeCallbackTestCase {
+/**
+ * Tests that lifecycle validation callbacks can be enabled while DDL influence is independently disabled
+ * using the new {@code quarkus.hibernate-orm.validation.ddl-influence} property.
+ */
+public class JPAValidationCallbackOnlyNoDdlTestCase {
 
     @RegisterExtension
     static QuarkusExtensionTest runner = new QuarkusExtensionTest()
@@ -18,7 +22,7 @@ public class JPAValidationModeCallbackTestCase {
             .overrideConfigKey("quarkus.hibernate-orm.validation.ddl-influence", "disabled");
 
     @Test
-    public void testInvalidEntity() {
+    public void testCallbackValidationEnabled() {
         RestAssured.given().body(
                 "The POST method should not persist an entity whose name exceeds the maximum allowed length.")
                 .when().post("/validation").then()
@@ -26,7 +30,7 @@ public class JPAValidationModeCallbackTestCase {
     }
 
     @Test
-    public void testDDL() {
+    public void testDdlInfluenceDisabled() {
         RestAssured.when().get("/validation").then()
                 .body(is("nullable: true"));
     }

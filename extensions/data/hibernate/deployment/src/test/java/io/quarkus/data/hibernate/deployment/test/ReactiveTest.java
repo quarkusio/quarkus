@@ -7,6 +7,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.arc.Arc;
+import io.quarkus.data.hibernate.managed.reactive.ReactiveManagedRepositoryBase;
+import io.quarkus.data.hibernate.record.reactive.ReactiveRecordRepositoryBase;
 import io.quarkus.hibernate.reactive.panache.common.WithTransaction;
 import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.vertx.RunOnVertxContext;
@@ -77,7 +79,7 @@ public class ReactiveTest {
 
     @WithTransaction(stateless = true)
     Uni<Void> modifyOneStatelessNoUpdate() {
-        return MyReactiveEntity_.statelessReactive().listAll()
+        return MyReactiveEntity_.recordReactive().listAll()
                 .onItem().invoke(list -> {
                     Assertions.assertEquals(1, list.size());
                     MyReactiveEntity entity = list.get(0);
@@ -90,7 +92,7 @@ public class ReactiveTest {
 
     @WithTransaction(stateless = true)
     Uni<Void> modifyOneStateless() {
-        return MyReactiveEntity_.statelessReactive().listAll()
+        return MyReactiveEntity_.recordReactive().listAll()
                 .flatMap(list -> {
                     Assertions.assertEquals(1, list.size());
                     MyReactiveEntity entity = list.get(0);
@@ -98,14 +100,14 @@ public class ReactiveTest {
                     Assertions.assertEquals("gee", entity.foo);
                     entity.foo = "fu";
                     // not ignored this time
-                    return entity.statelessReactive().update();
+                    return entity.recordReactive().update();
                 })
                 .replaceWithVoid();
     }
 
     @WithTransaction(stateless = true)
     Uni<Void> modifyOneStatelessCheck() {
-        return MyReactiveEntity_.statelessReactive().listAll()
+        return MyReactiveEntity_.recordReactive().listAll()
                 .onItem().invoke(list -> {
                     Assertions.assertEquals(1, list.size());
                     MyReactiveEntity entity = list.get(0);
@@ -116,7 +118,7 @@ public class ReactiveTest {
 
     @WithTransaction(stateless = true)
     Uni<Void> upsertNew() {
-        return MyReactiveEntity_.statelessReactive().count()
+        return MyReactiveEntity_.recordReactive().count()
                 .flatMap(count -> {
                     Assertions.assertEquals(0, count);
 
@@ -124,9 +126,9 @@ public class ReactiveTest {
                     entity.foo = "bar";
                     entity.id = 1L;
 
-                    return entity.statelessReactive().upsert();
+                    return entity.recordReactive().upsert();
                 })
-                .flatMap(v -> MyReactiveEntity_.statelessReactive().count())
+                .flatMap(v -> MyReactiveEntity_.recordReactive().count())
                 .map(count -> {
                     Assertions.assertEquals(1, count);
                     return null;
@@ -135,7 +137,7 @@ public class ReactiveTest {
 
     @WithTransaction(stateless = true)
     Uni<Void> upsertExisting() {
-        return MyReactiveEntity_.statelessReactive().listAll()
+        return MyReactiveEntity_.recordReactive().listAll()
                 .flatMap(list -> {
                     Assertions.assertEquals(1, list.size());
 
@@ -144,9 +146,9 @@ public class ReactiveTest {
                     Assertions.assertEquals(1L, entity.id);
                     entity.foo = "fu";
 
-                    return entity.statelessReactive().upsert();
+                    return entity.recordReactive().upsert();
                 })
-                .flatMap(v -> MyReactiveEntity_.statelessReactive().count())
+                .flatMap(v -> MyReactiveEntity_.recordReactive().count())
                 .map(count -> {
                     Assertions.assertEquals(1, count);
                     return null;
@@ -155,16 +157,16 @@ public class ReactiveTest {
 
     @WithTransaction(stateless = true)
     Uni<Void> upsertCheck() {
-        return MyReactiveEntity_.statelessReactive().listAll()
+        return MyReactiveEntity_.recordReactive().listAll()
                 .flatMap(list -> {
                     Assertions.assertEquals(1, list.size());
 
                     MyReactiveEntity entity = list.get(0);
                     Assertions.assertEquals("fu", entity.foo);
 
-                    return entity.statelessReactive().upsert();
+                    return entity.recordReactive().upsert();
                 })
-                .flatMap(v -> MyReactiveEntity_.statelessReactive().count())
+                .flatMap(v -> MyReactiveEntity_.recordReactive().count())
                 .map(count -> {
                     Assertions.assertEquals(1, count);
                     return null;
@@ -193,6 +195,41 @@ public class ReactiveTest {
                 .replaceWithVoid();
     }
 
+    @WithTransaction
+    Uni<Void> repositorySwitchingFromManaged() {
+        MyReactiveEntity entity = new MyReactiveEntity();
+        entity.foo = "switch-test";
+        return entity.persist()
+                .flatMap(v -> {
+                    var managedRepo = MyReactiveEntity_.managedReactive();
+                    Assertions.assertInstanceOf(ReactiveManagedRepositoryBase.class, managedRepo);
+                    var statelessRepo = managedRepo.recordReactive();
+                    Assertions.assertInstanceOf(ReactiveRecordRepositoryBase.class, statelessRepo);
+                    var managedAgain = statelessRepo.managedReactive();
+                    Assertions.assertInstanceOf(ReactiveManagedRepositoryBase.class, managedAgain);
+                    return managedAgain.count();
+                })
+                .onItem().invoke(count -> Assertions.assertEquals(1L, count))
+                .replaceWithVoid();
+    }
+
+    @WithTransaction(stateless = true)
+    Uni<Void> repositorySwitchingFromStateless() {
+        return MyReactiveEntity_.recordReactive().count()
+                .flatMap(count -> {
+                    Assertions.assertEquals(1L, count);
+                    var statelessRepo = MyReactiveEntity_.recordReactive();
+                    Assertions.assertInstanceOf(ReactiveRecordRepositoryBase.class, statelessRepo);
+                    var managedRepo = statelessRepo.managedReactive();
+                    Assertions.assertInstanceOf(ReactiveManagedRepositoryBase.class, managedRepo);
+                    var statelessAgain = managedRepo.recordReactive();
+                    Assertions.assertInstanceOf(ReactiveRecordRepositoryBase.class, statelessAgain);
+                    return statelessAgain.count();
+                })
+                .onItem().invoke(count -> Assertions.assertEquals(1L, count))
+                .replaceWithVoid();
+    }
+
     @Test
     void testRepositoryScopeIsApplicationScoped() {
         Assertions.assertEquals(ApplicationScoped.class,
@@ -216,6 +253,10 @@ public class ReactiveTest {
         asserter.execute(() -> upsertExisting());
         asserter.execute(() -> upsertCheck());
         asserter.execute(() -> runQueries());
+        asserter.execute(() -> clear());
+        asserter.execute(() -> repositorySwitchingFromManaged());
+        asserter.execute(() -> repositorySwitchingFromStateless());
+        asserter.execute(() -> clear());
     }
 
 }

@@ -34,6 +34,20 @@ public interface HibernateOrmConfigPersistenceUnit {
     Optional<@WithConverter(TrimmedStringConverter.class) String> datasource();
 
     /**
+     * The name of an external client (e.g. a MongoDB client) that this persistence unit connects to.
+     * <p>
+     * When set, the persistence unit does not use a JDBC datasource but instead relies on
+     * an extension (such as {@code quarkus-mongodb-hibernate}) to provide the connection.
+     * That extension must produce a
+     * {@link io.quarkus.hibernate.orm.deployment.spi.PersistenceUnitClientResolverBuildItem
+     * PersistenceUnitClientResolverBuildItem}
+     * to configure the dialect and connection properties.
+     * <p>
+     * Mutually exclusive with {@link #datasource()}.
+     */
+    Optional<@WithConverter(TrimmedStringConverter.class) String> client();
+
+    /**
      * The packages in which the entities affected to this persistence unit are located.
      */
     Optional<Set<@WithConverter(TrimmedStringConverter.class) String>> packages();

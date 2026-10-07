@@ -13,9 +13,11 @@ import java.util.stream.Collectors;
 
 import org.jboss.logging.Logger;
 
+import io.quarkus.datasource.common.runtime.DataSourceUtil;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.annotations.BuildProducer;
+import io.quarkus.deployment.component.ComponentLookup;
 import io.quarkus.hibernate.orm.deployment.HibernateOrmConfig;
 import io.quarkus.hibernate.orm.deployment.HibernateOrmConfigPersistenceUnit;
 import io.quarkus.hibernate.orm.deployment.JpaModelPerPersistenceUnitBuildItem;
@@ -116,6 +118,8 @@ public final class PersistenceUnitDefinitionSupport {
     public static void definePersistenceUnits(ProgrammingParadigm paradigm,
             HibernateOrmConfig config,
             PersistenceUnitLookupBuildItem lookupBuildItem,
+            ComponentLookup dataSourceLookup,
+            ComponentLookup clientLookup,
             List<PersistenceUnitRequestBuildItem> puRequests,
             List<PersistenceXmlDescriptorBuildItem> persistenceXmlDescriptors,
             List<AdditionalPersistenceUnitBuildItem> additionalPersistenceUnits,
@@ -163,7 +167,7 @@ public final class PersistenceUnitDefinitionSupport {
                     .add(item.getReason());
             var previous = additionalConfigs.put(puName,
                     new PersistenceUnitDefinitionBuildItem.AdditionalConfig(
-                            item.getDataSourceName(),
+                            item.getDataSourceName(), item.getClientName(),
                             item.getExplicitDialect(), item.getProperties()));
             if (previous != null) {
                 throw new IllegalStateException("Multiple " + AdditionalPersistenceUnitBuildItem.class.getSimpleName()
@@ -200,15 +204,88 @@ public final class PersistenceUnitDefinitionSupport {
             }
 
             PersistenceUnitDefinitionBuildItem.AdditionalConfig additionalConfig = additionalConfigs.get(puName);
-            Optional<String> dataSourceName = additionalConfig != null
-                    ? additionalConfig.dataSourceName().or(() -> HibernateProcessorUtil.getDataSourceName(config, puName))
-                    : HibernateProcessorUtil.getDataSourceName(config, puName);
+            BackendResolution backend = resolveBackend(config, puName, additionalConfig, dataSourceLookup, clientLookup);
+            if (backend.dataSourceName().isPresent() && backend.clientName().isPresent()) {
+                if (backend.explicit()) {
+                    throw new ConfigurationException(String.format(Locale.ROOT,
+                            "Persistence unit '%s' has both '%s' and '%s' set."
+                                    + " A persistence unit must use either a datasource or an external client, not both.",
+                            puName,
+                            HibernateOrmRuntimeConfig.puPropertyKey(puName, "datasource"),
+                            HibernateOrmRuntimeConfig.puPropertyKey(puName, "client")));
+                }
+                throw new ConfigurationException(String.format(Locale.ROOT,
+                        "Ambiguous configuration for the default persistence unit:"
+                                + " both a default datasource and a default external client are available."
+                                + " Set '%s' or '%s' explicitly.",
+                        HibernateOrmRuntimeConfig.puPropertyKey(puName, "datasource"),
+                        HibernateOrmRuntimeConfig.puPropertyKey(puName, "client")));
+            }
             persistenceUnitDefinitions.produce(new PersistenceUnitDefinitionBuildItem(puName, paradigm,
                     entry.getValue(),
                     config.persistenceUnits().get(puName),
-                    dataSourceName,
-                    Optional.ofNullable(additionalConfigs.get(puName))));
+                    backend.dataSourceName(),
+                    backend.clientName(),
+                    Optional.ofNullable(additionalConfig)));
         }
+    }
+
+    record BackendResolution(Optional<String> dataSourceName, Optional<String> clientName, boolean explicit) {
+    }
+
+    /**
+     * Resolves both the effective datasource name and client name for a persistence unit.
+     * <p>
+     * Normally only one of the two is present (a PU uses either a datasource or a client).
+     * When both are present, the caller should treat that as an ambiguity error.
+     * <p>
+     * Resolution order:
+     * <ol>
+     * <li>Additional config (from {@link AdditionalPersistenceUnitBuildItem}): datasource or client, as specified</li>
+     * <li>Explicit {@code client} config property: client, no datasource</li>
+     * <li>For the default PU with no explicit datasource: returns both if both are available
+     * (ambiguous), client only if only the client is available</li>
+     * <li>Otherwise: datasource from config</li>
+     * </ol>
+     */
+    static BackendResolution resolveBackend(HibernateOrmConfig config, String puName,
+            PersistenceUnitDefinitionBuildItem.AdditionalConfig additionalConfig,
+            ComponentLookup dataSourceLookup, ComponentLookup clientLookup) {
+        if (additionalConfig != null) {
+            if (additionalConfig.clientName().isPresent()) {
+                return new BackendResolution(Optional.empty(), additionalConfig.clientName(), true);
+            }
+            Optional<String> dataSourceName = additionalConfig.dataSourceName()
+                    .or(() -> HibernateProcessorUtil.getDataSourceName(config, puName));
+            return new BackendResolution(dataSourceName, Optional.empty(), true);
+        }
+
+        HibernateOrmConfigPersistenceUnit puConfig = config.persistenceUnits().get(puName);
+        if (puConfig != null && puConfig.datasource().isPresent() && puConfig.client().isPresent()) {
+            return new BackendResolution(puConfig.datasource(), puConfig.client(), true);
+        }
+        if (puConfig != null && puConfig.client().isPresent()) {
+            return new BackendResolution(Optional.empty(), puConfig.client(), true);
+        }
+
+        if (PersistenceUnitUtil.isDefaultPersistenceUnit(puName)
+                && (puConfig == null || puConfig.datasource().isEmpty())) {
+            boolean dataSourceAvailable = dataSourceLookup.unavailableReasons(DataSourceUtil.DEFAULT_DATASOURCE_NAME,
+                    ProgrammingParadigm.BLOCKING).isEmpty();
+            boolean clientAvailable = clientLookup.unavailableReasons(DataSourceUtil.DEFAULT_DATASOURCE_NAME,
+                    ProgrammingParadigm.BLOCKING).isEmpty();
+            if (dataSourceAvailable && clientAvailable) {
+                return new BackendResolution(
+                        Optional.of(DataSourceUtil.DEFAULT_DATASOURCE_NAME),
+                        Optional.of(DataSourceUtil.DEFAULT_DATASOURCE_NAME),
+                        false);
+            }
+            if (clientAvailable) {
+                return new BackendResolution(Optional.empty(), Optional.of(DataSourceUtil.DEFAULT_DATASOURCE_NAME), true);
+            }
+        }
+
+        return new BackendResolution(HibernateProcessorUtil.getDataSourceName(config, puName), Optional.empty(), true);
     }
 
     private static boolean isExplicitlyDisabled(ProgrammingParadigm paradigm, String puName, HibernateOrmConfig config) {

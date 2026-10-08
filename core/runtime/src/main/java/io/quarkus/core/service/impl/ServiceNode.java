@@ -601,7 +601,7 @@ public final class ServiceNode implements Runnable, AsyncStartContext<Object>, A
             old = wit;
         }
         if (remainingDepsOf(next) == 0 && stateOf(next) == S_PENDING) {
-            graph.executor().execute(this);
+            graph.execute(this);
         }
     }
 
@@ -683,7 +683,7 @@ public final class ServiceNode implements Runnable, AsyncStartContext<Object>, A
             old = wit;
         }
         if (shouldStop) {
-            graph.executor().execute(this::runStopHandler);
+            graph.execute(this::runStopHandler);
         }
     }
 
@@ -715,7 +715,7 @@ public final class ServiceNode implements Runnable, AsyncStartContext<Object>, A
             }
             old = wit;
         }
-        graph.executor().execute(this::runStopHandler);
+        graph.execute(this::runStopHandler);
     }
 
     /**
@@ -745,7 +745,7 @@ public final class ServiceNode implements Runnable, AsyncStartContext<Object>, A
             }
             old = wit;
         }
-        graph.executor().execute(this::runStopHandler);
+        graph.execute(this::runStopHandler);
     }
 
     /**

@@ -324,6 +324,19 @@ List<String> findNames(String name); <4>
 <3> Queries can of course refer to method parameters.
 <4> Native queries refer to database tables and columns instead of entity names and fields.
 
+`@Query` also supports bulk `UPDATE` and `DELETE` queries. These methods can return the number of affected entities:
+
+[source,java]
+----
+import jakarta.data.repository.Query;
+
+@Query("update Cat set name = :newName where name = :name")
+long renameCats(String name, String newName);
+
+@Query("delete from Cat where name = :name")
+long deleteByName(String name);
+----
+
 Generated finder and HQL query methods are type-checked at build time. They are validated for entity names, fields,
 HQL syntax, and parameter names. Native SQL is validated by the database when the query is executed.
 

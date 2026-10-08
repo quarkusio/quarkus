@@ -281,6 +281,17 @@ Cat findCatByNameAndBreed(String name, Breed breed); <3>
 <2> Or generate `COUNT` queries
 <3> Or single entities, and any number of parameters which must all match the queried entities.
 
+Use `@Delete` instead of `@Find` to delete entities matching the method parameters. The method can return the number
+of deleted entities:
+
+[source,java]
+----
+import jakarta.data.repository.Delete;
+
+@Delete
+long deleteByName(String name);
+----
+
 Alternatively, use Jakarta Data's `@Query` for entity queries or Jakarta Persistence's
 `@jakarta.persistence.query.NativeQuery` for native SQL. Jakarta Data's `@Query` supports JPQL and its portable
 Jakarta Data Query Language subset (JDQL). Hibernate also accepts HQL extensions in `@Query`. The Hibernate documentation contains the complete

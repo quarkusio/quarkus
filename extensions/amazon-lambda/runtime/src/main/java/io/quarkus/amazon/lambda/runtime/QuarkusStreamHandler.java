@@ -19,6 +19,7 @@ import io.quarkus.runtime.Quarkus;
 public class QuarkusStreamHandler implements RequestStreamHandler {
     public QuarkusStreamHandler() {
         Quarkus.manualInitialize();
+        LambdaInternalExtension.startIfEnabled();
     }
 
     @Override

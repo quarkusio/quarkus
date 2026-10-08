@@ -128,6 +128,9 @@ or `WithId.AutoUUIDv7` for a time-sortable `UUID` identifier. The following tabl
 |Assigned by the application
 |===
 
+NOTE: `WithId<Id>` provides an inherited `@Id` field without an identifier generator. You must assign its value before
+persisting the entity.
+
 For example, extend `WithId.AutoUUIDv7` to use generated UUIDv7 identifiers:
 
 [source,java]

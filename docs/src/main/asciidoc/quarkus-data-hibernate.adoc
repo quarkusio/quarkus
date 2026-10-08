@@ -415,6 +415,16 @@ public void repositoryOperations(Cat cat) {
 }
 ----
 
+[[generated-metamodels]]
+=== Generated metamodels
+
+The annotation processor generates two different metamodels for `Cat`:
+
+- `_Cat`, with a leading underscore, is the Jakarta Data metamodel. Its typed attributes build restrictions and sort criteria.
+- `Cat_`, with a trailing underscore, is the Jakarta Persistence metamodel. Its string attribute constants can be used in repository queries.
+
+Both are generated in the same package as `Cat`; the examples below assume `org.acme`.
+
 === Dynamically built queries
 
 When defining finder and query operations on a repository, queries are validated and generated at build time.
@@ -437,13 +447,7 @@ import java.util.List;
 List<Cat> search(Restriction<Cat> restriction, Order<Cat> order);
 ----
 
-The annotation processor generates two different metamodels for `Cat`:
-
-- `_Cat`, with a leading underscore, is the Jakarta Data metamodel. Its typed attributes build restrictions and sort criteria.
-- `Cat_`, with a trailing underscore, is the Jakarta Persistence metamodel. Its string attribute constants are used in the next subsection.
-
-Both are generated in the same package as `Cat`; the examples below assume `org.acme`.
-Use `_Cat` for type-safe restrictions and ordering:
+Use the <<generated-metamodels,generated Jakarta Data metamodel>> `_Cat` for type-safe restrictions and ordering:
 
 [source,java]
 ----

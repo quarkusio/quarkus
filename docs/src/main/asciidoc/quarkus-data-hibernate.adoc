@@ -177,8 +177,8 @@ corresponding `CustomId<Entity, Id>` repository interface; see <<entity-and-repo
 == Repositories
 
 A Quarkus Data Hibernate repository is an interface containing annotated finder, query, or lifecycle methods.
-The annotation processor generates its implementation. A repository may also declare `default` methods with custom
-implementations.
+The annotation processor generates its implementation. A repository may also declare unannotated `default` methods
+for custom operations.
 
 A repository does not need to extend another interface, but Quarkus Data provides a few repository supertypes worth
 considering for convenience. The usual conventions are to nest the repository in its entity and extend

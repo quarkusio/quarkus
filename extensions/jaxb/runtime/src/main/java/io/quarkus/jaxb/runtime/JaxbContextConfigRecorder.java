@@ -5,18 +5,20 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
-import io.quarkus.runtime.annotations.Recorder;
-
-@Recorder
 public class JaxbContextConfigRecorder {
     private volatile static Set<Class<?>> classesToBeBound = new HashSet<>();
 
-    public void addClassesToBeBound(Collection<Class<?>> classes) {
-        this.classesToBeBound.addAll(classes);
+    public static void addClassesToBeBound(Collection<Class<?>> classes) {
+        classesToBeBound.addAll(classes);
     }
 
-    public void reset() {
+    public static void reset() {
         classesToBeBound.clear();
+    }
+
+    public static void bindClasses(Collection<Class<?>> classes) {
+        reset();
+        addClassesToBeBound(classes);
     }
 
     public static Set<Class<?>> getClassesToBeBound() {

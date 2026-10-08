@@ -5,6 +5,7 @@ import java.lang.invoke.MethodHandles;
 import java.lang.invoke.VarHandle;
 import java.util.ArrayDeque;
 import java.util.concurrent.Executor;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.BooleanSupplier;
@@ -207,6 +208,25 @@ public final class ServiceGraph {
     }
 
     /**
+     * Execute a task on the current executor, falling back to the
+     * main-thread queue if the executor rejects the task.
+     * <p>
+     * This prevents a bounded thread pool (e.g. one with a limited
+     * queue size and a rejecting handoff executor) from silently
+     * dropping service node tasks, which would leave nodes stranded
+     * in {@code PENDING} and hang the startup drain loop.
+     *
+     * @param task the task to execute (must not be {@code null})
+     */
+    void execute(Runnable task) {
+        try {
+            executor().execute(task);
+        } catch (RejectedExecutionException t) {
+            submitToMainThread(task);
+        }
+    }
+
+    /**
      * Set a new executor for dispatching service actions.
      * Returns the previous executor so it can be restored later
      * (typically during shutdown).
@@ -287,7 +307,7 @@ public final class ServiceGraph {
         if (bottom == null) {
             throw new IllegalStateException("Bottom sentinel not set");
         }
-        executor().execute(top);
+        execute(top);
         // drain until the bottom sentinel either completes (signaling startDone)
         // or is canceled/failed (failure propagated to sentinel)
         drainUntil(() -> startDone || bottom.state() >= ServiceNode.S_FAILED);

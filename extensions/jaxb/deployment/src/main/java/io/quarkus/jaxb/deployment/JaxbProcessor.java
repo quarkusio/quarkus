@@ -64,11 +64,11 @@ import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.SynthesisFinishedBuildItem;
 import io.quarkus.arc.processor.BeanInfo;
 import io.quarkus.arc.processor.BeanResolver;
+import io.quarkus.core.Phase;
+import io.quarkus.core.deployment.service.ServiceRegistrar;
 import io.quarkus.deployment.ApplicationArchive;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
-import io.quarkus.deployment.annotations.ExecutionTime;
-import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageProxyDefinitionBuildItem;
@@ -362,22 +362,23 @@ public class JaxbProcessor {
     }
 
     @BuildStep
-    @Record(ExecutionTime.STATIC_INIT)
     void bindClassesToJaxbContext(
             JaxbConfig config,
             FilteredJaxbClassesToBeBoundBuildItem filteredClassesToBeBound,
             SynthesisFinishedBuildItem beanContainerState,
-            JaxbContextConfigRecorder jaxbContextConfig /* Force the build time container to invoke this method */) {
+            ServiceRegistrar serviceRegistrar) {
 
-        jaxbContextConfig.reset();
         final BeanResolver beanResolver = beanContainerState.getBeanResolver();
         final Set<BeanInfo> beans = beanResolver
                 .resolveBeans(Type.create(DotName.createSimple(JAXBContext.class), org.jboss.jandex.Type.Kind.CLASS));
-        if (!beans.isEmpty()) {
-            jaxbContextConfig.addClassesToBeBound(filteredClassesToBeBound.getClasses());
-            if (config.validateJaxbContext()) {
-                validateJaxbContext(filteredClassesToBeBound, beanResolver, beans);
-            }
+        final List<String> classNames = beans.isEmpty() ? List.of()
+                : List.copyOf(filteredClassesToBeBound.getClasses().stream().map(Class::getName).toList());
+        serviceRegistrar
+                .forService("io.quarkus.jaxb.classes-to-be-bound")
+                .atPhase(Phase.STATIC_INIT)
+                .onStart(ctx -> JaxbContextConfigRecorder.bindClasses(classNames));
+        if (!beans.isEmpty() && config.validateJaxbContext()) {
+            validateJaxbContext(filteredClassesToBeBound, beanResolver, beans);
         }
     }
 

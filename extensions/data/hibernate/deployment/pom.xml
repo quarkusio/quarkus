@@ -145,8 +145,12 @@
                                 <annotationProcessorPath>
                                     <groupId>io.quarkus</groupId>
                                     <artifactId>quarkus-data-processor</artifactId>
+                                    <version>${project.version}</version>
                                 </annotationProcessorPath>
                             </annotationProcessorPaths>
+                            <annotationProcessors>
+                                <annotationProcessor>org.hibernate.processor.HibernateProcessor</annotationProcessor>
+                            </annotationProcessors>
                         </configuration>
                     </execution>
                 </executions>

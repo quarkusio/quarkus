@@ -135,17 +135,19 @@ For example, extend `WithId.AutoUUIDv7` to use generated UUIDv7 identifiers:
 
 [source,java]
 ----
+import io.quarkus.data.hibernate.ManagedEntity;
 import io.quarkus.data.hibernate.WithId;
 import jakarta.persistence.Entity;
 
 @Entity
-public class CatWithUUID extends WithId.AutoUUIDv7 {
+public class CatWithUUID extends WithId.AutoUUIDv7 implements ManagedEntity.CustomId {
     public String name;
 }
 ----
 
 The entity inherits an `id` field of type `java.util.UUID`. When the entity is persisted, Hibernate automatically
 generates a time-sortable version 7 UUID for this field. You do not need to declare or assign the identifier yourself.
+Implementing `ManagedEntity.CustomId` also provides managed entity operations such as `persist()` and `delete()`.
 
 You can also provide your own database identifier explicitly and implement the `ManagedEntity.CustomId` interface in
 your entity, as well as use the `ManagedRepository.CustomId` interface for your repository, to specify the database

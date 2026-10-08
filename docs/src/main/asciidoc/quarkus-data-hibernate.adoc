@@ -86,7 +86,10 @@ automatically sent to the database without an explicit `update` instruction.
 === Entity field access
 
 Quarkus enhances entity bytecode at build time, so public fields can be accessed directly without writing getters and
-setters. This includes tracking changes to managed entities. See
+setters. Missing getters and setters are generated, and public-field access is rewritten to invoke the corresponding
+accessor methods. For example, reading `cat.name` invokes `getName()`, and assigning `cat.name` invokes `setName()`.
+You can write these accessors yourself to add custom logic; callers can continue using the public field without changes.
+Enhancement also tracks changes to managed entities. See
 xref:hibernate-orm.adoc#automatic-build-time-enhancement[Automatic build time enhancement].
 Public fields are a convenience, not a requirement: private fields with accessors and Jakarta Persistence property
 access are also supported.

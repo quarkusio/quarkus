@@ -10,23 +10,13 @@ import io.narayana.lra.LRAConstants;
 import io.narayana.lra.client.NarayanaLRAClient;
 import io.narayana.lra.client.internal.proxy.nonjaxrs.LRAParticipant;
 import io.narayana.lra.client.internal.proxy.nonjaxrs.LRAParticipantRegistry;
-import io.quarkus.runtime.RuntimeValue;
-import io.quarkus.runtime.annotations.Recorder;
 
-@Recorder
 public class NarayanaLRARecorder {
     private static final Logger log = Logger.getLogger(NarayanaLRARecorder.class);
 
     static LRAParticipantRegistry registry;
 
-    private final RuntimeValue<LRAConfiguration> runtimeConfig;
-
-    public NarayanaLRARecorder(final RuntimeValue<LRAConfiguration> runtimeConfig) {
-        this.runtimeConfig = runtimeConfig;
-    }
-
-    public void setConfig() {
-        LRAConfiguration lraConfig = runtimeConfig.getValue();
+    public static void setConfig(LRAConfiguration lraConfig) {
         // once this is unified in LRA project, we can move this to RelocateConfigSourceInterceptor
         setValue(NarayanaLRAClient.LRA_COORDINATOR_URL_KEY, lraConfig.coordinatorURL());
         if (lraConfig.baseUri().isPresent()) {
@@ -40,7 +30,7 @@ public class NarayanaLRARecorder {
         }
     }
 
-    public void setParticipantTypes(List<String> classNames) {
+    public static void setParticipantTypes(List<String> classNames) {
         Map<String, LRAParticipant> nonJaxParticipants = new HashMap<>();
 
         for (String className : classNames) {

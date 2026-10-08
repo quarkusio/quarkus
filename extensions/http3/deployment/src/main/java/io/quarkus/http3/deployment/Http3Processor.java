@@ -23,11 +23,10 @@ import org.jboss.logging.Logger;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
+import io.quarkus.core.Phase;
+import io.quarkus.core.deployment.service.ServiceRegistrar;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
-import io.quarkus.deployment.annotations.Consume;
-import io.quarkus.deployment.annotations.ExecutionTime;
-import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
@@ -217,24 +216,28 @@ class Http3Processor {
     }
 
     @BuildStep
-    @Record(ExecutionTime.RUNTIME_INIT)
     void setCertOrigin(
             Http3EnabledBuildItem http3Enabled,
             Http3CertOriginBuildItem certOriginItem,
-            Http3Recorder recorder) {
-        recorder.setCertOrigin(certOriginItem.getCertOrigin());
+            ServiceRegistrar serviceRegistrar) {
+        CertOrigin certOrigin = certOriginItem.getCertOrigin();
+        serviceRegistrar
+                .forService("io.quarkus.http3.cert-origin")
+                .atPhase(Phase.STATIC_INIT)
+                .onStart(ctx -> Http3Recorder.setCertOrigin(certOrigin));
     }
 
     @BuildStep
-    @Record(ExecutionTime.RUNTIME_INIT)
-    @Consume(ServiceStartBuildItem.class)
     void verifyTlsInProductionMode(
-            HttpServerStartedBuildItem httpServerStartedBuildItem, // Barrier.
             Http3EnabledBuildItem http3Enabled, // Only produced if configured.
             LaunchModeBuildItem launchMode,
-            Http3Recorder recorder) {
+            ServiceRegistrar serviceRegistrar) {
         if (launchMode.getLaunchMode() == LaunchMode.NORMAL) {
-            recorder.checkTls();
+            serviceRegistrar
+                    .forService("io.quarkus.http3.verify-tls")
+                    .afterBuildItem(HttpServerStartedBuildItem.class)
+                    .afterBuildItem(ServiceStartBuildItem.class)
+                    .onStart(ctx -> Http3Recorder.checkTls());
         }
     }
 

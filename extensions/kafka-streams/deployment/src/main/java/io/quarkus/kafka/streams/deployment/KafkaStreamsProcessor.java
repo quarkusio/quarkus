@@ -2,7 +2,10 @@ package io.quarkus.kafka.streams.deployment;
 
 import static io.quarkus.kafka.streams.runtime.KafkaStreamsPropertiesUtil.buildKafkaStreamsProperties;
 
+import java.util.Map;
 import java.util.Properties;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import jakarta.inject.Singleton;
 
@@ -21,15 +24,16 @@ import org.rocksdb.Status;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
+import io.quarkus.core.Phase;
+import io.quarkus.core.deployment.service.ServiceRegistrar;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
-import io.quarkus.deployment.annotations.ExecutionTime;
-import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.ModuleEnableNativeAccessBuildItem;
 import io.quarkus.deployment.builditem.NativeImageFeatureBuildItem;
+import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.JniRuntimeAccessBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
@@ -229,16 +233,21 @@ class KafkaStreamsProcessor {
     }
 
     @BuildStep
-    @Record(ExecutionTime.STATIC_INIT)
-    void processBuildTimeConfig(KafkaStreamsRecorder recorder, LaunchModeBuildItem launchMode,
+    void processBuildTimeConfig(ServiceRegistrar serviceRegistrar, LaunchModeBuildItem launchMode,
             BuildProducer<SyntheticBeanBuildItem> syntheticBeanBuildItemBuildProducer,
             BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
         Properties kafkaStreamsProperties = buildKafkaStreamsProperties(launchMode.getLaunchMode());
+        Map<String, String> properties = kafkaStreamsProperties.stringPropertyNames().stream()
+                .collect(Collectors.toUnmodifiableMap(Function.identity(), kafkaStreamsProperties::getProperty));
+        serviceRegistrar
+                .forService(KafkaStreamsSupport.class)
+                .atPhase(Phase.STATIC_INIT)
+                .onStart(ctx -> KafkaStreamsRecorder.kafkaStreamsSupport(properties));
 
         // create KafkaStreamsSupport as a synthetic bean
         syntheticBeanBuildItemBuildProducer.produce(SyntheticBeanBuildItem.configure(KafkaStreamsSupport.class)
                 .scope(Singleton.class)
-                .supplier(recorder.kafkaStreamsSupportSupplier(kafkaStreamsProperties))
+                .serviceValue(KafkaStreamsSupport.class)
                 .done());
 
         // make the producer an unremovable bean
@@ -247,11 +256,13 @@ class KafkaStreamsProcessor {
     }
 
     @BuildStep
-    @Record(ExecutionTime.RUNTIME_INIT)
-    void loadRocksDb(KafkaStreamsRecorder recorder) {
+    ServiceStartBuildItem loadRocksDb(ServiceRegistrar serviceRegistrar) {
         // Explicitly loading RocksDB native libs, as that's normally done from within
         // static initializers which already ran during build
-        recorder.loadRocksDb();
+        serviceRegistrar
+                .forService("io.quarkus.kafka.streams.load-rocksdb")
+                .onStart(ctx -> KafkaStreamsRecorder.loadRocksDb());
+        return new ServiceStartBuildItem("kafka-streams-rocksdb");
     }
 
     @BuildStep

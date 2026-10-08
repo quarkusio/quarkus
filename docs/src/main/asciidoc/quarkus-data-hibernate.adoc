@@ -555,11 +555,15 @@ List<Cat> byNameThenBirth = repo.findAll()
 
 Quarkus Data Hibernate supports managed and stateless sessions with blocking and reactive APIs.
 
+[[use-stateful-sessions]]
+=== Managed entities and stateful sessions
+
+Use `ManagedEntity` and `ManagedRepository` for Hibernate ORM _stateful sessions_. Entities persisted or obtained
+through a stateful session are managed by Hibernate ORM, and changes to their fields are automatically sent to the
+database without requiring an explicit `update` operation. The session type is `Session`.
+
 [[use-stateless-sessions]]
 === Record entities and stateless sessions
-
-Subtypes of `ManagedEntity` are managed by Hibernate ORM, and changes to the entity are automatically sent to the
-database without requiring an explicit `update` operation.
 
 To make every update operation explicit, use a Hibernate ORM _stateless session_. Extend `RecordEntity` for the entity
 and `RecordRepository` for its repository. Compared with a managed entity:

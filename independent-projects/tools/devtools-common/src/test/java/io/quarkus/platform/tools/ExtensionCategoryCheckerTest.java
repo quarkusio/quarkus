@@ -75,7 +75,7 @@ public class ExtensionCategoryCheckerTest {
                   ]
                 }
                 """);
-        ExtensionCategoryChecker checker = new ExtensionCategoryChecker(file, SILENT);
+        ExtensionCategoryChecker checker = new ExtensionCategoryChecker(file, null, SILENT);
 
         assertThat(checker.findUnknownCategories(extensionDescriptor("web", "logging")))
                 .containsExactly("logging");
@@ -83,14 +83,14 @@ public class ExtensionCategoryCheckerTest {
 
     @Test
     public void hasNoKnownCategoriesWhenFileIsNullAndRegistryClientDisabled() throws IOException {
-        ExtensionCategoryChecker checker = new ExtensionCategoryChecker(SILENT);
+        ExtensionCategoryChecker checker = new ExtensionCategoryChecker(null, SILENT);
 
         assertThat(checker.findUnknownCategories(extensionDescriptor("not-a-real-category"))).isEmpty();
     }
 
     @Test
     public void hasNoKnownCategoriesWhenFileDoesNotExistAndRegistryClientDisabled() throws IOException {
-        ExtensionCategoryChecker checker = new ExtensionCategoryChecker(tempDir.resolve("does-not-exist.json"), SILENT);
+        ExtensionCategoryChecker checker = new ExtensionCategoryChecker(tempDir.resolve("does-not-exist.json"), null, SILENT);
 
         assertThat(checker.findUnknownCategories(extensionDescriptor("not-a-real-category"))).isEmpty();
     }
@@ -98,7 +98,7 @@ public class ExtensionCategoryCheckerTest {
     @Test
     public void fallsBackWhenLocalFileListsNoCategories() throws IOException {
         Path file = writeCatalogOverrides("{\"categories\":[]}");
-        ExtensionCategoryChecker checker = new ExtensionCategoryChecker(file, SILENT);
+        ExtensionCategoryChecker checker = new ExtensionCategoryChecker(file, null, SILENT);
 
         assertThat(checker.findUnknownCategories(extensionDescriptor("not-a-real-category"))).isEmpty();
     }
@@ -106,7 +106,7 @@ public class ExtensionCategoryCheckerTest {
     @Test
     public void findUnknownCategoriesReturnsEmptyWhenAllCategoriesAreKnown() throws IOException {
         Path file = writeCatalogOverrides("{\"categories\":[{\"id\":\"web\"},{\"id\":\"data\"}]}");
-        ExtensionCategoryChecker checker = new ExtensionCategoryChecker(file, SILENT);
+        ExtensionCategoryChecker checker = new ExtensionCategoryChecker(file, null, SILENT);
 
         assertThat(checker.findUnknownCategories(extensionDescriptor("web", "data"))).isEmpty();
     }
@@ -114,7 +114,7 @@ public class ExtensionCategoryCheckerTest {
     @Test
     public void findUnknownCategoriesReturnsEmptyWhenExtensionHasNoCategories() throws IOException {
         Path file = writeCatalogOverrides("{\"categories\":[{\"id\":\"web\"}]}");
-        ExtensionCategoryChecker checker = new ExtensionCategoryChecker(file, SILENT);
+        ExtensionCategoryChecker checker = new ExtensionCategoryChecker(file, null, SILENT);
 
         ObjectNode extObject = JsonMapper.builder().build().createObjectNode();
 

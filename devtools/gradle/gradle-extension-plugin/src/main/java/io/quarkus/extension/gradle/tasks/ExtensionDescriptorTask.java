@@ -341,11 +341,13 @@ public class ExtensionDescriptorTask extends DefaultTask {
 
     private void warnAboutUnknownCategories(ObjectNode extObject) {
         String localPlatformOverridesFile = getLocalPlatformOverridesFile();
+        String quarkusCoreVersion = getQuarkusCoreVersionOrNull();
         final ExtensionCategoryChecker categoryChecker;
         try {
             categoryChecker = localPlatformOverridesFile == null
-                    ? new ExtensionCategoryChecker(new TaskLogMessageWriter())
-                    : new ExtensionCategoryChecker(Path.of(localPlatformOverridesFile), new TaskLogMessageWriter());
+                    ? new ExtensionCategoryChecker(quarkusCoreVersion, new TaskLogMessageWriter())
+                    : new ExtensionCategoryChecker(Path.of(localPlatformOverridesFile), quarkusCoreVersion,
+                            new TaskLogMessageWriter());
         } catch (IOException e) {
             throw new GradleException("Failed to parse " + localPlatformOverridesFile, e);
         }

@@ -385,7 +385,7 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
         } catch (IOException e) {
             throw new MojoExecutionException(e.getMessage(), e.getCause());
         }
-        warnAboutUnknownCategories(extObject);
+        warnAboutUnknownCategories(extObject, quarkusCoreVersion);
 
         final DefaultPrettyPrinter prettyPrinter = new DefaultPrettyPrinter();
         prettyPrinter.indentArraysWith(DefaultIndenter.SYSTEM_LINEFEED_INSTANCE);
@@ -642,12 +642,13 @@ public class ExtensionDescriptorMojo extends AbstractMojo {
         }
     }
 
-    private void warnAboutUnknownCategories(ObjectNode extObject) throws MojoExecutionException {
+    private void warnAboutUnknownCategories(ObjectNode extObject, String quarkusCoreVersion) throws MojoExecutionException {
         final ExtensionCategoryChecker categoryChecker;
         try {
             categoryChecker = localPlatformOverridesFile == null
-                    ? new ExtensionCategoryChecker(new MojoLogMessageWriter())
-                    : new ExtensionCategoryChecker(localPlatformOverridesFile.toPath(), new MojoLogMessageWriter());
+                    ? new ExtensionCategoryChecker(quarkusCoreVersion, new MojoLogMessageWriter())
+                    : new ExtensionCategoryChecker(localPlatformOverridesFile.toPath(), quarkusCoreVersion,
+                            new MojoLogMessageWriter());
         } catch (IOException e) {
             throw new MojoExecutionException("Failed to parse " + localPlatformOverridesFile, e);
         }

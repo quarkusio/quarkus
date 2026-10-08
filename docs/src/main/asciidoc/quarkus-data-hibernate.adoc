@@ -455,7 +455,6 @@ import jakarta.data.Order;
 import jakarta.data.restrict.Restrict;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
-import org.acme._Cat; // Automatically generated Jakarta Data metamodel (leading underscore)
 
 import java.util.List;
 

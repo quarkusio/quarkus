@@ -338,7 +338,7 @@ long deleteByName(String name);
 ----
 
 Generated finder and HQL query methods are type-checked at build time. They are validated for entity names, fields,
-HQL syntax, and parameter names. Native SQL is validated by the database when the query is executed.
+HQL syntax, and parameter names. Native SQL is validated by the database when the query is executed at run time.
 
 === Obtaining and using a repository
 

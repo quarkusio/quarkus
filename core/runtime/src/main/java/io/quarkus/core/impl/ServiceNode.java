@@ -11,6 +11,7 @@ import java.util.function.Consumer;
 
 import org.jboss.logging.Logger;
 
+import io.quarkus.core.AsyncGracefulShutdownContext;
 import io.quarkus.core.AsyncStartContext;
 import io.quarkus.core.AsyncStopContext;
 import io.quarkus.core.AsyncVoidStartContext;
@@ -818,6 +819,18 @@ public final class ServiceNode implements Runnable, AsyncStartContext<Object>, A
         if (!STOP_HANDLER.compareAndSet(this, null, stopper)) {
             throw new IllegalStateException("Service '" + name + "': stop handler already registered");
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public void onGracefulPreShutdownAsync(Consumer<AsyncGracefulShutdownContext> handler) {
+        graph.addGracefulPreShutdownHandler(handler);
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public void onGracefulShutdownAsync(Consumer<AsyncGracefulShutdownContext> handler) {
+        graph.addGracefulShutdownHandler(handler);
     }
 
     // ═══════════════════════════════════════════════

@@ -19,21 +19,39 @@ public class LifecycleEventsBuildStep {
     @BuildStep
     ApplicationStartBuildItem startupEvent(ServiceRegistrar reg,
             List<ServiceStartBuildItem> startList,
+            List<SyntheticBeanBuildItem> syntheticBeans,
             BeanContainerBuildItem beanContainer,
             LaunchModeBuildItem launchMode, ArcConfig config) {
         LaunchMode mode = launchMode.getLaunchMode();
         boolean disableObservers = config.test().disableApplicationLifecycleObservers();
 
-        reg
+        var builder = reg
                 .forService("io.quarkus.arc.startup-event")
                 .after("io.quarkus.arc.executor")
                 .afterBuildItem(SyntheticBeansRuntimeInitBuildItem.class)
-                .afterBuildItem(ServiceStartBuildItem.class)
-                .onStart(ctx -> {
-                    List<Class<?>> mockBeanClasses = ArcRecorder.computeMockBeanClasses(mode, disableObservers);
-                    ArcRecorder.fireLifecycleEvent(new StartupEvent(), mockBeanClasses);
-                    ctx.onStop(() -> ArcRecorder.performShutdown(mockBeanClasses));
-                });
+                .afterBuildItem(ServiceStartBuildItem.class);
+
+        // serviceValue() beans read from the service values map on first CDI access;
+        // the startup event triggers bean creation, so it must wait for all backing services
+        for (SyntheticBeanBuildItem bean : syntheticBeans) {
+            Class<?> serviceType = bean.configurator().getServiceType();
+            if (serviceType != null) {
+                List<String> nameParts = bean.configurator().getServiceNameParts();
+                if (nameParts == null || nameParts.isEmpty()) {
+                    builder.after(serviceType);
+                } else if (nameParts.size() == 1) {
+                    builder.after(serviceType, nameParts.get(0));
+                } else {
+                    builder.after(serviceType, nameParts);
+                }
+            }
+        }
+
+        builder.onStart(ctx -> {
+            List<Class<?>> mockBeanClasses = ArcRecorder.computeMockBeanClasses(mode, disableObservers);
+            ArcRecorder.fireLifecycleEvent(new StartupEvent(), mockBeanClasses);
+            ctx.onStop(() -> ArcRecorder.performShutdown(mockBeanClasses));
+        });
 
         reg
                 .forService("io.quarkus.arc.shutdown-gateway")

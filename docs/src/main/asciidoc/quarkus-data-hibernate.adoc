@@ -578,6 +578,14 @@ session is open.
 
 Queries and the way you obtain entities remain the same. Stateless sessions can also use <<jakarta-data,Jakarta Data repositories>>.
 
+[NOTE]
+====
+Whether an entity is managed depends on the session used to persist or obtain it, not on its Java superclass.
+For example, a `ManagedEntity` obtained through a `RecordRepository` is not managed, because that repository uses a
+stateless session. See <<switching-between-managed-and-record-models,Switching between managed and record models>>
+for alternative entity and repository APIs.
+====
+
 [[lets-get-reactive]]
 === Reactive access
 
@@ -1073,6 +1081,7 @@ finder, because it does not inherit persistence or query operations. A standalon
 `ManagedRepository<PlainCat>` or `RecordRepository<PlainCat>` to inherit those operations. Conversely, a nested repository
 can omit the supertype; nesting and inheritance are independent choices.
 
+[[switching-between-managed-and-record-models]]
 === Switching between managed and record models
 
 You can access an entity using any supported session model, regardless of the entity supertype. Pick the supertype that

@@ -882,7 +882,7 @@ The following Jakarta Data types are automatically mapped from query parameters:
 
 For `Sort` and `Order`, prefix the property name with `-` to indicate descending order.
 
-When binding sort parameters from REST endpoints to `BlockingDataQuery`, prefer `Order<Cat>` over `Sort<Cat>`. A
+When binding sort parameters from REST endpoints to `DataQuery`, prefer `Order<Cat>` over `Sort<Cat>`. A
 missing `sort` query parameter yields `null` for `Sort<Cat>` but an empty `Order.by()` for `Order<Cat>`. If the
 `Sort<Cat>` parameter is `null`, `.sort(null)` is a no-op. `Order` is preferred when multiple columns can be requested.
 

@@ -5,6 +5,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Stream;
 
+import jakarta.data.restrict.Restriction;
 import jakarta.persistence.LockModeType;
 
 import io.quarkus.data.hibernate.blocking.BlockingDataQuery;
@@ -130,5 +131,25 @@ public interface BlockingRecordRepositoryQueries<Entity, Id> extends BlockingRep
     @Override
     default Long update(String query, Map<String, Object> params) {
         return operations().update(getEntityClass(), query, params);
+    }
+
+    @Override
+    default <T> BlockingDataQuery<Entity> find(Restriction<T> restriction) {
+        return (BlockingDataQuery<Entity>) operations().find(getEntityClass(), restriction);
+    }
+
+    @Override
+    default <T> List<Entity> list(Restriction<T> restriction) {
+        return (List<Entity>) operations().list(getEntityClass(), restriction);
+    }
+
+    @Override
+    default <T> Long count(Restriction<T> restriction) {
+        return operations().count(getEntityClass(), restriction);
+    }
+
+    @Override
+    default <T> Long delete(Restriction<T> restriction) {
+        return operations().delete(getEntityClass(), restriction);
     }
 }

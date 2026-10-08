@@ -2,6 +2,7 @@ package io.quarkus.data.hibernate;
 
 import java.util.Map;
 
+import jakarta.data.restrict.Restriction;
 import jakarta.persistence.LockModeType;
 
 public interface RepositoryQueries<EntityResult, EntityList, Query extends DataQuery<?, ?, ?, ?, ?, ?, ?>, Count, Confirmation, Id> {
@@ -59,6 +60,16 @@ public interface RepositoryQueries<EntityResult, EntityList, Query extends DataQ
     Query findAll();
 
     /**
+     * Find entities matching a restriction.
+     *
+     * @param restriction the restriction to apply
+     * @return a new {@link DataQuery} instance for the entities matching the restriction
+     * @see #list(Restriction)
+     * @see #count(Restriction)
+     */
+    <T> Query find(Restriction<T> restriction);
+
+    /**
      * Find entities matching a query, with optional indexed parameters.
      * This method is a shortcut for <code>find(query, params).list()</code>.
      *
@@ -95,6 +106,17 @@ public interface RepositoryQueries<EntityResult, EntityList, Query extends DataQ
     EntityList listAll();
 
     /**
+     * Find entities matching a restriction.
+     * This method is a shortcut for <code>find(restriction).list()</code>.
+     *
+     * @param restriction the restriction to apply
+     * @return a {@link List} containing all results matching the restriction, without paging
+     * @see #find(Restriction)
+     * @see #count(Restriction)
+     */
+    <T> EntityList list(Restriction<T> restriction);
+
+    /**
      * Counts the number of this type of entity in the database.
      *
      * @return the number of this type of entity in the database.
@@ -124,6 +146,16 @@ public interface RepositoryQueries<EntityResult, EntityList, Query extends DataQ
      * @see #count(String, Object...)
      */
     Count count(String query, Map<String, Object> params);
+
+    /**
+     * Counts the number of this type of entity matching the given restriction.
+     *
+     * @param restriction the restriction to apply
+     * @return the number of entities counted.
+     * @see #count()
+     * @see #find(Restriction)
+     */
+    <T> Count count(Restriction<T> restriction);
 
     /**
      * Delete all entities of this type from the database.
@@ -172,6 +204,19 @@ public interface RepositoryQueries<EntityResult, EntityList, Query extends DataQ
      * @see #delete(String, Object...)
      */
     Count delete(String query, Map<String, Object> params);
+
+    /**
+     * Delete all entities of this type matching the given restriction.
+     *
+     * WARNING: the default implementation of this method uses a bulk delete query and ignores
+     * cascading rules from the JPA model.
+     *
+     * @param restriction the restriction to apply
+     * @return the number of entities deleted.
+     * @see #deleteAll()
+     * @see #find(Restriction)
+     */
+    <T> Count delete(Restriction<T> restriction);
 
     /**
      * Update all entities of this type matching the given query, with optional indexed parameters.

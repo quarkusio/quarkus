@@ -28,7 +28,8 @@ public class GrafanaDashboardExportDevUITest extends DevUIJsonRPCTest {
                     .addAsResource(new StringAsset(
                             "quarkus.application.name=orders\n"
                                     + "quarkus.otel.metrics.enabled=true\n"
-                                    + "quarkus.otel.traces.enabled=false\n"),
+                                    + "quarkus.otel.traces.enabled=false\n"
+                                    + "quarkus.devservices.enabled=false\n"),
                             "application.properties"));
 
     public GrafanaDashboardExportDevUITest() {

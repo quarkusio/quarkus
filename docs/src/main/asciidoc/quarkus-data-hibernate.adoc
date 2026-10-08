@@ -282,7 +282,7 @@ Cat findCatByNameAndBreed(String name, Breed breed); <3>
 <3> Or single entities, and any number of parameters which must all match the queried entities.
 
 Alternatively, use Jakarta Data's `@Query` for entity queries or Jakarta Persistence's
-`jakarta.persistence.query.NativeQuery` for native SQL. Jakarta Data's `@Query` supports JPQL and its portable
+`@jakarta.persistence.query.NativeQuery` for native SQL. Jakarta Data's `@Query` supports JPQL and its portable
 Jakarta Data Query Language subset (JDQL). Hibernate also accepts HQL extensions in `@Query`. The Hibernate documentation contains the complete
 link:https://docs.hibernate.org/orm/{hibernate-orm-version-major-minor}/introduction/html_single/#generated-query-methods[generated query method reference].
 

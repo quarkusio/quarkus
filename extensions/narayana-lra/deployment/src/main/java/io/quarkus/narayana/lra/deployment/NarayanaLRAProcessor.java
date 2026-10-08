@@ -1,8 +1,5 @@
 package io.quarkus.narayana.lra.deployment;
 
-import static io.quarkus.deployment.annotations.ExecutionTime.RUNTIME_INIT;
-import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
-
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -20,13 +17,15 @@ import io.narayana.lra.client.internal.proxy.ParticipantProxyResource;
 import io.narayana.lra.client.internal.proxy.nonjaxrs.jandex.DotNames;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanArchiveIndexBuildItem;
+import io.quarkus.core.Phase;
+import io.quarkus.core.deployment.service.ServiceRegistrar;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
-import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
+import io.quarkus.narayana.lra.runtime.LRAConfiguration;
 import io.quarkus.narayana.lra.runtime.NarayanaLRAProducers;
 import io.quarkus.narayana.lra.runtime.NarayanaLRARecorder;
 import io.quarkus.smallrye.openapi.deployment.spi.AddToOpenAPIDefinitionBuildItem;
@@ -54,14 +53,15 @@ class NarayanaLRAProcessor {
     }
 
     @BuildStep
-    @Record(RUNTIME_INIT)
-    public void build(NarayanaLRARecorder recorder) {
-        recorder.setConfig();
+    public void build(ServiceRegistrar serviceRegistrar) {
+        serviceRegistrar
+                .forService("io.quarkus.narayana.lra.config")
+                .require(LRAConfiguration.class)
+                .onStart((ctx, config) -> NarayanaLRARecorder.setConfig(config));
     }
 
     @BuildStep()
-    @Record(STATIC_INIT)
-    void createLRAParticipantRegistry(NarayanaLRARecorder recorder,
+    void createLRAParticipantRegistry(ServiceRegistrar serviceRegistrar,
             BeanArchiveIndexBuildItem beanArchiveIndex) {
 
         final List<String> classNames = new ArrayList<>();
@@ -90,7 +90,11 @@ class NarayanaLRAProcessor {
             classNames.add(classInfo.toString());
         }
 
-        recorder.setParticipantTypes(classNames);
+        List<String> participantClassNames = List.copyOf(classNames);
+        serviceRegistrar
+                .forService("io.quarkus.narayana.lra.participant-registry")
+                .atPhase(Phase.STATIC_INIT)
+                .onStart(ctx -> NarayanaLRARecorder.setParticipantTypes(participantClassNames));
     }
 
     private boolean isLRAParticipant(IndexView index, ClassInfo classInfo) {

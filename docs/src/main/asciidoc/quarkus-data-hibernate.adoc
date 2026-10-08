@@ -484,7 +484,6 @@ typed attributes of `_Cat`, they do not make query parameters or expressions typ
 ----
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
-import org.acme.Cat_; // Automatically generated Jakarta Persistence metamodel (trailing underscore)
 
 import java.util.List;
 

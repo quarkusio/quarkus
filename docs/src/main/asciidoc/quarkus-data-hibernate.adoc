@@ -905,7 +905,7 @@ rather than as a plain array:
 }
 ----
 
-The `totalElements` and `totalPages` fields are included only when the `PageRequest` was created with
+The `totalElements` and `totalPages` fields are only included when the `PageRequest` was created with
 `requestTotal=true`.
 
 === Example endpoint

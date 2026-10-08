@@ -832,7 +832,7 @@ public class Cat {
 <1> `@Find` defines a finder method from its parameters.
 <2> `@Query` defines a query using the Jakarta Data Query Language.
 <3> `@Delete` defines a finder-style delete method and can return the number of deleted entities.
-<4> A delete operation can also be written explicitly with `@Query`.
+<4> A delete operation can also be written explicitly with `@Query`, which also supports update queries.
 
 Repositories are CDI beans and are also available through generated metamodel accessors such as `Cat_.repo()`.
 

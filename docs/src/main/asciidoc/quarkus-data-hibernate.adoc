@@ -155,6 +155,12 @@ identifier type:
 
 [source,java]
 ----
+import io.quarkus.data.hibernate.ManagedEntity;
+import io.quarkus.data.hibernate.ManagedRepository;
+import jakarta.data.repository.Find;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
+
 @Entity
 public class CatWithId implements ManagedEntity.CustomId {
     @Id
@@ -189,6 +195,15 @@ provide ready-made persistence and query operations in addition to your declared
 
 [source,java]
 ----
+import io.quarkus.data.hibernate.ManagedEntity;
+import io.quarkus.data.hibernate.ManagedRepository;
+import jakarta.data.repository.Find;
+import jakarta.data.repository.Query;
+import jakarta.persistence.Entity;
+
+import java.time.LocalDate;
+import java.util.List;
+
 @Entity
 public class Cat extends ManagedEntity {
     public String name;
@@ -218,6 +233,11 @@ public class Cat extends ManagedEntity {
 .Record entity and repository
 [source,java]
 ----
+import io.quarkus.data.hibernate.RecordEntity;
+import io.quarkus.data.hibernate.RecordRepository;
+import jakarta.data.repository.Find;
+import jakarta.persistence.Entity;
+
 @Entity
 public class CatRecord extends RecordEntity {
     public String name;
@@ -243,6 +263,11 @@ link:https://docs.hibernate.org/orm/{hibernate-orm-version-major-minor}/introduc
 .A few common examples
 [source,java]
 ----
+import jakarta.data.repository.Find;
+import org.acme.Cat.Breed;
+
+import java.util.List;
+
 @Find
 List<Cat> findAllCats(); <1>
 
@@ -264,6 +289,13 @@ link:https://docs.hibernate.org/orm/{hibernate-orm-version-major-minor}/introduc
 .Examples of `@Query` and `@NativeQuery` usage
 [source,java]
 ----
+import jakarta.data.repository.Query;
+import jakarta.persistence.query.NativeQuery;
+import org.acme.Cat.Breed;
+
+import java.time.LocalDate;
+import java.util.List;
+
 @Query("from Cat")
 List<Cat> findAllCats(); <1>
 
@@ -290,6 +322,9 @@ Repositories are CDI beans and can be injected where you intend to use them:
 
 [source,java]
 ----
+import jakarta.inject.Inject;
+import jakarta.transaction.Transactional;
+
 @Inject
 Cat.Repo repo;
 
@@ -321,6 +356,15 @@ Here is an example of how it can be used:
 
 [source,java]
 ----
+import io.quarkus.data.hibernate.blocking.BlockingDataQuery;
+import jakarta.data.Sort;
+import jakarta.inject.Inject;
+import jakarta.transaction.Transactional;
+import org.hibernate.Session;
+
+import java.util.List;
+import java.util.Optional;
+
 @Inject
 Cat.Repo repo;
 
@@ -363,6 +407,8 @@ import jakarta.data.Order;
 import jakarta.data.restrict.Restriction;
 import jakarta.data.repository.Find;
 
+import java.util.List;
+
 @Find
 List<Cat> search(Restriction<Cat> restriction, Order<Cat> order);
 ----
@@ -377,8 +423,13 @@ Use `_Cat` for type-safe restrictions and ordering:
 
 [source,java]
 ----
+import jakarta.data.Order;
 import jakarta.data.restrict.Restrict;
+import jakarta.inject.Inject;
+import jakarta.transaction.Transactional;
 import org.acme._Cat; // Automatically generated Jakarta Data metamodel (leading underscore)
+
+import java.util.List;
 
 @Inject
 Cat.Repo repo;
@@ -404,7 +455,11 @@ typed attributes of `_Cat`, they do not make query parameters or expressions typ
 
 [source,java]
 ----
+import jakarta.inject.Inject;
+import jakarta.transaction.Transactional;
 import org.acme.Cat_; // Automatically generated Jakarta Persistence metamodel (trailing underscore)
+
+import java.util.List;
 
 @Inject
 Cat.Repo repo;
@@ -429,6 +484,12 @@ For queries that cannot be expressed with restrictions, use the query methods pr
 
 [source,java]
 ----
+import jakarta.data.Sort;
+import jakarta.inject.Inject;
+import jakarta.transaction.Transactional;
+
+import java.util.List;
+
 @Inject
 Cat.Repo repo;
 
@@ -452,6 +513,11 @@ when you need multiple criteria, or when receiving an `Order` from a REST endpoi
 
 [source,java]
 ----
+import jakarta.data.Order;
+import jakarta.data.Sort;
+
+import java.util.List;
+
 List<Cat> byName = repo.findAll().sort(Sort.asc("name")).list();
 List<Cat> byNameThenBirth = repo.findAll()
         .sort(Order.by(Sort.asc("name"), Sort.desc("birth")))
@@ -496,6 +562,12 @@ For reactive access:
 
 [source,java]
 ----
+import io.quarkus.data.hibernate.ManagedEntity;
+import io.quarkus.data.hibernate.ManagedRepository;
+import io.smallrye.mutiny.Uni;
+import jakarta.data.repository.Find;
+import jakarta.persistence.Entity;
+
 @Entity
 public class ReactiveCat extends ManagedEntity.Reactive {
     public String name;
@@ -511,6 +583,9 @@ With an injected `ReactiveCat.Repo repo`, operations are composed in a transacti
 
 [source,java]
 ----
+import io.smallrye.mutiny.Uni;
+import jakarta.transaction.Transactional;
+
 @Transactional
 public Uni<Void> renameCat(String name, String newName) {
     return repo.findByName(name)
@@ -530,6 +605,12 @@ pushed by calling `update()`, and insertion uses `insert()` instead of `persist(
 
 [source,java]
 ----
+import io.quarkus.data.hibernate.RecordEntity;
+import io.quarkus.data.hibernate.RecordRepository;
+import io.smallrye.mutiny.Uni;
+import jakarta.data.repository.Find;
+import jakarta.persistence.Entity;
+
 @Entity
 public class ReactiveCatRecord extends RecordEntity.Reactive {
     public String name;
@@ -545,6 +626,9 @@ With an injected `ReactiveCatRecord.Repo repo`, explicitly update the modified e
 
 [source,java]
 ----
+import io.smallrye.mutiny.Uni;
+import jakarta.transaction.Transactional;
+
 @Transactional
 public Uni<Void> renameCat(String name, String newName) {
     return repo.findByName(name)
@@ -668,6 +752,17 @@ Jakarta Data annotations in the same repository. The following example uses only
 
 [source,java]
 ----
+import io.quarkus.data.hibernate.RecordRepository;
+import jakarta.data.repository.Delete;
+import jakarta.data.repository.Find;
+import jakarta.data.repository.Query;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.Id;
+
+import java.time.LocalDate;
+import java.util.List;
+
 @Entity
 public class Cat {
     @Id
@@ -862,6 +957,11 @@ be placed on methods directly declared by a repository.
 
 [source,java]
 ----
+import io.quarkus.security.PermissionsAllowed;
+import jakarta.data.repository.Find;
+
+import java.util.List;
+
 @PermissionsAllowed("cat:list")
 @PermissionsAllowed("cat:read")
 @Find
@@ -872,6 +972,12 @@ You can also place a security annotation on the repository interface:
 
 [source,java]
 ----
+import io.quarkus.data.hibernate.ManagedRepository;
+import jakarta.annotation.security.RolesAllowed;
+import jakarta.data.repository.Find;
+
+import java.util.List;
+
 @RolesAllowed("admin")
 public interface SecuredCatRepo extends ManagedRepository<Cat> {
     @Find

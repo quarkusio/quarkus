@@ -18,6 +18,7 @@ public class QuarkusExtensionConfiguration {
     private Property<String> deploymentArtifact;
     private Property<String> deploymentModule;
     private Property<String> requiresQuarkusCore;
+    private Property<String> localPlatformOverridesFile;
     private ListProperty<String> excludedArtifacts;
     private ListProperty<String> parentFirstArtifacts;
     private ListProperty<String> runnerParentFirstArtifacts;
@@ -38,6 +39,7 @@ public class QuarkusExtensionConfiguration {
         deploymentModule = project.getObjects().property(String.class);
         deploymentModule.convention("deployment");
         requiresQuarkusCore = project.getObjects().property(String.class);
+        localPlatformOverridesFile = project.getObjects().property(String.class);
 
         excludedArtifacts = project.getObjects().listProperty(String.class);
         parentFirstArtifacts = project.getObjects().listProperty(String.class);
@@ -82,6 +84,19 @@ public class QuarkusExtensionConfiguration {
 
     public void setRequiresQuarkusCore(String requiresQuarkusCore) {
         this.requiresQuarkusCore.set(requiresQuarkusCore);
+    }
+
+    /**
+     * Path to a {@code catalog-overrides.json}-shaped file with the metadata for the platform this
+     * extension targets. This is useful for development of extensions within a platform
+     * which has not yet been published.
+     */
+    public Property<String> getLocalPlatformOverridesFile() {
+        return localPlatformOverridesFile;
+    }
+
+    public void setLocalPlatformOverridesFile(String localPlatformOverridesFile) {
+        this.localPlatformOverridesFile.set(localPlatformOverridesFile);
     }
 
     public ListProperty<String> getExcludedArtifacts() {

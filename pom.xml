@@ -79,7 +79,7 @@
         <bytebuddy.version>1.18.11</bytebuddy.version> <!-- version controlled by Hibernate ORM's needs; checked by maven-enforcer-plugin in bom -->
         <geolatte.version>1.12</geolatte.version> <!-- version controlled by Hibernate ORM's needs; checked by maven-enforcer-plugin in bom -->
         <hibernate-models.version>1.3.4</hibernate-models.version> <!-- version controlled by Hibernate ORM's needs; checked by maven-enforcer-plugin in bom -->
-        <hibernate-accessor.version>0.1.0.Alpha5</hibernate-accessor.version> <!-- version controlled by Hibernate ORM's needs; checked by maven-enforcer-plugin in bom -->
+        <hibernate-accessor.version>0.1.0.Alpha6</hibernate-accessor.version> <!-- version controlled by Hibernate ORM's needs; checked by maven-enforcer-plugin in bom -->
         <hibernate-reactive.version>5.0.0.Beta1</hibernate-reactive.version> <!-- highly sensitive to Hibernate ORM upgrades -->
         <hibernate-validator.version>9.1.3.Final</hibernate-validator.version>
         <hibernate-search.version>9.0.0.Beta1</hibernate-search.version>

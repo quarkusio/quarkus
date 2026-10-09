@@ -44,6 +44,7 @@ import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem.Builder;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
+import io.quarkus.core.deployment.service.ServiceRegistrar;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.Feature;
@@ -51,8 +52,6 @@ import io.quarkus.deployment.IsDevelopment;
 import io.quarkus.deployment.IsProduction;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
-import io.quarkus.deployment.annotations.ExecutionTime;
-import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.AdditionalIndexedClassesBuildItem;
 import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
@@ -65,6 +64,7 @@ import io.quarkus.deployment.builditem.LogCategoryBuildItem;
 import io.quarkus.deployment.builditem.ModuleEnableNativeAccessBuildItem;
 import io.quarkus.deployment.builditem.NativeImageFeatureBuildItem;
 import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
+import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageConfigBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageProxyDefinitionBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBundleBuildItem;
@@ -345,13 +345,13 @@ public class KafkaProcessor {
     }
 
     @BuildStep(onlyIf = HasSnappy.class)
-    @Record(ExecutionTime.RUNTIME_INIT)
-    void loadSnappyIfEnabled(LaunchModeBuildItem launch, SnappyRecorder recorder, KafkaBuildTimeConfig config) {
-        boolean loadFromSharedClassLoader = false;
-        if (launch.isTest()) {
-            loadFromSharedClassLoader = config.snappyLoadFromSharedClassLoader();
-        }
-        recorder.loadSnappy(loadFromSharedClassLoader);
+    ServiceStartBuildItem loadSnappyIfEnabled(LaunchModeBuildItem launch, ServiceRegistrar serviceRegistrar,
+            KafkaBuildTimeConfig config) {
+        boolean loadFromSharedClassLoader = launch.isTest() && config.snappyLoadFromSharedClassLoader();
+        serviceRegistrar
+                .forService("io.quarkus.kafka.client.load-snappy")
+                .onStart(ctx -> SnappyRecorder.loadSnappy(loadFromSharedClassLoader));
+        return new ServiceStartBuildItem("kafka-snappy");
     }
 
     @BuildStep(onlyIf = HasSnappy.class)
@@ -360,10 +360,11 @@ public class KafkaProcessor {
     }
 
     @BuildStep(onlyIf = IsProduction.class)
-    @Record(ExecutionTime.RUNTIME_INIT)
-    void checkBoostrapServers(KafkaRecorder recorder, Capabilities capabilities) {
+    void checkBoostrapServers(ServiceRegistrar serviceRegistrar, Capabilities capabilities) {
         if (capabilities.isPresent(Capability.KUBERNETES_SERVICE_BINDING)) {
-            recorder.checkBoostrapServers();
+            serviceRegistrar
+                    .forService("io.quarkus.kafka.client.check-bootstrap-servers")
+                    .onStart(ctx -> KafkaRecorder.checkBoostrapServers());
         }
     }
 

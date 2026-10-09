@@ -810,10 +810,9 @@ public abstract class BaseKubeProcessor<P, C extends PlatformConfiguration> {
         context.add(new ApplyImagePullPolicyDecorator(name, pullPolicy()));
         image.ifPresent(i -> context.add(new ApplyContainerImageDecorator(name, i.getImage())));
 
-        var stream = Stream.concat(config.convertToBuildItems().stream(), Targetable.filteredByTarget(envs, clusterType()));
-        if (config.idempotent()) {
-            stream = stream.sorted(Comparator.comparing(e -> EnvConverter.convertName(e.getName())));
-        }
+        // always sorted, not only when idempotent(): extensions contribute env vars from parallel build steps
+        var stream = Stream.concat(config.convertToBuildItems().stream(), Targetable.filteredByTarget(envs, clusterType()))
+                .sorted(Comparator.comparing(e -> EnvConverter.convertName(e.getName())));
         stream.map(e -> new AddEnvVarDecorator(ApplicationContainerDecorator.ANY, name, new EnvBuilder()
                 .withName(EnvConverter.convertName(e.getName()))
                 .withValue(e.getValue())

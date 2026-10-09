@@ -1,5 +1,6 @@
 package io.quarkus.redis.it.lettuce;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -8,6 +9,10 @@ import java.util.Map;
 import java.util.OptionalDouble;
 import java.util.OptionalLong;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -47,6 +52,8 @@ import io.quarkus.redis.datasource.keys.ReactiveKeyCommands;
 import io.quarkus.redis.datasource.keys.RedisValueType;
 import io.quarkus.redis.datasource.list.ListCommands;
 import io.quarkus.redis.datasource.list.ReactiveListCommands;
+import io.quarkus.redis.datasource.pubsub.PubSubCommands;
+import io.quarkus.redis.datasource.pubsub.ReactivePubSubCommands;
 import io.quarkus.redis.datasource.set.ReactiveSetCommands;
 import io.quarkus.redis.datasource.set.SetCommands;
 import io.quarkus.redis.datasource.sortedset.ReactiveSortedSetCommands;
@@ -58,7 +65,9 @@ import io.quarkus.redis.datasource.transactions.OptimisticLockingTransactionResu
 import io.quarkus.redis.datasource.transactions.TransactionResult;
 import io.quarkus.redis.datasource.value.ReactiveValueCommands;
 import io.quarkus.redis.datasource.value.ValueCommands;
+import io.smallrye.common.vertx.VertxContext;
 import io.smallrye.mutiny.Uni;
+import io.smallrye.mutiny.subscription.Cancellable;
 import io.vertx.redis.client.Command;
 import io.vertx.redis.client.Response;
 
@@ -93,6 +102,11 @@ public class LettuceBackendResource {
     private final ReactiveGeoCommands<String, String> reactiveGeo;
     private final CountMinCommands<String, String> countmin;
     private final ReactiveCountMinCommands<String, String> reactiveCountMin;
+    private final PubSubCommands<String> pubsub;
+    private final ReactivePubSubCommands<String> reactivePubSub;
+    /** Live Pub/Sub subscriptions by id, so tests can subscribe, publish, inspect and unsubscribe in separate calls. */
+    private final Map<String, Subscription> subscriptions = new ConcurrentHashMap<>();
+    private final AtomicInteger subscriptionIds = new AtomicInteger();
 
     @Inject
     public LettuceBackendResource(RedisDataSource ds, ReactiveRedisDataSource reactiveDs,
@@ -128,6 +142,8 @@ public class LettuceBackendResource {
         this.reactiveGeo = reactiveDs.geo(String.class);
         this.countmin = ds.countmin(String.class);
         this.reactiveCountMin = reactiveDs.countmin(String.class);
+        this.pubsub = ds.pubsub(String.class);
+        this.reactivePubSub = reactiveDs.pubsub(String.class);
     }
 
     @GET
@@ -687,6 +703,131 @@ public class LettuceBackendResource {
     @Path("/countmin/reactive/query/{key}/{item}")
     public Uni<Long> countMinQueryReactive(@PathParam("key") String key, @PathParam("item") String item) {
         return reactiveCountMin.cmsQuery(key, item);
+    }
+
+    /**
+     * Subscribes to {@code channels} (comma-separated) with the blocking API and returns a subscription id. The
+     * blocking call returns once Redis has confirmed the subscription. Every message is recorded as
+     * {@code channel:payload} and {@code onEnd} is recorded too, so tests can check it fires once the last channel
+     * is unsubscribed.
+     */
+    @POST
+    @Path("/pubsub/subscribe")
+    public String pubSubSubscribe(@QueryParam("channels") String channels) {
+        Subscription subscription = new Subscription();
+        subscription.subscriber = pubsub.subscribe(List.of(channels.split(",")),
+                (channel, payload) -> subscription.record(channel, payload), subscription::end, null);
+        return register(subscription);
+    }
+
+    /** Pattern counterpart of {@link #pubSubSubscribe(String)}; the recorded channel is the one published to. */
+    @POST
+    @Path("/pubsub/psubscribe")
+    public String pubSubSubscribeToPatterns(@QueryParam("patterns") String patterns) {
+        Subscription subscription = new Subscription();
+        subscription.subscriber = pubsub.subscribeToPatterns(List.of(patterns.split(",")),
+                (channel, payload) -> subscription.record(channel, payload), subscription::end, null);
+        return register(subscription);
+    }
+
+    /**
+     * Subscribes through the reactive {@code Multi} API. The subscription is established asynchronously, so a test
+     * must wait for the channel to show up in {@link #pubSubChannels()} before publishing. Cancelling the stream,
+     * via {@link #pubSubUnsubscribe(String, String)}, is what unsubscribes.
+     */
+    @POST
+    @Path("/pubsub/reactive/subscribe")
+    public String pubSubSubscribeReactive(@QueryParam("channels") String channels) {
+        Subscription subscription = new Subscription();
+        subscription.cancellable = reactivePubSub.subscribeAsMessages(channels.split(","))
+                .subscribe().with(message -> subscription.record(message.getChannel(), message.getPayload()),
+                        ignored -> {
+                        }, subscription::end);
+        return register(subscription);
+    }
+
+    @POST
+    @Path("/pubsub/publish/{channel}")
+    public void pubSubPublish(@PathParam("channel") String channel, String message) {
+        pubsub.publish(channel, message);
+    }
+
+    @POST
+    @Path("/pubsub/reactive/publish/{channel}")
+    public Uni<Void> pubSubPublishReactive(@PathParam("channel") String channel, String message) {
+        return reactivePubSub.publish(channel, message);
+    }
+
+    /** The messages received so far, whether the subscription ended, and whether every callback ran on a duplicated context. */
+    @GET
+    @Path("/pubsub/subscription/{id}")
+    public Map<String, Object> pubSubState(@PathParam("id") String id) {
+        Subscription subscription = subscriptions.get(id);
+        Map<String, Object> state = new LinkedHashMap<>();
+        state.put("messages", List.copyOf(subscription.messages));
+        state.put("ended", subscription.ended.get());
+        state.put("onDuplicatedContext", !subscription.offDuplicatedContext.get());
+        return state;
+    }
+
+    /** Unsubscribes from the given channels or patterns (comma-separated), or from all of them when none are given. */
+    @DELETE
+    @Path("/pubsub/subscription/{id}")
+    public void pubSubUnsubscribe(@PathParam("id") String id, @QueryParam("names") String names) {
+        Subscription subscription = subscriptions.get(id);
+        if (subscription.cancellable != null) {
+            subscription.cancellable.cancel();
+        } else if (names == null) {
+            subscription.subscriber.unsubscribe();
+        } else {
+            subscription.subscriber.unsubscribe(names.split(","));
+        }
+    }
+
+    /** The channels with at least one subscriber, as reported by the server. */
+    @GET
+    @Path("/pubsub/channels")
+    public List<String> pubSubChannels() {
+        List<String> channels = new ArrayList<>();
+        for (Response channel : blocking.execute(Command.PUBSUB, "CHANNELS")) {
+            channels.add(channel.toString());
+        }
+        return channels;
+    }
+
+    /** The number of pattern subscriptions, as reported by the server. */
+    @GET
+    @Path("/pubsub/numpat")
+    public int pubSubNumPat() {
+        return blocking.execute(Command.PUBSUB, "NUMPAT").toInteger();
+    }
+
+    private String register(Subscription subscription) {
+        String id = String.valueOf(subscriptionIds.incrementAndGet());
+        subscriptions.put(id, subscription);
+        return id;
+    }
+
+    /** One live Pub/Sub subscription: what it received, whether it ended, and the handle to end it. */
+    static final class Subscription {
+
+        final List<String> messages = new CopyOnWriteArrayList<>();
+        final AtomicBoolean ended = new AtomicBoolean();
+        final AtomicBoolean offDuplicatedContext = new AtomicBoolean();
+        volatile PubSubCommands.RedisSubscriber subscriber;
+        volatile Cancellable cancellable;
+
+        void record(String channel, String payload) {
+            if (!VertxContext.isOnDuplicatedContext()) {
+                offDuplicatedContext.set(true);
+            }
+            messages.add(channel + ":" + payload);
+        }
+
+        void end() {
+            ended.set(true);
+        }
+
     }
 
     @POST

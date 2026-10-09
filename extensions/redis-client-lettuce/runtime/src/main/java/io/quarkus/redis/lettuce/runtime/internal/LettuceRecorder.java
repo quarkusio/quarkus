@@ -337,7 +337,8 @@ public class LettuceRecorder {
     public Supplier<ReactiveRedisDataSource> getReactiveDataSource(String name) {
         return () -> reactiveDataSources.computeIfAbsent(name, k -> {
             LettuceConnection conn = dataSourceConnection(k);
-            return new LettuceReactiveRedisDataSourceImpl(mutinyVertx, conn, pools.get(k));
+            LettuceConnectionFactory factory = factories.get(k);
+            return new LettuceReactiveRedisDataSourceImpl(mutinyVertx, conn, pools.get(k), factory::connectPubSubAsync);
         });
     }
 

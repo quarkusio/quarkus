@@ -30,6 +30,7 @@ import io.lettuce.core.masterreplica.StatefulRedisMasterReplicaConnection;
 import io.lettuce.core.protocol.CommandType;
 import io.lettuce.core.protocol.RedisCommand;
 import io.lettuce.core.protocol.TransactionalCommand;
+import io.lettuce.core.pubsub.StatefulRedisPubSubConnection;
 import io.lettuce.core.resource.ClientResources;
 
 /**
@@ -285,6 +286,20 @@ public class LettuceConnectionFactory {
     }
 
     /**
+     * Opens a new Pub/Sub connection asynchronously using the byte-array codec. Each subscriber gets its own
+     * connection: a connection in subscribed mode cannot run ordinary commands, so Pub/Sub connections are kept
+     * apart from both the shared data source connection and the pool. Where it goes depends on the topology, see
+     * {@link Topology#connectPubSubAsync()}.
+     * <p>
+     * Never blocks the calling thread and is therefore safe to invoke from an event loop.
+     *
+     * @return a {@link CompletionStage} completing with a new {@link StatefulRedisPubSubConnection}
+     */
+    public CompletionStage<StatefulRedisPubSubConnection<byte[], byte[]>> connectPubSubAsync() {
+        return topology.connectPubSubAsync();
+    }
+
+    /**
      * Returns the database every connection this factory opens starts on: the database index of the configured URI
      * ({@code 0} unless the URI names one) for a standalone server and for a master/replica connection (the one of
      * the first node), always {@code 0} for a cluster, which has no other database (Lettuce ignores the database of
@@ -353,6 +368,17 @@ public class LettuceConnectionFactory {
 
         <K, V> StatefulConnection<K, V> connect(RedisCodec<K, V> codec);
 
+        /**
+         * Opens a Pub/Sub connection with the byte-array codec. Regular Pub/Sub is not tied to the key space, so the
+         * node does not matter for correctness, only for where the subscriber's traffic lands: a standalone client
+         * connects to its server, a cluster client to one node (Lettuce picks it; a cluster broadcasts every
+         * message to every node), a Sentinel client to the master the sentinels report (following a failover on
+         * reconnect, as Lettuce re-resolves the sentinel URI), a replication client to the first configured node
+         * that answers, master or replica (Redis propagates {@code PUBLISH} to the replicas, so a subscriber on a
+         * replica receives the messages published to the master).
+         */
+        CompletionStage<StatefulRedisPubSubConnection<byte[], byte[]>> connectPubSubAsync();
+
         int database();
 
     }
@@ -375,6 +401,11 @@ public class LettuceConnectionFactory {
         @Override
         public <K, V> StatefulConnection<K, V> connect(RedisCodec<K, V> codec) {
             return client.connect(codec);
+        }
+
+        @Override
+        public CompletionStage<StatefulRedisPubSubConnection<byte[], byte[]>> connectPubSubAsync() {
+            return client.connectPubSubAsync(ByteArrayCodec.INSTANCE, uri);
         }
 
         @Override
@@ -410,6 +441,11 @@ public class LettuceConnectionFactory {
             StatefulRedisClusterConnection<K, V> connection = client.connect(codec);
             connection.setReadFrom(readFrom);
             return connection;
+        }
+
+        @Override
+        public CompletionStage<StatefulRedisPubSubConnection<byte[], byte[]>> connectPubSubAsync() {
+            return client.connectPubSubAsync(ByteArrayCodec.INSTANCE).thenApply(connection -> connection);
         }
 
         @Override
@@ -449,8 +485,36 @@ public class LettuceConnectionFactory {
         }
 
         @Override
+        public CompletionStage<StatefulRedisPubSubConnection<byte[], byte[]>> connectPubSubAsync() {
+            // Lettuce has no master/replica Pub/Sub connection: a plain one is opened instead. A sentinel URI makes
+            // the client look the master up through the sentinels; the Redis URIs are tried in order.
+            return mode == MasterReplicaMode.SENTINEL
+                    ? client.connectPubSubAsync(ByteArrayCodec.INSTANCE, nodes.get(0))
+                    : connectPubSubAsync(0);
+        }
+
+        @Override
         public int database() {
             return nodes.get(0).getDatabase();
+        }
+
+        /** The Pub/Sub attempt on {@code nodes[index]}, falling back to the next node when it fails. */
+        private CompletionStage<StatefulRedisPubSubConnection<byte[], byte[]>> connectPubSubAsync(int index) {
+            RedisURI node = nodes.get(index);
+            // As a plain future: Lettuce's ConnectionFuture does not compose correctly through exceptionallyCompose.
+            CompletionStage<StatefulRedisPubSubConnection<byte[], byte[]>> attempt = client
+                    .connectPubSubAsync(ByteArrayCodec.INSTANCE, node).toCompletableFuture();
+            if (index == nodes.size() - 1) {
+                return attempt;
+            }
+            return attempt.exceptionallyCompose(failure -> {
+                logNextNode(node, failure);
+                return connectPubSubAsync(index + 1).whenComplete((connection, next) -> {
+                    if (next != null) {
+                        unwrap(next).addSuppressed(unwrap(failure));
+                    }
+                });
+            });
         }
 
         private <K, V> StatefulRedisMasterReplicaConnection<K, V> connectMasterReplica(RedisCodec<K, V> codec) {

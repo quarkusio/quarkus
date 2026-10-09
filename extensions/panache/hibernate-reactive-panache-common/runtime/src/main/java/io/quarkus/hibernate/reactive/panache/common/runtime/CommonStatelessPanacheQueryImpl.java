@@ -16,6 +16,14 @@ public class CommonStatelessPanacheQueryImpl<Entity> extends CommonAbstractPanac
         super(em, entityClass, query, originalQuery, sort, paramsArrayOrMap);
     }
 
+    /**
+     * Constructor for pre-built queries (e.g., from Criteria API)
+     */
+    public CommonStatelessPanacheQueryImpl(Uni<Mutiny.StatelessSession> em, Class<?> entityClass,
+            Uni<? extends Mutiny.SelectionQuery<?>> prebuiltQuery) {
+        super(em, entityClass, prebuiltQuery);
+    }
+
     protected CommonStatelessPanacheQueryImpl(CommonStatelessPanacheQueryImpl<?> previousQuery, String newQueryString,
             String customCountQueryForSpring, Class<?> projectionType) {
         super(previousQuery, newQueryString, customCountQueryForSpring, projectionType);

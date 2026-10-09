@@ -5,6 +5,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Stream;
 
+import jakarta.data.restrict.Restriction;
 import jakarta.persistence.LockModeType;
 
 import org.hibernate.Session;
@@ -222,5 +223,25 @@ public class StatelessBlockingOperations implements PanacheBlockingOperations {
     @Override
     public Stream<?> streamAll(Class<?> entityClass) {
         return DELEGATE.streamAll(entityClass);
+    }
+
+    @Override
+    public <T> BlockingDataQuery<?> find(Class<?> entityClass, Restriction<T> restriction) {
+        return DELEGATE.find(entityClass, restriction);
+    }
+
+    @Override
+    public <T> List<?> list(Class<?> entityClass, Restriction<T> restriction) {
+        return DELEGATE.list(entityClass, restriction);
+    }
+
+    @Override
+    public <T> Long count(Class<?> entityClass, Restriction<T> restriction) {
+        return DELEGATE.count(entityClass, restriction);
+    }
+
+    @Override
+    public <T> Long delete(Class<?> entityClass, Restriction<T> restriction) {
+        return DELEGATE.delete(entityClass, restriction);
     }
 }

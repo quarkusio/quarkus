@@ -345,6 +345,7 @@
                 <module>quartz-deferred-datasource</module>
                 <module>redis-client</module>
                 <module>redis-client-lettuce</module>
+                <module>redis-client-lettuce-without-reactor</module>
                 <module>redis-cache</module>
                 <module>logging-gelf</module>
                 <module>cache</module>

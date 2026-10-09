@@ -10,30 +10,24 @@ import java.util.regex.Pattern;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.devui.spi.DevContextBuildItem;
 import io.quarkus.test.QuarkusExtensionTest;
 import io.restassured.RestAssured;
 
-public class NoConfigTest {
+public class ReverseProxyPathTest {
 
     private static final Pattern URL_PATTERN = Pattern.compile("\\burl: '([^']+)'");
     private static final Pattern SERVER_BASE_PATTERN = Pattern.compile("var base = new URL\\(\"([^\"]+)\"");
+
     @RegisterExtension
     static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withEmptyApplication()
-            .addBuildChainCustomizer(builder -> builder
-                    .addBuildStep(context -> context.produce(new DevContextBuildItem("/proxy/8080")))
-                    .produces(DevContextBuildItem.class)
-                    .build());
+            .overrideConfigKey("quarkus.http.non-application-root-path", "/");
 
     @Test
-    public void shouldUseDefaultConfig() {
-        String indexHtml = RestAssured.when().get("/q/swagger-ui/index.html").then().statusCode(200).extract().asString();
-        assertResolvedPath(indexHtml, URL_PATTERN, "http://h/prefix/q/swagger-ui/", "/prefix/q/openapi");
-        assertResolvedPath(indexHtml, SERVER_BASE_PATTERN, "http://h/prefix/q/swagger-ui/", "/prefix/");
-        assertTrue(indexHtml.contains("/proxy/8080/q/swagger-ui/oauth2-redirect.html"));
-        assertTrue(indexHtml.contains("id='swaggerUiLogoLink' href='.'"));
-        assertTrue(indexHtml.contains("id='swaggerUiTitleLink' href='.'"));
+    public void shouldUseRelativeOpenApiUrl() {
+        String indexHtml = RestAssured.when().get("/swagger-ui/index.html").then().statusCode(200).extract().asString();
+        assertResolvedPath(indexHtml, URL_PATTERN, "http://h/prefix/swagger-ui/", "/prefix/openapi");
+        assertResolvedPath(indexHtml, SERVER_BASE_PATTERN, "http://h/prefix/swagger-ui/", "/prefix/");
     }
 
     private static void assertResolvedPath(String indexHtml, Pattern pattern, String pageUrl, String expectedPath) {

@@ -1,5 +1,6 @@
 package io.quarkus.deployment.jvm;
 
+import java.lang.module.ModuleFinder;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -86,15 +87,24 @@ public final class ResolvedJVMRequirements extends SimpleBuildItem {
         final Collection<String> toExport = modulePackagesToExport();
         final List<String> arguments = new ArrayList<>(toOpen.size() + toExport.size() + 1);
         for (String modulePackage : toOpen) {
-            arguments.add("--add-opens=" + modulePackage + "=ALL-UNNAMED");
+            if (isSystemModule(modulePackage)) {
+                arguments.add("--add-opens=" + modulePackage + "=ALL-UNNAMED");
+            }
         }
         for (String modulePackage : toExport) {
-            arguments.add("--add-exports=" + modulePackage + "=ALL-UNNAMED");
+            if (isSystemModule(modulePackage)) {
+                arguments.add("--add-exports=" + modulePackage + "=ALL-UNNAMED");
+            }
         }
         if (!enableNativeAccesses.isEmpty()) {
             arguments.add("--enable-native-access=ALL-UNNAMED");
         }
         return arguments;
+    }
+
+    // on the class path only the JDK's own modules are named, and the JVM warns about any other module
+    private static boolean isSystemModule(String modulePackage) {
+        return ModuleFinder.ofSystem().find(modulePackage.substring(0, modulePackage.indexOf('/'))).isPresent();
     }
 
     private List<String> modulePackagesToOpen() {

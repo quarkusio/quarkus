@@ -216,6 +216,25 @@ class ModuleInfoTest {
     }
 
     @Test
+    void withMoreDependenciesMergesIntoAutomaticDependencies() {
+        DependencyInfo existing = new DependencyInfo("dep.a",
+                Dependency.Modifier.Set.of(Dependency.Modifier.LINKED, Dependency.Modifier.READ), Map.of());
+        ModuleInfo info = new ModuleInfo(
+                "test.module", "1.0", ModuleDescriptor.Modifier.Set.of(), ARTIFACT, null,
+                Map.of(), List.of(), List.of(new AutoDependencyGroup("dep.b", List.of(existing))), Set.of(), Map.of(),
+                List.of());
+        DependencyInfo incoming = new DependencyInfo("dep.a",
+                Dependency.Modifier.Set.of(Dependency.Modifier.READ),
+                Map.of("dep.a.impl", PackageAccess.EXPORTED));
+        ModuleInfo result = info.withMoreDependencies(List.of(incoming));
+        // no separate entry that would hide the automatic one
+        assertThat(result.dependencies()).isEmpty();
+        DependencyInfo merged = result.autoDependencies().get(0).dependencies().get(0);
+        assertThat(merged.modifiers().contains(Dependency.Modifier.LINKED)).isTrue();
+        assertThat(merged.packageAccesses()).containsEntry("dep.a.impl", PackageAccess.EXPORTED);
+    }
+
+    @Test
     void withMoreDependenciesPreservesOrder() {
         DependencyInfo dep1 = new DependencyInfo("dep.a", Dependency.Modifier.Set.of(), Map.of());
         DependencyInfo dep2 = new DependencyInfo("dep.b", Dependency.Modifier.Set.of(), Map.of());

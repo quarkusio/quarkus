@@ -48,6 +48,7 @@ import io.quarkus.deployment.builditem.ExecutorBuildItem;
 import io.quarkus.deployment.builditem.IOThreadDetectorBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.LogCategoryBuildItem;
+import io.quarkus.deployment.builditem.ModuleExportBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.ThreadFactoryBuildItem;
@@ -93,6 +94,12 @@ class VertxCoreProcessor {
             "io.vertx.core.impl.BlockedThreadChecker", // Vert.x 4.2-
             "io.vertx.core.impl.btc.BlockedThreadChecker" // Vert.x 4.3+
     );
+
+    @BuildStep
+    ModuleExportBuildItem exportVertxInternalsToVertxUtils() {
+        return new ModuleExportBuildItem("io.vertx.core", "io.quarkus.vertx.utils",
+                "io.vertx.core.impl", "io.vertx.core.impl.buffer", "io.vertx.core.buffer.impl");
+    }
 
     @BuildStep
     AdditionalBeanBuildItem registerSafeDuplicatedContextInterceptor() {

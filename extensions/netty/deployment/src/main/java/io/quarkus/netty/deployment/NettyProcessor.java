@@ -60,6 +60,7 @@ import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildI
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedPackageBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.UnsafeAccessedFieldBuildItem;
 import io.quarkus.deployment.logging.LogCleanupFilterBuildItem;
+import io.quarkus.deployment.pkg.NativeConfig;
 import io.quarkus.deployment.pkg.builditem.CompiledJavaVersionBuildItem;
 import io.quarkus.gizmo.AssignableResultHandle;
 import io.quarkus.gizmo.BranchResult;
@@ -231,7 +232,6 @@ class NettyProcessor {
                 .addRuntimeInitializedClass("io.netty.internal.tcnative.SSL")
                 // Runtime initialize to respect io.netty.handler.ssl.conscrypt.useBufferAllocator
                 .addRuntimeInitializedClass("io.netty.handler.ssl.ConscryptAlpnSslEngine")
-                .addRuntimeInitializedClass("io.netty.util.internal.CleanerJava24Linker")
                 // Runtime initialize due to the use of tcnative in the static initializers?
                 .addRuntimeInitializedClass("io.netty.handler.ssl.ReferenceCountedOpenSslEngine")
                 // Runtime initialize to respect run-time provided values of the following properties:
@@ -579,15 +579,16 @@ class NettyProcessor {
      */
     @BuildStep
     void transformPlatformDependent0(CompiledJavaVersionBuildItem compiledJavaVersion,
+            NativeConfig nativeConfig,
             BuildProducer<BytecodeTransformerBuildItem> producer) {
         String className = "io.netty.util.internal.PlatformDependent0";
 
-        boolean isJava25OrHigher = compiledJavaVersion.getJavaVersion()
+        boolean isNativeOrJava25OrHigher = nativeConfig.enabled() || compiledJavaVersion.getJavaVersion()
                 .isJava25OrHigher() == CompiledJavaVersionBuildItem.JavaVersion.Status.TRUE;
 
         Set<String> fieldsToSkip;
         Set<String> knownUnhandledFields;
-        if (isJava25OrHigher) {
+        if (isNativeOrJava25OrHigher) {
             fieldsToSkip = Set.of(
                     "ALIGN_SLICE", "OFFSET_SLICE", "ABSOLUTE_PUT_BUFFER",
                     "ABSOLUTE_PUT_ARRAY", "SPLITTABLE_RANDOM_NEXT_BYTES",
@@ -729,13 +730,13 @@ class NettyProcessor {
                                 generateReadBitsMaxDirectMemory(transformer, className);
 
                                 // --- Java 25+ specific transforms ---
-                                if (isJava25OrHigher) {
+                                if (isNativeOrJava25OrHigher) {
                                     replaceWithReturnTrue(transformer, className, "hasMemorySegmentAddressOfBuffer");
                                     generateDirectBufferAddress(transformer, className);
                                 }
 
                                 ClassVisitor downstream = classVisitor;
-                                if (isJava25OrHigher) {
+                                if (isNativeOrJava25OrHigher) {
                                     downstream = new ClassVisitor(Gizmo.ASM_API_VERSION, downstream) {
                                         @Override
                                         public void visit(int version, int access, String name, String signature,
@@ -1050,13 +1051,18 @@ class NettyProcessor {
      * on Java 25+, the Foreign Function &amp; Memory API is stable and can be called directly,
      * eliminating ~20 reflective lookups and MethodHandle chain constructions.
      * <p>
-     * {@code INVOKE_MALLOC} and {@code INVOKE_FREE} must remain {@code MethodHandle}s because
+     * On the JVM, {@code INVOKE_MALLOC} and {@code INVOKE_FREE} remain {@code MethodHandle}s because
      * FFM's {@code Linker.downcallHandle()} always returns a {@code MethodHandle} to bridge
      * Java to native code. But {@code INVOKE_CREATE_BYTEBUFFER} wraps plain Java methods
      * ({@code MemorySegment.ofAddress/reinterpret/asByteBuffer}) and can be replaced with
      * direct calls in the inner class constructor.
      * <p>
-     * We replace the static initializer with:
+     * In native images, malloc/free are substituted with {@code UnmanagedMemory} operations.
+     * We remove the static initializer entirely and substitute {@code isSupported()} to return
+     * true: Quarkus requires GraalVM 25+ and enables native access for the buffer wrapper.
+     * This avoids requiring symbol lookup, downcall registrations, or runtime initialization.
+     * <p>
+     * On the JVM, we replace the static initializer with:
      *
      * <pre>{@code
      * static {
@@ -1109,8 +1115,9 @@ class NettyProcessor {
      */
     @BuildStep
     void transformCleanerJava24Linker(CompiledJavaVersionBuildItem compiledJavaVersion,
+            NativeConfig nativeConfig,
             BuildProducer<BytecodeTransformerBuildItem> producer) {
-        if (compiledJavaVersion.getJavaVersion()
+        if (!nativeConfig.enabled() && compiledJavaVersion.getJavaVersion()
                 .isJava25OrHigher() != CompiledJavaVersionBuildItem.JavaVersion.Status.TRUE) {
             return;
         }
@@ -1139,10 +1146,11 @@ class NettyProcessor {
                                 className, "<clinit>", void.class);
                         transformer.removeMethod(clinitDescriptor);
 
-                        MethodCreator clinit = transformer.addMethod(clinitDescriptor)
-                                .setModifiers(Modifier.STATIC);
-
-                        generateCleanerJava24LinkerClinit(clinit, className);
+                        if (!nativeConfig.enabled()) {
+                            MethodCreator clinit = transformer.addMethod(clinitDescriptor)
+                                    .setModifiers(Modifier.STATIC);
+                            generateCleanerJava24LinkerClinit(clinit, className);
+                        }
 
                         return transformer.applyTo(updateBytecodeVersion);
                     }
@@ -1522,8 +1530,9 @@ class NettyProcessor {
      */
     @BuildStep
     void transformCleanerJava25(CompiledJavaVersionBuildItem compiledJavaVersion,
+            NativeConfig nativeConfig,
             BuildProducer<BytecodeTransformerBuildItem> producer) {
-        if (compiledJavaVersion.getJavaVersion()
+        if (!nativeConfig.enabled() && compiledJavaVersion.getJavaVersion()
                 .isJava25OrHigher() != CompiledJavaVersionBuildItem.JavaVersion.Status.TRUE) {
             return;
         }

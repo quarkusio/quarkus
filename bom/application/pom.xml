@@ -91,7 +91,7 @@
         <gizmo.version>1.10.1</gizmo.version>
         <gizmo2.version>2.1.1</gizmo2.version>
         <jackson-bom.version>2.22.0</jackson-bom.version>
-        <lettuce.version>7.8.0.RELEASE</lettuce.version>
+        <lettuce.version>8.0.0-SNAPSHOT</lettuce.version>
         <commons-logging-jboss-logging.version>2.0.0.Final</commons-logging-jboss-logging.version>
         <commons-lang3.version>3.20.0</commons-lang3.version>
         <commons-codec.version>1.22.0</commons-codec.version>

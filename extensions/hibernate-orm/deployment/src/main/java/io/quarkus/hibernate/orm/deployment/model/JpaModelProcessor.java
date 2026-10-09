@@ -33,6 +33,7 @@ import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.HotDeploymentWatchedFileBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.index.LazyIndexer;
+import io.quarkus.hibernate.accessor.deployment.HibernateAccessorBuildItem;
 import io.quarkus.hibernate.orm.deployment.ClassNames;
 import io.quarkus.hibernate.orm.deployment.HibernateOrmConfig;
 import io.quarkus.hibernate.orm.deployment.HibernateOrmConfigPersistenceUnit;
@@ -208,6 +209,32 @@ final class JpaModelProcessor {
                 jpaModelPuContributions, indexBuildItem.getIndex(), ignorableNonIndexedClasses);
         final JpaModelBuildItem domainObjects = scavenger.discoverModelAndRegisterForReflection();
         domainObjectsProducer.produce(domainObjects);
+    }
+
+    @SuppressWarnings("deprecation")
+    @BuildStep
+    public void registerAccessors(
+            JpaModelBuildItem jpaModel,
+            JpaModelIndexBuildItem indexBuildItem,
+            List<AdditionalJpaModelBuildItem> additionalJpaModelBuildItems,
+            List<io.quarkus.hibernate.orm.deployment.AdditionalJpaModelBuildItem> deprecatedAdditionalJpaModelBuildItems,
+            BuildProducer<HibernateAccessorBuildItem> accessorBuildItemProducer) {
+        Set<String> managedClassesOnly = new HashSet<>(jpaModel.getManagedClassNames());
+
+        for (AdditionalJpaModelBuildItem additionalJpaModelBuildItem : additionalJpaModelBuildItems) {
+            managedClassesOnly.add(additionalJpaModelBuildItem.getClassName());
+        }
+        for (io.quarkus.hibernate.orm.deployment.AdditionalJpaModelBuildItem additionalJpaModelBuildItem : deprecatedAdditionalJpaModelBuildItems) {
+            managedClassesOnly.add(additionalJpaModelBuildItem.getClassName());
+        }
+
+        for (String managedClassName : managedClassesOnly) {
+            ClassInfo classToAccess = indexBuildItem.getIndex().getClassByName(managedClassName);
+            accessorBuildItemProducer.produce(
+                    new HibernateAccessorBuildItem.Builder(classToAccess)
+                            .all(classToAccess)
+                            .build());
+        }
     }
 
     // --- Per-PU model assignment ---

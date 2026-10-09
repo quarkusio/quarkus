@@ -34,6 +34,10 @@
             <artifactId>hibernate-accessor</artifactId>
         </dependency>
         <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-hibernate-accessor</artifactId>
+        </dependency>
+        <dependency>
             <groupId>org.graalvm.sdk</groupId>
             <artifactId>nativeimage</artifactId>
             <scope>provided</scope>

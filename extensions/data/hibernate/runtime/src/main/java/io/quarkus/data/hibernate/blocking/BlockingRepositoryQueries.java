@@ -5,6 +5,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Stream;
 
+import jakarta.data.metamodel.Attribute;
 import jakarta.persistence.LockModeType;
 
 import io.quarkus.data.hibernate.RepositoryQueries;
@@ -71,4 +72,42 @@ public interface BlockingRepositoryQueries<Entity, Id>
      * @see #listAll()
      */
     Stream<Entity> streamAll();
+
+    @Override
+    default <T> BlockingDataQuery<Entity> find(Attribute<T> attribute, Object value) {
+        return value == null ? find(attribute.name() + " IS NULL") : find(attribute.name() + " = ?1", value);
+    }
+
+    @Override
+    default <T> List<Entity> list(Attribute<T> attribute, Object value) {
+        return value == null ? list(attribute.name() + " IS NULL") : list(attribute.name() + " = ?1", value);
+    }
+
+    /**
+     * Find entities matching a query based on an entity attribute and a value.
+     * This method accepts Jakarta Data metamodel attributes.
+     * This method is a shortcut for <code>find(attribute, value).stream()</code>.
+     * It requires a transaction to work.
+     * Without a transaction, the underlying cursor can be closed before the end of the stream.
+     *
+     * @param <T> the entity type
+     * @param attribute the entity attribute from the Jakarta Data metamodel
+     * @param value the value to match
+     * @return a {@link Stream} containing all results, without paging
+     * @see #find(Attribute, Object)
+     * @see #stream(String, Object...)
+     */
+    default <T> Stream<Entity> stream(Attribute<T> attribute, Object value) {
+        return value == null ? stream(attribute.name() + " IS NULL") : stream(attribute.name() + " = ?1", value);
+    }
+
+    @Override
+    default <T> Long count(Attribute<T> attribute, Object value) {
+        return value == null ? count(attribute.name() + " IS NULL") : count(attribute.name() + " = ?1", value);
+    }
+
+    @Override
+    default <T> Long delete(Attribute<T> attribute, Object value) {
+        return value == null ? delete(attribute.name() + " IS NULL") : delete(attribute.name() + " = ?1", value);
+    }
 }

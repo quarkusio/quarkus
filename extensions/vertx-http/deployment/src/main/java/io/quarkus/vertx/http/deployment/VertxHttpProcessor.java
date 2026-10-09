@@ -273,7 +273,7 @@ class VertxHttpProcessor {
                     throw new IllegalStateException("Invalid static resource path '" + relativeUnix
                             + "'. Paths must not contain '..' when registering static resources.");
                 }
-                String endpoint = basePath + "/" + relativeUnix;
+                String endpoint = basePath.endsWith("/") ? basePath + relativeUnix : basePath + "/" + relativeUnix;
                 generatedStaticResources.produce(
                         new GeneratedStaticResourceBuildItem(endpoint, file));
 

@@ -1,0 +1,19 @@
+pluginManagement {
+    repositories {
+        mavenLocal {
+            content {
+                includeGroup 'new.group'
+                includeGroup 'old.group'
+                includeGroupByRegex 'io.quarkus.*'
+                includeGroup 'org.hibernate.orm'
+            }
+        }
+        mavenCentral()
+        gradlePluginPortal()
+    }
+    plugins {
+        id 'io.quarkus' version "${quarkusPluginVersion}"
+    }
+}
+
+include 'app-managed', 'app-opt', 'app-prov', 'app-req', 'app-prop'

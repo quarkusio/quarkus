@@ -1,5 +1,7 @@
 package io.quarkus.devui.runtime;
 
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -63,7 +65,7 @@ public class DevUICORSFilter implements Handler<RoutingContext> {
         String origin = request.getHeader(HttpHeaders.ORIGIN);
         if (origin == null || isLocalHost(origin)) {
             corsFilter(null).handle(event);
-        } else if (isConfiguredHost(origin) || isConfiguredHostPattern(origin)) {
+        } else if (isConfiguredHost(originHost(origin))) {
             corsFilter(origin).handle(event);
         } else {
             if (!origin.startsWith(CHROME_EXTENSION)) {
@@ -80,23 +82,31 @@ public class DevUICORSFilter implements Handler<RoutingContext> {
                 || origin.startsWith(HTTP_LOCAL_HOST_IP) || origin.startsWith(HTTPS_LOCAL_HOST_IP);
     }
 
-    private boolean isConfiguredHost(String origin) {
-        if (this.hosts != null) {
-            for (String configuredHost : this.hosts) {
-                if (origin.startsWith(HTTP + configuredHost) ||
-                        origin.startsWith(HTTPS + configuredHost)) {
-                    return true;
-                }
+    private static String originHost(String origin) {
+        try {
+            URI uri = new URI(origin);
+            String scheme = uri.getScheme();
+            if ("http".equals(scheme) || "https".equals(scheme)) {
+                return uri.getHost();
             }
+        } catch (URISyntaxException e) {
+            // Not a valid origin
         }
-        return false;
+        return null;
     }
 
-    private boolean isConfiguredHostPattern(String origin) {
+    // The host of the origin has to match a configured host exactly, or one of the patterns as a whole
+    private boolean isConfiguredHost(String host) {
+        if (host == null) {
+            return false;
+        }
+        if (this.hosts != null && this.hosts.contains(host)) {
+            return true;
+        }
         if (this.hostsPatterns != null && !this.hostsPatterns.isEmpty()) {
             // Regex
             for (Pattern pat : this.hostsPatterns) {
-                Matcher matcher = pat.matcher(origin);
+                Matcher matcher = pat.matcher(host);
                 if (matcher.matches()) {
                     return true;
                 }

@@ -71,13 +71,13 @@ import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
 import io.quarkus.deployment.builditem.GeneratedServiceProviderBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ConstantBootstrapBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.metrics.MetricsCapabilityBuildItem;
 import io.quarkus.gizmo2.ClassOutput;
 import io.quarkus.gizmo2.Const;
 import io.quarkus.gizmo2.Expr;
 import io.quarkus.gizmo2.Gizmo;
-import io.quarkus.gizmo2.LambdaStrategy;
 import io.quarkus.gizmo2.LocalVar;
 import io.quarkus.gizmo2.ParamVar;
 import io.quarkus.gizmo2.creator.BlockCreator;
@@ -377,6 +377,7 @@ public class SchedulerProcessor {
             BuildProducer<GeneratedClassBuildItem> generatedClasses,
             BuildProducer<GeneratedResourceBuildItem> generatedResources,
             BuildProducer<GeneratedServiceProviderBuildItem> generatedServiceProviders,
+            BuildProducer<ConstantBootstrapBuildItem> constantBootstraps,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             AnnotationProxyBuildItem annotationProxy,
             List<ForceStartSchedulerBuildItem> schedulerForcedStartItems,
@@ -405,9 +406,8 @@ public class SchedulerProcessor {
                 .build());
 
         ClassOutput classOutput = new GeneratedClassGizmo2Adaptor(generatedClasses, generatedResources,
-                generatedServiceProviders, generatedToBaseNameFun);
+                generatedServiceProviders, constantBootstraps, generatedToBaseNameFun);
         Gizmo gizmo = Gizmo.create(classOutput)
-                .withLambdaStrategy(LambdaStrategy.ANONYMOUS_CLASS)
                 .withDebugInfo(false)
                 .withParameters(false);
 

@@ -95,6 +95,7 @@ import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
 import io.quarkus.deployment.builditem.GeneratedServiceProviderBuildItem;
 import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ConstantBootstrapBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyBuildItem;
 import io.quarkus.deployment.execannotations.ExecutionModelAnnotationsAllowedBuildItem;
@@ -103,7 +104,6 @@ import io.quarkus.gizmo2.ClassOutput;
 import io.quarkus.gizmo2.Const;
 import io.quarkus.gizmo2.Expr;
 import io.quarkus.gizmo2.Gizmo;
-import io.quarkus.gizmo2.LambdaStrategy;
 import io.quarkus.gizmo2.LocalVar;
 import io.quarkus.gizmo2.ParamVar;
 import io.quarkus.gizmo2.Var;
@@ -491,12 +491,13 @@ public class WebSocketProcessor {
             BuildProducer<GeneratedClassBuildItem> generatedClasses,
             BuildProducer<GeneratedResourceBuildItem> generatedResources,
             BuildProducer<GeneratedServiceProviderBuildItem> generatedServiceProviders,
+            BuildProducer<ConstantBootstrapBuildItem> constantBootstraps,
             BuildProducer<GeneratedEndpointBuildItem> generatedEndpoints,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClasses,
             Optional<MetricsCapabilityBuildItem> metricsCapability) {
         final boolean metricsSupportEnabled = isMetricsSupportEnabled(metricsCapability);
         ClassOutput classOutput = new GeneratedClassGizmo2Adaptor(generatedClasses, generatedResources,
-                generatedServiceProviders, new Function<String, String>() {
+                generatedServiceProviders, constantBootstraps, new Function<String, String>() {
                     @Override
                     public String apply(String name) {
                         int idx = name.indexOf(CLIENT_ENDPOINT_SUFFIX);
@@ -513,7 +514,6 @@ public class WebSocketProcessor {
                     }
                 });
         Gizmo gizmo = Gizmo.create(classOutput)
-                .withLambdaStrategy(LambdaStrategy.ANONYMOUS_CLASS)
                 .withDebugInfo(false)
                 .withParameters(false);
         for (WebSocketEndpointBuildItem endpoint : endpoints) {

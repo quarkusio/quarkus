@@ -65,7 +65,6 @@ import io.quarkus.deployment.recording.RecorderContext;
 import io.quarkus.gizmo2.Const;
 import io.quarkus.gizmo2.Expr;
 import io.quarkus.gizmo2.Gizmo;
-import io.quarkus.gizmo2.LambdaStrategy;
 import io.quarkus.gizmo2.LocalVar;
 import io.quarkus.gizmo2.ParamVar;
 import io.quarkus.gizmo2.desc.ConstructorDesc;
@@ -283,8 +282,7 @@ public class SmallRyeReactiveMessagingProcessor {
             ReactiveMessagingConfiguration conf) {
 
         Gizmo gizmo = Gizmo
-                .create(new GeneratedClassGizmo2Adaptor(generatedClass, generatedResources, generatedServiceProviders, true))
-                .withLambdaStrategy(LambdaStrategy.ANONYMOUS_CLASS);
+                .create(new GeneratedClassGizmo2Adaptor(generatedClass, generatedResources, generatedServiceProviders, true));
 
         Set<String> connectorManagedIncomingChannels = connectorManagedChannels.stream()
                 .filter(c -> c.getDirection() == ChannelDirection.INCOMING)

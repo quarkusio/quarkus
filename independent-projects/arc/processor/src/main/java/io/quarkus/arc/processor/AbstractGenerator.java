@@ -33,6 +33,8 @@ abstract class AbstractGenerator {
         if (tccl == null) {
             throw new IllegalStateException("No TCCL available");
         }
+        // todo: in order to use the optimized lambda strategy, we have to update all sources of ClassOutput
+        // so that they output the constant bootstrap build item, so that native image knows to initialize it properly.
         return Gizmo.create(classOutput)
                 .withDebugInfo(false)
                 .withParameters(false)

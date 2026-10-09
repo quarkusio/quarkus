@@ -64,6 +64,14 @@ public class LettuceProcessor {
 
     private static final String FEATURE = "redis-client-lettuce";
 
+    // The classes holding the factories of Lettuce's reactive command APIs, see LettuceSubstitutions
+    private static final List<String> REACTIVE_FACTORY_HOLDERS = List.of(
+            "io.lettuce.core.api.reactive.RedisReactiveCommands$FactoryHolder",
+            "io.lettuce.core.cluster.api.reactive.RedisAdvancedClusterReactiveCommands$FactoryHolder",
+            "io.lettuce.core.cluster.pubsub.api.reactive.RedisClusterPubSubReactiveCommands$FactoryHolder",
+            "io.lettuce.core.pubsub.api.reactive.RedisPubSubReactiveCommands$FactoryHolder",
+            "io.lettuce.core.sentinel.api.reactive.RedisSentinelReactiveCommands$FactoryHolder");
+
     private static final DotName REDIS_CLIENT_ANNOTATION = DotName.createSimple(RedisClientName.class.getName());
 
     private static final DotName LETTUCE_REDIS_CLIENT = DotName.createSimple("io.lettuce.core.RedisClient");
@@ -134,6 +142,13 @@ public class LettuceProcessor {
         runtimeInit.produce(new RuntimeInitializedClassBuildItem("io.lettuce.core.cluster.RedisClusterClient"));
         runtimeInit.produce(new RuntimeInitializedClassBuildItem("io.lettuce.core.resource.DefaultClientResources"));
         runtimeInit.produce(new RuntimeInitializedClassBuildItem("io.lettuce.core.resource.DefaultClientResources$Builder"));
+        // The static initializers of the FactoryHolder classes create the factories of the reactive command APIs by
+        // calling newFactory(), which LettuceSubstitutions replaces when Reactive Streams is missing. Initialized at
+        // build time, they would run the original newFactory() and store its factory, which creates the Reactor-based
+        // implementations, in the image heap. Unconditional: the substitutions decide whether it matters.
+        for (String holder : REACTIVE_FACTORY_HOLDERS) {
+            runtimeInit.produce(new RuntimeInitializedClassBuildItem(holder));
+        }
     }
 
     @BuildStep

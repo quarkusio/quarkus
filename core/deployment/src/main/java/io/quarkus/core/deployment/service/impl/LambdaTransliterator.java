@@ -87,10 +87,24 @@ public final class LambdaTransliterator {
 
     /** Descriptor for {@link ServiceNode}. */
     private static final ClassDesc CD_ServiceNode = ConstantUtils.classDesc(ServiceNode.class);
+    /** Descriptor for {@link ServiceGraph}. */
+    private static final ClassDesc CD_ServiceGraph = ConstantUtils.classDesc(ServiceGraph.class);
+    /** Descriptor for {@link StartupContext}. */
+    private static final ClassDesc CD_StartupContext = ConstantUtils.classDesc(StartupContext.class);
     /** Descriptor for {@link SortedNullSafeMap}. */
     private static final ClassDesc CD_SortedNullSafeMap = ConstantUtils.classDesc(SortedNullSafeMap.class);
     /** Descriptor for {@link Map}. */
     private static final ClassDesc CD_Map = ConstantUtils.classDesc(Map.class);
+
+    /** {@code ServiceGraph ServiceNode.graph()} */
+    private static final MethodTypeDesc MTD_ServiceGraph = MethodTypeDesc.of(CD_ServiceGraph);
+    /** {@code StartupContext ServiceGraph.startupContext()} */
+    private static final MethodTypeDesc MTD_StartupContext = MethodTypeDesc.of(CD_StartupContext);
+    /** {@code Object ServiceNode.value()} */
+    private static final MethodTypeDesc MTD_Object = MethodTypeDesc.of(ConstantDescs.CD_Object);
+    /** {@code void StartupContext.putServiceValue(String, Object)} */
+    private static final MethodTypeDesc MTD_void_String_Object = MethodTypeDesc.of(
+            ConstantDescs.CD_void, ConstantDescs.CD_String, ConstantDescs.CD_Object);
 
     /**
      * Internal names of START context interfaces whose invokeinterface calls
@@ -602,14 +616,31 @@ public final class LambdaTransliterator {
         } else if (optional) {
             // optional sync typed: the action returns Optional<T>; an empty result marks the service as
             // valueless (skipped by consumeAll() consumers, empty for request() consumers) rather than failing
+
+            // store the unwrapped value in the serviceValues map before signaling completion,
+            // since startCompleteOptional releases dependents that may read the map immediately
+            ClassDesc optionalDesc = ConstantUtils.classDesc(Optional.class);
+            code.aload(returnSlot); // Optional<T>
+            code.invokevirtual(optionalDesc, "isPresent",
+                    MethodTypeDesc.of(ConstantDescs.CD_boolean));
+            code.ifThen(Opcode.IFNE, b -> {
+                b.aload(0); // ServiceNode
+                b.invokevirtual(CD_ServiceNode, "graph", MTD_ServiceGraph);
+                b.invokevirtual(CD_ServiceGraph, "startupContext", MTD_StartupContext);
+                b.loadConstant(serviceKey);
+                b.aload(returnSlot); // Optional<T>
+                b.invokevirtual(optionalDesc, "get", MTD_Object);
+                b.invokevirtual(CD_StartupContext, "putServiceValue", MTD_void_String_Object);
+            });
+
+            // now signal completion
             code.aload(0); // ServiceNode
             code.aload(returnSlot); // Optional<T>
             code.invokevirtual(serviceNodeDesc, "startCompleteOptional",
-                    MethodTypeDesc.of(ConstantDescs.CD_void, ConstantUtils.classDesc(Optional.class)));
+                    MethodTypeDesc.of(ConstantDescs.CD_void, optionalDesc));
         } else {
-            // sync typed: null check, then signal completion with value
+            // sync typed: null check
             code.aload(returnSlot);
-            code.dup();
             code.ifThen(Opcode.IFNULL, b -> {
                 b.new_(ConstantUtils.classDesc(IllegalStateException.class));
                 b.dup();
@@ -621,28 +652,21 @@ public final class LambdaTransliterator {
                         MethodTypeDesc.of(ConstantDescs.CD_void, stringDesc));
                 b.athrow();
             });
-            // startComplete(result)
+
+            // store in the serviceValues map before signaling completion,
+            // since startComplete releases dependents that may read the map immediately
+            code.aload(0); // ServiceNode
+            code.invokevirtual(CD_ServiceNode, "graph", MTD_ServiceGraph);
+            code.invokevirtual(CD_ServiceGraph, "startupContext", MTD_StartupContext);
+            code.loadConstant(serviceKey);
+            code.aload(returnSlot);
+            code.invokevirtual(CD_StartupContext, "putServiceValue", MTD_void_String_Object);
+
+            // now signal completion
             code.aload(0); // ServiceNode
             code.aload(returnSlot);
             code.invokevirtual(serviceNodeDesc, "startComplete",
                     MethodTypeDesc.of(ConstantDescs.CD_void, objectDesc));
-
-            // also store in the serviceValues map for recorder proxy resolution
-            // (legacy recorders resolve service proxies via startupContext.getServiceValue)
-            // TODO: remove once all recorder consumers are converted to services
-            ClassDesc serviceGraphDesc = ConstantUtils.classDesc(ServiceGraph.class);
-            ClassDesc startupContextDesc = ConstantUtils.classDesc(StartupContext.class);
-            code.aload(0); // ServiceNode
-            code.invokevirtual(CD_ServiceNode, "graph",
-                    MethodTypeDesc.of(serviceGraphDesc));
-            code.invokevirtual(serviceGraphDesc, "startupContext",
-                    MethodTypeDesc.of(startupContextDesc));
-            code.loadConstant(serviceKey);
-            code.aload(0); // ServiceNode
-            code.invokevirtual(CD_ServiceNode, "value",
-                    MethodTypeDesc.of(objectDesc));
-            code.invokevirtual(startupContextDesc, "putServiceValue",
-                    MethodTypeDesc.of(ConstantDescs.CD_void, stringDesc, objectDesc));
         }
 
         code.return_();
@@ -662,24 +686,20 @@ public final class LambdaTransliterator {
             TransliteratedAction.AliasService alias) {
         // slot 0 = ServiceNode (static method)
         ClassDesc serviceNodeDesc = ConstantUtils.classDesc(ServiceNode.class);
-        ClassDesc serviceGraphDesc = ConstantUtils.classDesc(ServiceGraph.class);
-        ClassDesc startupContextDesc = ConstantUtils.classDesc(StartupContext.class);
         ClassDesc objectDesc = ConstantUtils.classDesc(Object.class);
         ClassDesc stringDesc = ConstantUtils.classDesc(String.class);
 
         // get StartupContext: node.graph().startupContext()
         code.aload(0); // ServiceNode
-        code.invokevirtual(serviceNodeDesc, "graph",
-                MethodTypeDesc.of(serviceGraphDesc));
-        code.invokevirtual(serviceGraphDesc, "startupContext",
-                MethodTypeDesc.of(startupContextDesc));
+        code.invokevirtual(CD_ServiceNode, "graph", MTD_ServiceGraph);
+        code.invokevirtual(CD_ServiceGraph, "startupContext", MTD_StartupContext);
         int ctxSlot = 1;
         code.astore(ctxSlot);
 
         // load the value from the recorder proxy key
         code.aload(ctxSlot);
         code.loadConstant(alias.recorderProxyKey());
-        code.invokevirtual(startupContextDesc, "getValue",
+        code.invokevirtual(CD_StartupContext, "getValue",
                 MethodTypeDesc.of(objectDesc, stringDesc));
         int valueSlot = 2;
         code.astore(valueSlot);
@@ -688,8 +708,7 @@ public final class LambdaTransliterator {
         code.aload(ctxSlot);
         code.loadConstant(alias.serviceKey());
         code.aload(valueSlot);
-        code.invokevirtual(startupContextDesc, "putServiceValue",
-                MethodTypeDesc.of(ConstantDescs.CD_void, stringDesc, objectDesc));
+        code.invokevirtual(CD_StartupContext, "putServiceValue", MTD_void_String_Object);
 
         // signal completion: typed if value is non-null, void otherwise
         code.aload(valueSlot);
@@ -753,18 +772,12 @@ public final class LambdaTransliterator {
         // store in the serviceValues map for recorder proxy resolution
         // (legacy recorders resolve service proxies via startupContext.getServiceValue
         //  because __service$$value() returns true on the proxy)
-        ClassDesc serviceGraphDesc = ConstantUtils.classDesc(ServiceGraph.class);
-        ClassDesc startupContextDesc = ConstantUtils.classDesc(StartupContext.class);
-        ClassDesc stringDesc = ConstantUtils.classDesc(String.class);
         code.aload(0); // ServiceNode
-        code.invokevirtual(CD_ServiceNode, "graph",
-                MethodTypeDesc.of(serviceGraphDesc));
-        code.invokevirtual(serviceGraphDesc, "startupContext",
-                MethodTypeDesc.of(startupContextDesc));
+        code.invokevirtual(CD_ServiceNode, "graph", MTD_ServiceGraph);
+        code.invokevirtual(CD_ServiceGraph, "startupContext", MTD_StartupContext);
         code.loadConstant(rvw.rvKey());
         code.aload(rvSlot);
-        code.invokevirtual(startupContextDesc, "putServiceValue",
-                MethodTypeDesc.of(ConstantDescs.CD_void, stringDesc, objectDesc));
+        code.invokevirtual(CD_StartupContext, "putServiceValue", MTD_void_String_Object);
 
         // signal typed completion with the RuntimeValue wrapper
         code.aload(0); // ServiceNode

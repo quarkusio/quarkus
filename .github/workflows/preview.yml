@@ -49,11 +49,11 @@ jobs:
           HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
         run: |
           # workflow_run.pull_requests is empty for pull requests opened from forks:
-          # look the pull request up from the head of the documentation build instead
+          # look the pull request up from the branch the documentation build ran on instead.
           if [[ -z "$RAW_PR_NUMBER" ]]; then
             RAW_PR_NUMBER=$(gh api -X GET "repos/${GITHUB_REPOSITORY}/pulls" \
               -f state=open -f head="${HEAD_OWNER}:${HEAD_BRANCH}" -f per_page=100 \
-              --jq 'map(select(.head.sha == env.HEAD_SHA)) | .[0].number // empty')
+              --jq '.[0].number // empty')
           fi
           if ! [[ "$RAW_PR_NUMBER" =~ ^[0-9]+$ ]]; then
             echo "Invalid PR number: $RAW_PR_NUMBER" >&2

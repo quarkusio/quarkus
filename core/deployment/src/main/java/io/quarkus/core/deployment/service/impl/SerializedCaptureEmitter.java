@@ -17,13 +17,18 @@ import static java.lang.constant.ConstantDescs.CD_void;
 
 import java.lang.constant.ClassDesc;
 import java.lang.constant.ConstantDesc;
+import java.lang.constant.ConstantDescs;
+import java.lang.constant.DirectMethodHandleDesc;
+import java.lang.constant.DynamicConstantDesc;
 import java.lang.constant.MethodTypeDesc;
+import java.lang.reflect.Modifier;
 import java.lang.reflect.RecordComponent;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.IdentityHashMap;
 import java.util.List;
 
+import io.quarkus.core.Bootstraps;
 import io.smallrye.classfile.CodeBuilder;
 import io.smallrye.classfile.TypeKind;
 import io.smallrye.classfile.extras.constant.ExtraConstantDescs;
@@ -53,6 +58,11 @@ final class SerializedCaptureEmitter {
 
     private static final ClassDesc CD_Map_Entry = ClassDesc.of("java.util.Map$Entry");
     private static final ClassDesc CD_ConfigLookup = ClassDesc.of("io.quarkus.runtime.configuration.ConfigLookup");
+    private static final ClassDesc CD_Bootstraps = ClassDesc.of("io.quarkus.core.Bootstraps");
+
+    /** Bootstrap method handle for {@code Bootstraps.loadClass}. */
+    private static final DirectMethodHandleDesc BSM_Bootstraps_loadClass = ConstantDescs.ofConstantBootstrap(
+            CD_Bootstraps, "loadClass", CD_Class);
 
     /** CollSer tag: unmodifiable list. */
     private static final int TAG_LIST = 1;
@@ -207,10 +217,47 @@ final class SerializedCaptureEmitter {
 
     /**
      * Emit a Class constant from a SerializedClass node.
+     * <p>
+     * For accessible, non-array classes, emits a simple {@code ldc} class constant.
+     * For array types and inaccessible classes (non-public, or in a named module
+     * that does not export the package), emits a {@code condy} via
+     * {@link Bootstraps#loadClass} which uses the caller's
+     * class loader and handles array descriptors.
      */
     private static CaptureEmitter emitClassConstant(SerializedClass sc) {
         ClassDesc classDesc = sc.descriptor();
+        if (needsDynamicLoad(classDesc)) {
+            DynamicConstantDesc<?> condy = DynamicConstantDesc.ofNamed(
+                    BSM_Bootstraps_loadClass, classDesc.descriptorString(), CD_Class);
+            return code -> code.loadConstant(condy);
+        }
         return code -> code.loadConstant(classDesc);
+    }
+
+    /**
+     * Determine whether a class descriptor requires dynamic loading.
+     *
+     * @param classDesc the class descriptor to check
+     * @return {@code true} if the class cannot be safely emitted as an {@code ldc} class constant
+     */
+    private static boolean needsDynamicLoad(ClassDesc classDesc) {
+        if (classDesc.isArray()) {
+            return true;
+        }
+        if (classDesc.isPrimitive()) {
+            return false;
+        }
+        try {
+            Class<?> cls = Class.forName(
+                    classDesc.displayName(), false, Thread.currentThread().getContextClassLoader());
+            if (!Modifier.isPublic(cls.getModifiers())) {
+                return true;
+            }
+            Module module = cls.getModule();
+            return module.isNamed() && !module.isExported(cls.getPackageName());
+        } catch (ClassNotFoundException e) {
+            return true;
+        }
     }
 
     // ── Class loaders  ──

@@ -355,10 +355,16 @@ public class BeanGenerator extends AbstractGenerator {
             mc.returning(proxyType);
             mc.body(b0 -> {
                 LocalVar proxy = b0.localVar("proxy", cc.this_().field(proxyField));
-                // Create a new proxy instance, atomicity does not really matter here
+                // Guard against concurrent resolution: two threads must not create two client proxies
+                // for the same bean, otherwise QuarkusMock would only reach the cached one.
                 b0.ifNull(proxy, b1 -> {
-                    b1.set(proxy, b1.new_(proxyType, Const.of(bean.getIdentifier())));
-                    b1.set(cc.this_().field(proxyField), proxy);
+                    b1.synchronized_(cc.this_(), b2 -> {
+                        b2.set(proxy, cc.this_().field(proxyField));
+                        b2.ifNull(proxy, b3 -> {
+                            b3.set(proxy, b3.new_(proxyType, Const.of(bean.getIdentifier())));
+                            b3.set(cc.this_().field(proxyField), proxy);
+                        });
+                    });
                 });
                 b0.return_(proxy);
             });

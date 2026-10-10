@@ -1,8 +1,5 @@
 package io.quarkus.keycloak.admin.resteasy.client.runtime;
 
-import static io.quarkus.keycloak.admin.client.common.runtime.KeycloakAdminClientConfigUtil.validate;
-
-import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
 
 import javax.net.ssl.SSLContext;
@@ -24,37 +21,19 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import io.quarkus.keycloak.admin.client.common.runtime.Jackson2JsonNodeModule;
 import io.quarkus.keycloak.admin.client.common.runtime.KeycloakAdminClientConfig;
 import io.quarkus.resteasy.common.runtime.jackson.QuarkusJacksonSerializer;
-import io.quarkus.runtime.RuntimeValue;
-import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.tls.TlsConfiguration;
 import io.quarkus.tls.TlsConfigurationRegistry;
 import tools.jackson.databind.DeserializationFeature;
 import tools.jackson.databind.json.JsonMapper;
 
-@Recorder
 public class KeycloakAdminResteasyClientRecorder {
 
-    private final RuntimeValue<KeycloakAdminClientConfig> keycloakAdminClientConfigRuntimeValue;
-
-    public KeycloakAdminResteasyClientRecorder(
-            RuntimeValue<KeycloakAdminClientConfig> keycloakAdminClientConfigRuntimeValue) {
-        this.keycloakAdminClientConfigRuntimeValue = keycloakAdminClientConfigRuntimeValue;
-    }
-
-    public Supplier<Keycloak> createAdminClient() {
-
-        final KeycloakAdminClientConfig config = keycloakAdminClientConfigRuntimeValue.getValue();
-        validate(config);
+    public static Keycloak createAdminClient(KeycloakAdminClientConfig config) {
         if (config.serverUrl().isEmpty()) {
-            return new Supplier<>() {
-                @Override
-                public Keycloak get() {
-                    throw new IllegalStateException(
-                            "'quarkus.keycloak.admin-client.server-url' must be set in order to use the Keycloak admin client as a CDI bean");
-                }
-            };
+            throw new IllegalStateException(
+                    "'quarkus.keycloak.admin-client.server-url' must be set in order to use the Keycloak admin client as a CDI bean");
         }
-        final KeycloakBuilder keycloakBuilder = KeycloakBuilder
+        return KeycloakBuilder
                 .builder()
                 .clientId(config.clientId())
                 .clientSecret(config.clientSecret().orElse(null))
@@ -63,19 +42,12 @@ public class KeycloakAdminResteasyClientRecorder {
                 .password(config.password().orElse(null))
                 .realm(config.realm())
                 .serverUrl(config.serverUrl().get())
-                .scope(config.scope().orElse(null));
-        return new Supplier<Keycloak>() {
-            @Override
-            public Keycloak get() {
-                return keycloakBuilder.build();
-            }
-        };
+                .scope(config.scope().orElse(null))
+                .build();
     }
 
-    public void setClientProvider(Supplier<TlsConfigurationRegistry> registrySupplier) {
-        var registry = registrySupplier.get();
-        var namedTlsConfig = TlsConfiguration.from(registry,
-                keycloakAdminClientConfigRuntimeValue.getValue().tlsConfigurationName()).orElse(null);
+    public static void setClientProvider(TlsConfigurationRegistry registry, KeycloakAdminClientConfig config) {
+        var namedTlsConfig = TlsConfiguration.from(registry, config.tlsConfigurationName()).orElse(null);
         final boolean globalTrustAll;
         if (registry.getDefault().isPresent()) {
             globalTrustAll = registry.getDefault().get().isTrustAll();
@@ -120,7 +92,7 @@ public class KeycloakAdminResteasyClientRecorder {
         });
     }
 
-    public void avoidRuntimeInitIssueInClientBuilderWrapper() {
+    public static void avoidRuntimeInitIssueInClientBuilderWrapper() {
         // we set our provider at runtime, it is not used before that
         // however org.keycloak.admin.client.Keycloak.CLIENT_PROVIDER is initialized during
         // static init with org.keycloak.admin.client.ClientBuilderWrapper that is not compatible with native mode

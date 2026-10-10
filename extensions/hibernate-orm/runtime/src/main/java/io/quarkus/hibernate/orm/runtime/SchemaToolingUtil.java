@@ -1,6 +1,7 @@
 package io.quarkus.hibernate.orm.runtime;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URL;
 import java.nio.file.DirectoryStream;
 import java.nio.file.FileVisitResult;
@@ -8,6 +9,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.SimpleFileVisitor;
+import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -40,8 +42,21 @@ public class SchemaToolingUtil {
                             URL resource = Thread.currentThread()
                                     .getContextClassLoader()
                                     .getResource(fileName);
-                            Path zipFile = Paths.get(resource.toURI());
-                            ZipUtils.unzip(zipFile, unzipDir);
+                            if ("file".equals(resource.getProtocol())) {
+                                ZipUtils.unzip(Paths.get(resource.toURI()), unzipDir);
+                            } else {
+                                // In a packaged application the zip file is inside a jar,
+                                // where it cannot be accessed as a path: copy it to a temporary file first
+                                Path zipFile = Files.createTempFile(SQL_LOAD_SCRIPT_UNZIPPED_DIR_PREFIX, ".zip");
+                                try {
+                                    try (InputStream in = resource.openStream()) {
+                                        Files.copy(in, zipFile, StandardCopyOption.REPLACE_EXISTING);
+                                    }
+                                    ZipUtils.unzip(zipFile, unzipDir);
+                                } finally {
+                                    Files.deleteIfExists(zipFile);
+                                }
+                            }
                             try (DirectoryStream<Path> paths = Files.newDirectoryStream(unzipDir)) {
                                 for (Path path : paths) {
                                     unzippedFilesNames.add(path.toAbsolutePath().toString());

@@ -149,76 +149,91 @@ public class UberJarBuilder extends AbstractJarBuilder<JarBuildItem> {
 
     private void buildUberJar0(Path runnerJar) throws IOException {
 
-        try (ArchiveCreator archiveCreator = new ParallelCommonsCompressArchiveCreator(runnerJar,
-                packageConfig.jar().compress(), packageConfig.outputTimestamp(),
-                executorService)) {
-            LOG.info("Building uber jar: " + runnerJar);
+        final List<OpenPathTree> openTrees = new ArrayList<>();
+        try {
+            try (ArchiveCreator archiveCreator = new ParallelCommonsCompressArchiveCreator(runnerJar,
+                    packageConfig.jar().compress(), packageConfig.outputTimestamp(),
+                    executorService)) {
+                LOG.info("Building uber jar: " + runnerJar);
 
-            final Map<String, List<byte[]>> concatenatedEntries = new HashMap<>();
-            final Set<String> mergeResourcePaths = mergedResources.stream()
-                    .map(UberJarMergedResourceBuildItem::getPath)
-                    .collect(Collectors.toSet());
+                final Map<String, List<byte[]>> concatenatedEntries = new HashMap<>();
+                final Set<String> mergeResourcePaths = mergedResources.stream()
+                        .map(UberJarMergedResourceBuildItem::getPath)
+                        .collect(Collectors.toSet());
 
-            final Predicate<String> allIgnoredEntriesPredicate = getIgnoredEntriesPredicate();
+                final Predicate<String> allIgnoredEntriesPredicate = getIgnoredEntriesPredicate();
 
-            ResolvedDependency appArtifact = curateOutcome.getApplicationModel().getAppArtifact();
+                ResolvedDependency appArtifact = curateOutcome.getApplicationModel().getAppArtifact();
 
-            // the manifest needs to be the first entry in the jar, otherwise JarInputStream does not work properly
-            // see https://bugs.openjdk.java.net/browse/JDK-8031748
-            // the ArchiveCreator now makes sure it's the case, keeping the comment in case we change the implementation at some point
-            Manifest manifest = createManifest(packageConfig, appArtifact, applicationInfo);
-            attachRunnerMetadata(manifest, mainClass.getClassName(), "", jvmRequirements);
-            archiveCreator.addManifest(manifest);
+                // the manifest needs to be the first entry in the jar, otherwise JarInputStream does not work properly
+                // see https://bugs.openjdk.java.net/browse/JDK-8031748
+                // the ArchiveCreator now makes sure it's the case, keeping the comment in case we change the implementation at some point
+                Manifest manifest = createManifest(packageConfig, appArtifact, applicationInfo);
+                attachRunnerMetadata(manifest, mainClass.getClassName(), "", jvmRequirements);
+                archiveCreator.addManifest(manifest);
 
-            // application content is added first so that it takes precedence over dependency content
-            // the archive creator uses first-write-wins semantics
-            copyApplicationContent(archiveCreator, concatenatedEntries, allIgnoredEntriesPredicate);
+                // application content is added first so that it takes precedence over dependency content
+                // the archive creator uses first-write-wins semantics
+                copyApplicationContent(archiveCreator, concatenatedEntries, allIgnoredEntriesPredicate);
 
-            final Map<String, Set<Dependency>> duplicateCatcher = new HashMap<>();
+                final Map<String, Set<Dependency>> duplicateCatcher = new HashMap<>();
 
-            for (ResolvedDependency appDep : curateOutcome.getApplicationModel().getRuntimeDependencies()) {
+                for (ResolvedDependency appDep : curateOutcome.getApplicationModel().getRuntimeDependencies()) {
 
-                // Exclude files that are not jars (typically, we can have XML files here, see https://github.com/quarkusio/quarkus/issues/2852)
-                // and are not part of the optional dependencies to include
-                if (!includeAppDependency(appDep, outputTarget.getIncludedOptionalDependencies(), removedArtifactKeys)) {
-                    continue;
-                }
-
-                walkFileDependencyForDependency(archiveCreator, duplicateCatcher,
-                        concatenatedEntries, allIgnoredEntriesPredicate, appDep,
-                        mergeResourcePaths);
-            }
-
-            Map<Set<Dependency>, List<String>> explained = new HashMap<>();
-            for (Map.Entry<String, Set<Dependency>> entry : duplicateCatcher.entrySet()) {
-                if (entry.getValue().size() > 1) {
-                    explained.computeIfAbsent(entry.getValue(), k -> new ArrayList<>()).add(entry.getKey());
-                }
-            }
-            if (!explained.isEmpty()) {
-                for (Map.Entry<Set<Dependency>, List<String>> entry : explained.entrySet()) {
-                    var msg = new StringBuilder().append("Dependencies:");
-                    for (var dep : entry.getKey()) {
-                        msg.append(System.lineSeparator()).append("- ").append(dep.toCompactCoords());
+                    // Exclude files that are not jars (typically, we can have XML files here, see https://github.com/quarkusio/quarkus/issues/2852)
+                    // and are not part of the optional dependencies to include
+                    if (!includeAppDependency(appDep, outputTarget.getIncludedOptionalDependencies(), removedArtifactKeys)) {
+                        continue;
                     }
-                    msg.append(System.lineSeparator()).append("contain duplicate files:");
-                    for (var path : entry.getValue()) {
-                        msg.append(System.lineSeparator()).append("- ").append(path);
+
+                    // Retain OpenPathTree references until archiveCreator.close() finishes writing
+                    // all asynchronously scatter-compressed entries to avoid ClosedFileSystemException (#56987)
+                    OpenPathTree openTree = appDep.getContentTree().open();
+                    openTrees.add(openTree);
+                    walkFileDependencyForDependency(archiveCreator, duplicateCatcher,
+                            concatenatedEntries, allIgnoredEntriesPredicate, appDep, openTree,
+                            mergeResourcePaths);
+                }
+
+                Map<Set<Dependency>, List<String>> explained = new HashMap<>();
+                for (Map.Entry<String, Set<Dependency>> entry : duplicateCatcher.entrySet()) {
+                    if (entry.getValue().size() > 1) {
+                        explained.computeIfAbsent(entry.getValue(), k -> new ArrayList<>()).add(entry.getKey());
                     }
-                    LOG.warn(msg);
+                }
+                if (!explained.isEmpty()) {
+                    for (Map.Entry<Set<Dependency>, List<String>> entry : explained.entrySet()) {
+                        var msg = new StringBuilder().append("Dependencies:");
+                        for (var dep : entry.getKey()) {
+                            msg.append(System.lineSeparator()).append("- ").append(dep.toCompactCoords());
+                        }
+                        msg.append(System.lineSeparator()).append("contain duplicate files:");
+                        for (var path : entry.getValue()) {
+                            msg.append(System.lineSeparator()).append("- ").append(path);
+                        }
+                        LOG.warn(msg);
+                    }
+                }
+
+                // write concatenated entries (services, etc.) after all sources have been collected
+                writeConcatenatedEntries(archiveCreator, concatenatedEntries);
+
+                // now that all entries have been added, check if there's a META-INF/versions/ entry. If present,
+                // mark this jar as multi-release jar. Strictly speaking, the jar spec expects META-INF/versions/N
+                // directory where N is an integer greater than 8, but we don't do that level of checks here but that
+                // should be OK.
+                if (archiveCreator.isMultiVersion()) {
+                    LOG.debug("Uber jar will be marked as multi-release jar");
+                    archiveCreator.makeMultiVersion();
                 }
             }
-
-            // write concatenated entries (services, etc.) after all sources have been collected
-            writeConcatenatedEntries(archiveCreator, concatenatedEntries);
-
-            // now that all entries have been added, check if there's a META-INF/versions/ entry. If present,
-            // mark this jar as multi-release jar. Strictly speaking, the jar spec expects META-INF/versions/N
-            // directory where N is an integer greater than 8, but we don't do that level of checks here but that
-            // should be OK.
-            if (archiveCreator.isMultiVersion()) {
-                LOG.debug("Uber jar will be marked as multi-release jar");
-                archiveCreator.makeMultiVersion();
+        } finally {
+            for (OpenPathTree openTree : openTrees) {
+                try {
+                    openTree.close();
+                } catch (IOException | RuntimeException e) {
+                    LOG.warn("Failed to close path tree", e);
+                }
             }
         }
 
@@ -241,14 +256,12 @@ public class UberJarBuilder extends AbstractJarBuilder<JarBuildItem> {
 
     private void walkFileDependencyForDependency(ArchiveCreator archiveCreator,
             Map<String, Set<Dependency>> duplicateCatcher, Map<String, List<byte[]>> concatenatedEntries,
-            Predicate<String> ignoredEntriesPredicate, ResolvedDependency appDep,
+            Predicate<String> ignoredEntriesPredicate, ResolvedDependency appDep, OpenPathTree pathTree,
             Set<String> mergeResourcePaths) throws IOException {
 
-        // The reason opening and closing a path tree right away works, unlike creating and closing a ZipFileSystem,
-        // is that we are actually using a SharedOpenArchivePathTree here, which simply increments and decrements
-        // the user count of the cached shared open path tree instance. This open path tree instance will remain open
-        // until the last user called close() on it, which will be the Quarkus classloaders closing.
-        try (OpenPathTree pathTree = appDep.getContentTree().open()) {
+        // OpenPathTree lifecycle is managed by buildUberJar0 across asynchronous scatter-zip
+        // creation to ensure ReadOnlyZipFileSystem remains open during background entry reads (#56987).
+        try {
             pathTree.walkRaw(visit -> {
                 try {
                     final String relativePath = visit.getResourceName();

@@ -21,4 +21,10 @@ public class VertxWebEndpoint {
     public String echo(@Param("msg") String msg) {
         return "echo " + msg;
     }
+
+    // No path parameter, so no url template is published for this route
+    @Route(path = "query", methods = HttpMethod.GET)
+    public String query() {
+        return "query";
+    }
 }

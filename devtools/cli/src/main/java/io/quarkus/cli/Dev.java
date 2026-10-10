@@ -20,6 +20,10 @@ public class Dev extends BaseBuildCommand implements Callable<Integer> {
     @CommandLine.ArgGroup(order = 1, exclusive = false, heading = "%nDev Mode options:%n")
     DevOptions devOptions = new DevOptions();
 
+    @CommandLine.Option(order = 2, names = {
+            "--remote" }, description = "Connect to an application running in remote dev mode, as configured by quarkus.live-reload.url and quarkus.live-reload.password.")
+    boolean remote = false;
+
     @CommandLine.ArgGroup(order = 3, exclusive = false, validate = true, heading = "%nDebug options:%n")
     DebugOptions debugOptions = new DebugOptions();
 
@@ -33,8 +37,9 @@ public class Dev extends BaseBuildCommand implements Callable<Integer> {
             output.throwIfUnmatchedArguments(spec.commandLine());
 
             BuildSystemRunner runner = getRunner();
-            List<Supplier<BuildSystemRunner.BuildCommandArgs>> commandArgs = runner.prepareDevTestMode(
-                    true, devOptions, debugOptions, params);
+            List<Supplier<BuildSystemRunner.BuildCommandArgs>> commandArgs = remote
+                    ? runner.prepareRemoteDevMode(devOptions, debugOptions, params)
+                    : runner.prepareDevTestMode(true, devOptions, debugOptions, params);
 
             if (devOptions.isDryRun()) {
                 dryRunDev(spec.commandLine().getHelp(), runner.getBuildTool(), commandArgs.iterator().next().get());
@@ -56,7 +61,7 @@ public class Dev extends BaseBuildCommand implements Callable<Integer> {
 
     void dryRunDev(CommandLine.Help help, BuildTool buildTool, BuildSystemRunner.BuildCommandArgs args) {
         output.printText(new String[] {
-                "\nRun current project in dev mode\n",
+                remote ? "\nRun current project in remote dev mode\n" : "\nRun current project in dev mode\n",
                 "\t" + projectRoot().toString()
         });
         Map<String, String> dryRunOutput = new TreeMap<>();
@@ -71,7 +76,8 @@ public class Dev extends BaseBuildCommand implements Callable<Integer> {
 
     @Override
     public String toString() {
-        return "Dev [debugOptions=" + debugOptions
+        return "Dev [remote=" + remote
+                + ", debugOptions=" + debugOptions
                 + ", devOptions=" + devOptions
                 + ", properties=" + propertiesOptions.properties
                 + ", output=" + output

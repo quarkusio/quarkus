@@ -122,6 +122,9 @@ public interface BuildSystemRunner {
     List<Supplier<BuildCommandArgs>> prepareDevTestMode(boolean devMode, DevOptions commonOptions,
             DebugOptions debugOptions, List<String> params);
 
+    List<Supplier<BuildCommandArgs>> prepareRemoteDevMode(DevOptions commonOptions, DebugOptions debugOptions,
+            List<String> params);
+
     Path getProjectRoot();
 
     File getExecutable();

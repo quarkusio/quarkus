@@ -13,9 +13,6 @@ metadata:
   categories:
   - "data"
   status: "stable"
-  capabilities:
-    provides:
-    - "io.quarkus.hibernate.orm.panache"
   config:
   - "quarkus.datasource."
   - "quarkus.hibernate-orm."

@@ -111,6 +111,7 @@ public class OidcClientRecorder {
         try {
             OidcCommonUtils.verifyCommonConfiguration(oidcConfig, false, false);
             OidcCommonUtils.validateCredentialsForAllEndpoints(oidcConfig.credentials());
+            verifyMinRemainingAccessTokenLifespan(oidcConfig, oidcClientId);
         } catch (ConfigurationException e) {
             return Uni.createFrom().failure(e);
         }
@@ -154,6 +155,35 @@ public class OidcClientRecorder {
                                 deferredClient.onFailure().transform(t -> toOidcClientException(getEndpointUrl(oidcConfig), t)),
                                 oidcClientId, client);
                     });
+        }
+    }
+
+    /**
+     * Reusing the access token which is being refreshed is only enabled when a minimum remaining lifespan is
+     * configured lower than the refresh token time skew.
+     */
+    private static void verifyMinRemainingAccessTokenLifespan(OidcClientConfig oidcConfig, String oidcClientId) {
+        if (oidcConfig.minRemainingAccessTokenLifespan().isEmpty()) {
+            return;
+        }
+        final long minRemainingLifespan = oidcConfig.minRemainingAccessTokenLifespan().get().getSeconds();
+        if (minRemainingLifespan <= 0) {
+            throw new ConfigurationException(String.format(
+                    "'quarkus.oidc-client.min-remaining-access-token-lifespan' must be greater than 0 seconds"
+                            + " for the '%s' client, consider setting it to at least 3 seconds",
+                    oidcClientId));
+        }
+        if (oidcConfig.refreshTokenTimeSkew().isEmpty()) {
+            throw new ConfigurationException(String.format(
+                    "'quarkus.oidc-client.min-remaining-access-token-lifespan' requires"
+                            + " 'quarkus.oidc-client.refresh-token-time-skew' to be configured for the '%s' client",
+                    oidcClientId));
+        }
+        if (minRemainingLifespan >= oidcConfig.refreshTokenTimeSkew().get().getSeconds()) {
+            throw new ConfigurationException(String.format(
+                    "'quarkus.oidc-client.min-remaining-access-token-lifespan' must be less than"
+                            + " 'quarkus.oidc-client.refresh-token-time-skew' for the '%s' client",
+                    oidcClientId));
         }
     }
 

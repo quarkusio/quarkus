@@ -75,6 +75,10 @@ public class HibernateOrmRecorder {
         PersistenceProviderSetup.registerRuntimePersistenceProvider(runtimeConfig.getValue(), integrationRuntimeDescriptors);
     }
 
+    public void setDatasourcesWithMigratedSchema(Set<String> datasourceNames) {
+        SchemaManagementIntegrator.setDatasourcesWithMigratedSchema(datasourceNames);
+    }
+
     public BeanContainerListener initMetadata(List<QuarkusPersistenceUnitDefinition> parsedPersistenceXmlDescriptors,
             Collection<Class<? extends Integrator>> additionalIntegrators) {
         SchemaManagementIntegrator.clearDsMap();

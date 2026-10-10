@@ -3,6 +3,7 @@ package io.quarkus.keycloak.admin.resteasy.client.deployment;
 import jakarta.enterprise.context.RequestScoped;
 
 import org.jboss.jandex.DotName;
+import org.jboss.jandex.Type;
 import org.jboss.resteasy.client.jaxrs.internal.ResteasyClientBuilderImpl;
 import org.jboss.resteasy.client.jaxrs.internal.proxy.ProxyBuilderImpl;
 import org.keycloak.admin.client.JacksonProvider;
@@ -13,20 +14,23 @@ import org.keycloak.json.StringOrArrayDeserializer;
 import org.keycloak.json.StringOrArraySerializer;
 
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
+import io.quarkus.core.Phase;
+import io.quarkus.core.deployment.service.ServiceRegistrar;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
-import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Produce;
-import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.AdditionalApplicationArchiveMarkerBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyIgnoreWarningBuildItem;
 import io.quarkus.keycloak.admin.client.common.deployment.KeycloakAdminClientInjectionEnabled;
+import io.quarkus.keycloak.admin.client.common.runtime.KeycloakAdminClientConfig;
+import io.quarkus.keycloak.admin.client.common.runtime.KeycloakAdminClientConfigUtil;
+import io.quarkus.keycloak.admin.resteasy.client.runtime.KeycloakAdminClientCreator;
 import io.quarkus.keycloak.admin.resteasy.client.runtime.KeycloakAdminResteasyClientRecorder;
-import io.quarkus.tls.deployment.spi.TlsRegistryBuildItem;
+import io.quarkus.tls.TlsConfigurationRegistry;
 
 public class KeycloakAdminResteasyClientProcessor {
 
@@ -54,23 +58,31 @@ public class KeycloakAdminResteasyClientProcessor {
                 .methods().build();
     }
 
-    @Record(ExecutionTime.STATIC_INIT)
     @BuildStep
-    void avoidRuntimeInitIssueInClientBuilderWrapper(KeycloakAdminResteasyClientRecorder recorder) {
-        recorder.avoidRuntimeInitIssueInClientBuilderWrapper();
+    void avoidRuntimeInitIssueInClientBuilderWrapper(ServiceRegistrar serviceRegistrar) {
+        serviceRegistrar
+                .forService("io.quarkus.keycloak-admin-resteasy-client.reset-client-provider")
+                .atPhase(Phase.STATIC_INIT)
+                .onStart(ctx -> KeycloakAdminResteasyClientRecorder.avoidRuntimeInitIssueInClientBuilderWrapper());
     }
 
-    @Record(ExecutionTime.RUNTIME_INIT)
     @Produce(ServiceStartBuildItem.class)
     @BuildStep
-    public void integrate(KeycloakAdminResteasyClientRecorder recorder, TlsRegistryBuildItem tlsRegistryBuildItem) {
-        recorder.setClientProvider(tlsRegistryBuildItem.registry());
+    public void integrate(ServiceRegistrar serviceRegistrar) {
+        serviceRegistrar
+                .forService("io.quarkus.keycloak-admin-resteasy-client.client-provider")
+                .require(TlsConfigurationRegistry.class)
+                .require(KeycloakAdminClientConfig.class)
+                .onStart((ctx, registry, config) -> KeycloakAdminResteasyClientRecorder.setClientProvider(registry, config));
     }
 
-    @Record(ExecutionTime.RUNTIME_INIT)
     @BuildStep(onlyIf = KeycloakAdminClientInjectionEnabled.class)
-    public void registerKeycloakAdminClientBeans(KeycloakAdminResteasyClientRecorder recorder,
+    public void registerKeycloakAdminClientBeans(ServiceRegistrar serviceRegistrar,
             BuildProducer<SyntheticBeanBuildItem> syntheticBeanBuildItemBuildProducer) {
+        serviceRegistrar
+                .forService("io.quarkus.keycloak-admin-resteasy-client.validate-config")
+                .require(KeycloakAdminClientConfig.class)
+                .onStart((ctx, config) -> KeycloakAdminClientConfigUtil.validate(config));
         syntheticBeanBuildItemBuildProducer.produce(SyntheticBeanBuildItem
                 .configure(Keycloak.class)
                 // use @RequestScoped as we don't want to keep client connection open too long
@@ -79,7 +91,8 @@ public class KeycloakAdminResteasyClientProcessor {
                 .reserve(true)
                 .priority(0)
                 .unremovable()
-                .supplier(recorder.createAdminClient())
+                .creator(KeycloakAdminClientCreator.class)
+                .addInjectionPoint(Type.create(KeycloakAdminClientConfig.class))
                 .autoClose(true)
                 .done());
     }

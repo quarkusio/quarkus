@@ -29,14 +29,24 @@ public interface ContainerConfig extends EnvVarHolder {
     Optional<String> workingDir();
 
     /**
-     * The commands
+     * The command that the container runs.
+     * <p>
+     * Each element of the list becomes one element of the {@code command} field of the container. In
+     * {@code application.properties}, separate the elements with commas and no spaces, for example
+     * {@code my-command,--my-option}. For an element that holds a comma, write the comma as {@code \\,} or add an
+     * index to the property name, such as {@code command[0]}. When a command is set, the container ignores both the
+     * {@code ENTRYPOINT} and the {@code CMD} of the container image.
      */
     Optional<List<String>> command();
 
     /**
-     * The arguments
-     *
-     * @return The arguments.
+     * The arguments passed to the command of the container, or to the {@code ENTRYPOINT} of the image.
+     * <p>
+     * Each element of the list becomes one element of the {@code args} field of the container. In
+     * {@code application.properties}, separate the elements with commas and no spaces. For an element that holds a
+     * comma, write the comma as {@code \\,} or add an index to the property name, such as {@code arguments[0]}. The
+     * arguments replace the {@code CMD} of the container image. When no command is set, the {@code ENTRYPOINT} of the
+     * image receives the arguments, and if the image has no {@code ENTRYPOINT}, the first argument runs as the program.
      */
     Optional<List<String>> arguments();
 

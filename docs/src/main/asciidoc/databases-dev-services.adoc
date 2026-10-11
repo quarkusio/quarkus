@@ -170,6 +170,61 @@ you can disable this feature for a specific Dev Service by setting the configura
 xref:quarkus-datasource_quarkus-datasource-devservices_quarkus-datasource-devservices-reuse[`quarkus.datasource.devservices.reuse`/`quarkus.datasource."datasource-name".devservices.reuse`]
 to `false`.
 
+[[sharing-datasource]]
+=== Sharing a Dev Services database between several datasources
+
+By default, each named datasource gets its own Dev Services container.
+If you have several datasources in the same application and want them to share a single database,
+instead of duplicating connection details, set
+xref:quarkus-datasource_quarkus-datasource-devservices_quarkus-datasource-devservices-shares-container[`quarkus.datasource."datasource-name".devservices.shares-container`]
+to `true` on the datasource that should start the container, and
+xref:quarkus-datasource_quarkus-datasource-devservices_quarkus-datasource-devservices-use-from[`quarkus.datasource."datasource-name".devservices.use-from`]
+on the datasource(s) that should reuse it:
+
+[source,properties]
+----
+quarkus.datasource.db-kind=postgresql
+quarkus.datasource.devservices.shares-container=true
+
+quarkus.datasource."named".db-kind=postgresql
+quarkus.datasource."named".devservices.use-from=<default>
+----
+
+With this configuration, Dev Services only starts one container, for the default datasource.
+The `named` datasource does not start its own container; instead, it reuses the default datasource's
+JDBC URL, reactive URL, username and password.
+
+[IMPORTANT]
+====
+Both sides must opt in explicitly:
+
+* The datasource that owns the container must set `shares-container=true`. By itself, this does nothing --
+it only allows other datasources to reuse this one's container.
+* The datasource that wants to reuse a container must set `use-from` to the name of the datasource that
+provides it (use `<default>` to refer to the default datasource).
+
+If `use-from` references a datasource that does not set `shares-container=true`, the build fails.
+If `use-from` references a datasource that itself sets `use-from`, the build also fails -- only one level
+of sharing is supported.
+====
+
+[IMPORTANT]
+====
+The `devservices.*` properties (image name, init scripts, volumes, ...) of a datasource that sets `use-from`
+are ignored, since no container is started for it.
+====
+
+[IMPORTANT]
+====
+A datasource and the one it reuses through `use-from` must use the same `db-kind`.
+====
+
+[NOTE]
+====
+This only applies to Dev Services, within a single application, in dev mode and in tests; it does not share
+containers across different applications.
+====
+
 == Mapping volumes into Dev Services for Database
 
 Mapping volumes from the Docker host's filesystem to the containers is handy to provide files like scripts or configuration, but also to preserve database data and reuse it after an application restart.

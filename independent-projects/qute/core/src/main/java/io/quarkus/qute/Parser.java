@@ -7,6 +7,7 @@ import java.net.URI;
 import java.nio.CharBuffer;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Deque;
 import java.util.HashSet;
@@ -1016,12 +1017,24 @@ class Parser implements ParserHelper, ParserDelegate, WithOrigin, ErrorInitializ
     }
 
     static ExpressionImpl parseExpression(Supplier<Integer> idGenerator, String value, Scope scope, Origin origin) {
+        return parseExpression(idGenerator, value, scope, origin, -1);
+    }
+
+    /**
+     * @param lineCharacterStart the 1-based index of the first character of the value on the line of the origin, or
+     *        {@code -1} if the origin does not identify the expression itself
+     */
+    static ExpressionImpl parseExpression(Supplier<Integer> idGenerator, String value, Scope scope, Origin origin,
+            int lineCharacterStart) {
         if (value == null || value.isEmpty()) {
             return ExpressionImpl.EMPTY;
         }
         // (foo ?: bar) -> foo ?: bar
         if (value.charAt(0) == START_COMPOSITE_PARAM && value.charAt(value.length() - 1) == END_COMPOSITE_PARAM) {
             value = value.substring(1, value.length() - 1);
+            if (lineCharacterStart >= 0) {
+                lineCharacterStart++;
+            }
         }
         String namespace = null;
         int namespaceIdx = value.indexOf(NAMESPACE_SEPARATOR);
@@ -1029,6 +1042,7 @@ class Parser implements ParserHelper, ParserDelegate, WithOrigin, ErrorInitializ
         int bracketIdx;
 
         List<String> strParts;
+        int partsSearchStart = 0;
         if (namespaceIdx != -1
                 // No space or colon before the space
                 && ((spaceIdx = value.indexOf(' ')) == -1 || namespaceIdx < spaceIdx)
@@ -1039,10 +1053,11 @@ class Parser implements ParserHelper, ParserDelegate, WithOrigin, ErrorInitializ
             // Expression that starts with a namespace
             strParts = Expressions.splitParts(value.substring(namespaceIdx + 1, value.length()));
             namespace = value.substring(0, namespaceIdx);
+            partsSearchStart = namespaceIdx + 1;
         } else {
             Object literalValue = LiteralSupport.getLiteralValue(value);
             if (!Results.isNotFound(literalValue)) {
-                return ExpressionImpl.literal(idGenerator.get(), value, literalValue, origin);
+                return ExpressionImpl.literal(idGenerator.get(), value, literalValue, origin, lineCharacterStart);
             }
             strParts = Expressions.splitParts(value);
         }
@@ -1053,6 +1068,8 @@ class Parser implements ParserHelper, ParserDelegate, WithOrigin, ErrorInitializ
                     .build();
         }
 
+        int[] partPositions = partPositions(value, strParts, partsSearchStart, lineCharacterStart);
+
         // Safe expressions
         int lastIdx = strParts.size() - 1;
         String last = strParts.get(lastIdx);
@@ -1060,12 +1077,16 @@ class Parser implements ParserHelper, ParserDelegate, WithOrigin, ErrorInitializ
             // foo.val?? -> foo.val.or(null)
             strParts = ImmutableList.<String> builder().addAll(strParts.subList(0, lastIdx))
                     .add(last.substring(0, last.length() - 2)).add("or(null)").build();
+            int[] positions = Arrays.copyOf(partPositions, partPositions.length + 1);
+            positions[lastIdx + 1] = partPositions[lastIdx] >= 0 ? partPositions[lastIdx] + last.length() - 2 : -1;
+            partPositions = positions;
         }
 
         // Check if the first part is a literal value with chaining virtual method parts
         Object literalValue = Results.NotFound.EMPTY;
         List<Part> parts = new ArrayList<>(strParts.size());
         Part first = null;
+        int partIdx = 0;
 
         if (strParts.size() > 1) {
             Object firstPartLiteral = LiteralSupport.getLiteralValue(strParts.get(0));
@@ -1074,15 +1095,17 @@ class Parser implements ParserHelper, ParserDelegate, WithOrigin, ErrorInitializ
                 String literalTypeInfo = firstPartLiteral != null
                         ? Expressions.typeInfoFrom(firstPartLiteral.getClass().getName())
                         : null;
-                first = new ExpressionImpl.PartImpl(strParts.get(0), literalTypeInfo);
+                first = new ExpressionImpl.PartImpl(strParts.get(0), literalTypeInfo, partPositions[0]);
                 parts.add(first);
                 strParts = strParts.subList(1, strParts.size());
+                partIdx = 1;
             }
         }
 
         Iterator<String> strPartsIterator = strParts.iterator();
         while (strPartsIterator.hasNext()) {
-            Part part = createPart(idGenerator, namespace, first, strPartsIterator, scope, origin, value);
+            Part part = createPart(idGenerator, namespace, first, strPartsIterator, scope, origin, value,
+                    partPositions[partIdx++]);
             if (first == null) {
                 first = part;
             }
@@ -1091,20 +1114,56 @@ class Parser implements ParserHelper, ParserDelegate, WithOrigin, ErrorInitializ
         return new ExpressionImpl(idGenerator.get(), namespace, ImmutableList.copyOf(parts), literalValue, origin);
     }
 
+    /**
+     * Locates the parts in the expression value, in order, so that a repeated name is attributed to the right part.
+     *
+     * @return the line character start of each part, or {@code -1} for a part that cannot be located, e.g. a part
+     *         rewritten by the infix notation
+     */
+    private static int[] partPositions(String value, List<String> strParts, int searchStart, int lineCharacterStart) {
+        int[] positions = new int[strParts.size()];
+        if (lineCharacterStart < 0) {
+            Arrays.fill(positions, -1);
+            return positions;
+        }
+        int from = searchStart;
+        for (int i = 0; i < strParts.size(); i++) {
+            String strPart = strParts.get(i);
+            int idx = value.indexOf(strPart, from);
+            if (idx < 0) {
+                positions[i] = -1;
+            } else {
+                positions[i] = lineCharacterStart + idx;
+                from = idx + strPart.length();
+            }
+        }
+        return positions;
+    }
+
     private static Part createPart(Supplier<Integer> idGenerator, String namespace, Part first,
-            Iterator<String> strPartsIterator, Scope scope, Origin origin, String exprValue) {
+            Iterator<String> strPartsIterator, Scope scope, Origin origin, String exprValue, int lineCharacterStart) {
         String value = strPartsIterator.next();
         if (Expressions.isVirtualMethod(value)) {
             String name = Expressions.parseVirtualMethodName(value);
             List<String> strParams = new ArrayList<>(Expressions.parseVirtualMethodParams(value, origin, exprValue));
             List<Expression> params = new ArrayList<>(strParams.size());
             Scope paramScope = new Scope(scope);
+            int paramSearchFrom = name.length() + 1;
             for (String strParam : strParams) {
-                params.add(parseExpression(idGenerator, strParam.trim(), paramScope, origin));
+                String param = strParam.trim();
+                int paramLineCharacterStart = -1;
+                if (lineCharacterStart >= 0) {
+                    int idx = value.indexOf(param, paramSearchFrom);
+                    if (idx >= 0) {
+                        paramLineCharacterStart = lineCharacterStart + idx;
+                        paramSearchFrom = idx + param.length();
+                    }
+                }
+                params.add(parseExpression(idGenerator, param, paramScope, origin, paramLineCharacterStart));
             }
             // Note that an expression may never start with a virtual method
             String lastPartHint = strPartsIterator.hasNext() ? null : scope.getLastPartHint();
-            return new ExpressionImpl.VirtualMethodPartImpl(name, params, lastPartHint);
+            return new ExpressionImpl.VirtualMethodPartImpl(name, params, lastPartHint, lineCharacterStart);
         }
         // Try to parse the literal for bracket notation
         if (Expressions.isBracketNotation(value)) {
@@ -1146,7 +1205,7 @@ class Parser implements ParserHelper, ParserDelegate, WithOrigin, ErrorInitializ
             // If the type info present then append hint to the last part
             typeInfo += scope.getLastPartHint();
         }
-        return new ExpressionImpl.PartImpl(value, typeInfo);
+        return new ExpressionImpl.PartImpl(value, typeInfo, lineCharacterStart);
     }
 
     static boolean isLeftBracket(char character) {
@@ -1161,8 +1220,13 @@ class Parser implements ParserHelper, ParserDelegate, WithOrigin, ErrorInitializ
         return parseExpression(expressionIdGenerator::incrementAndGet, value, scopeStack.peek(), block.getOrigin());
     }
 
+    /**
+     * The origin of an output expression starts at the opening delimiter; the value itself starts one character later.
+     */
     ExpressionImpl createExpression(String value) {
-        return parseExpression(expressionIdGenerator::incrementAndGet, value, scopeStack.peek(), origin(value.length() + 1));
+        Origin origin = origin(value.length() + 1);
+        return parseExpression(expressionIdGenerator::incrementAndGet, value, scopeStack.peek(), origin,
+                origin.getLineCharacterStart() + 1);
     }
 
     Origin origin(int lineCharacterOffset) {

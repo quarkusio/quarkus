@@ -34,6 +34,10 @@ final class ExpressionImpl implements Expression {
     }
 
     static ExpressionImpl literal(int id, String literal, Object value, Origin origin) {
+        return literal(id, literal, value, origin, -1);
+    }
+
+    static ExpressionImpl literal(int id, String literal, Object value, Origin origin, int lineCharacterStart) {
         if (literal == null) {
             throw new IllegalArgumentException("Literal must not be null");
         }
@@ -41,7 +45,7 @@ final class ExpressionImpl implements Expression {
         if (value != null) {
             typeInfo = Expressions.typeInfoFrom(value.getClass().getName());
         }
-        return new ExpressionImpl(id, null, List.of(new PartImpl(literal, typeInfo)), value, origin);
+        return new ExpressionImpl(id, null, List.of(new PartImpl(literal, typeInfo, lineCharacterStart)), value, origin);
     }
 
     static Integer syntheticId() {
@@ -163,7 +167,11 @@ final class ExpressionImpl implements Expression {
         private final List<Expression> parameters;
 
         VirtualMethodPartImpl(String name, List<Expression> parameters, String lastPartHint) {
-            super(name, buildTypeInfo(name, parameters, lastPartHint));
+            this(name, parameters, lastPartHint, -1);
+        }
+
+        VirtualMethodPartImpl(String name, List<Expression> parameters, String lastPartHint, int lineCharacterStart) {
+            super(name, buildTypeInfo(name, parameters, lastPartHint), lineCharacterStart);
             this.parameters = parameters;
         }
 
@@ -232,11 +240,17 @@ final class ExpressionImpl implements Expression {
 
         protected final String name;
         protected final String typeInfo;
+        protected final int lineCharacterStart;
         protected volatile ValueResolver cachedResolver;
 
         PartImpl(String name, String typeInfo) {
+            this(name, typeInfo, -1);
+        }
+
+        PartImpl(String name, String typeInfo, int lineCharacterStart) {
             this.name = name;
             this.typeInfo = typeInfo;
+            this.lineCharacterStart = lineCharacterStart;
         }
 
         public String getName() {
@@ -245,6 +259,11 @@ final class ExpressionImpl implements Expression {
 
         public String getTypeInfo() {
             return typeInfo;
+        }
+
+        @Override
+        public int getLineCharacterStart() {
+            return lineCharacterStart;
         }
 
         @Override

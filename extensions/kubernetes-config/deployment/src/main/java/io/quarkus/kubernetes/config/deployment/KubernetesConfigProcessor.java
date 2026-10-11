@@ -6,14 +6,15 @@ import java.util.List;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
 
+import io.quarkus.core.Phase;
+import io.quarkus.core.deployment.service.ServiceRegistrar;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
-import io.quarkus.deployment.annotations.ExecutionTime;
-import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.ApplicationInfoBuildItem;
 import io.quarkus.deployment.builditem.RunTimeConfigBuilderBuildItem;
 import io.quarkus.kubernetes.config.runtime.KubernetesConfigBuildTimeConfig;
 import io.quarkus.kubernetes.config.runtime.KubernetesConfigRecorder;
+import io.quarkus.kubernetes.config.runtime.KubernetesConfigSourceConfig;
 import io.quarkus.kubernetes.config.runtime.KubernetesConfigSourceFactoryBuilder;
 import io.quarkus.kubernetes.config.runtime.SecretsRoleConfig;
 import io.quarkus.kubernetes.spi.KubernetesClusterRoleBuildItem;
@@ -40,7 +41,6 @@ public class KubernetesConfigProcessor {
     }
 
     @BuildStep
-    @Record(ExecutionTime.RUNTIME_INIT)
     public void handleAccessToSecrets(
             KubernetesConfigBuildTimeConfig buildTimeConfig,
             ApplicationInfoBuildItem applicationInfo,
@@ -48,7 +48,7 @@ public class KubernetesConfigProcessor {
             BuildProducer<KubernetesClusterRoleBuildItem> clusterRoleProducer,
             BuildProducer<KubernetesServiceAccountBuildItem> serviceAccountProducer,
             BuildProducer<KubernetesRoleBindingBuildItem> roleBindingProducer,
-            KubernetesConfigRecorder recorder) {
+            ServiceRegistrar serviceRegistrar) {
         if (buildTimeConfig.secretsEnabled()) {
             SecretsRoleConfig roleConfig = buildTimeConfig.secretsRoleConfig();
 
@@ -91,6 +91,11 @@ public class KubernetesConfigProcessor {
                     new Subject("", "ServiceAccount", null, null)));
         }
 
-        recorder.warnAboutSecrets();
+        boolean secretsEnabled = buildTimeConfig.secretsEnabled();
+        serviceRegistrar
+                .forService("io.quarkus.kubernetes-config.warn-about-secrets")
+                .atPhase(Phase.CONFIG)
+                .require(KubernetesConfigSourceConfig.class)
+                .onStart((ctx, runtimeConfig) -> KubernetesConfigRecorder.warnAboutSecrets(secretsEnabled, runtimeConfig));
     }
 }

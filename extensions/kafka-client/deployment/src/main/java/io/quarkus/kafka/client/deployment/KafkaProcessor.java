@@ -36,6 +36,7 @@ import org.apache.kafka.common.security.oauthbearer.internals.OAuthBearerRefresh
 import org.apache.kafka.common.security.oauthbearer.internals.OAuthBearerSaslClient;
 import org.apache.kafka.common.security.scram.internals.ScramSaslClient;
 import org.apache.kafka.common.serialization.*;
+import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
@@ -44,6 +45,7 @@ import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem.Builder;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
+import io.quarkus.core.deployment.service.ServiceRegistrar;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.Feature;
@@ -51,8 +53,6 @@ import io.quarkus.deployment.IsDevelopment;
 import io.quarkus.deployment.IsProduction;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
-import io.quarkus.deployment.annotations.ExecutionTime;
-import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.AdditionalIndexedClassesBuildItem;
 import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
@@ -78,7 +78,6 @@ import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
 import io.quarkus.deployment.pkg.steps.NativeImageFutureDefault;
 import io.quarkus.kafka.client.runtime.KafkaAdminClient;
 import io.quarkus.kafka.client.runtime.KafkaBindingConverter;
-import io.quarkus.kafka.client.runtime.KafkaRecorder;
 import io.quarkus.kafka.client.runtime.KafkaRuntimeConfigProducer;
 import io.quarkus.kafka.client.runtime.SnappyRecorder;
 import io.quarkus.kafka.client.runtime.dev.ui.KafkaTopicClient;
@@ -345,13 +344,10 @@ public class KafkaProcessor {
     }
 
     @BuildStep(onlyIf = HasSnappy.class)
-    @Record(ExecutionTime.RUNTIME_INIT)
-    void loadSnappyIfEnabled(LaunchModeBuildItem launch, SnappyRecorder recorder, KafkaBuildTimeConfig config) {
-        boolean loadFromSharedClassLoader = false;
-        if (launch.isTest()) {
-            loadFromSharedClassLoader = config.snappyLoadFromSharedClassLoader();
-        }
-        recorder.loadSnappy(loadFromSharedClassLoader);
+    void loadSnappyIfEnabled(ServiceRegistrar serviceRegistrar, LaunchModeBuildItem launch, KafkaBuildTimeConfig config) {
+        boolean loadFromSharedClassLoader = launch.isTest() && config.snappyLoadFromSharedClassLoader();
+        serviceRegistrar.forService("io.quarkus.kafka.client.load-snappy")
+                .onStart(ctx -> SnappyRecorder.loadSnappy(loadFromSharedClassLoader));
     }
 
     @BuildStep(onlyIf = HasSnappy.class)
@@ -360,10 +356,19 @@ public class KafkaProcessor {
     }
 
     @BuildStep(onlyIf = IsProduction.class)
-    @Record(ExecutionTime.RUNTIME_INIT)
-    void checkBoostrapServers(KafkaRecorder recorder, Capabilities capabilities) {
+    void checkBoostrapServers(ServiceRegistrar serviceRegistrar, Capabilities capabilities) {
         if (capabilities.isPresent(Capability.KUBERNETES_SERVICE_BINDING)) {
-            recorder.checkBoostrapServers();
+            serviceRegistrar.forService("io.quarkus.kafka.client.check-bootstrap-servers")
+                    .onStart(ctx -> {
+                        Config config = ConfigProvider.getConfig();
+                        if (!config.getValue("quarkus.kubernetes-service-binding.enabled", Boolean.class)) {
+                            return;
+                        }
+                        if (config.getOptionalValue("kafka.bootstrap.servers", String.class).isEmpty()) {
+                            throw new IllegalStateException(
+                                    "The property 'kafka.bootstrap.servers' must be set when 'quarkus.kubernetes-service-binding.enabled' has been set to 'true'");
+                        }
+                    });
         }
     }
 

@@ -46,7 +46,7 @@ public abstract class QuarkusBootstrapMojo extends AbstractMojo {
     protected QuarkusBootstrapProvider bootstrapProvider;
 
     @Component(hint = "quarkus-bootstrap", role = AbstractMavenLifecycleParticipant.class)
-    private BootstrapSessionListener bootstrapSessionListener;
+    BootstrapSessionListener bootstrapSessionListener;
 
     /**
      * The current repository/network configuration of Maven.
@@ -169,6 +169,14 @@ public abstract class QuarkusBootstrapMojo extends AbstractMojo {
     @Parameter(property = "reloadPoms")
     Set<File> reloadPoms = Set.of();
 
+    /**
+     * Whether to skip the recommendation to enable the Maven extensions of the Quarkus Maven plugin, logged by the
+     * {@code build} goal when they are not enabled. This is meant for builds in which the plugin cannot be enabled as a
+     * Maven extension, such as the integration tests of Quarkus itself and of Quarkus extensions.
+     */
+    @Parameter(property = "skipExtensionsHint", defaultValue = "false")
+    boolean skipExtensionsHint;
+
     private ArtifactKey projectId;
 
     @Override
@@ -198,7 +206,10 @@ public abstract class QuarkusBootstrapMojo extends AbstractMojo {
         }
     }
 
-    private void hintEnableExtensions() {
+    void hintEnableExtensions() {
+        if (skipExtensionsHint) {
+            return;
+        }
         //Make sure to only emit this warning on the "build" goal: it's too early to check the state
         //on bootstrapSessionListener otherwise, and too much nagging is probably not useful anyway.
         if ("build".equals(mojoExecution.getMojoDescriptor().getGoal()) && !bootstrapSessionListener.isEnabled()) {

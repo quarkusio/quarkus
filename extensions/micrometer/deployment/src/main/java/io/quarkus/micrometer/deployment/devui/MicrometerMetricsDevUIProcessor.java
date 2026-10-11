@@ -22,8 +22,8 @@ import io.quarkus.micrometer.runtime.devui.DevUiMetricsSampler;
  */
 public class MicrometerMetricsDevUIProcessor {
 
-    // Presence of the bridge runtime recorder means the micrometer->OTel bridge is active.
-    private static final String BRIDGE_RECORDER = "io.quarkus.micrometer.opentelemetry.runtime.MicrometerOtelBridgeRecorder";
+    // Presence of the bridge runtime bean creator means the micrometer->OTel bridge is active.
+    private static final String BRIDGE_RECORDER = "io.quarkus.micrometer.opentelemetry.runtime.MicrometerOtelBridgeBeanCreator";
 
     @BuildStep(onlyIf = { IsLocalDevelopment.class, MicrometerProcessor.MicrometerEnabled.class })
     void registerMicrometerMetricsCapture(BuildProducer<AdditionalBeanBuildItem> additionalBeans,

@@ -102,20 +102,31 @@ public class DevServicesDatasourceProcessor {
                 .collect(Collectors.toMap(DevServicesDatasourceProviderBuildItem::getDatabase,
                         DevServicesDatasourceProviderBuildItem::getDevServicesProvider));
 
+        Set<String> definedDatasourceNames = definedDatasources.stream().map(DataSourceDefinedBuildItem::getName)
+                .collect(Collectors.toSet());
+        Map<String, String> dbKindByName = definedDatasources.stream()
+                .collect(Collectors.toMap(DataSourceDefinedBuildItem::getName, DataSourceDefinedBuildItem::getDbKind));
         Map<String, Object> newDatasourceConfigs = buildMapFromBuildConfig(dataSourcesBuildTimeConfig,
-                definedDatasources.stream().map(DataSourceDefinedBuildItem::getName).collect(Collectors.toSet()));
+                definedDatasourceNames);
 
         for (DataSourceDefinedBuildItem ds : definedDatasources) {
             String name = ds.getName();
             DataSourceBuildTimeConfig config = dataSourcesBuildTimeConfig.dataSources().get(name);
-            Set<DatabaseFeature> features = featuresByDatasource
-                    .getOrDefault(name, Collections.emptySet());
-            DevServicesResultBuildItem devService = startDevDb(name, capabilities,
-                    ds,
-                    devDBProviderMap, config, configHandlersByDbType,
-                    dockerStatusBuildItem, composeProjectBuildItem,
-                    launchMode.getLaunchMode(), consoleInstalledBuildItem, loggingSetupBuildItem,
-                    devServicesConfig, useSharedNetwork, newDatasourceConfigs, features);
+            DevServicesResultBuildItem devService;
+            Optional<String> useFrom = config.devservices().useFrom();
+            if (useFrom.isPresent()) {
+                devService = mirrorDevDb(name, useFrom.get(), ds.getDbKind(), definedDatasourceNames, dbKindByName,
+                        dataSourcesBuildTimeConfig, devDBProviderMap);
+            } else {
+                Set<DatabaseFeature> features = featuresByDatasource
+                        .getOrDefault(name, Collections.emptySet());
+                devService = startDevDb(name, capabilities,
+                        ds,
+                        devDBProviderMap, config, configHandlersByDbType,
+                        dockerStatusBuildItem, composeProjectBuildItem,
+                        launchMode.getLaunchMode(), consoleInstalledBuildItem, loggingSetupBuildItem,
+                        devServicesConfig, useSharedNetwork, newDatasourceConfigs, features);
+            }
             if (devService != null) {
                 devServicesResultBuildItemBuildProducer.produce(devService);
             }
@@ -146,6 +157,8 @@ public class DevServicesDatasourceProcessor {
             res.put(name + ".devservices.port", config.devservices().port());
             res.put(name + ".devservices.properties", config.devservices().properties());
             res.put(name + ".devservices.reuse", config.devservices().reuse());
+            res.put(name + ".devservices.use-from", config.devservices().useFrom());
+            res.put(name + ".devservices.shares-container", config.devservices().sharesContainer());
             res.put(name + ".devservices.username", config.devservices().username());
             res.put(name + ".devservices.volumes", config.devservices().volumes());
             Optional<String> username = ConfigUtils.getFirstOptionalValue(
@@ -250,6 +263,171 @@ public class DevServicesDatasourceProcessor {
         } catch (Throwable t) {
             compressor.closeAndDumpCaptured();
             throw new RuntimeException(t);
+        }
+    }
+
+    /**
+     * Instead of starting a container for {@code dbName}, waits for the Dev Services database of
+     * {@code providerName} to start, then reuses its JDBC URL, reactive URL, username and password for
+     * {@code dbName}. This allows a named datasource to share another one's Dev Services database.
+     */
+    private DevServicesResultBuildItem mirrorDevDb(String dbName, String providerName, String dbKind,
+            Set<String> definedDatasourceNames, Map<String, String> dbKindByName,
+            DataSourcesBuildTimeConfig dataSourcesBuildTimeConfig, Map<String, DevServicesDatasourceProvider> devDBProviders) {
+        String dataSourcePrettyName = getDataSourcePrettyName(dbName);
+        String resolvedProvider = DataSourceUtil.isDefault(providerName) ? DataSourceUtil.DEFAULT_DATASOURCE_NAME
+                : providerName;
+        String resolvedSelf = DataSourceUtil.isDefault(dbName) ? DataSourceUtil.DEFAULT_DATASOURCE_NAME : dbName;
+
+        if (resolvedProvider.equals(resolvedSelf)) {
+            throw new ConfigurationException(String.format(Locale.ROOT,
+                    "Datasource '%s' cannot reference itself in '%s'. Set it to the name of another datasource.",
+                    dataSourcePrettyName, DataSourceUtil.dataSourcePropertyKey(dbName, "devservices.use-from")));
+        }
+        if (!definedDatasourceNames.contains(resolvedProvider)) {
+            throw new ConfigurationException(String.format(Locale.ROOT,
+                    "Datasource '%s' references '%s' in '%s', but that datasource is not configured.",
+                    dataSourcePrettyName, providerName, DataSourceUtil.dataSourcePropertyKey(dbName, "devservices.use-from")));
+        }
+        DataSourceBuildTimeConfig providerConfig = dataSourcesBuildTimeConfig.dataSources().get(resolvedProvider);
+        if (!providerConfig.devservices().sharesContainer()) {
+            throw new ConfigurationException(String.format(Locale.ROOT,
+                    "Datasource '%s' references '%s' in '%s', but '%s' does not set '%s' to 'true'.",
+                    dataSourcePrettyName, providerName,
+                    DataSourceUtil.dataSourcePropertyKey(dbName, "devservices.use-from"),
+                    getDataSourcePrettyName(resolvedProvider),
+                    DataSourceUtil.dataSourcePropertyKey(resolvedProvider, "devservices.shares-container")));
+        }
+        if (providerConfig.devservices().useFrom().isPresent()) {
+            throw new ConfigurationException(String.format(Locale.ROOT,
+                    "Datasource '%s' references '%s' in '%s', but '%s' itself references another datasource "
+                            + "in its own '%s'. Only one level of sharing is supported.",
+                    dataSourcePrettyName, providerName,
+                    DataSourceUtil.dataSourcePropertyKey(dbName, "devservices.use-from"),
+                    getDataSourcePrettyName(resolvedProvider),
+                    DataSourceUtil.dataSourcePropertyKey(resolvedProvider, "devservices.use-from")));
+        }
+        String providerDbKind = dbKindByName.get(resolvedProvider);
+        if (!dbKind.equals(providerDbKind)) {
+            throw new ConfigurationException(String.format(Locale.ROOT,
+                    "Datasource '%s' (db-kind '%s') cannot reuse the Dev Services database of '%s' (db-kind '%s'); "
+                            + "they must use the same db-kind.",
+                    dataSourcePrettyName, dbKind, getDataSourcePrettyName(resolvedProvider), providerDbKind));
+        }
+
+        if (!shouldStart(dbName, dataSourcesBuildTimeConfig.dataSources().get(dbName), false, dataSourcePrettyName)) {
+            return null;
+        }
+
+        DevServicesDatasourceProvider devDbProvider = devDBProviders.get(dbKind);
+        String feature = devDbProvider != null ? devDbProvider.getFeature() : dbKind;
+
+        SharedDatasourceStartable startable = new SharedDatasourceStartable();
+        return DevServicesResultBuildItem.owned()
+                .feature(feature)
+                .serviceName(dbName)
+                .serviceConfig(resolvedProvider)
+                .startable(() -> startable)
+                .dependsOnConfig(DataSourceUtil.dataSourcePropertyKey(resolvedProvider, "jdbc.url"),
+                        SharedDatasourceStartable::setJdbcUrl, true)
+                .dependsOnConfig(DataSourceUtil.dataSourcePropertyKey(resolvedProvider, "reactive.url"),
+                        SharedDatasourceStartable::setReactiveUrl, true)
+                .dependsOnConfig(DataSourceUtil.dataSourcePropertyKey(resolvedProvider, "username"),
+                        SharedDatasourceStartable::setUsername, true)
+                .dependsOnConfig(DataSourceUtil.dataSourcePropertyKey(resolvedProvider, "password"),
+                        SharedDatasourceStartable::setPassword, true)
+                .configProvider(s -> makeMirroredConfigMap(dbName, s))
+                .postStartHook((s) -> log.infof("Dev Services for %s configured to reuse the Dev Services database of %s",
+                        dataSourcePrettyName, getDataSourcePrettyName(resolvedProvider)))
+                .build();
+    }
+
+    private Map<String, String> makeMirroredConfigMap(String dbName, SharedDatasourceStartable startable) {
+        Map<String, String> config = new HashMap<>();
+        if (startable.getJdbcUrl() != null) {
+            setDataSourceProperties(config, dbName, "jdbc.url", startable.getJdbcUrl());
+        }
+        if (startable.getReactiveUrl() != null) {
+            setDataSourceProperties(config, dbName, "reactive.url", startable.getReactiveUrl());
+        }
+        if (startable.getUsername() != null) {
+            setDataSourceProperties(config, dbName, "username", startable.getUsername());
+        }
+        if (startable.getPassword() != null) {
+            setDataSourceProperties(config, dbName, "password", startable.getPassword());
+        }
+        return config;
+    }
+
+    /**
+     * A no-op {@link DatasourceStartable} standing in for a datasource that reuses another datasource's Dev
+     * Services database instead of starting its own container.
+     */
+    private static final class SharedDatasourceStartable implements DatasourceStartable {
+
+        private String jdbcUrl;
+        private String reactiveUrl;
+        private String username;
+        private String password;
+
+        void setJdbcUrl(String jdbcUrl) {
+            this.jdbcUrl = jdbcUrl;
+        }
+
+        void setReactiveUrl(String reactiveUrl) {
+            this.reactiveUrl = reactiveUrl;
+        }
+
+        void setUsername(String username) {
+            this.username = username;
+        }
+
+        void setPassword(String password) {
+            this.password = password;
+        }
+
+        String getJdbcUrl() {
+            return jdbcUrl;
+        }
+
+        @Override
+        public String getUsername() {
+            return username;
+        }
+
+        @Override
+        public String getPassword() {
+            return password;
+        }
+
+        @Override
+        public String getReactiveUrl() {
+            return reactiveUrl;
+        }
+
+        @Override
+        public String getEffectiveJdbcUrl() {
+            return jdbcUrl;
+        }
+
+        @Override
+        public void start() {
+            // nothing to start, this datasource reuses another one's Dev Services database
+        }
+
+        @Override
+        public void close() {
+            // nothing to close, the shared datasource owns the actual container
+        }
+
+        @Override
+        public String getConnectionInfo() {
+            return jdbcUrl != null ? jdbcUrl : reactiveUrl;
+        }
+
+        @Override
+        public String getContainerId() {
+            return null;
         }
     }
 

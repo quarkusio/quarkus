@@ -8,6 +8,8 @@ import java.util.function.Function;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
 
+import org.jboss.logging.Logger;
+
 import grpc.health.v1.HealthOuterClass.HealthCheckResponse;
 import grpc.health.v1.HealthOuterClass.HealthCheckResponse.ServingStatus;
 import io.quarkus.runtime.ShutdownEvent;
@@ -15,6 +17,8 @@ import io.smallrye.mutiny.operators.multi.processors.BroadcastProcessor;
 
 @ApplicationScoped
 public class GrpcHealthStorage {
+
+    private static final Logger LOG = Logger.getLogger(GrpcHealthStorage.class);
 
     public static final String DEFAULT_SERVICE_NAME = "";
 
@@ -27,6 +31,11 @@ public class GrpcHealthStorage {
             @Override
             public void accept(ServingStatus status) {
                 statuses.put(DEFAULT_SERVICE_NAME, status);
+            }
+        }, new Consumer<Throwable>() {
+            @Override
+            public void accept(Throwable t) {
+                LOG.errorf(t, "Error in gRPC health status broadcast for default service");
             }
         });
 
@@ -63,6 +72,11 @@ public class GrpcHealthStorage {
             @Override
             public void accept(ServingStatus status) {
                 statuses.put(serviceName, status);
+            }
+        }, new Consumer<Throwable>() {
+            @Override
+            public void accept(Throwable t) {
+                LOG.errorf(t, "Error in gRPC health status broadcast for service: %s", serviceName);
             }
         });
         return processor;

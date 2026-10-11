@@ -11,6 +11,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import org.jboss.logging.Logger;
+
 import io.dekorate.kubernetes.annotation.ServiceType;
 import io.dekorate.kubernetes.config.ImageConfiguration;
 import io.dekorate.kubernetes.config.ImageConfigurationBuilder;
@@ -66,6 +68,8 @@ import io.quarkus.kubernetes.spi.KubernetesRoleBuildItem;
 import io.quarkus.kubernetes.spi.KubernetesServiceAccountBuildItem;
 
 public class OpenshiftProcessor extends BaseKubeProcessor<AddPortToOpenshiftConfig, OpenShiftConfig> {
+
+    private static final Logger log = Logger.getLogger(OpenshiftProcessor.class);
     private static final String DOCKERIO_REGISTRY = "docker.io";
     private static final String OPENSHIFT_V3_APP = "app";
     private OpenShiftConfig config;
@@ -291,7 +295,13 @@ public class OpenshiftProcessor extends BaseKubeProcessor<AddPortToOpenshiftConf
 
             // OpenShift rejects any path (including "/") with passthrough TLS termination.
             if (config.route().tls().termination().filter("passthrough"::equalsIgnoreCase).isPresent()) {
+                if (config.route().path().isPresent()) {
+                    log.warn(
+                            "Ignoring quarkus.openshift.route.path: OpenShift does not allow a path on a route with passthrough TLS termination");
+                }
                 context.add(new RemovePathFromRouteDecorator(name));
+            } else {
+                config.route().path().ifPresent(path -> context.add(new ApplyPathToRouteDecorator(name, path)));
             }
         }
 

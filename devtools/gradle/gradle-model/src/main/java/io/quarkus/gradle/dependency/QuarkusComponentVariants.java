@@ -29,7 +29,6 @@ import org.gradle.api.attributes.LibraryElements;
 import org.gradle.api.attributes.Usage;
 import org.gradle.api.attributes.java.TargetJvmEnvironment;
 import org.gradle.api.model.ObjectFactory;
-import org.gradle.api.provider.ListProperty;
 import org.gradle.api.provider.Property;
 
 import io.quarkus.gradle.tooling.dependency.DependencyUtils;
@@ -174,7 +173,14 @@ public class QuarkusComponentVariants {
      */
     public static void addVariants(Project project, LaunchMode mode,
             Property<PlatformSpec> platformSpecProperty) {
-        new QuarkusComponentVariants(project, mode, platformSpecProperty).configureAndAddVariants();
+        create(project, mode, platformSpecProperty);
+    }
+
+    static QuarkusComponentVariants create(Project project, LaunchMode mode,
+            Property<PlatformSpec> platformSpecProperty) {
+        QuarkusComponentVariants variants = new QuarkusComponentVariants(project, mode, platformSpecProperty);
+        variants.configureAndAddVariants();
+        return variants;
     }
 
     private final Attribute<String> quarkusDepAttr;
@@ -185,6 +191,7 @@ public class QuarkusComponentVariants {
     private final List<ConditionalDependencyVariant> dependencyVariantQueue = new ArrayList<>();
     private final Map<String, SatisfiedExtensionDeps> satisfiedExtensionDeps = new HashMap<>();
     private final LaunchMode mode;
+    private final AtomicInteger variantRegistrationInvocations = new AtomicInteger();
 
     private QuarkusComponentVariants(Project project, LaunchMode mode,
             Property<PlatformSpec> platformSpecProperty) {
@@ -216,16 +223,30 @@ public class QuarkusComponentVariants {
                     config.setCanBeConsumed(false);
                     config.extendsFrom(getBaseConfiguration());
                     setConditionalAttributes(config, project, mode);
-                    final ListProperty<Dependency> dependencyProperty = project.getObjects().listProperty(Dependency.class);
-                    final AtomicInteger invocations = new AtomicInteger();
-                    config.getDependencies().addAllLater(dependencyProperty.value(project.provider(() -> {
-                        if (invocations.getAndIncrement() == 0) {
-                            addConditionalVariants(getBaseConfiguration());
-                            addDeploymentVariants();
-                        }
-                        return Set.of();
-                    })));
                 });
+    }
+
+    /**
+     * Prepares the metadata variants that make Quarkus conditional and deployment dependencies selectable.
+     * <p>
+     * Preparing the variants requires resolving and analyzing the base runtime configuration first. It therefore has to
+     * remain lazy, but it must complete before Gradle starts resolving the configuration that selects the variants.
+     * Gradle 9.8 snapshots component metadata rules at the beginning of resolution, immediately after the
+     * {@code beforeResolve} callbacks of the resolution root. Registering the variants later means that they are not
+     * considered for that resolution.
+     * <p>
+     * The listener is deliberately attached to the actual resolution root rather than to an inherited configuration:
+     * Gradle does not invoke an inherited configuration's {@code beforeResolve} callbacks when resolving its child.
+     *
+     * @param config the configuration whose resolution needs the variants
+     */
+    void prepareVariantsBeforeResolve(Configuration config) {
+        config.getIncoming().beforeResolve(ignored -> {
+            if (variantRegistrationInvocations.getAndIncrement() == 0) {
+                addConditionalVariants(getBaseConfiguration());
+                addDeploymentVariants();
+            }
+        });
     }
 
     /**

@@ -5,6 +5,7 @@ import jakarta.enterprise.inject.spi.CDI;
 import org.jboss.logging.Logger;
 
 import io.quarkus.devjsonrpc.runtime.comms.JsonRpcRouter;
+import io.quarkus.devjsonrpc.runtime.jsonrpc.JsonRpcCodec;
 import io.quarkus.devjsonrpc.runtime.jsonrpc.JsonRpcRequest;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Handler;
@@ -38,12 +39,20 @@ public class DevUIWebSocketHandler implements Handler<RoutingContext> {
 
     private void addSocket(ServerWebSocket socket) {
         try {
-            JsonRpcRouter jsonRpcRouter = CDI.current().select(JsonRpcRouter.class).get();
             DevUISessionManager sessionManager = CDI.current().select(DevUISessionManager.class).get();
             JavaScriptResponseWriter writer = new JavaScriptResponseWriter(socket);
             sessionManager.addSession(writer);
             socket.textMessageHandler((e) -> {
-                JsonRpcRequest jsonRpcRequest = jsonRpcRouter.getJsonRpcCodec().readRequest(e);
+                // Look the router up for each message rather than capturing it when the socket opens: after a hot
+                // reload the client can reconnect before the router has been fully initialized.
+                JsonRpcRouter jsonRpcRouter = CDI.current().select(JsonRpcRouter.class).get();
+                JsonRpcCodec codec = jsonRpcRouter.getJsonRpcCodec();
+                if (codec == null) {
+                    LOG.debug("Dev UI JSON-RPC codec not initialized yet, closing the websocket so the client reconnects");
+                    socket.close();
+                    return;
+                }
+                JsonRpcRequest jsonRpcRequest = codec.readRequest(e);
                 jsonRpcRouter.route(jsonRpcRequest, writer);
             }).closeHandler((e) -> {
                 sessionManager.purge();

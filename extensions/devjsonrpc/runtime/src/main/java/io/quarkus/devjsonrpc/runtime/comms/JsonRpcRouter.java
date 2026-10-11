@@ -48,7 +48,7 @@ public class JsonRpcRouter {
     // Map json-rpc subscriptions responses that is recorded
     private Map<String, JsonRpcMethod> recordedSubscriptionsMap;
 
-    private JsonRpcCodec codec;
+    private volatile JsonRpcCodec codec;
 
     /**
      * This gets populated at build time so the the routes knows all json-rpc endpoints.

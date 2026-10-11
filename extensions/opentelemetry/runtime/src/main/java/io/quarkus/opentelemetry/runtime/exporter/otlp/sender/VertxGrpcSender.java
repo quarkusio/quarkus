@@ -84,7 +84,6 @@ public final class VertxGrpcSender implements GrpcSender {
         this.exportTimeout = timeout;
         var httpClientOptions = new HttpClientOptions()
                 .setHttp2ClearTextUpgrade(false) // needed otherwise connections get closed immediately
-                .setReadIdleTimeout((int) timeout.getSeconds())
                 .setTracingPolicy(TracingPolicy.IGNORE); // needed to avoid tracing the calls from this gRPC client
         clientOptionsCustomizer.accept(httpClientOptions);
         // FIXME No way to set the connection exception handler for the gRPC client, at the moment.
@@ -281,7 +280,9 @@ public final class VertxGrpcSender implements GrpcSender {
                 Buffer buffer = Buffer.buffer(messageSize);
                 var os = new BufferOutputStream(buffer);
                 messageWriter.writeMessage(os);
-                request.send(buffer).onSuccess(new Handler<>() {
+                // A read idle timeout on the client would count from the last read on the connection and could close it
+                // while this request is in flight, after the collector has received it, and the retry would send it twice
+                request.send(buffer).timeout(exportTimeout.toMillis(), MILLISECONDS).onSuccess(new Handler<>() {
                     @Override
                     public void handle(GrpcClientResponse<Buffer, Buffer> response) {
                         response.exceptionHandler(new Handler<>() {
@@ -469,6 +470,8 @@ public final class VertxGrpcSender implements GrpcSender {
                 }).onFailure(new Handler<>() {
                     @Override
                     public void handle(Throwable t) {
+                        // Do not leave the stream open when the attempt timed out
+                        request.cancel();
                         if (attemptNumber <= MAX_ATTEMPTS && !isShutdown.get()) {
                             // retry
                             initiateSend(client, server,

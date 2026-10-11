@@ -3,6 +3,9 @@ package io.quarkus.devservices.test;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.File;
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.net.ServerSocket;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -30,19 +33,22 @@ import io.quarkus.maven.it.verifier.RunningInvoker;
  */
 class DevServicesContainerReuseTest extends MojoTestBase {
 
-    private static final int FIXED_PORT = 55432;
+    /**
+     * A free port chosen at runtime to pin the dev service, so both runs target the
+     * same port. A hardcoded port is racy: a leftover host-level listener (for
+     * example a stale docker-proxy) is not released by the container-based cleanup
+     * and causes "address already in use" failures (see #57045).
+     */
+    private static int fixedPort;
 
     @BeforeAll
-    static void ensurePortIsClear() {
-        String containerId = findContainerOnPort(FIXED_PORT);
-        if (containerId != null) {
-            DockerClientFactory.lazyClient().removeContainerCmd(containerId).withForce(true).exec();
-        }
+    static void choosePort() {
+        fixedPort = findAvailablePort();
     }
 
     @AfterAll
     static void removeContainers() {
-        String containerId = findContainerOnPort(FIXED_PORT);
+        String containerId = findContainerOnPort(fixedPort);
         if (containerId != null) {
             DockerClientFactory.lazyClient().removeContainerCmd(containerId).withForce(true).exec();
         }
@@ -51,7 +57,9 @@ class DevServicesContainerReuseTest extends MojoTestBase {
     @Test
     void testContainerReusedAcrossRuns() throws Exception {
         List<String> goals = List.of("clean", "test", "-Dquarkus.analytics.disabled=true");
-        Map<String, String> envVars = Map.of("TESTCONTAINERS_REUSE_ENABLE", "true");
+        Map<String, String> envVars = Map.of(
+                "TESTCONTAINERS_REUSE_ENABLE", "true",
+                "QUARKUS_SIMPLE_EXTENSION_DEVSERVICES_PORT", Integer.toString(fixedPort));
         File testDir = initProject("projects/devservices-container-reuse",
                 "projects/devservices-container-reuse-run");
 
@@ -62,9 +70,9 @@ class DevServicesContainerReuseTest extends MojoTestBase {
                 .isZero();
         firstRun.stop();
 
-        String firstContainerId = findContainerOnPort(FIXED_PORT);
+        String firstContainerId = findContainerOnPort(fixedPort);
         assertThat(firstContainerId)
-                .as("A container should be running on port %d after the first run", FIXED_PORT)
+                .as("A container should be running on port %d after the first run", fixedPort)
                 .isNotNull();
 
         RunningInvoker secondRun = new RunningInvoker(testDir, false);
@@ -74,10 +82,18 @@ class DevServicesContainerReuseTest extends MojoTestBase {
                 .isZero();
         secondRun.stop();
 
-        String secondContainerId = findContainerOnPort(FIXED_PORT);
+        String secondContainerId = findContainerOnPort(fixedPort);
         assertThat(secondContainerId)
                 .as("The same container should be reused across runs (see #53312)")
                 .isEqualTo(firstContainerId);
+    }
+
+    private static int findAvailablePort() {
+        try (ServerSocket socket = new ServerSocket(0)) {
+            return socket.getLocalPort();
+        } catch (IOException e) {
+            throw new UncheckedIOException("Unable to find a free port", e);
+        }
     }
 
     static String findContainerOnPort(int publicPort) {

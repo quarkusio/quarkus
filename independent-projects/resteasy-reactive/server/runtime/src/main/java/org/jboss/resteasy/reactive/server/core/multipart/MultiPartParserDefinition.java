@@ -271,6 +271,8 @@ public class MultiPartParserDefinition implements FormParserFactory.ParserDefini
                         parser.parse(ByteBuffer.wrap(buf, 0, c));
                     } catch (MultipartParser.HeaderTooLargeException e) {
                         throw new WebApplicationException(Response.Status.REQUEST_ENTITY_TOO_LARGE);
+                    } catch (MultipartParser.MalformedMessageException e) {
+                        throw new WebApplicationException(Response.Status.BAD_REQUEST);
                     }
                 }
                 if (!parser.isComplete()) {
@@ -471,6 +473,9 @@ public class MultiPartParserDefinition implements FormParserFactory.ParserDefini
                         } catch (MultipartParser.HeaderTooLargeException e) {
                             exchange.resume(
                                     new WebApplicationException(Response.Status.REQUEST_ENTITY_TOO_LARGE));
+                        } catch (MultipartParser.MalformedMessageException e) {
+                            exchange.resume(
+                                    new WebApplicationException(Response.Status.BAD_REQUEST));
                         } catch (Throwable t) {
                             exchange.resume(t);
                         }

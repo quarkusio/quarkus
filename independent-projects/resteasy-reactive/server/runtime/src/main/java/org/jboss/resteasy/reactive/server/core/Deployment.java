@@ -50,6 +50,7 @@ public class Deployment {
     private final List<GenericRuntimeConfigurableServerRestHandler<?>> runtimeConfigurableServerRestHandlers;
     private final RuntimeExceptionMapper exceptionMapper;
     private final boolean servletPresent;
+    private final boolean resumeOn404;
     private final ResteasyReactiveConfig resteasyReactiveConfig;
     private final Map<String, List<String>> disabledEndpoints;
     //this is not final, as it is set after startup
@@ -67,6 +68,7 @@ public class Deployment {
             List<GenericRuntimeConfigurableServerRestHandler<?>> runtimeConfigurableServerRestHandlers,
             RuntimeExceptionMapper exceptionMapper,
             boolean servletPresent,
+            boolean resumeOn404,
             ResteasyReactiveConfig resteasyReactiveConfig,
             Map<String, List<String>> disabledEndpoints) {
         this.exceptionMapping = exceptionMapping;
@@ -86,6 +88,7 @@ public class Deployment {
         this.runtimeConfigurableServerRestHandlers = runtimeConfigurableServerRestHandlers;
         this.exceptionMapper = exceptionMapper;
         this.servletPresent = servletPresent;
+        this.resumeOn404 = resumeOn404;
         this.resteasyReactiveConfig = resteasyReactiveConfig;
         this.disabledEndpoints = disabledEndpoints;
     }
@@ -112,6 +115,14 @@ public class Deployment {
 
     public boolean isServletPresent() {
         return servletPresent;
+    }
+
+    /**
+     * @return {@code true} if a request that does not match any resource must be passed to the next handler even if an
+     *         exception mapper for {@code NotFoundException} exists
+     */
+    public boolean isResumeOn404() {
+        return resumeOn404;
     }
 
     public ContextResolvers getContextResolvers() {

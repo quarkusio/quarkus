@@ -129,6 +129,40 @@ public interface DevServicesBuildTimeConfig {
     Map<String, String> volumes();
 
     /**
+     * The name of the datasource whose Dev Services container this datasource should reuse, instead of
+     * starting a separate container.
+     * <p>
+     * When set, this datasource does not start its own Dev Services container. Instead, it waits for the
+     * named datasource's Dev Services container to start, then reuses its JDBC URL, reactive URL, username
+     * and password. The other `devservices.*` properties of this datasource (image name, init scripts,
+     * volumes, ...) are then ignored, since no container is started for it.
+     * <p>
+     * The referenced datasource must set `devservices.shares-container` to `true`, and must not itself set
+     * `use-from`; only one level of sharing is supported.
+     * <p>
+     * Use `<default>` to refer to the default datasource.
+     * <p>
+     * This only affects Dev Services, within a single application, in dev mode and in tests. It does not
+     * make Dev Services containers shared across different applications.
+     *
+     * @asciidoclet
+     */
+    Optional<String> useFrom();
+
+    /**
+     * Whether this datasource accepts other datasources reusing its Dev Services container, by referencing
+     * it through their own `devservices.use-from` property.
+     * <p>
+     * Has no effect by itself; it only allows other datasources to opt in to reusing this datasource's
+     * container. If no other datasource references this one through `devservices.use-from`, this property
+     * changes nothing.
+     *
+     * @asciidoclet
+     */
+    @WithDefault("false")
+    boolean sharesContainer();
+
+    /**
      * Whether to keep Dev Service containers running *after a dev mode session or test suite execution*
      * to reuse them in the next dev mode session or test suite execution.
      *

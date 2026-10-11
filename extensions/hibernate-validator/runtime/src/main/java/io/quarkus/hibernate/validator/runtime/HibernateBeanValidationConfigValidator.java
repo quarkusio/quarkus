@@ -52,5 +52,11 @@ public class HibernateBeanValidationConfigValidator implements BeanValidationCon
         static Validator getValidator() {
             return validator;
         }
+
+        public static void close() {
+            if (validatorFactory != null) {
+                validatorFactory.close();
+            }
+        }
     }
 }

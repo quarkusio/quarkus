@@ -62,4 +62,11 @@ public interface PrometheusConfig {
      * appended to the defined prefix.
      */
     Optional<String> scheme();
+
+    /**
+     * The scheme Prometheus uses to scrape the metrics endpoint, {@code http} or {@code https}. It is the value of
+     * the scheme annotation and the scheme of the generated {@code ServiceMonitor} endpoint.
+     */
+    @WithDefault("http")
+    String scrapeScheme();
 }

@@ -18,4 +18,13 @@ public interface Container<T extends ContainerConfig> {
     void withStartupTimeout(Duration duration);
 
     Closeable closeableCallback(String serviceName);
+
+    /**
+     * Applies the standard Quarkus dev services labels, such as the process ownership UUID, to the
+     * underlying container.
+     * <p>
+     * Implementations not backed by a container that supports labels can ignore this call.
+     */
+    default void configureLabels() {
+    }
 }

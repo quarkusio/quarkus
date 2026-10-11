@@ -227,6 +227,7 @@ class ObservabilityDevServiceProcessor {
         @Override
         public void start() {
             container = dev.container(config, root);
+            container.configureLabels();
             timeout.ifPresent(container::withStartupTimeout);
             devServiceConfig = dev.start();
         }

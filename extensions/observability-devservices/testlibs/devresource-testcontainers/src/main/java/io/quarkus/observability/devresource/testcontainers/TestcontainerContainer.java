@@ -6,9 +6,11 @@ import java.util.Objects;
 
 import org.testcontainers.containers.GenericContainer;
 
+import io.quarkus.devservices.common.ConfigureUtil;
 import io.quarkus.devservices.common.ContainerShutdownCloseable;
 import io.quarkus.observability.common.config.ContainerConfig;
 import io.quarkus.observability.devresource.Container;
+import io.quarkus.runtime.LaunchMode;
 
 /**
  * Container impl / wrapper for Testcontainer's GenericContainer
@@ -43,5 +45,10 @@ public class TestcontainerContainer<C extends GenericContainer<C>, T extends Con
     @Override
     public Closeable closeableCallback(String serviceName) {
         return new ContainerShutdownCloseable(container, serviceName);
+    }
+
+    @Override
+    public void configureLabels() {
+        ConfigureUtil.configureLabels(container, LaunchMode.current());
     }
 }

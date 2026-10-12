@@ -1237,8 +1237,8 @@ than trusting the configured order, so the master need not be the first host.
 periodically, and `topology-cache-ttl` has no effect. Use a Sentinel client when the master can change.
 
 The key, value (string), hash, list, set, sorted set, bitmap, hyperloglog, geo, pub/sub, JSON, autosuggest and count-min command groups are
-implemented on the Lettuce backend, including their transactional variants. The other groups (stream,
-bloom, cuckoo, top-k, graph, search and time series) are not implemented yet and throw an
+implemented on the Lettuce backend, including their transactional variants (excluding pub/sub).
+The other groups (stream, bloom, cuckoo, top-k, graph, search and time series) are not implemented yet and throw an
 `UnsupportedOperationException` when requested from a data source.
 
 The data source methods exposing Vert.x types, such as `ReactiveRedisDataSource.getRedis()`, are not supported

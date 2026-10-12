@@ -167,6 +167,11 @@ public class LettuceReactivePubSubCommandsImpl<V> extends AbstractLettuceCommand
 
     private Uni<ReactiveRedisSubscriber> open(
             Function<StatefulRedisPubSubConnection<byte[], byte[]>, AbstractReactiveLettuceSubscriber> factory) {
+        return Uni.createFrom().deferred(() -> establish(factory));
+    }
+
+    private Uni<ReactiveRedisSubscriber> establish(
+            Function<StatefulRedisPubSubConnection<byte[], byte[]>, AbstractReactiveLettuceSubscriber> factory) {
         AtomicBoolean cancelled = new AtomicBoolean();
         AtomicReference<AbstractReactiveLettuceSubscriber> opened = new AtomicReference<>();
         Uni<ReactiveRedisSubscriber> establishing = LettuceResult.toUni(() -> {

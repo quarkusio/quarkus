@@ -328,6 +328,31 @@ class LettucePubSubCommandsTest extends CommandsTestBase {
     }
 
     @Test
+    void retryingTheSubscribeUniAfterATimedOutAttemptSubscribesAfresh() {
+        long before = connectionCount();
+        // The first connection attempt is held back by the test; every later one goes to Redis. A subscribe that
+        // gives up on the first attempt and retries must establish the subscription on the second, and the first
+        // attempt's connection must be closed once it is handed out, as the retry's cancellation state is its own.
+        CompletableFuture<StatefulRedisPubSubConnection<byte[], byte[]>> gate = new CompletableFuture<>();
+        AtomicInteger attempts = new AtomicInteger();
+        ReactivePubSubCommands<Person> slowFirst = new LettuceReactiveRedisDataSourceImpl(vertx, lettuceConnection, pool(),
+                () -> attempts.incrementAndGet() == 1 ? gate : pubSubConnector().get()).pubsub(Person.class);
+
+        ReactiveRedisSubscriber subscriber = slowFirst.subscribe(channel, person -> {
+        }).ifNoItem().after(Duration.ofMillis(200)).fail().onFailure().retry().atMost(1).await().atMost(TIMEOUT);
+
+        assertThat(attempts).hasValue(2);
+        assertThat(connection.sync().pubsubChannels()).hasSize(1);
+
+        StatefulRedisPubSubConnection<byte[], byte[]> late = redisClient.connectPubSub(codec, redisUri);
+        gate.complete(late);
+        Awaitility.await().until(() -> !late.isOpen());
+
+        subscriber.unsubscribe().await().atMost(TIMEOUT);
+        Awaitility.await().until(() -> connectionCount() == before);
+    }
+
+    @Test
     void unsubscribeOnAPatternSubscriberValidatesWithThePatternsLabel() {
         ReactiveRedisSubscriber subscriber = pubsub.subscribeToPattern(channel + "-*", person -> {
         }).await().atMost(TIMEOUT);

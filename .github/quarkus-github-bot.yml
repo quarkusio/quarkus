@@ -285,6 +285,7 @@ triage:
       labels: [area/panache]
       title: "panache"
       notify: [FroMage, loicmathieu]
+      notifyInPullRequest: true
       directories:
         - extensions/panache/
         - integration-tests/hibernate-orm-panache/
@@ -292,6 +293,7 @@ triage:
       labels: [area/data]
       title: "(quarkus.data(?!source)|jakarta data)"
       notify: [FroMage] # yrodiere/lucamolteni use the lottery instead
+      notifyInPullRequest: true
       directories:
         - extensions/data/
         - integration-tests/data/
@@ -299,7 +301,8 @@ triage:
     - id: rest-data-panache
       labels: [area/panache]
       title: "(panache.*resource|rest.data.panache)"
-      notify: [geoand]
+      notify: [geoand, FroMage]
+      notifyInPullRequest: true
     - id: qute
       labels: [area/qute]
       title: "qute"

@@ -8,6 +8,7 @@ import java.util.Optional;
 
 import org.junit.jupiter.api.Test;
 
+import io.lettuce.core.CredentialsProvider;
 import io.lettuce.core.ReadFrom;
 import io.lettuce.core.RedisCredentials;
 import io.lettuce.core.RedisURI;
@@ -142,7 +143,7 @@ class LettuceClientSettingsTest {
         first.setCredentialsProvider(new StaticCredentialsProvider("user", "secret".toCharArray()));
         first.setVerifyPeer(SslVerifyMode.CA);
         RedisURI second = RedisURI.create(URI.create("rediss://s2:26380?timeout=7s&clientName=app"));
-        second.setCredentialsProvider(first.getCredentialsProvider());
+        second.setCredentialsProvider(first.getCredentialsProviderAsync());
         second.setVerifyPeer(SslVerifyMode.CA);
 
         RedisURI master = LettuceClientSettings.sentinelUri(java.util.List.of(first, second), "mymaster");
@@ -151,7 +152,7 @@ class LettuceClientSettingsTest {
         assertThat(master.getDatabase()).isEqualTo(2);
         assertThat(master.isSsl()).isTrue();
         assertThat(master.getVerifyMode()).isEqualTo(SslVerifyMode.CA);
-        assertThat(((StaticCredentialsProvider) master.getCredentialsProvider()).resolveCredentialsNow().getUsername())
+        assertThat(credentialsOf(master).getUsername())
                 .isEqualTo("user");
         // the timeout bounds the connection and the SENTINEL queries, the client name is set on every connection
         assertThat(master.getTimeout()).isEqualTo(Duration.ofSeconds(7));
@@ -161,7 +162,7 @@ class LettuceClientSettingsTest {
         assertThat(master.getSentinels()).hasSize(2).allSatisfy(sentinel -> {
             assertThat(sentinel.isSsl()).isTrue();
             assertThat(sentinel.getVerifyMode()).isEqualTo(SslVerifyMode.CA);
-            assertThat(((StaticCredentialsProvider) sentinel.getCredentialsProvider()).resolveCredentialsNow()
+            assertThat(credentialsOf(sentinel)
                     .getPassword()).containsExactly("secret".toCharArray());
             assertThat(sentinel.getTimeout()).isEqualTo(Duration.ofSeconds(7));
             assertThat(sentinel.getClientName()).isEqualTo("app");
@@ -171,5 +172,9 @@ class LettuceClientSettingsTest {
         assertThat(master.getSentinels().get(0).getPort()).isEqualTo(26379);
         assertThat(master.getSentinels().get(1).getHost()).isEqualTo("s2");
         assertThat(master.getSentinels().get(1).getPort()).isEqualTo(26380);
+    }
+
+    private static RedisCredentials credentialsOf(RedisURI uri) {
+        return ((CredentialsProvider.ImmediateCredentialsProvider) uri.getCredentialsProviderAsync()).resolveCredentialsNow();
     }
 }

@@ -461,9 +461,15 @@ public class MultipartParser {
     }
 
     public static class MalformedMessageException extends RuntimeException {
+        public MalformedMessageException() {
+            super("Malformed multipart message");
+        }
     }
 
     public static class HeaderTooLargeException extends RuntimeException {
+        public HeaderTooLargeException() {
+            super("Multipart header too large");
+        }
     }
 
 }

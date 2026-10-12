@@ -87,6 +87,7 @@ import io.undertow.servlet.api.FilterInfo;
 import io.undertow.servlet.api.InstanceFactory;
 import io.undertow.servlet.api.InstanceHandle;
 import io.undertow.servlet.api.ListenerInfo;
+import io.undertow.servlet.api.LoggingExceptionHandler;
 import io.undertow.servlet.api.LoginConfig;
 import io.undertow.servlet.api.MimeMapping;
 import io.undertow.servlet.api.SecurityConstraint;
@@ -548,7 +549,10 @@ public class UndertowDeploymentRecorder {
                     };
                 }
             });
-            ExceptionHandler existing = info.getValue().getExceptionHandler();
+            ExceptionHandler configured = info.getValue().getExceptionHandler();
+            // no exception handler is set in prod mode if the application maps its own 500 error page,
+            // fall back to the Undertow default in this case
+            ExceptionHandler existing = configured != null ? configured : LoggingExceptionHandler.DEFAULT;
             info.getValue().setExceptionHandler(new ExceptionHandler() {
                 @Override
                 public boolean handleThrowable(HttpServerExchange exchange, ServletRequest request, ServletResponse response,

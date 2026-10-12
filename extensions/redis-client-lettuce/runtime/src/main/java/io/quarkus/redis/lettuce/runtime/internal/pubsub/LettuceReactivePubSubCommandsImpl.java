@@ -1,6 +1,7 @@
 package io.quarkus.redis.lettuce.runtime.internal.pubsub;
 
 import static io.quarkus.redis.runtime.datasource.Validation.notNullOrEmpty;
+import static io.quarkus.redis.runtime.datasource.Validation.validateCollection;
 import static io.smallrye.mutiny.helpers.ParameterValidation.doesNotContainNull;
 import static io.smallrye.mutiny.helpers.ParameterValidation.nonNull;
 
@@ -140,7 +141,7 @@ public class LettuceReactivePubSubCommandsImpl<V> extends AbstractLettuceCommand
     @Override
     public Uni<ReactiveRedisSubscriber> subscribeToPatterns(List<String> patterns, BiConsumer<String, V> onMessage,
             Runnable onEnd, Consumer<Throwable> onException) {
-        validatePatterns(patterns);
+        validateCollection(patterns, "patterns");
         nonNull(onMessage, "onMessage");
 
         List<String> subscribed = List.copyOf(patterns);
@@ -157,25 +158,13 @@ public class LettuceReactivePubSubCommandsImpl<V> extends AbstractLettuceCommand
     @Override
     public Uni<ReactiveRedisSubscriber> subscribe(List<String> channels, BiConsumer<String, V> onMessage, Runnable onEnd,
             Consumer<Throwable> onException) {
-        validateChannels(channels);
+        validateCollection(channels, "channels");
         nonNull(onMessage, "onMessage");
 
         List<String> subscribed = List.copyOf(channels);
         return open(conn -> new ReactiveLettuceChannelSubscriber(conn, subscribed, onMessage, onEnd, onException));
     }
 
-    /**
-     * Opens a dedicated Pub/Sub connection, wraps it in the subscriber {@code factory} produces and sends its
-     * {@code (P)SUBSCRIBE}. The returned {@code Uni} completes once Redis has acknowledged the subscription.
-     * <p>
-     * Cancelling the {@code Uni}, which is what the blocking wrapper does when its timeout elapses, must not leak
-     * the connection: a cancellation seen while connecting closes the connection as soon as it is opened, one seen
-     * while {@code (P)SUBSCRIBE} is in flight closes it right away, and one racing with the acknowledgement closes
-     * it too. The two steps are chained as futures rather than as {@code Uni} operators because Mutiny drops an
-     * item that arrives after a cancellation, which would lose the connection between two operators. Each side
-     * records its progress ({@code opened}, {@code cancelled}) before checking the other's, so whichever side
-     * runs last performs the close, and closing is idempotent.
-     */
     private Uni<ReactiveRedisSubscriber> open(
             Function<StatefulRedisPubSubConnection<byte[], byte[]>, AbstractReactiveLettuceSubscriber> factory) {
         AtomicBoolean cancelled = new AtomicBoolean();
@@ -259,32 +248,6 @@ public class LettuceReactivePubSubCommandsImpl<V> extends AbstractLettuceCommand
                         emitter::fail));
     }
 
-    private void validatePatterns(List<String> patterns) {
-        notNullOrEmpty(patterns, "patterns");
-
-        for (String pattern : patterns) {
-            if (pattern == null) {
-                throw new IllegalArgumentException("Pattern must not be null");
-            }
-            if (pattern.isBlank()) {
-                throw new IllegalArgumentException("Pattern cannot be blank");
-            }
-        }
-    }
-
-    private void validateChannels(List<String> channels) {
-        notNullOrEmpty(channels, "channels");
-
-        for (String pattern : channels) {
-            if (pattern == null) {
-                throw new IllegalArgumentException("Channel must not be null");
-            }
-            if (pattern.isBlank()) {
-                throw new IllegalArgumentException("Channel cannot be blank");
-            }
-        }
-    }
-
     private abstract class AbstractReactiveLettuceSubscriber implements ReactiveRedisSubscriber {
 
         final StatefulRedisPubSubConnection<byte[], byte[]> connection;
@@ -293,9 +256,7 @@ public class LettuceReactivePubSubCommandsImpl<V> extends AbstractLettuceCommand
         final Runnable onEnd;
         final Consumer<Throwable> onException;
         final Vertx vertx = dataSource.getVertx();
-        /** Set by whichever path closes the connection first; later closes and unsubscribes are no-ops. */
         private final AtomicBoolean closed = new AtomicBoolean();
-        /** Handles both message shapes: a connection is only ever in channel or in pattern mode, never both. */
         private final RedisPubSubListener<byte[], byte[]> listener = new RedisPubSubAdapter<>() {
             @Override
             public void message(byte[] channel, byte[] message) {
@@ -331,24 +292,17 @@ public class LettuceReactivePubSubCommandsImpl<V> extends AbstractLettuceCommand
             context.runOnContext(ignored -> runnable.run());
         }
 
-        /** What this subscriber deals in, {@code channels} or {@code patterns}, for validation messages. */
         abstract String kind();
 
         abstract RedisFuture<Void> subscribeToRedis(byte[][] names);
 
         abstract RedisFuture<Void> unsubscribeFromRedis(byte[][] names);
 
-        /** Registers the listener and sends {@code (P)SUBSCRIBE}; completes once Redis has acknowledged it. */
         CompletionStage<Void> subscribe() {
             connection.addListener(listener);
             return subscribeToRedis(encode(names));
         }
 
-        /**
-         * Closes the connection without running {@code onEnd}, for a subscriber that never reached the caller
-         * because the subscription failed or was cancelled. Closing the connection also drops any server-side
-         * subscription it had, so no {@code UNSUBSCRIBE} is needed first.
-         */
         void discard() {
             if (closed.compareAndSet(false, true)) {
                 connection.removeListener(listener);

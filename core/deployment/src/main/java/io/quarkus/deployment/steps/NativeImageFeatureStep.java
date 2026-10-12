@@ -41,6 +41,7 @@ import io.quarkus.gizmo2.Gizmo;
 import io.quarkus.gizmo2.LocalVar;
 import io.quarkus.gizmo2.ParamVar;
 import io.quarkus.gizmo2.desc.ClassMethodDesc;
+import io.quarkus.gizmo2.desc.InterfaceMethodDesc;
 import io.quarkus.gizmo2.desc.MethodDesc;
 import io.quarkus.modular.spi.items.AddDependencyBuildItem;
 import io.quarkus.runtime.LocalesBuildTimeConfig;
@@ -86,6 +87,13 @@ public class NativeImageFeatureStep {
                     CD_Executable);
     private static final ClassMethodDesc MD_FeatureImpl_DuringSetupAccessImpl_registerBuildTimeIndyIncludeList = ClassMethodDesc
             .of(CD_FeatureImpl_DuringSetupAccessImpl, "registerBuildTimeIndyIncludeList", ConstantDescs.CD_void, CD_Executable);
+
+    private static final MethodDesc MD_DuringSetupAccess_registerBuildTimeBootstrapCondy = InterfaceMethodDesc.of(
+            ClassDesc.of(Feature.DuringSetupAccess.class.getName()), "registerBuildTimeBootstrapCondy",
+            ConstantDescs.CD_void, CD_Executable);
+    private static final MethodDesc MD_DuringSetupAccess_registerBuildTimeBootstrapIndy = InterfaceMethodDesc.of(
+            ClassDesc.of(Feature.DuringSetupAccess.class.getName()), "registerBuildTimeBootstrapIndy",
+            ConstantDescs.CD_void, CD_Executable);
 
     /**
      * Exports the {@code com.oracle.svm.hosted} package from the GraalVM native image builder module
@@ -203,14 +211,25 @@ public class NativeImageFeatureStep {
                                                 b1.newArray(Class.class,
                                                         mtd.parameterList().stream().map(Const::of).toList())));
                                         if (condy) {
-                                            b1.invokeVirtual(
-                                                    MD_FeatureImpl_DuringSetupAccessImpl_registerBuildTimeCondyIncludeList,
-                                                    accessImpl, declaredMethod);
+                                            // GraalVM 25.4 moved bootstrap registration to the public Feature API.
+                                            b1.ifElse(b1.ge(b1.invokeVirtual(GRAALVM_VERSION_COMPARE_TO, graalVMVersion,
+                                                    b1.newArray(CD_int, Const.of(25), Const.of(4))), 0),
+                                                    b2 -> b2.invokeInterface(
+                                                            MD_DuringSetupAccess_registerBuildTimeBootstrapCondy,
+                                                            access, declaredMethod),
+                                                    b2 -> b2.invokeVirtual(
+                                                            MD_FeatureImpl_DuringSetupAccessImpl_registerBuildTimeCondyIncludeList,
+                                                            accessImpl, declaredMethod));
                                         }
                                         if (indy) {
-                                            b1.invokeVirtual(
-                                                    MD_FeatureImpl_DuringSetupAccessImpl_registerBuildTimeIndyIncludeList,
-                                                    accessImpl, declaredMethod);
+                                            b1.ifElse(b1.ge(b1.invokeVirtual(GRAALVM_VERSION_COMPARE_TO, graalVMVersion,
+                                                    b1.newArray(CD_int, Const.of(25), Const.of(4))), 0),
+                                                    b2 -> b2.invokeInterface(
+                                                            MD_DuringSetupAccess_registerBuildTimeBootstrapIndy,
+                                                            access, declaredMethod),
+                                                    b2 -> b2.invokeVirtual(
+                                                            MD_FeatureImpl_DuringSetupAccessImpl_registerBuildTimeIndyIncludeList,
+                                                            accessImpl, declaredMethod));
                                         }
                                     }
                                 });

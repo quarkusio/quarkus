@@ -42,9 +42,9 @@ public interface JLinkConfig {
 
     /**
      * The name of the launcher script generated in the image's {@code bin/} directory.
+     * By default, it is the name of the application artifact, as given by {@code quarkus.package.output-name}.
      */
-    //TODO TEMPORARY DEFAULT
-    @WithDefault("my-app")
+    @WithDefault("${quarkus.package.output-name}")
     String launcherName();
 
     /**

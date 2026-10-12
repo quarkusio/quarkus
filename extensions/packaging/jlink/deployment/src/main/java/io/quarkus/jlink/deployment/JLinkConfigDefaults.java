@@ -19,14 +19,4 @@ public final class JLinkConfigDefaults {
     public ConfigValue outputDirectory(ConfigSourceInterceptorContext ctxt) {
         return ctxt.restart("quarkus.package.output-directory");
     }
-
-    /**
-     * The default JLink launcher name is derived from the packaging out put name.
-     *
-     * @param ctxt the interceptor context (must not be {@code null})
-     * @return the config value, or {@code null} if it is not found
-     */
-    public ConfigValue launcherName(ConfigSourceInterceptorContext ctxt) {
-        return ctxt.restart("quarkus.package.output-name");
-    }
 }

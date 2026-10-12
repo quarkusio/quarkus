@@ -25,9 +25,15 @@ public class MultiplePersistenceUnitsClassLevelAnnotationIgnoredWithPackagesTest
     static QuarkusExtensionTest runner = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClass(MixedConfigAndClassLevelEntity.class)
-                    .addClass(Plane.class)
-                    .addAsResource("application-multiple-persistence-units-class-level-ignored-with-packages.properties",
-                            "application.properties"));
+                    .addClass(Plane.class))
+            .withConfiguration(
+                    """
+                            quarkus.hibernate-orm."users".datasource=users
+                            quarkus.hibernate-orm."users".packages=io.quarkus.hibernate.orm.multiplepersistenceunits.model.config.mixed
+
+                            quarkus.hibernate-orm."inventory".datasource=inventory
+                            quarkus.hibernate-orm."inventory".packages=io.quarkus.hibernate.orm.multiplepersistenceunits.model.config.inventory
+                            """);
 
     @Inject
     @PersistenceUnit("users")

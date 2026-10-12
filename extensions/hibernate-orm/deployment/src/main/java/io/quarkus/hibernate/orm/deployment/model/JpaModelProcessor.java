@@ -277,82 +277,53 @@ final class JpaModelProcessor {
             }
         }
 
+        // Config based packages have priority: when .packages is configured, class-level
+        // annotations are ignored (see warning above).
         Map<String, Set<String>> classLevelPersistenceUnitAssignments = new HashMap<>();
+        if (!hasPackagesInQuarkusConfig) {
+            for (AnnotationInstance classLevelPersistenceUnitAnnotation : classLevelPersistenceUnitAnnotations) {
+                String modelClassName = classLevelPersistenceUnitAnnotation.target().asClass().name().toString();
+                String persistenceUnitName = classLevelPersistenceUnitAnnotation.value().asString();
+                if (persistenceUnitName != null && !persistenceUnitName.isEmpty()) {
+                    classLevelPersistenceUnitAssignments.computeIfAbsent(modelClassName, c -> new HashSet<>())
+                            .add(persistenceUnitName);
+                    persistenceUnitsConfiguredThroughClassLevelAnnotations.add(persistenceUnitName);
+                }
+            }
+        }
 
         for (String modelClassName : jpaModel.getAllModelClassNames()) {
             ClassInfo modelClassInfo = index.getClassByName(DotName.createSimple(modelClassName));
             Set<String> relatedModelClassNames = getRelatedModelClassNames(index, jpaModel.getAllModelClassNames(),
                     modelClassInfo);
 
-            // Check for class-level @PersistenceUnit annotations
-            // Config based packages have priority: when .packages is configured, class-level
-            // annotations are ignored (see warning above).
-            if (!hasPackagesInQuarkusConfig && modelClassInfo != null) {
-                Set<String> classPersistenceUnits = new HashSet<>();
-                AnnotationInstance singleAnnotation = modelClassInfo.declaredAnnotation(ClassNames.QUARKUS_PERSISTENCE_UNIT);
-                AnnotationInstance containerAnnotation = modelClassInfo
-                        .declaredAnnotation(ClassNames.QUARKUS_PERSISTENCE_UNIT_REPEATABLE_CONTAINER);
-
-                if (singleAnnotation != null) {
-                    String persistenceUnitName = singleAnnotation.value().asString();
-                    if (persistenceUnitName != null && !persistenceUnitName.isEmpty()) {
-                        classPersistenceUnits.add(persistenceUnitName);
-                    }
-                }
-
-                if (containerAnnotation != null) {
-                    AnnotationInstance[] annotations = containerAnnotation.value().asNestedArray();
-                    for (AnnotationInstance annotation : annotations) {
-                        String persistenceUnitName = annotation.value().asString();
-                        if (persistenceUnitName != null && !persistenceUnitName.isEmpty()) {
-                            classPersistenceUnits.add(persistenceUnitName);
-                        }
-                    }
-                }
-
-                if (!classPersistenceUnits.isEmpty()) {
-                    classLevelPersistenceUnitAssignments.put(modelClassName, classPersistenceUnits);
-                    persistenceUnitsConfiguredThroughClassLevelAnnotations.addAll(classPersistenceUnits);
-                    for (String persistenceUnitName : classPersistenceUnits) {
-                        var model = modelPerPersistenceUnit.computeIfAbsent(persistenceUnitName,
-                                ignored -> new JpaPersistenceUnitModel());
-
-                        if (jpaModel.getEntityClassNames().contains(modelClassName)) {
-                            model.entityClassNames().add(modelClassName);
-                        }
-                        model.allModelClassNames().add(modelClassName);
-
-                        // also add the hierarchy to the persistence unit
-                        // we would need to add all the underlying model to it but adding the hierarchy
-                        // is necessary for Panache as we need to add PanacheEntity to the PU
-                        model.allModelClassNames().addAll(relatedModelClassNames);
-                    }
-                }
-            }
-
             // A class-level @PersistenceUnit annotation takes precedence over a package-level one:
-            // skip package rules entirely for classes that already got an explicit class-level assignment.
-            if (classLevelPersistenceUnitAssignments.containsKey(modelClassName)) {
-                continue;
-            }
-
-            for (Entry<String, Set<String>> packageRuleEntry : packageRules.entrySet()) {
-                if (modelClassName.startsWith(packageRuleEntry.getKey())) {
-                    for (String persistenceUnitName : packageRuleEntry.getValue()) {
-                        var model = modelPerPersistenceUnit.computeIfAbsent(persistenceUnitName,
-                                ignored -> new JpaPersistenceUnitModel());
-
-                        if (jpaModel.getEntityClassNames().contains(modelClassName)) {
-                            model.entityClassNames().add(modelClassName);
-                        }
-                        model.allModelClassNames().add(modelClassName);
-
-                        // also add the hierarchy to the persistence unit
-                        // we would need to add all the underlying model to it but adding the hierarchy
-                        // is necessary for Panache as we need to add PanacheEntity to the PU
-                        model.allModelClassNames().addAll(relatedModelClassNames);
+            // only apply package rules to classes without an explicit class-level assignment.
+            Set<String> classPersistenceUnits = classLevelPersistenceUnitAssignments.get(modelClassName);
+            Set<String> persistenceUnits = new HashSet<>();
+            if (classPersistenceUnits != null) {
+                persistenceUnits.addAll(classPersistenceUnits);
+            } else {
+                for (Entry<String, Set<String>> packageRuleEntry : packageRules.entrySet()) {
+                    if (modelClassName.startsWith(packageRuleEntry.getKey())) {
+                        persistenceUnits.addAll(packageRuleEntry.getValue());
                     }
                 }
+            }
+
+            for (String persistenceUnitName : persistenceUnits) {
+                var model = modelPerPersistenceUnit.computeIfAbsent(persistenceUnitName,
+                        ignored -> new JpaPersistenceUnitModel());
+
+                if (jpaModel.getEntityClassNames().contains(modelClassName)) {
+                    model.entityClassNames().add(modelClassName);
+                }
+                model.allModelClassNames().add(modelClassName);
+
+                // also add the hierarchy to the persistence unit
+                // we would need to add all the underlying model to it but adding the hierarchy
+                // is necessary for Panache as we need to add PanacheEntity to the PU
+                model.allModelClassNames().addAll(relatedModelClassNames);
             }
         }
 

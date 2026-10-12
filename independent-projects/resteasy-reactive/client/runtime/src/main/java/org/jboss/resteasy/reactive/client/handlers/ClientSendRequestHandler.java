@@ -125,7 +125,7 @@ public class ClientSendRequestHandler implements ClientRestHandler {
             @Override
             public void accept(HttpClientRequest httpClientRequest) {
                 if (requestContext.isUserCanceled()) {
-                    // in this case the user aborted before the request was even created
+                    httpClientRequest.reset();
                     return;
                 }
 

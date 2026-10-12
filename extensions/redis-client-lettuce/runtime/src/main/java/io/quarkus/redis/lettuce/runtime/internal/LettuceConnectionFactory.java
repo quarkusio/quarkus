@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
+import java.util.function.Function;
 
 import org.jboss.logging.Logger;
 
@@ -368,15 +369,6 @@ public class LettuceConnectionFactory {
 
         <K, V> StatefulConnection<K, V> connect(RedisCodec<K, V> codec);
 
-        /**
-         * Opens a Pub/Sub connection with the byte-array codec. Regular Pub/Sub is not tied to the key space, so the
-         * node does not matter for correctness, only for where the subscriber's traffic lands: a standalone client
-         * connects to its server, a cluster client to one node (Lettuce picks it; a cluster broadcasts every
-         * message to every node), a Sentinel client to the master the sentinels report (following a failover on
-         * reconnect, as Lettuce re-resolves the sentinel URI), a replication client to the first configured node
-         * that answers, master or replica (Redis propagates {@code PUBLISH} to the replicas, so a subscriber on a
-         * replica receives the messages published to the master).
-         */
         CompletionStage<StatefulRedisPubSubConnection<byte[], byte[]>> connectPubSubAsync();
 
         int database();
@@ -490,31 +482,15 @@ public class LettuceConnectionFactory {
             // the client look the master up through the sentinels; the Redis URIs are tried in order.
             return mode == MasterReplicaMode.SENTINEL
                     ? client.connectPubSubAsync(ByteArrayCodec.INSTANCE, nodes.get(0))
-                    : connectPubSubAsync(0);
+                    // As a plain future: Lettuce's ConnectionFuture does not compose correctly through
+                    // exceptionallyCompose.
+                    : tryInOrder(0, node -> client.connectPubSubAsync(ByteArrayCodec.INSTANCE, node).toCompletableFuture(),
+                            "open a Pub/Sub connection to");
         }
 
         @Override
         public int database() {
             return nodes.get(0).getDatabase();
-        }
-
-        /** The Pub/Sub attempt on {@code nodes[index]}, falling back to the next node when it fails. */
-        private CompletionStage<StatefulRedisPubSubConnection<byte[], byte[]>> connectPubSubAsync(int index) {
-            RedisURI node = nodes.get(index);
-            // As a plain future: Lettuce's ConnectionFuture does not compose correctly through exceptionallyCompose.
-            CompletionStage<StatefulRedisPubSubConnection<byte[], byte[]>> attempt = client
-                    .connectPubSubAsync(ByteArrayCodec.INSTANCE, node).toCompletableFuture();
-            if (index == nodes.size() - 1) {
-                return attempt;
-            }
-            return attempt.exceptionallyCompose(failure -> {
-                logNextNode(node, failure);
-                return connectPubSubAsync(index + 1).whenComplete((connection, next) -> {
-                    if (next != null) {
-                        unwrap(next).addSuppressed(unwrap(failure));
-                    }
-                });
-            });
         }
 
         private <K, V> StatefulRedisMasterReplicaConnection<K, V> connectMasterReplica(RedisCodec<K, V> codec) {
@@ -531,7 +507,7 @@ public class LettuceConnectionFactory {
                 RedisCodec<K, V> codec) {
             CompletionStage<StatefulRedisMasterReplicaConnection<K, V>> connecting = switch (mode) {
                 case SENTINEL -> io.lettuce.core.masterreplica.MasterReplica.connectAsync(client, codec, nodes.get(0));
-                case DISCOVER -> discoverAsync(codec, 0);
+                case DISCOVER -> discoverAsync(codec);
                 case STATIC -> io.lettuce.core.masterreplica.MasterReplica.connectAsync(client, codec, nodes);
             };
             return connecting.thenApply(connection -> {
@@ -556,28 +532,33 @@ public class LettuceConnectionFactory {
                     }
                     failure = e;
                     if (i < nodes.size() - 1) {
-                        logNextNode(nodes.get(i), e);
+                        logNextNode(nodes.get(i), e, "discover the replication topology from");
                     }
                 }
             }
             throw failure;
         }
 
+        private <K, V> CompletionStage<StatefulRedisMasterReplicaConnection<K, V>> discoverAsync(RedisCodec<K, V> codec) {
+            return tryInOrder(0, node -> io.lettuce.core.masterreplica.MasterReplica.connectAsync(client, codec, node),
+                    "discover the replication topology from");
+        }
+
         /**
-         * The asynchronous {@link #discover}: the attempt on {@code nodes[index]}, falling back to the next node when
-         * it fails.
+         * Runs {@code attempt} on {@code nodes[index]}, falling back to the next node when it fails. As in
+         * {@link #discover}, the failure of the last attempt is reported, the earlier ones suppressed on it.
+         *
+         * @param what what the attempt does, for the log line when a node is skipped ("<what> host:port")
          */
-        private <K, V> CompletionStage<StatefulRedisMasterReplicaConnection<K, V>> discoverAsync(RedisCodec<K, V> codec,
-                int index) {
+        private <T> CompletionStage<T> tryInOrder(int index, Function<RedisURI, CompletionStage<T>> attempt, String what) {
             RedisURI node = nodes.get(index);
-            CompletionStage<StatefulRedisMasterReplicaConnection<K, V>> attempt = io.lettuce.core.masterreplica.MasterReplica
-                    .connectAsync(client, codec, node);
+            CompletionStage<T> attempting = attempt.apply(node);
             if (index == nodes.size() - 1) {
-                return attempt;
+                return attempting;
             }
-            return attempt.exceptionallyCompose(failure -> {
-                logNextNode(node, failure);
-                return discoverAsync(codec, index + 1).whenComplete((connection, next) -> {
+            return attempting.exceptionallyCompose(failure -> {
+                logNextNode(node, failure, what);
+                return tryInOrder(index + 1, attempt, what).whenComplete((connection, next) -> {
                     if (next != null) {
                         unwrap(next).addSuppressed(unwrap(failure));
                     }
@@ -585,9 +566,9 @@ public class LettuceConnectionFactory {
             });
         }
 
-        private static void logNextNode(RedisURI node, Throwable failure) {
-            LOGGER.warnf("Unable to discover the replication topology from %s:%d (%s), trying the next host", node.getHost(),
-                    node.getPort(), unwrap(failure).getMessage());
+        private static void logNextNode(RedisURI node, Throwable failure, String what) {
+            LOGGER.warnf("Unable to %s %s:%d (%s), trying the next host", what, node.getHost(), node.getPort(),
+                    unwrap(failure).getMessage());
         }
 
         private static Throwable unwrap(Throwable failure) {

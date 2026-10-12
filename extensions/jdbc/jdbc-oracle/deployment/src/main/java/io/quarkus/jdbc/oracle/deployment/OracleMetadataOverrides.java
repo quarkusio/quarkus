@@ -124,6 +124,12 @@ public final class OracleMetadataOverrides {
         runtimeInitialized.produce(new RuntimeInitializedClassBuildItem("oracle.jdbc.driver.T4CXAConnection"));
         runtimeInitialized.produce(new RuntimeInitializedClassBuildItem("oracle.security.o5logon.O5Logon"));
 
+        // These two classes, new in driver version 23.26.3.0.0, hold a static field of type
+        // SSLContext, eagerly initialized in a static initializer; such an object cannot be
+        // initialized at build time.
+        runtimeInitialized.produce(new RuntimeInitializedClassBuildItem("oracle.net.aso.TLSHandshakeHandler"));
+        runtimeInitialized.produce(new RuntimeInitializedClassBuildItem("oracle.net.nt.EZTLSKeyVerifier"));
+
         //These were missing in the original driver, and apparently in its automatic feature definitions as well;
         //the need was spotted by running the native build: GraalVM will complain about these types having initialized fields
         //referring to various other types which aren't allowed in a captured heap.

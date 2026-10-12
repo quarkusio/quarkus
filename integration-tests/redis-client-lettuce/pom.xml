@@ -168,7 +168,7 @@
                         <configuration>
                             <images>
                                 <image>
-                                    <name>redis:8</name>
+                                    <name>redis:8-alpine</name>
                                     <alias>quarkus-test-redis</alias>
                                     <run>
                                         <ports>
@@ -188,7 +188,7 @@
                                     </run>
                                 </image>
                                 <image>
-                                    <name>redis:8</name>
+                                    <name>redis:8-alpine</name>
                                     <alias>quarkus-test-redis-tls</alias>
                                     <run>
                                         <ports>
@@ -216,7 +216,7 @@
                                      src/test/resources/redis/start-cluster.sh): the nodes announce 127.0.0.1 and
                                      their own port, so every port is published on the same host port -->
                                 <image>
-                                    <name>redis:8</name>
+                                    <name>redis:8-alpine</name>
                                     <alias>quarkus-test-redis-cluster</alias>
                                     <run>
                                         <ports>
@@ -249,7 +249,7 @@
                                      src/test/resources/redis/start-sentinel.sh): every process announces 127.0.0.1
                                      and its own port, so every port is published on the same host port -->
                                 <image>
-                                    <name>redis:8</name>
+                                    <name>redis:8-alpine</name>
                                     <alias>quarkus-test-redis-sentinel</alias>
                                     <run>
                                         <ports>

@@ -88,6 +88,13 @@ public abstract class AbstractLettuceCommands<K, V> {
         return value == null ? null : value.intValue();
     }
 
+    public static List<Integer> toInteger(List<Long> values) {
+        if (values == null || values.isEmpty()) {
+            return Collections.emptyList();
+        }
+        return values.stream().map(AbstractLettuceCommands::toInteger).toList();
+    }
+
     public static boolean isWholeSeconds(Duration duration) {
         return duration.getNano() == 0;
     }

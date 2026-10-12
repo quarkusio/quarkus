@@ -29,7 +29,7 @@ import io.vertx.mutiny.core.Vertx;
 public abstract class CommandsTestBase {
 
     protected static final Duration TIMEOUT = Duration.ofSeconds(5);
-    protected static final String REDIS_DEFAULT_IMAGE = "redis:8";
+    protected static final String REDIS_DEFAULT_IMAGE = "redis:8-alpine";
     protected static final GenericContainer<?> REDIS = createContainer();
     protected static final int MAX_POOL_SIZE = 6;
     protected static final int MAX_POOL_WAITING = 24;

@@ -111,7 +111,7 @@
                 </property>
             </activation>
             <properties>
-                <redis.base.image>redis:8</redis.base.image>
+                <redis.base.image>redis:8-alpine</redis.base.image>
             </properties>
             <build>
                 <plugins>

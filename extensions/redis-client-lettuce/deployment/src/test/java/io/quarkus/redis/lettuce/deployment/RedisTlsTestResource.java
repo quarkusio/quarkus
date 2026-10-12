@@ -90,7 +90,7 @@ public class RedisTlsTestResource implements QuarkusTestResourceLifecycleManager
         if (password != null) {
             command.addAll(List.of("--requirepass", password));
         }
-        return new GenericContainer<>(DockerImageName.parse("redis:8"))
+        return new GenericContainer<>(DockerImageName.parse("redis:8-alpine"))
                 .withCopyFileToContainer(cert(CERT_NAME + ".crt"), "/certs/server.crt")
                 .withCopyFileToContainer(cert(CERT_NAME + ".key"), "/certs/server.key")
                 .withCopyFileToContainer(cert(CERT_NAME + "-server-ca.crt"), "/certs/clients-ca.crt")

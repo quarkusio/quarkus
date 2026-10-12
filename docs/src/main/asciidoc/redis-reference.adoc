@@ -1173,7 +1173,7 @@ The credentials and the TLS settings apply to every node.
 The command groups work unchanged on a cluster, with the limits of Redis cluster itself:
 
 * Multi-key commands fail with a `CROSSSLOT` error from the server when their keys hash to different slots, unless
-the keys share a hash tag (`{user:1}:a` and `{user:1}:b`), as with the Vert.x client.
+the keys share a hashtag (`{user:1}:a` and `{user:1}:b`), as with the Vert.x client.
 `MGET`, `MSET`, `DEL`, `UNLINK`, `EXISTS` and `TOUCH` are split per slot and work across slots.
 * `withTransaction(...)` fails with an `UnsupportedOperationException` before any command is sent: Redis does not
 support `MULTI`/`EXEC`/`WATCH` across nodes and Lettuce does not route them.
@@ -1236,10 +1236,10 @@ than trusting the configured order, so the master need not be the first host.
 * The topology is discovered when a connection is opened and kept for its lifetime: it is not refreshed
 periodically, and `topology-cache-ttl` has no effect. Use a Sentinel client when the master can change.
 
-The key, value (string), hash, list, set, sorted set, bitmap, hyperloglog, geo, pub/sub and count-min command
-groups are implemented on the Lettuce backend, including their transactional variants where applicable. The other
-groups (stream, JSON, bloom, cuckoo, top-k, graph, search, autosuggest and time series) are not implemented yet and
-throw an `UnsupportedOperationException` when requested from a data source.
+The key, value (string), hash, list, set, sorted set, bitmap, hyperloglog, geo, pub/sub, JSON, autosuggest and count-min command groups are
+implemented on the Lettuce backend, including their transactional variants. The other groups (stream,
+bloom, cuckoo, top-k, graph, search and time series) are not implemented yet and throw an
+`UnsupportedOperationException` when requested from a data source.
 
 The data source methods exposing Vert.x types, such as `ReactiveRedisDataSource.getRedis()`, are not supported
 by the Lettuce backend and throw an `UnsupportedOperationException`; use `execute(...)` instead.

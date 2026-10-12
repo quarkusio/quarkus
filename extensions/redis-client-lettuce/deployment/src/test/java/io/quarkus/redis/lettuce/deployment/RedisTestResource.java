@@ -10,7 +10,7 @@ import io.quarkus.test.common.QuarkusTestResourceLifecycleManager;
 public class RedisTestResource implements QuarkusTestResourceLifecycleManager {
 
     static GenericContainer<?> server = new GenericContainer<>(
-            DockerImageName.parse("redis:8"))
+            DockerImageName.parse("redis:8-alpine"))
             .withExposedPorts(6379);
 
     @Override

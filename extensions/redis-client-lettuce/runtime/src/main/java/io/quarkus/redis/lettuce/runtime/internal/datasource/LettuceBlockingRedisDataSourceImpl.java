@@ -19,6 +19,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import io.quarkus.redis.datasource.ReactiveRedisDataSource;
 import io.quarkus.redis.datasource.RedisDataSource;
 import io.quarkus.redis.datasource.autosuggest.AutoSuggestCommands;
+import io.quarkus.redis.datasource.autosuggest.ReactiveAutoSuggestCommands;
 import io.quarkus.redis.datasource.bitmap.BitMapCommands;
 import io.quarkus.redis.datasource.bitmap.ReactiveBitMapCommands;
 import io.quarkus.redis.datasource.bloom.BloomCommands;
@@ -33,6 +34,7 @@ import io.quarkus.redis.datasource.hash.ReactiveHashCommands;
 import io.quarkus.redis.datasource.hyperloglog.HyperLogLogCommands;
 import io.quarkus.redis.datasource.hyperloglog.ReactiveHyperLogLogCommands;
 import io.quarkus.redis.datasource.json.JsonCommands;
+import io.quarkus.redis.datasource.json.ReactiveJsonCommands;
 import io.quarkus.redis.datasource.keys.KeyCommands;
 import io.quarkus.redis.datasource.list.ListCommands;
 import io.quarkus.redis.datasource.list.ReactiveListCommands;
@@ -54,11 +56,13 @@ import io.quarkus.redis.datasource.value.ReactiveValueCommands;
 import io.quarkus.redis.datasource.value.ValueCommands;
 import io.quarkus.redis.lettuce.runtime.internal.LettuceConnection;
 import io.quarkus.redis.lettuce.runtime.internal.LettuceResult;
+import io.quarkus.redis.runtime.datasource.BlockingAutoSuggestCommandsImpl;
 import io.quarkus.redis.runtime.datasource.BlockingBitmapCommandsImpl;
 import io.quarkus.redis.runtime.datasource.BlockingCountMinCommandsImpl;
 import io.quarkus.redis.runtime.datasource.BlockingGeoCommandsImpl;
 import io.quarkus.redis.runtime.datasource.BlockingHashCommandsImpl;
 import io.quarkus.redis.runtime.datasource.BlockingHyperLogLogCommandsImpl;
+import io.quarkus.redis.runtime.datasource.BlockingJsonCommandsImpl;
 import io.quarkus.redis.runtime.datasource.BlockingKeyCommandsImpl;
 import io.quarkus.redis.runtime.datasource.BlockingListCommandsImpl;
 import io.quarkus.redis.runtime.datasource.BlockingPubSubCommandsImpl;
@@ -446,12 +450,14 @@ public class LettuceBlockingRedisDataSourceImpl implements RedisDataSource {
 
     @Override
     public <K> JsonCommands<K> json(Class<K> redisKeyType) {
-        throw groupNotImplemented("json");
+        ReactiveJsonCommands<K> r = reactive.json(redisKeyType);
+        return new BlockingJsonCommandsImpl<>(this, r, timeout);
     }
 
     @Override
     public <K> JsonCommands<K> json(TypeReference<K> redisKeyType) {
-        throw groupNotImplemented("json");
+        ReactiveJsonCommands<K> r = reactive.json(redisKeyType);
+        return new BlockingJsonCommandsImpl<>(this, r, timeout);
     }
 
     @Override
@@ -508,12 +514,14 @@ public class LettuceBlockingRedisDataSourceImpl implements RedisDataSource {
 
     @Override
     public <K> AutoSuggestCommands<K> autosuggest(Class<K> redisKeyType) {
-        throw groupNotImplemented("autosuggest");
+        ReactiveAutoSuggestCommands<K> r = reactive.autosuggest(redisKeyType);
+        return new BlockingAutoSuggestCommandsImpl<>(this, r, timeout);
     }
 
     @Override
     public <K> AutoSuggestCommands<K> autosuggest(TypeReference<K> redisKeyType) {
-        throw groupNotImplemented("autosuggest");
+        ReactiveAutoSuggestCommands<K> r = reactive.autosuggest(redisKeyType);
+        return new BlockingAutoSuggestCommandsImpl<>(this, r, timeout);
     }
 
     @Override

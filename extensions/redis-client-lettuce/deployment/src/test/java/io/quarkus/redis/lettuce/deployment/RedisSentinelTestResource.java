@@ -53,7 +53,7 @@ public class RedisSentinelTestResource implements QuarkusTestResourceLifecycleMa
     private static final class RedisSentinelContainer extends GenericContainer<RedisSentinelContainer> {
 
         RedisSentinelContainer(List<Integer> ports) {
-            super(DockerImageName.parse(System.getProperty("redis.base.image", "redis:8")));
+            super(DockerImageName.parse(System.getProperty("redis.base.image", "redis:8-alpine")));
             for (int port : ports) {
                 addFixedExposedPort(port, port);
             }

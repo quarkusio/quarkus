@@ -35,7 +35,7 @@ import io.vertx.mutiny.core.Vertx;
 class LettuceClientResourcesTest {
 
     static final GenericContainer<?> REDIS = new GenericContainer<>(
-            DockerImageName.parse("redis:8"))
+            DockerImageName.parse("redis:8-alpine"))
             .withExposedPorts(6379);
 
     static Vertx vertx;

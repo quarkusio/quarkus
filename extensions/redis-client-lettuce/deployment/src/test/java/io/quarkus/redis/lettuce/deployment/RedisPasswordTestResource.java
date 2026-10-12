@@ -17,7 +17,7 @@ public class RedisPasswordTestResource implements QuarkusTestResourceLifecycleMa
     public static final String PASSWORD = "s3cr3t-p4ss";
 
     static GenericContainer<?> server = new GenericContainer<>(
-            DockerImageName.parse("redis:8"))
+            DockerImageName.parse("redis:8-alpine"))
             .withCommand("redis-server", "--requirepass", PASSWORD)
             .withExposedPorts(6379);
 

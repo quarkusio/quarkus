@@ -3,6 +3,7 @@ package io.quarkus.redis.lettuce.runtime.internal.pubsub;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import java.lang.reflect.Proxy;
 import java.time.Duration;
 import java.util.List;
 import java.util.UUID;
@@ -17,7 +18,9 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import io.lettuce.core.RedisException;
 import io.lettuce.core.pubsub.StatefulRedisPubSubConnection;
+import io.lettuce.core.pubsub.api.async.RedisPubSubAsyncCommands;
 import io.quarkus.redis.datasource.ReactiveRedisDataSource;
 import io.quarkus.redis.datasource.pubsub.ReactivePubSubCommands;
 import io.quarkus.redis.datasource.pubsub.ReactivePubSubCommands.ReactiveRedisSubscriber;
@@ -350,6 +353,74 @@ class LettucePubSubCommandsTest extends CommandsTestBase {
 
         subscriber.unsubscribe().await().atMost(TIMEOUT);
         Awaitility.await().until(() -> connectionCount() == before);
+    }
+
+    @Test
+    void subscribeOnAConnectionClosedMeanwhileFailsAndDoesNotLeak() {
+        long before = connectionCount();
+        // Lettuce fails SUBSCRIBE on a closed connection; the failure must reach the caller and the connection be
+        // let go of.
+        StatefulRedisPubSubConnection<byte[], byte[]> dead = redisClient.connectPubSub(codec, redisUri);
+        dead.close();
+        ReactivePubSubCommands<Person> onDead = new LettuceReactiveRedisDataSourceImpl(vertx, lettuceConnection, pool(),
+                () -> CompletableFuture.completedFuture(dead)).pubsub(Person.class);
+
+        assertThatThrownBy(() -> onDead.subscribe(channel, person -> {
+        }).await().atMost(TIMEOUT)).hasMessageContaining("closed");
+
+        Awaitility.await().until(() -> connectionCount() == before);
+    }
+
+    @Test
+    void subscribeThrowingSynchronouslyFailsInsteadOfHangingAndClosesTheConnection() {
+        long before = connectionCount();
+        // Lettuce can refuse a command synchronously (a full command buffer, commands rejected while disconnected).
+        // That happens inside the connect callback, where an uncaught throw would be swallowed and the subscribe
+        // left pending forever. Simulated by a connection whose async API throws from (P)SUBSCRIBE.
+        StatefulRedisPubSubConnection<byte[], byte[]> real = redisClient.connectPubSub(codec, redisUri);
+        StatefulRedisPubSubConnection<byte[], byte[]> refusing = refusingSubscribe(real);
+        ReactivePubSubCommands<Person> onRefusing = new LettuceReactiveRedisDataSourceImpl(vertx, lettuceConnection,
+                pool(), () -> CompletableFuture.completedFuture(refusing)).pubsub(Person.class);
+
+        assertThatThrownBy(() -> onRefusing.subscribe(channel, person -> {
+        }).await().atMost(TIMEOUT)).isInstanceOf(RedisException.class).hasMessage("refused");
+
+        Awaitility.await().until(() -> !real.isOpen());
+        Awaitility.await().until(() -> connectionCount() == before);
+    }
+
+    /** {@code connection}, except that its async {@code subscribe}/{@code psubscribe} throw instead of dispatching. */
+    @SuppressWarnings("unchecked")
+    private static StatefulRedisPubSubConnection<byte[], byte[]> refusingSubscribe(
+            StatefulRedisPubSubConnection<byte[], byte[]> connection) {
+        RedisPubSubAsyncCommands<byte[], byte[]> async = connection.async();
+        RedisPubSubAsyncCommands<byte[], byte[]> refusingAsync = (RedisPubSubAsyncCommands<byte[], byte[]>) Proxy
+                .newProxyInstance(connection.getClass().getClassLoader(),
+                        new Class<?>[] { RedisPubSubAsyncCommands.class }, (proxy, method, args) -> {
+                            if (method.getName().equals("subscribe") || method.getName().equals("psubscribe")) {
+                                throw new RedisException("refused");
+                            }
+                            return method.invoke(async, args);
+                        });
+        return (StatefulRedisPubSubConnection<byte[], byte[]>) Proxy.newProxyInstance(
+                connection.getClass().getClassLoader(), new Class<?>[] { StatefulRedisPubSubConnection.class },
+                (proxy, method, args) -> method.getName().equals("async") ? refusingAsync
+                        : method.invoke(connection, args));
+    }
+
+    @Test
+    void fullAndPartialUnsubscribesRacingCloseTheConnectionOnceAndCallOnEndOnce() {
+        long before = connectionCount();
+        String second = channel + "-second";
+        AtomicInteger ended = new AtomicInteger();
+        ReactiveRedisSubscriber subscriber = pubsub.subscribe(List.of(channel, second), (name, person) -> {
+        }, ended::incrementAndGet, null).await().atMost(TIMEOUT);
+
+        // unsubscribe() encodes the subscriber's live list while unsubscribe(channel) shrinks it.
+        Uni.join().all(subscriber.unsubscribe(channel), subscriber.unsubscribe()).andFailFast().await().atMost(TIMEOUT);
+
+        Awaitility.await().until(() -> connectionCount() == before);
+        Awaitility.await().during(Duration.ofMillis(200)).until(() -> ended.get() == 1);
     }
 
     @Test

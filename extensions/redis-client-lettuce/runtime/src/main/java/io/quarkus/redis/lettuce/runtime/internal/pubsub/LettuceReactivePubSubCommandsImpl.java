@@ -7,6 +7,7 @@ import static io.smallrye.mutiny.helpers.ParameterValidation.nonNull;
 
 import java.lang.reflect.Type;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -181,20 +182,35 @@ public class LettuceReactivePubSubCommandsImpl<V> extends AbstractLettuceCommand
                     result.completeExceptionally(connectFailure);
                     return;
                 }
-                AbstractReactiveLettuceSubscriber subscriber = factory.apply(conn);
+                // A throw out of a whenComplete callback goes nowhere: the result must be failed, and the
+                // connection closed, by hand.
+                AbstractReactiveLettuceSubscriber subscriber;
+                try {
+                    subscriber = factory.apply(conn);
+                } catch (RuntimeException e) {
+                    conn.closeAsync();
+                    result.completeExceptionally(e);
+                    return;
+                }
                 opened.set(subscriber);
                 if (cancelled.get()) {
                     subscriber.discard();
                     return;
                 }
-                subscriber.subscribe().whenComplete((ignored, subscribeFailure) -> {
-                    if (subscribeFailure != null) {
-                        subscriber.discard();
-                        result.completeExceptionally(subscribeFailure);
-                    } else if (!result.complete(subscriber) || cancelled.get()) {
-                        subscriber.discard();
-                    }
-                });
+                try {
+                    // Lettuce can refuse a command synchronously, e.g. on a connection closed in the meantime.
+                    subscriber.subscribe().whenComplete((ignored, subscribeFailure) -> {
+                        if (subscribeFailure != null) {
+                            subscriber.discard();
+                            result.completeExceptionally(subscribeFailure);
+                        } else if (!result.complete(subscriber) || cancelled.get()) {
+                            subscriber.discard();
+                        }
+                    });
+                } catch (RuntimeException e) {
+                    subscriber.discard();
+                    result.completeExceptionally(e);
+                }
             });
             return result;
         });
@@ -284,11 +300,11 @@ public class LettuceReactivePubSubCommandsImpl<V> extends AbstractLettuceCommand
         }
 
         private static byte[][] encode(List<String> names) {
-            byte[][] encoded = new byte[names.size()][];
-            for (int i = 0; i < encoded.length; i++) {
-                encoded[i] = names.get(i).getBytes(StandardCharsets.UTF_8);
+            List<byte[]> encoded = new ArrayList<>(names.size());
+            for (String name : names) {
+                encoded.add(name.getBytes(StandardCharsets.UTF_8));
             }
-            return encoded;
+            return encoded.toArray(byte[][]::new);
         }
 
         private void runOnDuplicatedContext(Runnable runnable) {

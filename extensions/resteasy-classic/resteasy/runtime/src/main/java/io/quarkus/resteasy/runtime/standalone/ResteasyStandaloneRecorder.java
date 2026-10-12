@@ -31,6 +31,7 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.PooledByteBufAllocator;
 import io.quarkus.resteasy.runtime.NonJaxRsClassMappings;
 import io.quarkus.resteasy.runtime.ResteasyVertxConfig;
+import io.quarkus.resteasy.runtime.StaticResourceShadowingCheck;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.ShutdownContext;
@@ -86,6 +87,17 @@ public class ResteasyStandaloneRecorder {
             deployment.start();
         }
         contextPath = path;
+    }
+
+    /**
+     * Logs a warning if static resources shadow endpoints, see {@link StaticResourceShadowingCheck}.
+     *
+     * @param staticFilePaths the paths of the static resources, relative to the HTTP root path
+     */
+    public void checkStaticResourceShadowing(String httpRootPath, Set<String> staticFilePaths) {
+        String indexPage = httpRuntimeConfig.getValue().staticResources().indexPage();
+        new StaticResourceShadowingCheck(deployment.getRegistry(), contextPath)
+                .check(httpRootPath, staticFilePaths, List.of(indexPage));
     }
 
     public void start(ShutdownContext shutdown, boolean isVirtual) {

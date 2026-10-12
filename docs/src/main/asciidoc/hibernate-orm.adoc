@@ -388,8 +388,7 @@ if the `packages` configuration property is used for at least one persistence un
 and only the `packages` configuration properties are taken into account.
 
 The package-level and class-level annotations, on the other hand, can be combined:
-a class-level `@PersistenceUnit` annotation always takes precedence over a package-level one for that particular class,
-which makes it convenient to assign a whole package to a persistence unit while moving a few specific classes to another one.
+a class-level `@PersistenceUnit` annotation always takes precedence over a package-level one for that particular class.
 
 Using the `packages` configuration property is simple:
 
@@ -477,29 +476,41 @@ public class SharedEntity {
 ----
 
 As mentioned above, a class-level annotation takes precedence over a package-level one.
-This is useful when most classes of a package belong to one persistence unit,
-but a few classes need to be attached to a different one.
 
-All classes in the `org.acme.model.user` package are attached to the `users` persistence unit by default:
+The following table summarizes how the three approaches interact when combined:
 
-[source,java]
-----
-@PersistenceUnit("users")
-package org.acme.model.user;
+[cols="2,2,2,4", options="header"]
+|===
+|`packages` configuration property
+|Package-level annotation
+|Class-level annotation
+|Result
 
-import io.quarkus.hibernate.orm.PersistenceUnit;
-----
+|`users`
+|`inventory`
+|`inventory`
+|Only `users`; configuration overrides both annotations.
 
-Except for `Warehouse`, which is explicitly attached to the `inventory` persistence unit instead, overriding the package-level annotation:
+|None
+|`users`
+|`inventory`
+|Only `inventory`; the class annotation overrides the package annotation.
 
-[source,java]
-----
-@Entity
-@PersistenceUnit("inventory")
-public class Warehouse {
-    // ...
-}
-----
+|None
+|`users`
+|None
+|`users`, from the package annotation.
+
+|None
+|None
+|`users`
+|`users`, from the class annotation.
+
+|None
+|None
+|None
+|Default persistence unit if no package annotations are used anywhere; otherwise unassigned.
+|===
 
 [[persistence-unit-detection]]
 === Conditions for persistence unit configuration

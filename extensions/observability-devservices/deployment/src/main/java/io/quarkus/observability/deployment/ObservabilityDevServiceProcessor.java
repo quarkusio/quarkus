@@ -2,18 +2,24 @@ package io.quarkus.observability.deployment;
 
 import java.io.IOException;
 import java.time.Duration;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
+import java.util.TreeSet;
 import java.util.function.BooleanSupplier;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import org.eclipse.microprofile.config.Config;
+import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.jandex.DotName;
 import org.jboss.logging.Logger;
 import org.testcontainers.DockerClientFactory;
 
+import io.quarkus.arc.deployment.ConfigPropertyBuildItem;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
@@ -22,12 +28,14 @@ import io.quarkus.deployment.IsDevServicesSupportedByLaunchMode;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.BuildSteps;
+import io.quarkus.deployment.annotations.Produce;
 import io.quarkus.deployment.builditem.DevServicesComposeProjectBuildItem;
 import io.quarkus.deployment.builditem.DevServicesResultBuildItem;
 import io.quarkus.deployment.builditem.DockerStatusBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
+import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.builditem.Startable;
 import io.quarkus.deployment.dev.devservices.ContainerInfo;
 import io.quarkus.deployment.dev.devservices.DevServicesConfig;
@@ -105,13 +113,7 @@ class ObservabilityDevServiceProcessor {
         //noinspection ResultOfMethodCallIgnored
         resources.stream().collect(Collectors.toMap(this::devId, Function.identity()));
 
-        ExtensionsCatalog catalog = new ExtensionsCatalog(
-                QuarkusClassLoader::isResourcePresentAtRuntime,
-                QuarkusClassLoader::isClassPresentAtRuntime,
-                capabilities.isPresent(Capability.OPENTELEMETRY_TRACER) ||
-                        capabilities.isPresent(Capability.OPENTELEMETRY_METRICS) ||
-                        capabilities.isPresent(Capability.OPENTELEMETRY_LOGS),
-                hasMicrometerOtlp(metricsConfiguration));
+        ExtensionsCatalog catalog = extensionsCatalog(capabilities, metricsConfiguration);
 
         for (DevResourceLifecycleManager<ContainerConfig> dev : resources) {
             String devId = devId(dev);
@@ -153,6 +155,57 @@ class ObservabilityDevServiceProcessor {
                                 .build());
             }
         }
+    }
+
+    @BuildStep
+    @Produce(ServiceStartBuildItem.class)
+    void hintAtMissingTestProperties(LaunchModeBuildItem launchMode,
+            ObservabilityConfiguration configuration,
+            List<ConfigPropertyBuildItem> requiredProperties,
+            Capabilities capabilities,
+            Optional<MetricsCapabilityBuildItem> metricsConfiguration) {
+
+        if (launchMode.getLaunchMode() != LaunchMode.TEST || configuration.enabledInTests()) {
+            return;
+        }
+
+        Set<String> provided = providedProperties(configuration, extensionsCatalog(capabilities, metricsConfiguration));
+        Config config = ConfigProvider.getConfig();
+        Set<String> missing = requiredProperties.stream()
+                .filter(property -> property.getDefaultValue() == null)
+                .map(ConfigPropertyBuildItem::getPropertyName)
+                .filter(provided::contains)
+                .filter(name -> config.getOptionalValue(name, String.class).isEmpty())
+                .collect(Collectors.toCollection(TreeSet::new));
+
+        if (!missing.isEmpty()) {
+            log.warnf("The application requires %s, which is provided by observability Dev Services. "
+                    + "Dev Services are not started in test mode by default. "
+                    + "Set quarkus.observability.enabled-in-tests=true to start them.", String.join(", ", missing));
+        }
+    }
+
+    @SuppressWarnings({ "rawtypes", "unchecked" })
+    private Set<String> providedProperties(ObservabilityConfiguration configuration, ExtensionsCatalog catalog) {
+        Set<String> provided = new HashSet<>();
+        for (DevResourceLifecycleManager<ContainerConfig> dev : (List<DevResourceLifecycleManager>) (List) DevResources
+                .resources()) {
+            if (dev.config(configuration, catalog).enabled()) {
+                provided.addAll(dev.configProvider(Function.<Map<String, String>> identity()).keySet());
+            }
+        }
+        return provided;
+    }
+
+    private ExtensionsCatalog extensionsCatalog(Capabilities capabilities,
+            Optional<MetricsCapabilityBuildItem> metricsConfiguration) {
+        return new ExtensionsCatalog(
+                QuarkusClassLoader::isResourcePresentAtRuntime,
+                QuarkusClassLoader::isClassPresentAtRuntime,
+                capabilities.isPresent(Capability.OPENTELEMETRY_TRACER) ||
+                        capabilities.isPresent(Capability.OPENTELEMETRY_METRICS) ||
+                        capabilities.isPresent(Capability.OPENTELEMETRY_LOGS),
+                hasMicrometerOtlp(metricsConfiguration));
     }
 
     private DevServicesResultBuildItem discoverRunningService(

@@ -12,7 +12,7 @@ import org.aesh.command.option.Option;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 /**
  * Verifies that a warning is logged when the SSH server starts without
@@ -21,7 +21,7 @@ import io.quarkus.test.QuarkusUnitTest;
 public class AeshSshNoAuthWarningTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot(jar -> jar.addClasses(
                     HelloCommand.class,
                     GoodbyeCommand.class))

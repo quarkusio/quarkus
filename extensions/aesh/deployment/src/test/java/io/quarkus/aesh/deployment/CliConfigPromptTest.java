@@ -19,7 +19,7 @@ import io.quarkus.aesh.runtime.AeshRemoteConnectionHandler;
 import io.quarkus.builder.BuildChainBuilder;
 import io.quarkus.builder.BuildContext;
 import io.quarkus.builder.BuildStep;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 /**
  * Tests that a custom {@code quarkus.aesh.prompt} value appears in remote
@@ -28,7 +28,7 @@ import io.quarkus.test.QuarkusUnitTest;
 public class CliConfigPromptTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot(jar -> jar.addClasses(DummyCommand.class))
             .overrideConfigKey("quarkus.aesh.prompt", "myapp> ")
             .addBuildChainCustomizer(injectRemoteTransport());

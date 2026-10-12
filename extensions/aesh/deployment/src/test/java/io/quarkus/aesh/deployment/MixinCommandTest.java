@@ -15,7 +15,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.aesh.runtime.AeshContext;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 /**
  * Tests that aesh @Mixin support works correctly with the Quarkus extension.
@@ -24,7 +24,7 @@ import io.quarkus.test.QuarkusUnitTest;
 public class MixinCommandTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot(jar -> jar.addClasses(
                     OutputMixin.class,
                     MixinGreetCommand.class,

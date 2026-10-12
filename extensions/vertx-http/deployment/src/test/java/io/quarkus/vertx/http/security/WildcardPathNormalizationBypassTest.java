@@ -22,7 +22,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 import io.quarkus.security.test.utils.TestIdentityController;
 import io.quarkus.security.test.utils.TestIdentityProvider;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.common.http.TestHTTPResource;
 import io.vertx.core.Vertx;
 import io.vertx.ext.web.Router;
@@ -42,7 +42,7 @@ public class WildcardPathNormalizationBypassTest {
             """;
 
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest().setArchiveProducer(() -> ShrinkWrap
+    static QuarkusExtensionTest test = new QuarkusExtensionTest().setArchiveProducer(() -> ShrinkWrap
             .create(JavaArchive.class)
             .addClasses(TestIdentityController.class, TestIdentityProvider.class, WildcardRouteHandler.class)
             .addAsResource(new StringAsset(APP_PROPS), "application.properties"));

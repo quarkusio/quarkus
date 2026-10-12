@@ -11,12 +11,12 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.mongodb.runtime.MongoConfig;
 import io.quarkus.mongodb.runtime.MongoTracingRuntimeConfig.CommandDetailLevel;
 import io.quarkus.mongodb.tracing.MongoTracingCommandListener;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class MongoTracingSanitizationTest {
 
     @RegisterExtension
-    static QuarkusUnitTest runner = new QuarkusUnitTest()
+    static QuarkusExtensionTest runner = new QuarkusExtensionTest()
             .withConfigurationResource("application-tracing-sanitized.properties");
 
     @Inject

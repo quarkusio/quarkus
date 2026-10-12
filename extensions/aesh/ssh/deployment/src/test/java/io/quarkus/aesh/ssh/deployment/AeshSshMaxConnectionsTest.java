@@ -16,7 +16,7 @@ import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 /**
  * Verifies that the SSH server enforces the max-connections limit.
@@ -26,7 +26,7 @@ public class AeshSshMaxConnectionsTest {
     private static final int SSH_PORT = 12226;
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot(jar -> jar.addClasses(HelloCommand.class))
             .overrideConfigKey("quarkus.aesh.ssh.port", String.valueOf(SSH_PORT))
             .overrideConfigKey("quarkus.aesh.ssh.password", "test-pw")

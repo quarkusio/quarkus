@@ -12,7 +12,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.aesh.runtime.AeshContext;
 import io.quarkus.aesh.runtime.AeshMode;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 /**
  * Tests that {@code quarkus.aesh.mode=console} forces console mode even when
@@ -21,7 +21,7 @@ import io.quarkus.test.QuarkusUnitTest;
 public class ExplicitConsoleModeConfigTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot(jar -> jar.addClass(SingleCommand.class))
             .overrideConfigKey("quarkus.aesh.mode", "console");
 

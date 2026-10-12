@@ -19,7 +19,7 @@ import io.quarkus.aesh.runtime.AeshRemoteConnectionHandler;
 import io.quarkus.builder.BuildChainBuilder;
 import io.quarkus.builder.BuildContext;
 import io.quarkus.builder.BuildStep;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 /**
  * Tests that {@code quarkus.aesh.enable-alias=true} and
@@ -28,7 +28,7 @@ import io.quarkus.test.QuarkusUnitTest;
 public class CliConfigEnableAliasAndExportTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot(jar -> jar.addClasses(DummyCommand.class))
             .overrideConfigKey("quarkus.aesh.enable-alias", "true")
             .overrideConfigKey("quarkus.aesh.enable-export", "true")

@@ -19,6 +19,8 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+import io.lettuce.core.RedisChannelHandler;
+import io.lettuce.core.RedisConnectionStateListener;
 import io.lettuce.core.RedisFuture;
 import io.lettuce.core.pubsub.RedisPubSubAdapter;
 import io.lettuce.core.pubsub.RedisPubSubListener;
@@ -290,6 +292,22 @@ public class LettuceReactivePubSubCommandsImpl<V> extends AbstractLettuceCommand
             }
         };
 
+        private final RedisConnectionStateListener stateListener = new RedisConnectionStateListener() {
+            @Override
+            public void onRedisDisconnected(RedisChannelHandler<?, ?> handler) {
+                if (handler.isClosed() || !connection.getOptions().isAutoReconnect()) {
+                    end();
+                }
+            }
+
+            @Override
+            public void onRedisExceptionCaught(RedisChannelHandler<?, ?> handler, Throwable cause) {
+                if (onException != null) {
+                    runOnDuplicatedContext(() -> onException.accept(cause));
+                }
+            }
+        };
+
         AbstractReactiveLettuceSubscriber(StatefulRedisPubSubConnection<byte[], byte[]> connection, List<String> names,
                 BiConsumer<String, V> onMessage, Runnable onEnd, Consumer<Throwable> onException) {
             this.connection = connection;
@@ -321,14 +339,31 @@ public class LettuceReactivePubSubCommandsImpl<V> extends AbstractLettuceCommand
 
         CompletionStage<Void> subscribe() {
             connection.addListener(listener);
+            connection.addListener(stateListener);
             return subscribeToRedis(encode(names));
         }
 
         void discard() {
             if (closed.compareAndSet(false, true)) {
-                connection.removeListener(listener);
+                removeListeners();
                 connection.closeAsync();
             }
+        }
+
+        private void end() {
+            if (closed.compareAndSet(false, true)) {
+                removeListeners();
+                names.clear();
+                connection.closeAsync();
+                if (onEnd != null) {
+                    runOnDuplicatedContext(onEnd);
+                }
+            }
+        }
+
+        private void removeListeners() {
+            connection.removeListener(listener);
+            connection.removeListener(stateListener);
         }
 
         void deliver(byte[] channel, byte[] payload) {
@@ -379,7 +414,7 @@ public class LettuceReactivePubSubCommandsImpl<V> extends AbstractLettuceCommand
             if (!names.isEmpty() || !closed.compareAndSet(false, true)) {
                 return Uni.createFrom().voidItem();
             }
-            connection.removeListener(listener);
+            removeListeners();
             return LettuceResult.toUni(connection::closeAsync).replaceWithVoid().invoke(() -> {
                 if (onEnd != null) {
                     runOnDuplicatedContext(onEnd);

@@ -18,6 +18,9 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import io.lettuce.core.ClientOptions;
+import io.lettuce.core.KillArgs;
+import io.lettuce.core.RedisClient;
 import io.lettuce.core.RedisException;
 import io.lettuce.core.pubsub.StatefulRedisPubSubConnection;
 import io.lettuce.core.pubsub.api.async.RedisPubSubAsyncCommands;
@@ -421,6 +424,77 @@ class LettucePubSubCommandsTest extends CommandsTestBase {
 
         Awaitility.await().until(() -> connectionCount() == before);
         Awaitility.await().during(Duration.ofMillis(200)).until(() -> ended.get() == 1);
+    }
+
+    @Test
+    void droppedConnectionIsReestablishedAndResubscribedWithoutEndingTheSubscriber() {
+        long before = connectionCount();
+        List<Person> received = new CopyOnWriteArrayList<>();
+        AtomicInteger ended = new AtomicInteger();
+        ReactiveRedisSubscriber subscriber = pubsub.subscribe(List.of(channel), (name, person) -> received.add(person),
+                ended::incrementAndGet, null).await().atMost(TIMEOUT);
+
+        // Kill the subscriber's connection server-side. Lettuce reconnects and re-subscribes (auto-reconnect is on
+        // by default): the subscriber keeps receiving and onEnd is not run.
+        assertThat(connection.sync().clientKill(KillArgs.Builder.typePubsub())).isEqualTo(1);
+        Awaitility.await().until(() -> connection.sync().pubsubChannels().size() == 1);
+        pubsub.publish(channel, luke).await().atMost(TIMEOUT);
+
+        Awaitility.await().until(() -> received.equals(List.of(luke)));
+        assertThat(ended).hasValue(0);
+
+        subscriber.unsubscribe().await().atMost(TIMEOUT);
+        Awaitility.await().until(() -> connectionCount() == before);
+        Awaitility.await().until(() -> ended.get() == 1);
+    }
+
+    @Test
+    void droppedConnectionEndsTheSubscriberWhenAutoReconnectIsOff() {
+        long before = connectionCount();
+        RedisClient noReconnect = RedisClient.create(lettuceResources.clientResources(), redisUri);
+        noReconnect.setOptions(ClientOptions.builder().autoReconnect(false).build());
+        try {
+            ReactivePubSubCommands<Person> onNoReconnect = new LettuceReactiveRedisDataSourceImpl(vertx, lettuceConnection,
+                    pool(), () -> noReconnect.connectPubSubAsync(codec, redisUri)).pubsub(Person.class);
+            AtomicInteger ended = new AtomicInteger();
+            AtomicBoolean endedOnDuplicatedContext = new AtomicBoolean();
+            ReactiveRedisSubscriber subscriber = onNoReconnect.subscribe(List.of(channel), (name, person) -> {
+            }, () -> {
+                endedOnDuplicatedContext.set(VertxContext.isOnDuplicatedContext());
+                ended.incrementAndGet();
+            }, null).await().atMost(TIMEOUT);
+
+            assertThat(connection.sync().clientKill(KillArgs.Builder.typePubsub())).isEqualTo(1);
+
+            Awaitility.await().until(() -> ended.get() == 1);
+            assertThat(endedOnDuplicatedContext).isTrue();
+            Awaitility.await().until(() -> connectionCount() == before);
+            // The subscriber is over: a later unsubscribe is a no-op and onEnd does not run again.
+            subscriber.unsubscribe().await().atMost(TIMEOUT);
+            Awaitility.await().during(Duration.ofMillis(200)).until(() -> ended.get() == 1);
+        } finally {
+            noReconnect.shutdown();
+        }
+    }
+
+    @Test
+    void shuttingDownTheClientEndsTheSubscriberAndCompletesTheStream() {
+        long before = connectionCount();
+        RedisClient shortLived = RedisClient.create(lettuceResources.clientResources(), redisUri);
+        ReactivePubSubCommands<Person> onShortLived = new LettuceReactiveRedisDataSourceImpl(vertx, lettuceConnection,
+                pool(), () -> shortLived.connectPubSubAsync(codec, redisUri)).pubsub(Person.class);
+        AtomicBoolean completed = new AtomicBoolean();
+        AtomicBoolean failed = new AtomicBoolean();
+        onShortLived.subscribe(channel).subscribe().with(ignored -> {
+        }, failure -> failed.set(true), () -> completed.set(true));
+        Awaitility.await().until(() -> connection.sync().pubsubChannels().size() == 1);
+
+        // Closing every connection of the client, as the application does at shutdown, ends the subscription.
+        shortLived.shutdown();
+
+        Awaitility.await().until(completed::get);
+        assertThat(failed).isFalse();
+        Awaitility.await().until(() -> connectionCount() == before);
     }
 
     @Test

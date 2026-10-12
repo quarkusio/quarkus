@@ -1276,6 +1276,13 @@ for a Sentinel client, following a failover when the connection is re-establishe
 host that answers for a replication client, master or replica (Redis propagates `PUBLISH` to the replicas, so a
 subscriber on a replica receives the messages published to the master).
 
+A subscriber's `onEnd` callback runs, and the `Multi` returned by the streaming `subscribe(...)` methods completes,
+when the last channel or pattern is unsubscribed and when the client is shut down with the application. A
+subscriber's connection that is lost (the server restarted, the network failed) is re-established and
+re-subscribed by Lettuce transparently: messages published in the meantime are missed, as with any Pub/Sub
+subscriber, but the subscription goes on and `onEnd` is not called, where the Vert.x backend ends the subscription.
+`onException` receives the I/O errors reported on the connection and the failures to decode a message.
+
 A blocking command issued from inside `withConnection(...)` runs on that pinned connection directly: it
 does not borrow a second connection from the pool, and it blocks that connection for its own duration, as
 it would without pooling.

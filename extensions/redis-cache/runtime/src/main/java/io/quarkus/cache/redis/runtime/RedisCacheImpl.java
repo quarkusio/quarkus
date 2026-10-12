@@ -187,7 +187,7 @@ public class RedisCacheImpl extends AbstractCache implements RedisCache {
                     startingPoint = new GetFromConnectionSupplier<V>(connection, type, encodedKey, marshaller).get();
                 }
 
-                return startingPoint
+                Uni<V> result = startingPoint
                         .chain(Unchecked.function(new UncheckedFunction<>() {
                             @Override
                             public Uni<V> apply(V cached) throws Exception {
@@ -227,6 +227,7 @@ public class RedisCacheImpl extends AbstractCache implements RedisCache {
                                 }
                             }
                         }));
+                return cacheInfo.useOptimisticLocking ? unwatchOnFailureOrCancellation(connection, result) : result;
             }
         })
 
@@ -283,7 +284,7 @@ public class RedisCacheImpl extends AbstractCache implements RedisCache {
                     startingPoint = new GetFromConnectionSupplier<V>(connection, type, encodedKey, marshaller).get();
                 }
 
-                return startingPoint
+                Uni<V> result = startingPoint
                         .chain(cached -> {
                             if (cached != null) {
                                 // Unwatch if optimistic locking
@@ -308,6 +309,7 @@ public class RedisCacheImpl extends AbstractCache implements RedisCache {
                                         });
                             }
                         });
+                return cacheInfo.useOptimisticLocking ? unwatchOnFailureOrCancellation(connection, result) : result;
             }
         })
                 .onFailure(RedisCacheImpl::isRecomputableError).recoverWithUni(e -> {
@@ -512,6 +514,11 @@ public class RedisCacheImpl extends AbstractCache implements RedisCache {
     private Uni<Void> watch(RedisConnection connection, byte[] keyToWatch) {
         return connection.send(Request.cmd(Command.WATCH).arg(keyToWatch))
                 .replaceWithVoid();
+    }
+
+    private <X> Uni<X> unwatchOnFailureOrCancellation(RedisConnection connection, Uni<X> operation) {
+        return operation.onFailure().call(() -> connection.send(Request.cmd(Command.UNWATCH)))
+                .onCancellation().call(() -> connection.send(Request.cmd(Command.UNWATCH)));
     }
 
     private <X> Uni<X> doGet(RedisConnection connection, byte[] encoded, Type clazz,

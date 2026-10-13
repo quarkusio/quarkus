@@ -739,7 +739,6 @@ public class DevMojoIT extends LaunchMojoTestBase {
         Assertions.assertEquals(1, results.getTestsPassed(), results.toString());
     }
 
-    @Disabled("Not currently working, see https://github.com/quarkusio/quarkus/issues/46362")
     @Test
     void testTestProfilesWhichRunMainAreHandled()
             throws MavenInvocationException, IOException {
@@ -753,7 +752,7 @@ public class DevMojoIT extends LaunchMojoTestBase {
 
         //check that the tests in both class files ran
         Assertions.assertEquals(0, results.getTestsFailed(), results.toString());
-        Assertions.assertEquals(9, results.getTestsPassed(), results.toString());
+        Assertions.assertEquals(10, results.getTestsPassed(), results.toString());
 
         // Edit the "Hello" message.
         File source = new File(testDir, "src/main/java/org/acme/HelloResource.java");
@@ -776,7 +775,7 @@ public class DevMojoIT extends LaunchMojoTestBase {
         //make sure the test is failing now, and others should have not run
         Assertions.assertEquals(2, results.getTestsFailed(), results.toString());
         Assertions.assertEquals(0, results.getTestsPassed(), results.toString());
-        Assertions.assertEquals(7, results.getTotalTestsPassed(), results.toString());
+        Assertions.assertEquals(8, results.getTotalTestsPassed(), results.toString());
 
         // Revert the change
         filter(source, Collections.singletonMap("return \"" + uuid + "\";", "return \"hello\";"));
@@ -794,7 +793,7 @@ public class DevMojoIT extends LaunchMojoTestBase {
 
         results = testingTestUtils.waitForNextCompletion();
         Assertions.assertEquals(0, results.getTestsFailed(), results.toString());
-        Assertions.assertEquals(9, results.getTotalTestsPassed(), results.toString());
+        Assertions.assertEquals(10, results.getTotalTestsPassed(), results.toString());
     }
 
     @Test

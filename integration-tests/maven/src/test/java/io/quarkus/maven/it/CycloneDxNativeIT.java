@@ -64,6 +64,12 @@ public class CycloneDxNativeIT extends MojoTestBase {
         assertComponent(components, "io.quarkus", "quarkus-cyclonedx", "runtime", null);
         assertComponent(components, "io.quarkus", "quarkus-cyclonedx-deployment", "development", null);
 
+        // The native-image builder component is injected only into the embedded `sbom` symbol,
+        // not into the on-disk distribution SBOM. It must therefore be absent here.
+        assertThat(components.stream().filter(CycloneDxNativeIT::isNativeImageBuilder))
+                .as("on-disk SBOM must not contain the native-image builder component (symbol-only injection)")
+                .isEmpty();
+
         verifySbomWithSyft(testDir.toPath(), "acme-app-1.0-SNAPSHOT-runner");
     }
 
@@ -114,5 +120,56 @@ public class CycloneDxNativeIT extends MojoTestBase {
                 .findFirst())
                 .as("syft-extracted SBOM should contain quarkus-cyclonedx")
                 .isPresent();
+
+        // The embedded SBOM carries a component identifying the GraalVM/Mandrel native-image
+        // builder used to compile the executable (see issue #53977).
+        final Component builder = syftComponents.stream()
+                .filter(CycloneDxNativeIT::isNativeImageBuilderInSyft)
+                .findFirst()
+                .orElse(null);
+        assertThat(builder)
+                .as("syft-extracted SBOM should contain the native-image builder component")
+                .isNotNull();
+        assertThat(builder.getVersion())
+                .as("native-image builder component should carry a version")
+                .isNotBlank();
+    }
+
+    /**
+     * Identifies the injected native-image builder component in an SBOM parsed directly with
+     * the CycloneDX {@link JsonParser} (i.e. the on-disk SBOM), where the {@code group} is
+     * preserved: group {@code org.graalvm} with a {@code pkg:generic/...} PURL. See
+     * {@code EmbeddedSbomBuilderInjector}.
+     */
+    private static boolean isNativeImageBuilder(Component c) {
+        return "org.graalvm".equals(c.getGroup())
+                && c.getPurl() != null
+                && c.getPurl().startsWith("pkg:generic/");
+    }
+
+    /** Values returned by {@code GraalVM.Version.getBuilderName()} (the injected component name). */
+    private static final List<String> BUILDER_NAMES = List.of("Mandrel", "Oracle-GraalVM", "GraalVM-CE", "Liberica-NIK");
+
+    /**
+     * Identifies the injected native-image builder component as re-emitted by syft.
+     * <p>
+     * syft only derives a CycloneDX {@code group} for Maven/Java packages (from
+     * {@code PomProperties.GroupID}); for a {@code pkg:generic} component it emits an empty
+     * group and may fold the group into the name (e.g. {@code org.graalvm/Mandrel}). We
+     * therefore match on the PURL ({@code pkg:generic/<builder>@...}) or the component name
+     * rather than on the group.
+     */
+    private static boolean isNativeImageBuilderInSyft(Component c) {
+        final String purl = c.getPurl();
+        final String name = c.getName();
+        for (String builder : BUILDER_NAMES) {
+            if (purl != null && purl.startsWith("pkg:generic/" + builder + "@")) {
+                return true;
+            }
+            if (name != null && (name.equals(builder) || name.endsWith("/" + builder))) {
+                return true;
+            }
+        }
+        return false;
     }
 }

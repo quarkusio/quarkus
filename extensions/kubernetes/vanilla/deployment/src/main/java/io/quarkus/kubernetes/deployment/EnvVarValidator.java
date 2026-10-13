@@ -74,7 +74,11 @@ public class EnvVarValidator {
      */
     Collection<KubernetesEnvBuildItem> getBuildItems() {
         if (conflicting.isEmpty() && errors.isEmpty()) {
-            return items.values();
+            // sorted for reproducible manifests: ItemKey hashes an enum, whose identity hash varies per JVM
+            return items.values().stream()
+                    .sorted(Comparator.comparing(KubernetesEnvBuildItem::getName)
+                            .thenComparing(item -> item.getType().name()))
+                    .toList();
         }
         throw new IllegalArgumentException(getError());
     }

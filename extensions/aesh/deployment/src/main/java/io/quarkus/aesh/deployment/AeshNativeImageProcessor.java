@@ -61,44 +61,46 @@ class AeshNativeImageProcessor {
     }
 
     /**
-     * Registers FFM downcall signatures used by aesh-readline's {@code LibC} class
-     * for POSIX terminal access (tcgetattr, tcsetattr, ioctl, read, poll, etc.).
+     * Registers FFM downcall signatures used by aesh-readline for POSIX
+     * terminal access (tcgetattr, tcsetattr, ioctl, read, write, poll, etc.).
      * <p>
      * GraalVM native image requires explicit registration of all FFM downcall
      * signatures. Without this, the FFM terminal provider fails at runtime with
      * {@code MissingForeignRegistrationError} and falls back to ExecPty.
      * <p>
-     * Most LibC functions use {@code captureCallState} to capture {@code errno},
-     * and {@code ioctl} additionally uses {@code firstVariadicArg}.
+     * Since aesh-readline 3.18.5 only {@code open} captures errno state
+     * ({@code captureCallState}); the remaining wrappers decide on return
+     * codes alone and must be registered without it, otherwise the registered
+     * descriptors do not match the actual calls. {@code ioctl} additionally
+     * uses {@code firstVariadicArg}. The {@code write} downcall (used by the
+     * terminal-detect probes) shares {@code read}'s descriptor, so one entry
+     * covers both.
      */
     @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
     void registerFfmDowncalls(BuildProducer<FfmDowncallBuildItem> downcalls) {
         // int isatty(int fd) — no captureCallState
         downcalls.produce(FfmDowncallBuildItem.builder(INT, INT).build());
-        // int open(const char *pathname, int flags)
+        // int open(const char *pathname, int flags) — the only call capturing errno
         downcalls.produce(FfmDowncallBuildItem.builder(INT, ADDRESS, INT)
                 .captureCallState().build());
+        // int open(const char *pathname, int flags) — terminal-detect variant without capture
+        downcalls.produce(FfmDowncallBuildItem.builder(INT, ADDRESS, INT).build());
         // int close(int fd)
-        downcalls.produce(FfmDowncallBuildItem.builder(INT, INT)
-                .captureCallState().build());
-        // ssize_t read(int fd, void *buf, size_t count)
-        downcalls.produce(FfmDowncallBuildItem.builder(LONG, INT, ADDRESS, LONG)
-                .captureCallState().build());
+        downcalls.produce(FfmDowncallBuildItem.builder(INT, INT).build());
+        // ssize_t read(int fd, void *buf, size_t count) and
+        // ssize_t write(int fd, const void *buf, size_t count) share this descriptor
+        downcalls.produce(FfmDowncallBuildItem.builder(LONG, INT, ADDRESS, LONG).build());
         // int poll(struct pollfd *fds, nfds_t nfds, int timeout) — Linux: nfds_t=long
-        downcalls.produce(FfmDowncallBuildItem.builder(INT, ADDRESS, LONG, INT)
-                .captureCallState().build());
+        downcalls.produce(FfmDowncallBuildItem.builder(INT, ADDRESS, LONG, INT).build());
         // int poll(struct pollfd *fds, nfds_t nfds, int timeout) — macOS: nfds_t=int
-        downcalls.produce(FfmDowncallBuildItem.builder(INT, ADDRESS, INT, INT)
-                .captureCallState().build());
+        downcalls.produce(FfmDowncallBuildItem.builder(INT, ADDRESS, INT, INT).build());
         // int tcgetattr(int fd, struct termios *termios_p)
-        downcalls.produce(FfmDowncallBuildItem.builder(INT, INT, ADDRESS)
-                .captureCallState().build());
+        downcalls.produce(FfmDowncallBuildItem.builder(INT, INT, ADDRESS).build());
         // int tcsetattr(int fd, int actions, const struct termios *termios_p)
-        downcalls.produce(FfmDowncallBuildItem.builder(INT, INT, INT, ADDRESS)
-                .captureCallState().build());
-        // int ioctl(int fd, unsigned long request, void *arg) — variadic
+        downcalls.produce(FfmDowncallBuildItem.builder(INT, INT, INT, ADDRESS).build());
+        // int ioctl(int fd, unsigned long request, void *arg) — variadic, no capture
         downcalls.produce(FfmDowncallBuildItem.builder(INT, INT, LONG, ADDRESS)
-                .captureCallState().firstVariadicArg(2).build());
+                .firstVariadicArg(2).build());
     }
 
     @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)

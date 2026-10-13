@@ -47,7 +47,7 @@ For example, the presence of `src/main/jib/foo/bar` would result in  `/foo/bar` 
 
 There are cases where the built container image may need to have Java debugging conditionally enabled at runtime.
 
-When the base image has not been changed (and therefore `ubi9/openjdk-17-runtime`, or `ubi10/openjdk-21-runtime` is used), then the `quarkus.jib.jvm-additional-arguments` configuration property can be used in order to
+When the base image has not been changed (and therefore `ubi10/openjdk-25-runtime` or `ubi10/openjdk-21-runtime` is used), then the `quarkus.jib.jvm-additional-arguments` configuration property can be used in order to
 make the JVM listen on the debug port at startup.
 
 The exact configuration is:
@@ -63,7 +63,7 @@ Other base images might provide launch scripts that enable debugging when an env
 
 The `quarkus.jib.jvm-entrypoint` configuration property can be used to completely override the container entry point and can thus be used to either hard code the JVM debug configuration or point to a script that handles the details.
 
-For example, if the base images `ubi9/openjdk-17-runtime` or  `ubi10/openjdk-21-runtime` are used to build the container, the entry point can be hard-coded on the application properties file.
+For example, if the base images `ubi10/openjdk-25-runtime` or `ubi10/openjdk-21-runtime` are used to build the container, the entry point can be hard-coded on the application properties file.
 
 .Example application.properties
 [source,properties]
@@ -150,7 +150,7 @@ For example, building multi-platform images is implemented differently for Docke
 === OpenShift [[s2i]]
 
 The extension `quarkus-container-image-openshift` is using OpenShift binary builds in order to perform container builds inside the OpenShift cluster.
-The idea behind the binary build is that you just upload the artifact and its dependencies to the cluster and during the build they will be merged to a builder image (defaults to `ubi9/openjdk-17` or `ubi10/openjdk-21`).
+The idea behind the binary build is that you just upload the artifact and its dependencies to the cluster and during the build they will be merged to a builder image (defaults to `ubi10/openjdk-25` or `ubi10/openjdk-21`).
 
 The benefit of this approach, is that it can be combined with OpenShift's `DeploymentConfig` that makes it easy to roll out changes to the cluster.
 

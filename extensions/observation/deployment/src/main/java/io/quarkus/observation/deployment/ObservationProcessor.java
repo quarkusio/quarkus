@@ -28,24 +28,26 @@ import io.micrometer.observation.ObservationRegistry;
 import io.micrometer.observation.annotation.Observed;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.AnnotationsTransformerBuildItem;
-import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.arc.deployment.InterceptorBindingRegistrarBuildItem;
 import io.quarkus.arc.deployment.OpenTelemetrySdkBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeansRuntimeInitBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.arc.processor.InterceptorBindingRegistrar;
+import io.quarkus.arc.runtime.BeanContainer;
+import io.quarkus.core.Phase;
+import io.quarkus.core.deployment.service.ServiceRegistrar;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.BuildSteps;
 import io.quarkus.deployment.annotations.Consume;
-import io.quarkus.deployment.annotations.ExecutionTime;
-import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.observation.ObservationRecorder;
+import io.quarkus.observation.ObservationRegistryCreator;
 import io.quarkus.observation.cdi.ObservedInterceptor;
 import io.quarkus.observation.cdi.convention.ObservedInterceptorConvention;
 import io.quarkus.observation.config.ObservationBuildConfig;
+import io.quarkus.observation.config.ObservationRuntimeConfig;
 import io.quarkus.observation.opentelemetry.handler.OpenTelemetryObservationHandler;
 import io.quarkus.observation.opentelemetry.handler.PropagatingReceiverTracingObservationHandler;
 import io.quarkus.observation.opentelemetry.handler.PropagatingSenderTracingObservationHandler;
@@ -235,12 +237,8 @@ class ObservationProcessor {
     /**
      * Create the Observation Registry after all handlers and user extension classes are available.
      */
-    @SuppressWarnings("removal")
     @BuildStep
-    @Record(ExecutionTime.RUNTIME_INIT)
-    SyntheticBeanBuildItem observationRegistryBean(
-            ObservationRecorder recorder,
-            Optional<OpenTelemetrySdkBuildItem> openTelemetrySdk) {
+    SyntheticBeanBuildItem observationRegistryBean(Optional<OpenTelemetrySdkBuildItem> openTelemetrySdk) {
         boolean tracingEnabled = openTelemetrySdk.isPresent()
                 && openTelemetrySdk.get().isTracingBuildTimeEnabled();
         var builder = SyntheticBeanBuildItem.configure(ObservationRegistry.class)
@@ -254,14 +252,21 @@ class ObservationProcessor {
                     .addInjectionPoint(ClassType.create(PROPAGATING_SENDER_DOT_NAME))
                     .addInjectionPoint(ClassType.create(OBSERVATION_OPENTELEMETRY_DOT_NAME));
         }
-        return builder.createWith(recorder.createObservationRegistry(tracingEnabled)).done();
+        return builder.creator(ObservationRegistryCreator.class)
+                .param(ObservationRegistryCreator.HAS_OTEL_TRACING, tracingEnabled)
+                .done();
     }
 
     @BuildStep
-    @Record(ExecutionTime.RUNTIME_INIT)
     @Consume(SyntheticBeansRuntimeInitBuildItem.class)
-    void registerPrintOutHandler(ObservationRecorder recorder, BeanContainerBuildItem beanContainer) {
-        recorder.registerPrintOutHandler(beanContainer.getValue());
+    void registerPrintOutHandler(ServiceRegistrar serviceRegistrar) {
+        serviceRegistrar
+                .forService("io.quarkus.observation.print-out-handler")
+                .atPhase(Phase.APPLICATION)
+                .require(BeanContainer.class)
+                .require(ObservationRuntimeConfig.class)
+                .afterBuildItem(SyntheticBeansRuntimeInitBuildItem.class)
+                .onStart((ctx, beanContainer, config) -> ObservationRecorder.registerPrintOutHandler(beanContainer, config));
     }
 
     @BuildStep

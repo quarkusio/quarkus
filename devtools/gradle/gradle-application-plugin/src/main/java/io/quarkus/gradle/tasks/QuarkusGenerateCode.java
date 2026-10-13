@@ -27,6 +27,7 @@ import org.gradle.api.tasks.InputFiles;
 import org.gradle.api.tasks.OutputDirectory;
 import org.gradle.api.tasks.PathSensitive;
 import org.gradle.api.tasks.PathSensitivity;
+import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.TaskAction;
 import org.gradle.util.GradleVersion;
 import org.gradle.workers.WorkQueue;
@@ -41,6 +42,8 @@ public abstract class QuarkusGenerateCode extends QuarkusTaskWithExtensionView {
 
     public static final String QUARKUS_GENERATED_SOURCES = "quarkus-generated-sources";
     public static final String QUARKUS_TEST_GENERATED_SOURCES = "quarkus-test-generated-sources";
+
+    private static final String GRPC_PROTO_DIRECTORY = "quarkus.grpc.codegen.proto-directory";
 
     private Set<Path> sourcesDirectories;
     private FileCollection compileClasspath;
@@ -94,6 +97,16 @@ public abstract class QuarkusGenerateCode extends QuarkusTaskWithExtensionView {
             Path providerSrcDir = src.resolve(input);
             if (Files.exists(providerSrcDir)) {
                 inputDirectories.add(providerSrcDir.toFile());
+            }
+        }
+
+        if (SourceSet.MAIN_SOURCE_SET_NAME.equals(inputSourceSetName)) {
+            String customProtoDirectory = getExtensionView().getQuarkusBuildProperties().get().get(GRPC_PROTO_DIRECTORY);
+            if (customProtoDirectory != null && !customProtoDirectory.isBlank()) {
+                Path customProtoDirectoryPath = Path.of(customProtoDirectory);
+                if (Files.isDirectory(customProtoDirectoryPath)) {
+                    inputDirectories.add(customProtoDirectoryPath.toFile());
+                }
             }
         }
 

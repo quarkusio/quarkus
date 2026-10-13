@@ -52,7 +52,7 @@
         <smallrye-modules.version>1.0.beta1</smallrye-modules.version>
         <smallrye-open-api.version>4.4.0-alpha3</smallrye-open-api.version>
         <smallrye-serial.version>1.0.beta6</smallrye-serial.version>
-        <smallrye-graphql.version>3.0.0.Beta7</smallrye-graphql.version>
+        <smallrye-graphql.version>3.0.0.Beta8</smallrye-graphql.version>
         <smallrye-fault-tolerance.version>7.0.0</smallrye-fault-tolerance.version>
         <smallrye-jwt.version>4.6.4</smallrye-jwt.version>
         <smallrye-context-propagation.version>2.4.0</smallrye-context-propagation.version>

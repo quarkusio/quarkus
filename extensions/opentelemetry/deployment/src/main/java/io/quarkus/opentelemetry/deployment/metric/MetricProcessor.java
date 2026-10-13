@@ -10,6 +10,7 @@ import org.jboss.jandex.DotName;
 import org.jboss.jandex.FieldInfo;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
+import org.jboss.logging.Logger;
 
 import io.opentelemetry.instrumentation.runtimetelemetry.internal.CpuMethods;
 import io.opentelemetry.sdk.metrics.export.MetricExporter;
@@ -31,18 +32,27 @@ import io.quarkus.opentelemetry.runtime.metrics.instrumentation.JvmMetricsServic
 
 @BuildSteps(onlyIf = MetricsEnabled.class)
 public class MetricProcessor {
+    private static final Logger LOG = Logger.getLogger(MetricProcessor.class);
     private static final DotName METRIC_EXPORTER = DotName.createSimple(MetricExporter.class.getName());
     private static final DotName METRIC_READER = DotName.createSimple(MetricReader.class.getName());
     private static final DotName METRIC_PROCESSOR = DotName.createSimple(MetricProcessor.class.getName());
 
     @BuildStep
-    void startJvmMetrics(BuildProducer<NativeMonitoringBuildItem> nativeMonitoring,
+    void startJvmMetrics(NativeConfig nativeConfig,
+            BuildProducer<NativeMonitoringBuildItem> nativeMonitoring,
             BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
         additionalBeans.produce(AdditionalBeanBuildItem.builder()
                 .setUnremovable()
                 .addBeanClass(JvmMetricsService.class)
                 .build());
         nativeMonitoring.produce(new NativeMonitoringBuildItem(NativeConfig.MonitoringOption.JFR));
+        if (nativeConfig.enabled() && nativeConfig.monitoring().isPresent()
+                && nativeConfig.monitoring().get().contains(NativeConfig.MonitoringOption.NONE)) {
+            LOG.warn("'quarkus.native.monitoring' is set to 'none', which also disables the JFR support that the"
+                    + " OpenTelemetry JVM metrics rely on. The JFR-based JVM metrics will not be produced by the native"
+                    + " executable. Keep 'jfr' in 'quarkus.native.monitoring' to produce them, or set"
+                    + " 'quarkus.otel.instrument.jvm-metrics=false' if the JVM metrics are not needed.");
+        }
     }
 
     @BuildStep

@@ -213,9 +213,7 @@ public class HibernateValidatorRecorder {
                     configuration.addValueExtractor(valueExtractor);
                 }
 
-                // TODO: re-enable once Hibernate Validator accepts an accessor factory again;
-                // the build time generated accessors are available through accessorFactory.getValue().
-                // configuration.accessorFactory(accessorFactory.getValue());
+                configuration.accessorFactory(accessorFactory.getValue());
 
                 Instance<ValidatorFactoryCustomizer> validatorFactoryCustomizers = context
                         .getInjectedReference(INSTANCE_VALIDATOR_FACTORY_CUSTOMER_TYPE_LITERAL);

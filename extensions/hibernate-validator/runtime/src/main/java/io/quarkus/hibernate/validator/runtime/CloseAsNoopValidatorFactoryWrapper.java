@@ -9,8 +9,10 @@ import jakarta.validation.ParameterNameProvider;
 import jakarta.validation.TraversableResolver;
 import jakarta.validation.Validator;
 
+import org.hibernate.accessor.AccessorFactory;
 import org.hibernate.validator.HibernateValidatorContext;
 import org.hibernate.validator.HibernateValidatorFactory;
+import org.hibernate.validator.bean.BeanResolver;
 import org.hibernate.validator.spi.nodenameprovider.PropertyNodeNameProvider;
 import org.hibernate.validator.spi.properties.GetterPropertySelectionStrategy;
 import org.hibernate.validator.spi.scripting.ScriptEvaluatorFactory;
@@ -81,16 +83,19 @@ class CloseAsNoopValidatorFactoryWrapper implements HibernateValidatorFactory {
         return validatorFactory.getGetterPropertySelectionStrategy();
     }
 
-    // TODO: re-enable once Hibernate Validator exposes the accessor factory again;
-    // the accessors are generated at build time by the Hibernate Accessor extension.
-    // @Override
-    // public AccessorFactory getAccessorFactory() {
-    //     return validatorFactory.getAccessorFactory();
-    // }
+    @Override
+    public AccessorFactory getAccessorFactory() {
+        return validatorFactory.getAccessorFactory();
+    }
 
     @Override
     public PropertyNodeNameProvider getPropertyNodeNameProvider() {
         return validatorFactory.getPropertyNodeNameProvider();
+    }
+
+    @Override
+    public BeanResolver getBeanResolver() {
+        return validatorFactory.getBeanResolver();
     }
 
     @Override

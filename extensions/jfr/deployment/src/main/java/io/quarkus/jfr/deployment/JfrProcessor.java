@@ -15,6 +15,7 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.BuildSteps;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
+import io.quarkus.deployment.builditem.AdditionalIndexedClassesBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
 import io.quarkus.jfr.runtime.internal.JfrRecorder;
@@ -22,6 +23,7 @@ import io.quarkus.jfr.runtime.internal.OTelIdProducer;
 import io.quarkus.jfr.runtime.internal.QuarkusIdProducer;
 import io.quarkus.jfr.runtime.internal.http.rest.classic.ClassicServerEventRecorderProducer;
 import io.quarkus.jfr.runtime.internal.http.rest.classic.ClassicServerFilter;
+import io.quarkus.jfr.runtime.internal.http.rest.client.RestClientFilter;
 import io.quarkus.jfr.runtime.internal.http.rest.reactive.ReactiveServerEventRecorderProducer;
 import io.quarkus.jfr.runtime.internal.http.rest.reactive.ReactiveServerFilters;
 import io.quarkus.jfr.runtime.internal.http.rest.reactive.ServerStartRecordingHandler;
@@ -100,6 +102,19 @@ public class JfrProcessor {
                     .produce(new GlobalHandlerCustomizerBuildItem(new ServerStartRecordingHandler.Customizer()));
             knownServerRestHandlerProducer
                     .produce(new KnownServerRestHandlerBuildItem(ServerStartRecordingHandler.class.getName()));
+        }
+    }
+
+    @BuildStep
+    void registerRestClientIntegration(Capabilities capabilities,
+            BuildProducer<AdditionalIndexedClassesBuildItem> additionalIndexed,
+            BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
+        if (capabilities.isPresent(Capability.REST_CLIENT_REACTIVE)) {
+            // the REST Client picks up the @Provider annotation from the index
+            additionalIndexed.produce(new AdditionalIndexedClassesBuildItem(RestClientFilter.class.getName()));
+            additionalBeans.produce(AdditionalBeanBuildItem.builder().setUnremovable()
+                    .addBeanClasses(RestClientFilter.class)
+                    .build());
         }
     }
 

@@ -9,6 +9,7 @@ import io.quarkus.jfr.runtime.internal.config.JfrRuntimeConfig;
 import io.quarkus.jfr.runtime.internal.http.rest.RestEndEvent;
 import io.quarkus.jfr.runtime.internal.http.rest.RestPeriodEvent;
 import io.quarkus.jfr.runtime.internal.http.rest.RestStartEvent;
+import io.quarkus.jfr.runtime.internal.http.rest.client.RestClientPeriodEvent;
 import io.quarkus.jfr.runtime.internal.runtime.QuarkusRuntimeInfo;
 import io.quarkus.runtime.ImageMode;
 import io.quarkus.runtime.RuntimeValue;
@@ -36,6 +37,10 @@ public class JfrRecorder {
                 logger.info("quarkus-jfr for REST server is disabled at runtime");
                 this.disabledRestJfr();
             }
+            if (!runtimeConfig.getValue().restClientEnabled()) {
+                logger.info("quarkus-jfr for REST Client is disabled at runtime");
+                this.disabledRestClientJfr();
+            }
         }
     }
 
@@ -45,8 +50,13 @@ public class JfrRecorder {
         FlightRecorder.unregister(RestPeriodEvent.class);
     }
 
+    public void disabledRestClientJfr() {
+        FlightRecorder.unregister(RestClientPeriodEvent.class);
+    }
+
     public void disabledQuarkusJfr() {
         this.disabledRestJfr();
+        this.disabledRestClientJfr();
     }
 
     public Supplier<QuarkusRuntimeInfo> quarkusInfoSupplier(String version, List<String> features) {

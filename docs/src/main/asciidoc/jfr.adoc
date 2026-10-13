@@ -197,7 +197,7 @@ This means that after we identify the trace and span IDs of interest from the UI
 If we have not enabled the OpenTelemetry extension, this extension creates an ID for each request and links it to JFR events as a traceId.
 In this case, the span ID will be null.
 
-For now, Quarkus only records REST events, but we plan to use this ID to link each event to each other as we add more events in the future.
+For now, Quarkus only records REST server and REST Client events, but we plan to use this ID to link each event to each other as we add more events in the future.
 
 === Event Implementation Policy
 
@@ -249,6 +249,45 @@ Resource Method records the method that was executed.
 We can check if the Resource Method was executed as expected by the HTTP Method and URI.
 
 Client records information about the accessing client.
+
+=== REST Client Event
+
+This event is recorded when the Quarkus REST Client extension is enabled.
+
+RestClient::
+
+  Records the time period from the moment the REST Client starts sending a request until the response has been received or the request has failed.
+
+This event has the following information.
+
+- HTTP Method
+- URI
+- Address
+- Client Name
+- Status
+- Failure
+
+HTTP Method records the HTTP Method of the outgoing request.
+
+URI records the URI path template of the invoked REST Client method, for example `/hello/{name}`.
+If no template is available, the URI path is recorded instead.
+Query parameters are never recorded.
+
+Address records the host and port of the remote endpoint.
+
+Client Name records the config key of the REST Client that sent the request.
+
+Status records the HTTP status code of the response, or `0` if no response was received.
+
+Failure records the class name of the exception if the request failed, for example when the connection was refused.
+
+When the request is sent while a REST server request is being processed, the event shares the trace ID of the corresponding REST server event.
+This makes it possible to see which remote calls were made by each REST server request.
+
+[NOTE]
+====
+Requests whose response is streamed as a `Multi` are not recorded.
+====
 
 === Runtime Event
 This event is recorded by default.

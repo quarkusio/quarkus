@@ -967,10 +967,10 @@ public class PausableHttpPostRequestEncoder implements ChunkedInput<HttpContent>
             buffer = ((QuarkusInternalAttribute) currentData).toByteBuf();
             currentData = null;
         } else {
-            if (currentData instanceof MultiByteHttpData) {
-                MultiByteHttpData multiByteHttpData = (MultiByteHttpData) this.currentData;
-                if (!multiByteHttpData.isReady(sizeleft)) {
-                    multiByteHttpData.suspend(sizeleft);
+            if (currentData instanceof PausableHttpData) {
+                PausableHttpData pausableHttpData = (PausableHttpData) this.currentData;
+                if (!pausableHttpData.isReady(sizeleft)) {
+                    pausableHttpData.suspend(sizeleft);
                     return WAIT_MARKER; // we'll invoke this method once more when the data is ready
                 }
             }

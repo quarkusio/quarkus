@@ -1,5 +1,7 @@
 package org.jboss.resteasy.reactive.client.impl.multipart;
 
+import java.io.InputStream;
+
 import io.smallrye.mutiny.Multi;
 import io.vertx.core.buffer.Buffer;
 
@@ -18,6 +20,7 @@ public class QuarkusMultipartFormDataPart {
     private final Class<?> type;
     private final Buffer content;
     private final Multi<Byte> multiByteContent;
+    private final InputStream inputStreamContent;
 
     public QuarkusMultipartFormDataPart(String name, Buffer content, String mediaType, Class<?> type) {
         this(name, null, content, mediaType, type);
@@ -30,6 +33,7 @@ public class QuarkusMultipartFormDataPart {
         this.mediaType = mediaType;
         this.type = type;
         this.multiByteContent = null;
+        this.inputStreamContent = null;
 
         if (name == null) {
             throw new NullPointerException("Multipart field name cannot be null");
@@ -56,6 +60,7 @@ public class QuarkusMultipartFormDataPart {
 
         this.name = name;
         this.multiByteContent = content;
+        this.inputStreamContent = null;
         this.mediaType = mediaType;
         this.filename = filename;
         this.text = text;
@@ -65,6 +70,30 @@ public class QuarkusMultipartFormDataPart {
         this.pathname = null;
         this.type = null;
         this.content = null;
+    }
+
+    public QuarkusMultipartFormDataPart(String name, String filename, InputStream content, String mediaType, boolean text) {
+        if (name == null) {
+            throw new NullPointerException("Multipart field name cannot be null");
+        }
+        if (content == null) {
+            throw new NullPointerException("Multipart field name content cannot be null when sending files");
+        }
+        if (mediaType == null) {
+            throw new NullPointerException("Multipart field media type cannot be null");
+        }
+
+        this.name = name;
+        this.inputStreamContent = content;
+        this.multiByteContent = null;
+        this.mediaType = mediaType;
+        this.filename = filename;
+        this.text = text;
+        this.value = null;
+        this.content = null;
+        this.pathname = null;
+        this.isObject = false;
+        this.type = null;
     }
 
     public QuarkusMultipartFormDataPart(String name, String value, String filename) {
@@ -80,6 +109,7 @@ public class QuarkusMultipartFormDataPart {
         this.pathname = null;
         this.content = null;
         this.multiByteContent = null;
+        this.inputStreamContent = null;
         this.mediaType = null;
         this.text = false;
         this.isObject = false;
@@ -105,6 +135,7 @@ public class QuarkusMultipartFormDataPart {
         this.pathname = pathname;
         this.content = null;
         this.multiByteContent = null;
+        this.inputStreamContent = null;
         this.mediaType = mediaType;
         this.text = text;
         this.isObject = false;
@@ -130,6 +161,7 @@ public class QuarkusMultipartFormDataPart {
         this.pathname = null;
         this.content = content;
         this.multiByteContent = null;
+        this.inputStreamContent = null;
         this.mediaType = mediaType;
         this.text = text;
         this.isObject = false;
@@ -166,6 +198,10 @@ public class QuarkusMultipartFormDataPart {
 
     public Multi<Byte> multiByteContent() {
         return multiByteContent;
+    }
+
+    public InputStream inputStreamContent() {
+        return inputStreamContent;
     }
 
     public String mediaType() {

@@ -94,7 +94,7 @@ public class Validation {
             throw new IllegalArgumentException("`" + name + "` must not be `null`");
         }
         if (map.isEmpty()) {
-            throw new IllegalArgumentException("`" + name + "` must not be `null`");
+            throw new IllegalArgumentException("`" + name + "` must not be empty");
         }
     }
 

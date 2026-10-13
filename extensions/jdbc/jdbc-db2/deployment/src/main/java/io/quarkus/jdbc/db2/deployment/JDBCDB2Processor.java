@@ -32,9 +32,9 @@ import io.quarkus.deployment.builditem.AdditionalIndexedClassesBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.IndexDependencyBuildItem;
+import io.quarkus.deployment.builditem.ModuleExportBuildItem;
 import io.quarkus.deployment.builditem.NativeImageEnableAllCharsetsBuildItem;
 import io.quarkus.deployment.builditem.SslNativeConfigBuildItem;
-import io.quarkus.deployment.builditem.nativeimage.JPMSExportBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageAllowIncompleteClasspathBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageConfigBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
@@ -175,11 +175,11 @@ public class JDBCDB2Processor {
     }
 
     @BuildStep
-    void addExportsToNativeImage(BuildProducer<JPMSExportBuildItem> jpmsExports) {
+    void addExportsToNativeImage(BuildProducer<ModuleExportBuildItem> moduleExports) {
         // com.ibm.db2:jcc:11.5.6.0 accesses sun.security.action.GetPropertyAction
         // which is strongly encapsulated in Java 17 requiring
         // --add-exports=java.base/sun.security.action=ALL-UNNAMED
-        jpmsExports.produce(new JPMSExportBuildItem("java.base", "sun.security.action"));
+        moduleExports.produce(new ModuleExportBuildItem("java.base", "jcc", "sun.security.action"));
     }
 
 }

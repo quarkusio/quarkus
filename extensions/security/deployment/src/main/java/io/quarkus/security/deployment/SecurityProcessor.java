@@ -94,10 +94,10 @@ import io.quarkus.deployment.builditem.GeneratedNativeImageClassBuildItem;
 import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
 import io.quarkus.deployment.builditem.GeneratedServiceProviderBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
+import io.quarkus.deployment.builditem.ModuleExportBuildItem;
 import io.quarkus.deployment.builditem.NativeImageFeatureBuildItem;
 import io.quarkus.deployment.builditem.RunTimeConfigBuilderBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
-import io.quarkus.deployment.builditem.nativeimage.JPMSExportBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageSecurityProviderBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
@@ -603,7 +603,7 @@ public class SecurityProcessor {
 
     // Work around https://github.com/quarkusio/quarkus/issues/21374
     @BuildStep
-    void addBouncyCastleExportsToNativeImage(BuildProducer<JPMSExportBuildItem> jpmsExports,
+    void addBouncyCastleExportsToNativeImage(BuildProducer<ModuleExportBuildItem> moduleExports,
             List<BouncyCastleProviderBuildItem> bouncyCastleProviders,
             List<BouncyCastleJsseProviderBuildItem> bouncyCastleJsseProviders) {
         boolean isInFipsMode;
@@ -617,8 +617,10 @@ public class SecurityProcessor {
         }
 
         if (isInFipsMode) {
-            jpmsExports.produce(new JPMSExportBuildItem("java.base", "sun.security.internal.spec"));
-            jpmsExports.produce(new JPMSExportBuildItem("java.base", "sun.security.provider"));
+            moduleExports.produce(
+                    new ModuleExportBuildItem("java.base", "org.bouncycastle.fips.core", "sun.security.internal.spec"));
+            moduleExports
+                    .produce(new ModuleExportBuildItem("java.base", "org.bouncycastle.fips.core", "sun.security.provider"));
         }
     }
 

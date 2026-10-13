@@ -20,15 +20,13 @@ import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.BuildSteps;
-import io.quarkus.deployment.annotations.ExecutionTime;
-import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
 import io.quarkus.deployment.builditem.LogCategoryBuildItem;
 import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
 import io.quarkus.gizmo.ClassTransformer;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.micrometer.deployment.MicrometerProcessor;
-import io.quarkus.micrometer.opentelemetry.runtime.MicrometerOtelBridgeRecorder;
+import io.quarkus.micrometer.opentelemetry.runtime.MicrometerOtelBridgeBeanCreator;
 import io.quarkus.opentelemetry.deployment.OpenTelemetryEnabled;
 import io.quarkus.opentelemetry.runtime.config.build.OTelBuildConfig;
 
@@ -77,10 +75,8 @@ public class MicrometerOtelBridgeProcessor {
     }
 
     @BuildStep
-    @Record(ExecutionTime.RUNTIME_INIT)
     void createBridgeBean(
             OTelBuildConfig oTelBuildConfig,
-            MicrometerOtelBridgeRecorder recorder,
             BuildProducer<SyntheticBeanBuildItem> syntheticBeanProducer) {
 
         if (!oTelBuildConfig.enabled()) {
@@ -94,7 +90,7 @@ public class MicrometerOtelBridgeProcessor {
                 .scope(Singleton.class)
                 .addInjectionPoint(ParameterizedType.create(DotName.createSimple(Instance.class),
                         new Type[] { ClassType.create(DotName.createSimple(OpenTelemetry.class.getName())) }, null))
-                .createWith(recorder.createBridge())
+                .creator(MicrometerOtelBridgeBeanCreator.class)
                 .done());
     }
 

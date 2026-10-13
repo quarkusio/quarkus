@@ -11,11 +11,18 @@ import io.quarkus.data.hibernate.blocking.BlockingDataQuery;
 import io.quarkus.data.hibernate.blocking.BlockingRepositoryQueries;
 import io.quarkus.data.hibernate.runtime.spi.PanacheBlockingOperations;
 import io.quarkus.data.hibernate.runtime.spi.PanacheOperations;
-import io.quarkus.hibernate.orm.panache.common.runtime.AbstractJpaOperations;
 
 public interface BlockingManagedRepositoryQueries<Entity, Id> extends BlockingRepositoryQueries<Entity, Id> {
+
+    // See BlockingManagedRepositoryOperations for the explanation of the doGetEntityClass() pattern.
+
+    private Class<? extends Entity> doGetEntityClass() {
+        throw new UnsupportedOperationException(
+                "doGetEntityClass() should be provided by the generated repository implementation");
+    }
+
     private Class<? extends Entity> getEntityClass() {
-        return AbstractJpaOperations.getRepositoryEntityClass(getClass());
+        return doGetEntityClass();
     }
 
     private PanacheBlockingOperations operations() {

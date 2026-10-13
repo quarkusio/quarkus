@@ -36,4 +36,13 @@ public class QuarkusDataHibernateFunctionalityTest {
                 .statusCode(200)
                 .body(is("OK"));
     }
+
+    @Test
+    public void testInterceptedPersonEndpoint() {
+        given()
+                .when().get("/intercepted-persons/test")
+                .then()
+                .statusCode(200)
+                .body(is("OK"));
+    }
 }

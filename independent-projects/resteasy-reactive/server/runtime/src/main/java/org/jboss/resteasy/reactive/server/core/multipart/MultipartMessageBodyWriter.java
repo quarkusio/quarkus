@@ -10,7 +10,7 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
 import java.nio.charset.Charset;
 import java.util.Collection;
-import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -310,8 +310,9 @@ public class MultipartMessageBodyWriter implements ServerMessageBodyWriter<Objec
 
     private void appendBoundaryIntoMediaType(ResteasyReactiveRequestContext requestContext, String boundary,
             MediaType mediaType) {
-        MediaType mediaTypeWithBoundary = new MediaType(mediaType.getType(), mediaType.getSubtype(),
-                Collections.singletonMap(BOUNDARY_PARAM, boundary));
+        Map<String, String> parameters = new LinkedHashMap<>(mediaType.getParameters());
+        parameters.put(BOUNDARY_PARAM, boundary);
+        MediaType mediaTypeWithBoundary = new MediaType(mediaType.getType(), mediaType.getSubtype(), parameters);
         requestContext.setResponseContentType(mediaTypeWithBoundary);
 
         // this is a total hack, but it's needed to make RestResponse<MultipartFormDataOutput> work properly

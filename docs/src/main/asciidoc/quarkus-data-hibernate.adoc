@@ -431,6 +431,30 @@ public class Code {
 }
 ----
 
+The examples above use `Cat_.NAME` and `Cat_.BREED` which are String constants from the JPA static metamodel.
+You can also use the Jakarta Data static metamodel, which provides type-safe attribute references:
+
+[source,java]
+----
+@Transactional
+public void jakartaDataMetamodelQueries() {
+    // Find a cat by name using Jakarta Data metamodel
+    Cat cat = repo.find(_Cat.name, "Lucky").singleResult();
+    // All cute cats using Jakarta Data metamodel
+    List<Cat> cuteCats = repo.list(_Cat.breed, Cat.Breed.CUTE);
+    // Count cats by breed using Jakarta Data metamodel
+    long count = repo.count(_Cat.breed, Cat.Breed.HAIRLESS);
+    // Delete cats using Jakarta Data metamodel
+    long deleted = repo.delete(_Cat.breed, Cat.Breed.HAIRLESS);
+}
+----
+
+Both the JPA static metamodel (`Cat_`) and the Jakarta Data static metamodel (`_Cat`) are automatically
+generated for your entities. You can use either one depending on your preference:
+
+* `Cat_.NAME` - JPA metamodel, provides a String constant
+* `_Cat.name` - Jakarta Data metamodel, provides an `Attribute<Cat>` object with additional type information
+
 Sorting is applied on the `PanacheQuery` returned by `find()` and `findAll()`, not on the shortcut
 `list()`, `listAll()`, `stream()`, or `streamAll()` methods. For a single criterion, pass a `Sort`
 directly — there is no need to wrap it in `Order.by()`. Use `Order` only when you need multiple

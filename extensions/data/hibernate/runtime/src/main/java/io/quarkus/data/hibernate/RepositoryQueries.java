@@ -2,6 +2,7 @@ package io.quarkus.data.hibernate;
 
 import java.util.Map;
 
+import jakarta.data.metamodel.Attribute;
 import jakarta.persistence.LockModeType;
 
 public interface RepositoryQueries<EntityResult, EntityList, Query extends DataQuery<?, ?, ?, ?, ?, ?, ?>, Count, Confirmation, Id> {
@@ -59,6 +60,19 @@ public interface RepositoryQueries<EntityResult, EntityList, Query extends DataQ
     Query findAll();
 
     /**
+     * Find entities using a query based on an entity attribute and a value.
+     * This method accepts Jakarta Data metamodel attributes.
+     *
+     * @param <T> the entity type
+     * @param attribute the entity attribute from the Jakarta Data metamodel
+     * @param value the value to match
+     * @return a new {@link DataQuery} instance for the given query
+     * @see #find(String, Object...)
+     * @see #list(Attribute, Object)
+     */
+    <T> Query find(Attribute<T> attribute, Object value);
+
+    /**
      * Find entities matching a query, with optional indexed parameters.
      * This method is a shortcut for <code>find(query, params).list()</code>.
      *
@@ -95,6 +109,20 @@ public interface RepositoryQueries<EntityResult, EntityList, Query extends DataQ
     EntityList listAll();
 
     /**
+     * Find entities matching a query based on an entity attribute and a value.
+     * This method accepts Jakarta Data metamodel attributes.
+     * This method is a shortcut for <code>find(attribute, value).list()</code>.
+     *
+     * @param <T> the entity type
+     * @param attribute the entity attribute from the Jakarta Data metamodel
+     * @param value the value to match
+     * @return a {@link List} containing all results, without paging
+     * @see #find(Attribute, Object)
+     * @see #list(String, Object...)
+     */
+    <T> EntityList list(Attribute<T> attribute, Object value);
+
+    /**
      * Counts the number of this type of entity in the database.
      *
      * @return the number of this type of entity in the database.
@@ -124,6 +152,19 @@ public interface RepositoryQueries<EntityResult, EntityList, Query extends DataQ
      * @see #count(String, Object...)
      */
     Count count(String query, Map<String, Object> params);
+
+    /**
+     * Counts the number of this type of entity matching a query based on an entity attribute and a value.
+     * This method accepts Jakarta Data metamodel attributes.
+     *
+     * @param <T> the entity type
+     * @param attribute the entity attribute from the Jakarta Data metamodel
+     * @param value the value to match
+     * @return the number of entities counted.
+     * @see #count()
+     * @see #count(String, Object...)
+     */
+    <T> Count count(Attribute<T> attribute, Object value);
 
     /**
      * Delete all entities of this type from the database.
@@ -172,6 +213,22 @@ public interface RepositoryQueries<EntityResult, EntityList, Query extends DataQ
      * @see #delete(String, Object...)
      */
     Count delete(String query, Map<String, Object> params);
+
+    /**
+     * Delete all entities of this type matching a query based on an entity attribute and a value.
+     * This method accepts Jakarta Data metamodel attributes.
+     *
+     * WARNING: the default implementation of this method uses a bulk delete query and ignores
+     * cascading rules from the JPA model.
+     *
+     * @param <T> the entity type
+     * @param attribute the entity attribute from the Jakarta Data metamodel
+     * @param value the value to match
+     * @return the number of entities deleted.
+     * @see #deleteAll()
+     * @see #delete(String, Object...)
+     */
+    <T> Count delete(Attribute<T> attribute, Object value);
 
     /**
      * Update all entities of this type matching the given query, with optional indexed parameters.

@@ -13,7 +13,9 @@ import java.io.UncheckedIOException;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
@@ -41,12 +43,15 @@ import org.gradle.api.artifacts.result.ResolvedDependencyResult;
 import org.gradle.api.artifacts.type.ArtifactTypeDefinition;
 import org.gradle.api.attributes.Attribute;
 import org.gradle.api.file.ConfigurableFileCollection;
+import org.gradle.api.file.DirectoryProperty;
 import org.gradle.api.file.FileCollection;
 import org.gradle.api.file.ProjectLayout;
 import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.provider.ListProperty;
 import org.gradle.api.provider.MapProperty;
 import org.gradle.api.provider.Property;
+import org.gradle.api.provider.Provider;
+import org.gradle.api.tasks.CacheableTask;
 import org.gradle.api.tasks.CompileClasspath;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.Internal;
@@ -54,9 +59,9 @@ import org.gradle.api.tasks.Nested;
 import org.gradle.api.tasks.OutputFile;
 import org.gradle.api.tasks.TaskAction;
 import org.gradle.internal.component.external.model.ModuleComponentArtifactIdentifier;
-import org.gradle.work.DisableCachingByDefault;
 
 import io.quarkus.bootstrap.BootstrapConstants;
+import io.quarkus.bootstrap.app.ApplicationModelRelocation;
 import io.quarkus.bootstrap.model.ApplicationModelBuilder;
 import io.quarkus.bootstrap.model.CapabilityContract;
 import io.quarkus.bootstrap.model.DefaultApplicationModel;
@@ -80,7 +85,7 @@ import io.quarkus.paths.PathList;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.util.HashUtil;
 
-@DisableCachingByDefault(because = "Not cacheable")
+@CacheableTask
 public abstract class QuarkusApplicationModelTask extends DefaultTask {
 
     /* @formatter:off */
@@ -129,10 +134,44 @@ public abstract class QuarkusApplicationModelTask extends DefaultTask {
     public abstract Property<String> getTypeModel();
 
     /**
-     * If any project task changes, we will invalidate this task anyway
+     * If any project task changes, we will invalidate this task anyway.
+     * <p>
+     * Declared {@code @Internal} because its {@code toString()} - which is what Gradle would hash -
+     * contains the module directory and the source and output roots as absolute paths, which would tie
+     * the cache key to the checkout directory. {@link #getProjectDescriptorFingerprint()} contributes
+     * the same information with those paths expressed relative to the relocation roots.
+     */
+    @Internal
+    public abstract Property<DefaultProjectDescriptor> getProjectDescriptor();
+
+    /**
+     * A rendering of {@link #getProjectDescriptor()} in which the absolute paths are replaced by
+     * relocation tokens, so that the same project laid out identically in two different directories
+     * produces the same value.
+     * <p>
+     * The module's source sets are held in a {@link java.util.HashMap}, so the descriptor's own
+     * {@code toString()} can render them in a different order from one JVM to the next; the parts are
+     * sorted here so that the value depends on the project and not on iteration order.
+     * <p>
+     * Lazily derived: Gradle queries inputs at execution time, and the roots are only known then.
      */
     @Input
-    public abstract Property<DefaultProjectDescriptor> getProjectDescriptor();
+    public Provider<String> getProjectDescriptorFingerprint() {
+        return getProjectDescriptor().map(descriptor -> {
+            final WorkspaceModule module = descriptor.getWorkspaceModule();
+            final List<String> parts = new ArrayList<>();
+            parts.add("id=" + module.getId());
+            parts.add("moduleDir=" + module.getModuleDir());
+            parts.add("buildDir=" + module.getBuildDir());
+            for (String classifier : module.getSourceClassifiers()) {
+                parts.add("sources[" + classifier + "]=" + module.getSources(classifier));
+            }
+            // sorted so that the value describes the project rather than the order a HashMap happened
+            // to iterate in
+            Collections.sort(parts);
+            return ApplicationModelRelocation.tokenizeOccurrences(String.join("\n", parts), relocationRoots());
+        });
+    }
 
     @Input
     public abstract Property<Boolean> getDeclaredDependencyCollectorEnabled();
@@ -149,6 +188,23 @@ public abstract class QuarkusApplicationModelTask extends DefaultTask {
 
     @OutputFile
     public abstract RegularFileProperty getApplicationModel();
+
+    /**
+     * The Gradle home, whose dependency cache holds the resolved location of every external dependency
+     * in the model, and the root directory of the build, which the other modules of a multi-module
+     * project live under. Both are roots the serialized model's paths are expressed relative to.
+     * <p>
+     * Declared {@code @Internal}: a root is what a path is made relative <em>to</em>, so it must not
+     * itself contribute to any cache key - that is the whole point of recording paths relative to it.
+     */
+    @Internal
+    public abstract DirectoryProperty getGradleUserHomeDirectory();
+
+    /**
+     * @see #getGradleUserHomeDirectory()
+     */
+    @Internal
+    public abstract DirectoryProperty getRootDirectory();
 
     public QuarkusApplicationModelTask() {
         getProjectBuildFile().set(getProject().getBuildFile());
@@ -178,7 +234,14 @@ public abstract class QuarkusApplicationModelTask extends DefaultTask {
         }
 
         DefaultApplicationModel model = modelBuilder.build();
-        ToolingUtils.serializeAppModel(model, getApplicationModel().get().getAsFile().toPath());
+        ToolingUtils.serializeAppModel(model, getApplicationModel().get().getAsFile().toPath(), relocationRoots());
+    }
+
+    /**
+     * @see GradleRelocationRoots
+     */
+    private List<ApplicationModelRelocation.Root> relocationRoots() {
+        return GradleRelocationRoots.of(getLayout(), getGradleUserHomeDirectory(), getRootDirectory());
     }
 
     private ResolvedDependencyBuilder getProjectArtifact(DefaultProjectDescriptor projectDescriptor) {
@@ -539,12 +602,12 @@ public abstract class QuarkusApplicationModelTask extends DefaultTask {
         var attributes = artifact.getVariant().getAttributes();
         return artifact.getId().getDisplayName() + "|" + artifact.getId().getComponentIdentifier().getDisplayName() + "|"
                 + artifact.getFile().getName() + "|"
-                // Use lastModified and length to distinguish rebuilt artifacts with the same name,
-                // identifier, version, and selected variant.
-                // A content checksum would be more precise, but it would add file I/O while Gradle
-                // calculates task inputs before execution. This task is not cacheable, so the
-                // timestamp/size pair is the pragmatic local up-to-date check here.
-                + artifact.getFile().lastModified() + "|"
+                // Length distinguishes rebuilt artifacts with the same name, identifier, version and
+                // selected variant. The modification time is deliberately left out: it is a property of
+                // when a file was written rather than of what it contains, so a project artifact built in
+                // another checkout - a sibling module's jar, say - would otherwise change this snapshot
+                // and with it the cache key, for a jar with identical content. What the artifacts contain
+                // is tracked by getOriginalClasspath(), which hashes them.
                 + artifact.getFile().length() + "|"
                 + projectArtifactPath(artifact, projectDir) + "|"
                 + attributes.keySet().stream()

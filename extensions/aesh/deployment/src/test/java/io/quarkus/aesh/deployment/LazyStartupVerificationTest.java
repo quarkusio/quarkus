@@ -21,7 +21,10 @@ import io.quarkus.test.QuarkusProdModeTest;
  * <p>
  * Each command class has a static construction counter that increments in its
  * constructor. The test runs {@code app run} and asserts that {@code AppCmd}
- * and {@code RunCmd} were constructed but {@code BuildCmd} was not.
+ * and {@code RunCmd} were each constructed exactly once while
+ * {@code BuildCmd} was never constructed: since aesh 3.18.4 class-registered
+ * commands record without building and executions fork straight from the
+ * recorded class (aesh #678), the discarded registration build is gone.
  * {@code RunCmd} also injects a CDI bean to prove injection works when the
  * command is constructed lazily during {@code execute()}.
  * <p>
@@ -50,9 +53,13 @@ public class LazyStartupVerificationTest {
         String output = config.getStartupConsoleOutput();
         Assertions.assertThat(config.getExitCode()).isZero();
 
-        // AppCmd (top command) should have been constructed during execute()
+        // AppCmd (top command) should have been constructed exactly once
+        // during execute(): since aesh 3.18.4 class registrations record
+        // without building and the execution forks straight from the
+        // recorded class (aesh #678), the discarded registration build
+        // is gone.
         Assertions.assertThat(output)
-                .as("AppCmd should be constructed")
+                .as("AppCmd should be constructed exactly once")
                 .contains("app:constructed=1");
 
         // RunCmd should have been constructed (counter = 1)

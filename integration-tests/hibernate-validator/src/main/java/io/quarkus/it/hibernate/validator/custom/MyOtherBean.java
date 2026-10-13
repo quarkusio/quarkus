@@ -1,5 +1,6 @@
 package io.quarkus.it.hibernate.validator.custom;
 
+@MyServiceLoadedConstraint
 @MyCustomConstraint
 public class MyOtherBean {
 

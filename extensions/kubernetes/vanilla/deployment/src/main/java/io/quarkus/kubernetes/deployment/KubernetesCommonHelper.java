@@ -5,6 +5,7 @@ import static io.dekorate.kubernetes.decorator.AddServiceResourceDecorator.disti
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -92,38 +93,52 @@ public class KubernetesCommonHelper {
     public static Map<String, Port> combinePorts(List<KubernetesPortBuildItem> ports,
             PlatformConfiguration config) {
         Map<String, Port> allPorts = new HashMap<>();
-        Map<String, Port> activePorts = new HashMap<>();
+        // Use LinkedHashMap to maintain insertion order after sorting
+        Map<String, Port> activePorts = new LinkedHashMap<>();
 
         allPorts.putAll(ports.stream()
                 .map(p -> new PortBuilder().withName(p.getName()).withContainerPort(p.getPort()).build())
                 .collect(Collectors.toMap(Port::getName, Function.identity(), (first, second) -> first))); //prevent dublicate keys
 
-        activePorts.putAll(verifyPorts(ports)
+        // First, collect verified ports
+        verifyPorts(ports)
                 .entrySet().stream()
-                .map(e -> new PortBuilder().withName(e.getKey()).withContainerPort(e.getValue()).build())
-                .collect(Collectors.toMap(Port::getName, Function.identity(), (first, second) -> first))); //prevent dublicate keys
+                .forEach(e -> {
+                    Port port = new PortBuilder().withName(e.getKey()).withContainerPort(e.getValue()).build();
+                    activePorts.put(port.getName(), port);
+                });
 
-        config.ports().entrySet().forEach(e -> {
-            String name = e.getKey();
-            Port configuredPort = PortConverter.convert(e);
-            Port buildItemPort = allPorts.get(name);
+        // Then, merge with config ports
+        config.ports().entrySet().stream()
+                .forEach(e -> {
+                    String name = e.getKey();
+                    Port configuredPort = PortConverter.convert(e);
+                    Port buildItemPort = allPorts.get(name);
 
-            Port combinedPort = buildItemPort == null ? configuredPort
-                    : new PortBuilder()
-                            .withName(name)
-                            .withHostPort(configuredPort.getHostPort() != null && configuredPort.getHostPort() != 0
-                                    ? configuredPort.getHostPort()
-                                    : buildItemPort.getHostPort())
-                            .withContainerPort(
-                                    configuredPort.getContainerPort() != null && configuredPort.getContainerPort() != 0
-                                            ? configuredPort.getContainerPort()
-                                            : buildItemPort.getContainerPort())
-                            .withPath(isNotNullOrEmpty(configuredPort.getPath()) ? configuredPort.getPath()
-                                    : buildItemPort.getPath())
-                            .build();
-            activePorts.put(name, combinedPort);
-        });
-        return activePorts;
+                    Port combinedPort = buildItemPort == null ? configuredPort
+                            : new PortBuilder()
+                                    .withName(name)
+                                    .withHostPort(configuredPort.getHostPort() != null && configuredPort.getHostPort() != 0
+                                            ? configuredPort.getHostPort()
+                                            : buildItemPort.getHostPort())
+                                    .withContainerPort(
+                                            configuredPort.getContainerPort() != null && configuredPort.getContainerPort() != 0
+                                                    ? configuredPort.getContainerPort()
+                                                    : buildItemPort.getContainerPort())
+                                    .withPath(isNotNullOrEmpty(configuredPort.getPath()) ? configuredPort.getPath()
+                                            : buildItemPort.getPath())
+                                    .build();
+                    activePorts.put(name, combinedPort);
+                });
+
+        // Finally, return a sorted LinkedHashMap
+        return activePorts.entrySet().stream()
+                .sorted(Map.Entry.comparingByKey())
+                .collect(Collectors.toMap(
+                        Map.Entry::getKey,
+                        Map.Entry::getValue,
+                        (e1, e2) -> e1,
+                        LinkedHashMap::new));
     }
 
     public static boolean isNotNullOrEmpty(String string) {

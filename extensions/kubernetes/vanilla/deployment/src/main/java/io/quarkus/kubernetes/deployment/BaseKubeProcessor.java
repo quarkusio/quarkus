@@ -168,16 +168,20 @@ public abstract class BaseKubeProcessor<P, C extends PlatformConfiguration> {
     }
 
     protected void createAnnotations(BuildProducer<KubernetesAnnotationBuildItem> annotations) {
-        config().annotations()
-                .forEach((k, v) -> annotations.produce(new KubernetesAnnotationBuildItem(k, v, deploymentTarget())));
+        config().annotations().entrySet().stream()
+                .sorted(Map.Entry.comparingByKey())
+                .forEach(e -> annotations
+                        .produce(new KubernetesAnnotationBuildItem(e.getKey(), e.getValue(), deploymentTarget())));
     }
 
     protected void createLabels(BuildProducer<KubernetesLabelBuildItem> labels,
             BuildProducer<ContainerImageLabelBuildItem> imageLabels) {
-        config().labels().forEach((k, v) -> {
-            labels.produce(new KubernetesLabelBuildItem(k, v, deploymentTarget()));
-            imageLabels.produce(new ContainerImageLabelBuildItem(k, v));
-        });
+        config().labels().entrySet().stream()
+                .sorted(Map.Entry.comparingByKey())
+                .forEach(e -> {
+                    labels.produce(new KubernetesLabelBuildItem(e.getKey(), e.getValue(), deploymentTarget()));
+                    imageLabels.produce(new ContainerImageLabelBuildItem(e.getKey(), e.getValue()));
+                });
         labels.produce(
                 new KubernetesLabelBuildItem(KubernetesLabelBuildItem.CommonLabels.MANAGED_BY, "quarkus", deploymentTarget()));
     }
@@ -310,10 +314,12 @@ public abstract class BaseKubeProcessor<P, C extends PlatformConfiguration> {
         createCommandDecorator(context, config, command);
         createArgsDecorator(context, config, command);
 
-        config.initContainers().entrySet()
+        config.initContainers().entrySet().stream()
+                .sorted(Map.Entry.comparingByKey())
                 .forEach(e -> context.add(new AddInitContainerDecorator(context.name, ContainerConverter.convert(e))));
 
-        config.sidecars().entrySet()
+        config.sidecars().entrySet().stream()
+                .sorted(Map.Entry.comparingByKey())
                 .forEach(e -> context.add(new AddSidecarDecorator(context.name, ContainerConverter.convert(e))));
 
         // Handle Pull Secrets
@@ -357,17 +363,19 @@ public abstract class BaseKubeProcessor<P, C extends PlatformConfiguration> {
         final var target = context.target;
 
         // Add roles from configuration
-        for (Map.Entry<String, RbacConfig.RoleConfig> roleFromConfig : config.rbac().roles().entrySet()) {
-            RbacConfig.RoleConfig role = roleFromConfig.getValue();
-            String roleName = role.name().orElse(roleFromConfig.getKey());
-            context.add(new AddRoleResourceDecorator(name,
-                    roleName,
-                    role.namespace().orElse(null),
-                    role.labels(),
-                    toPolicyRulesList(role.policyRules())));
+        config.rbac().roles().entrySet().stream()
+                .sorted(Map.Entry.comparingByKey())
+                .forEach(roleFromConfig -> {
+                    RbacConfig.RoleConfig role = roleFromConfig.getValue();
+                    String roleName = role.name().orElse(roleFromConfig.getKey());
+                    context.add(new AddRoleResourceDecorator(name,
+                            roleName,
+                            role.namespace().orElse(null),
+                            role.labels(),
+                            toPolicyRulesList(role.policyRules())));
 
-            roles.add(roleName);
-        }
+                    roles.add(roleName);
+                });
 
         // Add roles from extensions
         Targetable.filteredByTarget(rolesFromExtensions, target)
@@ -379,15 +387,17 @@ public abstract class BaseKubeProcessor<P, C extends PlatformConfiguration> {
                 .forEach(context::add);
 
         // Add cluster roles from configuration
-        for (Map.Entry<String, RbacConfig.ClusterRoleConfig> clusterRoleFromConfig : config.rbac().clusterRoles().entrySet()) {
-            RbacConfig.ClusterRoleConfig clusterRole = clusterRoleFromConfig.getValue();
-            String clusterRoleName = clusterRole.name().orElse(clusterRoleFromConfig.getKey());
-            context.add(new AddClusterRoleResourceDecorator(name,
-                    clusterRoleName,
-                    clusterRole.labels(),
-                    toPolicyRulesList(clusterRole.policyRules())));
-            clusterRoles.add(clusterRoleName);
-        }
+        config.rbac().clusterRoles().entrySet().stream()
+                .sorted(Map.Entry.comparingByKey())
+                .forEach(clusterRoleFromConfig -> {
+                    RbacConfig.ClusterRoleConfig clusterRole = clusterRoleFromConfig.getValue();
+                    String clusterRoleName = clusterRole.name().orElse(clusterRoleFromConfig.getKey());
+                    context.add(new AddClusterRoleResourceDecorator(name,
+                            clusterRoleName,
+                            clusterRole.labels(),
+                            toPolicyRulesList(clusterRole.policyRules())));
+                    clusterRoles.add(clusterRoleName);
+                });
 
         // Add cluster roles from extensions
         Targetable.filteredByTarget(clusterRolesFromExtensions, target)
@@ -435,40 +445,52 @@ public abstract class BaseKubeProcessor<P, C extends PlatformConfiguration> {
                 .forEach(context::add);
 
         // Add role bindings from configuration
-        for (Map.Entry<String, RbacConfig.RoleBindingConfig> rb : config.rbac().roleBindings().entrySet()) {
-            String rbName = rb.getValue().name().orElse(rb.getKey());
-            RbacConfig.RoleBindingConfig roleBinding = rb.getValue();
+        final String finalDefaultRoleName = defaultRoleName;
+        final boolean finalDefaultClusterWide = defaultClusterWide;
+        final String finalEffectiveServiceAccountName = effectiveServiceAccountName;
+        final String finalEffectiveServiceAccountNamespace = effectiveServiceAccountNamespace;
+        final boolean[] requiresServiceAccountRef = { requiresServiceAccount };
 
-            List<Subject> subjects = new ArrayList<>();
-            if (roleBinding.subjects().isEmpty()) {
-                requiresServiceAccount = true;
-                subjects.add(new Subject(null, SERVICE_ACCOUNT,
-                        effectiveServiceAccountName,
-                        effectiveServiceAccountNamespace));
-            } else {
-                for (Map.Entry<String, RbacConfig.SubjectConfig> s : roleBinding.subjects().entrySet()) {
-                    String subjectName = s.getValue().name().orElse(s.getKey());
-                    RbacConfig.SubjectConfig subject = s.getValue();
-                    subjects.add(new Subject(subject.apiGroup().orElse(null),
-                            subject.kind(),
-                            subjectName,
-                            subject.namespace().orElse(null)));
-                }
-            }
+        config.rbac().roleBindings().entrySet().stream()
+                .sorted(Map.Entry.comparingByKey())
+                .forEach(rb -> {
+                    String rbName = rb.getValue().name().orElse(rb.getKey());
+                    RbacConfig.RoleBindingConfig roleBinding = rb.getValue();
 
-            String roleName = roleBinding.roleName().orElse(defaultRoleName);
-            if (roleName == null) {
-                throw new IllegalStateException("No role has been set in the RoleBinding resource!");
-            }
+                    List<Subject> subjects = new ArrayList<>();
+                    if (roleBinding.subjects().isEmpty()) {
+                        requiresServiceAccountRef[0] = true;
+                        subjects.add(new Subject(null, SERVICE_ACCOUNT,
+                                finalEffectiveServiceAccountName,
+                                finalEffectiveServiceAccountNamespace));
+                    } else {
+                        roleBinding.subjects().entrySet().stream()
+                                .sorted(Map.Entry.comparingByKey())
+                                .forEach(s -> {
+                                    String subjectName = s.getValue().name().orElse(s.getKey());
+                                    RbacConfig.SubjectConfig subject = s.getValue();
+                                    subjects.add(new Subject(subject.apiGroup().orElse(null),
+                                            subject.kind(),
+                                            subjectName,
+                                            subject.namespace().orElse(null)));
+                                });
+                    }
 
-            boolean clusterWide = roleBinding.clusterWide().orElse(defaultClusterWide);
-            context.add(new AddRoleBindingResourceDecorator(name,
-                    rbName,
-                    null, // todo: should namespace be providable via config?
-                    roleBinding.labels(),
-                    new RoleRef(roleName, clusterWide),
-                    subjects.toArray(new Subject[0])));
-        }
+                    String roleName = roleBinding.roleName().orElse(finalDefaultRoleName);
+                    if (roleName == null) {
+                        throw new IllegalStateException("No role has been set in the RoleBinding resource!");
+                    }
+
+                    boolean clusterWide = roleBinding.clusterWide().orElse(finalDefaultClusterWide);
+                    context.add(new AddRoleBindingResourceDecorator(name,
+                            rbName,
+                            null, // todo: should namespace be providable via config?
+                            roleBinding.labels(),
+                            new RoleRef(roleName, clusterWide),
+                            subjects.toArray(new Subject[0])));
+                });
+
+        requiresServiceAccount = requiresServiceAccountRef[0];
 
         // Add cluster role bindings from extensions
         Targetable.filteredByTarget(clusterRoleBindingsFromExtensions, target)
@@ -480,30 +502,34 @@ public abstract class BaseKubeProcessor<P, C extends PlatformConfiguration> {
                 .forEach(context::add);
 
         // Add cluster role bindings from configuration
-        for (Map.Entry<String, RbacConfig.ClusterRoleBindingConfig> rb : config.rbac().clusterRoleBindings().entrySet()) {
-            String rbName = rb.getValue().name().orElse(rb.getKey());
-            RbacConfig.ClusterRoleBindingConfig clusterRoleBinding = rb.getValue();
+        config.rbac().clusterRoleBindings().entrySet().stream()
+                .sorted(Map.Entry.comparingByKey())
+                .forEach(rb -> {
+                    String rbName = rb.getValue().name().orElse(rb.getKey());
+                    RbacConfig.ClusterRoleBindingConfig clusterRoleBinding = rb.getValue();
 
-            List<Subject> subjects = new ArrayList<>();
-            if (clusterRoleBinding.subjects().isEmpty()) {
-                throw new IllegalStateException("No subjects have been set in the ClusterRoleBinding resource!");
-            }
+                    List<Subject> subjects = new ArrayList<>();
+                    if (clusterRoleBinding.subjects().isEmpty()) {
+                        throw new IllegalStateException("No subjects have been set in the ClusterRoleBinding resource!");
+                    }
 
-            for (Map.Entry<String, RbacConfig.SubjectConfig> s : clusterRoleBinding.subjects().entrySet()) {
-                String subjectName = s.getValue().name().orElse(s.getKey());
-                RbacConfig.SubjectConfig subject = s.getValue();
-                subjects.add(new Subject(subject.apiGroup().orElse(null),
-                        subject.kind(),
-                        subjectName,
-                        subject.namespace().orElse(null)));
-            }
+                    clusterRoleBinding.subjects().entrySet().stream()
+                            .sorted(Map.Entry.comparingByKey())
+                            .forEach(s -> {
+                                String subjectName = s.getValue().name().orElse(s.getKey());
+                                RbacConfig.SubjectConfig subject = s.getValue();
+                                subjects.add(new Subject(subject.apiGroup().orElse(null),
+                                        subject.kind(),
+                                        subjectName,
+                                        subject.namespace().orElse(null)));
+                            });
 
-            context.add(new AddClusterRoleBindingResourceDecorator(name,
-                    rbName,
-                    clusterRoleBinding.labels(),
-                    new RoleRef(clusterRoleBinding.roleName(), true),
-                    subjects.toArray(new Subject[0])));
-        }
+                    context.add(new AddClusterRoleBindingResourceDecorator(name,
+                            rbName,
+                            clusterRoleBinding.labels(),
+                            new RoleRef(clusterRoleBinding.roleName(), true),
+                            subjects.toArray(new Subject[0])));
+                });
 
         // if no role bindings were created, then automatically create one if:
         if (config.rbac().roleBindings().isEmpty()) {
@@ -758,7 +784,10 @@ public abstract class BaseKubeProcessor<P, C extends PlatformConfiguration> {
     }
 
     private static List<PolicyRule> toPolicyRulesList(Map<String, RbacConfig.PolicyRuleConfig> policyRules) {
-        return policyRules.values().stream().map(RBACUtil::from).toList();
+        return policyRules.entrySet().stream()
+                .sorted(Map.Entry.comparingByKey())
+                .map(e -> RBACUtil.from(e.getValue()))
+                .toList();
     }
 
     @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
@@ -811,9 +840,8 @@ public abstract class BaseKubeProcessor<P, C extends PlatformConfiguration> {
         image.ifPresent(i -> context.add(new ApplyContainerImageDecorator(name, i.getImage())));
 
         var stream = Stream.concat(config.convertToBuildItems().stream(), Targetable.filteredByTarget(envs, clusterType()));
-        if (config.idempotent()) {
-            stream = stream.sorted(Comparator.comparing(e -> EnvConverter.convertName(e.getName())));
-        }
+        // Always sort for deterministic output
+        stream = stream.sorted(Comparator.comparing(e -> EnvConverter.convertName(e.getName())));
         stream.map(e -> new AddEnvVarDecorator(ApplicationContainerDecorator.ANY, name, new EnvBuilder()
                 .withName(EnvConverter.convertName(e.getName()))
                 .withValue(e.getValue())
@@ -823,6 +851,9 @@ public abstract class BaseKubeProcessor<P, C extends PlatformConfiguration> {
                 .withPrefix(e.getPrefix())
                 .build()))
                 .forEach(context::add);
+
+        // Add decorator to sort container ports alphabetically for deterministic output
+        context.add(new SortContainerPortsDecorator());
 
         return context;
     }
@@ -856,14 +887,15 @@ public abstract class BaseKubeProcessor<P, C extends PlatformConfiguration> {
                                     // Currently, we have no way to filter out provided env vars.
                                     // So, we apply them on top of every change.
                                     // This needs to be addressed in dekorate to make things more efficient
-                                    for (Map.Entry<String, String> e : item.getEnvVars().entrySet()) {
-                                        builder.removeMatchingFromEnv(p -> p.getName().equals(e.getKey()));
-                                        builder.addNewEnv()
-                                                .withName(e.getKey())
-                                                .withValue(e.getValue())
-                                                .endEnv();
-
-                                    }
+                                    item.getEnvVars().entrySet().stream()
+                                            .sorted(Map.Entry.comparingByKey())
+                                            .forEach(e -> {
+                                                builder.removeMatchingFromEnv(p -> p.getName().equals(e.getKey()));
+                                                builder.addNewEnv()
+                                                        .withName(e.getKey())
+                                                        .withValue(e.getValue())
+                                                        .endEnv();
+                                            });
                                 }
                             });
                         }
@@ -881,10 +913,13 @@ public abstract class BaseKubeProcessor<P, C extends PlatformConfiguration> {
                     }
 
                     context.add(new AddInitContainerDecorator(context.name, containerBuilder
-                            .addAllToEnvVars(item.getEnvVars().entrySet().stream().map(e -> new EnvBuilder()
-                                    .withName(e.getKey())
-                                    .withValue(e.getValue())
-                                    .build()).collect(Collectors.toList()))
+                            .addAllToEnvVars(item.getEnvVars().entrySet().stream()
+                                    .sorted(Map.Entry.comparingByKey())
+                                    .map(e -> new EnvBuilder()
+                                            .withName(e.getKey())
+                                            .withValue(e.getValue())
+                                            .build())
+                                    .collect(Collectors.toList()))
                             .build()));
                 });
     }
@@ -939,13 +974,15 @@ public abstract class BaseKubeProcessor<P, C extends PlatformConfiguration> {
                         container.withImage(item.getImage())
                                 .withCommand(item.getCommand())
                                 .withArgs(item.getArguments());
-                        for (Map.Entry<String, String> e : item.getEnvVars().entrySet()) {
-                            container.removeMatchingFromEnv(p -> p.getName().equals(e.getKey()));
-                            container.addNewEnv()
-                                    .withName(e.getKey())
-                                    .withValue(e.getValue())
-                                    .endEnv();
-                        }
+                        item.getEnvVars().entrySet().stream()
+                                .sorted(Map.Entry.comparingByKey())
+                                .forEach(e -> {
+                                    container.removeMatchingFromEnv(p -> p.getName().equals(e.getKey()));
+                                    container.addNewEnv()
+                                            .withName(e.getKey())
+                                            .withValue(e.getValue())
+                                            .endEnv();
+                                });
                         return null;
                     };
                 }
@@ -960,14 +997,15 @@ public abstract class BaseKubeProcessor<P, C extends PlatformConfiguration> {
                             // Currently, we have no way to filter out provided env vars.
                             // So, we apply them on top of every change.
                             // This needs to be addressed in dekorate to make things more efficient
-                            for (Map.Entry<String, String> e : item.getEnvVars().entrySet()) {
-                                builder.removeMatchingFromEnv(p -> p.getName().equals(e.getKey()));
-                                builder.addNewEnv()
-                                        .withName(e.getKey())
-                                        .withValue(e.getValue())
-                                        .endEnv();
-
-                            }
+                            item.getEnvVars().entrySet().stream()
+                                    .sorted(Map.Entry.comparingByKey())
+                                    .forEach(e -> {
+                                        builder.removeMatchingFromEnv(p -> p.getName().equals(e.getKey()));
+                                        builder.addNewEnv()
+                                                .withName(e.getKey())
+                                                .withValue(e.getValue())
+                                                .endEnv();
+                                    });
                         }
                     });
                 }

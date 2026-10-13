@@ -88,7 +88,8 @@ java \
   -jar quarkus-run.jar
 ----
 
-NOTE: `/home/jboss` is the WORKDIR for all quarkus binaries in the base images `ubi9/openjdk-17-runtime` and `ubi10/openjdk-21-runtime` (https://catalog.redhat.com/en/software/containers/ubi10/openjdk-21-runtime/690ca3b700d71ac7397b98c6?container-tabs=dockerfile[Dockerfile for ubi10/openjdk-21-runtime, window="_blank"])
+NOTE: Jib puts the application, including `quarkus-run.jar`, in `/home/jboss` and makes it the working directory of the image.
+To use another directory, set `quarkus.jib.working-directory`.
 
 ==== Multi-module projects and layering
 

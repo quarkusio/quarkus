@@ -33,6 +33,7 @@ import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.gizmo2.Const;
 import io.quarkus.gizmo2.Expr;
 import io.quarkus.gizmo2.Gizmo;
+import io.quarkus.gizmo2.LambdaStrategy;
 import io.quarkus.gizmo2.LocalVar;
 import io.quarkus.gizmo2.Var;
 import io.quarkus.gizmo2.creator.BlockCreator;
@@ -94,7 +95,8 @@ class QuarkusSecurityJpaReactiveProcessor {
         GeneratedBeanGizmo2Adaptor gizmoAdaptor = new GeneratedBeanGizmo2Adaptor(beanProducer);
 
         String name = jpaSecurityDefinition.annotatedClass.name() + "__JpaReactiveIdentityProviderImpl";
-        Gizmo.create(gizmoAdaptor).class_(name, cc -> {
+        // todo: the gizmo-to-bean adapter doesn't know about constant bootstraps; use anon classes for lambdas for now
+        Gizmo.create(gizmoAdaptor).withLambdaStrategy(LambdaStrategy.ANONYMOUS_CLASS).class_(name, cc -> {
             cc.extends_(JpaReactiveIdentityProvider.class);
             cc.addAnnotation(Singleton.class);
             cc.defaultConstructor();
@@ -141,7 +143,8 @@ class QuarkusSecurityJpaReactiveProcessor {
         GeneratedBeanGizmo2Adaptor gizmoAdaptor = new GeneratedBeanGizmo2Adaptor(beanProducer);
 
         String name = jpaSecurityDefinition.annotatedClass.name() + "__JpaReactiveTrustedIdentityProviderImpl";
-        Gizmo.create(gizmoAdaptor).class_(name, cc -> {
+        // todo: the gizmo-to-bean adapter doesn't know about constant bootstraps; use anon classes for lambdas for now
+        Gizmo.create(gizmoAdaptor).withLambdaStrategy(LambdaStrategy.ANONYMOUS_CLASS).class_(name, cc -> {
             cc.extends_(JpaReactiveTrustedIdentityProvider.class);
             cc.addAnnotation(Singleton.class);
             cc.defaultConstructor();

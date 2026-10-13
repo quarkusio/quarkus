@@ -172,10 +172,13 @@ public final class SessionOperations {
         if (opened.isPresent()) {
             return work.apply(opened.get().session());
         } else {
-            Mutiny.Session session = OPENED_SESSIONS_STATE.createNewSession(persistenceUnitName, context);
-            LOG.debugf("Opening lazy managed session for Persistence Unit '%s'", persistenceUnitName);
-            return work.apply(session)
-                    .eventually(() -> OPENED_SESSIONS_STATE.closeSession(context, persistenceUnitName));
+            // The session is opened lazily, when the returned Uni is subscribed, so that each subscription gets its own session
+            // and a Uni that is never subscribed has no side effects
+            return Uni.createFrom().deferred(() -> {
+                Mutiny.Session session = OPENED_SESSIONS_STATE.createNewSession(persistenceUnitName, context);
+                LOG.debugf("Opening lazy managed session for Persistence Unit '%s'", persistenceUnitName);
+                return work.apply(session);
+            }).eventually(() -> OPENED_SESSIONS_STATE.closeSession(context, persistenceUnitName));
         }
     }
 
@@ -223,10 +226,14 @@ public final class SessionOperations {
         if (opened.isPresent()) {
             return work.apply(opened.get().session());
         } else {
-            Mutiny.StatelessSession session = OPENED_SESSIONS_STATE_STATELESS.createNewSession(persistenceUnitName, context);
-            LOG.debugf("Opening lazy stateless session for Persistence Unit '%s'", persistenceUnitName);
-            return work.apply(session)
-                    .eventually(() -> OPENED_SESSIONS_STATE_STATELESS.closeSession(context, persistenceUnitName));
+            // The session is opened lazily, when the returned Uni is subscribed, so that each subscription gets its own session
+            // and a Uni that is never subscribed has no side effects
+            return Uni.createFrom().deferred(() -> {
+                Mutiny.StatelessSession session = OPENED_SESSIONS_STATE_STATELESS.createNewSession(persistenceUnitName,
+                        context);
+                LOG.debugf("Opening lazy stateless session for Persistence Unit '%s'", persistenceUnitName);
+                return work.apply(session);
+            }).eventually(() -> OPENED_SESSIONS_STATE_STATELESS.closeSession(context, persistenceUnitName));
         }
     }
 

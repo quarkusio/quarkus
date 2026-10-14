@@ -41,7 +41,7 @@ class JpaModelProcessorTest {
                 "quarkus.hibernate-orm.\"inventory\".packages", "org.acme.inventory"));
         var markers = new ArrayList<AdditionalApplicationArchiveMarkerBuildItem>();
 
-        processor.includeArchivesHostingEntityPackagesInIndex(config, markers::add);
+        processor.includeArchivesHostingEntityPackagesInIndex(config, List.of(), markers::add);
 
         assertThat(markers).extracting(AdditionalApplicationArchiveMarkerBuildItem::getFile)
                 .containsExactlyInAnyOrder("org/acme/defaultpu", "org/acme/inventory");
@@ -96,6 +96,7 @@ class JpaModelProcessorTest {
         var result = processor.buildJpaModelPerPersistenceUnit(
                 emptyHibernateORMConfig(),
                 List.of(),
+                List.of(),
                 model,
                 new CombinedIndexBuildItem(index, index));
 
@@ -128,6 +129,7 @@ class JpaModelProcessorTest {
         var result = processor.buildJpaModelPerPersistenceUnit(
                 config,
                 List.of(),
+                List.of(),
                 model,
                 new CombinedIndexBuildItem(index, index));
 
@@ -159,6 +161,7 @@ class JpaModelProcessorTest {
         var result = processor.buildJpaModelPerPersistenceUnit(
                 emptyHibernateORMConfig(),
                 List.of(assignMyEntityToInventoryPU),
+                List.of(),
                 model,
                 new CombinedIndexBuildItem(index, index));
 

@@ -1297,8 +1297,16 @@ capable of exposing metrics that Hibernate ORM collects at runtime. To enable ex
 on the `/q/metrics` endpoint, make sure your project depends on a metrics extension and set the configuration
 property `quarkus.hibernate-orm.metrics.enabled` to `true`.
 
-To log session-level metrics for each Hibernate session, enable the `org.hibernate.session.metrics` log
-category; this only has an effect if statistics are enabled (`quarkus.hibernate-orm.statistics`).
+To log session-level metrics for each Hibernate session, enable `DEBUG` logging for the
+`org.hibernate.session.metrics` category:
+
+[source,properties]
+----
+quarkus.hibernate-orm.statistics=true
+quarkus.log.category."org.hibernate.session.metrics".level=DEBUG
+----
+
+This only has an effect if statistics are enabled (`quarkus.hibernate-orm.statistics`).
 
 == Limitations and other things you should know
 

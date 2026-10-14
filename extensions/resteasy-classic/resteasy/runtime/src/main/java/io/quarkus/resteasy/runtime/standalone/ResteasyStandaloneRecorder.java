@@ -28,7 +28,7 @@ import org.jboss.resteasy.spi.ResteasyConfiguration;
 import org.jboss.resteasy.spi.ResteasyDeployment;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.PooledByteBufAllocator;
+import io.netty.buffer.ByteBufAllocator;
 import io.quarkus.resteasy.runtime.NonJaxRsClassMappings;
 import io.quarkus.resteasy.runtime.ResteasyVertxConfig;
 import io.quarkus.runtime.LaunchMode;
@@ -365,9 +365,9 @@ public class ResteasyStandaloneRecorder {
         @Override
         public ByteBuf allocateBuffer(boolean direct, int bufferSize) {
             if (direct) {
-                return PooledByteBufAllocator.DEFAULT.directBuffer(bufferSize);
+                return ByteBufAllocator.DEFAULT.directBuffer(bufferSize);
             } else {
-                return PooledByteBufAllocator.DEFAULT.heapBuffer(bufferSize);
+                return ByteBufAllocator.DEFAULT.heapBuffer(bufferSize);
             }
         }
 

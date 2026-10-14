@@ -2,6 +2,7 @@ package org.jboss.resteasy.reactive.server.providers.serialisers;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
 
@@ -9,6 +10,7 @@ import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.MediaType;
 
 import org.jboss.resteasy.reactive.common.providers.serialisers.InputStreamMessageBodyHandler;
+import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 import org.jboss.resteasy.reactive.server.spi.ResteasyReactiveResourceInfo;
 import org.jboss.resteasy.reactive.server.spi.ServerMessageBodyReader;
 import org.jboss.resteasy.reactive.server.spi.ServerMessageBodyWriter;
@@ -43,6 +45,25 @@ public class ServerInputStreamMessageBodyHandler extends InputStreamMessageBodyH
     @Override
     public void writeResponse(InputStream is, Type genericType, ServerRequestContext context)
             throws WebApplicationException, IOException {
-        writeTo(is, context.getOrCreateOutputStream());
+        OutputStream entityStream = context.getOrCreateOutputStream();
+        try {
+            try {
+                is.transferTo(entityStream);
+            } finally {
+                try {
+                    is.close();
+                } catch (IOException e) {
+                    // Drop the exception so we don't mask real IO errors
+                }
+            }
+        } catch (Throwable t) {
+            if (context.serverResponse().headWritten()) {
+                context.serverResponse().reset();
+                ((ResteasyReactiveRequestContext) context).resume(t);
+                return;
+            }
+            throw t;
+        }
+        entityStream.close();
     }
 }

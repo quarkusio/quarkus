@@ -60,6 +60,9 @@ public class MavenModelBuilder implements ModelBuilder {
                 request.setRawModel(lp.getRawModel());
             }
             completeWorkspaceProjectBuildRequest(request);
+            if (request.getValidationLevel() < ModelBuildingRequest.VALIDATION_LEVEL_MAVEN_2_0) {
+                request.setValidationLevel(ModelBuildingRequest.VALIDATION_LEVEL_MAVEN_2_0);
+            }
             final LocalWorkspace workspace = lp.getWorkspace();
             if (workspace != null) {
                 request.setWorkspaceModelResolver(workspace);

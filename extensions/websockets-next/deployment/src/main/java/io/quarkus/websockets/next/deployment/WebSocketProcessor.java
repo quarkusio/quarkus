@@ -94,6 +94,7 @@ import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
 import io.quarkus.deployment.builditem.GeneratedServiceProviderBuildItem;
+import io.quarkus.deployment.builditem.ModuleExportBuildItem;
 import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ConstantBootstrapBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
@@ -194,6 +195,14 @@ public class WebSocketProcessor {
     // Parameter names consist of alphanumeric characters and underscore
     private static final Pattern PATH_PARAM_PATTERN = Pattern.compile("\\{[a-zA-Z0-9_]+\\}");
     public static final Pattern TRANSLATED_PATH_PARAM_PATTERN = Pattern.compile(":[a-zA-Z0-9_]+");
+
+    @BuildStep
+    void exportInternals(BuildProducer<ModuleExportBuildItem> exports) {
+        exports.produce(new ModuleExportBuildItem("io.smallrye.mutiny", "io.quarkus.websockets.next",
+                "io.smallrye.mutiny.helpers.queues"));
+        exports.produce(new ModuleExportBuildItem("io.vertx.core", "io.quarkus.websockets.next",
+                "io.vertx.core.buffer.impl"));
+    }
 
     @BuildStep
     FeatureBuildItem feature() {

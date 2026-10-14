@@ -9,10 +9,6 @@ import org.apache.avro.specific.SpecificData;
 import org.apache.avro.util.ClassSecurityValidator;
 import org.jboss.logging.Logger;
 
-import io.quarkus.runtime.ShutdownContext;
-import io.quarkus.runtime.annotations.Recorder;
-
-@Recorder
 public class AvroRecorder {
 
     private static final Logger log = Logger.getLogger(AvroRecorder.class);
@@ -30,21 +26,23 @@ public class AvroRecorder {
      * {@code org.apache.avro.SERIALIZABLE_CLASSES}/{@code org.apache.avro.SERIALIZABLE_PACKAGES} system properties keep
      * working as an additional escape hatch.
      * <p>
-     * A shutdown task restores the default validator to prevent continuous nesting of validators during reloads in dev mode.
+     * {@link #resetClassSecurityValidator()} restores the default validator on shutdown to prevent continuous nesting of
+     * validators during reloads in dev mode.
      *
-     * @param shutdownContext used to register the validator reset on shutdown
      * @param trustedClasses fully qualified names of the trusted classes
      * @param trustedPackages package names whose classes are trusted
      */
-    public void setupClassSecurityValidator(ShutdownContext shutdownContext, Set<String> trustedClasses,
-            List<String> trustedPackages) {
+    public static void setupClassSecurityValidator(Set<String> trustedClasses, List<String> trustedPackages) {
         QuarkusAvroClassSecurityPredicate predicate = new QuarkusAvroClassSecurityPredicate(trustedClasses,
                 trustedPackages);
         ClassSecurityValidator.setGlobal(ClassSecurityValidator.composite(predicate, ClassSecurityValidator.getGlobal()));
-        shutdownContext.addShutdownTask(() -> ClassSecurityValidator.setGlobal(ClassSecurityValidator.DEFAULT));
     }
 
-    public void clearStaticCaches() {
+    public static void resetClassSecurityValidator() {
+        ClassSecurityValidator.setGlobal(ClassSecurityValidator.DEFAULT);
+    }
+
+    public static void clearStaticCaches() {
         try {
             Field instanceField = SpecificData.class.getDeclaredField("INSTANCE");
             instanceField.setAccessible(true);

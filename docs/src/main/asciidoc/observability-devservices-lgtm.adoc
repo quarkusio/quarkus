@@ -177,6 +177,7 @@ image::observability-grafana-dashboards.png[alt=Dev UI LGTM, align=center,width=
 Each dashboard is tuned for the specific application setup. The available dashboards are:
 
 * *Quarkus Micrometer OpenTelemetry*: to be used with the Micrometer and OpenTelemetry extension.
+** Its JVM memory panels also work with applications using only the OpenTelemetry extension with metrics enabled (`quarkus.otel.metrics.enabled=true`).
 * *Quarkus Micrometer OTLP registry*: to be used with the Micrometer OTLP registry extension.
 * *Quarkus Micrometer Prometheus registry*: to be used with the Micrometer Prometheus registry extension.
 * *Quarkus OpenTelemetry Logging*: to view logs coming from the OpenTelemetry extension.

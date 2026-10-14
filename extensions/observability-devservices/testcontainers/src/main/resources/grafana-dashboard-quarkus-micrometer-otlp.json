@@ -2210,7 +2210,7 @@
           },
           "disableTextWrap": false,
           "editorMode": "builder",
-          "expr": "jvm_memory_used_bytes{area=~\"heap\"}",
+          "expr": "jvm_memory_used_bytes{  id=~\"$jvm_memory_pool_heap\"}",
           "format": "time_series",
           "fullMetaSearch": false,
           "hide": false,
@@ -3869,14 +3869,14 @@
           "type": "prometheus",
           "uid": "prometheus"
         },
-        "definition": "label_values(jvm_memory_used_bytes{area=\"heap\"},area)",
+        "definition": "label_values(jvm_memory_used_bytes{area=\"heap\"},id)",
         "includeAll": true,
         "label": "JVM Memory Pools Heap",
         "name": "jvm_memory_pool_heap",
         "options": [],
         "query": {
           "qryType": 1,
-          "query": "label_values(jvm_memory_used_bytes{area=\"heap\"},area)",
+          "query": "label_values(jvm_memory_used_bytes{area=\"heap\"},id)",
           "refId": "PrometheusVariableQueryEditor-VariableQuery"
         },
         "refresh": 1,

@@ -97,6 +97,33 @@ public class TestResourceManagerTest {
         Assertions.assertTrue(TestResourceManager.testResourcesRequireReload(info1, info2));
     }
 
+    @Test
+    void arrayBasedMetaAnnotationHasSameReloadGroupIdentifier() {
+        TestResourceManager manager1 = new TestResourceManager(ArrayTest1.class);
+        TestResourceManager manager2 = new TestResourceManager(ArrayTest2.class);
+
+        Assertions.assertEquals(TestResourceManager.getReloadGroupIdentifier(manager1.testResourceComparisonInfo()),
+                TestResourceManager.getReloadGroupIdentifier(manager2.testResourceComparisonInfo()));
+    }
+
+    @Test
+    void primitiveArrayBasedMetaAnnotationHasSameReloadGroupIdentifier() {
+        TestResourceManager manager1 = new TestResourceManager(PrimitiveArrayTest1.class);
+        TestResourceManager manager2 = new TestResourceManager(PrimitiveArrayTest2.class);
+
+        Assertions.assertEquals(TestResourceManager.getReloadGroupIdentifier(manager1.testResourceComparisonInfo()),
+                TestResourceManager.getReloadGroupIdentifier(manager2.testResourceComparisonInfo()));
+    }
+
+    @Test
+    void arrayBasedMetaAnnotationWithDifferentValuesHasDifferentReloadGroupIdentifier() {
+        TestResourceManager manager1 = new TestResourceManager(ArrayTest1.class);
+        TestResourceManager manager2 = new TestResourceManager(DiffereringArrayTest.class);
+
+        Assertions.assertNotEquals(TestResourceManager.getReloadGroupIdentifier(manager1.testResourceComparisonInfo()),
+                TestResourceManager.getReloadGroupIdentifier(manager2.testResourceComparisonInfo()));
+    }
+
     @WithTestResource(value = FirstLifecycleManager.class, scope = TestResourceScope.GLOBAL)
     @WithTestResource(value = SecondLifecycleManager.class, scope = TestResourceScope.GLOBAL)
     public static class MyTest {

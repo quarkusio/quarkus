@@ -18,8 +18,6 @@ import java.util.logging.Level;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import org.eclipse.microprofile.config.Config;
-import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
@@ -90,6 +88,7 @@ import io.quarkus.vertx.http.runtime.filters.GracefulShutdownFilter;
 import io.quarkus.vertx.http.runtime.graal.Brotli4jFeature;
 import io.quarkus.vertx.http.runtime.management.ManagementInterfaceBuildTimeConfig;
 import io.quarkus.vertx.http.runtime.security.SecurityHandlerPriorities;
+import io.smallrye.config.Config;
 import io.vertx.core.http.impl.http1.Http1ServerRequest;
 import io.vertx.core.impl.VertxImpl;
 import io.vertx.ext.web.Router;
@@ -640,7 +639,7 @@ class VertxHttpProcessor {
      * If any of the above rules applied, the port "https" will be generated as part of the Kubernetes resources.
      */
     private static boolean isSslConfigured() {
-        Config config = ConfigProvider.getConfig();
+        Config config = Config.get();
         InsecureRequests insecureRequests = config
                 .getOptionalValue("quarkus.http.insecure-requests", InsecureRequests.class)
                 .orElse(InsecureRequests.ENABLED);

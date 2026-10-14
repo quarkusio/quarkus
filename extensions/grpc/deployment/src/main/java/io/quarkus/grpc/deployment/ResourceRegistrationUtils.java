@@ -2,10 +2,9 @@ package io.quarkus.grpc.deployment;
 
 import java.util.regex.Pattern;
 
-import org.eclipse.microprofile.config.Config;
-
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
+import io.smallrye.config.Config;
 
 class ResourceRegistrationUtils {
 

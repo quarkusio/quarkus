@@ -7,7 +7,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 
-import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
 
 import io.quarkus.observability.common.ContainerConstants;
@@ -18,6 +17,7 @@ import io.quarkus.observability.devresource.DevResourceLifecycleManager;
 import io.quarkus.observability.devresource.ExtensionsCatalog;
 import io.quarkus.observability.devresource.testcontainers.ContainerResource;
 import io.quarkus.observability.testcontainers.LgtmContainer;
+import io.smallrye.config.Config;
 
 public class LgtmResource extends ContainerResource<LgtmContainer, LgtmConfig> {
 
@@ -83,7 +83,7 @@ public class LgtmResource extends ContainerResource<LgtmContainer, LgtmConfig> {
     }
 
     private String findExplicitlyConfiguredOtlpEndpoint() {
-        var cfg = ConfigProvider.getConfig();
+        Config cfg = Config.get();
         if (catalog != null && catalog.hasOpenTelemetry()) {
             for (String key : List.of(
                     OTEL_OTLP_ENDPOINT,

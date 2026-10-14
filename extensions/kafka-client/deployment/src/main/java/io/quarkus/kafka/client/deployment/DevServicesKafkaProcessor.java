@@ -18,8 +18,6 @@ import org.apache.kafka.clients.admin.CreateTopicsResult;
 import org.apache.kafka.clients.admin.KafkaAdminClient;
 import org.apache.kafka.clients.admin.NewTopic;
 import org.apache.kafka.clients.admin.TopicDescription;
-import org.eclipse.microprofile.config.Config;
-import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
 import org.testcontainers.utility.DockerImageName;
 
@@ -40,6 +38,7 @@ import io.quarkus.devservices.common.ContainerLocator;
 import io.quarkus.devservices.common.DevServicesHostUtil;
 import io.quarkus.devservices.common.StartableContainer;
 import io.quarkus.runtime.configuration.ConfigUtils;
+import io.smallrye.config.Config;
 import io.strimzi.test.container.StrimziKafkaCluster;
 import io.strimzi.test.container.StrimziKafkaContainer;
 
@@ -236,7 +235,7 @@ public class DevServicesKafkaProcessor {
     }
 
     private boolean hasKafkaChannelWithoutBootstrapServers() {
-        Config config = ConfigProvider.getConfig();
+        Config config = Config.get();
         for (String name : config.getPropertyNames()) {
             boolean isIncoming = name.startsWith("mp.messaging.incoming.");
             boolean isOutgoing = name.startsWith("mp.messaging.outgoing.");

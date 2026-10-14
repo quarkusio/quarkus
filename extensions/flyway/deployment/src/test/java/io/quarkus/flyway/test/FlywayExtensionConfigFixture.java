@@ -11,13 +11,13 @@ import java.util.stream.Collectors;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
-import org.eclipse.microprofile.config.Config;
 import org.flywaydb.core.Flyway;
 import org.flywaydb.core.api.Location;
 import org.flywaydb.core.api.configuration.Configuration;
 import org.flywaydb.core.api.configuration.FluentConfiguration;
 
 import io.quarkus.flyway.runtime.FlywayContainerUtil;
+import io.smallrye.config.Config;
 
 /**
  * This fixture provides access to read the expected and the actual configuration of flyway.

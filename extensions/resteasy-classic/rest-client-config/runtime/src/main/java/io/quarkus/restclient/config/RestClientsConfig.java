@@ -6,7 +6,6 @@ import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.Set;
 
-import org.eclipse.microprofile.config.ConfigProvider;
 import org.eclipse.microprofile.rest.client.ext.QueryParamStyle;
 
 import io.quarkus.runtime.annotations.ConfigDocDefault;
@@ -15,9 +14,9 @@ import io.quarkus.runtime.annotations.ConfigDocMapKey;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
 import io.quarkus.runtime.configuration.MemorySize;
+import io.smallrye.config.Config;
 import io.smallrye.config.ConfigMapping;
 import io.smallrye.config.ConfigValue;
-import io.smallrye.config.SmallRyeConfig;
 import io.smallrye.config.WithDefault;
 import io.smallrye.config.WithDefaults;
 import io.smallrye.config.WithKeys;
@@ -382,7 +381,7 @@ public interface RestClientsConfig {
         ConfigValue urlValue();
 
         default Optional<String> urlReload() {
-            SmallRyeConfig config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
+            Config config = Config.get();
             return config.getOptionalValue(urlValue().getName(), String.class);
         }
 
@@ -402,7 +401,7 @@ public interface RestClientsConfig {
         ConfigValue uriValue();
 
         default Optional<String> uriReload() {
-            SmallRyeConfig config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
+            Config config = Config.get();
             return config.getOptionalValue(uriValue().getName(), String.class);
         }
 

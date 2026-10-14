@@ -11,7 +11,6 @@ import org.aesh.command.completer.CompleterInvocation;
 import org.aesh.command.completer.OptionCompleter;
 import org.aesh.command.invocation.CommandInvocation;
 import org.aesh.command.option.Argument;
-import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.resteasy.reactive.common.model.ResourceClass;
 import org.jboss.resteasy.reactive.common.model.ResourceMethod;
 import org.jboss.resteasy.reactive.server.mapping.URITemplate;
@@ -23,6 +22,7 @@ import io.quarkus.deployment.console.QuarkusCommand;
 import io.quarkus.vertx.http.deployment.HttpRootPathBuildItem;
 import io.quarkus.vertx.http.deployment.NonApplicationRootPathBuildItem;
 import io.quarkus.vertx.http.deployment.devmode.IdeHelper;
+import io.smallrye.config.Config;
 
 public class ResteasyReactiveDevModeProcessor {
 
@@ -61,7 +61,7 @@ public class ResteasyReactiveDevModeProcessor {
                 }
             }
         }
-        var c = ConfigProvider.getConfig();
+        Config c = Config.get();
         String host = c.getOptionalValue("quarkus.http.host", String.class).orElse("localhost");
         String port = c.getOptionalValue("quarkus.http.port", String.class).orElse("8080");
         return new ConsoleCommandBuildItem(new OpenCommand(rp, np, host, port));

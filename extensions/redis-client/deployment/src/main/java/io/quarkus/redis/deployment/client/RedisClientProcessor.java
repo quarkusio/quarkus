@@ -22,8 +22,6 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Default;
 import jakarta.enterprise.inject.Instance;
 
-import org.eclipse.microprofile.config.Config;
-import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
@@ -67,6 +65,7 @@ import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.runtime.configuration.NameIterator;
 import io.quarkus.smallrye.health.deployment.spi.HealthBuildItem;
 import io.quarkus.tls.TlsConfigurationRegistry;
+import io.smallrye.config.Config;
 import io.smallrye.config.SmallRyeConfig;
 import io.vertx.core.Vertx;
 import io.vertx.redis.client.Command;
@@ -165,7 +164,7 @@ public class RedisClientProcessor {
                 .filter(i -> SUPPORTED_INJECTION_TYPE.contains(i.getRequiredType().name()))
                 .filter(InjectionPointInfo::isProgrammaticLookup)
                 .findAny()
-                .ifPresent(x -> names.addAll(configuredClientNames(buildTimeConfig, ConfigProvider.getConfig())));
+                .ifPresent(x -> names.addAll(configuredClientNames(buildTimeConfig, Config.get())));
 
         // Register services and synthetic beans for each client name
         for (String name : names) {

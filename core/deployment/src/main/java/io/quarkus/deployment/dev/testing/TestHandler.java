@@ -2,7 +2,6 @@ package io.quarkus.deployment.dev.testing;
 
 import java.util.function.BiConsumer;
 
-import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
 
 import io.quarkus.banner.BannerConfig;
@@ -16,7 +15,7 @@ import io.quarkus.runtime.BannerRecorder;
 import io.quarkus.runtime.BannerRuntimeConfig;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.logging.LoggingSetupRecorder;
-import io.smallrye.config.SmallRyeConfig;
+import io.smallrye.config.Config;
 
 public class TestHandler implements BiConsumer<Object, BuildResult> {
 
@@ -34,7 +33,7 @@ public class TestHandler implements BiConsumer<Object, BuildResult> {
 
         //we don't actually start the app
         //so logging would not be enabled
-        SmallRyeConfig config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
+        Config config = Config.get();
         BannerConfig banner = config.getConfigMapping(BannerConfig.class);
         LoggingSetupRecorder.handleFailedStart(
                 new BannerProcessor()

@@ -12,8 +12,6 @@ import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 
-import org.eclipse.microprofile.config.Config;
-import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
 import org.jboss.logging.MDC;
 
@@ -23,6 +21,7 @@ import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.value.registry.ValueRegistry;
 import io.quarkus.value.registry.ValueRegistry.RuntimeKey;
+import io.smallrye.config.Config;
 import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.ObjectReader;
 
@@ -66,7 +65,7 @@ public abstract class AbstractLambdaPollLoop {
      * whether requests go through the HTTP server or the mock event server.
      */
     private static String localBasePath() {
-        Config config = ConfigProvider.getConfig();
+        Config config = Config.get();
         String rootPath = config.getOptionalValue("quarkus.http.root-path", String.class).orElse("/");
         Optional<String> contextPath = config.getOptionalValue("quarkus.servlet.context-path", String.class);
         StringBuilder path = new StringBuilder(rootPath);

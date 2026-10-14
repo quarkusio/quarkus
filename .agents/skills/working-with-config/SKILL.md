@@ -138,6 +138,6 @@ metadata, verify the annotation processor is present in its `pom.xml`.
 - `BUILD_TIME` config changes require a rebuild
 - When adding new `quarkus.*` properties, always register them in a
   `@ConfigMapping` interface. Reading them programmatically via
-  `ConfigProvider.getConfig().getOptionalValue(...)` is fine, but the
+  `Config.get().getOptionalValue(...)` is fine, but the
   corresponding key must still be defined in a `@ConfigMapping` — otherwise
   SmallRye Config will emit "unknown property" warnings at startup.

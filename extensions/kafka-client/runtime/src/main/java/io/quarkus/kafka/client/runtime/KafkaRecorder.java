@@ -2,13 +2,12 @@ package io.quarkus.kafka.client.runtime;
 
 import java.util.Optional;
 
-import org.eclipse.microprofile.config.Config;
-import org.eclipse.microprofile.config.ConfigProvider;
+import io.smallrye.config.Config;
 
 public class KafkaRecorder {
 
     public static void checkBoostrapServers() {
-        Config config = ConfigProvider.getConfig();
+        Config config = Config.get();
         Boolean serviceBindingEnabled = config.getValue("quarkus.kubernetes-service-binding.enabled", Boolean.class);
         if (!serviceBindingEnabled) {
             return;

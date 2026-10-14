@@ -6,12 +6,11 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 
-import org.eclipse.microprofile.config.Config;
-import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.resteasy.plugins.server.servlet.ResteasyContextParameters;
 import org.jboss.resteasy.spi.ResteasyConfiguration;
 
 import io.quarkus.runtime.configuration.MemorySize;
+import io.smallrye.config.Config;
 
 /**
  * Some RESTEasy components use this class for configuration. This bridges MP Config to ResteasyConfiguration
@@ -24,7 +23,7 @@ public class ResteasyConfigurationMPConfig implements ResteasyConfiguration {
 
     @Override
     public String getParameter(String name) {
-        Config config = ConfigProvider.getConfig();
+        Config config = Config.get();
         if (config == null) {
             return null;
         }
@@ -43,7 +42,7 @@ public class ResteasyConfigurationMPConfig implements ResteasyConfiguration {
 
     @Override
     public Set<String> getParameterNames() {
-        Config config = ConfigProvider.getConfig();
+        Config config = Config.get();
         if (config == null) {
             return Set.of();
         }

@@ -2,8 +2,6 @@ package io.quarkus.stork.deployment;
 
 import static java.util.Arrays.asList;
 
-import org.eclipse.microprofile.config.Config;
-import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.jandex.DotName;
 import org.jboss.logging.Logger;
 
@@ -29,6 +27,7 @@ import io.quarkus.stork.StorkRegistrarConfigRecorder;
 import io.quarkus.stork.deployment.builditem.StorkInitializedBuildItem;
 import io.quarkus.stork.deployment.builditem.StorkRegistrationConfigReadyBuildItem;
 import io.quarkus.vertx.deployment.VertxBuildItem;
+import io.smallrye.config.Config;
 import io.smallrye.stork.spi.LoadBalancerProvider;
 import io.smallrye.stork.spi.ServiceDiscoveryProvider;
 import io.smallrye.stork.spi.ServiceRegistrarProvider;
@@ -140,7 +139,7 @@ public class SmallRyeStorkProcessor {
     void configuresAutomaticRegistration(BuildProducer<StorkRegistrationConfigReadyBuildItem> registration,
             StorkRegistrarConfigRecorder registrarConfigRecorder, Capabilities capabilities) {
         if (isStorkRegistrarPresentAtRuntime()) {
-            String smallryeHealthCheckDefaultPath = getDefaultHealthCheckPath(capabilities, ConfigProvider.getConfig());
+            String smallryeHealthCheckDefaultPath = getDefaultHealthCheckPath(capabilities, Config.get());
             String registrarType = "";
             if (QuarkusClassLoader.isClassPresentAtRuntime(CONSUL_SERVICE_REGISTRAR_PROVIDER)) {
                 registrarType = CONSUL_SERVICE_REGISTRAR_TYPE;

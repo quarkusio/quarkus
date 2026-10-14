@@ -11,7 +11,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
 import org.testcontainers.containers.MongoDBContainer;
 import org.testcontainers.utility.DockerImageName;
@@ -41,6 +40,7 @@ import io.quarkus.mongodb.deployment.spi.MongoClientsBuildItem;
 import io.quarkus.mongodb.runtime.MongoConfig;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.configuration.ConfigUtils;
+import io.smallrye.config.Config;
 
 @BuildSteps(onlyIf = { IsDevServicesSupportedByLaunchMode.class, DevServicesConfig.Enabled.class })
 public class DevServicesMongoProcessor {
@@ -184,7 +184,7 @@ public class DevServicesMongoProcessor {
     }
 
     private String getEffectiveUrl(String configPrefix, String hostAndPort, CapturedProperties capturedProperties) {
-        final String databaseName = ConfigProvider.getConfig()
+        final String databaseName = Config.get()
                 .getOptionalValue(configPrefix + "database", String.class)
                 .orElse("test");
         String effectiveUrl = MONGO_SCHEME + hostAndPort + "/" + databaseName;
@@ -209,8 +209,9 @@ public class DevServicesMongoProcessor {
 
     private CapturedProperties captureProperties(String connectionName, MongoClientBuildTimeConfig mongoClientBuildTimeConfig) {
         String configPrefix = getConfigPrefix(connectionName);
-        String databaseName = ConfigProvider.getConfig().getOptionalValue(configPrefix + "database", String.class).orElse(null);
-        String connectionString = ConfigProvider.getConfig().getOptionalValue(configPrefix + "connection-string", String.class)
+        Config config = Config.get();
+        String databaseName = config.getOptionalValue(configPrefix + "database", String.class).orElse(null);
+        String connectionString = config.getOptionalValue(configPrefix + "connection-string", String.class)
                 .orElse(null);
         //TODO: update for multiple connections
         DevServicesBuildTimeConfig devServicesConfig = mongoClientBuildTimeConfig.devservices();

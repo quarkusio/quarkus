@@ -49,7 +49,6 @@ import jakarta.interceptor.AroundConstruct;
 import jakarta.interceptor.AroundInvoke;
 import jakarta.interceptor.InvocationContext;
 
-import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTransformation;
@@ -103,6 +102,7 @@ import io.quarkus.gizmo.Gizmo;
 import io.quarkus.test.InjectMock;
 import io.quarkus.test.component.QuarkusComponentTestCallbacks.BeforeBuildContext;
 import io.quarkus.test.component.QuarkusComponentTestCallbacks.BeforeIndexContext;
+import io.smallrye.config.Config;
 import io.smallrye.config.ConfigMapping;
 
 class ComponentContainer {
@@ -401,6 +401,7 @@ class ComponentContainer {
                     if (configInjectionPoint) {
                         registrationContext.configure(Config.class)
                                 .addType(Config.class)
+                                .addType(org.eclipse.microprofile.config.Config.class)
                                 .creator(ConfigBeanCreator.class)
                                 .done();
                     }

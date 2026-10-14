@@ -3,18 +3,15 @@ package io.quarkus.keycloak.pep.runtime;
 import java.util.Map;
 import java.util.function.BooleanSupplier;
 
-import org.eclipse.microprofile.config.ConfigProvider;
-
 import io.quarkus.keycloak.pep.runtime.KeycloakPolicyEnforcerTenantConfig.KeycloakConfigPolicyEnforcer.PathConfig;
-import io.smallrye.config.SmallRyeConfig;
+import io.smallrye.config.Config;
 
 public final class KeycloakPolicyEnforcerBodyHandlerRequiredEvaluator implements BooleanSupplier {
 
     @Override
     public boolean getAsBoolean() {
         // right now this supplier is invoked exactly once per HTTP router finalization, so we don't need to optimize it
-        KeycloakPolicyEnforcerConfig runtimeConfig = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class)
-                .getConfigMapping(KeycloakPolicyEnforcerConfig.class);
+        KeycloakPolicyEnforcerConfig runtimeConfig = Config.get().getConfigMapping(KeycloakPolicyEnforcerConfig.class);
         if (isBodyHandlerRequired(runtimeConfig.defaultTenant())) {
             return true;
         }

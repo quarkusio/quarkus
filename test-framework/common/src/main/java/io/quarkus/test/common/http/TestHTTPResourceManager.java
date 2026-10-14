@@ -9,13 +9,10 @@ import java.util.Optional;
 import java.util.ServiceLoader;
 import java.util.function.Function;
 
-import org.eclipse.microprofile.config.ConfigProvider;
-
 import io.quarkus.runtime.test.TestHttpEndpointProvider;
 import io.quarkus.test.common.ListeningAddress;
 import io.quarkus.value.registry.ValueRegistry;
 import io.smallrye.config.Config;
-import io.smallrye.config.SmallRyeConfig;
 
 public class TestHTTPResourceManager {
 
@@ -41,7 +38,7 @@ public class TestHTTPResourceManager {
                 TestHTTPResource resource = f.getAnnotation(TestHTTPResource.class);
                 if (resource != null) {
                     if (config == null) {
-                        config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
+                        config = Config.get();
                     }
                     if (providers == null) {
                         providers = getProviders();

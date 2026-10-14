@@ -13,8 +13,6 @@ import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-import org.eclipse.microprofile.config.Config;
-import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.AnnotationTarget.Kind;
@@ -53,6 +51,7 @@ import io.quarkus.hibernate.orm.deployment.spi.JpaModelPersistenceUnitMappingBui
 import io.quarkus.hibernate.orm.panache.deployment.EntityToPersistenceUnitBuildItem;
 import io.quarkus.hibernate.orm.panache.deployment.JavaJpaTypeBundle;
 import io.quarkus.spring.data.deployment.generate.SpringDataRepositoryCreator;
+import io.smallrye.config.Config;
 
 public class SpringDataJPAProcessor {
 
@@ -176,7 +175,7 @@ public class SpringDataJPAProcessor {
     }
 
     private void detectAndLogSpecificSpringPropertiesIfExist() {
-        Config config = ConfigProvider.getConfig();
+        Config config = Config.get();
 
         Iterable<String> iterablePropertyNames = config.getPropertyNames();
         List<String> propertyNames = new ArrayList<String>();

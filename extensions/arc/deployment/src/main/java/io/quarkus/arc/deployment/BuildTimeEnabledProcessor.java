@@ -22,8 +22,6 @@ import java.util.stream.Collectors;
 
 import jakarta.enterprise.inject.Vetoed;
 
-import org.eclipse.microprofile.config.Config;
-import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.AnnotationTarget.Kind;
@@ -47,6 +45,7 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.runtime.configuration.ConfigUtils;
+import io.smallrye.config.Config;
 
 public class BuildTimeEnabledProcessor {
 
@@ -150,7 +149,7 @@ public class BuildTimeEnabledProcessor {
     @BuildStep
     void ifBuildProperty(CombinedIndexBuildItem index, BuildTimeEnabledStereotypesBuildItem stereotypes,
             BuildProducer<BuildTimeConditionBuildItem> conditions) {
-        Config config = ConfigProviderResolver.instance().getConfig();
+        Config config = Config.get();
         enablementAnnotations(IF_BUILD_PROPERTY, index.getComputingIndex(), stereotypes, conditions,
                 new Predicate<AnnotationInstance>() {
                     @Override
@@ -163,7 +162,7 @@ public class BuildTimeEnabledProcessor {
     @BuildStep
     void unlessBuildProperty(CombinedIndexBuildItem index, BuildTimeEnabledStereotypesBuildItem stereotypes,
             BuildProducer<BuildTimeConditionBuildItem> conditions) {
-        Config config = ConfigProviderResolver.instance().getConfig();
+        Config config = Config.get();
         enablementAnnotations(UNLESS_BUILD_PROPERTY, index.getComputingIndex(), stereotypes, conditions,
                 new Predicate<AnnotationInstance>() {
                     @Override

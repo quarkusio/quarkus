@@ -27,13 +27,11 @@ import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.eclipse.microprofile.config.ConfigProvider;
-
 import com.google.common.annotations.VisibleForTesting;
 
 import io.quarkus.runtime.logging.LogRuntimeConfig;
 import io.smallrye.common.os.OS;
-import io.smallrye.config.SmallRyeConfig;
+import io.smallrye.config.Config;
 
 public final class LauncherUtil {
 
@@ -67,8 +65,7 @@ public final class LauncherUtil {
      * @return a path of the configured log file path with the resolved suffix embedded in the filename
      */
     static Path buildUniqueLogPath(String instanceId) {
-        SmallRyeConfig config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
-        LogRuntimeConfig logRuntimeConfig = config.getConfigMapping(LogRuntimeConfig.class);
+        LogRuntimeConfig logRuntimeConfig = Config.get().getConfigMapping(LogRuntimeConfig.class);
         return LauncherUtil.buildUniqueLogPath(logRuntimeConfig, instanceId);
     }
 
@@ -115,7 +112,7 @@ public final class LauncherUtil {
      */
     // TODO - Replace internal usages of test.url with io.quarkus.vertx.http.HttpServer.getLocalBaseUri
     static String generateTestUrl() {
-        SmallRyeConfig config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
+        Config config = Config.get();
         String host = host(config, "quarkus.http.host");
         // These are build time properties so it is fine to evaluate them here as they will not change
         String rootPath = rootPath(config);

@@ -8,11 +8,11 @@ import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 
 import org.assertj.core.api.Assertions;
-import org.eclipse.microprofile.config.ConfigProvider;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusExtensionTest;
+import io.smallrye.config.Config;
 
 public class InvalidURITest {
 
@@ -50,7 +50,7 @@ public class InvalidURITest {
     @Test
     void shouldWork() {
         Client client = clientWithUri(
-                "http://localhost:" + ConfigProvider.getConfig().getValue("quarkus.http.test-port", Integer.class));
+                "http://localhost:" + Config.get().getValue("quarkus.http.test-port", Integer.class));
 
         assertThat(client.get()).isEqualTo("bar-of-chocolate");
     }

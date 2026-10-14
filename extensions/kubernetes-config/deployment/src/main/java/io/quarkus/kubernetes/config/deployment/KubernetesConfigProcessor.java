@@ -3,7 +3,6 @@ package io.quarkus.kubernetes.config.deployment;
 import java.util.Collections;
 import java.util.List;
 
-import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
 
 import io.quarkus.core.Phase;
@@ -24,6 +23,7 @@ import io.quarkus.kubernetes.spi.KubernetesServiceAccountBuildItem;
 import io.quarkus.kubernetes.spi.PolicyRule;
 import io.quarkus.kubernetes.spi.RoleRef;
 import io.quarkus.kubernetes.spi.Subject;
+import io.smallrye.config.Config;
 
 public class KubernetesConfigProcessor {
 
@@ -56,7 +56,7 @@ public class KubernetesConfigProcessor {
                     ? applicationInfo.getName() + "-" + roleConfig.name()
                     : roleConfig.name();
 
-            List<String> secretNames = ConfigProvider.getConfig()
+            List<String> secretNames = Config.get()
                     .getOptionalValues("quarkus.kubernetes-config.secrets", String.class)
                     .orElse(List.of());
 

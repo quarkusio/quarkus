@@ -4,9 +4,6 @@ import java.net.URI;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
-import org.eclipse.microprofile.config.Config;
-import org.eclipse.microprofile.config.ConfigProvider;
-
 import io.quarkus.builder.item.SimpleBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.util.UriNormalizationUtil;
@@ -14,6 +11,7 @@ import io.quarkus.vertx.http.deployment.devmode.ConfiguredPathInfo;
 import io.quarkus.vertx.http.deployment.devmode.NotFoundPageDisplayableEndpointBuildItem;
 import io.quarkus.vertx.http.runtime.HandlerType;
 import io.quarkus.vertx.http.runtime.management.ManagementInterfaceBuildTimeConfig;
+import io.smallrye.config.Config;
 import io.vertx.core.Handler;
 import io.vertx.ext.web.Route;
 import io.vertx.ext.web.Router;
@@ -202,7 +200,7 @@ public final class NonApplicationRootPathBuildItem extends SimpleBuildItem {
      * @return the prefix
      */
     public static String getManagementUrlPrefix(LaunchModeBuildItem mode) {
-        Config config = ConfigProvider.getConfig();
+        Config config = Config.get();
         // These will always be defined except when the configuration is not properly set up
         // (for instance in NonApplicationRootPathBuildItemTest)
         // so we default to the safest behavior possible

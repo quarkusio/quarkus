@@ -11,8 +11,6 @@ import java.util.Set;
 import java.util.function.BooleanSupplier;
 import java.util.stream.Stream;
 
-import org.eclipse.microprofile.config.Config;
-import org.eclipse.microprofile.config.ConfigProvider;
 import org.eclipse.microprofile.health.Liveness;
 import org.eclipse.microprofile.health.Readiness;
 import org.eclipse.microprofile.health.Startup;
@@ -74,6 +72,7 @@ import io.quarkus.vertx.http.deployment.webjar.WebJarBuildItem;
 import io.quarkus.vertx.http.deployment.webjar.WebJarResourcesFilter;
 import io.quarkus.vertx.http.deployment.webjar.WebJarResultsBuildItem;
 import io.quarkus.vertx.http.runtime.management.ManagementInterfaceBuildTimeConfig;
+import io.smallrye.config.Config;
 import io.smallrye.health.AsyncHealthCheckFactory;
 import io.smallrye.health.SmallRyeHealthReporter;
 import io.smallrye.health.api.HealthGroup;
@@ -144,7 +143,7 @@ class SmallRyeHealthProcessor {
             List<HealthBuildItem> healthBuildItems,
             SmallRyeHealthBuildTimeConfig smallryeHealthBuildTimeConfig) {
         boolean extensionsEnabled = smallryeHealthBuildTimeConfig.extensionsEnabled() &&
-                !ConfigProvider.getConfig().getOptionalValue("mp.health.disable-default-procedures", boolean.class)
+                !Config.get().getOptionalValue("mp.health.disable-default-procedures", boolean.class)
                         .orElse(false);
         if (extensionsEnabled) {
             for (HealthBuildItem buildItem : healthBuildItems) {
@@ -479,7 +478,7 @@ class SmallRyeHealthProcessor {
      * If so, it will select the scheme HTTPS, otherwise HTTP.
      */
     private static String selectSchemeForManagement() {
-        Config config = ConfigProvider.getConfig();
+        Config config = Config.get();
         for (String sslProperty : MANAGEMENT_SSL_PROPERTIES) {
             Optional<List<String>> property = config.getOptionalValues(MANAGEMENT_SSL_PREFIX + sslProperty,
                     String.class);

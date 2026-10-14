@@ -15,8 +15,6 @@ import jakarta.ws.rs.client.ClientResponseFilter;
 import jakarta.ws.rs.core.UriBuilder;
 import jakarta.ws.rs.ext.Provider;
 
-import org.eclipse.microprofile.config.ConfigProvider;
-
 import io.opentelemetry.api.GlobalOpenTelemetry;
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.trace.Span;
@@ -32,7 +30,7 @@ import io.opentelemetry.instrumentation.api.semconv.http.HttpSpanStatusExtractor
 import io.quarkus.arc.Unremovable;
 import io.quarkus.opentelemetry.runtime.QuarkusContextStorage;
 import io.quarkus.opentelemetry.runtime.config.runtime.OTelRuntimeConfig;
-import io.smallrye.config.SmallRyeConfig;
+import io.smallrye.config.Config;
 
 /**
  * A client filter for the JAX-RS Client and MicroProfile REST Client that records OpenTelemetry data. This is only used
@@ -61,9 +59,7 @@ public class OpenTelemetryClientFilter implements ClientRequestFilter, ClientRes
     // In Reactive Rest Client this is the constructor called. In the classic is the next one with injection.
     public OpenTelemetryClientFilter() {
         this(GlobalOpenTelemetry.get(),
-                ConfigProvider.getConfig()
-                        .unwrap(SmallRyeConfig.class)
-                        .getConfigMapping(OTelRuntimeConfig.class));
+                Config.get().getConfigMapping(OTelRuntimeConfig.class));
     }
 
     @Inject

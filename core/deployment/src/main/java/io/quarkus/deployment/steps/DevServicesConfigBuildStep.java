@@ -5,9 +5,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.eclipse.microprofile.config.Config;
-import org.eclipse.microprofile.config.ConfigProvider;
-
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Produce;
@@ -17,6 +14,7 @@ import io.quarkus.deployment.builditem.DevServicesLauncherConfigResultBuildItem;
 import io.quarkus.deployment.builditem.DevServicesResultBuildItem;
 import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
+import io.smallrye.config.Config;
 
 class DevServicesConfigBuildStep {
 
@@ -33,7 +31,7 @@ class DevServicesConfigBuildStep {
         for (DevServicesResultBuildItem resultBuildItem : devServicesResultBuildItems) {
             newProperties.putAll(resultBuildItem.getConfig());
         }
-        Config config = ConfigProvider.getConfig();
+        Config config = Config.get();
         //check if there are existing already started dev services
         //if there were no changes to the processors they don't produce config
         //so we merge existing config from previous runs

@@ -8,13 +8,12 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Produces;
 import jakarta.inject.Inject;
 
-import org.eclipse.microprofile.config.Config;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
 import io.quarkus.test.Mock;
 import io.quarkus.test.junit.QuarkusTest;
-import io.smallrye.config.SmallRyeConfig;
+import io.smallrye.config.Config;
 
 @QuarkusTest
 public class AppConfigMockTest {
@@ -60,7 +59,7 @@ public class AppConfigMockTest {
         @ApplicationScoped
         @Mock
         AppConfig appConfig() {
-            AppConfig appConfig = config.unwrap(SmallRyeConfig.class).getConfigMapping(AppConfig.class);
+            AppConfig appConfig = config.getConfigMapping(AppConfig.class);
             AppConfig appConfigSpy = Mockito.spy(appConfig);
             AppConfig.Info infoSpy = Mockito.spy(appConfig.info());
             Mockito.when(appConfigSpy.info()).thenReturn(infoSpy);

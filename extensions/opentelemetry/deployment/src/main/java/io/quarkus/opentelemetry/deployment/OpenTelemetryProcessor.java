@@ -21,7 +21,6 @@ import java.util.function.Predicate;
 import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Singleton;
 
-import org.eclipse.microprofile.config.ConfigProvider;
 import org.eclipse.microprofile.config.ConfigValue;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTransformation;
@@ -101,6 +100,7 @@ import io.quarkus.rest.client.reactive.spi.RegisteredRestClientBuildItem;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.vertx.core.deployment.CoreVertxBuildItem;
+import io.smallrye.config.Config;
 
 @BuildSteps(onlyIf = OpenTelemetryEnabled.class)
 public class OpenTelemetryProcessor {
@@ -526,7 +526,7 @@ public class OpenTelemetryProcessor {
     private static boolean dataSourceUsesOTelJdbcDriver(String dataSourceName) {
         List<String> driverPropertyKeys = DataSourceUtil.dataSourcePropertyKeys(dataSourceName, "jdbc.driver");
         for (String driverPropertyKey : driverPropertyKeys) {
-            ConfigValue explicitlyConfiguredDriverValue = ConfigProvider.getConfig().getConfigValue(driverPropertyKey);
+            ConfigValue explicitlyConfiguredDriverValue = Config.get().getConfigValue(driverPropertyKey);
             if (explicitlyConfiguredDriverValue.getValue() != null) {
                 return explicitlyConfiguredDriverValue.getValue().equals(OPEN_TELEMETRY_DRIVER);
             }

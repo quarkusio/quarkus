@@ -12,8 +12,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
 
-import org.eclipse.microprofile.config.ConfigProvider;
-
 import io.quarkus.bootstrap.model.ApplicationModel;
 import io.quarkus.deployment.IsLocalDevelopment;
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -25,7 +23,7 @@ import io.quarkus.devui.spi.page.Page;
 import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.maven.dependency.ArtifactKey;
 import io.quarkus.maven.dependency.ResolvedDependency;
-import io.smallrye.config.SmallRyeConfig;
+import io.smallrye.config.Config;
 
 public class DependenciesProcessor {
 
@@ -91,8 +89,7 @@ public class DependenciesProcessor {
     }
 
     private boolean isEnabled() {
-        SmallRyeConfig config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
-        var value = config.getConfigValue("quarkus.bootstrap.incubating-model-resolver");
+        var value = Config.get().getConfigValue("quarkus.bootstrap.incubating-model-resolver");
         // if it's not false and if it's false it doesn't come from the default value
         return value == null || !"false".equals(value.getValue()) || value.isDefault();
     }

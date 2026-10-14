@@ -123,6 +123,11 @@ public class QuarkusAugmentor {
                     launchMode, devModeType).accept(chainBuilder);
 
             Thread.currentThread().setContextClassLoader(classLoader);
+            // The build time configuration is registered for the deployment classloader, which only the build steps
+            // run with. Everything else in the augmentation runs with this classloader, so register it here as well
+            SmallRyeConfigProviderResolver resolver = (SmallRyeConfigProviderResolver) SmallRyeConfigProviderResolver
+                    .instance();
+            resolver.registerConfig(resolver.get(deploymentClassLoader), classLoader);
             chainBuilder.loadProviders(classLoader);
 
             chainBuilder.addPriorityItem(LoggingSetupBuildItem.class);
@@ -212,12 +217,11 @@ public class QuarkusAugmentor {
 
             return buildResult;
         } finally {
-            try {
-                ((SmallRyeConfigProviderResolver) SmallRyeConfigProviderResolver.instance())
-                        .releaseConfig(deploymentClassLoader);
-            } catch (Exception ignore) {
-
-            }
+            // Releases the build time configuration from the deployment classloader. The augmentation classloader
+            // keeps it, because Dev mode and the test handlers use it after the build. Dev Services capture the
+            // configuration of their own augmentation, because several applications may be augmented before any
+            // of them starts, and QuarkusConfigFactory only holds the last one
+            ((SmallRyeConfigProviderResolver) SmallRyeConfigProviderResolver.instance()).releaseConfig(deploymentClassLoader);
             Thread.currentThread().setContextClassLoader(originalClassLoader);
         }
     }

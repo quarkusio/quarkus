@@ -10,7 +10,6 @@ import java.util.UUID;
 import jakarta.inject.Inject;
 
 import org.assertj.core.api.Assertions;
-import org.eclipse.microprofile.config.ConfigProvider;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -20,6 +19,7 @@ import io.quarkus.cache.CacheManager;
 import io.quarkus.cache.redis.runtime.RedisCache;
 import io.quarkus.redis.datasource.RedisDataSource;
 import io.quarkus.test.QuarkusExtensionTest;
+import io.smallrye.config.Config;
 import io.vertx.mutiny.core.Vertx;
 import io.vertx.mutiny.redis.client.Redis;
 import io.vertx.mutiny.redis.client.RedisConnection;
@@ -158,7 +158,7 @@ public class RedisCacheWithOptimisticLockingTest {
         String key = UUID.randomUUID().toString();
         String watchedKey = "cache:" + SimpleCachedService.FAILING_CACHE_NAME + ":" + key;
         String transactionKey = "transaction:" + UUID.randomUUID();
-        String redisUrl = ConfigProvider.getConfig().getValue("quarkus.redis.hosts", String.class);
+        String redisUrl = Config.get().getValue("quarkus.redis.hosts", String.class);
         Redis otherRedis = Redis.createClient(vertx, redisUrl);
 
         try {

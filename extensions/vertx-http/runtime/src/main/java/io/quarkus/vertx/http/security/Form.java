@@ -5,14 +5,12 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 
-import org.eclipse.microprofile.config.ConfigProvider;
-
 import io.quarkus.vertx.http.runtime.FormAuthConfig;
 import io.quarkus.vertx.http.runtime.VertxHttpConfig;
 import io.quarkus.vertx.http.runtime.security.FormAuthenticationMechanism;
 import io.quarkus.vertx.http.runtime.security.HttpAuthenticationMechanism;
 import io.smallrye.common.annotation.Experimental;
-import io.smallrye.config.SmallRyeConfig;
+import io.smallrye.config.Config;
 
 /**
  * This class provides a way to create a Form-based authentication mechanism. The {@link HttpAuthenticationMechanism}
@@ -64,7 +62,7 @@ public interface Form {
         private int priority;
 
         public Builder() {
-            this(ConfigProvider.getConfig().unwrap(SmallRyeConfig.class).getConfigMapping(VertxHttpConfig.class));
+            this(Config.get().getConfigMapping(VertxHttpConfig.class));
         }
 
         private Builder(VertxHttpConfig vertxHttpConfig) {

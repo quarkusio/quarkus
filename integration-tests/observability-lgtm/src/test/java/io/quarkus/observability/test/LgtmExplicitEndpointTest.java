@@ -5,7 +5,6 @@ import java.util.Optional;
 
 import jakarta.inject.Inject;
 
-import org.eclipse.microprofile.config.Config;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledOnOs;
@@ -14,6 +13,7 @@ import org.junit.jupiter.api.condition.OS;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.QuarkusTestProfile;
 import io.quarkus.test.junit.TestProfile;
+import io.smallrye.config.Config;
 
 /**
  * Verifies that LGTM Dev Services do not start when an OTLP exporter endpoint

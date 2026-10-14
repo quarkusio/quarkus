@@ -2,9 +2,7 @@ package io.quarkus.runtime.configuration;
 
 import java.lang.invoke.MethodHandles;
 
-import org.eclipse.microprofile.config.ConfigProvider;
-
-import io.smallrye.config.SmallRyeConfig;
+import io.smallrye.config.Config;
 
 /**
  * Bootstrap methods for resolving configuration mappings as dynamic constants.
@@ -44,6 +42,6 @@ public final class ConfigLookup {
      * @return the resolved configuration mapping instance
      */
     public static Object getConfigMapping(Class<?> type) {
-        return ConfigProvider.getConfig().unwrap(SmallRyeConfig.class).getConfigMapping(type);
+        return Config.get().getConfigMapping(type);
     }
 }

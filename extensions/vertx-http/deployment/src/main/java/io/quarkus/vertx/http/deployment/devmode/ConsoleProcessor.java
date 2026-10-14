@@ -20,8 +20,6 @@ import org.aesh.command.option.Argument;
 import org.aesh.command.option.Option;
 import org.aesh.command.validator.CommandValidator;
 import org.aesh.command.validator.CommandValidatorException;
-import org.eclipse.microprofile.config.Config;
-import org.eclipse.microprofile.config.ConfigProvider;
 
 import io.quarkus.deployment.IsDevelopment;
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -40,6 +38,7 @@ import io.quarkus.vertx.http.deployment.HttpRootPathBuildItem;
 import io.quarkus.vertx.http.deployment.NonApplicationRootPathBuildItem;
 import io.quarkus.vertx.http.runtime.devmode.ConfigDescription;
 import io.quarkus.vertx.http.runtime.devmode.ConfigDescriptionsManager;
+import io.smallrye.config.Config;
 
 public class ConsoleProcessor {
 
@@ -54,7 +53,7 @@ public class ConsoleProcessor {
         if (context == null) {
             context = ConsoleStateManager.INSTANCE.createContext("HTTP");
         }
-        Config c = ConfigProvider.getConfig();
+        Config c = Config.get();
         String host = c.getOptionalValue("quarkus.http.host", String.class).orElse("localhost");
         boolean isInsecureDisabled = c.getOptionalValue("quarkus.http.insecure-requests", String.class)
                 .map("disabled"::equals)

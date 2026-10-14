@@ -13,22 +13,20 @@ import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
-import org.eclipse.microprofile.config.ConfigProvider;
-
 import io.quarkus.builder.item.SimpleBuildItem;
 import io.quarkus.deployment.util.ReflectUtil;
 import io.quarkus.dev.spi.DevModeType;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
-import io.smallrye.config.SmallRyeConfig;
+import io.smallrye.config.Config;
 
 public final class BooleanSupplierFactoryBuildItem extends SimpleBuildItem {
 
     private final LaunchMode launchMode;
     private final DevModeType devModeType;
     private final ClassValue<BooleanSupplier> suppliers = new ClassValue<>() {
-        final SmallRyeConfig config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
+        final Config config = Config.get();
 
         @Override
         protected BooleanSupplier computeValue(Class<?> type) {

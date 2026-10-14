@@ -11,10 +11,9 @@ import java.util.stream.StreamSupport;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
-import org.eclipse.microprofile.config.Config;
-
 import io.quarkus.liquibase.runtime.LiquibaseConfig;
 import io.quarkus.liquibase.runtime.LiquibaseDataSourceBuildTimeConfig;
+import io.smallrye.config.Config;
 import liquibase.GlobalConfiguration;
 
 /**

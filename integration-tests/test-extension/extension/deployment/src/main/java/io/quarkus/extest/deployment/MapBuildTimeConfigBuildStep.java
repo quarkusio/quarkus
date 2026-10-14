@@ -5,12 +5,11 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Optional;
 
-import org.eclipse.microprofile.config.ConfigProvider;
-
 import io.quarkus.arc.deployment.ConfigPropertyBuildItem;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.extest.runtime.config.TestMappingBuildTimeRunTime;
+import io.smallrye.config.Config;
 
 public class MapBuildTimeConfigBuildStep {
     public static final String TEST_MAP_CONFIG_MARKER = "test-map-config";
@@ -18,7 +17,7 @@ public class MapBuildTimeConfigBuildStep {
 
     @BuildStep
     void validate(BuildProducer<ConfigPropertyBuildItem> configProperties, TestMappingBuildTimeRunTime mapConfig) {
-        Optional<String> pathToMarkerFile = ConfigProvider.getConfig().getOptionalValue("test-map-config", String.class);
+        Optional<String> pathToMarkerFile = Config.get().getOptionalValue("test-map-config", String.class);
         if (pathToMarkerFile.isPresent()) {
             assert mapConfig.mapMap().get("main-profile") != null;
             assert mapConfig.mapMap().get("main-profile").get("property") != null;

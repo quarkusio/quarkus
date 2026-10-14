@@ -4,9 +4,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Produces;
 import jakarta.inject.Inject;
 
-import org.eclipse.microprofile.config.Config;
-
-import io.smallrye.config.SmallRyeConfig;
+import io.smallrye.config.Config;
 
 public class DummyMappingProducer {
 
@@ -17,6 +15,6 @@ public class DummyMappingProducer {
     @ApplicationScoped
     @io.quarkus.test.Mock
     DummyMapping server() {
-        return config.unwrap(SmallRyeConfig.class).getConfigMapping(DummyMapping.class);
+        return config.getConfigMapping(DummyMapping.class);
     }
 }

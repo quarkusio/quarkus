@@ -4,12 +4,12 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Optional;
 
-import org.eclipse.microprofile.config.Config;
-import org.eclipse.microprofile.config.ConfigProvider;
 import org.eclipse.microprofile.openapi.OASFactory;
 import org.eclipse.microprofile.openapi.OASFilter;
 import org.eclipse.microprofile.openapi.models.OpenAPI;
 import org.eclipse.microprofile.openapi.models.security.SecurityScheme;
+
+import io.smallrye.config.Config;
 
 /**
  * Auto add security
@@ -90,7 +90,7 @@ public abstract class AutoSecurityFilter implements OASFilter {
     protected abstract void updateSecurityScheme(SecurityScheme securityScheme);
 
     protected String getUrl(String configKey, String defaultValue, String shouldEndWith) {
-        Config c = ConfigProvider.getConfig();
+        Config c = Config.get();
 
         String u = c.getOptionalValue(configKey, String.class).orElse(defaultValue);
 

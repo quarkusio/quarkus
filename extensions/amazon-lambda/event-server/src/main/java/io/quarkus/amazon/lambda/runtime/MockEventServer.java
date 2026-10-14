@@ -17,12 +17,11 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.eclipse.microprofile.config.Config;
-import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
 
 import io.netty.handler.codec.http.HttpHeaderNames;
 import io.quarkus.runtime.configuration.MemorySize;
+import io.smallrye.config.Config;
 import io.vertx.core.Vertx;
 import io.vertx.core.VertxOptions;
 import io.vertx.core.buffer.Buffer;
@@ -77,7 +76,7 @@ public class MockEventServer implements Closeable {
         HttpServerOptions options = new HttpServerOptions();
         options.setPort(port == 0 ? -1 : port);
 
-        Config config = ConfigProvider.getConfig();
+        Config config = Config.get();
         Optional<MemorySize> maybeMaxHeadersSize = config
                 .getOptionalValue("quarkus.http.limits.max-header-size", MemorySize.class);
         if (maybeMaxHeadersSize.isPresent()) {

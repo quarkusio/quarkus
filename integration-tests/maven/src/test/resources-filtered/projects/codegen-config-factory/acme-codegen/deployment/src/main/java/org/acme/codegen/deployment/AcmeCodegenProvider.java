@@ -6,11 +6,11 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 import org.acme.AcmeConstants;
-import org.eclipse.microprofile.config.Config;
 
 import io.quarkus.bootstrap.prebuild.CodeGenException;
 import io.quarkus.deployment.CodeGenContext;
 import io.quarkus.deployment.CodeGenProvider;
+import io.smallrye.config.Config;
 
 public class AcmeCodegenProvider implements CodeGenProvider {
 

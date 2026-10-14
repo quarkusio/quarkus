@@ -9,7 +9,6 @@ import java.util.Optional;
 import java.util.function.Predicate;
 import java.util.stream.StreamSupport;
 
-import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
 
 import io.quarkus.container.spi.ContainerImageBuildRequestBuildItem;
@@ -27,6 +26,7 @@ import io.quarkus.deployment.builditem.SuppressNonRuntimeConfigChangedWarningBui
 import io.quarkus.deployment.pkg.builditem.ArtifactResultBuildItem;
 import io.quarkus.deployment.pkg.steps.NativeSourcesBuild;
 import io.quarkus.runtime.util.StringUtil;
+import io.smallrye.config.Config;
 
 public class ContainerImageProcessor {
 
@@ -156,7 +156,7 @@ public class ContainerImageProcessor {
      * The only way is to check the property names provided.
      **/
     static boolean isGroupSpecified() {
-        return StreamSupport.stream(ConfigProvider.getConfig().getPropertyNames().spliterator(), false)
+        return StreamSupport.stream(Config.get().getPropertyNames().spliterator(), false)
                 .anyMatch(n -> n.equals("quarkus.container-image.group") || n.equals("QUARKUS_CONTAINER_IMAGE_GROUP"));
     }
 

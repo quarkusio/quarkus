@@ -8,9 +8,6 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import org.eclipse.microprofile.config.Config;
-import org.eclipse.microprofile.config.ConfigProvider;
-
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.deployment.IsDevelopment;
@@ -27,6 +24,7 @@ import io.quarkus.vertx.http.runtime.devmode.AdditionalRouteDescription;
 import io.quarkus.vertx.http.runtime.devmode.ResourceNotFoundData;
 import io.quarkus.vertx.http.runtime.devmode.ResourceNotFoundRecorder;
 import io.quarkus.vertx.http.runtime.devmode.RouteDescription;
+import io.smallrye.config.Config;
 import io.vertx.core.Handler;
 import io.vertx.ext.web.RoutingContext;
 
@@ -93,7 +91,7 @@ public class NotFoundProcessor {
 
         DevModeType type = launchMode.getDevModeType().orElse(DevModeType.LOCAL);
         if (!type.equals(DevModeType.REMOTE_SERVER_SIDE)) {
-            Config config = ConfigProvider.getConfig();
+            Config config = Config.get();
             var host = config.getOptionalValue("quarkus.http.host", String.class).orElse("localhost");
             var port = config.getOptionalValue("quarkus.http.port", Integer.class).orElse(8080);
             return "http://" + host + ":" + port + "/";

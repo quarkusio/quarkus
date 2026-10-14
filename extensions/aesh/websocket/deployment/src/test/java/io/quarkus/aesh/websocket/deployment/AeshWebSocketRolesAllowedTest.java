@@ -20,7 +20,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.security.test.utils.TestIdentityController;
 import io.quarkus.security.test.utils.TestIdentityProvider;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.common.http.TestHTTPResource;
 import io.vertx.core.Vertx;
 import io.vertx.core.http.WebSocketClient;
@@ -33,7 +33,7 @@ import io.vertx.core.http.WebSocketConnectOptions;
 public class AeshWebSocketRolesAllowedTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot(jar -> jar.addClasses(
                     AeshWebSocketTestHelper.class,
                     HelloCommand.class,

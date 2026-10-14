@@ -20,7 +20,7 @@ import io.quarkus.aesh.runtime.CliSettings;
 import io.quarkus.builder.BuildChainBuilder;
 import io.quarkus.builder.BuildContext;
 import io.quarkus.builder.BuildStep;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 /**
  * Tests that a {@link CliSettings} SPI bean is discovered and invoked when
@@ -29,7 +29,7 @@ import io.quarkus.test.QuarkusUnitTest;
 public class CliSettingsCustomizerTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot(jar -> jar.addClasses(
                     DummyCommand.class,
                     TestCliSettings.class,

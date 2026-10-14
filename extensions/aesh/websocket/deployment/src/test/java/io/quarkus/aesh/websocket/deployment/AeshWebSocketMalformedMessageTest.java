@@ -15,7 +15,7 @@ import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.common.http.TestHTTPResource;
 import io.vertx.core.Vertx;
 import io.vertx.core.http.WebSocketClient;
@@ -28,7 +28,7 @@ import io.vertx.core.http.WebSocketConnectOptions;
 public class AeshWebSocketMalformedMessageTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot(jar -> jar.addClasses(HelloCommand.class));
 
     @TestHTTPResource("/aesh/terminal")

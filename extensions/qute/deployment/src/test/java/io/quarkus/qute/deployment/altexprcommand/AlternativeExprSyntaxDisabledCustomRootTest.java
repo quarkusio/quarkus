@@ -15,12 +15,12 @@ import io.quarkus.builder.BuildContext;
 import io.quarkus.builder.BuildStep;
 import io.quarkus.qute.Template;
 import io.quarkus.qute.deployment.TemplateRootBuildItem;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class AlternativeExprSyntaxDisabledCustomRootTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot(root -> root
                     .addAsResource(new StringAsset("{=foo.toLowerCase}{ignored}"), "templates/testik.html")
                     // This config file is completely ignored

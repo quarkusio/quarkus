@@ -178,16 +178,16 @@ final class QuarkusExtensionTestParameterizedClassTest {
 
         extension.resetForParameterizedClass();
 
-        Field customAppPropsField = AbstractQuarkusExtensionTest.class.getDeclaredField("customApplicationProperties");
+        Field customAppPropsField = QuarkusExtensionTest.class.getDeclaredField("customApplicationProperties");
         customAppPropsField.setAccessible(true);
         assertNull(customAppPropsField.get(extension));
 
-        Field customRuntimeAppPropsField = AbstractQuarkusExtensionTest.class
+        Field customRuntimeAppPropsField = QuarkusExtensionTest.class
                 .getDeclaredField("customRuntimeApplicationProperties");
         customRuntimeAppPropsField.setAccessible(true);
         assertNull(customRuntimeAppPropsField.get(extension));
 
-        Field configResourceNameField = AbstractQuarkusExtensionTest.class.getDeclaredField("configResourceName");
+        Field configResourceNameField = QuarkusExtensionTest.class.getDeclaredField("configResourceName");
         configResourceNameField.setAccessible(true);
         assertNull(configResourceNameField.get(extension));
     }

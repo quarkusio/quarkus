@@ -12,7 +12,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.qute.Engine;
 import io.quarkus.qute.Template;
 import io.quarkus.qute.Variant;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 /**
  * Reproducer for a bug when calling .raw on a missing bean property in an HTML template, the value resolver converts
@@ -25,7 +25,7 @@ import io.quarkus.test.QuarkusUnitTest;
 public class RawCallOnMissingPropertyTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot(root -> root
                     .addClass(Guide.class))
             .overrideConfigKey("quarkus.qute.property-not-found-strategy", "NOOP")

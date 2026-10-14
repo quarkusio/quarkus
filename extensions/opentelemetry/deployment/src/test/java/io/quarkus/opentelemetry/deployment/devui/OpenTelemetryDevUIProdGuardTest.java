@@ -14,7 +14,7 @@ import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.sdk.trace.SpanProcessor;
 import io.quarkus.opentelemetry.deployment.common.TestUtil;
 import io.quarkus.opentelemetry.runtime.devui.DevUiTracesSpanProcessor;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 /**
  * Guards the design's "not a bean outside dev": in a non-dev build the capture
@@ -26,7 +26,7 @@ import io.quarkus.test.QuarkusUnitTest;
 public class OpenTelemetryDevUIProdGuardTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot((JavaArchive jar) -> jar.addClass(TestUtil.class))
             // Keep the test hermetic: no OTLP export and no LGTM/observability dev
             // service container (which would also override the OTLP exporter).

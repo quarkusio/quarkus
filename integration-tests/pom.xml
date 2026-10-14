@@ -387,6 +387,7 @@
                 <module>picocli-native</module>
                 <module>web-dependency-locator</module>
                 <module>devmode</module>
+                <module>devui-playwright</module>
                 <module>ide-launcher</module>
                 <module>elasticsearch-rest-client</module>
                 <module>elasticsearch-java-client</module>

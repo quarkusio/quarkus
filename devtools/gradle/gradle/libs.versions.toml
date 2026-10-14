@@ -1,7 +1,7 @@
 [versions]
 plugin-publish = "2.2.1"
 
-kotlin = "2.4.20"
+kotlin = "2.4.21"
 smallrye-config = "4.0.0"
 json-schema-validator = "2.0.1"
 

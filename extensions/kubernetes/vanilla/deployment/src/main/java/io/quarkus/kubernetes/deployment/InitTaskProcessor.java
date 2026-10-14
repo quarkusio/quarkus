@@ -22,6 +22,8 @@ import io.quarkus.kubernetes.spi.PolicyRule;
 
 public class InitTaskProcessor {
 
+    static final String VIEW_JOBS_ROLE_NAME = "view-jobs";
+
     private static final String INIT_CONTAINER_WAITER_NAME = "wait-for-";
 
     public static void process(
@@ -77,13 +79,13 @@ public class InitTaskProcessor {
         }
 
         if (generateRoleForJobs) {
-            roles.produce(new KubernetesRoleBuildItem("view-jobs", Collections.singletonList(
+            roles.produce(new KubernetesRoleBuildItem(VIEW_JOBS_ROLE_NAME, Collections.singletonList(
                     new PolicyRule(
                             Collections.singletonList("batch"),
                             Collections.singletonList("jobs"),
                             List.of("get"))),
                     target));
-            roleBindings.produce(new KubernetesRoleBindingBuildItem(null, "view-jobs", false, target));
+            roleBindings.produce(new KubernetesRoleBindingBuildItem(null, VIEW_JOBS_ROLE_NAME, false, target));
             serviceAccount.produce(new KubernetesServiceAccountBuildItem(true));
         }
     }

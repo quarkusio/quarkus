@@ -19,6 +19,7 @@ public class QuarkusDirContextFactory implements DirContextFactory {
 
     private static final String CONNECT_TIMEOUT = "com.sun.jndi.ldap.connect.timeout";
     private static final String READ_TIMEOUT = "com.sun.jndi.ldap.read.timeout";
+    private static final String SOCKET_FACTORY = "java.naming.ldap.factory.socket";
     public static final String INITIAL_CONTEXT_FACTORY = "com.sun.jndi.ldap.LdapCtxFactory";
     private static final String SECURITY_AUTHENTICATION = "simple";
 
@@ -27,15 +28,25 @@ public class QuarkusDirContextFactory implements DirContextFactory {
     private final String securityCredential;
     private final Duration connectTimeout;
     private final Duration readTimeout;
+    private final boolean tlsRegistrySocketFactory;
     private final ClassLoader targetClassLoader;
 
     public QuarkusDirContextFactory(String providerUrl, String securityPrincipal, String securityCredential,
             Duration connectTimeout, Duration readTimeout) {
+        this(providerUrl, securityPrincipal, securityCredential, connectTimeout, readTimeout, false);
+    }
+
+    /**
+     * @param tlsRegistrySocketFactory whether the connections use {@link QuarkusLdapSocketFactory}
+     */
+    public QuarkusDirContextFactory(String providerUrl, String securityPrincipal, String securityCredential,
+            Duration connectTimeout, Duration readTimeout, boolean tlsRegistrySocketFactory) {
         this.providerUrl = providerUrl;
         this.securityPrincipal = securityPrincipal;
         this.securityCredential = securityCredential;
         this.connectTimeout = connectTimeout;
         this.readTimeout = readTimeout;
+        this.tlsRegistrySocketFactory = tlsRegistrySocketFactory;
         this.targetClassLoader = getClass().getClassLoader();
     }
 
@@ -95,6 +106,9 @@ public class QuarkusDirContextFactory implements DirContextFactory {
             env.put(InitialDirContext.REFERRAL, mode == null ? ReferralMode.IGNORE.getValue() : mode.getValue());
             env.put(CONNECT_TIMEOUT, "" + connectTimeout.toMillis());
             env.put(READ_TIMEOUT, "" + readTimeout.toMillis());
+            if (tlsRegistrySocketFactory) {
+                env.put(SOCKET_FACTORY, QuarkusLdapSocketFactory.class.getName());
+            }
 
             //            if (log.isDebugEnabled()) {
             //                log.debugf("Creating [" + InitialDirContext.class + "] with environment:");

@@ -220,14 +220,13 @@ public final class AutoAddScopeBuildItem extends MultiBuildItem {
                 DotName superName = clazz.superName();
                 while (superName != null && !superName.equals(DotNames.OBJECT)) {
                     ClassInfo superClass = index.getClassByName(superName);
-                    if (superClass != null) {
-                        if (superClass.interfaceNames().contains(interfaceName)) {
-                            return true;
-                        }
-                        superName = superClass.superName();
-                    } else {
-                        break;
+                    if (superClass == null) {
+                        throw new IllegalStateException("Superclass " + superName + " of " + clazz.name() + " not found");
                     }
+                    if (superClass.interfaceNames().contains(interfaceName)) {
+                        return true;
+                    }
+                    superName = superClass.superName();
                 }
                 return false;
             });

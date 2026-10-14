@@ -116,7 +116,7 @@ public class AutoAddScopeProcessor {
         }
     }
 
-    private boolean requiresContainerServices(ClassInfo clazz, Set<DotName> containerAnnotationNames, IndexView index) {
+    boolean requiresContainerServices(ClassInfo clazz, Set<DotName> containerAnnotationNames, IndexView index) {
         // Note that transformed methods/fields are not taken into account
         if (hasContainerAnnotation(clazz, containerAnnotationNames)) {
             return true;
@@ -125,14 +125,13 @@ public class AutoAddScopeProcessor {
             DotName superName = clazz.superName();
             while (superName != null && !superName.equals(DotNames.OBJECT)) {
                 final ClassInfo superClass = index.getClassByName(superName);
-                if (superClass != null) {
-                    if (hasContainerAnnotation(superClass, containerAnnotationNames)) {
-                        return true;
-                    }
-                    superName = superClass.superName();
-                } else {
-                    superName = null;
+                if (superClass == null) {
+                    throw new IllegalStateException("Superclass " + superName + " of " + clazz.name() + " not found");
                 }
+                if (hasContainerAnnotation(superClass, containerAnnotationNames)) {
+                    return true;
+                }
+                superName = superClass.superName();
             }
         }
         return false;

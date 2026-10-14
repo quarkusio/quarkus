@@ -23,6 +23,15 @@ import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
 import io.smallrye.config.SmallRyeConfig;
 
+
+/**
+ * A build item used to create a {@link BooleanSupplier} for conditional build steps.
+ * <p>
+ * The supplier is instantiated with the current {@link LaunchMode}, {@link DevModeType},
+ * and any supported build-time configuration values, allowing extensions to gate build logic
+ * based on runtime and configuration context.
+ */
+
 public final class BooleanSupplierFactoryBuildItem extends SimpleBuildItem {
 
     private final LaunchMode launchMode;

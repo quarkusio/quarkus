@@ -4,19 +4,23 @@ import jakarta.inject.Inject;
 
 import io.lettuce.core.api.StatefulRedisConnection;
 import io.lettuce.core.api.reactive.RedisReactiveCommands;
+import io.quarkus.redis.datasource.ReactiveRedisDataSource;
 import io.quarkus.redis.datasource.RedisDataSource;
 import io.quarkus.runtime.QuarkusApplication;
 import io.quarkus.runtime.annotations.QuarkusMain;
 
 /**
- * Uses the Lettuce backend through the data source and through the Lettuce connection bean, with the {@code reactive}
- * argument, requests Lettuce's reactive API instead.
+ * Uses the Lettuce backend through the blocking and the reactive data source and through the Lettuce connection bean.
+ * With the {@code reactive} argument, requests Lettuce's reactive API instead.
  */
 @QuarkusMain
 public class LettuceWithoutReactorApp implements QuarkusApplication {
 
     @Inject
     RedisDataSource dataSource;
+
+    @Inject
+    ReactiveRedisDataSource reactiveDataSource;
 
     @Inject
     StatefulRedisConnection<String, String> connection;
@@ -31,6 +35,12 @@ public class LettuceWithoutReactorApp implements QuarkusApplication {
         String value = dataSource.value(String.class).get("lettuce-without-reactor");
         if (!"value".equals(value)) {
             System.err.println("data source: expected value, got " + value);
+            return 1;
+        }
+
+        String reactiveValue = reactiveDataSource.value(String.class).get("lettuce-without-reactor").await().indefinitely();
+        if (!"value".equals(reactiveValue)) {
+            System.err.println("reactive data source: expected value, got " + reactiveValue);
             return 1;
         }
 

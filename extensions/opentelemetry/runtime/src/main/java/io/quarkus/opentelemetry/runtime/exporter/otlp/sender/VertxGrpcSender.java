@@ -29,7 +29,6 @@ import io.smallrye.common.annotation.SuppressForbidden;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
-import io.vertx.core.Promise;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpClientOptions;
@@ -282,26 +281,19 @@ public final class VertxGrpcSender implements GrpcSender {
                 var os = new BufferOutputStream(buffer);
                 messageWriter.writeMessage(os);
                 request.send(buffer).onSuccess(new Handler<>() {
+                    Buffer body;
+
                     @Override
                     public void handle(GrpcClientResponse<Buffer, Buffer> response) {
-                        response.exceptionHandler(new Handler<>() {
+                        response.handler(new Handler<>() {
+                            @Override
+                            public void handle(Buffer msg) {
+                                body = msg;
+                            }
+                        }).exceptionHandler(new Handler<>() {
                             @Override
                             public void handle(Throwable t) {
-                                if (attemptNumber <= MAX_ATTEMPTS && !isShutdown.get()) {
-                                    // retry
-                                    initiateSend(client, server,
-                                            MAX_ATTEMPTS - attemptNumber,
-                                            newAttempt(), exportTimeout,
-                                            new Consumer<>() {
-                                                @Override
-                                                public void accept(Throwable throwable) {
-                                                    failOnClientRequest(throwable, onError, attemptNumber);
-                                                }
-                                            });
-
-                                } else {
-                                    failOnClientRequest(t, onError, attemptNumber);
-                                }
+                                retryOrFail(t);
                             }
                         }).errorHandler(new Handler<>() {
                             @Override
@@ -313,7 +305,6 @@ public final class VertxGrpcSender implements GrpcSender {
                             public void handle(Void ignored) {
                                 GrpcStatus status = getStatus(response);
                                 if (status == GrpcStatus.OK) {
-                                    // onResponse.accept(GrpcResponse.create(status.code, status.toString()));
                                     onResponse.accept(new GrpcResponse() {
                                         @Override
                                         public GrpcStatusCode getStatusCode() {
@@ -327,28 +318,10 @@ public final class VertxGrpcSender implements GrpcSender {
 
                                         @Override
                                         public byte[] getResponseMessage() {
-                                            if (response == null) {
+                                            if (body == null) {
                                                 return null;
                                             }
-                                            Promise<String> promise = Promise.promise();
-                                            StringBuilder sb = new StringBuilder();
-                                            response.handler(msg -> {
-                                                sb.append(msg.toString());
-                                            });
-                                            response.endHandler(v -> {
-                                                // Done reading stream
-                                                promise.complete(sb.toString());
-                                            });
-                                            response.exceptionHandler(promise::fail);
-                                            String result = promise.future()
-                                                    .timeout(exportTimeout.toMillis(), MILLISECONDS)
-                                                    .recover(throwable -> Future.succeededFuture(
-                                                            "Response error: " + throwable.getMessage()))
-                                                    .result();
-                                            if (result == null || result.isEmpty()) {
-                                                return null;
-                                            }
-                                            return result.getBytes(StandardCharsets.UTF_8);
+                                            return body.getBytes();
                                         }
                                     });
                                 } else {
@@ -469,20 +442,7 @@ public final class VertxGrpcSender implements GrpcSender {
                 }).onFailure(new Handler<>() {
                     @Override
                     public void handle(Throwable t) {
-                        if (attemptNumber <= MAX_ATTEMPTS && !isShutdown.get()) {
-                            // retry
-                            initiateSend(client, server,
-                                    MAX_ATTEMPTS - attemptNumber,
-                                    newAttempt(), exportTimeout,
-                                    new Consumer<>() {
-                                        @Override
-                                        public void accept(Throwable throwable) {
-                                            failOnClientRequest(throwable, onError, attemptNumber);
-                                        }
-                                    });
-                        } else {
-                            failOnClientRequest(t, onError, attemptNumber);
-                        }
+                        retryOrFail(t);
                     }
                 });
             } catch (IOException e) {
@@ -492,6 +452,22 @@ public final class VertxGrpcSender implements GrpcSender {
                         + (e.getMessage() == null ? e.getClass().getName() : e.getMessage());
                 logger.log(Level.WARNING, message);
                 onError.accept(e);
+            }
+        }
+
+        private void retryOrFail(Throwable t) {
+            if (attemptNumber <= MAX_ATTEMPTS && !isShutdown.get()) {
+                initiateSend(client, server,
+                        MAX_ATTEMPTS - attemptNumber,
+                        newAttempt(), exportTimeout,
+                        new Consumer<>() {
+                            @Override
+                            public void accept(Throwable throwable) {
+                                failOnClientRequest(throwable, onError, attemptNumber);
+                            }
+                        });
+            } else {
+                failOnClientRequest(t, onError, attemptNumber);
             }
         }
 

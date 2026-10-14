@@ -116,6 +116,7 @@ Consult the relevant skill when you are about to do that type of work:
 | `classloading-and-runtime-dev` | Working with runtime-dev modules, conditional dependencies, or debugging classloading |
 | `creating-extensions` | Creating a new extension or understanding the full module layout                      |
 | `coding-style` | Code formatting, visibility, naming conventions, and logging                          |
+| `async-programming` | Writing or modifying asynchronous code with CompletionStage, Mutiny, or Vert.x Future |
 | `building-and-testing` | Maven build commands, flags, incremental builds, and build rules                      |
 | `pull-requests` | PR title/description conventions, commit hygiene, labels, and contribution rules      |
 | `writing-extension-devui` | Writing a Dev UI for a Quarkus extension                                              |

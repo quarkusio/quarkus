@@ -436,41 +436,36 @@ public class ClientSendRequestHandler implements ClientRestHandler {
                             clientResponse.pause();
                             Vertx vertx = Vertx.currentContext().owner();
                             vertx.fileSystem().createTempFile("rest-client", "")
-                                    .onComplete(tempFileCreation -> {
-                                        if (tempFileCreation.failed()) {
-                                            reportFinish(tempFileCreation.cause(), requestContext);
-                                            requestContext.resume(tempFileCreation.cause());
-                                            return;
+                                    .compose(new Function<String, Future<String>>() {
+                                        @Override
+                                        public Future<String> apply(String tmpFilePath) {
+                                            return vertx.fileSystem().open(tmpFilePath,
+                                                    new OpenOptions().setWrite(true))
+                                                    .compose(new Function<AsyncFile, Future<String>>() {
+                                                        @Override
+                                                        public Future<String> apply(AsyncFile tmpAsyncFile) {
+                                                            clientResponse.resume();
+                                                            return clientResponse.pipeTo(tmpAsyncFile)
+                                                                    .map(tmpFilePath);
+                                                        }
+                                                    });
                                         }
-                                        String tmpFilePath = tempFileCreation.result();
-                                        vertx.fileSystem().open(tmpFilePath,
-                                                new OpenOptions().setWrite(true))
-                                                .onComplete(asyncFileOpened -> {
-                                                    if (asyncFileOpened.failed()) {
-                                                        reportFinish(asyncFileOpened.cause(), requestContext);
-                                                        requestContext.resume(asyncFileOpened.cause());
-                                                        return;
-                                                    }
-                                                    final AsyncFile tmpAsyncFile = asyncFileOpened.result();
-                                                    clientResponse.pipeTo(tmpAsyncFile)
-                                                            .onComplete(event -> {
-                                                                if (event.failed()) {
-                                                                    reportFinish(event.cause(),
-                                                                            requestContext);
-                                                                    requestContext.resume(event.cause());
-                                                                    return;
-                                                                }
-
-                                                                if (loggingScope != LoggingScope.NONE) {
-                                                                    clientLogger.logRequest(
-                                                                            httpClientRequest, null, false);
-                                                                }
-
-                                                                requestContext.setTmpFilePath(tmpFilePath);
-                                                                requestContext.resume();
-                                                            });
-                                                    clientResponse.resume();
-                                                });
+                                    })
+                                    .onComplete(new Handler<AsyncResult<String>>() {
+                                        @Override
+                                        public void handle(AsyncResult<String> ar) {
+                                            if (ar.succeeded()) {
+                                                if (loggingScope != LoggingScope.NONE) {
+                                                    clientLogger.logRequest(
+                                                            httpClientRequest, null, false);
+                                                }
+                                                requestContext.setTmpFilePath(ar.result());
+                                                requestContext.resume();
+                                            } else {
+                                                reportFinish(ar.cause(), requestContext);
+                                                requestContext.resume(ar.cause());
+                                            }
+                                        }
                                     });
 
                         } else if (requestContext.isInputStreamDownload() ||

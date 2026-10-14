@@ -106,11 +106,11 @@ public class ClientRequestContextImpl implements ResteasyReactiveClientRequestCo
     @Override
     public <T> T unwrap(Class<T> theType) {
         if (theType == RestClientRequestContext.class) {
-            return (T) restClientRequestContext;
+            return theType.cast(restClientRequestContext);
         } else if (theType == HttpClientRequest.class) {
-            return (T) restClientRequestContext.getHttpClientRequest();
+            return theType.cast(restClientRequestContext.getHttpClientRequest());
         } else if (theType == HttpClientOptions.class) {
-            return (T) restClientRequestContext.getHttpClientOptions();
+            return theType.cast(restClientRequestContext.getHttpClientOptions());
         }
         return null;
     }

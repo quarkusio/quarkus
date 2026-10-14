@@ -7,21 +7,24 @@ import jakarta.enterprise.context.ApplicationScoped;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.builder.Version;
+import io.quarkus.core.deployment.service.ServiceRegistrar;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.BuildSteps;
-import io.quarkus.deployment.annotations.ExecutionTime;
-import io.quarkus.deployment.annotations.Record;
+import io.quarkus.deployment.builditem.AdditionalIndexedClassesBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
+import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
-import io.quarkus.jfr.runtime.internal.JfrRecorder;
+import io.quarkus.jfr.runtime.internal.JfrRuntimeSetup;
 import io.quarkus.jfr.runtime.internal.OTelIdProducer;
 import io.quarkus.jfr.runtime.internal.QuarkusIdProducer;
+import io.quarkus.jfr.runtime.internal.config.JfrRuntimeConfig;
 import io.quarkus.jfr.runtime.internal.http.rest.classic.ClassicServerEventRecorderProducer;
 import io.quarkus.jfr.runtime.internal.http.rest.classic.ClassicServerFilter;
+import io.quarkus.jfr.runtime.internal.http.rest.client.RestClientFilter;
 import io.quarkus.jfr.runtime.internal.http.rest.reactive.ReactiveServerEventRecorderProducer;
 import io.quarkus.jfr.runtime.internal.http.rest.reactive.ReactiveServerFilters;
 import io.quarkus.jfr.runtime.internal.http.rest.reactive.ServerStartRecordingHandler;
@@ -41,17 +44,25 @@ public class JfrProcessor {
     }
 
     @BuildStep
-    @Record(ExecutionTime.RUNTIME_INIT)
-    void registerVersion(List<FeatureBuildItem> features, BuildProducer<AdditionalBeanBuildItem> additionalBeans,
-            BuildProducer<SyntheticBeanBuildItem> beanProduce, JfrRecorder recorder) {
+    void registerVersion(List<FeatureBuildItem> features, ServiceRegistrar serviceRegistrar,
+            BuildProducer<AdditionalBeanBuildItem> additionalBeans,
+            BuildProducer<SyntheticBeanBuildItem> beanProduce,
+            BuildProducer<ServiceStartBuildItem> serviceStart) {
 
-        List<String> featureNames = features.stream().map(f -> f.getName()).toList();
+        List<String> featureNames = features.stream().map(FeatureBuildItem::getName).toList();
         String quarkusVersion = Version.getVersion();
 
+        serviceRegistrar
+                .forService(QuarkusRuntimeInfo.class)
+                .onStart(ctx -> QuarkusRuntimeInfo.create(quarkusVersion, featureNames));
+
         beanProduce.produce(SyntheticBeanBuildItem.configure(QuarkusRuntimeInfo.class)
-                .supplier(recorder.quarkusInfoSupplier(quarkusVersion, featureNames))
+                .serviceValue(QuarkusRuntimeInfo.class)
                 .scope(ApplicationScoped.class)
                 .setRuntimeInit().done());
+
+        // makes sure the service has run before JfrRuntimeBean reads the bean in its StartupEvent observer
+        serviceStart.produce(new ServiceStartBuildItem("jfr-runtime-info"));
 
         additionalBeans.produce(AdditionalBeanBuildItem.builder().setUnremovable()
                 .addBeanClasses(JfrRuntimeBean.class)
@@ -104,6 +115,19 @@ public class JfrProcessor {
     }
 
     @BuildStep
+    void registerRestClientIntegration(Capabilities capabilities,
+            BuildProducer<AdditionalIndexedClassesBuildItem> additionalIndexed,
+            BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
+        if (capabilities.isPresent(Capability.REST_CLIENT_REACTIVE)) {
+            // the REST Client picks up the @Provider annotation from the index
+            additionalIndexed.produce(new AdditionalIndexedClassesBuildItem(RestClientFilter.class.getName()));
+            additionalBeans.produce(AdditionalBeanBuildItem.builder().setUnremovable()
+                    .addBeanClasses(RestClientFilter.class)
+                    .build());
+        }
+    }
+
+    @BuildStep
     void registerResteasyClassicIntegration(Capabilities capabilities,
             BuildProducer<ResteasyJaxrsProviderBuildItem> resteasyJaxrsProviderBuildItemBuildProducer,
             BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
@@ -119,8 +143,11 @@ public class JfrProcessor {
     }
 
     @BuildStep
-    @Record(ExecutionTime.RUNTIME_INIT)
-    public void runtimeInit(JfrRecorder recorder) {
-        recorder.runtimeInit();
+    ServiceStartBuildItem runtimeInit(ServiceRegistrar serviceRegistrar) {
+        serviceRegistrar
+                .forService("io.quarkus.jfr.disable-events")
+                .require(JfrRuntimeConfig.class)
+                .onStart((ctx, runtimeConfig) -> JfrRuntimeSetup.disableEvents(runtimeConfig));
+        return new ServiceStartBuildItem(Feature.JFR);
     }
 }

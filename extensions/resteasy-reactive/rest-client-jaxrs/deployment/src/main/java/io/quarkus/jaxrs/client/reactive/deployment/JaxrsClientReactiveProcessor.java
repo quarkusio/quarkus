@@ -424,6 +424,7 @@ public class JaxrsClientReactiveProcessor {
                 .build();
 
         boolean observabilityIntegrationNeeded = (capabilities.isPresent(Capability.OPENTELEMETRY_TRACER) ||
+                capabilities.isPresent(Capability.JFR) ||
                 (metricsCapability.isPresent()
                         && metricsCapability.get().metricsSupported(MetricsFactory.MICROMETER)));
 

@@ -15,18 +15,33 @@ import io.lettuce.core.pubsub.api.reactive.RedisPubSubReactiveCommands;
 import io.lettuce.core.sentinel.api.reactive.RedisSentinelReactiveCommands;
 
 /**
- * When Reactive Streams (and so Project Reactor) is not on the classpath, substitute the factories of Lettuce's reactive
- * command APIs with factories that throw an {@link UnsupportedOperationException}.
+ * When Project Reactor is not on the classpath, substitute the factories of Lettuce's reactive command APIs with
+ * factories that throw an {@link UnsupportedOperationException}.
  * <p>
  * Lettuce makes Reactor optional, but its {@code reactive()} accessors stay reachable even if the application never calls
  * them, and they reach the constructors of the reactive command implementations through these factories. Linking those
- * implementations needs {@code org.reactivestreams.Publisher}, so a native image built without it fails. Lettuce creates
- * each factory in a {@code newFactory()} method of a {@code FactoryHolder} class precisely so that it can be substituted.
+ * implementations needs {@code org.reactivestreams.Publisher}, so a native image built without it fails; running them
+ * needs Reactor. Reactor requires Reactive Streams, so testing for Reactor covers both: an application that has Reactive
+ * Streams (for example through {@code quarkus-rest}) but no Reactor gets the exception from {@code reactive()} instead
+ * of a {@code NoClassDefFoundError} from its first reactive command. Lettuce creates each factory in a
+ * {@code newFactory()} method of a {@code FactoryHolder} class precisely so that it can be substituted.
  * <p>
  * The {@code FactoryHolder} classes are initialized at run time (see {@code LettuceProcessor}): initialized at build time,
  * their static initializers would run the original {@code newFactory()} and store its factory in the image heap.
  */
-@TargetClass(className = "io.lettuce.core.api.reactive.RedisReactiveCommands$FactoryHolder", onlyWith = ReactiveStreamsMissingSelector.class)
+final class LettuceSubstitutions {
+
+    private LettuceSubstitutions() {
+    }
+
+    static UnsupportedOperationException reactiveApiUnavailable() {
+        return new UnsupportedOperationException(
+                "The Lettuce reactive API requires Project Reactor (io.projectreactor:reactor-core), which is not on the"
+                        + " classpath of this native image");
+    }
+}
+
+@TargetClass(className = "io.lettuce.core.api.reactive.RedisReactiveCommands$FactoryHolder", onlyWith = ReactorMissingSelector.class)
 final class Target_RedisReactiveCommands_FactoryHolder {
 
     @Substitute
@@ -38,7 +53,7 @@ final class Target_RedisReactiveCommands_FactoryHolder {
     }
 }
 
-@TargetClass(className = "io.lettuce.core.cluster.api.reactive.RedisAdvancedClusterReactiveCommands$FactoryHolder", onlyWith = ReactiveStreamsMissingSelector.class)
+@TargetClass(className = "io.lettuce.core.cluster.api.reactive.RedisAdvancedClusterReactiveCommands$FactoryHolder", onlyWith = ReactorMissingSelector.class)
 final class Target_RedisAdvancedClusterReactiveCommands_FactoryHolder {
 
     @Substitute
@@ -50,7 +65,7 @@ final class Target_RedisAdvancedClusterReactiveCommands_FactoryHolder {
     }
 }
 
-@TargetClass(className = "io.lettuce.core.sentinel.api.reactive.RedisSentinelReactiveCommands$FactoryHolder", onlyWith = ReactiveStreamsMissingSelector.class)
+@TargetClass(className = "io.lettuce.core.sentinel.api.reactive.RedisSentinelReactiveCommands$FactoryHolder", onlyWith = ReactorMissingSelector.class)
 final class Target_RedisSentinelReactiveCommands_FactoryHolder {
 
     @Substitute
@@ -62,7 +77,7 @@ final class Target_RedisSentinelReactiveCommands_FactoryHolder {
     }
 }
 
-@TargetClass(className = "io.lettuce.core.pubsub.api.reactive.RedisPubSubReactiveCommands$FactoryHolder", onlyWith = ReactiveStreamsMissingSelector.class)
+@TargetClass(className = "io.lettuce.core.pubsub.api.reactive.RedisPubSubReactiveCommands$FactoryHolder", onlyWith = ReactorMissingSelector.class)
 final class Target_RedisPubSubReactiveCommands_FactoryHolder {
 
     @Substitute
@@ -74,7 +89,7 @@ final class Target_RedisPubSubReactiveCommands_FactoryHolder {
     }
 }
 
-@TargetClass(className = "io.lettuce.core.cluster.pubsub.api.reactive.RedisClusterPubSubReactiveCommands$FactoryHolder", onlyWith = ReactiveStreamsMissingSelector.class)
+@TargetClass(className = "io.lettuce.core.cluster.pubsub.api.reactive.RedisClusterPubSubReactiveCommands$FactoryHolder", onlyWith = ReactorMissingSelector.class)
 final class Target_RedisClusterPubSubReactiveCommands_FactoryHolder {
 
     @Substitute
@@ -86,24 +101,15 @@ final class Target_RedisClusterPubSubReactiveCommands_FactoryHolder {
     }
 }
 
-final class ReactiveStreamsMissingSelector implements BooleanSupplier {
+final class ReactorMissingSelector implements BooleanSupplier {
 
     @Override
     public boolean getAsBoolean() {
         try {
-            Class.forName("org.reactivestreams.Publisher");
+            Class.forName("reactor.core.publisher.Mono", false, getClass().getClassLoader());
             return false;
         } catch (ClassNotFoundException e) {
             return true;
         }
-    }
-}
-
-public class LettuceSubstitutions {
-
-    static UnsupportedOperationException reactiveApiUnavailable() {
-        return new UnsupportedOperationException(
-                "The Lettuce reactive API requires Project Reactor (io.projectreactor:reactor-core), which is not on the"
-                        + " classpath of this native image");
     }
 }

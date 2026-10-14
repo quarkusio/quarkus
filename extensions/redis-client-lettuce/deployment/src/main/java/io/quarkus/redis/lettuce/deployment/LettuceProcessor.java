@@ -143,7 +143,7 @@ public class LettuceProcessor {
         runtimeInit.produce(new RuntimeInitializedClassBuildItem("io.lettuce.core.resource.DefaultClientResources"));
         runtimeInit.produce(new RuntimeInitializedClassBuildItem("io.lettuce.core.resource.DefaultClientResources$Builder"));
         // The static initializers of the FactoryHolder classes create the factories of the reactive command APIs by
-        // calling newFactory(), which LettuceSubstitutions replaces when Reactive Streams is missing. Initialized at
+        // calling newFactory(), which LettuceSubstitutions replaces when Project Reactor is missing. Initialized at
         // build time, they would run the original newFactory() and store its factory, which creates the Reactor-based
         // implementations, in the image heap. Unconditional: the substitutions decide whether it matters.
         for (String holder : REACTIVE_FACTORY_HOLDERS) {

@@ -225,6 +225,8 @@ public final class AutoAddScopeBuildItem extends MultiBuildItem {
                             return true;
                         }
                         superName = superClass.superName();
+                    } else {
+                        break;
                     }
                 }
                 return false;

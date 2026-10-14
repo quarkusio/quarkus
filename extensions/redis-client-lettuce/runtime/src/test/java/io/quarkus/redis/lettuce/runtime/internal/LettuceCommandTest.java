@@ -7,6 +7,7 @@ import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 
 import org.junit.jupiter.api.Test;
@@ -179,6 +180,52 @@ class LettuceCommandTest {
         Uni<String> uni = command.toUni();
 
         assertThat(uni).isNotNull();
+    }
+
+    @Test
+    void toUniShouldInvokeFailureHookWithPropagatedFailure() {
+        RuntimeException failure = new RuntimeException("boom");
+        AtomicReference<Throwable> observed = new AtomicReference<>();
+        LettuceCommand<String, String> command = LettuceCommand.<String> of(() -> failed(failure))
+                .onFailure(observed::set);
+
+        assertThatThrownBy(() -> command.toUni().await().atMost(TIMEOUT)).isSameAs(failure);
+        assertThat(observed).hasValue(failure);
+    }
+
+    @Test
+    void toUniShouldNotInvokeFailureHookOnSuccess() {
+        AtomicInteger hookInvocations = new AtomicInteger();
+        LettuceCommand<String, Integer> command = LettuceCommand.of(() -> completed("hello"), String::length)
+                .onFailure(ignored -> hookInvocations.incrementAndGet());
+
+        assertThat(command.toUni().await().atMost(TIMEOUT)).isEqualTo(5);
+        assertThat(hookInvocations).hasValue(0);
+    }
+
+    @Test
+    void onFailureShouldNotAlterOriginalCommand() {
+        RuntimeException failure = new RuntimeException("boom");
+        AtomicInteger hookInvocations = new AtomicInteger();
+        LettuceCommand<String, String> command = LettuceCommand.of(() -> failed(failure));
+
+        LettuceCommand<String, String> hooked = command.onFailure(ignored -> hookInvocations.incrementAndGet());
+
+        assertThat(hooked).isNotSameAs(command);
+        assertThatThrownBy(() -> command.toUni().await().atMost(TIMEOUT)).isSameAs(failure);
+        assertThat(hookInvocations).hasValue(0);
+    }
+
+    @Test
+    void instanceDiscardingShouldKeepFailureHook() {
+        RuntimeException failure = new RuntimeException("boom");
+        AtomicInteger hookInvocations = new AtomicInteger();
+        LettuceCommand<String, Void> discarded = LettuceCommand.<String> of(() -> failed(failure))
+                .onFailure(ignored -> hookInvocations.incrementAndGet())
+                .discarding();
+
+        assertThatThrownBy(() -> discarded.toUni().await().atMost(TIMEOUT)).isSameAs(failure);
+        assertThat(hookInvocations).hasValue(1);
     }
 
     private static <T> RedisFuture<T> completed(T value) {

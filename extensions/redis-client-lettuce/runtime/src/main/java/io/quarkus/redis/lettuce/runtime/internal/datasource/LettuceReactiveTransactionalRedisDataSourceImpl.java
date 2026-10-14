@@ -47,6 +47,8 @@ import io.quarkus.redis.lettuce.runtime.internal.key.LettuceReactiveKeyCommandsI
 import io.quarkus.redis.lettuce.runtime.internal.key.LettuceReactiveTransactionalKeyCommandsImpl;
 import io.quarkus.redis.lettuce.runtime.internal.list.LettuceReactiveListCommandsImpl;
 import io.quarkus.redis.lettuce.runtime.internal.list.LettuceReactiveTransactionalListCommandsImpl;
+import io.quarkus.redis.lettuce.runtime.internal.search.LettuceReactiveSearchCommandsImpl;
+import io.quarkus.redis.lettuce.runtime.internal.search.LettuceReactiveTransactionalSearchCommandsImpl;
 import io.quarkus.redis.lettuce.runtime.internal.set.LettuceReactiveSetCommandsImpl;
 import io.quarkus.redis.lettuce.runtime.internal.set.LettuceReactiveTransactionalSetCommandsImpl;
 import io.quarkus.redis.lettuce.runtime.internal.sortedset.LettuceReactiveSortedSetCommandsImpl;
@@ -241,7 +243,10 @@ public class LettuceReactiveTransactionalRedisDataSourceImpl implements Reactive
 
     @Override
     public <K> ReactiveTransactionalSearchCommands search(Class<K> redisKeyType) {
-        throw groupNotImplemented("search");
+        nonNull(redisKeyType, "redisKeyType");
+        LettuceReactiveSearchCommandsImpl<K> reactiveSearch = (LettuceReactiveSearchCommandsImpl<K>) reactive
+                .search(redisKeyType);
+        return new LettuceReactiveTransactionalSearchCommandsImpl<>(this, reactiveSearch, tx);
     }
 
     @Override

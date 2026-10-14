@@ -564,13 +564,191 @@ public class QueryArgs implements RedisCommandExtraArguments {
         return list;
     }
 
-    private final static class ReturnClause {
+    /**
+     * @return whether {@code NOCONTENT} was requested
+     */
+    public boolean isNoContent() {
+        return nocontent;
+    }
+
+    /**
+     * @return whether {@code VERBATIM} was requested
+     */
+    public boolean isVerbatim() {
+        return verbatim;
+    }
+
+    /**
+     * @return the numeric filters, empty if not set
+     */
+    public List<NumericFilter> getFilters() {
+        return Collections.unmodifiableList(filters);
+    }
+
+    /**
+     * @return the geo filters, empty if not set
+     */
+    public List<GeoFilter> getGeoFilters() {
+        return Collections.unmodifiableList(geoFilters);
+    }
+
+    /**
+     * @return the keys the results are limited to ({@code INKEYS}), empty if not set
+     */
+    public List<String> getInKeys() {
+        return inKeys == null ? Collections.emptyList() : List.of(inKeys);
+    }
+
+    /**
+     * @return the attributes the results are limited to ({@code INFIELDS}), empty if not set
+     */
+    public List<String> getInFields() {
+        return inFields == null ? Collections.emptyList() : List.of(inFields);
+    }
+
+    /**
+     * @return the {@code RETURN} clauses in the order they were added, empty if not set
+     */
+    public List<ReturnClause> getReturnClauses() {
+        return Collections.unmodifiableList(returns);
+    }
+
+    /**
+     * @return the {@code SUMMARIZE} arguments, {@code null} if not set
+     */
+    public SummarizeArgs getSummarize() {
+        return summarize;
+    }
+
+    /**
+     * @return the {@code HIGHLIGHT} arguments, {@code null} if not set
+     */
+    public HighlightArgs getHighlight() {
+        return highlight;
+    }
+
+    /**
+     * @return the {@code SLOP}, {@code -1} if not set
+     */
+    public int getSlop() {
+        return slop;
+    }
+
+    /**
+     * @return whether {@code INORDER} was requested
+     */
+    public boolean isInOrder() {
+        return inOrder;
+    }
+
+    /**
+     * @return the stemmer language, {@code null} if not set
+     */
+    public String getLanguage() {
+        return lang;
+    }
+
+    /**
+     * @return the query expander, {@code null} if not set
+     */
+    public String getExpander() {
+        return expander;
+    }
+
+    /**
+     * @return the scoring function, {@code null} if not set
+     */
+    public String getScorer() {
+        return scorer;
+    }
+
+    /**
+     * @return whether {@code EXPLAINSCORE} was requested
+     */
+    public boolean isExplainScore() {
+        return explainScore;
+    }
+
+    /**
+     * @return the attribute to sort by in ascending order, {@code null} if not set
+     */
+    public String getSortByAscending() {
+        return asc;
+    }
+
+    /**
+     * @return the attribute to sort by in descending order, {@code null} if not set
+     */
+    public String getSortByDescending() {
+        return desc;
+    }
+
+    /**
+     * @return the {@code LIMIT} offset, {@code -1} if not set
+     */
+    public int getOffset() {
+        return offset;
+    }
+
+    /**
+     * @return the {@code LIMIT} count, {@code -1} if not set
+     */
+    public int getCount() {
+        return count;
+    }
+
+    /**
+     * @return the timeout, {@code null} if not set
+     */
+    public Duration getTimeout() {
+        return timeout;
+    }
+
+    /**
+     * @return the string-valued query parameters
+     */
+    public Map<String, String> getParams() {
+        return Collections.unmodifiableMap(params);
+    }
+
+    /**
+     * @return the binary query parameters (byte, float, double, int and long arrays)
+     */
+    public Map<String, byte[]> getByteArrayParams() {
+        return Collections.unmodifiableMap(byteArrayParams);
+    }
+
+    /**
+     * @return the dialect version, {@code -1} if not set
+     */
+    public int getDialect() {
+        return dialect;
+    }
+
+    /**
+     * A {@code RETURN} clause: an attribute (or JSON Path) and its optional alias.
+     */
+    public static final class ReturnClause {
         private final String field;
         private final String alias;
 
         public ReturnClause(String field, String alias) {
             this.field = field;
             this.alias = alias;
+        }
+
+        /**
+         * @return the attribute name or JSON Path expression
+         */
+        public String getField() {
+            return field;
+        }
+
+        /**
+         * @return the alias used in the result, {@code null} if not set
+         */
+        public String getAlias() {
+            return alias;
         }
 
         public List<String> toArgs() {

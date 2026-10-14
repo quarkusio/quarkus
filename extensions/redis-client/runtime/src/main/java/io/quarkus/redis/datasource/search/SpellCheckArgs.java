@@ -67,6 +67,34 @@ public class SpellCheckArgs implements RedisCommandExtraArguments {
         return this;
     }
 
+    /**
+     * @return the maximal Levenshtein distance, {@code 0} if not set
+     */
+    public int getDistance() {
+        return distance;
+    }
+
+    /**
+     * @return the {@code TERMS INCLUDE} values: the dictionary name followed by the extra terms, empty if not set
+     */
+    public List<String> getIncludes() {
+        return Collections.unmodifiableList(includes);
+    }
+
+    /**
+     * @return the {@code TERMS EXCLUDE} values: the dictionary name followed by the extra terms, empty if not set
+     */
+    public List<String> getExcludes() {
+        return Collections.unmodifiableList(excludes);
+    }
+
+    /**
+     * @return the dialect version, {@code -1} if not set
+     */
+    public int getDialect() {
+        return dialect;
+    }
+
     @Override
     public List<Object> toArgs() {
         List<Object> list = new ArrayList<>();

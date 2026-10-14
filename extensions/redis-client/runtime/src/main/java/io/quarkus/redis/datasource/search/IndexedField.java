@@ -40,6 +40,34 @@ public class IndexedField implements RedisCommandExtraArguments {
         this.options = options;
     }
 
+    /**
+     * @return the indexed field: a hash field name or a JSONPath expression
+     */
+    public String getField() {
+        return field;
+    }
+
+    /**
+     * @return the alias of the field, {@code null} if not set
+     */
+    public String getAlias() {
+        return alias;
+    }
+
+    /**
+     * @return the field type
+     */
+    public FieldType getType() {
+        return type;
+    }
+
+    /**
+     * @return the field options, {@code null} if not set
+     */
+    public FieldOptions getOptions() {
+        return options;
+    }
+
     public List<Object> toArgs() {
         List<Object> list = new ArrayList<>();
         list.add(field);

@@ -197,6 +197,111 @@ public class FieldOptions {
         return this;
     }
 
+    /**
+     * @return whether {@code SORTABLE} was requested
+     */
+    public boolean isSortable() {
+        return sortable;
+    }
+
+    /**
+     * @return whether {@code UNF} was requested
+     */
+    public boolean isUnf() {
+        return unf;
+    }
+
+    /**
+     * @return whether {@code NOSTEM} was requested
+     */
+    public boolean isNoStem() {
+        return noStem;
+    }
+
+    /**
+     * @return whether {@code NOINDEX} was requested
+     */
+    public boolean isNoIndex() {
+        return noIndex;
+    }
+
+    /**
+     * @return the phonetic matcher, {@code null} if not set
+     */
+    public String getPhonetic() {
+        return phonetic;
+    }
+
+    /**
+     * @return the weight, {@code -1} if not set
+     */
+    public double getWeight() {
+        return weight;
+    }
+
+    /**
+     * @return the tag separator, {@code 0} if not set
+     */
+    public char getSeparator() {
+        return separator;
+    }
+
+    /**
+     * @return whether {@code CASESENSITIVE} was requested
+     */
+    public boolean isCaseSensitive() {
+        return caseSensitive;
+    }
+
+    /**
+     * @return whether {@code WITHSUFFIXTRIE} was requested
+     */
+    public boolean isWithSuffixTrie() {
+        return withSuffixTrie;
+    }
+
+    /**
+     * @return the vector algorithm, {@code null} if not set
+     */
+    public VectorAlgorithm getVectorAlgorithm() {
+        return vectorAlgorithm;
+    }
+
+    /**
+     * @return the vector type, {@code null} if not set
+     */
+    public VectorType getVectorType() {
+        return vectorType;
+    }
+
+    /**
+     * @return the vector dimension, {@code null} if not set
+     */
+    public Integer getDimension() {
+        return dimension;
+    }
+
+    /**
+     * @return the vector distance metric, {@code null} if not set
+     */
+    public DistanceMetric getDistanceMetric() {
+        return distanceMetric;
+    }
+
+    /**
+     * @return the vector index initial capacity, {@code null} if not set
+     */
+    public Integer getInitialCap() {
+        return initialCap;
+    }
+
+    /**
+     * @return the vector index block size, {@code null} if not set
+     */
+    public Integer getBlockSize() {
+        return blockSize;
+    }
+
     public List<String> toArgs() {
         List<String> list = new ArrayList<>();
         if (vectorAlgorithm != null) {

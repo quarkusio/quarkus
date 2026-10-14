@@ -48,6 +48,27 @@ public class HighlightArgs implements RedisCommandExtraArguments {
         return this;
     }
 
+    /**
+     * @return the attributes to highlight, empty if not set (all text attributes are highlighted)
+     */
+    public List<String> getFields() {
+        return fields == null ? List.of() : List.of(fields);
+    }
+
+    /**
+     * @return the opening tag, {@code null} if not set
+     */
+    public String getOpenTag() {
+        return openTag;
+    }
+
+    /**
+     * @return the closing tag, {@code null} if not set
+     */
+    public String getCloseTag() {
+        return closeTag;
+    }
+
     @Override
     public List<Object> toArgs() {
         List<Object> list = new ArrayList<>();

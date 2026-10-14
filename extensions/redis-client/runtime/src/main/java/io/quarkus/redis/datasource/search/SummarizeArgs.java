@@ -73,6 +73,34 @@ public class SummarizeArgs implements RedisCommandExtraArguments {
         return this;
     }
 
+    /**
+     * @return the attributes to summarize, empty if not set (all text attributes are summarized)
+     */
+    public List<String> getFields() {
+        return fields == null ? List.of() : List.of(fields);
+    }
+
+    /**
+     * @return the number of fragments, {@code 0} if not set
+     */
+    public int getFragments() {
+        return frags;
+    }
+
+    /**
+     * @return the fragment length, {@code 0} if not set
+     */
+    public int getLength() {
+        return len;
+    }
+
+    /**
+     * @return the fragment separator, {@code null} if not set
+     */
+    public String getSeparator() {
+        return separator;
+    }
+
     @Override
     public List<Object> toArgs() {
         List<Object> list = new ArrayList<>();

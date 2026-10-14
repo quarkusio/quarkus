@@ -15,6 +15,7 @@ import io.lettuce.core.codec.ByteArrayCodec;
 import io.lettuce.core.output.StatusOutput;
 import io.lettuce.core.protocol.CommandArgs;
 import io.lettuce.core.protocol.CommandType;
+import io.quarkus.redis.lettuce.runtime.internal.search.LettuceSearchCursors;
 
 /**
  * A byte-array connection to a standalone Redis server or to a Redis cluster, as opened by
@@ -49,6 +50,8 @@ public final class LettuceConnection implements AutoCloseable {
     private final RedisClusterAsyncCommands<byte[], byte[]> async;
     /** The standalone command surface, carrying the transaction and database commands; {@code null} on a cluster. */
     private final RedisAsyncCommands<byte[], byte[]> standalone;
+    /** The cluster nodes owning the open aggregation cursors, shared by every search handle on this connection. */
+    private final LettuceSearchCursors searchCursors = new LettuceSearchCursors();
 
     private LettuceConnection(StatefulConnection<byte[], byte[]> connection, RedisClusterAsyncCommands<byte[], byte[]> async,
             RedisAsyncCommands<byte[], byte[]> standalone) {
@@ -86,6 +89,13 @@ public final class LettuceConnection implements AutoCloseable {
      */
     public boolean isCluster() {
         return standalone == null;
+    }
+
+    /**
+     * The registry of the cluster nodes owning the open aggregation cursors.
+     */
+    public LettuceSearchCursors searchCursors() {
+        return searchCursors;
     }
 
     /**

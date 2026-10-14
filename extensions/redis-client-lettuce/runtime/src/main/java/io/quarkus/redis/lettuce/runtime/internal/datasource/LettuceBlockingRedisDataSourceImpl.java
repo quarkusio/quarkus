@@ -39,6 +39,7 @@ import io.quarkus.redis.datasource.keys.KeyCommands;
 import io.quarkus.redis.datasource.list.ListCommands;
 import io.quarkus.redis.datasource.list.ReactiveListCommands;
 import io.quarkus.redis.datasource.pubsub.PubSubCommands;
+import io.quarkus.redis.datasource.search.ReactiveSearchCommands;
 import io.quarkus.redis.datasource.search.SearchCommands;
 import io.quarkus.redis.datasource.set.ReactiveSetCommands;
 import io.quarkus.redis.datasource.set.SetCommands;
@@ -55,21 +56,7 @@ import io.quarkus.redis.datasource.value.ReactiveValueCommands;
 import io.quarkus.redis.datasource.value.ValueCommands;
 import io.quarkus.redis.lettuce.runtime.internal.LettuceConnection;
 import io.quarkus.redis.lettuce.runtime.internal.LettuceResult;
-import io.quarkus.redis.runtime.datasource.BlockingAutoSuggestCommandsImpl;
-import io.quarkus.redis.runtime.datasource.BlockingBitmapCommandsImpl;
-import io.quarkus.redis.runtime.datasource.BlockingCountMinCommandsImpl;
-import io.quarkus.redis.runtime.datasource.BlockingGeoCommandsImpl;
-import io.quarkus.redis.runtime.datasource.BlockingHashCommandsImpl;
-import io.quarkus.redis.runtime.datasource.BlockingHyperLogLogCommandsImpl;
-import io.quarkus.redis.runtime.datasource.BlockingJsonCommandsImpl;
-import io.quarkus.redis.runtime.datasource.BlockingKeyCommandsImpl;
-import io.quarkus.redis.runtime.datasource.BlockingListCommandsImpl;
-import io.quarkus.redis.runtime.datasource.BlockingSetCommandsImpl;
-import io.quarkus.redis.runtime.datasource.BlockingSortedSetCommandsImpl;
-import io.quarkus.redis.runtime.datasource.BlockingStringCommandsImpl;
-import io.quarkus.redis.runtime.datasource.BlockingTransactionalRedisDataSourceImpl;
-import io.quarkus.redis.runtime.datasource.OptimisticLockingTransactionResultImpl;
-import io.quarkus.redis.runtime.datasource.TransactionResultImpl;
+import io.quarkus.redis.runtime.datasource.*;
 import io.vertx.redis.client.Command;
 import io.vertx.redis.client.Response;
 
@@ -508,7 +495,8 @@ public class LettuceBlockingRedisDataSourceImpl implements RedisDataSource {
 
     @Override
     public <K> SearchCommands<K> search(Class<K> redisKeyType) {
-        throw groupNotImplemented("search");
+        ReactiveSearchCommands<K> r = reactive.search(redisKeyType);
+        return new BlockingSearchCommandsImpl<>(this, r, timeout);
     }
 
     @Override
@@ -538,4 +526,5 @@ public class LettuceBlockingRedisDataSourceImpl implements RedisDataSource {
                 "The '" + group + "' command group is not yet implemented on the Lettuce backend. "
                         + "Remove the quarkus-redis-client-lettuce extension to use the Vert.x backend.");
     }
+
 }

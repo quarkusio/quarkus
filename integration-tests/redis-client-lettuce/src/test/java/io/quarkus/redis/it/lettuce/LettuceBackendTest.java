@@ -3,10 +3,15 @@ package io.quarkus.redis.it.lettuce;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import java.util.List;
+import java.util.Map;
+import java.util.function.BooleanSupplier;
+import java.util.function.Supplier;
 
 import org.hamcrest.CoreMatchers;
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.test.junit.QuarkusTest;
@@ -1234,6 +1239,311 @@ class LettuceBackendTest {
         assertEquals("false,8,1,4,true,3,[abcd, abcde],[abcde:1.0]", body);
         RestAssured.given().when().get("/lettuce/autosuggest/len/" + key).then()
                 .statusCode(200).body(CoreMatchers.is("3"));
+    }
+
+    private static final String MOVIE_SCHEMA = "title:TEXT:sortable,release_year:NUMERIC:sortable,"
+            + "rating:NUMERIC:sortable,genre:TAG:sortable";
+
+    private static void hset(String key, Map<String, String> fields) {
+        fields.forEach((field, value) -> RestAssured.given().body(value).when()
+                .post("/lettuce/hash/" + key + "/" + field).then().statusCode(200));
+    }
+
+    /** Creates the movie index over four hashes with the given key prefix, and waits until they are indexed. */
+    private static void createMovieIndex(String index, String prefix) {
+        // an index left over by a previous run against the same server would make FT.CREATE fail
+        RestAssured.given().queryParam("dd", true).when().delete("/lettuce/search/index/" + index);
+        RestAssured.given().queryParam("prefix", prefix).body(MOVIE_SCHEMA).when()
+                .post("/lettuce/search/index/" + index).then().statusCode(204);
+        hset(prefix + "11002", Map.of("title", "Star Wars: Episode V - The Empire Strikes Back",
+                "plot", "After the Rebels are brutally overpowered by the Empire on the ice planet Hoth, ...",
+                "release_year", "1972", "genre", "Action", "rating", "8.7"));
+        hset(prefix + "11003", Map.of("title", "The Godfather",
+                "plot", "The aging patriarch of an organized crime dynasty transfers control of his ...",
+                "release_year", "1972", "genre", "Drama", "rating", "9.2"));
+        hset(prefix + "11004", Map.of("title", "Heat",
+                "plot", "A group of professional bank robbers start to feel the heat ...",
+                "release_year", "1995", "genre", "Thriller", "rating", "8.2"));
+        hset(prefix + "11005", Map.of("title", "Star Wars: Episode VI - Return of the Jedi",
+                "plot", "The Rebels dispatch to Endor to destroy the second Empire's Death Star.",
+                "release_year", "1983", "genre", "Action", "rating", "8.3"));
+        awaitIndexed(index, "*", 4);
+    }
+
+    private static int searchCount(String index, String query) {
+        return RestAssured.given().queryParam("q", query).when().get("/lettuce/search/query/" + index)
+                .then().statusCode(200).extract().jsonPath().getInt("count");
+    }
+
+    /** Indexing runs in the background: polls until {@code query} matches {@code expected} documents. */
+    private static void awaitIndexed(String index, String query, int expected) {
+        await(() -> searchCount(index, query) == expected,
+                () -> "expected " + expected + " documents matching '" + query + "' in " + index + ", got "
+                        + searchCount(index, query));
+    }
+
+    private static void await(BooleanSupplier condition, Supplier<String> failure) {
+        long deadline = System.currentTimeMillis() + 10_000;
+        while (!condition.getAsBoolean()) {
+            if (System.currentTimeMillis() > deadline) {
+                fail(failure.get());
+            }
+            try {
+                Thread.sleep(100);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw new IllegalStateException(e);
+            }
+        }
+    }
+
+    @Test
+    public void searchCreateQueryDrop() {
+        String index = getKey("idx-movie");
+        String prefix = getKey("movie") + ":";
+        createMovieIndex(index, prefix);
+
+        RestAssured.given().when().get("/lettuce/search/list").then()
+                .statusCode(200).body("$", CoreMatchers.hasItem(index));
+
+        RestAssured.given().queryParam("q", "war").when().get("/lettuce/search/query/" + index).then()
+                .statusCode(200)
+                .body("count", CoreMatchers.is(2))
+                .body("documents.key", CoreMatchers.hasItems(prefix + "11002", prefix + "11005"))
+                // without WITHSCORES every score is reported as 1.0
+                .body("documents.score", CoreMatchers.everyItem(CoreMatchers.is(1.0f)))
+                .body("documents.properties.genre", CoreMatchers.everyItem(CoreMatchers.is("Action")));
+
+        // RETURN with an alias, sorted on the sortable year: Heat (1995) comes first
+        RestAssured.given().queryParam("q", "*").queryParam("return", "title,release_year=year")
+                .queryParam("sortBy", "release_year").queryParam("desc", true)
+                .when().get("/lettuce/search/query/" + index).then()
+                .statusCode(200)
+                .body("count", CoreMatchers.is(4))
+                .body("documents[0].key", CoreMatchers.is(prefix + "11004"))
+                .body("documents[0].properties.year", CoreMatchers.is("1995"))
+                .body("documents[0].properties.genre", CoreMatchers.nullValue());
+
+        // LIMIT 0 0 only counts
+        RestAssured.given().queryParam("q", "*").queryParam("offset", 0).queryParam("count", 0)
+                .when().get("/lettuce/search/query/" + index).then()
+                .statusCode(200)
+                .body("count", CoreMatchers.is(4))
+                .body("documents.size()", CoreMatchers.is(0));
+
+        // NOCONTENT returns the keys only
+        RestAssured.given().queryParam("q", "@genre:{Thriller}").queryParam("noContent", true)
+                .when().get("/lettuce/search/query/" + index).then()
+                .statusCode(200)
+                .body("documents.key", CoreMatchers.equalTo(List.of(prefix + "11004")))
+                .body("documents[0].properties.size()", CoreMatchers.is(0));
+
+        // PARAMS (dialect 2) and WITHSCORES
+        RestAssured.given().queryParam("q", "@genre:{$GENRE}").queryParam("param", "GENRE=Action")
+                .when().get("/lettuce/search/query/" + index).then()
+                .statusCode(200).body("count", CoreMatchers.is(2));
+        RestAssured.given().queryParam("q", "war").queryParam("withScores", true)
+                .when().get("/lettuce/search/query/" + index).then()
+                .statusCode(200)
+                .body("count", CoreMatchers.is(2))
+                .body("documents.score", CoreMatchers.everyItem(Matchers.greaterThan(0.0f)));
+
+        // DROPINDEX DD removes the index and its documents
+        RestAssured.given().queryParam("dd", true).when().delete("/lettuce/search/index/" + index).then()
+                .statusCode(204);
+        RestAssured.given().when().get("/lettuce/search/list").then()
+                .statusCode(200).body("$", CoreMatchers.not(CoreMatchers.hasItem(index)));
+        await(() -> RestAssured.given().when().get("/lettuce/key/exists/" + prefix + "11002")
+                .then().statusCode(200).extract().asString().equals("false"),
+                () -> "expected the documents of " + index + " to be deleted with it");
+    }
+
+    @Test
+    public void searchAggregateAndCursor() {
+        String index = getKey("idx-aggregate");
+        String prefix = getKey("aggregate") + ":";
+        createMovieIndex(index, prefix);
+
+        // GROUPBY genre REDUCE COUNT, most frequent first: the TAG values come back normalised
+        RestAssured.given().queryParam("q", "*").queryParam("groupBy", "@genre").queryParam("reduce", "COUNT:count")
+                .queryParam("sortBy", "@count").queryParam("desc", true)
+                .when().get("/lettuce/search/aggregate/" + index).then()
+                .statusCode(200)
+                .body("count", CoreMatchers.is(3))
+                .body("cursor", CoreMatchers.is(-1))
+                .body("documents[0].properties.genre", CoreMatchers.is("action"))
+                .body("documents[0].properties.count", CoreMatchers.is("2"))
+                .body("documents.properties.genre", CoreMatchers.hasItems("drama", "thriller"));
+
+        // LOAD with an alias and APPLY, sorted on the computed property
+        List<String> doubled = RestAssured.given().queryParam("q", "@genre:{Action}").queryParam("load", "rating=score")
+                .queryParam("apply", "doubled=@score * 2").queryParam("sortBy", "@doubled")
+                .when().get("/lettuce/search/aggregate/" + index).then()
+                .statusCode(200)
+                .body("count", CoreMatchers.is(2))
+                .extract().jsonPath().getList("documents.properties.doubled", String.class);
+        assertEquals(16.6, Double.parseDouble(doubled.get(0)), 0.01);
+        assertEquals(17.4, Double.parseDouble(doubled.get(1)), 0.01);
+
+        // WITHCURSOR COUNT 1: one page at a time
+        String page = RestAssured.given().queryParam("q", "*").queryParam("load", "*").queryParam("cursor", 1)
+                .when().get("/lettuce/search/aggregate/" + index).then()
+                .statusCode(200).body("count", CoreMatchers.is(1)).extract().asString();
+        long cursor = new JsonObject(page).getLong("cursor");
+        assertTrue(cursor > 0, page);
+
+        String next = RestAssured.given().when().get("/lettuce/search/cursor/" + index + "/" + cursor).then()
+                .statusCode(200).body("count", CoreMatchers.is(1)).extract().asString();
+        assertEquals(cursor, new JsonObject(next).getLong("cursor"));
+
+        RestAssured.given().when().delete("/lettuce/search/cursor/" + index + "/" + cursor).then().statusCode(204);
+        // the deleted cursor is gone on the server
+        RestAssured.given().when().get("/lettuce/search/cursor/" + index + "/" + cursor).then().statusCode(500);
+    }
+
+    @Test
+    public void searchAliases() {
+        String index = getKey("idx-alias");
+        String alias = getKey("alias-movie");
+        createMovieIndex(index, getKey("alias") + ":");
+
+        RestAssured.given().when().post("/lettuce/search/alias/" + alias + "/" + index).then().statusCode(204);
+        assertEquals(2, searchCount(alias, "war"));
+        // adding an existing alias fails, updating it does not
+        RestAssured.given().when().post("/lettuce/search/alias/" + alias + "/" + index).then().statusCode(500);
+        RestAssured.given().queryParam("update", true).when().post("/lettuce/search/alias/" + alias + "/" + index)
+                .then().statusCode(204);
+
+        RestAssured.given().when().delete("/lettuce/search/alias/" + alias).then().statusCode(204);
+        RestAssured.given().queryParam("q", "war").when().get("/lettuce/search/query/" + alias).then().statusCode(500);
+    }
+
+    @Test
+    public void searchAlterSchema() {
+        String index = getKey("idx-alter");
+        createMovieIndex(index, getKey("alter") + ":");
+        assertEquals(0, searchCount(index, "brutally"));
+
+        // the plot was stored in the hashes all along, but is only indexed once the schema has the field
+        RestAssured.given().body("plot:TEXT").when().post("/lettuce/search/alter/" + index).then().statusCode(204);
+        awaitIndexed(index, "brutally", 1);
+    }
+
+    @Test
+    public void searchSynonymsDictionariesSpellCheck() {
+        String index = getKey("idx-spell");
+        String dict = getKey("dict");
+        createMovieIndex(index, getKey("spell") + ":");
+
+        // synonyms: the existing documents are re-indexed, so "battle" now matches the two "Star Wars" titles. A group
+        // expands the exact indexed token, "wars", not the stem "war" a query would be reduced to
+        RestAssured.given().when().get("/lettuce/search/synonyms/" + index).then()
+                .statusCode(200).body("size()", CoreMatchers.is(0));
+        RestAssured.given().body("wars,battle").when().post("/lettuce/search/synonyms/" + index + "/conflict").then()
+                .statusCode(204);
+        RestAssured.given().when().get("/lettuce/search/synonyms/" + index).then()
+                .statusCode(200).body("conflict", CoreMatchers.equalTo(List.of("battle", "wars")));
+        awaitIndexed(index, "battle", 2);
+
+        // dictionaries are global: clear the words of a previous run first
+        RestAssured.given().queryParam("words", "hello,bonjour").when().delete("/lettuce/search/dict/" + dict).then()
+                .statusCode(204);
+        RestAssured.given().when().get("/lettuce/search/dict/" + dict).then()
+                .statusCode(200).body("size()", CoreMatchers.is(0));
+        RestAssured.given().body("hello,bonjour").when().post("/lettuce/search/dict/" + dict).then().statusCode(204);
+        RestAssured.given().when().get("/lettuce/search/dict/" + dict).then()
+                .statusCode(200).body("$", CoreMatchers.equalTo(List.of("bonjour", "hello")));
+        RestAssured.given().queryParam("words", "hello").when().delete("/lettuce/search/dict/" + dict).then()
+                .statusCode(204);
+        RestAssured.given().when().get("/lettuce/search/dict/" + dict).then()
+                .statusCode(200).body("$", CoreMatchers.equalTo(List.of("bonjour")));
+
+        // spell check against the terms of the index, then with the dictionary included
+        RestAssured.given().queryParam("q", "godfathr").when().get("/lettuce/search/spellcheck/" + index).then()
+                .statusCode(200)
+                .body("correct", CoreMatchers.is(false))
+                .body("suggestions.godfathr", CoreMatchers.equalTo(List.of("godfather")));
+        RestAssured.given().queryParam("q", "bonjour").when().get("/lettuce/search/spellcheck/" + index).then()
+                .statusCode(200)
+                .body("correct", CoreMatchers.is(false))
+                .body("suggestions.bonjour.size()", CoreMatchers.is(0));
+        RestAssured.given().queryParam("q", "bonjour").queryParam("include", dict)
+                .when().get("/lettuce/search/spellcheck/" + index).then()
+                .statusCode(200).body("correct", CoreMatchers.is(true));
+    }
+
+    @Test
+    public void searchTagVals() {
+        String index = getKey("idx-tagvals");
+        createMovieIndex(index, getKey("tagvals") + ":");
+
+        RestAssured.given().when().get("/lettuce/search/tagvals/" + index + "/genre").then()
+                .statusCode(200).body("$", CoreMatchers.equalTo(List.of("action", "drama", "thriller")));
+        // TAGVALS is only valid on a TAG field
+        RestAssured.given().when().get("/lettuce/search/tagvals/" + index + "/title").then().statusCode(500);
+    }
+
+    @Test
+    public void searchJsonIndex() {
+        String index = getKey("idx-json");
+        String prefix = getKey("item") + ":";
+        RestAssured.given().queryParam("dd", true).when().delete("/lettuce/search/index/" + index);
+        RestAssured.given().queryParam("prefix", prefix).queryParam("json", true)
+                .body("$.name=name:TEXT,$.price=price:NUMERIC")
+                .when().post("/lettuce/search/index/" + index).then().statusCode(204);
+        String headphones = "{\"name\":\"Noise-cancelling Bluetooth headphones\",\"price\":99.98}";
+        String earbuds = "{\"name\":\"Wireless earbuds\",\"price\":64.99}";
+        jsonSet(prefix + "1", headphones);
+        jsonSet(prefix + "2", earbuds);
+        awaitIndexed(index, "*", 2);
+
+        // a JSON index returns the whole document under "$"
+        String body = RestAssured.given().queryParam("q", "@name:(earbuds)").when()
+                .get("/lettuce/search/query/" + index).then()
+                .statusCode(200)
+                .body("count", CoreMatchers.is(1))
+                .body("documents[0].key", CoreMatchers.is(prefix + "2"))
+                .extract().asString();
+        String document = new JsonObject(body).getJsonArray("documents").getJsonObject(0)
+                .getJsonObject("properties").getString("$");
+        assertEquals(new JsonObject(earbuds), new JsonObject(document));
+
+        RestAssured.given().queryParam("q", "@price:[0 70]").queryParam("return", "name")
+                .when().get("/lettuce/search/query/" + index).then()
+                .statusCode(200)
+                .body("count", CoreMatchers.is(1))
+                .body("documents[0].properties.name", CoreMatchers.is("Wireless earbuds"));
+    }
+
+    @Test
+    public void searchReactive() {
+        String index = getKey("idx-reactive");
+        createMovieIndex(index, getKey("reactive") + ":");
+
+        RestAssured.given().when().get("/lettuce/search/reactive/list").then()
+                .statusCode(200).body("$", CoreMatchers.hasItem(index));
+        RestAssured.given().queryParam("q", "%gdfather%").when().get("/lettuce/search/reactive/query/" + index).then()
+                .statusCode(200)
+                .body("count", CoreMatchers.is(1))
+                .body("documents[0].properties.title", CoreMatchers.is("The Godfather"));
+    }
+
+    @Test
+    public void withTransactionSearch() {
+        String index = getKey("tx-search");
+        String prefix = getKey("tx-movie") + ":";
+        createMovieIndex(index, prefix);
+
+        String body = RestAssured.given().when().post("/lettuce/with-transaction/search/" + index)
+                .then().statusCode(200).extract().asString();
+        // ft_list contains the index, tagvals -> the normalised genres, aliasadd -> null, syndump -> the group added
+        // just before, dictdump after the del -> [bonjour], dropindex -> null
+        assertEquals("false,11,true,[action, drama, thriller],true,[greetings],[hello, world],[bonjour],true", body);
+        RestAssured.given().when().get("/lettuce/search/list").then()
+                .statusCode(200).body("$", CoreMatchers.not(CoreMatchers.hasItem(index)));
+        await(() -> RestAssured.given().when().get("/lettuce/key/exists/" + prefix + "11002")
+                .then().statusCode(200).extract().asString().equals("false"),
+                () -> "expected the documents of " + index + " to be deleted with it");
     }
 
 }

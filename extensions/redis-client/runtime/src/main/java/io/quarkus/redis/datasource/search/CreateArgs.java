@@ -288,6 +288,132 @@ public class CreateArgs implements RedisCommandExtraArguments {
         return indexedField(field, alias, type, null);
     }
 
+    /**
+     * @return whether the index targets JSON documents ({@code ON JSON})
+     */
+    public boolean isOnJson() {
+        return onJson;
+    }
+
+    /**
+     * @return whether the index targets hashes ({@code ON HASH})
+     */
+    public boolean isOnHash() {
+        return onHash;
+    }
+
+    /**
+     * @return the key prefixes, empty if not set
+     */
+    public List<String> getPrefixes() {
+        return prefixes == null ? Collections.emptyList() : List.of(prefixes);
+    }
+
+    /**
+     * @return the filter expression, {@code null} if not set
+     */
+    public String getFilter() {
+        return filter;
+    }
+
+    /**
+     * @return the default language, {@code null} if not set
+     */
+    public String getLanguage() {
+        return language;
+    }
+
+    /**
+     * @return the document attribute holding the language, {@code null} if not set
+     */
+    public String getLanguageField() {
+        return languageField;
+    }
+
+    /**
+     * @return the default score, {@code -1} if not set
+     */
+    public double getScore() {
+        return score;
+    }
+
+    /**
+     * @return the document attribute holding the score, {@code null} if not set
+     */
+    public String getScoreField() {
+        return scoreField;
+    }
+
+    /**
+     * @return the document attribute holding the payload, {@code null} if not set
+     */
+    public String getPayloadField() {
+        return payloadField;
+    }
+
+    /**
+     * @return whether {@code MAXTEXTFIELDS} was requested
+     */
+    public boolean isMaxTextFields() {
+        return maxTextFields;
+    }
+
+    /**
+     * @return whether {@code NOOFFSETS} was requested
+     */
+    public boolean isNoOffsets() {
+        return noOffsets;
+    }
+
+    /**
+     * @return the duration after which an unused index expires, {@code null} if not set
+     */
+    public Duration getTemporary() {
+        return temporary;
+    }
+
+    /**
+     * @return whether {@code NOHL} was requested
+     */
+    public boolean isNoHl() {
+        return noHl;
+    }
+
+    /**
+     * @return whether {@code NOFIELDS} was requested
+     */
+    public boolean isNoFields() {
+        return noFields;
+    }
+
+    /**
+     * @return whether {@code NOFREQS} was requested
+     */
+    public boolean isNoFreqs() {
+        return noFreqs;
+    }
+
+    /**
+     * @return the custom stop words, empty if not set
+     */
+    public List<String> getStopWords() {
+        return stopWords == null ? Collections.emptyList() : List.of(stopWords);
+    }
+
+    /**
+     * @return whether {@code SKIPINITIALSCAN} was requested
+     */
+    public boolean isSkipInitialScan() {
+        return skipInitialScan;
+    }
+
+    /**
+     * @return the indexed fields making up the schema, in the order they were added
+     */
+    public List<IndexedField> getSchema() {
+        return Collections.unmodifiableList(schema);
+    }
+
     @Override
     public List<Object> toArgs() {
         List<Object> list = new ArrayList<>();

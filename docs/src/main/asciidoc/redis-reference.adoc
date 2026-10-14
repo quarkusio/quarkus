@@ -1143,6 +1143,10 @@ The other client properties (the remaining pool settings, `max-waiting-handlers`
 `cluster-transactions`, `client-name`, the remaining `tcp.*` properties, ...) are not applied yet: the extension logs a warning at startup listing the configured properties it
 ignores, and a client configured only through `hosts-provider-name` is deactivated.
 Lettuce and the libraries it needs in native mode (`LatencyUtils`, `HdrHistogram`) are pulled in transitively.
+Project Reactor is excluded: the data sources use Mutiny, and Lettuce only needs Reactor for its own reactive API
+(`RedisReactiveCommands` and the other reactive command interfaces of the Lettuce beans).
+To use that API, add `io.projectreactor:reactor-core` to your application; without it, requesting the reactive API
+fails.
 
 [[lettuce-cluster]]
 === Redis cluster

@@ -26,8 +26,8 @@ import javax.net.ssl.X509TrustManager;
 import org.jboss.logging.Logger;
 
 import io.lettuce.core.ClientOptions;
+import io.lettuce.core.CredentialsProvider;
 import io.lettuce.core.ReadFrom;
-import io.lettuce.core.RedisCredentialsProvider;
 import io.lettuce.core.RedisURI;
 import io.lettuce.core.SslOptions;
 import io.lettuce.core.SslVerifyMode;
@@ -263,7 +263,7 @@ public final class LettuceClientSettings {
      * @param userInfo the credentials encoded in the URI
      * @param passwordProperty the {@code password} property, {@code null} when not set
      */
-    static RedisCredentialsProvider credentials(UserInfo userInfo, String passwordProperty) {
+    static CredentialsProvider credentials(UserInfo userInfo, String passwordProperty) {
         String password = userInfo.password() != null ? userInfo.password() : passwordProperty;
         return new StaticCredentialsProvider(userInfo.username(), password == null ? null : password.toCharArray());
     }

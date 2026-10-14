@@ -1,4 +1,4 @@
-package io.quarkus.core.impl;
+package io.quarkus.core.service.impl;
 
 /**
  * Monitors service startup and shutdown transitions.

@@ -46,11 +46,11 @@ import io.quarkus.core.deployment.service.impl.Dependency;
 import io.quarkus.core.deployment.service.impl.LambdaTransliterator;
 import io.quarkus.core.deployment.service.impl.ServiceValueRetentionBuildItem;
 import io.quarkus.core.deployment.service.impl.TransliteratedAction;
-import io.quarkus.core.impl.JfrServiceMonitor;
-import io.quarkus.core.impl.NoOpServiceMonitor;
-import io.quarkus.core.impl.NodeShutdownContext;
-import io.quarkus.core.impl.ServiceGraph;
-import io.quarkus.core.impl.ServiceNode;
+import io.quarkus.core.service.impl.JfrServiceMonitor;
+import io.quarkus.core.service.impl.NoOpServiceMonitor;
+import io.quarkus.core.service.impl.NodeShutdownContext;
+import io.quarkus.core.service.impl.ServiceGraph;
+import io.quarkus.core.service.impl.ServiceNode;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.GeneratedClassGizmo2Adaptor;
@@ -137,9 +137,9 @@ public class MainClassBuildStep {
     public static final String GENERATE_APP_CDS_SYSTEM_PROPERTY = "quarkus.appcds.generate";
 
     /** Class descriptor for ServiceGraph. */
-    private static final String SERVICE_GRAPH_CLASS = "io.quarkus.core.impl.ServiceGraph";
+    private static final String SERVICE_GRAPH_CLASS = "io.quarkus.core.service.impl.ServiceGraph";
     /** Class descriptor for ServiceNode. */
-    private static final String SERVICE_NODE_CLASS = "io.quarkus.core.impl.ServiceNode";
+    private static final String SERVICE_NODE_CLASS = "io.quarkus.core.service.impl.ServiceNode";
 
     // Class Descriptors (CD_)
     private static final ClassDesc CD_Application = ClassDesc.of(Application.class.getName());
@@ -262,7 +262,7 @@ public class MainClassBuildStep {
             .of(ClassDesc.of(NodeShutdownContext.class.getName()), boolean.class);
     private static final ConstructorDesc CMD_StringBuilder_ctor_String = ConstructorDesc.of(StringBuilder.class, String.class);
     private static final ConstructorDesc CMD_ServiceGraph_ctor_StartupContext_ServiceMonitor = ConstructorDesc
-            .of(CD_ServiceGraph, CD_StartupContext, ClassDesc.of("io.quarkus.core.impl.ServiceMonitor"));
+            .of(CD_ServiceGraph, CD_StartupContext, ClassDesc.of("io.quarkus.core.service.impl.ServiceMonitor"));
     private static final ConstructorDesc CMD_ServiceNode_ctor_String_MethodHandle_ServiceGraph_int = ConstructorDesc.of(
             CD_ServiceNode, ConstantDescs.CD_String, ClassDesc.of(MethodHandle.class.getName()), CD_ServiceGraph,
             ConstantDescs.CD_int);

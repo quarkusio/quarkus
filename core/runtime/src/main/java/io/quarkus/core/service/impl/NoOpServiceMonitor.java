@@ -1,4 +1,4 @@
-package io.quarkus.core.impl;
+package io.quarkus.core.service.impl;
 
 /**
  * A service monitor that does nothing.

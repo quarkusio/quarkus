@@ -1,4 +1,4 @@
-package io.quarkus.core.impl;
+package io.quarkus.core.service.impl;
 
 import java.lang.invoke.ConstantBootstraps;
 import java.lang.invoke.MethodHandle;

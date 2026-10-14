@@ -1,4 +1,4 @@
-package io.quarkus.core.impl;
+package io.quarkus.core.util;
 
 import static java.util.Map.entry;
 import static org.assertj.core.api.Assertions.assertThat;

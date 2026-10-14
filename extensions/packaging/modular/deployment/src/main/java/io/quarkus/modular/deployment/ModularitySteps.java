@@ -59,6 +59,7 @@ import io.smallrye.classfile.AnnotationValue;
 import io.smallrye.classfile.Attributes;
 import io.smallrye.classfile.ClassFile;
 import io.smallrye.classfile.ClassModel;
+import io.smallrye.classfile.FieldModel;
 import io.smallrye.classfile.attribute.ModuleAttribute;
 import io.smallrye.classfile.attribute.ModuleMainClassAttribute;
 import io.smallrye.classfile.attribute.RuntimeInvisibleAnnotationsAttribute;
@@ -149,6 +150,8 @@ public final class ModularitySteps {
         Set<String> arcGeneratedPackages = new HashSet<>();
         Set<String> arcRuntimeGeneratedPackages = new HashSet<>();
         Set<String> extraAppModuleDepPackages = new HashSet<>();
+        // bean package -> packages of the client proxies its generated beans link against
+        Map<String, Set<String>> clientProxyPackagesByBeanPackage = new HashMap<>();
 
         // Collect the initial set of modules that must be on the boot path.
         Set<String> bootPathModules = bootPathItems.stream().map(BootModulePathBuildItem::moduleName)
@@ -213,8 +216,20 @@ public final class ModularitySteps {
             if (bn.endsWith("_Synthetic_Bean") || bn.endsWith("_Subclass")) {
                 arcRuntimeGeneratedPackages.add(pn);
             }
-            if (bn.endsWith("_Bean") || bn.endsWith("_ArcAnnotationLiteral")) {
+            if (bn.endsWith("_Bean") || bn.endsWith("_ArcAnnotationLiteral") || bn.endsWith("_ClientProxy")) {
                 arcGeneratedPackages.add(pn);
+            }
+            if (bn.endsWith("_Bean")) {
+                // a bean initializes its client proxy class eagerly; the proxy may live in another module
+                ClassModel cm = ClassFile.of().parse(gcbi.getClassData());
+                for (FieldModel fm : cm.fields()) {
+                    ClassDesc type = fm.fieldTypeSymbol();
+                    if (fm.fieldName().equalsString("proxy") && type.displayName().endsWith("_ClientProxy")
+                            && !type.packageName().equals(pn)) {
+                        clientProxyPackagesByBeanPackage.computeIfAbsent(pn, ignored -> new HashSet<>())
+                                .add(type.packageName());
+                    }
+                }
             }
             if (bn.contains("_ComponentsProvider")) {
                 // todo: temporarily scrape the constant pool to add extra dependencies to the app module
@@ -332,6 +347,12 @@ public final class ModularitySteps {
         // todo: The Vert.x extension should use AddDependencyBuildItem for this.
         extraDepsMap.computeIfAbsent("io.vertx.core", ModularitySteps::newMap)
                 .put("io.quarkus.vertx", Modifier.Set.of(Modifier.READ, Modifier.LINKED, Modifier.SYNTHETIC));
+
+        // The generated main class in the application module drives the service graph in `io.quarkus.core.service.impl`.
+        // todo: core should use ModuleExportBuildItem for this once an extension can name the application module.
+        addExportsByModule.computeIfAbsent(appModuleName, ModularitySteps::newMap)
+                .computeIfAbsent("io.quarkus.core", ignored -> new HashSet<>())
+                .add("io.quarkus.core.service.impl");
 
         // Now go through the process to build a (Quarkus) module descriptor for each artifact.
         for (ResolvedDependency dependency : knownNamedModules.values()) {
@@ -452,6 +473,26 @@ public final class ModularitySteps {
             });
         }
 
+        // Link each module holding a generated bean against the module holding its client proxy (#52933).
+        for (Map.Entry<String, Set<String>> entry : clientProxyPackagesByBeanPackage.entrySet()) {
+            String beanModule = modulesByPackageTemporary.getOrDefault(entry.getKey(), appModuleName);
+            for (String proxyPackage : entry.getValue()) {
+                String proxyModule = modulesByPackageTemporary.getOrDefault(proxyPackage, appModuleName);
+                if (proxyModule.equals(beanModule)) {
+                    continue;
+                }
+                if (beanModule.equals(appModuleName)) {
+                    extraDepsMap.computeIfAbsent(appModuleName, ModularitySteps::newMap)
+                            .merge(proxyModule, Modifier.Set.of(Modifier.READ, Modifier.LINKED, Modifier.SYNTHETIC),
+                                    Modifier.Set::withAll);
+                } else {
+                    modulesByName.computeIfPresent(beanModule, (ignored, mi) -> mi.withMoreDependencies(List.of(
+                            new DependencyInfo(proxyModule,
+                                    Modifier.Set.of(Modifier.READ, Modifier.LINKED, Modifier.SYNTHETIC), Map.of()))));
+                }
+            }
+        }
+
         // Compute the set of extra app module dependencies from ArC component providers.
         // todo: Remove once #52933 is sorted out.
         for (String pn : extraAppModuleDepPackages) {
@@ -514,6 +555,19 @@ public final class ModularitySteps {
                             .stream()
                             .map((e) -> new DependencyInfo(e.getKey(), e.getValue(), Map.of()))
                             .toList());
+                    // Add extra exports from build items.
+                    Map<String, Set<String>> ebi = addExportsByModule.getOrDefault(appModuleName, Map.of());
+                    if (!ebi.isEmpty()) {
+                        mi = mi.withMoreDependencies(ebi
+                                .entrySet()
+                                .stream()
+                                .map((e) -> new DependencyInfo(
+                                        e.getKey(),
+                                        Modifier.Set.of(Modifier.READ, Modifier.OPTIONAL),
+                                        e.getValue().stream().collect(
+                                                Collectors.toMap(Function.identity(), ignored -> PackageAccess.EXPORTED))))
+                                .toList());
+                    }
                     // tabulate any used JDK modules.
                     mi.dependencies().stream()
                             .map(DependencyInfo::moduleName)

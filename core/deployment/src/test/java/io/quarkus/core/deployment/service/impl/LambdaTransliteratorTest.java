@@ -24,8 +24,8 @@ import io.quarkus.core.StartContext;
 import io.quarkus.core.deployment.service.Action1;
 import io.quarkus.core.deployment.service.Action2;
 import io.quarkus.core.deployment.service.impl.LambdaTransliterator.TransliterationException;
-import io.quarkus.core.impl.ServiceGraph;
-import io.quarkus.core.impl.ServiceNode;
+import io.quarkus.core.service.impl.ServiceGraph;
+import io.quarkus.core.service.impl.ServiceNode;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.StartupContext;
 

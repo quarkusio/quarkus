@@ -1,4 +1,4 @@
-package io.quarkus.data.hibernate.stateless;
+package io.quarkus.data.hibernate.record;
 
 import io.quarkus.data.hibernate.EntitySwitcher;
 

@@ -1,5 +1,8 @@
 package io.quarkus.test.common;
 
+import static io.quarkus.test.common.ListeningAddress.LAMBDA_BASE_URI;
+import static io.quarkus.test.common.ListeningAddress.LOCAL_BASE_URI;
+
 import java.net.URI;
 import java.time.Duration;
 import java.util.Optional;
@@ -7,7 +10,6 @@ import java.util.Optional;
 import org.eclipse.microprofile.config.ConfigProvider;
 
 import io.quarkus.value.registry.ValueRegistry;
-import io.quarkus.value.registry.ValueRegistry.RuntimeKey;
 import io.restassured.RestAssured;
 import io.restassured.config.HttpClientConfig;
 import io.restassured.path.json.JsonPath;
@@ -121,9 +123,6 @@ public class RestAssuredStateManager {
             RestAssured.enableLoggingOfRequestAndResponseIfValidationFails();
         }
     }
-
-    private static final RuntimeKey<URI> LOCAL_BASE_URI = RuntimeKey.key("quarkus.http.local-base-uri");
-    private static final RuntimeKey<URI> LAMBDA_BASE_URI = RuntimeKey.key("quarkus.lambda.local-base-uri");
 
     public static void setTestUri(ValueRegistry valueRegister) {
         setTestUri(valueRegister, null);

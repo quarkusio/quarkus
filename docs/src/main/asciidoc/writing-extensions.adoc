@@ -2670,6 +2670,11 @@ Includes a resource bundle in the native executable.
 `io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem`::
 Registers a class for reflection in Substrate. Constructors are always registered, while methods and fields are optional.
 
+`io.quarkus.deployment.builditem.nativeimage.ConstantBootstrapBuildItem`::
+Registers a bootstrap method for execution at native image build time, allowing GraalVM to constant-fold dynamic constants and `invokedynamic` call sites.
+The third bootstrap parameter must be `Class` for dynamic constants, `MethodType` for `invokedynamic`, or `TypeDescriptor` for a method supporting both.
+Quarkus uses the public bootstrap registration API on GraalVM 25.4 and later and the internal API on earlier versions that support registration (25.0.4 and later).
+
 `io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem`::
 A class that will be initialized at runtime rather than build time. This will cause the build to fail if the class is initialized as part of the native executable build process, so care must be taken.
 

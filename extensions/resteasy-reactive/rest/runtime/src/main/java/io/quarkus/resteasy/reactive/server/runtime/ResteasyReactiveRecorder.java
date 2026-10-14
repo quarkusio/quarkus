@@ -139,22 +139,12 @@ public class ResteasyReactiveRecorder extends ResteasyReactiveCommonRecorder imp
         };
         CurrentIdentityAssociation currentIdentityAssociation = Arc.container().select(CurrentIdentityAssociation.class)
                 .orNull();
-        ClassLoader tccl = Thread.currentThread().getContextClassLoader();
         if (contextFactory == null) {
-            contextFactory = new RequestContextFactory() {
-                @Override
-                public ResteasyReactiveRequestContext createContext(Deployment deployment,
-                        Object context, ThreadSetupAction requestContext,
-                        ServerRestHandler[] handlerChain, byte[] handlerKinds, ServerRestHandler[] abortHandlerChain) {
-                    return new QuarkusResteasyReactiveRequestContext(deployment, (RoutingContext) context,
-                            requestContext,
-                            handlerChain,
-                            handlerKinds,
-                            abortHandlerChain, launchMode == LaunchMode.DEVELOPMENT ? tccl : null, currentIdentityAssociation,
-                            dispatcher);
-                }
-
-            };
+            QuarkusResteasyReactiveRequestContextFactory quarkusContextFactory = new QuarkusResteasyReactiveRequestContextFactory(
+                    launchMode == LaunchMode.DEVELOPMENT ? Thread.currentThread().getContextClassLoader() : null,
+                    currentIdentityAssociation, dispatcher);
+            contextFactory = quarkusContextFactory;
+            shutdownContext.addLastShutdownTask(quarkusContextFactory::resetTccl);
         }
 
         RuntimeDeploymentManager runtimeDeploymentManager = new RuntimeDeploymentManager(info, EXECUTOR_SUPPLIER,
@@ -451,6 +441,37 @@ public class ResteasyReactiveRecorder extends ResteasyReactiveCommonRecorder imp
             if (!event.failed()) {
                 event.fail(extractRootCause(throwable));
             }
+        }
+    }
+
+    private static final class QuarkusResteasyReactiveRequestContextFactory implements RequestContextFactory {
+
+        private volatile ClassLoader devModeTccl;
+        private final CurrentIdentityAssociation currentIdentityAssociation;
+        private final ServerRestHandlerDispatcher dispatcher;
+
+        QuarkusResteasyReactiveRequestContextFactory(ClassLoader devModeTccl,
+                CurrentIdentityAssociation currentIdentityAssociation,
+                ServerRestHandlerDispatcher dispatcher) {
+            this.devModeTccl = devModeTccl;
+            this.currentIdentityAssociation = currentIdentityAssociation;
+            this.dispatcher = dispatcher;
+        }
+
+        void resetTccl() {
+            devModeTccl = null;
+        }
+
+        @Override
+        public ResteasyReactiveRequestContext createContext(Deployment deployment,
+                Object context, ThreadSetupAction requestContext,
+                ServerRestHandler[] handlerChain, byte[] handlerKinds, ServerRestHandler[] abortHandlerChain) {
+            return new QuarkusResteasyReactiveRequestContext(deployment, (RoutingContext) context,
+                    requestContext,
+                    handlerChain,
+                    handlerKinds,
+                    abortHandlerChain, devModeTccl, currentIdentityAssociation,
+                    dispatcher);
         }
     }
 

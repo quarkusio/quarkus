@@ -119,7 +119,7 @@ class PersistenceXmlProcessorTest {
     private void buildPersistenceUnits(List<PersistenceXmlDescriptorBuildItem> descriptors,
             List<AdditionalPersistenceUnitBuildItem> additional) {
         processor.buildBlockingPersistenceUnitFromPersistenceXml(hibernateORMConfig(Map.of()), descriptors, List.of(),
-                additional, emptyJpaModel(), new JpaModelPerPersistenceUnitBuildItem(Map.of(), Set.of(), Set.of()),
+                additional, emptyJpaModel(), new JpaModelPerPersistenceUnitBuildItem(Map.of(), Set.of(), Set.of(), Set.of()),
                 new Capabilities(Set.of()), ignored -> {
                 }, List.of());
     }

@@ -49,7 +49,8 @@ class LettuceBlockingCommandsPoolIntegrationTest extends CommandsTestBase {
     @Test
     void concurrentBlockingCallsAreBoundedByThePoolAndQueueBeyondMaxPoolSize() {
         LettuceConnectionPool pool = pool(2, 1);
-        LettuceReactiveRedisDataSourceImpl ds = new LettuceReactiveRedisDataSourceImpl(vertx, lettuceConnection, pool);
+        LettuceReactiveRedisDataSourceImpl ds = new LettuceReactiveRedisDataSourceImpl(vertx, lettuceConnection, pool,
+                pubSubConnector());
 
         String keyA = UUID.randomUUID().toString();
         String keyB = UUID.randomUUID().toString();
@@ -94,7 +95,8 @@ class LettuceBlockingCommandsPoolIntegrationTest extends CommandsTestBase {
     @Test
     void invalidBlockingArgumentsFailAtCallTimeWithoutTouchingThePool() {
         LettuceConnectionPool pool = pool(1, 1);
-        LettuceReactiveRedisDataSourceImpl ds = new LettuceReactiveRedisDataSourceImpl(vertx, lettuceConnection, pool);
+        LettuceReactiveRedisDataSourceImpl ds = new LettuceReactiveRedisDataSourceImpl(vertx, lettuceConnection, pool,
+                pubSubConnector());
 
         // Argument validation runs eagerly, so the call itself throws — no subscription needed —
         // matching the behaviour of non-blocking commands.

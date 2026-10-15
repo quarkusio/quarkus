@@ -4,6 +4,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
 import java.time.Duration;
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import jakarta.inject.Inject;
 
@@ -15,6 +17,8 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.lettuce.core.ReadFrom;
 import io.lettuce.core.masterreplica.StatefulRedisMasterReplicaConnection;
 import io.quarkus.redis.datasource.RedisDataSource;
+import io.quarkus.redis.datasource.pubsub.PubSubCommands;
+import io.quarkus.redis.datasource.pubsub.PubSubCommands.RedisSubscriber;
 import io.quarkus.redis.datasource.transactions.TransactionResult;
 import io.quarkus.redis.datasource.value.ValueCommands;
 import io.quarkus.redis.lettuce.deployment.RedisSentinelTestResource;
@@ -87,5 +91,20 @@ public class LettuceReplicationDataSourceTest {
         });
         assertThat(result.discarded()).isFalse();
         assertThat((String) result.get(1)).isEqualTo("a");
+    }
+
+    @Test
+    void publishesAndSubscribesThroughReplication() {
+        // The subscriber connects to the first configured host, whichever role it has; a message published to the
+        // master reaches it either way, as Redis propagates PUBLISH to the replicas.
+        PubSubCommands<String> pubsub = blocking.pubsub(String.class);
+        List<String> received = new CopyOnWriteArrayList<>();
+        RedisSubscriber subscriber = pubsub.subscribe("replication:channel", received::add);
+        try {
+            pubsub.publish("replication:channel", "hello");
+            await().atMost(Duration.ofSeconds(5)).until(() -> received.equals(List.of("hello")));
+        } finally {
+            subscriber.unsubscribe();
+        }
     }
 }

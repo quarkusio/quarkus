@@ -49,6 +49,11 @@ description: >
 - Keep methods focused and short; extract when complexity warrants it
 - Use `Optional` for API return types that may be absent. In internal hot runtime
   code paths, direct null checks are acceptable for performance
+- Keep build output **reproducible**: never let the iteration order of a
+  `HashSet`/`HashMap` (or `Set.of`/`Map.of`/`Set.copyOf`/`Map.copyOf`, whose order
+  is randomized per JVM run) end up in recorded bytecode, generated classes, or
+  generated resources. Use a sorted/stable collection (`TreeSet`, `TreeMap`, or an
+  explicitly sorted `List`). See the `writing-build-steps` skill for details
 - Commits should be atomic and semantic — properly squash before submitting PRs.
   This helps during bisects and makes it easier to revert changes when needed
 - Don't use deprecated methods or classes in new code

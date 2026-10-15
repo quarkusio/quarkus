@@ -48,6 +48,20 @@ Quarkus has a split classloading model — the #1 source of mistakes:
 - **Recorders bridge the gap.** A `@Recorder` lives in the runtime module but is
   invoked from deployment build steps — it generates bytecode that runs at runtime.
 
+## Reproducible Builds (Critical)
+
+Quarkus builds must be **reproducible** — building the same sources twice must
+produce byte-identical output (a nightly CI job enforces this). The #1 cause of
+breakage is unstable collection iteration order leaking into build output:
+
+- **Never let `HashSet`/`HashMap` iteration order end up in recorded bytecode,
+  generated classes, or generated resources** — it is not stable across builds.
+- **`Set.of`/`Map.of`/`Set.copyOf`/`Map.copyOf` are worse** — their order is
+  randomized per JVM run. (`List.of`/`List.copyOf` preserve order and are fine.)
+- When a collection's order affects build output, use a **sorted/stable**
+  collection (`TreeSet`, `TreeMap`, or an explicitly sorted `List`). See the
+  `writing-build-steps` skill for details.
+
 ## Build Commands
 
 ```bash

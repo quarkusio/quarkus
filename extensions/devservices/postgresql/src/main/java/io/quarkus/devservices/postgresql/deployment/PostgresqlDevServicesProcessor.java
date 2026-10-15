@@ -26,6 +26,7 @@ import io.quarkus.deployment.builditem.DevServicesComposeProjectBuildItem;
 import io.quarkus.deployment.builditem.DevServicesLauncherConfigResultBuildItem;
 import io.quarkus.devservices.common.ComposeLocator;
 import io.quarkus.devservices.common.ConfigureUtil;
+import io.quarkus.devservices.common.ContainerLocator;
 import io.quarkus.devservices.common.DevServicesHostUtil;
 import io.quarkus.devservices.common.JBossLoggingConsumer;
 import io.quarkus.devservices.common.Labels;
@@ -45,7 +46,11 @@ public class PostgresqlDevServicesProcessor {
     private static final String MAX_PREPARED_TRANSACTIONS = "max_prepared_transactions";
     private static final String DEFAULT_MAX_PREPARED_TRANSACTIONS = "--" + MAX_PREPARED_TRANSACTIONS + "=100";
 
+    static final String DEV_SERVICE_LABEL = "quarkus-dev-service-postgresql";
+
     private static final PostgresDatasourceServiceConfigurator configurator = new PostgresDatasourceServiceConfigurator();
+    private static final ContainerLocator postgresqlContainerLocator = ContainerLocator
+            .locateContainerWithLabels(POSTGRESQL_PORT, true, DEV_SERVICE_LABEL);
 
     @BuildStep
     ConsoleCommandBuildItem psqlCommand(DevServicesLauncherConfigResultBuildItem devServices) {
@@ -88,6 +93,8 @@ public class PostgresqlDevServicesProcessor {
                         .withDatabaseName(effectiveDbName)
                         .withReuse(containerConfig.isReuse());
                 Labels.addDataSourceLabel(container, datasourceName);
+                ConfigureUtil.configureSharedServiceLabel(container, launchMode, DEV_SERVICE_LABEL,
+                        containerConfig.getServiceName());
                 Volumes.addVolumes(container, containerConfig.getVolumes());
 
                 container.withEnv(containerConfig.getContainerEnv());
@@ -109,6 +116,14 @@ public class PostgresqlDevServicesProcessor {
                 }
 
                 return new DatasourceStartableContainer<>(container);
+            }
+
+            @Override
+            public Optional<DevServicesDatasourceProvider.RunningDevServicesDatasource> findRunningSharedDatasource(
+                    LaunchMode launchMode, DevServicesDatasourceContainerConfig containerConfig) {
+                return postgresqlContainerLocator
+                        .locateContainer(containerConfig.getServiceName(), containerConfig.isShared(), launchMode)
+                        .map(containerAddress -> configurator.composeRunningService(containerAddress, containerConfig));
             }
 
             @Override

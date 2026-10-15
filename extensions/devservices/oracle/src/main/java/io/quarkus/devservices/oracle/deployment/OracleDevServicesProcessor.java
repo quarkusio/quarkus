@@ -21,6 +21,7 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.DevServicesComposeProjectBuildItem;
 import io.quarkus.devservices.common.ComposeLocator;
 import io.quarkus.devservices.common.ConfigureUtil;
+import io.quarkus.devservices.common.ContainerLocator;
 import io.quarkus.devservices.common.DevServicesHostUtil;
 import io.quarkus.devservices.common.JBossLoggingConsumer;
 import io.quarkus.devservices.common.Labels;
@@ -43,7 +44,11 @@ public class OracleDevServicesProcessor {
     public static final String ORIGINAL_IMAGE_NAME = "gvenzl/oracle-free";
     public static final int PORT = 1521;
 
+    static final String DEV_SERVICE_LABEL = "quarkus-dev-service-oracle";
+
     private static final OracleDatasourceServiceConfigurator configurator = new OracleDatasourceServiceConfigurator();
+    private static final ContainerLocator oracleContainerLocator = ContainerLocator
+            .locateContainerWithLabels(PORT, true, DEV_SERVICE_LABEL);
 
     @BuildStep
     DevServicesDatasourceProviderBuildItem setupOracle(
@@ -78,6 +83,8 @@ public class OracleDevServicesProcessor {
                         .withDatabaseName(effectiveDbName)
                         .withReuse(containerConfig.isReuse());
                 Labels.addDataSourceLabel(container, datasourceName);
+                ConfigureUtil.configureSharedServiceLabel(container, launchMode, DEV_SERVICE_LABEL,
+                        containerConfig.getServiceName());
                 Volumes.addVolumes(container, containerConfig.getVolumes());
 
                 container.withEnv(containerConfig.getContainerEnv());
@@ -103,6 +110,14 @@ public class OracleDevServicesProcessor {
                 }
 
                 return new DatasourceStartableContainer<>(container);
+            }
+
+            @Override
+            public Optional<DevServicesDatasourceProvider.RunningDevServicesDatasource> findRunningSharedDatasource(
+                    LaunchMode launchMode, DevServicesDatasourceContainerConfig containerConfig) {
+                return oracleContainerLocator
+                        .locateContainer(containerConfig.getServiceName(), containerConfig.isShared(), launchMode)
+                        .map(containerAddress -> configurator.composeRunningService(containerAddress, containerConfig));
             }
 
             @Override

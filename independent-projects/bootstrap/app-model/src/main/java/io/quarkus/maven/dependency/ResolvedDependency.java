@@ -126,6 +126,7 @@ public interface ResolvedDependency extends Dependency {
         String moduleName = switch (groupId) {
             case "io.quarkus" -> switch (artifactId) {
                 case "quarkus-arc" -> "io.quarkus.arc.runtime";
+                case "quarkus-qute" -> "io.quarkus.qute.runtime";
                 default -> null;
             };
             case "io.smallrye.config" -> switch (artifactId) {

@@ -508,6 +508,23 @@ envFrom:
       optional: false
 ----
 
+A missing `Secret` or `ConfigMap` referenced this way prevents the container from starting.
+To import resources that may not exist, list them with `quarkus.kubernetes.env.optional-secrets` and `quarkus.kubernetes.env.optional-configmaps` instead;
+the generated references are then marked `optional: true`:
+
+[source,properties]
+----
+quarkus.kubernetes.env.optional-configmaps=my-config-map
+----
+
+[source,yaml]
+----
+envFrom:
+  - configMapRef:
+      name: my-config-map
+      optional: true
+----
+
 The following extracts a value identified by the `keyName` field from the `my-config-map` ConfigMap into a `foo`
 environment variable:
 

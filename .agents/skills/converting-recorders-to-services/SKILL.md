@@ -139,8 +139,9 @@ This resolves the producing step's nodes (with passthrough resolution
 for steps that have no service graph nodes) and creates ordering edges.
 
 **`afterBuildItem()` is deprecated** — it exists only for recorder
-coexistence. Once the producing recorder is converted to a service,
-replace with `require()` or `after()`, or drop it, as appropriate.
+coexistence. Before adding one, check whether the target has already
+been converted to a service; if so, use `require()` or `after()`
+directly instead.
 
 #### Cross-phase dependencies
 
@@ -200,6 +201,12 @@ Recorder proxies resolve via `startupContext.getServiceValue()` (for
 `__service$$value()` proxies) or `startupContext.getValue()` (for
 standard recorder proxies). The service deploy body stores values in
 the `serviceValues` map for this resolution.
+
+**After converting**, search for other extensions that use
+`afterBuildItem()` referencing build items your old recorder produced.
+Those consumers can now migrate from `afterBuildItem()` to
+`require()`/`after()` on your new service directly, removing one more
+link in the legacy bridge chain.
 
 ### 7. Synthetic beans
 

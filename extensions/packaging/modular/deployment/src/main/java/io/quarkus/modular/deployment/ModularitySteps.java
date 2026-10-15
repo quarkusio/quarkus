@@ -428,7 +428,7 @@ public final class ModularitySteps {
                         // tabulate any used JDK modules.
                         mi.dependencies().stream()
                                 .map(DependencyInfo::moduleName)
-                                .filter(n -> n.startsWith("java.") || n.startsWith("jdk.") || n.startsWith("ibm."))
+                                .filter(ModularitySteps::isJdkModule)
                                 .forEach(usedJdkModuleNames::add);
                         return mi;
                     });
@@ -517,7 +517,7 @@ public final class ModularitySteps {
                     // tabulate any used JDK modules.
                     mi.dependencies().stream()
                             .map(DependencyInfo::moduleName)
-                            .filter(n -> n.startsWith("java.") || n.startsWith("jdk.") || n.startsWith("ibm."))
+                            .filter(ModularitySteps::isJdkModule)
                             .forEach(usedJdkModuleNames::add);
                     return mi;
                 });
@@ -545,6 +545,41 @@ public final class ModularitySteps {
         bootModuleSet.forEach(m -> amb.bootModule(m.name()));
         modulesByName.values().forEach(amb::moduleInfo);
         return new ApplicationModuleInfoBuildItem(amb.build());
+    }
+
+    // The Java SE platform modules; other `java.*` names (`java.money`, `java.xml.bind`, ...) are libraries.
+    private static final Set<String> javaSeModuleNames = Set.of(
+            "java.base",
+            "java.compiler",
+            "java.datatransfer",
+            "java.desktop",
+            "java.instrument",
+            "java.logging",
+            "java.management",
+            "java.management.rmi",
+            "java.naming",
+            "java.net.http",
+            "java.prefs",
+            "java.rmi",
+            "java.scripting",
+            "java.se",
+            "java.security.jgss",
+            "java.security.sasl",
+            "java.smartcardio",
+            "java.sql",
+            "java.sql.rowset",
+            "java.transaction.xa",
+            "java.xml",
+            "java.xml.crypto");
+
+    /**
+     * Determine whether a module name refers to a module that the JDK provides.
+     *
+     * @param moduleName the module name
+     * @return {@code true} for a Java SE platform module or a {@code jdk.} / {@code ibm.} module
+     */
+    static boolean isJdkModule(String moduleName) {
+        return javaSeModuleNames.contains(moduleName) || moduleName.startsWith("jdk.") || moduleName.startsWith("ibm.");
     }
 
     private static final Set<String> bootLayerNames = ModuleLayer.boot().modules().stream().map(Module::getName)

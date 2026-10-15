@@ -21,7 +21,7 @@ description: >
 
 - Prefer package-private (default) visibility for internal implementation classes
 - Use `public` for user-facing API and for classes/methods that need to be accessed
-  across packages (e.g., processors, recorders, build items). Prefer package-private
+  across packages (e.g., processors, build items). Prefer package-private
   for purely internal implementation details
 - Use `protected` when designing for extension/subclassing
 - Internal classes should go in `.internal` or `.impl` sub-packages
@@ -30,7 +30,6 @@ description: >
 ## Naming
 
 - Deployment processors: `<Feature>Processor.java`
-- Recorders: `<Feature>Recorder.java`
 - Build items: `<Description>BuildItem.java`
 - Config interfaces: `<Feature>Config.java` or `<Feature>BuildTimeConfig.java` / `<Feature>RuntimeConfig.java`
 - Artifact IDs: `quarkus-<name>` (runtime), `quarkus-<name>-deployment` (deployment)

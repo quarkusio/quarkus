@@ -3,6 +3,7 @@ package io.quarkus.it.opentelemetry;
 import static io.opentelemetry.api.trace.SpanKind.CLIENT;
 import static io.opentelemetry.api.trace.SpanKind.INTERNAL;
 import static io.opentelemetry.api.trace.SpanKind.SERVER;
+import static io.opentelemetry.semconv.CodeAttributes.CODE_FUNCTION_NAME;
 import static io.opentelemetry.semconv.incubating.EnduserIncubatingAttributes.ENDUSER_ID;
 import static io.opentelemetry.semconv.incubating.UserIncubatingAttributes.USER_ROLES;
 import static io.restassured.RestAssured.get;
@@ -324,6 +325,7 @@ public class TracingTest {
         assertEquals("TracedService.call", cdi.get("name"));
         assertEquals(SpanKind.INTERNAL.toString(), cdi.get("kind"));
         assertEquals(server.get("spanId"), cdi.get("parent_spanId"));
+        assertEquals("io.quarkus.it.opentelemetry.TracedService.call", cdi.get("attr_" + CODE_FUNCTION_NAME.getKey()));
     }
 
     @Test
@@ -613,6 +615,8 @@ public class TracingTest {
         assertNull(fromInterceptor.get("attr_http.request.method"));
         assertNull(fromInterceptor.get("attr_http.response.status_code"));
         assertEquals("one", fromInterceptor.get("attr_message"));
+        assertEquals("io.quarkus.it.opentelemetry.PingPongResource$PingPongRestClient.pingpongIntercept",
+                fromInterceptor.get("attr_" + CODE_FUNCTION_NAME.getKey()));
 
         Map<String, Object> client = getSpanByKindAndParentId(spans, CLIENT, fromInterceptor.get("spanId"));
         assertEquals("GET /client/pong/{message}", client.get("name"));

@@ -210,13 +210,13 @@ of sharing is supported.
 
 [IMPORTANT]
 ====
-The `devservices.*` properties (image name, init scripts, volumes, ...) of a datasource that sets `use-from`
-are ignored, since no container is started for it.
-====
+The configuration of the application reusing an existing Dev Service will not affect the Dev Service, since it was started beforehand.
 
-[IMPORTANT]
-====
-A datasource and the one it reuses through `use-from` must use the same `db-kind`.
+Thus, the applications are responsible for ensuring their configuration for a given Dev Service is consistent:
+
+* Same `devservices.*` properties (image name, init scripts, volumes, ...) 
+* Same `db-kind`
+* Etc.
 ====
 
 [NOTE]

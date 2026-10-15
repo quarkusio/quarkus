@@ -479,6 +479,26 @@ it fallbacks to JUnit default behaviour which does not set a `ClassOrderer` at a
 The Quarkus orderer can also be disabled entirely by
 setting another `ClassOrderer` using the JUnit configuration. This is only permitted in cases where all Quarkus tests would run on the same application (that is, the use of test profiles and test resources is limited).
 
+[NOTE]
+====
+Starting with version 3.6.0, `maven-surefire-plugin` and `maven-failsafe-plugin` translate the `runOrder` option (`alphabetical`, `random` or `reversealphabetical`) into a JUnit `ClassOrderer` and pass it explicitly to JUnit. This replaces the Quarkus orderer, so tests which use different test profiles or test resources fail with an error explaining that the Quarkus JUnit configuration has been overridden.
+To avoid this, either do not set `runOrder` and use `quarkus.test.class-orderer` instead to choose the order of the tests within each group, or keep `runOrder` and set the Quarkus orderer in the plugin configuration, which takes precedence over `runOrder`:
+
+[source,xml]
+----
+<configuration>
+    <runOrder>alphabetical</runOrder>
+    <properties>
+        <configurationParameters>
+            junit.jupiter.testclass.order.default=io.quarkus.test.junit.util.QuarkusTestProfileAwareClassOrderer
+        </configurationParameters>
+    </properties>
+</configuration>
+----
+
+Note that `runOrder=random` also randomizes the order of test methods, which is not covered by `quarkus.test.class-orderer`.
+====
+
 === Writing a Profile
 
 To implement a test profile we need to implement `io.quarkus.test.junit.QuarkusTestProfile`:

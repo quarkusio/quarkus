@@ -25,6 +25,11 @@
             <artifactId>quarkus-rest</artifactId>
             <scope>provided</scope>
         </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-rest-client</artifactId>
+            <scope>provided</scope>
+        </dependency>
 
         <!-- Optional Dependencies-->
         <dependency>

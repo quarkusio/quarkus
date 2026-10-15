@@ -1,6 +1,5 @@
 package io.quarkus.registry.json;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -9,15 +8,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
 
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.JsonToken;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JsonSerializer;
-import com.fasterxml.jackson.databind.SerializerProvider;
-import com.fasterxml.jackson.databind.exc.InvalidFormatException;
-
 import io.quarkus.registry.config.RegistryConfigImpl;
+import tools.jackson.core.JsonGenerator;
+import tools.jackson.core.JsonParser;
+import tools.jackson.core.JsonToken;
+import tools.jackson.databind.DeserializationContext;
+import tools.jackson.databind.SerializationContext;
+import tools.jackson.databind.ValueSerializer;
+import tools.jackson.databind.exc.InvalidFormatException;
 
 /**
  * Serialization detail. Not part of the Catalog or Config API.
@@ -28,10 +26,10 @@ public interface JsonBuilder<T> {
     /**
      * Make sure a JsonBuilder is built before being serialized
      */
-    public class JsonBuilderSerializer<T> extends JsonSerializer<JsonBuilder<T>> {
+    public class JsonBuilderSerializer<T> extends ValueSerializer<JsonBuilder<T>> {
         @Override
-        public void serialize(JsonBuilder<T> value, JsonGenerator gen, SerializerProvider serializers) throws IOException {
-            gen.writeObject(value.build());
+        public void serialize(JsonBuilder<T> value, JsonGenerator gen, SerializationContext serializers) {
+            gen.writePOJO(value.build());
         }
     }
 
@@ -110,7 +108,7 @@ public interface JsonBuilder<T> {
         return Collections.unmodifiableMap(result);
     }
 
-    static void ensureNextToken(JsonParser p, JsonToken expected, DeserializationContext ctxt) throws IOException {
+    static void ensureNextToken(JsonParser p, JsonToken expected, DeserializationContext ctxt) {
         if (p.nextToken() != expected) {
             throw InvalidFormatException.from(p, "Expected " + expected, ctxt, RegistryConfigImpl.Builder.class);
         }

@@ -1,5 +1,7 @@
 package io.quarkus.grpc.deployment;
 
+import java.util.Optional;
+
 import io.quarkus.runtime.annotations.ConfigDocSection;
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.annotations.ConfigPhase;
@@ -17,6 +19,12 @@ public interface GrpcBuildTimeConfig {
     @ConfigDocSection(generated = true)
     GrpcDevModeConfig devMode();
 
+    /**
+     * gRPC code generation configuration.
+     */
+    @ConfigDocSection(generated = true)
+    GrpcCodegenConfig codegen();
+
     @ConfigGroup
     interface GrpcDevModeConfig {
 
@@ -26,5 +34,25 @@ public interface GrpcBuildTimeConfig {
          */
         @WithDefault("true")
         boolean forceServerStart();
+    }
+
+    @ConfigGroup
+    interface GrpcCodegenConfig {
+
+        /**
+         * Directory containing the proto files to compile.
+         * <p>
+         * By default, proto files are expected in {@code src/main/proto}.
+         * <p>
+         * This property is typically set in the build descriptor (Maven plugin properties or Gradle
+         * {@code quarkusBuildProperties}).
+         */
+        Optional<String> protoDirectory();
+
+        /**
+         * Skip gRPC code generation.
+         */
+        @WithDefault("false")
+        boolean skip();
     }
 }

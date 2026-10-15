@@ -47,6 +47,7 @@ public class NettyMetricsTest {
     static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot(jar -> jar.addClasses(HelloResource.class))
             .withConfigurationResource("test-logging.properties")
+            .overrideConfigKey("quarkus.otel.enabled", "false")
             .overrideConfigKey("quarkus.micrometer.binder-enabled-default", "false")
             .overrideConfigKey("quarkus.micrometer.binder.netty.enabled", "true")
             .overrideConfigKey("quarkus.redis.devservices.enabled", "false");

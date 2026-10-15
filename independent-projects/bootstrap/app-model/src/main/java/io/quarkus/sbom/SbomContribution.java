@@ -6,6 +6,8 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 
+import io.quarkus.maven.dependency.ArtifactCoords;
+
 /**
  * Groups component descriptors and their dependency relationships for SBOM contribution.
  * <p>
@@ -34,7 +36,7 @@ public final class SbomContribution {
      */
     public static SbomContribution of(Collection<ComponentDescriptor> components,
             Collection<ComponentDependencies> dependencies) {
-        return new SbomContribution(components, dependencies, null, null);
+        return new SbomContribution(components, dependencies, null, null, null);
     }
 
     /**
@@ -44,19 +46,21 @@ public final class SbomContribution {
      * @return a new contribution
      */
     public static SbomContribution ofComponents(Collection<ComponentDescriptor> components) {
-        return new SbomContribution(components, List.of(), null, null);
+        return new SbomContribution(components, List.of(), null, null, null);
     }
 
     private final Collection<ComponentDescriptor> components;
     private final Collection<ComponentDependencies> dependencies;
     private final String mainComponentBomRef;
     private final Path runnerPath;
+    private final ArtifactCoords appArtifact;
 
     private SbomContribution(
             Collection<ComponentDescriptor> components,
             Collection<ComponentDependencies> dependencies,
             String mainComponentBomRef,
-            Path runnerPath) {
+            Path runnerPath,
+            ArtifactCoords appArtifact) {
         this.components = components == null || components.isEmpty()
                 ? List.of()
                 : List.copyOf(components);
@@ -65,6 +69,7 @@ public final class SbomContribution {
                 : List.copyOf(dependencies);
         this.mainComponentBomRef = mainComponentBomRef;
         this.runnerPath = runnerPath;
+        this.appArtifact = appArtifact;
     }
 
     public Collection<ComponentDescriptor> components() {
@@ -83,6 +88,23 @@ public final class SbomContribution {
         return runnerPath;
     }
 
+    /**
+     * Returns the Maven coordinates of the application artifact that drives
+     * the Quarkus build, or {@code null} for extension contributions.
+     *
+     * <p>
+     * Used by the SBOM generator to resolve the project's own license from
+     * the artifact's POM. This is necessary when the main component uses a
+     * generic PURL (e.g. {@code pkg:generic/quarkus-run.jar}) that has no
+     * Maven coordinates for POM resolution.
+     * </p>
+     *
+     * @return the application artifact coordinates, or {@code null}
+     */
+    public ArtifactCoords appArtifact() {
+        return appArtifact;
+    }
+
     public static Builder builder() {
         return new Builder();
     }
@@ -93,6 +115,7 @@ public final class SbomContribution {
         private List<ComponentDependencies> dependencies;
         private String mainComponentBomRef;
         private Path runnerPath;
+        private ArtifactCoords appArtifact;
 
         private Builder() {
         }
@@ -135,8 +158,13 @@ public final class SbomContribution {
             return this;
         }
 
+        Builder setAppArtifact(ArtifactCoords appArtifact) {
+            this.appArtifact = appArtifact;
+            return this;
+        }
+
         public SbomContribution build() {
-            return new SbomContribution(components, dependencies, mainComponentBomRef, runnerPath);
+            return new SbomContribution(components, dependencies, mainComponentBomRef, runnerPath, appArtifact);
         }
     }
 }

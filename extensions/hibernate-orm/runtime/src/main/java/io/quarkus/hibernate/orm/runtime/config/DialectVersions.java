@@ -3,26 +3,35 @@ package io.quarkus.hibernate.orm.runtime.config;
 import org.hibernate.dialect.DatabaseVersion;
 
 /**
- * Constants exposing the default versions of various DBs in Quarkus.
+ * Constants and utilities for database versions in Quarkus.
  * <p>
- * If, one day, Hibernate ORM's defaults catch up with all our default versions,
- * we could consider relying on ORM's defaults going forward.
- * <p>
- * For H2, we will probably have to keep a constant here forever,
- * as H2 is embedded and thus Quarkus determines its default version through the BOM.
+ * For H2, we keep a constant here as H2 is embedded and Quarkus determines
+ * its default version through the BOM.
  * See https://github.com/quarkusio/quarkus/issues/1886
+ * <p>
+ * For other databases, default versions are now provided by database-specific
+ * extensions (JDBC/reactive clients) via {@code io.quarkus.datasource.deployment.spi.DefaultDataSourceDbVersionBuildItem}.
  */
 public final class DialectVersions {
+
+    /**
+     * Default database versions set by Quarkus' Hibernate ORM extension for specific dialects.
+     * <p>
+     * These versions are applied via {@code io.quarkus.hibernate.orm.deployment.spi.DatabaseKindDialectBuildItem}
+     * and serve as a last-resort fallback when the datasource extension does not provide a version.
+     * <p>
+     * In most cases, versions should come from datasource extensions
+     * via {@code io.quarkus.datasource.deployment.spi.DefaultDataSourceDbVersionBuildItem}.
+     */
     public static final class Defaults {
-
-        // The following constants must be at least equal to the default dialect version in Hibernate ORM
-        // These constants must be removed as soon as Hibernate ORM's minimum requirements become
-        // greater than or equal to these versions.
-        public static final String MSSQL = "13"; // 2016
-
-        // This must be aligned on the H2 version in the Quarkus BOM
-        // This must never be removed
-        public static final String H2 = "2.4.240";
+        /**
+         * Default MariaDB version. See build-parent/pom.xml.
+         */
+        public static final String MARIADB = "12.1";
+        /**
+         * Default Microsoft SQL Server version. See build-parent/pom.xml.
+         */
+        public static final String MSSQL = "16";
 
         private Defaults() {
         }

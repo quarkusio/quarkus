@@ -7,9 +7,8 @@ import java.util.Map;
 
 import org.junit.jupiter.api.Test;
 
-import com.fasterxml.jackson.databind.JsonNode;
-
 import io.quarkus.devui.tests.DevUIJsonRPCTest;
+import tools.jackson.databind.JsonNode;
 
 /**
  * All tests test the same api call, with different configuration and different expected results
@@ -46,7 +45,7 @@ public abstract class AbstractDevUIHibernateOrmTest extends DevUIJsonRPCTest {
             assertEquals(0, persistenceUnits.size());
         } else {
             assertEquals(1, persistenceUnits.size());
-            Iterator<JsonNode> persistenceUnitsIterator = persistenceUnits.elements();
+            Iterator<JsonNode> persistenceUnitsIterator = persistenceUnits.iterator();
             while (persistenceUnitsIterator.hasNext()) {
                 JsonNode persistenceUnit = persistenceUnitsIterator.next();
                 JsonNode name = persistenceUnit.get("name");
@@ -56,7 +55,7 @@ public abstract class AbstractDevUIHibernateOrmTest extends DevUIJsonRPCTest {
                 assertNotNull(managedEntities);
                 assertTrue(managedEntities.isArray());
 
-                Iterator<JsonNode> managedEntitiesIterator = managedEntities.elements();
+                Iterator<JsonNode> managedEntitiesIterator = managedEntities.iterator();
                 while (managedEntitiesIterator.hasNext()) {
                     JsonNode myEntity = managedEntitiesIterator.next();
 

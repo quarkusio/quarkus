@@ -1,6 +1,6 @@
 <develocity>
     <server>
-        <url>https://ge.quarkus.io</url>
+        <url>https://develocity.quarkus.io</url>
     </server>
     <buildScan>
         <!-- adjust conditions ?

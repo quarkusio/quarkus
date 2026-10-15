@@ -88,8 +88,7 @@ public class LambdaHttpHandler implements RequestHandler<AwsProxyRequest, AwsPro
             try {
                 //log.info("Got message: " + msg.getClass().getName());
 
-                if (msg instanceof HttpResponse) {
-                    HttpResponse res = (HttpResponse) msg;
+                if (msg instanceof HttpResponse res) {
                     responseBuilder.setStatusCode(res.status().code());
 
                     if (request.getRequestSource() == AwsProxyRequest.RequestSource.ALB) {
@@ -101,15 +100,11 @@ public class LambdaHttpHandler implements RequestHandler<AwsProxyRequest, AwsPro
                             continue; // ignore transfer encoding, chunked screws up message and response
                         }
                         for (String v : res.headers().getAll(name)) {
-                            if (name.equalsIgnoreCase("Transfer-Encoding") && v.contains("chunked")) {
-                                continue;
-                            }
                             responseBuilder.getMultiValueHeaders().add(name, v);
                         }
                     }
                 }
-                if (msg instanceof HttpContent) {
-                    HttpContent content = (HttpContent) msg;
+                if (msg instanceof HttpContent content) {
                     int readable = content.content().readableBytes();
                     if (baos == null && readable > 0) {
                         baos = createByteStream();
@@ -118,8 +113,7 @@ public class LambdaHttpHandler implements RequestHandler<AwsProxyRequest, AwsPro
                         baos.write(content.content().readByte());
                     }
                 }
-                if (msg instanceof FileRegion) {
-                    FileRegion file = (FileRegion) msg;
+                if (msg instanceof FileRegion file) {
                     if (file.count() > 0 && file.transferred() < file.count()) {
                         if (baos == null)
                             baos = createByteStream();
@@ -158,6 +152,13 @@ public class LambdaHttpHandler implements RequestHandler<AwsProxyRequest, AwsPro
     private AwsProxyResponse nettyDispatch(InetSocketAddress clientAddress, AwsProxyRequest request,
             Context context)
             throws Exception {
+        if (request.getHttpMethod() == null) {
+            throw new IllegalStateException("Missing HTTP method in the request event. "
+                    + "quarkus-amazon-lambda-rest expects an API Gateway REST API (payload format 1.0) proxy event "
+                    + "(AwsProxyRequest). For API Gateway HTTP API events (payload format 2.0, APIGatewayV2HTTPEvent) "
+                    + "use quarkus-amazon-lambda-http instead, "
+                    + "and make sure that the Lambda proxy integration is enabled");
+        }
         String path = request.getPath();
         //log.info("---- Got lambda request: " + path);
         if (request.getMultiValueQueryStringParameters() != null && !request.getMultiValueQueryStringParameters().isEmpty()) {
@@ -176,9 +177,9 @@ public class LambdaHttpHandler implements RequestHandler<AwsProxyRequest, AwsPro
                         sb.append("=");
                         sb.append(v);
                     } else {
-                        sb.append(URLEncoder.encode(e.getKey(), StandardCharsets.UTF_8.name()));
+                        sb.append(URLEncoder.encode(e.getKey(), StandardCharsets.UTF_8));
                         sb.append("=");
-                        sb.append(URLEncoder.encode(v, StandardCharsets.UTF_8.name()));
+                        sb.append(URLEncoder.encode(v, StandardCharsets.UTF_8));
                     }
                 }
             }

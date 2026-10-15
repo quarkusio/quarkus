@@ -8,7 +8,7 @@ import org.eclipse.microprofile.config.spi.ConfigSource;
 import org.eclipse.microprofile.config.spi.ConfigSourceProvider;
 import org.eclipse.microprofile.config.spi.Converter;
 
-import io.smallrye.config.ConfigMappingLoader;
+import io.smallrye.config.ConfigMappingHandler;
 import io.smallrye.config.ConfigMappings.ConfigClass;
 import io.smallrye.config.ConfigSourceFactory;
 import io.smallrye.config.ConfigSourceInterceptor;
@@ -154,11 +154,11 @@ public abstract class AbstractConfigBuilder implements SmallRyeConfigBuilderCust
         }
     }
 
-    public static void ensureLoaded(final String mappingClass) {
+    protected static ConfigClass configClass(final String mappingClass, final String prefix,
+            final ConfigMappingHandler handler) {
         try {
-            // To support mappings that are not public
             Class<?> klass = Thread.currentThread().getContextClassLoader().loadClass(mappingClass);
-            ConfigMappingLoader.ensureLoaded(klass);
+            return ConfigClass.configClass(klass, prefix, handler);
         } catch (ClassNotFoundException e) {
             throw new RuntimeException(e);
         }

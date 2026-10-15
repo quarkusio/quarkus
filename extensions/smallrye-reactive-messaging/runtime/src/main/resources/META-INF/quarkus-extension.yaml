@@ -12,5 +12,4 @@ metadata:
   status: "stable"
   config:
   - "quarkus.messaging."
-  - "quarkus.smallrye-reactive-messaging."
   - "mp.messaging."

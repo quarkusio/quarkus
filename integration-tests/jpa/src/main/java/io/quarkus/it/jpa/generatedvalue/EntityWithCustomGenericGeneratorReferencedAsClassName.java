@@ -9,7 +9,7 @@ import org.hibernate.annotations.GenericGenerator;
 @Entity
 public class EntityWithCustomGenericGeneratorReferencedAsClassName {
     @Id
-    @GeneratedValue(generator = "referenced-as-class-name")
-    @GenericGenerator(name = "referenced-as-class-name", strategy = "io.quarkus.it.jpa.generatedvalue.MyCustomGenericGeneratorReferencedAsClassName")
+    @GeneratedValue
+    @GenericGenerator(type = MyCustomGenericGeneratorReferencedAsClassName.class)
     public String id;
 }

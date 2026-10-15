@@ -23,6 +23,7 @@ import jakarta.interceptor.InvocationContext;
 import org.jboss.logging.Logger;
 
 import io.quarkus.arc.AbstractAnnotationLiteral;
+import io.quarkus.arc.ClientProxy;
 import io.quarkus.arc.runtime.InterceptorBindings;
 import io.quarkus.cache.Cache;
 import io.quarkus.cache.CacheException;
@@ -30,6 +31,7 @@ import io.quarkus.cache.CacheKey;
 import io.quarkus.cache.CacheKeyGenerator;
 import io.quarkus.cache.CacheManager;
 import io.quarkus.cache.CompositeCacheKey;
+import io.quarkus.cache.UndefinedCacheKeyGenerator;
 import io.smallrye.mutiny.Uni;
 
 public abstract class CacheInterceptor {
@@ -39,6 +41,7 @@ public abstract class CacheInterceptor {
     private static final Logger LOGGER = Logger.getLogger(CacheInterceptor.class);
     private static final String PERFORMANCE_WARN_MSG = "Cache key resolution based on reflection calls. Please create a GitHub issue in the Quarkus repository, the maintainers might be able to improve your application performance.";
     protected static final String UNHANDLED_ASYNC_RETURN_TYPE_MSG = "Unhandled async return type";
+    private static final String KOTLIN_CONTINUATION_CLASS_NAME = "kotlin.coroutines.Continuation";
 
     @Inject
     CacheManager cacheManager;
@@ -127,31 +130,95 @@ public abstract class CacheInterceptor {
 
     protected Object getCacheKey(Cache cache, Class<? extends CacheKeyGenerator> keyGeneratorClass,
             List<Short> cacheKeyParameterPositions, Method method, Object[] methodParameterValues) {
+        // Kotlin suspend functions have a synthetic Continuation as last parameter which must never be part of the cache key.
+        Object[] keyParameters = excludeKotlinContinuationParameter(method, methodParameterValues);
         if (keyGeneratorClass != UndefinedCacheKeyGenerator.class) {
-            return generateKey(keyGeneratorClass, method, methodParameterValues);
-        } else if (methodParameterValues == null || methodParameterValues.length == 0) {
+            return checkKeyElement(method, generateKey(keyGeneratorClass, method, keyParameters));
+        } else if (keyParameters == null || keyParameters.length == 0) {
             // If the intercepted method doesn't have any parameter, then the default cache key will be used.
             return cache.getDefaultKey();
         } else if (cacheKeyParameterPositions.size() == 1) {
             // If exactly one @CacheKey-annotated parameter was identified for the intercepted method at build time, then this
             // parameter will be used as the cache key.
-            return methodParameterValues[cacheKeyParameterPositions.get(0)];
+            return checkKeyElement(method, keyParameters[cacheKeyParameterPositions.get(0)]);
         } else if (cacheKeyParameterPositions.size() >= 2) {
             // If two or more @CacheKey-annotated parameters were identified for the intercepted method at build time, then a
             // composite cache key built from all these parameters will be used.
             List<Object> keyElements = new ArrayList<>();
             for (short position : cacheKeyParameterPositions) {
-                keyElements.add(methodParameterValues[position]);
+                keyElements.add(checkKeyElement(method, keyParameters[position]));
             }
             return new CompositeCacheKey(keyElements.toArray(new Object[0]));
-        } else if (methodParameterValues.length == 1) {
+        } else if (keyParameters.length == 1) {
             // If the intercepted method has exactly one parameter, then this parameter will be used as the cache key.
-            return methodParameterValues[0];
+            return checkKeyElement(method, keyParameters[0]);
         } else {
             // If the intercepted method has two or more parameters, then a composite cache key built from all these parameters
             // will be used.
-            return new CompositeCacheKey(methodParameterValues);
+            for (Object keyParameter : keyParameters) {
+                checkKeyElement(method, keyParameter);
+            }
+            return new CompositeCacheKey(keyParameters);
         }
+    }
+
+    /**
+     * Rejects a CDI client proxy as a cache key element, including the elements of a composite key.
+     * <p>
+     * The CDI specification leaves every method a client proxy inherits from {@link Object} undefined except
+     * {@code toString()}, so neither {@code equals()} nor {@code hashCode()} can be relied upon: entries stored through
+     * a proxy cannot be matched reliably, and the cache may call those methods later on a thread with no active
+     * context.
+     */
+    private static Object checkKeyElement(Method method, Object keyElement) {
+        if (keyElement instanceof ClientProxy proxy) {
+            throw new CacheException(new IllegalArgumentException("The cache key of method [" + method
+                    + "] contains a client proxy of the bean [" + proxy.arc_bean().getBeanClass().getName()
+                    + "]. The CDI specification only defines toString() on a client proxy, so its equals() and"
+                    + " hashCode() cannot be used as a cache key. Pass a value derived from the bean instead, or"
+                    + " declare a CacheKeyGenerator."));
+        }
+        if (keyElement instanceof CompositeCacheKey compositeKey) {
+            for (Object element : compositeKey.getKeyElements()) {
+                checkKeyElement(method, element);
+            }
+        }
+        return keyElement;
+    }
+
+    /**
+     * Returns a {@link CacheSpecialMethodHandler} registered through {@link CacheRecorder} that can handle the given
+     * method, or {@code null} if none is registered. Companion extensions (for example {@code quarkus-cache-kotlin})
+     * contribute handlers this way.
+     */
+    protected static CacheSpecialMethodHandler getSpecialMethodHandler(Method method) {
+        return CacheRecorder.getSpecialMethodHandler(method);
+    }
+
+    /**
+     * Returns {@code true} if the given method is a compiled Kotlin {@code suspend} function, which is identified by a
+     * synthetic {@code kotlin.coroutines.Continuation} last parameter. The class name comparison keeps this check free of
+     * any Kotlin dependency.
+     */
+    protected static boolean isKotlinSuspendMethod(Method method) {
+        if (method == null) {
+            return false;
+        }
+        Class<?>[] parameterTypes = method.getParameterTypes();
+        return parameterTypes.length > 0
+                && KOTLIN_CONTINUATION_CLASS_NAME.equals(parameterTypes[parameterTypes.length - 1].getName());
+    }
+
+    /**
+     * Drops the Kotlin {@code Continuation} parameter from the cache key material when present.
+     */
+    private static Object[] excludeKotlinContinuationParameter(Method method, Object[] methodParameterValues) {
+        if (methodParameterValues == null || methodParameterValues.length == 0 || !isKotlinSuspendMethod(method)) {
+            return methodParameterValues;
+        }
+        Object[] withoutContinuation = new Object[methodParameterValues.length - 1];
+        System.arraycopy(methodParameterValues, 0, withoutContinuation, 0, withoutContinuation.length);
+        return withoutContinuation;
     }
 
     private <T extends CacheKeyGenerator> Object generateKey(Class<T> keyGeneratorClass, Method method,

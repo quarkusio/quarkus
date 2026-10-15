@@ -1,5 +1,6 @@
 package io.quarkus.cache.redis.deployment;
 
+import static io.quarkus.cache.redis.runtime.RedisCacheBuildRecorder.REDIS_CACHE_TYPE;
 import static io.quarkus.deployment.annotations.ExecutionTime.RUNTIME_INIT;
 import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
 import static org.jboss.jandex.AnnotationTarget.Kind.METHOD;
@@ -30,6 +31,7 @@ import io.quarkus.cache.deployment.CacheNamesBuildItem;
 import io.quarkus.cache.redis.runtime.RedisCacheBuildRecorder;
 import io.quarkus.cache.redis.runtime.RedisCacheBuildTimeConfig;
 import io.quarkus.cache.redis.runtime.RedisCachesBuildTimeConfig;
+import io.quarkus.cache.runtime.CacheBuildConfig;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Record;
@@ -72,11 +74,15 @@ public class RedisCacheProcessor {
     @BuildStep
     @Record(STATIC_INIT)
     void determineKeyValueTypes(RedisCacheBuildRecorder recorder, CombinedIndexBuildItem combinedIndex,
-            CacheNamesBuildItem cacheNamesBuildItem, RedisCachesBuildTimeConfig buildConfig) {
+            CacheNamesBuildItem cacheNamesBuildItem, CacheBuildConfig cacheBuildConfig,
+            RedisCachesBuildTimeConfig buildConfig) {
 
         Map<String, java.lang.reflect.Type> keyTypes = new HashMap<>();
         RedisCacheBuildTimeConfig defaultBuildTimeConfig = buildConfig.defaultConfig();
         for (String cacheName : cacheNamesBuildItem.getNames()) {
+            if (!isRedisCache(cacheName, cacheBuildConfig)) {
+                continue;
+            }
             RedisCacheBuildTimeConfig namedBuildTimeConfig = buildConfig.cachesConfig().get(cacheName);
 
             if (namedBuildTimeConfig != null && namedBuildTimeConfig.keyType().isPresent()) {
@@ -93,6 +99,9 @@ public class RedisCacheProcessor {
         Optional<String> defaultValueType = buildConfig.defaultConfig().valueType();
         Set<String> cacheNames = cacheNamesBuildItem.getNames();
         for (String cacheName : cacheNames) {
+            if (!isRedisCache(cacheName, cacheBuildConfig)) {
+                continue;
+            }
             String valueType = null;
             RedisCacheBuildTimeConfig cacheSpecificGroup = buildConfig.cachesConfig().get(cacheName);
             if (cacheSpecificGroup == null) {
@@ -119,6 +128,12 @@ public class RedisCacheProcessor {
             }
         }
         recorder.setCacheValueTypes(valueTypes);
+    }
+
+    private static boolean isRedisCache(String cacheName, CacheBuildConfig cacheBuildConfig) {
+        CacheBuildConfig.CacheTypeBuildConfig cacheTypeConfig = cacheBuildConfig.cacheTypeByName().get(cacheName);
+        String cacheType = cacheTypeConfig != null ? cacheTypeConfig.type() : cacheBuildConfig.type();
+        return REDIS_CACHE_TYPE.equals(cacheType);
     }
 
     private static Map<String, Type> valueTypesFromCacheResultAnnotation(CombinedIndexBuildItem combinedIndex) {

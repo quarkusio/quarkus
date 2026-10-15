@@ -39,6 +39,8 @@
 
         <!-- HTTP -->
         <module>vertx-http</module>
+        <module>devjsonrpc</module>
+        <module>devmcp</module>
         <module>devui</module>
         <module>undertow</module>
         <module>websockets</module>
@@ -57,6 +59,7 @@
         <module>micrometer-registry-prometheus</module>
         <module>micrometer-opentelemetry</module>
         <module>opentelemetry</module>
+        <module>observation</module>
         <module>info</module>
         <module>observability-devservices</module>
         <module>jfr</module>
@@ -77,7 +80,7 @@
         <module>smallrye-reactive-messaging-kafka</module>
         <module>smallrye-reactive-messaging-amqp</module>
         <module>smallrye-reactive-messaging-pulsar</module>
-<!--        <module>smallrye-reactive-messaging-mqtt</module>-->
+        <module>smallrye-reactive-messaging-mqtt</module>
         <module>smallrye-reactive-messaging-rabbitmq</module>
         <module>smallrye-context-propagation</module>
         <module>reactive-datasource</module>
@@ -164,6 +167,7 @@
         <module>keycloak-admin-rest-client</module>
         <module>keycloak-admin-resteasy-client</module>
         <module>credentials</module>
+        <module>spiffe-client</module>
 
         <!-- SBOM -->
         <module>cyclonedx</module>

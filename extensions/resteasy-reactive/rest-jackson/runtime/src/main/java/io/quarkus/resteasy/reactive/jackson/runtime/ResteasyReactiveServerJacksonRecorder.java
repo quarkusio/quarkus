@@ -8,12 +8,6 @@ import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Supplier;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.ObjectReader;
-import com.fasterxml.jackson.databind.ObjectWriter;
-import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
-import com.fasterxml.jackson.databind.ser.std.StdSerializer;
-
 import io.quarkus.arc.Arc;
 import io.quarkus.resteasy.reactive.jackson.runtime.security.RolesAllowedConfigExpStorage;
 import io.quarkus.resteasy.reactive.jackson.runtime.serialisers.GeneratedSerializersRegister;
@@ -22,6 +16,11 @@ import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.runtime.annotations.RuntimeInit;
 import io.quarkus.runtime.annotations.StaticInit;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectReader;
+import tools.jackson.databind.ObjectWriter;
+import tools.jackson.databind.deser.std.StdDeserializer;
+import tools.jackson.databind.ser.std.StdSerializer;
 
 @Recorder
 public class ResteasyReactiveServerJacksonRecorder {

@@ -12,12 +12,11 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-
 import io.quarkus.redis.datasource.list.ListCommands;
 import io.quarkus.redis.datasource.set.SScanCursor;
 import io.quarkus.redis.datasource.set.SetCommands;
 import io.quarkus.redis.runtime.datasource.BlockingRedisDataSourceImpl;
+import tools.jackson.core.type.TypeReference;
 
 public class SetCommandsTest extends DatasourceTestBase {
 

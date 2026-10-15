@@ -2,7 +2,6 @@ package org.jboss.resteasy.reactive.server.core.multipart;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
@@ -22,11 +21,16 @@ import java.util.function.Supplier;
 import jakarta.ws.rs.BadRequestException;
 import jakarta.ws.rs.NotSupportedException;
 import jakarta.ws.rs.RuntimeType;
+import jakarta.ws.rs.core.EntityPart;
 import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.MultivaluedMap;
 import jakarta.ws.rs.ext.MessageBodyReader;
 
 import org.jboss.logging.Logger;
+import org.jboss.resteasy.reactive.common.core.Serialisers;
+import org.jboss.resteasy.reactive.common.jaxrs.EntityPartImpl;
 import org.jboss.resteasy.reactive.common.util.Encode;
+import org.jboss.resteasy.reactive.common.util.QuarkusMultivaluedHashMap;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 import org.jboss.resteasy.reactive.server.core.ServerSerialisers;
 import org.jboss.resteasy.reactive.server.handlers.RequestDeserializeHandler;
@@ -227,7 +231,7 @@ public final class MultipartSupport {
         for (FormValue value : values) {
             if (value.isFileItem()) {
                 try {
-                    ret.add(Files.readString(value.getFileItem().getFile(), Charset.defaultCharset()));
+                    ret.add(new String(readAllBytes(value.getFileItem()), Charset.defaultCharset()));
                 } catch (IOException e) {
                     throw new MultipartPartReadingException(e);
                 }
@@ -242,6 +246,13 @@ public final class MultipartSupport {
         return ret;
     }
 
+    private static byte[] readAllBytes(FileItem fileItem) throws IOException {
+        if (fileItem.isInMemory()) {
+            return fileItem.getInputStream().readAllBytes();
+        }
+        return Files.readAllBytes(fileItem.getFile());
+    }
+
     public static byte[] getByteArray(String formName, ResteasyReactiveRequestContext context) {
         FormValue value = getFirstValue(formName, context);
         if (value == null) {
@@ -249,11 +260,7 @@ public final class MultipartSupport {
         }
         if (value.isFileItem()) {
             try {
-                FileItem fileItem = value.getFileItem();
-                if (fileItem.isInMemory()) {
-                    return fileItem.getInputStream().readAllBytes();
-                }
-                return Files.readAllBytes(fileItem.getFile());
+                return readAllBytes(value.getFileItem());
             } catch (IOException e) {
                 throw new MultipartPartReadingException(e);
             }
@@ -271,7 +278,7 @@ public final class MultipartSupport {
         for (FormValue value : values) {
             if (value.isFileItem()) {
                 try {
-                    ret.add(Files.readAllBytes(value.getFileItem().getFile()));
+                    ret.add(readAllBytes(value.getFileItem()));
                 } catch (IOException e) {
                     throw new MultipartPartReadingException(e);
                 }
@@ -289,7 +296,7 @@ public final class MultipartSupport {
         }
         if (value.isFileItem()) {
             try {
-                return new FileInputStream(value.getFileItem().getFile().toFile());
+                return value.getFileItem().getInputStream();
             } catch (IOException e) {
                 throw new MultipartPartReadingException(e);
             }
@@ -307,7 +314,7 @@ public final class MultipartSupport {
         for (FormValue value : values) {
             if (value.isFileItem()) {
                 try {
-                    ret.add(new FileInputStream(value.getFileItem().getFile().toFile()));
+                    ret.add(value.getFileItem().getInputStream());
                 } catch (IOException e) {
                     throw new MultipartPartReadingException(e);
                 }
@@ -384,6 +391,77 @@ public final class MultipartSupport {
             }
         }
         return result;
+    }
+
+    public static List<EntityPart> toEntityPartList(ResteasyReactiveRequestContext context) {
+        FormData formData = context.getFormData();
+        if (formData == null) {
+            return Collections.emptyList();
+        }
+        Serialisers serialisers = context.getDeployment().getSerialisers();
+        List<EntityPart> result = new ArrayList<>();
+        for (String name : formData) {
+            Deque<FormValue> values = formData.get(name);
+            if (values != null) {
+                for (FormValue value : values) {
+                    result.add(formValueToEntityPart(name, value, serialisers));
+                }
+            }
+        }
+        return result;
+    }
+
+    public static EntityPart getEntityPart(String name, ResteasyReactiveRequestContext context) {
+        FormValue value = getFirstValue(name, context);
+        if (value == null) {
+            return null;
+        }
+        return formValueToEntityPart(name, value, context.getDeployment().getSerialisers());
+    }
+
+    public static List<EntityPart> getEntityParts(String name, ResteasyReactiveRequestContext context) {
+        Deque<FormValue> values = getValues(name, context);
+        if (values == null || values.isEmpty()) {
+            return Collections.emptyList();
+        }
+        Serialisers serialisers = context.getDeployment().getSerialisers();
+        List<EntityPart> result = new ArrayList<>();
+        for (FormValue value : values) {
+            result.add(formValueToEntityPart(name, value, serialisers));
+        }
+        return result;
+    }
+
+    private static EntityPart formValueToEntityPart(String name, FormValue value, Serialisers serialisers) {
+        InputStream content;
+        MediaType mediaType;
+        String fileName = value.getFileName();
+
+        if (value.isFileItem()) {
+            try {
+                content = value.getFileItem().getInputStream();
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
+            }
+            String contentType = null;
+            if (value.getHeaders() != null) {
+                contentType = value.getHeaders().getFirst("Content-Type");
+            }
+            mediaType = contentType != null ? MediaType.valueOf(contentType) : MediaType.APPLICATION_OCTET_STREAM_TYPE;
+        } else {
+            content = new ByteArrayInputStream(value.getValue().getBytes(
+                    value.getCharset() != null ? Charset.forName(value.getCharset()) : StandardCharsets.UTF_8));
+            mediaType = MediaType.TEXT_PLAIN_TYPE;
+        }
+
+        MultivaluedMap<String, String> headers = new QuarkusMultivaluedHashMap<>();
+        if (value.getHeaders() != null) {
+            headers.putAll(value.getHeaders());
+        }
+        headers.putSingle("Content-Type", mediaType.toString());
+        headers.putSingle("Content-Disposition", EntityPartImpl.buildContentDisposition(name, fileName));
+
+        return new EntityPartImpl(name, fileName, headers, mediaType, content, serialisers);
     }
 
     private static ByteArrayInputStream formAttributeValueToInputStream(String formAttributeValue) {

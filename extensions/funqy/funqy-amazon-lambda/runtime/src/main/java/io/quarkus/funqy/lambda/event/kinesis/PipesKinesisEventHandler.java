@@ -10,11 +10,11 @@ import java.util.stream.Stream;
 import com.amazonaws.services.lambda.runtime.events.KinesisEvent;
 import com.amazonaws.services.lambda.runtime.events.StreamsEventResponse;
 import com.amazonaws.services.lambda.runtime.events.StreamsEventResponse.BatchItemFailure;
-import com.fasterxml.jackson.databind.util.ByteBufferBackedInputStream;
 
 import io.quarkus.funqy.lambda.config.FunqyAmazonConfig;
 import io.quarkus.funqy.lambda.event.EventHandler;
 import io.quarkus.funqy.lambda.model.kinesis.PipesKinesisEvent;
+import tools.jackson.databind.util.ByteBufferBackedInputStream;
 
 public class PipesKinesisEventHandler
         implements EventHandler<List<PipesKinesisEvent>, KinesisEvent.Record, StreamsEventResponse> {

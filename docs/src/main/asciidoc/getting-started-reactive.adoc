@@ -3,9 +3,8 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= Getting Started With Reactive
+= Getting started with Reactive
 include::_attributes.adoc[]
-:categories: getting-started,reactive
 :summary: Learn more about developing reactive applications with Quarkus.
 :topics: getting-started,reactive
 

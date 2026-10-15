@@ -5,6 +5,9 @@ import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 
+import java.util.Map;
+
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -13,6 +16,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 import io.quarkus.funqy.runtime.ApplicationException;
 import io.quarkus.test.QuarkusExtensionTest;
 import io.restassured.RestAssured;
+import io.vertx.core.json.JsonObject;
 
 public class SimpleTest {
     @RegisterExtension
@@ -73,22 +77,26 @@ public class SimpleTest {
                 .post("/template")
                 .then().statusCode(204);
 
-        RestAssured.given().contentType("application/json")
+        JsonObject expectedOutput = new JsonObject("{\"name\":\"Bill\",\"message\":\"Hello Bill!\"}");
+        Map body = RestAssured.given().contentType("application/json")
                 .body("\"Bill\"")
                 .post(path)
                 .then().statusCode(200)
-                .body(equalTo("{\"name\":\"Bill\",\"message\":\"Hello Bill!\"}"));
+                .extract().body().as(Map.class);
+        Assertions.assertEquals(expectedOutput, new JsonObject(body));
 
         RestAssured.given().contentType("application/json")
                 .body("{\"greeting\":\"Guten tag\",\"punctuation\":\".\"}")
                 .post("/template")
                 .then().statusCode(204);
 
-        RestAssured.given().contentType("application/json")
+        expectedOutput = new JsonObject("{\"name\":\"Bill\",\"message\":\"Guten tag Bill.\"}");
+        body = RestAssured.given().contentType("application/json")
                 .body("\"Bill\"")
                 .post(path)
                 .then().statusCode(200)
-                .body(equalTo("{\"name\":\"Bill\",\"message\":\"Guten tag Bill.\"}"));
+                .extract().body().as(Map.class);
+        Assertions.assertEquals(expectedOutput, new JsonObject(body));
 
     }
 

@@ -17,13 +17,13 @@ import org.jboss.logging.Logger;
 
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
 import io.quarkus.datasource.common.runtime.DatabaseKind;
-import io.quarkus.datasource.deployment.spi.DatasourceStartable;
-import io.quarkus.datasource.deployment.spi.DevServicesDatasourceContainerConfig;
-import io.quarkus.datasource.deployment.spi.DevServicesDatasourceProvider;
-import io.quarkus.datasource.deployment.spi.DevServicesDatasourceProviderBuildItem;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.DevServicesComposeProjectBuildItem;
+import io.quarkus.devservices.datasource.common.DatasourceStartable;
+import io.quarkus.devservices.datasource.common.DevServicesDatasourceContainerConfig;
+import io.quarkus.devservices.datasource.common.DevServicesDatasourceProvider;
+import io.quarkus.devservices.datasource.common.DevServicesDatasourceProviderBuildItem;
 import io.quarkus.runtime.LaunchMode;
 
 public class H2DevServicesProcessor {

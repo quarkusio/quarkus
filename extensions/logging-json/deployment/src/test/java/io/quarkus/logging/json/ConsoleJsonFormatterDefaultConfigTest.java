@@ -17,13 +17,12 @@ import org.jboss.logmanager.handlers.ConsoleHandler;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import io.quarkus.bootstrap.logging.InitialConfigurator;
 import io.quarkus.bootstrap.logging.QuarkusDelayedHandler;
 import io.quarkus.logging.json.runtime.JsonFormatter;
 import io.quarkus.test.QuarkusExtensionTest;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 
 public class ConsoleJsonFormatterDefaultConfigTest {
 

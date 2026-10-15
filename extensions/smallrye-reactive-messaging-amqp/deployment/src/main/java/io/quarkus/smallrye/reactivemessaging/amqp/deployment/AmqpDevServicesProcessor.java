@@ -29,6 +29,7 @@ import io.quarkus.deployment.dev.devservices.RunningContainer;
 import io.quarkus.devservices.common.ComposeLocator;
 import io.quarkus.devservices.common.ConfigureUtil;
 import io.quarkus.devservices.common.ContainerLocator;
+import io.quarkus.devservices.common.DevServicesHostUtil;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.configuration.ConfigUtils;
 
@@ -94,7 +95,9 @@ public class AmqpDevServicesProcessor {
                             .feature(Feature.MESSAGING_AMQP)
                             .containerId(containerAddress.getId())
                             .config(Map.of(
-                                    AMQP_HOST_PROP, containerAddress.getHost(),
+                                    AMQP_HOST_PROP,
+                                    DevServicesHostUtil.resolvePublishedPortHost(containerAddress.getId(),
+                                            containerAddress.getHost()),
                                     AMQP_PORT_PROP, String.valueOf(containerAddress.getPort()),
                                     AMQP_MAPPED_PORT_PROP,
                                     String.valueOf(container.getPortMapping(AMQP_CONSOLE_PORT).orElse(0)),
@@ -123,6 +126,7 @@ public class AmqpDevServicesProcessor {
                         .config(Map.of(
                                 AMQP_USER_PROP, DEFAULT_USER,
                                 AMQP_PASSWORD_PROP, DEFAULT_PASSWORD))
+                        // keep the deprecated call until we remove it entirely
                         .configProvider(Map.of(
                                 AMQP_HOST_PROP, ArtemisContainer::getEffectiveHost,
                                 AMQP_PORT_PROP, s -> String.valueOf(s.getPort()),
@@ -233,7 +237,7 @@ public class AmqpDevServicesProcessor {
 
         @Override
         public String getConnectionInfo() {
-            return String.format("amqp://%s:%d", getEffectiveHost(), getPort());
+            return DevServicesHostUtil.formatPrefixedAuthority("amqp", getEffectiveHost(), getPort());
         }
 
         @Override
@@ -246,7 +250,7 @@ public class AmqpDevServicesProcessor {
         }
 
         public String getEffectiveHost() {
-            return useSharedNetwork ? hostName : getHost();
+            return DevServicesHostUtil.publishedPortHost(getContainerId(), useSharedNetwork, hostName, getHost());
         }
 
         public int getMappedConsolePort() {

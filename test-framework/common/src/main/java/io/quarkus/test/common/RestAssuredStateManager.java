@@ -6,11 +6,11 @@ import java.util.Optional;
 
 import org.eclipse.microprofile.config.ConfigProvider;
 
+import io.quarkus.value.registry.ValueRegistry;
+import io.quarkus.value.registry.ValueRegistry.RuntimeKey;
 import io.restassured.RestAssured;
 import io.restassured.config.HttpClientConfig;
-import io.restassured.config.RestAssuredConfig;
 import io.restassured.path.json.JsonPath;
-import io.restassured.specification.RequestSpecification;
 import io.smallrye.config.Config;
 
 /**
@@ -22,15 +22,8 @@ import io.smallrye.config.Config;
  * TODO: do we actually want this here, or should it be in a different module?
  */
 public class RestAssuredStateManager {
-
     private static final int DEFAULT_HTTP_PORT = 8081;
     private static final int DEFAULT_HTTPS_PORT = 8444;
-
-    private static int oldPort;
-    private static String oldBaseURI;
-    private static String oldBasePath;
-    private static Object oldRestAssuredConfig; // we can't declare the type here as that would prevent this class for being loaded if RestAssured is not present
-    private static Object oldRequestSpecification;
 
     private static final boolean REST_ASSURED_PRESENT;
 
@@ -78,7 +71,6 @@ public class RestAssuredStateManager {
             return;
         }
 
-        oldPort = RestAssured.port;
         if (port == null) {
             port = useSecureConnection ? getPortFromConfig(DEFAULT_HTTPS_PORT, "quarkus.http.test-ssl-port")
                     : getPortFromConfig(DEFAULT_HTTP_PORT, "quarkus.lambda.mock-event-server.test-port",
@@ -86,7 +78,6 @@ public class RestAssuredStateManager {
         }
         RestAssured.port = port;
 
-        oldBaseURI = RestAssured.baseURI;
         final String protocol = useSecureConnection ? "https://" : "http://";
         String host = ConfigProvider.getConfig().getOptionalValue("quarkus.http.host", String.class)
                 .orElse("localhost");
@@ -95,7 +86,6 @@ public class RestAssuredStateManager {
         }
         RestAssured.baseURI = protocol + host;
 
-        oldBasePath = RestAssured.basePath;
         Optional<String> basePath = ConfigProvider.getConfig().getOptionalValue("quarkus.http.root-path",
                 String.class);
         if (basePath.isPresent() || additionalPath != null) {
@@ -122,16 +112,28 @@ public class RestAssuredStateManager {
             RestAssured.basePath = bp.toString();
         }
 
-        oldRestAssuredConfig = RestAssured.config();
-
         Duration timeout = ConfigProvider.getConfig()
                 .getOptionalValue("quarkus.http.test-timeout", Duration.class).orElse(Duration.ofSeconds(30));
         configureTimeouts(timeout);
 
-        oldRequestSpecification = RestAssured.requestSpecification;
         if (ConfigProvider.getConfig()
                 .getOptionalValue("quarkus.test.rest-assured.enable-logging-on-failure", Boolean.class).orElse(true)) {
             RestAssured.enableLoggingOfRequestAndResponseIfValidationFails();
+        }
+    }
+
+    private static final RuntimeKey<URI> LOCAL_BASE_URI = RuntimeKey.key("quarkus.http.local-base-uri");
+    private static final RuntimeKey<URI> LAMBDA_BASE_URI = RuntimeKey.key("quarkus.lambda.local-base-uri");
+
+    public static void setTestUri(ValueRegistry valueRegister) {
+        setTestUri(valueRegister, null);
+    }
+
+    public static void setTestUri(ValueRegistry valueRegistry, String additionalPath) {
+        if (valueRegistry.containsKey(LAMBDA_BASE_URI)) {
+            setTestUri(valueRegistry.get(LAMBDA_BASE_URI), additionalPath);
+        } else if (valueRegistry.containsKey(LOCAL_BASE_URI)) {
+            setTestUri(valueRegistry.get(LOCAL_BASE_URI), additionalPath);
         }
     }
 
@@ -144,13 +146,9 @@ public class RestAssuredStateManager {
             return;
         }
 
-        oldPort = RestAssured.port;
         RestAssured.port = baseUri.getPort();
-
-        oldBaseURI = RestAssured.baseURI;
         RestAssured.baseURI = baseUri.getScheme() + "://" + baseUri.getHost();
 
-        oldBasePath = RestAssured.basePath;
         StringBuilder bp = new StringBuilder();
         if (baseUri.getPath().startsWith("/")) {
             bp.append(baseUri.getPath().substring(1));
@@ -171,14 +169,11 @@ public class RestAssuredStateManager {
         }
         RestAssured.basePath = bp.toString();
 
-        oldRestAssuredConfig = RestAssured.config();
-
         // TODO - This configuration can be set a single time at start
         Duration timeout = Config.get()
                 .getOptionalValue("quarkus.http.test-timeout", Duration.class).orElse(Duration.ofSeconds(30));
         configureTimeouts(timeout);
 
-        oldRequestSpecification = RestAssured.requestSpecification;
         if (Config.get()
                 .getOptionalValue("quarkus.test.rest-assured.enable-logging-on-failure", Boolean.class).orElse(true)) {
             RestAssured.enableLoggingOfRequestAndResponseIfValidationFails();
@@ -196,27 +191,12 @@ public class RestAssuredStateManager {
         if (!REST_ASSURED_PRESENT) {
             return;
         }
-
-        clearURL();
-
         JsonPath.config = null;
     }
 
-    /**
-     * @deprecated most probably, you want to call {@link #clearState()}. If it's not the case, please let us know so that we
-     *             can reconsider the deprecation.
-     *             Note: when removing, please move the code to {@link #clearState()}.
-     */
-    @Deprecated(forRemoval = true, since = "3.31")
-    static void clearURL() {
-        if (!REST_ASSURED_PRESENT) {
-            return;
+    public static void clearState(ValueRegistry valueRegistry) {
+        if (valueRegistry.containsKey(LOCAL_BASE_URI) || valueRegistry.containsKey(LAMBDA_BASE_URI)) {
+            clearState();
         }
-
-        RestAssured.port = oldPort;
-        RestAssured.baseURI = oldBaseURI;
-        RestAssured.basePath = oldBasePath;
-        RestAssured.config = (RestAssuredConfig) oldRestAssuredConfig;
-        RestAssured.requestSpecification = (RequestSpecification) oldRequestSpecification;
     }
 }

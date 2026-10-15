@@ -15,6 +15,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.arc.DefaultBean;
 import io.quarkus.arc.test.ArcTestContainer;
 
+@Deprecated
 public class DefaultBeanPriorityAmbiguousTest {
 
     @RegisterExtension

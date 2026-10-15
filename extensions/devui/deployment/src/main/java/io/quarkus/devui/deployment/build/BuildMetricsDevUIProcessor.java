@@ -9,9 +9,9 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.BuildSteps;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.pkg.builditem.BuildSystemTargetBuildItem;
+import io.quarkus.devjsonrpc.spi.JsonRPCProvidersBuildItem;
 import io.quarkus.devui.runtime.build.BuildMetricsDevUIRecorder;
 import io.quarkus.devui.runtime.build.BuildMetricsJsonRPCService;
-import io.quarkus.devui.spi.JsonRPCProvidersBuildItem;
 
 @BuildSteps(onlyIf = { IsLocalDevelopment.class })
 public class BuildMetricsDevUIProcessor {

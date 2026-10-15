@@ -5,7 +5,6 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Using Keycloak Admin Client
 include::_attributes.adoc[]
-:categories: security
 :keywords: sso oidc security keycloak
 :topics: security,authentication,authorization,keycloak,sso
 :extensions: io.quarkus:quarkus-keycloak-admin-rest-client,io.quarkus:quarkus-keycloak-admin-resteasy-client
@@ -222,7 +221,6 @@ For example, by default, a test container will be available at a randomly alloca
 %test.quarkus.keycloak.devservices.port=${kc.admin.port.test:45180} <1>
 %test.quarkus.keycloak.admin-client.server-url=http://localhost:${kc.admin.port.test:45180}/ <2>
 ----
-
 <1> Configure the Keycloak container to listen on the `45180` port by default
 <2> Configure the Keycloak Admin Client to use the same port
 

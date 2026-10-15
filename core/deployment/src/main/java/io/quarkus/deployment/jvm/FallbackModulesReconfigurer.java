@@ -2,6 +2,7 @@ package io.quarkus.deployment.jvm;
 
 import java.util.List;
 
+import io.quarkus.deployment.builditem.ModuleExportBuildItem;
 import io.quarkus.deployment.builditem.ModuleOpenBuildItem;
 
 /**
@@ -20,6 +21,16 @@ final class FallbackModulesReconfigurer implements JvmModulesReconfigurer {
                     "FallbackModulesReconfigurer: Could not apply and add-opens for module %s/%s, to module %s",
                     addOpen.openedModuleName(), addOpen.packageNames(),
                     addOpen.openingModuleName());
+        }
+    }
+
+    @Override
+    public void exportJavaModules(final List<ModuleExportBuildItem> addExports, ModulesClassloaderContext ignored) {
+        for (ModuleExportBuildItem addExport : addExports) {
+            JVMDeploymentLogger.logger.warnf(
+                    "FallbackModulesReconfigurer: Could not apply and add-exports for module %s/%s, to module %s",
+                    addExport.exportedModuleName(), addExport.packageNames(),
+                    addExport.exportingModuleName());
         }
     }
 

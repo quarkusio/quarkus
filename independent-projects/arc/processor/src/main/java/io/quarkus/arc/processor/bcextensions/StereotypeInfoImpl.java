@@ -37,8 +37,23 @@ class StereotypeInfoImpl implements StereotypeInfo {
     }
 
     @Override
+    public boolean isReserve() {
+        return arcStereotype.isReserve();
+    }
+
+    @Override
     public Integer priority() {
-        return arcStereotype.getAlternativePriority();
+        return arcStereotype.getPriority();
+    }
+
+    @Override
+    public boolean isEager() {
+        return arcStereotype.isEager();
+    }
+
+    @Override
+    public boolean isAutoClose() {
+        return arcStereotype.isAutoClose();
     }
 
     @Override

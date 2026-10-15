@@ -1,9 +1,11 @@
 package io.quarkus.micrometer.runtime;
 
+import java.util.Arrays;
 import java.util.concurrent.CompletableFuture;
 
 import jakarta.inject.Inject;
 
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -13,6 +15,8 @@ import io.micrometer.core.instrument.LongTaskTimer;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Metrics;
 import io.micrometer.core.instrument.Timer;
+import io.micrometer.core.instrument.distribution.CountAtBucket;
+import io.micrometer.core.instrument.distribution.HistogramSnapshot;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.quarkus.micrometer.test.CountedResource;
 import io.quarkus.micrometer.test.GuardedResult;
@@ -24,6 +28,7 @@ public class MicrometerTimedInterceptorTest {
     @RegisterExtension
     static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withConfigurationResource("test-logging.properties")
+            .overrideConfigKey("quarkus.otel.enabled", "false")
             .overrideConfigKey("quarkus.micrometer.binder.vertx.enabled", "false")
             .overrideConfigKey("quarkus.micrometer.registry-enabled-default", "false")
             .overrideConfigKey("quarkus.redis.devservices.enabled", "false")
@@ -38,9 +43,16 @@ public class MicrometerTimedInterceptorTest {
     @Inject
     TimedResource timed;
 
+    static final SimpleMeterRegistry simpleRegistry = new SimpleMeterRegistry();
+
     @BeforeAll
     static void addSimpleRegistry() {
-        Metrics.globalRegistry.add(new SimpleMeterRegistry());
+        Metrics.addRegistry(simpleRegistry);
+    }
+
+    @AfterAll
+    static void removeSimpleRegistry() {
+        Metrics.removeRegistry(simpleRegistry);
     }
 
     @Test
@@ -234,6 +246,39 @@ public class MicrometerTimedInterceptorTest {
                 .tag("extra", "tag").timer();
         Assertions.assertNotNull(bravoTimer);
         Assertions.assertEquals(1, bravoTimer.count());
+    }
+
+    @Test
+    void testTimeMethod_emptyServiceLevelObjectives() {
+        timed.emptyServiceLevelObjectives();
+
+        Timer timer = registry.get("emptyServiceLevelObjectives")
+                .tag("method", "emptyServiceLevelObjectives")
+                .tag("class", "io.quarkus.micrometer.test.TimedResource")
+                .tag("exception", "none").timer();
+
+        Assertions.assertNotNull(timer);
+        Assertions.assertEquals(1, timer.count());
+
+        HistogramSnapshot snapshot = timer.takeSnapshot();
+        Assertions.assertEquals(0, snapshot.histogramCounts().length);
+    }
+
+    @Test
+    void testTimeMethod_customServiceLevelObjectives() {
+        timed.customServiceLevelObjectives();
+
+        Timer timer = registry.get("customServiceLevelObjectives")
+                .tag("method", "customServiceLevelObjectives")
+                .tag("class", "io.quarkus.micrometer.test.TimedResource")
+                .tag("exception", "none").timer();
+
+        Assertions.assertNotNull(timer);
+        Assertions.assertEquals(1, timer.count());
+
+        HistogramSnapshot snapshot = timer.takeSnapshot();
+        Assertions.assertArrayEquals(new double[] { 1e7, 2.5e7, 5e7, 1e8, 5e8, 1e9 },
+                Arrays.stream(snapshot.histogramCounts()).mapToDouble(CountAtBucket::bucket).toArray());
     }
 
 }

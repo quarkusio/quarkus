@@ -5,7 +5,6 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Using Apache Kafka with Schema Registry and JSON Schema
 include::_attributes.adoc[]
-:categories: messaging
 :summary: Use Apache Kafka, Json Schema serialized records, and connect to a schema registry.
 :topics: messaging,kafka,apicurio,registry
 :extensions: io.quarkus:quarkus-apicurio-registry-json-schema,io.quarkus:quarkus-messaging-kafka
@@ -254,7 +253,7 @@ mp.messaging.incoming.movies-from-kafka.auto.offset.reset=earliest
 ====
 Again, unlike with Avro, we have to define the `value.deserializer`.
 
-If you use Confluent Schema Registry, you must configure `value.deserializer` as well with the value ´io.confluent.kafka.serializers.json.KafkaJsonSchemaDeserializer´.
+If you use Confluent Schema Registry, you must configure `value.deserializer` as well with the value `io.confluent.kafka.serializers.json.KafkaJsonSchemaDeserializer`.
 They are both detected automatically.
 ====
 

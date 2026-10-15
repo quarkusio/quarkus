@@ -9,21 +9,6 @@ public class JavaVersionUtil {
         IS_GRAALVM_JDK = (vmVendor != null) && vmVendor.startsWith("GraalVM");
     }
 
-    @Deprecated(forRemoval = true)
-    public static boolean isJava17OrHigher() {
-        return Runtime.version().feature() >= 17;
-    }
-
-    @Deprecated(forRemoval = true)
-    public static boolean isJava19OrHigher() {
-        return Runtime.version().feature() >= 19;
-    }
-
-    @Deprecated(forRemoval = true)
-    public static boolean isJava21OrHigher() {
-        return Runtime.version().feature() >= 21;
-    }
-
     public static boolean isGraalvmJdk() {
         return IS_GRAALVM_JDK;
     }

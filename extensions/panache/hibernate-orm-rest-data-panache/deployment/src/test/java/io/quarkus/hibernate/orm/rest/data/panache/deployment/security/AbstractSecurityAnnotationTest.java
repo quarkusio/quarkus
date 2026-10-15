@@ -30,15 +30,12 @@ abstract class AbstractSecurityAnnotationTest {
                     Dependency.of("io.quarkus", "quarkus-jdbc-h2-deployment", Version.getVersion()),
                     Dependency.of("io.quarkus", "quarkus-rest-jackson-deployment", Version.getVersion()),
                     Dependency.of("io.quarkus", "quarkus-elytron-security-properties-file-deployment", Version.getVersion())))
-            .overrideConfigKey("quarkus.datasource.db-kind", "h2")
             .overrideConfigKey("quarkus.security.users.embedded.enabled", "true")
             .overrideConfigKey("quarkus.security.users.embedded.plain-text", "true")
             .overrideConfigKey("quarkus.security.users.embedded.users.foo", "foo")
             .overrideConfigKey("quarkus.security.users.embedded.roles.foo", "user")
             .overrideConfigKey("quarkus.security.users.embedded.users.bar", "bar")
-            .overrideConfigKey("quarkus.security.users.embedded.roles.bar", "admin")
-            .overrideRuntimeConfigKey("quarkus.datasource.jdbc.url", "jdbc:h2:mem:test")
-            .overrideRuntimeConfigKey("quarkus.hibernate-orm.schema-management.strategy", "drop-and-create");
+            .overrideConfigKey("quarkus.security.users.embedded.roles.bar", "admin");
 
     @Entity
     @Table(name = "item")

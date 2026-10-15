@@ -1,0 +1,72 @@
+package io.quarkus.vertx.http;
+
+import static io.restassured.RestAssured.given;
+import static org.hamcrest.Matchers.emptyString;
+import static org.hamcrest.Matchers.equalTo;
+
+import jakarta.enterprise.event.Observes;
+
+import org.jboss.shrinkwrap.api.asset.StringAsset;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+
+import io.quarkus.test.QuarkusExtensionTest;
+import io.vertx.core.Handler;
+import io.vertx.ext.web.Router;
+import io.vertx.ext.web.RoutingContext;
+
+public class HostValidationAndCorsTest {
+
+    @RegisterExtension
+    static QuarkusExtensionTest runner = new QuarkusExtensionTest()
+            .withApplicationRoot((jar) -> jar
+                    .addClasses(LocalBeanRegisteringRoute.class)
+                    .addAsResource(new StringAsset(
+                            "quarkus.http.host-validation.allowed-hosts=localhost\n"
+                                    + "quarkus.http.cors.enabled=true\n"),
+                            "application.properties"));
+
+    @Test
+    void hostWithoutPortAndOrigin() {
+        given().header("Host", "localhost")
+                .header("Origin", "http://localhost:8081")
+                .get("/test").then()
+                .statusCode(403)
+                .body(emptyString());
+    }
+
+    @Test
+    void hostWithWrongPortAndOrigin() {
+        given().header("Host", "localhost:9000")
+                .header("Origin", "http://localhost:8081")
+                .get("/test").then()
+                .statusCode(403)
+                .body(emptyString());
+    }
+
+    @Test
+    void hostWithCorrectPortAndOrigin() {
+        given().header("Host", "localhost:8081")
+                .header("Origin", "http://localhost:8081")
+                .get("/test").then()
+                .statusCode(200)
+                .body(equalTo("test route"));
+    }
+
+    @Test
+    void wrongHostWithCorrectPortAndOrigin() {
+        given().header("Host", "public-api.com:8081")
+                .header("Origin", "http://public-api.com:8081")
+                .get("/test").then()
+                .statusCode(400)
+                .body(emptyString());
+    }
+
+    static class LocalBeanRegisteringRoute {
+
+        void init(@Observes Router router) {
+            Handler<RoutingContext> handler = rc -> rc.response().end("test route");
+            router.get("/test").handler(handler);
+        }
+    }
+}

@@ -13,7 +13,7 @@ import org.mockito.Mockito;
 import io.quarkus.test.component.QuarkusComponentTest;
 
 @QuarkusComponentTest
-@MockPanacheEntities(Person.class)
+@MockPanacheEntities({ Person.class, Subclass.class })
 public class EntityComponentTest {
 
     @Inject
@@ -34,6 +34,14 @@ public class EntityComponentTest {
         // default values
         assertEquals(0, Person.deleteAll());
         assertNull(Person.findById("1"));
+    }
+
+    @Test
+    public void testSubclass() {
+        Mockito.when(Subclass.count()).thenReturn(23L);
+        Mockito.when(Subclass.count("from foo")).thenReturn(13L);
+        assertEquals(23, Subclass.count());
+        assertEquals(13, Subclass.count("from foo"));
     }
 
 }

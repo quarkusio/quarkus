@@ -8,6 +8,8 @@ import java.io.IOException;
 import java.net.URL;
 import java.security.cert.X509Certificate;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import javax.net.ssl.SSLHandshakeException;
 
@@ -63,7 +65,7 @@ public abstract class LetsEncryptFlowTestBase {
 
     abstract String getChallengeEndpoint();
 
-    void testLetsEncryptFlow() throws IOException {
+    void testLetsEncryptFlow() throws IOException, TimeoutException {
         WebClientOptions options = new WebClientOptions().setSsl(true)
                 .setTrustOptions(new PemTrustOptions().addCertPath(SELF_SIGNED_CA.getAbsolutePath()));
         WebClient client = WebClient.create(vertx, options);
@@ -190,7 +192,7 @@ public abstract class LetsEncryptFlowTestBase {
                 .flatMap(HttpClientResponse::body)
                 .map(Buffer::toString)
                 .await()).hasCauseInstanceOf(SSLHandshakeException.class);
-        httpClient.close();
+        httpClient.close().await(5, TimeUnit.SECONDS);
 
         WebClient newWebClient = WebClient.create(vertx,
                 options.setTrustOptions(new PemTrustOptions().addCertPath(ACME_CA.getAbsolutePath())));

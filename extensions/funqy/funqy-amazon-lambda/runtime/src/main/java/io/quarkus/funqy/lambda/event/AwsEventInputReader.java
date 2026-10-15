@@ -11,22 +11,22 @@ import com.amazonaws.services.lambda.runtime.events.DynamodbEvent;
 import com.amazonaws.services.lambda.runtime.events.KinesisEvent;
 import com.amazonaws.services.lambda.runtime.events.SNSEvent;
 import com.amazonaws.services.lambda.runtime.events.SQSEvent;
-import com.fasterxml.jackson.core.JacksonException;
-import com.fasterxml.jackson.core.TreeNode;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.ObjectReader;
-import com.fasterxml.jackson.databind.module.SimpleModule;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import io.cloudevents.SpecVersion;
 import io.quarkus.amazon.lambda.runtime.LambdaInputReader;
 import io.quarkus.funqy.lambda.config.FunqyAmazonBuildTimeConfig;
 import io.quarkus.funqy.lambda.model.cloudevents.CloudEventV1;
 import io.quarkus.funqy.lambda.model.kinesis.PipesKinesisEvent;
+import tools.jackson.core.JacksonException;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectReader;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.module.SimpleModule;
+import tools.jackson.databind.node.ArrayNode;
+import tools.jackson.databind.node.ObjectNode;
 
 public class AwsEventInputReader implements LambdaInputReader<Object> {
 
@@ -41,15 +41,15 @@ public class AwsEventInputReader implements LambdaInputReader<Object> {
     final FunqyAmazonBuildTimeConfig amazonBuildTimeConfig;
     final ObjectReader reader;
 
-    public AwsEventInputReader(ObjectMapper mapper, ObjectReader reader,
+    public AwsEventInputReader(JsonMapper.Builder builder, ObjectReader reader,
             FunqyAmazonBuildTimeConfig amazonBuildTimeConfig) {
         // configure the mapper for advanced event handling
         final SimpleModule simpleModule = new SimpleModule();
         simpleModule.addDeserializer(Date.class, new DateDeserializer());
-        mapper.registerModule(simpleModule);
-        mapper.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
+        builder.addModule(simpleModule);
+        builder.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
 
-        this.mapper = mapper;
+        this.mapper = builder.build();
         this.amazonBuildTimeConfig = amazonBuildTimeConfig;
         this.reader = reader;
     }
@@ -192,9 +192,9 @@ public class AwsEventInputReader implements LambdaInputReader<Object> {
         return null;
     }
 
-    private Object deserializeFunqReturnType(TreeNode node) throws IOException {
+    private Object deserializeFunqReturnType(JsonNode node) {
         if (reader != null) {
-            return reader.readValue(node.traverse());
+            return reader.readValue(mapper.treeAsTokens(node));
         }
         return null;
     }

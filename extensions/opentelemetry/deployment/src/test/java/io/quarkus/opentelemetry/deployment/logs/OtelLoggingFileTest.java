@@ -1,10 +1,10 @@
 package io.quarkus.opentelemetry.deployment.logs;
 
+import static io.opentelemetry.semconv.CodeAttributes.CODE_FUNCTION_NAME;
+import static io.opentelemetry.semconv.CodeAttributes.CODE_LINE_NUMBER;
 import static io.opentelemetry.semconv.ExceptionAttributes.EXCEPTION_MESSAGE;
 import static io.opentelemetry.semconv.ExceptionAttributes.EXCEPTION_STACKTRACE;
 import static io.opentelemetry.semconv.ExceptionAttributes.EXCEPTION_TYPE;
-import static io.opentelemetry.semconv.incubating.CodeIncubatingAttributes.CODE_FUNCTION_NAME;
-import static io.opentelemetry.semconv.incubating.CodeIncubatingAttributes.CODE_LINE_NUMBER;
 import static io.opentelemetry.semconv.incubating.LogIncubatingAttributes.LOG_FILE_PATH;
 import static io.opentelemetry.semconv.incubating.ThreadIncubatingAttributes.THREAD_ID;
 import static io.opentelemetry.semconv.incubating.ThreadIncubatingAttributes.THREAD_NAME;
@@ -42,9 +42,9 @@ public class OtelLoggingFileTest {
                             .addAsResource(new StringAsset(InMemoryLogRecordExporterProvider.class.getCanonicalName()),
                                     "META-INF/services/io.opentelemetry.sdk.autoconfigure.spi.logs.ConfigurableLogRecordExporterProvider")
                             .add(new StringAsset(
-                                    "quarkus.otel.logs.enabled=true\n" +
-                                            "quarkus.log.file.enabled=true\n" + // enable log file
-                                            "quarkus.otel.traces.enabled=false\n"),
+                                    "quarkus.log.file.enabled=true\n" + // enable log file
+                                            "quarkus.otel.traces.enabled=false\n" +
+                                            "quarkus.datasource.devservices.enabled=false\n"),
                                     "application.properties"));
 
     @Inject
@@ -75,7 +75,7 @@ public class OtelLoggingFileTest {
                                 .containsEntry(CODE_FUNCTION_NAME.getKey(),
                                         "io.quarkus.opentelemetry.deployment.logs.OtelLoggingFileTest$JBossLoggingBean.hello")
                                 .containsEntry(THREAD_NAME.getKey(), Thread.currentThread().getName())
-                                .containsEntry(THREAD_ID.getKey(), Thread.currentThread().getId())
+                                .containsEntry(THREAD_ID.getKey(), Thread.currentThread().threadId())
                                 .containsEntry("log.logger.namespace", "org.jboss.logging.Logger")
                                 .containsEntry(LOG_FILE_PATH, "target" + File.separator + "quarkus.log")
                                 .containsKey(CODE_LINE_NUMBER.getKey())

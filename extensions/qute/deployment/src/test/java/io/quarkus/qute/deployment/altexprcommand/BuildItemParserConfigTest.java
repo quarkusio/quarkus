@@ -15,12 +15,12 @@ import io.quarkus.builder.BuildStep;
 import io.quarkus.qute.Engine;
 import io.quarkus.qute.ParserConfig;
 import io.quarkus.qute.deployment.TemplatePathBuildItem;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class BuildItemParserConfigTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withEmptyApplication()
             .addBuildChainCustomizer(buildCustomizer());
 

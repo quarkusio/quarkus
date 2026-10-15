@@ -102,6 +102,28 @@ public class InfinispanCacheTest {
     }
 
     @Test
+    public void testGetWithCustomExpiresAfter() throws Exception {
+        Cache cache = getCache();
+        String id = generateId();
+        String value = awaitUni(cache.get(id, key -> "one", Duration.ofSeconds(20)));
+        assertThat(value).isEqualTo("one");
+        value = awaitUni(cache.get(id, key -> "two", Duration.ofSeconds(20)));
+        assertThat(value).isEqualTo("one");
+        assertThat(remoteCache.get(id)).isEqualTo("one");
+    }
+
+    @Test
+    public void testGetAsyncWithCustomExpiresAfter() throws Exception {
+        Cache cache = getCache();
+        String id = generateId();
+        String value = awaitUni(cache.getAsync(id, key -> Uni.createFrom().item("one"), Duration.ofSeconds(20)));
+        assertThat(value).isEqualTo("one");
+        value = awaitUni(cache.getAsync(id, key -> Uni.createFrom().item("two"), Duration.ofSeconds(20)));
+        assertThat(value).isEqualTo("one");
+        assertThat(remoteCache.get(id)).isEqualTo("one");
+    }
+
+    @Test
     public void testGetWithWithMaxidle() {
         Cache cache = getCache(-1, 3);
         String id = generateId();

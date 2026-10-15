@@ -49,6 +49,22 @@
                     <groupId>org.jsoup</groupId>
                     <artifactId>jsoup</artifactId>
                 </exclusion>
+                <exclusion>
+                    <groupId>org.apache.maven.resolver</groupId>
+                    <artifactId>maven-resolver-transport-wagon</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.apache.maven.wagon</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.apache.httpcomponents</groupId>
+                    <artifactId>httpclient</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.apache.httpcomponents</groupId>
+                    <artifactId>httpcore</artifactId>
+                </exclusion>
             </exclusions>
         </dependency>
         <dependency>
@@ -108,37 +124,17 @@
         </dependency>
         <dependency>
             <groupId>org.apache.maven.resolver</groupId>
-            <artifactId>maven-resolver-transport-wagon</artifactId>
-            <exclusions>
-                <exclusion><!-- let's prefer the wagon-provider-api pulled by wagon-http and wagon-file -->
-                    <groupId>org.apache.maven.wagon</groupId>
-                    <artifactId>wagon-provider-api</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.maven.wagon</groupId>
-            <artifactId>wagon-http</artifactId>
+            <artifactId>maven-resolver-transport-http</artifactId>
             <exclusions>
                 <exclusion>
                     <groupId>org.slf4j</groupId>
                     <artifactId>jcl-over-slf4j</artifactId>
                 </exclusion>
-                <exclusion>
-                    <groupId>org.slf4j</groupId>
-                    <artifactId>slf4j-simple</artifactId>
-                </exclusion>
             </exclusions>
         </dependency>
         <dependency>
-            <groupId>org.apache.maven.wagon</groupId>
-            <artifactId>wagon-file</artifactId>
-            <exclusions>
-                <exclusion>
-                    <groupId>org.slf4j</groupId>
-                    <artifactId>slf4j-simple</artifactId>
-                </exclusion>
-            </exclusions>
+            <groupId>org.apache.maven.resolver</groupId>
+            <artifactId>maven-resolver-transport-file</artifactId>
         </dependency>
         <dependency>
             <groupId>org.junit.jupiter</groupId>

@@ -5,7 +5,6 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = SmallRye GraphQL
 include::_attributes.adoc[]
-:categories: web
 :summary: This guide explains how to leverage SmallRye GraphQL to implement GraphQL services.
 :topics: graphql
 :extensions: io.quarkus:quarkus-smallrye-graphql
@@ -250,7 +249,6 @@ public class FilmResource {
     }
 }
 ----
-
 <1> `@GraphQLApi` annotation indicates that the CDI bean will be a GraphQL endpoint
 <2> `@Query` annotation defines that this method will be queryable with the name `allFilms`
 <3> Documentation of the queryable method
@@ -413,7 +411,6 @@ Add the following to our `FilmResource` class:
         return service.getHeroesByFilm(film);
     }
 ----
-
 <1> Enable `List<Hero>` data to be added to queries that respond with `Film`
 
 By adding this method we have effectively changed the schema of the GraphQL API.
@@ -454,7 +451,6 @@ the heroes:
         // Here fetch all hero lists
     }
 ----
-
 <1> Here receive the films as a batch, allowing you to fetch the corresponding heroes.
 
 === Non blocking
@@ -518,6 +514,46 @@ Queries can be run on a virtual thread by adding `@RunOnVirtualThread` to the me
 ----
 
 Please note the general guidelines for using xref:./virtual-threads.adoc[virtual threads]
+
+=== Transactions
+
+When a JTA transaction manager is available (for example when you use
+xref:./hibernate-orm.adoc[Hibernate ORM] or the `quarkus-narayana-jta`
+extension), the extension automatically makes blocking GraphQL operations
+transactional, as if they were annotated with `@Transactional`. This is a
+convenient default for resolvers that read from or write to a database.
+
+A method receives this implicit `@Transactional` only when all of the
+following are true:
+
+* The `TRANSACTIONS` capability is present (a JTA extension is on the classpath).
+* Hibernate Reactive is *not* present (reactive session management handles
+  transactions itself, so nothing is added).
+* The method is a GraphQL operation (`@Query`, `@Mutation`, `@Subscription`,
+  `@Name`, `@Resolver` or a `@Source` method) on a `@GraphQLApi` class.
+* The method returns a blocking type. Reactive return types (`Uni`, `Multi`,
+  `CompletionStage`, `CompletableFuture` or `Publisher`) are never made
+  transactional.
+* The method is not annotated with `@NonBlocking`.
+* The method is not already annotated with `@Transactional` (an explicit
+  annotation always wins).
+
+To opt a specific operation out of this behavior - for example when the
+resolver calls a library that manages its own JDBC transactions - annotate it
+with `@Transactional(Transactional.TxType.NOT_SUPPORTED)`:
+
+[source,java]
+----
+    @Query("aiGenerationQuota")
+    @Transactional(Transactional.TxType.NOT_SUPPORTED)
+    public AiQuota getRemainingQuota() {
+        // ...
+    }
+----
+
+You can also use any other `TxType` (such as `REQUIRES_NEW`) to control how the
+operation participates in transactions, since an explicit `@Transactional`
+takes precedence over the implicit one.
 
 == Abstract Types
 
@@ -597,7 +633,6 @@ public interface Character {
     String getSurname();
 }
 ----
-
 <1> Getters defined in an interface will define the GraphQL fields that it contains
 
 Now, update our `Hero` and `Ally` entities to implement this interface.
@@ -632,7 +667,6 @@ public class Ally implements Character {
     }
 }
 ----
-
 <1> Because interfaces can't define fields, we have to implement the getters
 
 By adding an interface and updating existing entities to implement it, we have effectively changed the schema.
@@ -660,7 +694,6 @@ type Hero implements Character {
     # ...
 }
 ----
-
 <1> The `Character` interface was defined with the getters as fields
 <2> The `Ally` type was added and it implements `Character`
 <3> The `Hero` type was updated to implement `Character`
@@ -723,7 +756,6 @@ public interface SearchResult {
 
 }
 ----
-
 <1> `@Union` is required to indicate this Java interface represents a GraphQL union, not a GraphQL interface
 
 TIP: The Java interface representing the GraphQL union does not have to be empty,
@@ -737,7 +769,7 @@ public class Film implements SearchResult {
     // ...
 }
 
-public interface Character implements SearchResult {
+public interface Character extends SearchResult {
     // ...
 }
 
@@ -891,7 +923,6 @@ Example: We want to know when new Heroes are being created:
     }
 
 ----
-
 <1> The `Multi` processor that will broadcast any new ``Hero``es
 <2> When adding a new `Hero`, also broadcast it
 <3> Make the stream available in the schema and as a WebSocket during runtime
@@ -1071,13 +1102,13 @@ public class Phone {
 }
 ----
 
-See more about the `@AdaptToScalar` feature in the https://javadoc.io/static/io.smallrye/smallrye-graphql-api/1.5.0/io/smallrye/graphql/api/AdaptToScalar.html[JavaDoc].
+See more about the `@AdaptToScalar` feature in the https://javadoc.io/doc/io.smallrye/smallrye-graphql-api/2.18.5/io/smallrye/graphql/api/AdaptToScalar.html[JavaDoc].
 
 === Adapt with
 
 Another option for more complex cases is to provide an Adapter. You can then do the mapping yourself in the adapter.
 
-See more about the `AdaptWith` feature in the https://javadoc.io/static/io.smallrye/smallrye-graphql-api/1.5.0/io/smallrye/graphql/api/AdaptWith.html[JavaDoc].
+See more about the `AdaptWith` feature in the https://javadoc.io/doc/io.smallrye/smallrye-graphql-api/2.18.5/io/smallrye/graphql/api/AdaptWith.html[JavaDoc].
 
 For example:
 
@@ -1296,7 +1327,6 @@ When `SomeBusinessException` occurs, the error output will contain the Error cod
     }
 }
 ----
-
 <1> The error code
 
 == JavaScript Client

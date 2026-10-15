@@ -40,6 +40,7 @@ public class VertxConnectionMetricsTest {
     @RegisterExtension
     static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withConfigurationResource("test-logging.properties")
+            .overrideConfigKey("quarkus.otel.enabled", "false")
             .overrideConfigKey("quarkus.redis.devservices.enabled", "false")
             // Only allows 2 concurrent connections
             .overrideConfigKey("quarkus.http.limits.max-connections", "2")

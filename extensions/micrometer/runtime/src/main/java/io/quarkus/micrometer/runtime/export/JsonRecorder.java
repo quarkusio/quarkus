@@ -18,11 +18,11 @@ public class JsonRecorder {
         return handler;
     }
 
-    public Consumer<Route> route() {
+    public Consumer<Route> route(int order) {
         return new Consumer<Route>() {
             @Override
             public void accept(Route route) {
-                route.order(3).produces("application/json");
+                route.order(order).produces("application/json");
             }
         };
     }

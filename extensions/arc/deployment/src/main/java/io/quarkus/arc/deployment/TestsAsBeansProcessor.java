@@ -5,16 +5,19 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.AnnotationTarget.Kind;
 import org.jboss.jandex.AnnotationTransformation;
+import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.ClassInfo.NestingType;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
+import org.jboss.jandex.Type;
 import org.jboss.logging.Logger;
 
 import io.quarkus.arc.processor.Annotations;
@@ -39,15 +42,74 @@ public class TestsAsBeansProcessor {
             .createSimple("io.quarkus.test.junit.QuarkusIntegrationTest");
     private static final DotName QUARKUS_MAIN_TEST = DotName.createSimple("io.quarkus.test.junit.main.QuarkusMainTest");
     private static final DotName NESTED = DotName.createSimple("org.junit.jupiter.api.Nested");
+    private static final DotName EXTEND_WITH = DotName.createSimple("org.junit.jupiter.api.extension.ExtendWith");
+    private static final DotName QUARKUS_TEST_EXTENSION = DotName.createSimple("io.quarkus.test.junit.QuarkusTestExtension");
 
-    @BuildStep
-    public void testAnnotations(List<TestAnnotationBuildItem> items, BuildProducer<BeanDefiningAnnotationBuildItem> producer) {
+    @BuildStep(onlyIf = IsTest.class)
+    public void testAnnotations(List<TestAnnotationBuildItem> items, CombinedIndexBuildItem combinedIndex,
+            BuildProducer<BeanDefiningAnnotationBuildItem> beanDefiningAnnotations,
+            BuildProducer<TestBeanDefiningAnnotationsBuildItem> testAnnotations) {
+        if (items.isEmpty()) {
+            return;
+        }
+        // A meta-annotation is discovered only if its jar is part of the application index.
+        IndexView index = combinedIndex.getIndex();
+
+        Set<String> annotationNames = new HashSet<>();
         for (TestAnnotationBuildItem item : items) {
-            producer.produce(new BeanDefiningAnnotationBuildItem(DotName.createSimple(item.getAnnotationClassName())));
+            String name = item.getAnnotationClassName();
+            annotationNames.add(name);
+            // annotations (transitively) composed with a test annotation, e.g. a custom @QuarkusTest
+            collectMetaAnnotations(DotName.createSimple(name), index, ai -> true, annotationNames);
+        }
+        // annotations (transitively) composed with @ExtendWith(QuarkusTestExtension.class)
+        collectMetaAnnotations(EXTEND_WITH, index, TestsAsBeansProcessor::extendsWithQuarkusTestExtension,
+                annotationNames);
+
+        for (String annotationName : annotationNames) {
+            beanDefiningAnnotations.produce(new BeanDefiningAnnotationBuildItem(DotName.createSimple(annotationName)));
+        }
+        testAnnotations.produce(new TestBeanDefiningAnnotationsBuildItem(annotationNames));
+    }
+
+    /**
+     * Collects the names of all annotations that are (transitively) meta-annotated with
+     * {@code annotationName}, adding them to {@code result}. The initial set of usages can be narrowed
+     * with {@code filter}, which is used to match {@code @ExtendWith(QuarkusTestExtension.class)}
+     * specifically; the filter is not applied while recursing.
+     */
+    private static void collectMetaAnnotations(DotName annotationName, IndexView index,
+            Predicate<AnnotationInstance> filter, Set<String> result) {
+        for (AnnotationInstance instance : index.getAnnotations(annotationName)) {
+            if (!filter.test(instance)) {
+                continue;
+            }
+            AnnotationTarget target = instance.target();
+            if (target == null || target.kind() != Kind.CLASS) {
+                continue;
+            }
+            ClassInfo clazz = target.asClass();
+            // we are only interested in annotations that are meta-annotated with the given annotation
+            if (clazz.isAnnotation() && result.add(clazz.name().toString())) {
+                collectMetaAnnotations(clazz.name(), index, ai -> true, result);
+            }
         }
     }
 
-    @BuildStep
+    private static boolean extendsWithQuarkusTestExtension(AnnotationInstance extendWith) {
+        AnnotationValue value = extendWith.value();
+        if (value == null) {
+            return false;
+        }
+        for (Type type : value.asClassArray()) {
+            if (QUARKUS_TEST_EXTENSION.equals(type.name())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    @BuildStep(onlyIf = IsTest.class)
     public void testClassBeans(List<TestClassBeanBuildItem> items, BuildProducer<AdditionalBeanBuildItem> producer) {
         if (items.isEmpty()) {
             return;
@@ -62,9 +124,11 @@ public class TestsAsBeansProcessor {
 
     @BuildStep(onlyIf = IsTest.class)
     AnnotationsTransformerBuildItem vetoTestClassesNotMatchingTestProfile(Optional<TestProfileBuildItem> testProfile,
-            CombinedIndexBuildItem index, List<TestAnnotationBuildItem> testAnnotationBuildItems) {
-        Set<String> additionalTestAnnotationNames = testAnnotationBuildItems.stream()
-                .map(TestAnnotationBuildItem::getAnnotationClassName)
+            CombinedIndexBuildItem index, Optional<TestBeanDefiningAnnotationsBuildItem> testAnnotations) {
+        Set<String> additionalTestAnnotationNames = testAnnotations
+                .map(TestBeanDefiningAnnotationsBuildItem::getAnnotationNames)
+                .orElse(Set.of())
+                .stream()
                 .filter(a -> !a.equals(QUARKUS_TEST.toString()))
                 .collect(Collectors.toSet());
         // Since we only need to register all test classes that belong to the "current" test profile

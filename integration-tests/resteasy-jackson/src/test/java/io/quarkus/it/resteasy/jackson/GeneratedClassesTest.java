@@ -17,7 +17,7 @@ class GeneratedClassesTest {
     private Object generatedContextResolver() {
         try {
             Class<?> objectMapperResolverClass = Class
-                    .forName("io.quarkus.resteasy.common.runtime.jackson.QuarkusObjectMapperContextResolver");
+                    .forName("io.quarkus.resteasy.common.runtime.jackson.QuarkusJsonMapperContextResolver");
             return objectMapperResolverClass.newInstance();
         } catch (Exception e) {
             throw new RuntimeException(e);

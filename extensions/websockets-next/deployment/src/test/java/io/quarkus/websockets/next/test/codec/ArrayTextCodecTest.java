@@ -37,8 +37,8 @@ public class ArrayTextCodecTest {
         try (WSClient client = new WSClient(vertx)) {
             client.connect(testUri);
             client.waitForMessages(1);
-            assertEquals(new JsonArray().add(new JsonObject().put("name", "Foo").put("count", 1)).toString(),
-                    client.getMessages().get(0).toString());
+            assertEquals(new JsonArray().add(new JsonObject().put("name", "Foo").put("count", 1)),
+                    new JsonArray(client.getMessages().get(0).toString()));
         }
     }
 

@@ -84,7 +84,6 @@ public class NativeImageBuildStep {
      */
     private static final String JAVA_HOME_ENV = "JAVA_HOME";
 
-    private static final int OOM_ERROR_VALUE = 137;
     private static final String QUARKUS_XMX_PROPERTY = "quarkus.native.native-image-xmx";
     public static final String CONTAINER_BUILD_VOLUME_PATH = "/project";
     private static final String TRUST_STORE_SYSTEM_PROPERTY_MARKER = "-Djavax.net.ssl.trustStore=";
@@ -320,7 +319,7 @@ public class NativeImageBuildStep {
                 }
 
                 // See https://github.com/oracle/graal/issues/4921
-                try (DirectoryStream<Path> sharedLibs = Files.newDirectoryStream(outputDir, "*.{so,dll}")) {
+                try (DirectoryStream<Path> sharedLibs = Files.newDirectoryStream(outputDir, "*.{so,dll,dylib}")) {
                     sharedLibs.forEach(src -> {
                         Path dst = null;
                         try {
@@ -602,19 +601,83 @@ public class NativeImageBuildStep {
     }
 
     private RuntimeException imageGenerationFailed(Throwable cause, boolean isContainerBuild) {
-        if (cause instanceof AbnormalExitException aee && aee.exitCode() == OOM_ERROR_VALUE) {
-            if (isContainerBuild && !OS.LINUX.isCurrent()) {
-                return new ImageGenerationFailureException("Image generation failed. Exit code was " + aee.exitCode()
-                        + " which indicates an out of memory error. The most likely cause is Docker not being given enough memory. Also consider increasing the Xmx value for native image generation by setting the \""
-                        + QUARKUS_XMX_PROPERTY + "\" property", cause);
-            } else {
-                return new ImageGenerationFailureException("Image generation failed. Exit code was " + aee.exitCode()
-                        + " which indicates an out of memory error. Consider increasing the Xmx value for native image generation by setting the \""
-                        + QUARKUS_XMX_PROPERTY + "\" property", cause);
-            }
-        } else {
-            return new ImageGenerationFailureException("Image generation failed", cause);
+        if (cause instanceof AbnormalExitException aee) {
+            return new ImageGenerationFailureException(describeFailure(aee.exitCode(), isContainerBuild), cause);
         }
+        return new ImageGenerationFailureException("Image generation failed", cause);
+    }
+
+    /**
+     * Turns a native-image process exit code into a human-readable explanation.
+     * <p>
+     * The codes are the ones the native-image driver uses ({@code com.oracle.svm.core.util.ExitStatus}), plus the
+     * Unix {@code 128 + signal} codes for a builder that was killed by a signal. The exit code is always included,
+     * and for failures where the builder already printed the real cause the message points at the native-image
+     * output above.
+     */
+    static String describeFailure(int exitCode, boolean isContainerBuild) {
+        String prefix = "Image generation failed with exit code " + exitCode;
+        switch (exitCode) {
+            case 1: // ExitStatus.BUILDER_ERROR
+                return prefix + ": the native-image builder reported an error. "
+                        + "See the native-image output above for the cause.";
+            case 2: // fallback image created; Quarkus passes --no-fallback and fallback images are gone since GraalVM 25.1,
+                    // so this case can be dropped once GraalVM 25.0 is no longer supported
+                return prefix + ": native-image produced a fallback image instead of a native executable. "
+                        + "See the native-image output above for the reason.";
+            case 3: // ExitStatus.OUT_OF_MEMORY (builder Java heap, via -XX:+ExitOnOutOfMemoryError)
+                return prefix + ": the native-image builder ran out of Java heap. Increase the maximum heap size for "
+                        + "the build by setting the \"" + QUARKUS_XMX_PROPERTY + "\" property.";
+            case 20: // ExitStatus.DRIVER_ERROR
+                return prefix + " (native-image driver error). See the native-image output above for the cause.";
+            case 21: // ExitStatus.DRIVER_TO_BUILDER_ERROR
+                return prefix + ": the native-image driver could not communicate with the builder. "
+                        + "See the native-image output above.";
+            case 30: // ExitStatus.WATCHDOG_EXIT
+                return prefix + ": the native-image build watchdog fired because the build appears to be stuck. "
+                        + "See the native-image output above.";
+            case 125: // ExitStatus.CONTAINER_REUSE, only expected from a bundle build with a container
+                return prefix + ": the native-image driver could not reuse its build container. "
+                        + "See the native-image output above.";
+            case 134: // 128 + 6, SIGABRT
+                return prefix + ": the native-image builder aborted (SIGABRT). See the native-image output above.";
+            case 137: // ExitStatus.OUT_OF_MEMORY_KILLED (128 + 9, SIGKILL)
+                return prefix + ": the native-image build process was killed, which indicates it ran out of memory. "
+                        + oomGuidance(isContainerBuild);
+            case 139: // 128 + 11, SIGSEGV
+                return prefix + ": the native-image builder crashed with a segmentation fault (SIGSEGV). "
+                        + "See the native-image output above.";
+            case 143: // 128 + 15, SIGTERM
+                return prefix + ": the native-image build was terminated (SIGTERM), "
+                        + "usually because of a timeout or an external stop.";
+            case 172: // ExitStatus.MISSING_METADATA
+                return prefix + ": required reachability metadata is missing. "
+                        + "See the native-image output above for the missing entries.";
+            default:
+                return prefix + ". See the native-image output above for details.";
+        }
+    }
+
+    /**
+     * Guidance for an out-of-memory <em>kill</em> (exit code 137). Unlike an in-process Java-heap OOM (exit code 3),
+     * the builder here was killed from the outside because system or container memory was exhausted, so the fix is to
+     * make more memory available rather than to raise the builder heap - raising it actually makes a kill more likely.
+     * The advice is the same for every build; only a container build needs an extra hint about where the memory limit
+     * lives, and that hint differs between a Linux host (the container/cgroup limit) and a non-Linux host (the
+     * container runtime's Linux VM).
+     */
+    private static String oomGuidance(boolean isContainerBuild) {
+        String containerHint = "";
+        if (isContainerBuild) {
+            containerHint = OS.LINUX.isCurrent()
+                    ? "Raise the container/cgroup memory limit, and check vm.max_map_count and memory overcommit "
+                            + "settings (the kernel records the real reason in dmesg / 'journalctl -k'). "
+                    : "Give the container runtime more memory (Docker Desktop: Settings > Resources; "
+                            + "Podman: 'podman machine set --memory 8192') or raise vm.max_map_count inside its Linux VM. ";
+        }
+        return containerHint + "Free up memory on the machine, or give it more RAM or swap. "
+                + "Raising the \"" + QUARKUS_XMX_PROPERTY + "\" property makes the process more likely to be killed, "
+                + "so if it is set high relative to the available memory, lowering it may help instead.";
     }
 
     private void checkGraalVMVersion(GraalVM.Version version) {
@@ -942,6 +1005,19 @@ public class NativeImageBuildStep {
                     nativeImageArgs.add("--install-exit-handlers");
                 }
 
+                // Enable the new single callsite inliner on Mandrel 25.0.4+ by default.
+                // The feature is not yet available upstream, so do not enable for versions >= 25.1
+                if (graalVMVersion.compareTo(io.quarkus.runtime.graal.GraalVM.Version.VERSION_25_0_4) >= 0
+                        && graalVMVersion.compareTo(io.quarkus.runtime.graal.GraalVM.Version.VERSION_25_1_0) < 0
+                        && graalVMVersion.getDistribution() == Distribution.MANDREL) {
+                    final List<String> additionalBuildArgs = NativeConfigUtils.getNativeAdditionalBuildArgs(nativeConfig);
+                    if (additionalBuildArgs.stream().noneMatch(arg -> arg.contains("AOTSingleCallsiteInline"))) {
+                        log.info(
+                                "Single callsite inlining has been enabled for this build. It aims to improve runtime performance at the expense of 1-2% binary size increase. To disable this feature use -Dquarkus.native.additional-build-args-append=-H:-AOTSingleCallsiteInline");
+                        addExperimentalVMOption(nativeImageArgs, "-H:+AOTSingleCallsiteInline");
+                    }
+                }
+
                 /*
                  * Any parameters following this call are forced over the user provided parameters in
                  * quarkus.native.additional-build-args or quarkus.native.additional-build-args-append. So if you need
@@ -987,11 +1063,20 @@ public class NativeImageBuildStep {
                 }
 
                 if (nativeConfig.enableFallbackImages()) {
-                    nativeImageArgs.add("--auto-fallback");
+                    if (graalVMVersion.compareTo(io.quarkus.runtime.graal.GraalVM.Version.VERSION_25_1_0) < 0) {
+                        nativeImageArgs.add("--auto-fallback");
+                    } else {
+                        log.warn("Option deprecated in GraalVM 25.1 and is a no-op,"
+                                + " fallback images are not supported in GraalVM 25.1 and later."
+                                + " Avoid using it to prevent warnings.");
+                    }
                 } else {
-                    //Default: be strict as those fallback images aren't very useful
-                    //and tend to cover up real problems.
-                    nativeImageArgs.add("--no-fallback");
+                    // Option Deprecated in GraalVM 25.1 and is a no-op, avoid using it to prevent warnings
+                    if (graalVMVersion.compareTo(io.quarkus.runtime.graal.GraalVM.Version.VERSION_25_1_0) < 0) {
+                        //Default: be strict as those fallback images aren't very useful
+                        //and tend to cover up real problems.
+                        nativeImageArgs.add("--no-fallback");
+                    }
                 }
 
                 if (!classpathIsBroken) {
@@ -1058,9 +1143,6 @@ public class NativeImageBuildStep {
 
                 if (!nativeConfig.enableIsolates()) {
                     addExperimentalVMOption(nativeImageArgs, "-H:-SpawnIsolates");
-                }
-                if (nativeConfig.enableVmInspection()) {
-                    addExperimentalVMOption(nativeImageArgs, "-H:+AllowVMInspection");
                 }
                 if (nativeConfig.march().isPresent()) {
                     nativeImageArgs.add("-march=" + nativeConfig.march().get());

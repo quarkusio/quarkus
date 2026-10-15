@@ -1,10 +1,9 @@
 package io.quarkus.resteasy.reactive.jackson.runtime.mappers;
 
-import java.io.IOException;
-
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.core.SerializableString;
-import com.fasterxml.jackson.core.util.JsonGeneratorDelegate;
+import tools.jackson.core.JacksonException;
+import tools.jackson.core.JsonGenerator;
+import tools.jackson.core.SerializableString;
+import tools.jackson.core.util.JsonGeneratorDelegate;
 
 class PrefixSuffixGeneratorDelegate extends JsonGeneratorDelegate {
 
@@ -18,12 +17,14 @@ class PrefixSuffixGeneratorDelegate extends JsonGeneratorDelegate {
     }
 
     @Override
-    public void writeFieldName(String name) throws IOException {
-        delegate.writeFieldName(prefix + name + suffix);
+    public JsonGenerator writeName(String name) throws JacksonException {
+        delegate.writeName(prefix + name + suffix);
+        return this;
     }
 
     @Override
-    public void writeFieldName(SerializableString name) throws IOException {
-        delegate.writeFieldName(prefix + name.getValue() + suffix);
+    public JsonGenerator writeName(SerializableString name) throws JacksonException {
+        delegate.writeName(prefix + name.getValue() + suffix);
+        return this;
     }
 }

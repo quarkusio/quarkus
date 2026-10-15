@@ -70,14 +70,6 @@ public class BasicAuthenticationMechanism implements HttpAuthenticationMechanism
     private final Map<Pattern, Charset> userAgentCharsets;
     private final int priority;
 
-    /**
-     * @deprecated use {@link BasicAuthenticationMechanism(String, boolean)}
-     */
-    @Deprecated(forRemoval = true, since = "3.25")
-    public BasicAuthenticationMechanism(final String realmName) {
-        this(realmName, false);
-    }
-
     public BasicAuthenticationMechanism(final String realmName, final boolean silent) {
         this(realmName, silent, PRIORITY);
     }

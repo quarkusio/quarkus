@@ -33,7 +33,6 @@ import io.quarkus.deployment.pkg.builditem.NativeImageRunnerBuildItem;
 import io.quarkus.deployment.pkg.steps.NativeOrNativeSourcesBuild;
 import io.quarkus.deployment.pkg.steps.NoopNativeImageBuildRunner;
 import io.quarkus.runtime.graal.GraalVM;
-import io.smallrye.common.cpu.CPU;
 import io.smallrye.common.os.OS;
 
 class AwtProcessor {
@@ -54,9 +53,6 @@ class AwtProcessor {
     @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
     void supportCheck(BuildProducer<UnsupportedOSBuildItem> unsupported,
             NativeImageRunnerBuildItem nativeImageRunnerBuildItem) {
-        unsupported.produce(new UnsupportedOSBuildItem(OS.MAC,
-                "MacOS AWT integration is not ready in Quarkus native-image and would result in " +
-                        "java.lang.UnsatisfiedLinkError: Can't load library: awt | java.library.path = [.]."));
         final GraalVM.Version v;
         if (nativeImageRunnerBuildItem.getBuildRunner() instanceof NoopNativeImageBuildRunner) {
             v = CURRENT;
@@ -65,22 +61,23 @@ class AwtProcessor {
         } else {
             v = nativeImageRunnerBuildItem.getBuildRunner().getGraalVMVersion();
         }
-        if (v.compareTo(io.quarkus.deployment.pkg.steps.GraalVM.Version.VERSION_24_2_0) >= 0
-                && v.compareTo(GraalVM.Version.VERSION_25_0_0) < 0) {
-            unsupported.produce(new UnsupportedOSBuildItem(CPU.aarch64,
-                    "AWT needs JDK's JEP 454 FFI/FFM support and that is not available for AArch64 with " +
-                            "GraalVM's native-image prior to JDK 25, see: " +
-                            "https://www.graalvm.org/latest/reference-manual/native-image/native-code-interoperability/foreign-interface/#foreign-functions"));
+        if (v.compareTo(GraalVM.Version.VERSION_25_1_0) < 0) {
+            // Since GraalVM 25.1.3 (25 Innovation 1, the first 25.1 release) native-image copies the Darwin AWT
+            // libraries next to the executable like on Linux and Windows, oracle/graal@2b3ac81
+            unsupported.produce(new UnsupportedOSBuildItem(OS.MAC,
+                    "MacOS AWT integration requires GraalVM or Mandrel 25.1 or newer, older versions would result in " +
+                            "java.lang.UnsatisfiedLinkError: Can't load library: awt | java.library.path = [.]."));
         }
     }
 
     @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
-    void resources(
-            BuildProducer<NativeImageResourcePatternsBuildItem> resourcePatternsBuildItemBuildProducer) {
+    void resources(final BuildProducer<NativeImageResourcePatternsBuildItem> resourcePatternsBuildItemBuildProducer) {
         resourcePatternsBuildItemBuildProducer
                 .produce(NativeImageResourcePatternsBuildItem.builder()
-                        .includeGlobs("**/iio-plugin*.properties", // Texts for e.g. exceptions strings
-                                "**/*.pf") // Default colour profiles
+                        .module("java.desktop") // Target JDK module.
+                        .includeGlobs(
+                                "com/sun/imageio/plugins/*/iio-plugin*.properties", // Texts for e.g. exceptions strings
+                                "sun/java2d/cmm/profiles/*.pf") // Default colour profiles
                         .build());
     }
 
@@ -125,6 +122,7 @@ class AwtProcessor {
             BuildProducer<JniRuntimeAccessFieldBuildItem> jf,
             NativeImageRunnerBuildItem nativeImageRunnerBuildItem) {
         final boolean isWindowsTarget = OS.WINDOWS.isCurrent() && !nativeImageRunnerBuildItem.isContainerBuild();
+        final boolean isMacTarget = OS.MAC.isCurrent() && !nativeImageRunnerBuildItem.isContainerBuild();
         // Dynamically loading shared objects instead
         // of baking in static libs: https://github.com/oracle/graal/issues/4921
         jm.produce(new JniRuntimeAccessMethodBuildItem("java.lang.System", "load", "java.lang.String"));
@@ -190,6 +188,14 @@ class AwtProcessor {
             jf.produce(new JniRuntimeAccessFieldBuildItem("java.awt.AWTEvent", "consumed"));
             // java.desktop/windows/native/libawt/windows/awt_InputEvent.cpp
             jf.produce(new JniRuntimeAccessFieldBuildItem("java.awt.event.InputEvent", "modifiers"));
+        }
+        if (isMacTarget) {
+            // Mac headless only, LWCToolkit#initAppkit is substituted, see JDKSubstitutions.
+            // java.desktop/macosx/native/libawt_lwawt/font/AWTFont.m, CoreText system fonts
+            jm.produce(new JniRuntimeAccessMethodBuildItem("sun.font.CFontManager", "registerFont", "java.lang.String",
+                    "java.lang.String"));
+            // CFont#getCascadeList, font fallback
+            jm.produce(new JniRuntimeAccessMethodBuildItem("java.util.ArrayList", "add", "java.lang.Object"));
         }
     }
 
@@ -399,16 +405,16 @@ class AwtProcessor {
         if (v.compareTo(GraalVM.Version.VERSION_25_0_0) >= 0) {
             // Downcalls
             // malloc
-            downcalls.produce(new FfmDowncallBuildItem(ADDRESS, LONG));
+            downcalls.produce(FfmDowncallBuildItem.builder(ADDRESS, LONG).build());
             // HBCreateFace
-            downcalls.produce(new FfmDowncallBuildItem(ADDRESS, ADDRESS));
+            downcalls.produce(FfmDowncallBuildItem.builder(ADDRESS, ADDRESS).build());
             // HBDisposeFace
-            downcalls.produce(new FfmDowncallBuildItem(VOID, ADDRESS));
+            downcalls.produce(FfmDowncallBuildItem.builder(VOID, ADDRESS).build());
             // jdk_hb_shape
-            downcalls.produce(new FfmDowncallBuildItem(VOID, FLOAT, ADDRESS, ADDRESS, ADDRESS, INT, INT, INT, INT, INT, FLOAT,
-                    FLOAT, INT, INT, ADDRESS, ADDRESS));
+            downcalls.produce(FfmDowncallBuildItem.builder(VOID, FLOAT, ADDRESS, ADDRESS, ADDRESS, INT, INT, INT, INT, INT,
+                    FLOAT, FLOAT, INT, INT, ADDRESS, ADDRESS).build());
             // HBCreateFontFuncs
-            downcalls.produce(new FfmDowncallBuildItem(ADDRESS, ADDRESS, ADDRESS, ADDRESS, ADDRESS, ADDRESS));
+            downcalls.produce(FfmDowncallBuildItem.builder(ADDRESS, ADDRESS, ADDRESS, ADDRESS, ADDRESS, ADDRESS).build());
 
             // Upcalls
             // getFontTableData

@@ -22,8 +22,8 @@ import io.quarkus.oidc.OIDCException;
 import io.quarkus.oidc.OidcSession;
 import io.quarkus.oidc.TokenIntrospection;
 import io.quarkus.oidc.UserInfo;
-import io.quarkus.oidc.client.OidcClientConfig;
 import io.quarkus.oidc.client.OidcClients;
+import io.quarkus.oidc.client.runtime.OidcClientConfig;
 import io.quarkus.oidc.common.runtime.OidcConstants;
 import io.quarkus.security.PermissionsAllowed;
 import io.quarkus.security.identity.SecurityIdentity;
@@ -86,11 +86,12 @@ public class TenantResource {
         }
 
         if (revokeToken) {
-            OidcClientConfig oidcClientConfig = new OidcClientConfig();
-            oidcClientConfig.setClientId("client");
-            oidcClientConfig.setId("clientId");
-            oidcClientConfig.setTokenPath("http://localhost:8081/oidc/token");
-            oidcClientConfig.setRevokePath("http://localhost:8081/oidc/revoke");
+            OidcClientConfig oidcClientConfig = OidcClientConfig.builder()
+                    .clientId("client")
+                    .id("clientId")
+                    .tokenPath("http://localhost:8081/oidc/token")
+                    .revokePath("http://localhost:8081/oidc/revoke")
+                    .build();
 
             oidcClients.newClient(oidcClientConfig)
                     .chain(oidcClient -> oidcClient.revokeAccessToken(accessTokenCred.getToken())).await().indefinitely();

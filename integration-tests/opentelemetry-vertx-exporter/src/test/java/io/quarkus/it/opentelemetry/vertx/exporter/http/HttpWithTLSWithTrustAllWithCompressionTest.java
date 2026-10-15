@@ -25,8 +25,7 @@ public class HttpWithTLSWithTrustAllWithCompressionTest extends AbstractExporter
             return Collections.singletonList(
                     new TestResourceEntry(
                             OtelCollectorLifecycleManager.class,
-                            Map.of("enableTLS", "true", "enableCompression", "true", "preventTrustCert", "true", "protocol",
-                                    "http/protobuf")));
+                            Map.of("enableTLS", "true", "enableCompression", "true", "preventTrustCert", "true")));
         }
     }
 

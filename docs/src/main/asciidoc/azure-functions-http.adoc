@@ -6,7 +6,6 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 = Azure Functions with Quarkus REST, Undertow, or Reactive Routes
 :extension-status: preview
 include::_attributes.adoc[]
-:categories: cloud
 :summary: Deploy Vert.x Web, Servlet, or RESTEasy microservices as a Microsoft Azure Function.
 :topics: azure,serverless,function,cloud
 :extensions: io.quarkus:quarkus-azure-functions-http

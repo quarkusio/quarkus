@@ -126,17 +126,6 @@ public interface MongoClientConfig {
     Optional<Duration> readTimeout();
 
     /**
-     * If connecting with TLS, this option enables insecure TLS connections.
-     *
-     * @deprecated in favor of configuration at the tls registry level. See {@link #tlsConfigurationName()}
-     *             and quarkus tls registry hostname verification configuration
-     *             {@code quarkus.tls.hostname-verification-algorithm=NONE}.
-     */
-    @WithDefault("false")
-    @Deprecated(forRemoval = true, since = "3.21")
-    boolean tlsInsecure();
-
-    /**
      * Whether to connect using TLS.
      */
     @WithDefault("false")

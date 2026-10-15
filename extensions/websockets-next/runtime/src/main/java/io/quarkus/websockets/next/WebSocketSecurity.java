@@ -13,7 +13,8 @@ public interface WebSocketSecurity {
 
     /**
      * Authenticate with the bearer access token and update current {@link SecurityIdentity} attached to the WebSocket
-     * server connection.
+     * server connection. The update is only possible if the current {@link SecurityIdentity} and the bearer access
+     * token represent the same authenticated user.
      *
      * @param accessToken bearer access token
      * @return authentication result

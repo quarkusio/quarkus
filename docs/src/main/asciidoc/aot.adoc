@@ -3,9 +3,8 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= Ahead-of-Time (AOT) Caching
+= Ahead-of-time (AOT) caching
 include::_attributes.adoc[]
-:categories: core, cloud
 :summary: This guide explains how to use Leyden AOT caching with Quarkus for dramatically faster startup times on JDK 24+.
 :topics: aot,leyden,startup,performance
 
@@ -172,6 +171,44 @@ You can obtain more information about AOT cache usage with the `-Xlog:aot` optio
 
 You can collect even more information in an `aot.log` file with `-Xlog:class+load=info,aot+codecache=debug:file=aot.log:level,tags`.
 ====
+
+[[aot-add-modules]]
+=== Options that add modules, such as Flight Recorder
+
+The JVM only uses an AOT cache if the application runs with the same `--add-modules` as the training run.
+Otherwise it reports an error such as the following and starts the application without the cache:
+
+[source,text]
+----
+[error][aot] Mismatched values for property jdk.module.addmods: jdk.jfr specified during runtime but not during dump time
+----
+
+Some JVM options add a module implicitly.
+The most common one is `-XX:StartFlightRecording`, which adds `jdk.jfr`; enabling the Vector API with `--add-modules=jdk.incubator.vector` has the same effect.
+
+If the application is always started with such an option, pass the corresponding `--add-modules` to the training run with `quarkus.package.jar.aot.additional-recording-args`:
+
+[source, bash, subs=attributes+, role="primary asciidoc-tabs-sync-maven"]
+.Maven
+----
+./mvnw verify -Dquarkus.package.jar.aot.enabled=true -Dquarkus.package.jar.aot.additional-recording-args=--add-modules=jdk.jfr
+----
+
+[source, bash, subs=attributes+, role="secondary asciidoc-tabs-sync-gradle"]
+.Gradle
+----
+./gradlew build quarkusIntTest -Dquarkus.package.jar.aot.enabled=true -Dquarkus.package.jar.aot.additional-recording-args=--add-modules=jdk.jfr
+----
+
+The check works both ways: a cache generated this way is only used when the application is started with `-XX:StartFlightRecording` or `--add-modules=jdk.jfr`, and is rejected otherwise.
+A single cache cannot serve both kinds of runs.
+
+To record only occasionally, keep the default cache and start the recording on the running application instead, which does not affect the cache:
+
+[source,bash]
+----
+jcmd <pid> JFR.start
+----
 
 == Manual AOT file generation
 
@@ -369,9 +406,3 @@ java -XX:SharedArchiveFile=app-cds.jsa -jar quarkus-run.jar
 * The JDK version must be **exactly** the same
 * AppCDS only caches class metadata, not method profiles or verification results
 * Training during integration tests is not supported for AppCDS (only build-time generation)
-
-[TIP]
-====
-The legacy `quarkus.package.jar.appcds.enabled` configuration is still supported but deprecated.
-Use `quarkus.package.jar.aot.enabled=true` with `quarkus.package.jar.aot.type=app-cds` instead.
-====

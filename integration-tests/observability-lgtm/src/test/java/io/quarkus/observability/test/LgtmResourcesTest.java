@@ -21,7 +21,6 @@ public class LgtmResourcesTest extends LgtmConfigTestBase {
         @Override
         public Map<String, String> getConfigOverrides() {
             return Map.of(
-                    "quarkus.otel.exporter.otlp.protocol", "http/protobuf",
                     "quarkus.otel.exporter.otlp.endpoint", "http://${otel-collector.url}",
                     "quarkus.observability.dev-resources", "true",
                     "quarkus.observability.enabled", "false",

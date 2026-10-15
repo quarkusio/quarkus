@@ -284,4 +284,8 @@ public abstract class Application implements Closeable {
     public boolean isStarted() {
         return state == ST_STARTED;
     }
+
+    public boolean hasStaticGraph() {
+        return false;
+    }
 }

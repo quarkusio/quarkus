@@ -24,6 +24,7 @@ import io.quarkus.deployment.util.JandexUtil;
 import io.quarkus.gizmo2.ClassOutput;
 import io.quarkus.gizmo2.Const;
 import io.quarkus.gizmo2.Gizmo;
+import io.quarkus.gizmo2.LambdaStrategy;
 import io.quarkus.gizmo2.desc.ConstructorDesc;
 import io.quarkus.gizmo2.desc.FieldDesc;
 import io.quarkus.panache.common.deployment.TypeBundle;
@@ -88,9 +89,11 @@ public class SpringDataRepositoryCreator {
         // Track existing methods across all adders
         Set<String> existingMethods = new HashSet<>();
 
+        // todo: the gizmo-to-bean adapter doesn't know about constant bootstraps; use anon classes for lambdas for now
         Gizmo gizmo = Gizmo.create(classOutput)
                 .withDebugInfo(false)
-                .withParameters(false);
+                .withParameters(false)
+                .withLambdaStrategy(LambdaStrategy.ANONYMOUS_CLASS);
         gizmo.class_(generatedClassName, classCreator -> {
             classCreator.implements_(ClassDesc.of(repositoryToImplementStr));
             classCreator.addAnnotation(ApplicationScoped.class);

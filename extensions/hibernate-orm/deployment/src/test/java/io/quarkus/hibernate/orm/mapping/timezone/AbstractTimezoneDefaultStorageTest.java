@@ -1,5 +1,7 @@
 package io.quarkus.hibernate.orm.mapping.timezone;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import java.time.LocalDateTime;
 import java.time.Month;
 import java.time.OffsetDateTime;
@@ -13,7 +15,9 @@ import jakarta.inject.Inject;
 import org.assertj.core.api.SoftAssertions;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
+import org.hibernate.type.SqlTypes;
 
+import io.quarkus.hibernate.orm.SchemaUtil;
 import io.quarkus.narayana.jta.QuarkusTransaction;
 
 public class AbstractTimezoneDefaultStorageTest {
@@ -29,6 +33,14 @@ public class AbstractTimezoneDefaultStorageTest {
 
     @Inject
     Session session;
+
+    protected void assertDirectJdbcAccess() {
+        // H2 does not support direct ZonedDateTime access, so Hibernate uses OffsetDateTime for both mappings.
+        assertThat(SchemaUtil.getColumnTypeName(sessionFactory, EntityWithTimezones.class, "zonedDateTime"))
+                .isEqualTo(Integer.toString(SqlTypes.OFFSET_DATE_TIME));
+        assertThat(SchemaUtil.getColumnTypeName(sessionFactory, EntityWithTimezones.class, "offsetDateTime"))
+                .isEqualTo(Integer.toString(SqlTypes.OFFSET_DATE_TIME));
+    }
 
     protected long persistWithValuesToTest() {
         return QuarkusTransaction.requiringNew().call(() -> {

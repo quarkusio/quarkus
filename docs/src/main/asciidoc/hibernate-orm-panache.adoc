@@ -5,8 +5,7 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Simplified Hibernate ORM with Panache
 include::_attributes.adoc[]
-:categories: data
-:summary: Hibernate ORM is the de facto Jakarta Persistence implementation and offers you the full breadth of an Object Relational Mapper. It makes complex mappings possible, but it does not make simple and common mappings trivial. Panache focuses on making your entities trivial and fun to write.
+:summary: Panache focuses on making your Hibernate ORM entities trivial and fun to write.
 :config-file: application.properties
 :topics: data,hibernate-orm,panache,sql,jdbc
 :extensions: io.quarkus:quarkus-hibernate-orm-panache,io.quarkus:quarkus-hibernate-orm
@@ -947,7 +946,6 @@ public class DogDto {
 
 PanacheQuery<DogDto> query = Dog.findAll().project(DogDto.class);
 ----
-
 <1> This annotation can be used when you want to project `@Embedded` entity or `@ManyToOne`, `@OneToOne` relation.
 It does not support `@OneToMany` or `@ManyToMany` relation.
 
@@ -1014,7 +1012,6 @@ public class PersonName {
 // only 'name' will be loaded from the database
 PanacheQuery<PersonName> query = Person.find("status", Status.Alive).project(PersonName.class);
 ----
-
 <1> This will use your annotated constructor to create the query. (`select new PersonName(name) from ...`)
 
 [WARNING]

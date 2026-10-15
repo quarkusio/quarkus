@@ -6,5 +6,5 @@ public interface MetricsInitializer {
 
     boolean metricsEnabled();
 
-    void recordMetrics(AsyncCache<Object, Object> cache, String cacheName);
+    void recordMetrics(AsyncCache<Object, ?> cache, String cacheName);
 }

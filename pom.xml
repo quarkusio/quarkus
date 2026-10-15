@@ -55,7 +55,7 @@
         <postgres.url>jdbc:postgresql:hibernate_orm_test</postgres.url>
 
 
-        <quarkus-platform-bom-plugin.version>0.0.132</quarkus-platform-bom-plugin.version>
+        <quarkus-platform-bom-plugin.version>0.0.135</quarkus-platform-bom-plugin.version>
 
         <skipDocs>false</skipDocs>
         <skip.gradle.tests>false</skip.gradle.tests>
@@ -68,33 +68,35 @@
         <!-- Dependency versions -->
         <!-- Properties below are set in this file because they are used
              in the BOM as well as other POMs (build-parent/pom.xml, docs/pom.xml, ...) -->
+        <h2.version>2.5.252</h2.version> <!-- When updating, the dependency jts-core needs to be updated in extensions/jdbc/jdbc-h2/runtime/pom.xml - see https://github.com/h2database/h2database/blob/master/h2/pom.xml -->
         <jacoco.version>0.8.15</jacoco.version>
-        <kubernetes-client.version>7.7.0</kubernetes-client.version> <!-- Please check with Java Operator SDK team before updating -->
-        <rest-assured.version>6.0.0</rest-assured.version>
-        <hibernate-orm.version>7.4.4.Final</hibernate-orm.version> <!-- WARNING when updating, also align the versions below; checked by maven-enforcer-plugin in bom -->
-        <jakarta.persistence-api.version>3.2.0</jakarta.persistence-api.version> <!-- version controlled by Hibernate ORM's needs; checked by maven-enforcer-plugin in bom -->
-        <jakarta.data-api.version>1.0.1</jakarta.data-api.version> <!-- version controlled by Hibernate ORM's needs; checked by maven-enforcer-plugin in bom -->
+        <kubernetes-client.version>8.0.0</kubernetes-client.version> <!-- Please check with Java Operator SDK team before updating -->
+        <rest-assured.version>6.1.0</rest-assured.version>
+        <hibernate-orm.version>8.0.0.Beta3</hibernate-orm.version> <!-- WARNING when updating, also align the versions below; checked by maven-enforcer-plugin in bom -->
+        <jakarta.persistence-api.version>4.0.0-M7</jakarta.persistence-api.version> <!-- version controlled by Hibernate ORM's needs; checked by maven-enforcer-plugin in bom -->
+        <jakarta.data-api.version>1.1.0-M3</jakarta.data-api.version> <!-- version controlled by Hibernate ORM's needs; checked by maven-enforcer-plugin in bom -->
         <antlr.version>4.13.2</antlr.version> <!-- version controlled by Hibernate ORM's needs; checked by maven-enforcer-plugin in bom -->
-        <bytebuddy.version>1.18.8</bytebuddy.version> <!-- version controlled by Hibernate ORM's needs; checked by maven-enforcer-plugin in bom -->
-        <geolatte.version>1.11</geolatte.version> <!-- version controlled by Hibernate ORM's needs; checked by maven-enforcer-plugin in bom -->
-        <hibernate-models.version>1.1.1</hibernate-models.version> <!-- version controlled by Hibernate ORM's needs; checked by maven-enforcer-plugin in bom -->
-        <hibernate-reactive.version>4.5.1.Final</hibernate-reactive.version> <!-- highly sensitive to Hibernate ORM upgrades -->
-        <hibernate-validator.version>9.1.1.Final</hibernate-validator.version>
-        <hibernate-search.version>8.4.0.Final</hibernate-search.version>
+        <bytebuddy.version>1.18.11</bytebuddy.version> <!-- version controlled by Hibernate ORM's needs; checked by maven-enforcer-plugin in bom -->
+        <geolatte.version>1.12</geolatte.version> <!-- version controlled by Hibernate ORM's needs; checked by maven-enforcer-plugin in bom -->
+        <hibernate-models.version>1.3.4</hibernate-models.version> <!-- version controlled by Hibernate ORM's needs; checked by maven-enforcer-plugin in bom -->
+        <hibernate-accessor.version>0.1.0.Alpha5</hibernate-accessor.version> <!-- version controlled by Hibernate ORM's needs; checked by maven-enforcer-plugin in bom -->
+        <hibernate-reactive.version>5.0.0.Beta1</hibernate-reactive.version> <!-- highly sensitive to Hibernate ORM upgrades -->
+        <hibernate-validator.version>9.1.3.Final</hibernate-validator.version>
+        <hibernate-search.version>9.0.0.Beta1</hibernate-search.version>
 
         <!-- Make sure to check compatibility between these 2 gRPC components before upgrade -->
         <grpc.version>1.81.0</grpc.version> <!-- when updating, verify if following versions should not be updated too: -->
                                             <!-- com.google.auth -->
                                             <!-- perfmark.version https://central.sonatype.com/artifact/io.grpc/grpc-core  -->
         <grpc-jprotoc.version>1.2.2</grpc-jprotoc.version>
-        <protoc.version>4.35.0</protoc.version>
+        <protoc.version>4.35.1</protoc.version>
         <protobuf-java.version>${protoc.version}</protobuf-java.version>
         <protobuf-kotlin.version>${protoc.version}</protobuf-kotlin.version>
-        <proto-google-common-protos.version>2.71.0</proto-google-common-protos.version>
+        <proto-google-common-protos.version>2.74.0</proto-google-common-protos.version>
         <perfmark.version>0.27.0</perfmark.version><!-- dependency of io.grpc:grpc-core not managed in io.grpc:grpc-bom -->
 
         <!-- Used in the build parent and test BOM (for the JUnit plugin) and in the BOM (for the API) -->
-        <smallrye-certificate-generator.version>1.0.2</smallrye-certificate-generator.version>
+        <smallrye-certificate-generator.version>1.1.3</smallrye-certificate-generator.version>
 
         <!-- TestNG version: we don't enforce it in the BOM as it is mostly used in the MP TCKs and we need to use the version from the TCKs -->
         <testng.version>7.8.0</testng.version>

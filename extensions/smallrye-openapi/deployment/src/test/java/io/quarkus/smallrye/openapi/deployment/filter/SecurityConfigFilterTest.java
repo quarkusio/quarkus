@@ -25,7 +25,7 @@ class SecurityConfigFilterTest {
         SecurityScheme securityScheme = OASFactory.createSecurityScheme();
         SmallRyeOpenApiConfig config = new DummySmallRyeOpenApiConfig(SmallRyeOpenApiConfig.SecurityScheme.apiKey, null, null);
         assertThrows(ConfigurationException.class,
-                () -> new SecurityConfigFilter(config.documents().get(SmallRyeOpenApiConfig.DEFAULT_DOCUMENT_NAME))
+                () -> new SecurityConfigFilter(config.defaultDocument())
                         .configureApiKeySecurityScheme(securityScheme));
     }
 
@@ -35,7 +35,7 @@ class SecurityConfigFilterTest {
         SmallRyeOpenApiConfig config = new DummySmallRyeOpenApiConfig(SmallRyeOpenApiConfig.SecurityScheme.apiKey,
                 "KeyParamName", null);
         assertThrows(ConfigurationException.class,
-                () -> new SecurityConfigFilter(config.documents().get(SmallRyeOpenApiConfig.DEFAULT_DOCUMENT_NAME))
+                () -> new SecurityConfigFilter(config.defaultDocument())
                         .configureApiKeySecurityScheme(securityScheme));
     }
 
@@ -45,7 +45,7 @@ class SecurityConfigFilterTest {
         SmallRyeOpenApiConfig config = new DummySmallRyeOpenApiConfig(SmallRyeOpenApiConfig.SecurityScheme.apiKey,
                 "KeyParamName", "path");
         assertThrows(ConfigurationException.class,
-                () -> new SecurityConfigFilter(config.documents().get(SmallRyeOpenApiConfig.DEFAULT_DOCUMENT_NAME))
+                () -> new SecurityConfigFilter(config.defaultDocument())
                         .configureApiKeySecurityScheme(securityScheme));
     }
 
@@ -54,7 +54,7 @@ class SecurityConfigFilterTest {
         SecurityScheme securityScheme = OASFactory.createSecurityScheme();
         SmallRyeOpenApiConfig config = new DummySmallRyeOpenApiConfig(SmallRyeOpenApiConfig.SecurityScheme.apiKey,
                 "KeyParamName", "header");
-        new SecurityConfigFilter(config.documents().get(SmallRyeOpenApiConfig.DEFAULT_DOCUMENT_NAME))
+        new SecurityConfigFilter(config.defaultDocument())
                 .configureApiKeySecurityScheme(securityScheme);
         assertEquals("KeyParamName", securityScheme.getName());
         assertEquals(SecurityScheme.In.HEADER, securityScheme.getIn());
@@ -80,6 +80,11 @@ class SecurityConfigFilterTest {
         @Override
         public SmallRyeOpenApiJsClientConfig jsClient() {
             return () -> false;
+        }
+
+        @Override
+        public Optional<Path> storeSchemasDirectory() {
+            return Optional.empty();
         }
 
         @Override
@@ -114,11 +119,6 @@ class SecurityConfigFilterTest {
         @Override
         public String storeSchemaFileName() {
             return null;
-        }
-
-        @Override
-        public boolean alwaysRunFilter() {
-            return false;
         }
 
         @Override

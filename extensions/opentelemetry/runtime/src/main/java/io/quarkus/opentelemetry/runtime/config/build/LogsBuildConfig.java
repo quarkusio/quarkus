@@ -17,7 +17,7 @@ public interface LogsBuildConfig {
      * The OpenTelemetry SDK ( {@link io.quarkus.opentelemetry.runtime.config.build.OTelBuildConfig#enabled()} )
      * is enabled by default and if disabled, OpenTelemetry Logs will also be disabled.
      */
-    @WithDefault("false")
+    @WithDefault("true")
     Optional<Boolean> enabled();
 
     /**

@@ -23,6 +23,7 @@ import io.quarkus.bootstrap.model.ApplicationModel;
 import io.quarkus.extension.gradle.dependency.DeploymentClasspathBuilder;
 import io.quarkus.extension.gradle.tasks.ExtensionDescriptorTask;
 import io.quarkus.extension.gradle.tasks.ValidateExtensionTask;
+import io.quarkus.gradle.GradleVersionSupport;
 import io.quarkus.gradle.dependency.ApplicationDeploymentClasspathBuilder;
 import io.quarkus.gradle.extension.ExtensionConstants;
 import io.quarkus.gradle.tooling.ToolingUtils;
@@ -45,6 +46,8 @@ public class QuarkusExtensionPlugin implements Plugin<Project> {
 
     @Override
     public void apply(Project project) {
+        GradleVersionSupport.requireMinimumGradleVersion();
+
         final QuarkusExtensionConfiguration quarkusExt = project.getExtensions().create(EXTENSION_CONFIGURATION_NAME,
                 QuarkusExtensionConfiguration.class);
 

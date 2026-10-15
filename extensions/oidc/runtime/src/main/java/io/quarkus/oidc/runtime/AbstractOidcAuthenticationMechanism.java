@@ -1,8 +1,5 @@
 package io.quarkus.oidc.runtime;
 
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-
 import io.quarkus.oidc.AccessTokenCredential;
 import io.quarkus.oidc.IdTokenCredential;
 import io.quarkus.oidc.common.runtime.OidcConstants;
@@ -10,12 +7,12 @@ import io.quarkus.security.credential.TokenCredential;
 import io.quarkus.security.identity.IdentityProviderManager;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.security.identity.request.TokenAuthenticationRequest;
+import io.quarkus.vertx.core.runtime.ContextLocalsVertxServiceProvider;
 import io.quarkus.vertx.core.runtime.context.VertxContextSafetyToggle;
 import io.quarkus.vertx.http.runtime.security.HttpAuthenticationMechanism;
 import io.quarkus.vertx.http.runtime.security.HttpSecurityUtils;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.Vertx;
-import io.vertx.core.internal.ContextInternal;
 import io.vertx.ext.web.RoutingContext;
 
 abstract class AbstractOidcAuthenticationMechanism {
@@ -56,16 +53,14 @@ abstract class AbstractOidcAuthenticationMechanism {
             final var tokenCredential = (token instanceof IdTokenCredential)
                     ? new AccessTokenCredential(context.get(OidcConstants.ACCESS_TOKEN_VALUE))
                     : token;
-            ConcurrentMap<Object, Object> locals = ((ContextInternal) ctx)
-                    .getLocal(ContextInternal.LOCAL_MAP, ConcurrentHashMap::new);
-            locals.put(TokenCredential.class.getName(), tokenCredential);
+            ContextLocalsVertxServiceProvider.TOKEN_CREDENTIAL_LOCAL.put(ctx, tokenCredential);
             return identityProviderManager
                     .authenticate(HttpSecurityUtils.setRoutingContextAttribute(new TokenAuthenticationRequest(token), context))
                     .invoke(new Runnable() {
                         @Override
                         public void run() {
                             // remove as we recommend to acquire TokenCredential via CDI
-                            locals.remove(TokenCredential.class.getName());
+                            ContextLocalsVertxServiceProvider.TOKEN_CREDENTIAL_LOCAL.remove(ctx);
                         }
                     });
         }

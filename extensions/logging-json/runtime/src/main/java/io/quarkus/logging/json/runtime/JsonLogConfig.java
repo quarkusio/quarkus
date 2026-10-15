@@ -16,7 +16,6 @@ import io.quarkus.runtime.logging.LogRuntimeConfig;
 import io.smallrye.config.ConfigMapping;
 import io.smallrye.config.WithDefault;
 import io.smallrye.config.WithName;
-import io.smallrye.config.WithParentName;
 
 /**
  * Configuration for JSON log formatting.
@@ -129,17 +128,11 @@ public interface JsonLogConfig extends LogRuntimeConfig {
     @ConfigGroup
     interface JsonConfig {
         /**
-         * Determine whether to enable the JSON console formatting extension, which disables "normal" console formatting.
+         * Determine whether to enable the JSON console formatting extension, which disables "normal" console
+         * formatting.
+         * <p>
+         * Optional so named handlers can distinguish "not set" (skip) from "explicitly set" (apply).
          */
-        @WithParentName
-        @WithDefault("true")
-        @Deprecated(forRemoval = true, since = "3.19")
-        boolean enable();
-
-        /**
-         * Determine whether to enable the JSON console formatting extension, which disables "normal" console formatting.
-         */
-        // TODO make it non-optional with default true as soon as we drop the other config
         Optional<Boolean> enabled();
 
         /**
@@ -212,6 +205,20 @@ public interface JsonLogConfig extends LogRuntimeConfig {
         @WithDefault("false")
         @WithName("mdc.flat-fields")
         boolean mdcFlatFields();
+
+        /**
+         * When true, access log events emitted by {@code io.quarkus.http.access-log} are enriched with
+         * a nested {@code "accessLog"} JSON object containing first-class fields for the HTTP method,
+         * request URI, status code, response time, bytes sent, remote IP address, and protocol.
+         * <p>
+         * This option requires that the Vert.x HTTP access log is enabled
+         * ({@code quarkus.http.access-log.enabled=true}). When disabled (the default), access log
+         * entries are emitted with only the pre-formatted message string, preserving the existing
+         * behaviour.
+         */
+        @WithDefault("false")
+        @WithName("access-log.structured")
+        boolean structuredAccessLog();
 
         enum LogFormat {
             DEFAULT,

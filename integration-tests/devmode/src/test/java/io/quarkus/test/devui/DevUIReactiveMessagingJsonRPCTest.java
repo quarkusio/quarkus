@@ -7,10 +7,9 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import com.fasterxml.jackson.databind.JsonNode;
-
 import io.quarkus.devui.tests.DevUIJsonRPCTest;
 import io.quarkus.test.QuarkusDevModeTest;
+import tools.jackson.databind.JsonNode;
 
 public class DevUIReactiveMessagingJsonRPCTest extends DevUIJsonRPCTest {
 
@@ -33,7 +32,7 @@ public class DevUIReactiveMessagingJsonRPCTest extends DevUIJsonRPCTest {
         Assertions.assertNotNull(info);
         Assertions.assertTrue(info.isArray());
 
-        Iterator<JsonNode> en = info.elements();
+        Iterator<JsonNode> en = info.iterator();
         boolean consumerExists = false;
         boolean publisherExists = false;
         while (en.hasNext()) {
@@ -57,7 +56,7 @@ public class DevUIReactiveMessagingJsonRPCTest extends DevUIJsonRPCTest {
 
     private boolean typeAndDescriptionExist(JsonNode a, String type, String description) {
         if (a.isArray()) {
-            Iterator<JsonNode> en = a.elements();
+            Iterator<JsonNode> en = a.iterator();
             while (en.hasNext()) {
                 JsonNode b = en.next();
                 if (isTypeAndDescription(b, type, description)) {

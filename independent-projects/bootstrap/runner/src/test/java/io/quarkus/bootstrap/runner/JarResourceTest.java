@@ -1,7 +1,10 @@
 package io.quarkus.bootstrap.runner;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URI;
 import java.net.URL;
 import java.net.URLConnection;
 import java.nio.file.Files;
@@ -21,6 +24,22 @@ import org.junit.jupiter.api.condition.OS;
  * Tests {@link JarResource}
  */
 public class JarResourceTest {
+
+    @Test
+    public void testResourceUrlPreservesWindowsDriveLetter() throws Exception {
+        URL resourceUrl = JarResource.getResourceUrl(
+                new URI("file:///Z:/path/application.jar"), "application.properties");
+
+        assertThat(resourceUrl).hasToString("jar:file:/Z:/path/application.jar!/application.properties");
+    }
+
+    @Test
+    public void testResourceUrlPreservesUncAuthority() throws Exception {
+        URL resourceUrl = JarResource.getResourceUrl(
+                new URI("file://server/share/application.jar"), "application.properties");
+
+        assertThat(resourceUrl).hasToString("jar:file://server/share/application.jar!/application.properties");
+    }
 
     /**
      * Tests that the URL(s) returned from {@link JarResource#getResourceURL(String)} are properly encoded and can be used
@@ -67,6 +86,82 @@ public class JarResourceTest {
             try (final InputStream is = conn.getInputStream()) {
                 drainFully(is);
             }
+        }
+    }
+
+    /**
+     * @see <a href="https://github.com/quarkusio/quarkus/issues/56173">#56173</a>
+     */
+    @Test
+    public void testCodeSourceUrlExternalFormIsCached() throws Exception {
+        Path dir = Files.createTempDirectory("codesource-cache");
+        Path jarFile = dir.resolve("demo.jar");
+
+        JavaArchive jar = ShrinkWrap.create(JavaArchive.class);
+        jar.add(new StringAsset("dummy"), "dummy");
+        jar.as(ZipExporter.class).exportTo(jarFile.toFile(), true);
+
+        JarResource resource = new JarResource(null, jarFile);
+        resource.init();
+        URL codeSource = resource.getProtectionDomain().getCodeSource().getLocation();
+
+        String first = codeSource.toExternalForm();
+        String second = codeSource.toExternalForm();
+        assertThat(first).isSameAs(second);
+    }
+
+    /**
+     * @see <a href="https://github.com/quarkusio/quarkus/issues/56173">#56173</a>
+     */
+    @Test
+    public void testRelativeUrlResolutionAgainstCodeSource() throws Exception {
+        Path dir = Files.createTempDirectory("codesource");
+        Path jarFile = dir.resolve("demo.jar");
+
+        JavaArchive jar = ShrinkWrap.create(JavaArchive.class);
+        jar.add(new StringAsset("dummy"), "dummy");
+        jar.as(ZipExporter.class).exportTo(jarFile.toFile(), true);
+
+        JarResource resource = new JarResource(null, jarFile);
+        resource.init();
+        URL codeSource = resource.getProtectionDomain().getCodeSource().getLocation();
+
+        URL sibling = new URL(codeSource, "sibling.txt");
+
+        assertThat(sibling.toString()).isNotEqualTo(codeSource.toString());
+        assertThat(sibling.toString()).endsWith("sibling.txt");
+        assertThat(sibling.toString()).doesNotContain("demo.jar");
+    }
+
+    /**
+     * @see <a href="https://github.com/quarkusio/quarkus/issues/56173">#56173</a>
+     */
+    @Test
+    @DisabledOnOs(OS.WINDOWS)
+    public void testRelativeUrlResolutionWithSpecialCharacters() throws Exception {
+        Path dir = Files.createTempDirectory("code source dir");
+        Path jarFile = dir.resolve("demo.jar");
+
+        JavaArchive jar = ShrinkWrap.create(JavaArchive.class);
+        jar.add(new StringAsset("dummy"), "dummy");
+        jar.as(ZipExporter.class).exportTo(jarFile.toFile(), true);
+
+        String siblingContent = "sibling in special dir";
+        Files.writeString(dir.resolve("sibling.txt"), siblingContent);
+
+        JarResource resource = new JarResource(null, jarFile);
+        resource.init();
+        URL codeSource = resource.getProtectionDomain().getCodeSource().getLocation();
+
+        assertThat(codeSource.toString()).contains("code%20source%20dir");
+
+        URL sibling = new URL(codeSource, "sibling.txt");
+
+        assertThat(sibling.toString()).endsWith("/sibling.txt");
+        assertThat(sibling.toString()).contains("code%20source%20dir");
+
+        try (InputStream in = sibling.openStream()) {
+            assertThat(new String(in.readAllBytes())).isEqualTo(siblingContent);
         }
     }
 

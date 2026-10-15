@@ -28,11 +28,11 @@ import io.quarkus.arc.deployment.ValidationPhaseBuildItem;
 import io.quarkus.arc.deployment.ValidationPhaseBuildItem.ValidationErrorBuildItem;
 import io.quarkus.arc.processor.BuildExtension;
 import io.quarkus.arc.processor.InjectionPointInfo;
+import io.quarkus.core.Phase;
+import io.quarkus.core.deployment.service.ServiceRegistrar;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
-import io.quarkus.deployment.annotations.ExecutionTime;
-import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.ExtensionSslNativeSupportBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
@@ -48,7 +48,7 @@ import io.quarkus.mailer.MockMailbox;
 import io.quarkus.mailer.reactive.ReactiveMailer;
 import io.quarkus.mailer.runtime.MailTemplateMailerName;
 import io.quarkus.mailer.runtime.MailTemplateProducer;
-import io.quarkus.mailer.runtime.MailerRecorder;
+import io.quarkus.mailer.runtime.MailerBeanCreators;
 import io.quarkus.mailer.runtime.MailerSupport;
 import io.quarkus.mailer.runtime.Mailers;
 import io.quarkus.mailer.runtime.MailersBuildTimeConfig;
@@ -56,7 +56,7 @@ import io.quarkus.qute.CheckedTemplate;
 import io.quarkus.qute.deployment.CheckedTemplateAdapterBuildItem;
 import io.quarkus.qute.deployment.QuteProcessor;
 import io.quarkus.qute.deployment.TemplatePathBuildItem;
-import io.quarkus.tls.deployment.spi.TlsRegistryBuildItem;
+import io.quarkus.tls.TlsConfigurationRegistry;
 import io.vertx.ext.mail.MailClient;
 
 public class MailerProcessor {
@@ -98,9 +98,8 @@ public class MailerProcessor {
                 .build());
     }
 
-    @Record(ExecutionTime.STATIC_INIT)
     @BuildStep
-    MailersBuildItem generateMailerSupportBean(MailerRecorder recorder,
+    MailersBuildItem generateMailerSupportBean(ServiceRegistrar serviceRegistrar,
             CombinedIndexBuildItem index,
             BeanDiscoveryFinishedBuildItem beans,
             BuildProducer<SyntheticBeanBuildItem> syntheticBeans) {
@@ -120,10 +119,14 @@ public class MailerProcessor {
                 .map(ai -> ai.value().asString())
                 .collect(Collectors.toSet());
 
-        MailerSupport mailerSupport = new MailerSupport(hasDefaultMailer, namedMailers);
+        Set<String> mailerNames = Set.copyOf(namedMailers);
+        serviceRegistrar
+                .forService(MailerSupport.class)
+                .atPhase(Phase.STATIC_INIT)
+                .onStart(ctx -> new MailerSupport(hasDefaultMailer, mailerNames));
 
         syntheticBeans.produce(SyntheticBeanBuildItem.configure(MailerSupport.class)
-                .supplier(recorder.mailerSupportSupplier(mailerSupport))
+                .serviceValue(MailerSupport.class)
                 .scope(Singleton.class)
                 .unremovable()
                 .done());
@@ -160,19 +163,15 @@ public class MailerProcessor {
         return false;
     }
 
-    @Record(ExecutionTime.RUNTIME_INIT)
     @BuildStep
-    void generateMailerBeans(MailerRecorder recorder,
-            MailersBuildItem mailers,
-            BuildProducer<SyntheticBeanBuildItem> syntheticBeans,
-            // Just to make sure it is initialized
-            TlsRegistryBuildItem tlsRegistryBuildItem) {
+    void generateMailerBeans(MailersBuildItem mailers,
+            BuildProducer<SyntheticBeanBuildItem> syntheticBeans) {
         if (mailers.hasDefaultMailer()) {
-            generateMailerBeansForName(Mailers.DEFAULT_MAILER_NAME, recorder, syntheticBeans);
+            generateMailerBeansForName(Mailers.DEFAULT_MAILER_NAME, syntheticBeans);
         }
 
         for (String name : mailers.getNamedMailers()) {
-            generateMailerBeansForName(name, recorder, syntheticBeans);
+            generateMailerBeansForName(name, syntheticBeans);
         }
     }
 
@@ -182,7 +181,6 @@ public class MailerProcessor {
     }
 
     private void generateMailerBeansForName(String name,
-            MailerRecorder recorder,
             BuildProducer<SyntheticBeanBuildItem> syntheticBeans) {
         AnnotationInstance qualifier;
         if (Mailers.DEFAULT_MAILER_NAME.equals(name)) {
@@ -198,7 +196,9 @@ public class MailerProcessor {
                 .defaultBean()
                 .setRuntimeInit()
                 .addInjectionPoint(ClassType.create(DotName.createSimple(Mailers.class)))
-                .createWith(recorder.mailClientFunction(name))
+                .addInjectionPoint(ClassType.create(DotName.createSimple(TlsConfigurationRegistry.class)))
+                .creator(MailerBeanCreators.MailClientCreator.class)
+                .param(MailerBeanCreators.MAILER_NAME_PARAM, name)
                 .done());
         syntheticBeans.produce(SyntheticBeanBuildItem.configure(io.vertx.mutiny.ext.mail.MailClient.class)
                 .scope(Singleton.class)
@@ -207,7 +207,9 @@ public class MailerProcessor {
                 .defaultBean()
                 .setRuntimeInit()
                 .addInjectionPoint(ClassType.create(DotName.createSimple(Mailers.class)))
-                .createWith(recorder.reactiveMailClientFunction(name))
+                .addInjectionPoint(ClassType.create(DotName.createSimple(TlsConfigurationRegistry.class)))
+                .creator(MailerBeanCreators.ReactiveMailClientCreator.class)
+                .param(MailerBeanCreators.MAILER_NAME_PARAM, name)
                 .done());
         syntheticBeans.produce(SyntheticBeanBuildItem.configure(Mailer.class)
                 .scope(Singleton.class)
@@ -216,7 +218,9 @@ public class MailerProcessor {
                 .defaultBean()
                 .setRuntimeInit()
                 .addInjectionPoint(ClassType.create(DotName.createSimple(Mailers.class)))
-                .createWith(recorder.mailerFunction(name))
+                .addInjectionPoint(ClassType.create(DotName.createSimple(TlsConfigurationRegistry.class)))
+                .creator(MailerBeanCreators.MailerCreator.class)
+                .param(MailerBeanCreators.MAILER_NAME_PARAM, name)
                 .done());
         syntheticBeans.produce(SyntheticBeanBuildItem.configure(ReactiveMailer.class)
                 .scope(Singleton.class)
@@ -225,7 +229,9 @@ public class MailerProcessor {
                 .defaultBean()
                 .setRuntimeInit()
                 .addInjectionPoint(ClassType.create(DotName.createSimple(Mailers.class)))
-                .createWith(recorder.reactiveMailerFunction(name))
+                .addInjectionPoint(ClassType.create(DotName.createSimple(TlsConfigurationRegistry.class)))
+                .creator(MailerBeanCreators.ReactiveMailerCreator.class)
+                .param(MailerBeanCreators.MAILER_NAME_PARAM, name)
                 .done());
         syntheticBeans.produce(SyntheticBeanBuildItem.configure(MockMailbox.class)
                 .scope(Singleton.class)
@@ -234,7 +240,9 @@ public class MailerProcessor {
                 .defaultBean()
                 .setRuntimeInit()
                 .addInjectionPoint(ClassType.create(DotName.createSimple(Mailers.class)))
-                .createWith(recorder.mockMailboxFunction(name))
+                .addInjectionPoint(ClassType.create(DotName.createSimple(TlsConfigurationRegistry.class)))
+                .creator(MailerBeanCreators.MockMailboxCreator.class)
+                .param(MailerBeanCreators.MAILER_NAME_PARAM, name)
                 .done());
     }
 

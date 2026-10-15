@@ -2,6 +2,9 @@ package io.quarkus.vertx.http.certReload;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+
 import javax.net.ssl.SSLHandshakeException;
 
 import io.vertx.core.Vertx;
@@ -16,7 +19,7 @@ final class CertReloadTestHelper {
     private CertReloadTestHelper() {
     }
 
-    static String httpsGet(Vertx vertx, HttpClientOptions options, String path) {
+    static String httpsGet(Vertx vertx, HttpClientOptions options, String path) throws TimeoutException {
         var client = vertx.createHttpClient(options);
         try {
             return client.request(HttpMethod.GET, path)
@@ -25,11 +28,11 @@ final class CertReloadTestHelper {
                     .map(Buffer::toString)
                     .await();
         } finally {
-            client.close();
+            client.close().await(5, TimeUnit.SECONDS);
         }
     }
 
-    static void assertTlsFails(Vertx vertx, HttpClientOptions options, String path) {
+    static void assertTlsFails(Vertx vertx, HttpClientOptions options, String path) throws TimeoutException {
         var client = vertx.createHttpClient(options);
         try {
             assertThatThrownBy(() -> client.request(HttpMethod.GET, path)
@@ -38,7 +41,7 @@ final class CertReloadTestHelper {
                     .map(Buffer::toString)
                     .await()).hasCauseInstanceOf(SSLHandshakeException.class);
         } finally {
-            client.close();
+            client.close().await(5, TimeUnit.SECONDS);
         }
     }
 }

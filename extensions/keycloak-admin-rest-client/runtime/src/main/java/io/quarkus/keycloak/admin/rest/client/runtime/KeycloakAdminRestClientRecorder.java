@@ -1,32 +1,16 @@
 package io.quarkus.keycloak.admin.rest.client.runtime;
 
-import static io.quarkus.keycloak.admin.client.common.runtime.KeycloakAdminClientConfigUtil.validate;
-
-import java.util.function.Supplier;
-
 import org.keycloak.admin.client.Keycloak;
 import org.keycloak.admin.client.KeycloakBuilder;
 
 import io.quarkus.keycloak.admin.client.common.runtime.KeycloakAdminClientConfig;
-import io.quarkus.runtime.RuntimeValue;
-import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.tls.TlsConfiguration;
 import io.quarkus.tls.TlsConfigurationRegistry;
 
-@Recorder
 public class KeycloakAdminRestClientRecorder {
 
-    private final RuntimeValue<KeycloakAdminClientConfig> keycloakAdminClientConfigRuntimeValue;
-
-    public KeycloakAdminRestClientRecorder(
-            RuntimeValue<KeycloakAdminClientConfig> keycloakAdminClientConfigRuntimeValue) {
-        this.keycloakAdminClientConfigRuntimeValue = keycloakAdminClientConfigRuntimeValue;
-    }
-
-    public void setClientProvider(Supplier<TlsConfigurationRegistry> registrySupplier) {
-        var registry = registrySupplier.get();
-        var namedTlsConfig = TlsConfiguration.from(registry,
-                keycloakAdminClientConfigRuntimeValue.getValue().tlsConfigurationName());
+    public static void setClientProvider(TlsConfigurationRegistry registry, KeycloakAdminClientConfig config) {
+        var namedTlsConfig = TlsConfiguration.from(registry, config.tlsConfigurationName());
         if (namedTlsConfig.isPresent()) {
             Keycloak.setClientProvider(new KeycloakAdminRestClientProvider(namedTlsConfig.get()));
         } else {
@@ -40,20 +24,12 @@ public class KeycloakAdminRestClientRecorder {
         }
     }
 
-    public Supplier<Keycloak> createAdminClient() {
-
-        final KeycloakAdminClientConfig config = keycloakAdminClientConfigRuntimeValue.getValue();
-        validate(config);
+    public static Keycloak createAdminClient(KeycloakAdminClientConfig config) {
         if (config.serverUrl().isEmpty()) {
-            return new Supplier<>() {
-                @Override
-                public Keycloak get() {
-                    throw new IllegalStateException(
-                            "'quarkus.keycloak.admin-client.server-url' must be set in order to use the Keycloak admin client as a CDI bean");
-                }
-            };
+            throw new IllegalStateException(
+                    "'quarkus.keycloak.admin-client.server-url' must be set in order to use the Keycloak admin client as a CDI bean");
         }
-        final KeycloakBuilder keycloakBuilder = KeycloakBuilder
+        return KeycloakBuilder
                 .builder()
                 .clientId(config.clientId())
                 .clientSecret(config.clientSecret().orElse(null))
@@ -62,16 +38,11 @@ public class KeycloakAdminRestClientRecorder {
                 .password(config.password().orElse(null))
                 .realm(config.realm())
                 .serverUrl(config.serverUrl().get())
-                .scope(config.scope().orElse(null));
-        return new Supplier<Keycloak>() {
-            @Override
-            public Keycloak get() {
-                return keycloakBuilder.build();
-            }
-        };
+                .scope(config.scope().orElse(null))
+                .build();
     }
 
-    public void avoidRuntimeInitIssueInClientBuilderWrapper() {
+    public static void avoidRuntimeInitIssueInClientBuilderWrapper() {
         // we set our provider at runtime, it is not used before that
         // however org.keycloak.admin.client.Keycloak.CLIENT_PROVIDER is initialized during
         // static init with org.keycloak.admin.client.ClientBuilderWrapper that is not compatible with native mode

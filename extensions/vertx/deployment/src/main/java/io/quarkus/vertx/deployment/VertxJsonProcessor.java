@@ -27,13 +27,10 @@ public class VertxJsonProcessor {
 
     @BuildStep
     void nativeSupport(List<ReinitializeVertxJsonBuildItem> reinitializeVertxJson,
-            BuildProducer<RuntimeInitializedClassBuildItem> runtimeReinitializedClassProducer,
             BuildProducer<ServiceProviderBuildItem> serviceProviderBuildItemBuildProducer) {
         if (reinitializeVertxJson.isEmpty()) {
             return;
         }
-        runtimeReinitializedClassProducer
-                .produce(new RuntimeInitializedClassBuildItem("io.quarkus.vertx.runtime.jackson.QuarkusJacksonJsonCodec"));
         serviceProviderBuildItemBuildProducer
                 .produce(ServiceProviderBuildItem.allProvidersFromClassPath(JsonFactory.class.getName()));
     }

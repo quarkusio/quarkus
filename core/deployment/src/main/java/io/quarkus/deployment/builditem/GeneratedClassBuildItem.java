@@ -44,17 +44,6 @@ public final class GeneratedClassBuildItem extends MultiBuildItem {
     }
 
     /**
-     * {@return a name for this class}
-     *
-     * @deprecated This method may return the binary name, the internal name, or a hybrid thereof and should not be
-     *             used. Use {@link #binaryName()} or {@link #internalName()} instead.
-     */
-    @Deprecated(forRemoval = true)
-    public String getName() {
-        return name;
-    }
-
-    /**
      * {@return the <em>binary name</em> of the class, which is delimited by <code>.</code> characters}
      */
     public String binaryName() {

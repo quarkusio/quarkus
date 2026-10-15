@@ -4,10 +4,10 @@ import java.util.Objects;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 
 import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.registry.json.JsonBuilder;
+import tools.jackson.databind.annotation.JsonDeserialize;
 
 /**
  * Asymmetric data manipulation:

@@ -1,5 +1,6 @@
 package io.quarkus.deployment.util;
 
+import java.io.BufferedReader;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.net.URL;
@@ -13,6 +14,7 @@ import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Properties;
 
+import io.quarkus.bootstrap.BootstrapConstants;
 import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
 import io.quarkus.fs.util.ZipUtils;
 import io.quarkus.maven.dependency.ResolvedDependency;
@@ -118,6 +120,32 @@ public final class ArtifactInfoUtil {
             throw new RuntimeException("Unable to determine groupId and artifactId of the jar that contains " + clazz.getName(),
                     e);
         }
+    }
+
+    /**
+     * Reads the {@code deployment-artifact} property from the extension descriptor of a runtime extension artifact.
+     * <p>
+     * The descriptor is only present in the runtime artifact, so this is the only place the link between a runtime
+     * artifact and its deployment artifact is recorded. The {@code -deployment} naming convention is not authoritative.
+     *
+     * @param runtimeExtension a runtime extension artifact
+     * @return the coordinates of its deployment artifact, or {@code null} when the descriptor or the property is absent
+     */
+    public static String deploymentArtifactCoords(ResolvedDependency runtimeExtension) {
+        // Returns null instead of throwing when the descriptor is not found in a given path tree root, so that
+        // MultiRootPathTree.apply() can continue searching the remaining roots.
+        return runtimeExtension.getContentTree().apply(BootstrapConstants.DESCRIPTOR_PATH, visit -> {
+            if (visit == null) {
+                return null;
+            }
+            Properties props = new Properties();
+            try (BufferedReader reader = Files.newBufferedReader(visit.getPath())) {
+                props.load(reader);
+            } catch (IOException e) {
+                throw new RuntimeException("Failed to read " + visit.getUrl(), e);
+            }
+            return props.getProperty(BootstrapConstants.PROP_DEPLOYMENT_ARTIFACT);
+        });
     }
 
     /**

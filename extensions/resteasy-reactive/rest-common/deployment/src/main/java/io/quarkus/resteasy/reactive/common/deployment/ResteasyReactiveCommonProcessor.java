@@ -128,6 +128,10 @@ public class ResteasyReactiveCommonProcessor {
             return;
         }
         producer.produce(new AdditionalApplicationArchiveMarkerBuildItem(PROVIDERS_SERVICE_FILE));
+        producer.produce(new AdditionalApplicationArchiveMarkerBuildItem(
+                "META-INF/services/" + jakarta.ws.rs.core.Feature.class.getName()));
+        producer.produce(new AdditionalApplicationArchiveMarkerBuildItem(
+                "META-INF/services/" + jakarta.ws.rs.container.DynamicFeature.class.getName()));
     }
 
     @BuildStep

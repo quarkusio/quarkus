@@ -33,6 +33,8 @@ import org.junit.jupiter.api.Test;
 
 import io.quarkus.deployment.builditem.HotDeploymentWatchedFileBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
+import io.quarkus.hibernate.orm.deployment.model.JpaJandexScavenger;
+import io.quarkus.hibernate.orm.deployment.model.JpaModelPersistenceUnitContributionBuildItem;
 import io.quarkus.hibernate.orm.packages.ParentEntity;
 import io.quarkus.hibernate.orm.xml.hbm.NonAnnotatedComponent;
 import io.quarkus.hibernate.orm.xml.hbm.NonAnnotatedComponentUsingEntity;

@@ -20,11 +20,9 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.StringTokenizer;
-import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -77,7 +75,7 @@ class OidcDevServicesProcessor {
                     .serviceName(Feature.OIDC.getName().toUpperCase())
                     .serviceConfig(getServiceConfigIdentifier(devServicesConfig))
                     .startable(new OidcServerSupplier(devServicesConfig))
-                    .configProvider(createApplicationConfigProvider())
+                    .configProvider(OidcDevServicesProcessor::resolveApplicationConfig)
                     .build());
             oidcDevServicesPreparedProducer.produce(new OidcDevServicesPreparedBuildItem());
         }
@@ -87,35 +85,21 @@ class OidcDevServicesProcessor {
         // Dev Services are restarted if the "service config" is different then the previous one
         // we can't rely on the static variables, hence the idea in this method is to trust the hash code is
 
-        // TODO: use the builtin hashcode once https://github.com/smallrye/smallrye-config/issues/1462 is fixed
-        int configHashCode = Objects.hash(
-                config.enabled().orElse(true), // goal is to have deterministic value, not correct 'enabled' flag
-                config.accessTokenExpiresIn(),
-                config.idTokenExpiresIn(),
-                safeMapHash(config.roles()));
-
-        return configHashCode + SERVICE_CONFIG_IDENTIFIER_SEPARATOR + getOidcClientSecret()
+        return config.hashCode() + SERVICE_CONFIG_IDENTIFIER_SEPARATOR + getOidcClientSecret()
                 + SERVICE_CONFIG_IDENTIFIER_SEPARATOR + getOidcClientId() + SERVICE_CONFIG_IDENTIFIER_SEPARATOR
                 + getOidcApplicationType();
     }
 
-    private static Map<String, Function<OidcServer, String>> createApplicationConfigProvider() {
-        var lazyConfigMap = new HashMap<String, Function<OidcServer, String>>();
-        lazyConfigMap.put(AUTH_SERVER_URL_CONFIG_KEY, s -> s.baseURI);
+    private static Map<String, String> resolveApplicationConfig(OidcServer server) {
+        Map<String, String> config = new HashMap<>();
+        config.put(AUTH_SERVER_URL_CONFIG_KEY, server.baseURI);
         if (getOptionalOidcClientSecret().isEmpty()) {
-            lazyConfigMap.put(CLIENT_SECRET_CONFIG_KEY, s -> s.oidcClientSecret);
+            config.put(CLIENT_SECRET_CONFIG_KEY, server.oidcClientSecret);
         }
         if (getOptionalOidcClientId().isEmpty()) {
-            lazyConfigMap.put(CLIENT_ID_CONFIG_KEY, s -> s.oidcClientId);
+            config.put(CLIENT_ID_CONFIG_KEY, server.oidcClientId);
         }
-        return Collections.unmodifiableMap(lazyConfigMap);
-    }
-
-    private static int safeMapHash(Map<?, ?> map) {
-        if (map == null)
-            return 0;
-
-        return map.entrySet().stream().mapToInt(e -> Objects.hash(e.getKey(), e.getValue())).sum();
+        return config;
     }
 
     private static boolean shouldStartServer(OidcDevServicesConfig devServicesConfig,

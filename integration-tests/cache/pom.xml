@@ -52,7 +52,8 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-test-h2</artifactId>
+            <artifactId>quarkus-test-prometheus-metrics</artifactId>
+            <version>${project.version}</version>
             <scope>test</scope>
         </dependency>
 

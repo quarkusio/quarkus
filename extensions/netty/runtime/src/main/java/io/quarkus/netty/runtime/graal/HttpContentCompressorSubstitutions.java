@@ -42,7 +42,7 @@ final class Target_io_netty_handler_codec_compression_ZstdConstants {
 
     static final int MAX_COMPRESSION_LEVEL = 0;
 
-    static final int MAX_BLOCK_SIZE = 0;
+    static final int DEFAULT_MAX_ENCODE_SIZE = 0;
 
     static final int DEFAULT_BLOCK_SIZE = 0;
 }

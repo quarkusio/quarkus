@@ -180,6 +180,18 @@ public interface ApplicationModel extends Mappable {
      */
     Collection<ExtensionDevModeConfig> getExtensionDevModeConfig();
 
+    /**
+     * Quarkus version ranges required by the extensions present in the application model, as declared via the
+     * {@code requires-quarkus-version} property in their {@code META-INF/quarkus-extension.properties}
+     * descriptors, keyed by the extension runtime artifact key. Extensions that do not declare the property
+     * are not present in the map.
+     *
+     * @return required Quarkus version ranges per extension, never null
+     */
+    default Map<ArtifactKey, String> getRequiredQuarkusVersions() {
+        return Map.of();
+    }
+
     @Override
     default Map<String, Object> asMap(MappableCollectionFactory factory) {
         final Map<String, Object> map = factory.newMap();
@@ -193,19 +205,36 @@ public interface ApplicationModel extends Mappable {
             map.put(BootstrapConstants.MAPPABLE_CAPABILITIES, Mappable.asMaps(getExtensionCapabilities(), factory));
         }
         if (!getReloadableWorkspaceDependencies().isEmpty()) {
+            // Sort so the serialized form is deterministic across JVMs: Set.copyOf iteration
+            // order is salted per JVM, which busts the Gradle build cache (see #55619).
             map.put(BootstrapConstants.MAPPABLE_LOCAL_PROJECTS,
-                    Mappable.toStringCollection(getReloadableWorkspaceDependencies(), factory));
+                    Mappable.toStringCollection(
+                            getReloadableWorkspaceDependencies().stream().sorted().toList(), factory));
         }
         if (!getRemovedResources().isEmpty()) {
             final Map<ArtifactKey, Set<String>> removedResources = getRemovedResources();
             final Map<String, Object> mappedExcludedResources = factory.newMap(removedResources.size());
-            for (Map.Entry<ArtifactKey, Set<String>> entry : removedResources.entrySet()) {
-                mappedExcludedResources.put(entry.getKey().toString(), Mappable.toStringCollection(entry.getValue(), factory));
-            }
+            // getRemovedResources() is a per-JVM-salted Map.copyOf, so sort by key: this fixes the
+            // insertion order into the (HashMap-backed) JSON object, keeping its output stable across
+            // JVMs even when keys collide in a bucket. Sort each value collection for the same reason
+            // as local-projects above (see #55619).
+            removedResources.entrySet().stream()
+                    .sorted(Map.Entry.comparingByKey())
+                    .forEach(entry -> mappedExcludedResources.put(entry.getKey().toString(),
+                            Mappable.toStringCollection(entry.getValue().stream().sorted().toList(), factory)));
             map.put(BootstrapConstants.MAPPABLE_EXCLUDED_RESOURCES, mappedExcludedResources);
         }
         if (!getExtensionDevModeConfig().isEmpty()) {
             map.put(BootstrapConstants.MAPPABLE_EXTENSION_DEV_CONFIG, Mappable.asMaps(getExtensionDevModeConfig(), factory));
+        }
+        if (!getRequiredQuarkusVersions().isEmpty()) {
+            final Map<ArtifactKey, String> requiredQuarkusVersions = getRequiredQuarkusVersions();
+            final Map<String, Object> mappedRequiredQuarkusVersions = factory.newMap(requiredQuarkusVersions.size());
+            // Sort by key to keep the serialized form deterministic across JVMs (see #55619).
+            requiredQuarkusVersions.entrySet().stream()
+                    .sorted(Map.Entry.comparingByKey())
+                    .forEach(entry -> mappedRequiredQuarkusVersions.put(entry.getKey().toString(), entry.getValue()));
+            map.put(BootstrapConstants.MAPPABLE_REQUIRED_QUARKUS_VERSIONS, mappedRequiredQuarkusVersions);
         }
         return map;
     }

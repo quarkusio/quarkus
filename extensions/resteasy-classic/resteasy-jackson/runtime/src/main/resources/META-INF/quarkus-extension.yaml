@@ -11,6 +11,7 @@ metadata:
   - "jackson"
   - "rest"
   - "jakarta-rest"
+  guide: "https://quarkus.io/guides/resteasy"
   categories:
   - "web"
   - "serialization"

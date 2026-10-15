@@ -78,6 +78,11 @@ public class TlsConfigUtils {
                         "ALPN configuration not supported by implementation: %s. ALPN setting will be ignored.",
                         options.getClass().getName());
             }
+
+            if (sslOptions.getKeyExchangeGroups() != null && !sslOptions.getKeyExchangeGroups().isEmpty()) {
+                options.getSslOptions().setKeyExchangeGroups(sslOptions.getKeyExchangeGroups());
+            }
+            options.getSslOptions().setPqcEnforcementPolicy(sslOptions.getPqcEnforcementPolicy());
         }
     }
 
@@ -98,8 +103,8 @@ public class TlsConfigUtils {
         if (configuration.getKeyStoreOptions() != null) {
             options.setKeyCertOptions(configuration.getKeyStoreOptions());
         }
-
         applySSLOptions(options, configuration.getServerSSLOptions());
+        configuration.getSslEngineOptions().ifPresent(options::setSslEngineOptions);
     }
 
     /**
@@ -118,6 +123,7 @@ public class TlsConfigUtils {
             options.setTrustAll(sslOptions.isTrustAll());
         }
         applySSLOptions(options, sslOptions);
+        configuration.getSslEngineOptions().ifPresent(options::setSslEngineOptions);
         return sslOptions;
     }
 

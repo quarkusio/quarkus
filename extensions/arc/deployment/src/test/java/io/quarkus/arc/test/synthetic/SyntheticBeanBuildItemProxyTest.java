@@ -44,7 +44,7 @@ public class SyntheticBeanBuildItemProxyTest {
                     public void execute(BuildContext context) {
                         BytecodeRecorderImpl bytecodeRecorder = new BytecodeRecorderImpl(true,
                                 TestRecorder.class.getSimpleName(),
-                                "test", "" + TestRecorder.class.hashCode(), true);
+                                "test", "" + TestRecorder.class.hashCode(), context.getStepId(), true);
                         // We need to use reflection due to some class loading problems
                         Object recorderProxy = bytecodeRecorder.getRecordingProxy(TestRecorder.class);
                         try {
@@ -76,7 +76,7 @@ public class SyntheticBeanBuildItemProxyTest {
                         } catch (Exception e) {
                             throw new RuntimeException(e);
                         }
-                        context.produce(new StaticBytecodeRecorderBuildItem(bytecodeRecorder));
+                        context.produce(new StaticBytecodeRecorderBuildItem(bytecodeRecorder, context.getStepId()));
                     }
                 }).produces(StaticBytecodeRecorderBuildItem.class).produces(SyntheticBeanBuildItem.class).build();
             }

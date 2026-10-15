@@ -15,6 +15,7 @@ import static org.jboss.jandex.gizmo2.Jandex2Gizmo.classDescOf;
 import static org.jboss.jandex.gizmo2.Jandex2Gizmo.methodDescOf;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -93,7 +94,9 @@ import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
 import io.quarkus.deployment.builditem.GeneratedServiceProviderBuildItem;
+import io.quarkus.deployment.builditem.ModuleExportBuildItem;
 import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ConstantBootstrapBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyBuildItem;
 import io.quarkus.deployment.execannotations.ExecutionModelAnnotationsAllowedBuildItem;
@@ -125,6 +128,7 @@ import io.quarkus.vertx.http.deployment.EagerSecurityInterceptorClassesBuildItem
 import io.quarkus.vertx.http.deployment.FilterBuildItem;
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
 import io.quarkus.vertx.http.runtime.HandlerType;
+import io.quarkus.vertx.http.runtime.VertxHttpBuildTimeConfig;
 import io.quarkus.vertx.http.runtime.security.EagerSecurityInterceptorStorage;
 import io.quarkus.vertx.http.runtime.security.HttpSecurityPolicy;
 import io.quarkus.vertx.http.runtime.security.SecurityHandlerPriorities;
@@ -153,6 +157,7 @@ import io.quarkus.websockets.next.runtime.WebSocketClientRecorder;
 import io.quarkus.websockets.next.runtime.WebSocketClientRecorder.ClientEndpoint;
 import io.quarkus.websockets.next.runtime.WebSocketConnectionBase;
 import io.quarkus.websockets.next.runtime.WebSocketConnectorImpl;
+import io.quarkus.websockets.next.runtime.WebSocketDuplicatedContextSecurityIdentityAssociation;
 import io.quarkus.websockets.next.runtime.WebSocketEndpoint;
 import io.quarkus.websockets.next.runtime.WebSocketEndpoint.ExecutionModel;
 import io.quarkus.websockets.next.runtime.WebSocketEndpointBase;
@@ -190,6 +195,14 @@ public class WebSocketProcessor {
     // Parameter names consist of alphanumeric characters and underscore
     private static final Pattern PATH_PARAM_PATTERN = Pattern.compile("\\{[a-zA-Z0-9_]+\\}");
     public static final Pattern TRANSLATED_PATH_PARAM_PATTERN = Pattern.compile(":[a-zA-Z0-9_]+");
+
+    @BuildStep
+    void exportInternals(BuildProducer<ModuleExportBuildItem> exports) {
+        exports.produce(new ModuleExportBuildItem("io.smallrye.mutiny", "io.quarkus.websockets.next",
+                "io.smallrye.mutiny.helpers.queues"));
+        exports.produce(new ModuleExportBuildItem("io.vertx.core", "io.quarkus.websockets.next",
+                "io.vertx.core.buffer.impl"));
+    }
 
     @BuildStep
     FeatureBuildItem feature() {
@@ -487,12 +500,13 @@ public class WebSocketProcessor {
             BuildProducer<GeneratedClassBuildItem> generatedClasses,
             BuildProducer<GeneratedResourceBuildItem> generatedResources,
             BuildProducer<GeneratedServiceProviderBuildItem> generatedServiceProviders,
+            BuildProducer<ConstantBootstrapBuildItem> constantBootstraps,
             BuildProducer<GeneratedEndpointBuildItem> generatedEndpoints,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClasses,
             Optional<MetricsCapabilityBuildItem> metricsCapability) {
         final boolean metricsSupportEnabled = isMetricsSupportEnabled(metricsCapability);
         ClassOutput classOutput = new GeneratedClassGizmo2Adaptor(generatedClasses, generatedResources,
-                generatedServiceProviders, new Function<String, String>() {
+                generatedServiceProviders, constantBootstraps, new Function<String, String>() {
                     @Override
                     public String apply(String name) {
                         int idx = name.indexOf(CLIENT_ENDPOINT_SUFFIX);
@@ -912,20 +926,29 @@ public class WebSocketProcessor {
     }
 
     @BuildStep
-    void createSecurityIdentityAssociation(Capabilities capabilities,
+    void createSecurityIdentityAssociation(Capabilities capabilities, VertxHttpBuildTimeConfig buildTimeConfig,
             BuildProducer<AdditionalBeanBuildItem> additionalBeanProducer) {
         if (capabilities.isPresent(Capability.SECURITY)) {
-            additionalBeanProducer.produce(AdditionalBeanBuildItem.unremovableOf(WebSocketSecurityIdentityAssociation.class));
+            additionalBeanProducer.produce(
+                    AdditionalBeanBuildItem.unremovableOf(getSecurityIdentityAssociationClass(buildTimeConfig)));
         }
     }
 
     @BuildStep(onlyIf = IsTest.class)
     void delegateToWebSocketSecurityIdentityAssociationFromTestSecurity(Capabilities capabilities,
-            BuildProducer<SystemPropertyBuildItem> systemPropertyProducer) {
+            VertxHttpBuildTimeConfig buildTimeConfig, BuildProducer<SystemPropertyBuildItem> systemPropertyProducer) {
         if (capabilities.isPresent(Capability.SECURITY)) {
             systemPropertyProducer
                     .produce(new SystemPropertyBuildItem("test.quarkus.test-security.delegate-identity-association",
-                            WebSocketSecurityIdentityAssociation.class.getName()));
+                            getSecurityIdentityAssociationClass(buildTimeConfig).getName()));
+        }
+    }
+
+    private static Class<?> getSecurityIdentityAssociationClass(VertxHttpBuildTimeConfig buildTimeConfig) {
+        if (buildTimeConfig.auth().propagateSecurityIdentity()) {
+            return WebSocketDuplicatedContextSecurityIdentityAssociation.class;
+        } else {
+            return WebSocketSecurityIdentityAssociation.class;
         }
     }
 
@@ -943,7 +966,7 @@ public class WebSocketProcessor {
 
     private static Map<String, SecurityCheck> collectEndpointSecurityChecks(List<WebSocketEndpointBuildItem> endpoints,
             ClassSecurityCheckStorageBuildItem storage, IndexView index, SecurityTransformer securityTransformer) {
-        return endpoints
+        Map<String, SecurityCheck> endpointSecurityChecks = endpoints
                 .stream().<Map.Entry<String, SecurityCheck>> mapMulti((endpoint, consumer) -> {
                     var beanName = endpoint.beanClassName();
                     if (storage.getSecurityCheck(beanName) instanceof SecurityCheck check) {
@@ -954,7 +977,13 @@ public class WebSocketProcessor {
                                 + "correctly. Please open issue in Quarkus project");
                     }
                 })
-                .collect(Collectors.toUnmodifiableMap(Map.Entry::getKey, Map.Entry::getValue));
+                // Do not use Collectors.toUnmodifiableMap() here - its iteration order is not stable.
+                // Instead, collect to a regular HashMap<K, V> and wrap it in Collections.unmodifiableMap()
+                // down below.
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (previous, current) -> {
+                    throw new IllegalStateException("Multiple WebSocket endpoints with the same id");
+                }));
+        return Collections.unmodifiableMap(endpointSecurityChecks);
     }
 
     private static Map<String, Set<String>> collectEndpointAuthorizationPolicies(SecurityTransformer securityTransformer,
@@ -2000,7 +2029,7 @@ public class WebSocketProcessor {
         private final Map<String, SecurityCheck> endpointIdToSecurityCheck;
 
         private EndpointSecurityChecksBuildItem(Map<String, SecurityCheck> endpointIdToSecurityCheck) {
-            this.endpointIdToSecurityCheck = endpointIdToSecurityCheck;
+            this.endpointIdToSecurityCheck = Collections.unmodifiableMap(endpointIdToSecurityCheck);
         }
     }
 
@@ -2008,7 +2037,9 @@ public class WebSocketProcessor {
         private final Map<String, Set<String>> policyNameToEndpoints;
 
         private AuthorizationPolicyToEndpointsBuildItem(Map<String, Set<String>> policyNameToEndpoints) {
-            this.policyNameToEndpoints = Map.copyOf(policyNameToEndpoints);
+            // Map.copyOf() must not be used here - it produces unstable iteration order
+            Map<String, Set<String>> copiedMap = new HashMap<>(policyNameToEndpoints);
+            this.policyNameToEndpoints = Collections.unmodifiableMap(copiedMap);
         }
     }
 }

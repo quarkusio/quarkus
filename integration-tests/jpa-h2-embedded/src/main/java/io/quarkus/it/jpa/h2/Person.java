@@ -11,6 +11,7 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.NamedQuery;
 
 import org.hibernate.annotations.GenericGenerator;
+import org.hibernate.id.UUIDGenerator;
 
 @Entity
 @NamedQuery(name = "get_person_by_name", query = "select p from Person p where name = :name")
@@ -30,8 +31,8 @@ public class Person {
     }
 
     @Id
-    @GeneratedValue(generator = "UUID")
-    @GenericGenerator(name = "UUID", strategy = "org.hibernate.id.UUIDGenerator")
+    @GeneratedValue
+    @GenericGenerator(type = UUIDGenerator.class)
     public UUID getId() {
         return id;
     }

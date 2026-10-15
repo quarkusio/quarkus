@@ -22,6 +22,7 @@ public class MetricFiltersTest {
             .withApplicationRoot((jar) -> jar
                     .addClasses(AnnotatedFilter.class, NonAnnotatedFilter.class,
                             MeterFilterProducer.class))
+            .overrideConfigKey("quarkus.otel.enabled", "false")
             .overrideConfigKey("quarkus.redis.devservices.enabled", "false");
 
     @Test

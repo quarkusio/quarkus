@@ -6,9 +6,8 @@ import java.util.concurrent.TimeUnit;
 import org.awaitility.Awaitility;
 import org.awaitility.core.ConditionTimeoutException;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-
 import io.quarkus.devui.tests.DevUIJsonRPCTest;
+import tools.jackson.core.type.TypeReference;
 
 /**
  * Utilities for testing the test runner itself

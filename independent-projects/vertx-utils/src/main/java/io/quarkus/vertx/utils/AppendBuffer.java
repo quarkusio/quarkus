@@ -1,15 +1,10 @@
 package io.quarkus.vertx.utils;
 
-import java.lang.invoke.MethodHandle;
-import java.lang.invoke.MethodHandles;
-import java.lang.invoke.MethodType;
 import java.util.ArrayDeque;
 import java.util.Objects;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.CompositeByteBuf;
-import io.netty.buffer.PooledByteBufAllocator;
-import io.netty.util.internal.PlatformDependent;
 import io.vertx.core.impl.buffer.VertxByteBufAllocator;
 
 /**
@@ -18,39 +13,15 @@ import io.vertx.core.impl.buffer.VertxByteBufAllocator;
  */
 final class AppendBuffer {
 
-    private static final MethodHandle virtualMh = PlatformDependent.javaVersion() >= 21 ? findVirtualMH() : null;
-
-    private static MethodHandle findVirtualMH() {
-        try {
-            return MethodHandles.publicLookup().findVirtual(Thread.class, "isVirtual",
-                    MethodType.methodType(boolean.class));
-        } catch (Exception e) {
-            return null;
-        }
-    }
-
-    private static boolean isVirtualThread() {
-        if (virtualMh == null) {
-            return false;
-        }
-        try {
-            return (boolean) virtualMh.invokeExact(Thread.currentThread());
-        } catch (Throwable t) {
-            return false;
-        }
-    }
-
     private final int minChunkSize;
     private final int capacity;
     private ByteBuf buffer;
     private ArrayDeque<ByteBuf> otherBuffers;
     private int size;
-    private boolean anyHeap;
 
     private AppendBuffer(int minChunkSize, int capacity) {
         this.minChunkSize = Math.min(minChunkSize, capacity);
         this.capacity = capacity;
-        this.anyHeap = false;
     }
 
     /**
@@ -127,14 +98,7 @@ final class AppendBuffer {
         } else {
             chunkCapacity = toWrite;
         }
-        boolean isVirtualThread = isVirtualThread();
-        final ByteBuf tmpBuf;
-        if (isVirtualThread) {
-            // VertxByteBufAllocator allocates cheaper heap buffers ie which doesn't use reference counting
-            tmpBuf = VertxByteBufAllocator.DEFAULT.heapBuffer(chunkCapacity);
-        } else {
-            tmpBuf = PooledByteBufAllocator.DEFAULT.directBuffer(chunkCapacity);
-        }
+        final ByteBuf tmpBuf = VertxByteBufAllocator.POOLED_ALLOCATOR.directBuffer(chunkCapacity);
         try {
             tmpBuf.writeBytes(bytes, off, toWrite);
         } catch (Throwable t) {
@@ -155,9 +119,6 @@ final class AppendBuffer {
                 rollback(alreadyWritten, tmpBuf, resetOthers);
                 throw t;
             }
-        }
-        if (isVirtualThread) {
-            anyHeap = true;
         }
         size += toWrite;
         return toWrite + alreadyWritten;
@@ -185,7 +146,6 @@ final class AppendBuffer {
         if (others == null || others.isEmpty()) {
             size = 0;
             buffer = null;
-            anyHeap = false;
             // super fast-path
             return firstBuf;
         }
@@ -195,17 +155,10 @@ final class AppendBuffer {
     private CompositeByteBuf clearBuffers() {
         var firstBuf = buffer;
         var others = otherBuffers;
-        CompositeByteBuf batch;
-        if (anyHeap) {
-            batch = new CompositeByteBuf(VertxByteBufAllocator.DEFAULT, false, 1 + others.size());
-        } else {
-            // This should be the allocator picked by Netty
-            batch = PooledByteBufAllocator.DEFAULT.compositeBuffer(1 + others.size());
-        }
+        CompositeByteBuf batch = VertxByteBufAllocator.POOLED_ALLOCATOR.compositeBuffer(1 + others.size());
         try {
             buffer = null;
             size = 0;
-            anyHeap = false;
             batch.addComponent(true, 0, firstBuf);
             for (int i = 0, othersCount = others.size(); i < othersCount; i++) {
                 // if addComponent fail, it takes care of releasing curr and throwing the exception:

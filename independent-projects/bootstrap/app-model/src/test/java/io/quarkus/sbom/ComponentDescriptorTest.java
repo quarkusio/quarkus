@@ -97,4 +97,40 @@ class ComponentDescriptorTest {
                 .build();
         assertThat(descriptor.getLicenses()).isUnmodifiable();
     }
+
+    @Test
+    void productFieldsAndOverridesAreCarried() {
+        ComponentDescriptor d = ComponentDescriptor.builder()
+                .setPurl(Purl.maven("com.redhat.quarkus.platform", "quarkus-camel-bom", "3.20.0", "pom", null))
+                .setCpe("cpe:2.3:a:redhat:camel_quarkus:3.20:*:*:*:*:*:*:*")
+                .setComponentType("framework")
+                .setName("Camel Extensions for Quarkus")
+                .setVersion("3.20")
+                .setScope(ComponentDescriptor.SCOPE_EXCLUDED)
+                .build();
+
+        assertThat(d.getCpe()).isEqualTo("cpe:2.3:a:redhat:camel_quarkus:3.20:*:*:*:*:*:*:*");
+        assertThat(d.getComponentType()).isEqualTo("framework");
+        assertThat(d.getName()).isEqualTo("Camel Extensions for Quarkus");
+        assertThat(d.getVersion()).isEqualTo("3.20");
+        assertThat(d.getScope()).isEqualTo(ComponentDescriptor.SCOPE_EXCLUDED);
+
+        // copy-constructor preserves the new fields
+        ComponentDescriptor copy = new ComponentDescriptor.Builder(d).build();
+        assertThat(copy.getCpe()).isEqualTo(d.getCpe());
+        assertThat(copy.getComponentType()).isEqualTo("framework");
+        assertThat(copy.getName()).isEqualTo("Camel Extensions for Quarkus");
+        assertThat(copy.getVersion()).isEqualTo("3.20");
+    }
+
+    @Test
+    void nameAndVersionFallBackToPurlWhenNoOverride() {
+        ComponentDescriptor d = ComponentDescriptor.builder()
+                .setPurl(Purl.maven("io.quarkus", "quarkus-rest", "3.20.0", "jar", null))
+                .build();
+        assertThat(d.getName()).isEqualTo("quarkus-rest");
+        assertThat(d.getVersion()).isEqualTo("3.20.0");
+        assertThat(d.getCpe()).isNull();
+        assertThat(d.getComponentType()).isNull();
+    }
 }

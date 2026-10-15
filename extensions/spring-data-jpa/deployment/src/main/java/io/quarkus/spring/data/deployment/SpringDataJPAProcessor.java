@@ -45,10 +45,11 @@ import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
 import io.quarkus.deployment.builditem.GeneratedServiceProviderBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ConstantBootstrapBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.gizmo2.ClassOutput;
-import io.quarkus.hibernate.orm.deployment.IgnorableNonIndexedClasses;
-import io.quarkus.hibernate.orm.deployment.JpaModelPersistenceUnitMappingBuildItem;
+import io.quarkus.hibernate.orm.deployment.spi.IgnorableNonIndexedClasses;
+import io.quarkus.hibernate.orm.deployment.spi.JpaModelPersistenceUnitMappingBuildItem;
 import io.quarkus.hibernate.orm.deployment.spi.SqlLoadScriptDefaultBuildItem;
 import io.quarkus.hibernate.orm.panache.deployment.EntityToPersistenceUnitBuildItem;
 import io.quarkus.hibernate.orm.panache.deployment.JavaJpaTypeBundle;
@@ -67,7 +68,7 @@ public class SpringDataJPAProcessor {
     private static final String SPRING_DATASOURCE_DATA = "spring.datasource.data";
     public static final String QUARKUS_HIBERNATE_ORM_DIALECT = "quarkus.hibernate-orm.dialect";
     public static final String QUARKUS_HIBERNATE_ORM_LOG_SQL = "quarkus.hibernate-orm.log.sql";
-    public static final String QUARKUS_HIBERNATE_ORM_DIALECT_STORAGE_ENGINE = "quarkus.hibernate-orm.dialect.storage-engine";
+    public static final String QUARKUS_HIBERNATE_ORM_DIALECT_STORAGE_ENGINE = "quarkus.hibernate-orm.dialect.mysql.storage-engine or quarkus.hibernate-orm.dialect.mariadb.storage-engine";
     public static final String QUARKUS_HIBERNATE_ORM_SCHEMA_MANAGEMENT_STRATEGY = "quarkus.hibernate-orm.schema-management.strategy";
     public static final String QUARKUS_HIBERNATE_ORM_PHYSICAL_NAMING_STRATEGY = "quarkus.hibernate-orm.physical-naming-strategy";
     public static final String QUARKUS_HIBERNATE_ORM_IMPLICIT_NAMING_STRATEGY = "quarkus.hibernate-orm.implicit-naming-strategy";
@@ -128,6 +129,7 @@ public class SpringDataJPAProcessor {
             BuildProducer<GeneratedServiceProviderBuildItem> generatedServiceProviders,
             BuildProducer<AdditionalBeanBuildItem> additionalBeans,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClasses,
+            BuildProducer<ConstantBootstrapBuildItem> constantBootstraps,
             BuildProducer<EntityToPersistenceUnitBuildItem> entityToPersistenceUnit) {
 
         detectAndLogSpecificSpringPropertiesIfExist();
@@ -144,7 +146,7 @@ public class SpringDataJPAProcessor {
         Set<String> entities = implementCrudRepositories(generatedBeans, generatedClasses, generatedResources,
                 generatedServiceProviders, additionalBeans,
                 reflectiveClasses,
-                interfacesExtendingRepository, indexView);
+                constantBootstraps, interfacesExtendingRepository, indexView);
         determineEntityPersistenceUnits(jpaModelPersistenceUnitMapping, entities, "Spring Data JPA")
                 .forEach((e, pu) -> entityToPersistenceUnit.produce(new EntityToPersistenceUnitBuildItem(e, pu)));
 
@@ -253,11 +255,12 @@ public class SpringDataJPAProcessor {
             BuildProducer<GeneratedServiceProviderBuildItem> generatedServiceProviders,
             BuildProducer<AdditionalBeanBuildItem> additionalBeans,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClasses,
+            BuildProducer<ConstantBootstrapBuildItem> constantBootstraps,
             Set<ClassInfo> crudRepositoriesToImplement, IndexView index) {
 
         ClassOutput beansClassOutput = new GeneratedBeanGizmo2Adaptor(generatedBeans);
         ClassOutput otherClassOutput = new GeneratedClassGizmo2Adaptor(generatedClasses, generatedResources,
-                generatedServiceProviders, true);
+                generatedServiceProviders, constantBootstraps, true);
 
         SpringDataRepositoryCreator repositoryCreator = new SpringDataRepositoryCreator(beansClassOutput, otherClassOutput,
                 index, (n) -> {

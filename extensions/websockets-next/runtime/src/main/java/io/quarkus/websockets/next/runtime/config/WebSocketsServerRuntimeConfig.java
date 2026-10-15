@@ -47,6 +47,16 @@ public interface WebSocketsServerRuntimeConfig {
     OptionalInt maxFrameSize();
 
     /**
+     * The maximum number of pending (in-flight) messages processed concurrently for a single connection.
+     * <p>
+     * When set to a positive value, the connection applies back-pressure so that no more than this number of messages
+     * are received but not yet fully processed, bounding the memory a connection can retain. Set to {@code 0} or a
+     * negative value to disable back-pressure completely.
+     */
+    @WithDefault("256")
+    int maxPendingMessages();
+
+    /**
      * The interval after which, when set, the server sends a ping message to a connected client automatically.
      * <p>
      * Ping messages are not sent automatically by default.

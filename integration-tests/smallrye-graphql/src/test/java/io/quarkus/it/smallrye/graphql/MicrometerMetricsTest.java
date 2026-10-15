@@ -1,26 +1,22 @@
 package io.quarkus.it.smallrye.graphql;
 
+import static io.quarkus.test.micrometer.PrometheusMetricsAssert.assertMetrics;
+import static org.assertj.core.api.Assertions.entry;
 import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.MatcherAssert.assertThat;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
-import jakarta.json.Json;
-import jakarta.json.JsonObject;
-
-import org.hamcrest.Description;
-import org.hamcrest.TypeSafeMatcher;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.it.smallrye.graphql.metricresources.TestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.RestAssured;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.node.ObjectNode;
 
 @QuarkusTest
 public class MicrometerMetricsTest {
@@ -228,21 +224,13 @@ public class MicrometerMetricsTest {
         assertMetric("asyncSuperMetricFoo", false, "QUERY", iterations);
     }
 
+    private static final ObjectMapper MAPPER = new ObjectMapper();
+
     private String getPayload(String query) {
-        JsonObject jsonObject = createRequestBody(query);
-        return jsonObject.toString();
-    }
-
-    private JsonObject createRequestBody(String graphQL) {
-        return createRequestBody(graphQL, null);
-    }
-
-    private JsonObject createRequestBody(String graphQL, JsonObject variables) {
-        // Create the request
-        if (variables == null || variables.isEmpty()) {
-            variables = Json.createObjectBuilder().build();
-        }
-        return Json.createObjectBuilder().add("query", graphQL).add("variables", variables).build();
+        ObjectNode node = MAPPER.createObjectNode();
+        node.put("query", query);
+        node.putObject("variables");
+        return node.toString();
     }
 
     private void assertMetric(String name, boolean source, String type, long count) {
@@ -261,37 +249,39 @@ public class MicrometerMetricsTest {
     }
 
     private void assertMetricCountValue(String name, boolean source, String type, long count) {
-        RestAssured.when().get("/q/metrics").then()
-                .body(containsString(
-                        String.format("mp_graphql_seconds_count{name=\"%s\",source=\"%b\",type=\"%S\"} %d", name, source, type,
-                                count)));
+        assertMetrics(RestAssured.when().get("/q/metrics").then()
+                .extract().asInputStream())
+                .hasMetricWithExactLabelsAndValue("mp_graphql_seconds_count", (double) count,
+                        entry("name", name),
+                        entry("source", String.valueOf(source)),
+                        entry("type", type.toUpperCase()));
     }
 
     private void assertMetricTotalValue(String name, boolean source, String type, double minimumDuration) {
-        String endpoint = "/q/metrics";
-        String failureMessage = String.format(
-                "Expected metric with name '%s', source '%b', type '%s', and total minimum of %f to be present in the response body of endpoint '%s'",
-                name, source, type, minimumDuration, endpoint);
-        assertThat(failureMessage,
-                RestAssured.when().get(endpoint).asString(),
-                new TotalMetricMatcher(name, source, type, minimumDuration));
+        assertMetrics(RestAssured.when().get("/q/metrics").then()
+                .extract().asInputStream())
+                .hasMetricWithLabelsAndValueGreaterThanOrEqualTo("mp_graphql_seconds_sum", minimumDuration,
+                        entry("name", name),
+                        entry("source", String.valueOf(source)),
+                        entry("type", type));
     }
 
     private void assertMetricMaxValue(String name, boolean source, String type, double minimumDuration) {
-        // mean would be better, but it is harder to get...
-        String endpoint = "/q/metrics";
-        String failureMessage = String.format(
-                "Expected metric with name '%s', source '%b', type '%s', and at least or equal to maximum duration of %f to be present in the response body of endpoint '%s'",
-                name, source, type, minimumDuration, endpoint);
-        assertThat(failureMessage,
-                RestAssured.when().get(endpoint).asString(),
-                new MaxMetricMatcher(name, source, type, minimumDuration));
+        assertMetrics(RestAssured.when().get("/q/metrics").then()
+                .extract().asInputStream())
+                .hasMetricWithLabelsAndValueGreaterThanOrEqualTo("mp_graphql_seconds_max", minimumDuration,
+                        entry("name", name),
+                        entry("source", String.valueOf(source)),
+                        entry("type", type));
     }
 
     private void assertMetricExists(String name, boolean source, String type) {
-        RestAssured.when().get("/q/metrics").then()
-                .body(containsString(
-                        String.format("mp_graphql_seconds_count{name=\"%s\",source=\"%b\",type=\"%S\"}", name, source, type)));
+        assertMetrics(RestAssured.when().get("/q/metrics").then()
+                .extract().asInputStream())
+                .hasMetricWithExactLabels("mp_graphql_seconds_count",
+                        entry("name", name),
+                        entry("source", String.valueOf(source)),
+                        entry("type", type.toUpperCase()));
     }
 
     private Void assertResponse(String request, String response) {
@@ -307,69 +297,6 @@ public class MicrometerMetricsTest {
                 .body(containsString(response));
 
         return null;
-    }
-
-    abstract static class MetricMatcher extends TypeSafeMatcher<String> {
-        protected final String name;
-        protected final boolean source;
-        protected final String type;
-        protected final double value;
-
-        protected MetricMatcher(String name, boolean source, String type, double value) {
-            this.name = name;
-            this.source = source;
-            this.type = type;
-            this.value = value;
-        }
-
-        @Override
-        public void describeTo(Description description) {
-            description.appendText("a metric with name ").appendValue(name)
-                    .appendText(", source ").appendValue(source)
-                    .appendText(", type ").appendValue(type)
-                    .appendText(", and ").appendText(getValueDescription())
-                    .appendValue(value);
-        }
-
-        protected abstract String getValueDescription();
-    }
-
-    static class TotalMetricMatcher extends MetricMatcher {
-        public TotalMetricMatcher(String name, boolean source, String type, double total) {
-            super(name, source, type, total);
-        }
-
-        @Override
-        public boolean matchesSafely(String item) {
-            String pattern = String.format("mp_graphql_seconds_sum\\{name=\"%s\",source=\"%b\",type=\"%s\"\\} \\d+\\.\\d+",
-                    name, source, type);
-            Matcher matcher = Pattern.compile(pattern).matcher(item);
-            return matcher.find() && Double.parseDouble(matcher.group().split(" ")[1]) >= value;
-        }
-
-        @Override
-        protected String getValueDescription() {
-            return "total minimum of ";
-        }
-    }
-
-    static class MaxMetricMatcher extends MetricMatcher {
-        public MaxMetricMatcher(String name, boolean source, String type, double maxDuration) {
-            super(name, source, type, maxDuration);
-        }
-
-        @Override
-        public boolean matchesSafely(String item) {
-            String pattern = String.format("mp_graphql_seconds_max\\{name=\"%s\",source=\"%b\",type=\"%s\"\\} \\d+\\.\\d+",
-                    name, source, type);
-            Matcher matcher = Pattern.compile(pattern).matcher(item);
-            return matcher.find() && Double.parseDouble(matcher.group().split(" ")[1]) >= value;
-        }
-
-        @Override
-        protected String getValueDescription() {
-            return "maximum duration of ";
-        }
     }
 
 }

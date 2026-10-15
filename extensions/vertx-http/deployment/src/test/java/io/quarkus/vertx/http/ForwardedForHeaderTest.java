@@ -118,4 +118,11 @@ public class ForwardedForHeaderTest {
                 .body(Matchers.containsString("[2001:db8:85a3:8d3::]:101"));
     }
 
+    @Test
+    public void testMultipleForwardedForValuesUsesLeftmostByDefault() {
+        RestAssured.given().header("X-Forwarded-For", "1.1.1.1, 2.2.2.2").get("/forward").then()
+                .body(Matchers.containsString("1.1.1.1"))
+                .body(Matchers.not(Matchers.containsString("2.2.2.2")));
+    }
+
 }

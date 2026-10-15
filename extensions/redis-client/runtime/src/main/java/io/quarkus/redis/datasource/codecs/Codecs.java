@@ -1,6 +1,5 @@
 package io.quarkus.redis.datasource.codecs;
 
-import java.io.IOException;
 import java.lang.reflect.Type;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
@@ -8,12 +7,11 @@ import java.util.Objects;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.stream.Stream;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import io.quarkus.vertx.runtime.jackson.QuarkusJacksonJsonCodec;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.json.Json;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.ObjectMapper;
 
 public class Codecs {
 
@@ -82,7 +80,7 @@ public class Codecs {
                 } else {
                     return mapper.readValue(payload, type);
                 }
-            } catch (IOException e) {
+            } catch (Exception e) {
                 throw new RuntimeException(e);
             }
         }

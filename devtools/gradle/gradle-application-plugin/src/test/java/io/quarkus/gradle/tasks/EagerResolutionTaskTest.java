@@ -10,21 +10,18 @@ import java.io.IOException;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.util.Map;
 import java.util.stream.Stream;
 
 import org.apache.commons.io.FileUtils;
 import org.gradle.testkit.runner.BuildResult;
-import org.gradle.testkit.runner.GradleRunner;
-import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
-public class EagerResolutionTaskTest {
+import io.quarkus.gradle.testing.BaseGradleTest;
 
-    @TempDir
-    Path testProjectDir;
+public class EagerResolutionTaskTest extends BaseGradleTest {
 
     private static Stream<String> tasksToTest() {
         return Stream.of(
@@ -67,16 +64,7 @@ public class EagerResolutionTaskTest {
             e.printStackTrace();
         }
 
-        BuildResult firstBuild = buildResult(taskName);
+        BuildResult firstBuild = buildResult(Map.of(), taskName);
         assertEquals(SUCCESS, firstBuild.task(":quarkusGenerateCode").getOutcome());
-
-    }
-
-    private BuildResult buildResult(String task) {
-        return GradleRunner.create()
-                .withPluginClasspath()
-                .withProjectDir(testProjectDir.toFile())
-                .withArguments(task, "--info", "--stacktrace", "--build-cache")
-                .build();
     }
 }

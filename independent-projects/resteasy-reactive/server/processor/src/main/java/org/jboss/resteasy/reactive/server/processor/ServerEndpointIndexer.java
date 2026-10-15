@@ -44,6 +44,7 @@ import java.util.function.Supplier;
 import java.util.regex.PatternSyntaxException;
 
 import jakarta.enterprise.inject.spi.DeploymentException;
+import jakarta.ws.rs.core.EntityPart;
 import jakarta.ws.rs.core.MultivaluedMap;
 import jakarta.ws.rs.core.PathSegment;
 
@@ -76,6 +77,7 @@ import org.jboss.resteasy.reactive.server.core.parameters.converters.LoadedParam
 import org.jboss.resteasy.reactive.server.core.parameters.converters.LocalDateParamConverter;
 import org.jboss.resteasy.reactive.server.core.parameters.converters.LocalDateTimeParamConverter;
 import org.jboss.resteasy.reactive.server.core.parameters.converters.LocalTimeParamConverter;
+import org.jboss.resteasy.reactive.server.core.parameters.converters.MultivaluedMapConverter;
 import org.jboss.resteasy.reactive.server.core.parameters.converters.NoopParameterConverter;
 import org.jboss.resteasy.reactive.server.core.parameters.converters.OffsetDateTimeParamConverter;
 import org.jboss.resteasy.reactive.server.core.parameters.converters.OffsetTimeParamConverter;
@@ -392,7 +394,7 @@ public class ServerEndpointIndexer
                 continue;
             }
             Map<DotName, AnnotationInstance> annotations = new HashMap<>();
-            for (AnnotationInstance i : field.annotations()) {
+            for (AnnotationInstance i : getAnnotationStore().getAnnotations(field)) {
                 annotations.put(i.name(), i);
             }
             ServerIndexedParameter result = extractParameterInfo(currentClassInfo, actualEndpointInfo, null, existingConverters,
@@ -425,8 +427,8 @@ public class ServerEndpointIndexer
 
                 if (SUPPORTED_MULTIPART_FILE_TYPES.contains(field.type().name())) {
                     String name = field.name();
-                    AnnotationInstance restForm = field.annotation(ResteasyReactiveDotNames.REST_FORM_PARAM);
-                    AnnotationInstance formParam = field.annotation(ResteasyReactiveDotNames.FORM_PARAM);
+                    AnnotationInstance restForm = annotations.get(ResteasyReactiveDotNames.REST_FORM_PARAM);
+                    AnnotationInstance formParam = annotations.get(ResteasyReactiveDotNames.FORM_PARAM);
                     if (restForm != null) {
                         AnnotationValue value = restForm.value();
                         if (value != null) {
@@ -488,7 +490,8 @@ public class ServerEndpointIndexer
                 elementType, declaredType, declaredTypes.getDeclaredUnresolvedType(),
                 type, single, signature,
                 converter, defaultValue, parameterResult.isObtainedAsCollection(), parameterResult.isOptional(), encoded,
-                parameterResult.getCustomParameterExtractor(), mimeType, parameterResult.getSeparator());
+                parameterResult.getCustomParameterExtractor(), mimeType, parameterResult.getSeparator(),
+                parameterResult.getRestQueryMap(), parameterResult.getRestHeaderMap());
     }
 
     @Override
@@ -552,6 +555,14 @@ public class ServerEndpointIndexer
         ParameterConverterSupplier converter = extractConverter(elementType, index,
                 existingConverters, errorLocation, hasRuntimeConverters, builder.getAnns(), currentMethodInfo);
         builder.setConverter(new SetConverter.SetSupplier(converter));
+    }
+
+    @Override
+    protected void handleMapParam(Map<String, String> existingConverters, String errorLocation, boolean hasRuntimeConverters,
+            ServerIndexedParameter builder, String elementType, MethodInfo currentMethodInfo) {
+        ParameterConverterSupplier converter = extractConverter(elementType, index,
+                existingConverters, errorLocation, hasRuntimeConverters, builder.getAnns(), currentMethodInfo);
+        builder.setConverter(new MultivaluedMapConverter.MultivaluedMapSupplier(converter));
     }
 
     @Override
@@ -662,7 +673,7 @@ public class ServerEndpointIndexer
             return;
         }
         for (MethodInfo method : currentClassInfo.methods()) {
-            for (AnnotationInstance annotation : method.annotations()) {
+            for (AnnotationInstance annotation : getAnnotationStore().getAnnotations(method)) {
                 if (annotation.target().kind() == AnnotationTarget.Kind.METHOD) {
                     for (DotName annotationForField : JAX_RS_ANNOTATIONS_FOR_FIELDS) {
                         if (annotation.name().equals(annotationForField)) {
@@ -717,7 +728,8 @@ public class ServerEndpointIndexer
         } else if (elementType.equals(FileUpload.class.getName())
                 || elementType.equals(Path.class.getName())
                 || elementType.equals(File.class.getName())
-                || elementType.equals(InputStream.class.getName())) {
+                || elementType.equals(InputStream.class.getName())
+                || elementType.equals(EntityPart.class.getName())) {
             // this is handled by MultipartFormParamExtractor
             return null;
         } else {

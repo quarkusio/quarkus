@@ -10,6 +10,7 @@ import java.util.Optional;
 import java.util.Set;
 
 import io.quarkus.builder.item.MultiBuildItem;
+import io.quarkus.runtime.util.Reason;
 
 /**
  * Requests the creation of a (static) Hibernate ORM persistence unit that is <em>not</em> declared in
@@ -24,14 +25,18 @@ import io.quarkus.builder.item.MultiBuildItem;
 public final class AdditionalPersistenceUnitBuildItem extends MultiBuildItem {
 
     private final String persistenceUnitName;
+    private final Reason reason;
     private final Optional<String> dataSourceName;
+    private final Optional<String> explicitDialect;
     private final Set<String> managedClassNames;
     private final Set<String> mappingFileNames;
     private final Map<String, String> properties;
 
     private AdditionalPersistenceUnitBuildItem(Builder builder) {
         this.persistenceUnitName = builder.persistenceUnitName;
+        this.reason = builder.reason;
         this.dataSourceName = builder.dataSourceName;
+        this.explicitDialect = builder.explicitDialect;
         this.managedClassNames = Collections.unmodifiableSet(new LinkedHashSet<>(builder.managedClassNames));
         this.mappingFileNames = Collections.unmodifiableSet(new LinkedHashSet<>(builder.mappingFileNames));
         this.properties = Collections.unmodifiableMap(new LinkedHashMap<>(builder.properties));
@@ -41,8 +46,16 @@ public final class AdditionalPersistenceUnitBuildItem extends MultiBuildItem {
         return persistenceUnitName;
     }
 
+    public Reason getReason() {
+        return reason;
+    }
+
     public Optional<String> getDataSourceName() {
         return dataSourceName;
+    }
+
+    public Optional<String> getExplicitDialect() {
+        return explicitDialect;
     }
 
     public Set<String> getManagedClassNames() {
@@ -57,24 +70,36 @@ public final class AdditionalPersistenceUnitBuildItem extends MultiBuildItem {
         return properties;
     }
 
+    /**
+     * @deprecated Use {@link #builder(String, Reason)} instead, so that PU creation can be traced to its original reason.
+     */
+    @Deprecated
     public static Builder builder(String persistenceUnitName) {
-        return new Builder(persistenceUnitName);
+        return builder(persistenceUnitName, new Reason(AdditionalPersistenceUnitBuildItem.class.getSimpleName()));
+    }
+
+    public static Builder builder(String persistenceUnitName, Reason reason) {
+        return new Builder(persistenceUnitName, reason);
     }
 
     public static final class Builder {
 
         private final String persistenceUnitName;
+        private final Reason reason;
         private Optional<String> dataSourceName = Optional.empty();
+        private Optional<String> explicitDialect = Optional.empty();
         private final Set<String> managedClassNames = new LinkedHashSet<>();
         private final Set<String> mappingFileNames = new LinkedHashSet<>();
         private final Map<String, String> properties = new LinkedHashMap<>();
 
-        private Builder(String persistenceUnitName) {
+        private Builder(String persistenceUnitName, Reason reason) {
             Objects.requireNonNull(persistenceUnitName, "persistenceUnitName must not be null");
+            Objects.requireNonNull(reason, "reason must not be null");
             if (persistenceUnitName.isBlank()) {
                 throw new IllegalArgumentException("persistenceUnitName must not be blank");
             }
             this.persistenceUnitName = persistenceUnitName;
+            this.reason = reason;
         }
 
         /**
@@ -86,6 +111,18 @@ public final class AdditionalPersistenceUnitBuildItem extends MultiBuildItem {
          */
         public Builder dataSourceName(String dataSourceName) {
             this.dataSourceName = Optional.ofNullable(dataSourceName);
+            return this;
+        }
+
+        /**
+         * Sets the Hibernate ORM dialect for this persistence unit. When not set, the dialect is auto-detected
+         * from the datasource's database kind.
+         *
+         * @param dialect The fully-qualified class name of the Hibernate dialect.
+         * @return This builder.
+         */
+        public Builder dialect(String dialect) {
+            this.explicitDialect = Optional.ofNullable(dialect);
             return this;
         }
 

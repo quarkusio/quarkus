@@ -17,6 +17,8 @@ import java.util.concurrent.ExecutionException;
 import java.util.zip.DeflaterOutputStream;
 import java.util.zip.GZIPOutputStream;
 
+import org.xerial.snappy.SnappyFramedOutputStream;
+
 import com.aayushatharva.brotli4j.Brotli4jLoader;
 import com.aayushatharva.brotli4j.encoder.BrotliOutputStream;
 
@@ -24,6 +26,7 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.handler.codec.compression.BrotliDecoder;
+import io.netty.handler.codec.compression.SnappyFrameDecoder;
 import io.netty.handler.codec.compression.ZlibWrapper;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
@@ -180,6 +183,13 @@ public class Testflow {
                 throw new RuntimeException("Deflate compression failed", e);
             }
             return Buffer.buffer(byteStream.toByteArray());
+        } else if ("snappy".equalsIgnoreCase(algorithm)) {
+            try (SnappyFramedOutputStream snappyStream = new SnappyFramedOutputStream(byteStream)) {
+                snappyStream.write(payload.getBytes(StandardCharsets.UTF_8));
+            } catch (IOException e) {
+                throw new RuntimeException("Snappy compression failed", e);
+            }
+            return Buffer.buffer(byteStream.toByteArray());
         } else {
             throw new IllegalArgumentException("Unsupported encoding: " + algorithm);
         }
@@ -194,6 +204,8 @@ public class Testflow {
                 channel = new EmbeddedChannel(newZlibDecoder(ZlibWrapper.ZLIB, 0));
             } else if ("br".equalsIgnoreCase(algorithm)) {
                 channel = new EmbeddedChannel(new BrotliDecoder());
+            } else if ("snappy".equalsIgnoreCase(algorithm)) {
+                channel = new EmbeddedChannel(new SnappyFrameDecoder());
             } else {
                 throw new RuntimeException("Unexpected compression used by server: " + algorithm);
             }

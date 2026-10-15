@@ -25,6 +25,7 @@ import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
 import io.quarkus.deployment.builditem.GeneratedServiceProviderBuildItem;
 import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ConstantBootstrapBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveMethodBuildItem;
 import io.quarkus.gizmo2.ClassOutput;
@@ -39,6 +40,7 @@ public class ConfigurationPropertiesBuildStep {
             Capabilities capabilities,
             BuildProducer<GeneratedClassBuildItem> generatedClasses,
             BuildProducer<GeneratedResourceBuildItem> generatedResources,
+            BuildProducer<ConstantBootstrapBuildItem> constantBootstraps,
             BuildProducer<GeneratedServiceProviderBuildItem> generatedServiceProviders,
             BuildProducer<GeneratedBeanBuildItem> generatedBeans,
             BuildProducer<RunTimeConfigurationDefaultBuildItem> defaultConfigValues,
@@ -51,7 +53,7 @@ public class ConfigurationPropertiesBuildStep {
 
         ClassOutput beansClassOutput = new GeneratedBeanGizmo2Adaptor(generatedBeans);
         ClassOutput nonBeansClassOutput = new GeneratedClassGizmo2Adaptor(generatedClasses, generatedResources,
-                generatedServiceProviders, true);
+                generatedServiceProviders, constantBootstraps, true);
 
         /*
          * We generate CDI producer bean containing one method for each of the @ConfigProperties

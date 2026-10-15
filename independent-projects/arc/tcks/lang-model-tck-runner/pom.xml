@@ -32,8 +32,8 @@
             <artifactId>arc-arquillian</artifactId>
         </dependency>
         <dependency>
-            <groupId>jakarta.enterprise</groupId>
-            <artifactId>cdi-tck-lang-model</artifactId>
+            <groupId>jakarta.cdi</groupId>
+            <artifactId>jakarta.cdi-tck-lang-model</artifactId>
             <version>${version.cdi-tck}</version>
         </dependency>
         <dependency>

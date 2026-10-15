@@ -6,7 +6,7 @@ metadata:
     - "podman"
     - "container"
     - "image"
-  guide: "https://quarkus.io/guides/container-image"
+  guide: "https://quarkus.io/guides/container-image#podman"
   categories:
     - "cloud"
   status: "stable"

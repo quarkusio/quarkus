@@ -34,8 +34,6 @@ import jakarta.persistence.PersistenceUnitTransactionType;
 import org.hibernate.boot.CacheRegionDefinition;
 import org.hibernate.boot.MetadataBuilder;
 import org.hibernate.boot.MetadataSources;
-import org.hibernate.boot.archive.scan.internal.StandardScanOptions;
-import org.hibernate.boot.archive.scan.spi.Scanner;
 import org.hibernate.boot.beanvalidation.BeanValidationIntegrator;
 import org.hibernate.boot.internal.MetadataImpl;
 import org.hibernate.boot.model.FunctionContributor;
@@ -52,7 +50,6 @@ import org.hibernate.dialect.Dialect;
 import org.hibernate.engine.jdbc.dialect.spi.DialectFactory;
 import org.hibernate.integrator.spi.Integrator;
 import org.hibernate.internal.util.StringHelper;
-import org.hibernate.jpa.boot.internal.StandardJpaScanEnvironmentImpl;
 import org.hibernate.jpa.boot.spi.JpaSettings;
 import org.hibernate.jpa.boot.spi.PersistenceUnitDescriptor;
 import org.hibernate.jpa.boot.spi.TypeContributorList;
@@ -72,7 +69,6 @@ import io.quarkus.hibernate.orm.runtime.IntegrationSettings;
 import io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil;
 import io.quarkus.hibernate.orm.runtime.boot.xml.RecordableXmlMapping;
 import io.quarkus.hibernate.orm.runtime.integration.HibernateOrmIntegrationStaticDescriptor;
-import io.quarkus.hibernate.orm.runtime.integration.HibernateOrmIntegrationStaticInitListener;
 import io.quarkus.hibernate.orm.runtime.migration.MultiTenancyStrategy;
 import io.quarkus.hibernate.orm.runtime.proxies.PreGeneratedProxies;
 import io.quarkus.hibernate.orm.runtime.proxies.ProxyDefinitions;
@@ -80,6 +76,7 @@ import io.quarkus.hibernate.orm.runtime.recording.PrevalidatedQuarkusMetadata;
 import io.quarkus.hibernate.orm.runtime.recording.RecordableBootstrap;
 import io.quarkus.hibernate.orm.runtime.recording.RecordedState;
 import io.quarkus.hibernate.orm.runtime.service.QuarkusStaticInitDialectFactory;
+import io.quarkus.hibernate.orm.runtime.spi.HibernateOrmIntegrationStaticInitListener;
 import io.quarkus.hibernate.orm.runtime.tenant.HibernateMultiTenantConnectionProvider;
 
 /**
@@ -117,7 +114,7 @@ public class FastBootMetadataBuilder {
     private final List<HibernateOrmIntegrationStaticDescriptor> integrationStaticDescriptors;
 
     @SuppressWarnings("unchecked")
-    public FastBootMetadataBuilder(final QuarkusPersistenceUnitDefinition puDefinition, Scanner scanner,
+    public FastBootMetadataBuilder(final QuarkusPersistenceUnitDefinition puDefinition,
             Collection<Class<? extends Integrator>> additionalIntegrators, PreGeneratedProxies preGeneratedProxies) {
         this.persistenceUnit = puDefinition.getPersistenceUnitDescriptor();
         this.isReactive = puDefinition.isReactive();
@@ -175,19 +172,23 @@ public class FastBootMetadataBuilder {
                 standardServiceRegistry.getService(ChangesetCoordinator.class)));
 
         final MetadataSources metadataSources = new MetadataSources(ssrBuilder.getBootstrapServiceRegistry());
-        // No need to populate annotatedClassNames/annotatedPackages: they are populated through scanning
-        // XML mappings, however, cannot be contributed through the scanner,
-        // which only allows specifying mappings as files/resources,
-        // and we really don't want any XML parsing here...
+        // As of ORM 8.0 the container is responsible for populating annotatedClassNames/annotatedPackages
+        // https://docs.hibernate.org/orm/8.0/migration-guide/#scanning
+        for (String className : persistenceUnit.getManagedClassNames()) {
+            metadataSources.addAnnotatedClassName(className);
+        }
+
+        QuarkusPersistenceUnitDescriptor quarkusPU = (QuarkusPersistenceUnitDescriptor) persistenceUnit;
+        for (String packageName : quarkusPU.getManagedPackageNames()) {
+            metadataSources.addPackage(packageName);
+        }
+
         for (RecordableXmlMapping mapping : puDefinition.getXmlMappings()) {
             metadataSources.addXmlBinding(mapping.toHibernateOrmBinding());
         }
 
         this.metamodelBuilder = (MetadataBuilderImplementor) metadataSources
                 .getMetadataBuilder(standardServiceRegistry);
-        if (scanner != null) {
-            this.metamodelBuilder.applyScanner(scanner);
-        }
         populate(metamodelBuilder, mergedSettings.cacheRegionDefinitions);
 
         this.managedResources = MetadataBuildingProcess.prepare(metadataSources,
@@ -408,15 +409,6 @@ public class FastBootMetadataBuilder {
             }
         }
 
-        // If there's any mapping lib that we can work with available we'll set the default mapper:
-        if (puDefinition.getJsonMapperCreator().isPresent()) {
-            cfg.put(AvailableSettings.JSON_FORMAT_MAPPER, puDefinition.getJsonMapperCreator().get().create());
-        }
-        // If there's any mapping lib that we can work with available we'll set the default mapper:
-        if (puDefinition.getXmlMapperCreator().isPresent()) {
-            cfg.put(AvailableSettings.XML_FORMAT_MAPPER, puDefinition.getXmlMapperCreator().get().create());
-        }
-
         return mergedSettings;
     }
 
@@ -475,6 +467,7 @@ public class FastBootMetadataBuilder {
                 fullMeta.getSqlResultSetMappingMap(), //TODO might contain NativeSQLQueryReturn (as namedNativeQueryMap above)
                 fullMeta.getNamedEntityGraphs(), //TODO //reference to *annotation* instance ! FIXME or ignore feature?
                 fullMeta.getSqlFunctionMap(), //ok
+                fullMeta.getPersistenceUnitLifecycleCallbackDefinitions(),
                 fullMeta.getDatabase(), //Cleaned up: used to include references to MetadataBuildingOptions, etc..
                 fullMeta.getBootstrapContext() //FIXME WHOA!
         );
@@ -635,11 +628,6 @@ public class FastBootMetadataBuilder {
     protected void populate(MetadataBuilder metamodelBuilder, List<CacheRegionDefinition> cacheRegionDefinitions) {
 
         ((MetadataBuilderImplementor) metamodelBuilder).getBootstrapContext().markAsJpaBootstrap();
-
-        metamodelBuilder.applyScanEnvironment(new StandardJpaScanEnvironmentImpl(persistenceUnit));
-        metamodelBuilder.applyScanOptions(new StandardScanOptions(
-                (String) buildTimeSettings.get(AvailableSettings.SCANNER_DISCOVERY),
-                persistenceUnit.isExcludeUnlistedClasses()));
 
         if (cacheRegionDefinitions != null) {
             cacheRegionDefinitions.forEach(metamodelBuilder::applyCacheRegionDefinition);

@@ -4,8 +4,9 @@ import io.quarkus.agroal.spi.JdbcDriverBuildItem;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.datasource.common.runtime.DatabaseKind;
+import io.quarkus.datasource.deployment.spi.DatabaseVersionLoader;
 import io.quarkus.datasource.deployment.spi.DefaultDataSourceDbKindBuildItem;
-import io.quarkus.datasource.deployment.spi.DevServicesDatasourceConfigurationHandlerBuildItem;
+import io.quarkus.datasource.deployment.spi.DefaultDataSourceDbVersionBuildItem;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.Feature;
@@ -18,6 +19,7 @@ import io.quarkus.deployment.builditem.SslNativeConfigBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBundleBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
+import io.quarkus.devservices.datasource.common.DevServicesDatasourceConfigurationHandlerBuildItem;
 import io.quarkus.jdbc.mssql.runtime.MsSQLAgroalConnectionConfigurer;
 import io.quarkus.jdbc.mssql.runtime.MsSQLServiceBindingConverter;
 
@@ -71,12 +73,15 @@ public class MsSQLProcessor {
     @BuildStep
     void registerServiceBinding(Capabilities capabilities,
             BuildProducer<ServiceProviderBuildItem> serviceProvider,
-            BuildProducer<DefaultDataSourceDbKindBuildItem> dbKind) {
+            BuildProducer<DefaultDataSourceDbKindBuildItem> dbKind,
+            BuildProducer<DefaultDataSourceDbVersionBuildItem> dbVersion) {
         if (capabilities.isPresent(Capability.KUBERNETES_SERVICE_BINDING)) {
             serviceProvider.produce(
                     new ServiceProviderBuildItem("io.quarkus.kubernetes.service.binding.runtime.ServiceBindingConverter",
                             MsSQLServiceBindingConverter.class.getName()));
         }
         dbKind.produce(new DefaultDataSourceDbKindBuildItem(DatabaseKind.MSSQL));
+        dbVersion.produce(new DefaultDataSourceDbVersionBuildItem(DatabaseKind.MSSQL,
+                DatabaseVersionLoader.loadDefaultVersion("mssql")));
     }
 }

@@ -201,11 +201,6 @@ public class VertxCoreProducerTest {
         }
 
         @Override
-        public int workerPoolSize() {
-            return 20;
-        }
-
-        @Override
         public Duration maxWorkerExecuteTime() {
             return Duration.ofSeconds(1);
         }

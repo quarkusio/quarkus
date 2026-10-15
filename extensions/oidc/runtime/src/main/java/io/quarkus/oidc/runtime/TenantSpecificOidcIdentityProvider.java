@@ -5,8 +5,9 @@ import static io.quarkus.vertx.http.runtime.security.HttpSecurityUtils.getRoutin
 import java.util.Map;
 import java.util.function.Supplier;
 
-import io.quarkus.arc.Arc;
+import io.quarkus.arc.InjectableInstance;
 import io.quarkus.oidc.AccessTokenCredential;
+import io.quarkus.oidc.DPoPNonceProvider;
 import io.quarkus.oidc.OIDCException;
 import io.quarkus.oidc.TenantIdentityProvider;
 import io.quarkus.security.identity.AuthenticationRequestContext;
@@ -23,15 +24,10 @@ final class TenantSpecificOidcIdentityProvider extends OidcIdentityProvider
     private final BlockingSecurityExecutor blockingExecutor;
 
     TenantSpecificOidcIdentityProvider(String tenantId, DefaultTenantConfigResolver resolver,
-            BlockingSecurityExecutor blockingExecutor) {
-        super(resolver, blockingExecutor);
+            BlockingSecurityExecutor blockingExecutor, InjectableInstance<DPoPNonceProvider> dPoPNonceProvider) {
+        super(resolver, blockingExecutor, dPoPNonceProvider);
         this.blockingExecutor = blockingExecutor;
         this.tenantId = tenantId;
-    }
-
-    TenantSpecificOidcIdentityProvider(String tenantId) {
-        this(tenantId, Arc.container().instance(DefaultTenantConfigResolver.class).get(),
-                Arc.container().instance(BlockingSecurityExecutor.class).get());
     }
 
     @Override

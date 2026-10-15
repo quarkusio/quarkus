@@ -25,6 +25,12 @@ public interface RuntimeConfiguration {
 
         interface MultiPart {
             List<String> fileContentTypes();
+
+            /**
+             * File parts up to this size are kept in memory rather than written to a file; {@code 0} writes every
+             * file part to a file
+             */
+            long fileSizeThreshold();
         }
     }
 
@@ -34,5 +40,15 @@ public interface RuntimeConfiguration {
         long maxFormAttributeSize();
 
         int maxParameters();
+
+        int maxMultipartPartHeaderSize();
+
+        int maxMultipartHeaderCount();
+
+        /**
+         * The maximum size of a single file part of a multipart request; empty means that file parts are only bounded
+         * by {@link #maxBodySize()}
+         */
+        OptionalLong maxMultipartFileSize();
     }
 }

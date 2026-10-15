@@ -26,6 +26,7 @@ import io.smallrye.mutiny.Uni;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.auth.User;
 import io.vertx.ext.web.RoutingContext;
+import io.vertx.ext.web.impl.UserContextInternal;
 
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
@@ -137,8 +138,28 @@ class QuarkusHttpUserTest {
     }
 
     @Test
+    void setUserDelegatesToUserContextInternal() {
+        UserContextInternal userContext = mock(UserContextInternal.class);
+        when(routingContext.userContext()).thenReturn(userContext);
+
+        QuarkusHttpUser.setUser(routingContext, user);
+
+        verify(userContext).setUser(user);
+    }
+
+    @Test
+    void setUserWithNullClearsUser() {
+        UserContextInternal userContext = mock(UserContextInternal.class);
+        when(routingContext.userContext()).thenReturn(userContext);
+
+        QuarkusHttpUser.setUser(routingContext, null);
+
+        verify(userContext).setUser(null);
+    }
+
+    @Test
     void setIdentityWithSecurityIdentitySetsUserAndDeferredKey() {
-        io.vertx.ext.web.impl.UserContextInternal userContext = mock(io.vertx.ext.web.impl.UserContextInternal.class);
+        UserContextInternal userContext = mock(UserContextInternal.class);
         when(routingContext.userContext()).thenReturn(userContext);
 
         SecurityIdentity result = QuarkusHttpUser.setIdentity(securityIdentity, routingContext);

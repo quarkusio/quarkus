@@ -5,12 +5,12 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 
-import io.quarkus.devui.spi.AbstractDevUIBuildItem;
+import io.quarkus.devjsonrpc.spi.AbstractDevBuildItem;
 
 /**
  * Add an action to the Dev UI Workspace.
  */
-public final class WorkspaceActionBuildItem extends AbstractDevUIBuildItem {
+public final class WorkspaceActionBuildItem extends AbstractDevBuildItem {
     private final List<ActionBuilder> actionBuilders = new ArrayList<>();
 
     public WorkspaceActionBuildItem() {

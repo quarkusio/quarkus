@@ -5,7 +5,6 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Extension for Spring Data REST
 include::_attributes.adoc[]
-:categories: compatibility
 :summary: Spring Data REST simplifies the creation of CRUD applications based on our Spring Data compatibility layer.
 :topics: spring,data,hibernate-orm,jpa,rest,compatibility
 :extensions: io.quarkus:quarkus-spring-data-rest

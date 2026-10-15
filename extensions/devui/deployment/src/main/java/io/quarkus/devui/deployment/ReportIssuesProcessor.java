@@ -1,8 +1,8 @@
 package io.quarkus.devui.deployment;
 
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.devjsonrpc.spi.JsonRPCProvidersBuildItem;
 import io.quarkus.devui.runtime.reportissues.ReportIssuesJsonRPCService;
-import io.quarkus.devui.spi.JsonRPCProvidersBuildItem;
 
 public class ReportIssuesProcessor {
     @BuildStep

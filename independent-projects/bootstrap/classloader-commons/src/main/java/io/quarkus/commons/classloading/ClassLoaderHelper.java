@@ -43,4 +43,16 @@ public final class ClassLoaderHelper {
     public static boolean isInJdkPackage(String name) {
         return name.startsWith(JAVA) || name.startsWith(JDK_INTERNAL) || name.startsWith(SUN_MISC);
     }
+
+    /**
+     * Returns {@code true} if the resource name represents a regular class file,
+     * excluding {@code module-info.class} and {@code package-info.class}.
+     *
+     * @param resourceName the JAR entry path, e.g. {@code com/example/Foo.class}
+     */
+    public static boolean isClassEntry(String resourceName) {
+        return resourceName.endsWith(CLASS_SUFFIX)
+                && !resourceName.equals("module-info.class")
+                && !resourceName.endsWith("package-info.class");
+    }
 }

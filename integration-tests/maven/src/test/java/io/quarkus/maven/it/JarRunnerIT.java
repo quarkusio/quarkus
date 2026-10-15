@@ -487,6 +487,45 @@ public class JarRunnerIT extends MojoTestBase {
         }
     }
 
+    @Test
+    public void testMutableJarWithHibernateOrmInRemoteDevMode() throws Exception {
+        File testDir = initProject("projects/mutable-jar-hibernate-orm",
+                "projects/mutable-jar-hibernate-orm-remote-dev");
+        RunningInvoker running = new RunningInvoker(testDir, false);
+
+        MavenProcessInvocationResult result = running
+                .execute(List.of("package", "-DskipTests", "-Dquarkus.package.jar.type=mutable-jar",
+                        "-Dquarkus.analytics.disabled=true"), Map.of());
+        await().atMost(TestUtils.getDefaultTimeout(), TimeUnit.MINUTES)
+                .until(() -> result.getProcess() != null && !result.getProcess().isAlive());
+        assertThat(running.log()).containsIgnoringCase("BUILD SUCCESS");
+        running.stop();
+
+        Path runJar = testDir.toPath().toAbsolutePath().resolve(Paths.get("target/quarkus-app/quarkus-run.jar"));
+        assertThat(runJar).exists();
+
+        File output = new File(testDir, "target/output.log");
+        output.createNewFile();
+
+        ProcessBuilder processBuilder = doLaunch(runJar, output);
+        processBuilder.environment().put("QUARKUS_LAUNCH_DEVMODE", "true");
+        Process process = processBuilder.start();
+        try {
+            dumpFileContentOnFailure(() -> {
+                await()
+                        .pollDelay(1, TimeUnit.SECONDS)
+                        .atMost(TestUtils.getDefaultTimeout(), TimeUnit.MINUTES)
+                        .until(() -> devModeClient.getHttpResponse("/hello", 200));
+                return null;
+            }, output, ConditionTimeoutException.class);
+
+            String logs = FileUtils.readFileToString(output, "UTF-8");
+            assertThat(logs).contains("hibernate-orm");
+        } finally {
+            process.destroy();
+        }
+    }
+
     private void assertThatMutableFastJarWorks(String targetDirSuffix, String providersDir) throws Exception {
         File testDir = initProject("projects/classic",
                 "projects/project-classic-console-output-mutable-fast-jar" + targetDirSuffix);

@@ -3,7 +3,7 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= Testing Spring-style Applications in Quarkus
+= Testing Spring-style applications in Quarkus
 include::_attributes.adoc[]
 :categories: compatibility,testing
 :summary: Quarkus supports the @SpringBootTest annotation out of the box, letting Spring developers write tests in a familiar style while running on the Quarkus runtime.

@@ -4,6 +4,12 @@
 :quarkus-version: ${project.version}
 :quarkus-platform-groupid: io.quarkus.platform
 // .
+ifeval::["{quarkus-version}" == "999-SNAPSHOT"]
+:quarkus-branch: main
+endif::[]
+ifeval::["{quarkus-version}" != "999-SNAPSHOT"]
+:quarkus-branch: {quarkus-version}
+endif::[]
 :maven-version: ${proposed-maven-version}
 :graalvm-version: ${graal-community.version-for-documentation}
 :graalvm-docs-version: ${graal-community.tag-for-documentation}
@@ -11,12 +17,18 @@
 :mandrel-flavor: ${mandrel.image-tag-for-documentation}
 :surefire-version: ${version.surefire.plugin}
 :gradle-version: ${gradle-wrapper.version}
+:db2-default-version: ${db2.default.version}
 :db2-image: ${db2.image}
+:mariadb-default-version: ${mariadb.default.version}
 :mariadb-image: ${mariadb.image}
+:mssql-default-version: ${mssql.default.version}
 :mssql-image: ${mssql.image}
 :mssql-image-aarch64: ${mssql.image.aarch64}
+:mysql-default-version: ${mysql.default.version}
 :mysql-image: ${mysql.image}
+:oracle-default-version: ${oracle.default.version}
 :oracle-image: ${oracle.image}
+:postgres-default-version: ${postgres.default.version}
 :postgres-image: ${postgres.image}
 :elasticsearch-version: ${elasticsearch-server.version}
 :elasticsearch-image: ${elasticsearch.image}
@@ -86,7 +98,6 @@
 :vault-datasource-guide: https://docs.quarkiverse.io/quarkus-vault/dev/vault-datasource.html
 :micrometer-registry-guide: https://docs.quarkiverse.io/quarkus-micrometer-registry/dev/index.html
 :quarkus-migration-guide: https://github.com/quarkusio/quarkus/wiki/Migration-Guides[Migration Guides]
-:quarkus-tls-registry-reference-guide: TLS registry reference
 // .
 :create-app-group-id: org.acme
 :create-cli-group-id: {create-app-group-id}

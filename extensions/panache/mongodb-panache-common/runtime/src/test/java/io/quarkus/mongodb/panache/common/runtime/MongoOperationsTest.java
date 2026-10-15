@@ -2,6 +2,7 @@ package io.quarkus.mongodb.panache.common.runtime;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -40,6 +41,7 @@ import com.mongodb.client.model.Filters;
 
 import io.quarkus.mongodb.panache.common.PanacheUpdate;
 import io.quarkus.panache.common.Parameters;
+import io.quarkus.panache.common.exception.PanacheQueryException;
 
 class MongoOperationsTest {
     private final MongoOperations<Object, PanacheUpdate> operations = new MongoOperations() {
@@ -651,6 +653,59 @@ class MongoOperationsTest {
         assertBsonEquals(
                 new org.bson.Document("$set", Filters.eq("field", "a value")),
                 update);
+
+        // enhanced update of several fields by index
+        update = operations.bindUpdate(Object.class, "field = ?1 and field2 = ?2 and field3 = ?3",
+                new Object[] { "a value", "another value", 3 });
+        assertBsonEquals(
+                new org.bson.Document("$set", new org.bson.Document("field", "a value")
+                        .append("field2", "another value")
+                        .append("field3", 3)),
+                update);
+
+        // enhanced update of several fields by name
+        update = operations.bindUpdate(Object.class, "field = :field and field2 = :field2",
+                Parameters.with("field", "a value").and("field2", "another value").map());
+        assertBsonEquals(
+                new org.bson.Document("$set", new org.bson.Document("field", "a value")
+                        .append("field2", "another value")),
+                update);
+
+        // enhanced update of several fields with a replaced property name
+        update = operations.bindUpdate(DemoObj.class, "property = ?1 and field = ?2",
+                new Object[] { "a value", "another value" });
+        assertBsonEquals(
+                new org.bson.Document("$set", new org.bson.Document("value", "a value")
+                        .append("field", "another value")),
+                update);
+
+        // native update of several fields by index
+        update = operations.bindUpdate(Object.class, "{'field': ?1, 'field2': ?2}",
+                new Object[] { "a value", "another value" });
+        assertBsonEquals(
+                new org.bson.Document("$set", new org.bson.Document("field", "a value")
+                        .append("field2", "another value")),
+                update);
+
+        // native update of several fields by name
+        update = operations.bindUpdate(Object.class, "{'firstname': :firstname, 'status': :status}",
+                Parameters.with("firstname", "a value").and("status", "another value").map());
+        assertBsonEquals(
+                new org.bson.Document("$set", new org.bson.Document("firstname", "a value")
+                        .append("status", "another value")),
+                update);
+
+        // only assignments can be combined in an update
+        assertThrows(PanacheQueryException.class,
+                () -> operations.bindUpdate(Object.class, "field = ?1 and field2 > ?2", new Object[] { "a value", 2 }));
+
+        // the fields to set of an enhanced update are separated by 'and', not by commas
+        assertThrows(PanacheQueryException.class,
+                () -> operations.bindUpdate(Object.class, "field = ?1, field2 = ?2", new Object[] { "a value", 2 }));
+
+        // nothing else can follow the fields to set
+        assertThrows(PanacheQueryException.class,
+                () -> operations.bindUpdate(Object.class, "field = ?1 where field2 = ?2", new Object[] { "a value", 2 }));
     }
 
     @Test

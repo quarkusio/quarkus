@@ -3,7 +3,7 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= HTTP/3 Reference
+= HTTP/3 reference
 include::_attributes.adoc[]
 :categories: web
 :summary: Enable HTTP/3 (QUIC) support in Quarkus for reduced latency and improved performance.

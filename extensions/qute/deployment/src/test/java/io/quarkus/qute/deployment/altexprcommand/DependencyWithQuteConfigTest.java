@@ -9,12 +9,12 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.qute.Template;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class DependencyWithQuteConfigTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot(root -> root.addAsResource(new StringAsset("Hello {name}!"), "templates/hello.html"))
             .withAdditionalDependency(dependency -> dependency
                     .addAsResource(new StringAsset("alt-expr-syntax = true"), "templates/.qute")

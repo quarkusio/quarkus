@@ -13,9 +13,19 @@ public class UdsClientResource {
     @RestClient
     UdsClient client;
 
+    @RestClient
+    UdsNoUrlClient noUrlClient;
+
     @GET
     @Produces(MediaType.TEXT_PLAIN)
     public String test() {
         return client.test();
+    }
+
+    @GET
+    @Path("/no-url")
+    @Produces(MediaType.TEXT_PLAIN)
+    public String testNoUrl() {
+        return noUrlClient.test();
     }
 }

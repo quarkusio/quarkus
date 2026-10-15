@@ -16,7 +16,7 @@ public abstract class AbstractSystemPropertyProxyWithAuthTest extends ProxyTestB
         return new QuarkusExtensionTest()
                 .withApplicationRoot(
                         jar -> jar.addClasses(Client1.class, Client2.class, Client3.class, ViaHeaderReturningResource.class))
-                .withConfigurationResource("system-props-proxy-test-application.properties");
+                .withConfigurationResource(applicationProperties);
     }
 
     @RestClient

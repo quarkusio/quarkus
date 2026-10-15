@@ -180,7 +180,19 @@ public class ReflectionValueResolver implements ValueResolver {
                 && !Modifier.isStatic(method.getModifiers())
                 && !method.getReturnType().equals(Void.TYPE)
                 && !method.isBridge()
-                && !Object.class.equals(method.getDeclaringClass());
+                && isSafe(method);
+    }
+
+    private static boolean isSafe(Method method) {
+        Class<?> declaringClass = method.getDeclaringClass();
+        return Object.class != declaringClass
+                && Class.class != declaringClass
+                && !ClassLoader.class.isAssignableFrom(declaringClass)
+                && !hasReflectPackage(declaringClass);
+    }
+
+    private static boolean hasReflectPackage(Class<?> declaringClass) {
+        return declaringClass.getPackage() != null && "java.lang.reflect".equals(declaringClass.getPackage().getName());
     }
 
     private static boolean isMethodProperty(Method method) {

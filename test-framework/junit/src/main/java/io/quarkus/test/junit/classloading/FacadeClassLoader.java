@@ -38,6 +38,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.platform.commons.support.AnnotationSupport;
 import org.junit.platform.commons.support.HierarchyTraversalMode;
+import org.junit.platform.launcher.PostDiscoveryFilter;
 
 import io.quarkus.bootstrap.app.CuratedApplication;
 import io.quarkus.bootstrap.app.StartupAction;
@@ -112,6 +113,8 @@ public final class FacadeClassLoader extends ClassLoader implements Closeable {
     private Class<? extends Annotation> extendWithAnnotation;
     private Class<? extends Annotation> registerExtensionAnnotation;
     private Class<? extends Annotation> testAnnotation;
+    // Null when the JUnit annotations could not be loaded, and so there cannot be QuarkusTests
+    private PostDiscoveryFilterEvaluator postDiscoveryFilterEvaluator;
 
     // TODO maybe refactor this into a ContinuousFacadeClassLoader subclass
     private final Map<String, Class<?>> profiles;
@@ -204,6 +207,7 @@ public final class FacadeClassLoader extends ClassLoader implements Closeable {
             nestedAnnotation = (Class<? extends Annotation>) annotationLoader
                     .loadClass(Nested.class.getName());
             testAnnotation = (Class<? extends Annotation>) annotationLoader.loadClass(Test.class.getName());
+            postDiscoveryFilterEvaluator = new PostDiscoveryFilterEvaluator(annotationLoader);
         } catch (ClassNotFoundException | NoSuchMethodException e) {
             // If QuarkusTest is not on the classpath, that's fine; it just means we definitely won't have QuarkusTests. That means we can bypass a whole bunch of logic.
             log.debug("Could not load annotations for FacadeClassLoader: " + e);
@@ -328,10 +332,12 @@ public final class FacadeClassLoader extends ClassLoader implements Closeable {
                         // Ideally we would check for every way of disabling a test, but we don't want to recreate the JUnit logic, so just do common ones that might be guarding classes with classloading or dev-service-starting issues
                         // That does mean our behaviour in this area is slightly inconsistent between annotations; for some we will augment before giving up and for some we won't
                         boolean isDisabled = AnnotationSupport.isAnnotated(inspectionClass, disabledAnnotation)
-                                || isDisabledOnOs(inspectionClass);
+                                || isDisabledOnOs(inspectionClass)
+                                || isExcludedByPostDiscoveryFilters(inspectionClass);
 
                         // If a whole test class has an @Disabled annotation, do not bother creating a quarkus app for it
                         // Pragmatically, this fixes a LinkageError in grpc-cli which only reproduces in CI, but it's also probably what users would expect
+                        // The same goes for a class whose tests are all going to be filtered out by JUnit tags, otherwise dev services get started for tests which never run, see https://github.com/quarkusio/quarkus/issues/54435
                         if (!isDisabled) {
                             // There are several ways a test could be identified as a QuarkusTest:
                             // A Quarkus Test could be annotated with @QuarkusTest or with @ExtendWith[... QuarkusTestExtension.class ] or @RegisterExtension (or the service loader mechanism could be used)
@@ -410,6 +416,30 @@ public final class FacadeClassLoader extends ClassLoader implements Closeable {
             }
         }
 
+    }
+
+    /**
+     * Tells this classloader about the post-discovery filters (typically tag inclusions and exclusions) of the JUnit
+     * request that is about to be discovered, so that no application is built for test classes those filters are going
+     * to exclude entirely.
+     */
+    public void setPostDiscoveryFilters(List<? extends PostDiscoveryFilter> filters) {
+        if (postDiscoveryFilterEvaluator != null) {
+            postDiscoveryFilterEvaluator.setFilters(filters);
+        }
+    }
+
+    private boolean isExcludedByPostDiscoveryFilters(Class<?> inspectionClass) {
+        if (postDiscoveryFilterEvaluator == null) {
+            return false;
+        }
+        boolean excluded = postDiscoveryFilterEvaluator.excludesEveryTestIn(inspectionClass);
+        if (excluded) {
+            log.debugf(
+                    "Not creating a Quarkus application for %s because JUnit's post-discovery filters exclude all of its tests",
+                    inspectionClass.getName());
+        }
+        return excluded;
     }
 
     private boolean isDisabledOnOs(Class<?> inspectionClass) {

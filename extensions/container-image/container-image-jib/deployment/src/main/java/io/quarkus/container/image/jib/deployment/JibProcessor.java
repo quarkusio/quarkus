@@ -61,6 +61,8 @@ import com.google.cloud.tools.jib.api.buildplan.Port;
 import com.google.cloud.tools.jib.configuration.BuildContext;
 import com.google.cloud.tools.jib.configuration.ImageConfiguration;
 import com.google.cloud.tools.jib.docker.CliDockerClient;
+import com.google.cloud.tools.jib.event.events.ProgressEvent;
+import com.google.cloud.tools.jib.event.progress.ProgressEventHandler;
 import com.google.cloud.tools.jib.frontend.CredentialRetrieverFactory;
 
 import io.quarkus.builder.Version;
@@ -296,6 +298,7 @@ public class JibProcessor {
                 log.log(toJBossLoggingLevel(e.getLevel()), e.getMessage());
             }
         });
+        containerizer.addEventHandler(ProgressEvent.class, new ProgressEventHandler(new JibProgressReporter(log)));
         containerizer.setAllowInsecureRegistries(containerImageConfig.insecure());
         containerizer.setAlwaysCacheBaseImage(jibConfig.alwaysCacheBaseImage());
         containerizer.setOfflineMode(jibConfig.offlineMode());

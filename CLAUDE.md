@@ -25,3 +25,9 @@ guidance before starting work:
   when preparing a pull request, writing commit messages, or choosing labels.
 - **Building docs** — Read `.agents/skills/building-docs/SKILL.md`
   when building, previewing, or testing documentation changes locally.
+- **Manage deprecations** — Read `.agents/skills/manage-deprecations/SKILL.md`
+  when removing code that has been deprecated for over 12 months, adding
+  `@Deprecated` annotations that were missed on companions of a deprecated
+  element, or applying a new deprecation the user requests.
+- **Converting recorders to services** — Read `.agents/skills/converting-recorders-to-services/SKILL.md`
+  when converting extensions from `@Record`/`@Recorder` to `ServiceRegistrar` services.

@@ -16,8 +16,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-
 import io.quarkus.redis.datasource.keys.KeyCommands;
 import io.quarkus.redis.datasource.value.GetExArgs;
 import io.quarkus.redis.datasource.value.SetArgs;
@@ -25,6 +23,7 @@ import io.quarkus.redis.datasource.value.ValueCommands;
 import io.quarkus.redis.runtime.datasource.BlockingRedisDataSourceImpl;
 import io.vertx.core.json.DecodeException;
 import io.vertx.core.json.Json;
+import tools.jackson.core.type.TypeReference;
 
 public class ValueCommandsTest extends DatasourceTestBase {
 

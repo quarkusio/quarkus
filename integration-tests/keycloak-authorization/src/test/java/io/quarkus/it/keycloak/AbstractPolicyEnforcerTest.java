@@ -83,6 +83,22 @@ public abstract class AbstractPolicyEnforcerTest {
     }
 
     @Test
+    public void testUserHasAdminRoleServiceTenantWithEncodedMatrix() {
+        // GHSA-qcxp-gm7m-4j5v: encoded semicolon %3B must be normalized by the policy enforcer.
+        // Unauthorized users get 403 (enforcer matches path, correctly denies).
+        // Admin gets 404 (enforcer matches and allows, but JAX-RS router rejects the encoded path).
+        // Without the fix, ALL users would get 403 because the enforcer fails to match the path.
+        assureGetPath("/api-permission-tenant%3B", 403, getAccessToken("alice"), null);
+        assureGetPath("/api-permission-tenant%3Ba", 403, getAccessToken("alice"), null);
+
+        assureGetPath("/api-permission-tenant%3B", 403, getAccessToken("jdoe"), null);
+        assureGetPath("/api-permission-tenant%3Ba", 403, getAccessToken("jdoe"), null);
+
+        assureGetPath("/api-permission-tenant%3B", 404, getAccessToken("admin"), null);
+        assureGetPath("/api-permission-tenant%3Ba", 404, getAccessToken("admin"), null);
+    }
+
+    @Test
     public void testUserHasSuperUserRoleWebTenant() throws Exception {
         testWebAppTenantAllowed("alice", "/api-permission-webapp");
         testWebAppTenantForbidden("admin", "/api-permission-webapp");
@@ -220,6 +236,21 @@ public abstract class AbstractPolicyEnforcerTest {
 
         assureGetPath("/api;a/permission;a/entitlements;a", 200, getAccessToken("admin"), null);
         assureGetPath("//api;a/permission;a/entitlements;a", 200, getAccessToken("admin"), null);
+    }
+
+    @Test
+    public void testUserHasRoleConfidentialWithEncodedMatrix() {
+        // GHSA-qcxp-gm7m-4j5v: encoded semicolon %3B in multi-segment paths.
+        // Unauthorized users get 403 (enforcer matches, denies).
+        // Authorized users get 404 (enforcer matches, allows, router rejects encoded path).
+        assureGetPath("/api%3B/permission%3B", 403, getAccessToken("alice"), null);
+        assureGetPath("/api%3Ba/permission%3Ba", 403, getAccessToken("alice"), null);
+
+        assureGetPath("/api%3B/permission%3B", 404, getAccessToken("jdoe"), null);
+        assureGetPath("/api%3Ba/permission%3Ba", 404, getAccessToken("jdoe"), null);
+
+        assureGetPath("/api%3B/permission%3B", 403, getAccessToken("admin"), null);
+        assureGetPath("/api%3Ba/permission%3Ba", 403, getAccessToken("admin"), null);
     }
 
     @Test

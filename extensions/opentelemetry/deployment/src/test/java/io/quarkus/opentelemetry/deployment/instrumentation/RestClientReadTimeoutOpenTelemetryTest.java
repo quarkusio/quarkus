@@ -33,7 +33,7 @@ import io.quarkus.opentelemetry.deployment.common.exporter.InMemoryMetricExporte
 import io.quarkus.opentelemetry.deployment.common.exporter.TestSpanExporter;
 import io.quarkus.opentelemetry.deployment.common.exporter.TestSpanExporterProvider;
 import io.quarkus.opentelemetry.runtime.OpenTelemetryUtil;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 /**
  * Regression test for <a href="https://github.com/quarkusio/quarkus/issues/52239">#52239</a>.
@@ -44,7 +44,7 @@ public class RestClientReadTimeoutOpenTelemetryTest {
     static final CountDownLatch SLOW_HANDLER_DONE = new CountDownLatch(1);
 
     @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest().withApplicationRoot((jar) -> jar
+    static final QuarkusExtensionTest TEST = new QuarkusExtensionTest().withApplicationRoot((jar) -> jar
             .addPackage(TestSpanExporter.class.getPackage())
             .addClasses(SemconvResolver.class)
             .addAsResource(new StringAsset(TestSpanExporterProvider.class.getCanonicalName()),
@@ -58,7 +58,9 @@ public class RestClientReadTimeoutOpenTelemetryTest {
                     "%d{HH:mm:ss} %-5p traceId=%X{traceId}, spanId=%X{spanId} [%c{2.}] (%t) %s%e%n")
             .overrideConfigKey("quarkus.log.category.\"io.quarkus.opentelemetry\".level", "DEBUG")
             .overrideConfigKey("quarkus.rest-client.slow-client.url", "${test.url}")
-            .overrideConfigKey("quarkus.rest-client.slow-client.read-timeout", "3000");
+            .overrideConfigKey("quarkus.rest-client.slow-client.read-timeout", "3000")
+            .overrideConfigKey("quarkus.otel.metrics.enabled", "false")
+            .overrideConfigKey("quarkus.otel.logs.enabled", "false");
     private static final org.slf4j.Logger log = LoggerFactory.getLogger(RestClientReadTimeoutOpenTelemetryTest.class);
 
     @Inject

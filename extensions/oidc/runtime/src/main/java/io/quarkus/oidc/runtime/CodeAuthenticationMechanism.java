@@ -17,6 +17,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.function.BiFunction;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.regex.Pattern;
 
 import org.eclipse.microprofile.jwt.Claims;
@@ -224,6 +225,14 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                                 // This is an original redirect from IDP, check if the original request path and query need to be restored
                                 CodeAuthenticationStateBean stateBean = getCodeAuthenticationBean(parsedStateCookieValue,
                                         tenantContext);
+
+                                try {
+                                    validateAuthorizationResponseIssuer(requestParams, tenantContext);
+                                } catch (AuthenticationCompletionException ex) {
+                                    LOG.error(ex.getMessage());
+                                    throw ex;
+                                }
+
                                 if (stateBean != null && stateBean.getRestorePath() != null) {
                                     String restorePath = stateBean.getRestorePath();
                                     int userQueryIndex = restorePath.indexOf("?");
@@ -357,6 +366,15 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
         context.put(TenantConfigContext.class.getName(), configContext);
         return resolver.getTokenStateManager().getTokens(context, configContext.oidcConfig(),
                 sessionCookie, getTokenStateRequestContext)
+                // TokenStateManager implementations are allowed to report the missing token state
+                // by returning a null value instead of failing with AuthenticationFailedException
+                .onItem().ifNull().failWith(new Supplier<Throwable>() {
+                    @Override
+                    public Throwable get() {
+                        LOG.debug("Session token state is not available, reauthentication is required");
+                        return new AuthenticationFailedException("Authorization code flow tokens are not available");
+                    }
+                })
                 .onFailure(Throwable.class)
                 .recoverWithUni(
                         new Function<Throwable, Uni<? extends AuthorizationCodeTokens>>() {
@@ -756,7 +774,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
 
                         // redirect_uri
                         String redirectPath = getRedirectPath(configContext.oidcConfig(), context);
-                        String redirectUriParam = buildUri(context, isForceHttps(configContext.oidcConfig()), redirectPath);
+                        String redirectUriParam = buildRedirectUri(context, configContext.oidcConfig(), redirectPath);
                         LOG.debugf("Authentication request redirect_uri parameter: %s", redirectUriParam);
 
                         codeFlowParams.append(AMP).append(OidcConstants.CODE_FLOW_REDIRECT_URI).append(EQ)
@@ -894,6 +912,27 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
         return null;
     }
 
+    private void validateAuthorizationResponseIssuer(MultiMap requestParams, TenantConfigContext configContext) {
+        String expectedIssuer = configContext.getOidcMetadata().getIssuer();
+
+        if (expectedIssuer == null || OidcProvider.ANY_ISSUER.equals(expectedIssuer)) {
+            return;
+        }
+
+        String issParam = requestParams.get(OidcConstants.CODE_FLOW_ISSUER);
+
+        if (issParam != null) {
+            if (!issParam.equals(expectedIssuer)) {
+                throw new AuthenticationCompletionException(String.format(
+                        "Authorization response 'iss' parameter '%s' does not match the expected issuer '%s'",
+                        issParam, expectedIssuer));
+            }
+        } else if (configContext.getOidcMetadata().isAuthorizationResponseIssParameterSupported()) {
+            throw new AuthenticationCompletionException(
+                    "Authorization response 'iss' parameter is required but is not present");
+        }
+    }
+
     private Uni<SecurityIdentity> performCodeFlow(IdentityProviderManager identityProviderManager,
             RoutingContext context, TenantConfigContext configContext, MultiMap requestParams,
             String[] parsedStateCookieValue) {
@@ -903,6 +942,14 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
 
         // This is an original redirect from IDP, check if the original request path and query need to be restored
         CodeAuthenticationStateBean stateBean = getCodeAuthenticationBean(parsedStateCookieValue, configContext);
+
+        try {
+            validateAuthorizationResponseIssuer(requestParams, configContext);
+        } catch (AuthenticationCompletionException ex) {
+            LOG.error(ex.getMessage());
+            throw ex;
+        }
+
         if (stateBean != null && stateBean.getRestorePath() != null) {
             String restorePath = stateBean.getRestorePath();
             int userQueryIndex = restorePath.indexOf("?");
@@ -1396,6 +1443,14 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                 60 * 30).getValue();
     }
 
+    private String buildRedirectUri(RoutingContext context, OidcTenantConfig oidcConfig, String redirectPath) {
+        // For CIMD configs, use the helper to resolve redirect URI from client-id authority if needed
+        if (ClientIdMetadataHandler.isClientIdMetadataUrl(oidcConfig)) {
+            return OidcUtils.resolveRedirectUriForClientIdMetadata(oidcConfig);
+        }
+        return buildUri(context, isForceHttps(oidcConfig), redirectPath);
+    }
+
     private String buildUri(RoutingContext context, boolean forceHttps, String path) {
         if (path.startsWith(HTTP_SCHEME)) {
             return path;
@@ -1563,7 +1618,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
         }
 
         String redirectPath = getRedirectPath(configContext.oidcConfig(), context);
-        String redirectUriParam = buildUri(context, isForceHttps(configContext.oidcConfig()), redirectPath);
+        String redirectUriParam = buildRedirectUri(context, configContext.oidcConfig(), redirectPath);
         LOG.debugf("Token request redirect_uri parameter: %s", redirectUriParam);
 
         return configContext.provider().getCodeFlowTokens(code, redirectUriParam, codeVerifier);

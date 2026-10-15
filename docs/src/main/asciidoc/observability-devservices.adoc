@@ -5,7 +5,6 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Observability Dev Services
 include::_attributes.adoc[]
-:categories: observability,devservices,telemetry,metrics,tracing,logging
 :summary: Entry point for Observability DevServices
 :topics: observability,grafana,lgtm,prometheus,victoriametrics,jaeger,otel,otlp
 :extensions: io.quarkus:quarkus-observability-devservices

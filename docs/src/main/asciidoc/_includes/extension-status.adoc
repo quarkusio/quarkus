@@ -1,4 +1,5 @@
 ifdef::extension-status[]
+[[extension-status-note]]
 [NOTE]
 ====
 This technology is considered {extension-status}.

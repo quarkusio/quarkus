@@ -31,6 +31,7 @@ import io.quarkus.deployment.dev.devservices.DevServicesConfig;
 import io.quarkus.devservices.common.ComposeLocator;
 import io.quarkus.devservices.common.ConfigureUtil;
 import io.quarkus.devservices.common.ContainerLocator;
+import io.quarkus.devservices.common.DevServicesHostUtil;
 import io.quarkus.redis.runtime.client.config.RedisConfig;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.configuration.ConfigUtils;
@@ -95,8 +96,8 @@ public class DevServicesRedisProcessor {
                                             // Dev Service discovery works using a global dev service label applied in DevServicesCustomizerBuildItem
                                             // for backwards compatibility we still add the custom label
                                             .withSharedServiceLabel(launchMode.getLaunchMode(), redisConfig.serviceName()))
-                                    .configProvider(
-                                            Map.of(getPropertyName(name, HOSTS), s -> REDIS_SCHEME + s.getConnectionInfo()))
+                                    .configProvider(s -> Map.of(
+                                            getPropertyName(name, HOSTS), REDIS_SCHEME + s.getConnectionInfo()))
                                     .build());
                 }
             }
@@ -133,7 +134,8 @@ public class DevServicesRedisProcessor {
                         List.of(devServicesConfig.imageName().orElseGet(() -> getDefaultImageNameFor("redis"))),
                         REDIS_EXPOSED_PORT, launchMode, useSharedNetwork))
                 .map(containerAddress -> {
-                    String redisUrl = REDIS_SCHEME + containerAddress.getUrl();
+                    String redisUrl = REDIS_SCHEME + DevServicesHostUtil.formatResolvedHostAndPort(
+                            containerAddress.getId(), containerAddress.getHost(), containerAddress.getPort());
                     return DevServicesResultBuildItem.discovered()
                             .feature(Feature.REDIS_CLIENT)
                             .containerId(containerAddress.getId())
@@ -223,7 +225,9 @@ public class DevServicesRedisProcessor {
 
         @Override
         public String getConnectionInfo() {
-            return getHost() + ":" + getPort();
+            return DevServicesHostUtil.formatHostAndPort(
+                    DevServicesHostUtil.publishedPortHost(getContainerId(), useSharedNetwork, hostName, super.getHost()),
+                    getPort());
         }
     }
 }

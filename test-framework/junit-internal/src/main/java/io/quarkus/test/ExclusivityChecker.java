@@ -10,9 +10,7 @@ public class ExclusivityChecker {
 
         Class<?> testType = store.get(IO_QUARKUS_TESTING_TYPE, Class.class);
         if (testType != null) {
-            if (testType != QuarkusUnitTest.class
-                    && testType != QuarkusExtensionTest.class
-                    && testType != AbstractQuarkusExtensionTest.class
+            if (testType != QuarkusExtensionTest.class
                     && testType != QuarkusDevModeTest.class
                     && testType != QuarkusProdModeTest.class) {
                 throw new IllegalStateException(

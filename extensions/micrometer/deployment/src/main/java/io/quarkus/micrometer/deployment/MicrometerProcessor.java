@@ -1,6 +1,7 @@
 package io.quarkus.micrometer.deployment;
 
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.function.BooleanSupplier;
@@ -10,6 +11,7 @@ import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
+import org.jboss.logging.Logger;
 import org.jboss.logmanager.Level;
 
 import io.micrometer.core.annotation.Counted;
@@ -23,6 +25,8 @@ import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.arc.deployment.InterceptorBindingRegistrarBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.arc.processor.InterceptorBindingRegistrar;
+import io.quarkus.deployment.Capabilities;
+import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.IsDevelopment;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -61,6 +65,8 @@ import io.quarkus.vertx.http.deployment.NonApplicationRootPathBuildItem;
 
 @BuildSteps(onlyIf = MicrometerProcessor.MicrometerEnabled.class)
 public class MicrometerProcessor {
+    private static final Logger LOGGER = Logger.getLogger(MicrometerProcessor.class);
+
     private static final DotName METER_REGISTRY = DotName.createSimple(MeterRegistry.class.getName());
     private static final DotName METER_BINDER = DotName.createSimple(MeterBinder.class.getName());
     private static final DotName METER_FILTER = DotName.createSimple(MeterFilter.class.getName());
@@ -160,10 +166,10 @@ public class MicrometerProcessor {
 
         for (String beanClassName : OPERATING_SYSTEM_BEAN_CLASS_NAMES) {
             String reason = "Accessed by io.micrometer.core.instrument.binder.system.ProcessorMetrics.ProcessorMetrics(java.lang.Iterable<io.micrometer.core.instrument.Tag>)";
-            reflectiveMethods.produce(new ReflectiveMethodBuildItem(reason, false, beanClassName, "getCpuLoad"));
-            reflectiveMethods.produce(new ReflectiveMethodBuildItem(reason, false, beanClassName, "getSystemCpuLoad"));
-            reflectiveMethods.produce(new ReflectiveMethodBuildItem(reason, false, beanClassName, "getProcessCpuLoad"));
-            reflectiveMethods.produce(new ReflectiveMethodBuildItem(reason, false, beanClassName, "getProcessCpuTime"));
+            reflectiveMethods.produce(new ReflectiveMethodBuildItem(reason, beanClassName, "getCpuLoad"));
+            reflectiveMethods.produce(new ReflectiveMethodBuildItem(reason, beanClassName, "getSystemCpuLoad"));
+            reflectiveMethods.produce(new ReflectiveMethodBuildItem(reason, beanClassName, "getProcessCpuLoad"));
+            reflectiveMethods.produce(new ReflectiveMethodBuildItem(reason, beanClassName, "getProcessCpuTime"));
         }
 
         return UnremovableBeanBuildItem.beanTypes(METER_REGISTRY, METER_BINDER, METER_FILTER, METER_REGISTRY_CUSTOMIZER,
@@ -214,9 +220,23 @@ public class MicrometerProcessor {
     void configureRegistry(MicrometerRecorder recorder,
             List<MicrometerRegistryProviderBuildItem> providerClassItems,
             List<MetricsFactoryConsumerBuildItem> metricsFactoryConsumerBuildItems,
-            ShutdownContextBuildItem shutdownContextBuildItem) {
+            ShutdownContextBuildItem shutdownContextBuildItem,
+            Capabilities capabilities) {
 
-        Set<Class<? extends MeterRegistry>> typeClasses = new HashSet<>();
+        if (!providerClassItems.isEmpty()
+                && capabilities.isPresent(Capability.OPENTELEMETRY_METRICS)) {
+            if (LOGGER.isEnabled(Logger.Level.WARN)) {
+                // Create a comma-delimited list of the registry types
+                final String registries = String.join(", ", providerClassItems.stream()
+                        .map(i -> i.getRegistryClass().getSimpleName()).toList());
+
+                LOGGER.warnf("Redundant metrics collection detected: both Micrometer (registries: %s) and "
+                        + "OpenTelemetry are active. Consider disabling one system (e.g., setting quarkus.otel.metrics.enabled=false).",
+                        registries);
+            }
+        }
+
+        Set<Class<? extends MeterRegistry>> typeClasses = new LinkedHashSet<>();
         for (MicrometerRegistryProviderBuildItem item : providerClassItems) {
             typeClasses.add(item.getRegistryClass());
         }

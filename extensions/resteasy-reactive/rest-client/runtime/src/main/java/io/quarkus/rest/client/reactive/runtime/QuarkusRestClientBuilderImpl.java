@@ -21,6 +21,7 @@ import org.jboss.resteasy.reactive.client.api.ClientLogger;
 import org.jboss.resteasy.reactive.client.api.LoggingScope;
 
 import io.quarkus.proxy.ProxyType;
+import io.quarkus.rest.client.reactive.ParamStyle;
 import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
 import io.quarkus.rest.client.reactive.runtime.context.ClientHeadersFactoryContextResolver;
 import io.quarkus.tls.TlsConfiguration;
@@ -152,6 +153,18 @@ public class QuarkusRestClientBuilderImpl implements QuarkusRestClientBuilder {
     @Override
     public QuarkusRestClientBuilder queryParamStyle(QueryParamStyle style) {
         delegate.queryParamStyle(style);
+        return this;
+    }
+
+    @Override
+    public QuarkusRestClientBuilder queryParamStyle(ParamStyle style) {
+        delegate.queryParamStyle(style);
+        return this;
+    }
+
+    @Override
+    public QuarkusRestClientBuilder formParamStyle(ParamStyle style) {
+        delegate.formParamStyle(style);
         return this;
     }
 

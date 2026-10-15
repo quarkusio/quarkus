@@ -35,6 +35,7 @@ import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
 import io.quarkus.deployment.builditem.GeneratedServiceProviderBuildItem;
 import io.quarkus.deployment.builditem.MainClassBuildItem;
 import io.quarkus.deployment.builditem.ModuleEnableNativeAccessBuildItem;
+import io.quarkus.deployment.builditem.ModuleExportBuildItem;
 import io.quarkus.deployment.builditem.ModuleOpenBuildItem;
 import io.quarkus.deployment.builditem.TransformedClassesBuildItem;
 import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
@@ -110,7 +111,7 @@ public final class ModularitySteps {
             List<GeneratedServiceProviderBuildItem> generatedServices,
             TransformedClassesBuildItem transformedClasses,
             List<ModuleOpenBuildItem> opens,
-            // TODO: List<ModuleExportBuildItem> exports,
+            List<ModuleExportBuildItem> exports,
             List<ModuleEnableNativeAccessBuildItem> nativeAccesses,
             List<AddDependencyBuildItem> extraDeps,
             List<BootModulePathBuildItem> bootPathItems) {
@@ -181,6 +182,16 @@ public final class ModularitySteps {
                         Collectors.groupingBy(
                                 ModuleOpenBuildItem::openedModuleName,
                                 Collectors.flatMapping(mobi -> mobi.packageNames().stream(),
+                                        Collectors.toSet()))));
+        // Collect all add-exports and merge them into a flat map.
+        // We collapse duplicates by taking the union of the exported packages.
+        // exporting module -> exported module -> package set
+        Map<String, Map<String, Set<String>>> addExportsByModule = exports.stream()
+                .collect(Collectors.groupingBy(
+                        ModuleExportBuildItem::exportingModuleName,
+                        Collectors.groupingBy(
+                                ModuleExportBuildItem::exportedModuleName,
+                                Collectors.flatMapping(mebi -> mebi.packageNames().stream(),
                                         Collectors.toSet()))));
         // Collect the set of modules which require native access.
         Set<String> nativeAccessNames = nativeAccesses.stream()
@@ -399,6 +410,19 @@ public final class ModularitySteps {
                                             Modifier.Set.of(Modifier.READ, Modifier.OPTIONAL),
                                             e.getValue().stream().collect(
                                                     Collectors.toMap(Function.identity(), ignored -> PackageAccess.OPEN))))
+                                    .toList());
+                        }
+                        // Add extra exports from build items.
+                        Map<String, Set<String>> ebi = addExportsByModule.getOrDefault(moduleName, Map.of());
+                        if (!ebi.isEmpty()) {
+                            mi = mi.withMoreDependencies(ebi
+                                    .entrySet()
+                                    .stream()
+                                    .map((e) -> new DependencyInfo(
+                                            e.getKey(),
+                                            Modifier.Set.of(Modifier.READ, Modifier.OPTIONAL),
+                                            e.getValue().stream().collect(
+                                                    Collectors.toMap(Function.identity(), ignored -> PackageAccess.EXPORTED))))
                                     .toList());
                         }
                         // tabulate any used JDK modules.
@@ -742,7 +766,7 @@ public final class ModularitySteps {
             case "io.quarkus.resteasy.reactive.vertx" -> {
                 depAccesses.computeIfAbsent("io.vertx.core", ModularitySteps::newMap)
                         .putAll(Map.of("io.vertx.core.impl", PackageAccess.EXPORTED,
-                                "io.vertx.core.buffer.impl", PackageAccess.EXPORTED,
+                                "io.vertx.core.impl.buffer", PackageAccess.EXPORTED,
                                 "io.vertx.core.http.impl", PackageAccess.EXPORTED,
                                 "io.vertx.core.net.impl", PackageAccess.EXPORTED));
             }
@@ -782,7 +806,6 @@ public final class ModularitySteps {
                 depAccesses.computeIfAbsent("io.vertx.core", ModularitySteps::newMap)
                         .putAll(Map.of(
                                 "io.vertx.core.impl", PackageAccess.EXPORTED,
-                                "io.vertx.core.impl.logging", PackageAccess.EXPORTED,
                                 "io.vertx.core.http.impl", PackageAccess.EXPORTED,
                                 "io.vertx.core.net.impl", PackageAccess.EXPORTED));
             }
@@ -1075,7 +1098,7 @@ public final class ModularitySteps {
      * @return the artifact key (group, artifact, and classifier only) (not {@code null})
      */
     private static ArtifactKey keyOf(final ArtifactCoords dependency) {
-        return ArtifactKey.gac(dependency.getGroupId(), dependency.getArtifactId(), dependency.getClassifier());
+        return ArtifactKey.of(dependency.getGroupId(), dependency.getArtifactId(), dependency.getClassifier(), null);
     }
 
     /**

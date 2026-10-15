@@ -3,22 +3,22 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= Redis Extension Reference Guide
-:extension-status: stable
+= Redis extension reference guide
 include::_attributes.adoc[]
 :numbered:
 :sectnums:
-:categories: data
 :topics: data,redis,nosql
 :extensions: io.quarkus:quarkus-redis-client,io.quarkus:quarkus-redis-client-lettuce
 
 Redis is an in-memory data store used as a database, cache, streaming engine, and message broker.
 The Quarkus Redis extension allows integrating Quarkus applications with Redis.
 
+include::{includes}/extension-status.adoc[]
+
 To use this extension, the user must be familiar with Redis, especially understanding the mechanism of commands and how they are organized.
 Typically, we recommend:
 
-1. The https://try.redis.io/[interactive tutorial] introducing Redis.
+1. The https://redis.io/try/sandbox/[interactive tutorial] introducing Redis.
 2. The https://redis.io/commands/[command references] explains Redis commands and contains links to reference documentation.
 
 This extension provides imperative and reactive APIs and low-level and high-level (type-safe) clients.
@@ -217,7 +217,7 @@ The connection url is configured with the `quarkus.redis.hosts` (or `quarkus.red
 
 [source,properties]
 ----
-quarkus.redis.hosts=redis://[:password@]host[:port][/db-number]
+quarkus.redis.hosts=redis://[[username]:password@]host[:port][/db-number]
 ----
 
 === Use Unix Socket
@@ -226,7 +226,7 @@ When using unix-socket, you need:
 
 [source,properties]
 ----
-quarkus.redis.hosts=unix://[:password@]/domain/docker.sock[?select=db-number]
+quarkus.redis.hosts=unix://[[username]:password@]/domain/docker.sock[?select=db-number]
 ----
 
 === Use the Sentinel Mode
@@ -378,6 +378,17 @@ We recommend the latter, and if possible, using secrets or an environment variab
 
 The associated environment variable is `QUARKUS_REDIS_PASSWORD`, or `QUARKUS_REDIS_<NAME>_PASSWORD` for named clients.
 
+When the Redis server uses https://redis.io/docs/latest/operate/oss_and_stack/management/security/acl/[ACL] users (Redis 6 and later), the username can be set in the `redis://` URL or with the `quarkus.redis.username` property, whose environment variable is `QUARKUS_REDIS_USERNAME`, or `QUARKUS_REDIS_<NAME>_USERNAME` for named clients:
+
+[source,properties]
+----
+quarkus.redis.hosts=redis://localhost:6379
+quarkus.redis.username=my-app
+quarkus.redis.password=my-secret
+----
+
+Credentials set in the URL take precedence over the `quarkus.redis.username` and `quarkus.redis.password` properties.
+
 === Connection pooling
 
 Connections to Redis are always pooled.
@@ -498,7 +509,6 @@ public class MyRedisService {
     }
 }
 ----
-
 <1> Inject the `RedisDataSource` in the constructor
 <2> Creates the `HashCommands` object.
 This object has three type parameters: the type of the key, the type of the field, and the type of the member
@@ -695,7 +705,6 @@ public static class MyRedisCounter {
 
 }
 ----
-
 <1> Retrieve the commands.
 This time we will manipulate `Long` values
 <2> Retrieve the counter associated with the given `key`.

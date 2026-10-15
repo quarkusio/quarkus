@@ -10,11 +10,18 @@ import org.hibernate.validator.PredefinedScopeHibernateValidator;
 import org.hibernate.validator.PredefinedScopeHibernateValidatorConfiguration;
 import org.hibernate.validator.constraintvalidation.spi.DefaultConstraintValidatorFactory;
 
+import io.smallrye.config.ConfigMappingLoader.GeneratedConfigClass;
+import io.smallrye.config.ConfigValidationException;
 import io.smallrye.config.validator.BeanValidationConfigValidator;
 
 public class HibernateBeanValidationConfigValidator implements BeanValidationConfigValidator {
 
-    public HibernateBeanValidationConfigValidator(Set<String> constraints, Set<Class<?>> classesToBeValidated) {
+    private final Set<Class<?>> mappingsRequiringValidation;
+
+    public HibernateBeanValidationConfigValidator(Set<String> constraints, Set<Class<?>> classesToBeValidated,
+            Set<Class<?>> mappingsRequiringValidation) {
+        this.mappingsRequiringValidation = mappingsRequiringValidation;
+
         PredefinedScopeHibernateValidatorConfiguration configuration = Validation
                 .byProvider(PredefinedScopeHibernateValidator.class)
                 .configure();
@@ -28,6 +35,18 @@ public class HibernateBeanValidationConfigValidator implements BeanValidationCon
                 .traversableResolver(new TraverseAllTraversableResolver());
 
         ConfigValidatorHolder.initialize(configuration.buildValidatorFactory());
+    }
+
+    @Override
+    public void validateMapping(GeneratedConfigClass configClass, Object configObject) throws ConfigValidationException {
+        // Every config mapping in the application is validated through this single validator, even mappings
+        // that have no Bean Validation constraints anywhere in their tree. Skip those entirely: their generated
+        // mapping interface was never registered for reflection, since only constrained trees are (see
+        // HibernateValidatorProcessor#configValidator), so walking into them would blow up in native mode.
+        if (!mappingsRequiringValidation.contains(configClass.getParent())) {
+            return;
+        }
+        BeanValidationConfigValidator.super.validateMapping(configClass, configObject);
     }
 
     @Override

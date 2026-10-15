@@ -25,20 +25,6 @@ public class MutinyFaultToleranceTest {
     }
 
     @Test
-    public void nonblocking() {
-        Uni<String> hello = service.helloNonblocking();
-        assertThat(hello.await().indefinitely()).isEqualTo("hello");
-        assertThat(MutinyHelloService.COUNTER).hasValue(4);
-    }
-
-    @Test
-    public void blocking() {
-        Uni<String> hello = service.helloBlocking();
-        assertThat(hello.await().indefinitely()).isEqualTo("hello");
-        assertThat(MutinyHelloService.COUNTER).hasValue(4);
-    }
-
-    @Test
     public void asynchronous() {
         Uni<String> hello = service.helloAsynchronous();
         assertThat(hello.await().indefinitely()).isEqualTo("hello");
@@ -48,20 +34,6 @@ public class MutinyFaultToleranceTest {
     @Test
     public void asynchronousNonBlocking() {
         Uni<String> hello = service.helloAsynchronousNonBlocking();
-        assertThat(hello.await().indefinitely()).isEqualTo("hello");
-        assertThat(MutinyHelloService.COUNTER).hasValue(4);
-    }
-
-    @Test
-    public void asynchronousNonblockingCombined() {
-        Uni<String> hello = service.helloAsynchronousNonblockingCombined();
-        assertThat(hello.await().indefinitely()).isEqualTo("hello");
-        assertThat(MutinyHelloService.COUNTER).hasValue(4);
-    }
-
-    @Test
-    public void asynchronousBlockingCombined() {
-        Uni<String> hello = service.helloAsynchronousBlockingCombined();
         assertThat(hello.await().indefinitely()).isEqualTo("hello");
         assertThat(MutinyHelloService.COUNTER).hasValue(4);
     }

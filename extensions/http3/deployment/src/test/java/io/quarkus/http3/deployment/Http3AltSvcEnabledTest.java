@@ -60,13 +60,15 @@ class Http3AltSvcEnabledTest {
 
         HttpClientAgent client = vertx.httpClientBuilder().with(clientConfig).with(sslOptions).build();
 
-        var resp = client.request(HttpMethod.GET, port, "localhost", "/hello")
-                .compose(HttpClientRequest::send)
-                .await(5, TimeUnit.SECONDS);
+        try {
+            var resp = client.request(HttpMethod.GET, port, "localhost", "/hello")
+                    .compose(HttpClientRequest::send)
+                    .await(5, TimeUnit.SECONDS);
 
-        assertThat(resp.getHeader("Alt-Svc")).isEqualTo("h3=\":" + port + "\"; ma=86400");
-
-        client.close().await(5, TimeUnit.SECONDS);
+            assertThat(resp.getHeader("Alt-Svc")).isEqualTo("h3=\":" + port + "\"; ma=86400");
+        } finally {
+            client.close().await(5, TimeUnit.SECONDS);
+        }
     }
 
     @Test
@@ -82,14 +84,16 @@ class Http3AltSvcEnabledTest {
 
         HttpClientAgent client = vertx.httpClientBuilder().with(clientConfig).with(sslOptions).build();
 
-        var resp = client.request(HttpMethod.GET, port, "localhost", "/hello")
-                .compose(HttpClientRequest::send)
-                .await(5, TimeUnit.SECONDS);
+        try {
+            var resp = client.request(HttpMethod.GET, port, "localhost", "/hello")
+                    .compose(HttpClientRequest::send)
+                    .await(5, TimeUnit.SECONDS);
 
-        // With writeAltSvc, HTTP/2 delivers Alt-Svc as an ALTSVC frame instead of a response header.
-        assertThat(resp.getHeader("Alt-Svc")).isNull();
-
-        client.close().await(5, TimeUnit.SECONDS);
+            // With writeAltSvc, HTTP/2 delivers Alt-Svc as an ALTSVC frame instead of a response header.
+            assertThat(resp.getHeader("Alt-Svc")).isNull();
+        } finally {
+            client.close().await(5, TimeUnit.SECONDS);
+        }
     }
 
     @Test
@@ -105,13 +109,15 @@ class Http3AltSvcEnabledTest {
 
         HttpClientAgent client = vertx.httpClientBuilder().with(clientConfig).with(sslOptions).build();
 
-        var resp = client.request(HttpMethod.GET, port, "localhost", "/hello")
-                .compose(HttpClientRequest::send)
-                .await(10, TimeUnit.SECONDS);
+        try {
+            var resp = client.request(HttpMethod.GET, port, "localhost", "/hello")
+                    .compose(HttpClientRequest::send)
+                    .await(10, TimeUnit.SECONDS);
 
-        assertThat(resp.getHeader("Alt-Svc")).isNull();
-
-        client.close().await(5, TimeUnit.SECONDS);
+            assertThat(resp.getHeader("Alt-Svc")).isNull();
+        } finally {
+            client.close().await(5, TimeUnit.SECONDS);
+        }
     }
 
     @ApplicationScoped

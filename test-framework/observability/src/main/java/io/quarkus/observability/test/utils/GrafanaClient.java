@@ -13,8 +13,7 @@ import java.util.function.Function;
 
 import org.jboss.logging.Logger;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 
 public class GrafanaClient {
     private static final Logger LOG = Logger.getLogger(GrafanaClient.class.getName());
@@ -22,28 +21,38 @@ public class GrafanaClient {
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
     private final String url;
+    private final String prometheusUrl;
+    private final String tempoUrl;
     private final String username;
     private final String password;
 
     public GrafanaClient(String url, String username, String password) {
+        this(url, null, null, username, password);
+    }
+
+    public GrafanaClient(String url, String prometheusUrl, String tempoUrl, String username, String password) {
         this.url = url;
+        this.prometheusUrl = prometheusUrl;
+        this.tempoUrl = tempoUrl;
         this.username = username;
         this.password = password;
     }
 
     private <T> void handle(
+            String baseUrl,
             String path,
             Function<HttpRequest.Builder, HttpRequest.Builder> method,
             HttpResponse.BodyHandler<T> bodyHandler,
             BiConsumer<HttpResponse<T>, T> consumer) {
         try {
-            String credentials = username + ":" + password;
-            String encodedCredentials = Base64.getEncoder().encodeToString(credentials.getBytes());
-
             HttpClient httpClient = HttpClient.newHttpClient();
             HttpRequest.Builder builder = HttpRequest.newBuilder()
-                    .uri(URI.create(url + path))
-                    .header("Authorization", "Basic " + encodedCredentials);
+                    .uri(URI.create(baseUrl + path));
+            if (username != null && password != null) {
+                String credentials = username + ":" + password;
+                String encodedCredentials = Base64.getEncoder().encodeToString(credentials.getBytes());
+                builder.header("Authorization", "Basic " + encodedCredentials);
+            }
             HttpRequest request = method.apply(builder).build();
 
             HttpResponse<T> response = httpClient.send(request, bodyHandler);
@@ -68,6 +77,7 @@ public class GrafanaClient {
     private String grafana() {
         AtomicReference<String> ref = new AtomicReference<>();
         handle(
+                url,
                 "/config/grafana",
                 HttpRequest.Builder::GET,
                 HttpResponse.BodyHandlers.ofString(),
@@ -80,16 +90,13 @@ public class GrafanaClient {
     public User user() {
         AtomicReference<User> ref = new AtomicReference<>();
         handle(
+                url,
                 "/api/user",
                 HttpRequest.Builder::GET,
                 HttpResponse.BodyHandlers.ofString(),
                 (r, b) -> {
-                    try {
-                        User user = MAPPER.readValue(b, User.class);
-                        ref.set(user);
-                    } catch (JsonProcessingException e) {
-                        throw new UncheckedIOException(e);
-                    }
+                    User user = MAPPER.readValue(b, User.class);
+                    ref.set(user);
                 });
         User user = ref.get();
         LOG.info("User: " + user);
@@ -99,16 +106,13 @@ public class GrafanaClient {
     public QueryResult query(String query) {
         AtomicReference<QueryResult> ref = new AtomicReference<>();
         handle(
-                "/api/datasources/proxy/1/api/v1/query?query=" + query,
+                prometheusUrl != null ? prometheusUrl : url,
+                "/api/v1/query?query=" + query,
                 HttpRequest.Builder::GET,
                 HttpResponse.BodyHandlers.ofString(),
                 (r, b) -> {
-                    try {
-                        QueryResult result = MAPPER.readValue(b, QueryResult.class);
-                        ref.set(result);
-                    } catch (JsonProcessingException e) {
-                        throw new UncheckedIOException(e);
-                    }
+                    QueryResult result = MAPPER.readValue(b, QueryResult.class);
+                    ref.set(result);
                 });
         QueryResult queryResult = ref.get();
         LOG.info("Query: " + queryResult);
@@ -117,19 +121,16 @@ public class GrafanaClient {
 
     public TempoResult traces(String service, int limit, int spss) {
         AtomicReference<TempoResult> ref = new AtomicReference<>();
-        String path = "/api/datasources/proxy/uid/tempo/api/search?q=%7Bresource.service.name%3D%22"
+        String path = "/api/search?q=%7Bresource.service.name%3D%22"
                 + service + "%22%7D&limit=" + limit + "&spss=" + spss;
         handle(
+                tempoUrl != null ? tempoUrl : url,
                 path,
                 HttpRequest.Builder::GET,
                 HttpResponse.BodyHandlers.ofString(),
                 (r, b) -> {
-                    try {
-                        TempoResult result = MAPPER.readValue(b, TempoResult.class);
-                        ref.set(result);
-                    } catch (JsonProcessingException e) {
-                        throw new UncheckedIOException(e);
-                    }
+                    TempoResult result = MAPPER.readValue(b, TempoResult.class);
+                    ref.set(result);
                 });
         TempoResult tempoResult = ref.get();
         LOG.info("Traces: " + tempoResult);
@@ -139,6 +140,7 @@ public class GrafanaClient {
     public String dashboard(String uid) {
         AtomicReference<String> ref = new AtomicReference<>();
         handle(
+                url,
                 "/api/dashboards/uid/" + uid,
                 HttpRequest.Builder::GET,
                 HttpResponse.BodyHandlers.ofString(),

@@ -27,7 +27,6 @@ import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.security.PrivateKey;
 import java.time.Instant;
 import java.util.Date;
@@ -63,6 +62,7 @@ import io.quarkus.oidc.common.runtime.OidcCommonUtils;
 import io.quarkus.oidc.common.runtime.OidcConstants;
 import io.quarkus.oidc.runtime.OidcUtils;
 import io.quarkus.test.common.QuarkusTestResource;
+import io.quarkus.test.common.TestLog;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.oidc.server.OidcWireMock;
 import io.quarkus.test.oidc.server.OidcWiremockTestResource;
@@ -79,6 +79,9 @@ import io.vertx.core.json.JsonObject;
 @QuarkusTest
 @QuarkusTestResource(CustomOidcWiremockTestResource.class)
 public class CodeFlowAuthorizationTest {
+
+    // Injected automatically
+    protected TestLog testLog;
 
     @OidcWireMock
     WireMockServer wireMockServer;
@@ -199,6 +202,11 @@ public class CodeFlowAuthorizationTest {
     @Test
     public void testCodeFlowEncryptedIdTokenPem() throws IOException {
         doTestCodeFlowEncryptedIdToken("code-flow-encrypted-id-token-pem", KeyEncryptionAlgorithm.A256GCMKW);
+    }
+
+    @Test
+    public void testCodeFlowEncryptedIdTokenRsaOaep256() throws IOException {
+        doTestCodeFlowEncryptedIdToken("code-flow-encrypted-id-token-rsa-oaep-256", KeyEncryptionAlgorithm.A256GCMKW);
     }
 
     private void doTestCodeFlowEncryptedIdToken(String tenant, KeyEncryptionAlgorithm alg) throws IOException {
@@ -532,19 +540,14 @@ public class CodeFlowAuthorizationTest {
     }
 
     private void checkSignedUserInfoRecordInLog() {
-        final Path logDirectory = Paths.get(".", "target");
         given().await().pollInterval(100, TimeUnit.MILLISECONDS)
                 .atMost(10, TimeUnit.SECONDS)
                 .untilAsserted(new ThrowingRunnable() {
                     @Override
                     public void run() throws Throwable {
-                        Path accessLogFilePath = logDirectory.resolve("quarkus.log");
+                        Path accessLogFilePath = testLog.getLogFilePath();
                         boolean fileExists = Files.exists(accessLogFilePath);
-                        if (!fileExists) {
-                            accessLogFilePath = logDirectory.resolve("target/quarkus.log");
-                            fileExists = Files.exists(accessLogFilePath);
-                        }
-                        Assertions.assertTrue(Files.exists(accessLogFilePath),
+                        Assertions.assertTrue(fileExists,
                                 "quarkus log file " + accessLogFilePath + " is missing");
 
                         boolean lineConfirmingVerificationDetected = false;
@@ -858,6 +861,100 @@ public class CodeFlowAuthorizationTest {
         }
     }
 
+    @Test
+    public void testCodeFlowIssuerValidation() throws IOException {
+        try (final WebClient webClient = createWebClient()) {
+            webClient.getOptions().setRedirectEnabled(true);
+            HtmlPage page = webClient.getPage("http://localhost:8081/code-flow-issuer/code-flow-iss-present");
+
+            HtmlForm form = page.getFormByName("form");
+            form.getInputByName("username").type("alice");
+            form.getInputByName("password").type("alice");
+
+            TextPage textPage = form.getInputByValue("login").click();
+
+            assertEquals("alice", textPage.getContent());
+            webClient.getCookieManager().clearCookies();
+        }
+    }
+
+    @Test
+    public void testCodeFlowIssuerValidationWrongIssuer() throws IOException {
+        defineCodeFlowIssuerStub("quarkus-iss-mismatch", "login-iss-mismatch", "https://wrong-issuer.example.com");
+        try (final WebClient webClient = createWebClient()) {
+            webClient.getOptions().setRedirectEnabled(true);
+            HtmlPage page = webClient.getPage("http://localhost:8081/code-flow-issuer/code-flow-iss-mismatch");
+
+            HtmlForm form = page.getFormByName("form");
+            form.getInputByName("username").type("alice");
+            form.getInputByName("password").type("alice");
+
+            try {
+                form.getInputByValue("login").click();
+                fail("401 status is expected");
+            } catch (FailingHttpStatusCodeException ex) {
+                assertEquals(401, ex.getStatusCode());
+                String body = ex.getResponse().getContentAsString();
+                assertTrue(body.contains("does not match the expected issuer"));
+            }
+            webClient.getCookieManager().clearCookies();
+        }
+    }
+
+    @Test
+    public void testCodeFlowIssuerValidationMissingIssuerWhenRequired() throws IOException {
+        defineCodeFlowIssuerStub("quarkus-iss-missing", "login-iss-missing", null);
+        try (final WebClient webClient = createWebClient()) {
+            webClient.getOptions().setRedirectEnabled(true);
+            HtmlPage page = webClient.getPage("http://localhost:8081/code-flow-issuer/code-flow-iss-missing");
+
+            HtmlForm form = page.getFormByName("form");
+            form.getInputByName("username").type("alice");
+            form.getInputByName("password").type("alice");
+
+            try {
+                form.getInputByValue("login").click();
+                fail("401 status is expected");
+            } catch (FailingHttpStatusCodeException ex) {
+                assertEquals(401, ex.getStatusCode());
+                String body = ex.getResponse().getContentAsString();
+                assertTrue(body.contains("'iss' parameter is required but is not present"));
+            }
+            webClient.getCookieManager().clearCookies();
+        }
+    }
+
+    private void defineCodeFlowIssuerStub(String realm, String loginEndpoint, String issInResponse) {
+        // Login page
+        wireMockServer.stubFor(
+                get(urlPathMatching("/auth/realms/" + realm + "[/]?"))
+                        .willReturn(aResponse()
+                                .withHeader("Content-Type", "text/html")
+                                .withBody("<html>\n"
+                                        + "<body>\n"
+                                        + " <form action=\"/" + loginEndpoint + "\" name=\"form\">\n"
+                                        + "  <input type=\"text\" id=\"username\" name=\"username\"/>\n"
+                                        + "  <input type=\"password\" id=\"password\" name=\"password\"/>\n"
+                                        + "  <input type=\"hidden\" id=\"state\" name=\"state\" value=\"{{request.query.state}}\"/>\n"
+                                        + "  <input type=\"hidden\" id=\"redirect_uri\" name=\"redirect_uri\" value=\"{{request.query.redirect_uri}}\"/>\n"
+                                        + "  <input type=\"submit\" id=\"login\" value=\"login\"/>\n"
+                                        + "</form>\n"
+                                        + "</body>\n"
+                                        + "</html>")
+                                .withTransformers("response-template")));
+
+        // Login redirect
+        String issParam = issInResponse != null ? "&iss=" + issInResponse : "";
+        wireMockServer.stubFor(
+                get(urlPathMatching("/" + loginEndpoint))
+                        .willReturn(aResponse()
+                                .withHeader("Location",
+                                        "{{request.query.redirect_uri}}?state={{request.query.state}}"
+                                                + "&code=58af24f2-9093-4674-a431-4a9d66be719c" + issParam)
+                                .withStatus(302)
+                                .withTransformers("response-template")));
+    }
+
     private void defineCodeFlowConcurrentRefreshStub() {
         wireMockServer
                 .stubFor(WireMock.post("/auth/realms/quarkus/concurrent-refresh-token")
@@ -1166,6 +1263,7 @@ public class CodeFlowAuthorizationTest {
         Response metadataResponse = RestAssured.when()
                 .get("http://localhost:8081" + OidcConstants.RESOURCE_METADATA_WELL_KNOWN_PATH
                         + (resource == null ? "" : "/" + resource));
+        assertEquals("application/json", metadataResponse.contentType());
         JsonObject jsonMetadata = new JsonObject(metadataResponse.asString());
         assertEquals("https://localhost:8081" + (resource == null ? "" : "/" + resource),
                 jsonMetadata.getString(OidcConstants.RESOURCE_METADATA_RESOURCE));

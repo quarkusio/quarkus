@@ -74,6 +74,12 @@
     </dependencies>
 
     <build>
+        <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>true</filtering>
+            </resource>
+        </resources>
         <testResources>
             <testResource>
                 <directory>src/test/resources</directory>
@@ -130,6 +136,9 @@
                 <artifactId>maven-surefire-plugin</artifactId>
                 <configuration>
                     <skip>true</skip>
+                    <systemPropertyVariables combine.children="append">
+                        <postgres.default.version>${postgres.default.version}</postgres.default.version>
+                    </systemPropertyVariables>
                 </configuration>
             </plugin>
         </plugins>

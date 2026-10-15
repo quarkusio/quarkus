@@ -2,13 +2,11 @@ package io.quarkus.hibernate.orm.deployment;
 
 import java.util.Collection;
 import java.util.List;
-import java.util.Optional;
 
 import io.quarkus.builder.item.MultiBuildItem;
 import io.quarkus.hibernate.orm.runtime.boot.QuarkusPersistenceUnitDefinition;
 import io.quarkus.hibernate.orm.runtime.boot.QuarkusPersistenceUnitDescriptor;
 import io.quarkus.hibernate.orm.runtime.boot.xml.RecordableXmlMapping;
-import io.quarkus.hibernate.orm.runtime.customized.FormatMapperKind;
 import io.quarkus.hibernate.orm.runtime.integration.HibernateOrmIntegrationStaticDescriptor;
 import io.quarkus.hibernate.orm.runtime.recording.RecordedConfig;
 
@@ -23,27 +21,20 @@ public final class PersistenceUnitDescriptorBuildItem extends MultiBuildItem {
     private final QuarkusPersistenceUnitDescriptor descriptor;
 
     private final RecordedConfig config;
-    private final String multiTenancySchemaDataSource;
     private final List<RecordableXmlMapping> xmlMappings;
     private final boolean fromPersistenceXml;
     private final boolean isHibernateValidatorPresent;
-    private final Optional<FormatMapperKind> jsonMapper;
-    private final Optional<FormatMapperKind> xmlMapper;
 
     public PersistenceUnitDescriptorBuildItem(QuarkusPersistenceUnitDescriptor descriptor,
             RecordedConfig config,
-            String multiTenancySchemaDataSource,
             List<RecordableXmlMapping> xmlMappings,
             boolean fromPersistenceXml,
-            boolean isHibernateValidatorPresent, Optional<FormatMapperKind> jsonMapper, Optional<FormatMapperKind> xmlMapper) {
+            boolean isHibernateValidatorPresent) {
         this.descriptor = descriptor;
         this.config = config;
-        this.multiTenancySchemaDataSource = multiTenancySchemaDataSource;
         this.xmlMappings = xmlMappings;
         this.fromPersistenceXml = fromPersistenceXml;
         this.isHibernateValidatorPresent = isHibernateValidatorPresent;
-        this.jsonMapper = jsonMapper;
-        this.xmlMapper = xmlMapper;
     }
 
     public Collection<String> getManagedClassNames() {
@@ -60,10 +51,6 @@ public final class PersistenceUnitDescriptorBuildItem extends MultiBuildItem {
 
     public RecordedConfig getConfig() {
         return config;
-    }
-
-    public String getMultiTenancySchemaDataSource() {
-        return multiTenancySchemaDataSource;
     }
 
     public boolean hasXmlMappings() {
@@ -85,7 +72,7 @@ public final class PersistenceUnitDescriptorBuildItem extends MultiBuildItem {
     public QuarkusPersistenceUnitDefinition asOutputPersistenceUnitDefinition(
             List<HibernateOrmIntegrationStaticDescriptor> integrationStaticDescriptors) {
         return new QuarkusPersistenceUnitDefinition(descriptor, config,
-                xmlMappings, fromPersistenceXml, isHibernateValidatorPresent, jsonMapper, xmlMapper,
+                xmlMappings, fromPersistenceXml, isHibernateValidatorPresent,
                 integrationStaticDescriptors);
     }
 }

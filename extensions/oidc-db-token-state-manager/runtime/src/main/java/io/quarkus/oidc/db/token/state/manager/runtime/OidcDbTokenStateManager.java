@@ -12,7 +12,6 @@ import io.quarkus.oidc.AuthorizationCodeTokens;
 import io.quarkus.oidc.OidcRequestContext;
 import io.quarkus.oidc.OidcTenantConfig;
 import io.quarkus.oidc.TokenStateManager;
-import io.quarkus.security.AuthenticationCompletionException;
 import io.quarkus.security.AuthenticationFailedException;
 import io.smallrye.mutiny.Uni;
 import io.vertx.ext.web.RoutingContext;
@@ -27,6 +26,7 @@ public class OidcDbTokenStateManager implements TokenStateManager {
     private static final Logger LOG = Logger.getLogger(OidcDbTokenStateManager.class);
     private static final String TOKEN_STATE_INSERT_FAILED = "Failed to insert token state into database";
     private static final String FAILED_TO_ACQUIRE_TOKEN = "Failed to acquire authorization code tokens";
+    private static final String TOKENS_NOT_AVAILABLE = "Authorization code tokens are not available in the database";
 
     private static final String ID_TOKEN_COLUMN = "id_token";
     private static final String ACCESS_TOKEN_COLUMN = "access_token";
@@ -96,7 +96,7 @@ public class OidcDbTokenStateManager implements TokenStateManager {
                 .onFailure().transform(new Function<Throwable, Throwable>() {
                     @Override
                     public Throwable apply(Throwable throwable) {
-                        return new AuthenticationCompletionException(FAILED_TO_ACQUIRE_TOKEN, throwable);
+                        return new AuthenticationFailedException(FAILED_TO_ACQUIRE_TOKEN, throwable);
                     }
                 })
                 .flatMap(new Function<RowSet<Row>, Uni<? extends AuthorizationCodeTokens>>() {
@@ -116,7 +116,7 @@ public class OidcDbTokenStateManager implements TokenStateManager {
                                                 firstRow.getString(ACCESS_TOKEN_SCOPE_COLUMN)));
                             }
                         }
-                        return Uni.createFrom().failure(new AuthenticationCompletionException(FAILED_TO_ACQUIRE_TOKEN));
+                        return Uni.createFrom().failure(new AuthenticationFailedException(TOKENS_NOT_AVAILABLE));
                     }
                 })
                 .memoize().indefinitely();

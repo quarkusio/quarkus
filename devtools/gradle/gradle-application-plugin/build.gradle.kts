@@ -7,6 +7,7 @@ dependencies {
     implementation("io.quarkus:quarkus-analytics-common")
     compileOnly(libs.kotlin.gradle.plugin.api)
     testImplementation(libs.quarkus.project.core.extension.codestarts)
+    testImplementation(testFixtures(project(":gradle-model")))
 }
 
 group = "io.quarkus"

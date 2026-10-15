@@ -1,5 +1,5 @@
 plugins {
-    id("com.gradle.develocity") version "4.5.0"
+    id("com.gradle.develocity") version "4.5.1"
 }
 
 develocity {
@@ -7,7 +7,7 @@ develocity {
 		.map(String::isNotEmpty)
 		.getOrElse(false)
     if(isAuthenticated) {
-        server = "https://ge.quarkus.io"
+        server = "https://develocity.quarkus.io"
     }
 
     buildScan {

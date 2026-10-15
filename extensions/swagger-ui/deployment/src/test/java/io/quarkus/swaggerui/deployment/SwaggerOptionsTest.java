@@ -1,6 +1,7 @@
 package io.quarkus.swaggerui.deployment;
 
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.not;
 
 import java.io.IOException;
 import java.io.StringWriter;
@@ -34,6 +35,7 @@ public class SwaggerOptionsTest {
                         containsString("displayRequestDuration: true"),
                         containsString("supportedSubmitMethods: ['get', 'post']"),
                         containsString("plugins: [Plugin1, Plugin2]"),
+                        not(containsString("function RelativeServerPlugin()")),
                         containsString("https://unpkg.com/swagger-ui-plugin-hierarchical-tags"),
                         containsString("/some/local/script.js"));
 

@@ -24,6 +24,7 @@ class ReceiverDefinitionImpl<SIGNAL, RESPONSE> implements Receivers.ReceiverDefi
     private final Function<CallbackReceiver<SIGNAL, RESPONSE>, Receivers.Registration> registerFun;
     private final BeanContainer beanContainer;
     private final Type signalType;
+    private String name;
     private Set<Annotation> qualifiers = Set.of();
     private ExecutionModel executionModel = ExecutionModel.BLOCKING;
 
@@ -32,6 +33,12 @@ class ReceiverDefinitionImpl<SIGNAL, RESPONSE> implements Receivers.ReceiverDefi
         this.signalType = signalType;
         this.beanContainer = beanContainer;
         this.registerFun = registerFun;
+    }
+
+    @Override
+    public Receivers.ReceiverDefinition<SIGNAL> setName(String name) {
+        this.name = name;
+        return this;
     }
 
     @Override
@@ -56,7 +63,7 @@ class ReceiverDefinitionImpl<SIGNAL, RESPONSE> implements Receivers.ReceiverDefi
         Objects.requireNonNull(callback);
         @SuppressWarnings("unchecked")
         CallbackReceiver<SIGNAL, RESPONSE> receiver = (CallbackReceiver<SIGNAL, RESPONSE>) new CallbackReceiver<>(
-                signalType, qualifiers, void.class, executionModel,
+                signalType, name, qualifiers, void.class, executionModel,
                 new Function<SignalContext<SIGNAL>, Uni<Void>>() {
                     @Override
                     public Uni<Void> apply(SignalContext<SIGNAL> ctx) {
@@ -77,7 +84,7 @@ class ReceiverDefinitionImpl<SIGNAL, RESPONSE> implements Receivers.ReceiverDefi
         Objects.requireNonNull(responseType);
         Objects.requireNonNull(callback);
         return registerFun.apply(
-                (CallbackReceiver<SIGNAL, RESPONSE>) new CallbackReceiver<>(signalType, qualifiers,
+                (CallbackReceiver<SIGNAL, RESPONSE>) new CallbackReceiver<>(signalType, name, qualifiers,
                         responseType, executionModel, callback));
     }
 
@@ -87,22 +94,24 @@ class ReceiverDefinitionImpl<SIGNAL, RESPONSE> implements Receivers.ReceiverDefi
         Objects.requireNonNull(responseType);
         Objects.requireNonNull(callback);
         return registerFun.apply(
-                (CallbackReceiver<SIGNAL, RESPONSE>) new CallbackReceiver<>(signalType, qualifiers,
+                (CallbackReceiver<SIGNAL, RESPONSE>) new CallbackReceiver<>(signalType, name, qualifiers,
                         responseType.getType(), executionModel, callback));
     }
 
     static class CallbackReceiver<SIGNAL, RESPONSE> implements Receiver<SIGNAL, RESPONSE> {
 
         private final String id;
+        private final String name;
         private final Type signalType;
         private final Type responseType;
         private final Set<Annotation> qualifiers;
         private final ExecutionModel executionModel;
         private final Function<SignalContext<SIGNAL>, Uni<RESPONSE>> callback;
 
-        CallbackReceiver(Type signalType, Set<Annotation> qualifiers, Type responseType, ExecutionModel executionModel,
-                Function<SignalContext<SIGNAL>, Uni<RESPONSE>> callback) {
+        CallbackReceiver(Type signalType, String name, Set<Annotation> qualifiers, Type responseType,
+                ExecutionModel executionModel, Function<SignalContext<SIGNAL>, Uni<RESPONSE>> callback) {
             this.id = UUID.randomUUID().toString();
+            this.name = name;
             this.signalType = signalType;
             this.responseType = responseType;
             this.qualifiers = qualifiers;
@@ -112,6 +121,11 @@ class ReceiverDefinitionImpl<SIGNAL, RESPONSE> implements Receivers.ReceiverDefi
 
         String id() {
             return id;
+        }
+
+        @Override
+        public String name() {
+            return name;
         }
 
         @Override
@@ -150,8 +164,8 @@ class ReceiverDefinitionImpl<SIGNAL, RESPONSE> implements Receivers.ReceiverDefi
 
         @Override
         public String toString() {
-            return "CallbackReceiver [signalType=" + signalType + ", responseType=" + responseType + ", qualifiers="
-                    + qualifiers + ", executionModel=" + executionModel + "]";
+            return "CallbackReceiver [name=" + name + ", signalType=" + signalType + ", responseType=" + responseType
+                    + ", qualifiers=" + qualifiers + ", executionModel=" + executionModel + "]";
         }
 
     }

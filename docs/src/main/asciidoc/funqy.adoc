@@ -5,7 +5,6 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Funqy
 include::_attributes.adoc[]
-:categories: cloud
 :summary: This guide explains basics of the Funqy framework, a simple portable cross-provider cloud function API.
 :extension-status: preview
 :topics: serverless,function,cloud,funqy
@@ -19,6 +18,8 @@ and protocols it has to be a very simple API and thus, might not have all the fe
 to in other remoting abstractions.  A nice side effect though is that Funqy is as optimized and
 as small as possible.  This means that because Funqy sacrifices a little on flexibility, you'll
 get a framework that has little to no overhead.
+
+include::{includes}/extension-status.adoc[]
 
 == Funqy Basics
 

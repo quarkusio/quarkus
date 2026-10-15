@@ -23,7 +23,8 @@ public class OpenTelemetryDisabledSdkTest {
     @RegisterExtension
     static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withEmptyApplication()
-            .overrideConfigKey("quarkus.otel.sdk.disabled", "true");
+            .overrideConfigKey("quarkus.otel.sdk.disabled", "true")
+            .overrideConfigKey("quarkus.datasource.devservices.enabled", "false");
 
     @Inject
     SpanExporter spanExporter;

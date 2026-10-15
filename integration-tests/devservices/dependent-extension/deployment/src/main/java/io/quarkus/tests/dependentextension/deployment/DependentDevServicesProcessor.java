@@ -46,9 +46,9 @@ public class DependentDevServicesProcessor {
                 .feature(FEATURE)
                 .serviceName(FEATURE)
                 .startable(() -> new DependentContainer()) // Builds could be speeded up a bit by using an in-process service, but coverage is probably better with a container
-                .configProvider(Map.of(QUARKUS_DEPENDENT_EXTENSION_BASE_URL,
-                        c -> c.getConnectionInfo(), QUARKUS_DEPENDENT_EXTENSION_SEES_DEPENDENCY,
-                        c -> String.valueOf(c.isDependencyAvailable())))
+                .configProvider(c -> Map.of(
+                        QUARKUS_DEPENDENT_EXTENSION_BASE_URL, c.getConnectionInfo(),
+                        QUARKUS_DEPENDENT_EXTENSION_SEES_DEPENDENCY, String.valueOf(c.isDependencyAvailable())))
                 .dependsOnConfig("acme.simpleextension.base-url", (s, v) -> s.setOtherUrl(v))
                 .build();
 
@@ -61,8 +61,8 @@ public class DependentDevServicesProcessor {
                 .feature(FEATURE)
                 .serviceName(FEATURE + "unsat")
                 .startable(() -> new DependentContainer()) // Builds could be speeded up a bit by using an in-process service, but coverage is probably better with a container
-                .configProvider(Map.of(QUARKUS_UNSATISFIED_DEPENDENT_EXTENSION_BASE_URL,
-                        c -> c.getConnectionInfo()))
+                .configProvider(c -> Map.of(
+                        QUARKUS_UNSATISFIED_DEPENDENT_EXTENSION_BASE_URL, c.getConnectionInfo()))
                 .dependsOnConfig("impossible", (s, v) -> s.setOtherUrl(v))
                 .build();
 
@@ -75,9 +75,9 @@ public class DependentDevServicesProcessor {
                 .feature("quarkus-dependent")
                 .serviceName(FEATURE + "opt")
                 .startable(() -> new DependentContainer()) // Builds could be speeded up a bit by using an in-process service, but coverage is probably better with a container
-                .configProvider(Map.of(QUARKUS_OPTIONAL_DEPENDENT_EXTENSION_BASE_URL,
-                        c -> c.getConnectionInfo(), QUARKUS_OPTIONAL_DEPENDENT_EXTENSION_SEES_DEPENDENCY,
-                        c -> String.valueOf(c.isDependencyAvailable())))
+                .configProvider(c -> Map.of(
+                        QUARKUS_OPTIONAL_DEPENDENT_EXTENSION_BASE_URL, c.getConnectionInfo(),
+                        QUARKUS_OPTIONAL_DEPENDENT_EXTENSION_SEES_DEPENDENCY, String.valueOf(c.isDependencyAvailable())))
                 .dependsOnConfig("acme.simpleextension.base-url", (s, v) -> s.setOtherUrl(v), true)
                 .build();
 
@@ -90,9 +90,10 @@ public class DependentDevServicesProcessor {
                 .feature(FEATURE)
                 .serviceName(FEATURE + "unsat-opt")
                 .startable(() -> new OptionallyDependentContainer()) // Builds could be speeded up a bit by using an in-process service, but coverage is probably better with a container
-                .configProvider(Map.of(QUARKUS_UNSATISFIED_OPTIONAL_DEPENDENT_EXTENSION_BASE_URL,
-                        c -> c.getConnectionInfo(), QUARKUS_UNSATISFIED_OPTIONAL_DEPENDENT_EXTENSION_SEES_DEPENDENCY,
-                        c -> String.valueOf(c.isDependencyAvailable())))
+                .configProvider(c -> Map.of(
+                        QUARKUS_UNSATISFIED_OPTIONAL_DEPENDENT_EXTENSION_BASE_URL, c.getConnectionInfo(),
+                        QUARKUS_UNSATISFIED_OPTIONAL_DEPENDENT_EXTENSION_SEES_DEPENDENCY,
+                        String.valueOf(c.isDependencyAvailable())))
                 .dependsOnConfig("impossible", (s, v) -> s.setOtherUrl(v), true)
                 .build();
 

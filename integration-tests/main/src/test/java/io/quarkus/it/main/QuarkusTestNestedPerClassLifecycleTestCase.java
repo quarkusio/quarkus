@@ -42,6 +42,19 @@ public class QuarkusTestNestedPerClassLifecycleTestCase {
     }
 
     @Nested
+    class LevelOne {
+
+        @Nested
+        class LevelTwo {
+
+            @Test
+            public void verifyOuterInstance() {
+                assertEquals(1, counter.get());
+            }
+        }
+    }
+
+    @Nested
     class NestedTest {
 
         @Test

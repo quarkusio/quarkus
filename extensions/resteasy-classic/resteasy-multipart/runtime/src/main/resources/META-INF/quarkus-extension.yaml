@@ -10,7 +10,7 @@ metadata:
   - "jaxrs"
   - "rest"
   - "jakarta-rest"
-  guide: "https://quarkus.io/guides/rest-json#multipart-support"
+  guide: "https://quarkus.io/guides/resteasy#multipart-support"
   categories:
   - "web"
   status: "stable"

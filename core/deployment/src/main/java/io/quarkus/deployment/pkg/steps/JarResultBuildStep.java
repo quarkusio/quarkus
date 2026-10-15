@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -15,6 +16,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.function.BooleanSupplier;
 import java.util.stream.Collectors;
 
+import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.AdditionalApplicationArchiveBuildItem;
 import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
@@ -44,6 +46,7 @@ import io.quarkus.deployment.pkg.jar.FastJarBuilder;
 import io.quarkus.deployment.pkg.jar.LegacyThinJarBuilder;
 import io.quarkus.deployment.pkg.jar.NativeImageSourceJarBuilder;
 import io.quarkus.deployment.pkg.jar.UberJarBuilder;
+import io.quarkus.deployment.sbom.SbomGeneratedResourceBuildItem;
 import io.quarkus.maven.dependency.ArtifactKey;
 import io.quarkus.maven.dependency.DependencyFlags;
 import io.quarkus.maven.dependency.GACT;
@@ -66,10 +69,17 @@ import io.quarkus.maven.dependency.GACT;
 public class JarResultBuildStep {
 
     @BuildStep
-    OutputTargetBuildItem outputTarget(BuildSystemTargetBuildItem bst, PackageConfig packageConfig) {
-        String name = packageConfig.outputName().orElseGet(bst::getBaseName);
-        Path path = packageConfig.outputDirectory().map(s -> bst.getOutputDirectory().resolve(s))
-                .orElseGet(bst::getOutputDirectory);
+    void outputTarget(
+            PackageConfig packageConfig,
+            BuildSystemTargetBuildItem bst,
+            BuildProducer<OutputTargetBuildItem> outputTarget) {
+
+        // QuarkusBootstrap does not force to set a targetDirectory (QuarkusDeployableContainer),
+        // so in that case, it doesn't make sense to generate an OutputTargetBuildItem
+        if (bst.getOutputDirectory() == null) {
+            return;
+        }
+
         Optional<Set<ArtifactKey>> includedOptionalDependencies;
         if (packageConfig.jar().filterOptionalDependencies()) {
             includedOptionalDependencies = Optional.of(packageConfig.jar().includedOptionalDependencies()
@@ -78,8 +88,12 @@ public class JarResultBuildStep {
         } else {
             includedOptionalDependencies = Optional.empty();
         }
-        return new OutputTargetBuildItem(path, name, bst.getOriginalBaseName(), bst.isRebuild(), bst.getBuildSystemProps(),
-                includedOptionalDependencies);
+
+        outputTarget.produce(new OutputTargetBuildItem(
+                bst.getOutputDirectory(),
+                bst.getOutputDirectory().resolve(packageConfig.outputDirectory()),
+                packageConfig.outputName(), bst.getOriginalBaseName(), bst.isRebuild(),
+                bst.getBuildSystemProps(), includedOptionalDependencies));
     }
 
     @BuildStep(onlyIf = JarRequired.class)
@@ -110,12 +124,15 @@ public class JarResultBuildStep {
             MainClassBuildItem mainClassBuildItem,
             Optional<JvmStartupOptimizerArchiveRequestedBuildItem> jvmStartupOptimizerArchiveRequested,
             JarTreeShakeBuildItem treeShakeResult,
+            List<SbomGeneratedResourceBuildItem> sbomResources,
             ExecutorService buildExecutor)
             throws Exception {
 
         if (jvmStartupOptimizerArchiveRequested.isPresent()) {
             handleAppCDSSupportFileGeneration(transformedClasses, generatedClasses, jvmStartupOptimizerArchiveRequested.get());
         }
+
+        List<GeneratedResourceBuildItem> allResources = mergeResources(generatedResources, sbomResources);
 
         Set<ArtifactKey> removedArtifactKeys = getRemovedArtifactKeys(classLoadingConfig);
         Set<ArtifactKey> parentFirstArtifactKeys = getParentFirstArtifactKeys(curateOutcomeBuildItem, classLoadingConfig);
@@ -129,7 +146,7 @@ public class JarResultBuildStep {
                     applicationArchivesBuildItem,
                     transformedClasses,
                     generatedClasses,
-                    generatedResources,
+                    allResources,
                     generatedServiceProviders,
                     removedArtifactKeys,
                     uberJarMergedResourceBuildItems,
@@ -145,7 +162,7 @@ public class JarResultBuildStep {
                     applicationArchivesBuildItem,
                     transformedClasses,
                     generatedClasses,
-                    generatedResources,
+                    allResources,
                     generatedServiceProviders,
                     removedArtifactKeys,
                     buildExecutor,
@@ -160,7 +177,7 @@ public class JarResultBuildStep {
                     additionalApplicationArchiveBuildItems,
                     transformedClasses,
                     generatedClasses,
-                    generatedResources,
+                    allResources,
                     generatedServiceProviders,
                     parentFirstArtifactKeys,
                     removedArtifactKeys,
@@ -176,7 +193,7 @@ public class JarResultBuildStep {
                     additionalApplicationArchiveBuildItems,
                     transformedClasses,
                     generatedClasses,
-                    generatedResources,
+                    allResources,
                     generatedServiceProviders,
                     parentFirstArtifactKeys,
                     removedArtifactKeys,
@@ -203,6 +220,7 @@ public class JarResultBuildStep {
             MainClassBuildItem mainClassBuildItem,
             ClassLoadingConfig classLoadingConfig,
             JarTreeShakeBuildItem treeShakeResult,
+            List<SbomGeneratedResourceBuildItem> sbomResources,
             ExecutorService buildExecutor,
             ResolvedJVMRequirements jvmRequirements) throws Exception {
 
@@ -214,7 +232,7 @@ public class JarResultBuildStep {
                 applicationArchivesBuildItem,
                 transformedClasses,
                 generatedClasses,
-                generatedResources,
+                mergeResources(generatedResources, sbomResources),
                 generatedServiceProviders,
                 nativeImageResources,
                 getRemovedArtifactKeys(classLoadingConfig),
@@ -234,7 +252,7 @@ public class JarResultBuildStep {
         try (BufferedWriter writer = Files.newBufferedWriter(generatedClassesFile, StandardOpenOption.CREATE)) {
             StringBuilder classes = new StringBuilder();
             for (GeneratedClassBuildItem generatedClass : generatedClasses) {
-                classes.append(generatedClass.getName().replace('/', '.')).append(System.lineSeparator());
+                classes.append(generatedClass.binaryName()).append(System.lineSeparator());
             }
 
             for (Set<TransformedClassesBuildItem.TransformedClass> transformedClassesSet : transformedClasses
@@ -251,6 +269,20 @@ public class JarResultBuildStep {
                 writer.write(classes.toString());
             }
         }
+    }
+
+    private static List<GeneratedResourceBuildItem> mergeResources(
+            List<GeneratedResourceBuildItem> generatedResources,
+            List<SbomGeneratedResourceBuildItem> sbomResources) {
+        if (sbomResources.isEmpty()) {
+            return generatedResources;
+        }
+        List<GeneratedResourceBuildItem> result = new ArrayList<>(generatedResources.size() + sbomResources.size());
+        result.addAll(generatedResources);
+        for (SbomGeneratedResourceBuildItem sbom : sbomResources) {
+            result.add(new GeneratedResourceBuildItem(sbom.getName(), sbom.getData()));
+        }
+        return result;
     }
 
     static class JarRequired implements BooleanSupplier {

@@ -6,7 +6,7 @@ metadata:
   - "command-line"
   - "cli"
   categories:
-  - "miscellaneous"
+  - "command-line"
   status: "preview"
   guide: "https://quarkus.io/guides/aesh"
   codestart:

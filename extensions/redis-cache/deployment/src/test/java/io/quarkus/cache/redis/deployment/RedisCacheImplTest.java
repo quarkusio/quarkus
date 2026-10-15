@@ -182,6 +182,49 @@ class RedisCacheImplTest {
     }
 
     @Test
+    public void testGetWithCustomExpiration() {
+        String k = UUID.randomUUID().toString();
+        RedisCacheInfo info = new RedisCacheInfo();
+        info.name = "foo";
+        info.valueType = String.class;
+        RedisCacheImpl cache = new RedisCacheImpl(info, vertx, redis, BLOCKING_ALLOWED);
+
+        // Put with 1s expiration
+        assertThat(cache.get(k, String.class, s -> "hello", Duration.ofSeconds(1)).await().indefinitely()).isEqualTo("hello");
+        assertThat(cache.get(k, String.class, String::toUpperCase, Duration.ofSeconds(1)).await().indefinitely())
+                .isEqualTo("hello");
+        await().atMost(Duration.ofSeconds(5)).until(() -> cache.getOrNull(k, String.class).await().indefinitely() == null);
+    }
+
+    @Test
+    public void testGetAsyncWithCustomExpiration() {
+        String k = UUID.randomUUID().toString();
+        RedisCacheInfo info = new RedisCacheInfo();
+        info.name = "foo";
+        info.valueType = String.class;
+        RedisCacheImpl cache = new RedisCacheImpl(info, vertx, redis, BLOCKING_ALLOWED);
+
+        // Put with 1s expiration
+        assertThat(cache.getAsync(k, String.class, s -> Uni.createFrom().item("hello"), Duration.ofSeconds(1)).await()
+                .indefinitely()).isEqualTo("hello");
+        assertThat(cache.getOrNull(k, String.class).await().indefinitely()).isEqualTo("hello");
+        await().atMost(Duration.ofSeconds(5)).until(() -> cache.getOrNull(k, String.class).await().indefinitely() == null);
+    }
+
+    @Test
+    public void testPutWithCustomExpiration() {
+        String k = UUID.randomUUID().toString();
+        RedisCacheInfo info = new RedisCacheInfo();
+        info.name = "foo";
+        info.valueType = String.class;
+        RedisCacheImpl cache = new RedisCacheImpl(info, vertx, redis, BLOCKING_ALLOWED);
+
+        cache.put(k, "hello", Duration.ofSeconds(1)).await().indefinitely();
+        assertThat(cache.getOrNull(k, String.class).await().indefinitely()).isEqualTo("hello");
+        await().atMost(Duration.ofSeconds(5)).until(() -> cache.getOrNull(k, String.class).await().indefinitely() == null);
+    }
+
+    @Test
     public void testExpireAfterReadAndWrite() throws InterruptedException {
         String k = UUID.randomUUID().toString();
         RedisCacheInfo info = new RedisCacheInfo();

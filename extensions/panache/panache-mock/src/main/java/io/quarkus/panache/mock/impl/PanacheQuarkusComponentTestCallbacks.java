@@ -10,6 +10,7 @@ import java.util.function.BiFunction;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
+import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.Opcodes;
@@ -44,11 +45,10 @@ public class PanacheQuarkusComponentTestCallbacks implements QuarkusComponentTes
         List<ClassInfo> mockedEntities = new ArrayList<>();
         for (Class<?> mockClass : panacheMocks.value()) {
             ClassInfo maybeMockedEntity = buildContext.getComputingBeanArchiveIndex().getClassByName(mockClass);
-            DotName superName = maybeMockedEntity.superName();
             if (maybeMockedEntity.isAbstract()
-                    || superName == null
-                    || (!superName.equals(PANACHE_ENTITY)
-                            && !superName.equals(PANACHE_ENTITY_BASE))) {
+                    || (!isPanacheEntity(
+                            maybeMockedEntity,
+                            buildContext.getComputingBeanArchiveIndex()))) {
                 continue;
             }
             mockedEntities.add(maybeMockedEntity);
@@ -114,6 +114,24 @@ public class PanacheQuarkusComponentTestCallbacks implements QuarkusComponentTes
                         }
                     }));
         }
+    }
+
+    private static boolean isPanacheEntity(ClassInfo entity, IndexView index) {
+        ClassInfo current = entity;
+
+        while (current != null) {
+            DotName superName = current.superName();
+            if (superName == null) {
+                return false;
+            }
+            if (PANACHE_ENTITY.equals(superName)
+                    || PANACHE_ENTITY_BASE.equals(superName)) {
+                return true;
+            }
+            current = index.getClassByName(superName);
+        }
+
+        return false;
     }
 
     private void addMethod(String entityClass, ClassTransformer transformer, MethodInfo method) {

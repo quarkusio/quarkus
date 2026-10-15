@@ -1,8 +1,5 @@
 package org.jboss.resteasy.reactive.common.util;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import jakarta.ws.rs.core.MultivaluedMap;
 import jakarta.ws.rs.core.PathSegment;
 
@@ -88,51 +85,6 @@ public class PathSegmentImpl implements PathSegment {
             }
         }
         return buf.toString();
-    }
-
-    public static List<PathSegment> parseSegments(String path, boolean decode) {
-        return parseSegmentsOptimization(path, decode).segments;
-    }
-
-    /**
-     * Used when creating the matching path in ResteasyUriInfo
-     *
-     */
-    public static class SegmentParse {
-        public List<PathSegment> segments;
-        public boolean hasMatrixParams;
-
-    }
-
-    /**
-     *
-     * @param path encoded full path
-     * @param decode whether or not to decode each segment
-     * @return {@link SegmentParse}
-     */
-    public static SegmentParse parseSegmentsOptimization(String path, boolean decode) {
-        SegmentParse parse = new SegmentParse();
-        List<PathSegment> pathSegments = new ArrayList<PathSegment>();
-        parse.segments = pathSegments;
-        int start = 0;
-        if (path.startsWith("/"))
-            start++;
-        int length = path.length();
-        do {
-            String p;
-            int slash = path.indexOf('/', start);
-            if (slash < 0) {
-                p = path.substring(start);
-                start = length;
-            } else {
-                p = path.substring(start, slash);
-                start = slash + 1;
-            }
-            PathSegmentImpl pathSegment = new PathSegmentImpl(p, decode);
-            parse.hasMatrixParams |= pathSegment.hasMatrixParams();
-            pathSegments.add(pathSegment);
-        } while (start < length);
-        return parse;
     }
 
 }

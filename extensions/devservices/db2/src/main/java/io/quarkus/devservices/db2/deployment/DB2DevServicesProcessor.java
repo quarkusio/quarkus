@@ -19,10 +19,6 @@ import org.testcontainers.utility.DockerImageName;
 
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
 import io.quarkus.datasource.common.runtime.DatabaseKind;
-import io.quarkus.datasource.deployment.spi.DatasourceStartable;
-import io.quarkus.datasource.deployment.spi.DevServicesDatasourceContainerConfig;
-import io.quarkus.datasource.deployment.spi.DevServicesDatasourceProvider;
-import io.quarkus.datasource.deployment.spi.DevServicesDatasourceProviderBuildItem;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.DevServicesComposeProjectBuildItem;
@@ -31,9 +27,15 @@ import io.quarkus.deployment.dev.devservices.DevServicesConfig;
 import io.quarkus.deployment.util.ContainerRuntimeUtil;
 import io.quarkus.devservices.common.ComposeLocator;
 import io.quarkus.devservices.common.ConfigureUtil;
+import io.quarkus.devservices.common.DevServicesHostUtil;
 import io.quarkus.devservices.common.JBossLoggingConsumer;
 import io.quarkus.devservices.common.Labels;
 import io.quarkus.devservices.common.Volumes;
+import io.quarkus.devservices.datasource.common.DatasourceStartable;
+import io.quarkus.devservices.datasource.common.DatasourceStartableContainer;
+import io.quarkus.devservices.datasource.common.DevServicesDatasourceContainerConfig;
+import io.quarkus.devservices.datasource.common.DevServicesDatasourceProvider;
+import io.quarkus.devservices.datasource.common.DevServicesDatasourceProviderBuildItem;
 import io.quarkus.runtime.LaunchMode;
 
 public class DB2DevServicesProcessor {
@@ -122,6 +124,13 @@ public class DB2DevServicesProcessor {
 
                 container.withEnv(containerConfig.getContainerEnv());
 
+                String effectiveImageName = containerConfig.getImageName()
+                        .orElseGet(() -> ConfigureUtil.getDefaultImageNameFor("db2"));
+                if (devServicesConfig.licenseAcceptance()
+                        .map(images -> images.contains(effectiveImageName)).orElse(false)) {
+                    container.addEnv("LICENSE", "accept");
+                }
+
                 containerConfig.getAdditionalJdbcUrlProperties().forEach(container::withUrlParam);
                 containerConfig.getCommand().ifPresent(container::setCommand);
                 containerConfig.getInitScriptPath().ifPresent(container::withInitScripts);
@@ -129,7 +138,7 @@ public class DB2DevServicesProcessor {
                     container.withLogConsumer(new JBossLoggingConsumer(LOG));
                 }
 
-                return container;
+                return new DatasourceStartableContainer<>(container);
             }
 
             @Override
@@ -165,7 +174,19 @@ public class DB2DevServicesProcessor {
 
         @Override
         protected void configure() {
-            super.configure();
+            try {
+                super.configure();
+            } catch (IllegalStateException e) {
+                if (e.getMessage() != null && e.getMessage().contains("license agreement")) {
+                    throw new IllegalStateException(
+                            "The container image " + getDockerImageName()
+                                    + " requires you to accept a license agreement."
+                                    + " To accept, add the following to your Quarkus configuration:"
+                                    + " quarkus.devservices.license-acceptance=" + getDockerImageName(),
+                            e);
+                }
+                throw e;
+            }
 
             if (useSharedNetwork) {
                 return;
@@ -188,6 +209,16 @@ public class DB2DevServicesProcessor {
             }
         }
 
+        // this is always reachable from the host JVM, so that testcontainers can determine the status of the
+        // container (which it does by trying to acquire a connection)
+        @Override
+        public String getJdbcUrl() {
+            String host = DevServicesHostUtil.resolvePublishedPortHost(getContainerId(), getHost());
+            String authority = DevServicesHostUtil.formatHostAndPort(host, getMappedPort(DB2_PORT));
+            String additionalUrlParams = constructUrlParameters(":", ";", ";");
+            return "jdbc:db2://" + authority + "/" + getDatabaseName() + additionalUrlParams;
+        }
+
         // this is meant to be called by Quarkus code and is not strictly needed
         // in the DB2 case as testcontainers does not try to establish
         // a connection to determine if the container is ready, but we do it anyway to be consistent across
@@ -197,11 +228,11 @@ public class DB2DevServicesProcessor {
                 // in this case we expose the URL using the network alias we created in 'configure'
                 // and the container port since the application communicating with this container
                 // won't be doing port mapping
+                String authority = DevServicesHostUtil.formatHostAndPort(hostName, DB2_PORT);
                 String additionalUrlParams = constructUrlParameters(":", ";", ";");
-                return "jdbc:db2://" + hostName + ":" + DB2_PORT + "/" + getDatabaseName() + additionalUrlParams;
-            } else {
-                return super.getJdbcUrl();
+                return "jdbc:db2://" + authority + "/" + getDatabaseName() + additionalUrlParams;
             }
+            return getJdbcUrl();
         }
 
         public String getReactiveUrl() {

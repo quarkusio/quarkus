@@ -5,12 +5,11 @@ import java.util.Optional;
 import java.util.function.Function;
 
 import io.quarkus.arc.SyntheticCreationalContext;
-import io.quarkus.datasource.common.runtime.DataSourceUtil;
 import io.quarkus.datasource.common.runtime.DatabaseKind;
+import io.quarkus.datasource.deployment.spi.DataSourceDefinedBuildItem;
+import io.quarkus.datasource.deployment.spi.DatabaseVersionLoader;
 import io.quarkus.datasource.deployment.spi.DefaultDataSourceDbKindBuildItem;
-import io.quarkus.datasource.deployment.spi.DevServicesDatasourceConfigurationHandlerBuildItem;
-import io.quarkus.datasource.runtime.DataSourceBuildTimeConfig;
-import io.quarkus.datasource.runtime.DataSourcesBuildTimeConfig;
+import io.quarkus.datasource.deployment.spi.DefaultDataSourceDbVersionBuildItem;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.Feature;
@@ -23,12 +22,11 @@ import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
-import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
-import io.quarkus.reactive.datasource.runtime.DataSourceReactiveBuildTimeConfig;
-import io.quarkus.reactive.datasource.runtime.DataSourcesReactiveBuildTimeConfig;
+import io.quarkus.devservices.datasource.common.DevServicesDatasourceConfigurationHandlerBuildItem;
 import io.quarkus.reactive.datasource.spi.ReactivePoolBuildItem;
 import io.quarkus.reactive.db2.client.runtime.DB2PoolRecorder;
 import io.quarkus.reactive.db2.client.runtime.DB2ServiceBindingConverter;
+import io.quarkus.runtime.util.ProgrammingParadigm;
 import io.quarkus.tls.deployment.spi.TlsRegistryBuildItem;
 import io.quarkus.vertx.core.deployment.EventLoopCountBuildItem;
 import io.quarkus.vertx.deployment.VertxBuildItem;
@@ -50,18 +48,16 @@ class ReactiveDB2ClientProcessor {
             ShutdownContextBuildItem shutdown,
             Optional<TlsRegistryBuildItem> tlsRegistryBuildItem,
             BuildProducer<ExtensionSslNativeSupportBuildItem> sslNativeSupport,
-            DataSourcesBuildTimeConfig dataSourcesBuildTimeConfig,
-            DataSourcesReactiveBuildTimeConfig dataSourcesReactiveBuildTimeConfig,
-            List<DefaultDataSourceDbKindBuildItem> defaultDataSourceDbKindBuildItems,
-            CurateOutcomeBuildItem curateOutcomeBuildItem) {
+            List<DataSourceDefinedBuildItem> definedDataSources) {
 
         feature.produce(new FeatureBuildItem(Feature.REACTIVE_DB2_CLIENT));
 
-        for (String dataSourceName : dataSourcesBuildTimeConfig.dataSources().keySet()) {
-            if (!isReactiveDB2PoolDefined(dataSourcesBuildTimeConfig, dataSourcesReactiveBuildTimeConfig, dataSourceName,
-                    defaultDataSourceDbKindBuildItems, curateOutcomeBuildItem)) {
+        for (DataSourceDefinedBuildItem dataSource : definedDataSources) {
+            if (!dataSource.getParadigms().contains(ProgrammingParadigm.REACTIVE)
+                    || !DatabaseKind.isDB2(dataSource.getDbKind())) {
                 continue;
             }
+            String dataSourceName = dataSource.getName();
 
             Function<SyntheticCreationalContext<Pool>, Pool> poolFunction = recorder.configureDB2Pool(vertx.getVertx(),
                     eventLoopCount.getEventLoopCount(), dataSourceName, shutdown,
@@ -87,39 +83,15 @@ class ReactiveDB2ClientProcessor {
 
     @BuildStep
     void registerServiceBinding(Capabilities capabilities, BuildProducer<ServiceProviderBuildItem> serviceProvider,
-            BuildProducer<DefaultDataSourceDbKindBuildItem> dbKind) {
+            BuildProducer<DefaultDataSourceDbKindBuildItem> dbKind,
+            BuildProducer<DefaultDataSourceDbVersionBuildItem> dbVersion) {
         if (capabilities.isPresent(Capability.KUBERNETES_SERVICE_BINDING)) {
             serviceProvider.produce(
                     new ServiceProviderBuildItem("io.quarkus.kubernetes.service.binding.runtime.ServiceBindingConverter",
                             DB2ServiceBindingConverter.class.getName()));
         }
         dbKind.produce(new DefaultDataSourceDbKindBuildItem(DatabaseKind.DB2));
-    }
-
-    private static boolean isReactiveDB2PoolDefined(DataSourcesBuildTimeConfig dataSourcesBuildTimeConfig,
-            DataSourcesReactiveBuildTimeConfig dataSourcesReactiveBuildTimeConfig, String dataSourceName,
-            List<DefaultDataSourceDbKindBuildItem> defaultDataSourceDbKindBuildItems,
-            CurateOutcomeBuildItem curateOutcomeBuildItem) {
-        DataSourceBuildTimeConfig dataSourceBuildTimeConfig = dataSourcesBuildTimeConfig
-                .dataSources().get(dataSourceName);
-        DataSourceReactiveBuildTimeConfig dataSourceReactiveBuildTimeConfig = dataSourcesReactiveBuildTimeConfig
-                .dataSources().get(dataSourceName).reactive();
-
-        Optional<String> dbKind = DefaultDataSourceDbKindBuildItem.resolve(dataSourceBuildTimeConfig.dbKind(),
-                defaultDataSourceDbKindBuildItems,
-                !DataSourceUtil.isDefault(dataSourceName) || dataSourceBuildTimeConfig.devservices().enabled()
-                        .orElse(!dataSourcesBuildTimeConfig.hasNamedDataSources()),
-                curateOutcomeBuildItem);
-
-        if (!dbKind.isPresent()) {
-            return false;
-        }
-
-        if (!DatabaseKind.isDB2(dbKind.get())
-                || !dataSourceReactiveBuildTimeConfig.enabled()) {
-            return false;
-        }
-
-        return true;
+        dbVersion.produce(new DefaultDataSourceDbVersionBuildItem(DatabaseKind.DB2,
+                DatabaseVersionLoader.loadDefaultVersion("db2")));
     }
 }

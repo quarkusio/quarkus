@@ -4,6 +4,7 @@ import static org.jboss.jandex.AnnotationTarget.Kind.FIELD;
 import static org.jboss.jandex.AnnotationTarget.Kind.METHOD;
 
 import java.beans.ConstructorProperties;
+import java.lang.constant.ClassDesc;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -28,7 +29,7 @@ import org.jboss.jandex.IndexView;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.AutoAddScopeBuildItem;
 import io.quarkus.arc.deployment.GeneratedBeanBuildItem;
-import io.quarkus.arc.deployment.GeneratedBeanGizmoAdaptor;
+import io.quarkus.arc.deployment.GeneratedBeanGizmo2Adaptor;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.arc.processor.BeanInfo;
 import io.quarkus.arc.processor.BuiltinScope;
@@ -39,11 +40,11 @@ import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBundleBuil
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveMethodBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
-import io.quarkus.gizmo.ClassCreator;
-import io.quarkus.gizmo.ClassOutput;
-import io.quarkus.gizmo.MethodCreator;
-import io.quarkus.gizmo.MethodDescriptor;
-import io.quarkus.gizmo.ResultHandle;
+import io.quarkus.gizmo2.ClassOutput;
+import io.quarkus.gizmo2.Gizmo;
+import io.quarkus.gizmo2.ParamVar;
+import io.quarkus.gizmo2.desc.ConstructorDesc;
+import io.quarkus.gizmo2.desc.MethodDesc;
 import io.quarkus.jsonb.JsonbConfigCustomizer;
 import io.quarkus.jsonb.JsonbProducer;
 import io.quarkus.jsonb.QuarkusJsonbComponentInstanceCreator;
@@ -155,46 +156,35 @@ public class JsonbProcessor {
             return;
         }
 
-        ClassOutput classOutput = new GeneratedBeanGizmoAdaptor(generatedBeans);
+        ClassOutput classOutput = new GeneratedBeanGizmo2Adaptor(generatedBeans);
 
-        try (ClassCreator classCreator = ClassCreator.builder().classOutput(classOutput)
-                .className("io.quarkus.jsonb.customizer.RegisterSerializersAndDeserializersCustomizer")
-                .interfaces(JsonbConfigCustomizer.class.getName())
-                .build()) {
-            classCreator.addAnnotation(Singleton.class);
-
-            try (MethodCreator customize = classCreator.getMethodCreator("customize", void.class, JsonbConfig.class)) {
-                ResultHandle jsonbConfig = customize.getMethodParam(0);
-                if (!customSerializerClasses.isEmpty()) {
-                    ResultHandle serializersArray = customize.newArray(JsonbSerializer.class, customSerializerClasses.size());
-                    int i = 0;
-                    for (String customSerializerClass : customSerializerClasses) {
-                        customize.writeArrayValue(serializersArray, i,
-                                customize.newInstance(MethodDescriptor.ofConstructor(customSerializerClass)));
-                        i++;
+        Gizmo gizmo = Gizmo.create(classOutput);
+        gizmo.class_("io.quarkus.jsonb.customizer.RegisterSerializersAndDeserializersCustomizer", cc -> {
+            cc.implements_(JsonbConfigCustomizer.class);
+            cc.defaultConstructor();
+            cc.addAnnotation(Singleton.class);
+            cc.method("customize", mc -> {
+                ParamVar jsonbConfig = mc.parameter("jsonbConfig", JsonbConfig.class);
+                mc.returning(void.class);
+                mc.body(bc -> {
+                    if (!customSerializerClasses.isEmpty()) {
+                        var serializersArray = bc.newArray(JsonbSerializer.class,
+                                List.copyOf(customSerializerClasses),
+                                cls -> bc.new_(ConstructorDesc.of(ClassDesc.of(cls))));
+                        bc.invokeVirtual(
+                                MethodDesc.of(JsonbConfig.class, "withSerializers", JsonbConfig.class, JsonbSerializer[].class),
+                                jsonbConfig, serializersArray);
                     }
-                    customize.invokeVirtualMethod(
-                            MethodDescriptor.ofMethod(JsonbConfig.class, "withSerializers", JsonbConfig.class,
-                                    JsonbSerializer[].class),
-                            jsonbConfig, serializersArray);
-                }
-                if (!customDeserializerClasses.isEmpty()) {
-                    ResultHandle deserializersArray = customize.newArray(JsonbDeserializer.class,
-                            customDeserializerClasses.size());
-                    int i = 0;
-                    for (String customDeserializerClass : customDeserializerClasses) {
-                        customize.writeArrayValue(deserializersArray, i,
-                                customize.newInstance(MethodDescriptor.ofConstructor(customDeserializerClass)));
-                        i++;
+                    if (!customDeserializerClasses.isEmpty()) {
+                        var deserializersArray = bc.newArray(JsonbDeserializer.class,
+                                List.copyOf(customDeserializerClasses),
+                                cls -> bc.new_(ConstructorDesc.of(ClassDesc.of(cls))));
+                        bc.invokeVirtual(MethodDesc.of(JsonbConfig.class, "withDeserializers", JsonbConfig.class,
+                                JsonbDeserializer[].class), jsonbConfig, deserializersArray);
                     }
-                    customize.invokeVirtualMethod(
-                            MethodDescriptor.ofMethod(JsonbConfig.class, "withDeserializers", JsonbConfig.class,
-                                    JsonbDeserializer[].class),
-                            jsonbConfig, deserializersArray);
-                }
-
-                customize.returnValue(null);
-            }
-        }
+                    bc.return_();
+                });
+            });
+        });
     }
 }

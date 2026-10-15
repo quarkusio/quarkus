@@ -39,5 +39,4 @@
 - Do NOT use `@Transactional` on private methods — CDI proxies cannot intercept them.
 - Hibernate Reactive and Hibernate ORM can coexist in the same project, but do NOT mix them in the same method — they use separate persistence contexts.
 - Always add a JDBC driver extension when using Hibernate ORM, a Vert.x SQL client extension when using Hibernate Reactive.
-- Define `quarkus.datasource.db-kind` for the default datasource if there are multiple JDBC drivers or Vert.x SQL client extensions in the classpath.
-- Always define `quarkus.datasource."my-datasource".db-kind` for named datasources; this ensures the datasource is detected by Quarkus at build time.
+- Define `quarkus.datasource.db-kind` for the default or named datasource if there are multiple JDBC drivers or Vert.x SQL client extensions in the classpath.

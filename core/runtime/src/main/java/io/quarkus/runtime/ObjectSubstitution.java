@@ -9,7 +9,9 @@ package io.quarkus.runtime;
  *
  * @param <F> The non-serializable class
  * @param <T> The serializable class
+ * @deprecated The bytecode recorder infrastructure is being replaced by a lambda-based service mechanism.
  */
+@Deprecated(since = "4.0")
 public interface ObjectSubstitution<F, T> {
 
     T serialize(F obj);

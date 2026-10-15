@@ -17,8 +17,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-
 import io.quarkus.redis.datasource.keys.CopyArgs;
 import io.quarkus.redis.datasource.keys.ExpireArgs;
 import io.quarkus.redis.datasource.keys.KeyCommands;
@@ -30,6 +28,7 @@ import io.quarkus.redis.datasource.list.ListCommands;
 import io.quarkus.redis.datasource.sortedset.SortedSetCommands;
 import io.quarkus.redis.datasource.value.ValueCommands;
 import io.quarkus.redis.runtime.datasource.BlockingRedisDataSourceImpl;
+import tools.jackson.core.type.TypeReference;
 
 public class KeyCommandsTest extends DatasourceTestBase {
 

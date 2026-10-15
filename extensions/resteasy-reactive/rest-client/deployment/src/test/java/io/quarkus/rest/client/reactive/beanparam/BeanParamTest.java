@@ -128,8 +128,6 @@ public class BeanParamTest {
         private String restQueryOverridden = "restQueryOverridden";
         @QueryParam("queryParam")
         private String queryParam = "queryParam";
-
-        // FIXME: Matrix not supported
     }
 
     public static class MyBeanParamWithProperties {
@@ -198,8 +196,6 @@ public class BeanParamTest {
         public String getQueryParam() {
             return "queryParam";
         }
-
-        // FIXME: Matrix not supported
     }
 
     @Path("/")

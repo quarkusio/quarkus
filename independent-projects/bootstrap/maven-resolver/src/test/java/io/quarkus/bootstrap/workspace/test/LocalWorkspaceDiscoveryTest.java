@@ -773,6 +773,40 @@ public class LocalWorkspaceDiscoveryTest {
         assertThat(src.getOutputDir()).isEqualTo(module1Dir.resolve("target/classes/META-INF/resources"));
     }
 
+    @Test
+    public void createWorkspaceFromProvidedModules() throws Exception {
+        final Path rootDir = workDir.resolve("root");
+        final Path module1Dir = rootDir.resolve("module1");
+        final Path module2Dir = rootDir.resolve("module2");
+
+        final Path rootPom = rootDir.resolve("pom.xml");
+        final Path module1Pom = module1Dir.resolve("pom.xml");
+        final Path module2Pom = module2Dir.resolve("pom.xml");
+
+        final LocalProject currentProject = new BootstrapMavenContext(BootstrapMavenContext.config()
+                .setWorkspaceDiscovery(false)
+                .setCurrentProject(module2Pom.toString())
+                .setPreferPomsFromWorkspace(true)
+                .addProvidedModule(rootPom, ModelUtils.readModel(rootPom), ModelUtils.readModel(rootPom))
+                .addProvidedModule(module1Pom, ModelUtils.readModel(module1Pom), ModelUtils.readModel(module1Pom))
+                .addProvidedModule(module2Pom, ModelUtils.readModel(module2Pom), ModelUtils.readModel(module2Pom)))
+                .getCurrentProject();
+
+        assertNotNull(currentProject);
+        assertEquals("root-module-with-parent", currentProject.getArtifactId());
+
+        final LocalWorkspace ws = currentProject.getWorkspace();
+        assertNotNull(ws);
+        assertEquals(3, ws.getProjects().size());
+        assertNotNull(ws.getProject(MvnProjectBuilder.DEFAULT_GROUP_ID, "root"));
+        assertNotNull(ws.getProject(MvnProjectBuilder.DEFAULT_GROUP_ID, "root-no-parent-module"));
+        assertNotNull(ws.getProject(MvnProjectBuilder.DEFAULT_GROUP_ID, "root-module-with-parent"));
+
+        // modules not provided should NOT be discovered via filesystem
+        assertNull(ws.getProject(MvnProjectBuilder.DEFAULT_GROUP_ID, "root-module-not-direct-child"));
+        assertNull(ws.getProject(MvnProjectBuilder.DEFAULT_GROUP_ID, "empty-parent-relative-path-module"));
+    }
+
     private void assertCompleteWorkspace(final LocalProject project) {
         final Map<ArtifactKey, LocalProject> projects = project.getWorkspace().getProjects();
         assertEquals(5, projects.size());

@@ -4,7 +4,6 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Using Podman with Quarkus
-:categories: tooling
 :topics: podman,devops,tooling
 include::_attributes.adoc[]
 

@@ -15,5 +15,7 @@ final class Descriptors {
             String.class);
     static final MethodDesc BUNDLES_GET_TEMPLATE = MethodDesc.of(MessageBundles.class, "getTemplate",
             Template.class, String.class);
+    static final MethodDesc BUNDLES_GET_FOR_CURRENT_LOCALE = MethodDesc.of(MessageBundles.class, "getForCurrentLocale",
+            Object.class, Class.class);
 
 }

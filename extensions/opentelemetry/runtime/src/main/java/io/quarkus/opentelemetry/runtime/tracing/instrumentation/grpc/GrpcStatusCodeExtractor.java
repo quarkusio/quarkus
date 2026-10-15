@@ -1,6 +1,6 @@
 package io.quarkus.opentelemetry.runtime.tracing.instrumentation.grpc;
 
-import static io.opentelemetry.semconv.incubating.RpcIncubatingAttributes.RPC_GRPC_STATUS_CODE;
+import static io.opentelemetry.semconv.incubating.RpcIncubatingAttributes.RPC_RESPONSE_STATUS_CODE;
 
 import io.grpc.Status;
 import io.opentelemetry.api.common.AttributesBuilder;
@@ -25,7 +25,7 @@ class GrpcStatusCodeExtractor implements AttributesExtractor<GrpcRequest, Status
             final Throwable error) {
 
         if (status != null) {
-            attributes.put(RPC_GRPC_STATUS_CODE, status.getCode().value());
+            attributes.put(RPC_RESPONSE_STATUS_CODE, String.valueOf(status.getCode().value()));
         }
     }
 }

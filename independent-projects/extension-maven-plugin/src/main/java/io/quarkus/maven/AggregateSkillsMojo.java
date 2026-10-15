@@ -35,9 +35,8 @@ import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.MethodParameterInfo;
 import org.jboss.jandex.Type;
 
-import com.fasterxml.jackson.databind.node.ObjectNode;
-
 import io.quarkus.devtools.utils.SkillComposer;
+import tools.jackson.databind.node.ObjectNode;
 
 /**
  * Aggregates all extension skill files from the Quarkus source tree into a single JAR.
@@ -388,9 +387,9 @@ public class AggregateSkillsMojo extends AbstractMojo {
     // ── Jandex scanning for @DevMcpBuildTimeTool annotations on deployment classes ──
 
     private static final DotName DEV_MCP_BUILD_TIME_TOOL = DotName
-            .createSimple("io.quarkus.devui.spi.buildtime.DevMcpBuildTimeTool");
+            .createSimple("io.quarkus.devmcp.spi.deployment.DevMcpBuildTimeTool");
     private static final DotName DEV_MCP_BUILD_TIME_TOOLS = DotName
-            .createSimple("io.quarkus.devui.spi.buildtime.DevMcpBuildTimeTools");
+            .createSimple("io.quarkus.devmcp.spi.deployment.DevMcpBuildTimeTools");
 
     /**
      * Scans compiled deployment classes for {@code @DevMcpBuildTimeTool} annotations

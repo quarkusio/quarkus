@@ -6,7 +6,6 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 = Contribute to Quarkus documentation
 include::_attributes.adoc[]
 :diataxis-type: howto
-:categories: contributing
 :fn-diataxis: footnote:diataxis[Procida, D. Diátaxis documentation framework. https://diataxis.fr/]
 :topics: internals,documentation
 
@@ -38,7 +37,7 @@ To ensure that your content shows up correctly on the link:https://quarkus.io/gu
 
 . Decide on a xref:doc-concept.adoc[Diataxis] content type that best fits the content that you are contributing.
 +
-TIP: To help you decide, see the content type descriptions in xref:doc-reference.adoc#titles-and-headings[Titles and headings] on the "About Quarkus documentation" page.
+TIP: To help you decide, see the content type descriptions in xref:doc-reference.adoc#titles-headings[Titles and headings] on the "About Quarkus documentation" page.
 
 . Go to the `src/main/asciidoc/_templates` directory, and make a copy of the relevant template for the content type you have chosen. Be sure to:
 ** Use the filename syntax of`<category>-<titlekeyword>-<titlekeyword>.adoc`. For example, `security-basic-authentication.adoc`.
@@ -54,20 +53,22 @@ For example, `telemetry-micrometer.adoc` is a reference, and `telemetry-micromet
 = Secure a Quarkus application with basic authentication <2>
 include::_attributes.adoc[] <3>
 :diataxis-type: howto <4>
-:categories: security,web <5>
-<6>
+<5>
 ----
 <1> Set the `id` value to be the same as the file name but without the extension.
-<2> For information about how to create a good title for each content type, see xref:doc-reference.adoc#titles-and-headings[Titles and headings] on the "Quarkus style and content guidelines" page.
+<2> For information about how to create a good title for each content type, see xref:doc-reference.adoc#titles-headings[Titles and headings] on the "Quarkus style and content guidelines" page.
 <3> The `_attributes.adoc` include is required to ensure that attributes get resolved and the table of contents is generated.
 <4> Specify the diataxis type: `concept`, `howto`, `reference`, or `tutorial`.
-<5> Set at least one category to ensure that the content is findable on the link:https://quarkus.io/guides/[Quarkus documentation home page]. For a list of Quarkus categories, see xref:doc-reference.adoc#document-attributes-and-variables[Document attributes and variables] on the "Quarkus style and content guidelines" page.
-<6> Insert a blank line after all document attributes and before the abstract.
+<5> Insert a blank line after all document attributes and before the abstract.
 +
 [IMPORTANT]
 ====
 Ensure there are no blank lines between the document id and title, the attribute include (`include::_attributes.adoc[]`) and the declaration of other document attributes(`:attribute:`).
 ====
+
+. Add the guide file to the appropriate category or subcategory in `docs/src/main/resources/categories.yaml`.
++
+For more information, see xref:doc-reference.adoc#categories[Categories] on the "Quarkus style and content guidelines" page.
 
 . Add an abstract that describes the purpose of the guide.
 +
@@ -77,7 +78,7 @@ The first sentence of the abstract must explain the value and some benefit of th
 There must also be a line break before and after the abstract.
 ====
 
-For more information about the minimum header requirements, see xref:doc-reference.adoc#document-structure[Document structure] on the "Quarkus style and content guidelines" page.
+For more information about the minimum header requirements, see xref:doc-reference.adoc#doc-structure[Document structure] on the "Quarkus style and content guidelines" page.
 
 [id="add-prerequisites"]
 == Add a prerequisites section
@@ -129,33 +130,16 @@ For more information about these attributes, inspect the content of the `docs/sr
 As content evolves, you might want to restructure an existing piece of Quarkus content into one or more content types and retire the existing AsciiDoc source file.
 
 If you are retiring or renaming a published Quarkus AsciiDoc source file, ensure that the restructure does not break existing bookmarks and links to the original content.
-Configure a URL redirect in the link:https://github.com/quarkusio/quarkusio.github.io/[Quarkus.io Website] GitHub repository by using the following steps:
+Configure a URL redirect by adding an alias to the updated file:
 
-. Switch to the link:https://github.com/quarkusio/quarkusio.github.io/tree/develop/_redirects/guides[`quarkusio/quarkusio.github.io`] repository, and open the `_redirects/guides` folder.
-. Create a redirection file in Markdown format with a filename that matches the original AsciiDoc source filename that you want to retire.
-. Add the following contents to the Markdown redirection file:
-+
-[source,markdown]
+. Add an `aliases` entry to the file's frontmatter that lists the old URL:
+ +
+[source,yaml]
 ---
-permalink: /guides/<original_asciidoc_filename>/index.html // <1>
-newUrl: /guides/<new_asciidoc_filename> // <2>
+aliases:
+- /guides/<original_asciidoc_filename> // <1>
 ---
-+
-Where:
 <1> The name of the original AsciiDoc source file that you are retiring, without the `.adoc` file extension.
-<2> The name of the AsciiDoc source file that you want to redirect to, without the `.adoc` file extension.
-
-.Example
-
-|===
-|Name of original AsciiDoc source file |Name of target file to redirect to| Redirection file| Example pull request
-
-|`security-getting-started`
-|`security-overview-concept`
-|link:https://github.com/quarkusio/quarkusio.github.io/blob/develop/_redirects/guides/security-getting-started.md[`security-getting-started.md`]
-|link:https://github.com/quarkusio/quarkusio.github.io/pull/1579[PR #1579]
-
-|===
 
 [[anchors-howto]]
 == Use anchors to cross-reference in-file and cross-file content
@@ -290,7 +274,7 @@ Include errors in the results.
 
 === Use the Vale CLI
 
-If you install the https://vale.sh/docs/vale-cli/installation/[Vale CLI], you must specify the configuration file and the directory or list of files to scan:
+If you install the https://docs.vale.sh/topics/installation[Vale CLI], you must specify the configuration file and the directory or list of files to scan:
 
 [source,shell]
 ----
@@ -305,7 +289,7 @@ For more information, see the https://vale.sh/manual/[Vale CLI Manual].
 
 === Vale IDE plugins
 
-https://vale.sh/docs/integrations/guide/[Vale IDE integrations] require the Vale CLI to be installed.
+https://docs.vale.sh/guides/lsp[Vale IDE integrations] require the Vale CLI to be installed.
 
 Each IDE integration has its own configuration requirements. The Visual Studio Code IDE extension, for example, requires a definition of the Vale CLI path:
 
@@ -346,7 +330,7 @@ If you disagree with the Vale results, add the yellow PR label `needs-vale-rule-
 
 == Previewing doc changes on the Quarkus website
 
-After your PR is merged to `main` and the branch is synchronized with the link:https://github.com/quarkusio/quarkusio.github.io/tree/develop/_generated-doc[Quarkus.io] website repository, you can preview the resulting build output on the link:https://quarkus.io/version/main/guides/[Main branch (SNAPSHOT)] documentation page of the Quarkus site.
+After your PR is merged to `main` and the branch is synchronized with the link:https://github.com/quarkusio/quarkusio.github.io[Quarkus.io] website repository, you can preview the resulting build output on the link:https://quarkus.io/version/main/guides/[Main branch (SNAPSHOT)] documentation page of the Quarkus site.
 
 [IMPORTANT]
 ====

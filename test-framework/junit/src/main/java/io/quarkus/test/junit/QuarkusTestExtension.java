@@ -1,7 +1,6 @@
 package io.quarkus.test.junit;
 
 import static io.quarkus.runtime.LaunchMode.NORMAL;
-import static io.quarkus.test.common.ListeningAddress.LOCAL_BASE_URI;
 import static io.quarkus.test.common.PathTestHelper.getTestClassesLocation;
 import static io.quarkus.test.junit.IntegrationTestUtil.activateLogging;
 import static io.quarkus.test.junit.TestResourceUtil.TestResourceManagerReflections.copyEntriesFromProfile;
@@ -397,9 +396,7 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
             invokeBeforeEachCallbacks(tuple.getKey(), tuple.getValue());
             String endpointPath = getEndpointPath(context, testHttpEndpointProviders);
             ValueRegistry valueRegistry = ValueRegistryInjector.get(context);
-            if (valueRegistry.containsKey(LOCAL_BASE_URI)) {
-                RestAssuredStateManager.setTestUri(valueRegistry.get(LOCAL_BASE_URI), endpointPath);
-            }
+            RestAssuredStateManager.setTestUri(valueRegistry, endpointPath);
             TestScopeManager.setup(false);
         } else {
             throwBootFailureException();
@@ -425,6 +422,16 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
                 if (clazz == Object.class) {
                     break;
                 }
+            }
+        }
+        if (testHTTPEndpoint == null) {
+            Class<?> enclosing = context.getRequiredTestClass().getEnclosingClass();
+            while (enclosing != null) {
+                testHTTPEndpoint = enclosing.getAnnotation(TestHTTPEndpoint.class);
+                if (testHTTPEndpoint != null) {
+                    break;
+                }
+                enclosing = enclosing.getEnclosingClass();
             }
         }
         if (testHTTPEndpoint != null) {
@@ -594,26 +601,26 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
         }
         boolean isNewApplication = isNewApplication(state, extensionContext.getRequiredTestClass());
 
-        QuarkusClassLoader cl = getClassLoaderFromTestClass(extensionContext.getRequiredTestClass());
+        QuarkusClassLoader incomingClassLoader = getClassLoaderFromTestClass(extensionContext.getRequiredTestClass());
 
-        CuratedApplication curatedApplication = runningQuarkusApplication != null
+        CuratedApplication previousCuratedApplication = runningQuarkusApplication != null
                 ? ((QuarkusClassLoader) runningQuarkusApplication.getClassLoader())
                         .getCuratedApplication()
                 : null;
-        boolean isSameCuratedApplication = cl.getCuratedApplication() == curatedApplication;
+        CuratedApplication incomingCuratedApplication = incomingClassLoader.getCuratedApplication();
+        boolean isSameCuratedApplication = incomingCuratedApplication == previousCuratedApplication;
 
-        if (cl.getCuratedApplication() == null) {
+        if (incomingCuratedApplication == null) {
             throw new IllegalStateException(
-                    "Internal error: ClassLoader " + cl + " does not have a linked curated application.");
+                    "Internal error: ClassLoader " + incomingClassLoader + " does not have a linked curated application.");
         }
-        cl.getCuratedApplication().setEligibleForReuse(isSameCuratedApplication);
 
         // Let's clear the class-based caches of JDK/libraries when we switch to another application
         if (!isSameCuratedApplication) {
             ClearCache.clearCaches();
         }
 
-        if (cl.isClosed()) {
+        if (incomingClassLoader.isClosed()) {
             throw new IllegalStateException(
                     "Internal error. Attempting to run tests using an application which has already been closed. Is a non-default test order being used?");
         }
@@ -783,6 +790,10 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
                 if (outerClass.isInstance(actualTestInstance)) {
                     outerInstances.add(actualTestInstance);
                     actualTestInstance = declaredConstructor.newInstance(actualTestInstance);
+                } else if (outerClass.isInstance(outerInstances.peekLast())) {
+                    // this class is being initialized again, which happens when it has its own tests and also
+                    // encloses a nested class; its outer instance is already the innermost one on the stack
+                    actualTestInstance = declaredConstructor.newInstance(outerInstances.peekLast());
                 } else {
                     Object outerInstance = createActualTestInstance(outerClass, extensionContext, state);
                     invokeAfterConstructCallbacks(Object.class, outerInstance);
@@ -1061,7 +1072,8 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
         } finally {
             currentTestClassStack.pop();
             if (!outerInstances.isEmpty()) {
-                actualTestInstance = outerInstances.pop();
+                // outer instances are appended outermost first, so the innermost one is at the end
+                actualTestInstance = outerInstances.removeLast();
             }
         }
     }

@@ -8,7 +8,9 @@ import jakarta.inject.Inject;
 
 import org.eclipse.microprofile.jwt.JsonWebToken;
 
+import io.quarkus.arc.InjectableInstance;
 import io.quarkus.oidc.AccessTokenCredential;
+import io.quarkus.oidc.DPoPNonceProvider;
 import io.quarkus.oidc.OidcTenantConfig;
 import io.quarkus.oidc.TokenIntrospection;
 import io.quarkus.security.AuthenticationFailedException;
@@ -28,6 +30,9 @@ public class WebSocketIdentityUpdateProvider implements IdentityProvider<WebSock
 
     @Inject
     BlockingSecurityExecutor blockingExecutor;
+
+    @Inject
+    InjectableInstance<DPoPNonceProvider> dPoPNonceProvider;
 
     WebSocketIdentityUpdateProvider() {
     }
@@ -85,7 +90,8 @@ public class WebSocketIdentityUpdateProvider implements IdentityProvider<WebSock
                     "Cannot update SecurityIdentity because OIDC tenant wasn't resolved for current WebSocket connection"));
         }
         final var tenantId = tenantConfig.tenantId().get();
-        final var identityProvider = new TenantSpecificOidcIdentityProvider(tenantId, resolver, blockingExecutor);
+        final var identityProvider = new TenantSpecificOidcIdentityProvider(tenantId, resolver, blockingExecutor,
+                dPoPNonceProvider);
         final var credential = new AccessTokenCredential(accessToken);
         return identityProvider.authenticate(credential);
     }

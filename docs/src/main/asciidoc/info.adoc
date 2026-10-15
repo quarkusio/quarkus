@@ -3,9 +3,8 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= Application Info Endpoint
+= Application info endpoint
 include::_attributes.adoc[]
-:categories: observability
 :summary: Expose build, git, Java, and OS information via the /q/info endpoint.
 :topics: info,observability
 :extensions: io.quarkus:quarkus-info

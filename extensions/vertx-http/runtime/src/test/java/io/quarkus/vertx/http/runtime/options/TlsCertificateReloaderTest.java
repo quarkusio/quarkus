@@ -26,6 +26,7 @@ import io.quarkus.vertx.http.runtime.CertificateConfig;
 import io.quarkus.vertx.http.runtime.ServerSslConfig;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
+import io.vertx.core.http.ClientAuth;
 import io.vertx.core.http.HttpServer;
 import io.vertx.core.http.HttpServerConfig;
 import io.vertx.core.net.PemKeyCertOptions;
@@ -63,7 +64,7 @@ class TlsCertificateReloaderTest {
 
         IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
                 () -> TlsCertificateReloader.initCertReloadingAction(
-                        vertx, server, config, sslOptions, sslConfig, registry, Optional.empty()));
+                        vertx, server, config, sslOptions, sslConfig, registry, Optional.empty(), ClientAuth.REQUIRED));
 
         assertEquals("Unable to configure TLS reloading - The reload period cannot be less than 30 seconds",
                 ex.getMessage());
@@ -80,7 +81,7 @@ class TlsCertificateReloaderTest {
 
         assertDoesNotThrow(() -> {
             lastTimerId = TlsCertificateReloader.initCertReloadingAction(
-                    vertx, server, config, sslOptions, sslConfig, registry, Optional.empty());
+                    vertx, server, config, sslOptions, sslConfig, registry, Optional.empty(), ClientAuth.REQUIRED);
         });
     }
 
@@ -93,7 +94,7 @@ class TlsCertificateReloaderTest {
 
         assertThrows(IllegalArgumentException.class,
                 () -> TlsCertificateReloader.initCertReloadingAction(
-                        vertx, server, config, sslOptions, sslConfig, registry, Optional.empty()));
+                        vertx, server, config, sslOptions, sslConfig, registry, Optional.empty(), ClientAuth.REQUIRED));
     }
 
     @Test
@@ -104,7 +105,7 @@ class TlsCertificateReloaderTest {
         sslOptions.setKeyCertOptions(new PemKeyCertOptions());
 
         long result = TlsCertificateReloader.initCertReloadingAction(
-                vertx, server, config, sslOptions, sslConfig, registry, Optional.empty());
+                vertx, server, config, sslOptions, sslConfig, registry, Optional.empty(), ClientAuth.REQUIRED);
 
         assertEquals(-1L, result);
     }
@@ -115,7 +116,7 @@ class TlsCertificateReloaderTest {
 
         IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
                 () -> TlsCertificateReloader.initCertReloadingAction(
-                        vertx, server, null, null, sslConfig, registry, Optional.empty()));
+                        vertx, server, null, null, sslConfig, registry, Optional.empty(), ClientAuth.REQUIRED));
 
         assertEquals("Unable to configure TLS reloading - The HTTP server configuration was not provided",
                 ex.getMessage());
@@ -138,7 +139,7 @@ class TlsCertificateReloaderTest {
         when(vertx.setPeriodic(anyLong(), any(Handler.class))).thenReturn(200L);
 
         lastTimerId = TlsCertificateReloader.initCertReloadingAction(
-                vertx, server, config, null, sslConfig, registry, Optional.of("my-tls"));
+                vertx, server, config, null, sslConfig, registry, Optional.of("my-tls"), ClientAuth.REQUIRED);
 
         assertEquals(200L, lastTimerId);
     }
@@ -153,7 +154,7 @@ class TlsCertificateReloaderTest {
         when(vertx.setPeriodic(anyLong(), any(Handler.class))).thenReturn(555L);
 
         lastTimerId = TlsCertificateReloader.initCertReloadingAction(
-                vertx, server, config, sslOptions, sslConfig, registry, Optional.empty());
+                vertx, server, config, sslOptions, sslConfig, registry, Optional.empty(), ClientAuth.REQUIRED);
 
         assertEquals(555L, lastTimerId);
     }

@@ -1,5 +1,6 @@
 package io.quarkus.resteasy.reactive.server.test.simple;
 
+import java.io.IOException;
 import java.util.Optional;
 
 import jakarta.ws.rs.GET;
@@ -104,7 +105,7 @@ public class NewParamsRestResource {
     @Path("sse")
     @Produces(MediaType.SERVER_SENT_EVENTS)
     public void eventStream(SseEventSink eventSink,
-            Sse sse) {
+            Sse sse) throws IOException {
         Assertions.assertNotNull(eventSink);
         Assertions.assertNotNull(sse);
         try (SseEventSink sink = eventSink) {

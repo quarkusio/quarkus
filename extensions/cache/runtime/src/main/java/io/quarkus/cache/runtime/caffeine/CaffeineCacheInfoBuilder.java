@@ -54,6 +54,12 @@ public class CaffeineCacheInfoBuilder {
                     cacheInfo.metricsEnabled = defaultConfig.metricsEnabled().get();
                 }
 
+                if (namedCacheConfig != null) {
+                    cacheInfo.perItemExpiration = namedCacheConfig.perItemExpiration();
+                } else {
+                    cacheInfo.perItemExpiration = defaultConfig.perItemExpiration();
+                }
+
                 cacheInfos.add(cacheInfo);
             }
             return cacheInfos;

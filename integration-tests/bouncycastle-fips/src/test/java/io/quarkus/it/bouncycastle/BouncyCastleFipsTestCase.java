@@ -31,6 +31,16 @@ public class BouncyCastleFipsTestCase {
     }
 
     @Test
+    public void testPoly1305() {
+        RestAssured.given()
+                .when()
+                .get("/jca/poly1305")
+                .then()
+                .statusCode(200)
+                .body(equalTo("success"));
+    }
+
+    @Test
     public void testFipsMode() {
         RestAssured.given()
                 .when()

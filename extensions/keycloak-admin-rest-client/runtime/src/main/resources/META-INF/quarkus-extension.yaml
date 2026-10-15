@@ -11,6 +11,7 @@ metadata:
   - "reactive"
   - "rest"
   - "rest-client"
+  guide: "https://quarkus.io/guides/security-keycloak-admin-client"
   categories:
     - "security"
   status: "stable"

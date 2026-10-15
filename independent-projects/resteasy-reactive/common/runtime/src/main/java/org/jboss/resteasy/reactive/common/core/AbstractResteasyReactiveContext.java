@@ -24,7 +24,13 @@ public abstract class AbstractResteasyReactiveContext<T extends AbstractResteasy
         implements Runnable, Closeable, ResteasyReactiveCallbackContext {
     protected static final Logger log = Logger.getLogger(AbstractResteasyReactiveContext.class);
     protected static final Logger logWebApplicationExceptions = Logger.getLogger(WebApplicationException.class.getSimpleName());
+    private static final byte[] NO_KINDS = new byte[0];
     protected H[] handlers;
+    /**
+     * The kind of each handler in {@link #handlers}, as determined when the chain was built.
+     * Only meaningful to implementations that use it to speed up handler dispatch, see {@link #invokeHandler(int)}
+     */
+    protected byte[] handlerKinds;
     protected H[] abortHandlerChain;
     protected int position;
     protected Throwable throwable;
@@ -44,7 +50,13 @@ public abstract class AbstractResteasyReactiveContext<T extends AbstractResteasy
     protected boolean closed = false;
 
     public AbstractResteasyReactiveContext(H[] handlerChain, H[] abortHandlerChain, ThreadSetupAction requestContext) {
+        this(handlerChain, unknownKinds(handlerChain), abortHandlerChain, requestContext);
+    }
+
+    public AbstractResteasyReactiveContext(H[] handlerChain, byte[] handlerKinds, H[] abortHandlerChain,
+            ThreadSetupAction requestContext) {
         this.handlers = handlerChain;
+        this.handlerKinds = handlerKinds;
         this.abortHandlerChain = abortHandlerChain;
         this.requestContext = requestContext;
     }
@@ -105,6 +117,10 @@ public abstract class AbstractResteasyReactiveContext<T extends AbstractResteasy
         return (T) this;
     }
 
+    private static byte[] unknownKinds(Object[] chain) {
+        return chain.length == 0 ? NO_KINDS : new byte[chain.length];
+    }
+
     public void close() {
         if (closed) {
             return;
@@ -144,6 +160,9 @@ public abstract class AbstractResteasyReactiveContext<T extends AbstractResteasy
                 int pos = position;
                 position++; //increment before, as reset may reset it to zero
                 try {
+                    if (isHandlerCanceled(pos)) {
+                        continue;
+                    }
                     invokeHandler(pos);
                     if (suspended) {
                         synchronized (this) {
@@ -190,7 +209,7 @@ public abstract class AbstractResteasyReactiveContext<T extends AbstractResteasy
         } finally {
             // we need to make sure we don't close the underlying stream in the event loop if the task
             // has been offloaded to the executor
-            if ((position == handlers.length && !processingSuspended) || aborted) {
+            if ((position >= handlers.length && !processingSuspended) || aborted) {
                 if (requestScopeActivated) {
                     requestScopeDeactivated();
                     currentRequestScope.deactivate();
@@ -225,6 +244,10 @@ public abstract class AbstractResteasyReactiveContext<T extends AbstractResteasy
 
             }
         }
+    }
+
+    protected boolean isHandlerCanceled(int pos) {
+        return false;
     }
 
     protected void invokeHandler(int pos) throws Exception {
@@ -291,7 +314,12 @@ public abstract class AbstractResteasyReactiveContext<T extends AbstractResteasy
     }
 
     public void restart(H[] newHandlerChain, boolean keepTarget) {
+        restart(newHandlerChain, unknownKinds(newHandlerChain), keepTarget);
+    }
+
+    public void restart(H[] newHandlerChain, byte[] newHandlerKinds, boolean keepTarget) {
         this.handlers = newHandlerChain;
+        this.handlerKinds = newHandlerKinds;
         position = 0;
         restarted(keepTarget);
     }

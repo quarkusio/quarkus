@@ -39,6 +39,11 @@
             <artifactId>quarkus-junit</artifactId>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>org.xerial.snappy</groupId>
+            <artifactId>snappy-java</artifactId>
+            <scope>test</scope>
+        </dependency>
 
         <!-- Minimal test dependencies to *-deployment artifacts for consistent build order -->
         <dependency>

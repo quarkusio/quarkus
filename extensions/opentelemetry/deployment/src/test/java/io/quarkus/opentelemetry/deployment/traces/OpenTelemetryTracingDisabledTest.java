@@ -15,8 +15,9 @@ public class OpenTelemetryTracingDisabledTest {
     static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withEmptyApplication()
             .overrideConfigKey("quarkus.otel.traces.enabled", "false")
-            .overrideConfigKey("quarkus.otel.metrics.enabled", "true")
-            .overrideConfigKey("quarkus.otel.logs.enabled", "true");
+            .overrideConfigKey("quarkus.otel.metrics.enabled", "false")
+            .overrideConfigKey("quarkus.otel.logs.enabled", "false")
+            .overrideConfigKey("quarkus.datasource.devservices.enabled", "false");
 
     @Inject
     OpenTelemetry openTelemetry;

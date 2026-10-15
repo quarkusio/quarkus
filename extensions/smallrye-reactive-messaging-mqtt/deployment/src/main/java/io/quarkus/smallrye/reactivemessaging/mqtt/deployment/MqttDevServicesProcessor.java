@@ -29,6 +29,7 @@ import io.quarkus.deployment.dev.devservices.DevServicesConfig;
 import io.quarkus.devservices.common.ComposeLocator;
 import io.quarkus.devservices.common.ConfigureUtil;
 import io.quarkus.devservices.common.ContainerLocator;
+import io.quarkus.devservices.common.DevServicesHostUtil;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.configuration.ConfigUtils;
 
@@ -109,9 +110,9 @@ public class MqttDevServicesProcessor {
                                 useSharedNetwork)
                                 .withEnv(config.containerEnv()))
                         .postStartHook(this::logStarted)
-                        .configProvider(Map.of(
-                                SMALLRYE_MQTT_HOST, ConfiguredMqttContainer::getEffectiveHost,
-                                SMALLRYE_MQTT_PORT, s -> String.valueOf(s.getPort())))
+                        .configProvider(s -> Map.of(
+                                SMALLRYE_MQTT_HOST, s.getEffectiveHost(),
+                                SMALLRYE_MQTT_PORT, String.valueOf(s.getPort())))
                         .build());
     }
 
@@ -200,7 +201,7 @@ public class MqttDevServicesProcessor {
 
         @Override
         public String getConnectionInfo() {
-            return String.format("mqtt://%s:%d", getEffectiveHost(), getPort());
+            return DevServicesHostUtil.formatPrefixedAuthority("mqtt", getEffectiveHost(), getPort());
         }
 
         @Override
@@ -209,7 +210,7 @@ public class MqttDevServicesProcessor {
         }
 
         public String getEffectiveHost() {
-            return useSharedNetwork ? hostName : getHost();
+            return DevServicesHostUtil.publishedPortHost(getContainerId(), useSharedNetwork, hostName, getHost());
         }
 
         public int getPort() {

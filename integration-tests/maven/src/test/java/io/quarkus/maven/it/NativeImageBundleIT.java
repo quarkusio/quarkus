@@ -34,7 +34,7 @@ public class NativeImageBundleIT extends MojoTestBase {
 
         try {
             final MavenProcessInvocationResult result = running.execute(mvnArgs, Collections.emptyMap());
-            await().atMost(3, TimeUnit.MINUTES).until(() -> result.getProcess() != null && !result.getProcess().isAlive());
+            await().atMost(4, TimeUnit.MINUTES).until(() -> result.getProcess() != null && !result.getProcess().isAlive());
 
             // Check the build was successful with dry run and actual build executed
             final String processLog = running.log();

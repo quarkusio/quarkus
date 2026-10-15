@@ -47,6 +47,14 @@ public final class RunningDevServicesRegistry {
         log.infof(e, "Failed to close dev service for %s in launch mode %s: %s", featureName, launchMode, containerId);
     }
 
+    /**
+     * Closes the services owned by the given application instance, as the shutdown close task.
+     * <p>
+     * Services configured for Testcontainers-level reuse are removed from the registry but left running,
+     * so that a later, separate JVM run can pick them up. They are still stopped by
+     * {@link #closeAllRunningServices(DevServiceOwner)} when their configuration no longer matches the
+     * application being started, such as on an incompatible profile change.
+     */
     public void closeOwnRunningServices(UUID uuid, String launchMode) {
         Set<RunningService> services = servicesIndexedByLaunchMode.get(launchMode);
         Iterator<Map.Entry<ComparableDevServicesConfig, RunningService>> it = servicesIndexedByConfig.entrySet().iterator();
@@ -60,12 +68,17 @@ public final class RunningDevServicesRegistry {
                 if (services != null) {
                     services.remove(service);
                 }
-                try {
-                    logClosing(owner.featureName(), launchMode, service.containerId());
-                    service.close();
-                } catch (Exception e) {
-                    // We don't want to fail the shutdown hook if a service fails to close
-                    logFailedToClose(e, owner.featureName(), launchMode, service.containerId());
+                if (service.isReusable()) {
+                    log.debugf("Not closing reusable dev service for %s in launch mode %s: %s",
+                            owner.featureName(), launchMode, service.containerId());
+                } else {
+                    try {
+                        logClosing(owner.featureName(), launchMode, service.containerId());
+                        service.close();
+                    } catch (Exception e) {
+                        // We don't want to fail the shutdown hook if a service fails to close
+                        logFailedToClose(e, owner.featureName(), launchMode, service.containerId());
+                    }
                 }
             }
         }
@@ -95,6 +108,14 @@ public final class RunningDevServicesRegistry {
 
     }
 
+    /**
+     * Closes every service belonging to the given owner, regardless of reuse configuration.
+     * <p>
+     * This runs when a service's configuration no longer matches the application being started, such as
+     * on an incompatible profile change, where the running container cannot satisfy the new configuration
+     * and has to be replaced. Unlike the shutdown path in {@link #closeOwnRunningServices(UUID, String)},
+     * reuse does not spare a service here.
+     */
     public void closeAllRunningServices(DevServiceOwner owner) {
         Set<RunningService> launchModeServices = servicesIndexedByLaunchMode.get(owner.launchMode());
         var iterator = servicesIndexedByConfig.entrySet().iterator();

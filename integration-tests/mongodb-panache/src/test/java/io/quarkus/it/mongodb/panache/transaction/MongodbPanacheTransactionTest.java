@@ -137,4 +137,37 @@ class MongodbPanacheTransactionTest {
         Assertions.assertEquals(0, count);
     }
 
+    @Test
+    public void testTransactionTimeout() {
+        String endpoint = "/transaction";
+        // clean state
+        RestAssured.given().delete(endpoint).andReturn();
+
+        PersonDTO person = new PersonDTO();
+        person.id = 99L;
+        person.firstname = "Timeout";
+        person.lastname = "Person";
+
+        // the JTA transaction is configured with a 1s timeout; the reaper rolls it back
+        // asynchronously while the request handler is still sleeping past the timeout
+        Response response = RestAssured
+                .given()
+                .header("Content-Type", "application/json")
+                .body(person)
+                .post(endpoint + "/timeout")
+                .andReturn();
+        Assertions.assertEquals(500, response.statusCode());
+
+        // the reaper thread that performs the timeout rollback was never associated with the
+        // transaction via TransactionManager.begin(), so relying on transactionManager.getStatus()
+        // in MongoOperations.registerClientSession#afterCompletion would be wrong there (it would
+        // report STATUS_NO_TRANSACTION instead of STATUS_ROLLEDBACK). afterCompletion instead uses
+        // the given status parameter, so the Mongo ClientSession is correctly aborted here too.
+        Long count = get(endpoint + "/count").as(Long.class);
+        Assertions.assertEquals(0, count);
+
+        // cleanup
+        RestAssured.given().delete(endpoint).andReturn();
+    }
+
 }

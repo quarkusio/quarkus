@@ -12,10 +12,10 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import org.yaml.snakeyaml.DumperOptions;
-import org.yaml.snakeyaml.Yaml;
-
 import io.quarkus.devtools.messagewriter.MessageWriter;
+import tools.jackson.databind.MappingIterator;
+import tools.jackson.dataformat.yaml.YAMLMapper;
+import tools.jackson.dataformat.yaml.YAMLWriteFeature;
 
 public class QuarkusUpdateRecipeIO {
 
@@ -27,9 +27,12 @@ public class QuarkusUpdateRecipeIO {
      */
     public static List<Object> readRecipesYaml(String recipeYaml) {
         Objects.requireNonNull(recipeYaml, "inputStream is required");
-        Yaml yaml = new Yaml();
+        YAMLMapper yamlMapper = YAMLMapper.builder().build();
         List<Object> otherRecipes = new ArrayList<>();
-        yaml.loadAll(recipeYaml).iterator().forEachRemaining(otherRecipes::add);
+        MappingIterator<Object> it = yamlMapper.readerFor(Object.class).readValues(recipeYaml);
+        while (it.hasNext()) {
+            otherRecipes.add(it.next());
+        }
         return List.copyOf(otherRecipes);
     }
 
@@ -71,10 +74,14 @@ public class QuarkusUpdateRecipeIO {
         List<Object> output = new ArrayList<>();
         output.add(q);
         output.addAll(recipe.getRecipes());
-        final DumperOptions options = new DumperOptions();
-        options.setPrettyFlow(true);
-        Yaml yaml = new Yaml(options);
-        return yaml.dumpAll(output.iterator());
+        YAMLMapper yamlMapper = YAMLMapper.builder()
+                .enable(YAMLWriteFeature.MINIMIZE_QUOTES)
+                .build();
+        StringBuilder sb = new StringBuilder();
+        for (Object doc : output) {
+            sb.append(yamlMapper.writeValueAsString(doc));
+        }
+        return sb.toString();
     }
 
 }

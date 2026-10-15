@@ -11,7 +11,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.aesh.runtime.CliConfig;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 /**
  * Tests that history-related configuration properties ({@code persistHistory},
@@ -20,7 +20,7 @@ import io.quarkus.test.QuarkusUnitTest;
 public class CliConfigHistorySettingsTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot(jar -> jar.addClass(DummyCommand.class))
             .overrideConfigKey("quarkus.aesh.persist-history", "true")
             .overrideConfigKey("quarkus.aesh.history-file", "/tmp/test_aesh_history")

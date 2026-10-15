@@ -93,6 +93,16 @@ public interface DataSourceJdbcRuntimeConfig {
     Optional<AgroalConnectionFactoryConfiguration.TransactionIsolation> transactionIsolationLevel();
 
     /**
+     * Whether connections from this pool should be created in read-only mode,
+     * according to {@link java.sql.Connection#setReadOnly(boolean)}.
+     * The JDBC driver is responsible for enforcing read-only mode.
+     * <p>
+     * This is useful for secondary pools that target read replicas.
+     */
+    @ConfigDocDefault("By default, the read-only mode of connections is not configured.")
+    Optional<Boolean> readOnly();
+
+    /**
      * Collect and display extra troubleshooting info on leaked connections.
      */
     @WithDefault("false")

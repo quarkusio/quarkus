@@ -3,13 +3,6 @@ package io.quarkus.funqy.runtime.bindings.http;
 import java.util.concurrent.Executor;
 import java.util.function.Supplier;
 
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.JavaType;
-import com.fasterxml.jackson.databind.MapperFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.ObjectReader;
-import com.fasterxml.jackson.databind.ObjectWriter;
-
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.InstanceHandle;
 import io.quarkus.arc.runtime.BeanContainer;
@@ -23,6 +16,13 @@ import io.quarkus.runtime.annotations.Recorder;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.ext.web.RoutingContext;
+import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.JavaType;
+import tools.jackson.databind.MapperFeature;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectReader;
+import tools.jackson.databind.ObjectWriter;
+import tools.jackson.databind.json.JsonMapper;
 
 /**
  * Provides the runtime methods to bootstrap Quarkus Funq
@@ -33,9 +33,10 @@ public class FunqyHttpBindingRecorder {
     private static QueryObjectMapper queryMapper;
 
     public void init() {
-        objectMapper = getObjectMapper()
+        objectMapper = getJsonMapperBuilder()
                 .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
-                .configure(MapperFeature.ACCEPT_CASE_INSENSITIVE_PROPERTIES, true);
+                .configure(MapperFeature.ACCEPT_CASE_INSENSITIVE_PROPERTIES, true)
+                .build();
         queryMapper = new QueryObjectMapper();
         for (FunctionInvoker invoker : FunctionRecorder.registry.invokers()) {
             if (invoker.hasInput()) {
@@ -53,12 +54,12 @@ public class FunqyHttpBindingRecorder {
         }
     }
 
-    private ObjectMapper getObjectMapper() {
-        InstanceHandle<ObjectMapper> instance = Arc.container().instance(ObjectMapper.class);
+    private JsonMapper.Builder getJsonMapperBuilder() {
+        InstanceHandle<JsonMapper> instance = Arc.container().instance(JsonMapper.class);
         if (instance.isAvailable()) {
-            return instance.get().copy();
+            return instance.get().rebuild();
         }
-        return new ObjectMapper();
+        return JsonMapper.builder();
     }
 
     public Handler<RoutingContext> start(String contextPath,

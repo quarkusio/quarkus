@@ -115,6 +115,13 @@
             <artifactId>quarkus-junit-internal</artifactId>
             <scope>test</scope>
         </dependency>
+        <!-- Used by the tests to parse the generated manifests. No longer a transitive
+             dependency of the Kubernetes Client since 8.0.0, so it is declared explicitly. -->
+        <dependency>
+            <groupId>org.yaml</groupId>
+            <artifactId>snakeyaml</artifactId>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>

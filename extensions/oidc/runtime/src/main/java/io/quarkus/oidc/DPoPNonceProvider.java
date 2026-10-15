@@ -1,5 +1,7 @@
 package io.quarkus.oidc;
 
+import io.vertx.ext.web.RoutingContext;
+
 /**
  * When a DPoP proof must include a nonce, register an implementation of this interface as a CDI bean
  * to provide and validate a nonce value.
@@ -12,15 +14,50 @@ public interface DPoPNonceProvider {
      * Provides a nonce that must be included in the DPoP proof as the "nonce" claim.
      *
      * @return resource server nonce
+     * @deprecated use {@link #getNonce(DPoPNonceContext)} instead
      */
-    String getNonce();
+    @Deprecated(forRemoval = true)
+    default String getNonce() {
+        throw new UnsupportedOperationException("Implement getNonce(DPoPNonceContext) instead");
+    }
 
     /**
      * Determines if a DPoP proof nonce is valid. Implementations must check that this nonce exists and has not expired.
      *
      * @param nonce DPoP proof nonce
      * @return true if the `nonce` is valid
+     * @deprecated use {@link #isValid(DPoPNonceContext)} instead
      */
-    boolean isValid(String nonce);
+    @Deprecated(forRemoval = true)
+    default boolean isValid(String nonce) {
+        throw new UnsupportedOperationException("Implement isValid(DPoPProofContext) instead");
+    }
 
+    /**
+     * Provides a nonce that must be included in the DPoP proof as the "nonce" claim.
+     * <p>
+     * {@link DPoPNonceContext#nonce()} is always {@code null} when this method is called.
+     *
+     * @param context context giving access to the proof jti, the current request and tenant configuration
+     * @return resource server nonce; if this method returns null, no DPoP-Nonce HTTP header is added to the response
+     *         and a standard 401 challenge is returned without requesting a nonce
+     */
+    default String getNonce(DPoPNonceContext context) {
+        return getNonce();
+    }
+
+    /**
+     * Determines if a DPoP proof is valid. Implementations must check that this nonce exists, has not expired
+     * and wasn't already used with this jti.
+     *
+     * @param context context giving access to the DPoP proof nonce and jti values, the current request and the tenant
+     *        configuration
+     * @return true if the DPoP proof nonce is valid and the proof has not been replayed
+     */
+    default boolean isValid(DPoPNonceContext context) {
+        return isValid(context.nonce());
+    }
+
+    record DPoPNonceContext(RoutingContext routingContext, OidcTenantConfig tenantConfig, String jti, String nonce) {
+    }
 }

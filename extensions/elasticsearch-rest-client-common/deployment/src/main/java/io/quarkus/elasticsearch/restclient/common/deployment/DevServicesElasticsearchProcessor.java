@@ -9,7 +9,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.Function;
 
 import org.jboss.logging.Logger;
 import org.opensearch.testcontainers.OpensearchContainer;
@@ -32,6 +31,7 @@ import io.quarkus.deployment.dev.devservices.DevServicesConfig;
 import io.quarkus.devservices.common.ComposeLocator;
 import io.quarkus.devservices.common.ConfigureUtil;
 import io.quarkus.devservices.common.ContainerLocator;
+import io.quarkus.devservices.common.DevServicesHostUtil;
 import io.quarkus.devservices.common.Labels;
 import io.quarkus.devservices.common.StartableContainer;
 import io.quarkus.elasticsearch.restclient.common.deployment.ElasticsearchCommonBuildTimeConfig.ElasticsearchDevServicesBuildTimeConfig;
@@ -123,17 +123,19 @@ public class DevServicesElasticsearchProcessor {
                     container.withEnv(config.containerEnv());
                     container.withReuse(config.reuse());
 
-                    return new StartableContainer<>(container,
-                            c -> createdContainer.hostName() + ":"
-                                    + (useSharedNetwork ? ELASTICSEARCH_PORT
-                                            : c.getMappedPort(ELASTICSEARCH_PORT)));
+                    return new StartableContainer<>(container, c -> {
+                        String host = DevServicesHostUtil.publishedPortHost(c.getContainerId(), useSharedNetwork,
+                                createdContainer.hostName(), c.getHost());
+                        int port = useSharedNetwork ? ELASTICSEARCH_PORT : c.getMappedPort(ELASTICSEARCH_PORT);
+                        return DevServicesHostUtil.formatHostAndPort(host, port);
+                    });
                 })
                 .postStartHook(containerWrapper -> log.infof(
                         "Dev Services for Elasticsearch started. Other Quarkus applications in dev mode will find the "
                                 + "server automatically. For Quarkus applications in production mode, you can connect to"
                                 + " this by configuring your application to use %s",
                         containerWrapper.getConnectionInfo()))
-                .configProvider(buildConfigProviderMap(buildItemsConfig))
+                .configProvider(s -> buildPropertiesMap(buildItemsConfig, s.getConnectionInfo()))
                 .build());
     }
 
@@ -152,7 +154,9 @@ public class DevServicesElasticsearchProcessor {
                 .map(containerAddress -> DevServicesResultBuildItem.discovered()
                         .feature(Feature.ELASTICSEARCH_REST_CLIENT_COMMON)
                         .containerId(containerAddress.getId())
-                        .config(buildPropertiesMap(buildItemsConfig, containerAddress.getUrl()))
+                        .config(buildPropertiesMap(buildItemsConfig,
+                                DevServicesHostUtil.formatResolvedHostAndPort(containerAddress.getId(),
+                                        containerAddress.getHost(), containerAddress.getPort())))
                         .build())
                 .orElse(null);
     }
@@ -182,16 +186,6 @@ public class DevServicesElasticsearchProcessor {
         }
 
         return true;
-    }
-
-    @SuppressWarnings({ "unchecked", "rawtypes" })
-    private static Map buildConfigProviderMap(
-            DevservicesElasticsearchBuildItemsConfiguration buildItemConfig) {
-        Map<String, Function<StartableContainer<?>, String>> map = new HashMap<>();
-        for (String property : buildItemConfig.hostsConfigProperties()) {
-            map.put(property, StartableContainer::getConnectionInfo);
-        }
-        return map;
     }
 
     private CreatedContainer createElasticsearchContainer(ElasticsearchDevServicesBuildTimeConfig config,

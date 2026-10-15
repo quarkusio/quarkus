@@ -1,5 +1,6 @@
 package io.quarkus.arc.test.validation;
 
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -18,14 +19,18 @@ import io.quarkus.arc.test.ArcTestContainer;
 public class QualifierWithBindingArrayTest {
 
     @RegisterExtension
-    public ArcTestContainer container = ArcTestContainer.builder().beanClasses(Alpha.class, MyQualifier.class).shouldFail()
+    public ArcTestContainer container = ArcTestContainer.builder()
+            .beanClasses(Alpha.class, MyQualifier.class)
+            .shouldFail()
             .build();
 
     @Test
     public void testFailure() {
         Throwable error = container.getFailure();
         assertNotNull(error);
-        assertTrue(error instanceof DefinitionException);
+        assertInstanceOf(DefinitionException.class, error);
+        assertTrue(error.getMessage().contains("with array-valued return type"));
+        assertTrue(error.getMessage().contains("have to be annotated with @jakarta.enterprise.util.Nonbinding"));
     }
 
     @Dependent

@@ -114,7 +114,7 @@ public final class WrapperRunner {
     }
 
     private static void propagateSystemPropertyIfSet(String name, List<String> command) {
-        if (System.getProperties().containsKey(name)) {
+        if (System.getProperty(name) != null) {
             final StringBuilder buf = new StringBuilder();
             buf.append("-D").append(name);
             final String value = System.getProperty(name);

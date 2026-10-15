@@ -16,6 +16,7 @@ import com.github.dockerjava.api.command.InspectContainerResponse;
 
 import io.quarkus.deployment.builditem.Startable;
 import io.quarkus.devservices.common.ConfigureUtil;
+import io.quarkus.devservices.common.DevServicesHostUtil;
 import io.quarkus.runtime.LaunchMode;
 
 /**
@@ -91,11 +92,13 @@ final class RedpandaKafkaContainer extends GenericContainer<RedpandaKafkaContain
     private String getKafkaAdvertisedAddresses() {
         List<String> addresses = new ArrayList<>();
         if (useSharedNetwork) {
-            addresses.add(String.format("PLAINTEXT://%s:29092", hostName));
+            addresses.add(DevServicesHostUtil.formatPrefixedAuthority("PLAINTEXT", hostName, 29092));
         }
         // See https://github.com/quarkusio/quarkus/issues/21819
         // Kafka is always exposed to the Docker host network
-        addresses.add(String.format("OUTSIDE://%s:%d", getHost(), getMappedPort(DevServicesKafkaProcessor.KAFKA_PORT)));
+        addresses.add(DevServicesHostUtil.formatPrefixedAuthority("OUTSIDE",
+                DevServicesHostUtil.publishedPortHost(getContainerId(), getHost()),
+                getMappedPort(DevServicesKafkaProcessor.KAFKA_PORT)));
         return String.join(",", addresses);
     }
 

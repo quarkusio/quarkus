@@ -7,7 +7,6 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 = Deploying {project-name} applications to {openshift} in a single step
 include::_attributes.adoc[]
 :diataxis-type: howto
-:categories: cloud, native
 :summary: This guide describes how to build and deploy a Quarkus application to {openshift} in a single step.
 :topics: devops,kubernetes,openshift,cloud,deployment
 :extensions: io.quarkus:quarkus-openshift

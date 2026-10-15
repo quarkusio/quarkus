@@ -16,22 +16,27 @@ public interface BootstrapConstants {
     /**
      * Constant for sharing the additional mappings between test-sources and the corresponding application-sources.
      * The Gradle plugin populates this data which is then read by the PathTestHelper when executing tests.
+     * It can be set either as a system property or as an environment variable.
+     * If both are set, the system property takes precedence.
      */
     String TEST_TO_MAIN_MAPPINGS = "TEST_TO_MAIN_MAPPINGS";
 
     String OUTPUT_SOURCES_DIR = "OUTPUT_SOURCES_DIR";
 
     String QUARKUS_EXTENSION_FILE_NAME = "quarkus-extension.yaml";
+    String QUARKUS_EXTENSION_JSON_FILE_NAME = "quarkus-extension.json";
 
     String META_INF = "META-INF";
 
     String DESCRIPTOR_PATH = META_INF + '/' + DESCRIPTOR_FILE_NAME;
     String BUILD_STEPS_PATH = META_INF + "/quarkus-build-steps.list";
     String EXTENSION_METADATA_PATH = META_INF + '/' + QUARKUS_EXTENSION_FILE_NAME;
+    String EXTENSION_JSON_METADATA_PATH = META_INF + '/' + QUARKUS_EXTENSION_JSON_FILE_NAME;
 
     String PROP_DEPLOYMENT_ARTIFACT = "deployment-artifact";
     String PROP_PROVIDES_CAPABILITIES = "provides-capabilities";
     String PROP_REQUIRES_CAPABILITIES = "requires-capabilities";
+    String PROP_REQUIRES_QUARKUS_VERSION = "requires-quarkus-version";
     String PARENT_FIRST_ARTIFACTS = "parent-first-artifacts";
     String EXCLUDED_ARTIFACTS = "excluded-artifacts";
     String LESSER_PRIORITY_ARTIFACTS = "lesser-priority-artifacts";
@@ -69,6 +74,7 @@ public interface BootstrapConstants {
     String MAPPABLE_LOCAL_PROJECTS = "local-projects";
     String MAPPABLE_EXCLUDED_RESOURCES = "excluded-resources";
     String MAPPABLE_EXTENSION_DEV_CONFIG = "extension-dev-config";
+    String MAPPABLE_REQUIRED_QUARKUS_VERSIONS = "required-quarkus-versions";
     // ArtifactDependency Mappable keys
     String MAPPABLE_MAVEN_ARTIFACT = "maven-artifact";
     String MAPPABLE_SCOPE = "scope";

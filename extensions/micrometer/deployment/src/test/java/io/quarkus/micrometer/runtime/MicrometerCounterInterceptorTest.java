@@ -4,6 +4,7 @@ import java.util.concurrent.CompletableFuture;
 
 import jakarta.inject.Inject;
 
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -26,6 +27,7 @@ public class MicrometerCounterInterceptorTest {
     @RegisterExtension
     static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withConfigurationResource("test-logging.properties")
+            .overrideConfigKey("quarkus.otel.enabled", "false")
             .overrideConfigKey("quarkus.micrometer.binder.vertx.enabled", "false")
             .overrideConfigKey("quarkus.micrometer.registry-enabled-default", "false")
             .overrideConfigKey("quarkus.redis.devservices.enabled", "false")
@@ -41,9 +43,16 @@ public class MicrometerCounterInterceptorTest {
     @Inject
     CountedResource counted;
 
+    static final SimpleMeterRegistry simpleRegistry = new SimpleMeterRegistry();
+
     @BeforeAll
     static void addSimpleRegistry() {
-        Metrics.globalRegistry.add(new SimpleMeterRegistry());
+        Metrics.addRegistry(simpleRegistry);
+    }
+
+    @AfterAll
+    static void removeSimpleRegistry() {
+        Metrics.removeRegistry(simpleRegistry);
     }
 
     @Test
@@ -79,6 +88,20 @@ public class MicrometerCounterInterceptorTest {
         Assertions.assertNotNull(counter);
         Assertions.assertEquals(1, counter.count());
         Assertions.assertNull(counter.getId().getDescription());
+    }
+
+    @Test
+    void testCountRepeatableMeterTags() {
+        counted.countWithRepeatableTags(false);
+        Counter counter = registry.get("metric.repeatable")
+                .tag("method", "countWithRepeatableTags")
+                .tag("class", "io.quarkus.micrometer.test.CountedResource")
+                .tag("tag_a", "prefix_false")
+                .tag("tag_b", "prefix_false")
+                .tag("exception", "none")
+                .tag("result", "success").counter();
+        Assertions.assertNotNull(counter);
+        Assertions.assertEquals(1, counter.count());
     }
 
     @Test

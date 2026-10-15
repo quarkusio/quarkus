@@ -12,6 +12,8 @@ class QuarkusJunit5Callbacks extends QuarkusJunitCallbacks {
 
     private static final String BEFORE_EACH_CLASS_NAME_JUNIT5 = "org.junit.jupiter.api.BeforeEach";
     private static final String AFTER_EACH_CLASS_NAME_JUNIT5 = "org.junit.jupiter.api.AfterEach";
+    private static final String BEFORE_ALL_CLASS_NAME_JUNIT5 = "org.junit.jupiter.api.BeforeAll";
+    private static final String AFTER_ALL_CLASS_NAME_JUNIT5 = "org.junit.jupiter.api.AfterAll";
 
     static void invokeJunitBefores(Object testInstance)
             throws IllegalAccessException, IllegalArgumentException, InvocationTargetException, ClassNotFoundException {
@@ -21,5 +23,15 @@ class QuarkusJunit5Callbacks extends QuarkusJunitCallbacks {
     static void invokeJunitAfters(Object testInstance)
             throws IllegalAccessException, IllegalArgumentException, InvocationTargetException, ClassNotFoundException {
         invokeJunitAfters(AFTER_EACH_CLASS_NAME_JUNIT5, testInstance);
+    }
+
+    static void invokeJunitBeforeAlls(Object testInstance)
+            throws IllegalAccessException, IllegalArgumentException, InvocationTargetException, ClassNotFoundException {
+        invokeJunitBefores(BEFORE_ALL_CLASS_NAME_JUNIT5, testInstance);
+    }
+
+    static void invokeJunitAfterAlls(Object testInstance)
+            throws IllegalAccessException, IllegalArgumentException, InvocationTargetException, ClassNotFoundException {
+        invokeJunitAfters(AFTER_ALL_CLASS_NAME_JUNIT5, testInstance);
     }
 }

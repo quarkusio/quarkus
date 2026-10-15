@@ -646,6 +646,31 @@
                 <configuration>
                     <escapeString>\</escapeString>
                 </configuration>
+                <executions>
+                    <!-- copy the Maven wrapper to make sure we don't inherit the configuration from the root .mvn in the nested projects -->
+                    <execution>
+                        <id>copy-maven-wrapper</id>
+                        <phase>process-resources</phase>
+                        <goals>
+                            <goal>copy-resources</goal>
+                        </goals>
+                        <configuration>
+                            <propertiesEncoding>UTF-8</propertiesEncoding>
+                            <outputDirectory>${project.build.directory}/</outputDirectory>
+                            <resources>
+                                <resource>
+                                    <directory>${maven.multiModuleProjectDirectory}/</directory>
+                                    <includes>
+                                        <include>.mvn/wrapper/**</include>
+                                        <include>mvnw</include>
+                                        <include>mvnw.cmd</include>
+                                    </includes>
+                                    <filtering>false</filtering>
+                                </resource>
+                            </resources>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>
@@ -662,41 +687,6 @@
             <properties>
                 <maven.test.skip>true</maven.test.skip>
             </properties>
-        </profile>
-        <profile>
-            <id>gradle-8</id>
-            <activation>
-                <jdk>[17,25)</jdk>
-            </activation>
-            <!-- Adds an execution to the surefire plugin that runs selected tests with Gradle 8, only for Java < 25 -->
-            <build>
-                <pluginManagement>
-                    <plugins>
-                        <plugin>
-                            <groupId>org.apache.maven.plugins</groupId>
-                            <artifactId>maven-surefire-plugin</artifactId>
-                            <executions>
-                                <execution>
-                                    <id>gradle-wrapper-8.14</id>
-                                    <phase>test</phase>
-                                    <goals>
-                                        <goal>test</goal>
-                                    </goals>
-                                    <configuration>
-                                        <systemPropertyVariables>
-                                            <quarkus-test-gradle-wrapper-version>8.14</quarkus-test-gradle-wrapper-version>
-                                        </systemPropertyVariables>
-                                        <includes>
-                                            <include>BasicMultiModuleQuarkusBuildTest</include>
-                                            <include>MultiModuleConfigIsolationTest</include>
-                                        </includes>
-                                    </configuration>
-                                </execution>
-                            </executions>
-                        </plugin>
-                    </plugins>
-                </pluginManagement>
-            </build>
         </profile>
         <profile>
             <id>native-image</id>

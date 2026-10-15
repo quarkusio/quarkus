@@ -2,7 +2,6 @@ package io.quarkus.redis.deployment.client.datasource;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.io.IOException;
 import java.util.List;
 import java.util.UUID;
 
@@ -14,23 +13,22 @@ import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializerProvider;
-import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
-import com.fasterxml.jackson.databind.module.SimpleModule;
-import com.fasterxml.jackson.databind.ser.std.StdSerializer;
-
-import io.quarkus.jackson.ObjectMapperCustomizer;
+import io.quarkus.jackson.JsonMapperBuilderCustomizer;
 import io.quarkus.redis.datasource.RedisDataSource;
 import io.quarkus.redis.datasource.hash.HashCommands;
 import io.quarkus.redis.deployment.client.RedisTestResource;
 import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.common.QuarkusTestResource;
+import tools.jackson.core.JsonGenerator;
+import tools.jackson.core.JsonParser;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.DeserializationContext;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.SerializationContext;
+import tools.jackson.databind.deser.std.StdDeserializer;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.module.SimpleModule;
+import tools.jackson.databind.ser.std.StdSerializer;
 
 @QuarkusTestResource(RedisTestResource.class)
 public class QuarkusObjectMapperTest {
@@ -88,14 +86,14 @@ public class QuarkusObjectMapperTest {
     }
 
     @Singleton
-    public static class PersonCustomizer implements ObjectMapperCustomizer {
+    public static class PersonCustomizer implements JsonMapperBuilderCustomizer {
 
         @Override
-        public void customize(ObjectMapper objectMapper) {
+        public void customize(JsonMapper.Builder builder) {
             SimpleModule module = new SimpleModule();
             module.addDeserializer(Person.class, new PersonDeserializer());
             module.addSerializer(Person.class, new PersonSerializer());
-            objectMapper.registerModule(module);
+            builder.addModule(module);
         }
     }
 
@@ -106,11 +104,10 @@ public class QuarkusObjectMapperTest {
         }
 
         @Override
-        public void serialize(Person person, JsonGenerator jsonGenerator, SerializerProvider serializerProvider)
-                throws IOException {
+        public void serialize(Person person, JsonGenerator jsonGenerator, SerializationContext context) {
             jsonGenerator.writeStartObject();
-            jsonGenerator.writeStringField("nAmE", person.getName());
-            jsonGenerator.writeNumberField("aGe", person.getAge());
+            jsonGenerator.writeStringProperty("nAmE", person.getName());
+            jsonGenerator.writeNumberProperty("aGe", person.getAge());
             jsonGenerator.writeEndObject();
         }
     }
@@ -122,9 +119,8 @@ public class QuarkusObjectMapperTest {
         }
 
         @Override
-        public Person deserialize(JsonParser jsonParser, DeserializationContext deserializationContext)
-                throws IOException {
-            JsonNode node = jsonParser.getCodec().readTree(jsonParser);
+        public Person deserialize(JsonParser jsonParser, DeserializationContext context) {
+            JsonNode node = jsonParser.objectReadContext().readTree(jsonParser);
             String name = node.get("nAmE").asText();
             int age = (Integer) node.get("aGe").numberValue();
 

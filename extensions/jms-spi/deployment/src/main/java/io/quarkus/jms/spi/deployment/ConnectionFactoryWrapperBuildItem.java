@@ -8,7 +8,11 @@ import io.quarkus.builder.item.SimpleBuildItem;
 
 /**
  * A build item that can be used to wrap the JMS ConnectionFactory
+ *
+ * @deprecated This build item is deprecated and will be removed.
+ *             Use the SPI module from Quarkiverse `quarkus-jms` extension instead
  */
+@Deprecated(forRemoval = true, since = "4.0")
 public final class ConnectionFactoryWrapperBuildItem extends SimpleBuildItem {
     private final Function<ConnectionFactory, Object> wrapper;
 

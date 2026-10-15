@@ -96,7 +96,7 @@ public class AccessLogWithNonApplicationRootPathTestCase {
         };
     }
 
-    // Injected at runtime so the value survives the QuarkusUnitTest classloader boundary
+    // Injected at runtime so the value survives the QuarkusExtensionTest classloader boundary
     // (a static field set by the archive producer would not be visible to the test method).
     @ConfigProperty(name = "quarkus.http.access-log.log-directory")
     Path logDirectory;

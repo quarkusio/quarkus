@@ -92,6 +92,7 @@ import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.RunTimeConfigBuilderBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.StaticInitConfigBuilderBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ConstantBootstrapBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.deployment.execannotations.ExecutionModelAnnotationsAllowedBuildItem;
@@ -134,12 +135,14 @@ class RestClientReactiveProcessor {
     private static final DotName REST_CLIENT = DotName.createSimple(RestClient.class.getName());
     private static final DotName INJECT_MOCK = DotName.createSimple("io.quarkus.test.InjectMock");
     private static final DotName KOTLIN_METADATA_ANNOTATION = DotName.createSimple("kotlin.Metadata");
+    private static final DotName URL = DotName.createSimple("io.quarkus.rest.client.reactive.Url");
 
     private static final String ENABLE_COMPRESSION = "quarkus.http.enable-compression";
     private static final String KOTLIN_INTERFACE_DEFAULT_IMPL_SUFFIX = "$DefaultImpls";
 
     private static final Set<DotName> SKIP_COPYING_ANNOTATIONS_TO_GENERATED_CLASS = Set.of(
             REGISTER_REST_CLIENT,
+            REST_CLIENT,
             REGISTER_PROVIDER,
             REGISTER_PROVIDERS,
             CLIENT_HEADER_PARAM,
@@ -310,6 +313,8 @@ class RestClientReactiveProcessor {
             List<ClientResponseFilterBuildItem> clientResponseFilters,
             BuildProducer<GeneratedBeanBuildItem> generatedBeansProducer,
             BuildProducer<GeneratedClassBuildItem> generatedClassesProducer,
+            BuildProducer<GeneratedResourceBuildItem> generatedResourcesProducer,
+            BuildProducer<ConstantBootstrapBuildItem> constantBootstraps,
             BuildProducer<UnremovableBeanBuildItem> unremovableBeansProducer,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClassesProducer,
             BuildProducer<ExecutionModelAnnotationsAllowedBuildItem> executionModelAnnotationsAllowedProducer,
@@ -366,7 +371,8 @@ class RestClientReactiveProcessor {
 
         MultivaluedMap<String, GeneratedClassResult> generatedProviders = new QuarkusMultivaluedHashMap<>();
         Gizmo classGizmo = Gizmo
-                .create(new GeneratedClassGizmo2Adaptor(generatedClassesProducer, null, null, true));
+                .create(new GeneratedClassGizmo2Adaptor(generatedClassesProducer, generatedResourcesProducer,
+                        null, constantBootstraps, true));
         populateClientExceptionMapperFromAnnotations(index, classGizmo, reflectiveClassesProducer,
                 executionModelAnnotationsAllowedProducer)
                 .forEach(generatedProviders::add);
@@ -821,6 +827,15 @@ class RestClientReactiveProcessor {
         }
 
         recorder.setBlockingClassNames(blockingClassNames);
+
+        Set<String> interfacesWithUrlParam = new HashSet<>();
+        for (AnnotationInstance urlAnnotation : index.getAnnotations(URL)) {
+            if (urlAnnotation.target().kind() == AnnotationTarget.Kind.METHOD_PARAMETER) {
+                interfacesWithUrlParam.add(
+                        urlAnnotation.target().asMethodParameter().method().declaringClass().name().toString());
+            }
+        }
+        recorder.setInterfacesWithUrlParam(interfacesWithUrlParam);
 
         if (LaunchMode.current() == LaunchMode.DEVELOPMENT) {
             recorder.setConfigKeys(configKeys);

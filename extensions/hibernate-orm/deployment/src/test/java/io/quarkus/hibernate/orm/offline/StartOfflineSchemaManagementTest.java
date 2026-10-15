@@ -30,7 +30,7 @@ public class StartOfflineSchemaManagementTest {
             .assertLogRecords(records -> {
                 assertThat(records) // Configuration keys mispelled
                         .extracting(LogRecord::getMessage)
-                        .noneMatch(msg -> msg.contains("Unrecognized configuration key"));
+                        .noneMatch(msg -> msg.contains("Unrecognized configuration property"));
             })
             .assertException(
                     throwable -> assertThat(throwable)

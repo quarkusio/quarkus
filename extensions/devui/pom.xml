@@ -15,10 +15,10 @@
     <packaging>pom</packaging>
     <modules>
         <module>resources</module>
+        <module>observability-store</module>
         <module>runtime</module>
         <module>deployment</module>
         <module>test-spi</module>
         <module>deployment-spi</module>
-        <module>runtime-spi</module>
     </modules>
 </project>

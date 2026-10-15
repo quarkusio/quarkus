@@ -8,8 +8,8 @@ import java.util.Optional;
 import java.util.Set;
 
 import org.hibernate.reactive.common.spi.Implementor;
-import org.hibernate.reactive.context.impl.BaseKey;
-import org.hibernate.reactive.context.impl.ContextualDataStorage;
+import org.hibernate.reactive.context.internal.BaseKey;
+import org.hibernate.reactive.context.internal.ContextualDataStorage;
 import org.hibernate.reactive.mutiny.Mutiny;
 import org.jboss.logging.Logger;
 
@@ -48,6 +48,11 @@ public abstract class OpenedSessionsState<T extends Mutiny.Closeable> {
 
     private final ComputingCache<String, Mutiny.SessionFactory> sessionFactories = new ComputingCache<>(
             k -> createSessionFactory(k));
+
+    void clearCaches() {
+        sessionKeys.clear();
+        sessionFactories.clear();
+    }
 
     protected OpenedSessionsState() {
         sessionOnDemandKey = "hibernate.reactive.openedSessionState." + getSessionType().getName();

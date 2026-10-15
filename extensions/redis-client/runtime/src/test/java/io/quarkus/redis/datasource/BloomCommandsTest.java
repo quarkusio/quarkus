@@ -10,12 +10,11 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-
 import io.quarkus.redis.datasource.bloom.BfInsertArgs;
 import io.quarkus.redis.datasource.bloom.BfReserveArgs;
 import io.quarkus.redis.datasource.bloom.BloomCommands;
 import io.quarkus.redis.runtime.datasource.BlockingRedisDataSourceImpl;
+import tools.jackson.core.type.TypeReference;
 
 @RequiresCommand("bf.add")
 public class BloomCommandsTest extends DatasourceTestBase {

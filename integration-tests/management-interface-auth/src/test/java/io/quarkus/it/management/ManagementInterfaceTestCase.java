@@ -1,5 +1,7 @@
 package io.quarkus.it.management;
 
+import static io.quarkus.test.micrometer.PrometheusMetricsAssert.assertMetrics;
+
 import java.util.Set;
 
 import org.hamcrest.Matchers;
@@ -43,32 +45,34 @@ public class ManagementInterfaceTestCase {
 
     @Test
     void verifyThatSbomIsExposedOnManagementInterface() {
-        RestAssured.given().auth().preemptive().basic("john", "john").get(getPrefix() + "/.well-known/sbom")
+        RestAssured.given().auth().preemptive().basic("john", "john").get(getPrefix() + "/.not-so-well-known/sbom")
                 .then().statusCode(401);
 
-        RestAssured.given().auth().preemptive().basic("bob", "bob").get(getPrefix() + "/.well-known/sbom")
+        RestAssured.given().auth().preemptive().basic("bob", "bob").get(getPrefix() + "/.not-so-well-known/sbom")
                 .then().statusCode(403);
 
-        RestAssured.given().auth().basic("alice", "alice").get(getPrefix() + "/.well-known/sbom")
+        RestAssured.given().auth().basic("alice", "alice").get(getPrefix() + "/.not-so-well-known/sbom")
                 .then().statusCode(200);
 
-        RestAssured.given().auth().oauth2(getAdminToken()).get(getPrefix() + "/.well-known/sbom")
+        RestAssured.given().auth().oauth2(getAdminToken()).get(getPrefix() + "/.not-so-well-known/sbom")
                 .then().statusCode(401);
-        RestAssured.given().auth().oauth2(getUserToken()).get(getPrefix() + "/.well-known/sbom")
+        RestAssured.given().auth().oauth2(getUserToken()).get(getPrefix() + "/.not-so-well-known/sbom")
                 .then().statusCode(401);
 
-        RestAssured.get("/.well-known/sbom")
+        RestAssured.get("/.not-so-well-known/sbom")
                 .then().statusCode(404);
     }
 
     @Test
     void verifyThatMetricsAreExposedOnManagementInterface() {
-        RestAssured.given().auth().basic("alice", "alice").get(getPrefix() + "/q/metrics")
+        assertMetrics(RestAssured.given().auth().basic("alice", "alice").get(getPrefix() + "/q/metrics")
                 .then().statusCode(200)
-                .body(Matchers.containsString("http_server_bytes_read"));
-        RestAssured.given().auth().basic("bob", "bob").get(getPrefix() + "/q/metrics")
+                .extract().asInputStream())
+                .hasMetricNameContaining("http_server_bytes_read");
+        assertMetrics(RestAssured.given().auth().basic("bob", "bob").get(getPrefix() + "/q/metrics")
                 .then().statusCode(200)
-                .body(Matchers.containsString("http_server_bytes_read"));
+                .extract().asInputStream())
+                .hasMetricNameContaining("http_server_bytes_read");
         RestAssured.given().auth().basic("john", "john").get(getPrefix() + "/q/metrics")
                 .then().statusCode(401);
 

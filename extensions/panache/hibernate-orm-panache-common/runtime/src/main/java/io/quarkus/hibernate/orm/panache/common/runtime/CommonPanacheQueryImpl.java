@@ -1,9 +1,5 @@
 package io.quarkus.hibernate.orm.panache.common.runtime;
 
-import java.lang.reflect.AnnotatedElement;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.Field;
-import java.lang.reflect.Parameter;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -11,7 +7,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.stream.Collectors;
+import java.util.function.BiFunction;
 import java.util.stream.Stream;
 
 import jakarta.persistence.LockModeType;
@@ -21,16 +17,13 @@ import org.hibernate.SharedSessionContract;
 import org.hibernate.query.KeyedPage;
 import org.hibernate.query.KeyedResultList;
 import org.hibernate.query.SelectionQuery;
-import org.hibernate.query.spi.SqmQuery;
 
-import io.quarkus.hibernate.orm.panache.common.NestedProjectedClass;
-import io.quarkus.hibernate.orm.panache.common.ProjectedConstructor;
-import io.quarkus.hibernate.orm.panache.common.ProjectedFieldName;
 import io.quarkus.panache.common.Page;
 import io.quarkus.panache.common.Range;
 import io.quarkus.panache.common.Sort;
 import io.quarkus.panache.common.exception.PanacheQueryException;
 import io.quarkus.panache.hibernate.common.runtime.PanacheJpaUtil;
+import io.quarkus.panache.hibernate.common.runtime.ProjectionConstructorUtil;
 
 public class CommonPanacheQueryImpl<Entity> {
 
@@ -126,10 +119,15 @@ public class CommonPanacheQueryImpl<Entity> {
 
     // Builder
 
+    public CommonPanacheQueryImpl<Entity> sort(Sort sort) {
+        this.sort = sort;
+        return this;
+    }
+
     public <T> CommonPanacheQueryImpl<T> project(Class<T> type) {
         String selectQuery = query;
         if (PanacheJpaUtil.isNamedQuery(query)) {
-            SelectionQuery<?> q = session.createNamedSelectionQuery(query.substring(1));
+            SelectionQuery<?> q = session.createNamedSelectionQuery(query.substring(1), Object.class);
             selectQuery = getQueryString(q);
         }
 
@@ -158,91 +156,10 @@ public class CommonPanacheQueryImpl<Entity> {
     }
 
     private static StringBuilder getParametersFromClass(Class<?> type, String parentParameter) {
-        StringBuilder selectClause = new StringBuilder();
-        Constructor<?> constructor = getConstructor(type);
-
-        selectClause.append("new ").append(type.getName()).append(" (");
-        String parametersListStr = Stream.of(constructor.getParameters())
-                .map(parameter -> getParameterName(type, parentParameter, parameter))
-                .collect(Collectors.joining(","));
-        selectClause.append(parametersListStr);
-        selectClause.append(") ");
-        return selectClause;
-    }
-
-    private static Constructor<?> getConstructor(Class<?> type) {
-        Constructor<?>[] typeConstructors = type.getDeclaredConstructors();
-
-        //We start to look for constructors with @ProjectedConstructor
-        for (Constructor<?> typeConstructor : typeConstructors) {
-            if (typeConstructor.isAnnotationPresent(ProjectedConstructor.class)) {
-                return typeConstructor;
-            }
-        }
-
-        //If didn't find anything early,
-        //we try to find a constructor with parameters annotated with @ProjectedFieldName
-        for (Constructor<?> typeConstructor : typeConstructors) {
-            for (Parameter parameter : typeConstructor.getParameters()) {
-                if (parameter.isAnnotationPresent(ProjectedFieldName.class)) {
-                    return typeConstructor;
-                }
-            }
-        }
-
-        //We fall back to the first constructor that has parameters
-        for (Constructor<?> typeConstructor : typeConstructors) {
-            Parameter[] parameters = typeConstructor.getParameters();
-            if (parameters.length == 0) {
-                continue;
-            }
-
-            return typeConstructor;
-        }
-
-        //If everything fails, we return the first available constructor
-        return typeConstructors[0];
-    }
-
-    private static String getParameterName(Class<?> parentType, String parentParameter, Parameter parameter) {
-        String parameterName;
-        // Check if constructor param is annotated with ProjectedFieldName
-        if (hasProjectedFieldName(parameter)) {
-            parameterName = getNameFromProjectedFieldName(parameter);
-        } else if (!parameter.isNamePresent()) {
-            throw new PanacheQueryException(
-                    "Your application must be built with parameter names, this should be the default if" +
-                            " using Quarkus project generation. Check the Maven or Gradle compiler configuration to include '-parameters'.");
-        } else {
-            // Check if class field with same parameter name exists and contains @ProjectFieldName annotation
-            try {
-                Field field = parentType.getDeclaredField(parameter.getName());
-                parameterName = hasProjectedFieldName(field) ? getNameFromProjectedFieldName(field) : parameter.getName();
-            } catch (NoSuchFieldException e) {
-                parameterName = parameter.getName();
-            }
-        }
-        // For nested classes, add parent parameter in parameterName
-        parameterName = (parentParameter == null) ? parameterName : parentParameter.concat(".").concat(parameterName);
-        // Test if the parameter is a nested Class that should be projected too.
-        if (parameter.getType().isAnnotationPresent(NestedProjectedClass.class)) {
-            Class<?> nestedType = parameter.getType();
-            return getParametersFromClass(nestedType, parameterName).toString();
-        } else {
-            return parameterName;
-        }
-    }
-
-    private static boolean hasProjectedFieldName(AnnotatedElement annotatedElement) {
-        return annotatedElement.isAnnotationPresent(ProjectedFieldName.class);
-    }
-
-    private static String getNameFromProjectedFieldName(AnnotatedElement annotatedElement) {
-        final String name = annotatedElement.getAnnotation(ProjectedFieldName.class).value();
-        if (name.isEmpty()) {
-            throw new PanacheQueryException("The annotation ProjectedFieldName must have a non-empty value.");
-        }
-        return name;
+        BiFunction<Class<?>, String, String> nestedProjectionBuilder = (nestedType, parameterName) -> getParametersFromClass(
+                nestedType, parameterName).toString();
+        return new StringBuilder(
+                ProjectionConstructorUtil.buildConstructorExpression(type, parentParameter, nestedProjectionBuilder));
     }
 
     public void filter(String filterName, Map<String, Object> parameters) {
@@ -278,10 +195,7 @@ public class CommonPanacheQueryImpl<Entity> {
     public void nextPage() {
         checkPagination();
         if (keyedPage != null) {
-            if (lastKeyedResult == null) {
-                throw new UnsupportedOperationException(
-                        "Cannot call nextPage() before fetching results with list()");
-            }
+            checkKeyedResult();
             keyedPage = lastKeyedResult.getNextPage();
             lastKeyedResult = null;
         } else {
@@ -292,10 +206,7 @@ public class CommonPanacheQueryImpl<Entity> {
     public void previousPage() {
         checkPagination();
         if (keyedPage != null) {
-            if (lastKeyedResult == null) {
-                throw new UnsupportedOperationException(
-                        "Cannot call previousPage() before fetching results with list()");
-            }
+            checkKeyedResult();
             KeyedPage<?> prev = lastKeyedResult.getPreviousPage();
             if (prev != null) {
                 keyedPage = prev;
@@ -329,10 +240,7 @@ public class CommonPanacheQueryImpl<Entity> {
     public boolean hasNextPage() {
         checkPagination();
         if (keyedPage != null) {
-            if (lastKeyedResult == null) {
-                throw new UnsupportedOperationException(
-                        "Cannot call hasNextPage() before fetching results with list()");
-            }
+            checkKeyedResult();
             return !lastKeyedResult.isLastPage();
         }
         return page.index < (pageCount() - 1);
@@ -341,10 +249,7 @@ public class CommonPanacheQueryImpl<Entity> {
     public boolean hasPreviousPage() {
         checkPagination();
         if (keyedPage != null) {
-            if (lastKeyedResult == null) {
-                throw new UnsupportedOperationException(
-                        "Cannot call hasPreviousPage() before fetching results with list()");
-            }
+            checkKeyedResult();
             return !lastKeyedResult.isFirstPage();
         }
         return page.index > 0;
@@ -372,6 +277,13 @@ public class CommonPanacheQueryImpl<Entity> {
         if (range != null) {
             throw new UnsupportedOperationException("Cannot call a page related method in a ranged query, " +
                     "call page(Page) or page(int, int) to initiate pagination first");
+        }
+    }
+
+    private void checkKeyedResult() {
+        if (lastKeyedResult == null) {
+            throw new UnsupportedOperationException(
+                    "Cannot call this method before fetching results with list()");
         }
     }
 
@@ -587,15 +499,6 @@ public class CommonPanacheQueryImpl<Entity> {
 
     @SuppressWarnings("rawtypes")
     public static String getQueryString(SelectionQuery hibernateQuery) {
-        if (hibernateQuery instanceof SqmQuery) {
-            return ((SqmQuery) hibernateQuery).getQueryString();
-        } else if (hibernateQuery instanceof org.hibernate.query.Query) {
-            // In theory we never use a Query, but who knows.
-            return ((org.hibernate.query.Query) hibernateQuery).getQueryString();
-        } else {
-            throw new IllegalArgumentException("Unexpected Query class: '" + hibernateQuery.getClass().getName() + "', where '"
-                    + SqmQuery.class.getName() + "' or '"
-                    + org.hibernate.query.Query.class + "' is expected.");
-        }
+        return hibernateQuery.getQueryString();
     }
 }

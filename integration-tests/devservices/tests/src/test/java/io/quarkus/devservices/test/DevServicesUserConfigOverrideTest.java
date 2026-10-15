@@ -1,11 +1,8 @@
 package io.quarkus.devservices.test;
 
-import static io.quarkus.tests.oldmodelextension.Constants.OLD_MODEL_EXTENSION_BASE_URL;
-import static io.quarkus.tests.oldmodelextension.Constants.OLD_MODEL_EXTENSION_STATIC_THING;
 import static io.quarkus.tests.simpleextension.Constants.QUARKUS_SIMPLE_EXTENSION_BASE_URL;
 import static io.quarkus.tests.simpleextension.Constants.QUARKUS_SIMPLE_EXTENSION_STATIC_THING;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
 import java.util.Map;
 
@@ -28,16 +25,10 @@ public class DevServicesUserConfigOverrideTest {
         @Override
         public Map<String, String> getConfigOverrides() {
             return Map.of(
-                    OLD_MODEL_EXTENSION_BASE_URL, USER_PROVIDED_URL,
-                    OLD_MODEL_EXTENSION_STATIC_THING, USER_PROVIDED_STATIC);
+                    QUARKUS_SIMPLE_EXTENSION_BASE_URL, USER_PROVIDED_URL,
+                    QUARKUS_SIMPLE_EXTENSION_STATIC_THING, USER_PROVIDED_STATIC);
         }
     }
-
-    @ConfigProperty(name = OLD_MODEL_EXTENSION_BASE_URL, defaultValue = UNSET)
-    String oldModelExtensionBaseUrl;
-
-    @ConfigProperty(name = OLD_MODEL_EXTENSION_STATIC_THING, defaultValue = UNSET)
-    String oldModelStaticProperty;
 
     @ConfigProperty(name = QUARKUS_SIMPLE_EXTENSION_BASE_URL, defaultValue = UNSET)
     String simpleExtensionBaseUrl;
@@ -46,22 +37,12 @@ public class DevServicesUserConfigOverrideTest {
     String simpleStaticProperty;
 
     @Test
-    public void testUserConfigOverridesOldModelDevServicesBaseUrl() {
-        assertEquals(USER_PROVIDED_URL, oldModelExtensionBaseUrl);
+    public void testUserConfigOverridesDevServicesBaseUrl() {
+        assertEquals(USER_PROVIDED_URL, simpleExtensionBaseUrl);
     }
 
     @Test
-    public void testUserConfigOverridesOldModelDevServicesStaticConfig() {
-        assertEquals(USER_PROVIDED_STATIC, oldModelStaticProperty);
-    }
-
-    @Test
-    public void testNewModelServiceStillStartsAlongsideUserConfig() {
-        assertNotEquals(UNSET, simpleExtensionBaseUrl);
-    }
-
-    @Test
-    public void testNewModelStaticConfigStillAvailableAlongsideUserConfig() {
-        assertNotEquals(UNSET, simpleStaticProperty);
+    public void testUserConfigOverridesDevServicesStaticConfig() {
+        assertEquals(USER_PROVIDED_STATIC, simpleStaticProperty);
     }
 }

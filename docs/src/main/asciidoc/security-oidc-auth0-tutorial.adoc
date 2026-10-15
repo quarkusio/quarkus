@@ -7,7 +7,6 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 = Protect a Quarkus web application by using an Auth0 OpenID Connect provider
 include::_attributes.adoc[]
 :diataxis-type: tutorial
-:categories: security,web
 :keywords: oidc,sso,auth0
 
 xref:security-architecture.adoc[Quarkus Security] provides comprehensive OpenId Connect (OIDC) and OAuth2 support with its `quarkus-oidc` extension, supporting both xref:security-oidc-code-flow-authentication.adoc[Authorization code flow] and xref:security-oidc-bearer-token-authentication.adoc[Bearer token] authentication mechanisms.

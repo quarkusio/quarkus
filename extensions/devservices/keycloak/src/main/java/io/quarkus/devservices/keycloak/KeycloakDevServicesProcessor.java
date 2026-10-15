@@ -2,10 +2,16 @@ package io.quarkus.devservices.keycloak;
 
 import static io.quarkus.devservices.common.ConfigureUtil.getDefaultImageNameFor;
 import static io.quarkus.devservices.common.ContainerLocator.locateContainerWithLabels;
+import static io.quarkus.devservices.common.DevServicesHostUtil.formatPrefixedAuthority;
+import static io.quarkus.devservices.common.DevServicesHostUtil.formatResolvedHostAndPort;
+import static io.quarkus.devservices.common.DevServicesHostUtil.formatResolvedPrefixedAuthority;
+import static io.quarkus.devservices.common.DevServicesHostUtil.resolvePublishedPortHost;
 import static io.quarkus.devservices.common.Labels.QUARKUS_DEV_SERVICE;
 import static io.quarkus.devservices.keycloak.KeycloakDevServicesRequiredBuildItem.getDevServicesConfigurator;
 import static io.quarkus.devservices.keycloak.KeycloakDevServicesUtils.createWebClient;
+import static io.quarkus.devservices.keycloak.KeycloakDevServicesUtils.get;
 import static io.quarkus.devservices.keycloak.KeycloakDevServicesUtils.getPasswordAccessToken;
+import static io.quarkus.devservices.keycloak.KeycloakDevServicesUtils.post;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -26,7 +32,6 @@ import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.Set;
@@ -44,6 +49,7 @@ import org.keycloak.representations.idm.RoleRepresentation;
 import org.keycloak.representations.idm.RolesRepresentation;
 import org.keycloak.representations.idm.UserRepresentation;
 import org.keycloak.util.JsonSerialization;
+import org.testcontainers.Testcontainers;
 import org.testcontainers.containers.BindMode;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.wait.strategy.Wait;
@@ -65,9 +71,11 @@ import io.quarkus.devservices.common.ConfigureUtil;
 import io.quarkus.devservices.common.ContainerAddress;
 import io.quarkus.devservices.common.ContainerLocator;
 import io.quarkus.devservices.common.StartableContainer;
+import io.quarkus.devservices.keycloak.KeycloakDevServicesUtils.KeycloakHttpTarget;
 import io.quarkus.devui.spi.page.CardPageBuildItem;
 import io.quarkus.devui.spi.page.Page;
 import io.quarkus.runtime.LaunchMode;
+import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.runtime.configuration.MemorySize;
 import io.smallrye.mutiny.TimeoutException;
 import io.smallrye.mutiny.Uni;
@@ -155,8 +163,12 @@ public class KeycloakDevServicesProcessor {
                         KEYCLOAK_PORT, LaunchMode.current(), useSharedNetwork))
                 .map(containerAddress -> {
                     String sharedContainerUrl = getSharedContainerUrl(containerAddress);
+                    String host = resolvePublishedPortHost(containerAddress.getId(), containerAddress.getHost());
+                    KeycloakHttpTarget httpTarget = createHttpTarget(host, containerAddress.getPort(),
+                            isKeycloakX(config, DockerImageName.parse(imageName).asCompatibleSubstituteFor(imageName)));
                     Map<String, String> configs = prepareConfiguration(config, sharedContainerUrl,
-                            sharedContainerUrl, List.of(), new ArrayList<>(), devServicesConfigurator, sharedContainerUrl);
+                            sharedContainerUrl, List.of(), new ArrayList<>(), devServicesConfigurator, sharedContainerUrl,
+                            httpTarget);
                     return DevServicesResultBuildItem.discovered()
                             .feature(feature)
                             .containerId(containerAddress.getId())
@@ -168,7 +180,8 @@ public class KeycloakDevServicesProcessor {
                         .startable(() -> {
                             QuarkusOidcContainer oidcContainer = createContainer(config, useSharedNetwork,
                                     devServicesConfig.timeout(), composeProjectBuildItem, imageName, devServicesConfigurator);
-                            return new StartableContainer<>(oidcContainer, c -> c.getHost() + ":" + c.getPort());
+                            return new StartableContainer<>(oidcContainer,
+                                    c -> formatResolvedHostAndPort(c.getContainerId(), c.getHost(), c.getPort()));
                         })
                         .postStartHook(containerWrapper -> {
                             for (String error : containerWrapper.getContainer().errors) {
@@ -178,7 +191,7 @@ public class KeycloakDevServicesProcessor {
                             }
                             LOG.info("Dev Services for Keycloak started.");
                         })
-                        .configProvider(createLazyConfigMap(devServicesConfigurator))
+                        .configProvider(wrapper -> resolveConfig(wrapper, devServicesConfigurator))
                         .build());
         devServicesResultProducer.produce(devServicesResultBuildItem);
 
@@ -192,32 +205,7 @@ public class KeycloakDevServicesProcessor {
         // same if the config and the realm file modified times are same and the other way around
         StringBuilder serviceConfigIdentifier = new StringBuilder();
 
-        // TODO: use the builtin hashcode once https://github.com/smallrye/smallrye-config/issues/1462 is fixed
-        int configHashCode = Objects.hash(
-                config.enabled(),
-                config.imageName(),
-                config.keycloakXImage(),
-                config.shared(),
-                config.serviceName(),
-                config.realmPath(),
-                safeMapHash(config.resourceAliases()),
-                safeMapHash(config.resourceMappings()),
-                config.javaOpts(),
-                config.showLogs(),
-                config.startCommand(),
-                config.features(),
-                config.realmName(),
-                config.createRealm(),
-                config.createClient(),
-                config.startWithDisabledTenant(),
-                safeMapHash(config.users()),
-                safeMapHash(config.roles()),
-                config.port(),
-                safeMapHash(config.containerEnv()),
-                config.containerMemoryLimit(),
-                config.webClientTimeout(),
-                config.disableHttps());
-        serviceConfigIdentifier.append(configHashCode);
+        serviceConfigIdentifier.append(config.hashCode());
 
         for (int fileTimeHashCode : getRealmFileLastModifiedDateHashCode(config.realmPath())) {
             serviceConfigIdentifier.append(";"); // separator
@@ -226,21 +214,13 @@ public class KeycloakDevServicesProcessor {
         return serviceConfigIdentifier.toString();
     }
 
-    private static int safeMapHash(Map<?, ?> map) {
-        if (map == null)
-            return 0;
-
-        return map.entrySet().stream().mapToInt(e -> Objects.hash(e.getKey(), e.getValue())).sum();
-    }
-
-    private static Map<String, Function<StartableContainer<QuarkusOidcContainer>, String>> createLazyConfigMap(
+    private static Map<String, String> resolveConfig(StartableContainer<QuarkusOidcContainer> wrapper,
             KeycloakDevServicesConfigurator devServicesConfigurator) {
-        return devServicesConfigurator
-                .getLazyConfigKeys()
-                .stream()
-                .map(configKey -> Map.<String, Function<StartableContainer<QuarkusOidcContainer>, String>> entry(configKey,
-                        wrapper -> wrapper.getContainer().getConfigValue(configKey)))
-                .collect(Collectors.toUnmodifiableMap(Map.Entry::getKey, Map.Entry::getValue));
+        Map<String, String> config = new HashMap<>();
+        for (String configKey : devServicesConfigurator.getLazyConfigKeys()) {
+            config.put(configKey, wrapper.getContainer().getConfigValue(configKey));
+        }
+        return config;
     }
 
     private static boolean oidcDevServicesEnabled() {
@@ -294,7 +274,12 @@ public class KeycloakDevServicesProcessor {
     }
 
     private static String getBaseURL(String scheme, String host, Integer port) {
-        return scheme + host + ":" + port;
+        return formatPrefixedAuthority(scheme.endsWith("://") ? scheme.substring(0, scheme.length() - 3) : scheme, host,
+                port);
+    }
+
+    private static KeycloakHttpTarget createHttpTarget(String host, int port, boolean keycloakX) {
+        return new KeycloakHttpTarget(port, host, keycloakX ? "" : "/auth");
     }
 
     private static String startURL(String scheme, String host, Integer port, boolean isKeycloakX) {
@@ -316,7 +301,8 @@ public class KeycloakDevServicesProcessor {
     private static KeycloakDevServicesConfigurator.ConfigPropertiesContext createRealmsAndReturnPropertiesContext(
             KeycloakDevServicesConfig config, String internalURL,
             String hostURL, List<RealmRepresentation> realmReps, List<String> errors,
-            KeycloakDevServicesConfigurator devServicesConfigurator, String internalBaseUrl) {
+            KeycloakDevServicesConfigurator devServicesConfigurator, String internalBaseUrl,
+            KeycloakHttpTarget httpTarget) {
         final String realmName = !realmReps.isEmpty() ? realmReps.iterator().next().getRealm()
                 : getDefaultRealmName(config);
         final String authServerInternalUrl = realmsURL(internalURL, realmName);
@@ -339,18 +325,18 @@ public class KeycloakDevServicesProcessor {
             try {
                 WebClient client = createWebClient(vertxInstance);
                 try {
-                    String adminToken = getAdminToken(config, client, clientAuthServerBaseUrl);
+                    String adminToken = getAdminToken(config, client, httpTarget);
                     if (createDefaultRealm) {
-                        if (realmDoesNotExist(realmName, client, clientAuthServerBaseUrl, config, adminToken, errors)) {
-                            createDefaultRealm(config, client, adminToken, clientAuthServerBaseUrl, users, oidcClientId,
+                        if (realmDoesNotExist(realmName, client, httpTarget, config, adminToken, errors)) {
+                            createDefaultRealm(config, client, adminToken, httpTarget, users, oidcClientId,
                                     oidcClientSecret, errors, devServicesConfigurator);
                         }
                         realmNames.add(realmName);
                     } else {
                         for (RealmRepresentation realmRep : realmReps) {
-                            if (realmDoesNotExist(realmRep.getRealm(), client, clientAuthServerBaseUrl, config, adminToken,
+                            if (realmDoesNotExist(realmRep.getRealm(), client, httpTarget, config, adminToken,
                                     errors)) {
-                                createRealm(config, client, adminToken, clientAuthServerBaseUrl, realmRep, errors);
+                                createRealm(config, client, adminToken, httpTarget, realmRep, errors);
                             }
                             realmNames.add(realmRep.getRealm());
                         }
@@ -368,11 +354,11 @@ public class KeycloakDevServicesProcessor {
                 oidcClientSecret, internalBaseUrl, internalURL, clientAuthServerUrl, users, realmNames);
     }
 
-    private static boolean realmDoesNotExist(String realmName, WebClient client, String keycloakUrl,
+    private static boolean realmDoesNotExist(String realmName, WebClient client, KeycloakHttpTarget httpTarget,
             KeycloakDevServicesConfig config, String token, List<String> errors) {
         LOG.tracef("Detecting if the Keycloak realm '%s' exists", realmName);
         try {
-            var response = client.getAbs(keycloakUrl + "/admin/realms/" + realmName)
+            var response = get(client, httpTarget, httpTarget.path("/admin/realms/" + realmName))
                     .putHeader(HttpHeaders.CONTENT_TYPE.toString(), "application/json")
                     .putHeader(HttpHeaders.AUTHORIZATION.toString(), "Bearer " + token)
                     .send().await().atMost(config.webClientTimeout());
@@ -416,9 +402,10 @@ public class KeycloakDevServicesProcessor {
 
     private static Map<String, String> prepareConfiguration(KeycloakDevServicesConfig config,
             String internalURL, String hostURL, List<RealmRepresentation> realmReps, List<String> errors,
-            KeycloakDevServicesConfigurator devServicesConfigurator, String internalBaseUrl) {
+            KeycloakDevServicesConfigurator devServicesConfigurator, String internalBaseUrl,
+            KeycloakHttpTarget httpTarget) {
         var configPropertiesContext = createRealmsAndReturnPropertiesContext(config,
-                internalURL, hostURL, realmReps, errors, devServicesConfigurator, internalBaseUrl);
+                internalURL, hostURL, realmReps, errors, devServicesConfigurator, internalBaseUrl, httpTarget);
         return devServicesConfigurator.getLazyConfigKeys().stream().collect(Collectors.toUnmodifiableMap(
                 Function.identity(),
                 configKey -> devServicesConfigurator.getLazyConfigValue(configKey, configPropertiesContext)));
@@ -447,8 +434,8 @@ public class KeycloakDevServicesProcessor {
     }
 
     private static String getSharedContainerUrl(ContainerAddress containerAddress) {
-        return "http://" + ("0.0.0.0".equals(containerAddress.getHost()) ? "localhost" : containerAddress.getHost())
-                + ":" + containerAddress.getPort();
+        return formatResolvedPrefixedAuthority("http", containerAddress.getId(), containerAddress.getHost(),
+                containerAddress.getPort());
     }
 
     private static final class QuarkusOidcContainer extends GenericContainer<QuarkusOidcContainer> {
@@ -558,6 +545,12 @@ public class KeycloakDevServicesProcessor {
                 }
             } else {
                 addExposedPort(KEYCLOAK_PORT);
+            }
+
+            if (config.hostAccessiblePorts().isPresent()) {
+                for (int port : config.hostAccessiblePorts().get()) {
+                    Testcontainers.exposeHostPorts(port);
+                }
             }
 
             if (sharedContainer && LaunchMode.current() == LaunchMode.DEVELOPMENT) {
@@ -720,15 +713,20 @@ public class KeycloakDevServicesProcessor {
 
         private KeycloakDevServicesConfigurator.ConfigPropertiesContext createConfigPropertiesContext() {
             List<String> errors = new ArrayList<>();
-            String internalBaseUrl = getBaseURL((isHttps() ? "https://" : "http://"), getHost(), getPort());
+            String configHost = useSharedNetwork ? getHost()
+                    : resolvePublishedPortHost(getContainerId(), super.getHost());
+            String internalBaseUrl = getBaseURL((isHttps() ? "https://" : "http://"), configHost, getPort());
             String internalUrl = startURL(internalBaseUrl, keycloakX);
             String hostUrl = useSharedNetwork
                     // we need to use auto-detected host and port, so it works when docker host != localhost
                     ? startURL("http://", getSharedNetworkExternalHost(), getSharedNetworkExternalPort(), keycloakX)
                     : null;
 
+            KeycloakHttpTarget httpTarget = useSharedNetwork
+                    ? createHttpTarget(getSharedNetworkExternalHost(), getSharedNetworkExternalPort(), keycloakX)
+                    : createHttpTarget(resolvePublishedPortHost(getContainerId(), super.getHost()), getPort(), keycloakX);
             return createRealmsAndReturnPropertiesContext(config, internalUrl, hostUrl,
-                    realmReps, errors, devServicesConfigurator, internalBaseUrl);
+                    realmReps, errors, devServicesConfigurator, internalBaseUrl, httpTarget);
         }
 
         private String getConfigValue(String configKey) {
@@ -755,8 +753,8 @@ public class KeycloakDevServicesProcessor {
         return Set.of();
     }
 
-    private static void createDefaultRealm(KeycloakDevServicesConfig config, WebClient client, String token, String keycloakUrl,
-            Map<String, String> users,
+    private static void createDefaultRealm(KeycloakDevServicesConfig config, WebClient client, String token,
+            KeycloakHttpTarget httpTarget, Map<String, String> users,
             String oidcClientId, String oidcClientSecret, List<String> errors,
             KeycloakDevServicesConfigurator devServicesConfigurator) {
         RealmRepresentation realm = createDefaultRealmRep(config);
@@ -770,15 +768,15 @@ public class KeycloakDevServicesProcessor {
 
         devServicesConfigurator.customizeDefaultRealm(realm);
 
-        createRealm(config, client, token, keycloakUrl, realm, errors);
+        createRealm(config, client, token, httpTarget, realm, errors);
     }
 
-    private static String getAdminToken(KeycloakDevServicesConfig config, WebClient client, String keycloakUrl) {
+    private static String getAdminToken(KeycloakDevServicesConfig config, WebClient client, KeycloakHttpTarget httpTarget) {
         try {
-            LOG.tracef("Acquiring admin token");
+            LOG.tracef("Acquiring admin token from %s:%d", httpTarget.host(), httpTarget.port());
 
-            return getPasswordAccessToken(client,
-                    keycloakUrl + "/realms/master/protocol/openid-connect/token",
+            return getPasswordAccessToken(client, httpTarget,
+                    httpTarget.path("/realms/master/protocol/openid-connect/token"),
                     "admin-cli", null, "admin", "admin", null)
                     .await().atMost(config.webClientTimeout());
         } catch (TimeoutException e) {
@@ -790,12 +788,12 @@ public class KeycloakDevServicesProcessor {
         return null;
     }
 
-    private static void createRealm(KeycloakDevServicesConfig config, WebClient client, String token, String keycloakUrl,
-            RealmRepresentation realm,
+    private static void createRealm(KeycloakDevServicesConfig config, WebClient client, String token,
+            KeycloakHttpTarget httpTarget, RealmRepresentation realm,
             List<String> errors) {
         try {
             LOG.tracef("Creating the realm %s", realm.getRealm());
-            HttpResponse<Buffer> createRealmResponse = client.postAbs(keycloakUrl + "/admin/realms")
+            HttpResponse<Buffer> createRealmResponse = post(client, httpTarget, httpTarget.path("/admin/realms"))
                     .putHeader(HttpHeaders.CONTENT_TYPE.toString(), "application/json")
                     .putHeader(HttpHeaders.AUTHORIZATION.toString(), "Bearer " + token)
                     .sendBuffer(Buffer.buffer().appendString(JsonSerialization.writeValueAsString(realm)))
@@ -810,7 +808,7 @@ public class KeycloakDevServicesProcessor {
                         createRealmResponse.statusMessage());
             }
 
-            Uni<Integer> realmStatusCodeUni = client.getAbs(keycloakUrl + "/realms/" + realm.getRealm())
+            Uni<Integer> realmStatusCodeUni = get(client, httpTarget, httpTarget.path("/realms/" + realm.getRealm()))
                     .send().onItem()
                     .transform(resp -> {
                         LOG.debugf("Realm status: %d", resp.statusCode());
@@ -878,8 +876,14 @@ public class KeycloakDevServicesProcessor {
         realm.setEnabled(true);
         realm.setUsers(new ArrayList<>());
         realm.setClients(new ArrayList<>());
-        realm.setAccessTokenLifespan(600);
-        realm.setSsoSessionMaxLifespan(600);
+        realm.setAccessTokenLifespan((int) config.accessTokenLifespan().toSeconds());
+        realm.setSsoSessionMaxLifespan((int) config.ssoSessionMaxLifespan().toSeconds());
+        if (config.ssoSessionMaxLifespan().compareTo(config.accessTokenLifespan()) < 0) {
+            throw new ConfigurationException(
+                    "The configuration property 'quarkus.keycloak.devservices.sso-session-max-lifespan' value must be"
+                            + " greater or equal than the value of the 'quarkus.keycloak.devservices.access-token-lifespan' " +
+                            "configuration property");
+        }
         realm.setRefreshTokenMaxReuse(10);
         realm.setRequiredActions(List.of());
 

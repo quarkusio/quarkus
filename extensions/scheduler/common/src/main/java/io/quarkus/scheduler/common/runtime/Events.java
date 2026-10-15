@@ -14,6 +14,7 @@ import io.quarkus.scheduler.ScheduledJobResumed;
 import io.quarkus.scheduler.SchedulerPaused;
 import io.quarkus.scheduler.SchedulerResumed;
 import io.quarkus.scheduler.SkippedExecution;
+import io.quarkus.scheduler.StartedExecution;
 import io.quarkus.scheduler.SuccessfulExecution;
 
 public final class Events {
@@ -23,6 +24,7 @@ public final class Events {
     public final Event<SkippedExecution> skippedExecution;
     public final Event<SuccessfulExecution> successExecution;
     public final Event<FailedExecution> failedExecution;
+    public final Event<StartedExecution> startedExecution;
     public final Event<DelayedExecution> delayedExecution;
     public final Event<SchedulerPaused> schedulerPaused;
     public final Event<SchedulerResumed> schedulerResumed;
@@ -30,13 +32,15 @@ public final class Events {
     public final Event<ScheduledJobResumed> scheduledJobResumed;
 
     public Events(Event<SkippedExecution> skippedExecution, Event<SuccessfulExecution> successExecution,
-            Event<FailedExecution> failedExecution, Event<DelayedExecution> delayedExecution,
+            Event<FailedExecution> failedExecution, Event<StartedExecution> startedExecution,
+            Event<DelayedExecution> delayedExecution,
             Event<SchedulerPaused> schedulerPaused, Event<SchedulerResumed> schedulerResumed,
             Event<ScheduledJobPaused> scheduledJobPaused, Event<ScheduledJobResumed> scheduledJobResumed) {
         super();
         this.skippedExecution = skippedExecution;
         this.successExecution = successExecution;
         this.failedExecution = failedExecution;
+        this.startedExecution = startedExecution;
         this.delayedExecution = delayedExecution;
         this.schedulerPaused = schedulerPaused;
         this.schedulerResumed = schedulerResumed;

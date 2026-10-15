@@ -5,8 +5,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.FileSystem;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 import java.util.Properties;
 
 import org.assertj.core.api.Assertions;
@@ -85,5 +88,157 @@ public class QuarkusExtensionPluginTest {
                 .withArguments("build", ":deployment:dependencies", "--configuration", "annotationProcessor")
                 .build();
         assertThat(dependencies.getOutput()).contains(QuarkusExtensionPlugin.QUARKUS_ANNOTATION_PROCESSOR);
+    }
+
+    @Test
+    public void deploymentTestShouldGenerateApplicationModelWithComponentVariants() throws IOException {
+        createExtensionProjectWithDeploymentTest();
+
+        BuildResult test = runGradle(":deployment:test");
+
+        assertThat(test.task(":deployment:test").getOutcome()).isEqualTo(TaskOutcome.SUCCESS);
+        assertThat(test.getOutput()).doesNotContain("cannot choose between the following variants");
+        assertDeploymentTestApplicationModelMarker();
+    }
+
+    @Test
+    public void deploymentTestShouldGenerateApplicationModelWithoutComponentVariants() throws IOException {
+        createExtensionProjectWithDeploymentTest();
+
+        BuildResult test = runGradle(":deployment:test", "-PdisableQuarkusComponentVariants=true");
+
+        assertThat(test.task(":deployment:test").getOutcome()).isEqualTo(TaskOutcome.SUCCESS);
+        assertDeploymentTestApplicationModelMarker();
+    }
+
+    @Test
+    public void noArgApplicationModelBuilderShouldResolveDeploymentProjectWithComponentVariants() throws IOException {
+        createExtensionProjectWithDeploymentTest();
+
+        BuildResult model = runGradle(":runtime:resolveDeploymentTestApplicationModel");
+
+        assertThat(model.task(":runtime:resolveDeploymentTestApplicationModel").getOutcome())
+                .isEqualTo(TaskOutcome.SUCCESS);
+        assertThat(model.getOutput()).contains("resolved deployment test application model");
+    }
+
+    private BuildResult runGradle(String... arguments) {
+        List<String> gradleArguments = new ArrayList<>(List.of(arguments));
+        gradleArguments.add("-S");
+        return GradleRunner.create()
+                .withPluginClasspath()
+                .withProjectDir(testProjectDir)
+                .withArguments(gradleArguments)
+                .build();
+    }
+
+    private void createExtensionProjectWithDeploymentTest() throws IOException {
+        File runtimeModule = new File(testProjectDir, "runtime");
+        runtimeModule.mkdir();
+        TestUtils.writeFile(new File(runtimeModule, "build.gradle"), runtimeBuildFile());
+        File runtimeClass = new File(runtimeModule, "src/main/java/runtime/Test.java");
+        runtimeClass.getParentFile().mkdirs();
+        TestUtils.writeFile(runtimeClass, "package runtime; public class Test {}\n");
+
+        File deploymentModule = new File(testProjectDir, "deployment");
+        deploymentModule.mkdir();
+        TestUtils.writeFile(new File(deploymentModule, "build.gradle"), deploymentBuildFile());
+        File deploymentClass = new File(deploymentModule, "src/main/java/deployment/Test.java");
+        deploymentClass.getParentFile().mkdirs();
+        TestUtils.writeFile(deploymentClass, "package deployment; public class Test {}\n");
+        File deploymentTest = new File(deploymentModule, "src/test/java/deployment/GeneratedModelTest.java");
+        deploymentTest.getParentFile().mkdirs();
+        TestUtils.writeFile(deploymentTest, """
+                package deployment;
+
+                import static org.junit.jupiter.api.Assertions.assertNotNull;
+
+                import java.nio.file.Files;
+                import java.nio.file.Path;
+
+                import org.junit.jupiter.api.Test;
+
+                public class GeneratedModelTest {
+
+                    @Test
+                    public void serializedTestApplicationModelIsAvailable() throws Exception {
+                        String model = System.getProperty("quarkus-internal-test.serialized-app-model.path");
+                        assertNotNull(model);
+                        Files.writeString(Path.of(System.getProperty("model.marker.file")), "true");
+                    }
+                }
+                """);
+
+        TestUtils.writeFile(new File(testProjectDir, "settings.gradle"), "include 'runtime', 'deployment'\n");
+    }
+
+    private String runtimeBuildFile() throws IOException {
+        return """
+                plugins {
+                    id 'java'
+                    id 'io.quarkus.extension'
+                }
+
+                group = 'org.acme'
+                version = '1.0.0'
+
+                repositories {
+                    mavenCentral()
+                    mavenLocal()
+                }
+
+                quarkusExtension {
+                    disableValidation = true
+                }
+
+                dependencies {
+                    implementation enforcedPlatform("io.quarkus:quarkus-bom:%1$s")
+                    implementation "io.quarkus:quarkus-arc"
+                }
+
+                tasks.register("resolveDeploymentTestApplicationModel") {
+                    dependsOn(":deployment:testClasses")
+                    doLast {
+                        def mode = io.quarkus.runtime.LaunchMode.TEST
+                        io.quarkus.gradle.tooling.ToolingUtils.create(project(":deployment"), mode)
+                        println "resolved deployment test application model"
+                    }
+                }
+                """.formatted(TestUtils.getCurrentQuarkusVersion());
+    }
+
+    private String deploymentBuildFile() throws IOException {
+        return """
+                plugins {
+                    id 'java'
+                }
+
+                group = 'org.acme'
+                version = '1.0.0'
+
+                repositories {
+                    mavenCentral()
+                    mavenLocal()
+                }
+
+                dependencies {
+                    implementation enforcedPlatform("io.quarkus:quarkus-bom:%1$s")
+                    implementation "io.quarkus:quarkus-arc-deployment"
+                    implementation project(":runtime")
+                    testImplementation "org.junit.jupiter:junit-jupiter-api"
+                    testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine"
+                }
+
+                test {
+                    def markerFile = layout.buildDirectory.file("model-marker.txt").get().asFile
+                    systemProperty "model.marker.file", markerFile.absolutePath
+                }
+                """.formatted(TestUtils.getCurrentQuarkusVersion());
+    }
+
+    private void assertDeploymentTestApplicationModelMarker() throws IOException {
+        Path marker = testProjectDir.toPath().resolve("deployment/build/model-marker.txt");
+        assertThat(marker).exists();
+        assertThat(Files.readString(marker)).isEqualTo("true");
     }
 }

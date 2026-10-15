@@ -15,7 +15,7 @@ import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.common.http.TestHTTPResource;
 import io.vertx.core.Vertx;
 import io.vertx.core.http.WebSocketClient;
@@ -27,10 +27,13 @@ import io.vertx.core.http.WebSocketConnectOptions;
 public class AeshWebSocketIdleTimeoutTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot(jar -> jar.addClasses(
                     AeshWebSocketTestHelper.class, HelloCommand.class))
-            .overrideConfigKey("quarkus.aesh.websocket.idle-timeout", "2s");
+            .overrideConfigKey("quarkus.aesh.websocket.idle-timeout", "2s")
+            .overrideConfigKey("quarkus.websockets-next.server.traffic-logging.enabled", "true")
+            .overrideConfigKey("quarkus.log.category.\"io.quarkus.websockets.next.traffic\".level", "DEBUG")
+            .overrideConfigKey("quarkus.log.category.\"io.quarkus.aesh\".level", "DEBUG");
 
     @TestHTTPResource("/aesh/terminal")
     URI wsUri;
@@ -65,6 +68,12 @@ public class AeshWebSocketIdleTimeoutTest {
                 ws.closeHandler(v -> closedLatch.countDown());
 
                 ws.writeTextMessage("{\"action\":\"init\",\"cols\":80,\"rows\":24}");
+                // Retry init if server did not respond (handles slow JVMs like Semeru)
+                vertx.setTimer(2000, id -> {
+                    if (output.length() == 0) {
+                        ws.writeTextMessage("{\"action\":\"init\",\"cols\":80,\"rows\":24}");
+                    }
+                });
             });
 
             // Verify the command works

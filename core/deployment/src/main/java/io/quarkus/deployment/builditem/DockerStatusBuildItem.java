@@ -19,19 +19,4 @@ public final class DockerStatusBuildItem extends ContainerRuntimeStatusBuildItem
     public DockerStatusBuildItem(IsDockerWorking isDockerWorking) {
         super(isDockerWorking);
     }
-
-    /**
-     * Checks if the Docker runtime is available.
-     * <p>
-     * This method is deprecated and will be removed in a future release.
-     * Use {@link #isContainerRuntimeAvailable()} instead.
-     * </p>
-     *
-     * @return {@code true} if the Docker runtime is available, {@code false} otherwise
-     * @deprecated Use {@link #isContainerRuntimeAvailable()} instead
-     */
-    @Deprecated(forRemoval = true)
-    public boolean isDockerAvailable() {
-        return isContainerRuntimeAvailable();
-    }
 }

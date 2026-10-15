@@ -16,6 +16,7 @@ public class OpenTelemetryDisabledTest {
     static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withEmptyApplication()
             .overrideConfigKey("quarkus.otel.enabled", "false")
+            .overrideConfigKey("quarkus.datasource.devservices.enabled", "false")
             .assertException(t -> Assertions.assertEquals(DeploymentException.class, t.getClass()));
 
     @Inject

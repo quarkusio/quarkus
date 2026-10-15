@@ -6,20 +6,21 @@ import java.util.Map;
 
 import jakarta.inject.Singleton;
 
-import com.fasterxml.jackson.databind.BeanDescription;
-import com.fasterxml.jackson.databind.JavaType;
-import com.fasterxml.jackson.databind.JsonSerializer;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationConfig;
-import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
-import com.fasterxml.jackson.databind.module.SimpleModule;
-import com.fasterxml.jackson.databind.module.SimpleSerializers;
-import com.fasterxml.jackson.databind.ser.std.StdSerializer;
+import com.fasterxml.jackson.annotation.JsonFormat;
 
-import io.quarkus.jackson.ObjectMapperCustomizer;
+import io.quarkus.jackson.JsonMapperBuilderCustomizer;
+import tools.jackson.databind.BeanDescription;
+import tools.jackson.databind.JavaType;
+import tools.jackson.databind.SerializationConfig;
+import tools.jackson.databind.ValueSerializer;
+import tools.jackson.databind.deser.std.StdDeserializer;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.module.SimpleModule;
+import tools.jackson.databind.module.SimpleSerializers;
+import tools.jackson.databind.ser.std.StdSerializer;
 
 @Singleton
-public class GeneratedSerializersRegister implements ObjectMapperCustomizer {
+public class GeneratedSerializersRegister implements JsonMapperBuilderCustomizer {
 
     private static final SimpleModule mappingModule = new SimpleModule();
     private static final ExactSerializers serializers = new ExactSerializers();
@@ -31,8 +32,8 @@ public class GeneratedSerializersRegister implements ObjectMapperCustomizer {
     }
 
     @Override
-    public void customize(ObjectMapper objectMapper) {
-        objectMapper.registerModule(mappingModule);
+    public void customize(JsonMapper.Builder builder) {
+        builder.addModule(mappingModule);
     }
 
     public static void addSerializer(Class<? extends StdSerializer> serClass) {
@@ -57,16 +58,17 @@ public class GeneratedSerializersRegister implements ObjectMapperCustomizer {
 
     public static class ExactSerializers extends SimpleSerializers {
 
-        private final Map<Class<?>, JsonSerializer<?>> exactSerializers = new HashMap<>();
+        private final Map<Class<?>, ValueSerializer<?>> exactSerializers = new HashMap<>();
 
-        public <T> void addExactSerializer(Class<? extends T> type, JsonSerializer<T> ser) {
+        public <T> void addExactSerializer(Class<? extends T> type, ValueSerializer<T> ser) {
             exactSerializers.put(type, ser);
         }
 
         @Override
-        public JsonSerializer<?> findSerializer(SerializationConfig config, JavaType type, BeanDescription beanDesc) {
-            JsonSerializer<?> exactSerializer = exactSerializers.get(type.getRawClass());
-            return exactSerializer != null ? exactSerializer : super.findSerializer(config, type, beanDesc);
+        public ValueSerializer<?> findSerializer(SerializationConfig config,
+                JavaType type, BeanDescription.Supplier beanDescRef, JsonFormat.Value formatOverrides) {
+            ValueSerializer<?> exactSerializer = exactSerializers.get(type.getRawClass());
+            return exactSerializer != null ? exactSerializer : super.findSerializer(config, type, beanDescRef, formatOverrides);
         }
     }
 }

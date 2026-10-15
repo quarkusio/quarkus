@@ -5,6 +5,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.function.Predicate;
 
 import jakarta.ws.rs.core.Cookie;
 import jakarta.ws.rs.core.HttpHeaders;
@@ -101,6 +102,11 @@ public class HttpHeadersImpl implements HttpHeaders {
 
     public List<MediaType> getModifiableAcceptableMediaTypes() {
         return HeaderUtil.getAcceptableMediaTypes(requestHeaders);
+    }
+
+    @Override
+    public boolean containsHeaderString(String name, String valueSeparatorRegex, Predicate<String> valuePredicate) {
+        return HeaderUtil.containsHeaderString(requestHeaders, name, valueSeparatorRegex, valuePredicate);
     }
 
     @Override

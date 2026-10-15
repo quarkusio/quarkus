@@ -14,6 +14,7 @@ import java.util.Set;
 import jakarta.persistence.EntityManagerFactory;
 import jakarta.persistence.PersistenceConfiguration;
 import jakarta.persistence.PersistenceException;
+import jakarta.persistence.spi.ClassTransformer;
 import jakarta.persistence.spi.PersistenceProvider;
 import jakarta.persistence.spi.PersistenceUnitInfo;
 import jakarta.persistence.spi.ProviderUtil;
@@ -54,9 +55,9 @@ import io.quarkus.hibernate.orm.runtime.boot.QuarkusPersistenceUnitDescriptor;
 import io.quarkus.hibernate.orm.runtime.cache.QuarkusPersistenceUnitCacheConfiguration;
 import io.quarkus.hibernate.orm.runtime.cache.QuarkusPersistenceUnitCaffeineCacheManager;
 import io.quarkus.hibernate.orm.runtime.integration.HibernateOrmIntegrationRuntimeDescriptor;
-import io.quarkus.hibernate.orm.runtime.integration.HibernateOrmIntegrationRuntimeInitListener;
 import io.quarkus.hibernate.orm.runtime.recording.PrevalidatedQuarkusMetadata;
 import io.quarkus.hibernate.orm.runtime.recording.RecordedState;
+import io.quarkus.hibernate.orm.runtime.spi.HibernateOrmIntegrationRuntimeInitListener;
 import io.quarkus.hibernate.reactive.runtime.boot.FastBootReactiveEntityManagerFactoryBuilder;
 import io.quarkus.hibernate.reactive.runtime.boot.registry.PreconfiguredReactiveServiceRegistryBuilder;
 import io.quarkus.hibernate.reactive.runtime.customized.QuarkusReactiveConnectionPoolInitiator;
@@ -286,8 +287,6 @@ public final class FastBootHibernateReactivePersistenceProvider implements Persi
                     runtimeSettings,
                     validatorFactory, cdiBeanManager, recordedState.getMultiTenancyStrategy(),
                     !blockingSessionFactoryExists,
-                    recordedState.getBuildTimeSettings().getSource().getBuiltinFormatMapperBehaviour(),
-                    recordedState.getBuildTimeSettings().getSource().getJsonFormatterCustomizationCheck(),
                     importScripts);
         }
 
@@ -420,15 +419,12 @@ public final class FastBootHibernateReactivePersistenceProvider implements Persi
 
         // Database
         runtimeSettingsBuilder.put(AvailableSettings.JAKARTA_HBM2DDL_DATABASE_ACTION,
-                getString(persistenceUnitConfig.database().generation().generation()
-                        .orElse(generationStrategy)));
+                getString(generationStrategy));
 
         runtimeSettingsBuilder.put(AvailableSettings.JAKARTA_HBM2DDL_CREATE_SCHEMAS,
-                String.valueOf(persistenceUnitConfig.database().generation().createSchemas()
-                        .orElse(persistenceUnitConfig.schemaManagement().createSchemas())));
+                String.valueOf(persistenceUnitConfig.schemaManagement().createSchemas()));
 
-        if (persistenceUnitConfig.database().generation().haltOnError()
-                .orElse(persistenceUnitConfig.schemaManagement().haltOnError())) {
+        if (persistenceUnitConfig.schemaManagement().haltOnError()) {
             runtimeSettingsBuilder.put(AvailableSettings.HBM2DDL_HALT_ON_ERROR, "true");
         }
 
@@ -487,6 +483,11 @@ public final class FastBootHibernateReactivePersistenceProvider implements Persi
     }
 
     @Override
+    public ClassTransformer getClassTransformer(PersistenceUnitInfo info, Map<?, ?> properties) {
+        return null;
+    }
+
+    @Override
     public EntityManagerFactory createContainerEntityManagerFactory(PersistenceUnitInfo info, Map map) {
         //Not supported by Hibernate Reactive: this should always delegate to Hibernate ORM, which will do its own
         //persistence provider name checks and possibly reject if it's not a suitable.
@@ -508,6 +509,11 @@ public final class FastBootHibernateReactivePersistenceProvider implements Persi
     @Override
     public boolean generateSchema(String persistenceUnitName, Map map) {
         return getJdbcHibernatePersistenceProviderDelegate().generateSchema(persistenceUnitName, map);
+    }
+
+    @Override
+    public boolean generateSchema(PersistenceConfiguration configuration) {
+        return false;
     }
 
     private FastBootHibernatePersistenceProvider getJdbcHibernatePersistenceProviderDelegate() {

@@ -8,11 +8,11 @@ import java.util.Objects;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.registry.json.JsonBuilder;
 import io.quarkus.registry.json.JsonEntityWithAnySupport;
+import tools.jackson.databind.annotation.JsonSerialize;
 
 /**
  * Asymmetric data manipulation:

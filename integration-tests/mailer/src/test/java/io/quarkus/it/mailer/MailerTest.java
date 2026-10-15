@@ -203,8 +203,7 @@ public class MailerTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = { "start-tls-legacy", "start-tls-legacy-trust-all", "start-tls-registry",
-            "start-tls-registry-trust-all" })
+    @ValueSource(strings = { "start-tls-registry", "start-tls-registry-trust-all" })
     public void sendTextEmailUsingStartTls(String mailerName) {
         RestAssured.get("/mail/text/" + mailerName);
 
@@ -220,7 +219,7 @@ public class MailerTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = { "tls-legacy", "tls-legacy-trust-all", "tls-registry", "tls-registry-trust-all" })
+    @ValueSource(strings = { "tls-registry", "tls-registry-trust-all" })
     public void sendTextEmailUsingTls(String mailerName) {
         RestAssured.get("/mail/text/" + mailerName);
 

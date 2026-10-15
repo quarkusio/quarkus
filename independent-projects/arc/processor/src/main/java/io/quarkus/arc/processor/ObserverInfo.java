@@ -236,18 +236,6 @@ public class ObserverInfo implements InjectionTargetInfo {
      * attributes (including the bean class).
      *
      * @return the optional user id
-     * @deprecated use {@link #getUserId()} instead
-     */
-    @Deprecated(since = "3.26", forRemoval = true)
-    public String getId() {
-        return userId;
-    }
-
-    /**
-     * A unique user id should be used for multiple synthetic observer methods with the same
-     * attributes (including the bean class).
-     *
-     * @return the optional user id
      */
     public String getUserId() {
         return userId;
@@ -451,7 +439,7 @@ public class ObserverInfo implements InjectionTargetInfo {
         public ObserverTransformationContext(BuildContext buildContext, AnnotationTarget target,
                 Type observedType, Set<AnnotationInstance> qualifiers, Reception reception, TransactionPhase transactionPhase,
                 Integer priority, boolean async) {
-            super(buildContext, target, null, qualifiers);
+            super(buildContext, target, qualifiers);
             this.observedType = observedType;
             this.reception = reception;
             this.transactionPhase = transactionPhase;

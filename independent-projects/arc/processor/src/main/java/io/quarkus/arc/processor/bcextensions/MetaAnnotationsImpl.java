@@ -5,9 +5,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.Dependent;
 import jakarta.enterprise.context.spi.AlterableContext;
 import jakarta.enterprise.inject.build.compatible.spi.ClassConfig;
 import jakarta.enterprise.inject.build.compatible.spi.MetaAnnotations;
+import jakarta.enterprise.inject.spi.DeploymentException;
+import jakarta.inject.Singleton;
 
 import org.jboss.jandex.DotName;
 
@@ -59,6 +63,7 @@ class MetaAnnotationsImpl implements MetaAnnotations {
     public void addContext(Class<? extends Annotation> scopeAnnotation, Class<? extends AlterableContext> contextClass) {
         Objects.requireNonNull(scopeAnnotation);
         Objects.requireNonNull(contextClass);
+        checkBuiltInGlobalScope(scopeAnnotation);
         contexts.add(new ContextData(contextClass, scopeAnnotation, null));
     }
 
@@ -67,7 +72,15 @@ class MetaAnnotationsImpl implements MetaAnnotations {
             Class<? extends AlterableContext> contextClass) {
         Objects.requireNonNull(scopeAnnotation);
         Objects.requireNonNull(contextClass);
+        checkBuiltInGlobalScope(scopeAnnotation);
         contexts.add(new ContextData(contextClass, scopeAnnotation, isNormal));
+    }
+
+    private void checkBuiltInGlobalScope(Class<? extends Annotation> scope) {
+        if (scope == Singleton.class || scope == ApplicationScoped.class || scope == Dependent.class) {
+            throw new DeploymentException("Cannot register custom context class for " + scope.getName()
+                    + ", because it is a built-in global scope");
+        }
     }
 
     static final class ContextData {

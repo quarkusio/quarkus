@@ -1,0 +1,145 @@
+name: Quarkus Early Access JDK Build
+
+permissions:
+  contents: read
+  issues: write
+  packages: read
+
+on:
+  schedule:
+    # midnight every weekday + saturday
+    - cron:  '0 0 * * 1-6'
+  workflow_dispatch:
+    inputs:
+      jdkVersion:
+       description: 'JDK version'
+        required: true
+        # make sure to keep the matrix entries (see below) in sync!
+        default: '21'
+      jdkDistribution:
+        description: 'JDK distribution'
+        required: true
+        # make sure to keep the matrix entries (see below) in sync!
+        default: 'jdk.java.net'
+
+env:
+  # Workaround testsuite locale issue
+  LANG: en_US.UTF-8
+  MAVEN_OPTS: -Xmx2g -XX:MaxMetaspaceSize=1g
+  JVM_TEST_MAVEN_OPTS: "-e -B --settings .github/mvn-settings.xml -Dtest-containers -Dstart-containers -Dtest-resteasy-reactive-large-files -Dquarkus.test.rest-assured.enable-logging-on-failure=false -Dformat.skip"
+  MVNW_REPOURL: https://maven-central.storage-download.googleapis.com/maven2
+jobs:
+  linux-jvm-test:
+    name: JVM Tests - Early Access JDK ${{ matrix.version }} Build - ${{ matrix.dist }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      # This is complex because we want to use a different matrix when using workflow_dispatch.
+      # See https://docs.github.com/en/actions/learn-github-actions/expressions#example-returning-a-json-object
+      # for the code that inspired this.
+      # The first matrix (with a single entry) gets executed when using workflow_dispatch only.
+      # The second matrix (with multiple entries) get executed when NOT using workflow_dispatch.
+      # When adding a newer JDK here, make sure to update the defaults of workflow_dispatch inputs (see top of this file).
+      matrix: >-
+        ${{
+          fromJSON(
+            github.event_name == 'workflow_dispatch'
+            && format( '{{ "include": [{{ "version": "{0}", "dist": "{1}" }}] }}',
+                github.event.inputs.jdkVersion, github.event.inputs.jdkDistribution )
+            || '{ "include": [{ "version": 26, "dist": "jdk.java.net" }] }'
+          )
+        }}
+    if: github.repository == 'quarkusio/quarkus' || github.event_name == 'workflow_dispatch'
+    timeout-minutes: 360
+    env:
+      MAVEN_OPTS: -Xmx2048m -XX:MaxMetaspaceSize=1000m
+    steps:
+      - name: Set up JDK from jdk.java.net
+        if: matrix.dist == 'jdk.java.net'
+        uses: oracle-actions/setup-java@fff43251af9936a0e6a4d5d0946e14f1680e9b6b # v1.5.0
+        with:
+          website: jdk.java.net
+          release: ${{ matrix.version }}
+      - name: Set up JDK from other provider than jdk.java.net
+        if: matrix.dist != 'jdk.java.net'
+        uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
+        with:
+          distribution: ${{ matrix.dist }}
+          java-version: ${{ matrix.version }}
+      - name: Print Java version
+        shell: bash
+        run: java -version
+
+      - name: Stop mysql
+        shell: bash
+        run: |
+          ss -ln
+          sudo service mysql stop || true
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && github.event.ref || 'main' }}
+      - name: Get SHA
+        id: quarkus-sha
+        run: |
+          echo "sha=$(git rev-parse HEAD)" >> $GITHUB_OUTPUT
+      - name: Reclaim Disk Space
+        run: .github/ci-prerequisites.sh
+      - name: Get Date
+        id: get-date
+        run: |
+          echo "date=$(/bin/date -u "+%Y-%m")" >> $GITHUB_OUTPUT
+        shell: bash
+      - name: Cache Maven Repository
+        id: cache-maven
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.m2/repository
+          # refresh cache every month to avoid unlimited growth
+          # also add JDK version to key to avoid poisioning of the CI cache
+          key: q2maven-${{ steps.get-date.outputs.date }}-${{ matrix.version }}
+      - name: Build with Maven
+        # -fae to try to gather as many failures as possible
+        # (but not maven.test.failure.ignore because test report generation is buggy)
+        run: |
+          ./mvnw $JVM_TEST_MAVEN_OPTS -Dtcks install -fae
+      # Test reports disabled due to: https://github.com/ScaCap/action-surefire-report/issues/39
+      #- name: Publish Test Report
+      #  if: always()
+      #  uses: scacap/action-surefire-report@v1
+      #  with:
+      #    github_token: ${{ secrets.GITHUB_TOKEN }}
+      #    # fail required to upload failure archive in subsequent actions
+      #    fail_on_test_failures: true
+      #- name: Publish Gradle Test Report
+      #  if: always()
+      #  uses: scacap/action-surefire-report@v1
+      #  with:
+      #    github_token: ${{ secrets.GITHUB_TOKEN }}
+      #    # fail required to upload failure archive in subsequent actions
+      #    fail_on_test_failures: true
+      #    check_name: 'Test Report for Gradle'
+      #    report_paths: '**/build/test-results/test/TEST-*.xml'
+      - name: Prepare failure archive (if maven failed)
+        if: failure()
+        shell: bash
+        run: find . -name '*-reports' -type d -o -name '*.log' | tar -czf test-reports.tgz -T -
+      - name: Upload failure Archive (if maven failed)
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: failure()
+        with:
+          name: test-reports-linux-jvm${{ matrix.version }}
+          path: 'test-reports.tgz'
+      - name: Delete Local Artifacts From Cache
+        if: always()
+        shell: bash
+        run: rm -r ~/.m2/repository/io/quarkus
+      - name: Report status
+        if: always() && github.repository == 'quarkusio/quarkus' && github.event_name != 'workflow_dispatch'
+        uses: quarkusio/report-status-in-issue@main
+        with:
+          github-token: ${{ secrets.GITHUB_API_TOKEN }}
+          status: ${{ job.status }}
+          issue-repository: ${{ github.repository }}
+          issue-number: 15867
+          quarkus-sha: ${{ steps.quarkus-sha.outputs.sha }}
+          project-sha: ${{ steps.quarkus-sha.outputs.sha }}

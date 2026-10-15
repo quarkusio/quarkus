@@ -17,7 +17,7 @@ import io.quarkus.jackson.spi.ClassPathJacksonModuleBuildItem;
 
 public class KotlinProcessor {
 
-    private static final String KOTLIN_JACKSON_MODULE = "com.fasterxml.jackson.module.kotlin.KotlinModule";
+    private static final String KOTLIN_JACKSON_MODULE = "tools.jackson.module.kotlin.KotlinModule";
 
     @BuildStep
     FeatureBuildItem feature() {
@@ -65,7 +65,8 @@ public class KotlinProcessor {
         nativeResourcePatterns.produce(builder().includeGlobs(
                 "META-INF/**/*.kotlin_module",
                 "META-INF/services/kotlin.reflect.*",
-                "**/*.kotlin_builtins")
+                // as seen in e.g. kotlin-stdlib-*.jar, builtin files are in kotlin dir
+                "kotlin/**/*.kotlin_builtins")
                 .build());
 
         reflectiveHierarchyIgnoreWarning.produce(

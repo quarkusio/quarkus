@@ -60,13 +60,15 @@ class Http3AltSvcDisabledTest {
 
         HttpClientAgent client = vertx.httpClientBuilder().with(clientConfig).with(sslOptions).build();
 
-        var resp = client.request(HttpMethod.GET, port, "localhost", "/hello")
-                .compose(HttpClientRequest::send)
-                .await(5, TimeUnit.SECONDS);
+        try {
+            var resp = client.request(HttpMethod.GET, port, "localhost", "/hello")
+                    .compose(HttpClientRequest::send)
+                    .await(5, TimeUnit.SECONDS);
 
-        assertThat(resp.getHeader("Alt-Svc")).isNull();
-
-        client.close().await(5, TimeUnit.SECONDS);
+            assertThat(resp.getHeader("Alt-Svc")).isNull();
+        } finally {
+            client.close().await(5, TimeUnit.SECONDS);
+        }
     }
 
     @ApplicationScoped

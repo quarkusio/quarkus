@@ -8,7 +8,6 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 = Proactive authentication
 include::_attributes.adoc[]
 :diataxis-type: concept
-:categories: security,web
 :topics: security,authentication
 :extensions: io.quarkus:quarkus-vertx-http
 

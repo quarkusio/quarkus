@@ -24,11 +24,11 @@ import com.github.dockerjava.api.model.PushResponseItem;
 import dev.snowdrop.buildpack.BuildConfig;
 import dev.snowdrop.buildpack.BuildConfigBuilder;
 import dev.snowdrop.buildpack.BuildConfigFluent.DockerConfigNested;
+import dev.snowdrop.buildpack.config.HostAndSocketConfig;
 import dev.snowdrop.buildpack.config.ImageReference;
 import dev.snowdrop.buildpack.config.RegistryAuthConfig;
 import dev.snowdrop.buildpack.config.RegistryAuthConfigBuilder;
 import dev.snowdrop.buildpack.docker.DockerClientUtils;
-import dev.snowdrop.buildpack.docker.DockerClientUtils.HostAndSocket;
 import io.quarkus.container.image.deployment.ContainerImageConfig;
 import io.quarkus.container.image.deployment.util.NativeBinaryUtil;
 import io.quarkus.container.spi.AvailableContainerImageExtensionBuildItem;
@@ -293,8 +293,8 @@ public class BuildpackProcessor {
 
                         //configure dockerhost/socket if required
                         DockerConfigNested<BuildConfigBuilder> dc = b.editDockerConfig();
-                        buildpackConfig.dockerHost().ifPresent(dh -> dc.withDockerHost(dh));
-                        buildpackConfig.dockerSocket().ifPresent(ds -> dc.withDockerSocket(ds));
+                        dc.withHostAndSocketConfig(new HostAndSocketConfig(buildpackConfig.dockerHost().orElse(null),
+                                buildpackConfig.dockerSocket().orElse(null)));
                         dc.endDockerConfig();
 
                         //configure lifecycle override image if present
@@ -325,8 +325,9 @@ public class BuildpackProcessor {
             log.info("Pushing image to registry");
             Stream.concat(Stream.of(containerImage.getImage()), containerImage.getAdditionalImageTags().stream()).forEach(i -> {
 
-                HostAndSocket hns = DockerClientUtils.probeContainerRuntime(
-                        new HostAndSocket(buildpackConfig.dockerHost().orElse(""), buildpackConfig.dockerSocket().orElse("")));
+                HostAndSocketConfig hns = DockerClientUtils.probeContainerRuntime(
+                        new HostAndSocketConfig(buildpackConfig.dockerHost().orElse(null),
+                                buildpackConfig.dockerSocket().orElse(null)));
                 DockerClient dockerClient = DockerClientUtils.getDockerClient(hns, authConfigs);
 
                 ResultCallback.Adapter<PushResponseItem> callback = new ResultCallback.Adapter<>() {

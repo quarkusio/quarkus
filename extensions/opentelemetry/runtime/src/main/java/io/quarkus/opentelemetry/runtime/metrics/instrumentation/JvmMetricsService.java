@@ -1,9 +1,13 @@
 package io.quarkus.opentelemetry.runtime.metrics.instrumentation;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import jakarta.annotation.PreDestroy;
 import jakarta.enterprise.context.ApplicationScoped;
 
 import io.opentelemetry.api.OpenTelemetry;
+import io.opentelemetry.instrumentation.api.config.IncludeExclude;
 import io.opentelemetry.instrumentation.runtimetelemetry.RuntimeTelemetry;
 import io.opentelemetry.instrumentation.runtimetelemetry.RuntimeTelemetryBuilder;
 import io.opentelemetry.instrumentation.runtimetelemetry.internal.Internal;
@@ -26,26 +30,30 @@ public class JvmMetricsService {
 
         RuntimeTelemetryBuilder builder = RuntimeTelemetry.builder(openTelemetry);
 
-        Internal.setEnableJfrFeature(builder, "CONTEXT_SWITCH_METRICS");
-        Internal.setEnableJfrFeature(builder, "CPU_COUNT_METRICS");
-        Internal.setEnableJfrFeature(builder, "LOCK_METRICS");
-        Internal.setEnableJfrFeature(builder, "NETWORK_IO_METRICS");
-        Internal.setDisableJfrFeature(builder, "MEMORY_POOL_METRICS");
-        Internal.setUseLegacyJfrCpuCountMetric(builder, true);
+        // JMX metrics are emitted by default. The selectors below opt-in to the JFR based metrics
+        // that complement them (they are OpenTelemetry metric names, wildcards allowed). The JFR
+        // memory pool metrics are intentionally left out so that memory is sourced from JMX.
+        List<String> includedJfrMetrics = new ArrayList<>(List.of(
+                "jvm.cpu.context_switch",
+                "jvm.cpu.limit",
+                "jvm.cpu.longlock",
+                "jvm.network.*"));
 
         if (ImageMode.current().isNativeImage()) {
-            Internal.setEnableJfrFeature(builder, "THREAD_METRICS");
-            Internal.setEnableJfrFeature(builder, "CLASS_LOAD_METRICS");
-            Internal.setEnableJfrFeature(builder, "GC_DURATION_METRICS");
-            Internal.setEnableJfrFeature(builder, "CPU_UTILIZATION_METRICS");
-            Internal.setEnableJfrFeature(builder, "MEMORY_ALLOCATION_METRICS");
-        } else {
-            Internal.setDisableJfrFeature(builder, "THREAD_METRICS");
-            Internal.setDisableJfrFeature(builder, "CLASS_LOAD_METRICS");
-            Internal.setDisableJfrFeature(builder, "GC_DURATION_METRICS");
-            Internal.setDisableJfrFeature(builder, "CPU_UTILIZATION_METRICS");
-            Internal.setDisableJfrFeature(builder, "MEMORY_ALLOCATION_METRICS");
+            // In native mode some of the JMX sourced metrics are not available, so their JFR
+            // equivalents are enabled instead. Note the CPU utilization metric is the whole-system
+            // JFR one (jvm.system.cpu.utilization) rather than the JMX jvm.cpu.recent_utilization.
+            includedJfrMetrics.add("jvm.thread.count");
+            includedJfrMetrics.add("jvm.class.*");
+            includedJfrMetrics.add("jvm.gc.duration");
+            includedJfrMetrics.add("jvm.system.cpu.utilization");
+            includedJfrMetrics.add("jvm.memory.allocation");
         }
+
+        Internal.setJfrMetrics(builder, IncludeExclude.builder()
+                .setIncluded(includedJfrMetrics)
+                .build());
+        Internal.setUseLegacyJfrCpuCountMetric(builder, true);
 
         runtimeTelemetry = builder.build();
     }

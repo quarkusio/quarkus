@@ -15,8 +15,7 @@ public class JacksonRestClientTest {
             .withConfigurationResource("application.properties")
             .withApplicationRoot((jar) -> jar
                     .addClasses(ZonedDateTimeObjectMapperCustomizer.class, DateDto.class, HelloResource.class,
-                            RestInterface.class,
-                            ClientResource.class));
+                            RestInterface.class, ClientResource.class));
 
     @Test
     public void testCustomDeserialization() {

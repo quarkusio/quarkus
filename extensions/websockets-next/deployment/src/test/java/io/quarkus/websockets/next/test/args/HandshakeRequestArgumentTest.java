@@ -34,10 +34,11 @@ public class HandshakeRequestArgumentTest {
 
     @Test
     void testArgument() {
-        WSClient client = WSClient.create(vertx).connect(new WebSocketConnectOptions().addHeader("X-Test", "fool"),
-                testUri);
-        client.waitForMessages(1);
-        assertEquals("fool", client.getLastMessage().toString());
+        try (WSClient client = WSClient.create(vertx).connect(new WebSocketConnectOptions().addHeader("X-Test", "fool"),
+                testUri)) {
+            client.waitForMessages(1);
+            assertEquals("fool", client.getLastMessage().toString());
+        }
     }
 
     @WebSocket(path = "/xtest")

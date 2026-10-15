@@ -4,8 +4,9 @@ import io.quarkus.agroal.spi.JdbcDriverBuildItem;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.datasource.common.runtime.DatabaseKind;
+import io.quarkus.datasource.deployment.spi.DatabaseVersionLoader;
 import io.quarkus.datasource.deployment.spi.DefaultDataSourceDbKindBuildItem;
-import io.quarkus.datasource.deployment.spi.DevServicesDatasourceConfigurationHandlerBuildItem;
+import io.quarkus.datasource.deployment.spi.DefaultDataSourceDbVersionBuildItem;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.Feature;
@@ -14,6 +15,7 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
+import io.quarkus.devservices.datasource.common.DevServicesDatasourceConfigurationHandlerBuildItem;
 import io.quarkus.jdbc.mariadb.runtime.MariaDBAgroalConnectionConfigurer;
 import io.quarkus.jdbc.mariadb.runtime.MariaDBServiceBindingConverter;
 
@@ -25,11 +27,15 @@ public class JDBCMariaDBProcessor {
     }
 
     @BuildStep
-    void registerDriver(BuildProducer<JdbcDriverBuildItem> jdbcDriver, BuildProducer<DefaultDataSourceDbKindBuildItem> dbKind) {
+    void registerDriver(BuildProducer<JdbcDriverBuildItem> jdbcDriver,
+            BuildProducer<DefaultDataSourceDbKindBuildItem> dbKind,
+            BuildProducer<DefaultDataSourceDbVersionBuildItem> dbVersion) {
         jdbcDriver.produce(
                 new JdbcDriverBuildItem(DatabaseKind.MARIADB, "org.mariadb.jdbc.Driver", "org.mariadb.jdbc.MariaDbDataSource"));
 
         dbKind.produce(new DefaultDataSourceDbKindBuildItem(DatabaseKind.MARIADB));
+        dbVersion.produce(new DefaultDataSourceDbVersionBuildItem(DatabaseKind.MARIADB,
+                DatabaseVersionLoader.loadDefaultVersion("mariadb")));
     }
 
     @BuildStep
@@ -46,19 +52,6 @@ public class JDBCMariaDBProcessor {
                     .setUnremovable()
                     .build());
         }
-    }
-
-    @BuildStep
-    void registerAuthenticationPlugins(BuildProducer<ServiceProviderBuildItem> serviceProvider) {
-        // make sure that all plugins are available
-        serviceProvider
-                .produce(ServiceProviderBuildItem.allProvidersFromClassPath("org.mariadb.jdbc.plugin.AuthenticationPlugin"));
-    }
-
-    @BuildStep
-    void registerCodecs(BuildProducer<ServiceProviderBuildItem> serviceProvider) {
-        serviceProvider
-                .produce(ServiceProviderBuildItem.allProvidersFromClassPath("org.mariadb.jdbc.plugin.Codec"));
     }
 
     @BuildStep

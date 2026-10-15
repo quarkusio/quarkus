@@ -114,7 +114,10 @@ public class ResteasyReactiveJaxbProcessor {
             boolean consumesMultipart = consumesMultipart(resourceInfo);
             if (consumesXml || consumesMultipart) {
                 for (MethodParameterInfo parameter : methodInfo.parameters()) {
-                    if (isParameterBody(parameter, resourceInfo) && !isTypeCompatibleWithJaxb(parameter.type())) {
+                    if (!isParameterBody(parameter, resourceInfo)) {
+                        continue;
+                    }
+                    if (!isTypeCompatibleWithJaxb(parameter.type())) {
                         throw new DeploymentException(
                                 "Cannot handle collections or arrays as parameters using JAXB. You need to wrap it "
                                         + "into a root element class. Problematic parameter is '" + parameter.name()

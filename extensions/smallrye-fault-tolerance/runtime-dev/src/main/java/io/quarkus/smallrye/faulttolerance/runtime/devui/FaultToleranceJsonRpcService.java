@@ -13,9 +13,6 @@ import org.eclipse.microprofile.faulttolerance.Timeout;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.smallrye.faulttolerance.runtime.QuarkusFaultToleranceOperationProvider;
-import io.smallrye.common.annotation.Blocking;
-import io.smallrye.common.annotation.NonBlocking;
-import io.smallrye.faulttolerance.api.ApplyFaultTolerance;
 import io.smallrye.faulttolerance.api.ApplyGuard;
 import io.smallrye.faulttolerance.api.AsynchronousNonBlocking;
 import io.smallrye.faulttolerance.api.BeforeRetry;
@@ -50,10 +47,6 @@ public class FaultToleranceJsonRpcService {
         result.put("beanClass", operation.getBeanClass().getName());
         result.put("method", operation.getMethodDescriptor().name);
 
-        if (operation.hasApplyFaultTolerance()) {
-            result.put(ApplyFaultTolerance.class.getSimpleName(), new JsonObject()
-                    .put("value", operation.getApplyFaultTolerance().value()));
-        }
         if (operation.hasApplyGuard()) {
             result.put(ApplyGuard.class.getSimpleName(), new JsonObject()
                     .put("value", operation.getApplyGuard().value()));
@@ -64,12 +57,6 @@ public class FaultToleranceJsonRpcService {
         }
         if (operation.hasAsynchronousNonBlocking()) {
             result.put(AsynchronousNonBlocking.class.getSimpleName(), new JsonObject());
-        }
-        if (operation.hasBlocking()) {
-            result.put(Blocking.class.getSimpleName(), new JsonObject());
-        }
-        if (operation.hasNonBlocking()) {
-            result.put(NonBlocking.class.getSimpleName(), new JsonObject());
         }
 
         if (operation.hasBulkhead()) {

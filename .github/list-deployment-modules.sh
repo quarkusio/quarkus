@@ -12,7 +12,7 @@ shopt -s failglob
 # git ls-files would list it, but it is not part of Maven's reactor and passing it to
 # -pl fails the build. Collect the commented-out extensions and skip them.
 disabled=$(grep -oE '<!--[[:space:]]*<module>[^<]+</module>[[:space:]]*-->' extensions/pom.xml \
-           | sed -E 's|.*<module>([^<]+)</module>.*|extensions/\1/|')
+           | sed -E 's|.*<module>([^<]+)</module>.*|extensions/\1/|' || true)
 
 # Note: git's ** matches one or more path segments, never zero,
 # so core/deployment/pom.xml has to be listed explicitly.

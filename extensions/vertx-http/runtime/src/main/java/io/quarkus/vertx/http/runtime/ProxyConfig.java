@@ -2,6 +2,8 @@ package io.quarkus.vertx.http.runtime;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.OptionalInt;
+import java.util.Set;
 
 import io.quarkus.runtime.annotations.ConfigDocDefault;
 import io.quarkus.runtime.configuration.TrimmedStringConverter;
@@ -21,6 +23,23 @@ public interface ProxyConfig {
      */
     @WithDefault("false")
     boolean useProxyProtocol();
+
+    /**
+     * The listeners on which the {@code PROXY} protocol is expected when {@code use-proxy-protocol} is enabled.
+     * Connections to the other listeners are served without a {@code PROXY} protocol header.
+     * By default, the protocol is expected on every listener.
+     */
+    @WithDefault("http,https,domain-socket")
+    Set<ProxyProtocolListener> proxyProtocolListeners();
+
+    /**
+     * The listeners of the HTTP server.
+     */
+    enum ProxyProtocolListener {
+        HTTP,
+        HTTPS,
+        DOMAIN_SOCKET
+    }
 
     /**
      * If this is true then the address, scheme etc. will be set from headers forwarded by the proxy server, such as
@@ -200,4 +219,13 @@ public interface ProxyConfig {
      */
     @WithDefault("reject")
     ForwardedProtoValidation forwardedProtoValidation();
+
+    /**
+     * Selects the client address from the {@code X-Forwarded-For} header as the value at this 1-based index counted from
+     * the rightmost value ({@code 1} is the rightmost, {@code 2} the second from the right). When not set, the leftmost
+     * value is used. Use only when the server is reachable exclusively through trusted proxies or trusted clients,
+     * otherwise a client that connects directly can forge the selected value. Mutually exclusive with
+     * {@code quarkus.http.proxy.allow-forwarded} and with a {@code io.quarkus.vertx.http.XForwardedForSelector} CDI bean.
+     */
+    OptionalInt xForwardedForIndex();
 }

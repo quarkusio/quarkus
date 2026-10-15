@@ -1,6 +1,7 @@
 package io.quarkus.it.rest;
 
 import java.beans.ConstructorProperties;
+import java.io.IOException;
 
 import jakarta.json.bind.JsonbBuilder;
 import jakarta.ws.rs.GET;
@@ -48,7 +49,7 @@ public class TestResourceForConstructorProperties {
     @Path("/sse")
     @SseElementType(MediaType.APPLICATION_JSON)
     @Produces(MediaType.SERVER_SENT_EVENTS)
-    public void serverSentEvents(@Context SseEventSink sink) {
+    public void serverSentEvents(@Context SseEventSink sink) throws IOException {
         VanillaJavaImmutableData data = new VanillaJavaImmutableData("sse", "ssevalue");
         try {
             OutboundSseEvent.Builder builder = sse.newEventBuilder();

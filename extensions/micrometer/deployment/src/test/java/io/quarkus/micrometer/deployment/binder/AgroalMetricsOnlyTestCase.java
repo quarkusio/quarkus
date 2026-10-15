@@ -17,10 +17,9 @@ public class AgroalMetricsOnlyTestCase {
 
     @RegisterExtension
     static final QuarkusExtensionTest config = new QuarkusExtensionTest()
-            .overrideConfigKey("quarkus.datasource.db-kind", "h2")
+            .overrideConfigKey("quarkus.otel.enabled", "false")
             .overrideConfigKey("quarkus.datasource.metrics.enabled", "true")
-            .overrideRuntimeConfigKey("quarkus.datasource.username", "username-named")
-            .overrideRuntimeConfigKey("quarkus.datasource.jdbc.url", "jdbc:h2:tcp://localhost/mem:testing");
+            .overrideRuntimeConfigKey("quarkus.datasource.username", "username-named");
 
     @Inject
     MeterRegistry registry;

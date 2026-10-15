@@ -18,7 +18,7 @@ import io.quarkus.value.registry.ValueRegistry;
  * loader is used it should not also be annotated as this will result in it being executed
  * twice.
  *
- * Note that when using these with QuarkusExtensionTest or QuarkusUnitTest (rather than @QuarkusTest) they run
+ * Note that when using these with QuarkusExtensionTest (rather than @QuarkusTest) they run
  * before the ClassLoader has been setup. This means injection may not work
  * as expected.
  * <p>

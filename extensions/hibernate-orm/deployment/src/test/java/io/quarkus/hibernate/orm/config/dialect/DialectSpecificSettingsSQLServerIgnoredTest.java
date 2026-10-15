@@ -11,7 +11,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.hibernate.orm.MyEntity;
-import io.quarkus.hibernate.orm.deployment.util.HibernateProcessorUtil;
+import io.quarkus.hibernate.orm.deployment.util.HibernateProcessorSupport;
 import io.quarkus.test.QuarkusExtensionTest;
 
 public class DialectSpecificSettingsSQLServerIgnoredTest {
@@ -21,9 +21,9 @@ public class DialectSpecificSettingsSQLServerIgnoredTest {
                     .addClass(MyEntity.class)
                     .addAsResource("application-start-offline-mssql-dialect.properties", "application.properties"))
             .overrideConfigKey("quarkus.datasource.db-kind", "") // This will override to default which is H2
-            .setLogRecordPredicate(record -> HibernateProcessorUtil.class.getName().equals(record.getLoggerName()))
+            .setLogRecordPredicate(record -> HibernateProcessorSupport.class.getName().equals(record.getLoggerName()))
             .overrideConfigKey("quarkus.hibernate-orm.dialect.mssql.compatibility-level", "170") // this will be ignored
-            .setLogRecordPredicate(record -> HibernateProcessorUtil.class.getName().equals(record.getLoggerName()))
+            .setLogRecordPredicate(record -> HibernateProcessorSupport.class.getName().equals(record.getLoggerName()))
             .assertLogRecords(records -> {
                 assertThat(records)
                         .extracting(LogRecord::getMessage)

@@ -9,7 +9,7 @@ import org.junit.platform.launcher.listeners.SummaryGeneratingListener;
 
 /**
  * Minimal JUnit launcher for running a single test class in a forked JVM.
- * Used by the reproducibility check in {@link AbstractQuarkusExtensionTest}.
+ * Used by the reproducibility check in {@link QuarkusExtensionTest}.
  */
 class ReproducibilityTestLauncher {
     public static void main(String[] args) {

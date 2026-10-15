@@ -171,6 +171,10 @@ public class TestResource {
                 .where("{'category' : :category}", Parameters.with("category", "newCategory2"));
         Assertions.assertEquals(5, updated);
         Assertions.assertEquals(5, TestImperativeEntity.count("category = ?1", "newCategory3"));
+        updated = TestImperativeEntity.update("category = ?1 and description = ?2", "newCategory3", "newDescription")
+                .where("category = ?1", "newCategory3");
+        Assertions.assertEquals(5, updated);
+        Assertions.assertEquals(5, TestImperativeEntity.count("description = ?1", "newDescription"));
         updated = TestImperativeEntity.update("newField", "newValue").all();
         Assertions.assertEquals(10, updated);
         updated = TestImperativeEntity.update("{'$inc': {'cpt': 1}}").all();
@@ -596,6 +600,10 @@ public class TestResource {
                 .where("{'category' : :category}", Parameters.with("category", "newCategory2")).await().indefinitely();
         Assertions.assertEquals(5, updated);
         Assertions.assertEquals(5, TestReactiveEntity.count("category = ?1", "newCategory3").await().indefinitely());
+        updated = TestReactiveEntity.update("category = ?1 and description = ?2", "newCategory3", "newDescription")
+                .where("category = ?1", "newCategory3").await().indefinitely();
+        Assertions.assertEquals(5, updated);
+        Assertions.assertEquals(5, TestReactiveEntity.count("description = ?1", "newDescription").await().indefinitely());
         updated = TestReactiveEntity.update("newField", "newValue").all().await().indefinitely();
         Assertions.assertEquals(10, updated);
         updated = TestReactiveEntity.update("{'$inc': {'cpt': 1}}").all().await().indefinitely();

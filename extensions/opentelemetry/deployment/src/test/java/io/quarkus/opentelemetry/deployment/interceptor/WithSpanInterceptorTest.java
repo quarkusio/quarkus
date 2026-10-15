@@ -4,7 +4,7 @@ import static io.opentelemetry.api.trace.SpanKind.CLIENT;
 import static io.opentelemetry.api.trace.SpanKind.INTERNAL;
 import static io.opentelemetry.api.trace.SpanKind.SERVER;
 import static io.opentelemetry.api.trace.StatusCode.ERROR;
-import static io.opentelemetry.semconv.incubating.CodeIncubatingAttributes.CODE_FUNCTION_NAME;
+import static io.opentelemetry.semconv.CodeAttributes.CODE_FUNCTION_NAME;
 import static io.quarkus.opentelemetry.deployment.common.exporter.TestSpanExporter.getSpanByKindAndParentId;
 import static java.net.HttpURLConnection.HTTP_OK;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -55,7 +55,7 @@ public class WithSpanInterceptorTest {
                             .addAsManifestResource(
                                     "META-INF/services-config/io.opentelemetry.sdk.autoconfigure.spi.traces.ConfigurableSpanExporterProvider",
                                     "services/io.opentelemetry.sdk.autoconfigure.spi.traces.ConfigurableSpanExporterProvider")
-                            .addAsResource("resource-config/application-no-metrics.properties", "application.properties"));
+                            .addAsResource("resource-config/application-just-tracing.properties", "application.properties"));
 
     @Inject
     SpanBean spanBean;

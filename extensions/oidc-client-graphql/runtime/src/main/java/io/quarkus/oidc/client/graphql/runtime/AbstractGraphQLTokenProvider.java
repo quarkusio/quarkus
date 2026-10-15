@@ -26,6 +26,6 @@ public abstract class AbstractGraphQLTokenProvider extends AbstractTokensProduce
 
     @Override
     protected Optional<String> clientId() {
-        return Optional.of(oidcClientId);
+        return Optional.ofNullable(oidcClientId);
     }
 }

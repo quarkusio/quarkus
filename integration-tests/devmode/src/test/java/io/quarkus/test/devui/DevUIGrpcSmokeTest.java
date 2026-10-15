@@ -7,9 +7,6 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import io.grpc.examples.helloworld.Greeter;
 import io.grpc.examples.helloworld.HelloReply;
 import io.grpc.examples.helloworld.HelloRequest;
@@ -17,6 +14,8 @@ import io.quarkus.devui.tests.DevUIJsonRPCTest;
 import io.quarkus.grpc.GrpcService;
 import io.quarkus.test.QuarkusDevModeTest;
 import io.smallrye.mutiny.Uni;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 
 public class DevUIGrpcSmokeTest extends DevUIJsonRPCTest {
 
@@ -35,7 +34,7 @@ public class DevUIGrpcSmokeTest extends DevUIJsonRPCTest {
         JsonNode services = super.executeJsonRPCMethod("getServices");
         Assertions.assertNotNull(services);
         Assertions.assertTrue(services.isArray());
-        Iterator<JsonNode> en = services.elements();
+        Iterator<JsonNode> en = services.iterator();
         boolean serviceExists = false;
         boolean methodExists = false;
         while (en.hasNext()) {
@@ -46,7 +45,7 @@ public class DevUIGrpcSmokeTest extends DevUIJsonRPCTest {
                 JsonNode methods = service.get("methods");
                 Assertions.assertNotNull(methods);
                 Assertions.assertTrue(methods.isArray());
-                Iterator<JsonNode> mi = methods.elements();
+                Iterator<JsonNode> mi = methods.iterator();
                 while (mi.hasNext()) {
                     JsonNode method = mi.next();
                     String bareMethodName = method.get("bareMethodName").asText();

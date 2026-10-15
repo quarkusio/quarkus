@@ -1,6 +1,6 @@
 package io.quarkus.it.kafka.streams;
 
-import static org.hamcrest.Matchers.containsString;
+import static io.quarkus.test.micrometer.PrometheusMetricsAssert.assertMetrics;
 
 import java.io.File;
 import java.time.Duration;
@@ -142,9 +142,10 @@ public class KafkaStreamsTest {
 
     private void testMetricsPresent() {
         // Look for kafka consumer metrics (add .log().all() to examine what they are
-        RestAssured.when().get("/q/metrics").then()
+        assertMetrics(RestAssured.when().get("/q/metrics").then()
                 .statusCode(200)
-                .body(containsString("kafka_stream_"));
+                .extract().asInputStream())
+                .hasMetricNameContaining("kafka_stream_");
     }
 
     public void testKafkaStreamsNotAliveAndNotReady() throws Exception {

@@ -23,7 +23,7 @@ public class NonAppEndpointsEqualRootPath {
                     .addClasses(TestSpanExporter.class, TestSpanExporterProvider.class)
                     .addAsResource(new StringAsset(TestSpanExporterProvider.class.getCanonicalName()),
                             "META-INF/services/io.opentelemetry.sdk.autoconfigure.spi.traces.ConfigurableSpanExporterProvider"))
-            .withConfigurationResource("resource-config/application-no-metrics.properties")
+            .withConfigurationResource("resource-config/application-just-tracing.properties")
             .overrideConfigKey("quarkus.http.root-path", "/app")
             .overrideConfigKey("quarkus.http.non-application-root-path", "/app");
 

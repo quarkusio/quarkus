@@ -13,16 +13,10 @@ public sealed abstract class DiscoveryRootElement permits DiscoveryConfigRoot, D
     private final String qualifiedName;
     private final Map<String, DiscoveryConfigProperty> properties = new LinkedHashMap<>();
 
-    // TODO #42114 remove once fixed
-    // this is an approximation, we can't fully detect that in the case of config groups
-    @Deprecated(forRemoval = true)
-    private final boolean configMapping;
-
-    DiscoveryRootElement(Extension extension, String binaryName, String qualifiedName, boolean configMapping) {
+    DiscoveryRootElement(Extension extension, String binaryName, String qualifiedName) {
         this.extension = extension;
         this.binaryName = binaryName;
         this.qualifiedName = qualifiedName;
-        this.configMapping = configMapping;
     }
 
     public Extension getExtension() {
@@ -43,11 +37,6 @@ public sealed abstract class DiscoveryRootElement permits DiscoveryConfigRoot, D
 
     public Map<String, DiscoveryConfigProperty> getProperties() {
         return Collections.unmodifiableMap(properties);
-    }
-
-    @Deprecated(forRemoval = true)
-    public boolean isConfigMapping() {
-        return configMapping;
     }
 
     public String toString() {

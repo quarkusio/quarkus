@@ -4,11 +4,11 @@ import static io.quarkus.datasource.deployment.spi.DatabaseDefaultSetupConfig.DE
 import static io.quarkus.datasource.deployment.spi.DatabaseDefaultSetupConfig.DEFAULT_DATABASE_PASSWORD;
 import static io.quarkus.datasource.deployment.spi.DatabaseDefaultSetupConfig.DEFAULT_DATABASE_USERNAME;
 
-import io.quarkus.datasource.deployment.spi.DevServicesDatasourceContainerConfig;
-import io.quarkus.datasource.deployment.spi.DevServicesDatasourceProvider.RunningDevServicesDatasource;
 import io.quarkus.deployment.dev.devservices.RunningContainer;
 import io.quarkus.devservices.common.ContainerAddress;
 import io.quarkus.devservices.common.DatasourceServiceConfigurator;
+import io.quarkus.devservices.datasource.common.DevServicesDatasourceContainerConfig;
+import io.quarkus.devservices.datasource.common.DevServicesDatasourceProvider.RunningDevServicesDatasource;
 
 public class PostgresDatasourceServiceConfigurator implements DatasourceServiceConfigurator {
 

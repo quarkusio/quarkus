@@ -12,7 +12,8 @@ metadata:
   codestart:
     name: "amazon-lambda"
     kind: "example"
-    languages: "java"
+    languages:
+      - "java"
     artifact: "io.quarkus:quarkus-project-core-extension-codestarts"
   config:
   - "quarkus.lambda."

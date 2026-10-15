@@ -24,12 +24,12 @@ public class BuildTimeVertxBootstrapCustomizerSamePriorityTest {
                     .create(JavaArchive.class))
             .addBuildChainCustomizer(builder -> {
                 builder.addBuildStep(context -> {
-                    context.produce(new VertxBootstrapConsumerBuildItem(CustomizerWithPriority1000.INSTANCE, 1000));
+                    context.produce(new VertxBootstrapConsumerBuildItem(CustomizerWithPriority1000.INSTANCE, 1000, "foo"));
                 }).produces(VertxBootstrapConsumerBuildItem.class).build();
 
                 builder.addBuildStep(context -> {
                     context.produce(
-                            new VertxBootstrapConsumerBuildItem(AnotherCustomizerWithPriority1000.INSTANCE, 1000));
+                            new VertxBootstrapConsumerBuildItem(AnotherCustomizerWithPriority1000.INSTANCE, 1000, "bar"));
                 }).produces(VertxBootstrapConsumerBuildItem.class).build();
 
             })
@@ -41,7 +41,7 @@ public class BuildTimeVertxBootstrapCustomizerSamePriorityTest {
 
     @Test
     public void testThatTheCustomizersAreCalledInOrder() {
-        assertThat(calls).containsExactly("1000", "1000");
+        assertThat(calls).containsExactly("bar", "foo");
     }
 
     public static final List<String> calls = new ArrayList<>();
@@ -53,7 +53,7 @@ public class BuildTimeVertxBootstrapCustomizerSamePriorityTest {
         @Override
         public void accept(VertxBootstrap bootstrap) {
             assertThat(bootstrap).isNotNull();
-            calls.add("1000");
+            calls.add("foo");
         }
     }
 
@@ -64,7 +64,7 @@ public class BuildTimeVertxBootstrapCustomizerSamePriorityTest {
         @Override
         public void accept(VertxBootstrap bootstrap) {
             assertThat(bootstrap).isNotNull();
-            calls.add("1000");
+            calls.add("bar");
         }
     }
 }

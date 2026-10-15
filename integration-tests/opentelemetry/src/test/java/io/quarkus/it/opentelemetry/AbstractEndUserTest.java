@@ -2,7 +2,7 @@ package io.quarkus.it.opentelemetry;
 
 import static io.opentelemetry.semconv.UrlAttributes.URL_PATH;
 import static io.opentelemetry.semconv.incubating.EnduserIncubatingAttributes.ENDUSER_ID;
-import static io.opentelemetry.semconv.incubating.EnduserIncubatingAttributes.ENDUSER_ROLE;
+import static io.opentelemetry.semconv.incubating.UserIncubatingAttributes.USER_ROLES;
 import static io.quarkus.it.opentelemetry.AbstractEndUserTest.User.SCOTT;
 import static io.quarkus.it.opentelemetry.AbstractEndUserTest.User.STUART;
 import static io.restassured.RestAssured.get;
@@ -35,7 +35,7 @@ public abstract class AbstractEndUserTest {
 
     private static final String HTTP_PERM_AUGMENTOR_ROLE = "HTTP-PERM-AUGMENTOR";
     private static final String END_USER_ID_ATTR = "attr_" + ENDUSER_ID.getKey();
-    private static final String END_USER_ROLE_ATTR = "attr_" + ENDUSER_ROLE.getKey();
+    private static final String END_USER_ROLE_ATTR = "attr_" + USER_ROLES.getKey();
     private static final String READER_ROLE = "READER";
     private static final String WRITER_ROLE = "WRITER";
     private static final String WRITER_HTTP_PERM_ROLE = "WRITER-HTTP-PERM";

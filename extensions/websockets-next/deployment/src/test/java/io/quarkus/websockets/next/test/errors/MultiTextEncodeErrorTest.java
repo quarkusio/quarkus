@@ -42,10 +42,11 @@ public class MultiTextEncodeErrorTest {
 
     @Test
     void testError() {
-        WSClient client = WSClient.create(vertx).connect(testUri);
-        client.send(new JsonObject().put("name", "Fixa").encode());
-        client.waitForMessages(1);
-        assertEquals("java.lang.IllegalArgumentException:Fixa", client.getLastMessage().toString());
+        try (WSClient client = WSClient.create(vertx).connect(testUri)) {
+            client.send(new JsonObject().put("name", "Fixa").encode());
+            client.waitForMessages(1);
+            assertEquals("java.lang.IllegalArgumentException:Fixa", client.getLastMessage().toString());
+        }
     }
 
     @WebSocket(path = "/echo")

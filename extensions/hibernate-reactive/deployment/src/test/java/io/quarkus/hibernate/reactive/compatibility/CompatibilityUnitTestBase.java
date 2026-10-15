@@ -10,6 +10,7 @@ import org.hibernate.SessionFactory;
 import org.hibernate.reactive.mutiny.Mutiny;
 
 import io.quarkus.arc.Arc;
+import io.quarkus.hibernate.orm.PersistenceUnit;
 import io.quarkus.hibernate.reactive.entities.Hero;
 import io.quarkus.test.vertx.UniAsserter;
 
@@ -55,8 +56,24 @@ public abstract class CompatibilityUnitTestBase {
         assertThat(mutinySessionFactory).isNull();
     }
 
+    public void testReactiveDisabled(String persistenceUnitName) {
+        Mutiny.SessionFactory mutinySessionFactory = Arc.container()
+                .instance(Mutiny.SessionFactory.class, new PersistenceUnit.PersistenceUnitLiteral(persistenceUnitName))
+                .get();
+
+        assertThat(mutinySessionFactory).isNull();
+    }
+
     public void testBlockingDisabled() {
         SessionFactory sessionFactory = Arc.container().instance(SessionFactory.class).get();
+
+        assertThat(sessionFactory).isNull();
+    }
+
+    public void testBlockingDisabled(String persistenceUnitName) {
+        SessionFactory sessionFactory = Arc.container()
+                .instance(SessionFactory.class, new PersistenceUnit.PersistenceUnitLiteral(persistenceUnitName))
+                .get();
 
         assertThat(sessionFactory).isNull();
     }

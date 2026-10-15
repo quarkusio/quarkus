@@ -1,12 +1,15 @@
 package io.quarkus.deployment.pkg.builditem;
 
+import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 import io.quarkus.builder.item.SimpleBuildItem;
+import io.quarkus.commons.classloading.ClassLoaderHelper;
 import io.quarkus.maven.dependency.ArtifactKey;
+import io.quarkus.maven.dependency.ResolvedDependency;
 
 /**
  * Build item that holds the results of dependency usage analysis for tree shaking.
@@ -42,6 +45,44 @@ public final class JarTreeShakeBuildItem extends SimpleBuildItem {
      */
     public Map<ArtifactKey, List<String>> getRemovedClasses() {
         return removedClasses;
+    }
+
+    /**
+     * Collects JAR entry paths of unreachable classes from a dependency into the given set.
+     * Handles multi-release JAR entries and preserves inner classes whose outer class is reachable.
+     *
+     * @param dep the dependency to scan
+     * @param removedEntries the set to add removed entry paths to
+     */
+    public void collectUnreachableEntries(ResolvedDependency dep, Set<String> removedEntries) throws IOException {
+        if (!classesShaken) {
+            return;
+        }
+        try (var pathTree = dep.getContentTree().open()) {
+            pathTree.walkRaw(visit -> {
+                String rel = visit.getRelativePath("/");
+                String classRel = rel;
+                if (rel.startsWith("META-INF/versions/")) {
+                    String afterVersions = rel.substring("META-INF/versions/".length());
+                    int slash = afterVersions.indexOf('/');
+                    if (slash > 0) {
+                        classRel = afterVersions.substring(slash + 1);
+                    } else {
+                        return;
+                    }
+                }
+                if (ClassLoaderHelper.isClassEntry(classRel)) {
+                    String className = classRel.substring(0, classRel.length() - 6).replace('/', '.');
+                    if (!reachableClassNames.contains(className)) {
+                        int dollarIdx = className.indexOf('$');
+                        if (dollarIdx < 0
+                                || !reachableClassNames.contains(className.substring(0, dollarIdx))) {
+                            removedEntries.add(rel);
+                        }
+                    }
+                }
+            });
+        }
     }
 
     /**

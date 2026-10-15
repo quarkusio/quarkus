@@ -7,7 +7,6 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 = OpenID Connect (OIDC) configuration properties
 include::_attributes.adoc[]
 :diataxis-type: reference
-:categories: security
 :topics: security,oidc
 :extensions: io.quarkus:quarkus-oidc
 

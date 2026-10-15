@@ -6,8 +6,6 @@ import static org.junit.jupiter.params.provider.Arguments.arguments;
 import java.util.stream.Stream;
 
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
-import org.junit.jupiter.api.condition.EnabledForJreRange;
-import org.junit.jupiter.api.condition.JRE;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -22,7 +20,6 @@ public class ShouldPinTest {
 
     @ParameterizedTest
     @MethodSource
-    @EnabledForJreRange(min = JRE.JAVA_21)
     void testShouldPinButNoPinEventDetected(Class<?> clazz, String methodName) {
         runTestAndAssertFailure(clazz, methodName, "was expected to pin the carrier thread, it didn't");
     }

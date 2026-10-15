@@ -13,7 +13,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.aesh.runtime.AeshContext;
 import io.quarkus.aesh.runtime.AeshMode;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 /**
  * Tests that the {@link AeshContext} synthetic bean is produced correctly by the
@@ -22,7 +22,7 @@ import io.quarkus.test.QuarkusUnitTest;
 public class AeshContextTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot(jar -> jar.addClasses(
                     GitCommand.class,
                     CloneCommand.class,
@@ -45,12 +45,19 @@ public class AeshContextTest {
 
     @Test
     public void testAeshContextMode() {
-        // With multiple commands + commands, should resolve to console mode
+        // With multiple independent commands, should resolve to console mode
         AeshMode mode = aeshContext.getMode();
         Assertions.assertThat(mode).isNotNull();
         Assertions.assertThat(mode).isNotEqualTo(AeshMode.auto);
-        // With commands and multiple commands, should be console mode
         Assertions.assertThat(mode).isEqualTo(AeshMode.console);
+    }
+
+    @Test
+    public void testTopCommandNullInConsoleMode() {
+        // Console mode should not have a top command set
+        Assertions.assertThat(aeshContext.getTopCommandClassName())
+                .as("Top command should be null in console mode")
+                .isNull();
     }
 
     @Test

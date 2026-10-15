@@ -6,7 +6,6 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 = OpenID Connect (OIDC) and OAuth2 dynamic client registration
 include::_attributes.adoc[]
 :diataxis-type: reference
-:categories: security
 :topics: security,oidc,client
 :extensions: io.quarkus:quarkus-oidc-client-registration
 :extension-status: experimental
@@ -23,6 +22,8 @@ You can read more about it in the https://openid.net/specs/openid-connect-regist
 You can use Quarkus `quarkus-oidc-client-registration` extension to register one or more clients using OIDC client registration configurations and read, update and delete metadata of the registered clients.
 
 xref:security-openid-connect-multitenancy.adoc#tenant-config-resolver[OIDC TenantConfigResolver] can be used to create OIDC tenant configurations using the metadata of the registered clients.
+
+As an alternative to dynamic client registration, you can use the xref:security-oidc-client-id-metadata-document.adoc[OAuth Client ID Metadata Document] support, which allows the authorization server to discover the client configuration by fetching a metadata document from the `client-id` URL without requiring an explicit registration step.
 
 [IMPORTANT]
 ====

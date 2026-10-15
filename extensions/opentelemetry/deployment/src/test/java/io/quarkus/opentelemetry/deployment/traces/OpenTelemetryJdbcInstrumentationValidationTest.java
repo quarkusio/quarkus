@@ -17,7 +17,8 @@ public class OpenTelemetryJdbcInstrumentationValidationTest {
             .withApplicationRoot((jar) -> jar
                     .addAsResource(new StringAsset(
                             "quarkus.datasource.db-kind=h2\n" +
-                                    "quarkus.otel.metrics.exporter=none\n" +
+                                    "quarkus.otel.metrics.enabled=false\n" +
+                                    "quarkus.otel.logs.enabled=false\n" +
                                     "quarkus.datasource.jdbc.driver=io.opentelemetry.instrumentation.jdbc.OpenTelemetryDriver\n"),
                             "application.properties"))
             .assertException(t -> {

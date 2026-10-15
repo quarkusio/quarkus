@@ -9,6 +9,11 @@ import org.jboss.logging.Logger;
 
 import io.quarkus.test.common.QuarkusTestResourceLifecycleManager;
 
+/**
+ * @deprecated Use Dev Services instead: simply set {@code quarkus.datasource.db-kind=h2} without configuring a JDBC URL,
+ *             and Quarkus will automatically start an H2 database for tests.
+ */
+@Deprecated(forRemoval = true)
 public class H2DatabaseTestResource implements QuarkusTestResourceLifecycleManager {
 
     private static final Logger log = Logger.getLogger(H2DatabaseTestResource.class);

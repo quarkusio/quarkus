@@ -343,7 +343,7 @@ public abstract class AbstractJpaOperations<PanacheQueryType, SessionType extend
 
     private SelectionQuery<?> extractNamedSelectionQuery(Class<?> entityClass, String query) {
         String namedQueryName = extractNamedQueryName(entityClass, query);
-        return getSession(entityClass).createNamedSelectionQuery(namedQueryName);
+        return getSession(entityClass).createNamedSelectionQuery(namedQueryName, Long.class);
     }
 
     private MutationQuery extractNamedMutationQuery(Class<?> entityClass, String query) {

@@ -13,19 +13,22 @@ import org.testcontainers.mssqlserver.MSSQLServerContainer;
 import org.testcontainers.utility.DockerImageName;
 
 import io.quarkus.datasource.common.runtime.DatabaseKind;
-import io.quarkus.datasource.deployment.spi.DatasourceStartable;
-import io.quarkus.datasource.deployment.spi.DevServicesDatasourceContainerConfig;
-import io.quarkus.datasource.deployment.spi.DevServicesDatasourceProvider;
-import io.quarkus.datasource.deployment.spi.DevServicesDatasourceProviderBuildItem;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.DevServicesComposeProjectBuildItem;
 import io.quarkus.deployment.builditem.DevServicesSharedNetworkBuildItem;
+import io.quarkus.deployment.dev.devservices.DevServicesConfig;
 import io.quarkus.devservices.common.ComposeLocator;
 import io.quarkus.devservices.common.ConfigureUtil;
+import io.quarkus.devservices.common.DevServicesHostUtil;
 import io.quarkus.devservices.common.JBossLoggingConsumer;
 import io.quarkus.devservices.common.Labels;
 import io.quarkus.devservices.common.Volumes;
+import io.quarkus.devservices.datasource.common.DatasourceStartable;
+import io.quarkus.devservices.datasource.common.DatasourceStartableContainer;
+import io.quarkus.devservices.datasource.common.DevServicesDatasourceContainerConfig;
+import io.quarkus.devservices.datasource.common.DevServicesDatasourceProvider;
+import io.quarkus.devservices.datasource.common.DevServicesDatasourceProviderBuildItem;
 import io.quarkus.runtime.LaunchMode;
 
 public class MSSQLDevServicesProcessor {
@@ -42,7 +45,8 @@ public class MSSQLDevServicesProcessor {
     @BuildStep
     DevServicesDatasourceProviderBuildItem setupMSSQL(
             List<DevServicesSharedNetworkBuildItem> devServicesSharedNetworkBuildItem,
-            DevServicesComposeProjectBuildItem composeProjectBuildItem) {
+            DevServicesComposeProjectBuildItem composeProjectBuildItem,
+            DevServicesConfig devServicesConfig) {
 
         return new DevServicesDatasourceProviderBuildItem(DatabaseKind.MSSQL, new DevServicesDatasourceProvider() {
             @Override
@@ -78,6 +82,13 @@ public class MSSQLDevServicesProcessor {
 
                 container.withEnv(containerConfig.getContainerEnv());
 
+                String effectiveImageName = containerConfig.getImageName()
+                        .orElseGet(() -> ConfigureUtil.getDefaultImageNameFor("mssql"));
+                if (devServicesConfig.licenseAcceptance()
+                        .map(images -> images.contains(effectiveImageName)).orElse(false)) {
+                    container.addEnv("ACCEPT_EULA", "Y");
+                }
+
                 containerConfig.getAdditionalJdbcUrlProperties().forEach(container::withUrlParam);
                 containerConfig.getCommand().ifPresent(container::setCommand);
                 containerConfig.getInitScriptPath().ifPresent(container::withInitScripts);
@@ -85,7 +96,7 @@ public class MSSQLDevServicesProcessor {
                     container.withLogConsumer(new JBossLoggingConsumer(LOG));
                 }
 
-                return container;
+                return new DatasourceStartableContainer<>(container);
             }
 
             @Override
@@ -120,7 +131,19 @@ public class MSSQLDevServicesProcessor {
 
         @Override
         protected void configure() {
-            super.configure();
+            try {
+                super.configure();
+            } catch (IllegalStateException e) {
+                if (e.getMessage() != null && e.getMessage().contains("license agreement")) {
+                    throw new IllegalStateException(
+                            "The container image " + getDockerImageName()
+                                    + " requires you to accept a license agreement."
+                                    + " To accept, add the following to your Quarkus configuration:"
+                                    + " quarkus.devservices.license-acceptance=" + getDockerImageName(),
+                            e);
+                }
+                throw e;
+            }
 
             if (useSharedNetwork) {
                 return;
@@ -133,6 +156,15 @@ public class MSSQLDevServicesProcessor {
             }
         }
 
+        // this is always reachable from the host JVM, so that testcontainers can determine the status of the
+        // container (which it does by trying to acquire a connection)
+        @Override
+        public String getJdbcUrl() {
+            String host = DevServicesHostUtil.resolvePublishedPortHost(getContainerId(), getHost());
+            String additionalUrlParams = constructUrlParameters(";", ";");
+            return SqlServerDevServicesJdbcUrl.build(host, getMappedPort(MS_SQL_SERVER_PORT), additionalUrlParams);
+        }
+
         // this is meant to be called by Quarkus code and is needed in order to not disrupt testcontainers
         // from being able to determine the status of the container (which it does by trying to acquire a connection)
         public String getEffectiveJdbcUrl() {
@@ -141,20 +173,15 @@ public class MSSQLDevServicesProcessor {
                 // and the container port since the application communicating with this container
                 // won't be doing port mapping
                 String additionalUrlParams = constructUrlParameters(";", ";");
-                return "jdbc:sqlserver://" + hostName + ":" + MS_SQL_SERVER_PORT + additionalUrlParams;
-            } else {
-                return super.getJdbcUrl();
+                return SqlServerDevServicesJdbcUrl.build(hostName, MS_SQL_SERVER_PORT, additionalUrlParams);
             }
+            return getJdbcUrl();
         }
 
         public String getReactiveUrl() {
-            StringBuilder url = new StringBuilder("vertx-reactive:sqlserver://");
-            if (useSharedNetwork) {
-                url.append(hostName).append(":").append(MS_SQL_SERVER_PORT);
-            } else {
-                url.append(this.getHost()).append(":").append(this.getMappedPort(MS_SQL_SERVER_PORT));
-            }
-            return url.toString();
+            String host = DevServicesHostUtil.publishedPortHost(getContainerId(), useSharedNetwork, hostName, getHost());
+            int port = useSharedNetwork ? MS_SQL_SERVER_PORT : getMappedPort(MS_SQL_SERVER_PORT);
+            return "vertx-reactive:sqlserver://" + DevServicesHostUtil.formatHostAndPort(host, port);
         }
 
         @Override

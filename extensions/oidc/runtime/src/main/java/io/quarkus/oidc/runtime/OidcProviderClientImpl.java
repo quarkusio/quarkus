@@ -761,14 +761,15 @@ public class OidcProviderClientImpl implements OidcProviderClient, Closeable {
             Map<OidcEndpoint.Type, List<OidcResponseFilter>> responseFilters) {
         final boolean jwtAssertionProvided = oidcConfig.credentials().jwt()
                 .source() != OidcClientCommonConfig.Credentials.Jwt.Source.CLIENT;
-        final ClientAssertionProvider assertionProvider = getClientAssertionProvider(vertx, oidcConfig.credentials());
+        final ClientAssertionProvider assertionProvider = getClientAssertionProvider(vertx, oidcConfig.credentials(),
+                oidcConfig.authServerUrl());
         final boolean queryAuth = oidcConfig.credentials().clientSecret().method().orElse(null) == Method.QUERY;
         return OidcCommonUtils.clientSecret(oidcConfig.credentials())
                 .onItem().ifNotNull()
                 .transform(clientSecret -> new ClientCredentials(null, clientSecret, null,
                         OidcCommonUtils.initClientSecretBasicAuth(oidcConfig, clientSecret),
                         jwtAssertionProvided, assertionProvider, queryAuth))
-                .onItem().ifNull().switchTo(() -> OidcCommonUtils.initClientJwtKey(oidcConfig, true)
+                .onItem().ifNull().switchTo(() -> OidcCommonUtils.initClientJwtKey(oidcConfig)
                         .onItem().ifNotNull()
                         .transform(key -> new ClientCredentials(key, null, null, null,
                                 jwtAssertionProvided, assertionProvider, queryAuth))

@@ -13,4 +13,4 @@ metadata:
   guide: https://quarkus.io/guides/websockets-next-reference
   status: "stable"
   config:
-  - "quarkus.websockets.next"
+  - "quarkus.websockets-next."

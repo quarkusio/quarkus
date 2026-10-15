@@ -1,5 +1,7 @@
 package io.quarkus.aesh.deployment;
 
+import java.util.function.Consumer;
+
 import jakarta.enterprise.context.ApplicationScoped;
 
 import org.aesh.command.Command;
@@ -7,7 +9,6 @@ import org.aesh.command.CommandDefinition;
 import org.aesh.command.CommandNotFoundHandler;
 import org.aesh.command.CommandResult;
 import org.aesh.command.invocation.CommandInvocation;
-import org.aesh.command.shell.Shell;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -61,8 +62,8 @@ public class CommandNotFoundHandlerTest {
     public static class MyNotFoundHandler implements CommandNotFoundHandler {
 
         @Override
-        public void handleCommandNotFound(String line, Shell shell) {
-            shell.writeln("Unknown command: " + line + ". Try: hello, calc");
+        public void handleCommandNotFound(String line, Consumer<String> output) {
+            output.accept("Unknown command: " + line + ". Try: hello, calc");
         }
     }
 }

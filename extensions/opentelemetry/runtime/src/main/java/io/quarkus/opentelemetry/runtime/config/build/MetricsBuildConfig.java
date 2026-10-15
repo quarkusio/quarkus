@@ -18,7 +18,7 @@ public interface MetricsBuildConfig {
      * The OpenTelemetry SDK ( {@link io.quarkus.opentelemetry.runtime.config.build.OTelBuildConfig#enabled()} )
      * is enabled by default and if disabled, OpenTelemetry Metrics will also be disabled.
      */
-    @WithDefault("false")
+    @WithDefault("true")
     Optional<Boolean> enabled();
 
     /**

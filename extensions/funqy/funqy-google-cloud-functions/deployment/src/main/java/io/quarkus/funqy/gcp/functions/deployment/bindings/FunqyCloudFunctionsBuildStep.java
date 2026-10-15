@@ -6,8 +6,6 @@ import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
 import java.util.List;
 import java.util.Optional;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -18,7 +16,8 @@ import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
 import io.quarkus.funqy.deployment.FunctionBuildItem;
 import io.quarkus.funqy.deployment.FunctionInitializedBuildItem;
 import io.quarkus.funqy.gcp.functions.FunqyCloudFunctionsBindingRecorder;
-import io.quarkus.jackson.runtime.ObjectMapperProducer;
+import io.quarkus.jackson.runtime.JsonMapperProducer;
+import tools.jackson.databind.ObjectMapper;
 
 public class FunqyCloudFunctionsBuildStep {
     private static final String FEATURE_NAME = "funqy-google-cloud-functions";
@@ -57,6 +56,6 @@ public class FunqyCloudFunctionsBuildStep {
         unremovable.produce(new UnremovableBeanBuildItem(
                 new UnremovableBeanBuildItem.BeanClassNameExclusion(ObjectMapper.class.getName())));
         unremovable.produce(new UnremovableBeanBuildItem(
-                new UnremovableBeanBuildItem.BeanClassNameExclusion(ObjectMapperProducer.class.getName())));
+                new UnremovableBeanBuildItem.BeanClassNameExclusion(JsonMapperProducer.class.getName())));
     }
 }

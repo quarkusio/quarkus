@@ -148,8 +148,8 @@ If @QuarkusIntegrationTest is required, because of native, a `ExporterResource` 
 
 ### Common Pitfalls
 
-- **Use default protocol.** Unless instructed otherwise, use the default `grpc`.
-- **Protocol and port must match.** Default `grpc` uses port 4317, `http/protobuf` uses port 4318. A mismatch causes silent export failures.
+- **Use default protocol.** Unless instructed otherwise, use the default `http/protobuf`.
+- **Protocol and port must match.** Default `http/protobuf` uses port 4318, `grpc` uses port 4317. A mismatch causes silent export failures.
 - **Build-time vs runtime.** `quarkus.otel.exporter.otlp.endpoint` is a runtime property. `quarkus.otel.traces.enabled` is build-time. Changing a build-time property at runtime has no effect.
 - **Serverless requires simple export.** Set `quarkus.otel.simple=true` for immediate export instead of batching — batched spans may be lost when the function terminates.
 - **Disable specific instrumentation** with `quarkus.otel.instrument.<extension>=false` (e.g., `quarkus.otel.instrument.rest=false`).

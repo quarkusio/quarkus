@@ -1,6 +1,6 @@
 package io.quarkus.hibernate.reactive.runtime.customized;
 
-import org.hibernate.reactive.context.impl.VertxContext;
+import org.hibernate.reactive.context.internal.VertxContext;
 
 import io.quarkus.vertx.core.runtime.context.VertxContextSafetyToggle;
 

@@ -1,6 +1,7 @@
 package io.quarkus.oidc.runtime;
 
 import static io.quarkus.oidc.runtime.OidcUtils.validateAndCreateIdentity;
+import static io.quarkus.oidc.runtime.TenantContextFactory.getConfigPropertyForTenant;
 import static io.quarkus.vertx.http.runtime.security.HttpSecurityUtils.getRoutingContextAttribute;
 
 import java.security.NoSuchAlgorithmException;
@@ -19,8 +20,10 @@ import org.jose4j.jws.JsonWebSignature;
 import org.jose4j.lang.JoseException;
 import org.jose4j.lang.UnresolvableKeyException;
 
+import io.quarkus.arc.InjectableInstance;
 import io.quarkus.oidc.AccessTokenCredential;
 import io.quarkus.oidc.AuthorizationCodeTokens;
+import io.quarkus.oidc.DPoPNonceProvider;
 import io.quarkus.oidc.IdTokenCredential;
 import io.quarkus.oidc.OIDCException;
 import io.quarkus.oidc.OidcTenantConfig;
@@ -57,12 +60,15 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
     private final BlockingTaskRunner<Void> uniVoidOidcContext;
     private final BlockingTaskRunner<TokenIntrospection> getIntrospectionRequestContext;
     private final BlockingTaskRunner<UserInfo> getUserInfoRequestContext;
+    private final DPoPNonceProvider dPoPNonceProvider;
 
-    OidcIdentityProvider(DefaultTenantConfigResolver tenantResolver, BlockingSecurityExecutor blockingExecutor) {
+    OidcIdentityProvider(DefaultTenantConfigResolver tenantResolver, BlockingSecurityExecutor blockingExecutor,
+            InjectableInstance<DPoPNonceProvider> dPoPNonceProvider) {
         this.tenantResolver = tenantResolver;
         this.uniVoidOidcContext = new BlockingTaskRunner<>(blockingExecutor);
         this.getIntrospectionRequestContext = new BlockingTaskRunner<>(blockingExecutor);
         this.getUserInfoRequestContext = new BlockingTaskRunner<>(blockingExecutor);
+        this.dPoPNonceProvider = dPoPNonceProvider.orNull();
     }
 
     @Override
@@ -323,6 +329,60 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
                             if (!accessTokenProof.equals(accessTokenHash)) {
                                 LOG.warn("DPoP access token hash does not match the DPoP proof access token hash");
                                 throw new AuthenticationFailedException(invalidDPoPProofMap(request.getToken()));
+                            }
+
+                            if (dPoPNonceProvider != null) {
+                                String proofNonce = proofClaims.getString(OidcConstants.NONCE);
+                                if (proofNonce == null) {
+                                    /*
+                                     * Set HTTP error status to `401` and the error code value to `use_dpop_nonce`.
+                                     * See https://www.rfc-editor.org/rfc/rfc9449.html#section-9
+                                     */
+                                    LOG.debug("Required DPoP proof nonce claim is missing");
+                                    throw new AuthenticationFailedException(Map.of(
+                                            OidcConstants.ACCESS_TOKEN_VALUE, request.getToken().getToken(),
+                                            OidcConstants.USE_DPOP_NONCE, Boolean.TRUE));
+                                }
+                                DPoPNonceProvider.DPoPNonceContext proofContext = new DPoPNonceProvider.DPoPNonceContext(
+                                        getRoutingContextAttribute(request),
+                                        resolvedContext.oidcConfig(),
+                                        proofClaims.getString(Claims.jti.name()), proofNonce);
+                                if (!dPoPNonceProvider.isValid(proofContext)) {
+                                    /*
+                                     * This same error code is used when supplying a new nonce value when there was a nonce
+                                     * mismatch.
+                                     * See https://www.rfc-editor.org/rfc/rfc9449.html#section-9
+                                     */
+                                    LOG.tracef("DPoP proof nonce claim '%s' is invalid", proofNonce);
+                                    throw new AuthenticationFailedException(Map.of(
+                                            OidcConstants.ACCESS_TOKEN_VALUE, request.getToken().getToken(),
+                                            OidcConstants.USE_DPOP_NONCE, Boolean.TRUE));
+                                }
+                            }
+
+                            long proofIat = proofClaims.getLong(Claims.iat.name());
+                            final long nowSecs = System.currentTimeMillis() / 1000;
+                            final int lifespanGrace = resolvedContext.oidcConfig().token().lifespanGrace().orElse(0);
+
+                            if (proofIat > nowSecs + lifespanGrace) {
+                                LOG.warn("DPoP proof iat claim is in the future");
+                                throw new AuthenticationFailedException(invalidDPoPProofMap(request.getToken()));
+                            }
+
+                            if (nowSecs - proofIat > resolvedContext.oidcConfig().dpop().proofAge().toSeconds()
+                                    + lifespanGrace) {
+                                LOG.debugf("DPoP proof age exceeds the configured '%s' plus lifespan grace",
+                                        getConfigPropertyForTenant(resolvedContext.oidcConfig().tenantId().get(),
+                                                "dpop.proof-age"));
+                                throw new AuthenticationFailedException(invalidDPoPProofMap(request.getToken()));
+                            }
+
+                            if (proofClaims.containsKey(Claims.exp.name())) {
+                                long proofExp = proofClaims.getLong(Claims.exp.name());
+                                if (nowSecs > proofExp + lifespanGrace) {
+                                    LOG.debug("DPoP proof has expired");
+                                    throw new AuthenticationFailedException(invalidDPoPProofMap(request.getToken()));
+                                }
                             }
 
                             return t;
@@ -801,6 +861,7 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
         try {
             TokenVerificationResult result = resolvedContext.provider().verifyJwtToken(request.getToken().getToken(),
                     resolvedContext.oidcConfig().token().subjectRequired(), false, null);
+            OidcUtils.validatePrimaryJwtTokenType(resolvedContext.oidcConfig().token(), result.localVerificationResult());
             StepUpAuthenticationPolicy stepUpAuthPolicy = StepUpAuthenticationPolicy.getFromRequest(request);
             if (stepUpAuthPolicy != null) {
                 stepUpAuthPolicy.accept(result);

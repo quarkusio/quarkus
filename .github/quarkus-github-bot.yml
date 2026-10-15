@@ -7,7 +7,7 @@ similarGitHubHandleCheck:
   teams: [quarkus-push, quarkus-admin]
 develocity:
   enabled: true
-  url: "https://ge.quarkus.io/"
+  url: "https://develocity.quarkus.io/"
 workflows:
   rules:
     - allow:
@@ -17,13 +17,6 @@ workflows:
 workflowRunAnalysis:
   workflows: ["Quarkus CI", "Quarkus Documentation CI"]
   ignoredFlakyTests: ["org.acme.FlakyHelloResourceTest", "org.acme.FlakyHelloResourceWithSomeProfileTest", "org.acme.FlakyHelloResourceWithAnotherProfileTest"]
-projectsClassic:
-  rules:
-    - labels: [area/documentation]
-      project: 21
-      issues: true
-      pullRequests: true
-      status: To do
 projects:
   rules:
     - labels: [area/jakarta]
@@ -40,6 +33,8 @@ triage:
   discussions:
     monitoredCategories: [33575230]
   guardedBranches:
+    - ref: "3.40"
+      notify: [jmartisk, gsmet, rsvoboda, aloubyansky]
     - ref: '3.33'
       notify: [jmartisk, gsmet, rsvoboda, aloubyansky]
     - ref: '3.27'
@@ -290,13 +285,15 @@ triage:
       labels: [area/panache]
       title: "panache"
       notify: [FroMage, loicmathieu]
+      notifyInPullRequest: true
       directories:
         - extensions/panache/
         - integration-tests/hibernate-orm-panache/
     - id: data
       labels: [area/data]
       title: "(quarkus.data(?!source)|jakarta data)"
-      notify: [FroMage]  # yrodiere/lucamolteni use the lottery instead
+      notify: [FroMage] # yrodiere/lucamolteni use the lottery instead
+      notifyInPullRequest: true
       directories:
         - extensions/data/
         - integration-tests/data/
@@ -304,7 +301,8 @@ triage:
     - id: rest-data-panache
       labels: [area/panache]
       title: "(panache.*resource|rest.data.panache)"
-      notify: [geoand]
+      notify: [geoand, FroMage]
+      notifyInPullRequest: true
     - id: qute
       labels: [area/qute]
       title: "qute"
@@ -350,7 +348,7 @@ triage:
     - id: kubernetes
       labels: [area/kubernetes]
       titleBody: "kubernetes"
-      notify: [geoand, metacosm]
+      notify: [geoand, metacosm, xstefank]
       directories:
         - extensions/kubernetes/
         - extensions/kubernetes-client/
@@ -452,10 +450,10 @@ triage:
     - id: awt
       labels: [area/graphics]
       expression: |
-              matches("sun.font", titleBody)
-              || matches("sun.java2d", titleBody)
-              || matches("javax.imageio", titleBody)
-              || matches("sun.awt", titleBody)
+        matches("sun.font", titleBody)
+        || matches("sun.java2d", titleBody)
+        || matches("javax.imageio", titleBody)
+        || matches("sun.awt", titleBody)
       notify: [galderz, Karm]
       notifyInPullRequest: true
       directories:
@@ -465,10 +463,10 @@ triage:
     - id: securepipeline
       labels: [area/securepipeline]
       expression: |
-              matches("FIPS", titleBody)
-              || matches("SunPKCS11-NSS-FIPS", titleBody)
-              || matches("NSS module", titleBody)
-              || matches("libnss", titleBody)
+        matches("FIPS", titleBody)
+        || matches("SunPKCS11-NSS-FIPS", titleBody)
+        || matches("NSS module", titleBody)
+        || matches("libnss", titleBody)
       notify: [jerboaa, Karm]
       notifyInPullRequest: true
     - id: artemis
@@ -666,7 +664,6 @@ triage:
       notify: [geoand, FroMage]
       directories:
         - extensions/resteasy-reactive/
-
     - id: vault
       labels: [area/vault]
       title: vault
@@ -733,7 +730,7 @@ triage:
       title: "optaplanner"
       notify: [ge0ffrey, rsynek, Christopher-Chianelli]
     - id: extension-proposal
-      labels: [kind/extension-proposal,area/quarkiverse]
+      labels: [kind/extension-proposal, area/quarkiverse]
       title: "Extension Proposal"
       notify: [gastaldi, gsmet, aloubyansky]
     - id: mailer
@@ -768,7 +765,7 @@ triage:
     - id: reactive-sql-clients
       labels: [area/reactive-sql-clients]
       title: "(reactive sql|reactive pool|pgpool|mysqlpool|db2pool)"
-      notify: [tsegismont,vietj]
+      notify: [tsegismont, vietj]
       directories:
         - extensions/reactive-db2-client/
         - extensions/reactive-mysql-client/
@@ -806,5 +803,12 @@ triage:
       labels: [area/virtual-threads]
       title: "(virtual.thread|RunOnVirtualThread)"
       notify: [cescoffier, ozangunalp]
+    - id: sbom
+      labels: [area/sbom]
+      title: "(sbom|cyclonedx)"
+      notify: [aloubyansky]
+      notifyInPullRequest: true
+      directories:
+        - extensions/cyclonedx/
   qe:
     notify: [rsvoboda, mjurc]

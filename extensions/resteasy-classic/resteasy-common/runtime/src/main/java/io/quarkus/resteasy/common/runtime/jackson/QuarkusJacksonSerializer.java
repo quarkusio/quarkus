@@ -1,7 +1,6 @@
 package io.quarkus.resteasy.common.runtime.jackson;
 
 import java.io.File;
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.Reader;
@@ -25,9 +24,10 @@ import jakarta.ws.rs.core.StreamingOutput;
 import jakarta.ws.rs.ext.Provider;
 
 import org.jboss.resteasy.plugins.providers.FileRange;
-import org.jboss.resteasy.plugins.providers.jackson.ResteasyJackson2Provider;
 import org.jboss.resteasy.spi.AsyncOutputStream;
 import org.jboss.resteasy.spi.AsyncStreamingOutput;
+
+import dev.resteasy.providers.jackson.ResteasyJacksonProvider;
 
 /**
  * provider that can produce JSON by default, removing the need for @Produces and @Consumes everywhere
@@ -36,7 +36,7 @@ import org.jboss.resteasy.spi.AsyncStreamingOutput;
 @Produces(MediaType.WILDCARD)
 @Consumes(MediaType.WILDCARD)
 @Priority(Priorities.USER - 200)
-public class QuarkusJacksonSerializer extends ResteasyJackson2Provider {
+public class QuarkusJacksonSerializer extends ResteasyJacksonProvider {
 
     /**
      * RESTEasy can already handle these
@@ -65,7 +65,7 @@ public class QuarkusJacksonSerializer extends ResteasyJackson2Provider {
 
     @Override
     public void writeTo(Object t, Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType,
-            MultivaluedMap<String, Object> httpHeaders, OutputStream entityStream) throws IOException, WebApplicationException {
+            MultivaluedMap<String, Object> httpHeaders, OutputStream entityStream) throws WebApplicationException {
         httpHeaders.putSingle(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON);
         super.writeTo(t, type, genericType, annotations, mediaType, httpHeaders, entityStream);
     }

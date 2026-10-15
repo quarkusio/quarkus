@@ -1,6 +1,7 @@
 package io.quarkus.it.opentelemetry.vertx.exporter;
 
 import static io.quarkus.opentelemetry.runtime.config.runtime.exporter.OtlpExporterConfig.Protocol.GRPC;
+import static io.quarkus.opentelemetry.runtime.config.runtime.exporter.OtlpExporterConfig.Protocol.HTTP_PROTOBUF;
 import static org.testcontainers.Testcontainers.exposeHostPorts;
 
 import java.util.HashMap;
@@ -12,7 +13,6 @@ import org.testcontainers.containers.BindMode;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.output.Slf4jLogConsumer;
 import org.testcontainers.containers.wait.strategy.Wait;
-import org.testcontainers.images.PullPolicy;
 import org.testcontainers.utility.DockerImageName;
 import org.testcontainers.utility.MountableFile;
 
@@ -55,7 +55,7 @@ public class OtelCollectorLifecycleManager implements QuarkusTestResourceLifecyc
     private SelfSignedCertificate serverTls;
     private SelfSignedCertificate clientTlS;
 
-    private String protocol = GRPC;
+    private String protocol = HTTP_PROTOBUF;
     private boolean enableTLS = false;
     private boolean preventTrustCert = false;
     private boolean enableCompression = false;
@@ -108,7 +108,6 @@ public class OtelCollectorLifecycleManager implements QuarkusTestResourceLifecyc
         clientTlS = SelfSignedCertificate.create();
 
         collector = new GenericContainer<>(DockerImageName.parse(COLLECTOR_IMAGE))
-                .withImagePullPolicy(PullPolicy.alwaysPull())
                 .withEnv("LOGGING_EXPORTER_VERBOSITY_LEVEL", "basic") // basic, normal, detailed
                 .withCopyFileToContainer(
                         MountableFile.forHostPath(serverTls.certificatePath(), 0555),

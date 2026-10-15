@@ -18,7 +18,7 @@ public class ResponseEntityConverter {
 
     @SuppressWarnings("rawtypes")
     public static Response toResponse(ResponseEntity responseEntity, MediaType defaultMediaType) {
-        Response.ResponseBuilder responseBuilder = Response.status(responseEntity.getStatusCodeValue())
+        Response.ResponseBuilder responseBuilder = Response.status(responseEntity.getStatusCode().value())
                 .entity(responseEntity.getBody());
         var jaxRsHeaders = toJaxRsHeaders(responseEntity.getHeaders());
         if (!jaxRsHeaders.containsKey(HttpHeaders.CONTENT_TYPE) && (defaultMediaType != null)) {
@@ -36,6 +36,10 @@ public class ResponseEntityConverter {
     }
 
     private static Map<String, List<String>> toJaxRsHeaders(HttpHeaders springHeaders) {
-        return new HashMap<>(springHeaders);
+        Map<String, List<String>> result = new HashMap<>();
+        for (String name : springHeaders.headerNames()) {
+            result.put(name, springHeaders.getValuesAsList(name));
+        }
+        return result;
     }
 }

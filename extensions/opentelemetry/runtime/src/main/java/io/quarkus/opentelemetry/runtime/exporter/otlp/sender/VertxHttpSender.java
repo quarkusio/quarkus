@@ -27,6 +27,7 @@ import io.quarkus.vertx.core.runtime.BufferOutputStream;
 import io.smallrye.common.annotation.SuppressForbidden;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.AsyncResult;
+import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
@@ -43,9 +44,9 @@ public final class VertxHttpSender implements HttpSender {
     public static final String METRICS_PATH = "/v1/metrics";
     public static final String LOGS_PATH = "/v1/logs";
 
-    private static final Logger log = Logger.getLogger(VertxHttpSender.class.getName());
+    private static final Logger internalLogger = Logger.getLogger(VertxHttpSender.class.getName());
 
-    private static final ThrottlingLogger throttlingLogger = new ThrottlingLogger(
+    private final ThrottlingLogger throttlingLogger = new ThrottlingLogger(
             java.util.logging.Logger.getLogger(VertxHttpSender.class.getName()));
 
     private static final int MAX_ATTEMPTS = 3;
@@ -109,6 +110,11 @@ public final class VertxHttpSender implements HttpSender {
             Consumer<HttpResponse> onHttpResponseRead,
             Consumer<Throwable> onError) {
         if (isShutdown.get()) {
+            // The caller completes the result of the export in one of the two callbacks, so exactly one of
+            // them has to be invoked. Returning without calling either leaves the export result uncompleted
+            // forever, which in turn blocks the shutdown of the batch processor that is waiting for it.
+            // See https://github.com/quarkusio/quarkus/issues/55614
+            onError.accept(new IllegalStateException("The OpenTelemetry exporter has been shut down"));
             return;
         }
 
@@ -140,6 +146,9 @@ public final class VertxHttpSender implements HttpSender {
             int numberOfAttempts,
             Handler<HttpClientRequest> clientRequestSuccessHandler,
             Consumer<Throwable> onFailureCallback) {
+        if (client == null) {
+            return;
+        }
         Uni.createFrom().completionStage(new Supplier<CompletionStage<HttpClientRequest>>() {
             @Override
             public CompletionStage<HttpClientRequest> get() {
@@ -149,18 +158,13 @@ public final class VertxHttpSender implements HttpSender {
                 .onFailure(new Predicate<Throwable>() {
                     @Override
                     public boolean test(Throwable t) {
-                        // Will not retry on shutdown
-                        return t instanceof IllegalStateException ||
-                                t instanceof RejectedExecutionException;
+                        // Will not retry on shutdown, but the failure still has to reach the subscriber:
+                        // recovering with a Uni that never emits would leave the export uncompleted.
+                        // See https://github.com/quarkusio/quarkus/issues/55614
+                        return !(t instanceof IllegalStateException ||
+                                t instanceof RejectedExecutionException);
                     }
                 })
-                .recoverWithUni(new Supplier<Uni<? extends HttpClientRequest>>() {
-                    @Override
-                    public Uni<? extends HttpClientRequest> get() {
-                        return Uni.createFrom().nothing();
-                    }
-                })
-                .onFailure()
                 .retry()
                 .withBackOff(Duration.ofMillis(100))
                 .atMost(numberOfAttempts)
@@ -183,26 +187,34 @@ public final class VertxHttpSender implements HttpSender {
 
         if (client == null) {
             throttlingLogger.log(Level.FINE, "Client is null. Cannot close.");
+            // nothing to shutdown
+            shutdownResult.succeed();
             return shutdownResult;
         }
 
         try {
-            client.close()
-                    .onSuccess(
-                            new Handler<>() {
-                                @Override
-                                public void handle(Void event) {
-                                    shutdownResult.succeed();
-                                }
-                            })
-                    .onFailure(new Handler<>() {
-                        @Override
-                        public void handle(Throwable event) {
-                            shutdownResult.fail();
-                        }
-                    });
+            Future<Void> closeFuture = client.close();
+            if (closeFuture == null) {
+                throttlingLogger.log(Level.INFO, "HTTP client close returned null, possibly already closed.");
+                shutdownResult.fail();
+            } else {
+                closeFuture
+                        .onSuccess(
+                                new Handler<>() {
+                                    @Override
+                                    public void handle(Void event) {
+                                        shutdownResult.succeed();
+                                    }
+                                })
+                        .onFailure(new Handler<>() {
+                            @Override
+                            public void handle(Throwable event) {
+                                shutdownResult.fail();
+                            }
+                        });
+            }
         } catch (RejectedExecutionException e) {
-            log.debug("Unable to complete shutdown", e);
+            internalLogger.debug("Unable to complete shutdown", e);
             // if Netty's ThreadPool has been closed, this onSuccess() will immediately throw RejectedExecutionException
             // which we need to handle
             shutdownResult.fail();

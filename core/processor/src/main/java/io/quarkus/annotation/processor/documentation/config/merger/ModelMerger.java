@@ -74,8 +74,8 @@ public final class ModelMerger {
             }
 
             try (InputStream resolvedModelIs = Files.newInputStream(resolvedModelPath)) {
-                ResolvedModel resolvedModel = JacksonMappers.yamlObjectReader().readValue(resolvedModelIs,
-                        ResolvedModel.class);
+                ResolvedModel resolvedModel = JacksonMappers.yamlObjectReader().forType(ResolvedModel.class)
+                        .readValue(resolvedModelIs);
 
                 if (resolvedModel.getConfigRoots() == null || resolvedModel.getConfigRoots().isEmpty()) {
                     continue;

@@ -22,16 +22,21 @@ public class DevObserverInfoTest {
         List<DevObserverInfo> observers = new ArrayList<>();
         // Synthetic non-app - should be last
         observers.add(new DevObserverInfo(false, null, null, new Name("Delta"),
-                Collections.emptyList(), 0, false, Reception.ALWAYS, TransactionPhase.IN_PROGRESS));
+                Collections.emptyList(), 0, false, Reception.ALWAYS, TransactionPhase.IN_PROGRESS,
+                new Name("DeltaClass")));
         // App observers
         observers.add(new DevObserverInfo(true, new Name("Alpha"), "fooish", new Name("java.lang.String"),
-                Collections.emptyList(), 0, false, Reception.ALWAYS, TransactionPhase.IN_PROGRESS));
+                Collections.emptyList(), 0, false, Reception.ALWAYS, TransactionPhase.IN_PROGRESS,
+                new Name("AlphaClass")));
         observers.add(new DevObserverInfo(true, new Name("Alpha"), "blabla", new Name("java.lang.String"),
-                Collections.emptyList(), 1, false, Reception.ALWAYS, TransactionPhase.IN_PROGRESS));
+                Collections.emptyList(), 1, false, Reception.ALWAYS, TransactionPhase.IN_PROGRESS,
+                new Name("AlphaClass")));
         observers.add(new DevObserverInfo(true, null, null, new Name("Charlie"),
-                Collections.emptyList(), 0, false, Reception.ALWAYS, TransactionPhase.IN_PROGRESS));
+                Collections.emptyList(), 0, false, Reception.ALWAYS, TransactionPhase.IN_PROGRESS,
+                new Name("CharlieClass")));
         observers.add(new DevObserverInfo(true, new Name("Bravo"), "hop", new Name("java.lang.String"),
-                Collections.emptyList(), 0, false, Reception.IF_EXISTS, TransactionPhase.IN_PROGRESS));
+                Collections.emptyList(), 0, false, Reception.IF_EXISTS, TransactionPhase.IN_PROGRESS,
+                new Name("BravoClass")));
 
         Collections.sort(observers);
         assertEquals("blabla", observers.get(0).getMethodName());
@@ -40,10 +45,15 @@ public class DevObserverInfoTest {
         assertEquals("Alpha", observers.get(1).getDeclaringClass().toString());
         assertEquals("hop", observers.get(2).getMethodName());
         assertEquals("Bravo", observers.get(2).getDeclaringClass().toString());
+        assertEquals("Bravo", observers.get(2).getSource());
         assertNull(observers.get(3).getMethodName());
         assertEquals("Charlie", observers.get(3).getObservedType().toString());
+        assertEquals("Synthetic with bean class CharlieClass",
+                observers.get(3).getSource());
         assertEquals("Delta", observers.get(observers.size() - 1).getObservedType().toString());
         assertNull(observers.get(observers.size() - 1).getDeclaringClass());
+        assertEquals("Synthetic with bean class DeltaClass",
+                observers.get(observers.size() - 1).getSource());
     }
 
 }

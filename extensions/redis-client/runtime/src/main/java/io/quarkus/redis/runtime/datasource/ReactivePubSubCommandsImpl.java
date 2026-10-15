@@ -130,14 +130,13 @@ public class ReactivePubSubCommandsImpl<V> extends AbstractRedisCommands impleme
         nonNull(onMessage, "onMessage");
         validatePatterns(patterns);
 
-        return client.connect()
-                .chain(conn -> {
-                    RedisAPI api = RedisAPI.api(conn);
-                    ReactiveRedisPatternSubscriberImpl subscriber = new ReactiveRedisPatternSubscriberImpl(conn, api, patterns,
-                            (channel, value) -> onMessage.accept(value), onEnd, onException);
-                    return subscriber.subscribe()
-                            .replaceWith(subscriber);
-                });
+        return RedisConnections.withNewLongLivedConnection(client, conn -> {
+            RedisAPI api = RedisAPI.api(conn);
+            ReactiveRedisPatternSubscriberImpl subscriber = new ReactiveRedisPatternSubscriberImpl(conn, api, patterns,
+                    (channel, value) -> onMessage.accept(value), onEnd, onException);
+            return subscriber.subscribe()
+                    .replaceWith(subscriber);
+        });
     }
 
     @Override
@@ -147,14 +146,13 @@ public class ReactivePubSubCommandsImpl<V> extends AbstractRedisCommands impleme
         validatePatterns(patterns);
         nonNull(onMessage, "onMessage");
 
-        return client.connect()
-                .chain(conn -> {
-                    RedisAPI api = RedisAPI.api(conn);
-                    ReactiveRedisPatternSubscriberImpl subscriber = new ReactiveRedisPatternSubscriberImpl(conn, api, patterns,
-                            onMessage, onEnd, onException);
-                    return subscriber.subscribe()
-                            .replaceWith(subscriber);
-                });
+        return RedisConnections.withNewLongLivedConnection(client, conn -> {
+            RedisAPI api = RedisAPI.api(conn);
+            ReactiveRedisPatternSubscriberImpl subscriber = new ReactiveRedisPatternSubscriberImpl(conn, api, patterns,
+                    onMessage, onEnd, onException);
+            return subscriber.subscribe()
+                    .replaceWith(subscriber);
+        });
     }
 
     private void validateChannels(List<String> channels) {
@@ -176,14 +174,13 @@ public class ReactivePubSubCommandsImpl<V> extends AbstractRedisCommands impleme
         nonNull(onMessage, "onMessage");
         validateChannels(channels);
 
-        return client.connect()
-                .chain(conn -> {
-                    RedisAPI api = RedisAPI.api(conn);
-                    ReactiveAbstractRedisSubscriberImpl subscriber = new ReactiveAbstractRedisSubscriberImpl(conn, api,
-                            channels, (channel, value) -> onMessage.accept(value), onEnd, onException);
-                    return subscriber.subscribe()
-                            .replaceWith(subscriber);
-                });
+        return RedisConnections.withNewLongLivedConnection(client, conn -> {
+            RedisAPI api = RedisAPI.api(conn);
+            ReactiveAbstractRedisSubscriberImpl subscriber = new ReactiveAbstractRedisSubscriberImpl(conn, api,
+                    channels, (channel, value) -> onMessage.accept(value), onEnd, onException);
+            return subscriber.subscribe()
+                    .replaceWith(subscriber);
+        });
     }
 
     @Override
@@ -201,14 +198,13 @@ public class ReactivePubSubCommandsImpl<V> extends AbstractRedisCommands impleme
             }
         }
 
-        return client.connect()
-                .chain(conn -> {
-                    RedisAPI api = RedisAPI.api(conn);
-                    ReactiveAbstractRedisSubscriberImpl subscriber = new ReactiveAbstractRedisSubscriberImpl(conn, api,
-                            channels, onMessage, onEnd, onException);
-                    return subscriber.subscribe()
-                            .replaceWith(subscriber);
-                });
+        return RedisConnections.withNewLongLivedConnection(client, conn -> {
+            RedisAPI api = RedisAPI.api(conn);
+            ReactiveAbstractRedisSubscriberImpl subscriber = new ReactiveAbstractRedisSubscriberImpl(conn, api,
+                    channels, onMessage, onEnd, onException);
+            return subscriber.subscribe()
+                    .replaceWith(subscriber);
+        });
     }
 
     @Override

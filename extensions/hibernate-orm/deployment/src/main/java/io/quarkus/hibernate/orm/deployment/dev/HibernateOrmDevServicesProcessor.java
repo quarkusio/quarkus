@@ -19,11 +19,9 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.BuildSteps;
 import io.quarkus.deployment.builditem.DevServicesAdditionalConfigBuildItem;
-import io.quarkus.hibernate.orm.deployment.HibernateOrmConfig;
-import io.quarkus.hibernate.orm.deployment.HibernateOrmConfigPersistenceUnit;
 import io.quarkus.hibernate.orm.deployment.HibernateOrmEnabled;
-import io.quarkus.hibernate.orm.deployment.PersistenceUnitDescriptorBuildItem;
 import io.quarkus.hibernate.orm.deployment.spatial.HibernateSpatialAvailable;
+import io.quarkus.hibernate.orm.deployment.spi.PersistenceUnitDefinedBuildItem;
 import io.quarkus.hibernate.orm.deployment.vector.HibernateVectorAvailable;
 import io.quarkus.hibernate.orm.runtime.HibernateOrmRuntimeConfig;
 import io.quarkus.runtime.configuration.ConfigUtils;
@@ -35,32 +33,33 @@ public class HibernateOrmDevServicesProcessor {
 
     @BuildStep
     void devServicesAutoGenerateByDefault(List<JdbcDataSourceSchemaReadyBuildItem> schemaReadyBuildItems,
-            List<PersistenceUnitDescriptorBuildItem> persistenceUnitDescriptorBuildItems,
-            HibernateOrmConfig config,
+            List<PersistenceUnitDefinedBuildItem> definedPersistenceUnits,
             BuildProducer<DevServicesAdditionalConfigBuildItem> devServicesAdditionalConfigProducer) {
         Set<String> managedSources = schemaReadyBuildItems.stream().map(JdbcDataSourceSchemaReadyBuildItem::getDatasourceNames)
                 .collect(HashSet::new, Collection::addAll, Collection::addAll);
 
-        for (Map.Entry<String, HibernateOrmConfigPersistenceUnit> entry : config.persistenceUnits()
-                .entrySet()) {
-            Optional<String> dataSourceName = entry.getValue().datasource();
-            List<String> propertyKeysIndicatingDataSourceConfigured = DataSourceUtil
-                    .dataSourcePropertyKeys(dataSourceName.orElse(null), "username");
+        for (PersistenceUnitDefinedBuildItem pu : definedPersistenceUnits) {
+            String puName = pu.getPersistenceUnitName();
+            if (pu.getDataSourceName().isEmpty()) {
+                // Can't do much -- we don't know which datasource this PU uses
+                continue;
+            }
 
-            if (!managedSources.contains(dataSourceName.orElse(DataSourceUtil.DEFAULT_DATASOURCE_NAME))) {
-                List<String> schemaManagementStrategyPropertyKeys = HibernateOrmRuntimeConfig.puPropertyKeys(entry.getKey(),
+            String dataSourceName = pu.getDataSourceName().get();
+            List<String> propertyKeysIndicatingDataSourceConfigured = DataSourceUtil
+                    .dataSourcePropertyKeys(dataSourceName, "username");
+
+            if (!managedSources.contains(dataSourceName)) {
+                List<String> schemaManagementStrategyPropertyKeys = HibernateOrmRuntimeConfig.puPropertyKeys(puName,
                         "schema-management.strategy");
-                List<String> legacyDatabaseGenerationPropertyKeys = HibernateOrmRuntimeConfig.puPropertyKeys(entry.getKey(),
-                        "database.generation");
                 if (!ConfigUtils.isAnyPropertyPresent(propertyKeysIndicatingDataSourceConfigured)
-                        && !ConfigUtils.isAnyPropertyPresent(schemaManagementStrategyPropertyKeys)
-                        && !ConfigUtils.isAnyPropertyPresent(legacyDatabaseGenerationPropertyKeys)) {
+                        && !ConfigUtils.isAnyPropertyPresent(schemaManagementStrategyPropertyKeys)) {
                     devServicesAdditionalConfigProducer
                             .produce(new DevServicesAdditionalConfigBuildItem(devServicesConfig -> {
                                 // Only force DB generation if the datasource is configured through dev services
                                 if (propertyKeysIndicatingDataSourceConfigured.stream()
                                         .anyMatch(devServicesConfig::containsKey)) {
-                                    List<String> offlineStartKeys = HibernateOrmRuntimeConfig.puPropertyKeys(entry.getKey(),
+                                    List<String> offlineStartKeys = HibernateOrmRuntimeConfig.puPropertyKeys(puName,
                                             "database.start-offline");
                                     Optional<Boolean> offlineStart = ConfigUtils
                                             .getFirstOptionalValue(offlineStartKeys, Boolean.class);

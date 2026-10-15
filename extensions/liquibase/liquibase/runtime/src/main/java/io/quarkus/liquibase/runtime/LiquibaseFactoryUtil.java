@@ -42,4 +42,13 @@ public final class LiquibaseFactoryUtil {
 
         return LiquibaseDataSource.LiquibaseDataSourceLiteral.of(dataSourceName);
     }
+
+    public static String liquibasePropertyKey(String datasourceName, String radical) {
+        if (DataSourceUtil.isDefault(datasourceName)) {
+            return "quarkus.liquibase." + radical;
+        } else {
+            return "quarkus.liquibase.\"" + datasourceName + "\"." + radical;
+        }
+    }
+
 }

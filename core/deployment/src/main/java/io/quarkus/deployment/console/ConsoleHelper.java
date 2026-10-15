@@ -1,5 +1,6 @@
 package io.quarkus.deployment.console;
 
+import java.io.IOError;
 import java.io.IOException;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.function.Consumer;
@@ -7,12 +8,15 @@ import java.util.function.Supplier;
 
 import org.aesh.terminal.Connection;
 import org.aesh.terminal.tty.TerminalConnection;
+import org.jboss.logging.Logger;
 
 import io.quarkus.deployment.dev.testing.TestConfig;
 import io.quarkus.dev.console.BasicConsole;
 import io.quarkus.dev.console.QuarkusConsole;
 
 public class ConsoleHelper {
+
+    private static final Logger log = Logger.getLogger(ConsoleHelper.class);
 
     public static synchronized void installConsole(TestConfig config, ConsoleConfig consoleConfig, boolean test) {
         if (QuarkusConsole.installed) {
@@ -88,7 +92,10 @@ public class ConsoleHelper {
                     }
                 }
             });
-        } catch (IOException e) {
+        } catch (IOException | IOError e) {
+            // terminal probing failures surface as IOError, e.g. when an incompatible stty is first in the PATH,
+            // see https://github.com/quarkusio/quarkus/issues/55918
+            log.warn("Failed to initialize the advanced console, falling back to the basic console: " + e);
             QuarkusConsole.INSTANCE = new BasicConsole(colorEnabled, false, QuarkusConsole.ORIGINAL_OUT, System.console());
         }
         QuarkusConsole.installRedirects();

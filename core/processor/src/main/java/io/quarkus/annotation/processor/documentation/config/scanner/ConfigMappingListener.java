@@ -120,7 +120,7 @@ public class ConfigMappingListener implements ConfigAnnotationListener {
 
         DiscoveryConfigRoot discoveryConfigRoot = new DiscoveryConfigRoot(config.getExtension(),
                 rootPrefix, overriddenDocPrefix,
-                binaryName, configRoot.getQualifiedName().toString(), configPhase, overriddenDocFileName, true);
+                binaryName, configRoot.getQualifiedName().toString(), configPhase, overriddenDocFileName);
         configCollector.addConfigRoot(discoveryConfigRoot);
         return Optional.of(discoveryConfigRoot);
     }
@@ -187,9 +187,7 @@ public class ConfigMappingListener implements ConfigAnnotationListener {
     public Optional<DiscoveryConfigGroup> onConfigGroup(TypeElement configGroup) {
         DiscoveryConfigGroup discoveryConfigGroup = new DiscoveryConfigGroup(config.getExtension(),
                 utils.element().getBinaryName(configGroup),
-                configGroup.getQualifiedName().toString(),
-                // interface config groups are considered config mappings, let's hope it's enough
-                configGroup.getKind() == ElementKind.INTERFACE);
+                configGroup.getQualifiedName().toString());
         configCollector.addResolvedConfigGroup(discoveryConfigGroup);
         return Optional.of(discoveryConfigGroup);
     }

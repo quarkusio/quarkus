@@ -51,6 +51,11 @@ public class CacheResultInterceptor extends CacheInterceptor {
         LOGGER.debugf("Loading entry with key [%s] from cache [%s]", key, binding.cacheName());
 
         try {
+            CacheSpecialMethodHandler specialMethodHandler = getSpecialMethodHandler(invocationContext.getMethod());
+            if (specialMethodHandler != null) {
+                return specialMethodHandler.handleCacheResult(invocationContext, cache, key, binding);
+            }
+
             ReturnType returnType = determineReturnType(invocationContext.getMethod().getReturnType());
             if (returnType != ReturnType.NonAsync) {
                 Uni<Object> cacheValue = cache.getAsync(key, new Function<Object, Uni<Object>>() {
@@ -127,5 +132,4 @@ public class CacheResultInterceptor extends CacheInterceptor {
             }
         }
     }
-
 }

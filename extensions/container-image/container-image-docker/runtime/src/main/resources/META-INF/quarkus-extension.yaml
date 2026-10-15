@@ -6,6 +6,7 @@ metadata:
     - "docker"
     - "container"
     - "image"
+  guide: "https://quarkus.io/guides/container-image#docker"
   categories:
     - "cloud"
   status: "stable"

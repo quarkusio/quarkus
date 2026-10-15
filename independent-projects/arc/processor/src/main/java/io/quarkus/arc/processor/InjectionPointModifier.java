@@ -28,14 +28,12 @@ public class InjectionPointModifier {
         this.transformers = transformers;
     }
 
-    public Set<AnnotationInstance> applyTransformers(Type type, AnnotationTarget target, AnnotationTarget methodParameterTarget,
-            Set<AnnotationInstance> qualifiers) {
+    public Set<AnnotationInstance> applyTransformers(Type type, AnnotationTarget target, Set<AnnotationInstance> qualifiers) {
         // with no transformers, we just immediately return original set of qualifiers
         if (transformers.isEmpty()) {
             return qualifiers;
         }
-        TransformationContextImpl transformationContext = new TransformationContextImpl(buildContext, target,
-                methodParameterTarget, qualifiers);
+        TransformationContextImpl transformationContext = new TransformationContextImpl(buildContext, target, qualifiers);
         for (InjectionPointsTransformer transformer : transformers) {
             if (transformer.appliesTo(type)) {
                 transformer.transform(transformationContext);
@@ -44,18 +42,12 @@ public class InjectionPointModifier {
         return transformationContext.getQualifiers();
     }
 
-    // method variant used for field and resource field injection; a case where we don't need to deal with method. params
-    public Set<AnnotationInstance> applyTransformers(Type type, AnnotationTarget target, Set<AnnotationInstance> qualifiers) {
-        return applyTransformers(type, target, null, qualifiers);
-    }
-
     static class TransformationContextImpl extends AnnotationsTransformationContext<Set<AnnotationInstance>>
             implements InjectionPointsTransformer.TransformationContext {
 
         public TransformationContextImpl(BuildContext buildContext, AnnotationTarget target,
-                AnnotationTarget methodParameterTarget,
                 Set<AnnotationInstance> annotations) {
-            super(buildContext, target, methodParameterTarget, annotations);
+            super(buildContext, target, annotations);
         }
 
         @Override

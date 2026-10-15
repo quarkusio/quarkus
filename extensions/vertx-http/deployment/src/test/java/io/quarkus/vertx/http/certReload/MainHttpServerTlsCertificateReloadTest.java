@@ -2,6 +2,7 @@ package io.quarkus.vertx.http.certReload;
 
 import static io.quarkus.vertx.http.certReload.CertReloadTestHelper.assertTlsFails;
 import static io.quarkus.vertx.http.certReload.CertReloadTestHelper.httpsGet;
+import static java.nio.file.StandardCopyOption.*;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.File;
@@ -97,9 +98,9 @@ public class MainHttpServerTlsCertificateReloadTest {
 
         // Update certs
         Files.copy(new File("target/certificates/reload-B.crt").toPath(),
-                new File(certs, "/tls.crt").toPath(), java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+                new File(certs, "/tls.crt").toPath(), REPLACE_EXISTING);
         Files.copy(new File("target/certificates/reload-B.key").toPath(),
-                new File(certs, "/tls.key").toPath(), java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+                new File(certs, "/tls.key").toPath(), REPLACE_EXISTING);
 
         // Trigger the reload
         TlsCertificateReloader.reload().toCompletableFuture().get(10, TimeUnit.SECONDS);
@@ -120,6 +121,20 @@ public class MainHttpServerTlsCertificateReloadTest {
         String response3 = httpsGet(vertx, options2, "/hello");
 
         assertThat(response2).isEqualTo(response3);
+
+        // Restore the original certificate (A -> B -> A)
+        Files.copy(new File("target/certificates/reload-A.crt").toPath(),
+                new File(certs, "/tls.crt").toPath(), REPLACE_EXISTING);
+        Files.copy(new File("target/certificates/reload-A.key").toPath(),
+                new File(certs, "/tls.key").toPath(), REPLACE_EXISTING);
+
+        // Trigger the reload
+        TlsCertificateReloader.reload().toCompletableFuture().get(10, TimeUnit.SECONDS);
+
+        // The server should now present certificate A again
+        assertTlsFails(vertx, options2, "/hello");
+        String response4 = httpsGet(vertx, options, "/hello");
+        assertThat(response4).isEqualTo(response1);
     }
 
     public static class MyBean {

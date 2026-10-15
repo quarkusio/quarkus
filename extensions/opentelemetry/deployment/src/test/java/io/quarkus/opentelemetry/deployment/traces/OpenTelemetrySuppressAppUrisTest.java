@@ -35,7 +35,9 @@ public class OpenTelemetrySuppressAppUrisTest {
                     .addAsResource(new StringAsset(InMemoryMetricExporterProvider.class.getCanonicalName()),
                             "META-INF/services/io.opentelemetry.sdk.autoconfigure.spi.metrics.ConfigurableMetricExporterProvider")
                     .addClasses(TracerRouter.class, TraceMeResource.class))
-            .overrideConfigKey("quarkus.otel.traces.suppress-application-uris", "tracer,/hello/Itachi");
+            .overrideConfigKey("quarkus.otel.traces.suppress-application-uris", "tracer,/hello/Itachi")
+            .overrideConfigKey("quarkus.otel.metrics.exporter", "none")
+            .overrideConfigKey("quarkus.otel.logs.enabled", "false");
 
     @Inject
     InMemoryExporter exporter;

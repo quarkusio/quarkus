@@ -63,6 +63,12 @@
             <scope>test</scope>
         </dependency>
         <dependency>
+            <!-- Needed by SmallRye Config to generate the config mapping implementations in unit tests -->
+            <groupId>org.ow2.asm</groupId>
+            <artifactId>asm</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
             <groupId>org.awaitility</groupId>
             <artifactId>awaitility</artifactId>
             <scope>test</scope>

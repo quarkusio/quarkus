@@ -18,6 +18,8 @@ public final class JdbcDataSourceBuildItem extends MultiBuildItem {
 
     private final Optional<String> dbVersion;
 
+    private final boolean dbVersionUserSpecified;
+
     private final boolean transactionIntegrationEnabled;
 
     private final boolean xaEnabled;
@@ -25,19 +27,30 @@ public final class JdbcDataSourceBuildItem extends MultiBuildItem {
     private final boolean isDefault;
 
     /**
-     * @deprecated Use {@link #JdbcDataSourceBuildItem(String, String, Optional, boolean, boolean, boolean)} instead.
+     * @deprecated Use {@link #JdbcDataSourceBuildItem(String, String, Optional, boolean, boolean, boolean, boolean)} instead.
      */
     @Deprecated
     public JdbcDataSourceBuildItem(String name, String kind, Optional<String> dbVersion,
             boolean transactionIntegrationEnabled, boolean isDefault) {
-        this(name, kind, dbVersion, transactionIntegrationEnabled, false, isDefault);
+        this(name, kind, dbVersion, dbVersion.isPresent(), transactionIntegrationEnabled, false, isDefault);
+    }
+
+    /**
+     * @deprecated Use {@link #JdbcDataSourceBuildItem(String, String, Optional, boolean, boolean, boolean, boolean)} instead.
+     */
+    @Deprecated
+    public JdbcDataSourceBuildItem(String name, String kind, Optional<String> dbVersion,
+            boolean transactionIntegrationEnabled, boolean xaEnabled, boolean isDefault) {
+        this(name, kind, dbVersion, dbVersion.isPresent(), transactionIntegrationEnabled, xaEnabled, isDefault);
     }
 
     public JdbcDataSourceBuildItem(String name, String kind, Optional<String> dbVersion,
-            boolean transactionIntegrationEnabled, boolean xaEnabled, boolean isDefault) {
+            boolean dbVersionUserSpecified, boolean transactionIntegrationEnabled, boolean xaEnabled,
+            boolean isDefault) {
         this.name = name;
         this.dbKind = kind;
         this.dbVersion = dbVersion;
+        this.dbVersionUserSpecified = dbVersionUserSpecified;
         this.transactionIntegrationEnabled = transactionIntegrationEnabled;
         this.xaEnabled = xaEnabled;
         this.isDefault = isDefault;
@@ -65,5 +78,9 @@ public final class JdbcDataSourceBuildItem extends MultiBuildItem {
 
     public boolean isDefault() {
         return isDefault;
+    }
+
+    public boolean isDbVersionUserSpecified() {
+        return dbVersionUserSpecified;
     }
 }

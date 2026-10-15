@@ -2,9 +2,7 @@ package io.quarkus.jackson.deployment;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
-import java.io.IOException;
 import java.time.ZonedDateTime;
-import java.util.ArrayList;
 
 import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
@@ -12,15 +10,15 @@ import jakarta.inject.Singleton;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonSerializer;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializerProvider;
-import com.fasterxml.jackson.databind.module.SimpleModule;
-
-import io.quarkus.jackson.ObjectMapperCustomizer;
+import io.quarkus.jackson.JsonMapperBuilderCustomizer;
 import io.quarkus.test.QuarkusExtensionTest;
+import tools.jackson.core.JacksonException;
+import tools.jackson.core.JsonGenerator;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.SerializationContext;
+import tools.jackson.databind.ValueSerializer;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.module.SimpleModule;
 
 public class OverrideZonedDateTimeSerializerTest {
 
@@ -31,31 +29,29 @@ public class OverrideZonedDateTimeSerializerTest {
     ObjectMapper objectMapper;
 
     @Test
-    public void test() throws JsonProcessingException {
-        assertThat(new ArrayList<>(objectMapper.getRegisteredModuleIds())).asList()
-                .contains("jackson-datatype-jsr310");
+    public void test() {
         assertThat(objectMapper.writeValueAsString(ZonedDateTime.now())).isEqualTo("\"dummy\"");
     }
 
     @Singleton
-    static class TestCustomizer implements ObjectMapperCustomizer {
+    static class TestCustomizer implements JsonMapperBuilderCustomizer {
 
         @Override
         public int priority() {
-            return ObjectMapperCustomizer.MINIMUM_PRIORITY;
+            return JsonMapperBuilderCustomizer.MINIMUM_PRIORITY;
         }
 
         @Override
-        public void customize(ObjectMapper objectMapper) {
+        public void customize(JsonMapper.Builder builder) {
             SimpleModule module = new SimpleModule();
-            module.addSerializer(ZonedDateTime.class, new JsonSerializer<ZonedDateTime>() {
+            module.addSerializer(ZonedDateTime.class, new ValueSerializer<>() {
                 @Override
-                public void serialize(ZonedDateTime t, JsonGenerator jg, SerializerProvider sp) throws IOException {
-                    jg.writeString("dummy");
+                public void serialize(ZonedDateTime value, JsonGenerator gen, SerializationContext ctxt)
+                        throws JacksonException {
+                    gen.writeString("dummy");
                 }
-
             });
-            objectMapper.registerModule(module);
+            builder.addModule(module);
         }
     }
 }

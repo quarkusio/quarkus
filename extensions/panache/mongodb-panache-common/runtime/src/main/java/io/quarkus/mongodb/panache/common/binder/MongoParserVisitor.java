@@ -4,10 +4,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import org.bson.Document;
 import org.bson.conversions.Bson;
 
 import com.mongodb.client.model.Filters;
 
+import io.quarkus.panache.common.exception.PanacheQueryException;
 import io.quarkus.panacheql.internal.HqlParser;
 import io.quarkus.panacheql.internal.HqlParser.ComparisonPredicateContext;
 import io.quarkus.panacheql.internal.HqlParser.GroupedExpressionContext;
@@ -21,19 +23,49 @@ import io.quarkus.panacheql.internal.HqlParserBaseVisitor;
 class MongoParserVisitor extends HqlParserBaseVisitor<Object> {
     private Map<String, String> replacementMap;
     private Map<String, Object> parameterMaps;
+    private final boolean update;
 
     public MongoParserVisitor(Map<String, String> replacementMap, Map<String, Object> parameterMaps) {
+        this(replacementMap, parameterMaps, false);
+    }
+
+    /**
+     * @param update whether the predicate is an update document instead of a filter: {@code field = value} assignments
+     *        joined with {@code and} then list the fields to set.
+     */
+    MongoParserVisitor(Map<String, String> replacementMap, Map<String, Object> parameterMaps, boolean update) {
         this.replacementMap = replacementMap;
         this.parameterMaps = parameterMaps;
+        this.update = update;
     }
 
     @Override
     public Object visitAndPredicate(HqlParser.AndPredicateContext ctx) {
+        if (update) {
+            // 'field1 = ?1 and field2 = ?2' becomes {'field1': ?1, 'field2': ?2}, not an $and filter
+            Document fields = new Document();
+            for (HqlParser.PredicateContext predicate : ctx.predicate()) {
+                fields.putAll(visitAssignments(predicate));
+            }
+            return fields;
+        }
         List<Bson> filters = new ArrayList<>();
         for (HqlParser.PredicateContext predicate : ctx.predicate()) {
             filters.add((Bson) predicate.accept(this));
         }
         return Filters.and(filters);
+    }
+
+    /**
+     * Visits a predicate of an update, which can only contain {@code field = value} assignments, and returns the fields to
+     * set.
+     */
+    Document visitAssignments(HqlParser.PredicateContext predicate) {
+        if (!(predicate.accept(this) instanceof Document fields)) {
+            throw new PanacheQueryException("Only 'field = value' assignments are supported in an update, found: "
+                    + predicate.getText());
+        }
+        return fields;
     }
 
     @Override
@@ -50,7 +82,7 @@ class MongoParserVisitor extends HqlParserBaseVisitor<Object> {
         String field = (String) ctx.expression(0).accept(this);
         Object value = ctx.expression(1).accept(this);
         if (ctx.comparisonOperator().EQUAL() != null) {
-            return Filters.eq(field, value);
+            return update ? new Document(field, value) : Filters.eq(field, value);
         }
         if (ctx.comparisonOperator().NOT_EQUAL() != null) {
             return Filters.ne(field, value);

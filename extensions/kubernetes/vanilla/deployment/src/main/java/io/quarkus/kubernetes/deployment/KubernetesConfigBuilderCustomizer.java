@@ -1,7 +1,7 @@
 package io.quarkus.kubernetes.deployment;
 
-import static io.smallrye.config.ConfigMappingInterface.getProperties;
-import static io.smallrye.config.ConfigMappingLoader.getConfigMapping;
+import static io.smallrye.config.ConfigMappings.getProperties;
+import static io.smallrye.config.ConfigMappings.ConfigClass.configClass;
 import static io.smallrye.config.ConfigValue.CONFIG_SOURCE_COMPARATOR;
 
 import java.util.HashSet;
@@ -141,10 +141,8 @@ public class KubernetesConfigBuilderCustomizer implements SmallRyeConfigBuilderC
      * @return a Set of properties names to ignore
      */
     private static Set<PropertyName> ignoreOpenshiftNames() {
-        Set<String> kubernetes = getProperties(getConfigMapping(KubernetesConfig.class)).get(KubernetesConfig.class).get("")
-                .keySet();
-        Set<String> openshift = getProperties(getConfigMapping(OpenShiftConfig.class)).get(OpenShiftConfig.class).get("")
-                .keySet();
+        Set<String> kubernetes = getProperties(configClass(KubernetesConfig.class, "")).keySet();
+        Set<String> openshift = getProperties(configClass(OpenShiftConfig.class, "")).keySet();
 
         Set<PropertyName> ignored = new HashSet<>();
         for (String name : kubernetes) {
@@ -176,9 +174,8 @@ public class KubernetesConfigBuilderCustomizer implements SmallRyeConfigBuilderC
      * @return a Set of properties names to ignore
      */
     private static Set<PropertyName> ignoreKnativeNames() {
-        Set<String> kubernetes = getProperties(getConfigMapping(KubernetesConfig.class)).get(KubernetesConfig.class).get("")
-                .keySet();
-        Set<String> knative = getProperties(getConfigMapping(KnativeConfig.class)).get(KnativeConfig.class).get("").keySet();
+        Set<String> kubernetes = getProperties(configClass(KubernetesConfig.class, "")).keySet();
+        Set<String> knative = getProperties(configClass(KnativeConfig.class, "")).keySet();
 
         Set<PropertyName> ignored = new HashSet<>();
         for (String name : kubernetes) {

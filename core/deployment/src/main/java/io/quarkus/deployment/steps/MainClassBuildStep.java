@@ -880,7 +880,7 @@ public class MainClassBuildStep {
      * Generate a {@code startupContext.retainServiceValues(Set.of(k1, k2, ...))} call.
      */
     private static void generateRetainServiceValues(BlockCreator b0, Expr sc, Set<String> keys) {
-        Expr array = b0.newArray(ConstantDescs.CD_String, keys.stream().map(Const::of).toArray(Expr[]::new));
+        Expr array = b0.newArray(ConstantDescs.CD_String, keys.stream().sorted().map(Const::of).toArray(Expr[]::new));
         Expr keySet = b0.invokeStatic(MethodDesc.of(Set.class, "of", Set.class, Object[].class), array);
         b0.invokeVirtual(MethodDesc.of(StartupContext.class, "retainServiceValues", void.class, Set.class),
                 sc, keySet);

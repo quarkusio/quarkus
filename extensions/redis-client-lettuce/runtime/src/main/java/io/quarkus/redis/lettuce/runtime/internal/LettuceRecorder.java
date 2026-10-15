@@ -158,7 +158,7 @@ public class LettuceRecorder {
     }
 
     /**
-     * The Lettuce backend applies the hosts, client-type, timeout, active, password, TLS,
+     * The Lettuce backend applies the hosts, client-type, timeout, active, username, password, TLS,
      * {@code tcp.secure-transport-protocols}, {@code max-pool-size} and {@code max-pool-waiting} properties; for a
      * cluster also {@code replicas} and {@code topology-cache-ttl}, but not the database of a host URI (a cluster
      * only has database 0); for a Sentinel client {@code master-name}, {@code role}, {@code auto-failover} (a

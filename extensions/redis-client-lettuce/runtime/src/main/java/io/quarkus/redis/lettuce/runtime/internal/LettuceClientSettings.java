@@ -137,7 +137,8 @@ public final class LettuceClientSettings {
         for (URI host : hosts) {
             RedisURI redisUri = RedisURI.create(host);
             // Lettuce parsed the credentials of the URI its own way; replace them with the Vert.x interpretation.
-            redisUri.setCredentialsProvider(credentials(UserInfo.parse(host), config.password().orElse(null)));
+            redisUri.setCredentialsProvider(
+                    credentials(UserInfo.parse(host), config.username().orElse(null), config.password().orElse(null)));
             redisUri.setSsl(net.isSsl());
             if (net.isSsl()) {
                 redisUri.setVerifyPeer(verifyMode(net));
@@ -254,16 +255,18 @@ public final class LettuceClientSettings {
     }
 
     /**
-     * Combines the credentials of the URI with the {@code password} property. Like with the Vert.x Redis client, the
-     * property is the default password: a password encoded in the URI takes precedence. The user name, if any,
-     * always comes from the URI; a user name without password does not authenticate.
+     * Combines the credentials of the URI with the {@code username} and {@code password} properties. Like with the
+     * Vert.x Redis client, the properties are the defaults: a user name or a password encoded in the URI takes
+     * precedence over the corresponding property. A user name without password does not authenticate.
      *
      * @param userInfo the credentials encoded in the URI
+     * @param usernameProperty the {@code username} property, {@code null} when not set
      * @param passwordProperty the {@code password} property, {@code null} when not set
      */
-    static CredentialsProvider credentials(UserInfo userInfo, String passwordProperty) {
+    static CredentialsProvider credentials(UserInfo userInfo, String usernameProperty, String passwordProperty) {
+        String username = userInfo.username() != null ? userInfo.username() : usernameProperty;
         String password = userInfo.password() != null ? userInfo.password() : passwordProperty;
-        return new StaticCredentialsProvider(userInfo.username(), password == null ? null : password.toCharArray());
+        return new StaticCredentialsProvider(username, password == null ? null : password.toCharArray());
     }
 
     /**

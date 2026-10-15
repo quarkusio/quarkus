@@ -1115,20 +1115,20 @@ extension to your application:
 Adding the dependency is the only switch: the extension builds on `quarkus-redis-client`, so clients are
 configured with the same `quarkus.redis.*` properties and the Redis Dev Services work unchanged.
 In this initial version the Lettuce data sources apply `quarkus.redis[.<name>].hosts`, `client-type` (`standalone`,
-the default, `cluster`, see <<lettuce-cluster>>, `sentinel` and `replication`, see <<lettuce-sentinel>>), `password`,
-`tls.*`, `tls-configuration-name`, `tcp.secure-transport-protocols`, `timeout`, `active`, `max-pool-size` and
-`max-pool-waiting` (see <<connection-pooling-and-blocking-commands>>), for a cluster `replicas` and
+the default, `cluster`, see <<lettuce-cluster>>, `sentinel` and `replication`, see <<lettuce-sentinel>>), `username`,
+`password`, `tls.*`, `tls-configuration-name`, `tcp.secure-transport-protocols`, `timeout`, `active`,
+`max-pool-size` and `max-pool-waiting` (see <<connection-pooling-and-blocking-commands>>), for a cluster `replicas` and
 `topology-cache-ttl`, for a Sentinel client `master-name`, `role`, `auto-failover` and `replicas`, and for a
 replication client `topology` and `replicas`:
 
 * A standalone client connects to the first URI of `hosts`; a cluster client discovers the cluster from all of them;
 a Sentinel client takes them as the sentinels; a replication client as the nodes, or discovers the nodes from the
 first one.
-* The credentials are set with `password` or encoded in the URI, for example `redis://user:password@host:6379` or
-`redis://:password@host:6379`.
-The URI is read as the Vert.x Redis client reads it: a password encoded in the URI takes precedence over
-`password`, the username always comes from the URI, and a user info without a colon (`redis://user@host:6379`)
-is a username.
+* The credentials are set with `username` and `password` or encoded in the URI, for example
+`redis://user:password@host:6379` or `redis://:password@host:6379`.
+The URI is read as the Vert.x Redis client reads it: a username or a password encoded in the URI takes precedence
+over the `username` and `password` properties, and a user info without a colon (`redis://user@host:6379`) is a
+username.
 The `user` and `password` query parameters (`redis://host:6379?password=secret`) are fallbacks, as with the
 Vert.x client.
 * TLS is enabled by a `rediss://` URI or by `tls.enabled=true`.

@@ -148,7 +148,7 @@ reg.forService("io.quarkus.my-ext.setup")
 
 During the transitional period, the `ServiceRegistrar` provides bridge APIs to allow incremental migration of extensions.
 
-=== 1. Recorder $\rightarrow$ Service Bridge
+=== 1. Recorder-to-Service Bridge
 If you have a value produced by a legacy recorder that a new service needs to depend on, register it using `aliasRecorderValue`:
 
 [source,java]
@@ -165,7 +165,7 @@ void setupLegacyAndService(MyRecorder recorder, ServiceRegistrar reg) {
 
 Downstream services can now simply use `.require(MyLegacyValue.class)`.
 
-=== 2. Service $\rightarrow$ Recorder Bridge
+=== 2. Service-to-Recorder Bridge
 If an unconverted legacy recorder or an existing build item consumes a value that is now produced by a service, use the service-to-recorder bridge methods:
 
 * **`serviceAsRuntimeValue`**: Produces a `RuntimeValue<T>` proxy for a runtime service.
@@ -190,6 +190,7 @@ void bridgeServiceToLegacy(ServiceRegistrar reg, BuildProducer<LegacyBuildItem> 
 
 === ClassLoader & Thread Context ClassLoader (TCCL)
 Recorder bytecode always ran with the **runtime classloader as the TCCL**. Any recorder code that captured `Thread.currentThread().getContextClassLoader()` for later use relied on that.
+
 * After converting, ensure that the service still runs with the runtime CL as TCCL, and that captured/inherited CLs are the runtime CL (not the system `AppClassLoader`).
 * Clean up threads or `ThreadLocal`s your service owns in `onStop()`; never leak the `QuarkusClassLoader`.
 

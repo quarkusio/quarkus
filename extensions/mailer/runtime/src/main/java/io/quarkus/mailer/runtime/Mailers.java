@@ -205,7 +205,7 @@ public class Mailers {
         }
 
         if (optionsConfig.privateKey().isPresent()) {
-            vertxDkimOptions.setPrivateKey(optionsConfig.privateKey().get());
+            vertxDkimOptions.setPrivateKey(optionsConfig.privateKey().get().get());
         } else if (optionsConfig.privateKeyPath().isPresent()) {
             vertxDkimOptions.setPrivateKeyPath(optionsConfig.privateKeyPath().get());
         }
@@ -249,7 +249,7 @@ public class Mailers {
                 cfg.setUsername(config.username().get());
             }
             if (config.password().isPresent()) {
-                cfg.setPassword(config.password().get());
+                cfg.setPassword(config.password().get().get());
             }
         }
 

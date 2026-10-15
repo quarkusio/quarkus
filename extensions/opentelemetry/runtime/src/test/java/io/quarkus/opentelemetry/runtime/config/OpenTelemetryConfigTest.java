@@ -66,7 +66,7 @@ class OpenTelemetryConfigTest {
         assertTrue(mapping.proxyOptions().username().isPresent());
         assertEquals("naruto", mapping.proxyOptions().username().get());
         assertTrue(mapping.proxyOptions().password().isPresent());
-        assertEquals("hokage", mapping.proxyOptions().password().get());
+        assertEquals("hokage", mapping.proxyOptions().password().get().get());
         assertTrue(mapping.proxyOptions().host().isPresent());
         assertEquals("konoha", mapping.proxyOptions().host().get());
         assertTrue(mapping.proxyOptions().port().isPresent());
@@ -94,7 +94,7 @@ class OpenTelemetryConfigTest {
         assertTrue(traces.proxyOptions().username().isPresent());
         assertEquals("naruto", traces.proxyOptions().username().get());
         assertTrue(traces.proxyOptions().password().isPresent());
-        assertEquals("hokage", traces.proxyOptions().password().get());
+        assertEquals("hokage", traces.proxyOptions().password().get().get());
         assertTrue(traces.proxyOptions().host().isPresent());
         assertEquals("konoha", traces.proxyOptions().host().get());
         assertTrue(traces.proxyOptions().port().isPresent());
@@ -122,7 +122,7 @@ class OpenTelemetryConfigTest {
         assertTrue(metrics.proxyOptions().username().isPresent());
         assertEquals("naruto", metrics.proxyOptions().username().get());
         assertTrue(metrics.proxyOptions().password().isPresent());
-        assertEquals("hokage", metrics.proxyOptions().password().get());
+        assertEquals("hokage", metrics.proxyOptions().password().get().get());
         assertTrue(metrics.proxyOptions().host().isPresent());
         assertEquals("konoha", metrics.proxyOptions().host().get());
         assertTrue(metrics.proxyOptions().port().isPresent());
@@ -190,7 +190,7 @@ class OpenTelemetryConfigTest {
         assertTrue(traces.proxyOptions().username().isPresent());
         assertEquals("traces", traces.proxyOptions().username().get());
         assertTrue(traces.proxyOptions().password().isPresent());
-        assertEquals("traces", traces.proxyOptions().password().get());
+        assertEquals("traces", traces.proxyOptions().password().get().get());
         assertTrue(traces.proxyOptions().host().isPresent());
         assertEquals("traces", traces.proxyOptions().host().get());
         assertTrue(traces.proxyOptions().port().isPresent());

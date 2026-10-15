@@ -23,6 +23,7 @@ import io.quarkus.vertx.core.runtime.config.JksConfiguration;
 import io.quarkus.vertx.core.runtime.config.PemKeyCertConfiguration;
 import io.quarkus.vertx.core.runtime.config.PemTrustCertConfiguration;
 import io.quarkus.vertx.core.runtime.config.PfxConfiguration;
+import io.smallrye.config.Secret;
 import io.vertx.core.Future;
 import io.vertx.core.net.ClientSSLOptions;
 import io.vertx.core.net.JksOptions;
@@ -122,7 +123,7 @@ public final class ReactivePoolUtil {
     public static void configureCredentials(SqlConnectOptions connectOptions,
             DataSourceRuntimeConfig dataSourceRuntimeConfig) {
         dataSourceRuntimeConfig.username().ifPresent(connectOptions::setUser);
-        dataSourceRuntimeConfig.password().ifPresent(connectOptions::setPassword);
+        dataSourceRuntimeConfig.password().map(Secret::get).ifPresent(connectOptions::setPassword);
 
         if (dataSourceRuntimeConfig.credentialsProvider().isPresent()) {
             String beanName = dataSourceRuntimeConfig.credentialsProviderName().orElse(null);
@@ -304,14 +305,14 @@ public final class ReactivePoolUtil {
     private static JksOptions toJksOptions(JksConfiguration configuration) {
         JksOptions jksOptions = new JksOptions();
         configuration.path().ifPresent(jksOptions::setPath);
-        configuration.password().ifPresent(jksOptions::setPassword);
+        configuration.password().map(Secret::get).ifPresent(jksOptions::setPassword);
         return jksOptions;
     }
 
     private static PfxOptions toPfxOptions(PfxConfiguration configuration) {
         PfxOptions pfxOptions = new PfxOptions();
         configuration.path().ifPresent(pfxOptions::setPath);
-        configuration.password().ifPresent(pfxOptions::setPassword);
+        configuration.password().map(Secret::get).ifPresent(pfxOptions::setPassword);
         return pfxOptions;
     }
 }

@@ -32,6 +32,7 @@ import org.wildfly.security.password.interfaces.ClearPassword;
 import org.wildfly.security.password.spec.DigestPasswordSpec;
 
 import io.quarkus.runtime.util.ClassPathUtils;
+import io.smallrye.config.Secret;
 
 public class ElytronPropertiesFileRecorder {
 
@@ -105,20 +106,21 @@ public class ElytronPropertiesFileRecorder {
             return;
         }
         HashMap<String, SimpleRealmEntry> identityMap = new HashMap<>();
-        Map<String, String> userInfo = runtimeConfig.users();
+        Map<String, Secret<String>> userInfo = runtimeConfig.users();
         log.debugf("UserInfoMap: %s%n", userInfo);
         Map<String, String> roleInfo = runtimeConfig.roles();
         log.debugf("RoleInfoMap: %s%n", roleInfo);
-        for (Map.Entry<String, String> userPasswordEntry : userInfo.entrySet()) {
+        for (Map.Entry<String, Secret<String>> userPasswordEntry : userInfo.entrySet()) {
             Password password;
             String user = userPasswordEntry.getKey();
 
             if (runtimeConfig.plainText()) {
                 password = ClearPassword.createRaw(ClearPassword.ALGORITHM_CLEAR,
-                        userPasswordEntry.getValue().toCharArray());
+                        userPasswordEntry.getValue().get().toCharArray());
             } else {
                 try {
-                    byte[] hashed = ByteIterator.ofBytes(userPasswordEntry.getValue().getBytes(StandardCharsets.UTF_8))
+                    byte[] hashed = ByteIterator
+                            .ofBytes(userPasswordEntry.getValue().get().getBytes(StandardCharsets.UTF_8))
                             .asUtf8String().hexDecode().drain();
 
                     password = PasswordFactory

@@ -17,6 +17,7 @@ import org.eclipse.microprofile.config.spi.ConfigSource;
 
 import io.smallrye.config.Config;
 import io.smallrye.config.ConfigValue;
+import io.smallrye.config.SecretKeys;
 
 public class ConfigDescriptionsManager implements Supplier<ConfigDescriptionsManager> {
 
@@ -26,6 +27,7 @@ public class ConfigDescriptionsManager implements Supplier<ConfigDescriptionsMan
 
     private static final String QUOTED_DOT = "\".\"";
     private static final String QUOTED_DOT_KEY = "$$QUOTED_DOT$$";
+    private static final String SECRET_MASK = "***";
 
     volatile Map<ConfigSourceName, List<ConfigDescription>> values;
 
@@ -69,6 +71,11 @@ public class ConfigDescriptionsManager implements Supplier<ConfigDescriptionsMan
     }
 
     public Map<ConfigSourceName, List<ConfigDescription>> calculate() {
+        // secret values are masked in getConfigValue
+        return SecretKeys.doUnlocked(this::calculateUnlocked);
+    }
+
+    private Map<ConfigSourceName, List<ConfigDescription>> calculateUnlocked() {
         List<ConfigDescription> cd = new ArrayList<>(this.configDescriptions);
 
         Map<ConfigSourceName, List<ConfigDescription>> ordered = new TreeMap<>();
@@ -131,7 +138,7 @@ public class ConfigDescriptionsManager implements Supplier<ConfigDescriptionsMan
                     }
                 }
                 properties.add(item.getName());
-                item.setConfigValue(current.getConfigValue(item.getName()));
+                item.setConfigValue(getConfigValue(current, item.getName()));
 
                 String configSourceName = item.getConfigValue().getConfigSourceName();
                 int configSourceOrdinal = item.getConfigValue().getConfigSourceOrdinal();
@@ -217,7 +224,7 @@ public class ConfigDescriptionsManager implements Supplier<ConfigDescriptionsMan
                     item.getConfigPhase());
 
             properties.add(newDesc.getName());
-            newDesc.setConfigValue(current.getConfigValue(newDesc.getName()));
+            newDesc.setConfigValue(getConfigValue(current, newDesc.getName()));
 
             String configSourceName = newDesc.getConfigValue().getConfigSourceName();
             int configSourceOrdinal = newDesc.getConfigValue().getConfigSourceOrdinal();
@@ -248,7 +255,7 @@ public class ConfigDescriptionsManager implements Supplier<ConfigDescriptionsMan
             ConfigDescription newDesc = new ConfigDescription(expandedName, true);
 
             properties.add(newDesc.getName());
-            newDesc.setConfigValue(current.getConfigValue(newDesc.getName()));
+            newDesc.setConfigValue(getConfigValue(current, newDesc.getName()));
             String configSourceName = newDesc.getConfigValue().getConfigSourceName();
             int configSourceOrdinal = newDesc.getConfigValue().getConfigSourceOrdinal();
 
@@ -268,8 +275,8 @@ public class ConfigDescriptionsManager implements Supplier<ConfigDescriptionsMan
                     continue;
                 }
 
-                ConfigDescription item = new ConfigDescription(propertyName, null, null, current.getConfigValue(propertyName));
-                ConfigValue configValue = current.getConfigValue(propertyName);
+                ConfigValue configValue = getConfigValue(current, propertyName);
+                ConfigDescription item = new ConfigDescription(propertyName, null, null, configValue);
                 ConfigSourceName csn = new ConfigSourceName(configValue.getConfigSourceName(),
                         configValue.getConfigSourceOrdinal());
                 ordered.putIfAbsent(csn, new ArrayList<>());
@@ -283,6 +290,14 @@ public class ConfigDescriptionsManager implements Supplier<ConfigDescriptionsMan
         }
 
         return ordered;
+    }
+
+    private static ConfigValue getConfigValue(Config config, String name) {
+        ConfigValue configValue = config.getConfigValue(name);
+        if (configValue.isSecret() && configValue.getValue() != null) {
+            return configValue.from().withValue(SECRET_MASK).withRawValue(SECRET_MASK).build();
+        }
+        return configValue;
     }
 
     private String ensureQuoted(String part) {

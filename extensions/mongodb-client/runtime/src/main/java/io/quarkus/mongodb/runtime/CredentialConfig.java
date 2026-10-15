@@ -6,6 +6,7 @@ import java.util.Optional;
 import io.quarkus.runtime.annotations.ConfigDocMapKey;
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.quarkus.runtime.configuration.TrimmedStringConverter;
+import io.smallrye.config.Secret;
 import io.smallrye.config.WithConverter;
 
 /**
@@ -22,7 +23,7 @@ public interface CredentialConfig {
     /**
      * Configures the password.
      */
-    Optional<String> password();
+    Optional<Secret<String>> password();
 
     /**
      * Configures the authentication mechanism to use if a credential was supplied.

@@ -6,6 +6,7 @@ import java.util.Optional;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
 import io.smallrye.config.ConfigMapping;
+import io.smallrye.config.Secret;
 
 /**
  * See https://docs.wildfly.org/14/WildFly_Elytron_Security.html#validating-oauth2-bearer-tokens
@@ -24,7 +25,7 @@ public interface OAuth2RuntimeConfig {
      * The OAuth2 client secret used to validate the token.
      * Mandatory if the extension is enabled.
      */
-    Optional<String> clientSecret();
+    Optional<Secret<String>> clientSecret();
 
     /**
      * The OAuth2 introspection endpoint URL used to validate the token and gather the authentication claims.

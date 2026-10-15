@@ -39,6 +39,7 @@ import io.quarkus.vertx.http.runtime.security.annotation.BasicAuthentication;
 import io.quarkus.vertx.http.security.CSRF;
 import io.quarkus.vertx.http.security.HttpSecurity;
 import io.smallrye.config.Config;
+import io.smallrye.config.Secret;
 import io.vertx.core.http.ClientAuth;
 
 /**
@@ -153,7 +154,8 @@ public final class HttpSecurityConfiguration {
                 return (FormAuthenticationMechanism) additionalMechanism;
             }
         }
-        return new FormAuthenticationMechanism(httpConfig.auth().form(), httpConfig.encryptionKey());
+        return new FormAuthenticationMechanism(httpConfig.auth().form(),
+                httpConfig.encryptionKey().map(Secret::get));
     }
 
     MtlsAuthenticationMechanism getMtlsAuthenticationMechanism() {

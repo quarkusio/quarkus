@@ -69,10 +69,10 @@ public class GlobalConfigurationTest {
         assertThat(configRoot.formParamStyle().get()).isEqualTo(QueryParamStyle.COMMA_SEPARATED);
 
         assertThat(configRoot.trustStore().get()).isEqualTo("/path");
-        assertThat(configRoot.trustStorePassword().get()).isEqualTo("password");
+        assertThat(configRoot.trustStorePassword().get().get()).isEqualTo("password");
         assertThat(configRoot.trustStoreType().get()).isEqualTo("JKS");
         assertThat(configRoot.keyStore().get()).isEqualTo("/path");
-        assertThat(configRoot.keyStorePassword().get()).isEqualTo("password");
+        assertThat(configRoot.keyStorePassword().get().get()).isEqualTo("password");
         assertThat(configRoot.keyStoreType().get()).isEqualTo("JKS");
     }
 }

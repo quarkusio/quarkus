@@ -11,6 +11,7 @@ import io.quarkus.vertx.http.runtime.security.FormAuthenticationMechanism;
 import io.quarkus.vertx.http.runtime.security.HttpAuthenticationMechanism;
 import io.smallrye.common.annotation.Experimental;
 import io.smallrye.config.Config;
+import io.smallrye.config.Secret;
 
 /**
  * This class provides a way to create a Form-based authentication mechanism. The {@link HttpAuthenticationMechanism}
@@ -82,7 +83,7 @@ public interface Form {
             this.httpOnlyCookie = formAuthConfig.httpOnlyCookie();
             this.cookieSameSite = formAuthConfig.cookieSameSite();
             this.cookieMaxAge = formAuthConfig.cookieMaxAge();
-            this.encryptionKey = vertxHttpConfig.encryptionKey();
+            this.encryptionKey = vertxHttpConfig.encryptionKey().map(Secret::get);
             this.landingPageQueryParams = formAuthConfig.landingPageQueryParams();
             this.errorPageQueryParams = formAuthConfig.errorPageQueryParams();
             this.loginPageQueryParams = formAuthConfig.loginPageQueryParams();

@@ -518,7 +518,7 @@ public class OTelExporterRecorder {
                     proxyOptions.setUsername(proxyConfig.username().get());
                 }
                 if (proxyConfig.password().isPresent()) {
-                    proxyOptions.setPassword(proxyConfig.password().get());
+                    proxyOptions.setPassword(proxyConfig.password().get().get());
                 }
                 options.setProxyOptions(proxyOptions);
             } else {

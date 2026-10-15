@@ -8,6 +8,7 @@ import java.util.Set;
 import io.quarkus.vertx.http.security.CSRF;
 import io.smallrye.config.Config;
 import io.smallrye.config.ConfigInstanceBuilder;
+import io.smallrye.config.Secret;
 
 public final class RestCsrfBuilder implements CSRF.Builder {
 
@@ -21,7 +22,7 @@ public final class RestCsrfBuilder implements CSRF.Builder {
     private boolean cookieHttpOnly;
     private Optional<Set<String>> createTokenPath;
     private int tokenSize;
-    private Optional<String> tokenSignatureKey;
+    private Optional<Secret<String>> tokenSignatureKey;
     private boolean verifyToken;
     private boolean requireFormUrlEncoded;
 
@@ -121,7 +122,8 @@ public final class RestCsrfBuilder implements CSRF.Builder {
 
     @Override
     public CSRF.Builder tokenSignatureKey(String tokenSignatureKey) {
-        this.tokenSignatureKey = Optional.of(requireNonNull(tokenSignatureKey, "Token signature key"));
+        String key = requireNonNull(tokenSignatureKey, "Token signature key");
+        this.tokenSignatureKey = Optional.of(() -> key);
         return this;
     }
 

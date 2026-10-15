@@ -4,6 +4,7 @@ import java.nio.file.Path;
 import java.util.Optional;
 
 import io.quarkus.runtime.annotations.ConfigGroup;
+import io.smallrye.config.Secret;
 
 @ConfigGroup
 public interface P12KeyStoreConfig {
@@ -17,7 +18,7 @@ public interface P12KeyStoreConfig {
      * Password of the key store.
      * When not set, the password must be retrieved from the credential provider.
      */
-    Optional<String> password();
+    Optional<Secret<String>> password();
 
     /**
      * Alias of the private key and certificate in the key store.
@@ -28,7 +29,7 @@ public interface P12KeyStoreConfig {
      * Password of the alias in the key store.
      * If not set, the password will be retrieved from the credential provider.
      */
-    Optional<String> aliasPassword();
+    Optional<Secret<String>> aliasPassword();
 
     /**
      * Provider of the key store.

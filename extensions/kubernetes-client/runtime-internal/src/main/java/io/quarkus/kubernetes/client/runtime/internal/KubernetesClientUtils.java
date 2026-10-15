@@ -10,6 +10,8 @@ import io.fabric8.kubernetes.client.Config;
 import io.fabric8.kubernetes.client.ConfigBuilder;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClientBuilder;
+import io.smallrye.config.Secret;
+import io.smallrye.config.SecretKeys;
 
 public class KubernetesClientUtils {
 
@@ -42,8 +44,8 @@ public class KubernetesClientUtils {
         clientConfig.apiServerUrl().ifPresent(configBuilder::withMasterUrl);
         clientConfig.namespace().ifPresent(configBuilder::withNamespace);
         clientConfig.username().ifPresent(configBuilder::withUsername);
-        clientConfig.password().ifPresent(configBuilder::withPassword);
-        clientConfig.token().ifPresent(configBuilder::withOauthToken);
+        clientConfig.password().map(Secret::get).ifPresent(configBuilder::withPassword);
+        clientConfig.token().map(Secret::get).ifPresent(configBuilder::withOauthToken);
         clientConfig.caCertFile().ifPresent(configBuilder::withCaCertFile);
         clientConfig.caCertData().ifPresent(configBuilder::withCaCertData);
         clientConfig.clientCertFile().ifPresent(configBuilder::withClientCertFile);
@@ -51,11 +53,11 @@ public class KubernetesClientUtils {
         clientConfig.clientKeyFile().ifPresent(configBuilder::withClientKeyFile);
         clientConfig.clientKeyData().ifPresent(configBuilder::withClientKeyData);
         clientConfig.clientKeyAlgo().ifPresent(configBuilder::withClientKeyAlgo);
-        clientConfig.clientKeyPassphrase().ifPresent(configBuilder::withClientKeyPassphrase);
+        clientConfig.clientKeyPassphrase().map(Secret::get).ifPresent(configBuilder::withClientKeyPassphrase);
         clientConfig.httpProxy().ifPresent(configBuilder::withHttpProxy);
         clientConfig.httpsProxy().ifPresent(configBuilder::withHttpsProxy);
         clientConfig.proxyUsername().ifPresent(configBuilder::withProxyUsername);
-        clientConfig.proxyPassword().ifPresent(configBuilder::withProxyPassword);
+        clientConfig.proxyPassword().map(Secret::get).ifPresent(configBuilder::withProxyPassword);
         clientConfig.noProxy().ifPresent(list -> configBuilder.withNoProxy(list.toArray(new String[0])));
         clientConfig.requestRetryBackoffInterval()
                 .ifPresent(d -> configBuilder.withRequestRetryBackoffInterval(millisAsInt(d)));
@@ -93,8 +95,8 @@ public class KubernetesClientUtils {
                 .ifPresent(configBuilder::withMasterUrl);
         optional(config, "namespace", String.class).ifPresent(configBuilder::withNamespace);
         optional(config, "username", String.class).ifPresent(configBuilder::withUsername);
-        optional(config, "password", String.class).ifPresent(configBuilder::withPassword);
-        optional(config, "token", String.class).ifPresent(configBuilder::withOauthToken);
+        secret(config, "password").ifPresent(configBuilder::withPassword);
+        secret(config, "token").ifPresent(configBuilder::withOauthToken);
         optional(config, "ca-cert-file", String.class).ifPresent(configBuilder::withCaCertFile);
         optional(config, "ca-cert-data", String.class).ifPresent(configBuilder::withCaCertData);
         optional(config, "client-cert-file", String.class).ifPresent(configBuilder::withClientCertFile);
@@ -102,11 +104,11 @@ public class KubernetesClientUtils {
         optional(config, "client-key-file", String.class).ifPresent(configBuilder::withClientKeyFile);
         optional(config, "client-key-data", String.class).ifPresent(configBuilder::withClientKeyData);
         optional(config, "client-key-algo", String.class).ifPresent(configBuilder::withClientKeyAlgo);
-        optional(config, "client-key-passphrase", String.class).ifPresent(configBuilder::withClientKeyPassphrase);
+        secret(config, "client-key-passphrase").ifPresent(configBuilder::withClientKeyPassphrase);
         optional(config, "http-proxy", String.class).ifPresent(configBuilder::withHttpProxy);
         optional(config, "https-proxy", String.class).ifPresent(configBuilder::withHttpsProxy);
         optional(config, "proxy-username", String.class).ifPresent(configBuilder::withProxyUsername);
-        optional(config, "proxy-password", String.class).ifPresent(configBuilder::withProxyPassword);
+        secret(config, "proxy-password").ifPresent(configBuilder::withProxyPassword);
         optional(config, "no-proxy", String[].class).ifPresent(configBuilder::withNoProxy);
         optional(config, "request-retry-backoff-interval", Duration.class)
                 .ifPresent(d -> configBuilder.withRequestRetryBackoffInterval(millisAsInt(d)));
@@ -124,6 +126,11 @@ public class KubernetesClientUtils {
 
     private static <T> Optional<T> optional(io.smallrye.config.Config config, String key, Class<T> valueType) {
         return config.getOptionalValue(PREFIX + key, valueType);
+    }
+
+    // secret keys must be read unlocked
+    private static Optional<String> secret(io.smallrye.config.Config config, String key) {
+        return SecretKeys.doUnlocked(() -> optional(config, key, String.class));
     }
 
     private static int millisAsInt(Duration duration) {

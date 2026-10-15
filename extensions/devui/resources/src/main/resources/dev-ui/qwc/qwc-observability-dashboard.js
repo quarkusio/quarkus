@@ -13,6 +13,7 @@ import 'echarts-histogram';
 import 'echarts-gauge';
 import '@vaadin/button';
 import '@vaadin/icon';
+import '@vaadin/menu-bar';
 import '@vaadin/tabs';
 import '@vaadin/grid';
 
@@ -1010,7 +1011,7 @@ export class QwcObservabilityDashboard extends ObservabilityCardBase {
      * was actually measured. Every row carries the same columns, blank where the meter has no
      * distribution, because the CSV header is taken from the first row.
      */
-    _export() {
+    _metricsExportData() {
         const rows = [];
         const carded = new Set(this._selectedMetricNames());
         Object.entries(this._sections).filter(([name]) => carded.has(name)).forEach(([name, byKey]) => {
@@ -1030,7 +1031,53 @@ export class QwcObservabilityDashboard extends ObservabilityCardBase {
                 });
             });
         });
-        this.exportCsv(rows, 'metrics.csv');
+        return { rows, filename: 'metrics.csv' };
+    }
+
+    /**
+     * What the Export button offers: metrics while any metric has a card, and every signal card
+     * on screen, plus "All" once there is more than one. Labelled by the signal's title, so the
+     * developer picks the telemetry rather than getting every file at once.
+     */
+    _exportMenu(shown) {
+        const items = [];
+        if (this._metricsAvailable && this._selectedMetricNames().length > 0) {
+            items.push({ text: 'Metrics', exportKey: METRICS_SIGNAL });
+        }
+        shown.filter(id => id.startsWith(SIGNAL_PREFIX))
+            .forEach(id => items.push({ text: this._signalFor(id).title, exportKey: id }));
+        if (items.length > 1) {
+            items.push({ component: 'hr' });
+            items.push({ text: 'All', exportKey: items.filter(i => i.exportKey).map(i => i.exportKey) });
+        }
+        if (items.length === 0) {
+            return null;
+        }
+        // Memoized: the dashboard re-renders on every sample, and handing the menu bar new items
+        // each time would rebuild it, closing the list while the developer is choosing from it.
+        const signature = JSON.stringify(items);
+        if (this._exportMenuSignature !== signature) {
+            this._exportMenuSignature = signature;
+            this._exportMenuItems = [{ text: 'Export CSV', children: items }];
+        }
+        return this._exportMenuItems;
+    }
+
+    _onExportSelected(e) {
+        const key = e.detail.value.exportKey;
+        if (key === undefined) {
+            return; // the top-level "Export CSV" item, which only opens the list
+        }
+        (Array.isArray(key) ? key : [key]).forEach(k => {
+            const data = k === METRICS_SIGNAL ? this._metricsExportData() : this._signalExportData(k);
+            this.exportCsv(data?.rows, data?.filename);
+        });
+    }
+
+    /** Asks the component embedded in a signal card for its rows; see ObservabilityCardBase. */
+    _signalExportData(id) {
+        const widget = this.renderRoot.querySelector(`.card[data-card="${CSS.escape(id)}"] .card-body > *`);
+        return widget?.exportData?.() ?? null;
     }
 
     /**
@@ -1168,6 +1215,7 @@ export class QwcObservabilityDashboard extends ObservabilityCardBase {
         // leaving the page showing nothing.
         const maximized = cards.includes(this._maximized) ? this._maximized : null;
         const shown = maximized === null ? cards : [maximized];
+        const exportMenu = this._exportMenu(shown);
         return html`
             <div class="toolbar">
                 ${maximized === null ? '' : html`
@@ -1178,11 +1226,10 @@ export class QwcObservabilityDashboard extends ObservabilityCardBase {
                                    title="Discard the points captured so far and start the charts again">
                         <vaadin-icon icon="font-awesome-solid:eraser" slot="prefix"></vaadin-icon>
                         Clear history
-                    </vaadin-button>
-                    <vaadin-button theme="small" @click=${this._export}>
-                        <vaadin-icon icon="font-awesome-solid:file-csv" slot="prefix"></vaadin-icon>
-                        Export CSV
                     </vaadin-button>` : ''}
+                ${exportMenu === null ? '' : html`
+                    <vaadin-menu-bar theme="small dropdown-indicators" .items=${exportMenu}
+                                     @item-selected=${this._onExportSelected}></vaadin-menu-bar>`}
                 ${this._exportableToGrafana(cards) ? html`
                     <vaadin-button theme="small" @click=${this._exportGrafana}
                                    title="Download this dashboard as a Grafana dashboard, to import into the Grafana holding the same telemetry">
@@ -1240,14 +1287,14 @@ export class QwcObservabilityDashboard extends ObservabilityCardBase {
         const page = this._pageFor(signal);
         const tag = this._tag(page.componentName);
         return html`
-            <div class="${this._cardClass(id, true)}"
+            <div class="${this._cardClass(id, true)}" data-card="${id}"
                  @dragover=${e => this._onDragOver(e, id)} @drop=${e => this._onDrop(e, id)}>
                 ${this._renderCardHeader(id, html`
                     <vaadin-icon icon="${signal.icon}"></vaadin-icon>
                     <span class="title">${signal.title}</span>
                     <vaadin-button theme="tertiary small"
                                    @click=${() => this.routerController.goToPath('/' + page.id)}>Open</vaadin-button>`)}
-                <div class="card-body">${staticHtml`<${tag}></${tag}>`}</div>
+                <div class="card-body">${staticHtml`<${tag} embedded></${tag}>`}</div>
             </div>`;
     }
 
@@ -1271,7 +1318,7 @@ export class QwcObservabilityDashboard extends ObservabilityCardBase {
                         : html`
                             <div class="caption">${plot.caption}</div>
                             ${this._renderPercentileSummary(name, plot)}
-                            ${this._renderPlot(name, plot)}`}
+                            ${this._renderPlot(name, plot, maximized)}`}
                 </div>
             </div>`;
     }
@@ -1411,7 +1458,11 @@ export class QwcObservabilityDashboard extends ObservabilityCardBase {
         return summary === null ? '' : html`<div class="caption percentiles">${summary}</div>`;
     }
 
-    _renderPlot(name, plot) {
+    /**
+     * The legend only shows on a maximized card. In the grid it would take a third of a narrow
+     * card and still crop long tag combinations; the axis tooltip names every series anyway.
+     */
+    _renderPlot(name, plot, maximized) {
         if (plot.kind === 'histogram') {
             return html`<echarts-histogram buckets=${this._bucketsFor(name, plot)}></echarts-histogram>`;
         }
@@ -1436,6 +1487,7 @@ export class QwcObservabilityDashboard extends ObservabilityCardBase {
         return html`
             <echarts-line series=${this._seriesFor(name, plot)}
                           ?step=${plot.kind === 'step'}
+                          .showLegend=${maximized}
                           .valueFormatter=${format}></echarts-line>`;
     }
 }

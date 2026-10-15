@@ -41,7 +41,8 @@ class EchartsLine extends EchartsAbstractCanvas {
         const format = this.valueFormatter;
 
         const option = {};
-        option.tooltip = { trigger: "axis", valueFormatter: format ?? undefined };
+        // Appended to the body so the tooltip is not clipped by whatever card or panel holds the chart.
+        option.tooltip = { trigger: "axis", appendTo: "body", valueFormatter: format ?? undefined };
         if (this.showLegend) {
             // Vertical legend on the right so long series names (tag combinations) read on one line
             // each instead of wrapping across the top of the plot. Long names are truncated to keep
@@ -90,8 +91,9 @@ class EchartsLine extends EchartsAbstractCanvas {
     // re-seeds and calls reload() on becoming visible again. When visible, defer to the
     // base class rendering.
     updated(changedProps) {
+        // showLegend included: reload() replaces the option, which is the only way to drop a legend.
         const redraw = changedProps.has('series') || changedProps.has('step')
-            || changedProps.has('valueFormatter');
+            || changedProps.has('valueFormatter') || changedProps.has('showLegend');
         if (redraw && this._chart && !document.hidden) {
             this.reload();
         }

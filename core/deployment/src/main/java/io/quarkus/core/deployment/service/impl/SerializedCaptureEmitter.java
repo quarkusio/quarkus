@@ -113,6 +113,7 @@ final class SerializedCaptureEmitter {
                 doDedup = true;
                 yield res;
             }
+            case SerializedJavaTime sjt -> emitJavaTime(sjt);
             default -> throw new LambdaTransliterator.TransliterationException(
                     "Unsupported serialized type: " + serialized.getClass().getName());
         };
@@ -267,6 +268,167 @@ final class SerializedCaptureEmitter {
             case RUNTIME -> code -> {
                 code.invokestatic(CD_Thread, "currentThread", MethodTypeDesc.of(CD_Thread));
                 code.invokevirtual(CD_Thread, "getContextClassLoader", MethodTypeDesc.of(CD_ClassLoader));
+            };
+        };
+    }
+
+    // ── java.time types ──
+
+    private static final ClassDesc CD_Duration = ClassDesc.of("java.time.Duration");
+    private static final ClassDesc CD_Instant = ClassDesc.of("java.time.Instant");
+    private static final ClassDesc CD_LocalDate = ClassDesc.of("java.time.LocalDate");
+    private static final ClassDesc CD_LocalTime = ClassDesc.of("java.time.LocalTime");
+    private static final ClassDesc CD_LocalDateTime = ClassDesc.of("java.time.LocalDateTime");
+    private static final ClassDesc CD_ZoneOffset = ClassDesc.of("java.time.ZoneOffset");
+    private static final ClassDesc CD_ZoneId = ClassDesc.of("java.time.ZoneId");
+    private static final ClassDesc CD_ZonedDateTime = ClassDesc.of("java.time.ZonedDateTime");
+    private static final ClassDesc CD_OffsetTime = ClassDesc.of("java.time.OffsetTime");
+    private static final ClassDesc CD_OffsetDateTime = ClassDesc.of("java.time.OffsetDateTime");
+    private static final ClassDesc CD_Year = ClassDesc.of("java.time.Year");
+    private static final ClassDesc CD_YearMonth = ClassDesc.of("java.time.YearMonth");
+    private static final ClassDesc CD_MonthDay = ClassDesc.of("java.time.MonthDay");
+    private static final ClassDesc CD_Period = ClassDesc.of("java.time.Period");
+
+    private static final ClassDesc CD_String = ConstantDescs.CD_String;
+
+    /**
+     * Emit bytecode to reconstruct a {@code java.time} value from its decomposed fields.
+     * <p>
+     * Simple types emit a sequence of constant loads followed by a static factory call.
+     * Composite types (e.g. {@code ZonedDateTime}) first construct their component objects
+     * on the operand stack, then invoke the composite factory method.
+     */
+    private static CaptureEmitter emitJavaTime(SerializedJavaTime sjt) {
+        return switch (sjt) {
+            case SerializedJavaTime.OfDuration d -> code -> {
+                code.loadConstant(d.seconds());
+                code.loadConstant((long) d.nanos());
+                code.invokestatic(CD_Duration, "ofSeconds",
+                        MethodTypeDesc.of(CD_Duration, CD_long, CD_long));
+            };
+            case SerializedJavaTime.OfInstant i -> code -> {
+                code.loadConstant(i.seconds());
+                code.loadConstant((long) i.nanos());
+                code.invokestatic(CD_Instant, "ofEpochSecond",
+                        MethodTypeDesc.of(CD_Instant, CD_long, CD_long));
+            };
+            case SerializedJavaTime.OfLocalDate ld -> code -> {
+                code.loadConstant(ld.year());
+                code.loadConstant(ld.month());
+                code.loadConstant(ld.day());
+                code.invokestatic(CD_LocalDate, "of",
+                        MethodTypeDesc.of(CD_LocalDate, CD_int, CD_int, CD_int));
+            };
+            case SerializedJavaTime.OfLocalTime lt -> code -> {
+                code.loadConstant(lt.hour());
+                code.loadConstant(lt.minute());
+                code.loadConstant(lt.second());
+                code.loadConstant(lt.nano());
+                code.invokestatic(CD_LocalTime, "of",
+                        MethodTypeDesc.of(CD_LocalTime, CD_int, CD_int, CD_int, CD_int));
+            };
+            case SerializedJavaTime.OfLocalDateTime ldt -> code -> {
+                code.loadConstant(ldt.year());
+                code.loadConstant(ldt.month());
+                code.loadConstant(ldt.day());
+                code.loadConstant(ldt.hour());
+                code.loadConstant(ldt.minute());
+                code.loadConstant(ldt.second());
+                code.loadConstant(ldt.nano());
+                code.invokestatic(CD_LocalDateTime, "of",
+                        MethodTypeDesc.of(CD_LocalDateTime, CD_int, CD_int, CD_int, CD_int, CD_int, CD_int, CD_int));
+            };
+            case SerializedJavaTime.OfZoneOffset zo -> code -> {
+                code.loadConstant(zo.totalSeconds());
+                code.invokestatic(CD_ZoneOffset, "ofTotalSeconds",
+                        MethodTypeDesc.of(CD_ZoneOffset, CD_int));
+            };
+            case SerializedJavaTime.OfZoneId z -> code -> {
+                code.loadConstant(z.id());
+                code.invokestatic(CD_ZoneId, "of",
+                        MethodTypeDesc.of(CD_ZoneId, CD_String));
+            };
+            case SerializedJavaTime.OfZonedDateTime zdt -> code -> {
+                // LocalDateTime.of(year, month, day, hour, minute, second, nano)
+                code.loadConstant(zdt.year());
+                code.loadConstant(zdt.month());
+                code.loadConstant(zdt.day());
+                code.loadConstant(zdt.hour());
+                code.loadConstant(zdt.minute());
+                code.loadConstant(zdt.second());
+                code.loadConstant(zdt.nano());
+                code.invokestatic(CD_LocalDateTime, "of",
+                        MethodTypeDesc.of(CD_LocalDateTime, CD_int, CD_int, CD_int, CD_int, CD_int, CD_int, CD_int));
+                // ZoneOffset.ofTotalSeconds(offsetTotalSeconds)
+                code.loadConstant(zdt.offsetTotalSeconds());
+                code.invokestatic(CD_ZoneOffset, "ofTotalSeconds",
+                        MethodTypeDesc.of(CD_ZoneOffset, CD_int));
+                // ZoneId.of(zoneId)
+                code.loadConstant(zdt.zoneId());
+                code.invokestatic(CD_ZoneId, "of",
+                        MethodTypeDesc.of(CD_ZoneId, CD_String));
+                // ZonedDateTime.ofStrict(LocalDateTime, ZoneOffset, ZoneId)
+                code.invokestatic(CD_ZonedDateTime, "ofStrict",
+                        MethodTypeDesc.of(CD_ZonedDateTime, CD_LocalDateTime, CD_ZoneOffset, CD_ZoneId));
+            };
+            case SerializedJavaTime.OfOffsetTime ot -> code -> {
+                // LocalTime.of(hour, minute, second, nano)
+                code.loadConstant(ot.hour());
+                code.loadConstant(ot.minute());
+                code.loadConstant(ot.second());
+                code.loadConstant(ot.nano());
+                code.invokestatic(CD_LocalTime, "of",
+                        MethodTypeDesc.of(CD_LocalTime, CD_int, CD_int, CD_int, CD_int));
+                // ZoneOffset.ofTotalSeconds(offsetTotalSeconds)
+                code.loadConstant(ot.offsetTotalSeconds());
+                code.invokestatic(CD_ZoneOffset, "ofTotalSeconds",
+                        MethodTypeDesc.of(CD_ZoneOffset, CD_int));
+                // OffsetTime.of(LocalTime, ZoneOffset)
+                code.invokestatic(CD_OffsetTime, "of",
+                        MethodTypeDesc.of(CD_OffsetTime, CD_LocalTime, CD_ZoneOffset));
+            };
+            case SerializedJavaTime.OfOffsetDateTime odt -> code -> {
+                // LocalDateTime.of(year, month, day, hour, minute, second, nano)
+                code.loadConstant(odt.year());
+                code.loadConstant(odt.month());
+                code.loadConstant(odt.day());
+                code.loadConstant(odt.hour());
+                code.loadConstant(odt.minute());
+                code.loadConstant(odt.second());
+                code.loadConstant(odt.nano());
+                code.invokestatic(CD_LocalDateTime, "of",
+                        MethodTypeDesc.of(CD_LocalDateTime, CD_int, CD_int, CD_int, CD_int, CD_int, CD_int, CD_int));
+                // ZoneOffset.ofTotalSeconds(offsetTotalSeconds)
+                code.loadConstant(odt.offsetTotalSeconds());
+                code.invokestatic(CD_ZoneOffset, "ofTotalSeconds",
+                        MethodTypeDesc.of(CD_ZoneOffset, CD_int));
+                // OffsetDateTime.of(LocalDateTime, ZoneOffset)
+                code.invokestatic(CD_OffsetDateTime, "of",
+                        MethodTypeDesc.of(CD_OffsetDateTime, CD_LocalDateTime, CD_ZoneOffset));
+            };
+            case SerializedJavaTime.OfYear y -> code -> {
+                code.loadConstant(y.year());
+                code.invokestatic(CD_Year, "of",
+                        MethodTypeDesc.of(CD_Year, CD_int));
+            };
+            case SerializedJavaTime.OfYearMonth ym -> code -> {
+                code.loadConstant(ym.year());
+                code.loadConstant(ym.month());
+                code.invokestatic(CD_YearMonth, "of",
+                        MethodTypeDesc.of(CD_YearMonth, CD_int, CD_int));
+            };
+            case SerializedJavaTime.OfMonthDay md -> code -> {
+                code.loadConstant(md.month());
+                code.loadConstant(md.day());
+                code.invokestatic(CD_MonthDay, "of",
+                        MethodTypeDesc.of(CD_MonthDay, CD_int, CD_int));
+            };
+            case SerializedJavaTime.OfPeriod p -> code -> {
+                code.loadConstant(p.years());
+                code.loadConstant(p.months());
+                code.loadConstant(p.days());
+                code.invokestatic(CD_Period, "of",
+                        MethodTypeDesc.of(CD_Period, CD_int, CD_int, CD_int));
             };
         };
     }
@@ -660,6 +822,8 @@ final class SerializedCaptureEmitter {
                 ca.descriptorString().compareTo(((SerializedClass) b).descriptorString());
             case SerializedEnum ea ->
                 compareEnums(ea, (SerializedEnum) b);
+            case SerializedJavaTime ja ->
+                compareJavaTime(ja, (SerializedJavaTime) b);
             default -> throw new LambdaTransliterator.TransliterationException(
                     "Cannot deterministically sort serialized value of type "
                             + a.getClass().getName()
@@ -678,7 +842,8 @@ final class SerializedCaptureEmitter {
             case SerializedConfigMapping ignored -> 3;
             case SerializedClass ignored -> 4;
             case SerializedEnum ignored -> 5;
-            default -> 6;
+            case SerializedJavaTime ignored -> 6;
+            default -> 7;
         };
     }
 
@@ -710,6 +875,19 @@ final class SerializedCaptureEmitter {
             return c;
         }
         return a.constantName().string().compareTo(b.constantName().string());
+    }
+
+    /**
+     * Compare two {@link SerializedJavaTime} values by their record type name,
+     * then by field values in declaration order.
+     */
+    private static int compareJavaTime(SerializedJavaTime a, SerializedJavaTime b) {
+        int c = a.getClass().getSimpleName().compareTo(b.getClass().getSimpleName());
+        if (c != 0) {
+            return c;
+        }
+        // same record type — compare field values via toString (records have deterministic toString)
+        return a.toString().compareTo(b.toString());
     }
 
     /**

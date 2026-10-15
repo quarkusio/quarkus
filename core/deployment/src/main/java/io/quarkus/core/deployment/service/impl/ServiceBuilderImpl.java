@@ -480,6 +480,12 @@ final class ServiceBuilderImpl<T> {
     }
 
     private static void checkServiceType(Class<?> type) {
+        if (type.isPrimitive()) {
+            throw new IllegalArgumentException("Primitive types cannot be used as service types: " + type.getName());
+        }
+        if (type.isArray()) {
+            throw new IllegalArgumentException("Array types cannot be used as service types: " + type.getName());
+        }
         if (type.getTypeParameters().length > 0) {
             throw new IllegalArgumentException("Generic types cannot be used as service types: " + type.getName());
         }

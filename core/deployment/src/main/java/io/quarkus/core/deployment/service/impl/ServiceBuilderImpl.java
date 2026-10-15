@@ -160,6 +160,12 @@ final class ServiceBuilderImpl<T> {
                                 + " cannot be required by a static-init service action: "
                                 + "it is not available during static initialization.");
             }
+            if (phase == ConfigPhase.BUILD_AND_RUN_TIME_FIXED) {
+                throw new IllegalArgumentException(
+                        "Build-and-run-time-fixed configuration " + type.getName()
+                                + " cannot be required by a service action: "
+                                + "capture it in the lambda instead.");
+            }
             // config-direct: resolved from SmallRye Config, not the service values map
             dependencies.add(new Dependency(type, name, (injected ? Dependency.FL_INJECTED : 0) | Dependency.FL_CONFIG_DIRECT));
             return;

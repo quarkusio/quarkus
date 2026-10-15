@@ -33,6 +33,7 @@ import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.StartupContext;
 import io.smallrye.classfile.BootstrapMethodEntry;
 import io.smallrye.classfile.ClassFile;
+import io.smallrye.classfile.ClassHierarchyResolver;
 import io.smallrye.classfile.ClassModel;
 import io.smallrye.classfile.CodeBuilder;
 import io.smallrye.classfile.CodeElement;
@@ -324,18 +325,21 @@ public final class LambdaTransliterator {
      *
      * @param classInternalName the internal name for the generated class (using {@code /} separators)
      * @param actions the list of actions to include (must not be empty)
+     * @param classHierarchyResolver the resolver for class hierarchy information needed by stack map generation
      * @return a map of internal class name → class file bytes including the
      *         consolidated class itself plus any copied anonymous inner classes
      */
     public static Map<String, byte[]> generateConsolidatedClass(
             String classInternalName,
-            List<TransliteratedAction> actions) {
+            List<TransliteratedAction> actions,
+            ClassHierarchyResolver classHierarchyResolver) {
         ClassDesc generatedClassDesc = ExtraClassDesc.ofInternalName(classInternalName);
+        ClassFile cf = ClassFile.of(ClassFile.ClassHierarchyResolverOption.of(classHierarchyResolver));
 
         Map<String, AnonClassEntry> classRemapTable = new LinkedHashMap<>();
         int[] anonCounter = { 0 };
 
-        byte[] consolidatedBytes = ClassFile.of().build(generatedClassDesc, cb -> {
+        byte[] consolidatedBytes = cf.build(generatedClassDesc, cb -> {
             cb.withVersion(ClassFile.JAVA_21_VERSION, 0);
             cb.withFlags(ClassFile.ACC_PUBLIC | ClassFile.ACC_FINAL | ClassFile.ACC_SUPER);
 
@@ -436,11 +440,11 @@ public final class LambdaTransliterator {
                         ExtraClassDesc.ofInternalName(entry.getValue().newInternalName()));
             }
             // remap remaining references in method descriptors and invokedynamic types
-            ClassModel consolidatedModel = ClassFile.of().parse(consolidatedBytes);
-            consolidatedBytes = ClassRemapper.of(descMap).remapClass(ClassFile.of(), consolidatedModel);
+            ClassModel consolidatedModel = cf.parse(consolidatedBytes);
+            consolidatedBytes = ClassRemapper.of(descMap).remapClass(cf, consolidatedModel);
             for (var entry : classRemapTable.entrySet()) {
                 result.put(entry.getValue().newInternalName(),
-                        copyInnerClass(entry.getKey(), entry.getValue(),
+                        copyInnerClass(cf, entry.getKey(), entry.getValue(),
                                 descMap, consolidatedDesc));
             }
         }
@@ -1128,6 +1132,7 @@ public final class LambdaTransliterator {
      * handle correctly because the original enclosing class is not in the
      * remap map.
      *
+     * @param cf the configured {@link ClassFile} instance (with class hierarchy resolver)
      * @param originalInternalName the internal name of the original anonymous class
      * @param mapping the remap entry with new name and enclosing method info
      * @param descMap the ClassDesc remap map (original → new) for ClassRemapper
@@ -1135,20 +1140,21 @@ public final class LambdaTransliterator {
      * @return the transformed class file bytes
      */
     private static byte[] copyInnerClass(
+            ClassFile cf,
             String originalInternalName,
             AnonClassEntry mapping,
             Map<ClassDesc, ClassDesc> descMap,
             ClassDesc consolidatedClassDesc) {
         byte[] originalBytes = loadClassBytes(originalInternalName);
-        ClassModel cm = ClassFile.of().parse(originalBytes);
+        ClassModel cm = cf.parse(originalBytes);
 
         // Pass 1: remap all class references including the class name
-        byte[] remapped = ClassRemapper.of(descMap).remapClass(ClassFile.of(), cm);
+        byte[] remapped = ClassRemapper.of(descMap).remapClass(cf, cm);
 
         // Pass 2: fix nest/inner class/enclosing method attributes
-        ClassModel remappedModel = ClassFile.of().parse(remapped);
+        ClassModel remappedModel = cf.parse(remapped);
         ClassDesc newClassDesc = remappedModel.thisClass().asSymbol();
-        return ClassFile.of().transformClass(remappedModel, (cb, ce) -> {
+        return cf.transformClass(remappedModel, (cb, ce) -> {
             if (ce instanceof NestHostAttribute) {
                 cb.with(NestHostAttribute.of(consolidatedClassDesc));
             } else if (ce instanceof InnerClassesAttribute) {

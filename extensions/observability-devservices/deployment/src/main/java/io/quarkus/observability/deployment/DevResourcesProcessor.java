@@ -6,7 +6,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import io.quarkus.core.deployment.service.ServiceRegistrar;
-import io.quarkus.core.impl.LastShutdownTasks;
 import io.quarkus.deployment.IsDevResourcesSupportedByLaunchMode;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -46,7 +45,7 @@ class DevResourcesProcessor {
     public DevResourcesBuildItem shutdownDevResources(ServiceRegistrar serviceRegistrar) {
         serviceRegistrar
                 .forService("io.quarkus.observability.dev-resources.shutdown")
-                .onStart(ctx -> LastShutdownTasks.addRuntime(DevResources::stop));
+                .onStart(ctx -> ctx.onStop(DevResources::stop));
         return new DevResourcesBuildItem();
     }
 

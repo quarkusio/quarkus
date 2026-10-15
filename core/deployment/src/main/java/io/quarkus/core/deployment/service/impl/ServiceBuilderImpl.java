@@ -147,6 +147,12 @@ final class ServiceBuilderImpl<T> {
         checkServiceType(type);
         ConfigRoot configRoot = ConfigMappingDetector.findConfigRoot(type);
         if (configRoot != null) {
+            if (!name.isEmpty()) {
+                throw new IllegalArgumentException(
+                        "Configuration mapping " + type.getName()
+                                + " cannot have a service name: "
+                                + "config mappings are identified by type alone.");
+            }
             ConfigPhase phase = configRoot.phase();
             if (phase == ConfigPhase.BUILD_TIME) {
                 throw new IllegalArgumentException(

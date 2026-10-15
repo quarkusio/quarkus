@@ -5,6 +5,9 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.fail;
 
 import java.io.IOException;
+import java.lang.reflect.ParameterizedType;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletionStage;
 
 import jakarta.enterprise.inject.spi.DefinitionException;
@@ -75,6 +78,37 @@ public class MediatorConfigurationSupportTest {
         } catch (ClassNotFoundException e) {
             throw new IllegalStateException(e);
         }
+    }
+
+    @Test
+    public void testGenericIngestedPayloadTypes() {
+        MediatorConfigurationSupport support = create("subscriberSinkOfMessageOfList");
+        MediatorConfigurationSupport.ValidationOutput output = support.validate(Shape.SUBSCRIBER, null);
+        assertThat(output.getConsumption()).isEqualTo(MediatorConfiguration.Consumption.MESSAGE);
+        assertThat(output.getIngestedPayloadType()).isInstanceOfSatisfying(ParameterizedType.class, type -> {
+            assertThat(type.getRawType()).isEqualTo(List.class);
+            assertThat(type.getActualTypeArguments()).containsExactly(String.class);
+        });
+
+        support = create("subscriberSinkOfMessageOfMapCompletionStage");
+        output = support.validate(Shape.SUBSCRIBER, null);
+        assertThat(output.getConsumption()).isEqualTo(MediatorConfiguration.Consumption.MESSAGE);
+        assertThat(output.getIngestedPayloadType()).isInstanceOfSatisfying(ParameterizedType.class, type -> {
+            assertThat(type.getRawType()).isEqualTo(Map.class);
+            assertThat(type.getActualTypeArguments()).containsExactly(String.class, Integer.class);
+        });
+
+        support = create("processorMultiOfMessageOfList");
+        output = support.validate(Shape.STREAM_TRANSFORMER, null);
+        assertThat(output.getConsumption()).isEqualTo(MediatorConfiguration.Consumption.STREAM_OF_MESSAGE);
+        assertThat(output.getIngestedPayloadType()).isInstanceOfSatisfying(ParameterizedType.class, type -> {
+            assertThat(type.getRawType()).isEqualTo(List.class);
+            assertThat(type.getActualTypeArguments()).containsExactly(String.class);
+        });
+
+        support = create("subscriberSinkOfMessageCompletionStage");
+        output = support.validate(Shape.SUBSCRIBER, null);
+        assertThat(output.getIngestedPayloadType()).isEqualTo(Person.class);
     }
 
     @Test
@@ -496,6 +530,18 @@ public class MediatorConfigurationSupportTest {
         }
 
         SubscriberBuilder<Person, Void> subscriberSubscriberBuilderOfPayload() {
+            return null;
+        }
+
+        CompletionStage<Void> subscriberSinkOfMessageOfList(Message<List<String>> p) {
+            return null;
+        }
+
+        CompletionStage<Void> subscriberSinkOfMessageOfMapCompletionStage(Message<Map<String, Integer>> p) {
+            return null;
+        }
+
+        Multi<String> processorMultiOfMessageOfList(Multi<Message<List<String>>> p) {
             return null;
         }
 

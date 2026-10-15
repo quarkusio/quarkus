@@ -26,9 +26,9 @@ import java.util.function.UnaryOperator;
 
 import org.jboss.logging.Logger;
 
-import io.quarkus.core.impl.ServiceGraph;
-import io.quarkus.core.impl.ServiceNode;
-import io.quarkus.core.impl.SortedNullSafeMap;
+import io.quarkus.core.service.impl.ServiceGraph;
+import io.quarkus.core.service.impl.ServiceNode;
+import io.quarkus.core.util.SortedNullSafeMap;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.StartupContext;
 import io.smallrye.classfile.BootstrapMethodEntry;

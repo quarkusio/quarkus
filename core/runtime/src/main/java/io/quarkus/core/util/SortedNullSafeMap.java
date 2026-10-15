@@ -1,4 +1,4 @@
-package io.quarkus.core.impl;
+package io.quarkus.core.util;
 
 import java.util.Collections;
 import java.util.Map;

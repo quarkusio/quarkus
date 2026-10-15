@@ -166,9 +166,10 @@ serviceRegistrar.forService("io.quarkus.my-ext.setup")
 #### Config mappings
 
 - `BUILD_TIME` — extract values into locals before the lambda.
-- `BUILD_AND_RUN_TIME_FIXED` — use `.require(ConfigType.class)` (resolved
-  directly from SmallRye Config, no graph edge).
-- `RUN_TIME` — use `.require(ConfigType.class)` (same mechanism).
+- `BUILD_AND_RUN_TIME_FIXED` — capture directly (available at both build
+  and runtime, captured via `ConfigCaptureInterceptor`).
+- `RUN_TIME` — use `.require(ConfigType.class)` (injected as a service
+  dependency).
 
 ### 5. Stop ordering with `before()`
 

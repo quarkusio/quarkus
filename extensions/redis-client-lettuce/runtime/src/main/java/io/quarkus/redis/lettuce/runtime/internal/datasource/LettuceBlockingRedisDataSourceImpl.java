@@ -14,8 +14,6 @@ import java.util.function.Supplier;
 
 import org.jboss.logging.Logger;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-
 import io.quarkus.redis.datasource.ReactiveRedisDataSource;
 import io.quarkus.redis.datasource.RedisDataSource;
 import io.quarkus.redis.datasource.autosuggest.AutoSuggestCommands;
@@ -72,6 +70,7 @@ import io.quarkus.redis.runtime.datasource.OptimisticLockingTransactionResultImp
 import io.quarkus.redis.runtime.datasource.TransactionResultImpl;
 import io.vertx.redis.client.Command;
 import io.vertx.redis.client.Response;
+import tools.jackson.core.type.TypeReference;
 
 /**
  * Blocking wrapper around {@link LettuceReactiveRedisDataSourceImpl}.

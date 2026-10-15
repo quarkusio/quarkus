@@ -11,7 +11,6 @@ import org.junit.jupiter.api.Test;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import com.fasterxml.jackson.core.type.TypeReference;
 
 import io.quarkus.redis.datasource.ReactiveRedisDataSource;
 import io.quarkus.redis.datasource.RedisDataSource;
@@ -23,6 +22,7 @@ import io.quarkus.redis.datasource.list.Position;
 import io.quarkus.redis.datasource.list.ReactiveListCommands;
 import io.quarkus.redis.lettuce.runtime.internal.CommandsTestBase;
 import io.quarkus.redis.lettuce.runtime.internal.Person;
+import tools.jackson.core.type.TypeReference;
 
 class LettuceListCommandsTest extends CommandsTestBase {
 

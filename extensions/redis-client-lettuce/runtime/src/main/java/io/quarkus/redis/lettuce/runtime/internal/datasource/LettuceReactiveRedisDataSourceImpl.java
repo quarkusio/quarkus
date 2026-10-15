@@ -12,8 +12,6 @@ import java.util.List;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-
 import io.lettuce.core.codec.ByteArrayCodec;
 import io.lettuce.core.protocol.CommandArgs;
 import io.lettuce.core.protocol.CommandType;
@@ -68,6 +66,7 @@ import io.vertx.redis.client.Request;
 import io.vertx.redis.client.Response;
 import io.vertx.redis.client.impl.CommandMap;
 import io.vertx.redis.client.impl.RequestImpl;
+import tools.jackson.core.type.TypeReference;
 
 /**
  * Lettuce-backed implementation of {@link ReactiveRedisDataSource}.

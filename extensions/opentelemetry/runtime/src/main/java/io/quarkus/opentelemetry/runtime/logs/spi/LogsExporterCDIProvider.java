@@ -29,8 +29,10 @@ public class LogsExporterCDIProvider implements ConfigurableLogRecordExporterPro
         if (exporters.isUnsatisfied()) {
             return NoopLogRecordExporter.INSTANCE;
         } else {
-            log.debugf("using exporter: %s", exporters.get().getClass().getName());
-            return exporters.get();
+            // Fan out to every exporter so the built-in OTLP exporter can coexist with additional
+            // exporters (CDI beans or Quarkiverse extension exporters). The SDK composite isolates
+            // per-delegate failures.
+            return LogRecordExporter.composite(exporters.stream().toList());
         }
     }
 

@@ -16,22 +16,16 @@ import org.wildfly.security.authz.Roles;
 import org.wildfly.security.permission.PermissionVerifier;
 
 import io.quarkus.arc.runtime.BeanContainer;
-import io.quarkus.runtime.RuntimeValue;
-import io.quarkus.runtime.annotations.Recorder;
 
 /**
- * The runtime security recorder class that provides methods for creating RuntimeValues for the deployment security objects.
+ * Runtime helpers used by the Elytron security services to assemble the {@linkplain SecurityDomain} and to hand it
+ * over to the identity providers.
  */
-@Recorder
 public class ElytronRecorder {
     static final Logger log = Logger.getLogger(ElytronRecorder.class);
 
-    public void runLoadTask(Runnable runnable) {
-        runnable.run();
-    }
-
-    public void setDomainForIdentityProvider(BeanContainer bc, RuntimeValue<SecurityDomain> domain) {
-        bc.beanInstance(ElytronSecurityDomainManager.class).setDomain(domain.getValue());
+    public static void setDomainForIdentityProvider(BeanContainer bc, SecurityDomain domain) {
+        bc.beanInstance(ElytronSecurityDomainManager.class).setDomain(domain);
     }
 
     /**
@@ -39,16 +33,16 @@ public class ElytronRecorder {
      *
      * @param realmName - the default realm name
      * @param realm - the default SecurityRealm
-     * @return a runtime value for the SecurityDomain.Builder
+     * @return the SecurityDomain.Builder
      * @throws Exception on any error
      */
-    public RuntimeValue<SecurityDomain.Builder> configureDomainBuilder(String realmName, RuntimeValue<SecurityRealm> realm)
+    public static SecurityDomain.Builder configureDomainBuilder(String realmName, SecurityRealm realm)
             throws Exception {
-        log.debugf("buildDomain, realm=%s", realm.getValue());
+        log.debugf("buildDomain, realm=%s", realm);
 
         SecurityDomain.Builder domain = SecurityDomain.builder()
 
-                .addRealm(realmName, realm.getValue())
+                .addRealm(realmName, realm)
 
                 .setRoleDecoder(new RoleDecoder() {
                     @Override
@@ -73,19 +67,18 @@ public class ElytronRecorder {
             domain.setRealmMapper(CDI.current().select(RealmMapper.class).get());
         }
 
-        return new RuntimeValue<>(domain);
+        return domain;
     }
 
     /**
      * Called to add a realm to the {@linkplain SecurityDomain} being built
      *
-     * @param builder - runtime value for SecurityDomain.Builder created by
-     *        {@linkplain #configureDomainBuilder(String, RuntimeValue)}
+     * @param builder - SecurityDomain.Builder
      * @param realmName - the name of the SecurityRealm
-     * @param realm - the runtime value for the SecurityRealm
+     * @param realm - the SecurityRealm
      */
-    public void addRealm(RuntimeValue<SecurityDomain.Builder> builder, String realmName, RuntimeValue<SecurityRealm> realm) {
-        builder.getValue().addRealm(realmName, realm.getValue()).setRoleDecoder(new RoleDecoder() {
+    public static void addRealm(SecurityDomain.Builder builder, String realmName, SecurityRealm realm) {
+        builder.addRealm(realmName, realm).setRoleDecoder(new RoleDecoder() {
             @Override
             public Roles decodeRoles(AuthorizationIdentity authorizationIdentity) {
                 return CDI.current().select(DefaultRoleDecoder.class).get().decodeRoles(authorizationIdentity);
@@ -93,13 +86,4 @@ public class ElytronRecorder {
         }).build();
     }
 
-    /**
-     * Called to invoke the builder created by {@linkplain #configureDomainBuilder(String, RuntimeValue)}
-     *
-     * @param builder - the security domain builder
-     * @return the security domain runtime value
-     */
-    public RuntimeValue<SecurityDomain> buildDomain(RuntimeValue<SecurityDomain.Builder> builder) {
-        return new RuntimeValue<>(builder.getValue().build());
-    }
 }

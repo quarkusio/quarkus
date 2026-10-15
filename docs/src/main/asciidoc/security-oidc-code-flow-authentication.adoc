@@ -1515,7 +1515,7 @@ However, this is not a problem for Quarkus, as the logout mechanisms of such OID
 
 According to the https://openid.net/specs/openid-connect-session-1_0.html#RPLogout[RP-initiated logout] specification, the `quarkus.oidc.logout.post-logout-path` property is represented as a `post_logout_redirect_uri` query parameter, which is not recognized by the providers that do not support this specification.
 
-You can use `quarkus.oidc.logout.post-logout-url-param` to work around this issue.
+You can use `quarkus.oidc.logout.post-logout-uri-param` to work around this issue.
 You can also request that more logout query parameters be added with `quarkus.oidc.logout.extra-params`.
 For example, here is how you can support a logout with `Auth0`:
 

@@ -60,6 +60,7 @@ import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
 import io.quarkus.maven.dependency.ResolvedDependency;
+import io.quarkus.modular.spi.items.AddDependencyBuildItem;
 import io.quarkus.resteasy.reactive.common.runtime.ResteasyReactiveCommonRecorder;
 import io.quarkus.resteasy.reactive.common.runtime.ResteasyReactiveConfig;
 import io.quarkus.resteasy.reactive.spi.AbstractInterceptorBuildItem;
@@ -75,6 +76,7 @@ import io.quarkus.resteasy.reactive.spi.MessageBodyWriterOverrideBuildItem;
 import io.quarkus.resteasy.reactive.spi.ReaderInterceptorBuildItem;
 import io.quarkus.resteasy.reactive.spi.WriterInterceptorBuildItem;
 import io.quarkus.security.spi.DefaultSecurityCheckBuildItem;
+import io.smallrye.modules.desc.Dependency.Modifier;
 
 public class ResteasyReactiveCommonProcessor {
 
@@ -132,6 +134,12 @@ public class ResteasyReactiveCommonProcessor {
                 "META-INF/services/" + jakarta.ws.rs.core.Feature.class.getName()));
         producer.produce(new AdditionalApplicationArchiveMarkerBuildItem(
                 "META-INF/services/" + jakarta.ws.rs.container.DynamicFeature.class.getName()));
+    }
+
+    @BuildStep
+    AddDependencyBuildItem responseBuilderServices() {
+        return new AddDependencyBuildItem("io.quarkus.resteasy.reactive.common", "io.quarkus.resteasy.reactive",
+                Modifier.Set.of(Modifier.SERVICES, Modifier.OPTIONAL));
     }
 
     @BuildStep

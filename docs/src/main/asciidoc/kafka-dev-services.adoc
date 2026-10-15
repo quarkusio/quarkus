@@ -27,6 +27,7 @@ Dev Services for Kafka relies on Docker to start the broker.
 If your environment does not support Docker, you will need to start the broker manually, or connect to an already running broker.
 You can configure the broker address using `kafka.bootstrap.servers`.
 
+[[shared-broker]]
 == Shared broker
 
 Most of the time you need to share the broker between applications.

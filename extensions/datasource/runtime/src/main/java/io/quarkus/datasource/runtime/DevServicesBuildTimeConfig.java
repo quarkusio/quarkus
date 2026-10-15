@@ -129,38 +129,41 @@ public interface DevServicesBuildTimeConfig {
     Map<String, String> volumes();
 
     /**
-     * The name of the datasource whose Dev Services container this datasource should reuse, instead of
-     * starting a separate container.
+     * Indicates if the Dev Services database managed by Quarkus is shared.
+     * When shared, Quarkus looks for a running container using label-based service discovery, based on the
+     * `service-name` property.
+     * If a matching container is found, it is used, and so a second one is not started.
+     * Otherwise, Dev Services starts a new container.
      * <p>
-     * When set, this datasource does not start its own Dev Services container. Instead, it waits for the
-     * named datasource's Dev Services container to start, then reuses its JDBC URL, reactive URL, username
-     * and password. The other `devservices.*` properties of this datasource (image name, init scripts,
-     * volumes, ...) are then ignored, since no container is started for it.
+     * Unlike most other Dev Services, this defaults to `false`: this configuration group is shared by every
+     * database kind and by every datasource (default and named) in an application, so defaulting to `true`
+     * would mean every Quarkus application on a machine silently starts reusing the same database container
+     * (and therefore the same data) for a given `db-kind`, as soon as Docker is available. Opt in explicitly
+     * when you do want two or more applications to share one Dev Services database, for example in a
+     * monorepo.
      * <p>
-     * The referenced datasource must set `devservices.shares-container` to `true`, and must not itself set
-     * `use-from`; only one level of sharing is supported.
-     * <p>
-     * Use `<default>` to refer to the default datasource.
-     * <p>
-     * This only affects Dev Services, within a single application, in dev mode and in tests. It does not
-     * make Dev Services containers shared across different applications.
-     *
-     * @asciidoclet
-     */
-    Optional<String> useFrom();
-
-    /**
-     * Whether this datasource accepts other datasources reusing its Dev Services container, by referencing
-     * it through their own `devservices.use-from` property.
-     * <p>
-     * Has no effect by itself; it only allows other datasources to opt in to reusing this datasource's
-     * container. If no other datasource references this one through `devservices.use-from`, this property
-     * changes nothing.
+     * Container sharing is only used in dev mode.
      *
      * @asciidoclet
      */
     @WithDefault("false")
-    boolean sharesContainer();
+    boolean shared();
+
+    /**
+     * The value of the service discovery label attached to the started container.
+     * This property is used when `shared` is set to `true`.
+     * In this case, before starting a container, Dev Services looks for a container with the service
+     * discovery label set to the configured value. If found, it will use this container instead of starting
+     * a new one. Otherwise, it starts a new container with the service discovery label set to the specified
+     * value.
+     * <p>
+     * Defaults to the datasource's `db-kind`. This property is used when you need multiple shared databases
+     * of the same kind, each with their own set of applications sharing them.
+     *
+     * @asciidoclet
+     */
+    @ConfigDocDefault("The datasource's `db-kind`")
+    Optional<String> serviceName();
 
     /**
      * Whether to keep Dev Service containers running *after a dev mode session or test suite execution*

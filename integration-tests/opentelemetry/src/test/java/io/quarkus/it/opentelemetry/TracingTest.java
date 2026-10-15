@@ -605,8 +605,7 @@ public class TracingTest {
         assertNotNull(server.get("attr_user_agent.original"));
 
         Map<String, Object> fromInterceptor = getSpanByKindAndParentId(spans, INTERNAL, server.get("spanId"));
-        assertEquals("PingPongResource$PingPongRestClient$$CDIWrapper.pingpongIntercept",
-                fromInterceptor.get("name"));
+        assertEquals("PingPongRestClient.pingpongIntercept", fromInterceptor.get("name"));
         assertEquals(INTERNAL.toString(), fromInterceptor.get("kind"));
         assertTrue((Boolean) fromInterceptor.get("ended"));
         assertTrue((Boolean) fromInterceptor.get("parent_valid"));

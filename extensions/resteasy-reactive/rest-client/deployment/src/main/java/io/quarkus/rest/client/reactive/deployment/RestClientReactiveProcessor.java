@@ -136,6 +136,7 @@ class RestClientReactiveProcessor {
     private static final DotName INJECT_MOCK = DotName.createSimple("io.quarkus.test.InjectMock");
     private static final DotName KOTLIN_METADATA_ANNOTATION = DotName.createSimple("kotlin.Metadata");
     private static final DotName URL = DotName.createSimple("io.quarkus.rest.client.reactive.Url");
+    private static final DotName WITH_SPAN = DotName.createSimple("io.opentelemetry.instrumentation.annotations.WithSpan");
 
     private static final String ENABLE_COMPRESSION = "quarkus.http.enable-compression";
     private static final String KOTLIN_INTERFACE_DEFAULT_IMPL_SUFFIX = "$DefaultImpls";
@@ -778,7 +779,7 @@ class RestClientReactiveProcessor {
                             if (annotation.target().kind() == AnnotationTarget.Kind.METHOD
                                     && !BUILTIN_HTTP_ANNOTATIONS_TO_METHOD.containsKey(annotation.name())
                                     && !ResteasyReactiveDotNames.PATH.equals(annotation.name())) {
-                                addAnnotation(mc, annotation, index);
+                                addAnnotation(mc, effectiveWithSpan(annotation, jaxrsInterface, method), index);
                             }
                         }
 
@@ -842,6 +843,35 @@ class RestClientReactiveProcessor {
         }
 
         recorder.cleanUp(shutdown);
+    }
+
+    /**
+     * The {@code $$CDIWrapper} method generated for each REST client interface method is the one that gets
+     * intercepted, so its declaring class is what the OpenTelemetry {@code @WithSpan} instrumentation uses to
+     * derive the span name. Left as-is, that produces a span named after the generated wrapper (e.g.
+     * {@code Foo$$CDIWrapper.bar}) instead of the REST client interface. When {@code @WithSpan} is copied onto
+     * the wrapper without an explicit name, we set one derived from the interface so the span name stays stable.
+     */
+    private static AnnotationInstance effectiveWithSpan(AnnotationInstance annotation, ClassInfo jaxrsInterface,
+            MethodInfo method) {
+        if (!WITH_SPAN.equals(annotation.name())) {
+            return annotation;
+        }
+        AnnotationValue value = annotation.value("value");
+        if (value != null && !value.asString().isEmpty()) {
+            return annotation;
+        }
+        String interfaceName = jaxrsInterface.name().toString();
+        String simpleName = interfaceName
+                .substring(Math.max(interfaceName.lastIndexOf('.'), interfaceName.lastIndexOf('$')) + 1);
+        List<AnnotationValue> values = new ArrayList<>();
+        for (AnnotationValue existing : annotation.values()) {
+            if (!"value".equals(existing.name())) {
+                values.add(existing);
+            }
+        }
+        values.add(AnnotationValue.createStringValue("value", simpleName + "." + method.name()));
+        return AnnotationInstance.create(annotation.name(), annotation.target(), values);
     }
 
     /**

@@ -18,10 +18,10 @@ import org.jboss.resteasy.reactive.RestForm;
 
 import io.quarkus.csrf.reactive.runtime.CsrfTokenParameterProvider;
 import io.quarkus.csrf.reactive.runtime.CsrfTokenUtils;
+import io.quarkus.csrf.reactive.runtime.RestCsrfConfig;
 import io.quarkus.qute.Template;
 import io.quarkus.qute.TemplateInstance;
 import io.quarkus.security.Authenticated;
-import io.smallrye.config.Config;
 import io.vertx.ext.web.RoutingContext;
 
 @Path("/service")
@@ -50,6 +50,9 @@ public class TestResource {
 
     @Inject
     CsrfTokenParameterProvider parameterProvider;
+
+    @Inject
+    RestCsrfConfig restCsrfConfig;
 
     @GET
     @Path("/csrfTokenForm")
@@ -140,9 +143,7 @@ public class TestResource {
         return name + ":" + routingContext.get("csrf_token_verified", false) + ":"
                 + isResteasyReactiveUpload(multiPart.file) + ":"
                 + csrfTokenCookie.getValue().equals(
-                        CsrfTokenUtils.signCsrfToken(csrfTokenParam,
-                                Config.get().getValue("quarkus.rest-csrf.token-signature-key",
-                                        String.class)))
+                        CsrfTokenUtils.signCsrfToken(csrfTokenParam, restCsrfConfig.tokenSignatureKey().get().get()))
                 + ":tokenHeaderIsSet=" + (csrfHeader != null);
     }
 

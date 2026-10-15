@@ -317,7 +317,7 @@ public class ConfigAnnotationScanner {
         String qualifiedName = typeElement.getQualifiedName().toString();
 
         boolean optional = qualifiedName.startsWith(Optional.class.getName());
-        boolean secret = qualifiedName.startsWith("io.smallrye.config.Secret");
+        boolean secret = qualifiedName.equals(Types.SECRET_TYPE);
         boolean map = qualifiedName.equals(Map.class.getName());
         boolean list = qualifiedName.equals(List.class.getName())
                 || qualifiedName.equals(Set.class.getName());

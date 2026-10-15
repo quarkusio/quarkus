@@ -11,6 +11,7 @@ import org.infinispan.client.hotrod.configuration.NearCacheMode;
 import org.infinispan.client.hotrod.configuration.TransactionMode;
 
 import io.quarkus.runtime.annotations.ConfigGroup;
+import io.smallrye.config.Secret;
 import io.smallrye.config.WithDefault;
 import io.smallrye.config.WithName;
 
@@ -67,7 +68,7 @@ public interface InfinispanClientRuntimeConfig {
     /**
      * Sets password used by authentication.
      */
-    Optional<String> password();
+    Optional<Secret<String>> password();
 
     /**
      * Sets realm used by authentication
@@ -106,7 +107,7 @@ public interface InfinispanClientRuntimeConfig {
      * Specifies the password needed to open the keystore. You also need to specify a keyStore.
      * Setting this property implicitly enables SSL/TLS.
      */
-    Optional<String> keyStorePassword();
+    Optional<Secret<String>> keyStorePassword();
 
     /**
      * Specifies the type of the keyStore, such as PKCS12.
@@ -129,7 +130,7 @@ public interface InfinispanClientRuntimeConfig {
      * Specifies the password needed to open the truststore You also need to specify a trustStore.
      * Setting this property implicitly enables SSL/TLS.
      */
-    Optional<String> trustStorePassword();
+    Optional<Secret<String>> trustStorePassword();
 
     /**
      * Specifies the type of the truststore, such as JKS or JCEKS. Defaults to JKS if trustStore is enabled.

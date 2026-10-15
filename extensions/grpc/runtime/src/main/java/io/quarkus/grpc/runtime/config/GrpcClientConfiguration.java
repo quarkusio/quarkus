@@ -6,6 +6,7 @@ import java.util.Optional;
 import java.util.OptionalInt;
 
 import io.quarkus.runtime.annotations.ConfigGroup;
+import io.smallrye.config.Secret;
 import io.smallrye.config.WithDefault;
 
 @ConfigGroup
@@ -193,7 +194,7 @@ public interface GrpcClientConfiguration {
             /**
              * Password of the key file.
              */
-            Optional<String> password();
+            Optional<Secret<String>> password();
         }
 
         @ConfigGroup
@@ -207,7 +208,7 @@ public interface GrpcClientConfiguration {
             /**
              * Password of the key.
              */
-            Optional<String> password();
+            Optional<Secret<String>> password();
         }
 
         @ConfigGroup

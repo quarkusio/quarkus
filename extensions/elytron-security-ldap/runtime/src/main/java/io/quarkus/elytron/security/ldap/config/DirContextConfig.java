@@ -6,6 +6,7 @@ import java.util.Optional;
 import org.wildfly.security.auth.realm.ldap.DirContextFactory;
 
 import io.quarkus.runtime.annotations.ConfigGroup;
+import io.smallrye.config.Secret;
 import io.smallrye.config.WithDefault;
 
 @ConfigGroup
@@ -24,7 +25,7 @@ public interface DirContextConfig {
     /**
      * The password which belongs to the principal (also named "bindCredential")
      */
-    Optional<String> password();
+    Optional<Secret<String>> password();
 
     /**
      * how ldap redirects are handled

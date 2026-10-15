@@ -55,7 +55,7 @@ class FlywayCreator {
         if (flywayRuntimeConfig.jdbcUrl().isPresent()) {
             if (flywayRuntimeConfig.username().isPresent() && flywayRuntimeConfig.password().isPresent()) {
                 configure.dataSource(flywayRuntimeConfig.jdbcUrl().get(), flywayRuntimeConfig.username().get(),
-                        flywayRuntimeConfig.password().get());
+                        flywayRuntimeConfig.password().get().get());
             } else {
                 throw new ConfigurationException(
                         "Username and password must be defined when a JDBC URL is provided in the Flyway configuration");
@@ -67,7 +67,7 @@ class FlywayCreator {
                         .connectionFactoryConfiguration().jdbcUrl();
 
                 configure.dataSource(jdbcUrl, flywayRuntimeConfig.username().get(),
-                        flywayRuntimeConfig.password().get());
+                        flywayRuntimeConfig.password().get().get());
             } else if (dataSource != null) {
                 configure.dataSource(dataSource);
             }

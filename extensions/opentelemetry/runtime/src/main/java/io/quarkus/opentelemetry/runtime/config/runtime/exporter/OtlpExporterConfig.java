@@ -7,6 +7,7 @@ import java.util.OptionalInt;
 
 import io.quarkus.runtime.annotations.ConfigDocDefault;
 import io.quarkus.runtime.configuration.DurationConverter;
+import io.smallrye.config.Secret;
 import io.smallrye.config.WithConverter;
 import io.smallrye.config.WithName;
 
@@ -150,7 +151,7 @@ public interface OtlpExporterConfig {
          * types,
          * like `traces` or `metrics`.
          */
-        Optional<String> password();
+        Optional<Secret<String>> password();
 
         /**
          * Set proxy port.

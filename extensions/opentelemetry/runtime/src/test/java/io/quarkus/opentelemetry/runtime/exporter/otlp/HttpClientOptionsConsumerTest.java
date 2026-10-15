@@ -22,6 +22,7 @@ import io.quarkus.opentelemetry.runtime.config.runtime.exporter.OtlpExporterTrac
 import io.quarkus.tls.TlsConfiguration;
 import io.quarkus.tls.TlsConfigurationRegistry;
 import io.smallrye.config.ConfigInstanceBuilder;
+import io.smallrye.config.Secret;
 import io.vertx.core.http.HttpClientOptions;
 
 class HttpClientOptionsConsumerTest {
@@ -101,7 +102,7 @@ class HttpClientOptionsConsumerTest {
                 .with(OtlpExporterConfig::proxyOptions, ConfigInstanceBuilder.forInterface(OtlpExporterConfig.ProxyConfig.class)
                         .with(OtlpExporterConfig.ProxyConfig::enabled, isEnabled)
                         .withOptional(OtlpExporterConfig.ProxyConfig::username, "proxy-username")
-                        .withOptional(OtlpExporterConfig.ProxyConfig::password, "proxy-password")
+                        .withOptional(OtlpExporterConfig.ProxyConfig::password, (Secret<String>) () -> "proxy-password")
                         .withOptional(OtlpExporterConfig.ProxyConfig::port, 9999)
                         .withOptional(OtlpExporterConfig.ProxyConfig::host, "proxy-address")
                         .build())

@@ -1,13 +1,13 @@
 package io.quarkus.redis.lettuce.runtime.internal.pubsub;
 
 import static io.quarkus.redis.runtime.datasource.Validation.notNullOrEmpty;
-import static io.quarkus.redis.runtime.datasource.Validation.validateCollection;
 import static io.smallrye.mutiny.helpers.ParameterValidation.doesNotContainNull;
 import static io.smallrye.mutiny.helpers.ParameterValidation.nonNull;
 
 import java.lang.reflect.Type;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -166,6 +166,19 @@ public class LettuceReactivePubSubCommandsImpl<V> extends AbstractLettuceCommand
 
         List<String> subscribed = List.copyOf(channels);
         return open(conn -> new ReactiveLettuceChannelSubscriber(conn, subscribed, onMessage, onEnd, onException));
+    }
+
+    private static void validateCollection(Collection<String> col, String name) {
+        notNullOrEmpty(col, name);
+
+        for (String element : col) {
+            if (element == null) {
+                throw new IllegalArgumentException("Element must not be `null`");
+            }
+            if (element.isBlank()) {
+                throw new IllegalArgumentException("Element must not be `blank`");
+            }
+        }
     }
 
     private Uni<ReactiveRedisSubscriber> open(

@@ -98,19 +98,6 @@ public class Validation {
         }
     }
 
-    public static void validateCollection(Collection<String> col, String name) {
-        notNullOrEmpty(col, name);
-
-        for (String element : col) {
-            if (element == null) {
-                throw new IllegalArgumentException("Element must not be `null`");
-            }
-            if (element.isBlank()) {
-                throw new IllegalArgumentException("Element must not be `blank`");
-            }
-        }
-    }
-
     public static void validateLongitude(double longitude) {
         if (longitude < -180 || longitude > 180) {
             throw new IllegalArgumentException("The longitude must be in [-180, 180]");

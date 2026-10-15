@@ -21,13 +21,13 @@ import io.quarkus.hibernate.orm.PersistenceUnit.List;
 import io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil;
 
 /**
- * This annotation has two different purposes.
- * It is a qualifier used to specify to which persistence unit the injected {@link EntityManagerFactory} or
- * {@link EntityManager} belongs.
- * <p>
- * This allows for regular CDI bean injection of both interfaces.
- * <p>
- * It is also used to mark packages as part of a given persistence unit.
+ * This annotation has multiple purposes:
+ * <ul>
+ * <li>It is a qualifier used to specify to which persistence unit the injected {@link EntityManagerFactory} or
+ * {@link EntityManager} belongs. This allows for regular CDI bean injection of both interfaces.</li>
+ * <li>It is used to mark packages as part of a given persistence unit.</li>
+ * <li>It is used to mark classes (entities, mapped superclasses, embeddables) as part of a given persistence unit.</li>
+ * </ul>
  */
 @Target({ TYPE, FIELD, METHOD, PARAMETER, PACKAGE })
 @Retention(RUNTIME)
@@ -54,7 +54,7 @@ public @interface PersistenceUnit {
         }
     }
 
-    @Target(PACKAGE)
+    @Target({ TYPE, PACKAGE })
     @Retention(RUNTIME)
     @Documented
     @interface List {

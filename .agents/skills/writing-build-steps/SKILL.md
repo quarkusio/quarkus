@@ -55,35 +55,66 @@ injects a config mapping, you **must** reference that config mapping in a build
 step — otherwise the injection will fail with `UnsatisfiedResolutionException`.
 See the `working-with-config` skill for details.
 
-## Recorders
+## Services
 
-To execute code at runtime from a build step, use a `@Recorder`. The recorder
-class lives in the **runtime** module. Its methods are called from deployment
-build steps, but the actual execution happens at application startup — the
-recorder generates bytecode that replays those method calls at runtime.
+To execute code at runtime from a build step, register a service using
+`ServiceRegistrar`. Services are lightweight startup tasks that form a
+dependency graph. The service lambda is defined in the deployment build step
+but executes at runtime.
 
 ```java
 @BuildStep
-@Record(ExecutionTime.RUNTIME_INIT)
-void setupAtRuntime(MyRecorder recorder, SomeBuildItem item) {
-    recorder.initialize(item.getValue());
+void setupAtRuntime(ServiceRegistrar reg, SomeBuildItem item) {
+    reg.forService("io.quarkus.my-feature.setup")
+       .onStart(ctx -> {
+           // This lambda runs at runtime
+           MyFeature.initialize(item.getValue());
+       });
 }
 ```
 
-### Execution Times
+### Service Types
+
+- **Typed services** produce a value: `reg.forService(MyService.class)`
+- **Void services** produce no value, identified by name: `reg.forService("io.quarkus.feature.setup")`
+
+Use typed services when other services need to depend on the value produced.
+Use void services for side effects like initialization tasks.
+
+### Phases
+
+Services execute in ordered phases. The default is `Phase.APPLICATION`. Use
+`.atPhase(Phase)` to customize:
 
 - **`STATIC_INIT`** — Runs during static initialization (before `main()`).
-  Safe for native image. Prefer this when possible as it allows more work to
-  be done at build time in native mode.
-- **`RUNTIME_INIT`** — Runs at application startup (during `main()`). Use when
-  the code needs runtime-only resources (e.g., network, threads).
+  Results are baked into the native image heap when building a native image.
+- **`CONFIG`** — Registers configuration property classes.
+- **`LOGGING`** — Reconfigures the log manager.
+- **`INFRASTRUCTURE`** — Creates foundational infrastructure (executors, event loops).
+- **`BINDING`** — Binds server sockets.
+- **`DATA`** — Establishes database connections.
+- **`INIT`** — Performs one-time initialization (migrations, validation).
+- **`APPLICATION`** — Registers request-handling logic (default).
+- **`SERVING`** — Starts accepting requests.
 
-### Recorder Constraints
+### Dependencies
 
-- Recorder methods must only use types available in the **runtime** module
-- Do not pass deployment-only types to recorder methods
-- Do not use build-time-only libraries inside recorder implementations
-- Recorder method parameters must be recordable (the bytecode recorder writes
-  code that reconstructs the object, similar to how `ObjectMapper` would
-  serialize it — but to bytecode, not JSON). Use simple value types, collections,
-  or types with appropriate constructors/setters. This is NOT Java serialization
+Declare all dependencies explicitly on the service itself:
+
+- `.require(SomeService.class)` — depends on and consumes a service value
+- `.request(SomeService.class)` — optional dependency, injected as `Optional<T>`
+- `.after(SomeService.class)` — ordering-only dependency
+- `.before(SomeService.class)` — this service must start before the specified service
+
+Build step graph dependencies have zero influence on service execution order.
+
+### Lambda Capture Constraints
+
+Service lambda bodies run at runtime and can only reference runtime classes:
+
+- **Supported captures**: primitives, `String`, `Class`, enum values, immutable
+  collections, `BUILD_AND_RUN_TIME_FIXED` config, `Constable` values, records
+- **Unsupported**: mutable collections, `BUILD_TIME` config, `RUN_TIME` config
+  (use `.require()` instead), arbitrary runtime objects (use `.require()`)
+- **Never reference deployment classes** in the lambda body — this causes
+  `ClassNotFoundException` at runtime

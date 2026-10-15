@@ -1173,9 +1173,9 @@ quarkus.redis.replicas=share # defaults to "never"
 
 The client discovers the cluster topology from the configured hosts (the _seed_ nodes, which need not be all the
 members) and routes every command to the node owning its key, following `MOVED` and `ASK` redirects.
-Its view of the topology is refreshed every `topology-cache-ttl` (or its deprecated alias `hash-slot-cache-ttl`,
-default `1s`), and as soon as a redirect, an uncovered slot, an unknown node or a node that keeps failing to
-reconnect reveals a change. A non-positive TTL disables the periodic refresh and leaves the adaptive one.
+Its view of the topology is refreshed every `topology-cache-ttl` (default `1s`), and as soon as a redirect, an
+uncovered slot, an unknown node or a node that keeps failing to reconnect reveals a change. A non-positive TTL
+disables the periodic refresh and leaves the adaptive one.
 `replicas` selects the nodes read-only commands are sent to: `never` reads from the upstream nodes only,
 `share` from any node and `always` from the replicas, falling back to the upstream node of a shard that has no
 usable replica, as with the Vert.x client; writes always go to the upstream nodes.

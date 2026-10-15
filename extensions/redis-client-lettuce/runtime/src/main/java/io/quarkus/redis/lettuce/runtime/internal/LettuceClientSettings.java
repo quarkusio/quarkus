@@ -72,7 +72,7 @@ public final class LettuceClientSettings {
 
     private static final Logger LOGGER = Logger.getLogger(LettuceClientSettings.class);
 
-    /** The default of {@code topology-cache-ttl} and of its deprecated alias {@code hash-slot-cache-ttl}. */
+    /** The default of {@code topology-cache-ttl}. */
     public static final Duration DEFAULT_TOPOLOGY_CACHE_TTL = Duration.ofSeconds(1);
 
     /**
@@ -247,9 +247,7 @@ public final class LettuceClientSettings {
     }
 
     /**
-     * The TTL of the topology cache, {@code topology-cache-ttl}. The property always has its default, so its
-     * deprecated alias {@code hash-slot-cache-ttl} is not applied, by this backend or by the Vert.x one (whose
-     * factory falls back on the alias only when {@code topology-cache-ttl} is absent, which it never is).
+     * The TTL of the topology cache, {@code topology-cache-ttl}, which always has its default.
      */
     public static Duration topologyCacheTtl(RedisClientConfig config) {
         return config.topologyCacheTtl().orElse(DEFAULT_TOPOLOGY_CACHE_TTL);

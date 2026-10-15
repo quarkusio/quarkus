@@ -80,7 +80,7 @@ public class Validation {
         return v;
     }
 
-    static <X> void notNullOrEmpty(Collection<X> col, String name) {
+    public static <X> void notNullOrEmpty(Collection<X> col, String name) {
         if (col == null) {
             throw new IllegalArgumentException("`" + name + "` must not be `null`");
         }

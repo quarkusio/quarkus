@@ -1,16 +1,22 @@
 package io.quarkus.redis.it.lettuce;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
+import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
+import java.util.function.BooleanSupplier;
 
 import org.hamcrest.CoreMatchers;
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.RestAssured;
+import io.restassured.path.json.JsonPath;
 import io.vertx.core.json.JsonObject;
 
 @QuarkusTest
@@ -1156,6 +1162,118 @@ class LettuceBackendTest {
         assertEquals("false,7,true,3,[2, 4],true,[8, 4]", body);
         RestAssured.given().when().get("/lettuce/countmin/query/" + key + "-merged/a").then()
                 .statusCode(200).body(CoreMatchers.is("8"));
+    }
+
+    @Test
+    public void pubSubChannels() {
+        String first = getKey("pubsub-first");
+        String second = getKey("pubsub-second");
+        String id = RestAssured.given().queryParam("channels", first + "," + second).when()
+                .post("/lettuce/pubsub/subscribe").then().statusCode(200).extract().asString();
+        // The blocking subscribe returns once Redis confirmed, so both channels are active right away.
+        assertTrue(pubSubChannelNames().containsAll(List.of(first, second)));
+
+        publish(first, "luke");
+        publish(second, "leia");
+        awaitMessages(id, 2);
+        assertEquals(List.of(first + ":luke", second + ":leia"), messages(id));
+        assertTrue(state(id).getBoolean("onDuplicatedContext"));
+        assertFalse(state(id).getBoolean("ended"));
+
+        // Unsubscribing one channel keeps the subscription, and its connection, alive for the other.
+        RestAssured.given().queryParam("names", first).when().delete("/lettuce/pubsub/subscription/" + id).then()
+                .statusCode(204);
+        List<String> channels = pubSubChannelNames();
+        assertFalse(channels.contains(first));
+        assertTrue(channels.contains(second));
+        publish(first, "ignored");
+        publish(second, "han");
+        awaitMessages(id, 3);
+        assertEquals(second + ":han", messages(id).get(2));
+        assertFalse(state(id).getBoolean("ended"));
+
+        RestAssured.given().when().delete("/lettuce/pubsub/subscription/" + id).then().statusCode(204);
+        await(() -> state(id).getBoolean("ended"), "onEnd after the last unsubscribe");
+        assertFalse(pubSubChannelNames().contains(second));
+    }
+
+    @Test
+    public void pubSubPatterns() {
+        String prefix = getKey("pubsub-pattern-");
+        String id = RestAssured.given().queryParam("patterns", prefix + "*").when()
+                .post("/lettuce/pubsub/psubscribe").then().statusCode(200).extract().asString();
+        assertTrue(pubSubNumPat() >= 1);
+
+        publish(getKey("pubsub-unrelated"), "ignored");
+        publish(prefix + "a", "luke");
+        awaitMessages(id, 1);
+        // The callback receives the channel the message was published to, not the pattern.
+        assertEquals(List.of(prefix + "a:luke"), messages(id));
+
+        RestAssured.given().when().delete("/lettuce/pubsub/subscription/" + id).then().statusCode(204);
+        await(() -> state(id).getBoolean("ended"), "onEnd after unsubscribing the pattern");
+    }
+
+    @Test
+    public void pubSubReactiveStream() {
+        String channel = getKey("pubsub-reactive");
+        String id = RestAssured.given().queryParam("channels", channel).when()
+                .post("/lettuce/pubsub/reactive/subscribe").then().statusCode(200).extract().asString();
+        // The Multi subscribes asynchronously: wait for the server to see the channel before publishing.
+        await(() -> pubSubChannelNames().contains(channel), "reactive subscription to be established");
+
+        RestAssured.given().body("luke").when().post("/lettuce/pubsub/reactive/publish/" + channel).then()
+                .statusCode(204);
+        awaitMessages(id, 1);
+        assertEquals(List.of(channel + ":luke"), messages(id));
+        assertTrue(state(id).getBoolean("onDuplicatedContext"));
+
+        // Cancelling the stream unsubscribes and closes the connection.
+        RestAssured.given().when().delete("/lettuce/pubsub/subscription/" + id).then().statusCode(204);
+        await(() -> !pubSubChannelNames().contains(channel), "channel to be released after cancellation");
+    }
+
+    private static void publish(String channel, String message) {
+        RestAssured.given().body(message).when().post("/lettuce/pubsub/publish/" + channel).then().statusCode(204);
+    }
+
+    private static JsonPath state(String id) {
+        return RestAssured.given().when().get("/lettuce/pubsub/subscription/" + id).then().statusCode(200)
+                .extract().jsonPath();
+    }
+
+    private static List<String> messages(String id) {
+        return state(id).getList("messages", String.class);
+    }
+
+    private static List<String> pubSubChannelNames() {
+        return Arrays.asList(RestAssured.given().when().get("/lettuce/pubsub/channels").then().statusCode(200)
+                .extract().as(String[].class));
+    }
+
+    private static int pubSubNumPat() {
+        return Integer.parseInt(
+                RestAssured.given().when().get("/lettuce/pubsub/numpat").then().statusCode(200).extract().asString());
+    }
+
+    private static void awaitMessages(String id, int count) {
+        await(() -> messages(id).size() >= count, count + " message(s) on subscription " + id);
+    }
+
+    /** Pub/Sub delivery is asynchronous; poll for up to ten seconds instead of sleeping a fixed amount. */
+    private static void await(BooleanSupplier condition, String description) {
+        long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(10);
+        while (!condition.getAsBoolean()) {
+            if (System.nanoTime() > deadline) {
+                fail("Timed out waiting for " + description);
+            }
+            try {
+                Thread.sleep(50);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw new IllegalStateException(e);
+            }
+        }
     }
 
     @Test

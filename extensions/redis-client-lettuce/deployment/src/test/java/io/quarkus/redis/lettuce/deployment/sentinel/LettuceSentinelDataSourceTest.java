@@ -1,8 +1,11 @@
 package io.quarkus.redis.lettuce.deployment.sentinel;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
 
 import java.time.Duration;
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import jakarta.inject.Inject;
 
@@ -13,6 +16,8 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.redis.datasource.ReactiveRedisDataSource;
 import io.quarkus.redis.datasource.RedisDataSource;
+import io.quarkus.redis.datasource.pubsub.PubSubCommands;
+import io.quarkus.redis.datasource.pubsub.PubSubCommands.RedisSubscriber;
 import io.quarkus.redis.datasource.transactions.TransactionResult;
 import io.quarkus.redis.datasource.value.ValueCommands;
 import io.quarkus.redis.lettuce.deployment.RedisSentinelTestResource;
@@ -108,6 +113,20 @@ public class LettuceSentinelDataSourceTest {
             assertThat(values.get("sentinel:select")).isEqualTo("db0");
         } finally {
             blocking.select(0);
+        }
+    }
+
+    @Test
+    void publishesAndSubscribesOnTheMaster() {
+        // The subscriber's connection is resolved through the sentinels as well, so it lands on the master.
+        PubSubCommands<String> pubsub = blocking.pubsub(String.class);
+        List<String> received = new CopyOnWriteArrayList<>();
+        RedisSubscriber subscriber = pubsub.subscribe("sentinel:channel", received::add);
+        try {
+            pubsub.publish("sentinel:channel", "hello");
+            await().atMost(Duration.ofSeconds(5)).until(() -> received.equals(List.of("hello")));
+        } finally {
+            subscriber.unsubscribe();
         }
     }
 }

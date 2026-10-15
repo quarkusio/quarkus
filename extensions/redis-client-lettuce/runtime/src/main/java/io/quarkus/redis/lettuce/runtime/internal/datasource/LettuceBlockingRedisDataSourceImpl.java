@@ -39,6 +39,7 @@ import io.quarkus.redis.datasource.keys.KeyCommands;
 import io.quarkus.redis.datasource.list.ListCommands;
 import io.quarkus.redis.datasource.list.ReactiveListCommands;
 import io.quarkus.redis.datasource.pubsub.PubSubCommands;
+import io.quarkus.redis.datasource.pubsub.ReactivePubSubCommands;
 import io.quarkus.redis.datasource.search.SearchCommands;
 import io.quarkus.redis.datasource.set.ReactiveSetCommands;
 import io.quarkus.redis.datasource.set.SetCommands;
@@ -64,6 +65,7 @@ import io.quarkus.redis.runtime.datasource.BlockingHyperLogLogCommandsImpl;
 import io.quarkus.redis.runtime.datasource.BlockingJsonCommandsImpl;
 import io.quarkus.redis.runtime.datasource.BlockingKeyCommandsImpl;
 import io.quarkus.redis.runtime.datasource.BlockingListCommandsImpl;
+import io.quarkus.redis.runtime.datasource.BlockingPubSubCommandsImpl;
 import io.quarkus.redis.runtime.datasource.BlockingSetCommandsImpl;
 import io.quarkus.redis.runtime.datasource.BlockingSortedSetCommandsImpl;
 import io.quarkus.redis.runtime.datasource.BlockingStringCommandsImpl;
@@ -138,8 +140,7 @@ public class LettuceBlockingRedisDataSourceImpl implements RedisDataSource {
         // that completed the connection, where the block's blocking calls would deadlock.
         LettuceConnection conn = reactive.acquireConnection(timeout);
         releasing(conn, () -> {
-            LettuceReactiveRedisDataSourceImpl pinnedReactive = LettuceReactiveRedisDataSourceImpl
-                    .pinnedTo(reactive.getVertx(), conn, reactive.getPool());
+            LettuceReactiveRedisDataSourceImpl pinnedReactive = reactive.pinnedTo(conn);
             consumer.accept(pinnedTo(pinnedReactive, timeout));
             return null;
         });
@@ -185,8 +186,7 @@ public class LettuceBlockingRedisDataSourceImpl implements RedisDataSource {
         LettuceConnection conn = acquire();
         return releasing(conn, () -> {
             LettuceTransactionHolder holder = new LettuceTransactionHolder();
-            LettuceReactiveRedisDataSourceImpl pinnedReactive = LettuceReactiveRedisDataSourceImpl.pinnedTo(
-                    reactive.getVertx(), conn, reactive.getPool());
+            LettuceReactiveRedisDataSourceImpl pinnedReactive = reactive.pinnedTo(conn);
             BlockingTransactionalRedisDataSourceImpl source = new BlockingTransactionalRedisDataSourceImpl(
                     new LettuceReactiveTransactionalRedisDataSourceImpl(pinnedReactive, holder), timeout);
 
@@ -274,8 +274,7 @@ public class LettuceBlockingRedisDataSourceImpl implements RedisDataSource {
 
     private BlockingTransactionalRedisDataSourceImpl transactionalSource(LettuceConnection conn,
             LettuceTransactionHolder holder) {
-        LettuceReactiveRedisDataSourceImpl pinnedReactive = LettuceReactiveRedisDataSourceImpl.pinnedTo(
-                reactive.getVertx(), conn, reactive.getPool());
+        LettuceReactiveRedisDataSourceImpl pinnedReactive = reactive.pinnedTo(conn);
         return new BlockingTransactionalRedisDataSourceImpl(
                 new LettuceReactiveTransactionalRedisDataSourceImpl(pinnedReactive, holder), timeout);
     }
@@ -439,12 +438,14 @@ public class LettuceBlockingRedisDataSourceImpl implements RedisDataSource {
 
     @Override
     public <V> PubSubCommands<V> pubsub(Class<V> messageType) {
-        throw groupNotImplemented("pubsub");
+        ReactivePubSubCommands<V> r = reactive.pubsub(messageType);
+        return new BlockingPubSubCommandsImpl<>(this, r, timeout);
     }
 
     @Override
     public <V> PubSubCommands<V> pubsub(TypeReference<V> messageType) {
-        throw groupNotImplemented("pubsub");
+        ReactivePubSubCommands<V> r = reactive.pubsub(messageType);
+        return new BlockingPubSubCommandsImpl<>(this, r, timeout);
     }
 
     @Override

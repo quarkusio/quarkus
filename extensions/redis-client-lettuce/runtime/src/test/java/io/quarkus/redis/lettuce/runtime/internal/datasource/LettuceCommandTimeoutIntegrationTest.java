@@ -37,7 +37,8 @@ class LettuceCommandTimeoutIntegrationTest extends CommandsTestBase {
                 "redis://" + REDIS.getHost() + ":" + REDIS.getFirstMappedPort(), COMMAND_TIMEOUT);
         conn = factory.connect();
         pool = new LettuceConnectionPool(factory::connectAsync, 1, 1, 0);
-        ds = new LettuceBlockingRedisDataSourceImpl(new LettuceReactiveRedisDataSourceImpl(vertx, conn, pool), TIMEOUT);
+        ds = new LettuceBlockingRedisDataSourceImpl(
+                new LettuceReactiveRedisDataSourceImpl(vertx, conn, pool, factory::connectPubSubAsync), TIMEOUT);
     }
 
     @AfterEach

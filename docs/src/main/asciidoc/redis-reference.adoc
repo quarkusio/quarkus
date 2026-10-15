@@ -1241,9 +1241,9 @@ than trusting the configured order, so the master need not be the first host.
 * The topology is discovered when a connection is opened and kept for its lifetime: it is not refreshed
 periodically, and `topology-cache-ttl` has no effect. Use a Sentinel client when the master can change.
 
-The key, value (string), hash, list, set, sorted set, bitmap, hyperloglog, geo, JSON, autosuggest and count-min command groups are
-implemented on the Lettuce backend, including their transactional variants. The other groups (stream, pub/sub,
-bloom, cuckoo, top-k, graph, search and time series) are not implemented yet and throw an
+The key, value (string), hash, list, set, sorted set, bitmap, hyperloglog, geo, pub/sub, JSON, autosuggest and count-min command groups are
+implemented on the Lettuce backend, including their transactional variants (excluding pub/sub).
+The other groups (stream, bloom, cuckoo, top-k, graph, search and time series) are not implemented yet and throw an
 `UnsupportedOperationException` when requested from a data source.
 
 The data source methods exposing Vert.x types, such as `ReactiveRedisDataSource.getRedis()`, are not supported
@@ -1268,6 +1268,25 @@ transaction, instead of opening a fresh TCP connection per call.
 Because `max-pool-size` bounds only blocking commands and scoped connections on this backend — rather than
 every command, as on the Vert.x backend — the same configured value gives noticeably higher effective
 capacity here. `quarkus.redis.max-waiting-handlers` has no Lettuce equivalent and is ignored.
+
+Pub/Sub subscribers do not use the pool either. Each subscriber (one `subscribe(...)` or `subscribeToPattern(...)`
+call) opens its own dedicated Pub/Sub connection, keeps it for as long as at least one of its channels or patterns
+is subscribed, and closes it when the last one is unsubscribed. These connections are not counted against
+`max-pool-size` or `max-pool-waiting`, so adding subscribers never starves blocking commands or scoped
+connections, and `max-pool-size` does not need to be raised to accommodate them as it does on the Vert.x
+backend. The number of concurrent subscribers is bounded only by the Redis server's `maxclients` limit.
+Where a subscriber's connection goes follows the client type: to the server of a standalone client, to a node of
+the cluster Lettuce picks (a cluster delivers every message to every node), to the master the sentinels report
+for a Sentinel client, following a failover when the connection is re-established, and to the first configured
+host that answers for a replication client, master or replica (Redis propagates `PUBLISH` to the replicas, so a
+subscriber on a replica receives the messages published to the master).
+
+A subscriber's `onEnd` callback runs, and the `Multi` returned by the streaming `subscribe(...)` methods completes,
+when the last channel or pattern is unsubscribed and when the client is shut down with the application. A
+subscriber's connection that is lost (the server restarted, the network failed) is re-established and
+re-subscribed by Lettuce transparently: messages published in the meantime are missed, as with any Pub/Sub
+subscriber, but the subscription goes on and `onEnd` is not called, where the Vert.x backend ends the subscription.
+`onException` receives the I/O errors reported on the connection and the failures to decode a message.
 
 A blocking command issued from inside `withConnection(...)` runs on that pinned connection directly: it
 does not borrow a second connection from the pool, and it blocks that connection for its own duration, as

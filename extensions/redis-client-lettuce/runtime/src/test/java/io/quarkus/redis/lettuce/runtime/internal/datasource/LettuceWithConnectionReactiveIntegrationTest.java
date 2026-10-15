@@ -167,7 +167,7 @@ class LettuceWithConnectionReactiveIntegrationTest extends CommandsTestBase {
             throw new RuntimeException("connector boom");
         }, MAX_POOL_SIZE, MAX_POOL_WAITING, 0);
         LettuceReactiveRedisDataSourceImpl brokenDs = new LettuceReactiveRedisDataSourceImpl(
-                vertx, lettuceConnection, brokenPool);
+                vertx, lettuceConnection, brokenPool, pubSubConnector());
         long before = connectionCount();
         assertThatThrownBy(() -> brokenDs.withConnection(rds -> Uni.createFrom().voidItem())
                 .await().atMost(TIMEOUT)).hasMessageContaining("connector boom");

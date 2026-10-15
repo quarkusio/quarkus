@@ -2,6 +2,7 @@ package io.quarkus.redis.lettuce.deployment.cluster;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.awaitility.Awaitility.await;
 
 import java.time.Duration;
 import java.util.ArrayList;
@@ -9,6 +10,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import jakarta.inject.Inject;
 
@@ -26,6 +28,8 @@ import io.quarkus.redis.datasource.RedisDataSource;
 import io.quarkus.redis.datasource.keys.KeyScanArgs;
 import io.quarkus.redis.datasource.keys.KeyScanCursor;
 import io.quarkus.redis.datasource.list.KeyValue;
+import io.quarkus.redis.datasource.pubsub.PubSubCommands;
+import io.quarkus.redis.datasource.pubsub.PubSubCommands.RedisSubscriber;
 import io.quarkus.redis.datasource.value.ValueCommands;
 import io.quarkus.redis.lettuce.deployment.RedisClusterTestResource;
 import io.quarkus.redis.lettuce.runtime.internal.LettuceConnection;
@@ -250,6 +254,23 @@ public class LettuceClusterDataSourceTest {
         reactive.withConnection(ds -> ds.value(String.class).set("scoped:reactive", "v2"))
                 .await().atMost(Duration.ofSeconds(5));
         assertThat(blocking.value(String.class).get("scoped:reactive")).isEqualTo("v2");
+    }
+
+    @Test
+    void publishesAndSubscribesAcrossTheCluster() {
+        // Pub/Sub is not tied to a slot: a message published to any node reaches a subscriber connected to any
+        // other, and the subscriber's own connection is to a node Lettuce picks.
+        PubSubCommands<String> pubsub = blocking.pubsub(String.class);
+        List<String> received = new CopyOnWriteArrayList<>();
+        RedisSubscriber subscriber = pubsub.subscribe("cluster:channel", received::add);
+        try {
+            pubsub.publish("cluster:channel", "hello");
+            reactive.pubsub(String.class).publish("cluster:channel", "world").await().atMost(Duration.ofSeconds(5));
+            await().atMost(Duration.ofSeconds(5)).until(() -> received.size() == 2);
+            assertThat(received).containsExactly("hello", "world");
+        } finally {
+            subscriber.unsubscribe();
+        }
     }
 
     private List<RedisClusterNode> upstreamNodes() {

@@ -127,7 +127,8 @@ class LettuceWithTransactionBlockingIntegrationTest extends CommandsTestBase {
 
     @Test
     void releaseFailureDoesNotHideTheTransactionBlocksOwnException() {
-        LettuceReactiveRedisDataSourceImpl reactive = new LettuceReactiveRedisDataSourceImpl(vertx, lettuceConnection, pool()) {
+        LettuceReactiveRedisDataSourceImpl reactive = new LettuceReactiveRedisDataSourceImpl(vertx, lettuceConnection,
+                pool(), pubSubConnector()) {
             @Override
             Uni<Void> releaseConnection(LettuceConnection conn) {
                 return Uni.createFrom().failure(new IllegalStateException("release failed"));

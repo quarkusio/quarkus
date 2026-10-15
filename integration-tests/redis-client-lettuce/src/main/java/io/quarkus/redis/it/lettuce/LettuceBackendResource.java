@@ -1,5 +1,6 @@
 package io.quarkus.redis.it.lettuce;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -10,6 +11,10 @@ import java.util.OptionalDouble;
 import java.util.OptionalInt;
 import java.util.OptionalLong;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -56,6 +61,8 @@ import io.quarkus.redis.datasource.keys.ReactiveKeyCommands;
 import io.quarkus.redis.datasource.keys.RedisValueType;
 import io.quarkus.redis.datasource.list.ListCommands;
 import io.quarkus.redis.datasource.list.ReactiveListCommands;
+import io.quarkus.redis.datasource.pubsub.PubSubCommands;
+import io.quarkus.redis.datasource.pubsub.ReactivePubSubCommands;
 import io.quarkus.redis.datasource.set.ReactiveSetCommands;
 import io.quarkus.redis.datasource.set.SetCommands;
 import io.quarkus.redis.datasource.sortedset.ReactiveSortedSetCommands;
@@ -68,7 +75,9 @@ import io.quarkus.redis.datasource.transactions.TransactionResult;
 import io.quarkus.redis.datasource.value.ReactiveValueCommands;
 import io.quarkus.redis.datasource.value.ValueCommands;
 import io.quarkus.runtime.annotations.RegisterForReflection;
+import io.smallrye.common.vertx.VertxContext;
 import io.smallrye.mutiny.Uni;
+import io.smallrye.mutiny.subscription.Cancellable;
 import io.vertx.core.json.Json;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
@@ -104,12 +113,17 @@ public class LettuceBackendResource {
     private final ReactiveHyperLogLogCommands<String, String> reactiveHyperLogLog;
     private final GeoCommands<String, String> geo;
     private final ReactiveGeoCommands<String, String> reactiveGeo;
+    private final PubSubCommands<String> pubsub;
+    private final ReactivePubSubCommands<String> reactivePubSub;
     private final JsonCommands<String> json;
     private final ReactiveJsonCommands<String> reactiveJson;
-    private final CountMinCommands<String, String> countmin;
-    private final ReactiveCountMinCommands<String, String> reactiveCountMin;
     private final AutoSuggestCommands<String> autosuggest;
     private final ReactiveAutoSuggestCommands<String> reactiveAutoSuggest;
+    private final CountMinCommands<String, String> countmin;
+    private final ReactiveCountMinCommands<String, String> reactiveCountMin;
+
+    private final Map<String, Subscription> subscriptions = new ConcurrentHashMap<>();
+    private final AtomicInteger subscriptionIds = new AtomicInteger();
 
     @Inject
     public LettuceBackendResource(RedisDataSource ds, ReactiveRedisDataSource reactiveDs,
@@ -143,12 +157,14 @@ public class LettuceBackendResource {
         this.reactiveHyperLogLog = reactiveDs.hyperloglog(String.class);
         this.geo = ds.geo(String.class);
         this.reactiveGeo = reactiveDs.geo(String.class);
+        this.pubsub = ds.pubsub(String.class);
+        this.reactivePubSub = reactiveDs.pubsub(String.class);
         this.json = ds.json();
         this.reactiveJson = reactiveDs.json();
-        this.countmin = ds.countmin(String.class);
-        this.reactiveCountMin = reactiveDs.countmin(String.class);
         this.autosuggest = ds.autosuggest(String.class);
         this.reactiveAutoSuggest = reactiveDs.autosuggest(String.class);
+        this.countmin = ds.countmin(String.class);
+        this.reactiveCountMin = reactiveDs.countmin(String.class);
     }
 
     @GET
@@ -659,9 +675,6 @@ public class LettuceBackendResource {
         return countmin.cmsIncrBy(key, item, increment);
     }
 
-    /**
-     * Body: {@code item=increment,item=increment,...}. Uses an insertion-ordered map so the reply order is deterministic.
-     */
     @POST
     @Path("/countmin/incrby/{key}")
     public Map<String, Long> countMinIncrByMany(@PathParam("key") String key, String couples) {
@@ -685,9 +698,6 @@ public class LettuceBackendResource {
         return countmin.cmsQuery(key, items.split(","));
     }
 
-    /**
-     * Merges {@code src1} and {@code src2} into {@code dest}. Weights are optional: {@code ?weights=2,1}.
-     */
     @POST
     @Path("/countmin/merge/{dest}/{src1}/{src2}")
     public void countMinMerge(@PathParam("dest") String dest, @PathParam("src1") String src1,
@@ -774,6 +784,120 @@ public class LettuceBackendResource {
         return suggestions.stream()
                 .map(s -> withScores ? s.suggestion() + ":" + s.score() : s.suggestion())
                 .toList();
+    }
+
+    @POST
+    @Path("/pubsub/subscribe")
+    public String pubSubSubscribe(@QueryParam("channels") String channels) {
+        Subscription subscription = new Subscription();
+        subscription.subscriber = pubsub.subscribe(List.of(channels.split(",")),
+                (channel, payload) -> subscription.record(channel, payload), subscription::end, null);
+        return register(subscription);
+    }
+
+    /** Pattern counterpart of {@link #pubSubSubscribe(String)}; the recorded channel is the one published to. */
+    @POST
+    @Path("/pubsub/psubscribe")
+    public String pubSubSubscribeToPatterns(@QueryParam("patterns") String patterns) {
+        Subscription subscription = new Subscription();
+        subscription.subscriber = pubsub.subscribeToPatterns(List.of(patterns.split(",")),
+                (channel, payload) -> subscription.record(channel, payload), subscription::end, null);
+        return register(subscription);
+    }
+
+    /**
+     * Subscribes through the reactive {@code Multi} API. The subscription is established asynchronously, so a test
+     * must wait for the channel to show up in {@link #pubSubChannels()} before publishing. Cancelling the stream,
+     * via {@link #pubSubUnsubscribe(String, String)}, is what unsubscribes.
+     */
+    @POST
+    @Path("/pubsub/reactive/subscribe")
+    public String pubSubSubscribeReactive(@QueryParam("channels") String channels) {
+        Subscription subscription = new Subscription();
+        subscription.cancellable = reactivePubSub.subscribeAsMessages(channels.split(","))
+                .subscribe().with(message -> subscription.record(message.getChannel(), message.getPayload()),
+                        ignored -> {
+                        }, subscription::end);
+        return register(subscription);
+    }
+
+    @POST
+    @Path("/pubsub/publish/{channel}")
+    public void pubSubPublish(@PathParam("channel") String channel, String message) {
+        pubsub.publish(channel, message);
+    }
+
+    @POST
+    @Path("/pubsub/reactive/publish/{channel}")
+    public Uni<Void> pubSubPublishReactive(@PathParam("channel") String channel, String message) {
+        return reactivePubSub.publish(channel, message);
+    }
+
+    @GET
+    @Path("/pubsub/subscription/{id}")
+    public Map<String, Object> pubSubState(@PathParam("id") String id) {
+        Subscription subscription = subscriptions.get(id);
+        Map<String, Object> state = new LinkedHashMap<>();
+        state.put("messages", List.copyOf(subscription.messages));
+        state.put("ended", subscription.ended.get());
+        state.put("onDuplicatedContext", !subscription.offDuplicatedContext.get());
+        return state;
+    }
+
+    @DELETE
+    @Path("/pubsub/subscription/{id}")
+    public void pubSubUnsubscribe(@PathParam("id") String id, @QueryParam("names") String names) {
+        Subscription subscription = subscriptions.get(id);
+        if (subscription.cancellable != null) {
+            subscription.cancellable.cancel();
+        } else if (names == null) {
+            subscription.subscriber.unsubscribe();
+        } else {
+            subscription.subscriber.unsubscribe(names.split(","));
+        }
+    }
+
+    @GET
+    @Path("/pubsub/channels")
+    public List<String> pubSubChannels() {
+        List<String> channels = new ArrayList<>();
+        for (Response channel : blocking.execute(Command.PUBSUB, "CHANNELS")) {
+            channels.add(channel.toString());
+        }
+        return channels;
+    }
+
+    @GET
+    @Path("/pubsub/numpat")
+    public int pubSubNumPat() {
+        return blocking.execute(Command.PUBSUB, "NUMPAT").toInteger();
+    }
+
+    private String register(Subscription subscription) {
+        String id = String.valueOf(subscriptionIds.incrementAndGet());
+        subscriptions.put(id, subscription);
+        return id;
+    }
+
+    static final class Subscription {
+
+        final List<String> messages = new CopyOnWriteArrayList<>();
+        final AtomicBoolean ended = new AtomicBoolean();
+        final AtomicBoolean offDuplicatedContext = new AtomicBoolean();
+        volatile PubSubCommands.RedisSubscriber subscriber;
+        volatile Cancellable cancellable;
+
+        void record(String channel, String payload) {
+            if (!VertxContext.isOnDuplicatedContext()) {
+                offDuplicatedContext.set(true);
+            }
+            messages.add(channel + ":" + payload);
+        }
+
+        void end() {
+            ended.set(true);
+        }
+
     }
 
     @POST

@@ -520,7 +520,7 @@ public final class LambdaTransliterator {
                 for (TransliteratedAction ta : allActions) {
                     if (ta instanceof TransliteratedAction.ActionService as) {
                         String matchKey = as.serviceKey();
-                        if (matchKey.startsWith(prefix) && matchKey.length() > prefix.length()) {
+                        if (dep.consumeAllMatches(matchKey)) {
                             matches.add(new String[] { matchKey.substring(prefix.length()), matchKey });
                         }
                     }
@@ -1222,7 +1222,14 @@ public final class LambdaTransliterator {
      * @return the key string
      */
     public static String serviceKey(Class<?> type, List<String> nameParts) {
-        return type.getName() + ":" + String.join("/", nameParts);
+        if (nameParts.isEmpty()) {
+            return type.getName();
+        }
+        StringBuilder sb = new StringBuilder(type.getName());
+        for (String part : nameParts) {
+            sb.append('\0').append(part);
+        }
+        return sb.toString();
     }
 
     /**

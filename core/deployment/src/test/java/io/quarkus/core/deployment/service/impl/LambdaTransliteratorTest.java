@@ -61,7 +61,7 @@ class LambdaTransliteratorTest {
         TransliteratedAction.ActionService extracted = LambdaTransliterator.extract(
                 action, String.class, List.of(), List.of(), List.of(), List.of(), false, false, false, "test");
 
-        assertThat(extracted.serviceKey()).isEqualTo("java.lang.String:");
+        assertThat(extracted.serviceKey()).isEqualTo("java.lang.String");
 
         ServiceNode node = deployAndReturn(extracted);
         assertThat(node.value()).isEqualTo("hello");
@@ -75,7 +75,7 @@ class LambdaTransliteratorTest {
         TransliteratedAction.ActionService extracted = LambdaTransliterator.extract(
                 action, Integer.class, List.of("answer"), List.of(), List.of(), List.of(), false, false, false, "test");
 
-        assertThat(extracted.serviceKey()).isEqualTo("java.lang.Integer:answer");
+        assertThat(extracted.serviceKey()).isEqualTo("java.lang.Integer\0answer");
 
         ServiceNode node = deployAndReturn(extracted);
         assertThat(node.value()).isEqualTo(42);
@@ -366,7 +366,7 @@ class LambdaTransliteratorTest {
         // simulate a recorder having stored a value under a proxy key
         String recorderProxyKey = "recorder-proxy-key";
         TransliteratedAction.AliasService alias = new TransliteratedAction.AliasService(
-                "java.lang.String:alias", false, recorderProxyKey, "test");
+                "java.lang.String\0alias", false, recorderProxyKey, "test");
 
         Map<String, byte[]> classes = LambdaTransliterator.generateConsolidatedClass(
                 CONSOLIDATED_CLASS_NAME, List.of(extracted, alias));
@@ -397,7 +397,7 @@ class LambdaTransliteratorTest {
 
         // wrapper reads from the service key and stores a RuntimeValue at the rv key
         TransliteratedAction.RuntimeValueWrapper wrapper = new TransliteratedAction.RuntimeValueWrapper(
-                "java.lang.String:", false, "runtimevalue:java.lang.String:", "test");
+                "java.lang.String", false, "runtimevalue:java.lang.String", "test");
 
         Map<String, byte[]> classes = LambdaTransliterator.generateConsolidatedClass(
                 CONSOLIDATED_CLASS_NAME, List.of(extracted, wrapper));

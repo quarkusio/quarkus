@@ -13,6 +13,7 @@ import io.quarkus.core.Phase;
 import io.quarkus.core.deployment.service.impl.Dependency;
 import io.quarkus.core.deployment.service.impl.ServiceMetadataBuildItem;
 import io.quarkus.core.deployment.service.impl.StaticServiceMetadataBuildItem;
+import io.quarkus.core.service.impl.ServiceNode;
 
 /**
  * Validates the service dependency graphs built from {@link ServiceMetadataBuildItem}
@@ -145,7 +146,7 @@ public final class ServiceDependencyValidator {
         // phase 3: cross-phase duplicate detection
         for (String key : runtimeProviderKeys) {
             if (staticProviderKeys.contains(key)) {
-                errors.add("Cross-phase duplicate: service '" + key
+                errors.add("Cross-phase duplicate: service '" + ServiceNode.displayKey(key)
                         + "' is registered in both the static-init and runtime phases");
             }
         }
@@ -186,7 +187,8 @@ public final class ServiceDependencyValidator {
             providerKeys.add(key);
             ServiceMetadata existing = providers.put(key, item);
             if (existing != null) {
-                errors.add("Duplicate " + phaseName + " service registration for '" + key
+                errors.add("Duplicate " + phaseName + " service registration for '"
+                        + ServiceNode.displayKey(key)
                         + "': registered by build step '" + existing.buildStepName()
                         + "' and also by '" + item.buildStepName() + "'");
             }
@@ -201,8 +203,9 @@ public final class ServiceDependencyValidator {
                 String depKey = dep.key();
                 if (!dep.optional() && !providers.containsKey(depKey) && !preExistingProviders.contains(depKey)) {
                     errors.add("Unsatisfied dependency: " + phaseName + " service '"
-                            + item.serviceKey() + "' (build step '" + item.buildStepName()
-                            + "') depends on '" + depKey + "' which is not registered");
+                            + ServiceNode.displayKey(item.serviceKey())
+                            + "' (build step '" + item.buildStepName()
+                            + "') depends on '" + dep.displayKey() + "' which is not registered");
                 }
             }
         }
@@ -220,15 +223,16 @@ public final class ServiceDependencyValidator {
                 String depKey;
                 if (dep.consumeAll()) {
                     // check each matched provider individually
-                    String prefix = dep.keyPrefix();
                     for (Map.Entry<String, ServiceMetadata> entry : providers.entrySet()) {
-                        if (entry.getKey().startsWith(prefix)) {
+                        if (dep.consumeAllMatches(entry.getKey())) {
                             Phase depPhase = entry.getValue().phase();
                             if (depPhase != null && depPhase.ordinal() > itemPhase.ordinal()) {
                                 errors.add("Phase ordering violation: " + phaseName + " service '"
-                                        + item.serviceKey() + "' (phase " + itemPhase
+                                        + ServiceNode.displayKey(item.serviceKey())
+                                        + "' (phase " + itemPhase
                                         + ", build step '" + item.buildStepName()
-                                        + "') depends on '" + entry.getKey()
+                                        + "') depends on '"
+                                        + ServiceNode.displayKey(entry.getKey())
                                         + "' (phase " + depPhase + ")");
                             }
                         }
@@ -241,9 +245,10 @@ public final class ServiceDependencyValidator {
                     Phase depPhase = depMeta.phase();
                     if (depPhase != null && depPhase.ordinal() > itemPhase.ordinal()) {
                         errors.add("Phase ordering violation: " + phaseName + " service '"
-                                + item.serviceKey() + "' (phase " + itemPhase
+                                + ServiceNode.displayKey(item.serviceKey())
+                                + "' (phase " + itemPhase
                                 + ", build step '" + item.buildStepName()
-                                + "') depends on '" + depKey
+                                + "') depends on '" + dep.displayKey()
                                 + "' (phase " + depPhase + ")");
                     }
                 }
@@ -260,9 +265,8 @@ public final class ServiceDependencyValidator {
                 }
                 if (dep.consumeAll()) {
                     // consumeAll: add edges to all same-phase providers matching the type prefix
-                    String prefix = dep.keyPrefix();
                     for (String providerKey : providers.keySet()) {
-                        if (providerKey.startsWith(prefix)) {
+                        if (dep.consumeAllMatches(providerKey)) {
                             deps.add(providerKey);
                         }
                     }
@@ -319,17 +323,17 @@ public final class ServiceDependencyValidator {
                 frame.index++;
                 if (inStack.contains(dep)) {
                     // found a cycle; reconstruct the path
-                    StringBuilder path = new StringBuilder(dep);
+                    StringBuilder path = new StringBuilder(ServiceNode.displayKey(dep));
                     boolean inCycle = false;
                     for (StackFrame f : stack) {
                         if (f.node.equals(dep)) {
                             inCycle = true;
                         }
                         if (inCycle) {
-                            path.append(" -> ").append(f.node);
+                            path.append(" -> ").append(ServiceNode.displayKey(f.node));
                         }
                     }
-                    path.append(" -> ").append(dep);
+                    path.append(" -> ").append(ServiceNode.displayKey(dep));
                     return path.toString();
                 }
                 if (!visited.contains(dep)) {

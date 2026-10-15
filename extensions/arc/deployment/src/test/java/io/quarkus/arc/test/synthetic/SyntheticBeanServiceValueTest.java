@@ -65,7 +65,7 @@ public class SyntheticBeanServiceValueTest {
 
                             // Alias the recorder value to the service key so it appears
                             // as a service graph value in StartupContext
-                            String serviceKey = SynthBean.class.getName() + ":";
+                            String serviceKey = SynthBean.class.getName();
                             TransliteratedAction alias = new TransliteratedAction.AliasService(
                                     serviceKey, true, recorderKey, context.getStepId());
 

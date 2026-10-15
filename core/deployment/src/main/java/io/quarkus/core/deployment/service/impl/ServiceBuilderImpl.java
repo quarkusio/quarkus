@@ -218,7 +218,8 @@ final class ServiceBuilderImpl<T> {
 
     /**
      * Consume all services of the given type as a {@code Map<String, T>}.
-     * The map keys are the service names; unnamed services use empty string.
+     * The map keys are the immediate child service names under the type;
+     * services with no name or with deeper name hierarchies are not matched.
      * Zero matches produces an empty map (always optional).
      *
      * @param type the service type to match (must not be {@code null})
@@ -228,6 +229,41 @@ final class ServiceBuilderImpl<T> {
         checkServiceType(type);
         dependencies.add(
                 new Dependency(type, List.of(), Dependency.FL_INJECTED | Dependency.FL_OPTIONAL | Dependency.FL_CONSUME_ALL));
+    }
+
+    /**
+     * Consume all services of the given type and name as a {@code Map<String, T>}.
+     * The map keys are the immediate child service names under the given name prefix;
+     * services at the exact name or with deeper hierarchies are not matched.
+     * Zero matches produces an empty map (always optional).
+     *
+     * @param type the service type to match (must not be {@code null})
+     * @param name the service name prefix (must not be {@code null})
+     */
+    public void consumeAll(Class<?> type, String name) {
+        Assert.checkNotNullParam("type", type);
+        Assert.checkNotNullParam("name", name);
+        checkServiceType(type);
+        dependencies.add(
+                new Dependency(type, List.of(name),
+                        Dependency.FL_INJECTED | Dependency.FL_OPTIONAL | Dependency.FL_CONSUME_ALL));
+    }
+
+    /**
+     * Consume all services of the given type and name parts as a {@code Map<String, T>}.
+     * The map keys are the immediate child service names under the given name prefix;
+     * services at the exact name or with deeper hierarchies are not matched.
+     * Zero matches produces an empty map (always optional).
+     *
+     * @param type the service type to match (must not be {@code null})
+     * @param nameParts the service name parts prefix (must not be {@code null})
+     */
+    public void consumeAll(Class<?> type, List<String> nameParts) {
+        Assert.checkNotNullParam("type", type);
+        Assert.checkNotNullParam("nameParts", nameParts);
+        checkServiceType(type);
+        dependencies.add(
+                new Dependency(type, nameParts, Dependency.FL_INJECTED | Dependency.FL_OPTIONAL | Dependency.FL_CONSUME_ALL));
     }
 
     // ── after() — optional ordering-only dependencies ──

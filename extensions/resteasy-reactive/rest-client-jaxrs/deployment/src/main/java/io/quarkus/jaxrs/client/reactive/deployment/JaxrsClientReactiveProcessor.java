@@ -156,11 +156,13 @@ import io.quarkus.deployment.builditem.ApplicationIndexBuildItem;
 import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
+import io.quarkus.deployment.builditem.ModuleExportBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.deployment.metrics.MetricsCapabilityBuildItem;
+import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
 import io.quarkus.deployment.recording.RecorderContext;
 import io.quarkus.deployment.util.JandexUtil;
 import io.quarkus.gizmo.AssignableResultHandle;
@@ -180,6 +182,7 @@ import io.quarkus.jaxrs.client.reactive.runtime.ParameterDescriptorFromClassSupp
 import io.quarkus.jaxrs.client.reactive.runtime.RestClientBase;
 import io.quarkus.jaxrs.client.reactive.runtime.ToObjectArray;
 import io.quarkus.jaxrs.client.reactive.runtime.impl.MultipartResponseDataBase;
+import io.quarkus.modular.spi.items.AddDependencyBuildItem;
 import io.quarkus.resteasy.reactive.common.deployment.ApplicationResultBuildItem;
 import io.quarkus.resteasy.reactive.common.deployment.ParameterContainersBuildItem;
 import io.quarkus.resteasy.reactive.common.deployment.QuarkusFactoryCreator;
@@ -194,6 +197,7 @@ import io.quarkus.resteasy.reactive.spi.MessageBodyWriterBuildItem;
 import io.quarkus.resteasy.reactive.spi.MessageBodyWriterOverrideBuildItem;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.metrics.MetricsFactory;
+import io.smallrye.modules.desc.Dependency;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.buffer.Buffer;
@@ -249,6 +253,19 @@ public class JaxrsClientReactiveProcessor {
     private static final MethodDescriptor URI_CTOR = MethodDescriptor.ofConstructor(java.net.URI.class, String.class);
 
     private static final String MULTIPART_FORM_DATA = "multipart/form-data";
+
+    @BuildStep
+    ModuleExportBuildItem exportClientInternalsToGeneratedClients(CurateOutcomeBuildItem curateOutcome) {
+        return new ModuleExportBuildItem("io.quarkus.resteasy.reactive.client",
+                curateOutcome.getApplicationModel().getAppArtifact().getModuleName(),
+                "org.jboss.resteasy.reactive.client.impl");
+    }
+
+    @BuildStep
+    AddDependencyBuildItem clientContextResolverServices() {
+        return new AddDependencyBuildItem("io.quarkus.resteasy.reactive.client", "io.quarkus.rest.client.jaxrs",
+                Dependency.Modifier.Set.of(Dependency.Modifier.SERVICES, Dependency.Modifier.OPTIONAL));
+    }
 
     @BuildStep
     void registerClientResponseBuilder(BuildProducer<ServiceProviderBuildItem> serviceProviders) {

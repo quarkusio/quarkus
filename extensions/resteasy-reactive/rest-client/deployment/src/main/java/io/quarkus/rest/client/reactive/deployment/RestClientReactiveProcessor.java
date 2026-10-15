@@ -89,6 +89,7 @@ import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
 import io.quarkus.deployment.builditem.GeneratedServiceProviderBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
+import io.quarkus.deployment.builditem.ModuleExportBuildItem;
 import io.quarkus.deployment.builditem.RunTimeConfigBuilderBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.StaticInitConfigBuilderBuildItem;
@@ -164,6 +165,12 @@ class RestClientReactiveProcessor {
             ClassDesc.of(Object.class.getName()), ClassDesc.of(Object.class.getName()), ClassDesc.of(Object.class.getName()));
 
     private record ProviderToRegister(String className, int priority, boolean fromTCCL) {
+    }
+
+    @BuildStep
+    void exportClientInternals(BuildProducer<ModuleExportBuildItem> exports) {
+        exports.produce(new ModuleExportBuildItem("io.quarkus.resteasy.reactive.client", "io.quarkus.rest.client",
+                "org.jboss.resteasy.reactive.client.impl"));
     }
 
     @BuildStep

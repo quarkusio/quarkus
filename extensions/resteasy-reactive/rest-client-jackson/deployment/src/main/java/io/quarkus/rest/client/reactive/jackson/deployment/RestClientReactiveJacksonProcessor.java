@@ -16,6 +16,7 @@ import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
+import io.quarkus.deployment.builditem.ModuleExportBuildItem;
 import io.quarkus.rest.client.reactive.deployment.AnnotationToRegisterIntoClientContextBuildItem;
 import io.quarkus.rest.client.reactive.jackson.ClientObjectMapper;
 import io.quarkus.rest.client.reactive.jackson.runtime.serialisers.ClientJacksonMessageBodyReader;
@@ -37,6 +38,12 @@ public class RestClientReactiveJacksonProcessor {
     private static final List<String> HANDLED_WRITE_MEDIA_TYPES = Collections.singletonList(MediaType.APPLICATION_JSON);
     private static final List<String> HANDLED_READ_MEDIA_TYPES = List.of(MediaType.APPLICATION_JSON, APPLICATION_NDJSON,
             APPLICATION_STREAM_JSON);
+
+    @BuildStep
+    void exportClientInternals(BuildProducer<ModuleExportBuildItem> exports) {
+        exports.produce(new ModuleExportBuildItem("io.quarkus.resteasy.reactive.client", "io.quarkus.rest.client.jackson",
+                "org.jboss.resteasy.reactive.client.impl"));
+    }
 
     @BuildStep
     void feature(BuildProducer<FeatureBuildItem> features) {

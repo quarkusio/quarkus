@@ -1,20 +1,17 @@
 package io.quarkus.funqy.runtime;
 
-import io.quarkus.runtime.annotations.Recorder;
+import java.util.List;
 
-@Recorder
 public class FunctionRecorder {
-    public static FunctionRegistry registry;
+    public static volatile FunctionRegistry registry;
 
-    public void init() {
-        registry = new FunctionRegistry();
-    }
-
-    public void register(Class functionClass, String methodName, String descriptor) {
-        registry.register(functionClass, methodName, descriptor, methodName);
-    }
-
-    public void register(Class functionClass, String methodName, String descriptor, String functionName) {
-        registry.register(functionClass, methodName, descriptor, functionName);
+    public static FunctionRegistry init(List<Class<?>> functionClasses, List<String> methodNames, List<String> descriptors,
+            List<String> functionNames) {
+        FunctionRegistry newRegistry = new FunctionRegistry();
+        for (int i = 0; i < functionClasses.size(); i++) {
+            newRegistry.register(functionClasses.get(i), methodNames.get(i), descriptors.get(i), functionNames.get(i));
+        }
+        registry = newRegistry;
+        return newRegistry;
     }
 }

@@ -1,9 +1,9 @@
 package io.quarkus.funqy.deployment;
 
-import static io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT;
 import static io.quarkus.funqy.deployment.ReflectionRegistrationUtil.*;
 
 import java.lang.reflect.Modifier;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
@@ -29,16 +29,17 @@ import io.quarkus.arc.processor.AnnotationsTransformer;
 import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.arc.processor.DotNames;
 import io.quarkus.arc.processor.Transformation;
+import io.quarkus.core.Phase;
+import io.quarkus.core.deployment.service.ServiceRegistrar;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
-import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyBuildItem;
-import io.quarkus.deployment.recording.RecorderContext;
 import io.quarkus.funqy.Context;
 import io.quarkus.funqy.Funq;
 import io.quarkus.funqy.runtime.FunctionRecorder;
+import io.quarkus.funqy.runtime.FunctionRegistry;
 import io.quarkus.gizmo.Gizmo;
 
 public class FunctionScannerBuildStep {
@@ -160,21 +161,29 @@ public class FunctionScannerBuildStep {
     }
 
     @BuildStep
-    @Record(STATIC_INIT)
-    public FunctionInitializedBuildItem staticInit(FunctionRecorder recorder, List<FunctionBuildItem> functions,
-            RecorderContext context) {
+    public FunctionInitializedBuildItem staticInit(ServiceRegistrar serviceRegistrar, List<FunctionBuildItem> functions)
+            throws ClassNotFoundException {
         if (functions == null || functions.isEmpty())
             return null;
-        recorder.init();
+        ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
+        List<Class<?>> functionClasses = new ArrayList<>(functions.size());
+        List<String> methodNames = new ArrayList<>(functions.size());
+        List<String> descriptors = new ArrayList<>(functions.size());
+        List<String> functionNames = new ArrayList<>(functions.size());
         for (FunctionBuildItem function : functions) {
-            if (function.getFunctionName() == null) {
-                recorder.register(context.classProxy(function.getClassName()), function.getMethodName(),
-                        function.getDescriptor());
-            } else {
-                recorder.register(context.classProxy(function.getClassName()), function.getMethodName(),
-                        function.getDescriptor(), function.getFunctionName());
-            }
+            functionClasses.add(Class.forName(function.getClassName(), false, classLoader));
+            methodNames.add(function.getMethodName());
+            descriptors.add(function.getDescriptor());
+            functionNames.add(function.getFunctionName() == null ? function.getMethodName() : function.getFunctionName());
         }
+        List<Class<?>> capturedClasses = List.copyOf(functionClasses);
+        List<String> capturedMethodNames = List.copyOf(methodNames);
+        List<String> capturedDescriptors = List.copyOf(descriptors);
+        List<String> capturedFunctionNames = List.copyOf(functionNames);
+        serviceRegistrar.forService(FunctionRegistry.class)
+                .atPhase(Phase.STATIC_INIT)
+                .onStart(ctx -> FunctionRecorder.init(capturedClasses, capturedMethodNames, capturedDescriptors,
+                        capturedFunctionNames));
         return FunctionInitializedBuildItem.SINGLETON;
     }
 

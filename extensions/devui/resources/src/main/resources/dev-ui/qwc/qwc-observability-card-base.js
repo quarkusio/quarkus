@@ -3,7 +3,7 @@ import { notifier } from 'notifier';
 
 /**
  * Shared base for Observability signal components. Provides common shell affordances
- * (currently CSV export) so each signal component reuses them. Registered in the Dev UI
+ * (currently CSV and JSON export) so each signal component reuses them. Registered in the Dev UI
  * import map by core devui as the bare specifier 'observability-card-base'.
  *
  * Extends QwcHotReloadElement so signal components can react to dev-mode live reloads:
@@ -31,13 +31,27 @@ export class ObservabilityCardBase extends QwcHotReloadElement {
         for (const row of rows) {
             lines.push(headers.map(h => escape(row[h])).join(','));
         }
-        const blob = new Blob([lines.join('\n')], { type: 'text/csv' });
+        this.download(lines.join('\n'), 'text/csv', filename);
+        notifier.showInfoMessage('Exported ' + rows.length + ' rows');
+    }
+
+    /**
+     * Export an object to a downloaded JSON file.
+     * @param {Object} value
+     * @param {string} filename
+     */
+    exportJson(value, filename) {
+        this.download(JSON.stringify(value, null, 2), 'application/json', filename);
+    }
+
+    /** Hand the browser a file to save. */
+    download(content, mimeType, filename) {
+        const blob = new Blob([content], { type: mimeType });
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = url;
         link.download = filename;
         link.click();
         URL.revokeObjectURL(url);
-        notifier.showInfoMessage('Exported ' + rows.length + ' rows');
     }
 }

@@ -14,6 +14,7 @@ import com.example.test.Test;
 import com.example.test.TestOuterClass;
 
 import io.quarkus.grpc.GrpcClient;
+import io.quarkus.test.timeouts.TestTimeouts;
 import io.smallrye.mutiny.Multi;
 
 public class BlockingMutinyTestBase {
@@ -32,7 +33,7 @@ public class BlockingMutinyTestBase {
     void clear() {
         getClient().clear(EMPTY).onFailure().invoke(e -> {
             throw new RuntimeException("Failed to clear items", e);
-        }).await().atMost(Duration.ofSeconds(20));
+        }).await().atMost(TestTimeouts.get());
     }
 
     @org.junit.jupiter.api.Test
@@ -47,7 +48,7 @@ public class BlockingMutinyTestBase {
                     .onFailure().invoke(e -> {
                         throw new RuntimeException("Failed to add on attempt " + attempt, e);
                     })
-                    .await().atMost(Duration.ofSeconds(5));
+                    .await().atMost(TestTimeouts.get());
         }
 
         List<String> actual = new ArrayList<>();

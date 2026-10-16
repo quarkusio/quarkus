@@ -500,6 +500,8 @@
                         <!-- combine.self suppresses warnings about java.io.tmpdir being defined twice -->
                         <systemPropertyVariables combine.self="override">
                             <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
+                            <!-- needed for the global extensions, such as the one providing the shared test timeout -->
+                            <junit.jupiter.extensions.autodetection.enabled>true</junit.jupiter.extensions.autodetection.enabled>
                             <maven.home>${maven.home}</maven.home>
                             <maven.repo.local>${settings.localRepository}</maven.repo.local>
                             <maven.settings>${session.request.userSettingsFile.path}</maven.settings>
@@ -528,6 +530,8 @@
                         </properties>
                         <systemPropertyVariables>
                             <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
+                            <!-- needed for the global extensions, such as the one providing the shared test timeout -->
+                            <junit.jupiter.extensions.autodetection.enabled>true</junit.jupiter.extensions.autodetection.enabled>
                             <maven.home>${maven.home}</maven.home>
                             <maven.repo.local>${settings.localRepository}</maven.repo.local>
                             <maven.settings>${session.request.userSettingsFile.path}</maven.settings>
@@ -743,7 +747,24 @@
         </pluginManagement>
     </build>
 
-    <profiles>
+        <profiles>
+        <profile>
+            <!-- Gives every module the shared test timeout (see test-timeouts.properties).
+                 The module providing it opts out with a .no-test-timeouts marker file, as it cannot depend on itself. -->
+            <id>test-timeouts</id>
+            <activation>
+                <file>
+                    <missing>${basedir}/.no-test-timeouts</missing>
+                </file>
+            </activation>
+            <dependencies>
+                <dependency>
+                    <groupId>io.quarkus</groupId>
+                    <artifactId>quarkus-junit-timeouts</artifactId>
+                    <scope>test</scope>
+                </dependency>
+            </dependencies>
+        </profile>
         <profile>
             <id>format</id>
             <activation>

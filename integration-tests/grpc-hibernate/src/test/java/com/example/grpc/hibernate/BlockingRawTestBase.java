@@ -16,6 +16,7 @@ import com.example.test.TestOuterClass;
 import com.example.test.TestRaw;
 
 import io.quarkus.grpc.GrpcClient;
+import io.quarkus.test.timeouts.TestTimeouts;
 import io.smallrye.mutiny.Multi;
 
 public class BlockingRawTestBase {
@@ -34,7 +35,7 @@ public class BlockingRawTestBase {
     void clear() {
         getClient().clear(EMPTY).onFailure().invoke(e -> {
             throw new RuntimeException("Failed to clear items", e);
-        }).await().atMost(Duration.ofSeconds(20));
+        }).await().atMost(TestTimeouts.get());
     }
 
     @Test
@@ -49,7 +50,7 @@ public class BlockingRawTestBase {
                     .onFailure().invoke(e -> {
                         throw new RuntimeException("Failed to add on attempt " + attempt, e);
                     })
-                    .await().atMost(Duration.ofSeconds(5));
+                    .await().atMost(TestTimeouts.get());
         }
 
         List<String> actual = new CopyOnWriteArrayList<>();

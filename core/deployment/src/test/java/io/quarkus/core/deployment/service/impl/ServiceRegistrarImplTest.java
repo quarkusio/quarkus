@@ -32,7 +32,7 @@ class ServiceRegistrarImplTest {
 
         assertThat(rv).isInstanceOf(BytecodeRecorderImpl.ReturnedProxy.class);
         BytecodeRecorderImpl.ReturnedProxy proxy = (BytecodeRecorderImpl.ReturnedProxy) rv;
-        assertThat(proxy.__returned$proxy$key()).isEqualTo("runtimevalue:java.lang.CharSequence:");
+        assertThat(proxy.__returned$proxy$key()).isEqualTo("runtimevalue:java.lang.CharSequence");
         assertThat(proxy.__static$$init()).isFalse();
     }
 
@@ -47,8 +47,8 @@ class ServiceRegistrarImplTest {
         TransliteratedAction ta = recorderItems.get(0).getTransliteratedAction();
         assertThat(ta).isInstanceOf(TransliteratedAction.RuntimeValueWrapper.class);
         TransliteratedAction.RuntimeValueWrapper rvw = (TransliteratedAction.RuntimeValueWrapper) ta;
-        assertThat(rvw.sourceServiceKey()).isEqualTo("java.lang.CharSequence:");
-        assertThat(rvw.rvKey()).isEqualTo("runtimevalue:java.lang.CharSequence:");
+        assertThat(rvw.sourceServiceKey()).isEqualTo("java.lang.CharSequence");
+        assertThat(rvw.rvKey()).isEqualTo("runtimevalue:java.lang.CharSequence");
         assertThat(rvw.staticInit()).isFalse();
     }
 
@@ -60,7 +60,7 @@ class ServiceRegistrarImplTest {
         RuntimeValue<CharSequence> rv = builder.serviceAsRuntimeValue(CharSequence.class, "primary");
 
         BytecodeRecorderImpl.ReturnedProxy proxy = (BytecodeRecorderImpl.ReturnedProxy) rv;
-        assertThat(proxy.__returned$proxy$key()).isEqualTo("runtimevalue:java.lang.CharSequence:primary");
+        assertThat(proxy.__returned$proxy$key()).isEqualTo("runtimevalue:java.lang.CharSequence\0primary");
     }
 
     @Test
@@ -87,7 +87,7 @@ class ServiceRegistrarImplTest {
         RuntimeValue<CharSequence> rv = builder.staticInitServiceAsRuntimeValue(CharSequence.class, "named");
 
         BytecodeRecorderImpl.ReturnedProxy proxy = (BytecodeRecorderImpl.ReturnedProxy) rv;
-        assertThat(proxy.__returned$proxy$key()).isEqualTo("runtimevalue:java.lang.CharSequence:named");
+        assertThat(proxy.__returned$proxy$key()).isEqualTo("runtimevalue:java.lang.CharSequence\0named");
         assertThat(proxy.__static$$init()).isTrue();
     }
 

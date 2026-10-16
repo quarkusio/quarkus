@@ -42,6 +42,7 @@ import io.quarkus.core.service.impl.ServiceGraph;
 import io.quarkus.core.service.impl.ServiceNode;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.StartupContext;
+import io.smallrye.classfile.ClassHierarchyResolver;
 
 /**
  * Tests for {@link LambdaTransliterator}.
@@ -61,7 +62,7 @@ class LambdaTransliteratorTest {
         TransliteratedAction.ActionService extracted = LambdaTransliterator.extract(
                 action, String.class, List.of(), List.of(), List.of(), List.of(), false, false, false, "test");
 
-        assertThat(extracted.serviceKey()).isEqualTo("java.lang.String:");
+        assertThat(extracted.serviceKey()).isEqualTo("java.lang.String");
 
         ServiceNode node = deployAndReturn(extracted);
         assertThat(node.value()).isEqualTo("hello");
@@ -75,7 +76,7 @@ class LambdaTransliteratorTest {
         TransliteratedAction.ActionService extracted = LambdaTransliterator.extract(
                 action, Integer.class, List.of("answer"), List.of(), List.of(), List.of(), false, false, false, "test");
 
-        assertThat(extracted.serviceKey()).isEqualTo("java.lang.Integer:answer");
+        assertThat(extracted.serviceKey()).isEqualTo("java.lang.Integer\0answer");
 
         ServiceNode node = deployAndReturn(extracted);
         assertThat(node.value()).isEqualTo(42);
@@ -305,7 +306,7 @@ class LambdaTransliteratorTest {
                 action2, Integer.class, List.of(), List.of(), List.of(), List.of(), false, false, false, "test");
 
         Map<String, byte[]> classes = LambdaTransliterator.generateConsolidatedClass(
-                CONSOLIDATED_CLASS_NAME, List.of(extracted1, extracted2));
+                CONSOLIDATED_CLASS_NAME, List.of(extracted1, extracted2), ClassHierarchyResolver.defaultResolver());
         String className = CONSOLIDATED_CLASS_NAME.replace('/', '.');
 
         ClassLoader cl = makeClassLoader(classes);
@@ -340,7 +341,7 @@ class LambdaTransliteratorTest {
                 action2, String.class, List.of("svc2"), List.of(), List.of(), List.of(), false, false, false, "test");
 
         Map<String, byte[]> classes = LambdaTransliterator.generateConsolidatedClass(
-                CONSOLIDATED_CLASS_NAME, List.of(extracted1, extracted2));
+                CONSOLIDATED_CLASS_NAME, List.of(extracted1, extracted2), ClassHierarchyResolver.defaultResolver());
         String className = CONSOLIDATED_CLASS_NAME.replace('/', '.');
 
         ClassLoader cl = makeClassLoader(classes);
@@ -366,10 +367,10 @@ class LambdaTransliteratorTest {
         // simulate a recorder having stored a value under a proxy key
         String recorderProxyKey = "recorder-proxy-key";
         TransliteratedAction.AliasService alias = new TransliteratedAction.AliasService(
-                "java.lang.String:alias", false, recorderProxyKey, "test");
+                "java.lang.String\0alias", false, recorderProxyKey, "test");
 
         Map<String, byte[]> classes = LambdaTransliterator.generateConsolidatedClass(
-                CONSOLIDATED_CLASS_NAME, List.of(extracted, alias));
+                CONSOLIDATED_CLASS_NAME, List.of(extracted, alias), ClassHierarchyResolver.defaultResolver());
         String className = CONSOLIDATED_CLASS_NAME.replace('/', '.');
 
         ClassLoader cl = makeClassLoader(classes);
@@ -397,10 +398,10 @@ class LambdaTransliteratorTest {
 
         // wrapper reads from the service key and stores a RuntimeValue at the rv key
         TransliteratedAction.RuntimeValueWrapper wrapper = new TransliteratedAction.RuntimeValueWrapper(
-                "java.lang.String:", false, "runtimevalue:java.lang.String:", "test");
+                "java.lang.String", false, "runtimevalue:java.lang.String", "test");
 
         Map<String, byte[]> classes = LambdaTransliterator.generateConsolidatedClass(
-                CONSOLIDATED_CLASS_NAME, List.of(extracted, wrapper));
+                CONSOLIDATED_CLASS_NAME, List.of(extracted, wrapper), ClassHierarchyResolver.defaultResolver());
         String className = CONSOLIDATED_CLASS_NAME.replace('/', '.');
 
         ClassLoader cl = makeClassLoader(classes);
@@ -463,7 +464,7 @@ class LambdaTransliteratorTest {
                 "test");
 
         Map<String, byte[]> classes = LambdaTransliterator.generateConsolidatedClass(
-                CONSOLIDATED_CLASS_NAME, List.of(extracted));
+                CONSOLIDATED_CLASS_NAME, List.of(extracted), ClassHierarchyResolver.defaultResolver());
 
         // at least the consolidated class + one anonymous class copy
         assertThat(classes.size()).isGreaterThanOrEqualTo(2);
@@ -488,7 +489,7 @@ class LambdaTransliteratorTest {
                 false, "test");
 
         Map<String, byte[]> classes = LambdaTransliterator.generateConsolidatedClass(
-                CONSOLIDATED_CLASS_NAME, List.of(extracted));
+                CONSOLIDATED_CLASS_NAME, List.of(extracted), ClassHierarchyResolver.defaultResolver());
 
         assertThat(classes.size()).isGreaterThanOrEqualTo(2);
 
@@ -1062,7 +1063,7 @@ class LambdaTransliteratorTest {
     private static ServiceNode deployAndReturn(ServiceGraph graph,
             TransliteratedAction.ActionService extracted, ServiceNode... deps) throws Exception {
         Map<String, byte[]> classes = LambdaTransliterator.generateConsolidatedClass(
-                CONSOLIDATED_CLASS_NAME, List.of(extracted));
+                CONSOLIDATED_CLASS_NAME, List.of(extracted), ClassHierarchyResolver.defaultResolver());
         ClassLoader cl = makeClassLoader(classes);
         String className = CONSOLIDATED_CLASS_NAME.replace('/', '.');
         Class<?> clazz = cl.loadClass(className);

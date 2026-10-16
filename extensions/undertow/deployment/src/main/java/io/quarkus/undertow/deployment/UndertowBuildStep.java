@@ -193,6 +193,7 @@ public class UndertowBuildStep {
             BuildProducer<RouteBuildItem> routeProducer,
             ExecutorBuildItem executorBuildItem,
             ServletContextPathBuildItem servletContextPathBuildItem,
+            VertxHttpBuildTimeConfig httpBuildTimeConfig,
             Capabilities capabilities) throws Exception {
 
         boolean hasSecurity = capabilities.isPresent(Capability.SECURITY);
@@ -205,10 +206,9 @@ public class UndertowBuildStep {
                 .require(BeanContainer.class)
                 .require(ScheduledExecutorService.class)
                 .require(ServletRuntimeConfig.class)
-                .require(VertxHttpBuildTimeConfig.class)
                 .require(VertxHttpConfig.class)
                 .after("io.quarkus.arc.shutdown-gateway")
-                .onStart((ctx, manager, beanContainer, executor, servletRuntimeConfig, httpBuildTimeConfig,
+                .onStart((ctx, manager, beanContainer, executor, servletRuntimeConfig,
                         httpRuntimeConfig) -> {
                     if (hasSecurity) {
                         UndertowDeploymentRecorder.setupSecurity(manager);

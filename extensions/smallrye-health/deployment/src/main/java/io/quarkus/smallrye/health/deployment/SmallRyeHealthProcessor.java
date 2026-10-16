@@ -453,14 +453,14 @@ class SmallRyeHealthProcessor {
     }
 
     @BuildStep
-    void processSmallRyeHealthRuntimeConfig(ServiceRegistrar serviceRegistrar) {
+    void processSmallRyeHealthRuntimeConfig(ServiceRegistrar serviceRegistrar,
+            SmallRyeHealthBuildFixedConfig buildFixedConfig) {
         serviceRegistrar
                 .forService("io.quarkus.smallrye-health.runtime-config")
                 .require(BeanContainer.class)
                 .require(SmallRyeHealthRuntimeConfig.class)
-                .require(SmallRyeHealthBuildFixedConfig.class)
                 .afterBuildItem(SyntheticBeansRuntimeInitBuildItem.class)
-                .onStart((ctx, container, runtimeConfig, buildFixedConfig) -> SmallRyeHealthRecorder
+                .onStart((ctx, container, runtimeConfig) -> SmallRyeHealthRecorder
                         .processSmallRyeHealthRuntimeConfiguration(container, runtimeConfig, buildFixedConfig));
     }
 

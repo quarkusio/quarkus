@@ -14,7 +14,7 @@ import io.quarkus.runtime.annotations.Recorder;
 /**
  * Transitional recorder that unwraps legacy logging build-item values (which are delivered as
  * {@link RuntimeValue}-wrapped optionals and maps) so that they can be published into the logging service
- * graph via {@code ActionBuilder.aliasRecorderValue()}.
+ * graph via {@code ServiceRegistrar.aliasRecorderValue()}.
  * <p>
  * RECORDER COMPAT: this entire recorder exists only to bridge extension-contributed logging build items into
  * the service scheme during the migration period. Each method here can be removed once the corresponding

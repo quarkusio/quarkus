@@ -50,8 +50,12 @@ public class JsonRpcRouter {
 
     private volatile JsonRpcCodec codec;
 
+    // Written last in initialize, so a reader that sees true also sees the maps and the codec
+    private volatile boolean ready;
+
     /**
      * This gets populated at build time so the the routes knows all json-rpc endpoints.
+     * The codec is created here too, so the router is never visible with endpoints but no codec (or the other way around).
      *
      * @param runtimeMethods
      * @param runtimeSubscriptions
@@ -59,13 +63,15 @@ public class JsonRpcRouter {
      * @param deploymentSubscriptions
      * @param recordedMethods
      * @param recordedSubscriptions
+     * @param jsonMapper the mapper used to read requests and write responses
      */
-    public void populateJsonRpcEndpoints(Map<String, JsonRpcMethod> runtimeMethods,
+    public void initialize(Map<String, JsonRpcMethod> runtimeMethods,
             Map<String, JsonRpcMethod> runtimeSubscriptions,
             Map<String, JsonRpcMethod> deploymentMethods,
             Map<String, JsonRpcMethod> deploymentSubscriptions,
             Map<String, JsonRpcMethod> recordedMethods,
-            Map<String, JsonRpcMethod> recordedSubscriptions) {
+            Map<String, JsonRpcMethod> recordedSubscriptions,
+            JsonMapper jsonMapper) {
 
         this.runtimeMethodsMap = enhanceRuntimeJsonRpcEndpoints(runtimeMethods);
         this.runtimeSubscriptionMap = enhanceRuntimeJsonRpcEndpoints(runtimeSubscriptions);
@@ -75,10 +81,16 @@ public class JsonRpcRouter {
 
         this.recordedMethodsMap = recordedMethods;
         this.recordedSubscriptionsMap = recordedSubscriptions;
+
+        this.codec = new JsonRpcCodec(jsonMapper);
+        this.ready = true;
     }
 
-    public void initializeCodec(JsonMapper jsonMapper) {
-        this.codec = new JsonRpcCodec(jsonMapper);
+    /**
+     * @return true once {@link #initialize} has run, after which the endpoints and the codec can be used
+     */
+    public boolean isReady() {
+        return ready;
     }
 
     @Produces

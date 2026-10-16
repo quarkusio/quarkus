@@ -10,8 +10,8 @@ public final class BeanProperties {
 
     private InnerClass innerClass;
 
-    public BeanProperties(String finalValue) {
-        this.finalValue = finalValue;
+    public BeanProperties() {
+        this.finalValue = "final";
     }
 
     public String getFinalValue() {

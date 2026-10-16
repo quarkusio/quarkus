@@ -302,7 +302,7 @@ Default is `false`.
 
 * `exposed` - does not expose a particular HTTP verb when set to `false`. Default is `true`.
 * `path` - operation path (this is appended to the resource base path). Default is an empty string.
-* `rolesAllowed` - List of the security roles permitted to access this operation. It needs a Quarkus Security extension to be present, otherwise it will be ignored. Default is empty.
+* `rolesAllowed` - List of the security roles permitted to access this operation. It needs a Quarkus Security extension to be present, otherwise it will be ignored. When left empty, the operation inherits the `rolesAllowed` declared on the `@ResourceProperties` of the resource; set it to override the resource-level roles for this operation only. Default is empty.
 
 == Adding additional methods to the generated resource
 
@@ -343,6 +343,8 @@ public interface PeopleResource extends PanacheEntityResource<Person, Long> {
 
 Additionally, if you are only interested in specifying the roles that are allowed to use the resources, the `@ResourceProperties` and `@MethodProperties` annotations have the field `rolesAllowed` to list the security roles permitted to access the resource or operation.
 
+An operation that is customized with `@MethodProperties` but does not set its own `rolesAllowed` still inherits the `rolesAllowed` declared on the resource's `@ResourceProperties`. If you instead want a single operation of an otherwise-secured resource to be publicly accessible, annotate that operation with `jakarta.annotation.security.PermitAll` (or with `@Authenticated` if you only want to require an authenticated user); a security annotation declared directly on the operation always takes precedence over the resource-level `rolesAllowed`.
+
 === Using @Authenticated
 
 Additionally, REST Data with Panache can be used in conjunction with `io.quarkus.security.Authenticated`, by either:
@@ -359,6 +361,8 @@ public interface PeopleResource extends PanacheEntityResource<Person, Long> {
     boolean delete(Long id);
 }
 ----
+
+As with `rolesAllowed`, a security annotation placed directly on an operation takes precedence over `@ResourceProperties(authenticated=true)`: the operation is governed by its own annotation only. For example, annotating a single operation with `jakarta.annotation.security.PermitAll` makes that operation publicly accessible while every other operation of the resource still requires an authenticated user.
 
 === Securing endpoints using @PermissionsAllowed annotation
 
@@ -380,6 +384,51 @@ public interface PeopleResource extends PanacheEntityResource<Person, Long> {
 }
 ----
 
+=== Securing sort and filter fields
+
+REST Data with Panache validates the `sort` query parameter and field filter parameters against the entity's actual fields.
+This prevents users from attempting to sort or filter by non-existent fields, which could potentially be used for enumeration attacks or cause database errors.
+
+Additionally, fields that are hidden from JSON serialization are automatically excluded from sorting and filtering:
+
+* Fields annotated with `@JsonIgnore` (Jackson)
+* Fields annotated with `@JsonbTransient` (JSON-B)
+* Fields annotated with `@XmlTransient` (JAXB)
+* Fields listed in `@JsonIgnoreProperties` on the entity class
+* Fields whose type is annotated with `@JsonIgnoreType`
+
+==== Securing fields with @SecureField
+
+When using Quarkus REST with Jackson, you can use the `@SecureField` annotation to restrict sorting and filtering by sensitive fields based on the user's security roles.
+If a field is annotated with `@SecureField` and the user lacks the required roles, attempting to sort or filter by that field will result in a `400 Bad Request` response.
+
+[source,java]
+----
+import io.quarkus.resteasy.reactive.jackson.SecureField;
+
+@Entity
+public class Employee extends PanacheEntity {
+    public String name;
+    public String department;
+
+    @SecureField(rolesAllowed = {"hr", "admin"})
+    public BigDecimal salary;
+
+    @SecureField(rolesAllowed = "admin")
+    public String ssn;
+}
+----
+
+With this configuration:
+
+* Any user can sort or filter by `name` and `department`
+* Only users with the `hr` or `admin` role can use `?sort=salary` or `?salary=50000`
+* Only users with the `admin` role can use `?sort=ssn` or `?ssn=123-45-6789`
+* Unauthenticated users or users without the required roles will receive a `400 Bad Request` response that treats the field as invalid, to avoid revealing the existence of protected fields
+
+NOTE: The `@SecureField` annotation is provided by the `quarkus-rest-jackson` extension.
+See xref:rest.adoc#secure-serialization[Secure Serialization] in the Quarkus REST guide for more details.
+
 == Query parameters to list entities
 
 REST Data with Panache supports the following query parameters to get the list of entities:
@@ -388,10 +437,16 @@ REST Data with Panache supports the following query parameters to get the list o
 It applies to the paged resources only and is a number starting with 0. Default is 0.
 * `size` - a page size which should be returned by a list operation.
 It applies to the paged resources only and is a number starting with 1. Default is 20.
+The maximum page size is limited to 100 by default to prevent excessive database load. You can configure this limit using the `quarkus.rest-data-panache.max-page-size` property.
+Set it to empty to disable the limit entirely.
 * `sort` - a comma separated list of fields which should be used for sorting a result of a list operation.
 Fields are sorted in the ascending order unless they're prefixed with a `-`.
 E.g. `?sort=name,-age` will sort the result by the name ascending by the age descending.
+Only direct entity fields are supported; nested properties (e.g., `author.name`) cannot be used for sorting.
 * `namedQuery` - a named query that should be configured at entity level using the annotation `@NamedQuery`.
+
+NOTE: These query parameter names (`page`, `size`, `sort`, `namedQuery`) are reserved by the framework.
+If your entity has a field with one of these names, it cannot be filtered via query parameters.
 
 For example, if you want to get two `People` entities in the first page, you should call `http://localhost:8080/people?page=0&size=2`, and the response should look like:
 
@@ -425,6 +480,7 @@ Additionally, you can also filter by the entity fields by adding a query param w
 ----
 
 IMPORTANT: Filtering by fields is only supported for String, Boolean, Character, Double, Float, Integer, Long, Short, Byte and the primitive types.
+Nested properties (e.g., `author.name`) are not supported for filtering.
 
 == Complex filtering to list entities using @NamedQuery
 

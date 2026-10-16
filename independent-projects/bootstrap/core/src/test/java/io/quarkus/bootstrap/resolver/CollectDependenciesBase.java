@@ -2,6 +2,7 @@ package io.quarkus.bootstrap.resolver;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -11,6 +12,8 @@ import org.eclipse.aether.util.artifact.JavaScopes;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import io.quarkus.bootstrap.resolver.maven.workspace.LocalProject;
+import io.quarkus.bootstrap.util.IoUtils;
 import io.quarkus.maven.dependency.ArtifactDependency;
 import io.quarkus.maven.dependency.Dependency;
 import io.quarkus.maven.dependency.DependencyFlags;
@@ -65,6 +68,23 @@ public abstract class CollectDependenciesBase extends ResolverSetupCleanup {
 
     protected BootstrapAppModelResolver getTestResolver() throws Exception {
         return resolver;
+    }
+
+    /**
+     * Creates a resolver for a workspace consisting of the root project, as opposed to resolving the root
+     * project as an artifact installed in a Maven repository. Tests that depend on how the root POM is
+     * interpolated should be using this resolver, since the models of projects belonging to a workspace are
+     * interpolated differently from the models of artifacts resolved from a repository.
+     *
+     * @return application model resolver initialized with the root project as the current project
+     * @throws Exception in case the workspace could not be initialized
+     */
+    protected BootstrapAppModelResolver newWorkspaceResolver() throws Exception {
+        // the root POM is copied from the local Maven repo, faking a project it could have been installed from
+        final Path projectDir = Files.createDirectories(workDir.resolve("project"));
+        IoUtils.copy(getInstallDir(root).resolve(root.toPomArtifact().getArtifactFileName()),
+                projectDir.resolve("pom.xml"));
+        return newAppModelResolver(LocalProject.loadWorkspace(projectDir));
     }
 
     protected Path getInstallDir(TsArtifact artifact) {

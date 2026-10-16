@@ -7,7 +7,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.function.BiPredicate;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -37,6 +36,7 @@ import io.quarkus.hibernate.orm.runtime.migration.MultiTenancyStrategy;
 import io.quarkus.hibernate.orm.runtime.proxies.PreGeneratedProxies;
 import io.quarkus.hibernate.orm.runtime.schema.SchemaManagementIntegrator;
 import io.quarkus.hibernate.orm.runtime.tenant.DataSourceTenantConnectionResolver;
+import io.quarkus.hibernate.validator.spi.AttributeLoadedPredicate;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
@@ -305,11 +305,11 @@ public class HibernateOrmRecorder {
         }, "Hibernate post-boot validation thread for " + puName).start();
     }
 
-    public BiPredicate<Object, String> attributeLoadedPredicate() {
+    public AttributeLoadedPredicate attributeLoadedPredicate() {
         return new IsAttributeLoadedPredicate();
     }
 
-    private static class IsAttributeLoadedPredicate implements BiPredicate<Object, String> {
+    private static class IsAttributeLoadedPredicate implements AttributeLoadedPredicate {
         private final ProviderUtil providerUtil = new ProviderUtil();
 
         @Override

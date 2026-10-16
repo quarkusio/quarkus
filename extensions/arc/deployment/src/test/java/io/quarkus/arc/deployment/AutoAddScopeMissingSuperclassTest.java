@@ -39,6 +39,8 @@ class AutoAddScopeMissingSuperclassTest {
                 () -> item.test(child, List.of(), index));
 
         assertTrue(failure.getMessage().contains(child.superName().toString()));
+        assertTrue(failure.getMessage().contains("Jandex index"));
+        assertTrue(failure.getMessage().contains("application setup error"));
         assertEquals(1, lookups.get());
     }
 
@@ -52,6 +54,8 @@ class AutoAddScopeMissingSuperclassTest {
                 () -> new AutoAddScopeProcessor().requiresContainerServices(child, Set.of(), index));
 
         assertTrue(failure.getMessage().contains(child.superName().toString()));
+        assertTrue(failure.getMessage().contains("Jandex index"));
+        assertTrue(failure.getMessage().contains("application setup error"));
         assertEquals(1, lookups.get());
     }
 

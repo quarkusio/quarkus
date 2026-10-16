@@ -126,7 +126,8 @@ public class AutoAddScopeProcessor {
             while (superName != null && !superName.equals(DotNames.OBJECT)) {
                 final ClassInfo superClass = index.getClassByName(superName);
                 if (superClass == null) {
-                    throw new IllegalStateException("Superclass " + superName + " of " + clazz.name() + " not found");
+                    throw new IllegalStateException("Superclass " + superName + " of " + clazz.name()
+                            + " was not found in the Jandex index. This may indicate an application setup error.");
                 }
                 if (hasContainerAnnotation(superClass, containerAnnotationNames)) {
                     return true;

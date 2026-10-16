@@ -221,7 +221,8 @@ public final class AutoAddScopeBuildItem extends MultiBuildItem {
                 while (superName != null && !superName.equals(DotNames.OBJECT)) {
                     ClassInfo superClass = index.getClassByName(superName);
                     if (superClass == null) {
-                        throw new IllegalStateException("Superclass " + superName + " of " + clazz.name() + " not found");
+                        throw new IllegalStateException("Superclass " + superName + " of " + clazz.name()
+                                + " was not found in the Jandex index. This may indicate an application setup error.");
                     }
                     if (superClass.interfaceNames().contains(interfaceName)) {
                         return true;

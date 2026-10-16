@@ -11,6 +11,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -38,6 +39,7 @@ public class JsonFormatter extends org.jboss.logmanager.formatters.JsonFormatter
     private LogFormat logFormat = LogFormat.DEFAULT;
     private String tracePrefix = "";
     private boolean flatMdc = false;
+    private Map<String, String> mdcKeyOverrides = Map.of();
     private boolean structuredAccessLog = false;
     private List<JsonProvider> discoveredProviders = Collections.emptyList();
     private volatile List<JsonProvider> jsonProviders;
@@ -143,6 +145,14 @@ public class JsonFormatter extends org.jboss.logmanager.formatters.JsonFormatter
         this.flatMdc = flatMdc;
     }
 
+    public Map<String, String> getMdcKeyOverrides() {
+        return mdcKeyOverrides;
+    }
+
+    public void setMdcKeyOverrides(Map<String, String> mdcKeyOverrides) {
+        this.mdcKeyOverrides = Map.copyOf(mdcKeyOverrides);
+    }
+
     public boolean isStructuredAccessLog() {
         return structuredAccessLog;
     }
@@ -162,7 +172,7 @@ public class JsonFormatter extends org.jboss.logmanager.formatters.JsonFormatter
         String stackTraceKeyToTrim = logFormat.equals(LogFormat.ECS) ? getKey(Key.STACK_TRACE) : null;
         String processNameKey = logFormat.equals(LogFormat.ECS) ? getKey(Key.PROCESS_NAME) : null;
         return new FormatterJsonGenerator(superGenerator, this.excludedKeys, stackTraceKeyToTrim, processNameKey, this.flatMdc,
-                this.structuredAccessLog);
+                this.mdcKeyOverrides, this.structuredAccessLog);
     }
 
     @Override
@@ -471,18 +481,24 @@ public class JsonFormatter extends org.jboss.logmanager.formatters.JsonFormatter
          */
         private final String processNameKey;
         private final boolean flatMdc;
+        private final Map<String, String> mdcKeyOverrides;
         private final boolean structuredAccessLog;
         private int skippedDepth = 0;
 
         private FormatterJsonGenerator(final Generator delegate, final Set<String> excludedKeys,
                 final String stackTraceKeyToTrim, final String processNameKey, final boolean flatMdc,
-                final boolean structuredAccessLog) {
+                final Map<String, String> mdcKeyOverrides, final boolean structuredAccessLog) {
             this.delegate = delegate;
             this.excludedKeys = excludedKeys;
             this.stackTraceKeyToTrim = stackTraceKeyToTrim;
             this.processNameKey = processNameKey;
             this.flatMdc = flatMdc;
+            this.mdcKeyOverrides = mdcKeyOverrides;
             this.structuredAccessLog = structuredAccessLog;
+        }
+
+        private String mdcKey(final String key) {
+            return mdcKeyOverrides.getOrDefault(key, key);
         }
 
         private boolean isExcluded(final String key) {
@@ -524,20 +540,21 @@ public class JsonFormatter extends org.jboss.logmanager.formatters.JsonFormatter
                         }
                         Object v = entry.getValue();
                         if (v != null) {
-                            delegate.add(entry.getKey(), v.toString());
+                            delegate.add(mdcKey(entry.getKey()), v.toString());
                         }
                     }
                 } else if (!flatMdc) {
-                    if (structuredAccessLog && value != null && !value.isEmpty()) {
-                        // Filter out __access__ keys from the nested "mdc" object as well.
-                        Map<String, Object> filtered = new java.util.LinkedHashMap<>();
+                    if ((structuredAccessLog || !mdcKeyOverrides.isEmpty()) && value != null && !value.isEmpty()) {
+                        // Filter out __access__ keys from the nested "mdc" object as well, and rename the
+                        // overridden keys.
+                        Map<String, Object> rewritten = new LinkedHashMap<>();
                         for (Map.Entry<String, ?> entry : value.entrySet()) {
-                            if (!entry.getKey().startsWith(ACCESS_LOG_MDC_PREFIX)) {
-                                filtered.put(entry.getKey(), entry.getValue());
+                            if (!structuredAccessLog || !entry.getKey().startsWith(ACCESS_LOG_MDC_PREFIX)) {
+                                rewritten.put(mdcKey(entry.getKey()), entry.getValue());
                             }
                         }
-                        if (!filtered.isEmpty()) {
-                            delegate.add(key, filtered);
+                        if (!rewritten.isEmpty()) {
+                            delegate.add(key, rewritten);
                         }
                     } else {
                         delegate.add(key, value);

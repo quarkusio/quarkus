@@ -12,7 +12,9 @@ import static io.quarkus.opentelemetry.runtime.resource.KubernetesResourceProvid
 import static java.util.stream.Collectors.toList;
 
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.function.Predicate;
 
@@ -26,6 +28,7 @@ import org.jboss.jandex.AnnotationTransformation;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.ClassType;
 import org.jboss.jandex.DotName;
+import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.ParameterizedType;
 import org.jboss.jandex.Type;
 import org.objectweb.asm.ClassVisitor;
@@ -94,6 +97,7 @@ import io.quarkus.opentelemetry.runtime.config.build.OTelBuildConfig;
 import io.quarkus.opentelemetry.runtime.tracing.cdi.AddingSpanAttributesInterceptor;
 import io.quarkus.opentelemetry.runtime.tracing.cdi.WithSpanInterceptor;
 import io.quarkus.opentelemetry.runtime.tracing.instrumentation.InstrumentationRecorder;
+import io.quarkus.rest.client.reactive.spi.RegisteredRestClientBuildItem;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.vertx.core.deployment.CoreVertxBuildItem;
@@ -110,6 +114,8 @@ public class OpenTelemetryProcessor {
         }
     };
     private static final DotName WITH_SPAN_INTERCEPTOR = DotName.createSimple(WithSpanInterceptor.class.getName());
+    // the annotation is package-private so that applications cannot use it, hence the name is spelled out
+    private static final DotName SPAN_METHOD = DotName.createSimple("io.quarkus.opentelemetry.runtime.tracing.cdi.SpanMethod");
     private static final DotName ADD_SPAN_ATTRIBUTES_INTERCEPTOR = DotName
             .createSimple(AddingSpanAttributesInterceptor.class.getName());
 
@@ -391,7 +397,8 @@ public class OpenTelemetryProcessor {
                     public List<InterceptorBinding> getAdditionalBindings() {
                         return List.of(
                                 InterceptorBinding.of(WithSpan.class, Set.of("value", "kind")),
-                                InterceptorBinding.of(AddingSpanAttributes.class, Set.of("value")));
+                                InterceptorBinding.of(AddingSpanAttributes.class, Set.of("value")),
+                                InterceptorBinding.of(SPAN_METHOD, Set.of("declaringClass", "method")));
                     }
                 }));
 
@@ -417,6 +424,70 @@ public class OpenTelemetryProcessor {
         annotationsTransformer.produce(new AnnotationsTransformerBuildItem(AnnotationTransformation.forMethods()
                 .whenAllMatch(WITH_SPAN, ADD_SPAN_ATTRIBUTES)
                 .transform(ctx -> ctx.remove(isAddSpanAttribute))));
+    }
+
+    /**
+     * The {@code $$CDIWrapper} generated for a REST client interface is the class that gets intercepted, so the span
+     * name and the {@code code.function.name} attribute derived from the intercepted method would name the generated
+     * wrapper. We resolve the REST client interface method at build time instead and pass it to the interceptor as an
+     * interceptor binding, so both name the interface declaring the method.
+     */
+    @BuildStep
+    void transformRestClientWithSpan(List<RegisteredRestClientBuildItem> restClients,
+            BuildProducer<AnnotationsTransformerBuildItem> annotationsTransformer) {
+        if (restClients.isEmpty()) {
+            return;
+        }
+        Map<DotName, RegisteredRestClientBuildItem> restClientsByWrapper = new HashMap<>();
+        for (RegisteredRestClientBuildItem restClient : restClients) {
+            restClientsByWrapper.put(restClient.getCdiWrapperName(), restClient);
+        }
+        annotationsTransformer.produce(new AnnotationsTransformerBuildItem(AnnotationTransformation.forMethods()
+                .whenMethod(m -> restClientsByWrapper.containsKey(m.declaringClass().name()))
+                .transform(ctx -> {
+                    if (!ctx.hasAnnotation(WITH_SPAN) || ctx.hasAnnotation(SPAN_METHOD)) {
+                        return;
+                    }
+                    MethodInfo wrapperMethod = ctx.declaration().asMethod();
+                    RegisteredRestClientBuildItem restClient = restClientsByWrapper.get(wrapperMethod.declaringClass().name());
+                    MethodInfo interfaceMethod = findInterfaceMethod(restClient, wrapperMethod);
+                    if (interfaceMethod == null) {
+                        // not a method of the REST client interface, let the interceptor report the wrapper method
+                        return;
+                    }
+                    ctx.add(AnnotationInstance.builder(SPAN_METHOD)
+                            .add("declaringClass", interfaceMethod.declaringClass().name().toString())
+                            .add("method", interfaceMethod.name())
+                            .build());
+                })));
+    }
+
+    /**
+     * @return the method of the REST client interface, or of one of its super interfaces, that the given method of the
+     *         generated CDI wrapper implements, or {@code null} if there is none
+     */
+    private static MethodInfo findInterfaceMethod(RegisteredRestClientBuildItem restClient, MethodInfo wrapperMethod) {
+        for (MethodInfo candidate : restClient.getCdiWrapperMethods()) {
+            if (candidate.name().equals(wrapperMethod.name()) && sameParameterTypes(candidate, wrapperMethod)) {
+                return candidate;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Compares the erased parameter types of two methods.
+     */
+    private static boolean sameParameterTypes(MethodInfo a, MethodInfo b) {
+        if (a.parametersCount() != b.parametersCount()) {
+            return false;
+        }
+        for (int i = 0; i < a.parametersCount(); i++) {
+            if (!a.parameterType(i).name().equals(b.parameterType(i).name())) {
+                return false;
+            }
+        }
+        return true;
     }
 
     @BuildStep

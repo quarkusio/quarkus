@@ -14,7 +14,6 @@ import static io.quarkus.rest.client.reactive.deployment.DotNames.REGISTER_CLIEN
 import static io.quarkus.rest.client.reactive.deployment.DotNames.REGISTER_PROVIDER;
 import static io.quarkus.rest.client.reactive.deployment.DotNames.REGISTER_PROVIDERS;
 import static io.quarkus.rest.client.reactive.deployment.DotNames.RESPONSE_EXCEPTION_MAPPER;
-import static io.quarkus.rest.client.reactive.deployment.RegisteredRestClientBuildItem.toRegisteredRestClients;
 import static java.util.Arrays.asList;
 import static org.jboss.jandex.gizmo2.Jandex2Gizmo.addAnnotation;
 import static org.jboss.jandex.gizmo2.Jandex2Gizmo.classDescOf;
@@ -118,6 +117,7 @@ import io.quarkus.rest.client.reactive.runtime.RestClientReactiveConfig;
 import io.quarkus.rest.client.reactive.runtime.RestClientRecorder;
 import io.quarkus.rest.client.reactive.spi.ClientRequestFilterBuildItem;
 import io.quarkus.rest.client.reactive.spi.ClientResponseFilterBuildItem;
+import io.quarkus.rest.client.reactive.spi.RegisteredRestClientBuildItem;
 import io.quarkus.rest.client.reactive.spi.RestClientAnnotationsTransformerBuildItem;
 import io.quarkus.restclient.config.RegisteredRestClient;
 import io.quarkus.restclient.config.RestClientsBuildTimeConfig;
@@ -136,7 +136,6 @@ class RestClientReactiveProcessor {
     private static final DotName INJECT_MOCK = DotName.createSimple("io.quarkus.test.InjectMock");
     private static final DotName KOTLIN_METADATA_ANNOTATION = DotName.createSimple("kotlin.Metadata");
     private static final DotName URL = DotName.createSimple("io.quarkus.rest.client.reactive.Url");
-    private static final DotName WITH_SPAN = DotName.createSimple("io.opentelemetry.instrumentation.annotations.WithSpan");
 
     private static final String ENABLE_COMPRESSION = "quarkus.http.enable-compression";
     private static final String KOTLIN_INTERFACE_DEFAULT_IMPL_SUFFIX = "$DefaultImpls";
@@ -245,7 +244,30 @@ class RestClientReactiveProcessor {
         enrichers.produce(new JaxrsClientReactiveEnricherBuildItem(new MicroProfileRestClientEnricher()));
     }
 
-    private void searchForJaxRsMethods(List<MethodInfo> listOfKnownMethods, ClassInfo startingInterface, IndexView index) {
+    /**
+     * Determines the methods the {@code $$CDIWrapper} generated for a REST Client interface implements: the JAX-RS
+     * methods declared by the interface and its super interfaces, followed by the default methods of the interface.
+     */
+    private static List<MethodInfo> collectCdiWrapperMethods(ClassInfo jaxrsInterface, IndexView index) {
+        List<MethodInfo> methodsToImplement = new ArrayList<>();
+
+        // search this interface and its super interfaces for jaxrs methods
+        searchForJaxRsMethods(methodsToImplement, jaxrsInterface, index);
+        // search this interface for default methods
+        // we could search for default methods in super interfaces too,
+        // but emitting the correct invokespecial instruction would become convoluted
+        // (as invokespecial may only reference a method from a _direct_ super interface)
+        for (MethodInfo method : jaxrsInterface.methods()) {
+            boolean isDefault = !Modifier.isAbstract(method.flags()) && !Modifier.isStatic(method.flags());
+            if (isDefault) {
+                methodsToImplement.add(method);
+            }
+        }
+        return methodsToImplement;
+    }
+
+    private static void searchForJaxRsMethods(List<MethodInfo> listOfKnownMethods, ClassInfo startingInterface,
+            IndexView index) {
         for (MethodInfo method : startingInterface.methods()) {
             if (isRestMethod(method)) {
                 listOfKnownMethods.add(method);
@@ -551,11 +573,14 @@ class RestClientReactiveProcessor {
                 .build());
     }
 
+    @SuppressWarnings("removal")
     @BuildStep
     void determineRegisteredRestClients(
             CombinedIndexBuildItem combinedIndexBuildItem,
             RestClientsBuildTimeConfig clientsConfig,
-            BuildProducer<RegisteredRestClientBuildItem> producer) {
+            BuildProducer<RegisteredRestClientBuildItem> producer,
+            // still produced for extensions that have not migrated to the SPI build item yet
+            BuildProducer<io.quarkus.rest.client.reactive.deployment.RegisteredRestClientBuildItem> deprecatedProducer) {
         IndexView index = combinedIndexBuildItem.getIndex();
         Set<DotName> seen = new HashSet<>();
 
@@ -575,7 +600,10 @@ class RestClientReactiveProcessor {
             AnnotationValue baseUriValue = instance.value("baseUri");
             Optional<String> baseUri = baseUriValue == null ? Optional.empty() : Optional.of(baseUriValue.asString());
 
-            producer.produce(new RegisteredRestClientBuildItem(classInfo, configKey, baseUri));
+            producer.produce(new RegisteredRestClientBuildItem(classInfo, configKey, baseUri,
+                    collectCdiWrapperMethods(classInfo, index)));
+            deprecatedProducer.produce(new io.quarkus.rest.client.reactive.deployment.RegisteredRestClientBuildItem(
+                    classInfo, configKey, baseUri));
         }
 
         // now we go through the keys and if any of them correspond to classes that don't have a @RegisterRestClient annotation, we fake that annotation
@@ -595,7 +623,10 @@ class RestClientReactiveProcessor {
             if (cdiScope.isEmpty()) {
                 continue;
             }
-            producer.produce(new RegisteredRestClientBuildItem(classInfo, Optional.empty(), Optional.empty()));
+            producer.produce(new RegisteredRestClientBuildItem(classInfo, Optional.empty(), Optional.empty(),
+                    collectCdiWrapperMethods(classInfo, index)));
+            deprecatedProducer.produce(new io.quarkus.rest.client.reactive.deployment.RegisteredRestClientBuildItem(
+                    classInfo, Optional.empty(), Optional.empty()));
         }
     }
 
@@ -648,20 +679,7 @@ class RestClientReactiveProcessor {
             // for each interface annotated with @RegisterRestClient, generate a $$CDIWrapper CDI bean that can be injected
             validateKotlinDefaultMethods(jaxrsInterface, index);
 
-            List<MethodInfo> methodsToImplement = new ArrayList<>();
-
-            // search this interface and its super interfaces for jaxrs methods
-            searchForJaxRsMethods(methodsToImplement, jaxrsInterface, index);
-            // search this interface for default methods
-            // we could search for default methods in super interfaces too,
-            // but emitting the correct invokespecial instruction would become convoluted
-            // (as invokespecial may only reference a method from a _direct_ super interface)
-            for (MethodInfo method : jaxrsInterface.methods()) {
-                boolean isDefault = !Modifier.isAbstract(method.flags()) && !Modifier.isStatic(method.flags());
-                if (isDefault) {
-                    methodsToImplement.add(method);
-                }
-            }
+            List<MethodInfo> methodsToImplement = registerRestClient.getCdiWrapperMethods();
             if (methodsToImplement.isEmpty()) {
                 continue;
             }
@@ -779,7 +797,7 @@ class RestClientReactiveProcessor {
                             if (annotation.target().kind() == AnnotationTarget.Kind.METHOD
                                     && !BUILTIN_HTTP_ANNOTATIONS_TO_METHOD.containsKey(annotation.name())
                                     && !ResteasyReactiveDotNames.PATH.equals(annotation.name())) {
-                                addAnnotation(mc, effectiveWithSpan(annotation, jaxrsInterface, method), index);
+                                addAnnotation(mc, annotation, index);
                             }
                         }
 
@@ -843,35 +861,6 @@ class RestClientReactiveProcessor {
         }
 
         recorder.cleanUp(shutdown);
-    }
-
-    /**
-     * The {@code $$CDIWrapper} method generated for each REST client interface method is the one that gets
-     * intercepted, so its declaring class is what the OpenTelemetry {@code @WithSpan} instrumentation uses to
-     * derive the span name. Left as-is, that produces a span named after the generated wrapper (e.g.
-     * {@code Foo$$CDIWrapper.bar}) instead of the REST client interface. When {@code @WithSpan} is copied onto
-     * the wrapper without an explicit name, we set one derived from the interface so the span name stays stable.
-     */
-    private static AnnotationInstance effectiveWithSpan(AnnotationInstance annotation, ClassInfo jaxrsInterface,
-            MethodInfo method) {
-        if (!WITH_SPAN.equals(annotation.name())) {
-            return annotation;
-        }
-        AnnotationValue value = annotation.value("value");
-        if (value != null && !value.asString().isEmpty()) {
-            return annotation;
-        }
-        String interfaceName = jaxrsInterface.name().toString();
-        String simpleName = interfaceName
-                .substring(Math.max(interfaceName.lastIndexOf('.'), interfaceName.lastIndexOf('$')) + 1);
-        List<AnnotationValue> values = new ArrayList<>();
-        for (AnnotationValue existing : annotation.values()) {
-            if (!"value".equals(existing.name())) {
-                values.add(existing);
-            }
-        }
-        values.add(AnnotationValue.createStringValue("value", simpleName + "." + method.name()));
-        return AnnotationInstance.create(annotation.name(), annotation.target(), values);
     }
 
     /**
@@ -1013,7 +1002,7 @@ class RestClientReactiveProcessor {
         }
     }
 
-    private boolean isRestMethod(MethodInfo method) {
+    private static boolean isRestMethod(MethodInfo method) {
         if (!Modifier.isAbstract(method.flags())) {
             return false;
         }
@@ -1026,6 +1015,15 @@ class RestClientReactiveProcessor {
             }
         }
         return false;
+    }
+
+    private static List<RegisteredRestClient> toRegisteredRestClients(List<RegisteredRestClientBuildItem> restClients) {
+        return restClients.stream()
+                .map(rc -> new RegisteredRestClient(
+                        rc.getClassInfo().name().toString(),
+                        rc.getClassInfo().simpleName(),
+                        rc.getConfigKey().orElse(null)))
+                .toList();
     }
 
     private boolean removesTrailingSlashIsDisabled(RestClientsBuildTimeConfig config,

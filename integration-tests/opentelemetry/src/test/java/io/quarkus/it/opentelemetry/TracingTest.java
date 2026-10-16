@@ -649,6 +649,43 @@ public class TracingTest {
     }
 
     @Test
+    void testClientTracingWithInheritedInterceptedMethod() {
+        given()
+                .when().get("/client/pong-intercept-inherited/one")
+                .then()
+                .statusCode(200)
+                .body(containsString("one"));
+
+        await().atMost(5, SECONDS).until(() -> getSpans().size() == 4);
+        List<Map<String, Object>> spans = getSpans();
+        assertEquals(4, spans.size());
+        assertEquals(1, spans.stream().map(map -> map.get("traceId")).collect(toSet()).size());
+
+        Map<String, Object> server = getSpanByKindAndParentId(spans, SERVER, "0000000000000000");
+        assertEquals("GET /client/pong-intercept-inherited/{message}", server.get("name"));
+
+        // the @WithSpan method is declared by the super interface of the REST client, which is what the span name
+        // and the code.function.name attribute must report, as they do for any other CDI bean
+        Map<String, Object> fromInterceptor = getSpanByKindAndParentId(spans, INTERNAL, server.get("spanId"));
+        assertEquals("PingPongBaseRestClient.pingpongInherited", fromInterceptor.get("name"));
+        assertEquals(INTERNAL.toString(), fromInterceptor.get("kind"));
+        assertTrue((Boolean) fromInterceptor.get("ended"));
+        assertTrue((Boolean) fromInterceptor.get("parent_valid"));
+        assertFalse((Boolean) fromInterceptor.get("parent_remote"));
+        assertEquals("one", fromInterceptor.get("attr_message"));
+        assertEquals("io.quarkus.it.opentelemetry.PingPongResource$PingPongBaseRestClient.pingpongInherited",
+                fromInterceptor.get("attr_" + CODE_FUNCTION_NAME.getKey()));
+
+        Map<String, Object> client = getSpanByKindAndParentId(spans, CLIENT, fromInterceptor.get("spanId"));
+        assertEquals("GET /client/pong/{message}", client.get("name"));
+        assertEquals("http://localhost:8081/client/pong/one", client.get("attr_url.full"));
+
+        Map<String, Object> clientServer = getSpanByKindAndParentId(spans, SERVER, client.get("spanId"));
+        assertEquals("GET /client/pong/{message}", clientServer.get("name"));
+        assertEquals(clientServer.get("parentSpanId"), client.get("spanId"));
+    }
+
+    @Test
     void testTemplatedPathOnClass() {
         given()
                 .contentType("application/json")

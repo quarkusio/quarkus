@@ -20,6 +20,16 @@ public class Customer extends Human {
 
     private String name;
 
+    public Customer() {
+    }
+
+    public Customer(Long id, Address address, WorkAddress workAddress, String name) {
+        this.id = id;
+        this.address = address;
+        this.workAddress = workAddress;
+        this.name = name;
+    }
+
     public String getName() {
         return name;
     }

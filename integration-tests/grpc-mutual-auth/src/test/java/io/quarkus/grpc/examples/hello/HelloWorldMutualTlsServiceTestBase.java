@@ -2,8 +2,6 @@ package io.quarkus.grpc.examples.hello;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.time.Duration;
-
 import org.junit.jupiter.api.Test;
 
 import examples.GreeterGrpc;
@@ -11,6 +9,7 @@ import examples.HelloReply;
 import examples.HelloRequest;
 import examples.MutinyGreeterGrpc;
 import io.grpc.Channel;
+import io.quarkus.test.timeouts.TestTimeouts;
 
 class HelloWorldMutualTlsServiceTestBase {
 
@@ -28,7 +27,7 @@ class HelloWorldMutualTlsServiceTestBase {
     public void testHelloWorldServiceUsingMutinyStub() {
         HelloReply reply = MutinyGreeterGrpc.newMutinyStub(channel)
                 .sayHello(HelloRequest.newBuilder().setName("neo-blocking").build())
-                .await().atMost(Duration.ofSeconds(5));
+                .await().atMost(TestTimeouts.get());
         assertThat(reply.getMessage()).isEqualTo("Hello neo-blocking");
     }
 

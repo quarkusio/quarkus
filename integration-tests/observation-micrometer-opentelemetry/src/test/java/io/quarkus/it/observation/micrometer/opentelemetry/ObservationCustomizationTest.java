@@ -2,7 +2,6 @@ package io.quarkus.it.observation.micrometer.opentelemetry;
 
 import static io.restassured.RestAssured.get;
 import static io.restassured.RestAssured.given;
-import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 import static org.hamcrest.Matchers.is;
@@ -15,6 +14,7 @@ import org.junit.jupiter.api.Test;
 
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.TestProfile;
+import io.quarkus.test.timeouts.TestTimeouts;
 import io.restassured.common.mapper.TypeRef;
 
 @QuarkusTest
@@ -35,13 +35,13 @@ public class ObservationCustomizationTest {
                 .body(is("manual-result"));
 
         // CustomObservationFilter adds "filtered.by=custom-filter" to all observations
-        await().atMost(5, SECONDS).untilAsserted(() -> {
+        await().atMost(TestTimeouts.get()).untilAsserted(() -> {
             String body = get("/export").then().extract().asString();
             assertThat(body).contains("filtered.by");
             assertThat(body).contains("custom-filter");
         });
 
-        await().atMost(5, SECONDS).untilAsserted(() -> {
+        await().atMost(TestTimeouts.get()).untilAsserted(() -> {
             long count = getTimerCount("manual.operation");
             assertThat(count).isGreaterThanOrEqualTo(1);
         });
@@ -84,7 +84,7 @@ public class ObservationCustomizationTest {
         Map<String, Object> span = findSpanByName(spans, "custom-doWork");
         assertThat(span).isNotNull();
 
-        await().atMost(5, SECONDS).untilAsserted(() -> {
+        await().atMost(TestTimeouts.get()).untilAsserted(() -> {
             long count = getTimerCount("custom.observed");
             assertThat(count).isGreaterThanOrEqualTo(1);
         });
@@ -103,7 +103,7 @@ public class ObservationCustomizationTest {
 
     @SuppressWarnings("unchecked")
     private List<Map<String, Object>> getSpans(int minCount) {
-        await().atMost(5, SECONDS).untilAsserted(() -> {
+        await().atMost(TestTimeouts.get()).untilAsserted(() -> {
             List<Map<String, Object>> result = get("/export").as(List.class);
             assertThat(result).hasSizeGreaterThanOrEqualTo(minCount);
         });

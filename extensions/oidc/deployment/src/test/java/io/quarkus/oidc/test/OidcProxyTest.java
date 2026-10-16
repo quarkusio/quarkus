@@ -28,6 +28,7 @@ import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.keycloak.client.KeycloakTestClient;
 import io.quarkus.test.keycloak.server.KeycloakTestResourceLifecycleManager;
+import io.quarkus.test.timeouts.TestTimeouts;
 import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
 import io.vertx.core.Vertx;
@@ -72,7 +73,7 @@ class OidcProxyTest {
             assertTrue(latch.await(15, TimeUnit.SECONDS), "Proxy server is not listening");
             String authServerUrl = ConfigProvider.getConfig().getValue("quarkus.oidc.auth-server-url", String.class);
             callSecuredEndpoint(authServerUrl);
-            Awaitility.await().atMost(10, TimeUnit.SECONDS)
+            Awaitility.await().atMost(TestTimeouts.get())
                     .until(() -> headers.containsKey("host") && headers.containsKey("proxy-authorization"));
             assertTrue(authServerUrl.contains(headers.get("host")),
                     () -> "Expected Keycloak URL '%s' to contain host header '%s'".formatted(authServerUrl,

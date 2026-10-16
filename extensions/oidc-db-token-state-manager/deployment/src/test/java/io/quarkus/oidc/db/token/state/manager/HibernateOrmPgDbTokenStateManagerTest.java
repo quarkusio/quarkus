@@ -6,7 +6,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
 import java.net.URI;
-import java.time.Duration;
 import java.util.List;
 
 import org.awaitility.Awaitility;
@@ -21,6 +20,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.builder.Version;
 import io.quarkus.maven.dependency.Dependency;
 import io.quarkus.test.QuarkusExtensionTest;
+import io.quarkus.test.timeouts.TestTimeouts;
 import io.restassured.RestAssured;
 
 public class HibernateOrmPgDbTokenStateManagerTest extends AbstractDbTokenStateManagerTest {
@@ -90,7 +90,7 @@ public class HibernateOrmPgDbTokenStateManagerTest extends AbstractDbTokenStateM
         Awaitility
                 .await()
                 .ignoreExceptions()
-                .atMost(Duration.ofSeconds(10))
+                .atMost(TestTimeouts.get())
                 .untilAsserted(() -> assertTokenStateCount(0));
     }
 }

@@ -11,6 +11,7 @@ import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.test.junit.QuarkusTest;
+import io.quarkus.test.timeouts.TestTimeouts;
 import io.restassured.common.mapper.TypeRef;
 
 @QuarkusTest
@@ -33,7 +34,7 @@ public class FruitResourceTest {
                 .then()
                 .statusCode(201);
 
-        await().atMost(2, TimeUnit.SECONDS).pollDelay(500, TimeUnit.MILLISECONDS).untilAsserted(() -> {
+        await().atMost(TestTimeouts.get()).pollDelay(500, TimeUnit.MILLISECONDS).untilAsserted(() -> {
             // get the Fruit
             Fruit result = get("/fruits/1").as(Fruit.class);
 
@@ -62,7 +63,7 @@ public class FruitResourceTest {
                 .then()
                 .statusCode(200);
 
-        await().atMost(2, TimeUnit.SECONDS).pollDelay(500, TimeUnit.MILLISECONDS).untilAsserted(() -> {
+        await().atMost(TestTimeouts.get()).pollDelay(500, TimeUnit.MILLISECONDS).untilAsserted(() -> {
             Fruit result = get("/fruits/2").as(Fruit.class);
             assertThat(result).isNotNull().isEqualTo(pomegranate);
         });
@@ -74,7 +75,7 @@ public class FruitResourceTest {
                 .then()
                 .statusCode(200);
 
-        await().atMost(2, TimeUnit.SECONDS).pollDelay(500, TimeUnit.MILLISECONDS).untilAsserted(() -> {
+        await().atMost(TestTimeouts.get()).pollDelay(500, TimeUnit.MILLISECONDS).untilAsserted(() -> {
             // search the removed Fruit should yield no results
             // using a simple get-doc-by-id won't work since we will get an 500 error response:
             List<Fruit> results = get("/fruits/search?color=Red").as(LIST_OF_FRUIT_TYPE_REF);

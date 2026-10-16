@@ -2,27 +2,25 @@ package com.example.reactive;
 
 import static org.awaitility.Awaitility.await;
 
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.Timeout;
 
 import io.quarkus.grpc.GrpcClient;
+import io.quarkus.test.timeouts.TestTimeouts;
+import io.quarkus.test.timeouts.TimeLimit;
 import io.smallrye.mutiny.subscription.Cancellable;
 
 public class ReactiveServiceTestBase {
-
-    public static final int TIMEOUT = 60;
 
     @GrpcClient
     ReactiveTest client;
 
     @Test
-    @Timeout(TIMEOUT)
+    @TimeLimit(multiplier = 3)
     void shouldWatchAndAddMultipleTimes() {
         List<String> collected = new CopyOnWriteArrayList<>();
 
@@ -36,10 +34,10 @@ public class ReactiveServiceTestBase {
             expected.add(text);
             client.add(com.example.reactive.Test.Item.newBuilder().setText(text).build())
                     .onFailure().invoke(Throwable::printStackTrace)
-                    .await().atMost(Duration.ofSeconds(TIMEOUT / 6));
+                    .await().atMost(TestTimeouts.get());
         }
 
-        await().atMost(Duration.ofSeconds(TIMEOUT / 2))
+        await().atMost(TestTimeouts.get())
                 .until(() -> collected.containsAll(expected));
 
         watch.cancel();

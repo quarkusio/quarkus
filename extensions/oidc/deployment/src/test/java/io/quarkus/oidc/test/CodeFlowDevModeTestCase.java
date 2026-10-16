@@ -38,6 +38,7 @@ import io.quarkus.test.QuarkusDevModeTest;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.common.TestLog;
 import io.quarkus.test.keycloak.server.KeycloakTestResourceLifecycleManager;
+import io.quarkus.test.timeouts.TestTimeouts;
 
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 @QuarkusTestResource(KeycloakTestResourceLifecycleManager.class)
@@ -202,7 +203,7 @@ public class CodeFlowDevModeTestCase {
     protected void checkPkceSecretGenerated() {
         AtomicBoolean checkPassed = new AtomicBoolean();
         given().pollInterval(100, TimeUnit.MILLISECONDS)
-                .atMost(10, TimeUnit.SECONDS)
+                .atMost(TestTimeouts.get())
                 .untilAsserted(new ThrowingRunnable() {
                     @Override
                     public void run() throws Throwable {

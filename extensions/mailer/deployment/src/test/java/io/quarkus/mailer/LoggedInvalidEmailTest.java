@@ -1,6 +1,5 @@
 package io.quarkus.mailer;
 
-import java.time.Duration;
 import java.util.List;
 
 import jakarta.inject.Inject;
@@ -12,6 +11,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.mailer.reactive.ReactiveMailer;
 import io.quarkus.test.QuarkusExtensionTest;
+import io.quarkus.test.timeouts.TestTimeouts;
 import io.smallrye.mutiny.Uni;
 
 public class LoggedInvalidEmailTest {
@@ -33,7 +33,7 @@ public class LoggedInvalidEmailTest {
         List<String> to = List.of("clement@test.io", "inv alid@quarkus.io", "max@test.io");
         List<String> cc = List.of();
         List<String> bcc = List.of();
-        Assertions.assertThatThrownBy(() -> sender.send(to, cc, bcc).await().atMost(Duration.ofSeconds(5)))
+        Assertions.assertThatThrownBy(() -> sender.send(to, cc, bcc).await().atMost(TestTimeouts.get()))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("Unable to send an email")
                 .hasStackTraceContaining("inv alid@quarkus.io")
@@ -46,7 +46,7 @@ public class LoggedInvalidEmailTest {
         List<String> cc = List.of("clement@test.io", "inv alid@quarkus.io", "max@test.io");
         List<String> to = List.of();
         List<String> bcc = List.of();
-        Assertions.assertThatThrownBy(() -> sender.send(to, cc, bcc).await().atMost(Duration.ofSeconds(5)))
+        Assertions.assertThatThrownBy(() -> sender.send(to, cc, bcc).await().atMost(TestTimeouts.get()))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("Unable to send an email")
                 .hasStackTraceContaining("inv alid@quarkus.io")
@@ -59,7 +59,7 @@ public class LoggedInvalidEmailTest {
         List<String> bcc = List.of("clement@test.io", "inv alid@quarkus.io", "max@test.io");
         List<String> to = List.of();
         List<String> cc = List.of();
-        Assertions.assertThatThrownBy(() -> sender.send(to, cc, bcc).await().atMost(Duration.ofSeconds(5)))
+        Assertions.assertThatThrownBy(() -> sender.send(to, cc, bcc).await().atMost(TestTimeouts.get()))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("Unable to send an email")
                 .hasStackTraceContaining("inv alid@quarkus.io")

@@ -13,7 +13,6 @@ import static io.quarkus.websockets.next.test.telemetry.MetricsAsserter.assertSe
 import static io.quarkus.websockets.next.test.telemetry.MetricsAsserter.stringToBytes;
 
 import java.net.URI;
-import java.time.Duration;
 
 import jakarta.inject.Inject;
 
@@ -23,6 +22,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.common.http.TestHTTPResource;
+import io.quarkus.test.timeouts.TestTimeouts;
 import io.quarkus.websockets.next.WebSocketConnector;
 import io.quarkus.websockets.next.test.telemetry.endpoints.ontextmessage.BounceClient;
 import io.quarkus.websockets.next.test.telemetry.endpoints.ontextmessage.ClientEndpointWithPathParams;
@@ -85,7 +85,7 @@ public class MicrometerWebSocketsOnTextMessageTest extends AbstractWebSocketsOnM
                 serverSentCountBytesDelta, 0, 0, 0, 1, 0);
         // assert metric for our path tag only (this is sent from @OnOpen)
         int serverBytesSent1 = stringToBytes(expectedResponse);
-        Awaitility.await().atMost(Duration.ofSeconds(12)).untilAsserted(() -> getMetrics()
+        Awaitility.await().atMost(TestTimeouts.get()).untilAsserted(() -> getMetrics()
                 .body(assertServerMessagesCountBytesSent(path, serverBytesSent1)));
 
         var expectedResponse2 = "amy:macdonald"; // path is /ping/amy/and/macdonald
@@ -100,7 +100,7 @@ public class MicrometerWebSocketsOnTextMessageTest extends AbstractWebSocketsOnM
                 serverSentCountBytesDelta, 0, 0, 0, 1, 0);
         // assert metric for our path tag only (this is sent from @OnOpen) (no deltas, so previous bytes + current ones)
         int serverBytesSent2 = stringToBytes(expectedResponse2);
-        Awaitility.await().atMost(Duration.ofSeconds(12)).untilAsserted(() -> getMetrics()
+        Awaitility.await().atMost(TestTimeouts.get()).untilAsserted(() -> getMetrics()
                 .body(assertServerMessagesCountBytesSent(path, serverBytesSent1 + serverBytesSent2)));
     }
 
@@ -135,7 +135,7 @@ public class MicrometerWebSocketsOnTextMessageTest extends AbstractWebSocketsOnM
                 clientBytesReceived, 1, 1);
         // assert metric for our path tag only
         clientConn.closeAndAwait();
-        Awaitility.await().atMost(Duration.ofSeconds(12)).untilAsserted(() -> getMetrics()
+        Awaitility.await().atMost(TestTimeouts.get()).untilAsserted(() -> getMetrics()
                 .body(assertClientConnectionClosedTotal("/client-endpoint-with-path-param/{name}", 1))
                 .body(assertClientConnectionOpenedTotal("/client-endpoint-with-path-param/{name}", 1))
                 .body(assertClientMessagesCountBytesSent("/client-endpoint-with-path-param/{name}", clientBytesSent))
@@ -164,7 +164,7 @@ public class MicrometerWebSocketsOnTextMessageTest extends AbstractWebSocketsOnM
                 clientBytesReceived, 1, 1);
         // assert metric for our path tag only (prev + current ones, no deltas here)
         clientConn.closeAndAwait();
-        Awaitility.await().atMost(Duration.ofSeconds(12)).untilAsserted(() -> {
+        Awaitility.await().atMost(TestTimeouts.get()).untilAsserted(() -> {
             getMetrics()
                     .body(assertClientConnectionOpenedTotal("/client-endpoint-with-path-param/{name}", 2))
                     .body(assertClientConnectionClosedTotal("/client-endpoint-with-path-param/{name}", 2))

@@ -33,6 +33,7 @@ import org.junit.jupiter.api.Test;
 import io.quarkus.dev.spi.HotReplacementContext;
 import io.quarkus.dev.spi.RemoteDevState;
 import io.quarkus.runtime.util.HashUtil;
+import io.quarkus.test.timeouts.TestTimeouts;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.MultiMap;
@@ -259,7 +260,7 @@ class RemoteSyncHandlerTest {
             mutations.add(path);
             if (path.contains("First")) {
                 firstMutationEntered.countDown();
-                assertThat(releaseFirstMutation.await(10, TimeUnit.SECONDS)).isTrue();
+                assertThat(releaseFirstMutation.await(TestTimeouts.get().toSeconds(), TimeUnit.SECONDS)).isTrue();
             }
             return null;
         }).when(context).updateFile(any(), any());
@@ -277,7 +278,7 @@ class RemoteSyncHandlerTest {
                 invokeHandlePut(handler, first);
                 return null;
             });
-            assertThat(firstMutationEntered.await(10, TimeUnit.SECONDS)).isTrue();
+            assertThat(firstMutationEntered.await(TestTimeouts.get().toSeconds(), TimeUnit.SECONDS)).isTrue();
             var secondResult = executor.submit(() -> {
                 try {
                     invokeHandlePut(handler, second);
@@ -313,7 +314,7 @@ class RemoteSyncHandlerTest {
         CountDownLatch syncStarted = new CountDownLatch(1);
         doAnswer(invocation -> {
             mutationEntered.countDown();
-            assertThat(releaseMutation.await(10, TimeUnit.SECONDS)).isTrue();
+            assertThat(releaseMutation.await(TestTimeouts.get().toSeconds(), TimeUnit.SECONDS)).isTrue();
             return null;
         }).when(context).updateFile(any(), any());
         when(context.syncState(any())).thenAnswer(invocation -> {
@@ -332,7 +333,7 @@ class RemoteSyncHandlerTest {
                 invokeHandlePut(handler, oldSessionPut);
                 return null;
             });
-            assertThat(mutationEntered.await(10, TimeUnit.SECONDS)).isTrue();
+            assertThat(mutationEntered.await(TestTimeouts.get().toSeconds(), TimeUnit.SECONDS)).isTrue();
             var connectResult = executor.submit(() -> {
                 invoke(handler, "handleConnect", connect);
                 return null;

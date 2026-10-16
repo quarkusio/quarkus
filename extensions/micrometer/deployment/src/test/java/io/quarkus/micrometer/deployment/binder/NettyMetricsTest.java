@@ -18,7 +18,6 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.micrometer.common.docs.KeyName;
@@ -38,6 +37,7 @@ import io.quarkus.micrometer.runtime.binder.netty.NettyMetricsProvider;
 import io.quarkus.micrometer.runtime.binder.netty.VertxNettyAllocatorMetricsProvider;
 import io.quarkus.micrometer.test.HelloResource;
 import io.quarkus.test.QuarkusExtensionTest;
+import io.quarkus.test.timeouts.TimeLimit;
 import io.restassured.RestAssured;
 import io.vertx.core.Vertx;
 import io.vertx.core.internal.VertxInternal;
@@ -166,7 +166,7 @@ public class NettyMetricsTest {
     }
 
     @Test
-    @Timeout(60L)
+    @TimeLimit(multiplier = 3)
     public void testEventExecutorMetricsValues() throws Exception {
         VertxInternal vi = (VertxInternal) vertx;
         assertEventGroup(vi.eventLoopGroup(), "eventLoop");

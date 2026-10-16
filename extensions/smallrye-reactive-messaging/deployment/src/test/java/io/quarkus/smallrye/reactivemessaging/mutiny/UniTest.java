@@ -3,14 +3,13 @@ package io.quarkus.smallrye.reactivemessaging.mutiny;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
-import java.util.concurrent.TimeUnit;
-
 import jakarta.inject.Inject;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusExtensionTest;
+import io.quarkus.test.timeouts.TestTimeouts;
 
 public class UniTest {
     @RegisterExtension
@@ -23,7 +22,7 @@ public class UniTest {
 
     @Test
     public void shouldGetTextFromUniBean() {
-        await().atMost(5, TimeUnit.SECONDS)
+        await().atMost(TestTimeouts.get())
                 .until(() -> uniBean.getStrings().size() > 2);
         assertThat(uniBean.getStrings()).containsExactly("some!", "other!", "text!");
     }

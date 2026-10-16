@@ -5,7 +5,6 @@ import static io.opentelemetry.api.trace.SpanKind.INTERNAL;
 import static io.quarkus.opentelemetry.deployment.common.exporter.TestSpanExporter.getSpanByKindAndParentId;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import java.time.Duration;
 import java.util.List;
 
 import jakarta.inject.Inject;
@@ -35,6 +34,7 @@ import io.quarkus.opentelemetry.deployment.common.exporter.InMemoryMetricExporte
 import io.quarkus.opentelemetry.deployment.common.exporter.TestSpanExporter;
 import io.quarkus.opentelemetry.deployment.common.exporter.TestSpanExporterProvider;
 import io.quarkus.test.QuarkusExtensionTest;
+import io.quarkus.test.timeouts.TestTimeouts;
 import io.smallrye.mutiny.Uni;
 
 public class GrpcOpenInstrumentationDisabledTest {
@@ -77,7 +77,7 @@ public class GrpcOpenInstrumentationDisabledTest {
         String response = hello.sayHello(
                 HelloRequest.newBuilder().setName("ping").build())
                 .map(HelloReply::getMessage)
-                .await().atMost(Duration.ofSeconds(5));
+                .await().atMost(TestTimeouts.get());
         assertEquals("Hello ping", response);
 
         List<SpanData> spans = spanExporter.getFinishedSpanItems(1);

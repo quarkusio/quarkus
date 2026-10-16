@@ -11,14 +11,12 @@ import static io.opentelemetry.semconv.incubating.DbIncubatingAttributes.DbSyste
 import static io.restassured.RestAssured.get;
 import static io.restassured.RestAssured.given;
 import static java.net.HttpURLConnection.HTTP_OK;
-import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.awaitility.Awaitility.await;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 
-import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -32,6 +30,7 @@ import org.junit.jupiter.api.Test;
 
 import io.opentelemetry.api.trace.SpanKind;
 import io.quarkus.test.junit.QuarkusTest;
+import io.quarkus.test.timeouts.TestTimeouts;
 import io.restassured.RestAssured;
 import io.restassured.common.mapper.TypeRef;
 import io.vertx.redis.client.Command;
@@ -52,7 +51,7 @@ class QuarkusOpenTelemetryRedisTest {
     @BeforeEach
     void reset() {
         given().get("/opentelemetry/reset").then().statusCode(HTTP_OK);
-        await().atMost(5, SECONDS).until(() -> getSpans().isEmpty());
+        await().atMost(TestTimeouts.get()).until(() -> getSpans().isEmpty());
     }
 
     @Test
@@ -75,7 +74,7 @@ class QuarkusOpenTelemetryRedisTest {
                 .statusCode(200)
                 .body(CoreMatchers.is(SYNC_VALUE));
 
-        Awaitility.await().atMost(Duration.ofSeconds(10)).until(() -> getSpans().size() == 4);
+        Awaitility.await().atMost(TestTimeouts.get()).until(() -> getSpans().size() == 4);
 
         List<Map<String, Object>> spans = getSpans();
 
@@ -115,7 +114,7 @@ class QuarkusOpenTelemetryRedisTest {
                 .then()
                 .statusCode(500);
 
-        Awaitility.await().atMost(Duration.ofSeconds(10)).until(() -> getSpans().size() == 2);
+        Awaitility.await().atMost(TestTimeouts.get()).until(() -> getSpans().size() == 2);
 
         Map<String, Object> span = findSpan(getSpans(), m -> SpanKind.CLIENT.name().equals(m.get("kind")));
 
@@ -155,7 +154,7 @@ class QuarkusOpenTelemetryRedisTest {
                 .statusCode(200)
                 .body(CoreMatchers.is(REACTIVE_VALUE));
 
-        Awaitility.await().atMost(Duration.ofSeconds(10)).until(() -> getSpans().size() == 4);
+        Awaitility.await().atMost(TestTimeouts.get()).until(() -> getSpans().size() == 4);
 
         List<Map<String, Object>> spans = getSpans();
 
@@ -195,7 +194,7 @@ class QuarkusOpenTelemetryRedisTest {
                 .then()
                 .statusCode(500);
 
-        Awaitility.await().atMost(Duration.ofSeconds(10)).until(() -> getSpans().size() == 2);
+        Awaitility.await().atMost(TestTimeouts.get()).until(() -> getSpans().size() == 2);
 
         Map<String, Object> span = findSpan(getSpans(), m -> SpanKind.CLIENT.name().equals(m.get("kind")));
 
@@ -217,7 +216,7 @@ class QuarkusOpenTelemetryRedisTest {
                 .statusCode(200)
                 .body(CoreMatchers.is("OK"));
 
-        Awaitility.await().atMost(Duration.ofSeconds(10)).until(() -> getSpans().size() == 3);
+        Awaitility.await().atMost(TestTimeouts.get()).until(() -> getSpans().size() == 3);
 
         Map<String, Object> span = findSpan(getSpans(), m -> SpanKind.CLIENT.name().equals(m.get("kind"))
                 && "get".equals(m.get("name")));

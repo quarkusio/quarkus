@@ -5,7 +5,6 @@ import static org.awaitility.Awaitility.await;
 
 import java.time.Duration;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 import jakarta.inject.Inject;
 
@@ -13,6 +12,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusExtensionTest;
+import io.quarkus.test.timeouts.TestTimeouts;
 
 public class MultiTest {
     @RegisterExtension
@@ -27,7 +27,7 @@ public class MultiTest {
 
     @Test
     public void shouldGatherEvenFromMultiBean() {
-        await().atMost(5, TimeUnit.SECONDS)
+        await().atMost(TestTimeouts.get())
                 .until(() -> multiIntBean.getEvenNumbers().size() > 5);
 
         assertThat(multiIntBean.getEvenNumbers()).contains(2, 4, 6, 8, 10, 12);

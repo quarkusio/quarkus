@@ -26,6 +26,7 @@ import io.quarkus.maven.dependency.Dependency;
 import io.quarkus.signals.Receives;
 import io.quarkus.signals.Signal;
 import io.quarkus.test.QuarkusExtensionTest;
+import io.quarkus.test.timeouts.TestTimeouts;
 import io.smallrye.common.annotation.NonBlocking;
 import io.smallrye.common.annotation.RunOnVirtualThread;
 import io.smallrye.mutiny.Uni;
@@ -120,7 +121,7 @@ public class PipelineTracingTest {
     }
 
     private List<SpanData> awaitReceiveSpans(int count) {
-        Awaitility.await().atMost(Duration.ofSeconds(10)).until(() -> receiveSpans().size() >= count);
+        Awaitility.await().atMost(TestTimeouts.get()).until(() -> receiveSpans().size() >= count);
         return receiveSpans();
     }
 

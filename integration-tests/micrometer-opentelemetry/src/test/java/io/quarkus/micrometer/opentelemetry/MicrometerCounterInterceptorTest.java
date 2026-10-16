@@ -4,7 +4,6 @@ import static io.opentelemetry.sdk.testing.assertj.OpenTelemetryAssertions.asser
 import static io.restassured.RestAssured.get;
 import static io.restassured.RestAssured.given;
 import static java.net.HttpURLConnection.HTTP_OK;
-import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.awaitility.Awaitility.await;
 
 import java.util.List;
@@ -15,6 +14,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.test.junit.QuarkusTest;
+import io.quarkus.test.timeouts.TestTimeouts;
 import io.restassured.common.mapper.TypeRef;
 
 @QuarkusTest
@@ -34,7 +34,7 @@ public class MicrometerCounterInterceptorTest {
                 .then()
                 .statusCode(200);
 
-        await().atMost(5, SECONDS).until(() -> getMetrics("metric.all").size() > 1);
+        await().atMost(TestTimeouts.get()).until(() -> getMetrics("metric.all").size() > 1);
 
         List<Map<String, Object>> metrics = getMetrics("metric.all");
 

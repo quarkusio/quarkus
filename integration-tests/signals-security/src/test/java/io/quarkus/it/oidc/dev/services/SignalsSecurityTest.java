@@ -4,7 +4,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.net.URI;
-import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
@@ -19,6 +18,7 @@ import org.junit.jupiter.api.Test;
 import io.quarkus.test.common.http.TestHTTPResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.oidc.client.OidcTestClient;
+import io.quarkus.test.timeouts.TestTimeouts;
 import io.restassured.RestAssured;
 import io.vertx.core.Vertx;
 import io.vertx.core.http.WebSocket;
@@ -103,7 +103,7 @@ class SignalsSecurityTest {
             assertEquals("opened", messages.get(0));
             assertEquals("hello alice", messages.get(1));
 
-            Awaitility.await().atMost(Duration.ofSeconds(3)).untilAsserted(() -> RestAssured.given()
+            Awaitility.await().atMost(TestTimeouts.get()).untilAsserted(() -> RestAssured.given()
                     .get("/signals/messages")
                     .then()
                     .statusCode(200)

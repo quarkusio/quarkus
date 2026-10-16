@@ -6,7 +6,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 import java.net.URL;
-import java.time.Duration;
 
 import org.awaitility.Awaitility;
 import org.hamcrest.Matchers;
@@ -21,6 +20,7 @@ import org.junit.jupiter.api.Test;
 
 import io.quarkus.test.common.http.TestHTTPResource;
 import io.quarkus.test.keycloak.client.KeycloakTestClient;
+import io.quarkus.test.timeouts.TestTimeouts;
 import io.restassured.RestAssured;
 import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonObject;
@@ -30,7 +30,6 @@ import io.vertx.ext.web.client.WebClient;
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
 public abstract class AbstractPolicyEnforcerTest {
-    private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(10);
 
     @TestHTTPResource
     URL url;
@@ -113,7 +112,7 @@ public abstract class AbstractPolicyEnforcerTest {
     }
 
     private void testWebAppTenantAllowed(String user, String path) throws Exception {
-        Awaitility.await().atMost(REQUEST_TIMEOUT).untilAsserted(() -> assertTokenStateCount(0));
+        Awaitility.await().atMost(TestTimeouts.get()).untilAsserted(() -> assertTokenStateCount(0));
         try (final org.htmlunit.WebClient webClient = createWebClient()) {
             HtmlPage page = webClient.getPage("http://localhost:8081" + path);
 
@@ -133,7 +132,7 @@ public abstract class AbstractPolicyEnforcerTest {
             assureGetPathWithCookie("//api-permission-webapp", cookie, 200, null, "Permission Resource WebApp");
 
             webClient.getCookieManager().clearCookies();
-            Awaitility.await().atMost(REQUEST_TIMEOUT).untilAsserted(() -> assertTokenStateCount(1));
+            Awaitility.await().atMost(TestTimeouts.get()).untilAsserted(() -> assertTokenStateCount(1));
         }
     }
 
@@ -479,7 +478,7 @@ public abstract class AbstractPolicyEnforcerTest {
             req.bearerTokenAuthentication(token);
         }
         var result = req.send();
-        await().atMost(REQUEST_TIMEOUT).until(result::isComplete);
+        await().atMost(TestTimeouts.get()).until(result::isComplete);
         assertEquals(expectedStatusCode, result.result().statusCode(), path);
         if (body != null) {
             assertTrue(result.result().bodyAsString().contains(body), path);
@@ -493,7 +492,7 @@ public abstract class AbstractPolicyEnforcerTest {
         }
         req.putHeader("Cookie", cookie.getName() + "=" + cookie.getValue());
         var result = req.send();
-        await().atMost(REQUEST_TIMEOUT).until(result::isComplete);
+        await().atMost(TestTimeouts.get()).until(result::isComplete);
         assertEquals(expectedStatusCode, result.result().statusCode(), path);
         if (body != null) {
             assertTrue(result.result().bodyAsString().contains(body), path);
@@ -508,7 +507,7 @@ public abstract class AbstractPolicyEnforcerTest {
         }
         req.putHeader("Content-Type", "application/json");
         var result = req.sendJson(new JsonObject(requestBody));
-        await().atMost(REQUEST_TIMEOUT).until(result::isComplete);
+        await().atMost(TestTimeouts.get()).until(result::isComplete);
         assertEquals(expectedStatusCode, result.result().statusCode(), path);
         if (responseBody != null) {
             assertTrue(result.result().bodyAsString().contains(responseBody), path);

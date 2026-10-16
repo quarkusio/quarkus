@@ -2,7 +2,6 @@ package io.quarkus.micrometer.deployment.binder;
 
 import static org.awaitility.Awaitility.await;
 
-import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 
 import jakarta.annotation.PostConstruct;
@@ -23,6 +22,7 @@ import io.quarkus.micrometer.test.ClientDummyTag;
 import io.quarkus.micrometer.test.ClientHeaderTag;
 import io.quarkus.micrometer.test.Util;
 import io.quarkus.test.QuarkusExtensionTest;
+import io.quarkus.test.timeouts.TestTimeouts;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.WebSocketConnectOptions;
 import io.vertx.ext.web.client.WebClientOptions;
@@ -223,14 +223,14 @@ public class VertxHttpClientMetricsTest {
             return request
                     .send()
                     .map(HttpResponse::bodyAsString)
-                    .await().atMost(Duration.ofSeconds(10));
+                    .await().atMost(TestTimeouts.get());
         }
 
         public String post(String payload) {
             return client.postAbs("http://localhost:8888/post")
                     .sendBuffer(Buffer.buffer(payload))
                     .map(HttpResponse::bodyAsString)
-                    .await().atMost(Duration.ofSeconds(10));
+                    .await().atMost(TestTimeouts.get());
         }
 
         @PreDestroy

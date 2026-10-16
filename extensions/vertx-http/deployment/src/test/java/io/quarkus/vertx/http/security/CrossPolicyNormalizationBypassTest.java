@@ -4,7 +4,6 @@ import static org.awaitility.Awaitility.await;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.net.URL;
-import java.time.Duration;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
@@ -24,6 +23,7 @@ import io.quarkus.security.test.utils.TestIdentityController;
 import io.quarkus.security.test.utils.TestIdentityProvider;
 import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.common.http.TestHTTPResource;
+import io.quarkus.test.timeouts.TestTimeouts;
 import io.quarkus.vertx.http.runtime.security.HttpSecurityPolicy;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
@@ -41,8 +41,6 @@ import io.vertx.ext.web.client.WebClient;
  * Both normalization forms must be matched and their policies combined.
  */
 public class CrossPolicyNormalizationBypassTest {
-
-    private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(20);
 
     private static final String APP_PROPS = """
             quarkus.http.auth.permission.admin.paths=/admin/*
@@ -152,7 +150,7 @@ public class CrossPolicyNormalizationBypassTest {
             req.basicAuthentication(auth, auth);
         }
         var result = req.send();
-        await().atMost(REQUEST_TIMEOUT).until(result::isComplete);
+        await().atMost(TestTimeouts.get()).until(result::isComplete);
         assertEquals(expectedStatusCode, result.result().statusCode(),
                 "Path: " + path + " (auth=" + auth + ")");
         return result.result();

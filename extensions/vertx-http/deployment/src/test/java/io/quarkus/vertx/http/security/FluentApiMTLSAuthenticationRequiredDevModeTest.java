@@ -7,7 +7,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.io.File;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.time.Duration;
 
 import org.awaitility.Awaitility;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
@@ -20,6 +19,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusDevModeTest;
 import io.quarkus.test.common.http.TestHTTPResource;
+import io.quarkus.test.timeouts.TestTimeouts;
 import io.restassured.RestAssured;
 import io.smallrye.certs.Format;
 import io.smallrye.certs.junit5.Certificate;
@@ -52,7 +52,7 @@ public class FluentApiMTLSAuthenticationRequiredDevModeTest {
     void testCustomCertificateToRolesMapper(RepetitionInfo info) {
         URL url = correctPortIfNecessary(adminRoleTlsPath);
         final String headerValue = modifyFileAndGetHeaderValue(info);
-        Awaitility.await().atMost(Duration.ofSeconds(10)).untilAsserted(() -> RestAssured.given()
+        Awaitility.await().atMost(TestTimeouts.get()).untilAsserted(() -> RestAssured.given()
                 .keyStore("target/certs/mtls-test-client-keystore.p12", "secret")
                 .trustStore("target/certs/mtls-test-client-truststore.p12", "secret")
                 .get(url).then()

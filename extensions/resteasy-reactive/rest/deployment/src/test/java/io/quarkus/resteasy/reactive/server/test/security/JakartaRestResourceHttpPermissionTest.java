@@ -4,7 +4,6 @@ import static org.awaitility.Awaitility.await;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.net.URL;
-import java.time.Duration;
 
 import jakarta.inject.Inject;
 import jakarta.ws.rs.GET;
@@ -24,12 +23,12 @@ import io.quarkus.security.test.utils.TestIdentityController;
 import io.quarkus.security.test.utils.TestIdentityProvider;
 import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.common.http.TestHTTPResource;
+import io.quarkus.test.timeouts.TestTimeouts;
 import io.quarkus.vertx.http.runtime.security.HttpSecurityUtils;
 import io.vertx.core.Vertx;
 import io.vertx.ext.web.client.WebClient;
 
 public class JakartaRestResourceHttpPermissionTest {
-    private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(20);
     private static final String APP_PROPS = "quarkus.http.auth.permission.foo.paths=/api/foo,/api/foo/\n" +
             "quarkus.http.auth.permission.foo.policy=authenticated\n" +
             "quarkus.http.auth.permission.bar.paths=api/bar*\n" +
@@ -302,7 +301,7 @@ public class JakartaRestResourceHttpPermissionTest {
             req.basicAuthentication(username, username);
         }
         var result = req.send();
-        await().atMost(REQUEST_TIMEOUT).until(result::isComplete);
+        await().atMost(TestTimeouts.get()).until(result::isComplete);
         assertEquals(expectedStatusCode, result.result().statusCode(), path);
         if (body != null) {
             Assertions.assertTrue(result.result().bodyAsString().contains(body), path);

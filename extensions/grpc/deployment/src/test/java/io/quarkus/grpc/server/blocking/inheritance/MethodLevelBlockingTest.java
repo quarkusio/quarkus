@@ -5,7 +5,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.grpc.GrpcClient;
@@ -14,6 +13,7 @@ import io.quarkus.grpc.test.blocking.inheritance.BlockingTestService;
 import io.quarkus.grpc.test.blocking.inheritance.BlockingTestServiceGrpc;
 import io.quarkus.grpc.test.blocking.inheritance.InheritenceTest.Msg;
 import io.quarkus.test.QuarkusExtensionTest;
+import io.quarkus.test.timeouts.TimeLimit;
 import io.smallrye.common.annotation.Blocking;
 import io.smallrye.common.annotation.NonBlocking;
 import io.smallrye.mutiny.Uni;
@@ -32,25 +32,25 @@ public class MethodLevelBlockingTest {
     BlockingTestService client;
 
     @Test
-    @Timeout(5)
+    @TimeLimit
     void shouldBlockOnInheritedBlocking() {
         assertThat(client.notOverridden1(message()).await().indefinitely().getText()).isEqualTo(BLOCKING);
     }
 
     @Test
-    @Timeout(5)
+    @TimeLimit
     void shouldNotBlockOnInheritedNonBlocking() {
         assertThat(client.notOverridden2(message()).await().indefinitely().getText()).isEqualTo(NON_BLOCKING);
     }
 
     @Test
-    @Timeout(5)
+    @TimeLimit
     void shouldNotBlockOnOverriddenBlocking() {
         assertThat(client.overridden1(message()).await().indefinitely().getText()).isEqualTo(NON_BLOCKING);
     }
 
     @Test
-    @Timeout(5)
+    @TimeLimit
     void shouldBlockOnOverriddenBlocking() {
         assertThat(client.overridden2(message()).await().indefinitely().getText()).isEqualTo(BLOCKING);
     }

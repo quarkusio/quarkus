@@ -14,6 +14,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusExtensionTest;
+import io.quarkus.test.timeouts.TestTimeouts;
 import io.quarkus.vertx.ConsumeEvent;
 import io.vertx.mutiny.core.eventbus.EventBus;
 
@@ -39,7 +40,7 @@ public class BlockingConsumerOrderingTest {
             eventBus.send("ordered-blocking", i);
         }
 
-        assertThat(OrderingConsumers.orderedLatch.await(10, TimeUnit.SECONDS)).isTrue();
+        assertThat(OrderingConsumers.orderedLatch.await(TestTimeouts.get().toSeconds(), TimeUnit.SECONDS)).isTrue();
 
         assertThat(OrderingConsumers.orderedResults).hasSize(messageCount);
         for (int i = 0; i < messageCount; i++) {
@@ -58,7 +59,7 @@ public class BlockingConsumerOrderingTest {
             eventBus.send("unordered-blocking", i);
         }
 
-        assertThat(OrderingConsumers.unorderedLatch.await(10, TimeUnit.SECONDS)).isTrue();
+        assertThat(OrderingConsumers.unorderedLatch.await(TestTimeouts.get().toSeconds(), TimeUnit.SECONDS)).isTrue();
 
         assertThat(OrderingConsumers.unorderedResults).hasSize(messageCount);
     }

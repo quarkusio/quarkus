@@ -14,7 +14,6 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 import jakarta.inject.Inject;
 
@@ -25,6 +24,7 @@ import org.junit.jupiter.api.Test;
 import io.opentelemetry.sdk.testing.exporter.InMemorySpanExporter;
 import io.opentelemetry.sdk.trace.data.SpanData;
 import io.quarkus.test.junit.QuarkusTest;
+import io.quarkus.test.timeouts.TestTimeouts;
 import io.vertx.ext.web.Router;
 import io.vertx.mutiny.sqlclient.Pool;
 
@@ -60,7 +60,7 @@ public class SqlClientTest {
         // Why 3 spans:
         // Table creation + HTTP + Query = 3
 
-        await().atMost(5, TimeUnit.SECONDS).until(() -> inMemorySpanExporter.getFinishedSpanItems().size() == 3);
+        await().atMost(TestTimeouts.get()).until(() -> inMemorySpanExporter.getFinishedSpanItems().size() == 3);
         List<SpanData> spans = inMemorySpanExporter.getFinishedSpanItems();
         assertEquals(3, spans.size());
 
@@ -92,7 +92,7 @@ public class SqlClientTest {
     @BeforeEach
     @AfterEach
     void reset() {
-        await().atMost(5, TimeUnit.SECONDS).until(() -> {
+        await().atMost(TestTimeouts.get()).until(() -> {
             // make sure spans from previous tests are not included
             List<SpanData> finishedSpanItems = inMemorySpanExporter.getFinishedSpanItems();
             if (finishedSpanItems.size() > 0) {

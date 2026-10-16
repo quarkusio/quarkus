@@ -20,6 +20,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.bootstrap.util.IoUtils;
 import io.quarkus.test.QuarkusExtensionTest;
+import io.quarkus.test.timeouts.TestTimeouts;
 import io.restassured.RestAssured;
 import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpClient;
@@ -82,7 +83,7 @@ public class AccessLogConnectionStatusTestCase {
         RestAssured.get("/fast").then().statusCode(200);
 
         Awaitility.given().pollInterval(100, TimeUnit.MILLISECONDS)
-                .atMost(10, TimeUnit.SECONDS)
+                .atMost(TestTimeouts.get())
                 .untilAsserted(() -> {
                     String data = Files.readString(logDirectory.resolve("server.log"));
                     assertThat(data).contains("GET /slow HTTP/1.1 X");

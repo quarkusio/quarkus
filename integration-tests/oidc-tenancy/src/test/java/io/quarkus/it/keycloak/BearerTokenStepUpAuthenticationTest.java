@@ -30,6 +30,7 @@ import io.quarkus.test.common.http.TestHTTPResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.QuarkusTestProfile;
 import io.quarkus.test.junit.TestProfile;
+import io.quarkus.test.timeouts.TestTimeouts;
 import io.quarkus.websockets.next.OnOpen;
 import io.quarkus.websockets.next.OnTextMessage;
 import io.quarkus.websockets.next.WebSocket;
@@ -324,7 +325,7 @@ public class BearerTokenStepUpAuthenticationTest {
                         }
                     });
             if (expectFailure) {
-                Awaitility.await().atMost(5, TimeUnit.SECONDS).until(() -> throwable.get() != null);
+                Awaitility.await().atMost(TestTimeouts.get()).until(() -> throwable.get() != null);
                 throw new RuntimeException(throwable.get());
             } else {
                 Assertions.assertTrue(connectedLatch.await(5, TimeUnit.SECONDS));

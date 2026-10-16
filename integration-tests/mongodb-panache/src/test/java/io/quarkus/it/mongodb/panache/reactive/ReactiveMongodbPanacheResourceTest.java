@@ -6,7 +6,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import java.io.IOException;
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
@@ -34,6 +33,7 @@ import io.quarkus.it.mongodb.panache.BookDTO;
 import io.quarkus.it.mongodb.panache.book.BookDetail;
 import io.quarkus.it.mongodb.panache.person.Person;
 import io.quarkus.test.junit.QuarkusTest;
+import io.quarkus.test.timeouts.TestTimeouts;
 import io.restassured.RestAssured;
 import io.restassured.common.mapper.TypeRef;
 import io.restassured.config.ObjectMapperConfig;
@@ -204,7 +204,7 @@ public class ReactiveMongodbPanacheResourceTest {
                 nbEvent.increment();
             });
             source.open();
-            await().atMost(Duration.ofSeconds(10)).until(() -> nbEvent.sum() == 3);
+            await().atMost(TestTimeouts.get()).until(() -> nbEvent.sum() == 3);
         }
 
         //delete all

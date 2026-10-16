@@ -1,6 +1,5 @@
 package io.quarkus.opentelemetry.deployment.common.exporter;
 
-import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.time.Duration;
@@ -19,6 +18,7 @@ import io.opentelemetry.sdk.common.CompletableResultCode;
 import io.opentelemetry.sdk.logs.data.LogRecordData;
 import io.opentelemetry.sdk.logs.export.LogRecordExporter;
 import io.quarkus.arc.Unremovable;
+import io.quarkus.test.timeouts.TestTimeouts;
 
 @Unremovable
 @ApplicationScoped
@@ -34,7 +34,7 @@ public class InMemoryLogRecordExporter implements LogRecordExporter {
     }
 
     public List<LogRecordData> getFinishedLogRecordItemsAtLeast(final int count) {
-        Awaitility.await().atMost(5, SECONDS)
+        Awaitility.await().atMost(TestTimeouts.get())
                 .untilAsserted(() -> assertThat(getFinishedLogRecordItems().size()).isGreaterThanOrEqualTo(count));
         return getFinishedLogRecordItems();
     }

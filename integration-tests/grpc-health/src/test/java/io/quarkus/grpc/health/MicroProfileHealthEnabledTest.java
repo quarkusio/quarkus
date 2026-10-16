@@ -8,7 +8,6 @@ import static org.awaitility.Awaitility.await;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
 import jakarta.enterprise.context.ApplicationScoped;
@@ -29,6 +28,7 @@ import io.grpc.ServerServiceDefinition;
 import io.quarkus.grpc.GrpcClient;
 import io.quarkus.grpc.GrpcService;
 import io.quarkus.test.QuarkusExtensionTest;
+import io.quarkus.test.timeouts.TestTimeouts;
 import io.smallrye.mutiny.Multi;
 
 /*
@@ -95,7 +95,7 @@ public class MicroProfileHealthEnabledTest {
     }
 
     private void awaitExactStatusList(List<ServingStatus> statusList, ServingStatus... statuses) {
-        await("list to be contain exactly " + Arrays.toString(statuses)).atMost(2, TimeUnit.SECONDS)
+        await("list to be contain exactly " + Arrays.toString(statuses)).atMost(TestTimeouts.get())
                 .until(() -> statusList, isEqual(asList(statuses)));
     }
 

@@ -11,7 +11,6 @@ import java.nio.charset.StandardCharsets;
 import java.security.KeyPairGenerator;
 import java.security.PrivateKey;
 import java.security.cert.X509Certificate;
-import java.time.Duration;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.Base64;
@@ -36,6 +35,7 @@ import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.oidc.server.OidcWireMock;
 import io.quarkus.test.oidc.server.OidcWiremockTestResource;
+import io.quarkus.test.timeouts.TestTimeouts;
 import io.restassured.RestAssured;
 import io.smallrye.jwt.algorithm.SignatureAlgorithm;
 import io.smallrye.jwt.build.Jwt;
@@ -754,7 +754,7 @@ public class BearerTokenAuthorizationTest {
                 .then().statusCode(204);
         Awaitility
                 .await()
-                .atMost(Duration.ofSeconds(10))
+                .atMost(TestTimeouts.get())
                 .ignoreExceptions()
                 .untilAsserted(() -> RestAssured.given().get("order/bearer").then().statusCode(200).body(Matchers.is("alice")));
     }

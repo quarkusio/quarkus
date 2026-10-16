@@ -18,7 +18,6 @@ import java.security.spec.ECGenParameterSpec;
 import java.security.spec.ECParameterSpec;
 import java.security.spec.ECPoint;
 import java.security.spec.ECPublicKeySpec;
-import java.time.Duration;
 import java.util.Base64;
 import java.util.Set;
 
@@ -34,6 +33,7 @@ import io.quarkus.spiffe.client.SpiffeConnectionException;
 import io.quarkus.spiffe.client.deployment.SpiffeDevServicesProcessor.ServerMode;
 import io.quarkus.spiffe.svid.jwt.JwtSvidClient;
 import io.quarkus.spiffe.svid.jwt.WorkloadJsonWebToken;
+import io.quarkus.test.timeouts.TestTimeouts;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpMethod;
@@ -44,7 +44,6 @@ abstract class AbstractSpiffeClientTest {
 
     private static final String RESOURCE_SERVER_AUD = TEST_TRUST_DOMAIN + "/resource-server";
     private static final String API_GATEWAY_AUD = TEST_TRUST_DOMAIN + "/api-gateway";
-    private static final Duration TIMEOUT = Duration.ofSeconds(5);
 
     @Inject
     Vertx vertx;
@@ -75,7 +74,7 @@ abstract class AbstractSpiffeClientTest {
     @Test
     void getWorkloadJsonWebTokenMultipleAudiences() {
         WorkloadJsonWebToken svid = spiffeClient.getWorkloadJsonWebToken(Set.of(RESOURCE_SERVER_AUD, API_GATEWAY_AUD))
-                .await().atMost(TIMEOUT);
+                .await().atMost(TestTimeouts.get());
 
         assertThat(svid.audience()).containsExactlyInAnyOrder(RESOURCE_SERVER_AUD, API_GATEWAY_AUD);
     }
@@ -187,13 +186,13 @@ abstract class AbstractSpiffeClientTest {
 
     @Test
     void noArgFetchFailsWithoutConfiguredAudiences() {
-        assertThatThrownBy(() -> spiffeClient.getWorkloadJsonWebToken().await().atMost(TIMEOUT))
+        assertThatThrownBy(() -> spiffeClient.getWorkloadJsonWebToken().await().atMost(TestTimeouts.get()))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("quarkus.spiffe-client.audiences");
     }
 
     private WorkloadJsonWebToken fetchSvid(String audience) {
-        return jwtSvidClient.getWorkloadJsonWebToken(audience).await().atMost(TIMEOUT);
+        return jwtSvidClient.getWorkloadJsonWebToken(audience).await().atMost(TestTimeouts.get());
     }
 
     private void setServerMode(ServerMode mode) {
@@ -247,10 +246,10 @@ abstract class AbstractSpiffeClientTest {
                         assertThat(resp.statusCode()).isEqualTo(200);
                         return resp.body();
                     })
-                    .await().atMost(TIMEOUT)
+                    .await().atMost(TestTimeouts.get())
                     .toString();
         } finally {
-            client.close().await().atMost(TIMEOUT);
+            client.close().await().atMost(TestTimeouts.get());
         }
     }
 }

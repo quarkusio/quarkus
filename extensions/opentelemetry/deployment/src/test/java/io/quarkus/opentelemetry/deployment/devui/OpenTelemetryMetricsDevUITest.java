@@ -3,7 +3,6 @@ package io.quarkus.opentelemetry.deployment.devui;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
-import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 
@@ -14,6 +13,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.devui.tests.DevUIJsonRPCTest;
 import io.quarkus.test.QuarkusDevModeTest;
+import io.quarkus.test.timeouts.TestTimeouts;
 import io.restassured.RestAssured;
 import tools.jackson.databind.JsonNode;
 
@@ -40,7 +40,7 @@ public class OpenTelemetryMetricsDevUITest extends DevUIJsonRPCTest {
         RestAssured.get("/otel-metrics-test/hit").then().statusCode(200);
 
         // Both a counter and an observable gauge surface in the catalog.
-        await().atMost(Duration.ofSeconds(6)).untilAsserted(() -> {
+        await().atMost(TestTimeouts.get()).untilAsserted(() -> {
             JsonNode catalog = super.executeJsonRPCMethod("getCatalog");
             assertThat(catalogHas(catalog, "custom.otel.hits")).isTrue();
             assertThat(catalogHas(catalog, "custom.otel.gauge")).isTrue();
@@ -50,7 +50,7 @@ public class OpenTelemetryMetricsDevUITest extends DevUIJsonRPCTest {
                 Map.of("names", List.of("custom.otel.hits", "custom.otel.gauge")));
 
         // Drive several increments across multiple export ticks so we capture ≥3 points.
-        await().atMost(Duration.ofSeconds(8)).untilAsserted(() -> {
+        await().atMost(TestTimeouts.get()).untilAsserted(() -> {
             RestAssured.get("/otel-metrics-test/hit");
             JsonNode snap = super.executeJsonRPCMethod("getSnapshot");
             JsonNode counter = section(snap, "custom.otel.hits");

@@ -3,7 +3,6 @@ package io.quarkus.opentelemetry.deployment.common.exporter;
 import static io.opentelemetry.semconv.HttpAttributes.HTTP_REQUEST_METHOD;
 import static io.opentelemetry.semconv.HttpAttributes.HTTP_RESPONSE_STATUS_CODE;
 import static io.opentelemetry.semconv.HttpAttributes.HTTP_ROUTE;
-import static java.util.concurrent.TimeUnit.SECONDS;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toMap;
 
@@ -31,6 +30,7 @@ import io.opentelemetry.sdk.metrics.data.MetricData;
 import io.opentelemetry.sdk.metrics.data.PointData;
 import io.opentelemetry.sdk.metrics.export.MetricExporter;
 import io.quarkus.arc.Unremovable;
+import io.quarkus.test.timeouts.TestTimeouts;
 
 @Unremovable
 @ApplicationScoped
@@ -107,22 +107,22 @@ public class InMemoryMetricExporter implements MetricExporter {
     }
 
     public void assertCount(final String name, final String target, final int count) {
-        Awaitility.await().atMost(5, SECONDS)
+        Awaitility.await().atMost(TestTimeouts.get())
                 .untilAsserted(() -> Assertions.assertEquals(count, getFinishedMetricItems(name, target).size()));
     }
 
     public void assertCountAtLeast(final int count) {
-        Awaitility.await().atMost(5, SECONDS)
+        Awaitility.await().atMost(TestTimeouts.get())
                 .untilAsserted(() -> Assertions.assertTrue(count < getFinishedMetricItems().size()));
     }
 
     public void assertCountAtLeast(final String name, final String target, final int count) {
-        Awaitility.await().atMost(5, SECONDS)
+        Awaitility.await().atMost(TestTimeouts.get())
                 .untilAsserted(() -> Assertions.assertTrue(count < getFinishedMetricItems(name, target).size()));
     }
 
     public void assertCountPointsAtLeast(final String name, final String target, final int countPoints) {
-        Awaitility.await().atMost(5, SECONDS)
+        Awaitility.await().atMost(TestTimeouts.get())
                 .untilAsserted(() -> {
                     List<MetricData> metricData = getFinishedMetricItems(name, target);
                     Assertions.assertTrue(1 <= metricData.size());

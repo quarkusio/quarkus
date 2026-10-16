@@ -11,6 +11,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusExtensionTest;
+import io.quarkus.test.timeouts.TestTimeouts;
 import io.restassured.RestAssured;
 
 /**
@@ -105,7 +106,7 @@ public class SimpleContextPropagationTest {
     }
 
     private void awaitState(ThrowingRunnable task) {
-        Awaitility.await().atMost(5, TimeUnit.SECONDS)
+        Awaitility.await().atMost(TestTimeouts.get())
                 .pollInterval(1000, TimeUnit.MILLISECONDS)
                 .untilAsserted(task);
     }

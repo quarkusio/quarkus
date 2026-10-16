@@ -2,8 +2,6 @@ package io.quarkus.vertx.http.devmode.management;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.util.concurrent.TimeUnit;
-
 import org.awaitility.Awaitility;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.junit.jupiter.api.Disabled;
@@ -11,6 +9,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusDevModeTest;
+import io.quarkus.test.timeouts.TestTimeouts;
 import io.restassured.RestAssured;
 
 @Disabled("See https://github.com/quarkusio/quarkus/pull/48171")
@@ -41,7 +40,7 @@ public class LiveReloadManagementTest {
 
         // 2.1 Wait for the reload to be done, and first make sure that the "new" endpoint is there:
         Awaitility.await()
-                .atMost(5, TimeUnit.SECONDS)
+                .atMost(TestTimeouts.get())
                 .untilAsserted(() -> {
                     String secondClassToString = RestAssured.get(managementPath + "/manage-2")
                             .then()
@@ -67,7 +66,7 @@ public class LiveReloadManagementTest {
 
         // 6. Now wait for the app to get reloaded:
         Awaitility.await()
-                .atMost(5, TimeUnit.SECONDS)
+                .atMost(TestTimeouts.get())
                 .untilAsserted(() -> {
                     String response = RestAssured.get(managementPath + "/manage-cdi")
                             .then()
@@ -81,7 +80,7 @@ public class LiveReloadManagementTest {
 
         // 8. Wait for the app to get reloaded and management endpoint should be using the reloaded CDI bean:
         Awaitility.await()
-                .atMost(5, TimeUnit.SECONDS)
+                .atMost(TestTimeouts.get())
                 .untilAsserted(() -> {
                     String response = RestAssured.get(managementPath + "/manage-cdi")
                             .then()
@@ -96,7 +95,7 @@ public class LiveReloadManagementTest {
 
         // 10. Now wait for the app to get reloaded:
         Awaitility.await()
-                .atMost(5, TimeUnit.SECONDS)
+                .atMost(TestTimeouts.get())
                 .untilAsserted(() -> {
                     String response = RestAssured.get(managementPath + "/manage-bean-handler")
                             .then()

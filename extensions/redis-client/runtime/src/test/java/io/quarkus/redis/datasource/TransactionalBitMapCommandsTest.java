@@ -14,6 +14,7 @@ import io.quarkus.redis.datasource.bitmap.TransactionalBitMapCommands;
 import io.quarkus.redis.datasource.transactions.TransactionResult;
 import io.quarkus.redis.runtime.datasource.BlockingRedisDataSourceImpl;
 import io.quarkus.redis.runtime.datasource.ReactiveRedisDataSourceImpl;
+import io.quarkus.test.timeouts.TestTimeouts;
 
 public class TransactionalBitMapCommandsTest extends DatasourceTestBase {
 
@@ -78,7 +79,7 @@ public class TransactionalBitMapCommandsTest extends DatasourceTestBase {
                     .chain(() -> bitmap.setbit(key, 1L, 1))
                     .chain(() -> bitmap.setbit(key, 2L, 1))
                     .chain(() -> bitmap.bitcount(key, 0, -1));
-        }).await().atMost(Duration.ofSeconds(5));
+        }).await().atMost(TestTimeouts.get());
         assertThat(result.size()).isEqualTo(5);
         assertThat(result.discarded()).isFalse();
         assertThat((long) result.get(0)).isEqualTo(0);
@@ -97,7 +98,7 @@ public class TransactionalBitMapCommandsTest extends DatasourceTestBase {
                     .chain(() -> bitmap.setbit(key, 1L, 1))
                     .chain(() -> bitmap.setbit(key, 2L, 1))
                     .chain(tx::discard);
-        }).await().atMost(Duration.ofSeconds(5));
+        }).await().atMost(TestTimeouts.get());
         assertThat(result.size()).isEqualTo(0);
         assertThat(result.discarded()).isTrue();
     }

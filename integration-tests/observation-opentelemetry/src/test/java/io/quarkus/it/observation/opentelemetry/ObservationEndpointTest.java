@@ -2,7 +2,6 @@ package io.quarkus.it.observation.opentelemetry;
 
 import static io.restassured.RestAssured.get;
 import static io.restassured.RestAssured.given;
-import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
@@ -13,6 +12,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.test.junit.QuarkusTest;
+import io.quarkus.test.timeouts.TestTimeouts;
 import io.restassured.common.mapper.TypeRef;
 
 @QuarkusTest
@@ -96,7 +96,7 @@ public class ObservationEndpointTest {
 
     @SuppressWarnings("unchecked")
     private List<Map<String, Object>> getSpans(int minCount) {
-        await().atMost(5, SECONDS).untilAsserted(() -> {
+        await().atMost(TestTimeouts.get()).untilAsserted(() -> {
             List<Map<String, Object>> result = get("/export").as(List.class);
             assertThat(result).hasSizeGreaterThanOrEqualTo(minCount);
         });

@@ -26,6 +26,7 @@ import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.kafka.InjectKafkaCompanion;
 import io.quarkus.test.kafka.KafkaCompanionResource;
+import io.quarkus.test.timeouts.TestTimeouts;
 import io.restassured.common.mapper.TypeRef;
 import io.restassured.http.ContentType;
 import io.smallrye.reactive.messaging.kafka.companion.KafkaCompanion;
@@ -95,19 +96,19 @@ public class KafkaConnectorTest {
     @Test
     @Order(1)
     public void testExactlyOnceTransactional() {
-        await().atMost(Duration.ofSeconds(30)).untilAsserted(() -> {
+        await().atMost(TestTimeouts.get()).untilAsserted(() -> {
             List<String> processed = get("/kafka/exactly-once-fruit-processed").as(new TypeRef<List<String>>() {
             });
             assertTrue(processed.size() >= 4, "Expected at least 4 processed, got " + processed.size());
         });
-        await().atMost(Duration.ofSeconds(30)).untilAsserted(() -> {
+        await().atMost(TestTimeouts.get()).untilAsserted(() -> {
             List<String> results = get("/kafka/exactly-once-fruit-results").as(new TypeRef<List<String>>() {
             });
             assertTrue(results.size() >= 4, "Expected at least 4 results, got " + results.size());
             assertTrue(results.contains("persisted-fruit-0"));
         });
         // Verify fruits were persisted to the database by the @Transactional method
-        await().atMost(Duration.ofSeconds(30)).untilAsserted(() -> {
+        await().atMost(TestTimeouts.get()).untilAsserted(() -> {
             List<?> fruits = get("/kafka/exactly-once-fruits").as(new TypeRef<List<?>>() {
             });
             assertTrue(fruits.size() >= 4, "Expected at least 4 persisted fruits, got " + fruits.size());
@@ -158,7 +159,7 @@ public class KafkaConnectorTest {
         companion.produceStrings().fromRecords(new ProducerRecord<>("exactly-once-fruit-in", "fail-key", "fail-fruit"));
 
         // The first attempt fails and rolls back; the retry succeeds
-        await().atMost(Duration.ofSeconds(30)).untilAsserted(() -> {
+        await().atMost(TestTimeouts.get()).untilAsserted(() -> {
             List<String> processed = get("/kafka/exactly-once-fruit-processed").as(new TypeRef<List<String>>() {
             });
             assertTrue(processed.contains("fail-fruit"),
@@ -166,7 +167,7 @@ public class KafkaConnectorTest {
         });
 
         // Verify fail-fruit was persisted exactly once after the successful retry
-        await().atMost(Duration.ofSeconds(30)).untilAsserted(() -> {
+        await().atMost(TestTimeouts.get()).untilAsserted(() -> {
             List<?> fruits = get("/kafka/exactly-once-fruits").as(new TypeRef<List<?>>() {
             });
             assertEquals(initialCount + 1, fruits.size(),

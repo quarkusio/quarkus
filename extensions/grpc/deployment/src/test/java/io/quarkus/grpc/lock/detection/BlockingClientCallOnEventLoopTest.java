@@ -2,8 +2,6 @@ package io.quarkus.grpc.lock.detection;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.time.Duration;
-
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -14,6 +12,7 @@ import io.quarkus.grpc.blocking.call.test.CallBlockingGrpc;
 import io.quarkus.grpc.blocking.call.test.CallHello;
 import io.quarkus.grpc.server.services.HelloService;
 import io.quarkus.test.QuarkusExtensionTest;
+import io.quarkus.test.timeouts.TestTimeouts;
 import io.smallrye.mutiny.Uni;
 
 public class BlockingClientCallOnEventLoopTest {
@@ -31,7 +30,7 @@ public class BlockingClientCallOnEventLoopTest {
     @Test
     void shouldThrowExceptionOnBlockingClientCall() {
         Uni<CallHello.SuccessOrFailureDescription> result = callBlocking.doBlockingCall(CallHello.Empty.getDefaultInstance());
-        CallHello.SuccessOrFailureDescription response = result.await().atMost(Duration.ofSeconds(10));
+        CallHello.SuccessOrFailureDescription response = result.await().atMost(TestTimeouts.get());
 
         assertThat(response.getSuccess()).isFalse();
 

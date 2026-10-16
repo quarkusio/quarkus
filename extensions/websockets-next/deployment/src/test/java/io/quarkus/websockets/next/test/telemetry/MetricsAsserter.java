@@ -5,13 +5,14 @@ import static io.quarkus.websockets.next.test.telemetry.MetricsAsserter.Directio
 import static io.quarkus.websockets.next.test.telemetry.MetricsAsserter.Direction.OUTBOUND;
 
 import java.nio.charset.StandardCharsets;
-import java.time.Duration;
 import java.util.Arrays;
 
 import org.awaitility.Awaitility;
 import org.hamcrest.BaseMatcher;
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
+
+import io.quarkus.test.timeouts.TestTimeouts;
 
 public final class MetricsAsserter {
 
@@ -60,7 +61,7 @@ public final class MetricsAsserter {
         clientErrorCount += clientErrorsDelta;
         serverErrorCount += serverErrorsDelta;
 
-        Awaitility.await().atMost(Duration.ofSeconds(12)).untilAsserted(() -> getMetrics()
+        Awaitility.await().atMost(TestTimeouts.get()).untilAsserted(() -> getMetrics()
                 .body(assertServerConnectionOpenedTotal(serverConnectionOpenedCount))
                 .body(assertClientConnectionOpenedTotal(clientConnectionOpenedCount))
                 .body(assertServerErrorTotal(serverErrorCount))

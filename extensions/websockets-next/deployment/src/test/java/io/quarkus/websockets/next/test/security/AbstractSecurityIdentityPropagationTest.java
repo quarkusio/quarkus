@@ -6,7 +6,6 @@ import java.net.URI;
 import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
 import jakarta.enterprise.context.SessionScoped;
@@ -23,6 +22,7 @@ import io.quarkus.security.test.utils.TestIdentityController;
 import io.quarkus.security.test.utils.TestIdentityProvider;
 import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.common.http.TestHTTPResource;
+import io.quarkus.test.timeouts.TestTimeouts;
 import io.quarkus.websockets.next.OnTextMessage;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
@@ -69,7 +69,7 @@ public abstract class AbstractSecurityIdentityPropagationTest {
             client2 = testEcho("user", messages);
             client3 = testEcho("martin", messages);
 
-            Awaitility.await().atMost(5, TimeUnit.SECONDS).untilAsserted(() -> assertTrue(messages.size() > 2));
+            Awaitility.await().atMost(TestTimeouts.get()).untilAsserted(() -> assertTrue(messages.size() > 2));
             Supplier<String> errorMessage = () -> "Expected 3 messages for 3 users: 'admin', 'user' and 'martin'. Found messages were "
                     + messages;
             assertTrue(messages.stream().anyMatch(message -> message.contains("admin hello admin")), errorMessage);

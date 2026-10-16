@@ -2,8 +2,6 @@ package io.quarkus.grpc.server.blocking;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.time.Duration;
-
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
@@ -17,6 +15,7 @@ import com.dam.MutinyBlocking2Grpc;
 import io.quarkus.grpc.GrpcClient;
 import io.quarkus.grpc.GrpcService;
 import io.quarkus.test.QuarkusExtensionTest;
+import io.quarkus.test.timeouts.TestTimeouts;
 import io.smallrye.common.annotation.Blocking;
 import io.smallrye.common.annotation.NonBlocking;
 import io.smallrye.mutiny.Uni;
@@ -41,28 +40,28 @@ public class BlockingOnClassTest {
     @Test
     void shouldOffloadBlockingOnInterfaceImplementation() {
         Uni<ThreadName> reply = client1.returnThread1(EMPTY);
-        ThreadName threadName = reply.await().atMost(Duration.ofSeconds(10));
+        ThreadName threadName = reply.await().atMost(TestTimeouts.get());
         assertThat(threadName.getName()).contains("executor-thread");
     }
 
     @Test
     void shouldNotOffloadNonBlockingOnInterfaceImplementation() {
         Uni<ThreadName> reply = client1.returnThread2(EMPTY);
-        ThreadName threadName = reply.await().atMost(Duration.ofSeconds(10));
+        ThreadName threadName = reply.await().atMost(TestTimeouts.get());
         assertThat(threadName.getName()).contains("eventloop");
     }
 
     @Test
     void shouldOffloadBlockingOnSuperclassImplementation() {
         Uni<ThreadName> reply = client2.returnThread1(EMPTY);
-        ThreadName threadName = reply.await().atMost(Duration.ofSeconds(10));
+        ThreadName threadName = reply.await().atMost(TestTimeouts.get());
         assertThat(threadName.getName()).contains("executor-thread");
     }
 
     @Test
     void shouldNotOffloadNonBlockingOnSuperclassImplementation() {
         Uni<ThreadName> reply = client2.returnThread2(EMPTY);
-        ThreadName threadName = reply.await().atMost(Duration.ofSeconds(10));
+        ThreadName threadName = reply.await().atMost(TestTimeouts.get());
         assertThat(threadName.getName()).contains("eventloop");
     }
 

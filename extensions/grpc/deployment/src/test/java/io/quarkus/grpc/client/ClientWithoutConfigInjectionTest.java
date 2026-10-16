@@ -2,8 +2,6 @@ package io.quarkus.grpc.client;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.time.Duration;
-
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
@@ -19,6 +17,7 @@ import io.grpc.examples.helloworld.MutinyGreeterGrpc;
 import io.quarkus.grpc.GrpcClient;
 import io.quarkus.grpc.server.services.HelloService;
 import io.quarkus.test.QuarkusExtensionTest;
+import io.quarkus.test.timeouts.TestTimeouts;
 import io.smallrye.mutiny.Uni;
 
 public class ClientWithoutConfigInjectionTest {
@@ -30,8 +29,6 @@ public class ClientWithoutConfigInjectionTest {
                             MutinyGreeterGrpc.MutinyGreeterStub.class,
                             HelloService.class, HelloRequest.class, HelloReply.class,
                             HelloReplyOrBuilder.class, HelloRequestOrBuilder.class, HelloWorldProto.class));
-
-    private static final Duration TIMEOUT = Duration.ofSeconds(5);
 
     @GrpcClient
     GreeterGrpc.GreeterBlockingStub client;
@@ -51,10 +48,10 @@ public class ClientWithoutConfigInjectionTest {
     public void testHelloWithMutinyClient() {
         Uni<HelloReply> reply = mutinyClient
                 .sayHello(HelloRequest.newBuilder().setName("neo").build());
-        assertThat(reply.await().atMost(TIMEOUT).getMessage()).isEqualTo("Hello neo");
+        assertThat(reply.await().atMost(TestTimeouts.get()).getMessage()).isEqualTo("Hello neo");
 
         reply = mutinyClient
                 .wEIRD(HelloRequest.newBuilder().setName("neo").build());
-        assertThat(reply.await().atMost(TIMEOUT).getMessage()).isEqualTo("Hello neo");
+        assertThat(reply.await().atMost(TestTimeouts.get()).getMessage()).isEqualTo("Hello neo");
     }
 }

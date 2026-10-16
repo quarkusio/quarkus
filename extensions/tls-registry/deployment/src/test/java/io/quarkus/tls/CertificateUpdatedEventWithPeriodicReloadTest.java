@@ -22,6 +22,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusExtensionTest;
+import io.quarkus.test.timeouts.TestTimeouts;
 import io.smallrye.certs.Format;
 import io.smallrye.certs.junit5.Certificate;
 import io.smallrye.certs.junit5.Certificates;
@@ -74,7 +75,7 @@ public class CertificateUpdatedEventWithPeriodicReloadTest {
         Files.copy(new File("target/certs/test-periodic-event-B-keystore.p12").toPath(),
                 new File(certs, "/tls.p12").toPath(), java.nio.file.StandardCopyOption.REPLACE_EXISTING);
 
-        await().atMost(10, TimeUnit.SECONDS)
+        await().atMost(TestTimeouts.get())
                 .pollInterval(500, TimeUnit.MILLISECONDS)
                 .untilAsserted(() -> assertThat(observer.events()).isNotEmpty());
 

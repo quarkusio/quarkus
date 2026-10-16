@@ -14,6 +14,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.common.http.TestHTTPResource;
+import io.quarkus.test.timeouts.TestTimeouts;
 import io.quarkus.websockets.next.OnClose;
 import io.quarkus.websockets.next.OnTextMessage;
 import io.quarkus.websockets.next.WebSocket;
@@ -54,7 +55,7 @@ public class ConnectionCloseTest {
     private void assertClosed(URI testUri) throws InterruptedException {
         WSClient client = WSClient.create(vertx).connect(testUri);
         client.sendAndAwait("foo");
-        Awaitility.await().atMost(5, TimeUnit.SECONDS).until(() -> client.isClosed());
+        Awaitility.await().atMost(TestTimeouts.get()).until(() -> client.isClosed());
     }
 
     @WebSocket(path = "/closing")

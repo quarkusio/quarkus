@@ -3,7 +3,6 @@ package io.quarkus.vertx.deployment;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.time.Duration;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.CountDownLatch;
@@ -16,6 +15,7 @@ import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusExtensionTest;
+import io.quarkus.test.timeouts.TestTimeouts;
 import io.quarkus.vertx.ConsumeEvent;
 import io.smallrye.common.annotation.Blocking;
 import io.smallrye.mutiny.Uni;
@@ -82,7 +82,7 @@ public class MessageConsumerContextTest {
                     assertEquals("BAZ", tuple.getItem3());
                     return "done";
                 })
-                .await().atMost(Duration.ofSeconds(3));
+                .await().atMost(TestTimeouts.get());
 
         assertTrue(MessageConsumers.MESSAGES.size() >= 2);
     }

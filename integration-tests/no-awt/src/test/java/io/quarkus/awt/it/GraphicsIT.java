@@ -20,6 +20,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 import io.quarkus.test.common.TestLog;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
+import io.quarkus.test.timeouts.TestTimeouts;
 import io.restassured.RestAssured;
 
 @QuarkusIntegrationTest
@@ -63,7 +64,7 @@ public class GraphicsIT {
     private void checkLog(final Pattern lineMatchRegexp) {
         final Path logFilePath = getLogPath();
         org.awaitility.Awaitility.given().pollInterval(100, TimeUnit.MILLISECONDS)
-                .atMost(3, TimeUnit.SECONDS)
+                .atMost(TestTimeouts.get())
                 .untilAsserted(() -> {
                     assertTrue(Files.exists(logFilePath), "Quarkus log file " + logFilePath + " is missing");
                     boolean found = false;

@@ -3,7 +3,6 @@ package io.quarkus.micrometer.opentelemetry.deployment.compatibility;
 import static io.opentelemetry.sdk.testing.assertj.OpenTelemetryAssertions.assertThat;
 import static io.opentelemetry.sdk.testing.assertj.OpenTelemetryAssertions.equalTo;
 import static io.restassured.RestAssured.when;
-import static java.util.concurrent.TimeUnit.SECONDS;
 
 import java.util.Comparator;
 import java.util.List;
@@ -28,6 +27,7 @@ import io.quarkus.micrometer.opentelemetry.deployment.common.ServletEndpoint;
 import io.quarkus.micrometer.opentelemetry.deployment.common.Util;
 import io.quarkus.micrometer.opentelemetry.deployment.common.VertxWebEndpoint;
 import io.quarkus.test.QuarkusExtensionTest;
+import io.quarkus.test.timeouts.TestTimeouts;
 import io.restassured.RestAssured;
 
 /**
@@ -108,7 +108,7 @@ public class HttpCompatibilityTest {
         when().get("/vertx/item/1/123").then().statusCode(200);
         //        when().get("/servlet/12345").then().statusCode(200);
 
-        Awaitility.await().atMost(10, SECONDS)
+        Awaitility.await().atMost(TestTimeouts.get())
                 .untilAsserted(() -> {
                     final List<MetricData> metricDataList = metricExporter.getFinishedMetricItems("http.server.requests", null);
                     final MetricData metricData = metricDataList.get(metricDataList.size() - 1); // get last collected
@@ -136,7 +136,7 @@ public class HttpCompatibilityTest {
         metricExporter.assertCountDataPointsAtLeast("http.client.requests", null, 2);
         final List<MetricData> clientMetricDataList = metricExporter.getFinishedMetricItems("http.client.requests", null);
 
-        Awaitility.await().atMost(10, SECONDS)
+        Awaitility.await().atMost(TestTimeouts.get())
                 .untilAsserted(() -> {
                     final MetricData clientMetricData = clientMetricDataList.get(clientMetricDataList.size() - 1); // get last collected
                     assertThat(clientMetricData.getInstrumentationScopeInfo().getName())

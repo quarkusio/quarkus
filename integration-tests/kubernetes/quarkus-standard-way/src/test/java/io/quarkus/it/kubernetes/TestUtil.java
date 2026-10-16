@@ -8,7 +8,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
+
+import io.quarkus.test.timeouts.TestTimeouts;
 
 final class TestUtil {
 
@@ -17,7 +18,7 @@ final class TestUtil {
 
     public static void assertLogFileContents(Path logfile, String... expectedOutput) {
         // the logs might not be flushed to disk immediately, so wait a few seconds before giving up completely
-        await().atMost(3, TimeUnit.SECONDS).untilAsserted(() -> {
+        await().atMost(TestTimeouts.get()).untilAsserted(() -> {
             List<String> elements = Collections.emptyList();
             try {
                 elements = Files.readAllLines(logfile);

@@ -6,7 +6,6 @@ import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.net.URI;
-import java.time.Duration;
 
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
@@ -18,6 +17,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.rest.client.reactive.redirect.RedirectingResource;
 import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.common.http.TestHTTPResource;
+import io.quarkus.test.timeouts.TestTimeouts;
 import io.smallrye.mutiny.Uni;
 
 public class FileDownloadTest {
@@ -42,10 +42,10 @@ public class FileDownloadTest {
         java.nio.file.Path path = client.path();
         assertThat(path).exists().hasSize(FIFTY_MEGA);
 
-        file = client.uniFile().await().atMost(Duration.ofSeconds(10));
+        file = client.uniFile().await().atMost(TestTimeouts.get());
         assertThat(file).exists().hasSize(FIFTY_MEGA);
 
-        path = client.uniPath().await().atMost(Duration.ofSeconds(10));
+        path = client.uniPath().await().atMost(TestTimeouts.get());
         assertThat(path).exists().hasSize(FIFTY_MEGA);
     }
 

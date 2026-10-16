@@ -6,7 +6,6 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.net.URI;
-import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -28,6 +27,7 @@ import io.quarkus.builder.Version;
 import io.quarkus.maven.dependency.Dependency;
 import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.common.http.TestHTTPResource;
+import io.quarkus.test.timeouts.TestTimeouts;
 import io.quarkus.websockets.next.WebSocketConnector;
 import io.quarkus.websockets.next.test.telemetry.endpoints.ontextmessage.BounceClient;
 import io.quarkus.websockets.next.test.telemetry.endpoints.ontextmessage.BounceEndpoint;
@@ -152,7 +152,7 @@ public class OpenTelemetryWebSocketsTest {
             assertEquals("I'm Only Bleeding", response);
 
             client.sendAndAwait("throw-exception");
-            Awaitility.await().atMost(Duration.ofSeconds(5)).until(client::isClosed);
+            Awaitility.await().atMost(TestTimeouts.get()).until(client::isClosed);
             assertEquals(WebSocketCloseStatus.INTERNAL_SERVER_ERROR.code(), client.closeStatusCode());
         }
         waitForTracesToArrive(3);
@@ -194,7 +194,7 @@ public class OpenTelemetryWebSocketsTest {
 
     private void waitForTracesToArrive(int expectedTracesCount) {
         Awaitility.await()
-                .atMost(Duration.ofSeconds(5))
+                .atMost(TestTimeouts.get())
                 .untilAsserted(() -> assertEquals(expectedTracesCount, spanExporter.getFinishedSpanItems().size()));
     }
 

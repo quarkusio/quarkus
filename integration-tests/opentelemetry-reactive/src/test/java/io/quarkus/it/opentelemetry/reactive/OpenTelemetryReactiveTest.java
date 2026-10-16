@@ -13,7 +13,6 @@ import static io.quarkus.it.opentelemetry.reactive.Utils.getSpans;
 import static io.quarkus.it.opentelemetry.reactive.Utils.getSpansByKindAndParentId;
 import static io.restassured.RestAssured.given;
 import static java.net.HttpURLConnection.HTTP_OK;
-import static java.util.concurrent.TimeUnit.SECONDS;
 import static java.util.stream.Collectors.toSet;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
@@ -34,6 +33,7 @@ import org.junit.jupiter.api.Test;
 import io.quarkus.opentelemetry.runtime.tracing.security.SecurityEventUtil;
 import io.quarkus.security.AuthenticationFailedException;
 import io.quarkus.test.junit.QuarkusTest;
+import io.quarkus.test.timeouts.TestTimeouts;
 
 @QuarkusTest
 public class OpenTelemetryReactiveTest {
@@ -61,7 +61,7 @@ public class OpenTelemetryReactiveTest {
                 .statusCode(200)
                 .body(equalTo("Hello Naruto"));
 
-        await().atMost(5, SECONDS).until(() -> getSpans().size() == 2);
+        await().atMost(TestTimeouts.get()).until(() -> getSpans().size() == 2);
         List<Map<String, Object>> spans = getSpans();
         assertEquals(2, spans.size());
         assertEquals(spans.get(0).get("traceId"), spans.get(1).get("traceId"));
@@ -76,7 +76,7 @@ public class OpenTelemetryReactiveTest {
                 .statusCode(200)
                 .body(equalTo("helloGetUniDelay"));
 
-        await().atMost(5, SECONDS).until(() -> getSpans().size() == 2);
+        await().atMost(TestTimeouts.get()).until(() -> getSpans().size() == 2);
         Map<String, Object> parent = getSpanByKindAndParentId(getSpans(), SERVER, "0000000000000000");
         assertEquals("GET /reactive/hello-get-uni-delay", parent.get("name"));
 
@@ -95,7 +95,7 @@ public class OpenTelemetryReactiveTest {
                 .statusCode(200)
                 .body(equalTo("helloGetUniExecutor"));
 
-        await().atMost(5, SECONDS).until(() -> getSpans().size() == 2);
+        await().atMost(TestTimeouts.get()).until(() -> getSpans().size() == 2);
         Map<String, Object> parent = getSpanByKindAndParentId(getSpans(), SERVER, "0000000000000000");
         assertEquals("GET /reactive/hello-get-uni-executor", parent.get("name"));
 
@@ -128,7 +128,7 @@ public class OpenTelemetryReactiveTest {
     }
 
     private static void assertExceptionRecorded() {
-        await().atMost(5, SECONDS).until(() -> getExceptionEventData().size() == 1);
+        await().atMost(TestTimeouts.get()).until(() -> getExceptionEventData().size() == 1);
         assertThat(getExceptionEventData()).singleElement().satisfies(s -> {
             assertThat(s).contains("dummy");
         });
@@ -144,7 +144,7 @@ public class OpenTelemetryReactiveTest {
                 .statusCode(200)
                 .body(equalTo("Hello Naruto"));
 
-        await().atMost(5, SECONDS).until(() -> getSpans().size() == 2);
+        await().atMost(TestTimeouts.get()).until(() -> getSpans().size() == 2);
         List<Map<String, Object>> spans = getSpans();
         assertEquals(2, spans.size());
         assertEquals(spans.get(0).get("traceId"), spans.get(1).get("traceId"));
@@ -159,7 +159,7 @@ public class OpenTelemetryReactiveTest {
                 .statusCode(200)
                 .body(equalTo("Hello Naruto and Hello Goku"));
 
-        await().atMost(5, SECONDS).until(() -> getSpans().size() == 7);
+        await().atMost(TestTimeouts.get()).until(() -> getSpans().size() == 7);
 
         List<Map<String, Object>> spans = getSpans();
         assertEquals(7, spans.size());
@@ -210,7 +210,7 @@ public class OpenTelemetryReactiveTest {
                 .statusCode(200)
                 .body(equalTo("Hello Naruto and Hello Goku"));
 
-        await().atMost(5, SECONDS).until(() -> getSpans().size() == 7);
+        await().atMost(TestTimeouts.get()).until(() -> getSpans().size() == 7);
 
         List<Map<String, Object>> spans = getSpans();
         assertEquals(7, spans.size());
@@ -261,7 +261,7 @@ public class OpenTelemetryReactiveTest {
                 .statusCode(200)
                 .body(equalTo("helloGetUniDelay and Hello Naruto and Hello Goku and helloGetUniExecutor"));
 
-        await().atMost(5, SECONDS).until(() -> getSpans().size() == 13);
+        await().atMost(TestTimeouts.get()).until(() -> getSpans().size() == 13);
 
         List<Map<String, Object>> spans = getSpans();
         assertEquals(13, spans.size());
@@ -344,7 +344,7 @@ public class OpenTelemetryReactiveTest {
                 .then()
                 .statusCode(401);
 
-        await().atMost(5, SECONDS).until(() -> getSpans().size() == 1);
+        await().atMost(TestTimeouts.get()).until(() -> getSpans().size() == 1);
         assertThat(getSpans()).singleElement().satisfies(m -> {
             assertThat(m).extractingByKey("name").isEqualTo("GET /{dummy}/secured/item/{value}");
             assertEvent(m, SecurityEventUtil.AUTHN_FAILURE_EVENT_NAME);
@@ -357,7 +357,7 @@ public class OpenTelemetryReactiveTest {
                 .then()
                 .statusCode(200);
 
-        await().atMost(5, SECONDS).until(() -> getSpans().size() == 1);
+        await().atMost(TestTimeouts.get()).until(() -> getSpans().size() == 1);
         assertThat(getSpans()).singleElement().satisfies(m -> {
             assertThat(m).extractingByKey("name").isEqualTo("GET /{dummy}/secured/item/{value}");
             assertEvent(m, SecurityEventUtil.AUTHN_SUCCESS_EVENT_NAME, SecurityEventUtil.AUTHZ_SUCCESS_EVENT_NAME);

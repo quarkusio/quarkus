@@ -6,7 +6,6 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.net.URL;
-import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
@@ -25,6 +24,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.common.http.TestHTTPResource;
+import io.quarkus.test.timeouts.TestTimeouts;
 import io.vertx.core.Vertx;
 import io.vertx.ext.web.client.WebClient;
 
@@ -61,7 +61,7 @@ public class CancellableCompletionStageTest {
 
         try {
             // make sure we did make the proper request
-            await().atMost(Duration.ofSeconds(2)).untilAtomic(Resource.COUNT, equalTo(1));
+            await().atMost(TestTimeouts.get()).untilAtomic(Resource.COUNT, equalTo(1));
 
             // this will effectively cancel the request
             client.close();

@@ -2,8 +2,6 @@ package io.quarkus.grpc.client;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.time.Duration;
-
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
@@ -19,6 +17,7 @@ import io.grpc.examples.helloworld.HelloRequest;
 import io.quarkus.grpc.GrpcClient;
 import io.quarkus.grpc.server.services.HelloService;
 import io.quarkus.test.QuarkusExtensionTest;
+import io.quarkus.test.timeouts.TestTimeouts;
 import io.smallrye.common.vertx.VertxContext;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.internal.ContextInternal;
@@ -61,7 +60,7 @@ public class MutinyClientInjectionTest {
             return service.sayHello(HelloRequest.newBuilder().setName(s).build())
                     .map(HelloReply::getMessage)
                     .invoke(() -> assertThat(Vertx.currentContext()).isNotNull())
-                    .await().atMost(Duration.ofSeconds(5));
+                    .await().atMost(TestTimeouts.get());
         }
 
         public String invokeFromIoThread(String s) {
@@ -74,7 +73,7 @@ public class MutinyClientInjectionTest {
                             .invoke(() -> assertThat(Vertx.currentContext().getDelegate()).isInstanceOf(ContextInternal.class))
                             .subscribe().with(e::complete, e::fail);
                 });
-            }).await().atMost(Duration.ofSeconds(5));
+            }).await().atMost(TestTimeouts.get());
         }
 
         public String invokeFromDuplicatedContext(String s) {
@@ -88,7 +87,7 @@ public class MutinyClientInjectionTest {
                                     .isEqualTo(duplicate))
                             .subscribe().with(e::complete, e::fail);
                 });
-            }).await().atMost(Duration.ofSeconds(5));
+            }).await().atMost(TestTimeouts.get());
         }
 
     }

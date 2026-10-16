@@ -8,7 +8,6 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.net.URI;
-import java.time.Duration;
 import java.util.List;
 
 import jakarta.inject.Inject;
@@ -23,6 +22,7 @@ import io.quarkus.logging.Log;
 import io.quarkus.maven.dependency.Dependency;
 import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.common.http.TestHTTPResource;
+import io.quarkus.test.timeouts.TestTimeouts;
 import io.quarkus.websockets.next.OnError;
 import io.quarkus.websockets.next.OnOpen;
 import io.quarkus.websockets.next.WebSocket;
@@ -63,13 +63,13 @@ public class MicrometerWebSocketsStandaloneTest {
     @Test
     public void testServerEndpoint_OnConnectionError() {
         WebSocketClientConnection connection = onConnectErrorClient.baseUri(baseUri).connectAndAwait();
-        Awaitility.await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> {
+        Awaitility.await().atMost(TestTimeouts.get()).untilAsserted(() -> {
             // Connection closing is async and takes some time
             assertFalse(connection.isOpen(),
                     "Runtime exception happened on server side and connection is still open");
         });
 
-        Awaitility.await().atMost(Duration.ofSeconds(5)).untilAsserted(() -> {
+        Awaitility.await().atMost(TestTimeouts.get()).untilAsserted(() -> {
             getMetrics()
                     .body(assertServerConnectionOpeningFailedTotal("/on-connect-error", 1))
                     .body(assertServerErrorTotal("/on-connect-error", 1))
@@ -81,12 +81,12 @@ public class MicrometerWebSocketsStandaloneTest {
     @Test
     public void testServerEndpoint_OnConnectionErrorHandler() {
         WebSocketClientConnection connection = onConnectErrorHandlerClient.baseUri(baseUri).connectAndAwait();
-        Awaitility.await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> {
+        Awaitility.await().atMost(TestTimeouts.get()).untilAsserted(() -> {
             // Connection closing will never close because there is an OnError handler.
             assertTrue(connection.isOpen(), "Should never close");
         });
 
-        Awaitility.await().atMost(Duration.ofSeconds(5)).untilAsserted(() -> {
+        Awaitility.await().atMost(TestTimeouts.get()).untilAsserted(() -> {
             getMetrics()
                     .body(assertServerConnectionOpeningFailedTotal("/with-on-connect-error-handler", 0))
                     .body(assertServerErrorTotal("/with-on-connect-error-handler", 1))

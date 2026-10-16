@@ -14,6 +14,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.common.http.TestHTTPResource;
+import io.quarkus.test.timeouts.TestTimeouts;
 
 public class ReadTimeoutTestCase {
 
@@ -60,7 +61,7 @@ public class ReadTimeoutTestCase {
         socket.getOutputStream().write(
                 "6789".getBytes(StandardCharsets.UTF_8));
         socket.getOutputStream().flush();
-        Awaitility.await().atMost(20, TimeUnit.SECONDS).pollInterval(50, TimeUnit.MILLISECONDS)
+        Awaitility.await().atMost(TestTimeouts.get()).pollInterval(50, TimeUnit.MILLISECONDS)
                 .untilAsserted(new ThrowingRunnable() {
                     @Override
                     public void run() throws Throwable {

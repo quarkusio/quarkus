@@ -4,7 +4,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 import static org.hamcrest.Matchers.is;
 
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -15,6 +14,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.devui.tests.DevUIJsonRPCTest;
 import io.quarkus.test.QuarkusDevModeTest;
+import io.quarkus.test.timeouts.TestTimeouts;
 import io.restassured.RestAssured;
 import tools.jackson.databind.JsonNode;
 
@@ -41,7 +41,7 @@ public class MetricsBridgeFallbackTest extends DevUIJsonRPCTest {
         RestAssured.get("/probe/sampler-present").then().statusCode(200).body(is("true"));
 
         // Metrics still appear, all sourced from micrometer (the fallback path).
-        await().atMost(Duration.ofSeconds(6)).untilAsserted(() -> {
+        await().atMost(TestTimeouts.get()).untilAsserted(() -> {
             JsonNode catalog = super.executeJsonRPCMethod("getCatalog");
             List<String> names = new ArrayList<>();
             JsonNode groups = catalog.get("groups");

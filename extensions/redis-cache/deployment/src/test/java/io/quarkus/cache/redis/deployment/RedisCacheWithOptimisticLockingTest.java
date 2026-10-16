@@ -2,7 +2,6 @@ package io.quarkus.cache.redis.deployment;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -20,6 +19,7 @@ import io.quarkus.cache.CacheManager;
 import io.quarkus.cache.redis.runtime.RedisCache;
 import io.quarkus.redis.datasource.RedisDataSource;
 import io.quarkus.test.QuarkusExtensionTest;
+import io.quarkus.test.timeouts.TestTimeouts;
 import io.vertx.mutiny.core.Vertx;
 import io.vertx.mutiny.redis.client.Redis;
 import io.vertx.mutiny.redis.client.RedisConnection;
@@ -163,23 +163,23 @@ public class RedisCacheWithOptimisticLockingTest {
 
         try {
             Assertions.assertThatThrownBy(() -> simpleCachedService.failingCachedMethod(key)
-                    .await().atMost(Duration.ofSeconds(10)))
+                    .await().atMost(TestTimeouts.get()))
                     .hasMessageContaining("value loader failed");
 
-            RedisConnection connection = redis.connect().await().atMost(Duration.ofSeconds(10));
+            RedisConnection connection = redis.connect().await().atMost(TestTimeouts.get());
             try {
-                connection.send(Request.cmd(Command.MULTI)).await().atMost(Duration.ofSeconds(10));
+                connection.send(Request.cmd(Command.MULTI)).await().atMost(TestTimeouts.get());
                 connection.send(Request.cmd(Command.SET).arg(transactionKey).arg("value"))
-                        .await().atMost(Duration.ofSeconds(10));
+                        .await().atMost(TestTimeouts.get());
 
                 // Changing the failed load's key must not abort an unrelated transaction on the reused connection.
                 otherRedis.send(Request.cmd(Command.SET).arg(watchedKey).arg("changed"))
-                        .await().atMost(Duration.ofSeconds(10));
-                Response result = connection.send(Request.cmd(Command.EXEC)).await().atMost(Duration.ofSeconds(10));
+                        .await().atMost(TestTimeouts.get());
+                Response result = connection.send(Request.cmd(Command.EXEC)).await().atMost(TestTimeouts.get());
                 Assertions.assertThat(result).isNotNull();
                 Assertions.assertThat(result.get(0).toString()).isEqualTo("OK");
             } finally {
-                connection.close().await().atMost(Duration.ofSeconds(10));
+                connection.close().await().atMost(TestTimeouts.get());
             }
         } finally {
             otherRedis.close();

@@ -1,6 +1,5 @@
 package io.quarkus.smallrye.reactivemessaging.kafka.deployment.testing;
 
-import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
@@ -14,6 +13,7 @@ import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.test.junit.QuarkusTest;
+import io.quarkus.test.timeouts.TestTimeouts;
 import io.restassured.RestAssured;
 
 @QuarkusTest
@@ -35,7 +35,7 @@ class PriceResourceET {
             source.open();
 
             Awaitility.await()
-                    .atMost(Duration.ofSeconds(1))
+                    .atMost(TestTimeouts.get())
                     .until(() -> received.size() >= 2);
         }
 

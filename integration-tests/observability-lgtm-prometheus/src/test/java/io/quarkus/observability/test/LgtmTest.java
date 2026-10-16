@@ -12,6 +12,7 @@ import org.junit.jupiter.api.condition.OS;
 
 import io.quarkus.observability.test.utils.GrafanaClient;
 import io.quarkus.test.junit.QuarkusTest;
+import io.quarkus.test.timeouts.TestTimeouts;
 import io.restassured.RestAssured;
 
 /**
@@ -43,13 +44,13 @@ public class LgtmTest {
 
         Awaitility.setDefaultPollInterval(1, TimeUnit.SECONDS); // reduce load on the server. Default is .1s
 
-        Awaitility.await().atMost(61, TimeUnit.SECONDS).until(
+        Awaitility.await().atMost(TestTimeouts.get()).until(
                 client::user,
                 u -> "admin".equals(u.login));
-        Awaitility.await().atMost(61, TimeUnit.SECONDS).until(
+        Awaitility.await().atMost(TestTimeouts.get()).until(
                 () -> client.query("xvalue_X"),
                 result -> !result.data.result.isEmpty());
-        Awaitility.await().atMost(61, TimeUnit.SECONDS).until(
+        Awaitility.await().atMost(TestTimeouts.get()).until(
                 () -> client.traces("quarkus-integration-test-observability-lgtm-prometheus", 20, 3),
                 result -> !result.traces.isEmpty());
     }

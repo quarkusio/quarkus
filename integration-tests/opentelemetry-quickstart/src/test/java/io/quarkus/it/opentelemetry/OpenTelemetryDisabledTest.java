@@ -4,7 +4,6 @@ import static io.restassured.RestAssured.get;
 import static io.restassured.RestAssured.given;
 import static java.net.HttpURLConnection.HTTP_OK;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.awaitility.Awaitility.await;
 import static org.hamcrest.CoreMatchers.is;
 
@@ -17,6 +16,7 @@ import org.junit.jupiter.api.Test;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.QuarkusTestProfile;
 import io.quarkus.test.junit.TestProfile;
+import io.quarkus.test.timeouts.TestTimeouts;
 
 @QuarkusTest
 @TestProfile(OpenTelemetryDisabledTest.MyProfile.class)
@@ -24,7 +24,7 @@ public class OpenTelemetryDisabledTest extends BaseTest {
 
     @BeforeEach
     void reset() {
-        await().atMost(5, SECONDS).until(() -> {
+        await().atMost(TestTimeouts.get()).until(() -> {
             List<Map<String, Object>> spans = getSpans();
             if (spans.size() == 0) {
                 return true;

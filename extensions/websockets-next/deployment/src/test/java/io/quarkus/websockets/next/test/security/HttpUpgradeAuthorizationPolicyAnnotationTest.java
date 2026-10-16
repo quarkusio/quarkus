@@ -7,7 +7,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.net.URI;
-import java.time.Duration;
 import java.util.Collection;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -35,6 +34,7 @@ import io.quarkus.security.test.utils.TestIdentityController;
 import io.quarkus.security.test.utils.TestIdentityProvider;
 import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.common.http.TestHTTPResource;
+import io.quarkus.test.timeouts.TestTimeouts;
 import io.quarkus.vertx.http.runtime.security.HttpSecurityPolicy;
 import io.quarkus.vertx.http.security.AuthorizationPolicy;
 import io.quarkus.websockets.next.OnTextMessage;
@@ -98,7 +98,7 @@ class HttpUpgradeAuthorizationPolicyAnnotationTest {
     void testIdentityAugmentationByAuthorizationPolicy() {
         policyProducer.securityEvents.clear();
         testEchoEndpoint(augmentMeUri, "AugmentMe");
-        Awaitility.await().atMost(Duration.ofSeconds(15)).untilAsserted(() -> {
+        Awaitility.await().atMost(TestTimeouts.get()).untilAsserted(() -> {
             var authorizationFailureIdentities = policyProducer.securityEvents.stream()
                     .filter(e -> e.getSecurityIdentity() != null
                             && e.getSecurityIdentity().getAttributes().containsKey("new-attribute"))
@@ -143,7 +143,7 @@ class HttpUpgradeAuthorizationPolicyAnnotationTest {
         try (WSClient client = new WSClient(vertx)) {
             client.connect(basicAuth().addHeader(CUSTOM_AUTHORIZATION, "TwiceSecured"), twiceSecuredUri);
             client.sendAndAwait("bye");
-            Awaitility.await().atMost(Duration.ofSeconds(15)).until((client::isClosed));
+            Awaitility.await().atMost(TestTimeouts.get()).until((client::isClosed));
             assertEquals(1008, client.closeStatusCode(), "Expected close status 1008, but got " + client.closeStatusCode());
         }
     }

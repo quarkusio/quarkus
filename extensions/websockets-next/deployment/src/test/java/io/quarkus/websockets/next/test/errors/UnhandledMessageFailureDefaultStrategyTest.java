@@ -4,7 +4,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.net.URI;
-import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 
 import jakarta.inject.Inject;
@@ -16,6 +15,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.netty.handler.codec.http.websocketx.WebSocketCloseStatus;
 import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.common.http.TestHTTPResource;
+import io.quarkus.test.timeouts.TestTimeouts;
 import io.quarkus.websockets.next.test.utils.WSClient;
 import io.vertx.core.Vertx;
 
@@ -38,7 +38,7 @@ public class UnhandledMessageFailureDefaultStrategyTest {
         try (WSClient client = WSClient.create(vertx).connect(testUri)) {
             client.sendAndAwait("foo");
             assertTrue(EchoMessageError.MESSAGE_FAILURE_CALLED.await(5, TimeUnit.SECONDS));
-            Awaitility.await().atMost(Duration.ofSeconds(5)).until(() -> client.isClosed());
+            Awaitility.await().atMost(TestTimeouts.get()).until(() -> client.isClosed());
             assertEquals(WebSocketCloseStatus.INTERNAL_SERVER_ERROR.code(), client.closeStatusCode());
         }
     }

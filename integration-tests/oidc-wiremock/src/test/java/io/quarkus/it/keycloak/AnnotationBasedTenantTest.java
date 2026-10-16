@@ -34,6 +34,7 @@ import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.QuarkusTestProfile;
 import io.quarkus.test.junit.TestProfile;
 import io.quarkus.test.oidc.server.OidcWiremockTestResource;
+import io.quarkus.test.timeouts.TestTimeouts;
 import io.quarkus.vertx.http.runtime.security.AbstractPathMatchingHttpSecurityPolicy;
 import io.restassured.RestAssured;
 import io.smallrye.jwt.build.Jwt;
@@ -527,7 +528,7 @@ public class AnnotationBasedTenantTest {
                         }
                     });
             if (expectFailure) {
-                Awaitility.await().atMost(5, TimeUnit.SECONDS).until(() -> throwable.get() != null);
+                Awaitility.await().atMost(TestTimeouts.get()).until(() -> throwable.get() != null);
                 throw new RuntimeException(throwable.get());
             } else {
                 Assertions.assertTrue(connectedLatch.await(5, TimeUnit.SECONDS));

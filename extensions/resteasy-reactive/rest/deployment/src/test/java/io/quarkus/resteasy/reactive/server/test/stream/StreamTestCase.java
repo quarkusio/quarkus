@@ -2,7 +2,6 @@ package io.quarkus.resteasy.reactive.server.test.stream;
 
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
-import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -24,6 +23,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.common.http.TestHTTPResource;
+import io.quarkus.test.timeouts.TestTimeouts;
 import io.restassured.RestAssured;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.subscription.Cancellable;
@@ -153,7 +153,7 @@ public class StreamTestCase {
         Client client = ClientBuilder.newBuilder().build();
         WebTarget target = client.target(uri.toString() + "stream/text/stream");
         Multi<String> multi = target.request().rx(MultiInvoker.class).get(String.class);
-        List<String> list = multi.collect().asList().await().atMost(Duration.ofSeconds(5));
+        List<String> list = multi.collect().asList().await().atMost(TestTimeouts.get());
         Assertions.assertEquals(2, list.size());
         Assertions.assertEquals("foo", list.get(0));
         Assertions.assertEquals("bar", list.get(1));

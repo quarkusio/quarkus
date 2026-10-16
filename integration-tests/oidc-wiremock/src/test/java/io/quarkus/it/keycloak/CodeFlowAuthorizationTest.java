@@ -66,6 +66,7 @@ import io.quarkus.test.common.TestLog;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.oidc.server.OidcWireMock;
 import io.quarkus.test.oidc.server.OidcWiremockTestResource;
+import io.quarkus.test.timeouts.TestTimeouts;
 import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
 import io.restassured.response.Response;
@@ -541,7 +542,7 @@ public class CodeFlowAuthorizationTest {
 
     private void checkSignedUserInfoRecordInLog() {
         given().await().pollInterval(100, TimeUnit.MILLISECONDS)
-                .atMost(10, TimeUnit.SECONDS)
+                .atMost(TestTimeouts.get())
                 .untilAsserted(new ThrowingRunnable() {
                     @Override
                     public void run() throws Throwable {

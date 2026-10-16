@@ -13,7 +13,6 @@ import java.security.cert.CertificateFactory;
 import java.security.cert.PKIXParameters;
 import java.security.cert.TrustAnchor;
 import java.security.cert.X509Certificate;
-import java.time.Duration;
 import java.util.Base64;
 import java.util.List;
 import java.util.Set;
@@ -32,6 +31,7 @@ import io.quarkus.spiffe.client.SpiffeConnectionException;
 import io.quarkus.spiffe.svid.x509.WorkloadCertificateDocument;
 import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.common.QuarkusTestResource;
+import io.quarkus.test.timeouts.TestTimeouts;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpMethod;
@@ -41,7 +41,6 @@ class SpiffeX509SvidTest {
 
     private static final String DEFAULT_SPIFFE_ID = "spiffe://test.quarkus.io/test-workload";
     private static final String MODE_PATH = "/api/mode";
-    private static final Duration TIMEOUT = Duration.ofSeconds(5);
 
     @RegisterExtension
     static final QuarkusExtensionTest CONFIG = new QuarkusExtensionTest()
@@ -284,7 +283,7 @@ class SpiffeX509SvidTest {
     }
 
     private WorkloadCertificateDocument fetchCert() {
-        return spiffeClient.getWorkloadCertificate().await().atMost(TIMEOUT);
+        return spiffeClient.getWorkloadCertificate().await().atMost(TestTimeouts.get());
     }
 
     private void setMode(String mode) {
@@ -301,10 +300,10 @@ class SpiffeX509SvidTest {
                         assertThat(resp.statusCode()).isEqualTo(200);
                         return resp.body();
                     })
-                    .await().atMost(TIMEOUT)
+                    .await().atMost(TestTimeouts.get())
                     .toString();
         } finally {
-            client.close().await().atMost(TIMEOUT);
+            client.close().await().atMost(TestTimeouts.get());
         }
     }
 }

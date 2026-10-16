@@ -8,7 +8,6 @@ import java.net.URI;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
@@ -40,6 +39,7 @@ import io.quarkus.rest.client.reactive.ClientExceptionMapper;
 import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
 import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.common.http.TestHTTPResource;
+import io.quarkus.test.timeouts.TestTimeouts;
 import io.smallrye.mutiny.Multi;
 import tools.jackson.databind.ObjectMapper;
 
@@ -57,7 +57,7 @@ public class MultiSseTest {
         createClient()
                 .get()
                 .subscribe().with(resultList::add);
-        await().atMost(5, TimeUnit.SECONDS)
+        await().atMost(TestTimeouts.get())
                 .untilAsserted(
                         () -> assertThat(resultList).containsExactly("foo", "bar"));
 
@@ -80,7 +80,7 @@ public class MultiSseTest {
                     }
                 });
 
-        await().atMost(5, TimeUnit.SECONDS)
+        await().atMost(TestTimeouts.get())
                 .untilAsserted(
                         () -> assertThat(errorBody.get()).isEqualTo("invalid input provided"));
     }
@@ -91,7 +91,7 @@ public class MultiSseTest {
         createClient()
                 .getJson()
                 .subscribe().with(resultList::add);
-        await().atMost(5, TimeUnit.SECONDS)
+        await().atMost(TestTimeouts.get())
                 .untilAsserted(
                         () -> assertThat(resultList).containsExactly(new Dto("foo", "bar"), new Dto("chocolate", "bar")));
     }
@@ -102,7 +102,7 @@ public class MultiSseTest {
         createClient()
                 .getJsonAsMap()
                 .subscribe().with(resultList::add);
-        await().atMost(5, TimeUnit.SECONDS)
+        await().atMost(TestTimeouts.get())
                 .untilAsserted(
                         () -> assertThat(resultList).containsExactly(Map.of("name", "foo", "value", "bar"),
                                 Map.of("name", "chocolate", "value", "bar")));
@@ -114,7 +114,7 @@ public class MultiSseTest {
         createClient()
                 .post("test")
                 .subscribe().with(resultList::add);
-        await().atMost(5, TimeUnit.SECONDS)
+        await().atMost(TestTimeouts.get())
                 .untilAsserted(
                         () -> assertThat(resultList).containsExactly("test", "test", "test"));
     }
@@ -125,7 +125,7 @@ public class MultiSseTest {
         createClient()
                 .postAndReadAsMap("test")
                 .subscribe().with(resultList::add);
-        await().atMost(5, TimeUnit.SECONDS)
+        await().atMost(TestTimeouts.get())
                 .untilAsserted(
                         () -> assertThat(resultList).containsExactly(
                                 Map.of("name", "foo", "value", "test"),
@@ -144,7 +144,7 @@ public class MultiSseTest {
                 .getJson()
                 .subscribe()
                 .with(resultList::add);
-        await().atMost(5, TimeUnit.SECONDS)
+        await().atMost(TestTimeouts.get())
                 .untilAsserted(
                         () -> assertThat(resultList)
                                 .containsExactly(new Dto("foo", "bar"), new Dto("chocolate", "bar")));
@@ -161,7 +161,7 @@ public class MultiSseTest {
                         resultList.add(new EventContainer(event.id(), event.name(), event.data()));
                     }
                 });
-        await().atMost(5, TimeUnit.SECONDS)
+        await().atMost(TestTimeouts.get())
                 .untilAsserted(
                         () -> assertThat(resultList).containsExactly(
                                 new EventContainer("id0", "name0", new Dto("name0", "0")),
@@ -179,7 +179,7 @@ public class MultiSseTest {
                         resultList.add(new EventContainer(event.id(), event.name(), event.data()));
                     }
                 });
-        await().atMost(5, TimeUnit.SECONDS)
+        await().atMost(TestTimeouts.get())
                 .untilAsserted(
                         () -> assertThat(resultList).containsExactly(
                                 new EventContainer("id", "n0", new Dto("name0", "0")),

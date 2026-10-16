@@ -2,7 +2,6 @@ package io.quarkus.vertx;
 
 import static org.awaitility.Awaitility.await;
 
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -20,6 +19,7 @@ import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusExtensionTest;
+import io.quarkus.test.timeouts.TestTimeouts;
 import io.quarkus.vertx.core.runtime.context.VertxContextSafetyToggle;
 import io.smallrye.common.annotation.Blocking;
 import io.smallrye.common.vertx.ContextLocals;
@@ -116,7 +116,7 @@ public class DuplicatedContextTest {
 
         Uni.join().all(unis).andFailFast()
                 .runSubscriptionOn(Infrastructure.getDefaultExecutor())
-                .await().atMost(Duration.ofSeconds(30));
+                .await().atMost(TestTimeouts.get());
     }
 
     @Test
@@ -138,7 +138,7 @@ public class DuplicatedContextTest {
 
         Uni.join().all(unis).andCollectFailures()
                 .runSubscriptionOn(Infrastructure.getDefaultExecutor())
-                .await().atMost(Duration.ofSeconds(60));
+                .await().atMost(TestTimeouts.get());
 
     }
 
@@ -193,7 +193,7 @@ public class DuplicatedContextTest {
             Assertions.assertFalse(Thread.currentThread().getName().contains("vert.x-eventloop"));
             Assertions.assertTrue(VertxContext.isOnDuplicatedContext());
             VertxContextSafetyToggle.validateContextIfExists("Not marked as safe", "Not marked as safe");
-            return process(data).await().atMost(Duration.ofSeconds(4));
+            return process(data).await().atMost(TestTimeouts.get());
         }
 
         @ConsumeEvent(value = "context-send")

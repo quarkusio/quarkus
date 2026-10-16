@@ -8,7 +8,6 @@ import static io.quarkus.it.opentelemetry.AbstractEndUserTest.User.STUART;
 import static io.restassured.RestAssured.get;
 import static io.restassured.RestAssured.given;
 import static java.net.HttpURLConnection.HTTP_OK;
-import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.awaitility.Awaitility.await;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -17,7 +16,6 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 
@@ -28,6 +26,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import io.quarkus.test.timeouts.TestTimeouts;
 import io.restassured.common.mapper.TypeRef;
 import io.restassured.response.ValidatableResponse;
 
@@ -53,7 +52,7 @@ public abstract class AbstractEndUserTest {
     @AfterEach
     public void reset() {
         given().get("/reset").then().statusCode(HTTP_OK);
-        await().atMost(5, SECONDS).until(() -> getSpans().isEmpty());
+        await().atMost(TestTimeouts.get()).until(() -> getSpans().isEmpty());
     }
 
     @Test
@@ -421,7 +420,7 @@ public abstract class AbstractEndUserTest {
     }
 
     private static Map<String, Object> waitForSpanWithPath(final String path) {
-        Awaitility.await().atMost(Duration.ofSeconds(10)).until(() -> !getSpanByPath(path).isEmpty(), new TypeSafeMatcher<>() {
+        Awaitility.await().atMost(TestTimeouts.get()).until(() -> !getSpanByPath(path).isEmpty(), new TypeSafeMatcher<>() {
             @Override
             protected boolean matchesSafely(Boolean aBoolean) {
                 return Boolean.TRUE.equals(aBoolean);

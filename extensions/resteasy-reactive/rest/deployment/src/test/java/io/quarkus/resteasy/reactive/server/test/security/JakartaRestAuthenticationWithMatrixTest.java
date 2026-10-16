@@ -4,7 +4,6 @@ import static org.awaitility.Awaitility.await;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.net.URL;
-import java.time.Duration;
 
 import jakarta.inject.Inject;
 import jakarta.ws.rs.GET;
@@ -22,11 +21,11 @@ import io.quarkus.security.test.utils.TestIdentityController;
 import io.quarkus.security.test.utils.TestIdentityProvider;
 import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.common.http.TestHTTPResource;
+import io.quarkus.test.timeouts.TestTimeouts;
 import io.vertx.core.Vertx;
 import io.vertx.ext.web.client.WebClient;
 
 public class JakartaRestAuthenticationWithMatrixTest {
-    private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(20);
 
     private static WebClient client;
 
@@ -148,7 +147,7 @@ public class JakartaRestAuthenticationWithMatrixTest {
             req.basicAuthentication("admin", "admin");
         }
         var result = req.send();
-        await().atMost(REQUEST_TIMEOUT).until(result::isComplete);
+        await().atMost(TestTimeouts.get()).until(result::isComplete);
         assertEquals(expectedStatusCode, result.result().statusCode(), path);
     }
 }

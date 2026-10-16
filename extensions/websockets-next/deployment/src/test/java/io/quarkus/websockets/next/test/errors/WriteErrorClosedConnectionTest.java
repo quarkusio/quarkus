@@ -3,7 +3,6 @@ package io.quarkus.websockets.next.test.errors;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.net.URI;
-import java.time.Duration;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import jakarta.inject.Inject;
@@ -14,6 +13,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.common.http.TestHTTPResource;
+import io.quarkus.test.timeouts.TestTimeouts;
 import io.quarkus.websockets.next.OnBinaryMessage;
 import io.quarkus.websockets.next.OnError;
 import io.quarkus.websockets.next.WebSocket;
@@ -41,7 +41,7 @@ public class WriteErrorClosedConnectionTest {
     void testError() {
         WSClient client = WSClient.create(vertx).connect(testUri);
         client.sendAndAwait(Buffer.buffer("1"));
-        Awaitility.await().atMost(Duration.ofSeconds(5)).until(() -> client.isClosed());
+        Awaitility.await().atMost(TestTimeouts.get()).until(() -> client.isClosed());
         assertTrue(Echo.ERROR_HANDLER_CALLED.get());
     }
 

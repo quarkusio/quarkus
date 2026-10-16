@@ -3,7 +3,6 @@ package io.quarkus.test.junit;
 import static io.quarkus.runtime.LaunchMode.NORMAL;
 import static io.quarkus.runtime.configuration.ConfigSourceOrdinal.INTEGRATION_TEST;
 import static io.quarkus.test.common.ListeningAddress.LISTENING_ADDRESS;
-import static io.quarkus.test.common.ListeningAddress.LOCAL_BASE_URI;
 import static io.quarkus.test.common.ListeningAddress.MANAGEMENT_LISTENING_ADDRESS;
 import static io.quarkus.test.junit.ArtifactTypeUtil.isContainer;
 import static io.quarkus.test.junit.ArtifactTypeUtil.isJar;
@@ -136,14 +135,12 @@ public class QuarkusIntegrationTestExtension extends AbstractQuarkusTestWithCont
             }
 
             // Inject of ValueRegistry and Config done IntegrationTestUtil.doProcessTestInstance
-
             ValueRegistry valueRegistry = ValueRegistryInjector.get(context);
             Optional<ListeningAddress> listeningAddress = valueRegistry.get(LISTENING_ADDRESS);
             listeningAddress.ifPresent(new Consumer<ListeningAddress>() {
                 @Override
                 public void accept(ListeningAddress listeningAddress) {
-                    RestAssuredStateManager.setTestUri(
-                            valueRegistry.get(LOCAL_BASE_URI),
+                    RestAssuredStateManager.setTestUri(valueRegistry,
                             QuarkusTestExtension.getEndpointPath(context, testHttpEndpointProviders));
                 }
             });

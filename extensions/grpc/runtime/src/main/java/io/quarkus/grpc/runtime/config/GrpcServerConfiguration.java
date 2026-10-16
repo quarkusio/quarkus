@@ -26,4 +26,12 @@ public interface GrpcServerConfiguration {
      * gRPC compression, e.g. "gzip"
      */
     Optional<String> compression();
+
+    /**
+     * Whether to propagate the exception cause chain to gRPC clients using response trailers.
+     * <p>
+     * Disable for externally exposed services to avoid leaking internal error details.
+     */
+    @WithDefault("true")
+    boolean propagateExceptionCauses();
 }

@@ -3,7 +3,6 @@ package io.quarkus.it.micrometer.prometheus;
 import static io.restassured.RestAssured.get;
 import static io.restassured.RestAssured.given;
 import static io.restassured.RestAssured.when;
-import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 import static org.hamcrest.CoreMatchers.containsString;
@@ -25,6 +24,7 @@ import org.junit.jupiter.api.Test;
 
 import io.quarkus.test.junit.DisabledOnIntegrationTest;
 import io.quarkus.test.junit.QuarkusTest;
+import io.quarkus.test.timeouts.TestTimeouts;
 
 @QuarkusTest
 public class ClientRequestTest {
@@ -79,7 +79,7 @@ public class ClientRequestTest {
         when().get("/client/status").then().statusCode(200)
                 .body(containsString("ok400500timeout"));
 
-        await().atMost(5, SECONDS).untilAsserted(() -> assertThat(
+        await().atMost(TestTimeouts.get()).untilAsserted(() -> assertThat(
                 get("/server-requests/count").body().as(Integer.class),
                 greaterThan(7)));
 

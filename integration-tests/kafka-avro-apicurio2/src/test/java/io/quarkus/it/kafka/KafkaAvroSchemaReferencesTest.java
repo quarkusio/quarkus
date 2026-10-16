@@ -1,7 +1,6 @@
 package io.quarkus.it.kafka;
 
 import static io.apicurio.registry.serde.avro.AvroSerdeConfig.USE_SPECIFIC_AVRO_READER;
-import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.awaitility.Awaitility.await;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasItems;
@@ -26,6 +25,7 @@ import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.kafka.InjectKafkaCompanion;
 import io.quarkus.test.kafka.KafkaCompanionResource;
+import io.quarkus.test.timeouts.TestTimeouts;
 import io.smallrye.reactive.messaging.kafka.companion.ConsumerTask;
 import io.smallrye.reactive.messaging.kafka.companion.KafkaCompanion;
 
@@ -71,7 +71,7 @@ public class KafkaAvroSchemaReferencesTest {
 
         List<ConsumerRecord<String, Order>> received = consumer.awaitRecords(3, Duration.ofSeconds(10L)).getRecords();
 
-        await().atMost(10, SECONDS).until(() -> received.size() >= 3);
+        await().atMost(TestTimeouts.get()).until(() -> received.size() >= 3);
 
         List<String> products = received.stream().map(r -> r.value().getProduct()).toList();
         assertThat(products, hasItems("Laptop", "Phone", "Tablet"));

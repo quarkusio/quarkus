@@ -26,6 +26,7 @@ import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.context.Scope;
 import io.quarkus.devui.tests.DevUIJsonRPCTest;
 import io.quarkus.test.QuarkusDevModeTest;
+import io.quarkus.test.timeouts.TestTimeouts;
 import io.restassured.RestAssured;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
@@ -59,7 +60,7 @@ public class OpenTelemetryDevUITest extends DevUIJsonRPCTest {
     public void capturesAndGroupsParentChildSpans() throws Exception {
         RestAssured.when().get("/nested").then().statusCode(200);
 
-        Awaitility.await().atMost(Duration.ofSeconds(5)).untilAsserted(() -> {
+        Awaitility.await().atMost(TestTimeouts.get()).untilAsserted(() -> {
             JsonNode snapshot = super.executeJsonRPCMethod("getSnapshot");
             JsonNode traces = snapshot.get("traces");
             assertThat(traces).isNotNull();
@@ -90,7 +91,7 @@ public class OpenTelemetryDevUITest extends DevUIJsonRPCTest {
     @Test
     public void capturesErrorStatus() throws Exception {
         RestAssured.when().get("/boom").then().statusCode(500);
-        Awaitility.await().atMost(Duration.ofSeconds(5)).untilAsserted(() -> {
+        Awaitility.await().atMost(TestTimeouts.get()).untilAsserted(() -> {
             JsonNode snapshot = super.executeJsonRPCMethod("getSnapshot");
             // Assert the actual captured status field, not just that "ERROR" appears somewhere
             // in the serialized snapshot: the failing request must yield a span whose
@@ -106,7 +107,7 @@ public class OpenTelemetryDevUITest extends DevUIJsonRPCTest {
     @Test
     public void capturesReactiveSpanOffRequestThread() throws Exception {
         RestAssured.when().get("/reactive").then().statusCode(200);
-        Awaitility.await().atMost(Duration.ofSeconds(5)).untilAsserted(() -> {
+        Awaitility.await().atMost(TestTimeouts.get()).untilAsserted(() -> {
             JsonNode snapshot = super.executeJsonRPCMethod("getSnapshot");
             // A Uni endpoint completes off the request thread; assert on the span name field
             // rather than a substring anywhere in the snapshot.

@@ -2,7 +2,6 @@ package io.quarkus.it.observation.micrometer.opentelemetry;
 
 import static io.restassured.RestAssured.get;
 import static io.restassured.RestAssured.given;
-import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 import static org.hamcrest.Matchers.is;
@@ -14,6 +13,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.test.junit.QuarkusTest;
+import io.quarkus.test.timeouts.TestTimeouts;
 import io.restassured.common.mapper.TypeRef;
 
 @QuarkusTest
@@ -38,7 +38,7 @@ public class ObservationMicrometerOtelTest {
         Map attributes = (Map) span.get("attributes");
         assertThat(attributes.get("operation.type")).isEqualTo("manual");
 
-        await().atMost(5, SECONDS).untilAsserted(() -> {
+        await().atMost(TestTimeouts.get()).untilAsserted(() -> {
             long count = getTimerCount("manual.operation");
             assertThat(count).isEqualTo(1);
         });
@@ -56,7 +56,7 @@ public class ObservationMicrometerOtelTest {
         Map<String, Object> span = findSpanByName(spans, "ObservedService#doWork");
         assertThat(span).isNotNull();
 
-        await().atMost(5, SECONDS).untilAsserted(() -> {
+        await().atMost(TestTimeouts.get()).untilAsserted(() -> {
             long count = getTimerCount("doWork");
             assertThat(count).isEqualTo(1);
         });
@@ -75,7 +75,7 @@ public class ObservationMicrometerOtelTest {
 
     @SuppressWarnings("unchecked")
     private List<Map<String, Object>> getSpans(int minCount) {
-        await().atMost(5, SECONDS).untilAsserted(() -> {
+        await().atMost(TestTimeouts.get()).untilAsserted(() -> {
             List<Map<String, Object>> result = get("/export").as(List.class);
             assertThat(result).hasSizeGreaterThanOrEqualTo(minCount);
         });

@@ -52,6 +52,7 @@ import io.quarkus.maven.it.continuoustesting.ContinuousTestingMavenTestUtils;
 import io.quarkus.maven.it.verifier.MavenProcessInvocationResult;
 import io.quarkus.maven.it.verifier.RunningInvoker;
 import io.quarkus.test.devmode.util.DevModeClient;
+import io.quarkus.test.timeouts.TestTimeouts;
 
 /**
  * Tests tests in the quarkus:dev mojo.
@@ -857,7 +858,7 @@ public class DevMojoIT extends LaunchMojoTestBase {
         // test that we don't get multiple instances of a resource when loading from the ClassLoader
         await()
                 .pollDelay(100, TimeUnit.MILLISECONDS)
-                .atMost(5, TimeUnit.SECONDS)
+                .atMost(TestTimeouts.get())
                 .until(() -> devModeClient.getHttpResponse("/app/hello/resourcesCount").equals("1"));
 
         ContinuousTestingMavenTestUtils testingTestUtils = new ContinuousTestingMavenTestUtils();
@@ -1172,7 +1173,7 @@ public class DevMojoIT extends LaunchMojoTestBase {
         // Wait until we get "uuid"
         await()
                 .pollDelay(100, TimeUnit.MILLISECONDS)
-                .atMost(10, TimeUnit.SECONDS)
+                .atMost(TestTimeouts.get())
                 .until(() -> devModeClient.getHttpResponse("/app/hello/greeting").contains(uuid));
     }
 

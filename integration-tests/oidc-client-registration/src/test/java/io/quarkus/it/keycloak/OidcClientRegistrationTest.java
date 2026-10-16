@@ -24,6 +24,7 @@ import org.junit.jupiter.api.Test;
 
 import io.quarkus.test.common.TestLog;
 import io.quarkus.test.junit.QuarkusTest;
+import io.quarkus.test.timeouts.TestTimeouts;
 
 @QuarkusTest
 public class OidcClientRegistrationTest {
@@ -166,7 +167,7 @@ public class OidcClientRegistrationTest {
 
     private void checkLog() {
         given().await().pollInterval(100, TimeUnit.MILLISECONDS)
-                .atMost(10, TimeUnit.SECONDS)
+                .atMost(TestTimeouts.get())
                 .untilAsserted(new ThrowingRunnable() {
                     @Override
                     public void run() throws Throwable {

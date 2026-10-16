@@ -13,7 +13,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -45,6 +44,7 @@ import io.quarkus.security.spi.runtime.AuthenticationSuccessEvent;
 import io.quarkus.security.spi.runtime.AuthorizationFailureEvent;
 import io.quarkus.security.spi.runtime.AuthorizationSuccessEvent;
 import io.quarkus.test.QuarkusExtensionTest;
+import io.quarkus.test.timeouts.TestTimeouts;
 import io.smallrye.common.annotation.Blocking;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
@@ -107,7 +107,7 @@ public abstract class GrpcAuthTestBase {
                     resultCount.incrementAndGet();
                 });
 
-        await().atMost(10, TimeUnit.SECONDS)
+        await().atMost(TestTimeouts.get())
                 .until(() -> resultCount.get() == 1);
         assertSecurityEventsFired("john");
     }
@@ -132,8 +132,8 @@ public abstract class GrpcAuthTestBase {
                     }
                 });
 
-        await().atMost(10, TimeUnit.SECONDS).until(() -> authenticationFailedCount.get() == 1);
-        Awaitility.await().atMost(10, TimeUnit.SECONDS).untilAsserted(() -> {
+        await().atMost(TestTimeouts.get()).until(() -> authenticationFailedCount.get() == 1);
+        Awaitility.await().atMost(TestTimeouts.get()).untilAsserted(() -> {
             AuthenticationFailureEvent authFailureEvent = securityEventObserver.getStorage().stream()
                     .filter(e -> e instanceof AuthenticationFailureEvent)
                     .map(e -> (AuthenticationFailureEvent) e)
@@ -157,7 +157,7 @@ public abstract class GrpcAuthTestBase {
                     resultCount.incrementAndGet();
                 });
 
-        await().atMost(10, TimeUnit.SECONDS)
+        await().atMost(TestTimeouts.get())
                 .until(() -> resultCount.get() == 1);
         assertSecurityEventsFired("john");
     }
@@ -172,7 +172,7 @@ public abstract class GrpcAuthTestBase {
                 .supplier(() -> (Security.Container.newBuilder().setText("woo-hoo").build())).atMost(4))
                 .subscribe().with(e -> results.add(e.getIsOnEventLoop()));
 
-        await().atMost(10, TimeUnit.SECONDS)
+        await().atMost(TestTimeouts.get())
                 .until(() -> results.size() == 5);
 
         assertThat(results.stream().filter(e -> !e)).isEmpty();
@@ -189,7 +189,7 @@ public abstract class GrpcAuthTestBase {
                 .supplier(() -> (Security.Container.newBuilder().setText("woo-hoo").build())).atMost(4))
                 .subscribe().with(e -> results.add(e.getIsOnEventLoop()));
 
-        await().atMost(10, TimeUnit.SECONDS)
+        await().atMost(TestTimeouts.get())
                 .until(() -> results.size() == 5);
 
         assertThat(results.stream().filter(e -> e)).isEmpty();
@@ -209,7 +209,7 @@ public abstract class GrpcAuthTestBase {
                 .onFailure().invoke(error::set)
                 .subscribe().with(e -> resultCount.incrementAndGet());
 
-        await().atMost(10, TimeUnit.SECONDS)
+        await().atMost(TestTimeouts.get())
                 .until(() -> error.get() != null);
     }
 
@@ -226,7 +226,7 @@ public abstract class GrpcAuthTestBase {
                 .onFailure().invoke(error::set)
                 .subscribe().with(e -> resultCount.incrementAndGet());
 
-        await().atMost(10, TimeUnit.SECONDS)
+        await().atMost(TestTimeouts.get())
                 .until(() -> error.get() != null);
         StatusRuntimeException statusRuntimeException = (StatusRuntimeException) error.get();
         Assertions.assertEquals(Status.PERMISSION_DENIED, statusRuntimeException.getStatus());
@@ -257,7 +257,7 @@ public abstract class GrpcAuthTestBase {
                     resultCount.incrementAndGet();
                 });
 
-        await().atMost(10, TimeUnit.SECONDS)
+        await().atMost(TestTimeouts.get())
                 .until(() -> resultCount.get() == 1);
         assertSecurityEventsFired("john");
     }
@@ -277,7 +277,7 @@ public abstract class GrpcAuthTestBase {
                     resultCount.incrementAndGet();
                 });
 
-        await().atMost(10, TimeUnit.SECONDS)
+        await().atMost(TestTimeouts.get())
                 .until(() -> resultCount.get() == 1);
         assertSecurityEventsFired("john");
     }
@@ -295,7 +295,7 @@ public abstract class GrpcAuthTestBase {
                     results.add(e.getIsOnEventLoop());
                 });
 
-        await().atMost(10, TimeUnit.SECONDS)
+        await().atMost(TestTimeouts.get())
                 .until(() -> results.size() == 5);
 
         assertThat(results.stream().filter(e -> !e)).isEmpty();
@@ -313,7 +313,7 @@ public abstract class GrpcAuthTestBase {
                 .supplier(() -> (Security.Container.newBuilder().setText("woo-hoo").build())).atMost(4))
                 .subscribe().with(e -> results.add(e.getIsOnEventLoop()));
 
-        await().atMost(10, TimeUnit.SECONDS)
+        await().atMost(TestTimeouts.get())
                 .until(() -> results.size() == 5);
 
         assertThat(results.stream().filter(e -> e)).isEmpty();

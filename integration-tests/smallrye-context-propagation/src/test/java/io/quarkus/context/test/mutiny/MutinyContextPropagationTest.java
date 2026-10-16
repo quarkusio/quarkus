@@ -14,6 +14,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.context.test.CompletionExceptionMapper;
 import io.quarkus.context.test.RequestBean;
 import io.quarkus.test.QuarkusExtensionTest;
+import io.quarkus.test.timeouts.TestTimeouts;
 import io.restassured.RestAssured;
 
 /**
@@ -161,7 +162,7 @@ public class MutinyContextPropagationTest {
     }
 
     private void awaitState(ThrowingRunnable task) {
-        Awaitility.await().atMost(5, TimeUnit.SECONDS)
+        Awaitility.await().atMost(TestTimeouts.get())
                 .pollInterval(100, TimeUnit.MILLISECONDS)
                 .untilAsserted(task);
     }

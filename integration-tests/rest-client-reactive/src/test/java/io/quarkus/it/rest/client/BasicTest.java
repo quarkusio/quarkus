@@ -26,6 +26,7 @@ import io.quarkus.test.common.http.TestHTTPResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.QuarkusTestProfile;
 import io.quarkus.test.junit.TestProfile;
+import io.quarkus.test.timeouts.TestTimeouts;
 import io.restassured.RestAssured;
 import io.restassured.common.mapper.TypeRef;
 import io.restassured.response.Response;
@@ -188,7 +189,7 @@ public class BasicTest {
         Assertions.assertNotNull(initialServerSpan.get("attr_client.address"));
         Assertions.assertNotNull(initialServerSpan.get("attr_user_agent.original"));
 
-        Awaitility.await().atMost(Duration.ofSeconds(5))
+        Awaitility.await().atMost(TestTimeouts.get())
                 .until(() -> getClientSpansFromFullUrl("POST", "http://localhost:8081/hello?count=3").size() > 0);
 
         spans = getClientSpansFromFullUrl("POST", "http://localhost:8081/hello?count=3");
@@ -219,7 +220,7 @@ public class BasicTest {
 
         clientSpanId = (String) clientSpan.get("spanId");
 
-        Awaitility.await().atMost(Duration.ofSeconds(5))
+        Awaitility.await().atMost(TestTimeouts.get())
                 .until(() -> getServerSpansFromPath("POST /hello", "/hello").size() > 0);
         spans = getServerSpansFromPath("POST /hello", "/hello");
         Assertions.assertEquals(1, spans.size(), "found: " + spans);

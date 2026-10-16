@@ -21,7 +21,6 @@ import static io.quarkus.websockets.next.test.utils.WSClient.ReceiverMode.BINARY
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.net.URI;
-import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
@@ -45,6 +44,7 @@ import io.quarkus.builder.Version;
 import io.quarkus.maven.dependency.Dependency;
 import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.common.http.TestHTTPResource;
+import io.quarkus.test.timeouts.TestTimeouts;
 import io.quarkus.websockets.next.WebSocketConnector;
 import io.quarkus.websockets.next.test.telemetry.ExpectedServerEndpointResponse.DoubleEchoExpectedServerEndpointResponse;
 import io.quarkus.websockets.next.test.telemetry.ExpectedServerEndpointResponse.EchoExpectedServerEndpointResponse;
@@ -132,7 +132,7 @@ public abstract class AbstractWebSocketsOnMessageTest {
         asserter.serverConnectionOpenedCount += 1;
 
         // test metrics per all the paths (regardless of the URI tag)
-        Awaitility.await().atMost(Duration.ofSeconds(12)).untilAsserted(() -> {
+        Awaitility.await().atMost(TestTimeouts.get()).untilAsserted(() -> {
             getMetrics()
                     .body(assertServerConnectionOpenedTotal(asserter.serverConnectionOpenedCount))
                     .body(assertClientConnectionOpenedTotal(asserter.clientConnectionOpenedCount))
@@ -403,14 +403,14 @@ public abstract class AbstractWebSocketsOnMessageTest {
                     ws1.get().writeTextMessage(message);
                 }
             }
-            Awaitility.await().atMost(Duration.ofSeconds(5))
+            Awaitility.await().atMost(TestTimeouts.get())
                     .untilAsserted(() -> Assertions.assertTrue(messages1.size() >= expectedResponses1.length,
                             "Expected %d, got %d".formatted(expectedResponses1.length, messages1.size())));
             for (String expectedResponse : expectedResponses1) {
                 assertTrue(messages1.contains(expectedResponse),
                         () -> "Expected response '%s' not found, was: %s".formatted(expectedResponse, messages1));
             }
-            Awaitility.await().atMost(Duration.ofSeconds(5))
+            Awaitility.await().atMost(TestTimeouts.get())
                     .untilAsserted(() -> Assertions.assertTrue(messages2.size() >= expectedResponses1.length,
                             "Expected %d, got %d".formatted(expectedResponses1.length, messages2.size())));
             for (String expectedResponse : expectedResponses1) {
@@ -428,14 +428,14 @@ public abstract class AbstractWebSocketsOnMessageTest {
                     ws2.get().writeTextMessage(message);
                 }
             }
-            Awaitility.await().atMost(Duration.ofSeconds(5))
+            Awaitility.await().atMost(TestTimeouts.get())
                     .untilAsserted(() -> Assertions.assertTrue(messages2.size() >= expectedResponses2.length,
                             "Expected %d, got %d".formatted(expectedResponses2.length, messages2.size())));
             for (String expectedResponse : expectedResponses2) {
                 assertTrue(messages2.contains(expectedResponse),
                         () -> "Expected response '%s' not found, was: %s".formatted(expectedResponse, messages2));
             }
-            Awaitility.await().atMost(Duration.ofSeconds(5))
+            Awaitility.await().atMost(TestTimeouts.get())
                     .untilAsserted(() -> Assertions.assertTrue(messages1.size() >= expectedResponses2.length,
                             "Expected %d, got %d".formatted(expectedResponses2.length, messages1.size())));
             for (String expectedResponse : expectedResponses2) {

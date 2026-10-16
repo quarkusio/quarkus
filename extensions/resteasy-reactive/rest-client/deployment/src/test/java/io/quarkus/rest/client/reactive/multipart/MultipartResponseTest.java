@@ -11,7 +11,6 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
-import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutionException;
@@ -40,6 +39,7 @@ import io.quarkus.rest.client.reactive.TestJacksonBasicMessageBodyReader;
 import io.quarkus.rest.client.reactive.TestJacksonBasicMessageBodyWriter;
 import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.common.http.TestHTTPResource;
+import io.quarkus.test.timeouts.TestTimeouts;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.VertxException;
 
@@ -77,7 +77,7 @@ public class MultipartResponseTest {
     @Test
     void shouldParseUniMultipartResponse() {
         Client client = createClient();
-        MultipartData data = client.uniGetFile().await().atMost(Duration.ofSeconds(10));
+        MultipartData data = client.uniGetFile().await().atMost(TestTimeouts.get());
         assertThat(data.file).exists();
         verifyWooHooFile(data.file, 10000);
         assertThat(data.name).isEqualTo("foo");

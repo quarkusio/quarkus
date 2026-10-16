@@ -13,6 +13,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.common.http.TestHTTPResource;
+import io.quarkus.test.timeouts.TestTimeouts;
 import io.quarkus.websockets.next.BasicWebSocketConnector;
 import io.quarkus.websockets.next.OnBinaryMessage;
 import io.quarkus.websockets.next.OnTextMessage;
@@ -74,8 +75,8 @@ public class FragmentedMessagesBackpressureTest {
             }
             WebSocketClientConnection connection = basicConnector.connectAndAwait();
             try {
-                assertThat(received.await(5, TimeUnit.SECONDS)).isTrue();
-                assertThat(pings.await(5, TimeUnit.SECONDS)).isTrue();
+                assertThat(received.await(TestTimeouts.get().toSeconds(), TimeUnit.SECONDS)).isTrue();
+                assertThat(pings.await(TestTimeouts.get().toSeconds(), TimeUnit.SECONDS)).isTrue();
             } finally {
                 connection.closeAndAwait();
             }
@@ -100,7 +101,7 @@ public class FragmentedMessagesBackpressureTest {
             WebSocketClientConnection connection = basicConnector.baseUri("ws://localhost:" + server.actualPort())
                     .onTextMessage((c, m) -> received.countDown()).connectAndAwait();
             try {
-                assertThat(received.await(5, TimeUnit.SECONDS)).isTrue();
+                assertThat(received.await(TestTimeouts.get().toSeconds(), TimeUnit.SECONDS)).isTrue();
             } finally {
                 connection.closeAndAwait();
             }
@@ -126,7 +127,7 @@ public class FragmentedMessagesBackpressureTest {
             WebSocketClientConnection connection = connector.baseUri("ws://localhost:" + server.actualPort())
                     .connectAndAwait();
             try {
-                assertThat(Client.received.await(5, TimeUnit.SECONDS)).isTrue();
+                assertThat(Client.received.await(TestTimeouts.get().toSeconds(), TimeUnit.SECONDS)).isTrue();
             } finally {
                 connection.closeAndAwait();
             }
@@ -156,7 +157,7 @@ public class FragmentedMessagesBackpressureTest {
                     .toCompletableFuture()
                     .get(5, TimeUnit.SECONDS);
             sendFragments(ws, binary);
-            assertThat(Server.received.await(5, TimeUnit.SECONDS)).isTrue();
+            assertThat(Server.received.await(TestTimeouts.get().toSeconds(), TimeUnit.SECONDS)).isTrue();
         } finally {
             client.close().toCompletionStage().toCompletableFuture().get(5, TimeUnit.SECONDS);
         }

@@ -19,6 +19,7 @@ import io.quarkus.redis.datasource.geo.TransactionalGeoCommands;
 import io.quarkus.redis.datasource.transactions.TransactionResult;
 import io.quarkus.redis.runtime.datasource.BlockingRedisDataSourceImpl;
 import io.quarkus.redis.runtime.datasource.ReactiveRedisDataSourceImpl;
+import io.quarkus.test.timeouts.TestTimeouts;
 
 @RequiresRedis6OrHigher
 public class TransactionalGeoCommandsTest extends DatasourceTestBase {
@@ -72,7 +73,7 @@ public class TransactionalGeoCommandsTest extends DatasourceTestBase {
                     .chain(() -> geo.geopos(key, "2", "3", "4")) // 4 - list of position
                     .chain(() -> geo.geosearch(key,
                             new GeoSearchArgs<String>().withDistance().ascending().byRadius(10000, GeoUnit.KM))); // 5 - list of geo value
-        }).await().atMost(Duration.ofSeconds(5));
+        }).await().atMost(TestTimeouts.get());
         assertThat(result.size()).isEqualTo(6);
         assertThat(result.discarded()).isFalse();
         assertThat((Boolean) result.get(0)).isTrue();

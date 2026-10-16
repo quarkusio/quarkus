@@ -20,6 +20,7 @@ import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusExtensionTest;
+import io.quarkus.test.timeouts.TestTimeouts;
 import io.quarkus.vertx.core.runtime.context.VertxContextSafetyToggle;
 import io.smallrye.common.annotation.Blocking;
 import io.smallrye.common.vertx.ContextLocals;
@@ -193,7 +194,7 @@ public class DuplicatedContextTest {
             Assertions.assertFalse(Thread.currentThread().getName().contains("vert.x-eventloop"));
             Assertions.assertTrue(VertxContext.isOnDuplicatedContext());
             VertxContextSafetyToggle.validateContextIfExists("Not marked as safe", "Not marked as safe");
-            return process(data).await().atMost(Duration.ofSeconds(4));
+            return process(data).await().atMost(TestTimeouts.get());
         }
 
         @ConsumeEvent(value = "context-send")

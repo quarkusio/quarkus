@@ -14,6 +14,7 @@ import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.dev.spi.RemoteDevState;
+import io.quarkus.test.timeouts.TestTimeouts;
 import io.quarkus.vertx.http.runtime.devmode.RemoteSyncHandler;
 import io.vertx.core.Future;
 import io.vertx.core.Vertx;
@@ -64,7 +65,7 @@ class HttpRemoteDevClientTest {
                     "secret", Duration.ofSeconds(1), Duration.ofMillis(10), 5);
             session = client.sendConnectRequest(new RemoteDevState(Map.of(), null), ignored -> Map.of(), () -> null);
 
-            Awaitility.await().atMost(Duration.ofSeconds(5))
+            Awaitility.await().atMost(TestTimeouts.get())
                     .untilAsserted(() -> assertThat(devRequests).hasValue(2));
 
             assertThat(connectLength).hasValueGreaterThan(0);

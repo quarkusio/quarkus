@@ -7,7 +7,6 @@ import java.io.IOException;
 import java.net.URI;
 import java.util.Objects;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 import jakarta.ws.rs.GET;
@@ -28,6 +27,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
 import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.common.http.TestHTTPResource;
+import io.quarkus.test.timeouts.TestTimeouts;
 import tools.jackson.databind.ObjectMapper;
 
 public class RestMultiResponseTest {
@@ -49,7 +49,7 @@ public class RestMultiResponseTest {
         var resultList = new CopyOnWriteArrayList<Dto>();
         stream.subscribe().with(event -> resultList.add(event.data()));
 
-        await().atMost(5, TimeUnit.SECONDS)
+        await().atMost(TestTimeouts.get())
                 .untilAsserted(() -> {
                     assertThat(response.get()).isNotNull();
                     assertThat(response.get().status()).isEqualTo(200);
@@ -70,7 +70,7 @@ public class RestMultiResponseTest {
         var resultList = new CopyOnWriteArrayList<Dto>();
         stream.subscribe().with(event -> resultList.add(event.data()));
 
-        await().atMost(5, TimeUnit.SECONDS)
+        await().atMost(TestTimeouts.get())
                 .untilAsserted(() -> {
                     assertThat(response.get()).isNotNull();
                     assertThat(response.get().status()).isEqualTo(200);
@@ -90,7 +90,7 @@ public class RestMultiResponseTest {
         var resultList = new CopyOnWriteArrayList<String>();
         stream.subscribe().with(resultList::add);
 
-        await().atMost(5, TimeUnit.SECONDS)
+        await().atMost(TestTimeouts.get())
                 .untilAsserted(() -> {
                     assertThat(response.get()).isNotNull();
                     assertThat(response.get().status()).isEqualTo(200);

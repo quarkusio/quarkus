@@ -20,6 +20,7 @@ import org.junit.jupiter.api.Test;
 
 import io.opentelemetry.api.trace.SpanKind;
 import io.quarkus.test.junit.QuarkusTest;
+import io.quarkus.test.timeouts.TestTimeouts;
 import io.restassured.common.mapper.TypeRef;
 
 @QuarkusTest
@@ -31,7 +32,7 @@ public class ObservationReactiveTest {
     @AfterEach
     void reset() {
         given().get("/reset").then().statusCode(HTTP_OK);
-        await().atMost(5, SECONDS).until(() -> getSpans().isEmpty());
+        await().atMost(TestTimeouts.get()).until(() -> getSpans().isEmpty());
     }
 
     @Test
@@ -58,7 +59,7 @@ public class ObservationReactiveTest {
         assertThat(attributes.get("name")).isEqualTo("Naruto");
 
         // One request → the timer recorded at least one observation.
-        await().atMost(5, SECONDS).untilAsserted(() -> assertThat(getTimerCount("reactive.hello.observation"))
+        await().atMost(TestTimeouts.get()).untilAsserted(() -> assertThat(getTimerCount("reactive.hello.observation"))
                 .isGreaterThanOrEqualTo(1));
     }
 
@@ -83,7 +84,7 @@ public class ObservationReactiveTest {
         logger.infov("reactive.hello.observation Attributes: {0}", observedSpan.get("attributes"));
 
         // One @Observed invocation → the "reactiveWork" timer recorded at least one observation.
-        await().atMost(5, SECONDS).untilAsserted(() -> assertThat(getTimerCount("reactiveWork"))
+        await().atMost(TestTimeouts.get()).untilAsserted(() -> assertThat(getTimerCount("reactiveWork"))
                 .isGreaterThanOrEqualTo(1));
     }
 
@@ -125,7 +126,7 @@ public class ObservationReactiveTest {
 
         // One @Observed subscription → the "reactiveStream" parent timer recorded once; the child
         // "stream.item.observation" timer recorded once per emitted item (three).
-        await().atMost(5, SECONDS).untilAsserted(() -> {
+        await().atMost(TestTimeouts.get()).untilAsserted(() -> {
             assertThat(getTimerCount("reactiveStream")).isGreaterThanOrEqualTo(1);
             assertThat(getTimerCount("stream.item.observation")).isGreaterThanOrEqualTo(3);
         });
@@ -180,7 +181,7 @@ public class ObservationReactiveTest {
 
         // One request → the chain timer recorded once, and each of the two handler calls
         // recorded a "reactive.hello.observation".
-        await().atMost(5, SECONDS).untilAsserted(() -> {
+        await().atMost(TestTimeouts.get()).untilAsserted(() -> {
             assertThat(getTimerCount("chain.operation.observation")).isGreaterThanOrEqualTo(1);
             assertThat(getTimerCount("reactive.hello.observation")).isGreaterThanOrEqualTo(2);
         });
@@ -232,7 +233,7 @@ public class ObservationReactiveTest {
         }
 
         // One request → the combine timer recorded once, plus two handler observations.
-        await().atMost(5, SECONDS).untilAsserted(() -> {
+        await().atMost(TestTimeouts.get()).untilAsserted(() -> {
             assertThat(getTimerCount("combine.operation.observation")).isGreaterThanOrEqualTo(1);
             assertThat(getTimerCount("reactive.hello.observation")).isGreaterThanOrEqualTo(2);
         });
@@ -319,7 +320,7 @@ public class ObservationReactiveTest {
 
         // The combine timer must have recorded at least one observation per parallel request,
         // and each request drove two handler observations.
-        await().atMost(5, SECONDS).untilAsserted(() -> {
+        await().atMost(TestTimeouts.get()).untilAsserted(() -> {
             assertThat(getTimerCount("combine.operation.observation"))
                     .isGreaterThanOrEqualTo(parallelRequests);
             assertThat(getTimerCount("reactive.hello.observation"))
@@ -354,7 +355,7 @@ public class ObservationReactiveTest {
         assertThat((String) childSpan.get("name")).contains("doChildWork");
 
         // Both the parent (request thread) and the child @Observed (worker thread) timers recorded.
-        await().atMost(5, SECONDS).untilAsserted(() -> {
+        await().atMost(TestTimeouts.get()).untilAsserted(() -> {
             assertThat(getTimerCount("worker.parent.observation")).isGreaterThanOrEqualTo(1);
             assertThat(getTimerCount("doChildWork")).isGreaterThanOrEqualTo(1);
         });
@@ -385,7 +386,7 @@ public class ObservationReactiveTest {
         assertThat((String) childSpan.get("name")).contains("doChildWork");
 
         // Both the parent and the nested child @Observed timers recorded on the (virtual) thread.
-        await().atMost(5, SECONDS).untilAsserted(() -> {
+        await().atMost(TestTimeouts.get()).untilAsserted(() -> {
             assertThat(getTimerCount("virtual.parent.observation")).isGreaterThanOrEqualTo(1);
             assertThat(getTimerCount("doChildWork")).isGreaterThanOrEqualTo(1);
         });
@@ -411,13 +412,13 @@ public class ObservationReactiveTest {
         assertThat(errorSpan.get("traceId")).isEqualTo(serverSpan.get("traceId"));
 
         // The failing observation is still recorded once by the timer.
-        await().atMost(5, SECONDS).untilAsserted(() -> assertThat(getTimerCount("error.operation.observation"))
+        await().atMost(TestTimeouts.get()).untilAsserted(() -> assertThat(getTimerCount("error.operation.observation"))
                 .isGreaterThanOrEqualTo(1));
     }
 
     @SuppressWarnings("unchecked")
     private List<Map<String, Object>> waitForSpans(int minCount) {
-        await().atMost(5, SECONDS).untilAsserted(() -> {
+        await().atMost(TestTimeouts.get()).untilAsserted(() -> {
             List<Map<String, Object>> result = getSpans();
             assertThat(result).hasSizeGreaterThanOrEqualTo(minCount);
         });

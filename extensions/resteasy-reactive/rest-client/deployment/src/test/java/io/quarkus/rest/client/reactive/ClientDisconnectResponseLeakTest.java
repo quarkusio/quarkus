@@ -27,6 +27,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.common.http.TestHTTPResource;
+import io.quarkus.test.timeouts.TestTimeouts;
 import io.smallrye.common.annotation.Blocking;
 
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
@@ -76,7 +77,7 @@ public class ClientDisconnectResponseLeakTest {
         }
 
         // Poll until the pool recovers and the verification request succeeds
-        await().atMost(Duration.ofSeconds(15))
+        await().atMost(TestTimeouts.get())
                 .pollInterval(Duration.ofMillis(500))
                 .untilAsserted(() -> {
                     try (Socket socket = new Socket(uri.getHost(), uri.getPort())) {

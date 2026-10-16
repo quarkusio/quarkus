@@ -4,7 +4,6 @@ import static io.restassured.RestAssured.get;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
-import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -15,6 +14,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.devui.tests.DevUIJsonRPCTest;
 import io.quarkus.test.QuarkusDevModeTest;
+import io.quarkus.test.timeouts.TestTimeouts;
 import tools.jackson.databind.JsonNode;
 
 /**
@@ -44,7 +44,7 @@ public class MetricsReloadTest extends DevUIJsonRPCTest {
 
         // Accumulate at least a couple of points.
         AtomicInteger before = new AtomicInteger();
-        await().atMost(Duration.ofSeconds(10)).untilAsserted(() -> {
+        await().atMost(TestTimeouts.get()).untilAsserted(() -> {
             get("/metrics-test/hit");
             before.set(pointCount(super.executeJsonRPCMethod("getSnapshot"), "demo.hits"));
             assertThat(before.get()).isGreaterThanOrEqualTo(2);
@@ -55,7 +55,7 @@ public class MetricsReloadTest extends DevUIJsonRPCTest {
 
         // After the reload the selection and history are still there (store holder survived),
         // and capture resumes into the same series — the point count never resets to 0.
-        await().atMost(Duration.ofSeconds(20)).untilAsserted(() -> {
+        await().atMost(TestTimeouts.get()).untilAsserted(() -> {
             get("/metrics-test/hit");
             int n = pointCount(super.executeJsonRPCMethod("getSnapshot"), "demo.hits");
             assertThat(n).as(n + "hits found but before we had: " + before.get())

@@ -4,7 +4,6 @@ import static org.awaitility.Awaitility.await;
 
 import java.net.URI;
 import java.time.Duration;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import jakarta.ws.rs.GET;
@@ -17,6 +16,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.common.http.TestHTTPResource;
+import io.quarkus.test.timeouts.TestTimeouts;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.subscription.Cancellable;
 
@@ -48,14 +48,14 @@ public class CancelledQueuedRequestConnectionLeakTest {
         }, Throwable::printStackTrace);
         b.cancel();
 
-        await().atMost(5, TimeUnit.SECONDS).untilTrue(aIsDone);
+        await().atMost(TestTimeouts.get()).untilTrue(aIsDone);
 
         // C: should get the connection promptly, not after B's read-timeout
         AtomicBoolean cIsDone = new AtomicBoolean();
         client.fast().subscribe().with(res -> cIsDone.set(true), err -> cIsDone.set(true));
 
         // Without the fix for #57343: C is blocked ~10s (read-timeout); < 1s with the fix
-        await().atMost(3, TimeUnit.SECONDS).untilTrue(cIsDone);
+        await().atMost(TestTimeouts.get()).untilTrue(cIsDone);
     }
 
     @Path("resource")

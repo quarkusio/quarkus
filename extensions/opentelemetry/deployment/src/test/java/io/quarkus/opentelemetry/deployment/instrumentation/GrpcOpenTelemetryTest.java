@@ -17,7 +17,6 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
-import java.time.Duration;
 import java.util.List;
 
 import jakarta.enterprise.context.ApplicationScoped;
@@ -62,6 +61,7 @@ import io.quarkus.opentelemetry.deployment.common.exporter.InMemoryMetricExporte
 import io.quarkus.opentelemetry.deployment.common.exporter.TestSpanExporter;
 import io.quarkus.opentelemetry.deployment.common.exporter.TestSpanExporterProvider;
 import io.quarkus.test.QuarkusExtensionTest;
+import io.quarkus.test.timeouts.TestTimeouts;
 import io.quarkus.test.vertx.RunOnVertxContext;
 import io.smallrye.common.annotation.Blocking;
 import io.smallrye.mutiny.Multi;
@@ -115,7 +115,7 @@ public class GrpcOpenTelemetryTest {
         String response = greeterStub.sayHello(
                 HelloRequest.newBuilder().setName("Naruto").build())
                 .map(HelloReply::getMessage)
-                .await().atMost(Duration.ofSeconds(5));
+                .await().atMost(TestTimeouts.get());
         assertEquals("Hello Naruto", response);
 
         // HTTP spans are suppressed for gRPC — only gRPC CLIENT, gRPC SERVER, and internal spans remain
@@ -155,7 +155,7 @@ public class GrpcOpenTelemetryTest {
             greeterStub.sayHello(HelloRequest.newBuilder().setName("error").build())
                     .map(HelloReply::getMessage)
                     .await()
-                    .atMost(Duration.ofSeconds(5));
+                    .atMost(TestTimeouts.get());
             fail();
         } catch (Exception e) {
             assertTrue(true);
@@ -207,7 +207,7 @@ public class GrpcOpenTelemetryTest {
                 item("Whis"));
         Multi<Item> response = streamingStub.pipe(request);
 
-        List<String> items = response.map(Item::getMessage).collect().asList().await().atMost(Duration.ofSeconds(5));
+        List<String> items = response.map(Item::getMessage).collect().asList().await().atMost(TestTimeouts.get());
         assertTrue(items.contains("Hello Goku"));
         assertTrue(items.contains("Hello Vegeta"));
         assertTrue(items.contains("Hello Piccolo"));
@@ -244,7 +244,7 @@ public class GrpcOpenTelemetryTest {
                 item("Whis"));
         Multi<Item> response = streamingStub.pipeBlocking(request);
 
-        List<String> items = response.map(Item::getMessage).collect().asList().await().atMost(Duration.ofSeconds(5));
+        List<String> items = response.map(Item::getMessage).collect().asList().await().atMost(TestTimeouts.get());
         assertTrue(items.contains("Hello Goku"));
         assertTrue(items.contains("Hello Vegeta"));
         assertTrue(items.contains("Hello Piccolo"));
@@ -307,7 +307,7 @@ public class GrpcOpenTelemetryTest {
                     .onItem()
                     .transform(HelloReply::getMessage)
                     .await()
-                    .atMost(Duration.ofSeconds(5));
+                    .atMost(TestTimeouts.get());
         }
     }
 

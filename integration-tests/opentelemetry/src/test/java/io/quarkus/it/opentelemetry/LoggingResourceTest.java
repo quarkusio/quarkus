@@ -5,7 +5,6 @@ import static io.opentelemetry.api.trace.SpanKind.SERVER;
 import static io.restassured.RestAssured.get;
 import static io.restassured.RestAssured.given;
 import static java.net.HttpURLConnection.HTTP_OK;
-import static java.util.concurrent.TimeUnit.SECONDS;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 import static org.awaitility.Awaitility.await;
@@ -30,6 +29,7 @@ import io.opentelemetry.api.trace.SpanKind;
 import io.opentelemetry.api.trace.TraceId;
 import io.quarkus.test.common.http.TestHTTPResource;
 import io.quarkus.test.junit.QuarkusTest;
+import io.quarkus.test.timeouts.TestTimeouts;
 import io.restassured.common.mapper.TypeRef;
 
 @QuarkusTest
@@ -41,7 +41,7 @@ public class LoggingResourceTest {
     @BeforeEach
     @AfterEach
     void reset() {
-        await().atMost(5, SECONDS).until(() -> {
+        await().atMost(TestTimeouts.get()).until(() -> {
             List<Map<String, Object>> logs = getLogs();
             if (logs.size() == 0) {
                 return true;
@@ -83,7 +83,7 @@ public class LoggingResourceTest {
                 .body("message", equalTo("Direct trace"));
 
         // Wait for logs to be available as everything is async
-        await().atMost(Duration.ofSeconds(5)).until(() -> getLogs("directTrace called").size() == 1);
+        await().atMost(TestTimeouts.get()).until(() -> getLogs("directTrace called").size() == 1);
         Map<String, Object> logLine = getLogs("directTrace called").get(0);
         Map<String, Object> logLineSpanContext = (Map<String, Object>) logLine.get("spanContext");
 
@@ -117,7 +117,7 @@ public class LoggingResourceTest {
                 .body(is("Oh no! An exception"));
 
         // Wait for logs to be available as everything is async
-        await().atMost(Duration.ofSeconds(5)).until(() -> getLogs("Oh no Exception!").size() == 1);
+        await().atMost(TestTimeouts.get()).until(() -> getLogs("Oh no Exception!").size() == 1);
         Map<String, Object> logLine = getLogs("Oh no Exception!").get(0);
         Map<String, Object> logLineSpanContext = (Map<String, Object>) logLine.get("spanContext");
 
@@ -152,7 +152,7 @@ public class LoggingResourceTest {
                 .statusCode(200)
                 .body("message", CoreMatchers.equalTo("Chained trace"));
 
-        await().atMost(5, SECONDS).until(() -> getSpans().size() == 2);
+        await().atMost(TestTimeouts.get()).until(() -> getSpans().size() == 2);
         final List<Map<String, Object>> spans = getSpans();
         assertEquals(2, spans.size());
         assertEquals(1, spans.stream().map(map -> map.get("traceId")).collect(toSet()).size());
@@ -170,7 +170,7 @@ public class LoggingResourceTest {
         assertEquals("200", server.get("attr_http.response.status_code"));
 
         // Wait for logs to be available as everything is async
-        await().atMost(Duration.ofSeconds(5)).until(() -> getLogs("chainedTrace called").size() == 1);
+        await().atMost(TestTimeouts.get()).until(() -> getLogs("chainedTrace called").size() == 1);
         final Map<String, Object> serverLine = getLogs("chainedTrace called").get(0);
 
         final Map<String, Object> serverLineSpanContext = (Map<String, Object>) serverLine.get("spanContext");
@@ -185,7 +185,7 @@ public class LoggingResourceTest {
         assertEquals(SpanKind.INTERNAL.toString(), cdi.get("kind"));
         assertEquals(server.get("spanId"), cdi.get("parent_spanId"));
 
-        await().atMost(Duration.ofSeconds(5)).until(() -> getLogs("Chained trace called").size() == 1);
+        await().atMost(TestTimeouts.get()).until(() -> getLogs("Chained trace called").size() == 1);
         final Map<String, Object> cdiLine = getLogs("Chained trace called").get(0);
 
         final Map<String, Object> cdiLineSpanContext = (Map<String, Object>) cdiLine.get("spanContext");

@@ -3,7 +3,6 @@ package io.quarkus.rest.client.reactive;
 import static io.quarkus.rest.client.reactive.RestClientTestUtil.setUrlForClass;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.time.Duration;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -22,6 +21,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusExtensionTest;
+import io.quarkus.test.timeouts.TestTimeouts;
 import io.smallrye.mutiny.Uni;
 
 public class AsyncHeaderTest {
@@ -40,7 +40,7 @@ public class AsyncHeaderTest {
     void shouldSendHeaderWithUni() {
         String headerValue = "jaka piekna i dluga wartosc headera";
         String result = client.uniGet(headerValue)
-                .await().atMost(Duration.ofSeconds(10));
+                .await().atMost(TestTimeouts.get());
         assertThat(result).isEqualTo(String.format("passedHeader:%s", headerValue));
     }
 

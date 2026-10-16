@@ -30,6 +30,7 @@ import io.quarkus.builder.BuildChainBuilder;
 import io.quarkus.builder.BuildContext;
 import io.quarkus.builder.BuildStep;
 import io.quarkus.test.QuarkusExtensionTest;
+import io.quarkus.test.timeouts.TestTimeouts;
 import io.quarkus.vertx.http.deployment.HttpRootPathBuildItem;
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
 import io.restassured.RestAssured;
@@ -129,7 +130,7 @@ public class AccessLogWithNonApplicationRootPathTestCase {
 
         // The request to the application route is written to the access log.
         Awaitility.given().pollInterval(100, TimeUnit.MILLISECONDS)
-                .atMost(10, TimeUnit.SECONDS)
+                .atMost(TestTimeouts.get())
                 .untilAsserted(() -> {
                     Path logFile = logDirectory.resolve("server.log");
                     assertThat(Files.exists(logFile)).isTrue();

@@ -4,7 +4,6 @@ import static io.opentelemetry.sdk.metrics.data.MetricDataType.*;
 import static io.restassured.RestAssured.get;
 import static io.restassured.RestAssured.given;
 import static java.net.HttpURLConnection.HTTP_OK;
-import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -22,6 +21,7 @@ import org.junit.jupiter.api.Test;
 import io.opentelemetry.sdk.metrics.data.MetricDataType;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.common.JdkUtil;
+import io.quarkus.test.timeouts.TestTimeouts;
 import io.restassured.common.mapper.TypeRef;
 
 @QuarkusTest
@@ -29,7 +29,7 @@ public class MetricsTest {
     @BeforeEach
     @AfterEach
     void reset() {
-        await().atMost(5, SECONDS).until(() -> {
+        await().atMost(TestTimeouts.get()).until(() -> {
             // make sure spans are cleared
             List<Map<String, Object>> spans = getSpans();
             if (!spans.isEmpty()) {
@@ -65,9 +65,9 @@ public class MetricsTest {
                 .then()
                 .statusCode(200);
 
-        await().atMost(10, SECONDS).until(() -> getSpans().size() >= 2);
+        await().atMost(TestTimeouts.get()).until(() -> getSpans().size() >= 2);
         assertEquals(2, getSpans().size(), () -> "The spans are " + getSpans());
-        await().atMost(10, SECONDS).until(() -> getMetrics("direct-trace-counter").size() > 2);
+        await().atMost(TestTimeouts.get()).until(() -> getMetrics("direct-trace-counter").size() > 2);
 
         List<Map<String, Object>> metrics = getMetrics("direct-trace-counter");
         Integer value = (Integer) ((Map) ((List) ((Map) (getMetrics("direct-trace-counter")
@@ -98,7 +98,7 @@ public class MetricsTest {
 
         Set<MetricToAssert> allMetrics = getJvmMetricsToAssert();
 
-        await().atMost(10, SECONDS).untilAsserted(() -> {
+        await().atMost(TestTimeouts.get()).untilAsserted(() -> {
             Set<String> allMetricNames = getAllMetricNames("jvm.");
             assertThat(allMetricNames)
                     .containsAll(allMetrics.stream().map(MetricToAssert::name).toList());
@@ -117,7 +117,7 @@ public class MetricsTest {
         allMetrics.forEach(metricToAssert -> {
 
             // metric is there and has at least 1 reading
-            await().atMost(10, SECONDS)
+            await().atMost(TestTimeouts.get())
                     .untilAsserted(() -> assertThat(getMetrics(metricToAssert.name()))
                             .withFailMessage("The metric " + metricToAssert.name() + " is not defined")
                             .hasSizeGreaterThan(0));
@@ -125,7 +125,7 @@ public class MetricsTest {
             // skip assertions from flaky metrics
             if (!flakyMetrics.contains(metricToAssert.name())) {
                 // Correct values might take some time to register
-                await().atMost(10, SECONDS).untilAsserted(() -> assertThat(getLastReading(metricToAssert))
+                await().atMost(TestTimeouts.get()).untilAsserted(() -> assertThat(getLastReading(metricToAssert))
                         .withFailMessage("Metric must be greater than 0: " + metricToAssert.name)
                         .isGreaterThan(0d));
             }
@@ -140,7 +140,7 @@ public class MetricsTest {
                 .then()
                 .statusCode(200);
 
-        await().atMost(10, SECONDS).until(() -> getMetrics("http.server.request.duration").size() > 2);
+        await().atMost(TestTimeouts.get()).until(() -> getMetrics("http.server.request.duration").size() > 2);
 
         List<Map<String, Object>> metrics = getMetrics("http.server.request.duration");
 

@@ -22,6 +22,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.common.http.TestHTTPResource;
+import io.quarkus.test.timeouts.TestTimeouts;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.helpers.test.AssertSubscriber;
 
@@ -45,8 +46,8 @@ public class MultiDownloadBackPressureTest {
         CountingSubscriber subscriber = new CountingSubscriber();
         client.download().subscribe().withSubscriber(subscriber);
         subscriber.request(2);
-        await().atMost(Duration.ofSeconds(10)).until(() -> subscriber.received.get() == 2);
-        await().during(Duration.ofSeconds(2)).atMost(Duration.ofSeconds(10))
+        await().atMost(TestTimeouts.get()).until(() -> subscriber.received.get() == 2);
+        await().during(Duration.ofSeconds(2)).atMost(TestTimeouts.get())
                 .until(() -> subscriber.received.get() == 2 && Resource.emitted.get() < 512);
 
         subscriber.request(Long.MAX_VALUE);
@@ -65,7 +66,7 @@ public class MultiDownloadBackPressureTest {
         subscriber.awaitItems(1, Duration.ofSeconds(10));
         subscriber.cancel();
         AtomicInteger lastSeen = new AtomicInteger(-1);
-        await().during(Duration.ofSeconds(2)).atMost(Duration.ofSeconds(10))
+        await().during(Duration.ofSeconds(2)).atMost(TestTimeouts.get())
                 .until(() -> {
                     int now = Resource.emitted.get();
                     return now == lastSeen.getAndSet(now);

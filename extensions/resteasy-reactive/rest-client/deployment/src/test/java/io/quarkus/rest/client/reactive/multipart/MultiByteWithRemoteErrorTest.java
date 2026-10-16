@@ -3,7 +3,6 @@ package io.quarkus.rest.client.reactive.multipart;
 import static org.awaitility.Awaitility.await;
 
 import java.net.URI;
-import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -23,6 +22,7 @@ import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusExtensionTest;
+import io.quarkus.test.timeouts.TestTimeouts;
 import io.smallrye.mutiny.Multi;
 import io.vertx.core.Vertx;
 import io.vertx.core.net.NetServer;
@@ -60,7 +60,7 @@ public class MultiByteWithRemoteErrorTest {
         CompletableFuture<Integer> port = new CompletableFuture<>();
         netServer.listen().onComplete(server -> port.complete(server.result().actualPort()));
 
-        await().atMost(Duration.ofSeconds(5)).until(port::isDone);
+        await().atMost(TestTimeouts.get()).until(port::isDone);
 
         String uri = String.format("http://localhost:%s", port.get());
 

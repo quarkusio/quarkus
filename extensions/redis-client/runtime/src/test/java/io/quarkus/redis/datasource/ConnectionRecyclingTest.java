@@ -14,6 +14,7 @@ import io.quarkus.redis.datasource.pubsub.ReactivePubSubCommands;
 import io.quarkus.redis.runtime.datasource.BlockingRedisDataSourceImpl;
 import io.quarkus.redis.runtime.datasource.ReactivePubSubCommandsImpl;
 import io.quarkus.redis.runtime.datasource.ReactiveRedisDataSourceImpl;
+import io.quarkus.test.timeouts.TestTimeouts;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.subscription.Cancellable;
 import io.vertx.mutiny.redis.client.Redis;
@@ -76,7 +77,7 @@ public class ConnectionRecyclingTest extends DatasourceTestBase {
 
             // the connection must be returned to the pool even if it is delivered after cancellation
             RedisConnection recycledConnection = limitedRedis.connect()
-                    .await().atMost(Duration.ofSeconds(5));
+                    .await().atMost(TestTimeouts.get());
             recycledConnection.closeAndAwait();
             assertThat(functionInvoked).isFalse();
         } finally {
@@ -100,12 +101,12 @@ public class ConnectionRecyclingTest extends DatasourceTestBase {
             });
 
             // make sure the connection was acquired and the function is running before cancelling
-            assertThat(functionStarted.await(5, TimeUnit.SECONDS)).isTrue();
+            assertThat(functionStarted.await(TestTimeouts.get().toSeconds(), TimeUnit.SECONDS)).isTrue();
             cancellable.cancel();
 
             // cancelling the running operation must release the borrowed connection back to the pool
             RedisConnection recycledConnection = limitedRedis.connect()
-                    .await().atMost(Duration.ofSeconds(5));
+                    .await().atMost(TestTimeouts.get());
             recycledConnection.closeAndAwait();
         } finally {
             limitedRedis.closeAndAwait();
@@ -134,7 +135,7 @@ public class ConnectionRecyclingTest extends DatasourceTestBase {
             occupiedConnection.closeAndAwait();
 
             RedisConnection recycledConnection = limitedRedis.connect()
-                    .await().atMost(Duration.ofSeconds(5));
+                    .await().atMost(TestTimeouts.get());
             recycledConnection.closeAndAwait();
             assertThat(txInvoked).isFalse();
         } finally {
@@ -164,7 +165,7 @@ public class ConnectionRecyclingTest extends DatasourceTestBase {
             occupiedConnection.closeAndAwait();
 
             RedisConnection recycledConnection = limitedRedis.connect()
-                    .await().atMost(Duration.ofSeconds(5));
+                    .await().atMost(TestTimeouts.get());
             recycledConnection.closeAndAwait();
             assertThat(txInvoked).isFalse();
         } finally {
@@ -196,7 +197,7 @@ public class ConnectionRecyclingTest extends DatasourceTestBase {
             occupiedConnection.closeAndAwait();
 
             RedisConnection recycledConnection = limitedRedis.connect()
-                    .await().atMost(Duration.ofSeconds(5));
+                    .await().atMost(TestTimeouts.get());
             recycledConnection.closeAndAwait();
             assertThat(preTxInvoked).isFalse();
         } finally {
@@ -224,7 +225,7 @@ public class ConnectionRecyclingTest extends DatasourceTestBase {
             occupiedConnection.closeAndAwait();
 
             RedisConnection recycledConnection = limitedRedis.connect()
-                    .await().atMost(Duration.ofSeconds(5));
+                    .await().atMost(TestTimeouts.get());
             recycledConnection.closeAndAwait();
         } finally {
             limitedRedis.closeAndAwait();
@@ -241,12 +242,12 @@ public class ConnectionRecyclingTest extends DatasourceTestBase {
             ReactivePubSubCommandsImpl<String> pubsub = new ReactivePubSubCommandsImpl<>(limitedDataSource, String.class);
 
             ReactivePubSubCommands.ReactiveRedisSubscriber subscriber = pubsub.subscribe("channel", message -> {
-            }).await().atMost(Duration.ofSeconds(10));
+            }).await().atMost(TestTimeouts.get());
 
-            subscriber.unsubscribe().await().atMost(Duration.ofSeconds(10));
+            subscriber.unsubscribe().await().atMost(TestTimeouts.get());
 
             RedisConnection recycledConnection = limitedRedis.connect()
-                    .await().atMost(Duration.ofSeconds(5));
+                    .await().atMost(TestTimeouts.get());
             recycledConnection.closeAndAwait();
         } finally {
             limitedRedis.closeAndAwait();

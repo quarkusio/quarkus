@@ -2,8 +2,6 @@ package io.quarkus.grpc.protov2;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.time.Duration;
-
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
@@ -18,6 +16,7 @@ import io.grpc.examples.helloworld.v2.HelloWorldProtoV2;
 import io.grpc.examples.helloworld.v2.MutinyGreeterGrpc;
 import io.quarkus.grpc.GrpcClient;
 import io.quarkus.test.QuarkusExtensionTest;
+import io.quarkus.test.timeouts.TestTimeouts;
 
 public class ProtoV2Test {
 
@@ -37,7 +36,7 @@ public class ProtoV2Test {
     public void testProtoV2() {
         String s = stub.sayHello(HelloRequest.newBuilder().setName("proto v2").build())
                 .map(HelloReply::getMessage)
-                .await().atMost(Duration.ofSeconds(5));
+                .await().atMost(TestTimeouts.get());
         assertThat(s).isEqualTo("hello proto v2");
     }
 

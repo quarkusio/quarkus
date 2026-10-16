@@ -24,6 +24,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.common.http.TestHTTPResource;
+import io.quarkus.test.timeouts.TestTimeouts;
 import io.quarkus.vertx.http.ForwardedHandlerInitializer;
 import io.smallrye.certs.Format;
 import io.smallrye.certs.junit5.Alias;
@@ -108,7 +109,7 @@ class TrustedProxyTruststoreReloadTest {
         buildTruststore("proxy-b");
 
         // Wait for periodic reload to pick up the change
-        await().atMost(10, SECONDS).untilAsserted(() -> {
+        await().atMost(TestTimeouts.get()).untilAsserted(() -> {
             assertThat(requestWithClientAlias("proxy-b")).startsWith("https|somehost|").endsWith("|true");
         });
         assertThat(requestWithClientAlias("proxy-a")).startsWith("https|localhost").endsWith("|false");
@@ -116,7 +117,7 @@ class TrustedProxyTruststoreReloadTest {
         // Swap truststore to one with no proxy alias — proxy mustn't be trusted
         buildTruststore(null);
 
-        await().atMost(10, SECONDS).untilAsserted(() -> {
+        await().atMost(TestTimeouts.get()).untilAsserted(() -> {
             assertThat(requestWithClientAlias("proxy-b")).startsWith("https|localhost").endsWith("|false");
         });
         assertThat(requestWithClientAlias("proxy-a")).startsWith("https|localhost").endsWith("|false");

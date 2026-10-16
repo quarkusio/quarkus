@@ -3,7 +3,6 @@ package io.quarkus.grpc.examples.hello;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import java.time.Duration;
 import java.util.Map;
 
 import jakarta.inject.Inject;
@@ -20,6 +19,7 @@ import io.grpc.Channel;
 import io.grpc.StatusRuntimeException;
 import io.quarkus.grpc.test.utils.GRPCTestUtils;
 import io.quarkus.test.junit.QuarkusTest;
+import io.quarkus.test.timeouts.TestTimeouts;
 import io.vertx.core.Vertx;
 import io.vertx.grpc.client.GrpcClient;
 
@@ -58,11 +58,11 @@ class HelloWorldMutualTlsServiceTest extends HelloWorldMutualTlsServiceTestBase 
     public void testRolesHelloWorldServiceUsingMutinyStub() {
         HelloReply reply = MutinyGreeterGrpc.newMutinyStub(channel)
                 .sayHelloRoleUser(HelloRequest.newBuilder().setName("neo-blocking").build())
-                .await().atMost(Duration.ofSeconds(5));
+                .await().atMost(TestTimeouts.get());
         assertThat(reply.getMessage())
                 .isEqualTo("Hello neo-blocking from CN=testclient,O=Default Company Ltd,L=Default City,C=XX");
         assertThrows(StatusRuntimeException.class, () -> MutinyGreeterGrpc.newMutinyStub(channel)
                 .sayHelloRoleAdmin(HelloRequest.newBuilder().setName("neo-blocking").build())
-                .await().atMost(Duration.ofSeconds(5)));
+                .await().atMost(TestTimeouts.get()));
     }
 }

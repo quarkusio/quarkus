@@ -5,8 +5,6 @@ import static io.quarkus.rest.client.reactive.TestHeaderConfig.HEADER_PARAM_NAME
 import static io.quarkus.rest.client.reactive.TestRestClientListener.HEADER_PARAM_VALUE;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.time.Duration;
-
 import jakarta.enterprise.context.RequestScoped;
 import jakarta.enterprise.context.control.ActivateRequestContext;
 import jakarta.ws.rs.GET;
@@ -22,6 +20,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusExtensionTest;
+import io.quarkus.test.timeouts.TestTimeouts;
 import io.smallrye.mutiny.Uni;
 
 @ActivateRequestContext
@@ -44,7 +43,7 @@ public class RestClientListenerTest {
     @Test
     public void shouldCallRegisteredRestClient() {
         String result = client.get()
-                .await().atMost(Duration.ofSeconds(10));
+                .await().atMost(TestTimeouts.get());
         assertThat(result).isEqualTo(HEADER_PARAM_VALUE);
     }
 

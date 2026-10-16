@@ -1,7 +1,6 @@
 package io.quarkus.opentelemetry.deployment.metrics;
 
 import static io.opentelemetry.sdk.metrics.data.MetricDataType.*;
-import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.is;
 
@@ -26,6 +25,7 @@ import io.quarkus.opentelemetry.deployment.common.exporter.InMemoryMetricExporte
 import io.quarkus.opentelemetry.deployment.common.exporter.InMemoryMetricExporterProvider;
 import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.junit.common.JdkUtil;
+import io.quarkus.test.timeouts.TestTimeouts;
 import io.restassured.RestAssured;
 
 /**
@@ -105,7 +105,7 @@ public class JvmMetricsTest extends BaseJvmMetricsTest {
                 .statusCode(200)
                 .body(is("hello"));
 
-        Awaitility.await().atMost(10, SECONDS)
+        Awaitility.await().atMost(TestTimeouts.get())
                 .untilAsserted(
                         () -> assertThat(metricExporter.getFinishedMetricItems().stream()
                                 .map(MetricData::getName)

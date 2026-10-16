@@ -2,7 +2,6 @@ package io.quarkus.grpc.examples.hello;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.time.Duration;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -17,6 +16,7 @@ import examples.HelloRequest;
 import examples.MutinyGreeterGrpc;
 import io.grpc.Channel;
 import io.quarkus.grpc.test.utils.GRPCTestUtils;
+import io.quarkus.test.timeouts.TestTimeouts;
 import io.vertx.core.Deployable;
 import io.vertx.core.Vertx;
 import io.vertx.core.internal.VertxInternal;
@@ -98,7 +98,7 @@ abstract class HelloWorldNewServiceTestBase {
     public void testHelloWorldServiceUsingMutinyStub() {
         HelloReply reply = MutinyGreeterGrpc.newMutinyStub(channel)
                 .sayHello(HelloRequest.newBuilder().setName("neo-blocking").build())
-                .await().atMost(Duration.ofSeconds(5));
+                .await().atMost(TestTimeouts.get());
         assertThat(reply.getMessage()).isEqualTo("Hello neo-blocking");
     }
 

@@ -1,7 +1,6 @@
 package io.quarkus.websockets.next.test.errors;
 
 import java.net.URI;
-import java.time.Duration;
 
 import jakarta.inject.Inject;
 
@@ -11,6 +10,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.common.http.TestHTTPResource;
+import io.quarkus.test.timeouts.TestTimeouts;
 import io.quarkus.websockets.next.OnBinaryMessage;
 import io.quarkus.websockets.next.OnError;
 import io.quarkus.websockets.next.WebSocket;
@@ -38,7 +38,7 @@ public class RuntimeErrorCloseConnectionTest {
     void testError() {
         WSClient client = WSClient.create(vertx).connect(testUri);
         client.sendAndAwait(Buffer.buffer("1"));
-        Awaitility.await().atMost(Duration.ofSeconds(5)).until(() -> client.isClosed());
+        Awaitility.await().atMost(TestTimeouts.get()).until(() -> client.isClosed());
     }
 
     @WebSocket(path = "/echo")

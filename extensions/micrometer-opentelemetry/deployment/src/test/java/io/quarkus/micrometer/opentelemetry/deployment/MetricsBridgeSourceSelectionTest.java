@@ -4,7 +4,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 import static org.hamcrest.Matchers.is;
 
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -15,6 +14,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.devui.tests.DevUIJsonRPCTest;
 import io.quarkus.test.QuarkusDevModeTest;
+import io.quarkus.test.timeouts.TestTimeouts;
 import io.restassured.RestAssured;
 import tools.jackson.databind.JsonNode;
 
@@ -44,7 +44,7 @@ public class MetricsBridgeSourceSelectionTest extends DevUIJsonRPCTest {
 
         // Metrics still appear (via the OTel reader). Select everything the catalog knows, then
         // assert every stored series is source="otel" — no Micrometer-sourced duplicate slipped in.
-        await().atMost(Duration.ofSeconds(6)).untilAsserted(() -> {
+        await().atMost(TestTimeouts.get()).untilAsserted(() -> {
             selectAll();
             JsonNode snap = super.executeJsonRPCMethod("getSnapshot");
             JsonNode sections = snap.get("sections");

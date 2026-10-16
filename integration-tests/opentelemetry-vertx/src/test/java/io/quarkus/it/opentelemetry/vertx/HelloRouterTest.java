@@ -28,6 +28,7 @@ import org.junit.jupiter.api.Test;
 
 import io.opentelemetry.instrumentation.api.incubator.semconv.messaging.MessageOperation;
 import io.quarkus.test.junit.QuarkusTest;
+import io.quarkus.test.timeouts.TestTimeouts;
 import io.restassured.http.ContentType;
 import io.vertx.core.http.HttpMethod;
 
@@ -37,7 +38,7 @@ class HelloRouterTest extends SpanExporterBaseTest {
     @BeforeEach
     void reset() {
         given().get("/reset").then().statusCode(HTTP_OK);
-        await().atMost(5, TimeUnit.SECONDS).until(() -> getSpans().size() == 0);
+        await().atMost(TestTimeouts.get()).until(() -> getSpans().size() == 0);
     }
 
     @Test
@@ -48,7 +49,7 @@ class HelloRouterTest extends SpanExporterBaseTest {
                 .statusCode(HTTP_OK)
                 .body(equalTo("hello"));
 
-        await().atMost(5, TimeUnit.SECONDS).until(() -> getSpans().size() == 1);
+        await().atMost(TestTimeouts.get()).until(() -> getSpans().size() == 1);
         List<Map<String, Object>> spans = getSpans();
         assertEquals(1, spans.size());
 
@@ -68,7 +69,7 @@ class HelloRouterTest extends SpanExporterBaseTest {
                 .statusCode(HTTP_OK)
                 .body(equalTo("hello Naruto"));
 
-        await().atMost(5, TimeUnit.SECONDS).until(() -> getSpans().size() == 1);
+        await().atMost(TestTimeouts.get()).until(() -> getSpans().size() == 1);
         List<Map<String, Object>> spans = getSpans();
         assertEquals(1, spans.size());
 
@@ -90,7 +91,7 @@ class HelloRouterTest extends SpanExporterBaseTest {
                 .statusCode(HTTP_OK)
                 .body(equalTo("hello Naruto"));
 
-        await().atMost(5, TimeUnit.SECONDS).until(() -> spanSize(1));
+        await().atMost(TestTimeouts.get()).until(() -> spanSize(1));
         List<Map<String, Object>> spans = getSpans();
         assertEquals(1, spans.size());
 
@@ -112,7 +113,7 @@ class HelloRouterTest extends SpanExporterBaseTest {
                 .statusCode(HTTP_OK)
                 .body(equalTo("hello"));
 
-        await().atMost(5, TimeUnit.SECONDS).until(() -> getMessages().size() == 1);
+        await().atMost(TestTimeouts.get()).until(() -> getMessages().size() == 1);
 
         List<String> messages = getMessages();
         assertEquals(1, messages.size());

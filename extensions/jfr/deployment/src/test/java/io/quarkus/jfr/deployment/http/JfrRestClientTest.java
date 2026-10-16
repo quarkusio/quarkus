@@ -6,7 +6,6 @@ import static org.hamcrest.Matchers.is;
 
 import java.io.IOException;
 import java.nio.file.Files;
-import java.time.Duration;
 import java.util.List;
 
 import jakarta.ws.rs.GET;
@@ -22,6 +21,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusExtensionTest;
+import io.quarkus.test.timeouts.TestTimeouts;
 import io.smallrye.mutiny.Multi;
 import jdk.jfr.Recording;
 import jdk.jfr.consumer.RecordedEvent;
@@ -161,7 +161,7 @@ public class JfrRestClientTest {
         @GET
         @Path("/exercise-stream")
         public String exerciseStream() {
-            return String.join(",", streamingClient.stream().collect().asList().await().atMost(Duration.ofSeconds(5)));
+            return String.join(",", streamingClient.stream().collect().asList().await().atMost(TestTimeouts.get()));
         }
     }
 }

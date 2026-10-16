@@ -26,6 +26,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.common.http.TestHTTPResource;
+import io.quarkus.test.timeouts.TestTimeouts;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.Vertx;
 import io.vertx.ext.web.client.WebClient;
@@ -96,8 +97,8 @@ public class CancellableResponseFilterTest {
 
         try {
             // both filters run on a normal request
-            await().atMost(Duration.ofSeconds(10)).untilAtomic(NonCancellableResponseFilter.COUNT, equalTo(1));
-            await().atMost(Duration.ofSeconds(10)).untilAtomic(OtherResponseFilter.COUNT, equalTo(1));
+            await().atMost(TestTimeouts.get()).untilAtomic(NonCancellableResponseFilter.COUNT, equalTo(1));
+            await().atMost(TestTimeouts.get()).untilAtomic(OtherResponseFilter.COUNT, equalTo(1));
             assertEquals(2, Resource.COUNT.get());
         } finally {
             try {

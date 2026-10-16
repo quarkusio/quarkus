@@ -1,6 +1,5 @@
 package io.quarkus.observation.opentelemetry.deployment.common;
 
-import static java.util.concurrent.TimeUnit.SECONDS;
 import static java.util.stream.Collectors.toList;
 import static org.awaitility.Awaitility.await;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -15,6 +14,7 @@ import io.opentelemetry.sdk.common.CompletableResultCode;
 import io.opentelemetry.sdk.trace.data.SpanData;
 import io.opentelemetry.sdk.trace.export.SpanExporter;
 import io.quarkus.arc.Unremovable;
+import io.quarkus.test.timeouts.TestTimeouts;
 
 @Unremovable
 @ApplicationScoped
@@ -29,7 +29,7 @@ public class TestSpanExporter implements SpanExporter {
     }
 
     public void assertSpanCount(int spanCount) {
-        await().atMost(5, SECONDS).untilAsserted(
+        await().atMost(TestTimeouts.get()).untilAsserted(
                 () -> assertEquals(spanCount, finishedSpanItems.size(), "Spans: " + finishedSpanItems.toString()));
     }
 

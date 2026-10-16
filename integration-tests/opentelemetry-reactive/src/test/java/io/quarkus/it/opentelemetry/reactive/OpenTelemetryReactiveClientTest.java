@@ -18,7 +18,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 
 import jakarta.inject.Inject;
 
@@ -29,6 +28,7 @@ import org.junit.jupiter.api.Test;
 
 import io.opentelemetry.api.trace.SpanKind;
 import io.quarkus.test.junit.QuarkusTest;
+import io.quarkus.test.timeouts.TestTimeouts;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.http.HttpMethod;
 
@@ -42,7 +42,7 @@ public class OpenTelemetryReactiveClientTest {
     @AfterEach
     void reset() {
         given().get("/reset").then().statusCode(HTTP_OK);
-        await().atMost(5, TimeUnit.SECONDS).until(() -> getSpans().size() == 0);
+        await().atMost(TestTimeouts.get()).until(() -> getSpans().size() == 0);
     }
 
     @Test
@@ -50,7 +50,7 @@ public class OpenTelemetryReactiveClientTest {
         Uni<String> result = client.helloGet("Naruto");
         assertEquals("Hello Naruto", result.await().indefinitely());
 
-        await().atMost(5, TimeUnit.SECONDS).until(() -> getSpans().size() == 3);
+        await().atMost(TestTimeouts.get()).until(() -> getSpans().size() == 3);
         List<Map<String, Object>> spans = getSpans();
         assertEquals(3, spans.size());
         assertEquals(1, spans.stream().map(map -> map.get("traceId")).collect(toSet()).size());
@@ -85,7 +85,7 @@ public class OpenTelemetryReactiveClientTest {
         Uni<String> result = client.helloPost("Naruto");
         assertEquals("Hello Naruto", result.await().indefinitely());
 
-        await().atMost(5, TimeUnit.SECONDS).until(() -> getSpans().size() == 3);
+        await().atMost(TestTimeouts.get()).until(() -> getSpans().size() == 3);
 
         List<Map<String, Object>> spans = getSpans();
         assertEquals(3, spans.size());

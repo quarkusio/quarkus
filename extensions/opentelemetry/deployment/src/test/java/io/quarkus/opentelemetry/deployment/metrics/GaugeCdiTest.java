@@ -1,6 +1,5 @@
 package io.quarkus.opentelemetry.deployment.metrics;
 
-import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -31,6 +30,7 @@ import io.quarkus.opentelemetry.deployment.common.exporter.InMemoryMetricExporte
 import io.quarkus.opentelemetry.deployment.common.exporter.InMemoryMetricExporterProvider;
 import io.quarkus.opentelemetry.deployment.common.exporter.TestSpanExporterProvider;
 import io.quarkus.test.QuarkusExtensionTest;
+import io.quarkus.test.timeouts.TestTimeouts;
 
 public class GaugeCdiTest {
     @RegisterExtension
@@ -100,7 +100,7 @@ public class GaugeCdiTest {
     void validateMetricReaderClassloader() throws ExecutionException, InterruptedException, TimeoutException {
         CompletableFuture<Map<String, String>> testResultsFuture = gaugeBean.evaluateReaderClassloader();
 
-        Awaitility.await().atMost(5, SECONDS)
+        Awaitility.await().atMost(TestTimeouts.get())
                 .untilAsserted(() -> assertTrue(testResultsFuture.isDone()));
         Map<String, String> testResults = testResultsFuture.get();
 

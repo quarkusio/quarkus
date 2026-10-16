@@ -24,6 +24,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.common.http.TestHTTPResource;
+import io.quarkus.test.timeouts.TestTimeouts;
 
 public class SseBroadcasterCloseTestCase {
 
@@ -52,7 +53,7 @@ public class SseBroadcasterCloseTestCase {
                 client.target(uri.toString() + "sse-broadcaster/close").request().get(String.class);
 
                 // The registered sink's onClose listener must fire exactly once, not twice.
-                Awaitility.await().atMost(10, TimeUnit.SECONDS).untilAsserted(() -> Assertions.assertEquals("1",
+                Awaitility.await().atMost(TestTimeouts.get()).untilAsserted(() -> Assertions.assertEquals("1",
                         client.target(uri.toString() + "sse-broadcaster/close-count").request().get(String.class)));
             }
         } finally {

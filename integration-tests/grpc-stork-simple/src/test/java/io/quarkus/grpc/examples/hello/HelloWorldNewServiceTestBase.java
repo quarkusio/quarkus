@@ -1,7 +1,5 @@
 package io.quarkus.grpc.examples.hello;
 
-import java.time.Duration;
-
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -10,6 +8,7 @@ import examples.HelloReply;
 import examples.HelloRequest;
 import examples.MutinyGreeterGrpc;
 import io.quarkus.grpc.GrpcClient;
+import io.quarkus.test.timeouts.TestTimeouts;
 
 class HelloWorldNewServiceTestBase {
 
@@ -29,7 +28,7 @@ class HelloWorldNewServiceTestBase {
     public void testHelloWorldServiceUsingMutinyStub() {
         HelloReply reply = mutiny
                 .sayHello(HelloRequest.newBuilder().setName("neo-blocking").build())
-                .await().atMost(Duration.ofSeconds(5));
+                .await().atMost(TestTimeouts.get());
         Assertions.assertEquals(reply.getMessage(), "Hello neo-blocking");
     }
 

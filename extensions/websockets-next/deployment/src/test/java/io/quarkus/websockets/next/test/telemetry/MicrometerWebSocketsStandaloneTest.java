@@ -23,6 +23,7 @@ import io.quarkus.logging.Log;
 import io.quarkus.maven.dependency.Dependency;
 import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.common.http.TestHTTPResource;
+import io.quarkus.test.timeouts.TestTimeouts;
 import io.quarkus.websockets.next.OnError;
 import io.quarkus.websockets.next.OnOpen;
 import io.quarkus.websockets.next.WebSocket;
@@ -69,7 +70,7 @@ public class MicrometerWebSocketsStandaloneTest {
                     "Runtime exception happened on server side and connection is still open");
         });
 
-        Awaitility.await().atMost(Duration.ofSeconds(5)).untilAsserted(() -> {
+        Awaitility.await().atMost(TestTimeouts.get()).untilAsserted(() -> {
             getMetrics()
                     .body(assertServerConnectionOpeningFailedTotal("/on-connect-error", 1))
                     .body(assertServerErrorTotal("/on-connect-error", 1))
@@ -86,7 +87,7 @@ public class MicrometerWebSocketsStandaloneTest {
             assertTrue(connection.isOpen(), "Should never close");
         });
 
-        Awaitility.await().atMost(Duration.ofSeconds(5)).untilAsserted(() -> {
+        Awaitility.await().atMost(TestTimeouts.get()).untilAsserted(() -> {
             getMetrics()
                     .body(assertServerConnectionOpeningFailedTotal("/with-on-connect-error-handler", 0))
                     .body(assertServerErrorTotal("/with-on-connect-error-handler", 1))

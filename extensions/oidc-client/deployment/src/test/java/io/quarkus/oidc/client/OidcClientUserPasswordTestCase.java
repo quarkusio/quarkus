@@ -11,7 +11,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.Callable;
-import java.util.concurrent.TimeUnit;
 import java.util.logging.LogRecord;
 import java.util.stream.Collectors;
 
@@ -24,6 +23,7 @@ import io.quarkus.oidc.client.runtime.OidcClientImpl;
 import io.quarkus.oidc.common.runtime.OidcCommonUtils;
 import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.common.QuarkusTestResource;
+import io.quarkus.test.timeouts.TestTimeouts;
 import io.restassured.RestAssured;
 import io.restassured.response.Response;
 
@@ -126,7 +126,7 @@ public class OidcClientUserPasswordTestCase {
                 .body(equalTo("alice"));
 
         // Wait until the access token has expired
-        await().atMost(5, TimeUnit.SECONDS)
+        await().atMost(TestTimeouts.get())
                 .pollInterval(Duration.ofSeconds(1))
                 .until(new Callable<Boolean>() {
                     @Override

@@ -14,6 +14,7 @@ import io.quarkus.redis.datasource.value.ReactiveTransactionalValueCommands;
 import io.quarkus.redis.datasource.value.TransactionalValueCommands;
 import io.quarkus.redis.runtime.datasource.BlockingRedisDataSourceImpl;
 import io.quarkus.redis.runtime.datasource.ReactiveRedisDataSourceImpl;
+import io.quarkus.test.timeouts.TestTimeouts;
 
 @RequiresRedis6OrHigher
 public class TransactionalValueCommandsTest extends DatasourceTestBase {
@@ -64,7 +65,7 @@ public class TransactionalValueCommandsTest extends DatasourceTestBase {
                     .chain(() -> string.get(key))
                     .chain(() -> string.strlen("k2"))
                     .chain(() -> string.get("nonexisting_key"));
-        }).await().atMost(Duration.ofSeconds(5));
+        }).await().atMost(TestTimeouts.get());
         assertThat(result.size()).isEqualTo(6);
         assertThat(result.discarded()).isFalse();
         assertThat(result.<Void> get(0)).isNull();

@@ -1,7 +1,6 @@
 package io.quarkus.it.kafka;
 
 import static io.apicurio.registry.serde.avro.AvroSerdeConfig.USE_SPECIFIC_AVRO_READER;
-import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.awaitility.Awaitility.await;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasItems;
@@ -25,6 +24,7 @@ import io.quarkus.test.common.WithTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.kafka.InjectKafkaCompanion;
 import io.quarkus.test.kafka.KafkaCompanionResource;
+import io.quarkus.test.timeouts.TestTimeouts;
 import io.smallrye.reactive.messaging.kafka.companion.ConsumerTask;
 import io.smallrye.reactive.messaging.kafka.companion.KafkaCompanion;
 
@@ -81,7 +81,7 @@ public class KafkaAvroMixedVersionTest {
         List<ConsumerRecord<String, Pet>> received = consumer.awaitRecords(2, Duration.ofSeconds(10L)).getRecords();
 
         // Verify we can successfully use Legacy8ByteIdHandler (v2 mode)
-        await().atMost(10, SECONDS).until(() -> received.size() >= 2);
+        await().atMost(TestTimeouts.get()).until(() -> received.size() >= 2);
         List<String> pets = received.stream().map(r -> r.value().getName()).toList();
         assertThat(pets, hasItems("Shadow", "Whiskers"));
     }
@@ -118,7 +118,7 @@ public class KafkaAvroMixedVersionTest {
         List<ConsumerRecord<String, Pet>> received = consumer.awaitRecords(2, Duration.ofSeconds(10L)).getRecords();
 
         // Verify native v3-to-v3 communication works
-        await().atMost(10, SECONDS).until(() -> received.size() >= 2);
+        await().atMost(TestTimeouts.get()).until(() -> received.size() >= 2);
         List<String> pets = received.stream().map(r -> r.value().getName()).toList();
         assertThat(pets, hasItems("Rex", "Luna"));
     }

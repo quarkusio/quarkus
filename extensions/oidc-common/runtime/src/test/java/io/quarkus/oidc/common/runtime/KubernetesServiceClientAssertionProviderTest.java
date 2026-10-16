@@ -15,6 +15,7 @@ import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.oidc.common.runtime.config.OidcClientCommonConfig.Credentials.Jwt.Source;
+import io.quarkus.test.timeouts.TestTimeouts;
 import io.smallrye.jwt.build.Jwt;
 import io.vertx.core.Vertx;
 
@@ -39,7 +40,7 @@ class KubernetesServiceClientAssertionProviderTest {
 
             Awaitility.await()
                     .atLeast(Duration.ofSeconds(2))
-                    .atMost(Duration.ofSeconds(7))
+                    .atMost(TestTimeouts.get())
                     .untilAsserted(
                             () -> assertEquals(secondJwtBearerToken, clientAssertionProvider.clientAssertion.bearerToken()));
         } finally {
@@ -59,7 +60,7 @@ class KubernetesServiceClientAssertionProviderTest {
             String validToken = createJwtBearerToken();
             storeNewJwtBearerToken(emptyTokenPath, validToken);
 
-            Awaitility.await().atMost(Duration.ofSeconds(10))
+            Awaitility.await().atMost(TestTimeouts.get())
                     .untilAsserted(() -> assertEquals(validToken, clientAssertionProvider.getAvailableClientAssertion()));
         } finally {
             vertx.close().toCompletionStage().toCompletableFuture().join();
@@ -82,7 +83,7 @@ class KubernetesServiceClientAssertionProviderTest {
 
             Awaitility.await()
                     .atLeast(Duration.ofSeconds(2))
-                    .atMost(Duration.ofSeconds(7))
+                    .atMost(TestTimeouts.get())
                     .untilAsserted(() -> assertEquals(secondSvidToken, clientAssertionProvider.clientAssertion.bearerToken()));
         } finally {
             vertx.close().toCompletionStage().toCompletableFuture().join();

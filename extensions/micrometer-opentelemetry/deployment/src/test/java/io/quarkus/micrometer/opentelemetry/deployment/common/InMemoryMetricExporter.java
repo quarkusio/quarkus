@@ -25,6 +25,7 @@ import io.opentelemetry.sdk.metrics.data.MetricData;
 import io.opentelemetry.sdk.metrics.data.PointData;
 import io.opentelemetry.sdk.metrics.export.MetricExporter;
 import io.quarkus.arc.Unremovable;
+import io.quarkus.test.timeouts.TestTimeouts;
 
 @Unremovable
 @ApplicationScoped
@@ -67,19 +68,19 @@ public class InMemoryMetricExporter implements MetricExporter {
     }
 
     public MetricData getLastFinishedHistogramItem(String testSummary, int count) {
-        Awaitility.await().atMost(5, SECONDS)
+        Awaitility.await().atMost(TestTimeouts.get())
                 .untilAsserted(() -> Assertions.assertEquals(count, getFinishedMetricItems(testSummary, null).size()));
         List<MetricData> metricData = getFinishedMetricItems(testSummary, null);
         return metricData.get(metricData.size() - 1);// get last added entry which will be the most recent
     }
 
     public void assertCountDataPointsAtLeast(final String name, final String target, final int count) {
-        Awaitility.await().atMost(5, SECONDS)
+        Awaitility.await().atMost(TestTimeouts.get())
                 .untilAsserted(() -> Assertions.assertTrue(count < countMaxPoints(name, target)));
     }
 
     public void assertCountDataPointsAtLeastOrEqual(final String name, final String target, final int count) {
-        Awaitility.await().atMost(5, SECONDS)
+        Awaitility.await().atMost(TestTimeouts.get())
                 .untilAsserted(() -> Assertions.assertTrue(count <= countMaxPoints(name, target)));
     }
 

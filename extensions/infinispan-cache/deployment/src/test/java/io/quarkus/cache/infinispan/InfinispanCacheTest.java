@@ -33,6 +33,7 @@ import io.quarkus.cache.infinispan.runtime.InfinispanCacheInfo;
 import io.quarkus.infinispan.client.Remote;
 import io.quarkus.logging.Log;
 import io.quarkus.test.QuarkusExtensionTest;
+import io.quarkus.test.timeouts.TestTimeouts;
 import io.smallrye.mutiny.Uni;
 
 public class InfinispanCacheTest {
@@ -90,14 +91,14 @@ public class InfinispanCacheTest {
         assertThat(value).isEqualTo("one");
         assertThat(remoteCache.get(id)).isEqualTo("one");
         // Wait lifespan expiration
-        await().atMost(Duration.ofSeconds(3)).until(() -> remoteCache.get(id) == null);
+        await().atMost(TestTimeouts.get()).until(() -> remoteCache.get(id) == null);
         // key has expired
         assertThat(remoteCache.get(id)).isNull();
         value = awaitUni(cache.get(id, key -> "two"));
         assertThat(value).isEqualTo("two");
         assertThat(remoteCache.get(id)).isEqualTo("two");
         // Wait lifespan expiration
-        await().atMost(Duration.ofSeconds(3)).until(() -> remoteCache.get(id) == null);
+        await().atMost(TestTimeouts.get()).until(() -> remoteCache.get(id) == null);
         assertThat(remoteCache.get(id)).isNull();
     }
 
@@ -207,12 +208,12 @@ public class InfinispanCacheTest {
                 throw new RuntimeException(e);
             }
             return "thread1";
-        }).await().atMost(Duration.ofSeconds(10)));
+        }).await().atMost(TestTimeouts.get()));
 
         // Ensure first retrieval is in lambda before continuing
         barrier.await(10, TimeUnit.SECONDS);
 
-        Future<String> thread2 = fork(() -> cache.get(id, key -> "thread2").await().atMost(Duration.ofSeconds(10)));
+        Future<String> thread2 = fork(() -> cache.get(id, key -> "thread2").await().atMost(TestTimeouts.get()));
 
         barrier.await(1, TimeUnit.SECONDS);
 
@@ -234,14 +235,14 @@ public class InfinispanCacheTest {
         assertThat(value).isEqualTo("one");
         assertThat(remoteCache.get(id)).isEqualTo("one");
         // Wait lifespan expiration
-        await().atMost(Duration.ofSeconds(3)).until(() -> remoteCache.get(id) == null);
+        await().atMost(TestTimeouts.get()).until(() -> remoteCache.get(id) == null);
         // key has expired
         assertThat(remoteCache.get(id)).isNull();
         value = awaitUni(cache.getAsync(id, key -> Uni.createFrom().item("two")));
         assertThat(value).isEqualTo("two");
         assertThat(remoteCache.get(id)).isEqualTo("two");
         // Wait lifespan expiration
-        await().atMost(Duration.ofSeconds(3)).until(() -> remoteCache.get(id) == null);
+        await().atMost(TestTimeouts.get()).until(() -> remoteCache.get(id) == null);
         assertThat(remoteCache.get(id)).isNull();
     }
 
@@ -374,6 +375,6 @@ public class InfinispanCacheTest {
     }
 
     private static <T> T awaitUni(Uni<T> uni) {
-        return uni.await().atMost(Duration.ofSeconds(10));
+        return uni.await().atMost(TestTimeouts.get());
     }
 }

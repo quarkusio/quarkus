@@ -37,6 +37,8 @@ import org.hibernate.search.mapper.pojo.mapping.definition.annotation.FullTextFi
 import org.hibernate.search.mapper.pojo.mapping.definition.annotation.Indexed;
 import org.hibernate.search.mapper.pojo.mapping.definition.annotation.KeywordField;
 
+import io.quarkus.test.timeouts.TestTimeouts;
+
 @Path("/test/hibernate-search-outbox-polling")
 public class HibernateSearchOutboxPollingTestResource {
 
@@ -216,7 +218,7 @@ public class HibernateSearchOutboxPollingTestResource {
             await("Waiting for the formation of a cluster of " + expectedAgentCount + " agents")
                     .pollDelay(Duration.ZERO)
                     .pollInterval(Duration.ofMillis(5))
-                    .atMost(Duration.ofSeconds(10)) // CI can be rather slow...
+                    .atMost(TestTimeouts.get()) // CI can be rather slow...
                     .untilAsserted(() -> inTransaction(userTransaction, () -> {
                         List<Agent> agents = entityManager
                                 .createQuery("select a from " + OutboxPollingAgentAdditionalMappingProducer.ENTITY_NAME
@@ -235,7 +237,7 @@ public class HibernateSearchOutboxPollingTestResource {
             await("Waiting for all outbox events to be processed")
                     .pollDelay(Duration.ZERO)
                     .pollInterval(Duration.ofMillis(5))
-                    .atMost(Duration.ofSeconds(20)) // CI can be rather slow...
+                    .atMost(TestTimeouts.get()) // CI can be rather slow...
                     .untilAsserted(() -> inTransaction(userTransaction, () -> {
                         List<OutboxEvent> events = entityManager
                                 .createQuery("select e from " + OutboxPollingOutboxEventAdditionalMappingProducer.ENTITY_NAME

@@ -23,7 +23,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.Callable;
-import java.util.concurrent.TimeUnit;
 
 import org.hamcrest.Matchers;
 import org.htmlunit.FailingHttpStatusCodeException;
@@ -41,6 +40,7 @@ import io.quarkus.oidc.runtime.OidcUtils;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.keycloak.client.KeycloakTestClient;
+import io.quarkus.test.timeouts.TestTimeouts;
 import io.restassured.RestAssured;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpMethod;
@@ -334,7 +334,7 @@ public class BearerTokenAuthorizationTest {
             //Verify all the cookies are cleared after the session timeout
             webClient.getCache().clear();
 
-            await().atMost(10, TimeUnit.SECONDS)
+            await().atMost(TestTimeouts.get())
                     .pollInterval(Duration.ofSeconds(1))
                     .until(new Callable<Boolean>() {
                         @Override

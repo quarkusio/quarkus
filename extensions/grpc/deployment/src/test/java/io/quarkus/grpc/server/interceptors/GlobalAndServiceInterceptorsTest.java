@@ -2,8 +2,6 @@ package io.quarkus.grpc.server.interceptors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.time.Duration;
-
 import jakarta.enterprise.context.ApplicationScoped;
 
 import org.jboss.shrinkwrap.api.ShrinkWrap;
@@ -35,6 +33,7 @@ import io.quarkus.grpc.GrpcClient;
 import io.quarkus.grpc.GrpcService;
 import io.quarkus.grpc.RegisterInterceptor;
 import io.quarkus.test.QuarkusExtensionTest;
+import io.quarkus.test.timeouts.TestTimeouts;
 import io.smallrye.mutiny.Uni;
 
 public class GlobalAndServiceInterceptorsTest {
@@ -69,7 +68,7 @@ public class GlobalAndServiceInterceptorsTest {
     void shouldInvokeGlobalInterceptorAndNotInvokedUnregisteredLocal() {
         Uni<HelloReply> result = greeter.sayHello(HelloRequest.newBuilder().setName("ServiceA").build());
 
-        HelloReply helloReply = result.await().atMost(Duration.ofSeconds(5));
+        HelloReply helloReply = result.await().atMost(TestTimeouts.get());
         assertThat(helloReply.getMessage()).isEqualTo("Hello, ServiceA");
 
         assertThat(GlobalInterceptor.invoked).isTrue();
@@ -81,7 +80,7 @@ public class GlobalAndServiceInterceptorsTest {
     void shouldInvokeGlobalInterceptorAndInvokedRegisteredLocal() {
         Uni<HelloReply3> result = greeter3.sayHello(HelloRequest3.newBuilder().setName("ServiceB").build());
 
-        HelloReply3 helloReply = result.await().atMost(Duration.ofSeconds(5));
+        HelloReply3 helloReply = result.await().atMost(TestTimeouts.get());
         assertThat(helloReply.getMessage()).isEqualTo("Hello3, ServiceB");
 
         assertThat(GlobalInterceptor.invoked).isTrue();
@@ -93,7 +92,7 @@ public class GlobalAndServiceInterceptorsTest {
     void shouldInvokeGlobalInterceptorAndInvokedRegisteredLocalOnGrpcStub() {
         Uni<GoodbyeReply> result = farewell.sayGoodbye(GoodbyeRequest.newBuilder().setName("Farewell").build());
 
-        GoodbyeReply goodbyeReply = result.await().atMost(Duration.ofSeconds(5));
+        GoodbyeReply goodbyeReply = result.await().atMost(TestTimeouts.get());
         assertThat(goodbyeReply.getMessage()).isEqualTo("Goodbye, Farewell");
 
         assertThat(GlobalInterceptor.invoked).isTrue();

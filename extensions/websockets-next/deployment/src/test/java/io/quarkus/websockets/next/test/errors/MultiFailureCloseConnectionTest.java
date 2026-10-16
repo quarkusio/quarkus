@@ -3,7 +3,6 @@ package io.quarkus.websockets.next.test.errors;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.net.URI;
-import java.time.Duration;
 
 import jakarta.inject.Inject;
 
@@ -13,6 +12,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.common.http.TestHTTPResource;
+import io.quarkus.test.timeouts.TestTimeouts;
 import io.quarkus.websockets.next.OnError;
 import io.quarkus.websockets.next.OnTextMessage;
 import io.quarkus.websockets.next.WebSocket;
@@ -43,7 +43,7 @@ public class MultiFailureCloseConnectionTest {
         // "bar" should be sent back
         client.waitForMessages(1);
         // "foo" results in a failure -> connection closed
-        Awaitility.await().atMost(Duration.ofSeconds(5)).until(() -> client.isClosed());
+        Awaitility.await().atMost(TestTimeouts.get()).until(() -> client.isClosed());
         // "foo" and "baz" should never be sent back
         assertEquals(1, client.getMessages().size());
     }

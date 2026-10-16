@@ -7,7 +7,6 @@ import static io.quarkus.it.opentelemetry.reactive.Utils.getSpans;
 import static io.restassured.RestAssured.get;
 import static io.restassured.RestAssured.given;
 import static java.net.HttpURLConnection.HTTP_OK;
-import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.awaitility.Awaitility.await;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -27,6 +26,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import io.quarkus.test.timeouts.TestTimeouts;
 import io.restassured.response.ValidatableResponse;
 
 public abstract class AbstractEndUserTest {
@@ -51,7 +51,7 @@ public abstract class AbstractEndUserTest {
     @AfterEach
     public void reset() {
         given().get("/reset").then().statusCode(HTTP_OK);
-        await().atMost(5, SECONDS).until(() -> getSpans().isEmpty());
+        await().atMost(TestTimeouts.get()).until(() -> getSpans().isEmpty());
     }
 
     @Test

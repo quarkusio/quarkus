@@ -2,8 +2,6 @@ package io.quarkus.grpc.client;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.time.Duration;
-
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
@@ -31,6 +29,7 @@ import io.quarkus.grpc.GrpcClient;
 import io.quarkus.grpc.server.services.GoodbyeService;
 import io.quarkus.grpc.server.services.HelloService;
 import io.quarkus.test.QuarkusExtensionTest;
+import io.quarkus.test.timeouts.TestTimeouts;
 
 public class MultipleStubsInjectionTest {
 
@@ -90,7 +89,7 @@ public class MultipleStubsInjectionTest {
         public String invokeMutinyGreeter(String s) {
             return mutinyGreeter.sayHello(HelloRequest.newBuilder().setName(s).build())
                     .map(HelloReply::getMessage)
-                    .await().atMost(Duration.ofSeconds(5));
+                    .await().atMost(TestTimeouts.get());
         }
 
         public String invokeBlockingGreeter(String s) {
@@ -100,7 +99,7 @@ public class MultipleStubsInjectionTest {
         public String invokeMutinyFarewell(String s) {
             return mutinyFarewell.sayGoodbye(GoodbyeRequest.newBuilder().setName(s).build())
                     .map(GoodbyeReply::getMessage)
-                    .await().atMost(Duration.ofSeconds(5));
+                    .await().atMost(TestTimeouts.get());
         }
 
         public String invokeBlockingFarewell(String s) {

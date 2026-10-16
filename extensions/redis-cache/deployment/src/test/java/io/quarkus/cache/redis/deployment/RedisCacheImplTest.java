@@ -26,6 +26,7 @@ import org.testcontainers.containers.GenericContainer;
 import io.quarkus.cache.redis.runtime.RedisCacheImpl;
 import io.quarkus.cache.redis.runtime.RedisCacheInfo;
 import io.quarkus.test.QuarkusExtensionTest;
+import io.quarkus.test.timeouts.TestTimeouts;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.infrastructure.Infrastructure;
 import io.vertx.core.json.Json;
@@ -53,7 +54,7 @@ class RedisCacheImplTest {
     void clear() {
         try {
             redis.send(Request.cmd(Command.FLUSHALL).arg("SYNC")).await()
-                    .atMost(Duration.ofSeconds(10));
+                    .atMost(TestTimeouts.get());
         } catch (Exception ignored) {
             // ignored.
         }
@@ -193,7 +194,7 @@ class RedisCacheImplTest {
         assertThat(cache.get(k, String.class, s -> "hello", Duration.ofSeconds(1)).await().indefinitely()).isEqualTo("hello");
         assertThat(cache.get(k, String.class, String::toUpperCase, Duration.ofSeconds(1)).await().indefinitely())
                 .isEqualTo("hello");
-        await().atMost(Duration.ofSeconds(5)).until(() -> cache.getOrNull(k, String.class).await().indefinitely() == null);
+        await().atMost(TestTimeouts.get()).until(() -> cache.getOrNull(k, String.class).await().indefinitely() == null);
     }
 
     @Test
@@ -208,7 +209,7 @@ class RedisCacheImplTest {
         assertThat(cache.getAsync(k, String.class, s -> Uni.createFrom().item("hello"), Duration.ofSeconds(1)).await()
                 .indefinitely()).isEqualTo("hello");
         assertThat(cache.getOrNull(k, String.class).await().indefinitely()).isEqualTo("hello");
-        await().atMost(Duration.ofSeconds(5)).until(() -> cache.getOrNull(k, String.class).await().indefinitely() == null);
+        await().atMost(TestTimeouts.get()).until(() -> cache.getOrNull(k, String.class).await().indefinitely() == null);
     }
 
     @Test
@@ -221,7 +222,7 @@ class RedisCacheImplTest {
 
         cache.put(k, "hello", Duration.ofSeconds(1)).await().indefinitely();
         assertThat(cache.getOrNull(k, String.class).await().indefinitely()).isEqualTo("hello");
-        await().atMost(Duration.ofSeconds(5)).until(() -> cache.getOrNull(k, String.class).await().indefinitely() == null);
+        await().atMost(TestTimeouts.get()).until(() -> cache.getOrNull(k, String.class).await().indefinitely() == null);
     }
 
     @Test

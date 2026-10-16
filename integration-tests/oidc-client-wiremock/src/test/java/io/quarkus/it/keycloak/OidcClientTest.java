@@ -33,6 +33,7 @@ import com.github.tomakehurst.wiremock.client.WireMock;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.common.TestLog;
 import io.quarkus.test.junit.QuarkusTest;
+import io.quarkus.test.timeouts.TestTimeouts;
 import io.restassured.RestAssured;
 import io.restassured.response.Response;
 import io.vertx.core.json.JsonArray;
@@ -161,7 +162,7 @@ public class OidcClientTest {
 
     private static void waitUntillAccessTokenHasExpired(int expirationMs) {
         long expiredTokenTime = System.currentTimeMillis() + expirationMs;
-        await().atMost(10, TimeUnit.SECONDS)
+        await().atMost(TestTimeouts.get())
                 .pollInterval(Duration.ofSeconds(3))
                 .until(new Callable<Boolean>() {
                     @Override
@@ -312,13 +313,13 @@ public class OidcClientTest {
             // wait until it is clear that token was refreshed again (wouldn't happen without configured refresh interval)
             waitUntillAccessTokenHasExpired(2000);
 
-            Awaitility.await().atMost(Duration.ofSeconds(10))
+            Awaitility.await().atMost(TestTimeouts.get())
                     .untilAsserted(() -> server.verify(new CountMatchingStrategy(CountMatchingStrategy.GREATER_THAN, 0),
                             WireMock.postRequestedFor(urlEqualTo("/tokens-refresh-test")).withRequestBody(
                                     matching(".*refresh_token=refresh_token_" + tokenIndex + ".*"))));
 
             // check that call is made with the refreshed token
-            Awaitility.await().atMost(Duration.ofSeconds(3)).untilAsserted(() -> {
+            Awaitility.await().atMost(TestTimeouts.get()).untilAsserted(() -> {
                 String accessToken2 = RestAssured.when().get("/frontend/tokenRefreshInterval")
                         .then()
                         .statusCode(200)
@@ -362,7 +363,7 @@ public class OidcClientTest {
 
     private void checkLog() {
         given().await().pollInterval(100, TimeUnit.MILLISECONDS)
-                .atMost(10, TimeUnit.SECONDS)
+                .atMost(TestTimeouts.get())
                 .untilAsserted(new ThrowingRunnable() {
                     @Override
                     public void run() throws Throwable {

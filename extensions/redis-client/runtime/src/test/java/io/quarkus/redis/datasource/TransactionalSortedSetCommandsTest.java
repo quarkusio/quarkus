@@ -16,6 +16,7 @@ import io.quarkus.redis.datasource.sortedset.TransactionalSortedSetCommands;
 import io.quarkus.redis.datasource.transactions.TransactionResult;
 import io.quarkus.redis.runtime.datasource.BlockingRedisDataSourceImpl;
 import io.quarkus.redis.runtime.datasource.ReactiveRedisDataSourceImpl;
+import io.quarkus.test.timeouts.TestTimeouts;
 
 @RequiresRedis6OrHigher
 public class TransactionalSortedSetCommandsTest extends DatasourceTestBase {
@@ -64,7 +65,7 @@ public class TransactionalSortedSetCommandsTest extends DatasourceTestBase {
                     .chain(() -> set.zpopmin(key))
                     .chain(() -> set.zcard(key))
                     .chain(() -> set.zpopmax(key, 3));
-        }).await().atMost(Duration.ofSeconds(5));
+        }).await().atMost(TestTimeouts.get());
         assertThat(result.size()).isEqualTo(5);
         assertThat(result.discarded()).isFalse();
         assertThat((int) result.get(0)).isEqualTo(4);

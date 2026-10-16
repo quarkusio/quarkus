@@ -17,6 +17,7 @@ import org.junit.jupiter.api.Test;
 import io.quarkus.spiffe.client.SpiffeClient;
 import io.quarkus.spiffe.svid.jwt.WorkloadJsonWebToken;
 import io.quarkus.spiffe.svid.x509.WorkloadCertificateDocument;
+import io.quarkus.test.timeouts.TestTimeouts;
 import io.smallrye.jwt.build.Jwt;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.Vertx;
@@ -80,7 +81,7 @@ public class SpiffeClientAssertionProviderTest {
             String initialToken = awaitAssertion(provider);
             assertEquals(firstToken, initialToken);
 
-            Awaitility.await().atMost(Duration.ofSeconds(10))
+            Awaitility.await().atMost(TestTimeouts.get())
                     .untilAsserted(() -> {
                         String current = awaitAssertion(provider);
                         assertNotEquals(firstToken, current);
@@ -132,7 +133,7 @@ public class SpiffeClientAssertionProviderTest {
     }
 
     private static String awaitAssertion(SpiffeClientAssertionProvider provider) {
-        return provider.getClientAssertion().await().atMost(Duration.ofSeconds(5));
+        return provider.getClientAssertion().await().atMost(TestTimeouts.get());
     }
 
     private static class StubSpiffeClient implements SpiffeClient {

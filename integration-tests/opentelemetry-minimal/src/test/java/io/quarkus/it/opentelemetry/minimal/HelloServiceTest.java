@@ -3,13 +3,12 @@ package io.quarkus.it.opentelemetry.minimal;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 
-import java.time.Duration;
-
 import jakarta.inject.Inject;
 
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.test.junit.QuarkusTest;
+import io.quarkus.test.timeouts.TestTimeouts;
 
 @QuarkusTest
 public class HelloServiceTest {
@@ -19,7 +18,7 @@ public class HelloServiceTest {
 
     @Test
     public void testHello() {
-        Integer result = helloService.getMetricCount().await().atMost(Duration.ofSeconds(5));
+        Integer result = helloService.getMetricCount().await().atMost(TestTimeouts.get());
         System.out.println("Metric count: " + result);
         assertThat(result, greaterThanOrEqualTo(1));
     }

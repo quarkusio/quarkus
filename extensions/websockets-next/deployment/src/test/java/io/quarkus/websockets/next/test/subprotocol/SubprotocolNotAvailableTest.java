@@ -5,7 +5,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.net.URI;
-import java.time.Duration;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -21,6 +20,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.netty.handler.codec.http.websocketx.WebSocketClientHandshakeException;
 import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.common.http.TestHTTPResource;
+import io.quarkus.test.timeouts.TestTimeouts;
 import io.quarkus.websockets.next.OnOpen;
 import io.quarkus.websockets.next.WebSocket;
 import io.quarkus.websockets.next.test.utils.WSClient;
@@ -55,7 +55,7 @@ public class SubprotocolNotAvailableTest {
         assertFalse(Endpoint.OPEN_CALLED.get());
         // Wait until the CDI singleton context is destroyed
         // Otherwise the test app is shut down before the WebSocketSessionContext is ended properly
-        Awaitility.await().atMost(Duration.ofSeconds(5)).until(() -> Endpoint.SESSION_CONTEXT_DESTROYED.get());
+        Awaitility.await().atMost(TestTimeouts.get()).until(() -> Endpoint.SESSION_CONTEXT_DESTROYED.get());
     }
 
     @WebSocket(path = "/endpoint")

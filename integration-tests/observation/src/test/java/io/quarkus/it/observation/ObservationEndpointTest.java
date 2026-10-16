@@ -1,13 +1,13 @@
 package io.quarkus.it.observation;
 
 import static io.restassured.RestAssured.given;
-import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.awaitility.Awaitility.await;
 import static org.hamcrest.Matchers.is;
 
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.test.junit.QuarkusTest;
+import io.quarkus.test.timeouts.TestTimeouts;
 
 @QuarkusTest
 public class ObservationEndpointTest {
@@ -21,7 +21,7 @@ public class ObservationEndpointTest {
                 .body(is("manual-result"));
 
         // Timers are asserted with count = 0 — correct for a CompositeMeterRegistry with no sub-registries
-        await().atMost(5, SECONDS).untilAsserted(() -> {
+        await().atMost(TestTimeouts.get()).untilAsserted(() -> {
             given().get("/timer/manual.operation")
                     .then()
                     .statusCode(200)
@@ -38,7 +38,7 @@ public class ObservationEndpointTest {
                 .statusCode(200)
                 .body(is("nested-result"));
 
-        await().atMost(5, SECONDS).untilAsserted(() -> {
+        await().atMost(TestTimeouts.get()).untilAsserted(() -> {
             given().get("/timer/parent.operation")
                     .then()
                     .statusCode(200)
@@ -60,7 +60,7 @@ public class ObservationEndpointTest {
                 .statusCode(200)
                 .body(is("observed-result"));
 
-        await().atMost(5, SECONDS).untilAsserted(() -> {
+        await().atMost(TestTimeouts.get()).untilAsserted(() -> {
             given().get("/timer/doWork")
                     .then()
                     .statusCode(200)

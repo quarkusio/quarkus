@@ -630,7 +630,7 @@ public class QuarkusPlugin implements Plugin<Project> {
             LaunchMode launchMode, String quarkusModelFile) {
         var declaredDepsProvider = project.getProviders()
                 .provider(() -> dependencyDataCollector.collectDeclaredDependencies(
-                        project, classpath.getDeploymentConfiguration()));
+                        project, classpath.getDeploymentConfiguration(), classpath.resolvePlatformSpec()));
         task.getProjectDescriptor().set(projectDescriptor);
         task.getDeclaredDependencyCollectorEnabled().set(declaredDependencyCollectorEnabled(project));
         task.getLaunchMode().set(launchMode);

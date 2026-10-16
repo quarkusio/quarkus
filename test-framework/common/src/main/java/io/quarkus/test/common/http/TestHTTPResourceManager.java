@@ -123,7 +123,10 @@ public class TestHTTPResourceManager {
 
     public static String testUrl(ValueRegistry valueRegistry, Config config, String... paths) {
         String host = host(config, "quarkus.http.host");
-        int port = valueRegistry.getOrDefault(ListeningAddress.HTTP_TEST_PORT, 8081);
+        // When served by the Lambda mock event server, there is no Vert.x HTTP server registering the test port
+        int port = valueRegistry.containsKey(ListeningAddress.LAMBDA_BASE_URI)
+                ? valueRegistry.get(ListeningAddress.LAMBDA_BASE_URI).getPort()
+                : valueRegistry.getOrDefault(ListeningAddress.HTTP_TEST_PORT, 8081);
         String rootPath = rootPath(config, paths);
         return "http://" + host + ":" + port + rootPath;
     }

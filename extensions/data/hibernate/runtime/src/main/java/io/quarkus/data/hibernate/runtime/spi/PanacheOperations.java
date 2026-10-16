@@ -3,6 +3,7 @@ package io.quarkus.data.hibernate.runtime.spi;
 import java.util.Map;
 import java.util.stream.Stream;
 
+import jakarta.data.restrict.Restriction;
 import jakarta.persistence.LockModeType;
 
 import io.quarkus.data.hibernate.runtime.hr.ManagedReactiveOperations;
@@ -95,4 +96,12 @@ public interface PanacheOperations<One, Many, Query, Count, Completion, Confirma
     Count update(Class<?> entityClass, String query, Object... params);
 
     Count update(Class<?> entityClass, String query, Map<String, Object> params);
+
+    <T> Query find(Class<?> entityClass, Restriction<T> restriction);
+
+    <T> Many list(Class<?> entityClass, Restriction<T> restriction);
+
+    <T> Count count(Class<?> entityClass, Restriction<T> restriction);
+
+    <T> Count delete(Class<?> entityClass, Restriction<T> restriction);
 }

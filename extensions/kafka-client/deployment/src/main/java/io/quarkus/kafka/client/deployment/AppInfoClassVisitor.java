@@ -12,7 +12,7 @@ import io.quarkus.gizmo.Gizmo;
 
 /**
  * ASM {@link ClassVisitor} that rewrites {@code registerAppInfo} and {@code unregisterAppInfo}
- * in {@code org.apache.kafka.common.utils.AppInfoParser} to skip JMX MBean registration/unregistration
+ * in Kafka\'s {@code AppInfoParser} to skip JMX MBean registration/unregistration
  * while preserving the calls to {@code registerMetrics} and {@code unregisterMetrics}.
  * <p>
  * The original methods register/unregister JMX MBeans which causes "Error registering AppInfo mbean"
@@ -27,8 +27,8 @@ import io.quarkus.gizmo.Gizmo;
  */
 class AppInfoClassVisitor extends ClassVisitor {
 
-    private static final String APP_INFO_PARSER = "org/apache/kafka/common/utils/AppInfoParser";
-    private static final String APP_INFO_INNER = "org/apache/kafka/common/utils/AppInfoParser$AppInfo";
+    private String appInfoParser;
+    private String appInfoInner;
     private static final String METRICS = "org/apache/kafka/common/metrics/Metrics";
 
     private boolean hasClientIdParam;
@@ -36,6 +36,13 @@ class AppInfoClassVisitor extends ClassVisitor {
 
     AppInfoClassVisitor(ClassVisitor classVisitor) {
         super(Gizmo.ASM_API_VERSION, classVisitor);
+    }
+
+    @Override
+    public void visit(int version, int access, String name, String signature, String superName, String[] interfaces) {
+        this.appInfoParser = name;
+        this.appInfoInner = name + "$AppInfo";
+        super.visit(version, access, name, signature, superName, interfaces);
     }
 
     @Override
@@ -98,20 +105,20 @@ class AppInfoClassVisitor extends ClassVisitor {
         mv.visitVarInsn(Opcodes.ALOAD, 2);
 
         // Create new AppInfoParser.AppInfo(nowMs)
-        mv.visitTypeInsn(Opcodes.NEW, APP_INFO_INNER);
+        mv.visitTypeInsn(Opcodes.NEW, appInfoInner);
         mv.visitInsn(Opcodes.DUP);
         mv.visitVarInsn(Opcodes.LLOAD, 3); // nowMs
-        mv.visitMethodInsn(Opcodes.INVOKESPECIAL, APP_INFO_INNER, "<init>", "(J)V", false);
+        mv.visitMethodInsn(Opcodes.INVOKESPECIAL, appInfoInner, "<init>", "(J)V", false);
 
         if (hasClientIdParam) {
             // Kafka >= 4.2: registerMetrics(metrics, appInfo, id)
             mv.visitVarInsn(Opcodes.ALOAD, 1); // id
-            mv.visitMethodInsn(Opcodes.INVOKESTATIC, APP_INFO_PARSER, "registerMetrics",
-                    "(L" + METRICS + ";L" + APP_INFO_INNER + ";Ljava/lang/String;)V", false);
+            mv.visitMethodInsn(Opcodes.INVOKESTATIC, appInfoParser, "registerMetrics",
+                    "(L" + METRICS + ";L" + appInfoInner + ";Ljava/lang/String;)V", false);
         } else {
             // Kafka < 4.2: registerMetrics(metrics, appInfo)
-            mv.visitMethodInsn(Opcodes.INVOKESTATIC, APP_INFO_PARSER, "registerMetrics",
-                    "(L" + METRICS + ";L" + APP_INFO_INNER + ";)V", false);
+            mv.visitMethodInsn(Opcodes.INVOKESTATIC, appInfoParser, "registerMetrics",
+                    "(L" + METRICS + ";L" + appInfoInner + ";)V", false);
         }
 
         mv.visitInsn(Opcodes.RETURN);
@@ -141,11 +148,11 @@ class AppInfoClassVisitor extends ClassVisitor {
         if (hasClientIdParam) {
             // Kafka >= 4.2: unregisterMetrics(metrics, id)
             mv.visitVarInsn(Opcodes.ALOAD, 1); // id
-            mv.visitMethodInsn(Opcodes.INVOKESTATIC, APP_INFO_PARSER, "unregisterMetrics",
+            mv.visitMethodInsn(Opcodes.INVOKESTATIC, appInfoParser, "unregisterMetrics",
                     "(L" + METRICS + ";Ljava/lang/String;)V", false);
         } else {
             // Kafka < 4.2: unregisterMetrics(metrics)
-            mv.visitMethodInsn(Opcodes.INVOKESTATIC, APP_INFO_PARSER, "unregisterMetrics",
+            mv.visitMethodInsn(Opcodes.INVOKESTATIC, appInfoParser, "unregisterMetrics",
                     "(L" + METRICS + ";)V", false);
         }
 

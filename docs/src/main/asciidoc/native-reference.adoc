@@ -805,7 +805,7 @@ You can find instructions on how to quickly set up this application in this guid
 
 This debugging guide has the following requirements:
 
-* JDK 17 installed with `JAVA_HOME` configured appropriately
+* JDK 21+ installed with `JAVA_HOME` configured appropriately
 * Apache Maven {maven-version}
 * A working container runtime (Docker, podman)
 

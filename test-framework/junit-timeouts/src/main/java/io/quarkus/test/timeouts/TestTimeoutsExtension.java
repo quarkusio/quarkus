@@ -1,5 +1,6 @@
 package io.quarkus.test.timeouts;
 
+import java.lang.reflect.Method;
 import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.security.CodeSource;
@@ -12,13 +13,17 @@ import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
+import org.junit.jupiter.api.extension.InvocationInterceptor;
+import org.junit.jupiter.api.extension.ReflectiveInvocationContext;
 
 /**
  * A global JUnit extension (registered through autodetection) that resolves the timeout of each test and exposes it
  * through {@link TestTimeouts#get()}.
  */
-public class TestTimeoutsExtension implements BeforeAllCallback, AfterAllCallback, BeforeEachCallback, AfterEachCallback {
+public class TestTimeoutsExtension implements BeforeAllCallback, AfterAllCallback, BeforeEachCallback, AfterEachCallback,
+        InvocationInterceptor {
 
+    private static final TimeLimitInterceptor INTERCEPTOR = new TimeLimitInterceptor();
     private static final Map<Path, Module> MODULES = new ConcurrentHashMap<>();
 
     private record Module(TimeoutResolver resolver, String path) {
@@ -38,6 +43,18 @@ public class TestTimeoutsExtension implements BeforeAllCallback, AfterAllCallbac
     public void afterEach(ExtensionContext context) {
         // back to the class level value, in case the class level callbacks still need it
         publish(context, null);
+    }
+
+    @Override
+    public void interceptTestMethod(Invocation<Void> invocation, ReflectiveInvocationContext<Method> invocationContext,
+            ExtensionContext extensionContext) throws Throwable {
+        INTERCEPTOR.interceptTestMethod(invocation, invocationContext, extensionContext);
+    }
+
+    @Override
+    public void interceptTestTemplateMethod(Invocation<Void> invocation,
+            ReflectiveInvocationContext<Method> invocationContext, ExtensionContext extensionContext) throws Throwable {
+        INTERCEPTOR.interceptTestTemplateMethod(invocation, invocationContext, extensionContext);
     }
 
     @Override

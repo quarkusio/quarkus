@@ -69,6 +69,7 @@
         <dependency>
             <groupId>com.aayushatharva.brotli4j</groupId>
             <artifactId>brotli4j</artifactId>
+            <optional>true</optional>
         </dependency>
         <dependency>
             <groupId>org.graalvm.sdk</groupId>

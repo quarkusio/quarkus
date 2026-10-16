@@ -141,12 +141,32 @@ quarkus.http.compression-level=6
 ==== Brotli compression
 
 Brotli compression is not available by default.
-Enable it by adding `br` to the compressors list:
+It relies on the Brotli4J library, which Quarkus does not add to your application unless you ask for it.
+
+First, add the dependency:
+
+[source,xml]
+----
+<dependency>
+    <groupId>com.aayushatharva.brotli4j</groupId>
+    <artifactId>brotli4j</artifactId>
+</dependency>
+----
+
+The version is managed by the Quarkus BOM, so you do not need to specify one.
+
+Then add `br` to the compressors list:
 
 [source,properties]
 ----
 quarkus.http.compressors=deflate,gzip,br
 ----
+
+If `br` is configured while Brotli4J is missing, the build fails with a message pointing at this dependency.
+
+NOTE: Brotli4J ships its native library in a separate, platform-specific artifact such as `native-linux-x86_64`.
+Maven selects the right one automatically through the profiles declared in the `brotli4j` POM.
+Build tools that ignore Maven profiles, such as Gradle, need that artifact declared explicitly as well.
 
 TIP: Enabling Brotli adds approximately 1MB to native executable size because it requires bundling the Brotli4J native library.
 

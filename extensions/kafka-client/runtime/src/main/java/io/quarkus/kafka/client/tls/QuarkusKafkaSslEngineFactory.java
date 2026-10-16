@@ -49,11 +49,20 @@ public class QuarkusKafkaSslEngineFactory implements SslEngineFactory {
             SslConfigs.SSL_SECURE_RANDOM_IMPLEMENTATION_CONFIG);
 
     private TlsConfiguration configuration;
-    private SSLContext sslContext;
+
+    public QuarkusKafkaSslEngineFactory() {
+    }
+
+    // Allows testing the same registry configuration across certificate rotations.
+    QuarkusKafkaSslEngineFactory(TlsConfiguration configuration) {
+        this.configuration = configuration;
+    }
 
     @Override
     public SSLEngine createClientSslEngine(String peerHost, int peerPort, String endpointIdentification) {
-        SSLEngine sslEngine = sslContext.createSSLEngine(peerHost, peerPort);
+        // Fetch the current TLS material for each new connection. The registry may have
+        // reloaded the certificate since the previous Kafka connection was created.
+        SSLEngine sslEngine = createSslContext().createSSLEngine(peerHost, peerPort);
         sslEngine.setUseClientMode(true);
         SSLParameters sslParameters = sslEngine.getSSLParameters();
         sslParameters.setEndpointIdentificationAlgorithm(endpointIdentification);
@@ -88,7 +97,6 @@ public class QuarkusKafkaSslEngineFactory implements SslEngineFactory {
 
     @Override
     public void close() throws IOException {
-        this.sslContext = null;
         this.configuration = null;
     }
 
@@ -106,16 +114,24 @@ public class QuarkusKafkaSslEngineFactory implements SslEngineFactory {
             TlsConfigurationRegistry registry = tlsConfig.get();
             configuration = registry.get(tlsConfigName)
                     .orElseThrow(() -> new IllegalArgumentException("No TLS configuration found for name " + tlsConfigName));
-            try {
-                sslContext = configuration.createSSLContext();
-            } catch (Exception e) {
-                throw new RuntimeException("Failed to create SSLContext", e);
-            }
+            createSslContext(); // Fail fast for invalid TLS material at configuration time.
             String clientId = (String) configs.get(CommonClientConfigs.CLIENT_ID_CONFIG);
             log.debugf("Configured Kafka client '%s' QuarkusKafkaSslEngineFactory with TLS configuration : %s",
                     clientId, tlsConfigName);
         }
 
+    }
+
+    private SSLContext createSslContext() {
+        TlsConfiguration tlsConfiguration = configuration;
+        if (tlsConfiguration == null) {
+            throw new IllegalStateException("Kafka SSL engine factory is not configured");
+        }
+        try {
+            return tlsConfiguration.createSSLContext();
+        } catch (Exception e) {
+            throw new IllegalStateException("Failed to create SSLContext from Kafka TLS configuration", e);
+        }
     }
 
     /**

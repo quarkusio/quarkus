@@ -18,11 +18,11 @@ import org.eclipse.microprofile.rest.client.RestClientBuilder;
 import org.jboss.resteasy.reactive.MultipartForm;
 import org.jboss.resteasy.reactive.PartType;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.timeouts.TestTimeouts;
+import io.quarkus.test.timeouts.TimeLimit;
 import io.smallrye.mutiny.Multi;
 import io.vertx.core.Vertx;
 import io.vertx.core.net.NetServer;
@@ -44,7 +44,7 @@ public class MultiByteWithRemoteErrorTest {
      * verify that the client didn't hang and got some exception
      */
     @Test
-    @Timeout(10)
+    @TimeLimit
     void shouldFailGracefullyOnRemoteError() throws ExecutionException, InterruptedException {
         NetServerOptions options = new NetServerOptions()
                 .setHost("localhost");

@@ -7,7 +7,6 @@ import jakarta.transaction.Transactional;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.grpc.GrpcClient;
@@ -16,6 +15,7 @@ import io.quarkus.grpc.test.blocking.inheritance.BlockingTestService;
 import io.quarkus.grpc.test.blocking.inheritance.BlockingTestServiceGrpc;
 import io.quarkus.grpc.test.blocking.inheritance.InheritenceTest;
 import io.quarkus.test.QuarkusExtensionTest;
+import io.quarkus.test.timeouts.TimeLimit;
 import io.smallrye.common.annotation.NonBlocking;
 import io.smallrye.mutiny.Uni;
 
@@ -33,25 +33,25 @@ public class BlockingFromTransactionalTest {
     BlockingTestService client;
 
     @Test
-    @Timeout(5)
+    @TimeLimit
     void shouldBlockOnInheritedClassLevelTransactional() {
         assertThat(client.notOverridden1(message()).await().indefinitely().getText()).isEqualTo(BLOCKING);
     }
 
     @Test
-    @Timeout(5)
+    @TimeLimit
     void shouldNotBlockOnInheritedTransactionalMarkedNonBlocking() {
         assertThat(client.notOverridden2(message()).await().indefinitely().getText()).isEqualTo(NON_BLOCKING);
     }
 
     @Test
-    @Timeout(5)
+    @TimeLimit
     void shouldNotBlockOnOverriddenTransactionalMarkedNonBlocking() {
         assertThat(client.overridden1(message()).await().indefinitely().getText()).isEqualTo(NON_BLOCKING);
     }
 
     @Test
-    @Timeout(5)
+    @TimeLimit
     void shouldBlockOnOverriddenTransactional() {
         assertThat(client.overridden2(message()).await().indefinitely().getText()).isEqualTo(BLOCKING);
     }

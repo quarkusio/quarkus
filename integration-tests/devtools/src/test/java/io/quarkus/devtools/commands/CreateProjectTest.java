@@ -27,7 +27,6 @@ import java.util.stream.IntStream;
 import org.apache.maven.model.Model;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.Timeout;
 
 import io.quarkus.devtools.commands.data.QuarkusCommandException;
 import io.quarkus.devtools.commands.data.QuarkusCommandOutcome;
@@ -37,6 +36,7 @@ import io.quarkus.devtools.project.QuarkusProjectHelper;
 import io.quarkus.devtools.testing.PlatformAwareTestBase;
 import io.quarkus.devtools.testing.SnapshotTesting;
 import io.quarkus.maven.utilities.MojoUtils;
+import io.quarkus.test.timeouts.TimeLimit;
 
 public class CreateProjectTest extends PlatformAwareTestBase {
     @Test
@@ -231,7 +231,7 @@ public class CreateProjectTest extends PlatformAwareTestBase {
     }
 
     @Test
-    @Timeout(6)
+    @TimeLimit
     @DisplayName("Should create correctly multiple times in parallel with multiple threads")
     void createMultipleTimes() throws InterruptedException {
         final ExecutorService executorService = Executors.newFixedThreadPool(4);

@@ -17,12 +17,12 @@ import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.rest.client.reactive.headers.ClientHeaderParamFromPropertyTest;
 import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.common.http.TestHTTPResource;
+import io.quarkus.test.timeouts.TimeLimit;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.Vertx;
 
@@ -49,7 +49,7 @@ public class ConnectionPoolSizeTest {
     }
 
     @Test
-    @Timeout(5)
+    @TimeLimit
     void shouldPerform21CallsWithQueuing() throws InterruptedException {
         Client client = QuarkusRestClientBuilder.newBuilder().baseUri(uri)
                 .build(Client.class);
@@ -62,7 +62,7 @@ public class ConnectionPoolSizeTest {
     }
 
     @Test
-    @Timeout(5)
+    @TimeLimit
     void shouldPerform5CallsWithoutQueueingOnQueue6() throws InterruptedException {
         Client client = QuarkusRestClientBuilder.newBuilder().baseUri(uri)
                 .property(QuarkusRestClientProperties.CONNECTION_POOL_SIZE, 6)
@@ -76,7 +76,7 @@ public class ConnectionPoolSizeTest {
     }
 
     @Test
-    @Timeout(5)
+    @TimeLimit
     void shouldPerform5CallsWithQueueingOnQueue4() throws InterruptedException {
         Client client = QuarkusRestClientBuilder.newBuilder().baseUri(uri)
                 .property(QuarkusRestClientProperties.CONNECTION_POOL_SIZE, 4)

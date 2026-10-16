@@ -10,7 +10,6 @@ import org.assertj.core.api.Assertions;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import com.google.protobuf.ByteString;
@@ -25,6 +24,7 @@ import io.quarkus.grpc.server.services.AssertHelper;
 import io.quarkus.grpc.server.services.BlockingMutinyTestService;
 import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.timeouts.TestTimeouts;
+import io.quarkus.test.timeouts.TimeLimit;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 
@@ -48,7 +48,7 @@ public class BlockingMethodsWithMutinyImplTest {
     MutinyBlockingTestServiceGrpc.MutinyBlockingTestServiceStub mutiny;
 
     @Test
-    @Timeout(5)
+    @TimeLimit
     public void testEmpty() {
         EmptyProtos.Empty empty = service
                 .emptyCall(EmptyProtos.Empty.newBuilder().build());
@@ -56,7 +56,7 @@ public class BlockingMethodsWithMutinyImplTest {
     }
 
     @Test
-    @Timeout(5)
+    @TimeLimit
     public void testBlockingEmpty() {
         EmptyProtos.Empty empty = service
                 .emptyCallBlocking(EmptyProtos.Empty.newBuilder().build());
@@ -64,7 +64,7 @@ public class BlockingMethodsWithMutinyImplTest {
     }
 
     @Test
-    @Timeout(5)
+    @TimeLimit
     public void testUnaryMethod() {
         Messages.SimpleResponse response = service
                 .unaryCall(Messages.SimpleRequest.newBuilder().build());
@@ -72,7 +72,7 @@ public class BlockingMethodsWithMutinyImplTest {
     }
 
     @Test
-    @Timeout(5)
+    @TimeLimit
     public void testUnaryMethodBlocking() {
         Messages.SimpleResponse response = service
                 .unaryCallBlocking(Messages.SimpleRequest.newBuilder().build());
@@ -80,7 +80,7 @@ public class BlockingMethodsWithMutinyImplTest {
     }
 
     @Test
-    @Timeout(5)
+    @TimeLimit
     public void testStreamingOutMethod() {
         Iterator<Messages.StreamingOutputCallResponse> iterator = service
                 .streamingOutputCall(Messages.StreamingOutputCallRequest.newBuilder().build());
@@ -94,7 +94,7 @@ public class BlockingMethodsWithMutinyImplTest {
     }
 
     @Test
-    @Timeout(5)
+    @TimeLimit
     public void testStreamingOutMethodBlocking() {
         Iterator<Messages.StreamingOutputCallResponse> iterator = service
                 .streamingOutputCallBlocking(Messages.StreamingOutputCallRequest.newBuilder().build());
@@ -109,7 +109,7 @@ public class BlockingMethodsWithMutinyImplTest {
     }
 
     @Test
-    @Timeout(5)
+    @TimeLimit
     public void testStreamingInMethodWithMutinyClient() {
         Multi<Messages.StreamingInputCallRequest> input = Multi.createFrom().items("a", "b", "c", "d")
                 .map(s -> Messages.Payload.newBuilder().setBody(ByteString.copyFromUtf8(s)).build())
@@ -120,7 +120,7 @@ public class BlockingMethodsWithMutinyImplTest {
     }
 
     @Test
-    @Timeout(5)
+    @TimeLimit
     public void testStreamingInMethodBlockingWithMutinyClient() {
         Multi<Messages.StreamingInputCallRequest> input = Multi.createFrom().items("a", "b", "c", "d")
                 .map(s -> Messages.Payload.newBuilder().setBody(ByteString.copyFromUtf8(s)).build())
@@ -131,7 +131,7 @@ public class BlockingMethodsWithMutinyImplTest {
     }
 
     @Test
-    @Timeout(5)
+    @TimeLimit
     public void testFullDuplexMethodWithMutinyClient() {
         Multi<Messages.StreamingOutputCallRequest> input = Multi.createFrom().items("a", "b", "c", "d")
                 .map(s -> Messages.Payload.newBuilder().setBody(ByteString.copyFromUtf8(s)).build())
@@ -145,7 +145,7 @@ public class BlockingMethodsWithMutinyImplTest {
     }
 
     @Test
-    @Timeout(5)
+    @TimeLimit
     public void testFullDuplexMethodBlockingWithMutinyClient() {
         Multi<Messages.StreamingOutputCallRequest> input = Multi.createFrom().items("a", "b", "c", "d")
                 .map(s -> Messages.Payload.newBuilder().setBody(ByteString.copyFromUtf8(s)).build())
@@ -159,7 +159,7 @@ public class BlockingMethodsWithMutinyImplTest {
     }
 
     @Test
-    @Timeout(5)
+    @TimeLimit
     public void testHalfDuplexMethodWithMutinyClient() {
         Multi<Messages.StreamingOutputCallRequest> input = Multi.createFrom().items("a", "b", "c", "d")
                 .map(s -> Messages.Payload.newBuilder().setBody(ByteString.copyFromUtf8(s)).build())
@@ -173,7 +173,7 @@ public class BlockingMethodsWithMutinyImplTest {
     }
 
     @Test
-    @Timeout(5)
+    @TimeLimit
     public void testHalfDuplexMethodBlockingWithMutinyClient() {
         Multi<Messages.StreamingOutputCallRequest> input = Multi.createFrom().items("a", "b", "c", "d")
                 .map(s -> Messages.Payload.newBuilder().setBody(ByteString.copyFromUtf8(s)).build())

@@ -9,7 +9,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.Timeout;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -18,6 +17,7 @@ import io.grpc.examples.streaming.Streaming;
 import io.grpc.examples.streaming.StringReply;
 import io.grpc.examples.streaming.StringRequest;
 import io.quarkus.grpc.GrpcClient;
+import io.quarkus.test.timeouts.TimeLimit;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.helpers.test.AssertSubscriber;
@@ -31,7 +31,7 @@ public class LongStreamTestBase {
     Streaming streamSvc;
 
     @Test
-    @Timeout(10)
+    @TimeLimit
     public void testQuickFailure() {
         Multi<StringRequest> multi = Multi.createFrom().range(1, 1000)
                 // delaying stream to make it a bit longer
@@ -50,7 +50,7 @@ public class LongStreamTestBase {
     }
 
     @Test
-    @Timeout(10)
+    @TimeLimit
     public void testMidFailure() {
         AtomicBoolean cancelled = new AtomicBoolean();
         Multi<StringRequest> multi = Multi.createFrom().range(1, 1000)
@@ -73,7 +73,7 @@ public class LongStreamTestBase {
     }
 
     @Test
-    @Timeout(10)
+    @TimeLimit
     public void testQuickFailureWithBidi() {
         Multi<StringRequest> multi = Multi.createFrom().range(1, 1000)
                 // delaying stream to make it a bit longer
@@ -91,7 +91,7 @@ public class LongStreamTestBase {
                 .assertFailedWith(StatusRuntimeException.class);
     }
 
-    @Timeout(10)
+    @TimeLimit
     @RepeatedTest(5)
     public void testMidFailureWithBiDi() {
         AtomicBoolean cancelled = new AtomicBoolean();

@@ -22,12 +22,12 @@ import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
-import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.common.http.TestHTTPResource;
 import io.quarkus.test.timeouts.TestTimeouts;
+import io.quarkus.test.timeouts.TimeLimit;
 import io.smallrye.common.annotation.Blocking;
 
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
@@ -52,21 +52,21 @@ public class ClientDisconnectResponseLeakTest {
 
     @Test
     @Order(1)
-    @Timeout(30)
+    @TimeLimit(multiplier = 2)
     void passThrough_connectionReleasedAfterClientDisconnect() throws Exception {
         verifyNoLeak("/proxy/pass-through", "/proxy/pass-through");
     }
 
     @Test
     @Order(2)
-    @Timeout(30)
+    @TimeLimit(multiplier = 2)
     void direct_connectionReleasedAfterClientDisconnect() throws Exception {
         verifyNoLeak("/proxy/direct", "/proxy/pass-through");
     }
 
     @Test
     @Order(3)
-    @Timeout(30)
+    @TimeLimit(multiplier = 2)
     void buffered_connectionReleasedAfterClientDisconnect() throws Exception {
         verifyNoLeak("/proxy/buffered", "/proxy/buffered");
     }

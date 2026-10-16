@@ -13,7 +13,6 @@ import org.apache.http.HttpStatus;
 import org.apache.kafka.streams.KafkaStreams;
 import org.hamcrest.CoreMatchers;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.Timeout;
 
 import io.quarkus.kafka.streams.runtime.KafkaStreamsTopologyManager;
 import io.quarkus.runtime.Application;
@@ -21,6 +20,7 @@ import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.QuarkusTestProfile;
 import io.quarkus.test.junit.TestProfile;
+import io.quarkus.test.timeouts.TimeLimit;
 import io.restassured.RestAssured;
 
 @QuarkusTestResource(KafkaSSLTestResource.class)
@@ -35,7 +35,7 @@ public class KafkaStreamsStartupFailureTest {
     KafkaStreamsTopologyManager kafkaStreamsTopologyManager;
 
     @Test
-    @Timeout(5)
+    @TimeLimit
     public void testShutdownBeforeKStreamsStarted() throws Exception {
         assertEquals(State.CREATED, kafkaStreams.state());
         RestAssured.get("/q/health/ready").then()

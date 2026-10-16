@@ -1,6 +1,5 @@
 package io.quarkus.test.timeouts;
 
-import java.lang.reflect.Method;
 import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.security.CodeSource;
@@ -10,20 +9,22 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.junit.jupiter.api.extension.AfterAllCallback;
 import org.junit.jupiter.api.extension.AfterEachCallback;
+import org.junit.jupiter.api.extension.AfterTestExecutionCallback;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
+import org.junit.jupiter.api.extension.BeforeTestExecutionCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
-import org.junit.jupiter.api.extension.InvocationInterceptor;
-import org.junit.jupiter.api.extension.ReflectiveInvocationContext;
+import org.junit.jupiter.api.extension.ExtensionContext.Namespace;
 
 /**
  * A global JUnit extension (registered through autodetection) that resolves the timeout of each test and exposes it
  * through {@link TestTimeouts#get()}.
  */
 public class TestTimeoutsExtension implements BeforeAllCallback, AfterAllCallback, BeforeEachCallback, AfterEachCallback,
-        InvocationInterceptor {
+        BeforeTestExecutionCallback, AfterTestExecutionCallback {
 
-    private static final TimeLimitInterceptor INTERCEPTOR = new TimeLimitInterceptor();
+    private static final Namespace NAMESPACE = Namespace.create(TestTimeoutsExtension.class);
+    private static final String ENFORCER_KEY = "enforcer";
     private static final Map<Path, Module> MODULES = new ConcurrentHashMap<>();
 
     private record Module(TimeoutResolver resolver, String path) {
@@ -46,15 +47,19 @@ public class TestTimeoutsExtension implements BeforeAllCallback, AfterAllCallbac
     }
 
     @Override
-    public void interceptTestMethod(Invocation<Void> invocation, ReflectiveInvocationContext<Method> invocationContext,
-            ExtensionContext extensionContext) throws Throwable {
-        INTERCEPTOR.interceptTestMethod(invocation, invocationContext, extensionContext);
+    public void beforeTestExecution(ExtensionContext context) {
+        TimeLimitEnforcer enforcer = TimeLimitEnforcer.startFor(context);
+        if (enforcer != null) {
+            context.getStore(NAMESPACE).put(ENFORCER_KEY, enforcer);
+        }
     }
 
     @Override
-    public void interceptTestTemplateMethod(Invocation<Void> invocation,
-            ReflectiveInvocationContext<Method> invocationContext, ExtensionContext extensionContext) throws Throwable {
-        INTERCEPTOR.interceptTestTemplateMethod(invocation, invocationContext, extensionContext);
+    public void afterTestExecution(ExtensionContext context) throws Exception {
+        TimeLimitEnforcer enforcer = context.getStore(NAMESPACE).remove(ENFORCER_KEY, TimeLimitEnforcer.class);
+        if (enforcer != null) {
+            enforcer.finish();
+        }
     }
 
     @Override

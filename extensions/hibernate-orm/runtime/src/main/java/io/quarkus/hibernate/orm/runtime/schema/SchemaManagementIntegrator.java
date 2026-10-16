@@ -3,35 +3,36 @@ package io.quarkus.hibernate.orm.runtime.schema;
 import static org.hibernate.cfg.AvailableSettings.PERSISTENCE_UNIT_NAME;
 
 import java.io.StringWriter;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.IdentityHashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.hibernate.boot.Metadata;
 import org.hibernate.boot.spi.BootstrapContext;
+import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.engine.config.spi.ConfigurationService;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.integrator.spi.Integrator;
 import org.hibernate.service.ServiceRegistry;
 import org.hibernate.service.spi.ServiceRegistryImplementor;
 import org.hibernate.service.spi.SessionFactoryServiceRegistry;
-import org.hibernate.tool.schema.SourceType;
+import org.hibernate.tool.schema.Action;
 import org.hibernate.tool.schema.TargetType;
 import org.hibernate.tool.schema.internal.exec.ScriptTargetOutputToWriter;
 import org.hibernate.tool.schema.spi.CommandAcceptanceException;
 import org.hibernate.tool.schema.spi.ContributableMatcher;
 import org.hibernate.tool.schema.spi.ExceptionHandler;
 import org.hibernate.tool.schema.spi.ExecutionOptions;
-import org.hibernate.tool.schema.spi.SchemaDropper;
 import org.hibernate.tool.schema.spi.SchemaManagementException;
 import org.hibernate.tool.schema.spi.SchemaManagementTool;
+import org.hibernate.tool.schema.spi.SchemaManagementToolCoordinator;
 import org.hibernate.tool.schema.spi.SchemaMigrator;
 import org.hibernate.tool.schema.spi.SchemaValidator;
-import org.hibernate.tool.schema.spi.ScriptSourceInput;
 import org.hibernate.tool.schema.spi.ScriptTargetOutput;
-import org.hibernate.tool.schema.spi.SourceDescriptor;
 import org.hibernate.tool.schema.spi.TargetDescriptor;
 import org.jboss.logging.Logger;
 
@@ -45,6 +46,8 @@ public class SchemaManagementIntegrator implements Integrator, DatabaseSchemaPro
 
     private static final Map<String, Holder> metadataMap = new ConcurrentHashMap<>();
     private static final Map<String, String> datasourceToPuMap = new ConcurrentHashMap<>();
+    // Datasources whose schema is reset by Flyway or Liquibase when the database is reset from the Dev UI
+    private static final Set<String> datasourcesWithMigratedSchema = ConcurrentHashMap.newKeySet();
     private static final Map<SessionFactoryImplementor, String> nameCache = Collections
             .synchronizedMap(new IdentityHashMap<>());
 
@@ -70,6 +73,11 @@ public class SchemaManagementIntegrator implements Integrator, DatabaseSchemaPro
 
     public static void mapDatasource(String datasource, String pu) {
         datasourceToPuMap.put(datasource, pu);
+    }
+
+    public static void setDatasourcesWithMigratedSchema(Collection<String> datasources) {
+        datasourcesWithMigratedSchema.clear();
+        datasourcesWithMigratedSchema.addAll(datasources);
     }
 
     static String defaultName(SessionFactoryImplementor sf) {
@@ -100,21 +108,64 @@ public class SchemaManagementIntegrator implements Integrator, DatabaseSchemaPro
         Holder holder = metadataMap.get(name);
 
         ServiceRegistry serviceRegistry = holder.sessionFactory.getServiceRegistry();
-        SimpleExecutionOptions executionOptions = new SimpleExecutionOptions(serviceRegistry);
-        Object schemaGenerationDatabaseAction = executionOptions.getConfigurationValues()
-                .get("jakarta.persistence.schema-generation.database.action");
-        if (schemaGenerationDatabaseAction != null && !(schemaGenerationDatabaseAction.toString().equals("none"))) {
-            //if this is none we assume another framework is doing this (e.g. flyway)
+        // A reset is an explicit request for a fresh database: the data init script is executed
+        // even with the "none" data management strategy, which only applies on startup
+        SimpleExecutionOptions executionOptions = new SimpleExecutionOptions(serviceRegistry,
+                "Failed to recreate schema", true);
+        Action schemaGenerationDatabaseAction = databaseAction(executionOptions);
+        if (!Action.NONE.equals(schemaGenerationDatabaseAction) && !Action.POPULATE.equals(schemaGenerationDatabaseAction)) {
+            //if this is none (or populate, which doesn't touch the schema) we assume another framework is doing this (e.g. flyway)
             SchemaManagementTool schemaManagementTool = serviceRegistry
                     .getService(SchemaManagementTool.class);
-            SchemaDropper schemaDropper = schemaManagementTool.getSchemaDropper(executionOptions.getConfigurationValues());
-            schemaDropper.doDrop(holder.metadata, executionOptions, ContributableMatcher.ALL, new SimpleSourceDescriptor(),
-                    new SimpleTargetDescriptor());
-            schemaManagementTool.getSchemaCreator(executionOptions.getConfigurationValues())
-                    .doCreation(holder.metadata, executionOptions, ContributableMatcher.ALL, new SimpleSourceDescriptor(),
-                            new SimpleTargetDescriptor());
+            // Drop and create the schema exactly like on startup,
+            // so that the schema init script and the data init script get executed too
+            SchemaManagementToolCoordinator.performDatabaseAction(Action.CREATE, holder.metadata, schemaManagementTool,
+                    serviceRegistry, executionOptions, ContributableMatcher.ALL);
         }
         //we still clear caches though
+        evictCaches(holder);
+    }
+
+    /**
+     * Executes the data init script again, for persistence units whose schema is managed by another framework
+     * (e.g. Flyway) and thus was not recreated by {@link #recreateDatabase(String)}.
+     * Must be called after that other framework is done resetting the schema.
+     */
+    public static void populatePersistenceUnit(String name) {
+        if (!LaunchMode.current().isDevOrTest()) {
+            throw new IllegalStateException("Can only be used in dev or test mode");
+        }
+        Holder holder = metadataMap.get(name);
+
+        ServiceRegistry serviceRegistry = holder.sessionFactory.getServiceRegistry();
+        SimpleExecutionOptions executionOptions = new SimpleExecutionOptions(serviceRegistry,
+                "Failed to execute the data init script", true);
+        // The data init script is executed again when Hibernate ORM doesn't manage the schema
+        // (database action "none", or "populate" which Quarkus computes for the "create" data management strategy,
+        // see InitScriptSupport#configureDataManagement), whatever the data management strategy,
+        // since a reset is an explicit request for a fresh database. Otherwise:
+        // - when Hibernate ORM manages the schema, recreateDatabase() already executed the data init script
+        //   as part of the schema creation, so populating again would insert the data twice;
+        // - scripts set through the deprecated sql-load-script property are only executed
+        //   when Hibernate ORM creates the schema (they never get the "populate" action,
+        //   and the data management strategy does not apply to them).
+        Action databaseAction = databaseAction(executionOptions);
+        if (Action.POPULATE.equals(databaseAction) || (Action.NONE.equals(databaseAction)
+                && InitScriptSupport.isDataInitScriptSkippedOnStart(executionOptions.getConfigurationValues()))) {
+            SchemaManagementTool schemaManagementTool = serviceRegistry
+                    .getService(SchemaManagementTool.class);
+            SchemaManagementToolCoordinator.performDatabaseAction(Action.POPULATE, holder.metadata, schemaManagementTool,
+                    serviceRegistry, executionOptions, ContributableMatcher.ALL);
+            evictCaches(holder);
+        }
+    }
+
+    private static Action databaseAction(SimpleExecutionOptions executionOptions) {
+        return Action.interpretJpaSetting(executionOptions.getConfigurationValues()
+                .get(AvailableSettings.JAKARTA_HBM2DDL_DATABASE_ACTION));
+    }
+
+    private static void evictCaches(Holder holder) {
         holder.sessionFactory.getCache().evictAll();
         holder.sessionFactory.getCache().evictQueries();
     }
@@ -183,6 +234,24 @@ public class SchemaManagementIntegrator implements Integrator, DatabaseSchemaPro
         recreateDatabases();
     }
 
+    @Override
+    public void populateDatabase(String dbName) {
+        String name = datasourceToPuMap.get(dbName);
+        if (name == null) {
+            //not an hibernate DS
+            return;
+        }
+        if (!datasourcesWithMigratedSchema.contains(dbName)) {
+            // Neither Flyway nor Liquibase reset this database: either Hibernate ORM recreated the schema
+            // (and loaded the data along with it), or nothing did, and loading the data again
+            // would apply it on top of the existing data.
+            // Flyway only reports datasources with SQL migrations: a datasource migrated only by Java migrations
+            // is reset by Flyway, but the data init script is not executed again (same limitation as Dev Services).
+            return;
+        }
+        populatePersistenceUnit(name);
+    }
+
     static class Holder {
         final Metadata metadata;
         final SessionFactoryImplementor sessionFactory;
@@ -197,9 +266,19 @@ public class SchemaManagementIntegrator implements Integrator, DatabaseSchemaPro
 
     private static class SimpleExecutionOptions implements ExecutionOptions {
         private final Map<String, Object> configurationValues;
+        private final String errorMessage;
 
         public SimpleExecutionOptions(ServiceRegistry serviceRegistry) {
-            configurationValues = serviceRegistry.getService(ConfigurationService.class).getSettings();
+            this(serviceRegistry, "Failed to recreate schema", false);
+        }
+
+        /**
+         * @param keepDataInitScript Whether to keep the data init script even when it is not executed on startup.
+         */
+        public SimpleExecutionOptions(ServiceRegistry serviceRegistry, String errorMessage, boolean keepDataInitScript) {
+            Map<String, Object> settings = serviceRegistry.getService(ConfigurationService.class).getSettings();
+            configurationValues = keepDataInitScript ? settings : InitScriptSupport.schemaManagementSettings(settings);
+            this.errorMessage = errorMessage;
         }
 
         @Override
@@ -217,33 +296,10 @@ public class SchemaManagementIntegrator implements Integrator, DatabaseSchemaPro
             return new ExceptionHandler() {
                 @Override
                 public void handleException(CommandAcceptanceException exception) {
-                    log.error("Failed to recreate schema", exception);
+                    log.error(errorMessage, exception);
                 }
             };
         }
     }
 
-    private static class SimpleSourceDescriptor implements SourceDescriptor {
-        @Override
-        public SourceType getSourceType() {
-            return SourceType.METADATA;
-        }
-
-        @Override
-        public ScriptSourceInput getScriptSourceInput() {
-            return null;
-        }
-    }
-
-    private static class SimpleTargetDescriptor implements TargetDescriptor {
-        @Override
-        public EnumSet<TargetType> getTargetTypes() {
-            return EnumSet.of(TargetType.DATABASE);
-        }
-
-        @Override
-        public ScriptTargetOutput getScriptTargetOutput() {
-            return null;
-        }
-    }
 }

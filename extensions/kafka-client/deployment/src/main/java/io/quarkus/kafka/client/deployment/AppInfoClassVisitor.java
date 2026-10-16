@@ -12,7 +12,7 @@ import io.quarkus.gizmo.Gizmo;
 
 /**
  * ASM {@link ClassVisitor} that rewrites {@code registerAppInfo} and {@code unregisterAppInfo}
- * in Kafka\'s {@code AppInfoParser} to skip JMX MBean registration/unregistration
+ * in Kafka's {@code AppInfoParser} to skip JMX MBean registration/unregistration
  * while preserving the calls to {@code registerMetrics} and {@code unregisterMetrics}.
  * <p>
  * The original methods register/unregister JMX MBeans which causes "Error registering AppInfo mbean"
@@ -27,10 +27,10 @@ import io.quarkus.gizmo.Gizmo;
  */
 class AppInfoClassVisitor extends ClassVisitor {
 
-    private String appInfoParser;
-    private String appInfoInner;
     private static final String METRICS = "org/apache/kafka/common/metrics/Metrics";
 
+    private String appInfoParser;
+    private String appInfoInner;
     private boolean hasClientIdParam;
     private final List<DeferredMethod> deferredMethods = new ArrayList<>();
 

@@ -75,7 +75,7 @@ import io.smallrye.serial.SerialContext;
  * <p>
  * The transliteration process is split into two phases:
  * <ol>
- * <li>{@link #extract(Serializable, Class, List, List, boolean, boolean, List) extract()} —
+ * <li>{@link #extract(Serializable, Class, List, List, List, List, boolean, boolean, boolean, String) extract()} —
  * eagerly extracts the lambda metadata and body during build step execution,
  * producing a {@link TransliteratedAction.ActionService} data record</li>
  * <li>{@link #generateConsolidatedClass(String, List) generateConsolidatedClass()} —

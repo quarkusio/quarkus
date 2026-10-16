@@ -4,24 +4,18 @@ import static biz.paluch.logging.RuntimeContainerProperties.PROPERTY_LOGSTASH_GE
 
 import java.util.Map;
 import java.util.Optional;
+import java.util.logging.ErrorManager;
 import java.util.logging.Handler;
 
 import biz.paluch.logging.gelf.jboss7.JBoss7GelfLogHandler;
-import io.quarkus.runtime.RuntimeValue;
-import io.quarkus.runtime.annotations.Recorder;
+import io.quarkus.runtime.logging.LogCleanupFilter;
 
-@Recorder
 public class GelfLogHandlerRecorder {
-    private final RuntimeValue<GelfConfig> runtimeConfig;
 
-    public GelfLogHandlerRecorder(final RuntimeValue<GelfConfig> runtimeConfig) {
-        this.runtimeConfig = runtimeConfig;
-    }
-
-    public RuntimeValue<Optional<Handler>> initializeHandler() {
-        GelfConfig config = runtimeConfig.getValue();
+    public static Optional<Handler> initializeHandler(GelfConfig config, ErrorManager errorManager,
+            LogCleanupFilter cleanupFilter) {
         if (!config.enabled()) {
-            return new RuntimeValue<>(Optional.empty());
+            return Optional.empty();
         }
 
         String previousSkipHostnameResolution = null;
@@ -79,6 +73,8 @@ public class GelfLogHandlerRecorder {
             handler.setAdditionalFieldTypes(additionalFieldsType.toString());
         }
 
-        return new RuntimeValue<>(Optional.of(handler));
+        handler.setErrorManager(errorManager);
+        handler.setFilter(cleanupFilter);
+        return Optional.of(handler);
     }
 }

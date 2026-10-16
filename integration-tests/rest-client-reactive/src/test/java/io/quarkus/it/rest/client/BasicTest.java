@@ -8,7 +8,6 @@ import static org.assertj.core.api.Assertions.entry;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 
-import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -159,7 +158,7 @@ public class BasicTest {
         String serverTraceId = null;
         String clientSpanId = null;
 
-        Awaitility.await().atMost(Duration.ofSeconds(30))
+        Awaitility.await().atMost(TestTimeouts.get())
                 .until(() -> getServerSpansFromPath("POST /call-hello-client-trace", "/call-hello-client-trace").size() > 0);
 
         List<Map<String, Object>> spans = getServerSpansFromPath("POST /call-hello-client-trace", "/call-hello-client-trace");

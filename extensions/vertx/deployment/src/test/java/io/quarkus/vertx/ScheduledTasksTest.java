@@ -81,7 +81,7 @@ public class ScheduledTasksTest {
         long start = System.currentTimeMillis();
         await().atMost(TestTimeouts.get()).untilAdder(counter, greaterThan(3L));
         cancellable.cancel();
-        await().atMost(Duration.ofSeconds(1)).untilTrue(cancelled);
+        await().atMost(TestTimeouts.get()).untilTrue(cancelled);
         long duration = System.currentTimeMillis() - start;
         assertThat((long) items.size(), lessThanOrEqualTo(duration / 100L + 1L));
         assertThat(items.get(0), containsString("Hello executor-thread-"));
@@ -104,7 +104,7 @@ public class ScheduledTasksTest {
         long start = System.currentTimeMillis();
         await().atMost(TestTimeouts.get()).untilAdder(counter, greaterThan(3L));
         cancellable.get().cancel();
-        await().atMost(Duration.ofSeconds(1)).untilTrue(cancelled);
+        await().atMost(TestTimeouts.get()).untilTrue(cancelled);
         long duration = System.currentTimeMillis() - start;
         assertThat((long) items.size(), lessThanOrEqualTo(duration / 100L + 1L));
         assertThat(items.get(0), containsString("Hello vert.x-eventloop-thread-"));

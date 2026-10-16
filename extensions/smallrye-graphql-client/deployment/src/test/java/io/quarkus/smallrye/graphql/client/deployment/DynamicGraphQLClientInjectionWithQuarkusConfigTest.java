@@ -5,7 +5,6 @@ import static io.smallrye.graphql.client.core.Document.document;
 import static io.smallrye.graphql.client.core.Field.field;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 
@@ -20,6 +19,7 @@ import io.quarkus.smallrye.graphql.client.deployment.model.Person;
 import io.quarkus.smallrye.graphql.client.deployment.model.PersonDto;
 import io.quarkus.smallrye.graphql.client.deployment.model.TestingGraphQLApi;
 import io.quarkus.test.QuarkusExtensionTest;
+import io.quarkus.test.timeouts.TestTimeouts;
 import io.smallrye.graphql.client.GraphQLClient;
 import io.smallrye.graphql.client.core.Document;
 import io.smallrye.graphql.client.core.Operation;
@@ -48,7 +48,7 @@ public class DynamicGraphQLClientInjectionWithQuarkusConfigTest {
         Document query = document(
                 Operation.operation("PeopleQuery", field("people", field("firstName"), field("lastName"))));
         List<Person> people = client.executeAsync(query)
-                .await().atMost(Duration.ofSeconds(30)).getList(Person.class, "people");
+                .await().atMost(TestTimeouts.get()).getList(Person.class, "people");
         assertEquals("John", people.get(0).getFirstName());
         assertEquals("Arthur", people.get(1).getFirstName());
     }

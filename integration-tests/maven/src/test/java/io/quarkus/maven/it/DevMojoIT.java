@@ -1198,7 +1198,7 @@ public class DevMojoIT extends LaunchMojoTestBase {
         // Wait until we get "uuid"
         await()
                 .pollDelay(100, TimeUnit.MILLISECONDS)
-                .atMost(60, TimeUnit.SECONDS)
+                .atMost(TestTimeouts.get())
                 .until(() -> devModeClient.getHttpResponse("/app/hello/greeting").contains(uuid));
     }
 
@@ -1440,7 +1440,7 @@ public class DevMojoIT extends LaunchMojoTestBase {
 
         await()
                 .pollDelay(100, TimeUnit.MILLISECONDS)
-                .atMost(30, TimeUnit.SECONDS)
+                .atMost(TestTimeouts.get())
                 .until(() -> running.log().contains("Skipping quarkus:dev as this is assumed to be a support library"));
     }
 

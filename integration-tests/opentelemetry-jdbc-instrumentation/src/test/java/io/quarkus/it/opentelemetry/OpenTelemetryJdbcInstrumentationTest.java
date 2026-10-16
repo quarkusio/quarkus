@@ -3,12 +3,10 @@ package io.quarkus.it.opentelemetry;
 import static io.restassured.RestAssured.get;
 import static io.restassured.RestAssured.given;
 import static java.net.HttpURLConnection.HTTP_OK;
-import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.awaitility.Awaitility.await;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 
@@ -17,6 +15,7 @@ import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 
+import io.quarkus.test.timeouts.TestTimeouts;
 import io.restassured.common.mapper.TypeRef;
 
 public abstract class OpenTelemetryJdbcInstrumentationTest {
@@ -25,7 +24,7 @@ public abstract class OpenTelemetryJdbcInstrumentationTest {
     @AfterEach
     void reset() {
         given().get("/reset").then().statusCode(HTTP_OK);
-        await().atMost(30, SECONDS).until(() -> {
+        await().atMost(TestTimeouts.get()).until(() -> {
             // make sure spans are cleared
             List<Map<String, Object>> spans = getSpans();
             if (spans.size() > 0) {
@@ -48,7 +47,7 @@ public abstract class OpenTelemetryJdbcInstrumentationTest {
                 .statusCode(200)
                 .body("message", Matchers.equalTo("Hit message."));
 
-        Awaitility.await().atMost(Duration.ofSeconds(55)).untilAsserted(() -> {
+        Awaitility.await().atMost(TestTimeouts.get()).untilAsserted(() -> {
             assertFalse(getSpans().isEmpty());
 
             // Assert insert has been traced
@@ -76,7 +75,7 @@ public abstract class OpenTelemetryJdbcInstrumentationTest {
                 .statusCode(200)
                 .body("message", Matchers.equalTo("Hit message."));
 
-        Awaitility.await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> {
+        Awaitility.await().atMost(TestTimeouts.get()).untilAsserted(() -> {
             assertTrue(getSpans().isEmpty(), "No spans should be recorded when OpenTelemetry is disabled.");
         });
     }
@@ -89,7 +88,7 @@ public abstract class OpenTelemetryJdbcInstrumentationTest {
                 .statusCode(200)
                 .body("message", Matchers.equalTo("Hit message."));
 
-        Awaitility.await().atMost(Duration.ofSeconds(55)).untilAsserted(() -> {
+        Awaitility.await().atMost(TestTimeouts.get()).untilAsserted(() -> {
             List<Map<String, Object>> spans = getSpans();
             assertFalse(spans.isEmpty());
 
@@ -116,7 +115,7 @@ public abstract class OpenTelemetryJdbcInstrumentationTest {
                 .statusCode(200)
                 .body("message", Matchers.equalTo("Hit message."));
 
-        Awaitility.await().atMost(Duration.ofSeconds(55)).untilAsserted(() -> {
+        Awaitility.await().atMost(TestTimeouts.get()).untilAsserted(() -> {
             List<Map<String, Object>> spans = getSpans();
             assertFalse(spans.isEmpty());
 

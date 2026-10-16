@@ -2,7 +2,6 @@ package io.quarkus.vertx;
 
 import static org.awaitility.Awaitility.await;
 
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -117,7 +116,7 @@ public class DuplicatedContextTest {
 
         Uni.join().all(unis).andFailFast()
                 .runSubscriptionOn(Infrastructure.getDefaultExecutor())
-                .await().atMost(Duration.ofSeconds(30));
+                .await().atMost(TestTimeouts.get());
     }
 
     @Test
@@ -139,7 +138,7 @@ public class DuplicatedContextTest {
 
         Uni.join().all(unis).andCollectFailures()
                 .runSubscriptionOn(Infrastructure.getDefaultExecutor())
-                .await().atMost(Duration.ofSeconds(60));
+                .await().atMost(TestTimeouts.get());
 
     }
 

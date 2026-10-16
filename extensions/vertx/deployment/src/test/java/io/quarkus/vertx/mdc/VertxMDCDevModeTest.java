@@ -23,6 +23,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.bootstrap.logging.InitialConfigurator;
 import io.quarkus.test.QuarkusDevModeTest;
+import io.quarkus.test.timeouts.TestTimeouts;
 
 public class VertxMDCDevModeTest {
     @RegisterExtension
@@ -53,7 +54,7 @@ public class VertxMDCDevModeTest {
                 .then()
                 .body(is(value));
         Awaitility.given().pollInterval(100, TimeUnit.MILLISECONDS)
-                .atMost(2, TimeUnit.SECONDS)
+                .atMost(TestTimeouts.get())
                 .untilAsserted(new ThrowingRunnable() {
                     @Override
                     public void run() throws Throwable {

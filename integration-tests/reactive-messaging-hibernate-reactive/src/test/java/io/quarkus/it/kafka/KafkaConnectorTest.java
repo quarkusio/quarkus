@@ -15,6 +15,7 @@ import org.junit.jupiter.api.Test;
 import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.kafka.KafkaCompanionResource;
+import io.quarkus.test.timeouts.TestTimeouts;
 import io.restassured.common.mapper.TypeRef;
 import io.restassured.http.ContentType;
 
@@ -70,19 +71,19 @@ public class KafkaConnectorTest {
 
     @Test
     public void testExactlyOnceWithTransaction() {
-        await().atMost(java.time.Duration.ofSeconds(30)).untilAsserted(() -> {
+        await().atMost(TestTimeouts.get()).untilAsserted(() -> {
             List<String> processed = get("/kafka/exactly-once-fruit-processed").as(new TypeRef<List<String>>() {
             });
             Assertions.assertTrue(processed.size() >= 4, "Expected at least 4 processed, got " + processed.size());
         });
-        await().atMost(java.time.Duration.ofSeconds(30)).untilAsserted(() -> {
+        await().atMost(TestTimeouts.get()).untilAsserted(() -> {
             List<String> results = get("/kafka/exactly-once-fruit-results").as(new TypeRef<List<String>>() {
             });
             Assertions.assertTrue(results.size() >= 4, "Expected at least 4 results, got " + results.size());
             Assertions.assertTrue(results.contains("persisted-fruit-0"));
         });
         // Verify fruits were persisted to the database by the @WithTransaction method
-        await().atMost(java.time.Duration.ofSeconds(30)).untilAsserted(() -> {
+        await().atMost(TestTimeouts.get()).untilAsserted(() -> {
             List<?> fruits = get("/kafka/exactly-once-fruits").as(new TypeRef<List<?>>() {
             });
             Assertions.assertTrue(fruits.size() >= 4, "Expected at least 4 persisted fruits, got " + fruits.size());

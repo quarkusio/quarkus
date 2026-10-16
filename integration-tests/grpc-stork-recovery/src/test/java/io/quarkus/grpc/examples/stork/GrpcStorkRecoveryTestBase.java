@@ -4,7 +4,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.awaitility.Awaitility.await;
 
-import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 
 import org.junit.jupiter.api.Test;
@@ -14,6 +13,7 @@ import examples.HelloReply;
 import examples.HelloRequest;
 import io.grpc.StatusRuntimeException;
 import io.quarkus.grpc.GrpcClient;
+import io.quarkus.test.timeouts.TestTimeouts;
 
 /**
  * Reproducer for two ways a {@code stork://} gRPC client failed to recover when
@@ -51,7 +51,7 @@ abstract class GrpcStorkRecoveryTestBase {
 
         // Without a working re-resolution the client stays broken and this
         // never succeeds within the timeout.
-        await().atMost(Duration.ofSeconds(30)).ignoreExceptions().untilAsserted(() -> {
+        await().atMost(TestTimeouts.get()).ignoreExceptions().untilAsserted(() -> {
             assertThat(call(request).getMessage()).isEqualTo("Hello late");
         });
     }

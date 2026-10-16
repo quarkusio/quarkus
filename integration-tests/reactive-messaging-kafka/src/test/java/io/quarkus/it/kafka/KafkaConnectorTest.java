@@ -23,6 +23,7 @@ import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.DisabledOnIntegrationTest;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.kafka.KafkaCompanionResource;
+import io.quarkus.test.timeouts.TestTimeouts;
 import io.restassured.common.mapper.TypeRef;
 
 @QuarkusTest
@@ -117,12 +118,12 @@ public class KafkaConnectorTest {
     @Test
     @Order(8)
     public void testExactlyOnceProcessing() {
-        await().atMost(java.time.Duration.ofSeconds(30)).untilAsserted(() -> {
+        await().atMost(TestTimeouts.get()).untilAsserted(() -> {
             List<Integer> processed = get("/kafka/exactly-once-processed").as(new TypeRef<List<Integer>>() {
             });
             Assertions.assertTrue(processed.size() >= 6, "Expected at least 6 processed, got " + processed.size());
         });
-        await().atMost(java.time.Duration.ofSeconds(30)).untilAsserted(() -> {
+        await().atMost(TestTimeouts.get()).untilAsserted(() -> {
             List<Integer> results = get("/kafka/exactly-once-results").as(new TypeRef<List<Integer>>() {
             });
             Assertions.assertTrue(results.size() >= 6, "Expected at least 6 results, got " + results.size());
@@ -138,12 +139,12 @@ public class KafkaConnectorTest {
     public void testExactlyOnceListProcessing() {
         // Each input record produces 2 output records (value*10 and value*10+1)
         // 4 input records -> 8 output records
-        await().atMost(java.time.Duration.ofSeconds(30)).untilAsserted(() -> {
+        await().atMost(TestTimeouts.get()).untilAsserted(() -> {
             List<Integer> processed = get("/kafka/exactly-once-list-processed").as(new TypeRef<List<Integer>>() {
             });
             Assertions.assertTrue(processed.size() >= 4, "Expected at least 4 processed, got " + processed.size());
         });
-        await().atMost(java.time.Duration.ofSeconds(30)).untilAsserted(() -> {
+        await().atMost(TestTimeouts.get()).untilAsserted(() -> {
             List<Integer> results = get("/kafka/exactly-once-list-results").as(new TypeRef<List<Integer>>() {
             });
             Assertions.assertTrue(results.size() >= 8, "Expected at least 8 results, got " + results.size());
@@ -160,12 +161,12 @@ public class KafkaConnectorTest {
     @Test
     @Order(10)
     public void testExactlyOnceUniProcessing() {
-        await().atMost(java.time.Duration.ofSeconds(30)).untilAsserted(() -> {
+        await().atMost(TestTimeouts.get()).untilAsserted(() -> {
             List<Integer> processed = get("/kafka/exactly-once-uni-processed").as(new TypeRef<List<Integer>>() {
             });
             Assertions.assertTrue(processed.size() >= 6, "Expected at least 6 processed, got " + processed.size());
         });
-        await().atMost(java.time.Duration.ofSeconds(30)).untilAsserted(() -> {
+        await().atMost(TestTimeouts.get()).untilAsserted(() -> {
             List<Integer> results = get("/kafka/exactly-once-uni-results").as(new TypeRef<List<Integer>>() {
             });
             Assertions.assertTrue(results.size() >= 6, "Expected at least 6 results, got " + results.size());

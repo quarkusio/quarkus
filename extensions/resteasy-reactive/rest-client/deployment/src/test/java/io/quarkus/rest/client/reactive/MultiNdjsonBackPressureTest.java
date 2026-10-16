@@ -54,7 +54,7 @@ public class MultiNdjsonBackPressureTest {
 
         long lineLength = subscriber.bytes.get() / subscriber.received.get();
         subscriber.request(Long.MAX_VALUE);
-        assertThat(subscriber.completed.await(120, TimeUnit.SECONDS)).isTrue();
+        assertThat(subscriber.completed.await(TestTimeouts.get().toSeconds(), TimeUnit.SECONDS)).isTrue();
         assertThat(subscriber.failure.get()).isNull();
         assertThat(subscriber.bytes.get()).isEqualTo((long) LINES * lineLength);
         assertThat(Resource.emitted.get()).isEqualTo(LINES);

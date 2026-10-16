@@ -11,7 +11,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
-import java.time.Duration;
 
 import org.awaitility.Awaitility;
 import org.jboss.logging.Logger;
@@ -99,7 +98,7 @@ class OidcClientKeycloakDevServiceRealmFileModificationTest {
     }
 
     private static void assertGetAccessTokenWorks(String greeting, String expectedRealmRoles) {
-        Awaitility.await().atMost(Duration.ofSeconds(30)).untilAsserted(() -> {
+        Awaitility.await().atMost(TestTimeouts.get()).untilAsserted(() -> {
             String[] greetingToToken = RestAssured.given()
                     .get("/client/token")
                     .then()

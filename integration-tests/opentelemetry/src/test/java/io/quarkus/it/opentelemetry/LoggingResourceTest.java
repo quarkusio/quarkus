@@ -15,7 +15,6 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.net.URL;
-import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 
@@ -89,7 +88,7 @@ public class LoggingResourceTest {
 
         String spanId = (String) logLineSpanContext.get("spanId");
 
-        await().atMost(Duration.ofSeconds(30)).until(() -> getSpans().size() > 0);
+        await().atMost(TestTimeouts.get()).until(() -> getSpans().size() > 0);
         List<Map<String, Object>> spans = getSpans();
         Map<String, Object> spanData = spans.stream()
                 .filter(map -> spanId.equals(map.get("spanId")))
@@ -123,7 +122,7 @@ public class LoggingResourceTest {
 
         String spanId = (String) logLineSpanContext.get("spanId");
 
-        await().atMost(Duration.ofSeconds(30)).until(() -> getSpans().size() > 0);
+        await().atMost(TestTimeouts.get()).until(() -> getSpans().size() > 0);
 
         List<Map<String, Object>> spans = getSpans();
         Map<String, Object> spanData = spans.stream()

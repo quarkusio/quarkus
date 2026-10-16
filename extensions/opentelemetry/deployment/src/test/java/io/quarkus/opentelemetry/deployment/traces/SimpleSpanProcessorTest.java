@@ -33,6 +33,7 @@ import io.quarkus.opentelemetry.deployment.common.TestUtil;
 import io.quarkus.opentelemetry.deployment.common.exporter.TestSpanExporter;
 import io.quarkus.opentelemetry.deployment.common.exporter.TestSpanExporterProvider;
 import io.quarkus.test.QuarkusExtensionTest;
+import io.quarkus.test.timeouts.TestTimeouts;
 
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class SimpleSpanProcessorTest {
@@ -136,7 +137,7 @@ public class SimpleSpanProcessorTest {
         Span postShutdownSpan = tracer.spanBuilder("after-shutdown").startSpan();
         postShutdownSpan.end();
 
-        await().during(200, MILLISECONDS).atMost(1, SECONDS)
+        await().during(200, MILLISECONDS).atMost(TestTimeouts.get())
                 .untilAsserted(() -> assertEquals(0, testSpanExporter.getPartialFinishedSpanItems().size(),
                         "No spans should be exported after shutdown"));
     }

@@ -6,7 +6,6 @@ import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.time.Duration;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -26,6 +25,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.runtime.util.ExceptionUtil;
 import io.quarkus.test.QuarkusExtensionTest;
+import io.quarkus.test.timeouts.TestTimeouts;
 import io.quarkus.websockets.next.HttpUpgradeCheck;
 import io.quarkus.websockets.next.test.utils.WSClient;
 import io.smallrye.mutiny.Uni;
@@ -76,7 +76,7 @@ public class GlobalHttpUpgradeCheckTest extends AbstractHttpUpgradeCheckTestBase
             assertTrue(root.getMessage().contains("401"), root.getMessage());
 
             Awaitility.await()
-                    .atMost(Duration.ofSeconds(2))
+                    .atMost(TestTimeouts.get())
                     .until(() -> ResponseHeadersObserver.responseHeaders != null
                             && !ResponseHeadersObserver.responseHeaders.isEmpty());
             var headers = ResponseHeadersObserver.responseHeaders;

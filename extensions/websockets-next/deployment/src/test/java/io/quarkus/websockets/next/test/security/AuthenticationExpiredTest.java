@@ -26,6 +26,7 @@ import io.quarkus.security.test.utils.TestIdentityController;
 import io.quarkus.security.test.utils.TestIdentityProvider;
 import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.common.http.TestHTTPResource;
+import io.quarkus.test.timeouts.TestTimeouts;
 import io.quarkus.websockets.next.CloseReason;
 import io.quarkus.websockets.next.OnClose;
 import io.quarkus.websockets.next.OnTextMessage;
@@ -84,7 +85,7 @@ public class AuthenticationExpiredTest {
 
             Awaitility
                     .await()
-                    .atMost(Duration.ofSeconds(1))
+                    .atMost(TestTimeouts.get())
                     .untilAsserted(() -> assertTrue(Endpoint.CLOSED_MESSAGE.get()
                             .startsWith("Connection closed with reason 'Authentication expired'")));
 

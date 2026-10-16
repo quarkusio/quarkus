@@ -1,7 +1,5 @@
 package io.quarkus.micrometer.opentelemetry.deployment.common;
 
-import static java.util.concurrent.TimeUnit.SECONDS;
-
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -85,7 +83,7 @@ public class InMemoryMetricExporter implements MetricExporter {
     }
 
     public void assertCountDataPointsAtLeastOrEqual(Supplier<MetricDataFilter> tag, int count) {
-        Awaitility.await().atMost(50, SECONDS)
+        Awaitility.await().atMost(TestTimeouts.get())
                 .untilAsserted(() -> Assertions.assertTrue(count <= tag.get().lastReadingPointsSize()));
     }
 

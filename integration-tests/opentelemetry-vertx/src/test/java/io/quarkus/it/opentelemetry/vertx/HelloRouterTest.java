@@ -21,7 +21,6 @@ import static org.junit.jupiter.api.Assertions.*;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -119,7 +118,7 @@ class HelloRouterTest extends SpanExporterBaseTest {
         assertEquals(1, messages.size());
         assertEquals("hello to bus", messages.get(0));
 
-        await().atMost(50, TimeUnit.SECONDS).until(() -> spanSize(3));
+        await().atMost(TestTimeouts.get()).until(() -> spanSize(3));
         List<Map<String, Object>> spans = getSpans();
         assertEquals(3, spans.size(), "found:" + printSpans(spans));
         assertEquals(1, spans.stream().map(map -> map.get("traceId")).collect(toSet()).size());

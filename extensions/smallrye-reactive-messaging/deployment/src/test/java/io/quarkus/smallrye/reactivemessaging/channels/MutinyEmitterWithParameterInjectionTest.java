@@ -2,7 +2,6 @@ package io.quarkus.smallrye.reactivemessaging.channels;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
@@ -16,6 +15,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusExtensionTest;
+import io.quarkus.test.timeouts.TestTimeouts;
 import io.smallrye.reactive.messaging.MutinyEmitter;
 import io.vertx.core.Vertx;
 
@@ -57,7 +57,7 @@ public class MutinyEmitterWithParameterInjectionTest {
 
         public void run() {
             // Payloads
-            emitter.send("a").await().atMost(Duration.ofSeconds(1));
+            emitter.send("a").await().atMost(TestTimeouts.get());
             emitter.sendAndForget("b");
             emitter.sendAndAwait("c");
 

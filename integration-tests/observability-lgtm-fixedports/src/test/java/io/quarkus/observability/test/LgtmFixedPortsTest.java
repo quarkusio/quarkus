@@ -12,6 +12,7 @@ import org.junit.jupiter.api.condition.OS;
 
 import io.quarkus.observability.test.utils.GrafanaClient;
 import io.quarkus.test.junit.QuarkusTest;
+import io.quarkus.test.timeouts.TestTimeouts;
 import io.restassured.RestAssured;
 
 @QuarkusTest
@@ -38,13 +39,13 @@ public class LgtmFixedPortsTest {
 
         Awaitility.setDefaultPollInterval(5, TimeUnit.SECONDS); // reduce load on the server. Default is .1s
 
-        Awaitility.given().ignoreException(UncheckedIOException.class).await().atMost(90, TimeUnit.SECONDS).until(
+        Awaitility.given().ignoreException(UncheckedIOException.class).await().atMost(TestTimeouts.get()).until(
                 client::user,
                 u -> "admin".equals(u.login));
-        Awaitility.given().ignoreException(UncheckedIOException.class).await().atMost(90, TimeUnit.SECONDS).until(
+        Awaitility.given().ignoreException(UncheckedIOException.class).await().atMost(TestTimeouts.get()).until(
                 () -> client.query("xvalue_X"),
                 result -> !result.data.result.isEmpty());
-        Awaitility.given().ignoreException(UncheckedIOException.class).await().atMost(90, TimeUnit.SECONDS).until(
+        Awaitility.given().ignoreException(UncheckedIOException.class).await().atMost(TestTimeouts.get()).until(
                 () -> client.traces("quarkus-integration-test-observability-lgtm-fixedports", 20, 3),
                 result -> !result.traces.isEmpty());
     }

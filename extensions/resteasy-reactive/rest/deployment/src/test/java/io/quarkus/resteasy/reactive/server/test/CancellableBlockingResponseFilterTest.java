@@ -6,7 +6,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.io.IOException;
 import java.net.URL;
-import java.time.Duration;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -30,6 +29,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.common.http.TestHTTPResource;
+import io.quarkus.test.timeouts.TestTimeouts;
 import io.smallrye.common.annotation.Blocking;
 import io.vertx.core.Vertx;
 import io.vertx.ext.web.client.WebClient;
@@ -63,7 +63,7 @@ public class CancellableBlockingResponseFilterTest {
 
         try {
             // make sure we did make the proper request
-            await().atMost(Duration.ofSeconds(2)).untilAtomic(Resource.COUNT, equalTo(1));
+            await().atMost(TestTimeouts.get()).untilAtomic(Resource.COUNT, equalTo(1));
 
             // this will effectively close the connection
             client.close();

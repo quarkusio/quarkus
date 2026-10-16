@@ -6,8 +6,6 @@ import static io.quarkus.security.test.utils.SecurityTestUtils.assertFailureFor;
 import static io.quarkus.security.test.utils.SecurityTestUtils.assertSuccess;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import java.time.Duration;
-
 import jakarta.enterprise.event.Event;
 import jakarta.inject.Inject;
 import jakarta.inject.Named;
@@ -25,6 +23,7 @@ import io.quarkus.security.test.cdi.app.denied.unnanotated.BeanWithSecurityAnnot
 import io.quarkus.security.test.utils.IdentityMock;
 import io.quarkus.security.test.utils.SecurityTestUtils;
 import io.quarkus.test.QuarkusExtensionTest;
+import io.quarkus.test.timeouts.TestTimeouts;
 
 public class DisabledCDISecurityEventTest {
 
@@ -60,7 +59,7 @@ public class DisabledCDISecurityEventTest {
         producer.fireAsync(new AuthorizationFailureEvent(null, null, null));
         producer.fire(new AuthorizationFailureEvent(null, null, null));
         assertEquals(1, observer.getObserverEvents().size());
-        Awaitility.await().atMost(Duration.ofSeconds(2))
+        Awaitility.await().atMost(TestTimeouts.get())
                 .untilAsserted(() -> assertEquals(1, asyncAuthZFailureObserver.getObserverEvents().size()));
     }
 

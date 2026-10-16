@@ -12,8 +12,6 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.time.Duration;
-
 import jakarta.inject.Inject;
 import jakarta.inject.Named;
 
@@ -32,6 +30,7 @@ import io.quarkus.security.test.cdi.app.denied.unnanotated.BeanWithSecurityAnnot
 import io.quarkus.security.test.utils.IdentityMock;
 import io.quarkus.security.test.utils.SecurityTestUtils;
 import io.quarkus.test.QuarkusExtensionTest;
+import io.quarkus.test.timeouts.TestTimeouts;
 
 public class CDIAuthorizationFailureEventTest {
 
@@ -146,7 +145,7 @@ public class CDIAuthorizationFailureEventTest {
     }
 
     private void assertAsyncObserved(int eventCount) {
-        Awaitility.await().atMost(Duration.ofSeconds(2))
+        Awaitility.await().atMost(TestTimeouts.get())
                 .untilAsserted(() -> assertEquals(eventCount, asyncObserver.getObserverEvents().size()));
     }
 

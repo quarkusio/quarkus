@@ -26,6 +26,7 @@ import io.micrometer.core.instrument.search.MeterNotFoundException;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.quarkus.scheduler.Scheduled;
 import io.quarkus.test.QuarkusExtensionTest;
+import io.quarkus.test.timeouts.TestTimeouts;
 
 public class MicrometerTimedTest {
 
@@ -65,7 +66,7 @@ public class MicrometerTimedTest {
             //the count is updated after the method is called,
             //so we need to use Awaitility as the metric may not be up-to-date immediately
             Awaitility.await().pollInterval(10, TimeUnit.MILLISECONDS)
-                    .atMost(2, TimeUnit.SECONDS)
+                    .atMost(TestTimeouts.get())
                     .untilAsserted(() -> assertTrue(timer1.count() > 0, "Count=" + timer1.count()));
         } catch (MeterNotFoundException e) {
             fail(e.getMessage() + "\nFound: " + registry.find("scheduled.methods").meters().stream()
@@ -80,7 +81,7 @@ public class MicrometerTimedTest {
                     .timer();
             assertNotNull(timer2);
             Awaitility.await().pollInterval(10, TimeUnit.MILLISECONDS)
-                    .atMost(2, TimeUnit.SECONDS)
+                    .atMost(TestTimeouts.get())
                     .untilAsserted(() -> assertTrue(timer2.count() > 0, "Count=" + timer2.count()));
         } catch (MeterNotFoundException e) {
             fail(e.getMessage() + "\nFound: " + registry.find("foo").meters().stream()

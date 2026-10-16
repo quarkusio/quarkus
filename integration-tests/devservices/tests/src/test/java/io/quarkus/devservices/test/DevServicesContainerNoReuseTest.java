@@ -22,6 +22,7 @@ import org.testcontainers.DockerClientFactory;
 import io.quarkus.maven.it.MojoTestBase;
 import io.quarkus.maven.it.verifier.MavenProcessInvocationResult;
 import io.quarkus.maven.it.verifier.RunningInvoker;
+import io.quarkus.test.timeouts.TestTimeouts;
 
 /**
  * Verifies that DevServices does NOT reuse containers across runs
@@ -87,7 +88,7 @@ class DevServicesContainerNoReuseTest extends MojoTestBase {
                 .isZero();
         firstRun.stop();
 
-        await().atMost(30, TimeUnit.SECONDS)
+        await().atMost(TestTimeouts.get())
                 .pollInterval(1, TimeUnit.SECONDS)
                 .untilAsserted(() -> assertThat(findContainerOnPort(FIXED_PORT))
                         .as("Container on port %d should be stopped after the first run"

@@ -15,7 +15,6 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 
@@ -417,7 +416,7 @@ public abstract class AbstractEndUserTest {
     }
 
     private static Map<String, Object> waitForSpanWithPath(final String path) {
-        Awaitility.await().atMost(Duration.ofSeconds(30)).until(() -> !getSpanByPath(path).isEmpty(), new TypeSafeMatcher<>() {
+        Awaitility.await().atMost(TestTimeouts.get()).until(() -> !getSpanByPath(path).isEmpty(), new TypeSafeMatcher<>() {
             @Override
             protected boolean matchesSafely(Boolean aBoolean) {
                 return Boolean.TRUE.equals(aBoolean);

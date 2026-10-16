@@ -59,7 +59,7 @@ public class CancellableResponseFilterTest {
 
         try {
             // make sure we did make the proper request
-            await().atMost(Duration.ofSeconds(2)).untilAtomic(Resource.COUNT, equalTo(1));
+            await().atMost(TestTimeouts.get()).untilAtomic(Resource.COUNT, equalTo(1));
 
             // this will effectively close the connection
             client.close();

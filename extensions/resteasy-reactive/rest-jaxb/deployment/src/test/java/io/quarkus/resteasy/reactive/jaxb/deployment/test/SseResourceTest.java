@@ -7,7 +7,6 @@ import java.io.InputStream;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
 import java.net.URI;
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -45,6 +44,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.common.http.TestHTTPResource;
+import io.quarkus.test.timeouts.TestTimeouts;
 import io.smallrye.common.annotation.Blocking;
 import io.smallrye.mutiny.Multi;
 
@@ -108,7 +108,7 @@ public class SseResourceTest {
         Client client = ClientBuilder.newBuilder().build();
         WebTarget target = client.target(uri.toString() + path);
         Multi<String> multi = target.request().rx(MultiInvoker.class).get(String.class);
-        List<String> list = multi.collect().asList().await().atMost(Duration.ofSeconds(30));
+        List<String> list = multi.collect().asList().await().atMost(TestTimeouts.get());
         assertThat(list).containsExactly("hello");
     }
 
@@ -123,7 +123,7 @@ public class SseResourceTest {
         Client client = ClientBuilder.newBuilder().build();
         WebTarget target = client.target(uri.toString() + path);
         Multi<Message> multi = target.request().rx(MultiInvoker.class).get(Message.class);
-        List<Message> list = multi.collect().asList().await().atMost(Duration.ofSeconds(30));
+        List<Message> list = multi.collect().asList().await().atMost(TestTimeouts.get());
         assertThat(list).extracting("name").containsExactly("hello");
     }
 

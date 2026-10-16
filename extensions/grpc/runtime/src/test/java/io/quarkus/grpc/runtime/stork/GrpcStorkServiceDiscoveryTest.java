@@ -4,7 +4,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
 import java.net.URI;
-import java.time.Duration;
 import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -89,7 +88,7 @@ class GrpcStorkServiceDiscoveryTest {
         resolver.shutdown();
 
         // The delayed failure must not notify the listener once shutdown has completed.
-        await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> {
+        await().atMost(TestTimeouts.get()).untilAsserted(() -> {
             assertThat(listener.errors.get()).isZero();
             assertThat(listener.results.get()).isZero();
         });
@@ -108,7 +107,7 @@ class GrpcStorkServiceDiscoveryTest {
         resolver.shutdown();
 
         // The delayed empty resolution must not notify the listener once shutdown has completed.
-        await().atMost(Duration.ofSeconds(2)).untilAsserted(() -> {
+        await().atMost(TestTimeouts.get()).untilAsserted(() -> {
             assertThat(listener.errors.get()).isZero();
             assertThat(listener.results.get()).isZero();
         });

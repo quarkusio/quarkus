@@ -7,7 +7,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import java.time.Duration;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -31,6 +30,7 @@ import io.opentelemetry.proto.metrics.v1.Sum;
 import io.opentelemetry.proto.trace.v1.ResourceSpans;
 import io.opentelemetry.proto.trace.v1.ScopeSpans;
 import io.opentelemetry.proto.trace.v1.Span;
+import io.quarkus.test.timeouts.TestTimeouts;
 
 public abstract class AbstractExporterTest {
 
@@ -63,7 +63,7 @@ public abstract class AbstractExporterTest {
 
     private void verifyTraces() {
         await()
-                .atMost(Duration.ofSeconds(30))
+                .atMost(TestTimeouts.get())
                 .untilAsserted(() -> assertThat(traces.getTraceRequests()).hasSize(1));
 
         ExportTraceServiceRequest request = traces.getTraceRequests().get(0);
@@ -129,7 +129,7 @@ public abstract class AbstractExporterTest {
 
     private Metric getMetric(final String metricName) {
         await()
-                .atMost(Duration.ofSeconds(30))
+                .atMost(TestTimeouts.get())
                 .untilAsserted(() -> {
                     List<ExportMetricsServiceRequest> reqs = metrics.getMetricRequests();
                     Optional<Metric> metric = getMetric(metricName, reqs);
@@ -152,7 +152,7 @@ public abstract class AbstractExporterTest {
     private void verifyLogs() {
         List<ExportLogsServiceRequest> logsRequests = logs.getLogsRequests();
         await()
-                .atMost(Duration.ofSeconds(30))
+                .atMost(TestTimeouts.get())
                 .untilAsserted(() -> assertThat(logsRequests).hasSizeGreaterThan(2));
         ExportLogsServiceRequest request = logsRequests.get(logsRequests.size() - 2);
         assertEquals(1, request.getResourceLogsCount());

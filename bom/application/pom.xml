@@ -96,7 +96,7 @@
         <commons-logging-jboss-logging.version>2.0.0.Final</commons-logging-jboss-logging.version>
         <commons-lang3.version>3.21.0</commons-lang3.version>
         <commons-codec.version>1.23.0</commons-codec.version>
-        <classmate.version>1.7.1</classmate.version>
+        <classmate.version>1.8.0</classmate.version>
         <!-- See root POM for hibernate-orm.version, hibernate-reactive.version, hibernate-validator.version,
              hibernate-search.version, antlr.version, bytebuddy.version -->
         <narayana.version>7.3.4.Final</narayana.version>

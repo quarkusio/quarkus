@@ -1,6 +1,7 @@
 package io.quarkus.test.common.http;
 
 import java.lang.reflect.Field;
+import java.net.URI;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -14,10 +15,13 @@ import org.eclipse.microprofile.config.ConfigProvider;
 import io.quarkus.runtime.test.TestHttpEndpointProvider;
 import io.quarkus.test.common.ListeningAddress;
 import io.quarkus.value.registry.ValueRegistry;
+import io.quarkus.value.registry.ValueRegistry.RuntimeKey;
 import io.smallrye.config.Config;
 import io.smallrye.config.SmallRyeConfig;
 
 public class TestHTTPResourceManager {
+    private static final RuntimeKey<URI> LOCAL_BASE_URI = RuntimeKey.key("quarkus.http.local-base-uri");
+    private static final RuntimeKey<URI> LAMBDA_BASE_URI = RuntimeKey.key("quarkus.lambda.local-base-uri");
 
     public static void inject(Object testCase, ValueRegistry valueRegistry) {
         inject(testCase, valueRegistry, Config.get(), TestHttpEndpointProvider.load());
@@ -122,6 +126,13 @@ public class TestHTTPResourceManager {
     }
 
     public static String testUrl(ValueRegistry valueRegistry, Config config, String... paths) {
+        URI baseUri = getBaseUri(valueRegistry, LAMBDA_BASE_URI);
+        if (baseUri == null) {
+            baseUri = getBaseUri(valueRegistry, LOCAL_BASE_URI);
+        }
+        if (baseUri != null) {
+            return appendPaths(baseUri, paths);
+        }
         String host = host(config, "quarkus.http.host");
         int port = valueRegistry.getOrDefault(ListeningAddress.HTTP_TEST_PORT, 8081);
         String rootPath = rootPath(config, paths);
@@ -136,10 +147,29 @@ public class TestHTTPResourceManager {
     }
 
     public static String testUrlSsl(ValueRegistry valueRegistry, Config config, String... paths) {
+        URI baseUri = getBaseUri(valueRegistry, LOCAL_BASE_URI);
+        if (baseUri != null && "https".equals(baseUri.getScheme())) {
+            return appendPaths(baseUri, paths);
+        }
         String host = host(config, "quarkus.http.host");
         int port = valueRegistry.getOrDefault(ListeningAddress.HTTPS_TEST_PORT, 8444);
         String rootPath = rootPath(config, paths);
         return "https://" + host + ":" + port + rootPath;
+    }
+
+    private static URI getBaseUri(ValueRegistry valueRegistry, RuntimeKey<URI> key) {
+        return valueRegistry.containsKey(key) ? valueRegistry.get(key) : null;
+    }
+
+    private static String appendPaths(URI baseUri, String... paths) {
+        StringBuilder result = new StringBuilder(baseUri.toString());
+        for (String path : paths) {
+            if (!result.toString().endsWith("/")) {
+                result.append('/');
+            }
+            result.append(path.startsWith("/") ? path.substring(1) : path);
+        }
+        return result.toString();
     }
 
     public static String testManagementUrlSsl(ValueRegistry valueRegistry, Config config, String... paths) {

@@ -2876,7 +2876,7 @@ An extension may provide multiple capabilities, but only a single provider of a 
 By default, capabilities are not displayed to users.
 Capabilities should be used when checking for the presence of an extension rather than class path based checks.
 
-The preferred way to declare the capabilities an extension provides (or requires) is in the extension descriptor, by configuring the `quarkus-extension-maven-plugin` in the runtime module's `pom.xml`:
+The preferred way to declare the capabilities an extension provides (or requires) is by configuring the `quarkus-extension-maven-plugin` in the runtime module's `pom.xml`:
 
 [source,xml]
 ----

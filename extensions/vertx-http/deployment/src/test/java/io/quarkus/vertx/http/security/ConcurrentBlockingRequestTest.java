@@ -7,7 +7,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
-import java.time.Duration;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -34,6 +33,7 @@ import io.quarkus.security.test.utils.TestIdentityController;
 import io.quarkus.security.test.utils.TestIdentityProvider;
 import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.common.http.TestHTTPResource;
+import io.quarkus.test.timeouts.TestTimeouts;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpClientOptions;
@@ -49,7 +49,6 @@ import io.vertx.mutiny.core.http.HttpClientRequest;
  */
 public class ConcurrentBlockingRequestTest {
 
-    private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(10);
     private static final String APP_PROPS = """
             quarkus.http.auth.permission.auth.paths=/blocker
             quarkus.http.auth.permission.auth.policy=root-policy
@@ -153,7 +152,7 @@ public class ConcurrentBlockingRequestTest {
                 .request(HttpMethod.GET, viewerUri.getPath())
                 .map(withBasic(credentials))
                 .flatMap(HttpClientRequest::send)
-                .await().atMost(REQUEST_TIMEOUT);
+                .await().atMost(TestTimeouts.get());
         return response.statusCode();
     }
 

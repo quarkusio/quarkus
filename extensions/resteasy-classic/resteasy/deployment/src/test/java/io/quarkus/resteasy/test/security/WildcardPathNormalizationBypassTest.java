@@ -3,7 +3,6 @@ package io.quarkus.resteasy.test.security;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.net.URL;
-import java.time.Duration;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
@@ -19,6 +18,7 @@ import io.quarkus.security.test.utils.TestIdentityController;
 import io.quarkus.security.test.utils.TestIdentityProvider;
 import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.common.http.TestHTTPResource;
+import io.quarkus.test.timeouts.TestTimeouts;
 import io.vertx.core.http.HttpMethod;
 import io.vertx.ext.web.Router;
 import io.vertx.mutiny.core.Vertx;
@@ -30,8 +30,6 @@ import io.vertx.mutiny.core.http.HttpClientRequest;
  * is present.
  */
 public class WildcardPathNormalizationBypassTest {
-
-    private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(20);
 
     @RegisterExtension
     static QuarkusExtensionTest runner = new QuarkusExtensionTest()
@@ -97,12 +95,12 @@ public class WildcardPathNormalizationBypassTest {
                     .invoke(r -> assertEquals(expectedStatusCode, r.statusCode(),
                             "Path: " + path + " (auth=" + auth + ")"))
                     .await()
-                    .atMost(REQUEST_TIMEOUT);
+                    .atMost(TestTimeouts.get());
         } finally {
             httpClient
                     .close()
                     .await()
-                    .atMost(REQUEST_TIMEOUT);
+                    .atMost(TestTimeouts.get());
         }
     }
 

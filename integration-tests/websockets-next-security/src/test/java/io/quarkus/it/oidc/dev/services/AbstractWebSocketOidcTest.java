@@ -6,7 +6,6 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.net.URI;
-import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
@@ -26,6 +25,7 @@ import io.quarkus.it.oidc.dev.services.SecurityIdentityUpdateWebSocket.ResponseD
 import io.quarkus.security.AuthenticationFailedException;
 import io.quarkus.test.common.http.TestHTTPResource;
 import io.quarkus.test.oidc.client.OidcTestClient;
+import io.quarkus.test.timeouts.TestTimeouts;
 import io.vertx.core.Vertx;
 import io.vertx.core.http.WebSocket;
 import io.vertx.core.http.WebSocketClient;
@@ -33,8 +33,6 @@ import io.vertx.core.http.WebSocketConnectOptions;
 import tools.jackson.databind.ObjectMapper;
 
 abstract class AbstractWebSocketOidcTest {
-
-    private static final Duration TIMEOUT = Duration.ofSeconds(10);
 
     private static final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -152,7 +150,7 @@ abstract class AbstractWebSocketOidcTest {
 
             // first authorized call the endpoint without any identity update
             ws1.get().writeTextMessage(createRequest("hello", null));
-            Awaitility.await().atMost(TIMEOUT)
+            Awaitility.await().atMost(TestTimeouts.get())
                     .untilAsserted(() -> assertEquals(1, messages.size(), "Messages: " + messages));
             var responseDto = messages.get(0);
             assertEquals("hello", responseDto.message());
@@ -161,7 +159,7 @@ abstract class AbstractWebSocketOidcTest {
             // now update identity
             Thread.sleep(1000); // makes sure that tokens have different expiration time
             ws1.get().writeTextMessage(createRequest("hello", oidcTestClient.getAccessToken("alice", "alice")));
-            Awaitility.await().atMost(TIMEOUT)
+            Awaitility.await().atMost(TestTimeouts.get())
                     .untilAsserted(() -> assertEquals(2, messages.size(), "Messages: " + messages));
             responseDto = messages.get(1);
             assertEquals("hello", responseDto.message());
@@ -172,7 +170,7 @@ abstract class AbstractWebSocketOidcTest {
             // and update identity again
             Thread.sleep(1000); // makes sure that tokens have different expiration time
             ws1.get().writeTextMessage(createRequest("hello", oidcTestClient.getAccessToken("alice", "alice")));
-            Awaitility.await().atMost(TIMEOUT)
+            Awaitility.await().atMost(TestTimeouts.get())
                     .untilAsserted(() -> assertEquals(3, messages.size(), "Messages: " + messages));
             responseDto = messages.get(2);
             assertEquals("hello", responseDto.message());
@@ -185,7 +183,7 @@ abstract class AbstractWebSocketOidcTest {
             // that updated identity is passed to the checker on the next invocation
             Assertions.assertNull(ws1.get().closeStatusCode());
             ws1.get().writeTextMessage(createRequest("bye", oidcTestClient.getAccessToken("alice", "alice")));
-            Awaitility.await().atMost(TIMEOUT).untilAsserted(
+            Awaitility.await().atMost(TestTimeouts.get()).untilAsserted(
                     () -> {
                         Assertions.assertNotNull(ws1.get().closeStatusCode());
                         assertEquals(WebSocketCloseStatus.POLICY_VIOLATION.code(), (int) ws1.get().closeStatusCode());
@@ -258,7 +256,7 @@ abstract class AbstractWebSocketOidcTest {
 
             // after about 2 seconds, updated SecurityIdentity will expire, so expect connection closed
             Assertions.assertNull(ws1.get().closeStatusCode());
-            Awaitility.await().atMost(TIMEOUT).untilAsserted(
+            Awaitility.await().atMost(TestTimeouts.get()).untilAsserted(
                     () -> {
                         Assertions.assertNotNull(ws1.get().closeStatusCode());
                         assertEquals(WebSocketCloseStatus.POLICY_VIOLATION.code(), (int) ws1.get().closeStatusCode());
@@ -317,7 +315,7 @@ abstract class AbstractWebSocketOidcTest {
 
             // by default the authorization failure should result in closing of the connection
             Assertions.assertNull(ws1.get().closeStatusCode());
-            Awaitility.await().atMost(TIMEOUT).untilAsserted(
+            Awaitility.await().atMost(TestTimeouts.get()).untilAsserted(
                     () -> {
                         Assertions.assertNotNull(ws1.get().closeStatusCode());
                         assertEquals(WebSocketCloseStatus.POLICY_VIOLATION.code(), (int) ws1.get().closeStatusCode());
@@ -374,7 +372,7 @@ abstract class AbstractWebSocketOidcTest {
             // now update identity
             Thread.sleep(1000); // makes sure that tokens have different expiration time
             ws1.get().writeTextMessage(createRequest("hello", oidcTestClient.getAccessToken("alice", "alice")));
-            Awaitility.await().atMost(TIMEOUT)
+            Awaitility.await().atMost(TestTimeouts.get())
                     .untilAsserted(() -> assertEquals(1, messages.size(), "Messages: " + messages));
             var firstResponseDto = messages.get(0);
             assertEquals("hello", firstResponseDto.message());
@@ -383,7 +381,7 @@ abstract class AbstractWebSocketOidcTest {
             // and update identity again
             Thread.sleep(1000); // makes sure that tokens have different expiration time
             ws1.get().writeTextMessage(createRequest("hello", oidcTestClient.getAccessToken("alice", "alice")));
-            Awaitility.await().atMost(TIMEOUT)
+            Awaitility.await().atMost(TestTimeouts.get())
                     .untilAsserted(() -> assertEquals(2, messages.size(), "Messages: " + messages));
             var secondResponseDto = messages.get(1);
             assertEquals("hello", secondResponseDto.message());
@@ -393,7 +391,7 @@ abstract class AbstractWebSocketOidcTest {
 
             // now without any identity update
             ws1.get().writeTextMessage(createRequest("hello", null));
-            Awaitility.await().atMost(TIMEOUT)
+            Awaitility.await().atMost(TestTimeouts.get())
                     .untilAsserted(() -> assertEquals(3, messages.size(), "Messages: " + messages));
             var thirdResponseDto = messages.get(2);
             assertEquals("hello", thirdResponseDto.message());
@@ -436,7 +434,7 @@ abstract class AbstractWebSocketOidcTest {
 
             Assertions.assertNull(ws1.get().closeStatusCode());
             ws1.get().writeTextMessage(createRequest("hello", oidcTestClient.getAccessToken("alice", "alice")));
-            Awaitility.await().atMost(TIMEOUT).untilAsserted(
+            Awaitility.await().atMost(TestTimeouts.get()).untilAsserted(
                     () -> {
                         Assertions.assertNotNull(ws1.get().closeStatusCode());
                         assertEquals(WebSocketCloseStatus.POLICY_VIOLATION.code(), (int) ws1.get().closeStatusCode());

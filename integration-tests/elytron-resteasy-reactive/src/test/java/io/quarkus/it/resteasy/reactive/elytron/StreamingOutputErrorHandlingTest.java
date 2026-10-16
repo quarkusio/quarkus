@@ -3,7 +3,6 @@ package io.quarkus.it.resteasy.reactive.elytron;
 import static io.restassured.RestAssured.port;
 
 import java.nio.charset.StandardCharsets;
-import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -17,6 +16,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.test.junit.QuarkusTest;
+import io.quarkus.test.timeouts.TestTimeouts;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
@@ -26,7 +26,6 @@ import io.vertx.core.http.HttpMethod;
 
 @QuarkusTest
 public class StreamingOutputErrorHandlingTest {
-    private static final Duration TIMEOUT = Duration.ofSeconds(10);
     private static final int ITEMS_PER_BATCH = 100;
     private static final int BYTES_PER_CHUNK = "This is one chunk of data.\n"
             .getBytes(StandardCharsets.UTF_8).length;
@@ -62,7 +61,7 @@ public class StreamingOutputErrorHandlingTest {
                 b -> byteCount.addAndGet(b.length()),
                 () -> connectionWasReset.set(true));
 
-        Assertions.assertTimeoutPreemptively(TIMEOUT, () -> {
+        Assertions.assertTimeoutPreemptively(TestTimeouts.get(), () -> {
             try {
                 latch.get();
                 Assertions.assertEquals(EXPECTED_BYTES_FIRST_BATCH, byteCount.get(),
@@ -85,7 +84,7 @@ public class StreamingOutputErrorHandlingTest {
         sendRequest("/streaming-output-error/output?fail=false", latch,
                 b -> byteCount.addAndGet(b.length()), () -> {
                 });
-        Assertions.assertTimeoutPreemptively(TIMEOUT,
+        Assertions.assertTimeoutPreemptively(TestTimeouts.get(),
                 () -> latch.get(),
                 "StreamingOutput should complete successfully without errors");
 

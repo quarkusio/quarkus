@@ -2,7 +2,6 @@ package io.quarkus.grpc.server.blocking;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.time.Duration;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -25,6 +24,7 @@ import io.quarkus.grpc.blocking.MutinyBlockingTestServiceGrpc;
 import io.quarkus.grpc.server.services.AssertHelper;
 import io.quarkus.grpc.server.services.BlockingMutinyTestService;
 import io.quarkus.test.QuarkusExtensionTest;
+import io.quarkus.test.timeouts.TestTimeouts;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 
@@ -40,8 +40,6 @@ public class BlockingMethodsWithMutinyImplTest {
                             .addPackage(BlockingTestServiceGrpc.class.getPackage())
                             .addClasses(BlockingMutinyTestService.class, AssertHelper.class))
             .withConfigurationResource("blocking-test-config.properties");
-
-    protected static final Duration TIMEOUT = Duration.ofSeconds(5);
 
     @GrpcClient("blocking-test")
     BlockingTestServiceGrpc.BlockingTestServiceBlockingStub service;
@@ -118,7 +116,7 @@ public class BlockingMethodsWithMutinyImplTest {
                 .map(p -> Messages.StreamingInputCallRequest.newBuilder().setPayload(p).build());
         Uni<Messages.StreamingInputCallResponse> done = mutiny.streamingInputCall(input);
         assertThat(done).isNotNull();
-        done.await().atMost(TIMEOUT);
+        done.await().atMost(TestTimeouts.get());
     }
 
     @Test
@@ -129,7 +127,7 @@ public class BlockingMethodsWithMutinyImplTest {
                 .map(p -> Messages.StreamingInputCallRequest.newBuilder().setPayload(p).build());
         Uni<Messages.StreamingInputCallResponse> done = mutiny.streamingInputCallBlocking(input);
         assertThat(done).isNotNull();
-        done.await().atMost(TIMEOUT);
+        done.await().atMost(TestTimeouts.get());
     }
 
     @Test
@@ -141,7 +139,7 @@ public class BlockingMethodsWithMutinyImplTest {
         List<String> response = mutiny.fullDuplexCall(input)
                 .map(o -> o.getPayload().getBody().toStringUtf8())
                 .collect().asList()
-                .await().atMost(TIMEOUT);
+                .await().atMost(TestTimeouts.get());
         assertThat(response).isNotNull().hasSize(4)
                 .containsExactly("a1", "b2", "c3", "d4");
     }
@@ -155,7 +153,7 @@ public class BlockingMethodsWithMutinyImplTest {
         List<String> response = mutiny.fullDuplexCallBlocking(input)
                 .map(o -> o.getPayload().getBody().toStringUtf8())
                 .collect().asList()
-                .await().atMost(TIMEOUT);
+                .await().atMost(TestTimeouts.get());
         assertThat(response).isNotNull().hasSize(4)
                 .containsExactly("a1", "b2", "c3", "d4");
     }
@@ -169,7 +167,7 @@ public class BlockingMethodsWithMutinyImplTest {
         List<String> response = mutiny.halfDuplexCall(input)
                 .map(o -> o.getPayload().getBody().toStringUtf8())
                 .collect().asList()
-                .await().atMost(TIMEOUT);
+                .await().atMost(TestTimeouts.get());
         assertThat(response).isNotNull().hasSize(4).containsExactly("A", "B", "C", "D");
 
     }
@@ -183,7 +181,7 @@ public class BlockingMethodsWithMutinyImplTest {
         List<String> response = mutiny.halfDuplexCallBlocking(input)
                 .map(o -> o.getPayload().getBody().toStringUtf8())
                 .collect().asList()
-                .await().atMost(TIMEOUT);
+                .await().atMost(TestTimeouts.get());
         assertThat(response).isNotNull().hasSize(4)
                 .containsExactly("A", "B", "C", "D");
     }

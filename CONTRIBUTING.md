@@ -248,6 +248,10 @@ of your fork with `main` of this repo (e.g. monthly).
 Don't forget to include tests in your pull requests. Also don't forget the documentation (reference documentation,
 javadoc...).
 
+Tests that wait for something to happen should use the shared `TestTimeouts.get()` from `quarkus-junit-timeouts` instead of
+hard-coding a duration. It is configured in [`test-timeouts.properties`](test-timeouts.properties), where it can be
+overridden per module, class or method.
+
 Be sure to test your pull request in:
 
 1. Java mode

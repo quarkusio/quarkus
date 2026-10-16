@@ -96,6 +96,25 @@ run the TCKs:
   readable assertions and better failure messages.
 - Use RestAssured for HTTP endpoint testing.
 
+## Timeouts
+
+Do not hard-code how long a test waits for something that should succeed. Use the shared timeout
+(`io.quarkus.test.timeouts.TestTimeouts`, provided to every module as a test dependency):
+
+```java
+uni.await().atMost(TestTimeouts.get());
+assertThat(latch.await(TestTimeouts.get().toSeconds(), TimeUnit.SECONDS)).isTrue();
+```
+
+- The value comes from `test-timeouts.properties` at the repository root (default `timeout=20s`) and can be overridden
+  from the most to the least specific key: `<module path>.<Class>.<method>.timeout`, `<module path>.<Class>.timeout`,
+  `<module path>.timeout` (then each parent path, such as `extensions.timeout`), `timeout`. For example
+  `extensions/redis-client/runtime.timeout=30s`.
+- CI can pass `-Dquarkus.test.timeout=...` to replace the global default and `-Dquarkus.test.timeout.multiplier=3` to
+  scale whatever value is found.
+- Do not use it for timeouts that are part of what the test checks, such as "nothing must arrive within 2 seconds".
+- Prefer raising the shared value, or a module override, over inventing a new constant in a test.
+
 ## Key Rules
 
 - Do NOT use `@QuarkusTest` in deployment module tests — use `QuarkusExtensionTest`

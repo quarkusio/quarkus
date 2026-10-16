@@ -11,6 +11,7 @@ import java.util.function.Consumer;
 
 import org.jboss.logging.Logger;
 
+import io.quarkus.core.AsyncGracefulShutdownContext;
 import io.quarkus.core.AsyncStartContext;
 import io.quarkus.core.AsyncStopContext;
 import io.quarkus.core.AsyncVoidStartContext;
@@ -183,7 +184,7 @@ public final class ServiceNode implements Runnable, AsyncStartContext<Object>, A
     // Graph structure (set during single-threaded construction)
     // ═══════════════════════════════════════════════
 
-    /** Diagnostic name for logging. */
+    /** The service key, used for lookups and as an internal identifier. */
     private final String name;
 
     /**
@@ -353,7 +354,7 @@ public final class ServiceNode implements Runnable, AsyncStartContext<Object>, A
             }
             old = wit;
         }
-        LOG.tracef("Running service '%s'", name);
+        LOG.tracef("Running service '%s'", displayKey(name));
         graph.monitor().startInitiated(name);
         try {
             action.invokeExact(this);
@@ -365,7 +366,7 @@ public final class ServiceNode implements Runnable, AsyncStartContext<Object>, A
                 if (s != S_RUNNING) {
                     // action already signaled completion before throwing
                     if (s != S_COMPLETED && s != S_STOPPING && s != S_STOPPED) {
-                        LOG.errorf(t, "Service '%s' threw after signaling %s", name, stateName(s));
+                        LOG.errorf(t, "Service '%s' threw after signaling %s", displayKey(name), stateName(s));
                     }
                     return;
                 }
@@ -431,7 +432,8 @@ public final class ServiceNode implements Runnable, AsyncStartContext<Object>, A
         for (;;) {
             if (stateOf(old) != S_RUNNING) {
                 throw new IllegalStateException(
-                        "Service '" + name + "': completion method already called (state is " + stateName(stateOf(old)) + ")");
+                        "Service '" + displayKey(name) + "': completion method already called (state is "
+                                + stateName(stateOf(old)) + ")");
             }
             long next = pack(S_COMPLETED, remainingDepsOf(old), liveDependentsOf(old));
             long wit = (long) PACKED.compareAndExchange(this, old, next);
@@ -493,7 +495,7 @@ public final class ServiceNode implements Runnable, AsyncStartContext<Object>, A
         for (;;) {
             int s = stateOf(old);
             if (s == S_FAILED) {
-                throw new IllegalStateException("Service '" + name + "': cannot cancel after failure");
+                throw new IllegalStateException("Service '" + displayKey(name) + "': cannot cancel after failure");
             }
             if (s != S_RUNNING) {
                 return; // already canceled, completed, or in another non-cancelable state
@@ -521,7 +523,8 @@ public final class ServiceNode implements Runnable, AsyncStartContext<Object>, A
         for (;;) {
             if (stateOf(old) != S_RUNNING) {
                 throw new IllegalStateException(
-                        "Service '" + name + "': completion method already called (state is " + stateName(stateOf(old)) + ")");
+                        "Service '" + displayKey(name) + "': completion method already called (state is "
+                                + stateName(stateOf(old)) + ")");
             }
             long next = pack(S_FAILED, remainingDepsOf(old), liveDependentsOf(old));
             long wit = (long) PACKED.compareAndExchange(this, old, next);
@@ -546,7 +549,7 @@ public final class ServiceNode implements Runnable, AsyncStartContext<Object>, A
         graph.monitor().startFailed(name, cause.toString());
         this.failure = cause;
         graph.recordFailure(cause);
-        LOG.debugf(cause, "Service '%s' failed to start", name);
+        LOG.debugf(cause, "Service '%s' failed to start", displayKey(name));
         // forward: cancel dependents that haven't started yet
         for (ServiceNode dep : dependents) {
             dep.dependencyFailed();
@@ -599,7 +602,7 @@ public final class ServiceNode implements Runnable, AsyncStartContext<Object>, A
             old = wit;
         }
         if (remainingDepsOf(next) == 0 && stateOf(next) == S_PENDING) {
-            graph.executor().execute(this);
+            graph.execute(this);
         }
     }
 
@@ -681,7 +684,7 @@ public final class ServiceNode implements Runnable, AsyncStartContext<Object>, A
             old = wit;
         }
         if (shouldStop) {
-            graph.executor().execute(this::runStopHandler);
+            graph.execute(this::runStopHandler);
         }
     }
 
@@ -713,7 +716,7 @@ public final class ServiceNode implements Runnable, AsyncStartContext<Object>, A
             }
             old = wit;
         }
-        graph.executor().execute(this::runStopHandler);
+        graph.execute(this::runStopHandler);
     }
 
     /**
@@ -743,7 +746,7 @@ public final class ServiceNode implements Runnable, AsyncStartContext<Object>, A
             }
             old = wit;
         }
-        graph.executor().execute(this::runStopHandler);
+        graph.execute(this::runStopHandler);
     }
 
     /**
@@ -757,7 +760,7 @@ public final class ServiceNode implements Runnable, AsyncStartContext<Object>, A
             try {
                 handler.accept(this::finishStop);
             } catch (Throwable t) {
-                LOG.errorf(t, "Stop handler for service '%s' threw an exception", name);
+                LOG.errorf(t, "Stop handler for service '%s' threw an exception", displayKey(name));
                 this.stopFailed = true;
                 graph.monitor().stopFailed(name, t.toString());
                 finishStop();
@@ -816,8 +819,20 @@ public final class ServiceNode implements Runnable, AsyncStartContext<Object>, A
     @Override
     public void onStopAsync(Consumer<AsyncStopContext> stopper) {
         if (!STOP_HANDLER.compareAndSet(this, null, stopper)) {
-            throw new IllegalStateException("Service '" + name + "': stop handler already registered");
+            throw new IllegalStateException("Service '" + displayKey(name) + "': stop handler already registered");
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public void onGracefulPreShutdownAsync(Consumer<AsyncGracefulShutdownContext> handler) {
+        graph.addGracefulPreShutdownHandler(handler);
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public void onGracefulShutdownAsync(Consumer<AsyncGracefulShutdownContext> handler) {
+        graph.addGracefulShutdownHandler(handler);
     }
 
     // ═══════════════════════════════════════════════
@@ -904,10 +919,39 @@ public final class ServiceNode implements Runnable, AsyncStartContext<Object>, A
     }
 
     /**
+     * Format a service key for display in error messages and diagnostics.
+     * Renders as {@code type[key0][key1]...} for named services, or just
+     * {@code type} for unnamed services.
+     *
+     * @param serviceKey the internal service key (with {@code '\0'} delimiters)
+     * @return a human-readable representation
+     */
+    public static String displayKey(String serviceKey) {
+        int idx = serviceKey.indexOf('\0');
+        if (idx == -1) {
+            return serviceKey;
+        }
+        StringBuilder sb = new StringBuilder(serviceKey.length() + 8);
+        sb.append(serviceKey, 0, idx);
+        while (idx != -1) {
+            int next = serviceKey.indexOf('\0', idx + 1);
+            sb.append('[');
+            if (next == -1) {
+                sb.append(serviceKey, idx + 1, serviceKey.length());
+            } else {
+                sb.append(serviceKey, idx + 1, next);
+            }
+            sb.append(']');
+            idx = next;
+        }
+        return sb.toString();
+    }
+
+    /**
      * {@inheritDoc}
      */
     @Override
     public String toString() {
-        return "ServiceNode[" + name + ":" + stateName(state()) + "]";
+        return "ServiceNode[" + displayKey(name) + ":" + stateName(state()) + "]";
     }
 }

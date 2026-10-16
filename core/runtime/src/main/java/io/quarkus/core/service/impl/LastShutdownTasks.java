@@ -18,7 +18,10 @@ import org.jboss.logging.Logger;
  * that calls {@link #runStatic()} to execute all collected tasks.
  *
  * @see NodeShutdownContext
+ * @deprecated This class supports the legacy {@link io.quarkus.runtime.ShutdownContext#addLastShutdownTask(Runnable)}
+ *             API. Use {@link io.quarkus.core.StartContext#onStop(Runnable)} with appropriate service ordering instead.
  */
+@Deprecated(since = "4.0", forRemoval = true)
 public final class LastShutdownTasks {
 
     private static final Logger LOG = Logger.getLogger("io.quarkus.service");

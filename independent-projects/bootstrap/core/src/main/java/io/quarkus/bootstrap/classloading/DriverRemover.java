@@ -19,6 +19,18 @@ public class DriverRemover implements Runnable {
 
     @Override
     public void run() {
+        // Run the removal twice. DriverManager.getDrivers() calls isDriverAllowed()
+        // which does Class.forName(driverName, true, callerCL) -- the 'true' triggers
+        // class initialization. If a Driver class was defined by this classloader but
+        // not yet initialized, this causes its static initializer to run, which calls
+        // DriverManager.registerDriver() -- registering a new driver instance during
+        // the iteration. CopyOnWriteArrayList snapshot semantics mean the first pass
+        // doesn't see this newly registered driver. The second pass picks it up.
+        deregisterDrivers();
+        deregisterDrivers();
+    }
+
+    private void deregisterDrivers() {
         Enumeration<Driver> drivers = DriverManager.getDrivers();
         while (drivers.hasMoreElements()) {
             Driver driver = drivers.nextElement();

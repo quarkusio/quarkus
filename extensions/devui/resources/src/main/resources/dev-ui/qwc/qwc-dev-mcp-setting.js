@@ -573,14 +573,10 @@ export class QwcDevMCPSetting extends QwcHotReloadElement {
         icon: 'font-awesome-solid:bolt',
         file: '~/.config/zed/settings.json',
         docsUrl: 'https://zed.dev/docs/ai/mcp',
-        prerequisite: 'Requires Node.js and npx',
         config: {
           context_servers: {
             'quarkus-mcp': {
-              command: {
-                path: 'npx',
-                args: ['-y', 'mcp-remote', this._mcpPath]
-              }
+              url: this._mcpPath
             }
           }
         }
@@ -621,7 +617,7 @@ export class QwcDevMCPSetting extends QwcHotReloadElement {
           mcpServers: {
             'quarkus-mcp': {
               command: 'npx',
-              args: ['-y', 'mcp-remote', this._mcpPath]
+              args: ['-y', 'mcp-remote@0.15.1', this._mcpPath]
             }
           }
         }

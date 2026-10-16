@@ -31,7 +31,7 @@ class PhaseServicesTest {
         ServiceMetadataBuildItem meta = metadataItems.get(0);
         assertThat(meta.dependencies()).hasSize(1);
         Dependency dep = meta.dependencies().get(0);
-        assertThat(dep.key()).isEqualTo("io.quarkus.core.deployment.service.impl.PhaseServicesTest$TestEnum:FOO");
+        assertThat(dep.key()).isEqualTo("io.quarkus.core.deployment.service.impl.PhaseServicesTest$TestEnum\0FOO");
     }
 
     @Test
@@ -47,7 +47,7 @@ class PhaseServicesTest {
         ServiceMetadataBuildItem meta = metadataItems.get(0);
         assertThat(meta.dependencies()).hasSize(1);
         Dependency dep = meta.dependencies().get(0);
-        assertThat(dep.key()).isEqualTo("io.quarkus.core.Phase:DATA");
+        assertThat(dep.key()).isEqualTo("io.quarkus.core.Phase\0DATA");
     }
 
     @Test

@@ -123,6 +123,7 @@ import io.quarkus.runtime.util.StepTiming;
 import io.quarkus.value.registry.RuntimeInfoProvider;
 import io.quarkus.value.registry.RuntimeInfoProvider.RuntimeSource;
 import io.quarkus.value.registry.ValueRegistry;
+import io.smallrye.classfile.ClassHierarchyResolver;
 
 public class MainClassBuildStep {
 
@@ -795,9 +796,14 @@ public class MainClassBuildStep {
             return Map.of();
         }
 
+        ClassHierarchyResolver classHierarchyResolver = ClassHierarchyResolver
+                .ofResourceParsing(Thread.currentThread().getContextClassLoader())
+                .cached();
         Map<TransliteratedAction, ConsolidatedRef> refs = new IdentityHashMap<>();
-        consolidateBatch(staticActions, "io/quarkus/generated/service/StaticServiceActions", refs, generatedClass);
-        consolidateBatch(runtimeActions, "io/quarkus/generated/service/RuntimeServiceActions", refs, generatedClass);
+        consolidateBatch(staticActions, "io/quarkus/generated/service/StaticServiceActions", refs, generatedClass,
+                classHierarchyResolver);
+        consolidateBatch(runtimeActions, "io/quarkus/generated/service/RuntimeServiceActions", refs, generatedClass,
+                classHierarchyResolver);
         return refs;
     }
 
@@ -813,11 +819,13 @@ public class MainClassBuildStep {
             List<TransliteratedAction> actions,
             String classInternalName,
             Map<TransliteratedAction, ConsolidatedRef> refs,
-            BuildProducer<GeneratedClassBuildItem> generatedClass) {
+            BuildProducer<GeneratedClassBuildItem> generatedClass,
+            ClassHierarchyResolver classHierarchyResolver) {
         if (actions.isEmpty()) {
             return;
         }
-        Map<String, byte[]> classes = LambdaTransliterator.generateConsolidatedClass(classInternalName, actions);
+        Map<String, byte[]> classes = LambdaTransliterator.generateConsolidatedClass(
+                classInternalName, actions, classHierarchyResolver);
         for (var entry : classes.entrySet()) {
             // service action classes reference application types in their bytecode,
             // so they must be application classes to share the same classloader

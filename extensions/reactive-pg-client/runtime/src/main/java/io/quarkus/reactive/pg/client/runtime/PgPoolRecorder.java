@@ -24,6 +24,7 @@ import io.quarkus.tls.TlsConfigurationRegistry;
 import io.vertx.core.Future;
 import io.vertx.core.Vertx;
 import io.vertx.core.internal.VertxInternal;
+import io.vertx.core.net.NetClientOptions;
 import io.vertx.pgclient.PgBuilder;
 import io.vertx.pgclient.PgConnectOptions;
 import io.vertx.pgclient.SslMode;
@@ -84,7 +85,9 @@ public class PgPoolRecorder {
                 dataSourceReactiveRuntimeConfig, dataSourceReactivePostgreSQLConfig, tlsRegistry);
         Supplier<Future<SqlConnectOptions>> databasesSupplier = ReactivePoolUtil.toDatabasesSupplier(pgConnectOptionsList,
                 dataSourceRuntimeConfig, PgConnectOptions::new);
-        return createPool(vertx, poolOptions, pgConnectOptionsList, dataSourceName, databasesSupplier, context);
+        NetClientOptions netClientOptions = ReactivePoolUtil.toNetClientOptions(dataSourceReactiveRuntimeConfig);
+        return createPool(vertx, poolOptions, netClientOptions, pgConnectOptionsList, dataSourceName, databasesSupplier,
+                context);
     }
 
     private List<PgConnectOptions> toPgConnectOptions(String dataSourceName, DataSourceRuntimeConfig dataSourceRuntimeConfig,
@@ -149,17 +152,18 @@ public class PgPoolRecorder {
         return pgConnectOptionsList;
     }
 
-    private Pool createPool(Vertx vertx, PoolOptions poolOptions,
+    private Pool createPool(Vertx vertx, PoolOptions poolOptions, NetClientOptions netClientOptions,
             List<PgConnectOptions> pgConnectOptionsList,
             String dataSourceName, Supplier<Future<SqlConnectOptions>> databases,
             SyntheticCreationalContext<Pool> context) {
         Instance<PoolCreator> instance = context.getInjectedReference(POOL_CREATOR_TYPE_LITERAL, qualifier(dataSourceName));
         if (instance.isResolvable()) {
-            PoolCreator.Input input = new DefaultInput(vertx, poolOptions, pgConnectOptionsList);
+            PoolCreator.Input input = new DefaultInput(vertx, poolOptions, netClientOptions, pgConnectOptionsList);
             return instance.get().create(input);
         }
 
         return PgBuilder.pool().with(poolOptions)
+                .with(netClientOptions)
                 .connectingTo(databases)
                 .using(vertx).build();
     }
@@ -167,11 +171,14 @@ public class PgPoolRecorder {
     private static class DefaultInput implements PoolCreator.Input {
         private final Vertx vertx;
         private final PoolOptions poolOptions;
+        private final NetClientOptions netClientOptions;
         private final List<? extends SqlConnectOptions> connectOptionsList;
 
-        public DefaultInput(Vertx vertx, PoolOptions poolOptions, List<? extends SqlConnectOptions> connectOptionsList) {
+        public DefaultInput(Vertx vertx, PoolOptions poolOptions, NetClientOptions netClientOptions,
+                List<? extends SqlConnectOptions> connectOptionsList) {
             this.vertx = vertx;
             this.poolOptions = poolOptions;
+            this.netClientOptions = netClientOptions;
             this.connectOptionsList = connectOptionsList;
         }
 
@@ -183,6 +190,11 @@ public class PgPoolRecorder {
         @Override
         public PoolOptions poolOptions() {
             return poolOptions;
+        }
+
+        @Override
+        public NetClientOptions netClientOptions() {
+            return netClientOptions;
         }
 
         @Override

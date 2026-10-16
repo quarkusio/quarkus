@@ -5,6 +5,7 @@ import static io.quarkus.credentials.CredentialsProvider.USER_PROPERTY_NAME;
 import static io.quarkus.reactive.datasource.runtime.UnitisedTime.unitised;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -26,6 +27,7 @@ import io.quarkus.vertx.core.runtime.config.PfxConfiguration;
 import io.vertx.core.Future;
 import io.vertx.core.net.ClientSSLOptions;
 import io.vertx.core.net.JksOptions;
+import io.vertx.core.net.NetClientOptions;
 import io.vertx.core.net.PemKeyCertOptions;
 import io.vertx.core.net.PemTrustOptions;
 import io.vertx.core.net.PfxOptions;
@@ -91,6 +93,64 @@ public final class ReactivePoolUtil {
         }
 
         return poolOptions;
+    }
+
+    /**
+     * Build the {@link NetClientOptions} used by the pool to open connections, from the TCP keep-alive and socket idle
+     * timeout settings of the generic reactive datasource config.
+     * <p>
+     * When none of these settings is configured, the result is equivalent to the default {@link NetClientOptions}.
+     */
+    public static NetClientOptions toNetClientOptions(DataSourceReactiveRuntimeConfig config) {
+        NetClientOptions netClientOptions = new NetClientOptions();
+
+        netClientOptions.setTcpKeepAlive(config.tcpKeepAlive());
+        if (config.tcpKeepAliveIdle().isPresent()) {
+            netClientOptions.setTcpKeepAliveIdleSeconds(toSeconds("tcp-keep-alive-idle", config.tcpKeepAliveIdle().get()));
+        }
+        if (config.tcpKeepAliveInterval().isPresent()) {
+            netClientOptions.setTcpKeepAliveIntervalSeconds(
+                    toSeconds("tcp-keep-alive-interval", config.tcpKeepAliveInterval().get()));
+        }
+        if (config.tcpKeepAliveCount().isPresent()) {
+            int count = config.tcpKeepAliveCount().getAsInt();
+            if (count < 1) {
+                throw new ConfigurationException("tcp-keep-alive-count must be strictly positive, got " + count);
+            }
+            netClientOptions.setTcpKeepAliveCount(count);
+        }
+
+        if (config.socketReadIdleTimeout().isPresent() || config.socketWriteIdleTimeout().isPresent()) {
+            // Vert.x uses a single unit for the read, write and read/write idle timeouts
+            netClientOptions.setIdleTimeoutUnit(MILLISECONDS);
+            if (config.socketReadIdleTimeout().isPresent()) {
+                netClientOptions
+                        .setReadIdleTimeout(toMillis("socket-read-idle-timeout", config.socketReadIdleTimeout().get()));
+            }
+            if (config.socketWriteIdleTimeout().isPresent()) {
+                netClientOptions
+                        .setWriteIdleTimeout(toMillis("socket-write-idle-timeout", config.socketWriteIdleTimeout().get()));
+            }
+        }
+
+        return netClientOptions;
+    }
+
+    private static int toSeconds(String property, Duration duration) {
+        long seconds = duration.toSeconds();
+        if (seconds < 1 || seconds > Integer.MAX_VALUE) {
+            throw new ConfigurationException(property + " must be between 1 second and " + Integer.MAX_VALUE
+                    + " seconds, got " + duration);
+        }
+        return (int) seconds;
+    }
+
+    private static int toMillis(String property, Duration duration) {
+        if (duration.isNegative() || duration.isZero() || duration.toMillis() > Integer.MAX_VALUE) {
+            throw new ConfigurationException(property + " must be between 1 millisecond and " + Integer.MAX_VALUE
+                    + " milliseconds, got " + duration);
+        }
+        return (int) Math.max(1, duration.toMillis());
     }
 
     /**

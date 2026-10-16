@@ -5,6 +5,8 @@ import java.util.Set;
 
 import org.jboss.logging.Logger;
 
+import io.netty.handler.codec.http.HttpResponseStatus;
+import io.quarkus.vertx.http.runtime.security.HttpSecurityUtils;
 import io.vertx.core.http.HttpHeaders;
 import io.vertx.core.http.MimeMapping;
 import io.vertx.core.internal.net.RFC3986;
@@ -83,6 +85,72 @@ public final class RoutingUtils {
                         // let's be extra careful here in case Vert.x normalizes the mount points at
                         // some point
                         ctx.mountPoint().endsWith("/") ? ctx.mountPoint().length() - 1 : ctx.mountPoint().length());
+    }
+
+    /**
+     * Handles a request for a directory containing an index page when the request path does not end with a slash,
+     * according to {@code quarkus.http.static-resources.index-directories}.
+     *
+     * @return {@code true} if the request was handled, {@code false} if the caller should proceed as if the path
+     *         did not exist
+     */
+    public static boolean handleIndexDirectory(RoutingContext ctx, StaticResourcesConfig.IndexDirectories mode) {
+        String query = ctx.request().query();
+        switch (mode) {
+            case REDIRECT:
+                String location = indexDirectoryLocation(ctx);
+                if (location == null) {
+                    return false;
+                }
+                if (query != null) {
+                    location = location + "?" + query;
+                }
+                ctx.response().setStatusCode(HttpResponseStatus.MOVED_PERMANENTLY.code())
+                        .putHeader(HttpHeaders.LOCATION, location)
+                        .end();
+                return true;
+            case REROUTE:
+                String path = ctx.normalizedPath() + "/";
+                if (query != null) {
+                    path = path + "?" + query;
+                }
+                ctx.reroute(path);
+                return true;
+            default:
+                return false;
+        }
+    }
+
+    /**
+     * Builds the {@code Location} pointing at the directory path with its trailing slash, or returns {@code null}
+     * when the path of the request must not be reflected back to the client.
+     * <p>
+     * The path is only reflected when it already is the form the directory was matched under: an absolute path no
+     * client can read as an authority, free of dot segments, and whose full normalization - repeated percent
+     * decoding, matrix parameter removal, back slashes, dot segments, as {@link HttpSecurityUtils#normalizePath}
+     * performs it - denotes the very same resource. A path that needs any of those transformations is treated as a
+     * path that does not exist, so a request crafted to make the header mean something else gets the answer it
+     * would get without an index page.
+     */
+    private static String indexDirectoryLocation(RoutingContext ctx) {
+        String path = ctx.request().path();
+        if (path == null || !path.startsWith("/") || path.startsWith("//")) {
+            return null;
+        }
+        for (int i = 0; i < path.length(); i++) {
+            char c = path.charAt(i);
+            if (c == '\\' || c < ' ' || c == 0x7f) {
+                return null;
+            }
+        }
+        if (!path.equals(RFC3986.removeDotSegments(path))) {
+            return null;
+        }
+        String resolved = getNormalizedAndDecodedPath(ctx);
+        if (resolved == null || !resolved.equals(HttpSecurityUtils.normalizePath(path))) {
+            return null;
+        }
+        return path + "/";
     }
 
     /**

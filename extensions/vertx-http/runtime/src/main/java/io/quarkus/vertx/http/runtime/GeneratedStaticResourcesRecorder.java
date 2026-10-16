@@ -33,6 +33,7 @@ public class GeneratedStaticResourcesRecorder {
 
         DevClasspathStaticHandlerOptions options = new DevClasspathStaticHandlerOptions.Builder()
                 .indexPage(config.indexPage())
+                .indexDirectories(config.indexDirectories())
                 .httpBuildTimeConfig(httpBuildTimeConfig)
                 .defaultEncoding(config.contentEncoding())
                 .build();

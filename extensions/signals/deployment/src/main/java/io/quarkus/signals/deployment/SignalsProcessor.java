@@ -1,6 +1,5 @@
 package io.quarkus.signals.deployment;
 
-import static io.quarkus.deployment.annotations.ExecutionTime.RUNTIME_INIT;
 import static io.quarkus.signals.deployment.ReceiverExecutorImplementationBuildItem.ReceiverExecutorImplementation.DEFAULT_BLOCKING;
 import static io.quarkus.signals.deployment.ReceiverExecutorImplementationBuildItem.ReceiverExecutorImplementation.VERTX;
 
@@ -56,7 +55,6 @@ import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.GeneratedClassGizmo2Adaptor;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
-import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
@@ -82,7 +80,7 @@ import io.quarkus.signals.runtime.impl.InvokerReceiver.InvokerReceiverInfo;
 import io.quarkus.signals.runtime.impl.ReceiverManager;
 import io.quarkus.signals.runtime.impl.RequestContextInterceptor;
 import io.quarkus.signals.runtime.impl.SignalBeanCreator;
-import io.quarkus.signals.runtime.impl.SignalsRecorder;
+import io.quarkus.signals.runtime.impl.SignalsContextCreator;
 import io.quarkus.signals.runtime.impl.SignalsRecorder.SignalsContext;
 import io.quarkus.signals.runtime.impl.VertxReceiverExecutor;
 
@@ -208,9 +206,8 @@ class SignalsProcessor {
         return false;
     }
 
-    @Record(RUNTIME_INIT)
     @BuildStep
-    void generateReceivers(SignalsRecorder recorder,
+    void generateReceivers(
             BeanRegistrationPhaseBuildItem beanRegistration,
             BeanArchiveIndexBuildItem beanArchiveIndex,
             List<ReceiverMethodBuildItem> receivers,
@@ -339,9 +336,12 @@ class SignalsProcessor {
         syntheticBeans.produce(SyntheticBeanBuildItem.configure(SignalsContext.class)
                 .scope(Dependent.class)
                 .setRuntimeInit()
-                .supplier(recorder.createContext(receiverClasses,
-                        orderedSpiComponents.getOrderedEnricherIds(),
-                        orderedSpiComponents.getOrderedInterceptorIds()))
+                .creator(SignalsContextCreator.class)
+                .param(SignalsContextCreator.RECEIVER_CLASSES, receiverClasses.toArray(String[]::new))
+                .param(SignalsContextCreator.ENRICHER_IDS,
+                        orderedSpiComponents.getOrderedEnricherIds().toArray(String[]::new))
+                .param(SignalsContextCreator.INTERCEPTOR_IDS,
+                        orderedSpiComponents.getOrderedInterceptorIds().toArray(String[]::new))
                 .done());
 
         for (InjectionPointInfo ip : beanRegistration.getInjectionPoints()) {

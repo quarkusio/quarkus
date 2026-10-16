@@ -1,0 +1,3 @@
+quarkus:
+  observability:
+    enabled-in-tests: true

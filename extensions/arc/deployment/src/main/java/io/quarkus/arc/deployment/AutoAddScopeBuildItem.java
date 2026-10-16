@@ -25,6 +25,11 @@ public final class AutoAddScopeBuildItem extends MultiBuildItem {
         return new Builder();
     }
 
+    static IllegalStateException missingSuperclassInIndex(DotName superName, ClassInfo clazz) {
+        return new IllegalStateException("Superclass " + superName + " of " + clazz.name()
+                + " was not found in the Jandex index. This may indicate an application setup error.");
+    }
+
     private final MatchPredicate matchPredicate;
     private final boolean containerServicesRequired;
     private final DotName defaultScope;
@@ -221,8 +226,7 @@ public final class AutoAddScopeBuildItem extends MultiBuildItem {
                 while (superName != null && !superName.equals(DotNames.OBJECT)) {
                     ClassInfo superClass = index.getClassByName(superName);
                     if (superClass == null) {
-                        throw new IllegalStateException("Superclass " + superName + " of " + clazz.name()
-                                + " was not found in the Jandex index. This may indicate an application setup error.");
+                        throw missingSuperclassInIndex(superName, clazz);
                     }
                     if (superClass.interfaceNames().contains(interfaceName)) {
                         return true;

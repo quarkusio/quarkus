@@ -5,6 +5,10 @@ import java.util.Optional;
 import io.quarkus.builder.item.SimpleBuildItem;
 import io.quarkus.runtime.RuntimeValue;
 
+/**
+ * @deprecated Use {@link io.quarkus.deployment.builditem.OpenTelemetrySdkBuildItem} instead.
+ */
+@Deprecated(forRemoval = true)
 public final class OpenTelemetrySdkBuildItem extends SimpleBuildItem {
 
     private final boolean tracingBuildTimeEnabled;

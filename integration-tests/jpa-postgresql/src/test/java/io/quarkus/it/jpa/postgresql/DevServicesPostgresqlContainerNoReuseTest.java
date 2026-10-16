@@ -65,8 +65,8 @@ class DevServicesPostgresqlContainerNoReuseTest extends MojoTestBase {
         // It's disabled by default, but since we can't be sure of the environment,
         // we force it here.
         Map<String, String> envVars = Map.of("TESTCONTAINERS_REUSE_ENABLE", "false");
-        File testDir = initProject("projects/devservices-postgresql-reuse",
-                "projects/devservices-postgresql-reuse-run");
+        File testDir = initProject("projects/devservices-postgresql-no-reuse",
+                "projects/devservices-postgresql-no-reuse-run");
 
         // First run — starts a DevServices PostgreSQL container on the fixed port
         RunningInvoker firstRun = new RunningInvoker(testDir, false);

@@ -10,10 +10,8 @@ import jakarta.inject.Inject;
 import org.hamcrest.Matchers;
 import org.jboss.logging.Logger;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import io.restassured.RestAssured;
+import tools.jackson.databind.ObjectMapper;
 
 public abstract class AbstractTest {
     private static final Logger LOG = Logger.getLogger(AbstractTest.class);
@@ -71,31 +69,19 @@ public abstract class AbstractTest {
     }
 
     protected String createExpected(String message) {
-        try {
-            Greeting g = new Greeting(0, message);
-            return om.writeValueAsString(g);
-        } catch (JsonProcessingException ex) {
-            throw new RuntimeException(ex);
-        }
+        Greeting g = new Greeting(0, message);
+        return om.writeValueAsString(g);
     }
 
     protected String createExpectedList(String message) {
-        try {
-            List<Greeting> l = new ArrayList<>();
-            l.add(new Greeting(0, message));
-            return om.writeValueAsString(l);
-        } catch (JsonProcessingException ex) {
-            throw new RuntimeException(ex);
-        }
+        List<Greeting> l = new ArrayList<>();
+        l.add(new Greeting(0, message));
+        return om.writeValueAsString(l);
     }
 
     protected String createExpectedMap(String message) {
-        try {
-            Map<String, Greeting> m = new HashMap<>();
-            m.put(message, new Greeting(0, message));
-            return om.writeValueAsString(m);
-        } catch (JsonProcessingException ex) {
-            throw new RuntimeException(ex);
-        }
+        Map<String, Greeting> m = new HashMap<>();
+        m.put(message, new Greeting(0, message));
+        return om.writeValueAsString(m);
     }
 }

@@ -1,7 +1,6 @@
 package io.quarkus.smallrye.openapi.deployment.spi;
 
 import io.quarkus.builder.item.MultiBuildItem;
-import io.smallrye.openapi.api.OpenApiDocument;
 import io.smallrye.openapi.api.SmallRyeOpenAPI;
 
 /**
@@ -9,18 +8,12 @@ import io.smallrye.openapi.api.SmallRyeOpenAPI;
  */
 public final class OpenApiDocumentBuildItem extends MultiBuildItem {
 
-    private final OpenApiDocument openApiDocument;
     private final SmallRyeOpenAPI smallRyeOpenAPI;
     private final String documentName;
 
-    public OpenApiDocumentBuildItem(OpenApiDocument openApiDocument, SmallRyeOpenAPI smallRyeOpenAPI, String documentName) {
-        this.openApiDocument = openApiDocument;
+    public OpenApiDocumentBuildItem(SmallRyeOpenAPI smallRyeOpenAPI, String documentName) {
         this.smallRyeOpenAPI = smallRyeOpenAPI;
         this.documentName = documentName;
-    }
-
-    public OpenApiDocument getOpenApiDocument() {
-        return openApiDocument;
     }
 
     public SmallRyeOpenAPI getSmallRyeOpenAPI() {

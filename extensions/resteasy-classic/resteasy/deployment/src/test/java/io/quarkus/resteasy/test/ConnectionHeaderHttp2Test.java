@@ -94,7 +94,7 @@ class ConnectionHeaderHttp2Test {
             assertNull(response.getHeader("connection"),
                     "Connection header must not be set on HTTP/2 responses");
         } finally {
-            client.close();
+            client.close().await(5, TimeUnit.SECONDS);
         }
     }
 

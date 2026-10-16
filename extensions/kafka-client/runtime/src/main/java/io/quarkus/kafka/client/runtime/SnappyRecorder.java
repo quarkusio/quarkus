@@ -10,12 +10,10 @@ import java.net.URL;
 import org.xerial.snappy.OSInfo;
 
 import io.quarkus.runtime.Application;
-import io.quarkus.runtime.annotations.Recorder;
 
-@Recorder
 public class SnappyRecorder {
 
-    public void loadSnappy(boolean loadFromSharedClassLoader) {
+    public static void loadSnappy(boolean loadFromSharedClassLoader) {
         if (loadFromSharedClassLoader) {
             try {
                 Application.class.getClassLoader().loadClass(SnappyLoader.class.getName());

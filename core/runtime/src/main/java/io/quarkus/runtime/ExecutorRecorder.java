@@ -15,149 +15,164 @@ import org.jboss.threads.EnhancedQueueExecutor;
 import org.jboss.threads.JBossExecutors;
 import org.jboss.threads.JBossThreadFactory;
 
-import io.quarkus.runtime.annotations.Recorder;
 import io.quarkus.runtime.util.NoopShutdownScheduledExecutorService;
 import io.smallrye.common.cpu.ProcessorInfo;
 
 /**
- *
+ * Creates and manages the main executor service for blocking tasks.
  */
-@Recorder
 public class ExecutorRecorder {
     private static final Logger log = Logger.getLogger("io.quarkus.thread-pool");
 
     private static volatile Executor current;
+    private static volatile EnhancedQueueExecutor underlying;
 
-    private final RuntimeValue<ThreadPoolConfig> threadPoolConfig;
-
-    public ExecutorRecorder(RuntimeValue<ThreadPoolConfig> threadPoolConfig) {
-        this.threadPoolConfig = threadPoolConfig;
+    private ExecutorRecorder() {
     }
 
-    public ScheduledExecutorService setupRunTime(ShutdownContext shutdownContext,
+    /**
+     * Create and configure the main executor service.
+     * <p>
+     * In production and test modes, the returned executor wraps the underlying
+     * {@link EnhancedQueueExecutor} in a {@link NoopShutdownScheduledExecutorService}
+     * to prevent application code from shutting it down prematurely.
+     *
+     * @param threadPoolConfig the thread pool configuration
+     * @param launchMode the current launch mode
+     * @param threadFactory the thread factory, or {@code null} for the default
+     * @param contextHandler the context handler, or {@code null} for none
+     * @return the configured executor service
+     */
+    public static ScheduledExecutorService setupRunTime(ThreadPoolConfig threadPoolConfig,
             LaunchMode launchMode, ThreadFactory threadFactory, ContextHandler<Object> contextHandler) {
-        final EnhancedQueueExecutor underlying = createExecutor(threadPoolConfig.getValue(), threadFactory, contextHandler);
-        if (launchMode == LaunchMode.DEVELOPMENT) {
-            shutdownContext.addLastShutdownTask(new Runnable() {
-                @Override
-                public void run() {
-                    for (Runnable i : underlying.shutdownNow()) {
-                        Thread thread = new Thread(i, "Shutdown task thread");
-                        thread.setDaemon(true);
-                        thread.start();
-                    }
-                    current = null;
-
-                }
-            });
-        } else {
-            Runnable shutdownTask = createShutdownTask(threadPoolConfig.getValue(), underlying);
-            shutdownContext.addLastShutdownTask(shutdownTask);
+        final EnhancedQueueExecutor eqe = createExecutor(threadPoolConfig, threadFactory, contextHandler);
+        if (threadPoolConfig.prefill()) {
+            eqe.prestartAllCoreThreads();
         }
-        if (threadPoolConfig.getValue().prefill()) {
-            underlying.prestartAllCoreThreads();
-        }
-        ScheduledExecutorService managed = underlying;
-        // In prod and test mode, we wrap the ExecutorService and the shutdown() and shutdownNow() are deliberately not delegated
-        // This is to prevent the application and other extensions from shutting down the executor service
-        // The problem was described in https://github.com/quarkusio/quarkus/issues/16833#issuecomment-1917042589
-        // and https://github.com/quarkusio/quarkus/issues/43228
-        // For example, the Vertx instance is closed before io.quarkus.runtime.ExecutorRecorder.createShutdownTask() is used
-        // And when it's closed the underlying worker thread pool (which is in the prod mode backed by the ExecutorBuildItem) is closed as well
-        // As a result the quarkus.thread-pool.shutdown-interrupt config property and logic defined in ExecutorRecorder.createShutdownTask() is completely ignored
+        underlying = eqe;
+        ScheduledExecutorService managed = eqe;
+        // In prod and test mode, wrap so that application code cannot shut down the executor prematurely
+        // (see https://github.com/quarkusio/quarkus/issues/16833#issuecomment-1917042589
+        //  and https://github.com/quarkusio/quarkus/issues/43228)
         if (launchMode != LaunchMode.DEVELOPMENT) {
-            managed = new NoopShutdownScheduledExecutorService(underlying);
+            managed = new NoopShutdownScheduledExecutorService(eqe);
         }
         current = managed;
         return managed;
     }
 
-    private static Runnable createShutdownTask(ThreadPoolConfig threadPoolConfig, EnhancedQueueExecutor executor) {
-        return new Runnable() {
-            @Override
-            public void run() {
-                executor.shutdown();
-                final Duration shutdownTimeout = threadPoolConfig.shutdownTimeout();
-                final Optional<Duration> optionalInterval = threadPoolConfig.shutdownCheckInterval();
-                long remaining = shutdownTimeout.toNanos();
-                final long interval = optionalInterval.orElse(Duration.ofNanos(Long.MAX_VALUE)).toNanos();
-                long intervalRemaining = interval;
-                long interruptRemaining = threadPoolConfig.shutdownInterrupt().toNanos();
+    /**
+     * Shut down the executor synchronously.
+     * <p>
+     * In development mode, performs an immediate {@code shutdownNow()}.
+     * In production and test modes, performs an orderly shutdown with
+     * configurable timeout and interrupt behavior.
+     *
+     * @param threadPoolConfig the thread pool configuration (for timeout/interrupt settings)
+     * @param launchMode the current launch mode
+     */
+    public static void shutdownExecutor(ThreadPoolConfig threadPoolConfig, LaunchMode launchMode) {
+        final EnhancedQueueExecutor eqe = underlying;
+        if (eqe == null) {
+            return;
+        }
 
-                long start = System.nanoTime();
-                int loop = 1;
-                for (;;) {
-                    // This log can be very useful when debugging problems
-                    log.debugf("loop: %s, remaining: %s, intervalRemaining: %s, interruptRemaining: %s", loop++, remaining,
-                            intervalRemaining, interruptRemaining);
-                    try {
-                        if (!executor.awaitTermination(Math.min(remaining, intervalRemaining), TimeUnit.NANOSECONDS)) {
-                            long end = System.nanoTime();
-                            long elapsed = Math.max(0, end - start);
-                            start = end;
-                            intervalRemaining -= elapsed;
-                            remaining -= elapsed;
-                            interruptRemaining -= elapsed;
-                            if (interruptRemaining <= 0) {
-                                executor.shutdown(true);
-                            }
-                            if (remaining <= 0) {
-                                // done waiting
-                                final List<Runnable> runnables = executor.shutdownNow();
-                                if (!runnables.isEmpty()) {
-                                    log.warnf("Thread pool shutdown failed: discarding %d tasks, %d threads still running",
-                                            runnables.size(), executor.getActiveCount());
-                                } else {
-                                    log.warnf("Thread pool shutdown failed: %d threads still running",
-                                            executor.getActiveCount());
-                                }
-                                break;
-                            }
-                            if (intervalRemaining <= 0) {
-                                intervalRemaining = interval;
-                                // do some probing
-                                final int queueSize = executor.getQueueSize();
-                                final Thread[] runningThreads = executor.getRunningThreads();
-                                if (queueSize <= 0) {
-                                    log.infof("Awaiting thread pool shutdown; %d thread(s) running",
-                                            runningThreads.length);
-                                } else {
-                                    log.infof("Awaiting thread pool shutdown; %d thread(s) running with %d task(s) waiting",
-                                            runningThreads.length, queueSize);
-                                }
-                                // make sure no threads are stuck in {@code exit()}
-                                int realWaiting = runningThreads.length;
-                                for (Thread thr : runningThreads) {
-                                    final StackTraceElement[] stackTrace = thr.getStackTrace();
-                                    for (int i = 0; i < stackTrace.length && i < 8; i++) {
-                                        if (stackTrace[i].getClassName().equals("java.lang.System")
-                                                && stackTrace[i].getMethodName().equals("exit")) {
-                                            final Throwable t = new Throwable();
-                                            t.setStackTrace(stackTrace);
-                                            log.errorf(t, "Thread %s is blocked in System.exit(); pooled (Executor) threads "
-                                                    + "should never call this method because it never returns, thus preventing "
-                                                    + "the thread pool from shutting down in a timely manner.  This is the "
-                                                    + "stack trace of the call", thr.getName());
-                                            // don't bother waiting for exit() to return
-                                            realWaiting--;
-                                            break;
-                                        }
-                                    }
-                                }
-                                if (realWaiting == 0) {
-                                    // just exit
-                                    executor.shutdownNow();
+        if (launchMode == LaunchMode.DEVELOPMENT) {
+            for (Runnable i : eqe.shutdownNow()) {
+                Thread thread = new Thread(i, "Shutdown task thread");
+                thread.setDaemon(true);
+                thread.start();
+            }
+        } else {
+            performOrderlyShutdown(eqe, threadPoolConfig);
+        }
+        underlying = null;
+        current = null;
+    }
+
+    /**
+     * Perform an orderly shutdown of the executor, blocking until terminated
+     * or the configured timeout expires.
+     *
+     * @param executor the executor to shut down
+     * @param threadPoolConfig the configuration with timeout and interrupt settings
+     */
+    private static void performOrderlyShutdown(EnhancedQueueExecutor executor, ThreadPoolConfig threadPoolConfig) {
+        executor.shutdown();
+        final Duration shutdownTimeout = threadPoolConfig.shutdownTimeout();
+        final Optional<Duration> optionalInterval = threadPoolConfig.shutdownCheckInterval();
+        long remaining = shutdownTimeout.toNanos();
+        final long interval = optionalInterval.orElse(Duration.ofNanos(Long.MAX_VALUE)).toNanos();
+        long intervalRemaining = interval;
+        long interruptRemaining = threadPoolConfig.shutdownInterrupt().toNanos();
+
+        long start = System.nanoTime();
+        int loop = 1;
+        for (;;) {
+            log.debugf("loop: %s, remaining: %s, intervalRemaining: %s, interruptRemaining: %s", loop++, remaining,
+                    intervalRemaining, interruptRemaining);
+            try {
+                if (!executor.awaitTermination(Math.min(remaining, intervalRemaining), TimeUnit.NANOSECONDS)) {
+                    long end = System.nanoTime();
+                    long elapsed = Math.max(0, end - start);
+                    start = end;
+                    intervalRemaining -= elapsed;
+                    remaining -= elapsed;
+                    interruptRemaining -= elapsed;
+                    if (interruptRemaining <= 0) {
+                        executor.shutdown(true);
+                    }
+                    if (remaining <= 0) {
+                        final List<Runnable> runnables = executor.shutdownNow();
+                        if (!runnables.isEmpty()) {
+                            log.warnf("Thread pool shutdown failed: discarding %d tasks, %d threads still running",
+                                    runnables.size(), executor.getActiveCount());
+                        } else {
+                            log.warnf("Thread pool shutdown failed: %d threads still running",
+                                    executor.getActiveCount());
+                        }
+                        break;
+                    }
+                    if (intervalRemaining <= 0) {
+                        intervalRemaining = interval;
+                        final int queueSize = executor.getQueueSize();
+                        final Thread[] runningThreads = executor.getRunningThreads();
+                        if (queueSize <= 0) {
+                            log.infof("Awaiting thread pool shutdown; %d thread(s) running",
+                                    runningThreads.length);
+                        } else {
+                            log.infof("Awaiting thread pool shutdown; %d thread(s) running with %d task(s) waiting",
+                                    runningThreads.length, queueSize);
+                        }
+                        // make sure no threads are stuck in exit()
+                        int realWaiting = runningThreads.length;
+                        for (Thread thr : runningThreads) {
+                            final StackTraceElement[] stackTrace = thr.getStackTrace();
+                            for (int i = 0; i < stackTrace.length && i < 8; i++) {
+                                if (stackTrace[i].getClassName().equals("java.lang.System")
+                                        && stackTrace[i].getMethodName().equals("exit")) {
+                                    final Throwable t = new Throwable();
+                                    t.setStackTrace(stackTrace);
+                                    log.errorf(t, "Thread %s is blocked in System.exit(); pooled (Executor) threads "
+                                            + "should never call this method because it never returns, thus preventing "
+                                            + "the thread pool from shutting down in a timely manner.  This is the "
+                                            + "stack trace of the call", thr.getName());
+                                    realWaiting--;
                                     break;
                                 }
                             }
-                        } else {
-                            return;
                         }
-                    } catch (InterruptedException ignored) {
+                        if (realWaiting == 0) {
+                            executor.shutdownNow();
+                            break;
+                        }
                     }
+                } else {
+                    return;
                 }
+            } catch (InterruptedException ignored) {
             }
-        };
+        }
     }
 
     private static EnhancedQueueExecutor createExecutor(ThreadPoolConfig threadPoolConfig, ThreadFactory threadFactory,
@@ -193,10 +208,21 @@ public class ExecutorRecorder {
         return builder.build();
     }
 
+    /**
+     * Get the maximum pool size from the configuration.
+     *
+     * @param threadPoolConfig the thread pool configuration
+     * @return the maximum pool size
+     */
     public static int getMaxSize(ThreadPoolConfig threadPoolConfig) {
         return threadPoolConfig.maxThreads().orElseGet(MaxThreadsCalculator.INSTANCE);
     }
 
+    /**
+     * Calculate the default maximum number of threads.
+     *
+     * @return the default max thread count
+     */
     public static int calculateMaxThreads() {
         return MaxThreadsCalculator.INSTANCE.getAsInt();
     }
@@ -222,6 +248,11 @@ public class ExecutorRecorder {
         }
     }
 
+    /**
+     * Get the current executor.
+     *
+     * @return the current executor, or {@code null} if not yet initialized
+     */
     public static Executor getCurrent() {
         return current;
     }

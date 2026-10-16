@@ -14,7 +14,6 @@ metadata:
   - "cloud"
   status: "stable"
   config:
-  - "quarkus.health."
   - "quarkus.smallrye-health."
   - "mp.health."
   codestart:

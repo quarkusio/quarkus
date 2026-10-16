@@ -46,4 +46,9 @@ public class ReactiveMessagingTracingIncomingDecorator implements PublisherDecor
         return multi;
     }
 
+    // To make sure OTel context is not cleared by ConnectorContextPropagationDecorator
+    @Override
+    public int getPriority() {
+        return -200;
+    }
 }

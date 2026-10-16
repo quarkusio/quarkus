@@ -5,7 +5,6 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Using Blaze-Persistence
 include::_attributes.adoc[]
-:categories: data
 :summary: This guide explains how to use Blaze-Persistence to simplify your data and DTO layers.
 :config-file: application.properties
 
@@ -104,7 +103,6 @@ public class SantaClausService {
     }
 }
 ----
-
 <1> Inject the `EntityManager`
 <2> Inject the `CriteriaBuilderFactory`
 <3> Inject the `EntityViewManager`

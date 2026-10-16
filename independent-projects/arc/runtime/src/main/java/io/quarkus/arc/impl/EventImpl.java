@@ -1,12 +1,15 @@
 package io.quarkus.arc.impl;
 
 import static io.quarkus.arc.impl.TypeCachePollutionUtils.asParameterizedType;
+import static io.quarkus.arc.impl.TypeCachePollutionUtils.asWildcardType;
 import static io.quarkus.arc.impl.TypeCachePollutionUtils.isParameterizedType;
+import static io.quarkus.arc.impl.TypeCachePollutionUtils.isWildcardType;
 import static jakarta.transaction.Status.STATUS_COMMITTED;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
+import java.lang.reflect.WildcardType;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
@@ -43,6 +46,7 @@ import org.jboss.logging.Logger;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.AsyncObserverExceptionHandler;
+import io.quarkus.arc.InjectableBean;
 import io.quarkus.arc.InstanceHandle;
 import io.quarkus.arc.ManagedContext;
 
@@ -178,6 +182,18 @@ class EventImpl<T> implements Event<T> {
 
     static <T> Notifier<T> createNotifier(Class<?> runtimeType, Type eventType, Set<Annotation> qualifiers,
             ArcContainerImpl container, boolean activateRequestContext, InjectionPoint injectionPoint) {
+        return doCreateNotifier(runtimeType, eventType, qualifiers, container, activateRequestContext, injectionPoint, null);
+    }
+
+    static <T> Notifier<T> createShutdownNotifier(Class<?> runtimeType, Type eventType, Set<Annotation> qualifiers,
+            ArcContainerImpl container, InjectionPoint injectionPoint, ArcShutdownAction shutdownAction) {
+        return doCreateNotifier(runtimeType, eventType, qualifiers, container, false,
+                injectionPoint, shutdownAction);
+    }
+
+    private static <T> Notifier<T> doCreateNotifier(Class<?> runtimeType, Type eventType, Set<Annotation> qualifiers,
+            ArcContainerImpl container, boolean activateRequestContext, InjectionPoint injectionPoint,
+            ArcShutdownAction shutdownAction) {
         // all events should have `@Any` qualifiers
         // if there was no other explicit qualifier added, also add @Default
         Set<Annotation> normalizedQualifiers = new HashSet<>(qualifiers);
@@ -188,6 +204,10 @@ class EventImpl<T> implements Event<T> {
         EventMetadata metadata = new EventMetadataImpl(normalizedQualifiers, eventType, injectionPoint);
         List<ObserverMethod<? super T>> notifierObserverMethods = new ArrayList<>(
                 container.resolveObserverMethods(eventType, normalizedQualifiers));
+        if (shutdownAction != null) {
+            return new ShutdownNotifier<>(runtimeType, notifierObserverMethods, metadata, activateRequestContext,
+                    shutdownAction);
+        }
         return new Notifier<>(runtimeType, notifierObserverMethods, metadata, activateRequestContext);
     }
 
@@ -195,7 +215,17 @@ class EventImpl<T> implements Event<T> {
         if (isParameterizedType(type)) {
             ParameterizedType parameterizedType = asParameterizedType(type);
             if (Event.class.isAssignableFrom(Types.getRawType(parameterizedType.getRawType()))) {
-                return parameterizedType.getActualTypeArguments()[0];
+                Type typeArg = parameterizedType.getActualTypeArguments()[0];
+                if (isWildcardType(typeArg)) {
+                    WildcardType wt = asWildcardType(typeArg);
+                    Type[] lowerBounds = wt.getLowerBounds();
+                    if (lowerBounds.length != 0) {
+                        return lowerBounds[0];
+                    }
+                    throw new IllegalArgumentException(
+                            "Wildcard without lower bound is an invalid specified type: " + type);
+                }
+                return typeArg;
             }
         }
         return type;
@@ -258,10 +288,6 @@ class EventImpl<T> implements Event<T> {
         final EventMetadata eventMetadata;
         private final boolean hasTxObservers;
         private final boolean activateRequestContext;
-
-        Notifier(Class<?> runtimeType, List<ObserverMethod<? super T>> observerMethods, EventMetadata eventMetadata) {
-            this(runtimeType, observerMethods, eventMetadata, true);
-        }
 
         Notifier(Class<?> runtimeType, List<ObserverMethod<? super T>> observerMethods, EventMetadata eventMetadata,
                 boolean activateRequestContext) {
@@ -356,19 +382,23 @@ class EventImpl<T> implements Event<T> {
             }
         }
 
-        @SuppressWarnings({ "rawtypes", "unchecked" })
         private void notifyObservers(T event, ObserverExceptionHandler exceptionHandler,
                 Predicate<ObserverMethod<?>> predicate) {
-            EventContext eventContext = new EventContextImpl<>(event, eventMetadata);
+            EventContext<T> eventContext = new EventContextImpl<>(event, eventMetadata);
             for (ObserverMethod<?> observerMethod : observerMethods) {
                 if (predicate.test(observerMethod)) {
                     try {
-                        observerMethod.notify(eventContext);
+                        callObserverMethod(observerMethod, eventContext);
                     } catch (Throwable t) {
                         exceptionHandler.handle(t, observerMethod, eventContext);
                     }
                 }
             }
+        }
+
+        @SuppressWarnings({ "rawtypes", "unchecked" })
+        protected void callObserverMethod(ObserverMethod<?> observerMethod, EventContext eventContext) {
+            observerMethod.notify(eventContext);
         }
 
         boolean isEmpty() {
@@ -379,6 +409,30 @@ class EventImpl<T> implements Event<T> {
             return !observer.getTransactionPhase().equals(TransactionPhase.IN_PROGRESS);
         }
 
+    }
+
+    static class ShutdownNotifier<T> extends Notifier<T> {
+
+        private final ArcShutdownAction shutdownAction;
+
+        ShutdownNotifier(Class<?> runtimeType, List<ObserverMethod<? super T>> observerMethods,
+                EventMetadata eventMetadata, boolean activateRequestContext, ArcShutdownAction shutdownAction) {
+            super(runtimeType, observerMethods, eventMetadata, activateRequestContext);
+            this.shutdownAction = shutdownAction;
+        }
+
+        @Override
+        @SuppressWarnings({ "rawtypes", "unchecked" })
+        protected void callObserverMethod(ObserverMethod<?> observerMethod, EventContext eventContext) {
+            InjectableBean<?> declaringBean = (InjectableBean<?>) observerMethod.getDeclaringBean();
+            String info = declaringBean != null ? declaringBean.getBeanClass().getName() : observerMethod.toString();
+            shutdownAction.run(info, new Runnable() {
+                @Override
+                public void run() {
+                    observerMethod.notify(eventContext);
+                }
+            });
+        }
     }
 
     static class ArcSynchronization implements Synchronization {

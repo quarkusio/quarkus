@@ -3,9 +3,8 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= Funqy Knative Events Binding
+= Funqy Knative events binding
 include::_attributes.adoc[]
-:categories: cloud
 :summary: This guide explains Funqy's Knative Events binding.
 :devtools-no-gradle:
 :topics: serverless,function,cloud,funqy

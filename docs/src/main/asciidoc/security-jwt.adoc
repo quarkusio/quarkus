@@ -6,7 +6,6 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 [id="security-jwt"]
 = Using JWT RBAC
 include::_attributes.adoc[]
-:categories: security
 :summary: This guide explains how your application can use SmallRye JWT to provide secured access to the Jakarta REST endpoints.
 :extension-name: SmallRye JWT
 :mp-jwt: MicroProfile JWT RBAC
@@ -381,7 +380,6 @@ public class GenerateToken {
     }
 }
 ----
-
 <1> Sets the `iss` (issuer) claim in the JWT.
     This value must match the server-side `mp.jwt.verify.issuer` configuration for the token to be considered valid.
 <2> Specifies the `upn` (User Principal Name) claim, which the {mp-jwt} specification defines as the preferred claim for identifying the `Principal` in container security APIs.
@@ -427,6 +425,29 @@ f3cg+fr8aou7pr9SHhJlZCU=
 
 Later, you configure the `smallrye.jwt.sign.key.location` property to specify the location of the private signing key.
 
+[[generating-keys-with-the-quarkus-cli]]
+[TIP]
+.Generating keys with the Quarkus CLI
+====
+You can generate a public and private key pair by using the Quarkus CLI:
+
+[source,shell]
+----
+quarkus jwt generate-key
+----
+
+This generates RSA 2048-bit keys by default.
+You can also generate EC keys or specify a different key size:
+
+[source,shell]
+----
+quarkus jwt generate-key --algo EC
+quarkus jwt generate-key --algo RSA --size 4096
+----
+
+The keys are written to `src/main/resources/privateKey.pem` and `src/main/resources/publicKey.pem` in PKCS#8 format, and the required JWT configuration properties are automatically added to `application.properties`.
+====
+
 [NOTE]
 .Generating keys with OpenSSL
 ====
@@ -442,7 +463,7 @@ openssl rsa -pubout -in rsaPrivateKey.pem -out publicKey.pem
 An additional step is required to generate and convert the private key to the PKCS#8 format, commonly used for secure key storage and transport.
 
 .`openssl` commands to perform the conversion
-[source, bash]
+[source,shell]
 ----
 openssl pkcs8 -topk8 -nocrypt -inform pem -in rsaPrivateKey.pem -outform pem -out privateKey.pem
 ----
@@ -616,7 +637,7 @@ include::{includes}/devtools/build.adoc[]
 . Run the application:
 +
 ====
-[source,bash]
+[source,shell]
 ----
 java -jar target/quarkus-app/quarkus-run.jar
 ----
@@ -639,7 +660,7 @@ include::{includes}/devtools/build-native.adoc[]
 . Run the following binary directly:
 +
 ====
-[source,bash]
+[source,shell]
 ----
 ./target/security-jwt-quickstart-1.0.0-SNAPSHOT-runner
 ----
@@ -856,7 +877,7 @@ Please see the xref:security-openid-connect-client-reference.adoc#token-propagat
 [[auto-generated-keys]]
 ==== Automatic key generation
 
-This extension generates an asymmetric RSA 2024 bit signing key pair in the dev and test modes if the verification key has not been configured.
+This extension generates an asymmetric RSA 2048-bit signing key pair in the dev and test modes if the verification key has not been configured.
 Once the key pair is generated, the public RSA key is used to configure the `mp.jwt.verify.publickey` property, and the RSA private key is available to tests to sign tokens using `smallrye-jwt-build`, for example:
 
 [source,java]
@@ -870,7 +891,9 @@ public String token() {
 }
 ----
 
-See xref:security-jwt-build.adoc#sign-claims[signing claims guide] for mode details.
+See xref:security-jwt-build.adoc#sign-claims[signing claims guide] for more details.
+
+For production, you can generate your own key pair with `quarkus jwt generate-key`, which also adds the required configuration to `application.properties`.
 
 You can disable automatic key generation by setting at least one of the following properties:
 

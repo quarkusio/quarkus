@@ -8,7 +8,7 @@ import org.hibernate.boot.spi.BootstrapContext;
 import org.hibernate.envers.boot.internal.EnversService;
 import org.hibernate.envers.configuration.EnversSettings;
 
-import io.quarkus.hibernate.orm.runtime.integration.HibernateOrmIntegrationStaticInitListener;
+import io.quarkus.hibernate.orm.runtime.spi.HibernateOrmIntegrationStaticInitListener;
 import io.quarkus.runtime.annotations.Recorder;
 
 @Recorder

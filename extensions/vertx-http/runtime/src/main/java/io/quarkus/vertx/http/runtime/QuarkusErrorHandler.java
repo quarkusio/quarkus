@@ -33,6 +33,7 @@ import io.quarkus.security.UnauthorizedException;
 import io.quarkus.vertx.http.runtime.VertxHttpConfig.PayloadHint;
 import io.quarkus.vertx.http.runtime.security.HttpAuthenticator;
 import io.vertx.core.Handler;
+import io.vertx.core.http.HttpClosedException;
 import io.vertx.ext.web.MIMEHeader;
 import io.vertx.ext.web.RoutingContext;
 import io.vertx.ext.web.impl.ParsableMIMEValue;
@@ -170,7 +171,7 @@ public class QuarkusErrorHandler implements Handler<RoutingContext> {
         } else {
             details = generateHeaderMessage(uuid);
         }
-        if (exception instanceof IOException) {
+        if (shouldLogAsDebug(exception)) {
             log.debugf(exception,
                     "IOError processing HTTP request to %s failed, the client likely terminated the connection. Error id: %s",
                     event.request().uri(), uuid);
@@ -227,6 +228,16 @@ public class QuarkusErrorHandler implements Handler<RoutingContext> {
                 }
                 break;
         }
+    }
+
+    private boolean shouldLogAsDebug(Throwable t) {
+        if (t instanceof IOException) {
+            return true;
+        }
+        if (t instanceof HttpClosedException) {
+            return true;
+        }
+        return false;
     }
 
     private void defaultResponse(RoutingContext event, String details, String stack, Throwable throwable) {

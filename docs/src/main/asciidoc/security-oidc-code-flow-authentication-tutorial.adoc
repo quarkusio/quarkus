@@ -7,7 +7,6 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 = Protect a web application by using OpenID Connect (OIDC) authorization code flow
 include::_attributes.adoc[]
 :diataxis-type: tutorial
-:categories: security,web
 :topics: security,oidc,keycloak,authorization
 :extensions: io.quarkus:quarkus-oidc
 

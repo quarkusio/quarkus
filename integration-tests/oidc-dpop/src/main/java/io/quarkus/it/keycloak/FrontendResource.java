@@ -1,8 +1,10 @@
 package io.quarkus.it.keycloak;
 
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.security.KeyPair;
 import java.security.PrivateKey;
+import java.security.Signature;
 import java.util.UUID;
 
 import jakarta.annotation.PreDestroy;
@@ -143,6 +145,100 @@ public class FrontendResource {
     }
 
     @GET
+    @Path("login-jwt-missing-jti")
+    public Response loginJwtMissingJti() {
+        return redirect("dpop-jwt", "callback-jwt-missing-jti");
+    }
+
+    @GET
+    @Path("callback-jwt-missing-jti")
+    public Response callbackJwtMissingJti(@QueryParam("code") String code) throws Exception {
+        return callProtectedEndpoint(code, "dpop-jwt", "callback-jwt-missing-jti", "GET", "dpop-jwt", "dpop-jwt",
+                false, false, false, null, null);
+    }
+
+    @GET
+    @Path("login-jwt-missing-iat")
+    public Response loginJwtMissingIat() {
+        return redirect("dpop-jwt", "callback-jwt-missing-iat");
+    }
+
+    @GET
+    @Path("callback-jwt-missing-iat")
+    public Response callbackJwtMissingIat(@QueryParam("code") String code) throws Exception {
+        return callProtectedEndpointWithManualProof(code, "callback-jwt-missing-iat", UUID.randomUUID().toString(), null, null);
+    }
+
+    @GET
+    @Path("login-jwt-expired")
+    public Response loginJwtExpired() {
+        return redirect("dpop-jwt", "callback-jwt-expired");
+    }
+
+    @GET
+    @Path("callback-jwt-expired")
+    public Response callbackJwtExpired(@QueryParam("code") String code) throws Exception {
+        long nowSecs = System.currentTimeMillis() / 1000;
+        return callProtectedEndpointWithManualProof(code, "callback-jwt-expired", UUID.randomUUID().toString(),
+                nowSecs, nowSecs - 60);
+    }
+
+    @GET
+    @Path("login-jwt-old-iat")
+    public Response loginJwtOldIat() {
+        return redirect("dpop-jwt", "callback-jwt-old-iat");
+    }
+
+    @GET
+    @Path("callback-jwt-old-iat")
+    public Response callbackJwtOldIat(@QueryParam("code") String code) throws Exception {
+        long nowSecs = System.currentTimeMillis() / 1000;
+        return callProtectedEndpointWithManualProof(code, "callback-jwt-old-iat", UUID.randomUUID().toString(),
+                nowSecs - 7200, null);
+    }
+
+    @GET
+    @Path("login-jwt-future-iat")
+    public Response loginJwtFutureIat() {
+        return redirect("dpop-jwt", "callback-jwt-future-iat");
+    }
+
+    @GET
+    @Path("callback-jwt-future-iat")
+    public Response callbackJwtFutureIat(@QueryParam("code") String code) throws Exception {
+        long nowSecs = System.currentTimeMillis() / 1000;
+        return callProtectedEndpointWithManualProof(code, "callback-jwt-future-iat", UUID.randomUUID().toString(),
+                nowSecs + 3600, null);
+    }
+
+    @GET
+    @Path("login-jwt-with-nonce-and-jti/{nonce}/{jti}")
+    public Response loginJwtWithNonceAndJti(@RestPath String nonce, @RestPath String jti) {
+        return redirect("dpop-jwt", "callback-jwt-with-nonce-and-jti/" + nonce + "/" + jti);
+    }
+
+    @GET
+    @Path("callback-jwt-with-nonce-and-jti/{nonce}/{jti}")
+    public Response callbackJwtWithNonceAndJti(@RestQuery String code, @RestPath String nonce, @RestPath String jti)
+            throws Exception {
+        return callProtectedEndpoint(code, "dpop-jwt", "callback-jwt-with-nonce-and-jti/" + nonce + "/" + jti, "GET",
+                "dpop-jwt", "dpop-jwt", false, false, false, nonce, jti);
+    }
+
+    @GET
+    @Path("login-jwt-no-nonce-with-jti/{jti}")
+    public Response loginJwtNoNonceWithJti(@RestPath String jti) {
+        return redirect("dpop-jwt", "callback-jwt-no-nonce-with-jti/" + jti);
+    }
+
+    @GET
+    @Path("callback-jwt-no-nonce-with-jti/{jti}")
+    public Response callbackJwtNoNonceWithJti(@RestQuery String code, @RestPath String jti) throws Exception {
+        return callProtectedEndpoint(code, "dpop-jwt", "callback-jwt-no-nonce-with-jti/" + jti, "GET",
+                "dpop-jwt", "dpop-jwt", false, false, false, null, jti);
+    }
+
+    @GET
     @Path("login-jwt-wrong-dpop-http-method")
     public Response loginJwtWrongDpopHttpMethod() {
         return redirect("dpop-jwt", "callback-jwt-wrong-dpop-http-method");
@@ -223,6 +319,25 @@ public class FrontendResource {
             boolean wrongDpopJwkKey,
             boolean wrongDpopTokenHash, String resourceNonce)
             throws Exception {
+        return callProtectedEndpoint(code, tenantId, redirectPath, dPopHttpMethod, dPopEndpointPath, quarkusEndpointPath,
+                wrongDpopSignature, wrongDpopJwkKey, wrongDpopTokenHash, resourceNonce, UUID.randomUUID().toString());
+    }
+
+    private Response callProtectedEndpoint(String code, String tenantId, String redirectPath, String dPopHttpMethod,
+            String dPopEndpointPath, String quarkusEndpointPath,
+            boolean wrongDpopSignature,
+            boolean wrongDpopJwkKey,
+            boolean wrongDpopTokenHash, String resourceNonce, String jti)
+            throws Exception {
+        KeyPair keyPair = KeyUtils.generateKeyPair(2048);
+        String accessToken = acquireAccessToken(code, tenantId, redirectPath, keyPair);
+        String absoluteDpopEndpointUri = ui.getBaseUriBuilder().path("service").path(dPopEndpointPath).build().toString();
+        String dpopProof = createDPopProofForQuarkus(keyPair, accessToken, dPopHttpMethod, absoluteDpopEndpointUri,
+                wrongDpopSignature, wrongDpopJwkKey, wrongDpopTokenHash, resourceNonce, jti);
+        return callQuarkus(quarkusEndpointPath, accessToken, dpopProof);
+    }
+
+    private String acquireAccessToken(String code, String tenantId, String redirectPath, KeyPair keyPair) throws Exception {
         String redirectUriParam = ui.getBaseUriBuilder().path("single-page-app").path(redirectPath).build().toString();
 
         MultiMap grantParams = MultiMap.caseInsensitiveMultiMap();
@@ -234,19 +349,17 @@ public class FrontendResource {
         Buffer encoded = OidcCommonUtils.encodeForm(grantParams);
         HttpRequest<Buffer> requestToKeycloak = client.postAbs(getConfigMetadata(tenantId).getTokenUri());
         requestToKeycloak.putHeader("Content-Type", HttpHeaders.APPLICATION_X_WWW_FORM_URLENCODED.toString());
-
-        KeyPair keyPair = KeyUtils.generateKeyPair(2048);
         requestToKeycloak.putHeader("DPoP", createDPopProofForKeycloak(keyPair, tenantId));
 
         JsonObject grantResponse = requestToKeycloak.sendBufferAndAwait(encoded).bodyAsJsonObject();
-        String accessToken = grantResponse.getString("access_token");
+        return grantResponse.getString("access_token");
+    }
 
+    private Response callQuarkus(String quarkusEndpointPath, String accessToken, String dpopProof) {
         String requestPath = ui.getBaseUriBuilder().path("service").path(quarkusEndpointPath).build().toString();
         HttpRequest<Buffer> requestToQuarkus = client.getAbs(requestPath);
         requestToQuarkus.putHeader("Accept", "text/plain");
-        String absoluteDpopEndpointUri = ui.getBaseUriBuilder().path("service").path(dPopEndpointPath).build().toString();
-        requestToQuarkus.putHeader("DPoP", createDPopProofForQuarkus(keyPair, accessToken, dPopHttpMethod,
-                absoluteDpopEndpointUri, wrongDpopSignature, wrongDpopJwkKey, wrongDpopTokenHash, resourceNonce));
+        requestToQuarkus.putHeader("DPoP", dpopProof);
         requestToQuarkus.putHeader("Authorization", "DPoP " + accessToken);
         HttpResponse<Buffer> response = requestToQuarkus.sendAndAwait();
         if (response.statusCode() == 401) {
@@ -259,6 +372,15 @@ public class FrontendResource {
             return responseBuilder.build();
         }
         return Response.ok(response.bodyAsString()).build();
+    }
+
+    private Response callProtectedEndpointWithManualProof(String code, String redirectPath, String jti, Long iat, Long exp)
+            throws Exception {
+        KeyPair keyPair = KeyUtils.generateKeyPair(2048);
+        String accessToken = acquireAccessToken(code, "dpop-jwt", redirectPath, keyPair);
+        String absoluteDpopEndpointUri = ui.getBaseUriBuilder().path("service").path("dpop-jwt").build().toString();
+        String dpopProof = createDPopProofForQuarkusManual(keyPair, accessToken, "GET", absoluteDpopEndpointUri, jti, iat, exp);
+        return callQuarkus("dpop-jwt", accessToken, dpopProof);
     }
 
     private Response redirect(String tenantId, String callbackPath) {
@@ -302,7 +424,11 @@ public class FrontendResource {
             String dPopEndpointPath,
             boolean wrongDpopSignature,
             boolean wrongDpopJwkKey,
-            boolean wrongAccesstokenHash, String nonce) throws Exception {
+            boolean wrongAccesstokenHash, String nonce, String jti) throws Exception {
+
+        if (jti == null) {
+            return createDPopProofForQuarkusManual(keyPair, accessToken, dPopHttpMethod, dPopEndpointPath, null, null, null);
+        }
 
         JwtClaimsBuilder jwtClaimsBuilder = Jwt.claim("htm", dPopHttpMethod)
                 .claim("htu", dPopEndpointPath);
@@ -310,6 +436,8 @@ public class FrontendResource {
         if (nonce != null) {
             jwtClaimsBuilder.claim("nonce", nonce);
         }
+
+        jwtClaimsBuilder.claim("jti", jti);
 
         JwtSignatureBuilder jwtSignatureBuilder = jwtClaimsBuilder
                 .claim("ath", wrongAccesstokenHash ? accessToken
@@ -324,6 +452,35 @@ public class FrontendResource {
         PrivateKey signingKey = wrongDpopSignature ? KeyUtils.generateKeyPair(2048).getPrivate()
                 : keyPair.getPrivate();
         return jwtSignatureBuilder.sign(signingKey);
+    }
+
+    // Builds a signed DPoP proof with full control over the jti/iat/exp claims (each omitted when null). SmallRye JWT
+    // always adds jti/iat/exp automatically, so the proof is assembled manually to test missing or out-of-range claims.
+    private String createDPopProofForQuarkusManual(KeyPair keyPair, String accessToken, String dPopHttpMethod,
+            String dPopEndpointPath, String jti, Long iat, Long exp) throws Exception {
+        JsonObject claims = new JsonObject()
+                .put("htm", dPopHttpMethod)
+                .put("htu", dPopEndpointPath)
+                .put("ath", OidcCommonUtils.base64UrlEncode(OidcUtils.getSha256Digest(accessToken)));
+        if (jti != null) {
+            claims.put("jti", jti);
+        }
+        if (iat != null) {
+            claims.put("iat", iat);
+        }
+        if (exp != null) {
+            claims.put("exp", exp);
+        }
+
+        String header = OidcCommonUtils.base64UrlEncode(
+                new JsonObject().put("typ", "dpop+jwt").put("alg", "RS256").encode().getBytes(StandardCharsets.UTF_8));
+        String payload = OidcCommonUtils.base64UrlEncode(claims.encode().getBytes(StandardCharsets.UTF_8));
+
+        String signingInput = header + "." + payload;
+        Signature signature = Signature.getInstance("SHA256withRSA");
+        signature.initSign(keyPair.getPrivate());
+        signature.update(signingInput.getBytes(StandardCharsets.UTF_8));
+        return signingInput + "." + OidcCommonUtils.base64UrlEncode(signature.sign());
     }
 
     private OidcConfigurationMetadata getConfigMetadata(String tenantId) {

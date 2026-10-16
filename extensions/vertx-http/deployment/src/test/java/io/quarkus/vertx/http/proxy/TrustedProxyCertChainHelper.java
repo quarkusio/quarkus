@@ -16,6 +16,8 @@ import java.security.cert.X509Certificate;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.util.Base64;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import io.smallrye.certs.chain.CertificateChainGenerator;
 import io.vertx.core.Vertx;
@@ -111,7 +113,8 @@ final class TrustedProxyCertChainHelper {
         }
     }
 
-    static String requestWithClientKeystore(Vertx vertx, URL tlsUrl, File keystoreFile, File clientTruststore) {
+    static String requestWithClientKeystore(Vertx vertx, URL tlsUrl, File keystoreFile, File clientTruststore)
+            throws TimeoutException {
         var options = new HttpClientOptions()
                 .setSsl(true)
                 .setDefaultPort(tlsUrl.getPort())
@@ -133,9 +136,9 @@ final class TrustedProxyCertChainHelper {
                     .flatMap(HttpClientRequest::send)
                     .flatMap(HttpClientResponse::body)
                     .map(Buffer::toString)
-                    .toCompletionStage().toCompletableFuture().join();
+                    .await();
         } finally {
-            client.close().toCompletionStage().toCompletableFuture().join();
+            client.close().await(5, TimeUnit.SECONDS);
         }
     }
 

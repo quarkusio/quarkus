@@ -1,10 +1,9 @@
 package io.quarkus.security.jpa.common.deployment;
 
+import java.lang.constant.ClassDesc;
 import java.util.Collection;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
-import java.util.function.BiConsumer;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
@@ -13,15 +12,17 @@ import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.Index;
 import org.jboss.jandex.Type;
+import org.wildfly.security.password.Password;
 
 import io.quarkus.arc.processor.DotNames;
-import io.quarkus.gizmo.AssignableResultHandle;
-import io.quarkus.gizmo.BranchResult;
-import io.quarkus.gizmo.BytecodeCreator;
-import io.quarkus.gizmo.FieldDescriptor;
-import io.quarkus.gizmo.MethodCreator;
-import io.quarkus.gizmo.MethodDescriptor;
-import io.quarkus.gizmo.ResultHandle;
+import io.quarkus.gizmo2.Const;
+import io.quarkus.gizmo2.Expr;
+import io.quarkus.gizmo2.LocalVar;
+import io.quarkus.gizmo2.creator.BlockCreator;
+import io.quarkus.gizmo2.desc.ClassMethodDesc;
+import io.quarkus.gizmo2.desc.ConstructorDesc;
+import io.quarkus.gizmo2.desc.FieldDesc;
+import io.quarkus.gizmo2.desc.MethodDesc;
 import io.quarkus.security.AuthenticationFailedException;
 import io.quarkus.security.identity.request.TrustedAuthenticationRequest;
 import io.quarkus.security.identity.request.UsernamePasswordAuthenticationRequest;
@@ -42,89 +43,88 @@ public final class JpaSecurityIdentityUtil {
 
     public static void buildIdentity(Index index, JpaSecurityDefinition jpaSecurityDefinition,
             AnnotationValue passwordTypeValue, AnnotationValue passwordProviderValue,
-            PanacheEntityPredicateBuildItem panacheEntityPredicate, FieldDescriptor passwordProviderField,
-            MethodCreator outerMethod, ResultHandle userVar, BytecodeCreator innerMethod) {
+            PanacheEntityPredicateBuildItem panacheEntityPredicate, FieldDesc passwordProviderField,
+            Expr thisRef, Expr requestParam, Expr userVar, BlockCreator bc) {
         // if(user == null) throw new AuthenticationFailedException();
 
         PasswordType passwordType = passwordTypeValue != null ? PasswordType.valueOf(passwordTypeValue.asEnum())
                 : PasswordType.MCF;
 
-        try (BytecodeCreator trueBranch = innerMethod.ifNull(userVar).trueBranch()) {
-
-            ResultHandle exceptionInstance = trueBranch
-                    .newInstance(MethodDescriptor.ofConstructor(AuthenticationFailedException.class));
-            trueBranch.invokeStaticMethod(passwordActionMethod(), trueBranch.load(passwordType));
-            trueBranch.throwException(exceptionInstance);
-        }
+        bc.if_(bc.isNull(userVar), trueBranch -> {
+            Expr exceptionInstance = trueBranch
+                    .new_(ConstructorDesc.of(AuthenticationFailedException.class));
+            trueBranch.invokeStatic(passwordActionMethod(), Const.of(passwordType));
+            trueBranch.throw_(exceptionInstance);
+        });
 
         // :pass = user.pass | user.getPass()
-        ResultHandle pass = jpaSecurityDefinition.password.readValue(innerMethod, userVar);
+        LocalVar pass = bc.localVar("pass", jpaSecurityDefinition.password.readValue(bc, userVar));
 
         if (passwordType == PasswordType.CUSTOM && passwordProviderValue == null) {
             throw new RuntimeException("Missing password provider for password type: " + passwordType);
         }
 
-        ResultHandle storedPassword;
+        Expr storedPassword;
         switch (passwordType) {
             case CUSTOM:
                 String passwordProviderClassStr = passwordProviderValue.asString();
                 String passwordProviderMethod = "getPassword";
-                ResultHandle passwordProviderInstanceField = innerMethod.readInstanceField(passwordProviderField,
-                        outerMethod.getThis());
-                BytecodeCreator trueBranch = innerMethod.ifNull(passwordProviderInstanceField).trueBranch();
-                ResultHandle passwordProviderInstance = trueBranch
-                        .newInstance(MethodDescriptor.ofConstructor(passwordProviderClassStr));
-                trueBranch.writeInstanceField(passwordProviderField, outerMethod.getThis(), passwordProviderInstance);
-                trueBranch.close();
-                ResultHandle objectToInvokeOn = innerMethod.readInstanceField(passwordProviderField, outerMethod.getThis());
+                LocalVar passwordProviderInstanceField = bc.localVar("ppField",
+                        bc.get(thisRef.field(passwordProviderField)));
+                bc.if_(bc.isNull(passwordProviderInstanceField), trueBranch -> {
+                    Expr passwordProviderInstance = trueBranch
+                            .new_(ConstructorDesc.of(ClassDesc.of(passwordProviderClassStr)));
+                    trueBranch.set(thisRef.field(passwordProviderField), passwordProviderInstance);
+                });
+                LocalVar objectToInvokeOn = bc.localVar("ppObj",
+                        bc.get(thisRef.field(passwordProviderField)));
 
                 // :getPasswordMethod(:pass);
-                storedPassword = innerMethod.invokeVirtualMethod(
-                        MethodDescriptor.ofMethod(passwordProviderClassStr, passwordProviderMethod,
-                                org.wildfly.security.password.Password.class,
+                storedPassword = bc.invokeVirtual(
+                        ClassMethodDesc.of(ClassDesc.of(passwordProviderClassStr),
+                                passwordProviderMethod,
+                                Password.class,
                                 String.class),
-                        objectToInvokeOn, pass);
+                        bc.cast(objectToInvokeOn, ClassDesc.of(passwordProviderClassStr)), pass);
                 break;
             case CLEAR:
-                storedPassword = innerMethod.invokeStaticMethod(getUtilMethod("getClearPassword"), pass);
+                storedPassword = bc.invokeStatic(getUtilMethod("getClearPassword"), pass);
                 break;
             case MCF:
-                storedPassword = innerMethod.invokeStaticMethod(getUtilMethod("getMcfPassword"), pass);
+                storedPassword = bc.invokeStatic(getUtilMethod("getMcfPassword"), pass);
                 break;
             default:
                 throw new RuntimeException("Unknown password type: " + passwordType);
         }
 
         // Builder builder = JpaIdentityProviderUtil.checkPassword(storedPassword, request);
-        ResultHandle builder = innerMethod.invokeStaticMethod(
-                MethodDescriptor.ofMethod(JpaIdentityProviderUtil.class, "checkPassword",
+        Expr builder = bc.invokeStatic(
+                MethodDesc.of(JpaIdentityProviderUtil.class, "checkPassword",
                         QuarkusSecurityIdentity.Builder.class,
-                        org.wildfly.security.password.Password.class,
+                        Password.class,
                         UsernamePasswordAuthenticationRequest.class),
-                storedPassword, outerMethod.getMethodParam(1));
-        AssignableResultHandle builderVar = innerMethod.createVariable(QuarkusSecurityIdentity.Builder.class);
-        innerMethod.assign(builderVar, builder);
+                storedPassword, requestParam);
+        LocalVar builderVar = bc.localVar("builder", QuarkusSecurityIdentity.Builder.class, builder);
 
-        setupRoles(index, jpaSecurityDefinition, panacheEntityPredicate, userVar, builderVar, innerMethod);
+        setupRoles(index, jpaSecurityDefinition, panacheEntityPredicate, userVar, builderVar, bc);
     }
 
     public static void buildTrustedIdentity(Index index, JpaSecurityDefinition jpaSecurityDefinition,
-            PanacheEntityPredicateBuildItem panacheEntityPredicate, MethodCreator outerMethod, ResultHandle userVar,
-            BytecodeCreator innerMethod) {
+            PanacheEntityPredicateBuildItem panacheEntityPredicate, Expr requestParam, Expr userVar,
+            BlockCreator bc) {
         // if(user == null) return null;
-        try (BytecodeCreator trueBranch = innerMethod.ifNull(userVar).trueBranch()) {
-            trueBranch.returnValue(trueBranch.loadNull());
-        }
+        bc.if_(bc.isNull(userVar), trueBranch -> {
+            trueBranch.returnNull();
+        });
         // Builder builder = JpaIdentityProviderUtil.trusted(request);
-        ResultHandle builder = innerMethod.invokeStaticMethod(MethodDescriptor.ofMethod(JpaIdentityProviderUtil.class,
+        Expr builder = bc.invokeStatic(MethodDesc.of(JpaIdentityProviderUtil.class,
                 "trusted",
                 QuarkusSecurityIdentity.Builder.class,
                 TrustedAuthenticationRequest.class),
-                outerMethod.getMethodParam(1));
-        AssignableResultHandle builderVar = innerMethod.createVariable(QuarkusSecurityIdentity.Builder.class);
-        innerMethod.assign(builderVar, builder);
+                requestParam);
+        LocalVar builderVar = bc.localVar("builder", QuarkusSecurityIdentity.Builder.class, builder);
 
-        setupRoles(index, jpaSecurityDefinition, panacheEntityPredicate, userVar, builderVar, innerMethod);
+        setupRoles(index, jpaSecurityDefinition, panacheEntityPredicate, userVar, builderVar, bc);
     }
 
     static AnnotationTarget getSingleAnnotatedElement(Index index, DotName annotation) {
@@ -138,9 +138,9 @@ public final class JpaSecurityIdentityUtil {
     }
 
     private static void setupRoles(Index index, JpaSecurityDefinition jpaSecurityDefinition,
-            PanacheEntityPredicateBuildItem panacheEntityPredicate, ResultHandle userVar,
-            AssignableResultHandle builderVar, BytecodeCreator innerMethod) {
-        ResultHandle role = jpaSecurityDefinition.roles.readValue(innerMethod, userVar);
+            PanacheEntityPredicateBuildItem panacheEntityPredicate, Expr userVar,
+            LocalVar builderVar, BlockCreator bc) {
+        Expr role = jpaSecurityDefinition.roles.readValue(bc, userVar);
         // role: user.getRole()
         boolean handledRole = false;
         Type rolesType = jpaSecurityDefinition.roles.type();
@@ -151,8 +151,8 @@ public final class JpaSecurityIdentityUtil {
             case CLASS:
                 if (rolesType.name().equals(DotNames.STRING)) {
                     // JpaIdentityProviderUtil.addRoles(builder, :role)
-                    innerMethod.invokeStaticMethod(
-                            MethodDescriptor.ofMethod(JpaIdentityProviderUtil.class, "addRoles", void.class,
+                    bc.invokeStatic(
+                            MethodDesc.of(JpaIdentityProviderUtil.class, "addRoles", void.class,
                                     QuarkusSecurityIdentity.Builder.class, String.class),
                             builderVar, role);
                     handledRole = true;
@@ -164,8 +164,6 @@ public final class JpaSecurityIdentityUtil {
                         || roleType.equals(DOTNAME_COLLECTION)
                         || roleType.equals(DOTNAME_SET)) {
                     Type elementType = rolesType.asParameterizedType().arguments().get(0);
-                    String elementClassName = elementType.name().toString();
-                    String elementClassTypeDescriptor = "L" + elementClassName.replace('.', '/') + ";";
                     JpaSecurityDefinition.FieldOrMethod rolesFieldOrMethod;
                     if (!elementType.name().equals(DotNames.STRING)) {
                         ClassInfo roleClass = index.getClassByName(elementType.name());
@@ -188,15 +186,15 @@ public final class JpaSecurityIdentityUtil {
                     //    // or for String collections:
                     //    JpaIdentityProviderUtil.addRoles(:role);
                     // }
-                    foreach(innerMethod, role, elementClassTypeDescriptor, (creator, var) -> {
-                        ResultHandle roleElement;
+                    bc.forEach(role, (loopBody, var) -> {
+                        Expr roleElement;
                         if (rolesFieldOrMethod != null) {
-                            roleElement = rolesFieldOrMethod.readValue(creator, var);
+                            roleElement = rolesFieldOrMethod.readValue(loopBody, var);
                         } else {
                             roleElement = var;
                         }
-                        creator.invokeStaticMethod(
-                                MethodDescriptor.ofMethod(JpaIdentityProviderUtil.class, "addRoles", void.class,
+                        loopBody.invokeStatic(
+                                MethodDesc.of(JpaIdentityProviderUtil.class, "addRoles", void.class,
                                         QuarkusSecurityIdentity.Builder.class, String.class),
                                 builderVar, roleElement);
                     });
@@ -209,47 +207,19 @@ public final class JpaSecurityIdentityUtil {
         }
 
         // return builder.build()
-        innerMethod.returnValue(innerMethod.invokeVirtualMethod(
-                MethodDescriptor.ofMethod(QuarkusSecurityIdentity.Builder.class,
+        bc.return_(bc.invokeVirtual(
+                MethodDesc.of(QuarkusSecurityIdentity.Builder.class,
                         "build",
                         QuarkusSecurityIdentity.class),
                 builderVar));
     }
 
-    private static void foreach(BytecodeCreator bytecodeCreator, ResultHandle iterable, String type,
-            BiConsumer<BytecodeCreator, AssignableResultHandle> body) {
-        ResultHandle iterator = bytecodeCreator.invokeInterfaceMethod(
-                MethodDescriptor.ofMethod(Iterable.class, "iterator", Iterator.class),
-                iterable);
-        try (BytecodeCreator loop = bytecodeCreator.createScope()) {
-            ResultHandle hasNextValue = loop.invokeInterfaceMethod(
-                    MethodDescriptor.ofMethod(Iterator.class, "hasNext", boolean.class),
-                    iterator);
-
-            BranchResult hasNextBranch = loop.ifNonZero(hasNextValue);
-            try (BytecodeCreator hasNext = hasNextBranch.trueBranch()) {
-                ResultHandle next = hasNext.invokeInterfaceMethod(
-                        MethodDescriptor.ofMethod(Iterator.class, "next", Object.class),
-                        iterator);
-
-                AssignableResultHandle var = hasNext.createVariable(type);
-                hasNext.assign(var, next);
-
-                body.accept(hasNext, var);
-                hasNext.continueScope(loop);
-            }
-            try (BytecodeCreator doesNotHaveNext = hasNextBranch.falseBranch()) {
-                doesNotHaveNext.breakScope(loop);
-            }
-        }
+    private static MethodDesc getUtilMethod(String passwordProviderMethod) {
+        return MethodDesc.of(JpaIdentityProviderUtil.class, passwordProviderMethod,
+                Password.class, String.class);
     }
 
-    private static MethodDescriptor getUtilMethod(String passwordProviderMethod) {
-        return MethodDescriptor.ofMethod(JpaIdentityProviderUtil.class, passwordProviderMethod,
-                org.wildfly.security.password.Password.class, String.class);
-    }
-
-    private static MethodDescriptor passwordActionMethod() {
-        return MethodDescriptor.ofMethod(JpaIdentityProviderUtil.class, "passwordAction", void.class, PasswordType.class);
+    private static MethodDesc passwordActionMethod() {
+        return MethodDesc.of(JpaIdentityProviderUtil.class, "passwordAction", void.class, PasswordType.class);
     }
 }

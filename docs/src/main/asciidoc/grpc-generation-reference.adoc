@@ -5,7 +5,6 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = gRPC code generation reference guide
 include::_attributes.adoc[]
-:categories: Serialization
 :diataxis-type: Reference
 :summary: Learn how to configure gRPC code generation.
 :topics: grpc
@@ -236,7 +235,6 @@ Then, add the `eu.maveniverse.maven.nisse:plugin3` and the `protobuf-maven-plugi
     </plugins>
 </build>
 ----
-
 <1> The `protobuf-maven-plugin` generates stub classes from your gRPC service definition (`proto` files).
 <2> Class generation uses the tool `protoc`, which is OS-specific. This is why we use the Nisse Maven plugin to target the executable compatible with the operating system.
 

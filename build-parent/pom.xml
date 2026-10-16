@@ -20,7 +20,7 @@
 
         <!-- These properties are needed in order for them to be resolvable by the generated projects -->
         <compiler-plugin.version>${version.compiler.plugin}</compiler-plugin.version>
-        <kotlin.version>2.4.0</kotlin.version>
+        <kotlin.version>2.4.20</kotlin.version>
         <ksp-gradle-plugin.version>2.2.10-2.0.2</ksp-gradle-plugin.version> <!-- Kotlin Symbol Processing plugin used in a test -->
         <dokka.version>2.2.0</dokka.version>
 
@@ -31,15 +31,16 @@
         <jandex-gradle-plugin.version>2.3.0</jandex-gradle-plugin.version>
 
         <asciidoctorj.version>3.0.0</asciidoctorj.version>
-        <htmlunit.version>5.2.0</htmlunit.version>
+        <htmlunit.version>5.5.0</htmlunit.version>
         <javaparser-core.version>3.28.2</javaparser-core.version>
-        <jdeparser.version>2.1.0</jdeparser.version>
+        <jdeparser2.version>2.1.0</jdeparser2.version>
+        <jdeparser.version>3.0.beta1</jdeparser.version>
         <subethasmtp.version>6.0.1</subethasmtp.version>
 
         <!-- Dev tools -->
-        <freemarker.version>2.3.34</freemarker.version>
-        <commonmark.version>0.29.0</commonmark.version>
-        <jgit.version>7.7.0.202606012155-r</jgit.version>
+        <freemarker.version>2.3.35</freemarker.version>
+        <commonmark.version>0.30.1</commonmark.version>
+        <jgit.version>7.8.0.202609011348-r</jgit.version>
 
         <!-- Arquillian BOM -->
         <arquillian.version>1.7.0.Final</arquillian.version>
@@ -60,7 +61,10 @@
         <!-- These 2 properties are used by CreateProjectMojo to add the Maven Wrapper -->
         <proposed-maven-version>3.9.16</proposed-maven-version>
         <maven-wrapper.version>3.3.4</maven-wrapper.version>
-        <gradle-wrapper.version>9.6.0</gradle-wrapper.version>
+        <!-- Supported Gradle versions, interpreted as a version range -->
+        <minimum-gradle-version>9.6</minimum-gradle-version>
+        <supported-gradle-versions>[9.6,)</supported-gradle-versions>
+        <gradle-wrapper.version>9.7.0</gradle-wrapper.version>
         <quarkus-gradle-plugin.version>${project.version}</quarkus-gradle-plugin.version>
         <quarkus-maven-plugin.version>${project.version}</quarkus-maven-plugin.version>
         <maven-plugin-plugin.version>3.8.1</maven-plugin-plugin.version>
@@ -81,26 +85,58 @@
         <opensearch.protocol>http</opensearch.protocol>
         <junit-pioneer.version>2.3.0</junit-pioneer.version>
 
-        <!-- Database images for JDBC/Reactive/Hibernate tests and devservices -->
-        <postgres.image>docker.io/library/postgres:18</postgres.image>
-        <postgis.image>docker.io/postgis/postgis:18-3.6</postgis.image>
-        <pgvector.image>docker.io/pgvector/pgvector:pg18</pgvector.image>
-        <mariadb.image>docker.io/library/mariadb:12.1</mariadb.image>
-        <db2.image>icr.io/db2_community/db2:12.1.0.0</db2.image>
+        <!-- Database default versions for `quarkus.datasource.db-version` and images for devservices -->
+        <db2.version>12.1</db2.version>
+        <db2.image>icr.io/db2_community/db2:${db2.version}.5.0</db2.image>
+        <!-- Default build-time version: latest version at least 2 years old -->
+        <!-- See https://github.com/quarkusio/quarkus/issues/53277 -->
+        <!-- See https://endoflife.date/ibm-db2 -->
+        <db2.default.version>12.1</db2.default.version>
+        <mariadb.version>12.3</mariadb.version>
+        <mariadb.image>docker.io/library/mariadb:${mariadb.version}</mariadb.image>
+        <!-- Default build-time version: latest version at least 2 years old -->
+        <!-- See https://github.com/quarkusio/quarkus/issues/53277 -->
+        <!-- See https://endoflife.date/mariadb -->
+        <mariadb.default.version>11.4</mariadb.default.version>
+        <mssql.version>16</mssql.version> <!-- SQL Server 2022 = version 16 -->
         <mssql.image>mcr.microsoft.com/mssql/server:2025-latest</mssql.image>
+        <!-- Default build-time version: latest version at least 2 years old -->
+        <!-- See https://github.com/quarkusio/quarkus/issues/53277 -->
+        <!-- See https://endoflife.date/mssqlserver -->
+        <mssql.default.version>16</mssql.default.version>
         <mssql.image.aarch64>mcr.microsoft.com/azure-sql-edge:latest</mssql.image.aarch64>
-        <mysql.image>docker.io/library/mysql:9.5</mysql.image>
-        <oracle.image>docker.io/gvenzl/oracle-free:23-slim-faststart</oracle.image>
+        <mysql.version>9.7</mysql.version>
+        <mysql.image>docker.io/library/mysql:${mysql.version}</mysql.image>
+        <!-- Default build-time version: latest version at least 2 years old -->
+        <!-- See https://github.com/quarkusio/quarkus/issues/53277 -->
+        <!-- See https://endoflife.date/mysql -->
+        <mysql.default.version>8.4</mysql.default.version>
+        <oracle.version>23</oracle.version>
+        <oracle.image>docker.io/gvenzl/oracle-free:${oracle.version}-slim-faststart</oracle.image>
+        <!-- Default build-time version: latest version at least 2 years old -->
+        <!-- See https://github.com/quarkusio/quarkus/issues/53277 -->
+        <!-- See https://endoflife.date/oracle-database -->
+        <oracle.default.version>23</oracle.default.version>
+        <postgres.version>18</postgres.version>
+        <postgres.image>docker.io/library/postgres:${postgres.version}</postgres.image>
+        <postgis.image>docker.io/postgis/postgis:${postgres.version}-3.6</postgis.image>
+        <pgvector.image>docker.io/pgvector/pgvector:pg${postgres.version}</pgvector.image>
+        <!-- Default build-time version: latest version at least 2 years old -->
+        <!-- See https://github.com/quarkusio/quarkus/issues/53277 -->
+        <!-- See https://endoflife.date/postgresql -->
+        <postgres.default.version>16</postgres.default.version>
+
+        <!-- mongo:8.x refuses to start on Linux kernel >= 6.19 (https://jira.mongodb.org/browse/SERVER-121912) -->
         <mongo.image>docker.io/library/mongo:7.0</mongo.image>
 
         <!-- Align various dependencies that are not really part of the bom-->
         <junit4.version>4.13.2</junit4.version>
 
         <!-- The image to use for tests that run Keycloak -->
-        <keycloak.server.version>26.7.0</keycloak.server.version>
+        <keycloak.server.version>26.7.4</keycloak.server.version>
         <keycloak.docker.image>quay.io/keycloak/keycloak:${keycloak.server.version}</keycloak.docker.image>
 
-        <unboundid-ldap.version>7.0.4</unboundid-ldap.version>
+        <unboundid-ldap.version>7.0.5</unboundid-ldap.version>
 
         <assertj.version>3.27.7</assertj.version>
         <!-- Keep in sync with VineflowerDecompiler.DEFAULT_VINEFLOWER_VERSION -->
@@ -110,30 +146,36 @@
         <wiremock-maven-plugin.version>7.3.0</wiremock-maven-plugin.version>
 
         <!-- Artemis test dependencies -->
-        <artemis.version>2.55.0</artemis.version>
+        <artemis.version>2.57.0</artemis.version>
 
         <!-- Dev Services Images -->
         <!-- TODO switch to apache/activemq-artemis to match the artemis version-->
-        <amqp.image>quay.io/arkmq-org/arkmq-org-broker:artemis.2.55.0</amqp.image>
-        <apicurio-registry.image>quay.io/apicurio/apicurio-registry:3.1.7</apicurio-registry.image>
+        <amqp.image>quay.io/arkmq-org/arkmq-org-broker:artemis.2.57.0</amqp.image>
+        <apicurio-registry.image>quay.io/apicurio/apicurio-registry:3.3.1</apicurio-registry.image>
         <narayana-lra.image>quay.io/jbosstm/lra-coordinator:latest</narayana-lra.image>
         <rabbitmq.image>docker.io/library/rabbitmq:3.12-management</rabbitmq.image>
         <pulsar.image>docker.io/apachepulsar/pulsar:3.2.4</pulsar.image>
-        <redis.image>docker.io/library/redis:7</redis.image>
+        <redis.image>docker.io/library/redis:8</redis.image>
         <infinispan.image>quay.io/infinispan/server:latest</infinispan.image>
         <mailpit.image>docker.io/axllent/mailpit:latest</mailpit.image>
+        <kafka.redpanda.image>docker.io/redpandadata/redpanda:v26.1.12</kafka.redpanda.image>
+        <kafka.strimzi.image>quay.io/strimzi-test-container/test-container:0.115.0-kafka-4.2.0</kafka.strimzi.image>
+        <kafka.native.image>quay.io/ogunalp/kafka-native:latest</kafka.native.image>
+        <kafka.upstream.image>docker.io/apache/kafka:4.2.0</kafka.upstream.image>
+        <kafka.upstream.native.image>docker.io/apache/kafka-native:4.2.0</kafka.upstream.native.image>
+        <observability.lgtm.image>docker.io/grafana/otel-lgtm:0.31.0</observability.lgtm.image>
 
         <!-- Code Coverage Properties-->
         <jacoco.agent.argLine></jacoco.agent.argLine>
 
         <asciidoctor-maven-plugin.version>2.0.0</asciidoctor-maven-plugin.version>
-        <docker-maven-plugin.version>0.48.1</docker-maven-plugin.version>
+        <docker-maven-plugin.version>0.49.0</docker-maven-plugin.version>
         <maven-invoker-plugin.version>3.10.1</maven-invoker-plugin.version>
 
         <!-- revapi API check -->
         <revapi-maven-plugin.version>0.14.7</revapi-maven-plugin.version>
         <revapi-java-plugin.version>0.26.1</revapi-java-plugin.version>
-        <build-helper-plugin.version>3.6.1</build-helper-plugin.version>
+        <build-helper-plugin.version>3.6.2</build-helper-plugin.version>
         <revapi-reporter-text.version>0.14.5</revapi-reporter-text.version>
         <revapi-reporter-json.version>0.4.5</revapi-reporter-json.version>
         <!-- Latest release to be used by api-compatibility-check to check backwards compatibility of the Quarkus API. -->
@@ -158,12 +200,12 @@
         <failsafe.argLine.additional>${surefire.argLine.additional}</failsafe.argLine.additional>
 
         <!-- google cloud functions invoker-->
-        <gcf-invoker.version>2.0.0</gcf-invoker.version>
+        <gcf-invoker.version>2.0.2</gcf-invoker.version>
         <!-- Jakarta JMS API -->
         <jakarta.jms-api.version>3.1.0</jakarta.jms-api.version>
 
         <!-- Quarkus Analytics -->
-        <properties-maven-plugin.version>1.3.0</properties-maven-plugin.version>
+        <properties-maven-plugin.version>1.3.1</properties-maven-plugin.version>
         <quarkus.analytics.disabled>true</quarkus.analytics.disabled>
 
         <!-- If PTS is enabled at the global level  -->
@@ -209,6 +251,11 @@
             <!-- Extension processor -->
             <dependency>
                 <groupId>org.jboss.jdeparser</groupId>
+                <artifactId>jdeparser</artifactId>
+                <version>${jdeparser2.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.smallrye.jdeparser</groupId>
                 <artifactId>jdeparser</artifactId>
                 <version>${jdeparser.version}</version>
             </dependency>
@@ -350,7 +397,7 @@
 
             <!-- Artemis test dependencies -->
             <dependency>
-                <groupId>org.apache.activemq</groupId>
+                <groupId>org.apache.artemis</groupId>
                 <artifactId>artemis-server</artifactId>
                 <version>${artemis.version}</version>
                 <scope>test</scope>
@@ -378,13 +425,13 @@
                 </exclusions>
             </dependency>
             <dependency>
-                <groupId>org.apache.activemq</groupId>
+                <groupId>org.apache.artemis</groupId>
                 <artifactId>artemis-amqp-protocol</artifactId>
                 <version>${artemis.version}</version>
                 <scope>test</scope>
                 <exclusions>
                     <exclusion>
-                        <groupId>org.apache.activemq</groupId>
+                        <groupId>org.apache.artemis</groupId>
                         <artifactId>artemis-server</artifactId>
                     </exclusion>
                 </exclusions>
@@ -467,7 +514,7 @@
                         <!-- the add-opens java.base/java.lang=ALL-UNNAMED is here for
                              org.jboss.JDKSpecific.ThreadAccess.clearThreadLocals() -->
                         <!-- set -XX:+HeapDumpOnOutOfMemoryError to provide some useful debugging info, should this happen -->
-                        <argLine>${jacoco.agent.argLine} -Xmx1500m -XX:+HeapDumpOnOutOfMemoryError -XX:MaxMetaspaceSize=1500m -Djava.io.tmpdir="${project.build.directory}" ${surefire.argLine.additional} --add-opens java.naming/com.sun.naming.internal=ALL-UNNAMED --add-opens java.base/java.lang=ALL-UNNAMED --add-opens=java.base/java.lang.invoke=ALL-UNNAMED</argLine>
+                        <argLine>${jacoco.agent.argLine} -Xmx1500m -XX:+HeapDumpOnOutOfMemoryError -XX:MaxMetaspaceSize=1500m -Djava.io.tmpdir="${project.build.directory}" ${surefire.argLine.additional} --enable-native-access=ALL-UNNAMED --add-opens java.naming/com.sun.naming.internal=ALL-UNNAMED --add-opens java.base/java.lang=ALL-UNNAMED --add-opens=java.base/java.lang.invoke=ALL-UNNAMED</argLine>
                         <excludedEnvironmentVariables>MAVEN_OPTS</excludedEnvironmentVariables>
                     </configuration>
                 </plugin>
@@ -621,7 +668,7 @@
                         <dependency>
                             <groupId>org.apache.groovy</groupId>
                             <artifactId>groovy</artifactId>
-                            <version>5.0.6</version>
+                            <version>5.1.2</version>
                         </dependency>
                     </dependencies>
                 </plugin>
@@ -722,6 +769,13 @@
                     <plugin>
                         <groupId>net.revelc.code</groupId>
                         <artifactId>impsort-maven-plugin</artifactId>
+                        <dependencies>
+                            <dependency>
+                                <groupId>com.github.javaparser</groupId>
+                                <artifactId>javaparser-core</artifactId>
+                                <version>${javaparser-core.version}</version>
+                            </dependency>
+                        </dependencies>
                         <configuration>
                             <removeUnused>true</removeUnused>
                         </configuration>
@@ -762,6 +816,13 @@
                     <plugin>
                         <groupId>net.revelc.code</groupId>
                         <artifactId>impsort-maven-plugin</artifactId>
+                        <dependencies>
+                            <dependency>
+                                <groupId>com.github.javaparser</groupId>
+                                <artifactId>javaparser-core</artifactId>
+                                <version>${javaparser-core.version}</version>
+                            </dependency>
+                        </dependencies>
                         <configuration>
                             <removeUnused>true</removeUnused>
                         </configuration>
@@ -849,12 +910,12 @@
                             </execution>
                         </executions>
                         <configuration>
-                            <jdkVersion>17</jdkVersion>
+                            <jdkVersion>21</jdkVersion>
                             <outputFormat>html</outputFormat>
                             <externalDocumentationLinks>
                                 <link>
                                     <!-- Root URL of the generated documentation to link with. The trailing slash is required! -->
-                                    <url>https://docs.oracle.com/en/java/javase/17/docs/api/</url>
+                                    <url>https://docs.oracle.com/en/java/javase/21/docs/api/</url>
                                 </link>
                             </externalDocumentationLinks>
                         </configuration>

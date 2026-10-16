@@ -16,7 +16,7 @@ public class OtlpExporterOverrideConfigTest {
     static final QuarkusExtensionTest TEST = new QuarkusExtensionTest()
             .withEmptyApplication()
             .overrideConfigKey("quarkus.otel.traces.exporter", "cdi")
-            .overrideConfigKey("quarkus.otel.exporter.otlp.protocol", "http/protobuf")
+            .overrideConfigKey("quarkus.otel.exporter.otlp.protocol", "grpc")
             .overrideConfigKey("quarkus.otel.exporter.otlp.endpoint", "http://localhost ")
             .overrideConfigKey("quarkus.otel.bsp.schedule.delay", "50")
             .overrideConfigKey("quarkus.otel.bsp.export.timeout", "PT1S");
@@ -27,7 +27,7 @@ public class OtlpExporterOverrideConfigTest {
     @Test
     void config() {
         assertTrue(config.traces().protocol().isPresent());
-        assertEquals("http/protobuf", config.traces().protocol().get().trim());
+        assertEquals("grpc", config.traces().protocol().get().trim());
         assertTrue(config.traces().endpoint().isPresent());
         assertEquals("http://localhost", config.traces().endpoint().get().trim());
     }

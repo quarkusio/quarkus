@@ -2,6 +2,7 @@ package io.quarkus.test.junit;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.lang.reflect.Field;
 import java.util.List;
 import java.util.stream.IntStream;
 
@@ -37,5 +38,20 @@ public class QuarkusIntegrationTestExtensionTest {
     @Test
     public void tailReturnsEmptyForEmptyLog() {
         assertThat(QuarkusIntegrationTestExtension.applicationLogTail(List.of(), 50, "quarkus.log")).isEmpty();
+    }
+
+    @Test
+    public void clearBootFailureClearsStaticBootFailureState() throws Exception {
+        Field failedBoot = QuarkusIntegrationTestExtension.class.getDeclaredField("failedBoot");
+        failedBoot.setAccessible(true);
+        failedBoot.setBoolean(null, true);
+        Field firstException = QuarkusIntegrationTestExtension.class.getDeclaredField("firstException");
+        firstException.setAccessible(true);
+        firstException.set(null, new RuntimeException("boom"));
+
+        QuarkusIntegrationTestExtension.clearBootFailure();
+
+        assertThat(failedBoot.getBoolean(null)).isFalse();
+        assertThat(firstException.get(null)).isNull();
     }
 }

@@ -5,7 +5,6 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Kafka Dev UI
 include::_attributes.adoc[]
-:categories: messaging
 :summary: Dev UI extension for Apache Kafka for development purposes.
 :topics: messaging,kafka,dev-ui,dev-mode
 :extensions: io.quarkus:quarkus-kafka-client,io.quarkus:quarkus-messaging-kafka

@@ -11,6 +11,7 @@ import java.util.logging.LogRecord;
 import jakarta.inject.Inject;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledOnOs;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.agroal.api.AgroalDataSource;
@@ -18,6 +19,7 @@ import io.agroal.api.configuration.AgroalConnectionPoolConfiguration;
 import io.agroal.api.exceptionsorter.DB2ExceptionSorter;
 import io.quarkus.test.QuarkusExtensionTest;
 
+@DisabledOnOs(architectures = "aarch64", disabledReason = "The DB2 image is not published for arm64")
 public class DevServicesDB2DatasourceTestCase {
 
     @RegisterExtension

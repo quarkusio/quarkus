@@ -9,6 +9,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.OptionalInt;
@@ -22,16 +23,25 @@ import org.mockito.Mockito;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.configuration.MemorySize;
 import io.quarkus.vertx.http.runtime.ProxyConfig;
+import io.quarkus.vertx.http.runtime.ProxyConfig.ProxyProtocolListener;
 import io.quarkus.vertx.http.runtime.ServerLimitsConfig;
 import io.quarkus.vertx.http.runtime.TrafficShapingConfig;
 import io.quarkus.vertx.http.runtime.VertxHttpBuildTimeConfig;
 import io.quarkus.vertx.http.runtime.VertxHttpConfig;
 import io.quarkus.vertx.http.runtime.VertxHttpConfig.InsecureRequests;
 import io.quarkus.vertx.http.runtime.WebsocketServerConfig;
+import io.quarkus.vertx.http.runtime.management.ManagementConfig;
+import io.quarkus.vertx.http.runtime.management.ManagementInterfaceBuildTimeConfig;
 import io.vertx.core.http.ClientAuth;
 import io.vertx.core.http.HttpServerConfig;
 
 class HttpServerOptionsUtilsTest {
+
+    private static void applyCommonOptions(HttpServerConfig config, VertxHttpBuildTimeConfig buildTimeConfig,
+            VertxHttpConfig httpConfig, List<String> websocketSubProtocols, String host) {
+        HttpServerOptionsUtils.applyCommonOptions(config, buildTimeConfig, httpConfig, websocketSubProtocols, host,
+                ProxyProtocolListener.HTTP);
+    }
 
     @Test
     void applyCommonOptionsNewApiWithGzipCompressor() {
@@ -39,10 +49,24 @@ class HttpServerOptionsUtilsTest {
         VertxHttpBuildTimeConfig buildTimeConfig = buildTimeConfig(true, Optional.of(List.of("gzip")), OptionalInt.empty());
         VertxHttpConfig httpConfig = minimalHttpConfig();
 
-        HttpServerOptionsUtils.applyCommonOptions(config, buildTimeConfig, httpConfig, Collections.emptyList());
+        applyCommonOptions(config, buildTimeConfig, httpConfig, Collections.emptyList(), "localhost");
 
         assertThat(config.getCompressionConfig()).isNotNull();
         assertThat(config.getCompressionConfig().isCompressionEnabled()).isTrue();
+    }
+
+    @Test
+    void applyCommonOptionsNewApiWithSnappyCompressor() {
+        HttpServerConfig config = new HttpServerConfig();
+        VertxHttpBuildTimeConfig buildTimeConfig = buildTimeConfig(true, Optional.of(List.of("snappy")),
+                OptionalInt.empty());
+        VertxHttpConfig httpConfig = minimalHttpConfig();
+
+        applyCommonOptions(config, buildTimeConfig, httpConfig, Collections.emptyList(), "localhost");
+
+        assertThat(config.getCompressionConfig()).isNotNull();
+        assertThat(config.getCompressionConfig().isCompressionEnabled()).isTrue();
+        assertThat(config.getCompressionConfig().getCompressors()).hasSize(1);
     }
 
     @Test
@@ -51,7 +75,7 @@ class HttpServerOptionsUtilsTest {
         VertxHttpBuildTimeConfig buildTimeConfig = buildTimeConfig(false, Optional.empty(), OptionalInt.empty());
         VertxHttpConfig httpConfig = minimalHttpConfig();
 
-        HttpServerOptionsUtils.applyCommonOptions(config, buildTimeConfig, httpConfig, Collections.emptyList());
+        applyCommonOptions(config, buildTimeConfig, httpConfig, Collections.emptyList(), "localhost");
 
         assertThat(config.getCompressionConfig().isCompressionEnabled()).isFalse();
     }
@@ -62,7 +86,7 @@ class HttpServerOptionsUtilsTest {
         VertxHttpBuildTimeConfig buildTimeConfig = buildTimeConfig(false, Optional.empty(), OptionalInt.empty());
         VertxHttpConfig httpConfig = minimalHttpConfig(true);
 
-        HttpServerOptionsUtils.applyCommonOptions(config, buildTimeConfig, httpConfig, Collections.emptyList());
+        applyCommonOptions(config, buildTimeConfig, httpConfig, Collections.emptyList(), "localhost");
 
         assertThat(config.getHttp2Config()).isNotNull();
         assertThat(config.getHttp2Config().getInitialSettings()).isNotNull();
@@ -75,7 +99,7 @@ class HttpServerOptionsUtilsTest {
         VertxHttpBuildTimeConfig buildTimeConfig = buildTimeConfig(false, Optional.empty(), OptionalInt.empty());
         VertxHttpConfig httpConfig = minimalHttpConfig();
 
-        HttpServerOptionsUtils.applyCommonOptions(config, buildTimeConfig, httpConfig, Collections.emptyList());
+        applyCommonOptions(config, buildTimeConfig, httpConfig, Collections.emptyList(), "localhost");
 
         assertThat(config.getHttp1Config().getMaxHeaderSize()).isEqualTo(20480);
         assertThat(config.getHttp1Config().getMaxChunkSize()).isEqualTo(8192);
@@ -91,7 +115,7 @@ class HttpServerOptionsUtilsTest {
         VertxHttpConfig httpConfig = minimalHttpConfig();
         List<String> subProtocols = List.of("graphql-ws", "subscriptions-transport-ws");
 
-        HttpServerOptionsUtils.applyCommonOptions(config, buildTimeConfig, httpConfig, subProtocols);
+        applyCommonOptions(config, buildTimeConfig, httpConfig, subProtocols, "localhost");
 
         assertThat(config.getWebSocketConfig().getSubProtocols()).containsExactlyElementsOf(subProtocols);
     }
@@ -111,9 +135,56 @@ class HttpServerOptionsUtilsTest {
         when(trafficShaping.peakOutboundGlobalBandwidth()).thenReturn(Optional.empty());
         when(httpConfig.trafficShaping()).thenReturn(trafficShaping);
 
-        HttpServerOptionsUtils.applyCommonOptions(config, buildTimeConfig, httpConfig, Collections.emptyList());
+        applyCommonOptions(config, buildTimeConfig, httpConfig, Collections.emptyList(), "localhost");
 
         assertThat(config.getTcpConfig().getTrafficShapingOptions()).isNotNull();
+    }
+
+    @Test
+    void createHttpServerConfigSetsHost() {
+        VertxHttpBuildTimeConfig buildTimeConfig = buildTimeConfig(false, Optional.empty(), OptionalInt.empty());
+        VertxHttpConfig httpConfig = minimalHttpConfig();
+        when(httpConfig.hostEnabled()).thenReturn(true);
+        when(httpConfig.determinePort(LaunchMode.NORMAL)).thenReturn(8080);
+
+        HttpServerConfig config = HttpServerOptionsUtils.createHttpServerConfig(
+                buildTimeConfig, httpConfig, LaunchMode.NORMAL, Collections.emptyList());
+
+        assertThat(config).isNotNull();
+        assertThat(config.getTcpHost()).isEqualTo("localhost");
+    }
+
+    @Test
+    void createHttpAndSslServerConfigsUseDifferentHosts() {
+        VertxHttpBuildTimeConfig buildTimeConfig = buildTimeConfig(false, Optional.empty(), OptionalInt.empty());
+        VertxHttpConfig httpConfig = minimalHttpConfig();
+        when(httpConfig.host()).thenReturn("127.0.0.1");
+        when(httpConfig.sslHost()).thenReturn(Optional.of("0.0.0.0"));
+        when(httpConfig.determineSslHost()).thenReturn("0.0.0.0");
+
+        HttpServerConfig httpServerConfig = new HttpServerConfig();
+        applyCommonOptions(httpServerConfig, buildTimeConfig, httpConfig, Collections.emptyList(),
+                httpConfig.host());
+        assertThat(httpServerConfig.getTcpHost()).isEqualTo("127.0.0.1");
+
+        HttpServerConfig httpsServerConfig = new HttpServerConfig();
+        applyCommonOptions(httpsServerConfig, buildTimeConfig, httpConfig, Collections.emptyList(),
+                httpConfig.determineSslHost());
+        assertThat(httpsServerConfig.getTcpHost()).isEqualTo("0.0.0.0");
+    }
+
+    @Test
+    void createSslServerConfigFallsBackToHostWhenSslHostNotSet() {
+        VertxHttpBuildTimeConfig buildTimeConfig = buildTimeConfig(false, Optional.empty(), OptionalInt.empty());
+        VertxHttpConfig httpConfig = minimalHttpConfig();
+        when(httpConfig.sslHost()).thenReturn(Optional.empty());
+        when(httpConfig.determineSslHost()).thenReturn("localhost");
+
+        HttpServerConfig config = new HttpServerConfig();
+        applyCommonOptions(config, buildTimeConfig, httpConfig, Collections.emptyList(),
+                httpConfig.determineSslHost());
+
+        assertThat(config.getTcpHost()).isEqualTo("localhost");
     }
 
     @Test
@@ -260,6 +331,164 @@ class HttpServerOptionsUtilsTest {
         return config;
     }
 
+    @Test
+    void proxyProtocolIsUsedOnEveryListenerByDefault() {
+        VertxHttpBuildTimeConfig buildTimeConfig = buildTimeConfig(false, Optional.empty(), OptionalInt.empty());
+        VertxHttpConfig httpConfig = minimalHttpConfig();
+        when(httpConfig.proxy().useProxyProtocol()).thenReturn(true);
+        when(httpConfig.proxy().proxyProtocolListeners()).thenReturn(EnumSet.allOf(ProxyProtocolListener.class));
+
+        for (ProxyProtocolListener listener : ProxyProtocolListener.values()) {
+            HttpServerConfig config = new HttpServerConfig();
+            HttpServerOptionsUtils.applyCommonOptions(config, buildTimeConfig, httpConfig, Collections.emptyList(),
+                    "localhost", listener);
+            assertThat(config.getTcpConfig().isUseProxyProtocol()).as(listener.name()).isTrue();
+        }
+    }
+
+    @Test
+    void proxyProtocolCanBeLimitedToTheHttpsListener() {
+        VertxHttpBuildTimeConfig buildTimeConfig = buildTimeConfig(false, Optional.empty(), OptionalInt.empty());
+        VertxHttpConfig httpConfig = minimalHttpConfig();
+        when(httpConfig.proxy().useProxyProtocol()).thenReturn(true);
+        when(httpConfig.proxy().proxyProtocolListeners()).thenReturn(EnumSet.of(ProxyProtocolListener.HTTPS));
+
+        HttpServerConfig http = new HttpServerConfig();
+        HttpServerOptionsUtils.applyCommonOptions(http, buildTimeConfig, httpConfig, Collections.emptyList(), "localhost",
+                ProxyProtocolListener.HTTP);
+        HttpServerConfig https = new HttpServerConfig();
+        HttpServerOptionsUtils.applyCommonOptions(https, buildTimeConfig, httpConfig, Collections.emptyList(), "localhost",
+                ProxyProtocolListener.HTTPS);
+        HttpServerConfig domainSocket = new HttpServerConfig();
+        HttpServerOptionsUtils.applyCommonOptions(domainSocket, buildTimeConfig, httpConfig, Collections.emptyList(),
+                "localhost", ProxyProtocolListener.DOMAIN_SOCKET);
+
+        assertThat(http.getTcpConfig().isUseProxyProtocol()).isFalse();
+        assertThat(https.getTcpConfig().isUseProxyProtocol()).isTrue();
+        assertThat(domainSocket.getTcpConfig().isUseProxyProtocol()).isFalse();
+    }
+
+    @Test
+    void proxyProtocolListenersAreIgnoredWhenTheProtocolIsDisabled() {
+        VertxHttpBuildTimeConfig buildTimeConfig = buildTimeConfig(false, Optional.empty(), OptionalInt.empty());
+        VertxHttpConfig httpConfig = minimalHttpConfig();
+        when(httpConfig.proxy().useProxyProtocol()).thenReturn(false);
+        when(httpConfig.proxy().proxyProtocolListeners()).thenReturn(EnumSet.allOf(ProxyProtocolListener.class));
+
+        HttpServerConfig https = new HttpServerConfig();
+        HttpServerOptionsUtils.applyCommonOptions(https, buildTimeConfig, httpConfig, Collections.emptyList(), "localhost",
+                ProxyProtocolListener.HTTPS);
+        assertThat(https.getTcpConfig().isUseProxyProtocol()).isFalse();
+    }
+
+    @Test
+    void managementProxyProtocolIsUsedOnEveryListenerByDefault() {
+        ManagementInterfaceBuildTimeConfig buildTimeConfig = minimalManagementBuildTimeConfig();
+        ManagementConfig managementConfig = minimalManagementConfig();
+        when(managementConfig.proxy().useProxyProtocol()).thenReturn(true);
+        when(managementConfig.proxy().proxyProtocolListeners()).thenReturn(EnumSet.allOf(ProxyProtocolListener.class));
+
+        for (ProxyProtocolListener listener : ProxyProtocolListener.values()) {
+            HttpServerConfig config = new HttpServerConfig();
+            HttpServerOptionsUtils.applyCommonOptionsForManagementInterface(config, buildTimeConfig, managementConfig,
+                    Collections.emptyList(), listener);
+            assertThat(config.getTcpConfig().isUseProxyProtocol()).as(listener.name()).isTrue();
+        }
+    }
+
+    @Test
+    void managementProxyProtocolCanBeLimitedToTheHttpsListener() {
+        ManagementInterfaceBuildTimeConfig buildTimeConfig = minimalManagementBuildTimeConfig();
+        ManagementConfig managementConfig = minimalManagementConfig();
+        when(managementConfig.proxy().useProxyProtocol()).thenReturn(true);
+        when(managementConfig.proxy().proxyProtocolListeners()).thenReturn(EnumSet.of(ProxyProtocolListener.HTTPS));
+
+        HttpServerConfig http = new HttpServerConfig();
+        HttpServerOptionsUtils.applyCommonOptionsForManagementInterface(http, buildTimeConfig, managementConfig,
+                Collections.emptyList(), ProxyProtocolListener.HTTP);
+        HttpServerConfig https = new HttpServerConfig();
+        HttpServerOptionsUtils.applyCommonOptionsForManagementInterface(https, buildTimeConfig, managementConfig,
+                Collections.emptyList(), ProxyProtocolListener.HTTPS);
+        HttpServerConfig domainSocket = new HttpServerConfig();
+        HttpServerOptionsUtils.applyCommonOptionsForManagementInterface(domainSocket, buildTimeConfig, managementConfig,
+                Collections.emptyList(), ProxyProtocolListener.DOMAIN_SOCKET);
+
+        assertThat(http.getTcpConfig().isUseProxyProtocol()).isFalse();
+        assertThat(https.getTcpConfig().isUseProxyProtocol()).isTrue();
+        assertThat(domainSocket.getTcpConfig().isUseProxyProtocol()).isFalse();
+    }
+
+    @Test
+    void managementProxyProtocolListenersAreIgnoredWhenTheProtocolIsDisabled() {
+        ManagementInterfaceBuildTimeConfig buildTimeConfig = minimalManagementBuildTimeConfig();
+        ManagementConfig managementConfig = minimalManagementConfig();
+        when(managementConfig.proxy().useProxyProtocol()).thenReturn(false);
+        when(managementConfig.proxy().proxyProtocolListeners()).thenReturn(EnumSet.allOf(ProxyProtocolListener.class));
+
+        HttpServerConfig https = new HttpServerConfig();
+        HttpServerOptionsUtils.applyCommonOptionsForManagementInterface(https, buildTimeConfig, managementConfig,
+                Collections.emptyList(), ProxyProtocolListener.HTTPS);
+        assertThat(https.getTcpConfig().isUseProxyProtocol()).isFalse();
+    }
+
+    private ManagementInterfaceBuildTimeConfig minimalManagementBuildTimeConfig() {
+        ManagementInterfaceBuildTimeConfig config = mock(ManagementInterfaceBuildTimeConfig.class);
+        when(config.enableCompression()).thenReturn(false);
+        when(config.enableDecompression()).thenReturn(false);
+        when(config.compressionLevel()).thenReturn(OptionalInt.empty());
+        return config;
+    }
+
+    private ManagementConfig minimalManagementConfig() {
+        ManagementConfig config = mock(ManagementConfig.class);
+
+        when(config.host()).thenReturn("localhost");
+        when(config.idleTimeout()).thenReturn(Duration.ofMinutes(30));
+        when(config.acceptBacklog()).thenReturn(-1);
+        when(config.handle100ContinueAutomatically()).thenReturn(false);
+        when(config.useSemicolonAsQueryParamDelimiter()).thenReturn(false);
+        when(config.compressionContentSizeThreshold()).thenReturn(0);
+        when(config.logActivity()).thenReturn(false);
+        when(config.proxyProtocolTimeout()).thenReturn(Duration.ofSeconds(10));
+        when(config.tcpUserTimeout()).thenReturn(Duration.ZERO);
+        when(config.soLinger()).thenReturn(-1);
+        when(config.tcpKeepAlive()).thenReturn(false);
+        when(config.reuseAddress()).thenReturn(true);
+        when(config.trafficClass()).thenReturn(-1);
+        when(config.sendBufferSize()).thenReturn(OptionalInt.empty());
+        when(config.receiveBufferSize()).thenReturn(OptionalInt.empty());
+        when(config.readIdleTimeout()).thenReturn(Duration.ZERO);
+        when(config.writeIdleTimeout()).thenReturn(Duration.ZERO);
+
+        ServerLimitsConfig limits = mock(ServerLimitsConfig.class);
+        when(limits.maxHeaderSize()).thenReturn(MemorySize.of("20k"));
+        when(limits.maxChunkSize()).thenReturn(MemorySize.of("8k"));
+        when(limits.maxInitialLineLength()).thenReturn(4096);
+        when(limits.maxFormAttributeSize()).thenReturn(MemorySize.of("2k"));
+        when(limits.maxFormFields()).thenReturn(256);
+        when(limits.maxFormBufferedBytes()).thenReturn(MemorySize.of("1k"));
+        when(limits.maxQueryParameters()).thenReturn(1024);
+        when(config.limits()).thenReturn(limits);
+
+        ProxyConfig proxy = mock(ProxyConfig.class);
+        when(proxy.useProxyProtocol()).thenReturn(false);
+        when(config.proxy()).thenReturn(proxy);
+
+        WebsocketServerConfig ws = mock(WebsocketServerConfig.class);
+        when(ws.maxFrameSize()).thenReturn(Optional.empty());
+        when(ws.maxMessageSize()).thenReturn(Optional.empty());
+        when(ws.perFrameCompression()).thenReturn(true);
+        when(ws.perMessageCompression()).thenReturn(true);
+        when(ws.compressionLevel()).thenReturn(6);
+        when(ws.allowServerNoContext()).thenReturn(false);
+        when(ws.preferredClientNoContext()).thenReturn(false);
+        when(ws.closingTimeout()).thenReturn(10);
+        when(ws.acceptUnmaskedFrames()).thenReturn(false);
+        when(config.websocketServer()).thenReturn(ws);
+
+        return config;
+    }
+
     private VertxHttpConfig minimalHttpConfig() {
         return minimalHttpConfig(true);
     }
@@ -289,8 +518,9 @@ class HttpServerOptionsUtilsTest {
         when(limits.maxFormFields()).thenReturn(256);
         when(limits.maxFormBufferedBytes()).thenReturn(MemorySize.of("1k"));
         when(limits.maxInitialLineLength()).thenReturn(4096);
+        when(limits.maxQueryParameters()).thenReturn(1024);
         when(limits.headerTableSize()).thenReturn(OptionalLong.empty());
-        when(limits.maxConcurrentStreams()).thenReturn(OptionalLong.empty());
+        when(limits.maxConcurrentStreams()).thenReturn(128L);
         when(limits.maxFrameSize()).thenReturn(OptionalInt.empty());
         when(limits.maxHeaderListSize()).thenReturn(OptionalLong.empty());
         when(limits.rstFloodMaxRstFramePerWindow()).thenReturn(OptionalInt.empty());

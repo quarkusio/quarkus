@@ -30,6 +30,7 @@ import io.quarkus.opentelemetry.runtime.tracing.instrumentation.resteasy.AttachE
 import io.quarkus.opentelemetry.runtime.tracing.instrumentation.resteasy.OpenTelemetryClassicServerFilter;
 import io.quarkus.opentelemetry.runtime.tracing.instrumentation.resteasy.OpenTelemetryReactiveServerFilter;
 import io.quarkus.resteasy.common.spi.ResteasyJaxrsProviderBuildItem;
+import io.quarkus.resteasy.reactive.server.spi.KnownServerRestHandlerBuildItem;
 import io.quarkus.resteasy.reactive.server.spi.PreExceptionMapperHandlerBuildItem;
 import io.quarkus.resteasy.reactive.spi.CustomContainerRequestFilterBuildItem;
 import io.quarkus.vertx.deployment.spi.VertxBootstrapConsumerBuildItem;
@@ -113,20 +114,23 @@ public class InstrumentationProcessor {
     @BuildStep(onlyIfNot = MetricsExtensionAvailable.class, onlyIf = VertxHttpAvailable.class)
     @Record(ExecutionTime.STATIC_INIT)
     VertxBootstrapConsumerBuildItem vertxHttpMetrics(InstrumentationRecorder recorder) {
-        return new VertxBootstrapConsumerBuildItem(recorder.getVertxHttpMetrics(), LIBRARY_AFTER + 1);
+        return new VertxBootstrapConsumerBuildItem(recorder.getVertxHttpMetrics(), LIBRARY_AFTER + 1,
+                "opentelemetry.vertx.http-metrics");
     }
 
     @BuildStep(onlyIfNot = { MetricsExtensionAvailable.class, VertxHttpAvailable.class })
     @Record(ExecutionTime.STATIC_INIT)
     VertxBootstrapConsumerBuildItem vertxMetricsOptions(InstrumentationRecorder recorder) {
-        return new VertxBootstrapConsumerBuildItem(recorder.getVertxMetricsOptions(), LIBRARY_AFTER + 1);
+        return new VertxBootstrapConsumerBuildItem(recorder.getVertxMetricsOptions(), LIBRARY_AFTER + 2,
+                "opentelemetry.vertx.metrics");
     }
 
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
     VertxBootstrapConsumerBuildItem vertxTracingOptions(
             InstrumentationRecorder recorder) {
-        return new VertxBootstrapConsumerBuildItem(recorder.processVertxBootstrap(), LIBRARY_AFTER);
+        return new VertxBootstrapConsumerBuildItem(recorder.processVertxBootstrap(), LIBRARY_AFTER,
+                "opentelemetry.vertx.tracing");
     }
 
     // RESTEasy and Vert.x web
@@ -145,12 +149,15 @@ public class InstrumentationProcessor {
             Capabilities capabilities,
             BuildProducer<CustomContainerRequestFilterBuildItem> containerRequestFilterBuildItemBuildProducer,
             BuildProducer<PreExceptionMapperHandlerBuildItem> preExceptionMapperHandlerBuildItemBuildProducer,
+            BuildProducer<KnownServerRestHandlerBuildItem> knownServerRestHandlerBuildItemBuildProducer,
             OTelBuildConfig config) {
         if (capabilities.isPresent(Capability.RESTEASY_REACTIVE) && config.instrument().rest()) {
             containerRequestFilterBuildItemBuildProducer
                     .produce(new CustomContainerRequestFilterBuildItem(OpenTelemetryReactiveServerFilter.class.getName()));
             preExceptionMapperHandlerBuildItemBuildProducer
                     .produce(new PreExceptionMapperHandlerBuildItem(new AttachExceptionHandler()));
+            knownServerRestHandlerBuildItemBuildProducer
+                    .produce(new KnownServerRestHandlerBuildItem(AttachExceptionHandler.class.getName()));
         }
 
     }

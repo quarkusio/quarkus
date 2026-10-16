@@ -38,7 +38,6 @@ import io.quarkus.micrometer.runtime.binder.JVMInfoBinder;
 import io.quarkus.micrometer.runtime.config.MicrometerConfig;
 import io.quarkus.micrometer.runtime.config.runtime.HttpClientConfig;
 import io.quarkus.micrometer.runtime.config.runtime.HttpServerConfig;
-import io.quarkus.micrometer.runtime.config.runtime.VertxConfig;
 import io.quarkus.runtime.ImageMode;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.RuntimeValue;
@@ -59,17 +58,14 @@ public class MicrometerRecorder {
     private final MicrometerConfig config;
     private final RuntimeValue<HttpServerConfig> httpServerConfig;
     private final RuntimeValue<HttpClientConfig> httpClientConfig;
-    private final RuntimeValue<VertxConfig> vertxConfig;
 
     public MicrometerRecorder(
             final MicrometerConfig config,
             final RuntimeValue<HttpServerConfig> httpServerConfig,
-            final RuntimeValue<HttpClientConfig> clientConfig,
-            final RuntimeValue<VertxConfig> vertxConfig) {
+            final RuntimeValue<HttpClientConfig> clientConfig) {
         this.config = config;
         this.httpServerConfig = httpServerConfig;
         this.httpClientConfig = clientConfig;
-        this.vertxConfig = vertxConfig;
     }
 
     @StaticInit
@@ -289,6 +285,6 @@ public class MicrometerRecorder {
                 .ifPresent(HttpCommonTags::setAdditionalHttpMethods);
         return new RuntimeValue<HttpBinderConfiguration>(
                 new HttpBinderConfiguration(httpServerMetricsEnabled, httpClientMetricsEnabled, httpServerConfig.getValue(),
-                        httpClientConfig.getValue(), vertxConfig.getValue()));
+                        httpClientConfig.getValue()));
     }
 }

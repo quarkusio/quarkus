@@ -5,11 +5,13 @@ import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNa
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.ENCODED;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.FORM_PARAM;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.HEADER_PARAM;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.MATRIX_PARAM;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.PATH_PARAM;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.QUERY_PARAM;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.REST_COOKIE_PARAM;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.REST_FORM_PARAM;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.REST_HEADER_PARAM;
+import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.REST_MATRIX_PARAM;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.REST_PATH_PARAM;
 import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames.REST_QUERY_PARAM;
 
@@ -78,6 +80,28 @@ public class BeanParamParser {
                             new FieldExtractor(null, fieldInfo.name(), fieldInfo.declaringClass().name().toString()),
                             fieldInfo.type()),
                     (annotationValue, getterMethod) -> new QueryParamItem(getterMethod.name(),
+                            annotationValue != null ? annotationValue : getterName(getterMethod),
+                            getterMethod.hasDeclaredAnnotation(ENCODED),
+                            new GetterExtractor(getterMethod),
+                            getterMethod.returnType())));
+
+            resultList.addAll(paramItemsForFieldsAndMethods(beanParamClass, MATRIX_PARAM,
+                    (annotationValue, fieldInfo) -> new MatrixParamItem(fieldInfo.name(), annotationValue,
+                            fieldInfo.hasDeclaredAnnotation(ENCODED),
+                            new FieldExtractor(null, fieldInfo.name(), fieldInfo.declaringClass().name().toString()),
+                            fieldInfo.type()),
+                    (annotationValue, getterMethod) -> new MatrixParamItem(getterMethod.name(), annotationValue,
+                            getterMethod.hasDeclaredAnnotation(ENCODED),
+                            new GetterExtractor(getterMethod),
+                            getterMethod.returnType())));
+
+            resultList.addAll(paramItemsForFieldsAndMethods(beanParamClass, REST_MATRIX_PARAM,
+                    (annotationValue, fieldInfo) -> new MatrixParamItem(fieldInfo.name(),
+                            annotationValue != null ? annotationValue : fieldInfo.name(),
+                            fieldInfo.hasDeclaredAnnotation(ENCODED),
+                            new FieldExtractor(null, fieldInfo.name(), fieldInfo.declaringClass().name().toString()),
+                            fieldInfo.type()),
+                    (annotationValue, getterMethod) -> new MatrixParamItem(getterMethod.name(),
                             annotationValue != null ? annotationValue : getterName(getterMethod),
                             getterMethod.hasDeclaredAnnotation(ENCODED),
                             new GetterExtractor(getterMethod),

@@ -33,7 +33,7 @@
         {
             "category": "Data5",
             "timeout": 90,
-            "test-modules": "jpa-postgresql, jpa-postgresql-withxml, narayana-stm, narayana-jta, reactive-pg-client, hibernate-reactive-postgresql, hibernate-orm-tenancy/schema, hibernate-orm-tenancy/schema-mariadb, hibernate-orm-spatial, hibernate-orm-vector",
+            "test-modules": "jpa-postgresql, jpa-postgresql-withxml, narayana-stm, narayana-jta, reactive-pg-client, hibernate-reactive-postgresql, hibernate-orm-tenancy/schema, hibernate-orm-tenancy/schema-mariadb, hibernate-orm-spatial, hibernate-orm-vector, agroal",
             "os-name": "ubuntu-latest"
         },
         {
@@ -81,13 +81,13 @@
         {
             "category": "Security2",
             "timeout": 75,
-            "test-modules": "oidc, oidc-code-flow, oidc-tenancy, oidc-client, oidc-client-reactive, oidc-token-propagation, oidc-wiremock, oidc-client-wiremock, oidc-wiremock-providers, oidc-dev-services",
+            "test-modules": "oidc, oidc-code-flow, oidc-tenancy, oidc-client, oidc-client-reactive, oidc-token-propagation, oidc-wiremock, oidc-client-wiremock, oidc-wiremock-providers, oidc-dev-services, oidc-spiffe",
             "os-name": "ubuntu-latest"
         },
         {
             "category": "Security3",
             "timeout": 55,
-            "test-modules": "keycloak-authorization, smallrye-jwt-token-propagation, security-webauthn",
+            "test-modules": "keycloak-authorization, smallrye-jwt-token-propagation, security-webauthn, signals-security, websockets-next-security",
             "os-name": "ubuntu-latest"
         },
         {
@@ -129,7 +129,7 @@
         {
             "category": "Observability",
             "timeout": 130,
-            "test-modules": "micrometer-prometheus, logging-json, observability-lgtm, opentelemetry, opentelemetry-jdbc-instrumentation, opentelemetry-mongodb-client-instrumentation, opentelemetry-redis-instrumentation, micrometer-opentelemetry",
+            "test-modules": "micrometer-prometheus, logging-json, observability-lgtm, observation-micrometer-opentelemetry, observation-reactive, opentelemetry, opentelemetry-jdbc-instrumentation, opentelemetry-mongodb-client-instrumentation, opentelemetry-redis-instrumentation, micrometer-opentelemetry",
             "os-name": "ubuntu-latest"
         },
         {
@@ -141,7 +141,7 @@
         {
             "category": "gRPC",
             "timeout": 80,
-            "test-modules": "grpc-health, grpc-encoding, grpc-interceptors, grpc-mutual-auth, grpc-plain-text-gzip, grpc-plain-text-mutiny, grpc-proto-v2, grpc-streaming, grpc-streaming-native, grpc-tls, grpc-tls-p12, grpc-test-random-port",
+            "test-modules": "grpc-domain-socket, grpc-health, grpc-encoding, grpc-interceptors, grpc-mutual-auth, grpc-plain-text-gzip, grpc-plain-text-mutiny, grpc-proto-v2, grpc-streaming, grpc-streaming-native, grpc-tls, grpc-tls-p12, grpc-test-random-port",
             "os-name": "ubuntu-latest"
         },
         {

@@ -46,7 +46,8 @@ public class HibernateRepositoryAnnotationsTest {
     @Test
     void testAllRepositoryDefiningAnnotationsListed() {
         var allProcessingAnnotations = findAllProcessingAnnotations();
-        var knowRepositoryDefiningAnnotations = HibernateOrmProcessor.HIBERNATE_REPOSITORY_ANNOTATIONS.stream()
+        var knowRepositoryDefiningAnnotations = io.quarkus.hibernate.orm.deployment.HibernateOrmProcessor.HIBERNATE_REPOSITORY_ANNOTATIONS
+                .stream()
                 .map(Class::getName).collect(toSet());
         assertThat(allProcessingAnnotations)
                 .isNotEmpty()

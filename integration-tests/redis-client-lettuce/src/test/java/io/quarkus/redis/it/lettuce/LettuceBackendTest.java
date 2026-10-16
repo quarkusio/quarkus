@@ -958,8 +958,11 @@ class LettuceBackendTest {
         String key = getKey("json-person");
         RestAssured.given().body("luke,20").when().post("/lettuce/json/person/" + key).then()
                 .statusCode(200).body(CoreMatchers.is("luke,20,true"));
-        RestAssured.given().when().get("/lettuce/json/" + key).then()
-                .statusCode(200).body(CoreMatchers.is("{\"name\":\"luke\",\"age\":20}"));
+        // Jackson decides the property order of the stored document (alphabetical since Jackson 3), so compare the
+        // documents rather than the text
+        String stored = RestAssured.given().when().get("/lettuce/json/" + key).then()
+                .statusCode(200).extract().asString();
+        assertEquals(new JsonObject("{\"name\":\"luke\",\"age\":20}"), new JsonObject(stored));
     }
 
     @Test

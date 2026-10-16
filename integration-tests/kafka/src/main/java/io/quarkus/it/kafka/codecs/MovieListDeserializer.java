@@ -2,9 +2,8 @@ package io.quarkus.it.kafka.codecs;
 
 import java.util.List;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-
 import io.quarkus.kafka.client.serialization.ObjectMapperDeserializer;
+import tools.jackson.core.type.TypeReference;
 
 public class MovieListDeserializer extends ObjectMapperDeserializer<List<Movie>> {
     public MovieListDeserializer() {

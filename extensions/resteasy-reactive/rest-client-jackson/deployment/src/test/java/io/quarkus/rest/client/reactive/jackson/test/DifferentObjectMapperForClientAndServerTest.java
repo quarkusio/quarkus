@@ -22,15 +22,15 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
-
-import io.quarkus.jackson.ObjectMapperCustomizer;
+import io.quarkus.jackson.JsonMapperBuilderCustomizer;
 import io.quarkus.rest.client.reactive.QuarkusRestClientBuilder;
 import io.quarkus.rest.client.reactive.jackson.ClientObjectMapper;
 import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.common.http.TestHTTPResource;
+import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.SerializationFeature;
+import tools.jackson.databind.json.JsonMapper;
 
 public class DifferentObjectMapperForClientAndServerTest {
     @RegisterExtension
@@ -128,9 +128,10 @@ public class DifferentObjectMapperForClientAndServerTest {
         @ClientObjectMapper
         static ObjectMapper objectMapper(ObjectMapper defaultObjectMapper) {
             CUSTOM_OBJECT_MAPPER_COUNT.incrementAndGet();
-            return defaultObjectMapper.copy()
+            return ((JsonMapper) defaultObjectMapper).rebuild()
                     .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
-                    .disable(DeserializationFeature.UNWRAP_ROOT_VALUE);
+                    .disable(DeserializationFeature.UNWRAP_ROOT_VALUE)
+                    .build();
         }
     }
 
@@ -175,16 +176,16 @@ public class DifferentObjectMapperForClientAndServerTest {
         @Override
         public ObjectMapper getContext(Class<?> type) {
             COUNT.incrementAndGet();
-            return new ObjectMapper().enable(DeserializationFeature.UNWRAP_ROOT_VALUE);
+            return JsonMapper.builder().enable(DeserializationFeature.UNWRAP_ROOT_VALUE).build();
         }
     }
 
     @Singleton
-    public static class ServerCustomObjectMapperDisallowUnknownProperties implements ObjectMapperCustomizer {
+    public static class ServerCustomObjectMapperDisallowUnknownProperties implements JsonMapperBuilderCustomizer {
 
         @Override
-        public void customize(ObjectMapper objectMapper) {
-            objectMapper.enable(SerializationFeature.WRAP_ROOT_VALUE);
+        public void customize(JsonMapper.Builder builder) {
+            builder.enable(SerializationFeature.WRAP_ROOT_VALUE);
         }
     }
 }

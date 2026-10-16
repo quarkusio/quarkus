@@ -6,7 +6,6 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 [id="gradle-tooling"]
 = Quarkus and Gradle
 include::_attributes.adoc[]
-:categories: tooling, native
 :summary: Develop and build your Quarkus application with Gradle
 :devtools-no-maven:
 :topics: gradle,tooling
@@ -81,7 +80,6 @@ test {
     systemProperty "quarkus.test.profile", "foo" <1>
 }
 ----
-
 <1> The `foo` configuration profile will be used to run the tests.
 ****
 
@@ -94,7 +92,6 @@ tasks.test {
     systemProperty("quarkus.test.profile", "foo") <1>
 }
 ----
-
 <1> The `foo` configuration profile will be used to run the tests.
 ****
 
@@ -311,6 +308,10 @@ Now you need to connect your local agent to the remote host, using the `remote-d
 Now every time you refresh the browser you should see any changes you have made locally immediately visible in the remote
 app.
 
+Remote development HTTP requests are limited by `quarkus.http.limits.max-body-size`.
+Set this value high enough for the largest file that must be synchronized.
+If the general HTTP body limit is disabled, remote development still applies a 10 MiB limit.
+
 All the config options are shown below:
 
 include::{generated-dir}/config/quarkus-core_quarkus.live-reload.adoc[opts=optional, leveloffset=+1]
@@ -522,7 +523,6 @@ quarkusBuild {
     }
 }
 ----
-
 <1> Set `quarkus.native.container-build` property to `true`
 <2> Set `quarkus.native.builder-image` property to `quay.io/quarkus/ubi10-quarkus-mandrel-builder-image:{mandrel-flavor}`
 ****
@@ -539,7 +539,6 @@ tasks.quarkusBuild {
     }
 }
 ----
-
 <1> Set `quarkus.native.container-build` property to `true`
 <2> Set `quarkus.native.builder-image` property to `quay.io/quarkus/ubi10-quarkus-mandrel-builder-image:{mandrel-flavor}`
 ****

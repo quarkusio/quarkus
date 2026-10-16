@@ -3,6 +3,7 @@ package io.quarkus.oidc.runtime;
 import static io.quarkus.runtime.configuration.DurationConverter.parseDuration;
 
 import java.time.Duration;
+import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -14,8 +15,10 @@ import jakarta.enterprise.util.TypeLiteral;
 import org.jboss.logging.Logger;
 
 import io.quarkus.arc.Arc;
+import io.quarkus.arc.InjectableInstance;
 import io.quarkus.arc.SyntheticCreationalContext;
 import io.quarkus.arc.runtime.BeanContainer;
+import io.quarkus.oidc.DPoPNonceProvider;
 import io.quarkus.oidc.Oidc;
 import io.quarkus.oidc.OidcTenantConfig;
 import io.quarkus.oidc.TenantIdentityProvider;
@@ -26,6 +29,7 @@ import io.quarkus.runtime.annotations.RuntimeInit;
 import io.quarkus.runtime.annotations.StaticInit;
 import io.quarkus.security.AuthenticationFailedException;
 import io.quarkus.security.runtime.SecurityConfig;
+import io.quarkus.security.spi.runtime.BlockingSecurityExecutor;
 import io.quarkus.tls.TlsConfigurationRegistry;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
@@ -62,7 +66,8 @@ public class OidcRecorder {
     @RuntimeInit
     public Function<SyntheticCreationalContext<TenantConfigBean>, TenantConfigBean> createTenantConfigBean(
             Supplier<Vertx> vertx, Supplier<TlsConfigurationRegistry> registry,
-            Supplier<ProxyConfigurationRegistry> proxyConfigurationRegistrySupplier) {
+            Supplier<ProxyConfigurationRegistry> proxyConfigurationRegistrySupplier,
+            Set<OidcRoute> allowedRoutes) {
         return new Function<SyntheticCreationalContext<TenantConfigBean>, TenantConfigBean>() {
             @Override
             public TenantConfigBean apply(SyntheticCreationalContext<TenantConfigBean> ctx) {
@@ -70,7 +75,7 @@ public class OidcRecorder {
                 ctx.getInjectedReference(new TypeLiteral<Event<Oidc>>() {
                 }).fire(oidc);
                 return new TenantConfigBean(vertx.get(), registry.get(), oidc, securityConfig.getValue().events().enabled(),
-                        proxyConfigurationRegistrySupplier.get());
+                        proxyConfigurationRegistrySupplier.get(), allowedRoutes);
             }
         };
     }
@@ -129,11 +134,16 @@ public class OidcRecorder {
         };
     }
 
-    public Supplier<TenantIdentityProvider> createTenantIdentityProvider(String tenantName) {
-        return new Supplier<TenantIdentityProvider>() {
+    public Function<SyntheticCreationalContext<TenantIdentityProvider>, TenantIdentityProvider> createTenantIdentityProvider(
+            String tenantName) {
+        return new Function<SyntheticCreationalContext<TenantIdentityProvider>, TenantIdentityProvider>() {
             @Override
-            public TenantIdentityProvider get() {
-                return new TenantSpecificOidcIdentityProvider(tenantName);
+            public TenantIdentityProvider apply(SyntheticCreationalContext<TenantIdentityProvider> ctx) {
+                DefaultTenantConfigResolver resolver = ctx.getInjectedReference(DefaultTenantConfigResolver.class);
+                BlockingSecurityExecutor blockingExecutor = ctx.getInjectedReference(BlockingSecurityExecutor.class);
+                InjectableInstance<DPoPNonceProvider> dPoPNonceProvider = ctx.getInjectedReference(new TypeLiteral<>() {
+                });
+                return new TenantSpecificOidcIdentityProvider(tenantName, resolver, blockingExecutor, dPoPNonceProvider);
             }
         };
     }
@@ -183,6 +193,10 @@ public class OidcRecorder {
 
     public Handler<RoutingContext> getResourceMetadataHandler(BeanContainer beanContainer) {
         return beanContainer.beanInstance(ResourceMetadataHandler.class);
+    }
+
+    public Handler<RoutingContext> getClientIdMetadataHandler(BeanContainer beanContainer) {
+        return beanContainer.beanInstance(ClientIdMetadataHandler.class);
     }
 
 }

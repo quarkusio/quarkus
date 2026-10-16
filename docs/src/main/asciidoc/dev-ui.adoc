@@ -5,7 +5,6 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Dev UI
 include::_attributes.adoc[]
-:categories: writing-extensions
 :summary: Learn more about Dev UI
 :topics: dev-ui,testing
 
@@ -66,6 +65,9 @@ The *menu* on the left-hand side provides structured access to built-in pages:
 
 | *Dev Services*
 | Displays information about automatically started services (e.g., databases, Kafka brokers).
+
+| *Observability*
+| A dashboard of telemetry cards you compose yourself: application metrics, plus a card per signal (such as OpenTelemetry traces) contributed by the telemetry extensions in use. Only present when at least one such extension is present.
 
 | *Build Metrics*
 | Provides performance metrics from the last build and reload cycle.
@@ -160,6 +162,27 @@ The settings page is a dialog that contains settings for Dev UI:
 - Storage (Manage local browser storage used in Dev UI)
 - Dev MCP (Enable your Dev Mode to expose a MCP Server)
 - ... and more... (Other extensions might add to this)
+
+[[dev-ui-hosts]]
+=== Accessing Dev UI through another host name
+
+Dev UI only answers requests that are addressed to `localhost` or `127.0.0.1`, and only accepts these as the origin of a cross-origin request.
+This protects it against DNS rebinding, where a page from another site makes the browser call a local port under a host name that the attacker controls.
+
+To open Dev UI through another name, for example the name of your machine, two settings are needed.
+The HTTP server has to accept the host name, see xref:http-reference.adoc#host-header-validation[HTTP Host header validation], and Dev UI has to accept it as well:
+
+[source,properties]
+----
+%dev.quarkus.http.host-validation.allowed-hosts=localhost,127.0.0.1,my-machine
+%dev.quarkus.dev-ui.hosts=my-machine
+----
+
+Setting `quarkus.http.host-validation.allowed-hosts` replaces the built-in local names, so `localhost` and `127.0.0.1` have to be listed again to keep Dev UI reachable through them.
+
+`quarkus.dev-ui.hosts` takes a comma-separated list of host names.
+Only list names that you control.
+Host names are compared as text and are never resolved, so that a name which merely resolves to a local address is not accepted.
 
 == Guide for Extension Developers
 
@@ -697,7 +720,6 @@ export class QwcJokesList extends LitElement { // <3>
 }
 customElements.define('qwc-jokes-list', QwcJokesList); // <12>
 ----
-
 <1> You can import Classes and/or functions from other libraries.
 In this case, we use the `LitElement` class and `html` & `css` functions from `Lit`
 <2> Build time data as defined in the Build step and can be imported using the key and always from `build-time-data`. All keys added in your Build step will be available.
@@ -1624,7 +1646,6 @@ connectedCallback() {
     });
 }
 ----
-
 <1> Note the method `getJoke` corresponds to the method in your Java Service. This method returns a https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise[Promise] with the JsonRPC result.
 <2> In this case, the result is an object, so we just add it to our list of jokes. This could also be an array if the server returned some collection.
 
@@ -1742,7 +1763,7 @@ To do this you can return/produce a `WorkspaceActionBuildItem` in your processor
 <3> Here the code that will execute if the user selects this action. You will receive some input (see the `Input` section below)
 <4> How the result should be displayed (see the `Display` section below)
 <5> What the result type would be (see the `DisplayType` section below)
-<6> Optional filter if this action only applies to certain items. Takes a regex as input, and some predefined regexes exisits in the the `Patterns` class
+<6> Optional filter if this action only applies to certain items. Takes a regex as input, and some predefined regexes exists in the `Patterns` class
 
 ==== Input
 
@@ -1773,6 +1794,96 @@ Depending on what your action does with the content input, your output might pro
 - markdown: This will display interperated markdown
 - html: This will display interperated html
 - image: This will display an image
+
+=== Observability dashboard
+
+As soon as one extension contributes a telemetry signal, Dev UI adds a single *Observability*
+entry to the left menu, and that entry is a dashboard the user composes: they pick the cards they
+want the first time they open it, change their mind later with *Edit dashboard*, and drag the
+cards into the order that suits them. The choice is kept in the browser's local storage rather
+than per application, so it follows the developer from one application to the next.
+
+Extensions contribute to that dashboard in two ways.
+
+==== Contributing a signal card
+
+If your extension captures a telemetry signal (traces, logs, events, profiles, ...), produce an
+`ObservabilitySignalBuildItem` from `quarkus-devui-deployment-spi` alongside the page that shows
+it. The dashboard then offers that page as a card, so there is no second component to write:
+
+[source,java]
+----
+@BuildStep(onlyIf = IsLocalDevelopment.class)
+void tracesPage(BuildProducer<UnlistedPageBuildItem> unlistedPages,
+        BuildProducer<ObservabilitySignalBuildItem> signals) {
+
+    UnlistedPageBuildItem page = new UnlistedPageBuildItem(); // <1>
+    page.addPage(Page.webComponentPageBuilder()
+            .icon("font-awesome-solid:diagram-project")
+            .title("Traces")
+            .componentLink("qwc-otel-traces.js"));
+    unlistedPages.produce(page);
+
+    signals.produce(new ObservabilitySignalBuildItem(
+            "traces", // <2>
+            "OpenTelemetry Traces", // <3>
+            "font-awesome-solid:diagram-project", // <4>
+            "quarkus-opentelemetry/traces", // <5>
+            "spanCount")); // <6>
+}
+----
+<1> The page that backs the card. It has to be an unlisted page: the dashboard resolves the page
+id against the unlisted pages only, and a signal pointing at a card, menu or footer page is
+dropped without an error, leaving you with a signal that never shows up as a card.
+<2> A key unique among all signals. It identifies the card in the stored dashboard, so changing
+it drops the card from dashboards that already have it.
+<3> The title shown on the card and in the picker. Name the backend here, not just the signal:
+the picker lists every extension's signals together, so a bare "Traces" is ambiguous.
+<4> The icon, from the Dev UI icon set.
+<5> The id of the page above. Dev UI derives it as `<namespace>/<title-in-lowercase-with-dashes>`,
+where the namespace defaults to your extension's name. Pass `null` if the signal has no page of
+its own: the dashboard then knows the feature is present but contributes no card for it (this is
+what metrics does, since it expands into one card per meter instead).
+<6> Optional name of a JSON-RPC method returning a live count. Reserved for a future count on the
+card; pass `null` if you have none.
+
+The card renders your component inline, in a box 320 pixels tall (420 for a card spanning the
+full width), with an *Open* link through to the full page. Size the component against its host
+(`height: 100%`, or a flex column) rather than against the viewport - the card body scrolls what
+does not fit, and the user can always maximize the card to give it the whole dashboard area.
+Nothing else changes: the component is imported only when the card is actually on the dashboard,
+and its JSON-RPC calls, subscriptions and hot reload behave exactly as they do on the full page.
+
+Extend `ObservabilityCardBase` rather than `QwcHotReloadElement` in that component. Core Dev UI
+puts it in the import map under the bare specifier `observability-card-base`; it extends
+`QwcHotReloadElement` itself, so you keep `hotReload()`, and adds the affordances every signal
+component ends up wanting, currently `exportCsv(rows, filename)`:
+
+[source,javascript]
+----
+import { ObservabilityCardBase } from 'observability-card-base';
+
+export class QwcOtelTraces extends ObservabilityCardBase {
+    // ...
+}
+----
+
+==== Contributing metrics
+
+Meters need no work at all. Every meter registered with Micrometer or with the OpenTelemetry SDK
+is listed in the dashboard's picker automatically, and the dashboard chooses how to draw the ones
+the user adds. That choice follows what was actually captured rather than the declared meter
+type: a rate for a counter, a dial for a gauge, and mean and max per interval for a timer or a
+distribution summary, joined by percentiles when the meter publishes them and replaced by bucket
+bars when it publishes a histogram. If your extension exposes metrics, simply register them as
+usual.
+
+Writing a new metrics *backend* is the exception. A backend samples meters into the shared
+`MetricsTimeSeriesStore` and tells the core Dev UI it did so by producing a
+`MetricsBackendBuildItem` naming itself (`new MetricsBackendBuildItem("micrometer")`); the core
+then registers the JSON-RPC service and the metrics signal once, no matter how many backends are
+active. See `DevUiMetricsSampler` (Micrometer) and `DevUiMetricsExporter` (OpenTelemetry) for the
+two existing implementations.
 
 === Advanced: Custom cards
 

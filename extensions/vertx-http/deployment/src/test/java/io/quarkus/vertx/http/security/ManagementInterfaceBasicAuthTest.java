@@ -89,7 +89,7 @@ public class ManagementInterfaceBasicAuthTest {
                 .get(metrics.toString() + ";a=a1")
                 .then()
                 .assertThat()
-                .statusCode(404); // instead of 401
+                .statusCode(401);
 
     }
 

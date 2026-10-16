@@ -7,7 +7,6 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 = Using OpenID Connect (OIDC) multitenancy
 include::_attributes.adoc[]
 :diataxis-type: howto
-:categories: security
 :keywords: sso oidc oauth2 security
 :topics: security,oidc,multitenancy
 :extensions: io.quarkus:quarkus-oidc

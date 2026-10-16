@@ -1,6 +1,7 @@
 package io.quarkus.keycloak.pep.runtime;
 
 import static io.quarkus.keycloak.pep.runtime.KeycloakPolicyEnforcerUtil.createPolicyEnforcer;
+import static io.quarkus.keycloak.pep.runtime.KeycloakPolicyEnforcerUtil.getAndValidateProxyConfiguration;
 import static io.quarkus.keycloak.pep.runtime.KeycloakPolicyEnforcerUtil.getOidcTenantConfig;
 
 import java.util.HashMap;
@@ -9,6 +10,7 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.event.Observes;
 import jakarta.enterprise.inject.Instance;
 
 import org.keycloak.adapters.authorization.PolicyEnforcer;
@@ -20,6 +22,8 @@ import io.quarkus.oidc.OidcTenantConfig;
 import io.quarkus.oidc.common.runtime.OidcTlsSupport;
 import io.quarkus.oidc.runtime.BlockingTaskRunner;
 import io.quarkus.oidc.runtime.TenantConfigBean;
+import io.quarkus.proxy.ProxyConfigurationRegistry;
+import io.quarkus.runtime.StartupEvent;
 import io.quarkus.security.spi.runtime.BlockingSecurityExecutor;
 import io.quarkus.tls.TlsConfigurationRegistry;
 import io.quarkus.vertx.http.runtime.VertxHttpConfig;
@@ -35,12 +39,15 @@ public class DefaultPolicyEnforcerResolver implements PolicyEnforcerResolver {
     private final PolicyEnforcer defaultPolicyEnforcer;
     private final long readTimeout;
     private final OidcTlsSupport tlsSupport;
+    private final ProxyConfigurationRegistry proxyConfigurationRegistry;
 
     DefaultPolicyEnforcerResolver(TenantConfigBean tenantConfigBean, KeycloakPolicyEnforcerConfig config,
             VertxHttpConfig httpConfig, BlockingSecurityExecutor blockingSecurityExecutor,
             Instance<TenantPolicyConfigResolver> configResolver,
-            InjectableInstance<TlsConfigurationRegistry> tlsConfigRegistryInstance) {
+            InjectableInstance<TlsConfigurationRegistry> tlsConfigRegistryInstance,
+            ProxyConfigurationRegistry proxyConfigurationRegistry) {
         this.readTimeout = httpConfig.readTimeout().toMillis();
+        this.proxyConfigurationRegistry = proxyConfigurationRegistry;
 
         if (tlsConfigRegistryInstance.isResolvable()) {
             this.tlsSupport = OidcTlsSupport.of(tlsConfigRegistryInstance.get());
@@ -51,8 +58,9 @@ public class DefaultPolicyEnforcerResolver implements PolicyEnforcerResolver {
         var defaultTenantConfig = tenantConfigBean.getDefaultTenant().oidcConfig();
         var defaultTenantTlsSupport = tlsSupport.forConfig(defaultTenantConfig.tls());
         this.defaultPolicyEnforcer = createPolicyEnforcer(defaultTenantConfig, config.defaultTenant(),
-                defaultTenantTlsSupport);
-        this.namedPolicyEnforcers = createNamedPolicyEnforcers(tenantConfigBean, config, tlsSupport);
+                defaultTenantTlsSupport, proxyConfigurationRegistry);
+        this.namedPolicyEnforcers = createNamedPolicyEnforcers(tenantConfigBean, config, tlsSupport,
+                proxyConfigurationRegistry);
         if (configResolver.isResolvable()) {
             this.dynamicConfigResolver = configResolver.get();
             this.requestContext = new BlockingTaskRunner<>(blockingSecurityExecutor);
@@ -95,18 +103,30 @@ public class DefaultPolicyEnforcerResolver implements PolicyEnforcerResolver {
         return dynamicConfigResolver != null;
     }
 
+    static void validateStaticTenants(@Observes StartupEvent event, TenantConfigBean tenantConfigBean,
+            KeycloakPolicyEnforcerConfig config, ProxyConfigurationRegistry proxyConfigurationRegistry) {
+        getAndValidateProxyConfiguration(tenantConfigBean.getDefaultTenant().oidcConfig().proxy().proxyConfigurationName(),
+                proxyConfigurationRegistry);
+        for (String tenant : config.namedTenants().keySet()) {
+            getAndValidateProxyConfiguration(getOidcTenantConfig(tenantConfigBean, tenant).proxy().proxyConfigurationName(),
+                    proxyConfigurationRegistry);
+        }
+    }
+
     private Uni<PolicyEnforcer> getDynamicPolicyEnforcer(RoutingContext routingContext, OidcTenantConfig config) {
         return dynamicConfigResolver.resolve(routingContext, config, requestContext)
                 .onItem().ifNotNull().transform(new Function<KeycloakPolicyEnforcerTenantConfig, PolicyEnforcer>() {
                     @Override
                     public PolicyEnforcer apply(KeycloakPolicyEnforcerTenantConfig tenant) {
-                        return createPolicyEnforcer(config, tenant, tlsSupport.forConfig(config.tls()));
+                        return createPolicyEnforcer(config, tenant, tlsSupport.forConfig(config.tls()),
+                                proxyConfigurationRegistry);
                     }
                 });
     }
 
     private static Map<String, PolicyEnforcer> createNamedPolicyEnforcers(TenantConfigBean tenantConfigBean,
-            KeycloakPolicyEnforcerConfig config, OidcTlsSupport tlsSupport) {
+            KeycloakPolicyEnforcerConfig config, OidcTlsSupport tlsSupport,
+            ProxyConfigurationRegistry proxyConfigurationRegistry) {
         if (config.namedTenants().isEmpty()) {
             return Map.of();
         }
@@ -115,7 +135,8 @@ public class DefaultPolicyEnforcerResolver implements PolicyEnforcerResolver {
         for (Map.Entry<String, KeycloakPolicyEnforcerTenantConfig> tenant : config.namedTenants().entrySet()) {
             var oidcTenantConfig = getOidcTenantConfig(tenantConfigBean, tenant.getKey());
             policyEnforcerTenants.put(tenant.getKey(),
-                    createPolicyEnforcer(oidcTenantConfig, tenant.getValue(), tlsSupport.forConfig(oidcTenantConfig.tls())));
+                    createPolicyEnforcer(oidcTenantConfig, tenant.getValue(), tlsSupport.forConfig(oidcTenantConfig.tls()),
+                            proxyConfigurationRegistry));
         }
         return Map.copyOf(policyEnforcerTenants);
     }

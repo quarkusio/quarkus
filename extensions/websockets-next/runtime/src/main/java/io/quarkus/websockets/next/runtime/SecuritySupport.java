@@ -5,9 +5,11 @@ import static io.quarkus.vertx.http.runtime.security.QuarkusHttpUser.DEFERRED_ID
 
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
 
 import org.jboss.logging.Logger;
 
+import io.quarkus.runtime.BlockingOperationControl;
 import io.quarkus.security.AuthenticationFailedException;
 import io.quarkus.security.credential.TokenCredential;
 import io.quarkus.security.identity.IdentityProviderManager;
@@ -16,9 +18,11 @@ import io.quarkus.vertx.http.runtime.security.QuarkusHttpUser;
 import io.quarkus.websockets.next.CloseReason;
 import io.quarkus.websockets.next.WebSocketServerException;
 import io.quarkus.websockets.next.runtime.spi.security.WebSocketIdentityUpdateRequest;
+import io.smallrye.common.vertx.VertxContext;
 import io.smallrye.mutiny.Uni;
+import io.vertx.core.Context;
+import io.vertx.core.Vertx;
 import io.vertx.ext.web.RoutingContext;
-import io.vertx.ext.web.impl.UserContextInternal;
 
 public final class SecuritySupport {
 
@@ -44,7 +48,7 @@ public final class SecuritySupport {
         }
     }
 
-    SecurityIdentity getIdentity() {
+    private SecurityIdentity getIdentity() {
         return identity;
     }
 
@@ -57,7 +61,7 @@ public final class SecuritySupport {
      *
      * @return deferred identity (the `Uni` item can be null) or null
      */
-    Uni<SecurityIdentity> getDeferredIdentity() {
+    private Uni<SecurityIdentity> getDeferredIdentity() {
         if (routingContext == null) {
             return null;
         }
@@ -75,24 +79,49 @@ public final class SecuritySupport {
                     }
                 }
 
-                this.identity = resolvedIdentity;
-                this.onClose = closeConnectionWhenIdentityExpired(routingContext, connection, resolvedIdentity);
+                return setSecurityIdentityIfAbsentAndGet(resolvedIdentity);
             }
             return resolvedIdentity;
         });
     }
 
+    private synchronized SecurityIdentity setSecurityIdentityIfAbsentAndGet(SecurityIdentity resolvedIdentity) {
+        if (this.identity == null) {
+            this.identity = resolvedIdentity;
+            this.onClose = closeConnectionWhenIdentityExpired(routingContext, connection, resolvedIdentity);
+        }
+        return this.identity;
+    }
+
     CompletionStage<SecurityIdentity> updateSecurityIdentity(String accessToken, WebSocketConnectionImpl connection,
             IdentityProviderManager identityProviderManager) {
-        var authenticationRequest = new WebSocketIdentityUpdateRequest(new TokenCredential(accessToken, "bearer"),
-                this.identity);
-        return identityProviderManager
-                .authenticate(setRoutingContextAttribute(authenticationRequest, routingContext))
-                .onItem().ifNull().failWith(AuthenticationFailedException::new)
-                .invoke(newIdentity -> this.updateSecurityIdentity(newIdentity, connection))
-                .onFailure().invoke(throwable -> LOG.debug(
-                        "Failed to update SecurityIdentity attached to the WebSocket connection with id " + connection.id(),
-                        throwable))
+        final Uni<SecurityIdentity> currentSecurityIdentity;
+        if (this.identity == null) {
+            currentSecurityIdentity = getDeferredIdentity();
+            if (currentSecurityIdentity == null) {
+                Uni<SecurityIdentity> failure = Uni.createFrom().failure(new IllegalStateException(
+                        "Failed to update SecurityIdentity because current SecurityIdentity is null"));
+                return failure.convert().toCompletionStage();
+            }
+        } else {
+            currentSecurityIdentity = Uni.createFrom().item(this.identity);
+        }
+        return currentSecurityIdentity
+                .flatMap(identity -> {
+                    if (identity == null || identity.isAnonymous()) {
+                        return Uni.createFrom().failure(new AuthenticationFailedException(
+                                "Failed to update SecurityIdentity because current SecurityIdentity is anonymous"));
+                    }
+                    var authenticationRequest = new WebSocketIdentityUpdateRequest(new TokenCredential(accessToken, "bearer"),
+                            identity);
+                    return identityProviderManager
+                            .authenticate(setRoutingContextAttribute(authenticationRequest, routingContext))
+                            .invoke(newIdentity -> this.updateSecurityIdentity(newIdentity, connection))
+                            .onFailure().invoke(throwable -> LOG.debug(
+                                    "Failed to update SecurityIdentity attached to the WebSocket connection with id "
+                                            + connection.id(),
+                                    throwable));
+                })
                 .convert().toCompletionStage();
     }
 
@@ -121,8 +150,7 @@ public final class SecuritySupport {
         onClose(); // cancel previous timer that closes connection when identity expired
         this.identity = updatedIdentity;
         // this shouldn't be necessary (and probably isn't) but updating ctx it just to stay on the safe side
-        UserContextInternal userContextInternal = (UserContextInternal) this.routingContext.userContext();
-        userContextInternal.setUser(new QuarkusHttpUser(updatedIdentity));
+        QuarkusHttpUser.setUser(this.routingContext, new QuarkusHttpUser(updatedIdentity));
         this.onClose = closeConnectionWhenIdentityExpired(routingContext, connection, updatedIdentity);
         if (connection.isClosed()) {
             // it could be that while we were updating identity, connection has been closed
@@ -144,6 +172,63 @@ public final class SecuritySupport {
                                     e -> LOG.errorf("Unable to close connection [%s] after authentication "
                                             + "expired due to unhandled failure: %s", connection, e)));
             return () -> vertx.cancelTimer(timerId);
+        }
+        return null;
+    }
+
+    static SecurityIdentity getSecurityIdentity(boolean userChangedIdentity,
+            Supplier<SecurityIdentity> identitySupplier) {
+        if (userChangedIdentity) {
+            return identitySupplier.get();
+        }
+
+        SecuritySupport securitySupport = getSecuritySupportFromCtx();
+        if (securitySupport != null) {
+            if (securitySupport.getIdentity() != null) {
+                return securitySupport.getIdentity();
+            }
+            if (BlockingOperationControl.isBlockingAllowed()) {
+                Uni<SecurityIdentity> deferredIdentity = securitySupport.getDeferredIdentity();
+                if (deferredIdentity != null) {
+                    SecurityIdentity resolvedIdentity = deferredIdentity.await().indefinitely();
+                    if (resolvedIdentity != null) {
+                        return resolvedIdentity;
+                    }
+                }
+            }
+        }
+
+        return identitySupplier.get();
+    }
+
+    static Uni<SecurityIdentity> getSecurityIdentityUni(boolean userChangedIdentity,
+            Supplier<Uni<SecurityIdentity>> deferredIdentitySupplier) {
+        if (userChangedIdentity) {
+            return deferredIdentitySupplier.get();
+        }
+
+        SecuritySupport securitySupport = getSecuritySupportFromCtx();
+        if (securitySupport != null) {
+            if (securitySupport.getIdentity() != null) {
+                return Uni.createFrom().item(securitySupport.getIdentity());
+            }
+            Uni<SecurityIdentity> deferredIdentity = securitySupport.getDeferredIdentity();
+            if (deferredIdentity != null) {
+                // calling to the delegate should return anonymous identity, so that we avoid NPEs
+                return deferredIdentity.onItem().ifNull().switchTo(deferredIdentitySupplier::get);
+            }
+        }
+
+        return deferredIdentitySupplier.get();
+    }
+
+    private static SecuritySupport getSecuritySupportFromCtx() {
+        Context context = Vertx.currentContext();
+        if (context != null && VertxContext.isDuplicatedContext(context)) {
+            if (ContextSupport.WebSocketContextLocalsProvider.WEB_SOCKET_CONN_LOCAL
+                    .get(context) instanceof WebSocketConnectionImpl connection) {
+                return connection.securitySupport();
+            }
         }
         return null;
     }

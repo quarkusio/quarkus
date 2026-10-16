@@ -161,6 +161,7 @@
             </activation>
             <modules>
                 <module>core</module>
+                <module>agroal</module>
                 <module>avro-reload</module>
                 <module>awt</module>
                 <module>awt-packaging</module>
@@ -245,6 +246,7 @@
                 <module>vertx-kotlin</module>
                 <module>websockets</module>
                 <module>websockets-next</module>
+                <module>websockets-next-security</module>
                 <module>spring-di</module>
                 <module>spring-web</module>
                 <module>spring-data-jpa</module>
@@ -274,6 +276,7 @@
                 <module>oidc-dev-services</module>
                 <module>oidc-mtls</module>
                 <module>oidc-dpop</module>
+                <module>oidc-spiffe</module>
                 <module>oidc-token-propagation</module>
                 <module>oidc-token-propagation-reactive</module>
                 <module>openapi</module>
@@ -355,7 +358,7 @@
                 <module>reactive-messaging-amqp</module>
                 <module>reactive-messaging-kafka</module>
                 <module>reactive-messaging-pulsar</module>
-<!--                <module>reactive-messaging-mqtt</module>-->
+                <module>reactive-messaging-mqtt</module>
                 <module>reactive-messaging-rabbitmq</module>
                 <module>reactive-messaging-rabbitmq-devservices</module>
                 <module>reactive-messaging-rabbitmq-dyn</module>
@@ -376,6 +379,7 @@
                 <module>packaging</module>
                 <module>signals</module>
                 <module>signals-command-mode</module>
+                <module>signals-security</module>
                 <module>simple with space</module>
                 <module>aesh</module>
                 <module>aesh-native</module>
@@ -389,8 +393,14 @@
                 <module>elasticsearch-rest-client</module>
                 <module>elasticsearch-java-client</module>
                 <module>micrometer-prometheus</module>
+                <module>micrometer-prometheus-opentelemetry</module>
                 <module>micrometer-security</module>
                 <module>micrometer-opentelemetry</module>
+                <module>observation</module>
+                <module>observation-opentelemetry</module>
+                <module>observation-micrometer-opentelemetry</module>
+                <module>observation-prometheus</module>
+                <module>observation-reactive</module>
                 <module>opentelemetry</module>
                 <module>opentelemetry-quickstart</module>
                 <module>opentelemetry-spi</module>
@@ -449,13 +459,13 @@
                 <module>grpc-proto3</module>
                 <module>grpc-proto4</module>
                 <module>grpc-encoding</module>
+                <module>grpc-domain-socket</module>
                 <module>google-cloud-functions-http</module>
                 <module>google-cloud-functions</module>
                 <module>istio</module>
                 <module>management-interface</module>
                 <module>management-interface-auth</module>
                 <module>mtls-certificates</module>
-                <!-- Virtual threads test -->
                 <module>virtual-threads</module>
                 <module>mutiny-native-jctools</module>
             </modules>

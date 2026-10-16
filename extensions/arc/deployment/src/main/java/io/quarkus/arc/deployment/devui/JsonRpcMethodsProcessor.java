@@ -9,7 +9,7 @@ import org.jboss.jandex.MethodInfo;
 
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.execannotations.ExecutionModelAnnotationsAllowedBuildItem;
-import io.quarkus.devui.spi.JsonRPCProvidersBuildItem;
+import io.quarkus.devjsonrpc.spi.JsonRPCProvidersBuildItem;
 
 // this class is present in the `arc/deployment` module, because it has to be present always
 // and cannot be in the `core/deployment` module, as it depends on `quarkus-devui-deployment-spi`

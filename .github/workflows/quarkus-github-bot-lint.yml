@@ -3,25 +3,24 @@ name: quarkus-github-bot.yml lint
 permissions:
   contents: read
 
-# CI disabled for Vert.x 5 experimental branch - uncomment the 'on' triggers below to re-enable
-#on:
-#  push:
-#    paths:
-#      - '.github/quarkus-github-bot.yml'
-#  pull_request:
-#    paths:
-#      - '.github/quarkus-github-bot.yml'
-on: [workflow_dispatch]
+on:
+  push:
+    paths:
+      - '.github/quarkus-github-bot.yml'
+  pull_request:
+    paths:
+      - '.github/quarkus-github-bot.yml'
 
 jobs:
   lint:
     name: "quarkus-github-bot.yml validation"
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      # do not use apt-get, it can't find the yamllint package on ubuntu-slim
       - name: install yamllint
         shell: bash
-        run: sudo apt-get install -y yamllint
+        run: pipx install yamllint
       - name: run yamllint for quarkus-github-bot.yml
         shell: bash
         run: yamllint -c .github/yamllint.conf .github/quarkus-github-bot.yml

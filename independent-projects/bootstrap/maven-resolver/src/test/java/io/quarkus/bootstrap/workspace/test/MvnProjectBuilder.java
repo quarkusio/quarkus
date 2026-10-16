@@ -4,6 +4,7 @@
 package io.quarkus.bootstrap.workspace.test;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -21,9 +22,9 @@ public class MvnProjectBuilder {
     public static final String DEFAULT_GROUP_ID = "io.quarkus.test";
     public static final String DEFAULT_VERSION = "1.0";
 
-    private MvnProjectBuilder parent;
-    private Model model = new Model();
-    private List<MvnProjectBuilder> modules = new ArrayList<>(0);
+    private final MvnProjectBuilder parent;
+    private final Model model = new Model();
+    private final List<MvnProjectBuilder> modules = new ArrayList<>(0);
 
     public static MvnProjectBuilder forArtifact(String artifactId) {
         return new MvnProjectBuilder(artifactId);
@@ -120,7 +121,7 @@ public class MvnProjectBuilder {
         try {
             ModelUtils.persistModel(projectDir.resolve("pom.xml"), model);
         } catch (IOException e) {
-            throw new IllegalStateException();
+            throw new UncheckedIOException(e);
         }
     }
 }

@@ -25,6 +25,7 @@ public class DefaultApplicationModel implements ApplicationModel, Serializable {
     private final Set<ArtifactKey> localProjectArtifacts;
     private final Map<ArtifactKey, Set<String>> excludedResources;
     private final List<ExtensionDevModeConfig> extensionDevConfig;
+    private final Map<ArtifactKey, String> requiredQuarkusVersions;
 
     public DefaultApplicationModel(ApplicationModelBuilder builder) {
         this.appArtifact = builder.appArtifact.build();
@@ -34,6 +35,7 @@ public class DefaultApplicationModel implements ApplicationModel, Serializable {
         this.localProjectArtifacts = Set.copyOf(builder.reloadableWorkspaceModules);
         this.excludedResources = Map.copyOf(builder.excludedResources);
         this.extensionDevConfig = List.copyOf(builder.extensionDevConfig);
+        this.requiredQuarkusVersions = Map.copyOf(builder.requiredQuarkusVersions);
     }
 
     @Override
@@ -99,6 +101,11 @@ public class DefaultApplicationModel implements ApplicationModel, Serializable {
     @Override
     public Collection<ExtensionDevModeConfig> getExtensionDevModeConfig() {
         return extensionDevConfig;
+    }
+
+    @Override
+    public Map<ArtifactKey, String> getRequiredQuarkusVersions() {
+        return requiredQuarkusVersions;
     }
 
     private Collection<ResolvedDependency> collectDependencies(int flags) {

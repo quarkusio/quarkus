@@ -27,6 +27,7 @@ import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.pkg.builditem.ArtifactResultBuildItem;
+import io.quarkus.runtime.LaunchMode;
 import io.quarkus.smallrye.health.deployment.spi.HealthBuildItem;
 import io.quarkus.websockets.next.HttpUpgradeCheck;
 import io.quarkus.websockets.next.WebSocket;
@@ -162,7 +163,7 @@ class AeshWebSocketProcessor {
     @Produce(ArtifactResultBuildItem.class)
     void warnIfInsecureInProduction(AeshWebSocketConfig config,
             LaunchModeBuildItem launchMode) {
-        if (config.enabled() && launchMode.getLaunchMode() == io.quarkus.runtime.LaunchMode.NORMAL) {
+        if (config.enabled() && launchMode.getLaunchMode() == LaunchMode.NORMAL) {
             if (config.rolesAllowed().isEmpty() && !config.authenticated()) {
                 LOG.warn("Aesh WebSocket terminal is enabled in production without " +
                         "authentication. Set 'quarkus.aesh.websocket.roles-allowed' or " +

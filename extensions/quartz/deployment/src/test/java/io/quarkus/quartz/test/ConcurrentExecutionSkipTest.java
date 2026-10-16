@@ -17,6 +17,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.scheduler.FailedExecution;
 import io.quarkus.scheduler.Scheduled;
 import io.quarkus.scheduler.SkippedExecution;
+import io.quarkus.scheduler.StartedExecution;
 import io.quarkus.scheduler.SuccessfulExecution;
 import io.quarkus.test.QuarkusExtensionTest;
 
@@ -34,8 +35,9 @@ public class ConcurrentExecutionSkipTest {
             if (Jobs.SKIPPED_LATCH.await(10, TimeUnit.SECONDS)) {
                 // Exactly one job is blocked
                 assertEquals(1, Jobs.COUNTER.get());
-                // Skipped Execution does not fire SuccessfulExecution event
+                // Skipped Execution does not fire SuccessfulExecution or StartedExecution event
                 assertEquals(0, Jobs.SUCCESS_COUNTER.get());
+                assertEquals(1, Jobs.STARTED_COUNTER.get());
                 // Unblock all executions
                 Jobs.BLOCKING_LATCH.countDown();
             } else {
@@ -58,11 +60,12 @@ public class ConcurrentExecutionSkipTest {
         static final AtomicInteger COUNTER = new AtomicInteger(0);
         static final AtomicInteger FAILING_COUNTER = new AtomicInteger(0);
         static final AtomicInteger SUCCESS_COUNTER = new AtomicInteger(0);
+        static final AtomicInteger STARTED_COUNTER = new AtomicInteger(0);
         static final AtomicInteger FAILURE_COUNTER = new AtomicInteger(0);
         static final CountDownLatch SKIPPED_LATCH = new CountDownLatch(1);
         static final CountDownLatch FAILED_LATCH = new CountDownLatch(1);
 
-        @Scheduled(every = "1s", concurrentExecution = SKIP)
+        @Scheduled(identity = "nonconcurrent", every = "1s", concurrentExecution = SKIP)
         void nonconcurrent() throws InterruptedException {
             COUNTER.incrementAndGet();
             if (!BLOCKING_LATCH.await(10, TimeUnit.SECONDS)) {
@@ -84,6 +87,12 @@ public class ConcurrentExecutionSkipTest {
 
         void onSuccess(@Observes SuccessfulExecution event) {
             SUCCESS_COUNTER.incrementAndGet();
+        }
+
+        void onStarted(@Observes StartedExecution event) {
+            if ("nonconcurrent".equals(event.getExecution().getTrigger().getId())) {
+                STARTED_COUNTER.incrementAndGet();
+            }
         }
 
         void onFailure(@Observes FailedExecution event) {

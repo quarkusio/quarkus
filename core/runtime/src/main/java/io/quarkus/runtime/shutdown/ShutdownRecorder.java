@@ -48,7 +48,12 @@ public class ShutdownRecorder {
     private static void executePreShutdown() throws InterruptedException {
         CountDownLatch preShutdown = new CountDownLatch(shutdownListeners.size());
         for (ShutdownListener i : shutdownListeners) {
-            i.preShutdown(new LatchShutdownNotification(preShutdown));
+            ShutdownAction.SHUTDOWN_LISTENER_PRESHUTDOWN.run(i.getClass().getName(), new Runnable() {
+                @Override
+                public void run() {
+                    i.preShutdown(new LatchShutdownNotification(preShutdown));
+                }
+            });
         }
         preShutdown.await();
     }
@@ -66,7 +71,12 @@ public class ShutdownRecorder {
     private static void executeShutdown() throws InterruptedException {
         CountDownLatch shutdown = new CountDownLatch(shutdownListeners.size());
         for (ShutdownListener i : shutdownListeners) {
-            i.shutdown(new LatchShutdownNotification(shutdown));
+            ShutdownAction.SHUTDOWN_LISTENER_SHUTDOWN.run(i.getClass().getName(), new Runnable() {
+                @Override
+                public void run() {
+                    i.shutdown(new LatchShutdownNotification(shutdown));
+                }
+            });
         }
         if (shutdownConfig.getValue().isTimeoutEnabled()
                 && !shutdown.await(shutdownConfig.getValue().timeout().get().toMillis(), TimeUnit.MILLISECONDS)) {

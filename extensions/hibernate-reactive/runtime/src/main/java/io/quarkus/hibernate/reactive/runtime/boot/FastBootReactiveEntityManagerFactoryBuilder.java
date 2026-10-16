@@ -5,15 +5,13 @@ import jakarta.persistence.EntityManagerFactory;
 import org.hibernate.boot.internal.SessionFactoryOptionsBuilder;
 import org.hibernate.boot.registry.StandardServiceRegistry;
 import org.hibernate.boot.spi.SessionFactoryOptions;
-import org.hibernate.reactive.session.impl.ReactiveSessionFactoryImpl;
+import org.hibernate.reactive.session.internal.ReactiveSessionFactoryImpl;
 
 import io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil;
 import io.quarkus.hibernate.orm.runtime.RuntimeSettings;
 import io.quarkus.hibernate.orm.runtime.SchemaToolingUtil;
 import io.quarkus.hibernate.orm.runtime.boot.FastBootEntityManagerFactoryBuilder;
 import io.quarkus.hibernate.orm.runtime.boot.QuarkusPersistenceUnitDescriptor;
-import io.quarkus.hibernate.orm.runtime.customized.BuiltinFormatMapperBehaviour;
-import io.quarkus.hibernate.orm.runtime.customized.JsonFormatterCustomizationCheck;
 import io.quarkus.hibernate.orm.runtime.migration.MultiTenancyStrategy;
 import io.quarkus.hibernate.orm.runtime.recording.PrevalidatedQuarkusMetadata;
 
@@ -24,12 +22,9 @@ public final class FastBootReactiveEntityManagerFactoryBuilder extends FastBootE
             StandardServiceRegistry standardServiceRegistry, RuntimeSettings runtimeSettings, Object validatorFactory,
             Object cdiBeanManager, MultiTenancyStrategy strategy,
             boolean shouldApplySchemaMigration,
-            BuiltinFormatMapperBehaviour builtinFormatMapperBehaviour,
-            JsonFormatterCustomizationCheck jsonFormatterCustomizationCheck,
             SchemaToolingUtil.PreparedImportScripts importScripts) {
         super(puDescriptor, metadata, standardServiceRegistry, runtimeSettings, validatorFactory,
-                cdiBeanManager, strategy, shouldApplySchemaMigration, builtinFormatMapperBehaviour,
-                jsonFormatterCustomizationCheck, importScripts);
+                cdiBeanManager, strategy, shouldApplySchemaMigration, importScripts);
     }
 
     @Override

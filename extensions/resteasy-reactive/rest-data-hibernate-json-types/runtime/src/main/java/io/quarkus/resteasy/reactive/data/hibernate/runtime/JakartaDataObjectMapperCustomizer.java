@@ -2,18 +2,17 @@ package io.quarkus.resteasy.reactive.data.hibernate.runtime;
 
 import jakarta.inject.Singleton;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.module.SimpleModule;
-
-import io.quarkus.jackson.ObjectMapperCustomizer;
+import io.quarkus.jackson.JsonMapperBuilderCustomizer;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.module.SimpleModule;
 
 @Singleton
-public class JakartaDataObjectMapperCustomizer implements ObjectMapperCustomizer {
+public class JakartaDataObjectMapperCustomizer implements JsonMapperBuilderCustomizer {
 
     @Override
-    public void customize(ObjectMapper objectMapper) {
+    public void customize(JsonMapper.Builder builder) {
         SimpleModule module = new SimpleModule("quarkus-rest-data-hibernate-json-types");
         module.addSerializer(new PageSerializer());
-        objectMapper.registerModule(module);
+        builder.addModule(module);
     }
 }

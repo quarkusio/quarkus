@@ -5,7 +5,6 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Introduction to Contexts and Dependency Injection (CDI)
 include::_attributes.adoc[]
-:categories: core
 :keywords: qualifier event interceptor observer arc
 :summary: Quarkus DI solution is based on the [Jakarta Contexts and Dependency Injection 4.1](https://jakarta.ee/specifications/cdi/4.1/jakarta-cdi-spec-4.1.html) specification. This guide explains the basics of CDI.
 :numbered:

@@ -2,6 +2,7 @@ package io.quarkus.kubernetes.client.deployment;
 
 import static com.dajudge.kindcontainer.KubernetesVersionEnum.latest;
 import static io.quarkus.devservices.common.ContainerLocator.locateContainerWithLabels;
+import static io.quarkus.devservices.common.DevServicesHostUtil.formatResolvedHostAndPort;
 import static io.quarkus.devservices.common.Labels.QUARKUS_DEV_SERVICE;
 import static io.quarkus.kubernetes.client.runtime.internal.KubernetesDevServicesBuildTimeConfig.Flavor.api_only;
 import static java.nio.charset.StandardCharsets.US_ASCII;
@@ -162,13 +163,13 @@ public class DevServicesKubernetesProcessor {
                 .serviceConfig(configuration)
                 .startable(() -> createQuarkusKubernetesContainer(configuration, clusterType,
                         useSharedNetwork, devServicesConfig.timeout()))
-                .configProvider(Map.of(
-                        KUBERNETES_CLIENT_MASTER_URL, c -> c.getCluster().getServer(),
-                        KUBERNETES_CLIENT_CA_CERT_DATA, c -> c.getCluster().getCertificateAuthorityData(),
-                        KUBERNETES_CLIENT_CLIENT_CERT_DATA, c -> c.getUser().getClientCertificateData(),
-                        KUBERNETES_CLIENT_CLIENT_KEY_DATA, c -> c.getUser().getClientKeyData(),
-                        KUBERNETES_CLIENT_CLIENT_KEY_ALGO, c -> Config.getKeyAlgorithm(null, c.getUser().getClientKeyData()),
-                        KUBERNETES_CLIENT_NAMESPACE, c -> "default"))
+                .configProvider(c -> Map.of(
+                        KUBERNETES_CLIENT_MASTER_URL, c.getCluster().getServer(),
+                        KUBERNETES_CLIENT_CA_CERT_DATA, c.getCluster().getCertificateAuthorityData(),
+                        KUBERNETES_CLIENT_CLIENT_CERT_DATA, c.getUser().getClientCertificateData(),
+                        KUBERNETES_CLIENT_CLIENT_KEY_DATA, c.getUser().getClientKeyData(),
+                        KUBERNETES_CLIENT_CLIENT_KEY_ALGO, Config.getKeyAlgorithm(null, c.getUser().getClientKeyData()),
+                        KUBERNETES_CLIENT_NAMESPACE, "default"))
                 .postStartHook(c -> {
                     log.info(
                             "Dev Services for Kubernetes started. Other Quarkus applications in dev mode will find the "
@@ -455,19 +456,25 @@ public class DevServicesKubernetesProcessor {
             this.containerInfo = dockerClient.inspectContainerCmd(getContainerId()).exec();
         }
 
+        private String resolvedConnectionAddress() {
+            return formatResolvedHostAndPort(containerAddress.getId(), containerAddress.getHost(),
+                    containerAddress.getPort());
+        }
+
         private KubeConfig getKubeconfigFromContainer() {
             var image = getContainerInfo().getConfig().getImage();
+            String connectionAddress = resolvedConnectionAddress();
             if (image.contains("rancher/k3s")) {
                 return KubeConfigUtils
-                        .parseKubeConfig(KubeConfigUtils.replaceServerInKubeconfig("https://" + containerAddress.getUrl(),
+                        .parseKubeConfig(KubeConfigUtils.replaceServerInKubeconfig("https://" + connectionAddress,
                                 getFileContentFromContainer(K3S_KUBECONFIG)));
             } else if (image.contains("kindest/node")) {
                 return KubeConfigUtils
-                        .parseKubeConfig(KubeConfigUtils.replaceServerInKubeconfig("https://" + containerAddress.getUrl(),
+                        .parseKubeConfig(KubeConfigUtils.replaceServerInKubeconfig("https://" + connectionAddress,
                                 getFileContentFromContainer(KIND_KUBECONFIG)));
             } else if (image.contains("k8s.gcr.io/kube-apiserver") ||
                     image.contains("registry.k8s.io/kube-apiserver")) {
-                return getKubeconfigFromApiContainer(containerAddress.getUrl());
+                return getKubeconfigFromApiContainer(connectionAddress);
             }
 
             // this can happen only if the user manually start

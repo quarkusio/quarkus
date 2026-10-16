@@ -7,7 +7,6 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 = Your second Quarkus application
 include::_attributes.adoc[]
 :diataxis-type: tutorial
-:categories: getting-started, data, core
 :summary: Discover some of the features that make developing with Quarkus a joyful experience.
 :topics: getting-started,dev-services
 

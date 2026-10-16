@@ -2,8 +2,6 @@ package io.quarkus.virtual.threads;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.Callable;
@@ -15,8 +13,6 @@ import java.util.concurrent.Future;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledForJreRange;
-import org.junit.jupiter.api.condition.JRE;
 
 import io.smallrye.config.SmallRyeConfigBuilder;
 import io.smallrye.mutiny.Uni;
@@ -35,9 +31,7 @@ class VirtualThreadExecutorSupplierTest {
     }
 
     @Test
-    @EnabledForJreRange(min = JRE.JAVA_20, disabledReason = "Virtual Threads are a preview feature starting from Java 20")
-    void virtualThreadCustomScheduler()
-            throws ClassNotFoundException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
+    void virtualThreadCustomScheduler() {
         Executor executor = VirtualThreadsRecorder.newVirtualThreadPerTaskExecutorWithName("vthread-");
         var assertSubscriber = Uni.createFrom().emitter(e -> {
             assertThat(Thread.currentThread().getName()).isNotEmpty()
@@ -50,8 +44,7 @@ class VirtualThreadExecutorSupplierTest {
     }
 
     @Test
-    @EnabledForJreRange(min = JRE.JAVA_20, disabledReason = "Virtual Threads are a preview feature starting from Java 20")
-    void execute() throws ClassNotFoundException, InvocationTargetException, NoSuchMethodException, IllegalAccessException {
+    void execute() {
         Executor executor = VirtualThreadsRecorder.newVirtualThreadPerTaskExecutorWithName(null);
         var assertSubscriber = Uni.createFrom().emitter(e -> {
             assertThat(Thread.currentThread().getName()).isEmpty();
@@ -63,7 +56,6 @@ class VirtualThreadExecutorSupplierTest {
     }
 
     @Test
-    @EnabledForJreRange(min = JRE.JAVA_20, disabledReason = "Virtual Threads are a preview feature starting from Java 20")
     void executePropagatesVertxContext() throws ExecutionException, InterruptedException {
         ExecutorService executorService = VirtualThreadsRecorder.getCurrent();
         Vertx vertx = Vertx.vertx();
@@ -79,7 +71,6 @@ class VirtualThreadExecutorSupplierTest {
     }
 
     @Test
-    @EnabledForJreRange(min = JRE.JAVA_20, disabledReason = "Virtual Threads are a preview feature starting from Java 20")
     void executePropagatesVertxContextMutiny() {
         ExecutorService executorService = VirtualThreadsRecorder.getCurrent();
         Vertx vertx = Vertx.vertx();
@@ -98,7 +89,6 @@ class VirtualThreadExecutorSupplierTest {
     }
 
     @Test
-    @EnabledForJreRange(min = JRE.JAVA_20, disabledReason = "Virtual Threads are a preview feature starting from Java 20")
     void submitPropagatesVertxContext() throws ExecutionException, InterruptedException {
         ExecutorService executorService = VirtualThreadsRecorder.getCurrent();
         Vertx vertx = Vertx.vertx();
@@ -114,7 +104,6 @@ class VirtualThreadExecutorSupplierTest {
     }
 
     @Test
-    @EnabledForJreRange(min = JRE.JAVA_20, disabledReason = "Virtual Threads are a preview feature starting from Java 20")
     void invokeAllPropagatesVertxContext() throws ExecutionException, InterruptedException {
         ExecutorService executorService = VirtualThreadsRecorder.getCurrent();
         Vertx vertx = Vertx.vertx();
@@ -131,17 +120,8 @@ class VirtualThreadExecutorSupplierTest {
     }
 
     public static void assertThatItRunsOnVirtualThread() {
-        // We cannot depend on a Java 20.
-        try {
-            Method isVirtual = Thread.class.getMethod("isVirtual");
-            isVirtual.setAccessible(true);
-            boolean virtual = (Boolean) isVirtual.invoke(Thread.currentThread());
-            if (!virtual) {
-                throw new AssertionError("Thread " + Thread.currentThread() + " is not a virtual thread");
-            }
-        } catch (Exception e) {
-            throw new AssertionError(
-                    "Thread " + Thread.currentThread() + " is not a virtual thread - cannot invoke Thread.isVirtual()", e);
+        if (!Thread.currentThread().isVirtual()) {
+            throw new AssertionError("Thread " + Thread.currentThread() + " is not a virtual thread");
         }
     }
 }

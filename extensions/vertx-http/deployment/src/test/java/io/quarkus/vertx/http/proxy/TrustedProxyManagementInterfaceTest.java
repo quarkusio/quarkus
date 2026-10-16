@@ -5,6 +5,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.File;
 import java.net.URL;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
 
 import jakarta.inject.Inject;
@@ -89,25 +91,25 @@ class TrustedProxyManagementInterfaceTest {
             .addBuildChainCustomizer(buildCustomizer());
 
     @Test
-    void proxyAAcceptedOnMainRouter() {
+    void proxyAAcceptedOnMainRouter() throws TimeoutException {
         String body = requestWithClientAlias("proxy-a", mainUrl);
         assertThat(body).isEqualTo("https|somehost|backend:4444|true");
     }
 
     @Test
-    void proxyARejectedOnManagement() {
+    void proxyARejectedOnManagement() throws TimeoutException {
         String body = requestWithClientAlias("proxy-a", managementUrl);
         assertThat(body).startsWith("https|localhost").endsWith("|false");
     }
 
     @Test
-    void proxyBRejectedOnMainRouter() {
+    void proxyBRejectedOnMainRouter() throws TimeoutException {
         String body = requestWithClientAlias("proxy-b", mainUrl);
         assertThat(body).startsWith("https|localhost").endsWith("|false");
     }
 
     @Test
-    void proxyBAcceptedOnManagement() {
+    void proxyBAcceptedOnManagement() throws TimeoutException {
         String body = requestWithClientAlias("proxy-b", managementUrl);
         assertThat(body).startsWith("https|somehost|").endsWith("|true");
     }
@@ -138,7 +140,7 @@ class TrustedProxyManagementInterfaceTest {
         }
     }
 
-    private String requestWithClientAlias(String alias, URL targetUrl) {
+    private String requestWithClientAlias(String alias, URL targetUrl) throws TimeoutException {
         var options = new HttpClientOptions()
                 .setSsl(true)
                 .setDefaultPort(targetUrl.getPort())
@@ -163,7 +165,7 @@ class TrustedProxyManagementInterfaceTest {
                     .map(Buffer::toString)
                     .toCompletionStage().toCompletableFuture().join();
         } finally {
-            client.close().toCompletionStage().toCompletableFuture().join();
+            client.close().await(5, TimeUnit.SECONDS);
         }
     }
 }

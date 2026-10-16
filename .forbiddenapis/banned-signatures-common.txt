@@ -74,3 +74,7 @@ io.vertx.mutiny.core.Vertx#executeBlockingAndForget(java.util.concurrent.Callabl
 io.vertx.mutiny.core.Context#executeBlocking(java.util.concurrent.Callable)
 io.vertx.mutiny.core.Context#executeBlockingAndAwait(java.util.concurrent.Callable)
 io.vertx.mutiny.core.Context#executeBlockingAndForget(java.util.concurrent.Callable)
+
+@defaultMessage Do not use dynamic proxies, Quarkus has better alternatives (CDI interceptors, bytecode generation, etc.)
+java.lang.reflect.Proxy#newProxyInstance(java.lang.ClassLoader,java.lang.Class[],java.lang.reflect.InvocationHandler)
+java.lang.reflect.Proxy#getProxyClass(java.lang.ClassLoader,java.lang.Class[])

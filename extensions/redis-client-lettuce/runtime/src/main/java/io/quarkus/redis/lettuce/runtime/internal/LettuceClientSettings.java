@@ -72,7 +72,7 @@ public final class LettuceClientSettings {
 
     private static final Logger LOGGER = Logger.getLogger(LettuceClientSettings.class);
 
-    /** The default of {@code topology-cache-ttl} and of its deprecated alias {@code hash-slot-cache-ttl}. */
+    /** The default of {@code topology-cache-ttl}. */
     public static final Duration DEFAULT_TOPOLOGY_CACHE_TTL = Duration.ofSeconds(1);
 
     /**
@@ -137,7 +137,8 @@ public final class LettuceClientSettings {
         for (URI host : hosts) {
             RedisURI redisUri = RedisURI.create(host);
             // Lettuce parsed the credentials of the URI its own way; replace them with the Vert.x interpretation.
-            redisUri.setCredentialsProvider(credentials(UserInfo.parse(host), config.password().orElse(null)));
+            redisUri.setCredentialsProvider(
+                    credentials(UserInfo.parse(host), config.username().orElse(null), config.password().orElse(null)));
             redisUri.setSsl(net.isSsl());
             if (net.isSsl()) {
                 redisUri.setVerifyPeer(verifyMode(net));
@@ -247,25 +248,25 @@ public final class LettuceClientSettings {
     }
 
     /**
-     * The TTL of the topology cache, {@code topology-cache-ttl}. The property always has its default, so its
-     * deprecated alias {@code hash-slot-cache-ttl} is not applied, by this backend or by the Vert.x one (whose
-     * factory falls back on the alias only when {@code topology-cache-ttl} is absent, which it never is).
+     * The TTL of the topology cache, {@code topology-cache-ttl}, which always has its default.
      */
     public static Duration topologyCacheTtl(RedisClientConfig config) {
         return config.topologyCacheTtl().orElse(DEFAULT_TOPOLOGY_CACHE_TTL);
     }
 
     /**
-     * Combines the credentials of the URI with the {@code password} property. Like with the Vert.x Redis client, the
-     * property is the default password: a password encoded in the URI takes precedence. The user name, if any,
-     * always comes from the URI; a user name without password does not authenticate.
+     * Combines the credentials of the URI with the {@code username} and {@code password} properties. Like with the
+     * Vert.x Redis client, the properties are the defaults: a user name or a password encoded in the URI takes
+     * precedence over the corresponding property. A user name without password does not authenticate.
      *
      * @param userInfo the credentials encoded in the URI
+     * @param usernameProperty the {@code username} property, {@code null} when not set
      * @param passwordProperty the {@code password} property, {@code null} when not set
      */
-    static CredentialsProvider credentials(UserInfo userInfo, String passwordProperty) {
+    static CredentialsProvider credentials(UserInfo userInfo, String usernameProperty, String passwordProperty) {
+        String username = userInfo.username() != null ? userInfo.username() : usernameProperty;
         String password = userInfo.password() != null ? userInfo.password() : passwordProperty;
-        return new StaticCredentialsProvider(userInfo.username(), password == null ? null : password.toCharArray());
+        return new StaticCredentialsProvider(username, password == null ? null : password.toCharArray());
     }
 
     /**

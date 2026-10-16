@@ -1,15 +1,12 @@
 package io.quarkus.hibernate.orm.runtime.integration;
 
-import java.util.function.BiConsumer;
-
-import org.hibernate.boot.Metadata;
-import org.hibernate.boot.spi.BootstrapContext;
-
-public interface HibernateOrmIntegrationStaticInitListener {
-
-    void contributeBootProperties(BiConsumer<String, Object> propertyCollector);
-
-    void onMetadataInitialized(Metadata metadata, BootstrapContext bootstrapContext,
-            BiConsumer<String, Object> propertyCollector);
+/**
+ * @deprecated Use
+ *             {@link io.quarkus.hibernate.orm.runtime.spi.HibernateOrmIntegrationStaticInitListener}
+ *             instead.
+ */
+@Deprecated(since = "4.0", forRemoval = true)
+public interface HibernateOrmIntegrationStaticInitListener
+        extends io.quarkus.hibernate.orm.runtime.spi.HibernateOrmIntegrationStaticInitListener {
 
 }

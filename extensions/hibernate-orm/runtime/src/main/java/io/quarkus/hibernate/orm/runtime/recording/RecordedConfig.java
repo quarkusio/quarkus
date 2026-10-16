@@ -6,8 +6,6 @@ import java.util.Optional;
 import java.util.Set;
 
 import io.quarkus.hibernate.orm.runtime.config.DatabaseOrmCompatibilityVersion;
-import io.quarkus.hibernate.orm.runtime.customized.BuiltinFormatMapperBehaviour;
-import io.quarkus.hibernate.orm.runtime.customized.JsonFormatterCustomizationCheck;
 import io.quarkus.hibernate.orm.runtime.migration.MultiTenancyStrategy;
 import io.quarkus.runtime.annotations.RecordableConstructor;
 
@@ -19,22 +17,20 @@ public class RecordedConfig {
     private final Optional<String> dbKind;
     private final Optional<String> supportedDBkind;
     private final Optional<String> dbVersion;
+    private final boolean dbVersionUserSpecified;
     private final Optional<String> explicitDialect;
     private final Set<String> entityClassNames;
     private final MultiTenancyStrategy multiTenancyStrategy;
     private final Map<String, String> quarkusConfigUnsupportedProperties;
     private final DatabaseOrmCompatibilityVersion databaseOrmCompatibilityVersion;
-    private final BuiltinFormatMapperBehaviour builtinFormatMapperBehaviour;
-    private final JsonFormatterCustomizationCheck jsonFormatterCustomizationCheck;
 
     @RecordableConstructor
     public RecordedConfig(Optional<String> dataSource, Optional<String> dbKind,
             Optional<String> supportedDBkind,
-            Optional<String> dbVersion, Optional<String> explicitDialect, Set<String> entityClassNames,
+            Optional<String> dbVersion, boolean dbVersionUserSpecified, Optional<String> explicitDialect,
+            Set<String> entityClassNames,
             MultiTenancyStrategy multiTenancyStrategy,
             DatabaseOrmCompatibilityVersion databaseOrmCompatibilityVersion,
-            BuiltinFormatMapperBehaviour builtinFormatMapperBehaviour,
-            JsonFormatterCustomizationCheck jsonFormatterCustomizationCheck,
             Map<String, String> quarkusConfigUnsupportedProperties) {
         Objects.requireNonNull(dataSource);
         Objects.requireNonNull(dbKind);
@@ -45,12 +41,11 @@ public class RecordedConfig {
         this.dbKind = dbKind;
         this.supportedDBkind = supportedDBkind;
         this.dbVersion = dbVersion;
+        this.dbVersionUserSpecified = dbVersionUserSpecified;
         this.explicitDialect = explicitDialect;
         this.entityClassNames = entityClassNames;
         this.multiTenancyStrategy = multiTenancyStrategy;
         this.databaseOrmCompatibilityVersion = databaseOrmCompatibilityVersion;
-        this.builtinFormatMapperBehaviour = builtinFormatMapperBehaviour;
-        this.jsonFormatterCustomizationCheck = jsonFormatterCustomizationCheck;
         this.quarkusConfigUnsupportedProperties = quarkusConfigUnsupportedProperties;
     }
 
@@ -70,6 +65,10 @@ public class RecordedConfig {
         return dbVersion;
     }
 
+    public boolean isDbVersionUserSpecified() {
+        return dbVersionUserSpecified;
+    }
+
     public Optional<String> getExplicitDialect() {
         return explicitDialect;
     }
@@ -84,14 +83,6 @@ public class RecordedConfig {
 
     public DatabaseOrmCompatibilityVersion getDatabaseOrmCompatibilityVersion() {
         return databaseOrmCompatibilityVersion;
-    }
-
-    public BuiltinFormatMapperBehaviour getBuiltinFormatMapperBehaviour() {
-        return builtinFormatMapperBehaviour;
-    }
-
-    public JsonFormatterCustomizationCheck getJsonFormatterCustomizationCheck() {
-        return jsonFormatterCustomizationCheck;
     }
 
     public Map<String, String> getQuarkusConfigUnsupportedProperties() {

@@ -87,6 +87,11 @@
             <scope>test</scope>
         </dependency>
         <dependency>
+            <groupId>jakarta.data</groupId>
+            <artifactId>jakarta.data-api</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
             <groupId>io.quarkus.gizmo</groupId>
             <artifactId>gizmo</artifactId>
             <type>test-jar</type>
@@ -94,12 +99,12 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-resteasy-deployment</artifactId>
+            <artifactId>quarkus-rest-deployment</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-resteasy-jackson-deployment</artifactId>
+            <artifactId>quarkus-rest-jackson-deployment</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -163,6 +168,9 @@
                             <!-- These tests seem to leak metaspace memory
                                  so we run them in a separate, short-lived JVM -->
                             <excludedGroups>devmode</excludedGroups>
+                            <systemPropertyVariables>
+                                <h2.version>${h2.version}</h2.version>
+                            </systemPropertyVariables>
                         </configuration>
                     </execution>
                     <execution>

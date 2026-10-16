@@ -1,19 +1,13 @@
 package io.quarkus.grpc.codegen;
 
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.regex.Pattern;
+import java.util.stream.Stream;
 
 import org.jboss.logging.Logger;
-
-import com.github.javaparser.ast.CompilationUnit;
-import com.github.javaparser.ast.Modifier;
-import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
-import com.github.javaparser.ast.body.MethodDeclaration;
-import com.github.javaparser.ast.body.TypeDeclaration;
-import com.github.javaparser.ast.expr.NormalAnnotationExpr;
-import com.github.javaparser.ast.visitor.ModifierVisitor;
-import com.github.javaparser.ast.visitor.Visitable;
-import com.github.javaparser.utils.SourceRoot;
 
 import io.quarkus.deployment.CodeGenContext;
 
@@ -28,6 +22,10 @@ public class GrpcPostProcessing {
     public static final String QUARKUS_GENERATED = "io.quarkus.Generated";
     public static final String STUB = "Stub";
     public static final String BIND_METHOD = "bindService";
+
+    private static final Pattern FINAL_STUB_CLASS = Pattern.compile("\\bfinal\\s+(class\\s+\\w*Stub\\b)");
+    private static final Pattern FINAL_BIND_SERVICE = Pattern.compile(
+            "\\bfinal\\s+(\\S+\\s+bindService\\s*\\()", Pattern.CASE_INSENSITIVE);
 
     private final Path root;
     private final boolean replaceGeneratedAnnotation;
@@ -64,73 +62,38 @@ public class GrpcPostProcessing {
     }
 
     public void postprocess() {
-        SourceRoot sr = new SourceRoot(root);
-        try {
-            sr.parse("", new SourceRoot.Callback() {
-                @Override
-                public com.github.javaparser.utils.SourceRoot.Callback.Result process(Path localPath, Path absolutePath,
-                        com.github.javaparser.ParseResult<CompilationUnit> result) {
-                    if (result.isSuccessful()) {
-                        CompilationUnit unit = result.getResult().orElseThrow(); // the parsing succeed, so we can retrieve the cu
-
-                        if (unit.getPrimaryType().isPresent()) {
-                            TypeDeclaration<?> type = unit.getPrimaryType().get();
-                            postprocess(unit, type);
-                            return Result.SAVE;
-                        }
-
-                    } else {
-                        // Compilation issue - report and skip
-                        log.errorf(
-                                "Unable to parse a class generated using protoc, skipping post-processing for this " +
-                                        "file. Reported problems are %s",
-                                result.toString());
-                    }
-
-                    return Result.DONT_SAVE;
-                }
-            });
-        } catch (Exception e) {
-            // read issue, report and exit
-            log.error("Unable to parse the classes generated using protoc - skipping gRPC post processing", e);
+        if (!Files.isDirectory(root)) {
+            return;
+        }
+        try (Stream<Path> stream = Files.walk(root)) {
+            stream.filter(p -> p.toString().endsWith(".java"))
+                    .filter(Files::isRegularFile)
+                    .forEach(this::postprocessFile);
+        } catch (IOException e) {
+            log.error("Unable to walk the classes generated using protoc - skipping gRPC post processing", e);
         }
     }
 
-    private void postprocess(CompilationUnit unit, TypeDeclaration<?> primary) {
-        log.debugf("Post-processing %s", primary.getFullyQualifiedName().orElse(primary.getNameAsString()));
+    private void postprocessFile(Path file) {
+        try {
+            String content = Files.readString(file);
+            String modified = content;
 
-        unit.accept(new ModifierVisitor<Void>() {
-
-            @Override
-            public Visitable visit(NormalAnnotationExpr n, Void arg) {
-                if (replaceGeneratedAnnotation) {
-                    if (n.getNameAsString().equals(JAVAX_GENERATED)) {
-                        n.setName(QUARKUS_GENERATED);
-                    }
-                }
-                return super.visit(n, arg);
+            if (replaceGeneratedAnnotation) {
+                modified = modified.replace(JAVAX_GENERATED, QUARKUS_GENERATED);
             }
 
-            @Override
-            public Visitable visit(ClassOrInterfaceDeclaration n, Void arg) {
-                if (removeFinal) {
-                    if (n.hasModifier(Modifier.Keyword.FINAL) && n.getNameAsString().endsWith(STUB)) {
-                        n.removeModifier(Modifier.Keyword.FINAL);
-                    }
-                }
-                return super.visit(n, arg);
+            if (removeFinal) {
+                modified = FINAL_STUB_CLASS.matcher(modified).replaceAll("$1");
+                modified = FINAL_BIND_SERVICE.matcher(modified).replaceAll("$1");
             }
 
-            @Override
-            public Visitable visit(MethodDeclaration n, Void arg) {
-                if (removeFinal) {
-                    if (n.hasModifier(Modifier.Keyword.FINAL)
-                            && n.getNameAsString().equalsIgnoreCase(BIND_METHOD)) {
-                        n.removeModifier(Modifier.Keyword.FINAL);
-                    }
-                }
-                return super.visit(n, arg);
+            if (!modified.equals(content)) {
+                Files.writeString(file, modified);
+                log.debugf("Post-processed %s", file);
             }
-        }, null);
+        } catch (IOException e) {
+            log.errorf("Failed to post-process %s: %s", file, e.getMessage());
+        }
     }
 }

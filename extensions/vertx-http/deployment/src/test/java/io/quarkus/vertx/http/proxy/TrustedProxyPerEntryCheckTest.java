@@ -5,6 +5,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.File;
 import java.net.URL;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import jakarta.inject.Inject;
 
@@ -71,18 +73,18 @@ class TrustedProxyPerEntryCheckTest {
                             "server-truststore.p12"));
 
     @Test
-    void proxyARejectedWhenDnAndAliasMatchDifferentEntries() {
+    void proxyARejectedWhenDnAndAliasMatchDifferentEntries() throws TimeoutException {
         String body = requestWithClientAlias("proxy-a");
         assertThat(body).startsWith("https|localhost").endsWith("|false");
     }
 
     @Test
-    void proxyBRejectedWhenDnAndAliasMatchDifferentEntries() {
+    void proxyBRejectedWhenDnAndAliasMatchDifferentEntries() throws TimeoutException {
         String body = requestWithClientAlias("proxy-b");
         assertThat(body).startsWith("https|localhost").endsWith("|false");
     }
 
-    private String requestWithClientAlias(String alias) {
+    private String requestWithClientAlias(String alias) throws TimeoutException {
         var options = new HttpClientOptions()
                 .setSsl(true)
                 .setDefaultPort(tlsUrl.getPort())
@@ -107,7 +109,7 @@ class TrustedProxyPerEntryCheckTest {
                     .map(Buffer::toString)
                     .toCompletionStage().toCompletableFuture().join();
         } finally {
-            client.close().toCompletionStage().toCompletableFuture().join();
+            client.close().await(5, TimeUnit.SECONDS);
         }
     }
 }

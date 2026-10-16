@@ -12,14 +12,14 @@ import io.quarkus.reactive.transaction.runtime.TransactionalInterceptorNever;
 import io.quarkus.reactive.transaction.runtime.TransactionalInterceptorNotSupported;
 import io.quarkus.reactive.transaction.runtime.TransactionalInterceptorRequiresNew;
 import io.quarkus.reactive.transaction.runtime.TransactionalInterceptorSupports;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 import io.quarkus.test.vertx.RunOnVertxContext;
 import io.smallrye.mutiny.Uni;
 
 public class SupportOnlyRequiredTransactionTypeTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot(jar -> jar.addDefaultPackage()
                     .addClasses(
                             TransactionalInterceptorNever.class,

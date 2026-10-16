@@ -32,7 +32,7 @@ public interface HibernateEnversBuildTimeConfig {
      * Configuration for persistence units.
      */
     @WithParentName
-    @WithUnnamedKey(PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME)
+    @WithUnnamedKey(value = PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME, eager = false)
     @ConfigDocMapKey("persistence-unit-name")
     Map<String, HibernateEnversBuildTimeConfigPersistenceUnit> persistenceUnits();
 

@@ -184,23 +184,9 @@ public class RedisClientInstrumenterVertxTracer implements
             return REDIS;
         }
 
-        // kept for compatibility reasons
-        @Deprecated
-        @Override
-        public String getUser(CommandTrace commandTrace) {
-            return commandTrace.user();
-        }
-
         @Override
         public String getDbNamespace(CommandTrace commandTrace) {
             return commandTrace.dbIndex();
-        }
-
-        // kept for compatibility reasons
-        @Deprecated
-        @Override
-        public String getConnectionString(final CommandTrace commandTrace) {
-            return commandTrace.serverAddressPort();
         }
 
         @Override

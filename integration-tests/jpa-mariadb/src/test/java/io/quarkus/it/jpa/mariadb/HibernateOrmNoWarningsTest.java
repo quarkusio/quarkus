@@ -21,11 +21,7 @@ import io.quarkus.test.junit.QuarkusTest;
 @QuarkusTest
 @QuarkusTestResource(value = LogCollectingTestResource.class, restrictToAnnotatedClass = true, initArgs = {
         @ResourceArg(name = LogCollectingTestResource.LEVEL, value = "WARNING"),
-        @ResourceArg(name = LogCollectingTestResource.INCLUDE, value = "org\\.hibernate\\..*"),
-        // Ignore logs about schema management:
-        // they are unfortunate (https://github.com/quarkusio/quarkus/issues/16204)
-        // but for now we have to live with them.
-        @ResourceArg(name = LogCollectingTestResource.EXCLUDE, value = "org\\.hibernate\\.tool\\.schema.*")
+        @ResourceArg(name = LogCollectingTestResource.INCLUDE, value = "org\\.hibernate\\..*")
 })
 public class HibernateOrmNoWarningsTest {
     @Test

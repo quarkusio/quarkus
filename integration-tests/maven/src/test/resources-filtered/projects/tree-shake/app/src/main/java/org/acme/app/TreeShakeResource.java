@@ -26,6 +26,7 @@ import org.acme.multirelease.MultiReleaseClass;
 import org.acme.serviceloader.ServiceInterface;
 import org.acme.throws_.ThrowingService;
 import org.acme.loadchain.ChainProvider;
+import org.acme.pkginfo.PkgInfoService;
 import org.acme.serialization.ResourceDeserializer;
 import org.acme.transform.TransformableClass;
 
@@ -166,5 +167,11 @@ public class TreeShakeResource {
     @Path("/loadclass-chain")
     public String loadclassChain() {
         return String.join(",", new ChainProvider().getLoaded());
+    }
+
+    @GET
+    @Path("/package-info")
+    public String packageInfo() {
+        return new PkgInfoService().describe();
     }
 }

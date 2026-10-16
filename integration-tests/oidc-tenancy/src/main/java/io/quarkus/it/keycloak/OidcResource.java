@@ -144,14 +144,17 @@ public class OidcResource {
             @HeaderParam("Authorization") String authorization, @FormParam("token") String token) throws Exception {
         introspectionEndpointCallCount++;
 
-        boolean activeStatus = introspection && !token.endsWith("-invalid");
+        String baseToken = token.contains(":") ? token.substring(0, token.indexOf(":")) : token;
+        String tokenClientId = token.contains(":") ? token.substring(token.indexOf(":") + 1) : null;
+        boolean activeStatus = introspection && !baseToken.endsWith("-invalid")
+                && (!OidcUtils.isOpaqueToken(baseToken) || clientId.equals(tokenClientId));
         String requiredClaim = "\"required_claim\": \"1\",";
-        if (token.endsWith("_2") && ++opaqueToken2UsageCount == 2) {
+        if (baseToken.endsWith("_2") && ++opaqueToken2UsageCount == 2) {
             // This is to confirm that the same opaque token_2 works well when its introspection response
             // includes `required_claim` with value "1" but fails when the required claim is not included
             requiredClaim = "";
         }
-        if (token.endsWith("_3")) {
+        if (baseToken.endsWith("_3")) {
             ++opaqueToken3UsageCount;
             // This is to confirm that the same opaque token_3 works well when its introspection response
             // includes `required_claim` with values "1,2" but fails when the required claim is not included
@@ -242,6 +245,34 @@ public class OidcResource {
                 "   \"sub\": \"123456789\"," +
                 "   \"preferred_username\": \"alice\"" +
                 "  }";
+    }
+
+    @GET
+    @Produces("application/json")
+    @Path("userinfo-tenant-introspection-cache-one")
+    public Response userinfoClientIntrospectionCacheOne(@HeaderParam("Authorization") String authorization) {
+        return userinfoForTenant(authorization, "client-introspection-cache-one");
+    }
+
+    @GET
+    @Produces("application/json")
+    @Path("userinfo-tenant-introspection-cache-two")
+    public Response userinfoClientIntrospectionCacheTwo(@HeaderParam("Authorization") String authorization) {
+        return userinfoForTenant(authorization, "client-introspection-cache-two");
+    }
+
+    private Response userinfoForTenant(String authorization, String expectedClientId) {
+        userInfoEndpointCallCount++;
+        String token = authorization.substring("Bearer ".length());
+        String tokenClientId = token.contains(":") ? token.substring(token.indexOf(":") + 1) : null;
+        if (!expectedClientId.equals(tokenClientId)) {
+            return Response.status(401).build();
+        }
+        return Response.ok("{" +
+                "   \"sub\": \"123456789\"," +
+                "   \"preferred_username\": \"alice\"," +
+                "   \"client_id\": \"" + tokenClientId + "\"" +
+                "  }").build();
     }
 
     @POST
@@ -336,8 +367,8 @@ public class OidcResource {
     @POST
     @Path("opaque-token")
     @Produces("application/json")
-    public String testOpaqueToken() {
-        return "{\"access_token\": \"987654321\"," +
+    public String testOpaqueToken(@QueryParam("client_id") String clientId) {
+        return "{\"access_token\": \"987654321:" + clientId + "\"," +
                 "   \"token_type\": \"Bearer\"," +
                 "   \"refresh_token\": \"123456789\"," +
                 "   \"expires_in\": 300 }";
@@ -346,8 +377,8 @@ public class OidcResource {
     @POST
     @Path("opaque-token2")
     @Produces("application/json")
-    public String testOpaqueToken2() {
-        return "{\"access_token\": \"987654321_2\"," +
+    public String testOpaqueToken2(@QueryParam("client_id") String clientId) {
+        return "{\"access_token\": \"987654321_2:" + clientId + "\"," +
                 "   \"token_type\": \"Bearer\"," +
                 "   \"refresh_token\": \"123456789\"," +
                 "   \"expires_in\": 300 }";
@@ -356,8 +387,8 @@ public class OidcResource {
     @POST
     @Path("opaque-token3")
     @Produces("application/json")
-    public String testOpaqueToken3() {
-        return "{\"access_token\": \"987654321_3\"," +
+    public String testOpaqueToken3(@QueryParam("client_id") String clientId) {
+        return "{\"access_token\": \"987654321_3:" + clientId + "\"," +
                 "   \"token_type\": \"Bearer\"," +
                 "   \"refresh_token\": \"123456789\"," +
                 "   \"expires_in\": 300 }";

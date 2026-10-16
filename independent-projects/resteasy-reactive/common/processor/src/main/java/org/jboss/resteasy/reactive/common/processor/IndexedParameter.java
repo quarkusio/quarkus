@@ -33,6 +33,8 @@ public class IndexedParameter<T extends IndexedParameter<T>> {
     protected boolean single;
     protected boolean optional;
     protected String separator;
+    private boolean restQueryMap;
+    private boolean restHeaderMap;
 
     public boolean isObtainedAsCollection() {
         return !single
@@ -229,5 +231,23 @@ public class IndexedParameter<T extends IndexedParameter<T>> {
     public T setSeparator(String separator) {
         this.separator = separator;
         return (T) this;
+    }
+
+    public T setRestQueryMap(boolean restQueryMap) {
+        this.restQueryMap = restQueryMap;
+        return (T) this;
+    }
+
+    public boolean getRestQueryMap() {
+        return restQueryMap;
+    }
+
+    public T setRestHeaderMap(boolean restHeaderMap) {
+        this.restHeaderMap = restHeaderMap;
+        return (T) this;
+    }
+
+    public boolean getRestHeaderMap() {
+        return restHeaderMap;
     }
 }

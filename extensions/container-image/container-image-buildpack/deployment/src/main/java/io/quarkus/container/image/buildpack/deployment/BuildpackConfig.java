@@ -16,7 +16,7 @@ public interface BuildpackConfig {
     /**
      * The buildpacks builder image to use when building the project in jvm mode.
      */
-    @WithDefault("paketocommunity/builder-ubi-base:latest")
+    @WithDefault("docker.io/paketobuildpacks/ubi-9-builder")
     String jvmBuilderImage();
 
     /**

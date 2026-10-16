@@ -113,6 +113,7 @@ public class AeshRemoteConnectionHandler {
         });
 
         try {
+            LOG.debugf("Setting up aesh console for %s session %s", transport, sessionId);
             var registryBuilder = registryFactory.create();
             var settingsBuilder = CliSettingsHelper.createBaseSettings(config, customizers);
             settingsBuilder.persistHistory(false);
@@ -128,9 +129,11 @@ public class AeshRemoteConnectionHandler {
                 runner.addExitCommand();
             }
 
+            LOG.debugf("Starting aesh console runner for %s session %s", transport, sessionId);
             runner.start();
+            LOG.debugf("Aesh console runner finished for %s session %s", transport, sessionId);
         } catch (Exception e) {
-            LOG.error("Error handling remote connection", e);
+            LOG.errorf(e, "Error handling remote %s connection (session %s)", transport, sessionId);
             connection.close();
         }
     }

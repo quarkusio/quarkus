@@ -12,10 +12,12 @@ import jakarta.ws.rs.core.MultivaluedMap;
 import org.jboss.resteasy.reactive.server.StreamingOutputStream;
 
 import com.fasterxml.jackson.annotation.JsonView;
-import com.fasterxml.jackson.core.JsonFactory;
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.ObjectWriter;
+
+import tools.jackson.core.StreamReadFeature;
+import tools.jackson.core.StreamWriteFeature;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectReader;
+import tools.jackson.databind.ObjectWriter;
 
 public final class JacksonMessageBodyWriterUtil {
 
@@ -24,25 +26,17 @@ public final class JacksonMessageBodyWriterUtil {
 
     public static ObjectWriter createDefaultWriter(ObjectMapper mapper) {
         // we don't want the ObjectWriter to close the stream automatically, as we want to handle closing manually at the proper points
-        JsonFactory jsonFactory = mapper.getFactory();
-        if (JacksonMessageBodyWriterUtil.needsNewFactory(jsonFactory)) {
-            jsonFactory = jsonFactory.copy();
-            JacksonMessageBodyWriterUtil.setNecessaryJsonFactoryConfig(jsonFactory);
-            jsonFactory.setCodec(mapper);
-            return mapper.writer().with(jsonFactory);
-        } else {
-            return mapper.writer();
-        }
+        return setNecessaryWriteConfig(mapper.writer());
     }
 
-    private static boolean needsNewFactory(JsonFactory jsonFactory) {
-        return jsonFactory.isEnabled(JsonGenerator.Feature.AUTO_CLOSE_TARGET)
-                || jsonFactory.isEnabled(JsonGenerator.Feature.FLUSH_PASSED_TO_STREAM);
+    public static ObjectWriter setNecessaryWriteConfig(ObjectWriter writer) {
+        return writer
+                .without(StreamWriteFeature.AUTO_CLOSE_TARGET)
+                .without(StreamWriteFeature.FLUSH_PASSED_TO_STREAM);
     }
 
-    public static void setNecessaryJsonFactoryConfig(JsonFactory jsonFactory) {
-        jsonFactory.configure(JsonGenerator.Feature.AUTO_CLOSE_TARGET, false);
-        jsonFactory.configure(JsonGenerator.Feature.FLUSH_PASSED_TO_STREAM, false);
+    public static ObjectReader setNecessaryReadConfig(ObjectReader reader) {
+        return reader.without(StreamReadFeature.AUTO_CLOSE_SOURCE);
     }
 
     public static void doLegacyWrite(Object o, Annotation[] annotations, MultivaluedMap<String, Object> httpHeaders,

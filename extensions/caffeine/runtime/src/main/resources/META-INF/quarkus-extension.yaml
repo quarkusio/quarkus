@@ -8,6 +8,6 @@ metadata:
   categories:
   - "data"
   status: "stable"
-  unlisted: "true"
+  unlisted: true
   config:
   - "quarkus.cache."

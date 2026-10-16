@@ -6,10 +6,10 @@ import java.util.function.Function;
 
 import io.quarkus.arc.SyntheticCreationalContext;
 import io.quarkus.datasource.common.runtime.DatabaseKind;
+import io.quarkus.datasource.deployment.spi.DataSourceDefinedBuildItem;
+import io.quarkus.datasource.deployment.spi.DatabaseVersionLoader;
 import io.quarkus.datasource.deployment.spi.DefaultDataSourceDbKindBuildItem;
-import io.quarkus.datasource.deployment.spi.DevServicesDatasourceConfigurationHandlerBuildItem;
-import io.quarkus.datasource.runtime.DataSourceBuildTimeConfig;
-import io.quarkus.datasource.runtime.DataSourcesBuildTimeConfig;
+import io.quarkus.datasource.deployment.spi.DefaultDataSourceDbVersionBuildItem;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.Feature;
@@ -22,12 +22,11 @@ import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
-import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
-import io.quarkus.reactive.datasource.runtime.DataSourceReactiveBuildTimeConfig;
-import io.quarkus.reactive.datasource.runtime.DataSourcesReactiveBuildTimeConfig;
+import io.quarkus.devservices.datasource.common.DevServicesDatasourceConfigurationHandlerBuildItem;
 import io.quarkus.reactive.datasource.spi.ReactivePoolBuildItem;
 import io.quarkus.reactive.mysql.client.runtime.MySQLPoolRecorder;
 import io.quarkus.reactive.mysql.client.runtime.MySQLServiceBindingConverter;
+import io.quarkus.runtime.util.ProgrammingParadigm;
 import io.quarkus.tls.deployment.spi.TlsRegistryBuildItem;
 import io.quarkus.vertx.core.deployment.EventLoopCountBuildItem;
 import io.quarkus.vertx.deployment.VertxBuildItem;
@@ -49,18 +48,17 @@ class ReactiveMySQLClientProcessor {
             ShutdownContextBuildItem shutdown,
             Optional<TlsRegistryBuildItem> tlsRegistryBuildItem,
             BuildProducer<ExtensionSslNativeSupportBuildItem> sslNativeSupport,
-            DataSourcesBuildTimeConfig dataSourcesBuildTimeConfig,
-            DataSourcesReactiveBuildTimeConfig dataSourcesReactiveBuildTimeConfig,
-            List<DefaultDataSourceDbKindBuildItem> defaultDataSourceDbKindBuildItems,
-            CurateOutcomeBuildItem curateOutcomeBuildItem) {
+            List<DataSourceDefinedBuildItem> definedDataSources) {
 
         feature.produce(new FeatureBuildItem(Feature.REACTIVE_MYSQL_CLIENT));
 
-        for (String dataSourceName : dataSourcesBuildTimeConfig.dataSources().keySet()) {
-            if (!isReactiveMySQLPoolDefined(dataSourcesBuildTimeConfig, dataSourcesReactiveBuildTimeConfig, dataSourceName,
-                    defaultDataSourceDbKindBuildItems, curateOutcomeBuildItem)) {
+        for (DataSourceDefinedBuildItem dataSource : definedDataSources) {
+            if (!dataSource.getParadigms().contains(ProgrammingParadigm.REACTIVE)
+                    || (!DatabaseKind.isMySQL(dataSource.getDbKind())
+                            && !DatabaseKind.isMariaDB(dataSource.getDbKind()))) {
                 continue;
             }
+            String dataSourceName = dataSource.getName();
 
             Function<SyntheticCreationalContext<Pool>, Pool> poolFunction = recorder.configureMySQLPool(vertx.getVertx(),
                     eventLoopCount.getEventLoopCount(), dataSourceName, shutdown,
@@ -87,41 +85,23 @@ class ReactiveMySQLClientProcessor {
 
     @BuildStep
     void registerServiceBinding(Capabilities capabilities, BuildProducer<ServiceProviderBuildItem> serviceProvider,
-            BuildProducer<DefaultDataSourceDbKindBuildItem> dbKind) {
+            BuildProducer<DefaultDataSourceDbKindBuildItem> dbKind,
+            BuildProducer<DefaultDataSourceDbVersionBuildItem> dbVersion) {
         if (capabilities.isPresent(Capability.KUBERNETES_SERVICE_BINDING)) {
             serviceProvider.produce(
                     new ServiceProviderBuildItem("io.quarkus.kubernetes.service.binding.runtime.ServiceBindingConverter",
                             MySQLServiceBindingConverter.class.getName()));
         }
+
+        // Only producing a default db-kind for MySQL -- if we also produced one for MariaDB,
+        // Quarkus would no longer be able to pick a default.
         dbKind.produce(new DefaultDataSourceDbKindBuildItem(DatabaseKind.MYSQL));
-    }
 
-    private static boolean isReactiveMySQLPoolDefined(DataSourcesBuildTimeConfig dataSourcesBuildTimeConfig,
-            DataSourcesReactiveBuildTimeConfig dataSourcesReactiveBuildTimeConfig, String dataSourceName,
-            List<DefaultDataSourceDbKindBuildItem> defaultDataSourceDbKindBuildItems,
-            CurateOutcomeBuildItem curateOutcomeBuildItem) {
-        DataSourceBuildTimeConfig dataSourceBuildTimeConfig = dataSourcesBuildTimeConfig
-                .dataSources().get(dataSourceName);
-        DataSourceReactiveBuildTimeConfig dataSourceReactiveBuildTimeConfig = dataSourcesReactiveBuildTimeConfig
-                .dataSources().get(dataSourceName).reactive();
-
-        Optional<String> dbKind = DefaultDataSourceDbKindBuildItem.resolve(dataSourceBuildTimeConfig.dbKind(),
-                defaultDataSourceDbKindBuildItems,
-                !io.quarkus.datasource.common.runtime.DataSourceUtil.isDefault(dataSourceName)
-                        || dataSourceBuildTimeConfig.devservices().enabled()
-                                .orElse(!dataSourcesBuildTimeConfig.hasNamedDataSources()),
-                curateOutcomeBuildItem);
-
-        if (!dbKind.isPresent()) {
-            return false;
-        }
-
-        if ((!DatabaseKind.isMySQL(dbKind.get())
-                && !DatabaseKind.isMariaDB(dbKind.get()))
-                || !dataSourceReactiveBuildTimeConfig.enabled()) {
-            return false;
-        }
-
-        return true;
+        // Producing default db-versions for both MySQL and MariaDB,
+        // so that explicit db-kind selection leads to the right default version.
+        dbVersion.produce(new DefaultDataSourceDbVersionBuildItem(DatabaseKind.MYSQL,
+                DatabaseVersionLoader.loadDefaultVersion("mysql")));
+        dbVersion.produce(new DefaultDataSourceDbVersionBuildItem(DatabaseKind.MARIADB,
+                DatabaseVersionLoader.loadDefaultVersion("mariadb")));
     }
 }

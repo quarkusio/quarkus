@@ -1,7 +1,8 @@
 package io.quarkus.arc.processor;
 
+import java.lang.annotation.Annotation;
 import java.lang.constant.ClassDesc;
-import java.util.Collections;
+import java.util.List;
 import java.util.Set;
 
 import jakarta.enterprise.inject.Any;
@@ -15,20 +16,19 @@ import io.quarkus.gizmo2.desc.FieldDesc;
 
 enum BuiltinQualifier {
 
-    DEFAULT(AnnotationInstance.create(DotNames.DEFAULT, null, Collections.emptyList()),
-            Default.Literal.class.getName()),
-    ANY(AnnotationInstance.create(DotNames.ANY, null, Collections.emptyList()),
-            Any.Literal.class.getName()),;
+    DEFAULT(AnnotationInstance.create(DotNames.DEFAULT, null, List.of()), Default.Literal.class),
+    ANY(AnnotationInstance.create(DotNames.ANY, null, List.of()), Any.Literal.class),
+    ;
 
     static final Set<AnnotationInstance> DEFAULT_QUALIFIERS = Set.of(DEFAULT.getInstance(), ANY.getInstance());
 
     private final AnnotationInstance instance;
 
-    private final String literalType;
+    private final ClassDesc literalClass;
 
-    private BuiltinQualifier(AnnotationInstance instance, String literalType) {
+    BuiltinQualifier(AnnotationInstance instance, Class<? extends Annotation> literalClass) {
         this.instance = instance;
-        this.literalType = literalType;
+        this.literalClass = ClassDesc.of(literalClass.getName());
     }
 
     AnnotationInstance getInstance() {
@@ -36,7 +36,6 @@ enum BuiltinQualifier {
     }
 
     StaticFieldVar getLiteralInstance() {
-        ClassDesc literalClass = ClassDesc.of(literalType);
         return Expr.staticField(FieldDesc.of(literalClass, "INSTANCE", literalClass));
     }
 

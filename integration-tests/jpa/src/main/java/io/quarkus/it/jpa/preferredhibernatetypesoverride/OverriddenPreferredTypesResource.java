@@ -18,7 +18,6 @@ import jakarta.ws.rs.core.MediaType;
 import org.hibernate.Session;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.type.SqlTypes;
-import org.hibernate.type.StandardBasicTypes;
 
 import io.quarkus.hibernate.orm.PersistenceUnit;
 
@@ -59,7 +58,7 @@ public class OverriddenPreferredTypesResource {
                 .isEqualTo(SqlTypes.CHAR);
         assertThat(metamodel.getAttributeMapping(metamodel.getPropertyIndex("createdAt")).getSingleJdbcMapping().getJdbcType()
                 .getDefaultSqlTypeCode())
-                .isEqualTo(SqlTypes.INSTANT);
+                .isEqualTo(SqlTypes.TIMESTAMP);
 
         assertThat(metamodel.getAttributeMapping(metamodel.getPropertyIndex("overridenDuration")).getSingleJdbcMapping()
                 .getJdbcType()
@@ -92,8 +91,8 @@ public class OverriddenPreferredTypesResource {
         return session.createNativeQuery(
                 """
                         SELECT id FROM %s WHERE isPersisted = :isPersisted
-                        """.formatted(EntityWithOverridablePreferredTypes.NAME))
-                .addScalar("id", StandardBasicTypes.UUID_CHAR)
+                        """.formatted(EntityWithOverridablePreferredTypes.NAME),
+                UUID.class)
                 .setParameter("isPersisted", true)
                 .getResultList();
     }

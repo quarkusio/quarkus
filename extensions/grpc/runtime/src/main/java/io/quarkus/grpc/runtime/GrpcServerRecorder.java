@@ -8,7 +8,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Pattern;
 
 import jakarta.enterprise.inject.Any;
@@ -40,11 +39,9 @@ import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
-import io.quarkus.value.registry.ValueRegistry;
 import io.quarkus.vertx.http.runtime.QuarkusErrorHandler;
 import io.quarkus.vertx.http.runtime.security.HttpAuthenticator;
 import io.quarkus.virtual.threads.VirtualThreadsRecorder;
-import io.smallrye.common.vertx.VertxContext;
 import io.vertx.core.Context;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
@@ -66,13 +63,9 @@ public class GrpcServerRecorder {
     private static final Pattern GRPC_CONTENT_TYPE = Pattern.compile("^application/grpc.*");
 
     private final RuntimeValue<GrpcConfiguration> runtimeConfig;
-    private final RuntimeValue<ValueRegistry> valueRegistry;
 
-    public GrpcServerRecorder(
-            final RuntimeValue<GrpcConfiguration> runtimeConfig,
-            final RuntimeValue<ValueRegistry> valueRegistry) {
+    public GrpcServerRecorder(final RuntimeValue<GrpcConfiguration> runtimeConfig) {
         this.runtimeConfig = runtimeConfig;
-        this.valueRegistry = valueRegistry;
     }
 
     public static List<GrpcServiceDefinition> getServices() {
@@ -259,12 +252,11 @@ public class GrpcServerRecorder {
 
     private static void routingContextAware(GrpcIoServer server, RoutingContext context) {
         Context currentContext = Vertx.currentContext();
-        var local = currentContext.getLocal(VertxContext.DATA_MAP_LOCAL, ConcurrentHashMap::new);
-        local.put(RoutingContext.class.getName(), context);
+        GrpcContextLocalsProvider.ROUTING_CONTEXT_LOCAL.put(currentContext, context);
         try {
             server.handle(context.request());
         } finally {
-            local.remove(RoutingContext.class.getName());
+            GrpcContextLocalsProvider.ROUTING_CONTEXT_LOCAL.remove(currentContext);
         }
     }
 
@@ -375,15 +367,12 @@ public class GrpcServerRecorder {
         interceptors.addAll(globalInterceptors);
         interceptors.addAll(grpcContainer.getSortedPerServiceInterceptors(service.getImplementationClassName()));
 
-        // We only register the blocking interceptor if needed by at least one method of the service (either blocking or runOnVirtualThread)
-        if (!blockingMethodsPerService.isEmpty()) {
-            List<String> list = blockingMethodsPerService.get(service.getImplementationClassName());
-            List<String> virtuals = virtualMethodsPerService.get(service.getImplementationClassName());
-            if (list != null || virtuals != null) {
-                interceptors
-                        .add(new BlockingServerInterceptor(vertx, list, virtuals,
-                                VirtualThreadsRecorder.getCurrent(), devMode));
-            }
+        List<String> list = blockingMethodsPerService.get(service.getImplementationClassName());
+        List<String> virtuals = virtualMethodsPerService.get(service.getImplementationClassName());
+        if (list != null || virtuals != null) {
+            interceptors
+                    .add(new BlockingServerInterceptor(vertx, list, virtuals,
+                            VirtualThreadsRecorder.getCurrent(), devMode));
         }
         interceptors.sort(Interceptors.INTERCEPTOR_COMPARATOR);
         return ServerInterceptors.intercept(service.definition, interceptors);

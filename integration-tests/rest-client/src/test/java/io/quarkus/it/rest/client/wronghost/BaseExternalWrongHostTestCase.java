@@ -1,8 +1,8 @@
 package io.quarkus.it.rest.client.wronghost;
 
-import static io.restassured.RestAssured.given;
+import static io.quarkus.test.micrometer.PrometheusMetricsAssert.assertMetrics;
 import static io.restassured.RestAssured.when;
-import static org.hamcrest.CoreMatchers.containsString;
+import static org.assertj.core.api.Assertions.entry;
 import static org.hamcrest.Matchers.is;
 
 import org.junit.jupiter.api.Test;
@@ -17,11 +17,13 @@ public abstract class BaseExternalWrongHostTestCase {
                 .statusCode(200)
                 .body(is("200"));
 
-        given()
-                .when().get("/q/metrics")
+        assertMetrics(when()
+                .get("/q/metrics")
                 .then()
                 .statusCode(200)
-                .body(containsString(
-                        "clientName=\"localhost\",method=\"GET\",outcome=\"SUCCESS\",status=\"200\",uri=\"root\"}"));
+                .extract().asInputStream())
+                .hasMetricWithLabels("http_client_requests_seconds_count",
+                        entry("clientName", "localhost"), entry("method", "GET"),
+                        entry("outcome", "SUCCESS"), entry("status", "200"), entry("uri", "root"));
     }
 }

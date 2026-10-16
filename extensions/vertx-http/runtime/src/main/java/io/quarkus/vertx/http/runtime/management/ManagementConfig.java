@@ -12,6 +12,7 @@ import io.quarkus.runtime.annotations.ConfigRoot;
 import io.quarkus.vertx.http.runtime.BodyConfig;
 import io.quarkus.vertx.http.runtime.FilterConfig;
 import io.quarkus.vertx.http.runtime.HeaderConfig;
+import io.quarkus.vertx.http.runtime.HostValidationConfig;
 import io.quarkus.vertx.http.runtime.ProxyConfig;
 import io.quarkus.vertx.http.runtime.ServerLimitsConfig;
 import io.quarkus.vertx.http.runtime.ServerSslConfig;
@@ -76,6 +77,12 @@ public interface ManagementConfig {
     CORSConfig cors();
 
     /**
+     * The HTTP Host header validation
+     */
+    @ConfigDocSection(generated = true)
+    HostValidationConfig hostValidation();
+
+    /**
      * The SSL config
      */
     ServerSslConfig ssl();
@@ -103,16 +110,12 @@ public interface ManagementConfig {
      * Whether the HTTP server should treat the semicolon ({@code ;}) as a query parameter
      * delimiter, in addition to the ampersand ({@code &}).
      * <p>
-     * When set to {@code true} (the default), a request like {@code /path?a=1;b=2} is parsed
-     * as two parameters ({@code a=1} and {@code b=2}). When set to {@code false}, the
+     * When set to {@code true}, a request like {@code /path?a=1;b=2} is parsed
+     * as two parameters ({@code a=1} and {@code b=2}). When set to {@code false} (the default), the
      * semicolon is treated as a literal character and the request yields a single parameter
      * ({@code a=1;b=2}).
-     * <p>
-     * The default is {@code true} to preserve backward compatibility. It will change to
-     * {@code false} in Quarkus 4, as using the semicolon as a query parameter delimiter is
-     * uncommon and can cause issues when semicolons appear as part of parameter values.
      */
-    @WithDefault("true")
+    @WithDefault("false")
     boolean useSemicolonAsQueryParamDelimiter();
 
     /**

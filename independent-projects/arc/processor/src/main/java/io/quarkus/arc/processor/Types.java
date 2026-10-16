@@ -31,6 +31,9 @@ import org.jboss.jandex.PrimitiveType;
 import org.jboss.jandex.Type;
 import org.jboss.jandex.Type.Kind;
 import org.jboss.jandex.TypeVariable;
+import org.jboss.jandex.TypeVariableReference;
+import org.jboss.jandex.UnresolvedTypeVariable;
+import org.jboss.jandex.VoidType;
 import org.jboss.jandex.WildcardType;
 import org.jboss.logging.Logger;
 
@@ -101,16 +104,25 @@ public final class Types {
         }
     }
 
+    /**
+     * @deprecated use Gizmo 2 and {@link RuntimeTypeCreator}
+     */
     @Deprecated(forRemoval = true, since = "3.30")
     public static ResultHandle getTypeHandle(BytecodeCreator creator, Type type) {
         return getTypeHandle(creator, type, null);
     }
 
+    /**
+     * @deprecated use Gizmo 2 and {@link RuntimeTypeCreator}
+     */
     @Deprecated(forRemoval = true, since = "3.30")
     public static ResultHandle getTypeHandle(BytecodeCreator creator, Type type, ResultHandle tccl) {
         return getTypeHandle(creator, type, tccl, null);
     }
 
+    /**
+     * @deprecated use Gizmo 2 and {@link RuntimeTypeCreator}
+     */
     @Deprecated(forRemoval = true, since = "3.30")
     public static ResultHandle getTypeHandle(BytecodeCreator creator, Type type, ResultHandle tccl, IndexView index) {
         AssignableResultHandle result = creator.createVariable(Object.class);
@@ -278,6 +290,9 @@ public final class Types {
         creator.assign(variable, parameterizedTypeHandle);
     }
 
+    /**
+     * @deprecated use Gizmo 2 and {@link RuntimeTypeCreator}
+     */
     @Deprecated(forRemoval = true, since = "3.30")
     public static void getParameterizedType(AssignableResultHandle variable, BytecodeCreator creator, ResultHandle tccl,
             ParameterizedType parameterizedType) {
@@ -286,6 +301,9 @@ public final class Types {
         typeVariables.patchReferences(creator);
     }
 
+    /**
+     * @deprecated use Gizmo 2 and {@link RuntimeTypeCreator}
+     */
     @Deprecated(forRemoval = true, since = "3.30")
     public static ResultHandle getParameterizedType(BytecodeCreator creator, ResultHandle tccl,
             ParameterizedType parameterizedType) {
@@ -581,12 +599,11 @@ public final class Types {
     }
 
     /**
-     * Detects wildcard for given type.
-     * In case the annotation target is a producer and the boolean parameter is true, throws a {@link DefinitionException}
-     * based on the boolean parameter.
-     * Returns true if a wildcard is detected, false otherwise.
+     * Returns whether given {@code type} contains wildcard type arguments.
+     * When the type does contain wildcard type arguments, the given {@code producerFieldOrMethod} is not {@code null}
+     * and {@code throwIfDetected} is set, throws a {@link DefinitionException}.
      */
-    static boolean containsWildcard(Type type, AnnotationTarget producerFieldOrMethod, boolean throwIfDetected) {
+    public static boolean containsWildcard(Type type, AnnotationTarget producerFieldOrMethod, boolean throwIfDetected) {
         if (type.kind().equals(Kind.WILDCARD_TYPE)) {
             if (throwIfDetected && producerFieldOrMethod != null) {
                 // a producer method that has wildcard directly in its return type
@@ -831,17 +848,46 @@ public final class Types {
         return PRIMITIVE_CLASS_NAMES.contains(className);
     }
 
-    static boolean containsTypeVariable(Type type) {
-        if (type.kind() == Kind.TYPE_VARIABLE) {
-            return true;
-        } else if (type.kind() == Kind.PARAMETERIZED_TYPE) {
-            for (Type arg : type.asParameterizedType().arguments()) {
-                if (containsTypeVariable(arg)) {
-                    return true;
+    /**
+     * Returns whether the given {@code type} contains type variables. That is, recursively:
+     * <ul>
+     * <li>{@link VoidType void}, {@linkplain PrimitiveType primitive types}, {@linkplain ClassType class types}:
+     * always {@code false}</li>
+     * <li>{@linkplain ArrayType array types}: whether the {@linkplain ArrayType#constituent() constituent type}
+     * contains type variables</li>
+     * <li>{@linkplain ParameterizedType parameterized types}: whether at least one
+     * {@linkplain ParameterizedType#arguments() type argument} or the {@linkplain ParameterizedType#owner() owner type}
+     * contains type variables</li>
+     * <li>{@linkplain TypeVariable type variables}, {@linkplain TypeVariableReference type variable references},
+     * {@linkplain UnresolvedTypeVariable unresolved type variables}: always {@code true}</li>
+     * <li>{@linkplain WildcardType wildcard types}: whether the {@linkplain WildcardType#extendsBound() upper bound}
+     * or {@linkplain WildcardType#superBound() lower bound} contains type variables</li>
+     * </ul>
+     *
+     * @return whether the given type contains type variables
+     */
+    public static boolean containsTypeVariable(Type type) {
+        return switch (type.kind()) {
+            case VOID, PRIMITIVE, CLASS -> false;
+            case ARRAY -> containsTypeVariable(type.asArrayType().constituent());
+            case PARAMETERIZED_TYPE -> {
+                ParameterizedType parameterizedType = type.asParameterizedType();
+                for (Type typeArg : parameterizedType.arguments()) {
+                    if (containsTypeVariable(typeArg)) {
+                        yield true;
+                    }
                 }
+                if (parameterizedType.owner() != null) {
+                    yield containsTypeVariable(parameterizedType.owner());
+                }
+                yield false;
             }
-        }
-        return false;
+            case TYPE_VARIABLE, TYPE_VARIABLE_REFERENCE, UNRESOLVED_TYPE_VARIABLE -> true;
+            case WILDCARD_TYPE -> {
+                WildcardType wildcardType = type.asWildcardType();
+                Type bound = wildcardType.superBound() != null ? wildcardType.superBound() : wildcardType.extendsBound();
+                yield containsTypeVariable(bound);
+            }
+        };
     }
-
 }

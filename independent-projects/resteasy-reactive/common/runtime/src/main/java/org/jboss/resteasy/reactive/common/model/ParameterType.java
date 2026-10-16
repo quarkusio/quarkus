@@ -8,6 +8,7 @@ public enum ParameterType {
     FORM,
     MULTI_PART_FORM,
     MULTI_PART_DATA_INPUT,
+    ENTITY_PART_LIST,
     BODY,
     SKIPPED,
     MATRIX,

@@ -8,7 +8,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.hibernate.orm.MyEntity;
-import io.quarkus.hibernate.orm.deployment.util.HibernateProcessorUtil;
+import io.quarkus.hibernate.orm.deployment.util.HibernateProcessorSupport;
 import io.quarkus.test.QuarkusExtensionTest;
 
 /**
@@ -21,11 +21,10 @@ public class StorageSpecificMysqlDBIgnoredTest {
             .withApplicationRoot((jar) -> jar
                     .addClass(MyEntity.class)
                     .addAsResource("application-start-offline-mariadb-dialect.properties", "application.properties"))
-            .setLogRecordPredicate(record -> HibernateProcessorUtil.class.getName().equals(record.getLoggerName()))
+            .setLogRecordPredicate(record -> HibernateProcessorSupport.class.getName().equals(record.getLoggerName()))
             .overrideConfigKey("quarkus.datasource.db-kind", "") // This will override to default which is H2
-            .overrideConfigKey("quarkus.hibernate-orm.dialect.storage-engine", "")
             .overrideConfigKey("quarkus.hibernate-orm.dialect.mysql.storage-engine", "innodb") // This will be ignored
-            .setLogRecordPredicate(record -> HibernateProcessorUtil.class.getName().equals(record.getLoggerName()))
+            .setLogRecordPredicate(record -> HibernateProcessorSupport.class.getName().equals(record.getLoggerName()))
             .assertLogRecords(records -> {
                 assertThat(records)
                         .extracting(LogRecord::getMessage)

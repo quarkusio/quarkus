@@ -91,14 +91,16 @@ class Http3DisabledTest {
 
         HttpClientAgent client = vertx.httpClientBuilder().with(clientConfig).with(sslOptions).build();
 
-        var resp = client.request(HttpMethod.GET, port, "localhost", "/hello")
-                .compose(HttpClientRequest::send)
-                .compose(HttpClientResponse::body)
-                .await(3, TimeUnit.SECONDS);
+        try {
+            var resp = client.request(HttpMethod.GET, port, "localhost", "/hello")
+                    .compose(HttpClientRequest::send)
+                    .compose(HttpClientResponse::body)
+                    .await(3, TimeUnit.SECONDS);
 
-        assertThat(resp.toString()).isEqualTo(HttpVersion.HTTP_1_1 + "-hello");
-
-        client.close().await(5, TimeUnit.SECONDS);
+            assertThat(resp.toString()).isEqualTo(HttpVersion.HTTP_1_1 + "-hello");
+        } finally {
+            client.close().await(5, TimeUnit.SECONDS);
+        }
     }
 
     @Test
@@ -114,14 +116,16 @@ class Http3DisabledTest {
 
         HttpClientAgent client = vertx.httpClientBuilder().with(clientConfig).with(sslOptions).build();
 
-        var resp = client.request(HttpMethod.GET, port, "localhost", "/hello")
-                .compose(HttpClientRequest::send)
-                .compose(HttpClientResponse::body)
-                .await(3, TimeUnit.SECONDS);
+        try {
+            var resp = client.request(HttpMethod.GET, port, "localhost", "/hello")
+                    .compose(HttpClientRequest::send)
+                    .compose(HttpClientResponse::body)
+                    .await(3, TimeUnit.SECONDS);
 
-        assertThat(resp.toString()).isEqualTo(HttpVersion.HTTP_2 + "-hello");
-
-        client.close().await(5, TimeUnit.SECONDS);
+            assertThat(resp.toString()).isEqualTo(HttpVersion.HTTP_2 + "-hello");
+        } finally {
+            client.close().await(5, TimeUnit.SECONDS);
+        }
     }
 
     @ApplicationScoped

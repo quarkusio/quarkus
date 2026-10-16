@@ -11,11 +11,12 @@ import java.io.FileOutputStream;
 import java.net.URL;
 import java.nio.file.Files;
 import java.security.KeyStore;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import jakarta.inject.Inject;
 
 import org.jboss.shrinkwrap.api.asset.StringAsset;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledOnOs;
 import org.junit.jupiter.api.condition.OS;
@@ -36,7 +37,6 @@ import io.vertx.core.http.HttpClientResponse;
 import io.vertx.core.http.HttpMethod;
 import io.vertx.core.net.PfxOptions;
 
-@Disabled("https://github.com/quarkusio/quarkus/issues/55130") // TODO: enable when #55130 is fixed
 @Certificates(certificates = {
         @Certificate(subjectAlternativeNames = "DNS:localhost", client = true, aliases = {
                 @Alias(name = "proxy-a", cn = "proxy-a", client = true, password = PASSWORD),
@@ -141,7 +141,7 @@ class TrustedProxyTruststoreReloadTest {
         }
     }
 
-    private String requestWithClientAlias(String alias) {
+    private String requestWithClientAlias(String alias) throws TimeoutException {
         var options = new HttpClientOptions()
                 .setSsl(true)
                 .setDefaultPort(tlsUrl.getPort())
@@ -166,7 +166,7 @@ class TrustedProxyTruststoreReloadTest {
                     .map(Buffer::toString)
                     .toCompletionStage().toCompletableFuture().join();
         } finally {
-            client.close().toCompletionStage().toCompletableFuture().join();
+            client.close().await(5, TimeUnit.SECONDS);
         }
     }
 }

@@ -7,6 +7,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
 import jakarta.ws.rs.client.Invocation;
+import jakarta.ws.rs.core.HttpHeaders;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.sse.InboundSseEvent;
@@ -102,6 +103,8 @@ public class SseEventSourceImpl implements SseEventSource, Handler<Long> {
             if (throwable != null) {
                 receiveThrowable(throwable);
                 notifyCompletion();
+            } else if (response.getStatus() == Response.Status.SERVICE_UNAVAILABLE.getStatusCode()) {
+                handleServiceUnavailable(response);
             } else if (Response.Status.Family.familyOf(response.getStatus()) != Response.Status.Family.SUCCESSFUL) {
                 receiveThrowable(new RuntimeException("HTTP call unsuccessful: " + response.getStatus()));
                 notifyCompletion();
@@ -114,6 +117,31 @@ public class SseEventSourceImpl implements SseEventSource, Handler<Long> {
             }
             return null;
         });
+    }
+
+    private synchronized void handleServiceUnavailable(Response response) {
+        if (!isOpen) {
+            return;
+        }
+        isInProgress = false;
+        long defaultDelayMs = TimeUnit.MILLISECONDS.convert(reconnectDelay, reconnectUnit);
+        long delayMs = defaultDelayMs;
+        String retryAfter = response.getHeaderString(HttpHeaders.RETRY_AFTER);
+        if (retryAfter != null) {
+            try {
+                long serverDelayMs = Long.parseLong(retryAfter.trim()) * 1000;
+                if (serverDelayMs > 0) {
+                    delayMs = Math.min(serverDelayMs, Math.max(defaultDelayMs, 300_000));
+                }
+            } catch (NumberFormatException e) {
+                // unparseable — use default
+            }
+        }
+        Vertx vertx = webTarget.getRestClient().getVertx();
+        if (timerId != -1) {
+            vertx.cancelTimer(timerId);
+        }
+        timerId = vertx.setTimer(delayMs, this);
     }
 
     /**

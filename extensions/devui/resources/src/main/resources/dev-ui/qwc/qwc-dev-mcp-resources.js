@@ -136,10 +136,10 @@ export class QwcDevMCPResources extends observeState(LitElement) {
 
     _loadResources(){
         this.jsonRpc.list().then(jsonRpcResponse => {
-            let er = jsonRpcResponse.result.resources;
+            let er = jsonRpcResponse.result?.resources;
             er = (er ?? []).map(o => ({ ...o, enabled: true }));
             this.jsonRpc.listDisabled().then(jsonRpcResponse => {
-                let dr = jsonRpcResponse.result.resources;
+                let dr = jsonRpcResponse.result?.resources;
                 dr = (dr ?? []).map(o => ({ ...o, enabled: false }));
                 
                 const collator = new Intl.Collator(undefined, { numeric: true, sensitivity: 'base' });

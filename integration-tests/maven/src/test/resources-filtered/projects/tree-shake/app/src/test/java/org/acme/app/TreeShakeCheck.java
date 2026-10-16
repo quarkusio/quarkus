@@ -222,4 +222,14 @@ public class TreeShakeCheck {
         given().when().get("/tree-shake/loadclass-chain")
                 .then().statusCode(200).body(is("AlphaTarget,BetaTarget"));
     }
+
+    /**
+     * Verifies that {@code package-info.class} files are preserved by the tree shaker,
+     * so that package-level annotations remain accessible at runtime.
+     */
+    @Test
+    void testPackageInfo() {
+        given().when().get("/tree-shake/package-info")
+                .then().statusCode(200).body(is("tree-shake-test"));
+    }
 }

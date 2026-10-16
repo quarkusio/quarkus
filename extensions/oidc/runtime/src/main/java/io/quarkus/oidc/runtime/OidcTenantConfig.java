@@ -148,6 +148,12 @@ public interface OidcTenantConfig extends OidcClientCommonConfig {
     ResourceMetadata resourceMetadata();
 
     /**
+     * Client ID Metadata Document configuration.
+     */
+    @ConfigDocSection
+    ClientIdMetadata clientIdMetadata();
+
+    /**
      * Protected resource metadata.
      */
     interface ResourceMetadata {
@@ -182,10 +188,28 @@ public interface OidcTenantConfig extends OidcClientCommonConfig {
     }
 
     /**
+     * Client ID Metadata Document.
+     */
+    interface ClientIdMetadata {
+        /**
+         * Force the Client ID Metadata Document URL to use the HTTPS scheme.
+         * Setting this to {@code false} allows HTTP URLs as the client identifier.
+         */
+        @WithDefault("true")
+        boolean forceHttpsScheme();
+    }
+
+    /**
      * Configuration to customize validation of token claims.
      */
     @ConfigDocSection
     Token token();
+
+    /**
+     * Configuration of the Demonstrating Proof of Possession (DPoP) proof verification.
+     */
+    @ConfigDocSection
+    Dpop dpop();
 
     /**
      * RP-initiated, back-channel and front-channel logout configuration.
@@ -989,16 +1013,6 @@ public interface OidcTenantConfig extends OidcClientCommonConfig {
         Optional<Boolean> pkceRequired();
 
         /**
-         * Secret used to encrypt a Proof Key for Code Exchange (PKCE) code verifier in the code flow state.
-         * This secret should be at least 32 characters long.
-         *
-         * @deprecated This field is deprecated. Use {@link #stateSecret} instead.
-         *
-         */
-        @Deprecated(forRemoval = true)
-        Optional<String> pkceSecret();
-
-        /**
          * Secret used to encrypt Proof Key for Code Exchange (PKCE) code verifier and/or nonce in the code flow
          * state.
          * This secret should be at least 32 characters long.
@@ -1267,6 +1281,21 @@ public interface OidcTenantConfig extends OidcClientCommonConfig {
         boolean decryptAccessToken();
 
         /**
+         * Supported ID and access token key decryption algorithms
+         */
+        enum DecryptionAlgorithm {
+            RSA_OAEP,
+            RSA_OAEP_256,
+            A256GCMKW
+        }
+
+        /**
+         * ID and access token key decryption algorithm
+         */
+        @ConfigDocDefault("RSA-OAEP if the decryption key is a private key, A256GCMKW if it is a secret key")
+        Optional<DecryptionAlgorithm> decryptionAlgorithm();
+
+        /**
          * Allow the remote introspection of JWT tokens when no matching JWK key is available.
          *
          * This property is set to `true` by default for backward-compatibility reasons. It is planned that this default value
@@ -1317,6 +1346,19 @@ public interface OidcTenantConfig extends OidcClientCommonConfig {
          */
         Binding binding();
 
+    }
+
+    interface Dpop {
+
+        /**
+         * The maximum acceptable age of a DPoP proof.
+         * <p>
+         * Evaluated as the difference between the server's current time and the DPoP proof's {@code iat}
+         * (issued at) claim. Proofs exceeding this age are rejected with an {@code invalid_dpop_proof} error.
+         * Leeway for clock skew can be adjusted using {@link Token#lifespanGrace()}.
+         */
+        @WithDefault("2M")
+        Duration proofAge();
     }
 
     interface Binding {

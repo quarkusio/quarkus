@@ -61,56 +61,65 @@ class Http3RestTest {
     @Test
     void testHttp3Get() throws Exception {
         HttpClientAgent client = createHttp3Client();
-        int port = tlsUrl.getPort();
 
-        var response = client.request(HttpMethod.GET, port, "localhost", "/hello")
-                .compose(HttpClientRequest::send)
-                .compose(resp -> resp.body()
-                        .map(body -> new ResponseStruct(resp.version().name(), body.toString(), resp.statusCode())))
-                .await(10, TimeUnit.SECONDS);
+        try {
+            int port = tlsUrl.getPort();
 
-        assertThat(response.version).isEqualTo("HTTP_3");
-        assertThat(response.status).isEqualTo(200);
-        assertThat(response.body).isEqualTo("hello");
+            var response = client.request(HttpMethod.GET, port, "localhost", "/hello")
+                    .compose(HttpClientRequest::send)
+                    .compose(resp -> resp.body()
+                            .map(body -> new ResponseStruct(resp.version().name(), body.toString(), resp.statusCode())))
+                    .await(10, TimeUnit.SECONDS);
 
-        client.close().await(5, TimeUnit.SECONDS);
+            assertThat(response.version).isEqualTo("HTTP_3");
+            assertThat(response.status).isEqualTo(200);
+            assertThat(response.body).isEqualTo("hello");
+        } finally {
+            client.close().await(5, TimeUnit.SECONDS);
+        }
     }
 
     @Test
     void testHttp3Post() throws Exception {
         HttpClientAgent client = createHttp3Client();
-        int port = tlsUrl.getPort();
 
-        String requestBody = "echo me over http3";
-        var response = client.request(HttpMethod.POST, port, "localhost", "/echo")
-                .compose(req -> req.send(Buffer.buffer(requestBody)))
-                .compose(resp -> resp.body()
-                        .map(body -> new ResponseStruct(resp.version().name(), body.toString(), resp.statusCode())))
-                .await(10, TimeUnit.SECONDS);
+        try {
+            int port = tlsUrl.getPort();
 
-        assertThat(response.version).isEqualTo("HTTP_3");
-        assertThat(response.status).isEqualTo(200);
-        assertThat(response.body).isEqualTo(requestBody);
+            String requestBody = "echo me over http3";
+            var response = client.request(HttpMethod.POST, port, "localhost", "/echo")
+                    .compose(req -> req.send(Buffer.buffer(requestBody)))
+                    .compose(resp -> resp.body()
+                            .map(body -> new ResponseStruct(resp.version().name(), body.toString(), resp.statusCode())))
+                    .await(10, TimeUnit.SECONDS);
 
-        client.close().await(5, TimeUnit.SECONDS);
+            assertThat(response.version).isEqualTo("HTTP_3");
+            assertThat(response.status).isEqualTo(200);
+            assertThat(response.body).isEqualTo(requestBody);
+        } finally {
+            client.close().await(5, TimeUnit.SECONDS);
+        }
     }
 
     @Test
     void testHttp3Version() throws Exception {
         HttpClientAgent client = createHttp3Client();
-        int port = tlsUrl.getPort();
 
-        var response = client.request(HttpMethod.GET, port, "localhost", "/version")
-                .compose(HttpClientRequest::send)
-                .compose(resp -> resp.body()
-                        .map(body -> new ResponseStruct(resp.version().name(), body.toString(), resp.statusCode())))
-                .await(10, TimeUnit.SECONDS);
+        try {
+            int port = tlsUrl.getPort();
 
-        assertThat(response.version).isEqualTo("HTTP_3");
-        assertThat(response.status).isEqualTo(200);
-        assertThat(response.body).isEqualTo("HTTP_3");
+            var response = client.request(HttpMethod.GET, port, "localhost", "/version")
+                    .compose(HttpClientRequest::send)
+                    .compose(resp -> resp.body()
+                            .map(body -> new ResponseStruct(resp.version().name(), body.toString(), resp.statusCode())))
+                    .await(10, TimeUnit.SECONDS);
 
-        client.close().await(5, TimeUnit.SECONDS);
+            assertThat(response.version).isEqualTo("HTTP_3");
+            assertThat(response.status).isEqualTo(200);
+            assertThat(response.body).isEqualTo("HTTP_3");
+        } finally {
+            client.close().await(5, TimeUnit.SECONDS);
+        }
     }
 
     @Test
@@ -124,17 +133,19 @@ class Http3RestTest {
                 .setTrustOptions(new PfxOptions().setPath("target/certs/http3-test-truststore.p12").setPassword("secret"));
         HttpClientAgent client = vertx.httpClientBuilder().with(clientConfig).with(sslOptions).build();
 
-        var resp = client.request(HttpMethod.GET, port, "localhost", "/hello")
-                .compose(HttpClientRequest::send)
-                .await(10, TimeUnit.SECONDS);
+        try {
+            var resp = client.request(HttpMethod.GET, port, "localhost", "/hello")
+                    .compose(HttpClientRequest::send)
+                    .await(10, TimeUnit.SECONDS);
 
-        String altSvc = resp.getHeader("Alt-Svc");
-        assertThat(altSvc).isNotNull();
-        assertThat(altSvc).startsWith("h3=\":");
+            String altSvc = resp.getHeader("Alt-Svc");
+            assertThat(altSvc).isNotNull();
+            assertThat(altSvc).startsWith("h3=\":");
 
-        resp.body().await(5, TimeUnit.SECONDS);
-
-        client.close().await(5, TimeUnit.SECONDS);
+            resp.body().await(5, TimeUnit.SECONDS);
+        } finally {
+            client.close().await(5, TimeUnit.SECONDS);
+        }
 
         clientConfig = new HttpClientConfig();
         clientConfig.setVersions(HttpVersion.HTTP_2);
@@ -143,13 +154,16 @@ class Http3RestTest {
                 .setTrustOptions(new PfxOptions().setPath("target/certs/http3-test-truststore.p12").setPassword("secret"));
         client = vertx.httpClientBuilder().with(clientConfig).with(sslOptions).build();
 
-        resp = client.request(HttpMethod.GET, port, "localhost", "/hello")
-                .compose(HttpClientRequest::send)
-                .await(10, TimeUnit.SECONDS);
+        try {
+            var resp = client.request(HttpMethod.GET, port, "localhost", "/hello")
+                    .compose(HttpClientRequest::send)
+                    .await(10, TimeUnit.SECONDS);
 
-        altSvc = resp.getHeader("Alt-Svc");
-        assertThat(altSvc).isNull();
-        resp.body().await(5, TimeUnit.SECONDS);
-        client.close().await(5, TimeUnit.SECONDS);
+            String altSvc = resp.getHeader("Alt-Svc");
+            assertThat(altSvc).isNull();
+            resp.body().await(5, TimeUnit.SECONDS);
+        } finally {
+            client.close().await(5, TimeUnit.SECONDS);
+        }
     }
 }

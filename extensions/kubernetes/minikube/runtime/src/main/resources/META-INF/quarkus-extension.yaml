@@ -5,7 +5,7 @@ metadata:
   keywords:
   - "kubernetes"
   - "minikube"
-  guide: "https://quarkus.io/guides/kubernetes"
+  guide: "https://quarkus.io/guides/deploying-to-kubernetes#deploying-to-minikube"
   categories:
   - "cloud"
   status: "stable"

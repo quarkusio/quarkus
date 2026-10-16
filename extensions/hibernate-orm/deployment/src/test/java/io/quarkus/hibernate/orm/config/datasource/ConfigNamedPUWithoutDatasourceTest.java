@@ -7,7 +7,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.hibernate.orm.config.namedpu.MyEntity;
-import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.test.QuarkusExtensionTest;
 
 public class ConfigNamedPUWithoutDatasourceTest {
@@ -22,9 +21,10 @@ public class ConfigNamedPUWithoutDatasourceTest {
             .overrideConfigKey("quarkus.hibernate-orm.pu-1.packages", MyEntity.class.getPackageName())
             .overrideConfigKey("quarkus.hibernate-orm.pu-1.schema-management.strategy", "drop-and-create")
             .assertException(t -> assertThat(t)
-                    .isInstanceOf(ConfigurationException.class)
-                    .hasMessageContainingAll("Datasource must be defined for persistence unit 'pu-1'.")
-                    .hasMessageContainingAll("'quarkus.hibernate-orm.\"pu-1\".datasource'"));
+                    .hasMessageContainingAll(
+                            "Hibernate ORM persistence unit 'pu-1' cannot be created",
+                            "Datasource must be defined for persistence unit 'pu-1'",
+                            "quarkus.hibernate-orm.\"pu-1\".datasource"));
 
     @Test
     public void testInvalidConfiguration() {

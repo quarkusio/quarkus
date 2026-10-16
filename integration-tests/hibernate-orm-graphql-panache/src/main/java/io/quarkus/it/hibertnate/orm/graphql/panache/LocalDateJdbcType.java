@@ -49,7 +49,7 @@ public final class LocalDateJdbcType implements JdbcType {
     }
 
     @Override
-    public <T> JavaType<T> getJdbcRecommendedJavaTypeMapping(
+    public JavaType<?> getRecommendedJavaType(
             Integer length,
             Integer scale,
             TypeConfiguration typeConfiguration) {

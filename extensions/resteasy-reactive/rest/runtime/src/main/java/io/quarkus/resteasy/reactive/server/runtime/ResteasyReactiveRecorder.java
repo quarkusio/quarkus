@@ -60,6 +60,7 @@ import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
+import io.quarkus.runtime.annotations.StaticInit;
 import io.quarkus.runtime.rest.DisabledRestEndpoints;
 import io.quarkus.security.AuthenticationCompletionException;
 import io.quarkus.security.AuthenticationException;
@@ -79,6 +80,7 @@ import io.quarkus.virtual.threads.VirtualThreadsRecorder;
 import io.vertx.core.Handler;
 import io.vertx.ext.web.RoutingContext;
 
+@SuppressWarnings("unused")
 @Recorder
 public class ResteasyReactiveRecorder extends ResteasyReactiveCommonRecorder implements EndpointInvokerFactory {
 
@@ -105,6 +107,7 @@ public class ResteasyReactiveRecorder extends ResteasyReactiveCommonRecorder imp
         return currentDeployment;
     }
 
+    @StaticInit
     public RuntimeValue<Deployment> createDeployment(String applicationPath, DeploymentInfo info,
             BeanContainer beanContainer,
             ShutdownContext shutdownContext,
@@ -112,9 +115,11 @@ public class ResteasyReactiveRecorder extends ResteasyReactiveCommonRecorder imp
             RequestContextFactory contextFactory,
             BeanFactory<ResteasyReactiveInitialiser> initClassFactory,
             LaunchMode launchMode,
-            boolean servletPresent) {
+            boolean servletPresent,
+            String dispatcherClassName) {
 
         info.setServletPresent(servletPresent);
+        ServerRestHandlerDispatcher dispatcher = createDispatcher(dispatcherClassName);
 
         CurrentRequestManager
                 .setCurrentRequestInstance(new QuarkusCurrentRequest(beanContainer.beanInstance(CurrentVertxRequest.class)));
@@ -134,26 +139,18 @@ public class ResteasyReactiveRecorder extends ResteasyReactiveCommonRecorder imp
         };
         CurrentIdentityAssociation currentIdentityAssociation = Arc.container().select(CurrentIdentityAssociation.class)
                 .orNull();
-        ClassLoader tccl = Thread.currentThread().getContextClassLoader();
         if (contextFactory == null) {
-            contextFactory = new RequestContextFactory() {
-                @Override
-                public ResteasyReactiveRequestContext createContext(Deployment deployment,
-                        Object context, ThreadSetupAction requestContext,
-                        ServerRestHandler[] handlerChain, ServerRestHandler[] abortHandlerChain) {
-                    return new QuarkusResteasyReactiveRequestContext(deployment, (RoutingContext) context,
-                            requestContext,
-                            handlerChain,
-                            abortHandlerChain, launchMode == LaunchMode.DEVELOPMENT ? tccl : null, currentIdentityAssociation);
-                }
-
-            };
+            QuarkusResteasyReactiveRequestContextFactory quarkusContextFactory = new QuarkusResteasyReactiveRequestContextFactory(
+                    launchMode == LaunchMode.DEVELOPMENT ? Thread.currentThread().getContextClassLoader() : null,
+                    currentIdentityAssociation, dispatcher);
+            contextFactory = quarkusContextFactory;
+            shutdownContext.addLastShutdownTask(quarkusContextFactory::resetTccl);
         }
 
         RuntimeDeploymentManager runtimeDeploymentManager = new RuntimeDeploymentManager(info, EXECUTOR_SUPPLIER,
                 VTHREAD_EXECUTOR_SUPPLIER,
                 closeTaskHandler, contextFactory, new ArcThreadSetupAction(beanContainer.requestContext()),
-                httpBuildTimeConfig.rootPath());
+                httpBuildTimeConfig.rootPath(), dispatcher);
         Deployment deployment = runtimeDeploymentManager.deploy();
         DisabledRestEndpoints.set(deployment.getDisabledEndpoints());
         initClassFactory.createInstance().getInstance().init(deployment);
@@ -169,11 +166,23 @@ public class ResteasyReactiveRecorder extends ResteasyReactiveCommonRecorder imp
         return new RuntimeValue<>(deployment);
     }
 
+    private ServerRestHandlerDispatcher createDispatcher(String className) {
+        try {
+            return (ServerRestHandlerDispatcher) Class
+                    .forName(className, true, Thread.currentThread().getContextClassLoader())
+                    .getDeclaredConstructor().newInstance();
+        } catch (ReflectiveOperationException e) {
+            throw new IllegalStateException("Unable to create the generated handler dispatcher " + className, e);
+        }
+    }
+
+    @StaticInit
     public RuntimeValue<RestInitialHandler> restInitialHandler(RuntimeValue<Deployment> deploymentRuntimeValue) {
         Deployment deployment = deploymentRuntimeValue.getValue();
         return new RuntimeValue<>(new RestInitialHandler(deployment));
     }
 
+    @StaticInit
     public Handler<RoutingContext> handler(RuntimeValue<RestInitialHandler> restInitialHandlerRuntimeValue) {
         RestInitialHandler initialHandler = restInitialHandlerRuntimeValue.getValue();
 
@@ -192,6 +201,7 @@ public class ResteasyReactiveRecorder extends ResteasyReactiveCommonRecorder imp
         return new ResteasyReactiveVertxHandler(eventCustomizer, initialHandler);
     }
 
+    @StaticInit
     public Handler<RoutingContext> failureHandler(RuntimeValue<RestInitialHandler> restInitialHandlerRuntimeValue,
             boolean noCustomAuthCompletionExMapper, boolean noCustomAuthFailureExMapper, boolean noCustomAuthRedirectExMapper,
             boolean proactive) {
@@ -260,11 +270,8 @@ public class ResteasyReactiveRecorder extends ResteasyReactiveCommonRecorder imp
      * <p>
      * We have a strategy around handling the Application class and build time init, that allows for the singletons
      * to still work.
-     *
-     * @param applicationClass
-     * @param singletonClassesEmpty
-     * @return
      */
+    @StaticInit
     public Supplier<Application> handleApplication(final Class<? extends Application> applicationClass,
             final boolean singletonClassesEmpty) {
         Supplier<Application> applicationSupplier;
@@ -318,6 +325,7 @@ public class ResteasyReactiveRecorder extends ResteasyReactiveCommonRecorder imp
         };
     }
 
+    @StaticInit
     public Function<Class<?>, BeanFactory<?>> factoryCreator(BeanContainer container) {
         return new Function<>() {
             @Override
@@ -345,10 +353,12 @@ public class ResteasyReactiveRecorder extends ResteasyReactiveCommonRecorder imp
         };
     }
 
+    @StaticInit
     public ServerSerialisers createServerSerialisers() {
         return new ServerSerialisers();
     }
 
+    @StaticInit
     public Handler<RoutingContext> defaultAuthFailureHandler(
             RuntimeValue<Deployment> deployment, boolean setTemplatePath) {
         return new Handler<>() {
@@ -367,6 +377,7 @@ public class ResteasyReactiveRecorder extends ResteasyReactiveCommonRecorder imp
         };
     }
 
+    @StaticInit
     public Supplier<Boolean> beanUnavailable(String className) {
         return new Supplier<>() {
             @Override
@@ -430,6 +441,37 @@ public class ResteasyReactiveRecorder extends ResteasyReactiveCommonRecorder imp
             if (!event.failed()) {
                 event.fail(extractRootCause(throwable));
             }
+        }
+    }
+
+    private static final class QuarkusResteasyReactiveRequestContextFactory implements RequestContextFactory {
+
+        private volatile ClassLoader devModeTccl;
+        private final CurrentIdentityAssociation currentIdentityAssociation;
+        private final ServerRestHandlerDispatcher dispatcher;
+
+        QuarkusResteasyReactiveRequestContextFactory(ClassLoader devModeTccl,
+                CurrentIdentityAssociation currentIdentityAssociation,
+                ServerRestHandlerDispatcher dispatcher) {
+            this.devModeTccl = devModeTccl;
+            this.currentIdentityAssociation = currentIdentityAssociation;
+            this.dispatcher = dispatcher;
+        }
+
+        void resetTccl() {
+            devModeTccl = null;
+        }
+
+        @Override
+        public ResteasyReactiveRequestContext createContext(Deployment deployment,
+                Object context, ThreadSetupAction requestContext,
+                ServerRestHandler[] handlerChain, byte[] handlerKinds, ServerRestHandler[] abortHandlerChain) {
+            return new QuarkusResteasyReactiveRequestContext(deployment, (RoutingContext) context,
+                    requestContext,
+                    handlerChain,
+                    handlerKinds,
+                    abortHandlerChain, devModeTccl, currentIdentityAssociation,
+                    dispatcher);
         }
     }
 

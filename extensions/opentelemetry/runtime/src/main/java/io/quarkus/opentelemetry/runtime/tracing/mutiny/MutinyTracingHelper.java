@@ -18,6 +18,10 @@ public class MutinyTracingHelper {
      * by running on a duplicated context. The span will be closed when the pipeline completes.
      * If there is already a span in the current context, it will be used as parent for the new span.
      * <p>
+     * The whole parent {@link io.opentelemetry.context.Context} is activated for the wrapped pipeline, not just the new
+     * span. Any {@link io.opentelemetry.api.baggage.Baggage} present in the current context therefore remains available
+     * through {@code Baggage.current()} inside the pipeline.
+     * <p>
      * Use as follows:
      * Given this existing pipeline:
      * ```java
@@ -67,7 +71,10 @@ public class MutinyTracingHelper {
      *
      * @param <T>
      * @param parentContext
-     *        the parent context to use for the new span. If empty, a new root span will be created.
+     *        the parent context to use for the new span. Its entries, including any
+     *        {@link io.opentelemetry.api.baggage.Baggage}, are propagated into the wrapped pipeline. If empty, a new
+     *        root span will be created; this only detaches the trace parent, so baggage already active in the
+     *        surrounding context is still propagated.
      * @param spanName
      *        the name of the span that should be created
      * @param pipeline
@@ -87,7 +94,13 @@ public class MutinyTracingHelper {
                 spanBuilder.setNoParent();
             }
             final Span span = spanBuilder.startSpan();
-            final Scope scope = span.makeCurrent();
+            // Activate the whole parent context rather than only the span, so that other
+            // context entries - in particular baggage - stay available to the wrapped pipeline. Using
+            // span.makeCurrent() would only carry the span data into the current context.
+            final io.opentelemetry.context.Context contextToActivate = parentContext
+                    .orElseGet(io.opentelemetry.context.Context::root)
+                    .with(span);
+            final Scope scope = contextToActivate.makeCurrent();
             return pipeline.onTermination()
                     .invoke((o, throwable, isCancelled) -> {
                         try {

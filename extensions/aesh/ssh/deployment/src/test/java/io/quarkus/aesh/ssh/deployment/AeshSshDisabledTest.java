@@ -11,18 +11,19 @@ import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 /**
- * Verifies that setting {@code quarkus.aesh.ssh.enabled=false} prevents the
- * SSH server from starting.
+ * Verifies that setting {@code quarkus.aesh.ssh.enabled=false} at build time
+ * prevents the SSH server beans from being registered and the SSH server
+ * from starting.
  */
 public class AeshSshDisabledTest {
 
     private static final int SSH_PORT = 12225;
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot(jar -> jar.addClasses(
                     HelloCommand.class,
                     GoodbyeCommand.class))
@@ -31,7 +32,10 @@ public class AeshSshDisabledTest {
 
     @Test
     public void testSshServerNotStarted() {
-        // The SSH port should not be listening when disabled
+        // The SSH port should not be listening when disabled at build time.
+        // With enabled=false, SshServerLifecycle is not registered as a bean
+        // and no AeshRemoteTransportBuildItem is produced, so the local
+        // console is not suppressed either.
         Assertions.assertThatThrownBy(() -> {
             try (Socket socket = new Socket("localhost", SSH_PORT)) {
                 // should not connect

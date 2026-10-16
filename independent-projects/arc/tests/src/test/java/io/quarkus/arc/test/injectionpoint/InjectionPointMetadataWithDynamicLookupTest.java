@@ -39,6 +39,7 @@ public class InjectionPointMetadataWithDynamicLookupTest {
             assertEquals(BeanWithInjectionPointMetadata.class, ip.getType());
             assertEquals(Set.of(), ip.getQualifiers());
             assertNull(ip.getMember());
+            assertNull(ip.getAnnotated());
             assertNull(ip.getBean());
         });
     }
@@ -50,8 +51,9 @@ public class InjectionPointMetadataWithDynamicLookupTest {
         bean.assertPresent(ip -> {
             // the `Instance<BeanWithInjectionPointMetadata>` through which the `bean` was looked up
             assertEquals(BeanWithInjectionPointMetadata.class, ip.getType());
-            assertEquals(Set.of(), ip.getQualifiers());
+            assertEquals(Set.of(Default.Literal.INSTANCE), ip.getQualifiers());
             assertNull(ip.getMember());
+            assertNull(ip.getAnnotated());
             assertNull(ip.getBean());
         });
     }
@@ -63,8 +65,9 @@ public class InjectionPointMetadataWithDynamicLookupTest {
         bean.assertPresent(ip -> {
             // the `Instance<BeanWithInjectionPointMetadata>` through which the `bean` was looked up
             assertEquals(BeanWithInjectionPointMetadata.class, ip.getType());
-            assertEquals(Set.of(), ip.getQualifiers());
+            assertEquals(Set.of(Default.Literal.INSTANCE), ip.getQualifiers());
             assertNull(ip.getMember());
+            assertNull(ip.getAnnotated());
             assertNull(ip.getBean());
         });
     }
@@ -77,8 +80,9 @@ public class InjectionPointMetadataWithDynamicLookupTest {
         bean.assertPresent(ip -> {
             // the `Instance<BeanWithInjectionPointMetadata>` through which the `bean` was looked up
             assertEquals(BeanWithInjectionPointMetadata.class, ip.getType());
-            assertEquals(Set.of(), ip.getQualifiers());
+            assertEquals(Set.of(Default.Literal.INSTANCE), ip.getQualifiers());
             assertNull(ip.getMember());
+            assertNull(ip.getAnnotated());
             assertNull(ip.getBean());
         });
     }
@@ -114,8 +118,9 @@ public class InjectionPointMetadataWithDynamicLookupTest {
 
         // the `Instance<MyDependentBean>` through which the `bean` was looked up
         assertEquals(MyDependentBean.class, bean.ip.getType());
-        assertEquals(Set.of(), bean.ip.getQualifiers());
+        assertEquals(Set.of(Default.Literal.INSTANCE), bean.ip.getQualifiers());
         assertNull(bean.ip.getMember());
+        assertNull(bean.ip.getAnnotated());
         assertNull(bean.ip.getBean());
 
         assertNotNull(bean.dependency);

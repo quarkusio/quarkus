@@ -1,14 +1,11 @@
 package io.quarkus.it.opentelemetry.scheduler;
 
-import java.io.IOException;
-
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.databind.SerializerProvider;
-import com.fasterxml.jackson.databind.ser.std.StdSerializer;
-
 import io.opentelemetry.sdk.trace.data.EventData;
 import io.opentelemetry.sdk.trace.data.ExceptionEventData;
 import io.opentelemetry.sdk.trace.data.SpanData;
+import tools.jackson.core.JsonGenerator;
+import tools.jackson.databind.SerializationContext;
+import tools.jackson.databind.ser.std.StdSerializer;
 
 public class SpanDataSerializer extends StdSerializer<SpanData> {
 
@@ -21,26 +18,25 @@ public class SpanDataSerializer extends StdSerializer<SpanData> {
     }
 
     @Override
-    public void serialize(SpanData spanData, JsonGenerator gen, SerializerProvider provider)
-            throws IOException {
+    public void serialize(SpanData spanData, JsonGenerator gen, SerializationContext serializationContext) {
         gen.writeStartObject();
 
-        gen.writeStringField("name", spanData.getName());
-        gen.writeStringField("kind", spanData.getKind().name());
-        gen.writeNumberField("startEpochNanos", spanData.getStartEpochNanos());
-        gen.writeNumberField("endEpochNanos", spanData.getEndEpochNanos());
+        gen.writeStringProperty("name", spanData.getName());
+        gen.writeStringProperty("kind", spanData.getKind().name());
+        gen.writeNumberProperty("startEpochNanos", spanData.getStartEpochNanos());
+        gen.writeNumberProperty("endEpochNanos", spanData.getEndEpochNanos());
 
-        gen.writeObjectFieldStart("status");
-        gen.writeStringField("statusCode", spanData.getStatus().getStatusCode().name());
+        gen.writeObjectPropertyStart("status");
+        gen.writeStringProperty("statusCode", spanData.getStatus().getStatusCode().name());
         gen.writeEndObject();
 
-        gen.writeArrayFieldStart("events");
+        gen.writeArrayPropertyStart("events");
         for (EventData event : spanData.getEvents()) {
             gen.writeStartObject();
             if (event instanceof ExceptionEventData) {
                 ExceptionEventData exEvent = (ExceptionEventData) event;
-                gen.writeObjectFieldStart("exception");
-                gen.writeStringField("message", exEvent.getException().getMessage());
+                gen.writeObjectPropertyStart("exception");
+                gen.writeStringProperty("message", exEvent.getException().getMessage());
                 gen.writeEndObject();
             }
             gen.writeEndObject();

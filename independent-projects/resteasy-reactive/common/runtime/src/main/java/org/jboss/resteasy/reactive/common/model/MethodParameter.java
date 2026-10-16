@@ -26,6 +26,8 @@ public class MethodParameter {
     public String mimeType;
     public String partFileName;
     public String separator;
+    public boolean restQueryMap;
+    public boolean restHeaderMap;
 
     public MethodParameter() {
     }
@@ -34,7 +36,7 @@ public class MethodParameter {
             ParameterType parameterType,
             boolean single,
             String defaultValue, boolean isObtainedAsCollection, boolean optional, boolean encoded,
-            String mimeType, String partFileName, String separator) {
+            String mimeType, String partFileName, String separator, boolean restQueryMap, boolean restHeaderMap) {
         this.name = name;
         this.type = type;
         this.declaredType = declaredType;
@@ -49,6 +51,8 @@ public class MethodParameter {
         this.mimeType = mimeType;
         this.partFileName = partFileName;
         this.separator = separator;
+        this.restQueryMap = restQueryMap;
+        this.restHeaderMap = restHeaderMap;
     }
 
     public String getName() {
@@ -117,6 +121,14 @@ public class MethodParameter {
     public MethodParameter setObtainedAsCollection(boolean isObtainedAsCollection) {
         this.isObtainedAsCollection = isObtainedAsCollection;
         return this;
+    }
+
+    public boolean isRestQueryMap() {
+        return restQueryMap;
+    }
+
+    public boolean isRestHeaderMap() {
+        return restHeaderMap;
     }
 
     @Override

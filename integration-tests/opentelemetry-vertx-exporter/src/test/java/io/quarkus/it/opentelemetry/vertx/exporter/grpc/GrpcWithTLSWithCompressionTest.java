@@ -9,7 +9,8 @@ import io.quarkus.test.junit.QuarkusTest;
 @QuarkusTest
 @QuarkusTestResource(value = OtelCollectorLifecycleManager.class, initArgs = {
         @ResourceArg(name = "enableTLS", value = "true"),
-        @ResourceArg(name = "enableCompression", value = "true")
+        @ResourceArg(name = "enableCompression", value = "true"),
+        @ResourceArg(name = "protocol", value = "grpc")
 }, restrictToAnnotatedClass = true)
 public class GrpcWithTLSWithCompressionTest extends AbstractExporterTest {
 

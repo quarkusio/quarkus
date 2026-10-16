@@ -1,1 +1,2 @@
 io.quarkus.it.main.TestContextCheckerAfterAllCallback
+io.quarkus.it.main.OuterInstanceLeakCheckerAfterAllCallback

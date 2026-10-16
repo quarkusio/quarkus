@@ -5,6 +5,7 @@ import java.util.List;
 import io.quarkus.builder.BuildException;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.ModuleEnableNativeAccessBuildItem;
+import io.quarkus.deployment.builditem.ModuleExportBuildItem;
 import io.quarkus.deployment.builditem.ModuleOpenBuildItem;
 import io.quarkus.deployment.jvm.ResolvedJVMRequirements;
 
@@ -29,8 +30,9 @@ public class JvmRequirementsBuildStep {
      */
     @BuildStep
     ResolvedJVMRequirements resolveJVMRequirements(final List<ModuleOpenBuildItem> addOpens,
+            final List<ModuleExportBuildItem> addExports,
             final List<ModuleEnableNativeAccessBuildItem> enableNativeAccesses) throws BuildException {
-        return new ResolvedJVMRequirements(addOpens, enableNativeAccesses);
+        return new ResolvedJVMRequirements(addOpens, addExports, enableNativeAccesses);
     }
 
 }

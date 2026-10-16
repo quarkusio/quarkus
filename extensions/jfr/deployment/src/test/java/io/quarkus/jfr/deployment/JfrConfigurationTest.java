@@ -16,6 +16,7 @@ public class JfrConfigurationTest {
     static final QuarkusExtensionTest TEST = new QuarkusExtensionTest()
             .overrideConfigKey("quarkus.jfr.enabled", "false")
             .overrideConfigKey("quarkus.jfr.rest.enabled", "false")
+            .overrideConfigKey("quarkus.jfr.rest-client.enabled", "false")
             .overrideConfigKey("quarkus.jfr.runtime.enabled", "false");
 
     @Inject
@@ -25,6 +26,7 @@ public class JfrConfigurationTest {
     void config() {
         assertFalse(runtimeConfig.enabled());
         assertFalse(runtimeConfig.restEnabled());
+        assertFalse(runtimeConfig.restClientEnabled());
         assertFalse(runtimeConfig.runtimeEnabled());
     }
 }

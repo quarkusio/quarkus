@@ -8,7 +8,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.narayana.jta.runtime.QuarkusRecoveryService;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 /**
  * Tests that explicitly setting {@code enable-recovery=true} starts the recovery
@@ -17,7 +17,7 @@ import io.quarkus.test.QuarkusUnitTest;
 public class TransactionRecoveryExplicitlyEnabledWithoutXaTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class))
             .overrideConfigKey("quarkus.transaction-manager.enable-recovery", "true");
 

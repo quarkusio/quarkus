@@ -10,19 +10,26 @@ import javax.xml.namespace.QName;
 
 import org.graalvm.nativeimage.hosted.Feature;
 import org.graalvm.nativeimage.hosted.RuntimeReflection;
+import org.w3c.dom.Document;
+import org.w3c.dom.Node;
 
-import com.fasterxml.jackson.databind.deser.std.DateDeserializers;
-import com.fasterxml.jackson.databind.ext.CoreXMLDeserializers;
-import com.fasterxml.jackson.databind.ext.CoreXMLSerializers;
-import com.fasterxml.jackson.databind.ser.std.SqlDateSerializer;
-import com.fasterxml.jackson.databind.ser.std.SqlTimeSerializer;
+import tools.jackson.databind.ext.CoreXMLDeserializers;
+import tools.jackson.databind.ext.DOMDeserializer;
+import tools.jackson.databind.ext.DOMSerializer;
+import tools.jackson.databind.ext.QNameSerializer;
+import tools.jackson.databind.ext.XMLGregorianCalendarSerializer;
+import tools.jackson.databind.ext.sql.JavaSqlDateDeserializer;
+import tools.jackson.databind.ext.sql.JavaSqlDateSerializer;
+import tools.jackson.databind.ext.sql.JavaSqlTimeSerializer;
+import tools.jackson.databind.ext.sql.JavaSqlTimestampDeserializer;
 
 /**
  * Registers Jackson serializers/deserializers for reflection only when their corresponding
  * types are reachable during native image analysis. This avoids unconditionally pulling in
- * {@code java.sql.*} and {@code javax.xml.datatype.*} class hierarchies into the native image.
+ * {@code java.sql.*}, {@code javax.xml.datatype.*} and {@code org.w3c.dom.*} class hierarchies into the native image.
  *
- * See <a href="https://github.com/quarkusio/quarkus/issues/53818">GitHub issue #53818</a>.
+ * See <a href="https://github.com/quarkusio/quarkus/issues/53818">GitHub issue #53818</a> and
+ * <a href="https://github.com/quarkusio/quarkus/issues/55650">GitHub issue #55650</a>.
  */
 public class JacksonSerializerRegistrationFeature implements Feature {
 
@@ -35,19 +42,30 @@ public class JacksonSerializerRegistrationFeature implements Feature {
     public void beforeAnalysis(BeforeAnalysisAccess access) {
         // java.sql serializers/deserializers
         registerWhenReachable(access, new Class<?>[] { Date.class }, true,
-                SqlDateSerializer.class,
-                DateDeserializers.SqlDateDeserializer.class);
+                JavaSqlDateSerializer.class,
+                JavaSqlDateDeserializer.class);
 
         registerWhenReachable(access, new Class<?>[] { Time.class }, true,
-                SqlTimeSerializer.class);
+                JavaSqlTimeSerializer.class);
 
         registerWhenReachable(access, new Class<?>[] { Timestamp.class }, true,
-                DateDeserializers.TimestampDeserializer.class);
+                JavaSqlTimestampDeserializer.class);
 
-        // CoreXMLSerializers/CoreXMLDeserializers handle XMLGregorianCalendar, QName, and Duration
+        // CoreXMLDeserializers handles XMLGregorianCalendar, QName, and Duration
         registerWhenReachable(access, new Class<?>[] { XMLGregorianCalendar.class, QName.class, Duration.class }, false,
-                CoreXMLSerializers.class,
+                QNameSerializer.class,
+                XMLGregorianCalendarSerializer.class,
                 CoreXMLDeserializers.class);
+
+        // DOM handlers, loaded reflectively by the OptionalHandlerFactory substitution: they initialize the JDK XML
+        // parsers and transformers, which should only be in the image when a DOM type is reachable.
+        // Node and Document deliberately share one registration: Document is a Node, DOMSerializer handles any Node,
+        // and both deserializers pull in the same XML stack, so reaching either type costs the image the same and
+        // separate triggers would only add a way to end up with one handler and not the other.
+        registerWhenReachable(access, new Class<?>[] { Node.class, Document.class }, false,
+                DOMSerializer.class,
+                DOMDeserializer.NodeDeserializer.class,
+                DOMDeserializer.DocumentDeserializer.class);
     }
 
     private void registerWhenReachable(BeforeAnalysisAccess access, Class<?>[] triggerClasses,

@@ -25,7 +25,6 @@ import io.smallrye.config.ConfigMapping;
 import io.smallrye.config.WithConverter;
 import io.smallrye.config.WithDefault;
 import io.smallrye.config.WithName;
-import io.smallrye.config.WithParentName;
 
 /**
  * Logging
@@ -180,15 +179,6 @@ public interface LogRuntimeConfig {
         boolean enabled();
 
         /**
-         * If file logging should be enabled
-         *
-         * @deprecated use {@code quarkus.log.file.enabled} instead
-         */
-        // when dropping this property also adjust OpenTelemetryLogHandler
-        @Deprecated(since = "3.26", forRemoval = true)
-        Optional<Boolean> enable();
-
-        /**
          * The log format
          */
         @WithDefault("%d{yyyy-MM-dd HH:mm:ss,SSS} %h %N[%i] %-5p [%c{3.}] (%t) %s%e%n")
@@ -284,14 +274,6 @@ public interface LogRuntimeConfig {
         boolean enabled();
 
         /**
-         * If console logging should be enabled
-         *
-         * @deprecated use {@code quarkus.log.console.enabled} instead
-         */
-        @Deprecated(since = "3.26", forRemoval = true)
-        Optional<Boolean> enable();
-
-        /**
          * If console logging should go to {@link System#err} instead of {@link System#out}.
          */
         @WithDefault("false")
@@ -336,14 +318,6 @@ public interface LogRuntimeConfig {
          */
         @WithDefault("false")
         boolean enabled();
-
-        /**
-         * If syslog logging should be enabled
-         *
-         * @deprecated use {@code quarkus.log.syslog.enabled} instead
-         */
-        @Deprecated(since = "3.26", forRemoval = true)
-        Optional<Boolean> enable();
 
         /**
          *
@@ -457,14 +431,6 @@ public interface LogRuntimeConfig {
         boolean enabled();
 
         /**
-         * If socket logging should be enabled
-         *
-         * @deprecated use {@code quarkus.log.socket.enabled} instead
-         */
-        @Deprecated(since = "3.26", forRemoval = true)
-        Optional<Boolean> enable();
-
-        /**
          *
          * The IP address and port of the server receiving the logs
          */
@@ -531,21 +497,6 @@ public interface LogRuntimeConfig {
          */
         @WithDefault("false")
         boolean enabled();
-
-        /**
-         * Whether to log asynchronously
-         *
-         * @deprecated use {@code .enabled} instead
-         */
-        @Deprecated(since = "3.26", forRemoval = true)
-        Optional<Boolean> enable();
-
-        /**
-         * Indicates whether to log asynchronously
-         */
-        @WithParentName
-        @Deprecated(forRemoval = true, since = "3.24")
-        Optional<Boolean> legacyEnable();
 
         /**
          * The queue length to use before flushing writing

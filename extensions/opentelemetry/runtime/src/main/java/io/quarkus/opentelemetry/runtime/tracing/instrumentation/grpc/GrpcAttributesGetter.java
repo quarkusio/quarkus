@@ -7,8 +7,14 @@ enum GrpcAttributesGetter implements RpcAttributesGetter<GrpcRequest, Status> {
     INSTANCE;
 
     @Override
-    public String getSystem(final GrpcRequest grpcRequest) {
+    public String getRpcSystemName(final GrpcRequest grpcRequest) {
         return "grpc";
+    }
+
+    @Deprecated
+    @Override
+    public String getSystem(final GrpcRequest grpcRequest) {
+        return getRpcSystemName(grpcRequest);
     }
 
     @Override
@@ -17,7 +23,7 @@ enum GrpcAttributesGetter implements RpcAttributesGetter<GrpcRequest, Status> {
     }
 
     /**
-     * Marked as Deprecated upstream
+     * Marked as Deprecated upstream. To be removed on OTel Instrumentation 3.0
      *
      * @param grpcRequest
      * @return
@@ -30,6 +36,6 @@ enum GrpcAttributesGetter implements RpcAttributesGetter<GrpcRequest, Status> {
 
     @Override
     public String getRpcMethod(final GrpcRequest grpcRequest) {
-        return grpcRequest.getMethodDescriptor().getBareMethodName();
+        return grpcRequest.getMethodDescriptor().getFullMethodName();
     }
 }

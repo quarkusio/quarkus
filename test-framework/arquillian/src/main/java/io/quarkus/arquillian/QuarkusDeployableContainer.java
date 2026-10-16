@@ -177,7 +177,8 @@ public class QuarkusDeployableContainer implements DeployableContainer<QuarkusCo
                     .setProjectRoot(appLocation)
                     .setIsolateDeployment(false)
                     .setFlatClassPath(true)
-                    .setMode(QuarkusBootstrap.Mode.TEST);
+                    .setMode(QuarkusBootstrap.Mode.TEST)
+                    .setTest(true);
             for (Path i : libraries) {
                 bootstrapBuilder.addAdditionalApplicationArchive(new AdditionalDependency(i, false, true));
             }
@@ -242,8 +243,10 @@ public class QuarkusDeployableContainer implements DeployableContainer<QuarkusCo
             HTTPContext httpContext = new HTTPContext(uri.getHost(), uri.getPort());
             // This is to work around https://github.com/arquillian/arquillian-core/issues/216
             String path = uri.getPath();
-            if (path == null || !path.endsWith("/")) {
+            if (path == null) {
                 path = "/";
+            } else if (!path.endsWith("/")) {
+                path = path + "/";
             }
             httpContext.add(new Servlet("dummy", path));
             metadata.addContext(httpContext);

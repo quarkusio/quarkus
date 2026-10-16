@@ -59,21 +59,26 @@ class Http3AutoTlsTest {
         clientConfig.setVersions(HttpVersion.HTTP_3);
         clientConfig.setHttp3Config(new Http3ClientConfig());
 
-        ClientSSLOptions sslOptions = new ClientSSLOptions().setTrustAll(true);
+        // trust + hostname verifications are different steps since Vert.x 5.1.8 / Netty 4.2.18.Final
+        ClientSSLOptions sslOptions = new ClientSSLOptions()
+                .setTrustAll(true)
+                .setHostnameVerificationAlgorithm("");
 
         HttpClientAgent client = vertx.httpClientBuilder().with(clientConfig).with(sslOptions).build();
 
-        var response = client.request(HttpMethod.GET, port, "localhost", "/hello")
-                .compose(HttpClientRequest::send)
-                .compose(resp -> resp.body()
-                        .map(body -> new ResponseStruct(resp.version().name(), body.toString(), resp.statusCode())))
-                .await(10, TimeUnit.SECONDS);
+        try {
+            var response = client.request(HttpMethod.GET, port, "localhost", "/hello")
+                    .compose(HttpClientRequest::send)
+                    .compose(resp -> resp.body()
+                            .map(body -> new ResponseStruct(resp.version().name(), body.toString(), resp.statusCode())))
+                    .await(10, TimeUnit.SECONDS);
 
-        assertThat(response.version).isEqualTo("HTTP_3");
-        assertThat(response.status).isEqualTo(200);
-        assertThat(response.body).isEqualTo("auto-tls-hello");
-
-        client.close().await(5, TimeUnit.SECONDS);
+            assertThat(response.version).isEqualTo("HTTP_3");
+            assertThat(response.status).isEqualTo(200);
+            assertThat(response.body).isEqualTo("auto-tls-hello");
+        } finally {
+            client.close().await(5, TimeUnit.SECONDS);
+        }
     }
 
     record ResponseStruct(String version, String body, int status) {

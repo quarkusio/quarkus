@@ -8,7 +8,6 @@ import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
@@ -35,9 +34,10 @@ public class TestUtil {
      *
      * @param lineMatchRegexp pattern
      * @param name identifier
+     * @param logPath logPath
      */
-    public static void checkLog(final Pattern lineMatchRegexp, final String name) {
-        final Path accessLogFilePath = Paths.get(".", "target", "quarkus.log").toAbsolutePath();
+    public static void checkLog(final Pattern lineMatchRegexp, final String name, final Path logPath) {
+        final Path accessLogFilePath = logPath.toAbsolutePath();
         org.awaitility.Awaitility.given().pollInterval(100, TimeUnit.MILLISECONDS)
                 .atMost(3, TimeUnit.SECONDS)
                 .untilAsserted(() -> {

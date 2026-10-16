@@ -57,10 +57,8 @@ public interface TracesRuntimeConfig {
      * When setting the stock sampler to `traceidratio` or `parentbased_traceidratio` you need to set a `double` compatible
      * value between `0.0d` and `1.0d`, like `0.01d` or `0.5d`. It is kept as a `String` to allow the flexible customisation of
      * alternative samplers.
-     * <p>
-     * Defaults to `1.0d`.
      */
     @WithName("sampler.arg")
-    @WithDefault("1.0d")
+    @WithDefault("0.1d")
     Optional<String> samplerArg();
 }

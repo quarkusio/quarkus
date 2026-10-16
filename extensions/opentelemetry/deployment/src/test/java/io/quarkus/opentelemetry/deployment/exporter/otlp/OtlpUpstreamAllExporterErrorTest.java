@@ -18,9 +18,7 @@ public class OtlpUpstreamAllExporterErrorTest {
     static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withEmptyApplication()
             .overrideConfigKey("quarkus.otel.traces.exporter", "otlp")
-            .overrideConfigKey("quarkus.otel.metrics.enabled", "true")
             .overrideConfigKey("quarkus.otel.metrics.exporter", "otlp")
-            .overrideConfigKey("quarkus.otel.logs.enabled", "true")
             .overrideConfigKey("quarkus.otel.logs.exporter", "otlp")
             .assertException(t -> {
                 assertEquals(DeploymentException.class, t.getClass());

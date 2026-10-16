@@ -9,7 +9,7 @@ import org.aesh.command.invocation.CommandInvocation;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 /**
  * Tests that a {@code @CommandDefinition(groupCommands=...)} referencing a sub-command class
@@ -19,7 +19,7 @@ import io.quarkus.test.QuarkusUnitTest;
 public class GroupSubCommandNotAnnotatedValidationTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest test = new QuarkusUnitTest()
+    static final QuarkusExtensionTest test = new QuarkusExtensionTest()
             .setExpectedException(DeploymentException.class)
             .withApplicationRoot(jar -> jar.addClasses(MyGroup.class, UnannotatedSubCommand.class));
 

@@ -35,7 +35,7 @@ public class OpenShiftClientProcessor {
             BuildProducer<ServiceProviderBuildItem> serviceProviderProducer) {
 
         final String[] deserializerClasses = combinedIndexBuildItem.getIndex()
-                .getAllKnownSubclasses(DotName.createSimple("com.fasterxml.jackson.databind.JsonDeserializer"))
+                .getAllKnownSubclasses(DotName.createSimple("tools.jackson.databind.ValueDeserializer"))
                 .stream()
                 .map(c -> c.name().toString())
                 .filter(s -> s.startsWith("io.fabric8.openshift"))
@@ -45,7 +45,7 @@ public class OpenShiftClientProcessor {
                 .methods().build());
 
         final String[] serializerClasses = combinedIndexBuildItem.getIndex()
-                .getAllKnownSubclasses(DotName.createSimple("com.fasterxml.jackson.databind.JsonSerializer"))
+                .getAllKnownSubclasses(DotName.createSimple("tools.jackson.databind.ValueSerializer"))
                 .stream()
                 .map(c -> c.name().toString())
                 .filter(s -> s.startsWith("io.fabric8.openshift"))

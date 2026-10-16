@@ -6,6 +6,7 @@ metadata:
   - "http3"
   - "quic"
   - "h3"
+  guide: "https://quarkus.io/guides/http3-reference"
   categories:
   - "web"
   status: "experimental"

@@ -3,8 +3,6 @@ package io.quarkus.resteasy.reactive.jackson.deployment.test;
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.containsString;
 
-import java.io.IOException;
-
 import jakarta.inject.Singleton;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
@@ -15,19 +13,18 @@ import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.JsonToken;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializerProvider;
-import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
-import com.fasterxml.jackson.databind.module.SimpleModule;
-import com.fasterxml.jackson.databind.ser.std.StdSerializer;
-
-import io.quarkus.jackson.ObjectMapperCustomizer;
+import io.quarkus.jackson.JsonMapperBuilderCustomizer;
 import io.quarkus.test.QuarkusDevModeTest;
 import io.vertx.core.json.JsonArray;
+import tools.jackson.core.JsonGenerator;
+import tools.jackson.core.JsonParser;
+import tools.jackson.core.JsonToken;
+import tools.jackson.databind.DeserializationContext;
+import tools.jackson.databind.SerializationContext;
+import tools.jackson.databind.deser.std.StdDeserializer;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.module.SimpleModule;
+import tools.jackson.databind.ser.std.StdSerializer;
 
 public class CustomModuleLiveReloadTest {
 
@@ -105,7 +102,7 @@ public class CustomModuleLiveReloadTest {
         }
 
         @Override
-        public void serialize(StringAndInt value, JsonGenerator gen, SerializerProvider provider) throws IOException {
+        public void serialize(StringAndInt value, JsonGenerator gen, SerializationContext ctxt) {
             if (value == null)
                 gen.writeNull();
             else {
@@ -121,7 +118,7 @@ public class CustomModuleLiveReloadTest {
         }
 
         @Override
-        public StringAndInt deserialize(JsonParser p, DeserializationContext ctxt) throws IOException {
+        public StringAndInt deserialize(JsonParser p, DeserializationContext ctxt) {
             if (p.currentToken() == JsonToken.VALUE_STRING) {
                 return StringAndInt.parse(p.getText());
             } else if (p.currentToken() == JsonToken.VALUE_NULL) {
@@ -132,13 +129,13 @@ public class CustomModuleLiveReloadTest {
     }
 
     @Singleton
-    public static class Customizer implements ObjectMapperCustomizer {
+    public static class Customizer implements JsonMapperBuilderCustomizer {
         @Override
-        public void customize(ObjectMapper objectMapper) {
+        public void customize(JsonMapper.Builder objectMapper) {
             var m = new SimpleModule("test");
             m.addSerializer(StringAndInt.class, new StringAndIntSerializer());
             m.addDeserializer(StringAndInt.class, new StringAndIntDeserializer());
-            objectMapper.registerModule(m);
+            objectMapper.addModule(m);
         }
     }
 }

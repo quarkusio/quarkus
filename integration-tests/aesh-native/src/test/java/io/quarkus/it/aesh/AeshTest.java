@@ -113,4 +113,14 @@ public class AeshTest {
         assertThat(hello2.exitCode()).isZero();
         assertThat(hello2.getOutput()).contains("Hello Second!");
     }
+
+    @Test
+    @Launch({ "metadata-check" })
+    public void testMetadataRegistryDiscovery(LaunchResult result) {
+        // Verifies that MetadataRegistry discovery works in native mode.
+        // If META-INF/aesh/registry is not registered as a native image resource,
+        // MetadataProviderRegistry.getProvider() would return null.
+        assertThat(result.exitCode()).isZero();
+        assertThat(result.getOutput()).contains("metadata-provider: found");
+    }
 }

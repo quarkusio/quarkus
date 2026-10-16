@@ -5,7 +5,6 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Quarkus for the Web
 include::_attributes.adoc[]
-:categories: web
 :summary: Learn more about creating all kinds of Web applications with Quarkus.
 :numbered:
 :sectnums:
@@ -75,7 +74,6 @@ Here is a simple example of a Qute template:
 </body>
 </html>
 ----
-
 <1> With the https://docs.quarkiverse.io/quarkus-web-bundler/dev/[Web Bundler extension], this expression will be replaced by the bundled scripts and styles.
 <2> You can directly use the HTTP parameters in your templates.
 <3> This expression is validated. Try to change the expression to `cdi:Product.notHere` and the build will fail.
@@ -178,7 +176,7 @@ For example the https://github.com/quarkusio/search.quarkus.io[Quarkus documenta
 We described the most common ways to create web applications with Quarkus but there are other options:
 
 * https://quarkus.io/extensions/com.vaadin/vaadin-quarkus-extension/[Vaadin Flow extension], for this unique framework that lets you build web apps directly from Java code without writing HTML or JavaScript.
-* JavaServer Faces (jsf) is a specification for building component-based web apps in Java. It available in Quarkus, the https://quarkus.io/extensions/org.apache.myfaces.core.extensions.quarkus/myfaces-quarkus/[MyFaces] extension is an implementation of Faces for Quarkus. https://quarkus.io/extensions/io.quarkiverse.primefaces/quarkus-primefaces/[PrimeFaces] is a Faces components suite, and https://quarkus.io/extensions/io.quarkiverse.omnifaces/quarkus-omnifaces/[OmniFaces], a utility library. More information is available in https://www.melloware.com/quarkus-faces-using-jsf-with-quarkus/[this blog post].
+* JavaServer Faces (jsf) is a specification for building component-based web apps in Java. It available in Quarkus, the https://quarkus.io/extensions/org.apache.myfaces.core.extensions.quarkus/myfaces-quarkus/[MyFaces] extension is an implementation of Faces for Quarkus. https://quarkus.io/extensions/io.quarkiverse.primefaces/quarkus-primefaces/[PrimeFaces] is a Faces components suite, and https://quarkus.io/extensions/io.quarkiverse.omnifaces/quarkus-omnifaces/[OmniFaces], a utility library. More information is available in https://www.melloware.com/blog/quarkus-faces/[this blog post].
 * Create xref:building-my-first-extension.adoc[a new extension] for your favorite web framework.
 
 == Testing your web applications

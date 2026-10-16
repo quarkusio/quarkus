@@ -36,8 +36,6 @@ class DefaultPersistenceUnitFileTest {
                             .addAsManifestResource("META-INF/some-persistence.xml", "persistence.xml")
                             .addAsResource(StringAsset(
                                     """
-                    quarkus.datasource.db-kind=h2
-                    quarkus.datasource.jdbc.url=jdbc:h2:mem:default;DB_CLOSE_DELAY=-1
                     """.trimIndent()),
                                     "application.properties")
                 }

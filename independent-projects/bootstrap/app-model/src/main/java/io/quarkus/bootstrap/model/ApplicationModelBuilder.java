@@ -97,6 +97,15 @@ public class ApplicationModelBuilder {
             }
         }
 
+        final Map<String, Object> requiredQuarkusVersionsMap = (Map<String, Object>) map
+                .get(BootstrapConstants.MAPPABLE_REQUIRED_QUARKUS_VERSIONS);
+        if (requiredQuarkusVersionsMap != null) {
+            for (Map.Entry<String, Object> requiredQuarkusVersion : requiredQuarkusVersionsMap.entrySet()) {
+                builder.addRequiredQuarkusVersion(ArtifactKey.fromString(requiredQuarkusVersion.getKey()),
+                        requiredQuarkusVersion.getValue().toString());
+            }
+        }
+
         return builder.build();
     }
 
@@ -113,6 +122,7 @@ public class ApplicationModelBuilder {
     PlatformImports platformImports;
     final Map<WorkspaceModuleId, WorkspaceModule.Mutable> projectModules = new HashMap<>();
     final Collection<ExtensionDevModeConfig> extensionDevConfig = new ConcurrentLinkedDeque<>();
+    final Map<ArtifactKey, String> requiredQuarkusVersions = new ConcurrentHashMap<>();
 
     public ApplicationModelBuilder() {
         // we never include the ide launcher in the final app model
@@ -285,6 +295,9 @@ public class ApplicationModelBuilder {
                 case BootstrapConstants.EXT_DEV_MODE_LOCK_JVM_OPTIONS:
                     lockJvmOptions = splitByCommaAndAddAll(value, lockJvmOptions);
                     break;
+                case BootstrapConstants.PROP_REQUIRES_QUARKUS_VERSION:
+                    addRequiredQuarkusVersion(extensionKey, value);
+                    break;
                 default:
                     if (name.startsWith(REMOVED_RESOURCES_DOT)) {
                         addRemovedResources(extensionKey, name, value);
@@ -296,6 +309,19 @@ public class ApplicationModelBuilder {
                     jvmOptionsBuilder == null ? JvmOptions.builder().build() : jvmOptionsBuilder.build(),
                     lockJvmOptions));
         }
+    }
+
+    /**
+     * Records the Quarkus version range required by the given extension, as declared via the
+     * {@code requires-quarkus-version} property of its {@code META-INF/quarkus-extension.properties} descriptor.
+     *
+     * @param extensionKey extension runtime artifact key
+     * @param versionRange the required Quarkus version range
+     * @return this builder instance
+     */
+    public ApplicationModelBuilder addRequiredQuarkusVersion(ArtifactKey extensionKey, String versionRange) {
+        requiredQuarkusVersions.put(extensionKey, versionRange);
+        return this;
     }
 
     private static Set<String> splitByCommaAndAddAll(String commaList, Set<String> set) {

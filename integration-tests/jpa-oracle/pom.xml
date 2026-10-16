@@ -33,7 +33,9 @@
         </dependency>
         <!-- Include the PostgreSQL driver as well: not actually used, but
             we need to validate native-image compilation with multiple JDBC drivers, in particular to
-            test all weird native-image metadata being included in the Oracle JDBC driver -->
+            test all weird native-image metadata being included in the Oracle JDBC driver
+            TODO move this testing of "multiple JDBC drivers" to a separate IT module?
+         -->
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-jdbc-postgresql</artifactId>
@@ -170,12 +172,18 @@
                         <artifactId>maven-surefire-plugin</artifactId>
                         <configuration>
                             <skip>false</skip>
+                            <systemPropertyVariables combine.children="append">
+                                <oracle.default.version>${oracle.default.version}</oracle.default.version>
+                            </systemPropertyVariables>
                         </configuration>
                     </plugin>
                     <plugin>
                         <artifactId>maven-failsafe-plugin</artifactId>
                         <configuration>
                             <skip>false</skip>
+                            <systemPropertyVariables combine.children="append">
+                                <oracle.default.version>${oracle.default.version}</oracle.default.version>
+                            </systemPropertyVariables>
                         </configuration>
                     </plugin>
                 </plugins>
@@ -191,11 +199,24 @@
             <build>
                 <plugins>
                     <plugin>
+                        <groupId>io.quarkus</groupId>
+                        <artifactId>quarkus-maven-plugin</artifactId>
+                        <configuration>
+                            <systemProperties>
+                                <!-- Activate external-db profile at build time so that
+                                     %external-db.quarkus.datasource.db-version gets applied
+                                     during native image generation -->
+                                <quarkus.profile>prod,external-db</quarkus.profile>
+                            </systemProperties>
+                        </configuration>
+                    </plugin>
+                    <plugin>
                         <artifactId>maven-surefire-plugin</artifactId>
                         <configuration>
                             <skip>false</skip>
                             <systemPropertyVariables combine.children="append">
                                 <quarkus.test.profile>test,external-db</quarkus.test.profile>
+                                <oracle.db-version>${oracle.db-version}</oracle.db-version>
                             </systemPropertyVariables>
                         </configuration>
                     </plugin>
@@ -205,6 +226,7 @@
                             <skip>false</skip>
                             <systemPropertyVariables combine.children="append">
                                 <quarkus.test.profile>prod,external-db</quarkus.test.profile>
+                                <oracle.db-version>${oracle.db-version}</oracle.db-version>
                             </systemPropertyVariables>
                         </configuration>
                     </plugin>

@@ -1,7 +1,7 @@
 package io.quarkus.opentelemetry.runtime.config.runtime.exporter;
 
-import static io.quarkus.opentelemetry.runtime.config.runtime.exporter.OtlpExporterConfig.DEFAULT_GRPC_BASE_URI;
-import static io.quarkus.opentelemetry.runtime.config.runtime.exporter.OtlpExporterConfig.Protocol.GRPC;
+import static io.quarkus.opentelemetry.runtime.config.runtime.exporter.OtlpExporterConfig.DEFAULT_HTTP_BASE_URI;
+import static io.quarkus.opentelemetry.runtime.config.runtime.exporter.OtlpExporterConfig.Protocol.HTTP_PROTOBUF;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -30,8 +30,8 @@ public class OtlpExporterConfigBuilder implements ConfigBuilder {
     @Override
     public SmallRyeConfigBuilder configBuilder(final SmallRyeConfigBuilder builder) {
         // Main defaults
-        builder.withDefaultValue("quarkus.otel.exporter.otlp.endpoint", DEFAULT_GRPC_BASE_URI);
-        builder.withDefaultValue("quarkus.otel.exporter.otlp.protocol", GRPC);
+        builder.withDefaultValue("quarkus.otel.exporter.otlp.endpoint", DEFAULT_HTTP_BASE_URI);
+        builder.withDefaultValue("quarkus.otel.exporter.otlp.protocol", HTTP_PROTOBUF);
         builder.withDefaultValue("quarkus.otel.exporter.otlp.timeout", "10s");
         builder.withDefaultValue("quarkus.otel.exporter.otlp.proxy-options.enabled", "false");
 

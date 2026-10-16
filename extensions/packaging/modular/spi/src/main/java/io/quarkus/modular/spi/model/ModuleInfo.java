@@ -3,6 +3,7 @@ package io.quarkus.modular.spi.model;
 import static io.smallrye.common.constraint.Assert.checkNotNullParam;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -152,8 +153,20 @@ public record ModuleInfo(
                 newDeps.add(dep);
             }
         }
+        // a separate entry would shadow the automatic dependency on the same module
+        Set<String> autoNames = new HashSet<>();
+        ArrayList<AutoDependencyGroup> newAutoDeps = new ArrayList<>(autoDependencies.size());
+        for (AutoDependencyGroup group : autoDependencies) {
+            ArrayList<DependencyInfo> groupDeps = new ArrayList<>(group.dependencies().size());
+            for (DependencyInfo dep : group.dependencies()) {
+                autoNames.add(dep.moduleName());
+                DependencyInfo more = index2.get(dep.moduleName());
+                groupDeps.add(more == null ? dep : DependencyInfo.merge(dep, more));
+            }
+            newAutoDeps.add(new AutoDependencyGroup(group.hostModuleName(), groupDeps));
+        }
         for (DependencyInfo dep : moreDependencies) {
-            if (index1.containsKey(dep.moduleName())) {
+            if (index1.containsKey(dep.moduleName()) || autoNames.contains(dep.moduleName())) {
                 // we already added it; skip
             } else {
                 newDeps.add(dep);
@@ -167,7 +180,7 @@ public record ModuleInfo(
                 mainClassName,
                 packages,
                 newDeps,
-                autoDependencies,
+                newAutoDeps,
                 uses,
                 provides,
                 generated);

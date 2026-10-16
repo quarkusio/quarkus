@@ -7,7 +7,6 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 = Micrometer Metrics
 include::_attributes.adoc[]
 :diataxis-type: reference
-:categories: observability
 :summary: Use Micrometer to collect metrics produced by Quarkus, its extensions, and your application.
 :base-units: https://github.com/micrometer-metrics/micrometer/blob/main/micrometer-core/src/main/java/io/micrometer/core/instrument/binder/BaseUnits.java
 :concepts: https://docs.micrometer.io/micrometer/reference/concepts
@@ -24,6 +23,8 @@ IMPORTANT: Micrometer is the recommended approach to metrics for Quarkus.
 NOTE: By default, the metrics are exposed on the main HTTP server.
 If you would like to surface metrics from a separate management port, see the <<management-interface,Managed interface>> section.
 
+NOTE: `quarkus-micrometer` now uses the Prometheus client v1.x. For help migrating from the old client, please check the https://github.com/micrometer-metrics/micrometer/wiki/1.13-Migration-Guide[Prometheus Java client 0.x to 1.x upgrade]  from Micrometer.
+
 == Micrometer and monitoring system extensions
 
 Quarkus Micrometer extensions are structured in the same way as the Micrometer project.
@@ -33,7 +34,7 @@ Other Quarkus and Quarkiverse extensions use the Quarkus Micrometer extension to
 Quarkus extensions:
 
 - micrometer
-- micrometer-registry-prometheus
+- micrometer-registry-prometheus (Prometheus client v1.x)
 - micrometer-opentelemetry
 
 link:https://github.com/quarkiverse/quarkus-micrometer-registry[Quarkiverse extensions] (may be incomplete):
@@ -176,7 +177,6 @@ public StatsdMeterRegistry createStatsdMeterRegistry(StatsdConfig statsdConfig, 
           .build();
 }
 ----
-
 <1> The method returns a `@Singleton`.
 <2> The method returns the specific type of `MeterRegistry`
 
@@ -201,7 +201,7 @@ Micrometer applies naming conventions to convert registered meter names to match
 
 Given the following declaration of a timer: `registry.timer("http.server.requests")`, applied naming conventions will emit the following metrics for different monitoring systems:
 
-- Prometheus: `http_server_requests_duration_seconds`
+- Prometheus: `http_server_requests_seconds`
 - Atlas: `httpServerRequests`
 - Graphite: `http.server.requests`
 - InfluxDB: `http_server_requests`
@@ -712,6 +712,7 @@ java -Dio.netty.leakDetection.level=advanced ...
 * https://quarkus.io/guides/resteasy[`quarkus-resteasy-jackson`]
 * https://quarkus.io/guides/resteasy-client[`quarkus-resteasy-client`]
 * https://quarkus.io/guides/scheduler[`quarkus-scheduler`]
+* https://quarkus.io/guides/signals[`quarkus-signals`]
 * https://quarkus.io/guides/smallrye-graphql[`quarkus-smallrye-graphql`]
 * https://quarkus.io/extensions/io.quarkus/quarkus-messaging[`quarkus-messaging`]
 ** AMQP 1.0
@@ -771,7 +772,6 @@ public class CustomConfiguration {
                 if(id.getName().startsWith("myservice")) {
                     return DistributionStatisticConfig.builder()
                         .percentiles(0.5, 0.95)     // median and 95th percentile, not aggregable
-                        .percentilesHistogram(true) // histogram buckets (e.g. prometheus histogram_quantile)
                         .build()
                         .merge(config);
                 }
@@ -892,6 +892,61 @@ With such a configuration, the JSON metrics will be available from `http://0.0.0
 The Prometheus metrics will be available from `http://0.0.0.0:9000/q/metrics/prometheus`.
 
 Refer to the xref:./management-interface-reference.adoc[management interface reference] for more information.
+
+[[dev-ui-metrics]]
+== Metrics in the Dev UI
+
+In dev mode, when a metrics backend is present, your application metrics become
+available as cards on the Dev UI *Observability* dashboard. Each card charts one metric
+name and carries a reading of its latest value in the header.
+Pick which metrics to add from the grouped catalog the first time you open the dashboard,
+and change your mind later with *Edit dashboard*; only the metrics on the dashboard are
+captured, to save resources. Drag a card by its header to arrange the dashboard in
+whatever order suits you, and use the expand icon in a card's header to give that one
+metric the whole dashboard area when a chart needs more room than a tile allows; press
+*Escape* to go back. A maximized metric card also offers a *Data* tab, listing the
+captured samples as they were recorded, before the card derives a rate or a mean from
+them and before a histogram's buckets are merged to fit the chart. Your choice of cards
+and their order is kept in browser local storage and is shared by every application you
+run.
+
+How a card is drawn depends on what the meter measures:
+
+Counters:: A per-second rate, because the raw value only ever climbs. One line per tag
+combination.
+Gauges:: A dial showing the current reading, with the history beside it. Where the dial's full
+scale comes from is stated in the caption: a gauge that is already a ratio reads out of 100%; one
+whose ceiling is published as a separate meter, such as `jvm.memory.used` against `jvm.memory.max`,
+is scaled to that meter, which the dashboard captures alongside it; anything else is scaled to the
+highest reading in the retention window. A gauge split across several tag combinations keeps a
+plain line chart, since a dial can only show one reading. A gauge that moves in whole steps, such
+as a long task timer's active task count, is drawn as a staircase rather than a sloped line.
+Timers and distribution summaries:: The mean and the maximum per sample interval, derived
+from the recorded total and count rather than from the recording count alone. Durations
+are labeled in the unit that fits (µs, ms, s, min) and sizes in binary units (KiB, MiB).
+Histograms:: A bar per bucket, showing how the recordings were spread. Buckets accumulate
+from the moment capture starts, empty buckets at either end are dropped, and neighboring
+buckets are merged when a meter publishes more of them than a card can label. Published
+percentiles, if the meter has any, are summarized above the bars.
+
+The charts are available automatically whenever a metrics backend and the Dev UI are
+present; they are dev-mode only and add nothing to production or native builds. You can
+tune the capture with:
+
+[source,properties]
+----
+quarkus.dev-ui.observability.metrics.sample-interval=5s <1>
+quarkus.dev-ui.observability.metrics.retention=10m      <2>
+quarkus.dev-ui.observability.metrics.max-points-per-series=720 <3>
+----
+<1> How often meters are sampled.
+<2> Rolling time window kept per series.
+<3> Hard cap on points retained per series.
+
+These charts work with the Prometheus registry, the Micrometer OpenTelemetry bridge,
+and native OpenTelemetry metrics. When the bridge forwards Micrometer meters into the
+OpenTelemetry SDK, the metrics are captured once (from OpenTelemetry), avoiding
+duplicates.
 
 == Configuration Reference
 

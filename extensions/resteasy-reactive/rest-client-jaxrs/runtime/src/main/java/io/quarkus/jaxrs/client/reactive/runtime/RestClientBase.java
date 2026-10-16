@@ -3,8 +3,10 @@ package io.quarkus.jaxrs.client.reactive.runtime;
 import java.io.Closeable;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.StringJoiner;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -113,6 +115,19 @@ public abstract class RestClientBase implements Closeable {
             return value == null ? null : value.toString();
         }
     };
+
+    private static final ParamConverter<OffsetDateTime> OFFSET_DATE_TIME_CONVERTER = new ParamConverter<>() {
+        @Override
+        public OffsetDateTime fromString(String value) {
+            return value == null ? null : OffsetDateTime.parse(value);
+        }
+
+        @Override
+        public String toString(OffsetDateTime value) {
+            return value == null ? null : value.toString();
+        }
+    };
+
     private final List<ParamConverterProvider> paramConverterProviders;
     private final Map<Class<?>, ParamConverterProvider> providerForClass = new ConcurrentHashMap<>();
 
@@ -121,19 +136,31 @@ public abstract class RestClientBase implements Closeable {
     }
 
     @SuppressWarnings("unused") // used by generated code
-    public <T> Object[] convertParamArray(T[] value, Class<T> type, Type genericType, Annotation[] annotations) {
+    public <T> Object[] convertParamArray(T[] values, Class<T> type, Type genericType, Annotation[] annotations,
+            String separator) {
         ParamConverter<T> converter = getConverter(type, genericType, annotations);
 
-        if (converter == null) {
-            return value;
-        } else {
-            Object[] result = new Object[value.length];
+        Object[] resultArray;
 
-            for (int i = 0; i < value.length; i++) {
-                result[i] = converter.toString(value[i]);
+        if (converter == null) {
+            resultArray = values;
+        } else {
+            resultArray = new Object[values.length];
+            for (int i = 0; i < values.length; i++) {
+                resultArray[i] = converter.toString(values[i]);
             }
-            return result;
         }
+
+        if (separator == null || separator.isEmpty() || resultArray.length < 2)
+            return resultArray;
+
+        StringJoiner sj = new StringJoiner(separator);
+
+        for (Object result : resultArray) {
+            sj.add(result.toString());
+        }
+
+        return new Object[] { sj.toString() };
     }
 
     @SuppressWarnings("unused") // used by generated code
@@ -204,6 +231,9 @@ public abstract class RestClientBase implements Closeable {
             }
             if (rawType == UUID.class) {
                 return (ParamConverter<T>) UUID_CONVERTER;
+            }
+            if (rawType == OffsetDateTime.class) {
+                return (ParamConverter<T>) OFFSET_DATE_TIME_CONVERTER;
             }
             return null;
         }

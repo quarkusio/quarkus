@@ -5,12 +5,10 @@ import java.util.List;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import io.quarkus.it.jackson.model.Elephant;
 import io.quarkus.it.jackson.model.MammalFamily;
 import io.quarkus.it.jackson.model.Whale;
+import tools.jackson.databind.ObjectMapper;
 
 @Path("jsonSubTypes")
 public class JsonSubTypesResource {
@@ -22,7 +20,7 @@ public class JsonSubTypesResource {
     }
 
     @GET
-    public String test() throws JsonProcessingException {
+    public String test() {
         return objectMapper.writeValueAsString(new MammalFamily(List.of(
                 new Whale(30.0, "white"), new Elephant(10, "africa"))));
     }

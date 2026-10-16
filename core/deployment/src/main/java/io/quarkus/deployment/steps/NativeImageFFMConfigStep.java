@@ -13,18 +13,21 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.FfmDowncallBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.FfmUpcallBuildItem;
+import io.quarkus.deployment.pkg.steps.NativeOrNativeSourcesBuild;
 
 /**
+ * @formatter:off
  * Creates reachability-metadata.json with:
- * https://www.graalvm.org/latest/reference-manual/native-image/native-code-interoperability/ffm-api/#registering-foreign-calls
- * https://www.graalvm.org/latest/reference-manual/native-image/metadata/#foreign-function-and-memory-api
- *
- * It does not handle anything else, i.e. it does not implement
- * https://github.com/quarkusio/quarkus/issues/41016
+ * <a href="https://www.graalvm.org/latest/reference-manual/native-image/native-code-interoperability/ffm-api/#registering-foreign-calls">Foreign calls</a>
+ * <a href="https://www.graalvm.org/latest/reference-manual/native-image/metadata/#foreign-function-and-memory-api">FFM/FFI config</a>
+ * Schema used:
+ * <a href="https://github.com/graalvm/graalvm-community-jdk25u/blob/master/docs/reference-manual/native-image/assets/reachability-metadata-schema-v1.2.0.json">reachability-metadata-schema-v1.2.0.json</a>
+ * Notes on proper testing: At least integration-tests module awt.
+ * @formatter:on
  */
 public class NativeImageFFMConfigStep {
 
-    @BuildStep
+    @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
     void generateFfmConfig(BuildProducer<GeneratedResourceBuildItem> reachabilityMetadata,
             List<FfmDowncallBuildItem> downcalls,
             List<FfmUpcallBuildItem> upcalls) {
@@ -33,19 +36,35 @@ public class NativeImageFFMConfigStep {
         }
         final JsonObjectBuilder foreignJson = Json.object();
         if (!downcalls.isEmpty()) {
-            final JsonArrayBuilder downcallsArray = Json.array();
+            // We use sorted array so as the order of elements remains the same between builds.
+            final JsonArrayBuilder downcallsArray = Json.sortedArray();
             downcalls.stream().distinct().forEach(downcall -> {
                 final JsonObjectBuilder dcb = Json.object();
                 dcb.put("returnType", downcall.getReturnType());
                 final JsonArrayBuilder paramsArray = Json.array();
                 paramsArray.addAll(downcall.getParameterTypes());
                 dcb.put("parameterTypes", paramsArray);
+                if (downcall.hasOptions()) {
+                    final JsonObjectBuilder options = Json.object();
+                    if (downcall.isCaptureCallState()) {
+                        options.put("captureCallState", true);
+                    }
+                    if (downcall.getFirstVariadicArg() >= 0) {
+                        options.put("firstVariadicArg", downcall.getFirstVariadicArg());
+                    }
+                    if (downcall.getCritical() != null) {
+                        final JsonObjectBuilder criticalObj = Json.object();
+                        criticalObj.put("allowHeapAccess", downcall.getCritical().allowHeapAccess());
+                        options.put("critical", criticalObj);
+                    }
+                    dcb.put("options", options);
+                }
                 downcallsArray.add(dcb);
             });
             foreignJson.put("downcalls", downcallsArray);
         }
         if (!upcalls.isEmpty()) {
-            final JsonArrayBuilder upcallsArray = Json.array();
+            final JsonArrayBuilder upcallsArray = Json.sortedArray();
             upcalls.stream().distinct().forEach(upcall -> {
                 final JsonObjectBuilder ucb = Json.object();
                 ucb.put("returnType", upcall.getReturnType());

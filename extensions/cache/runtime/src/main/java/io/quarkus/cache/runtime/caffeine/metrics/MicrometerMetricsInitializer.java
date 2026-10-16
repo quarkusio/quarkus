@@ -21,7 +21,7 @@ public class MicrometerMetricsInitializer implements MetricsInitializer {
     }
 
     @Override
-    public void recordMetrics(AsyncCache<Object, Object> cache, String cacheName) {
+    public void recordMetrics(AsyncCache<Object, ?> cache, String cacheName) {
         LOGGER.tracef("Initializing Micrometer metrics for cache [%s]", cacheName);
         // The 'tags' vararg is purposely empty here. Tags should be configured using MeterFilter.
         CaffeineCacheMetrics.monitor(Metrics.globalRegistry, cache, cacheName);

@@ -28,9 +28,9 @@ class OpenApiFilterUnknownDocumentNameValidationTest {
                 String message = throwable.getMessage();
                 MatcherAssert.assertThat(message, Matchers
                         .is("""
-                                Following instances of the OpenAPIFilter annotation are invalid because of a misconfigured documentNames value.
+                                Following instances of the OpenApiFilter annotation are invalid because of a misconfigured documentNames value.
                                 Valid values are: [<ALL>, <default>]
-                                @OpenAPIFilter 'io.quarkus.smallrye.openapi.test.jaxrs.OpenApiFilterUnknownDocumentNameValidationTest$FilterWithUnknownDocumentName' references unknown document names: [unknown-document]"""));
+                                @OpenApiFilter 'io.quarkus.smallrye.openapi.test.jaxrs.OpenApiFilterUnknownDocumentNameValidationTest$FilterWithUnknownDocumentName' references unknown document names: [unknown-document]"""));
             });
 
     @Test

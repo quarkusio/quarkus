@@ -6,7 +6,6 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 = Google Cloud Functions (Serverless) with Quarkus REST, Undertow, or Reactive Routes
 :extension-status: preview
 include::_attributes.adoc[]
-:categories: cloud
 :summary: This guide explains how you can deploy Vert.x Web, Servlet, or RESTEasy microservices as a Google Cloud Function.
 :topics: google,gcp,serverless,function,cloud
 :extensions: io.quarkus:quarkus-google-cloud-functions-http

@@ -67,7 +67,7 @@ public class InitTaskProcessor {
                                     .build())));
                 });
 
-                String waitForImage = config.image().orElse(config.waitForContainer().image());
+                String waitForImage = config.waitForContainer().image();
                 initContainers
                         .produce(KubernetesInitContainerBuildItem.create(INIT_CONTAINER_WAITER_NAME + taskName, waitForImage)
                                 .withImagePullPolicy(config.waitForContainer().imagePullPolicy().name())

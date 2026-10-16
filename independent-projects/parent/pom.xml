@@ -18,30 +18,30 @@
     <properties>
         <!-- Plugin versions (please keep in alphabetical order) -->
         <version.archetype.plugin>3.4.1</version.archetype.plugin>
-        <version.buildhelper.plugin>3.6.1</version.buildhelper.plugin>
+        <version.buildhelper.plugin>3.6.2</version.buildhelper.plugin>
         <version.clean.plugin>3.5.0</version.clean.plugin>
-        <version.compiler.plugin>3.15.0</version.compiler.plugin>
+        <version.compiler.plugin>3.16.0</version.compiler.plugin>
         <version.dependency.plugin>3.8.1</version.dependency.plugin>
-        <version.deploy.plugin>3.1.4</version.deploy.plugin>
+        <version.deploy.plugin>3.2.0</version.deploy.plugin>
         <version.enforcer.plugin>3.6.3</version.enforcer.plugin>
-        <version.exec.plugin>3.6.3</version.exec.plugin>
+        <version.exec.plugin>3.6.4</version.exec.plugin>
         <version.formatter.plugin>2.27.0</version.formatter.plugin>
         <version.gpg.plugin>3.2.8</version.gpg.plugin>
         <version.impsort.plugin>1.13.0</version.impsort.plugin>
-        <version.install.plugin>3.1.4</version.install.plugin>
+        <version.install.plugin>3.2.0</version.install.plugin>
         <version.javadoc.plugin>3.12.0</version.javadoc.plugin>
-         <version.jar.plugin>3.5.0</version.jar.plugin>
-        <version.plugin.plugin>3.15.2</version.plugin.plugin>
+         <version.jar.plugin>3.5.1</version.jar.plugin>
+        <version.plugin.plugin>3.16.0</version.plugin.plugin>
         <version.release.plugin>3.3.1</version.release.plugin>
         <version.resources.plugin>3.5.0</version.resources.plugin>
         <version.shade.plugin>3.6.2</version.shade.plugin>
         <version.source.plugin>3.4.0</version.source.plugin>
         <version.surefire.plugin>3.5.6</version.surefire.plugin>
         <version.failsafe.plugin>${version.surefire.plugin}</version.failsafe.plugin>
-        <version.versions.plugin>2.21.0</version.versions.plugin>
+        <version.versions.plugin>2.22.0</version.versions.plugin>
         <version.yaml-properties.plugin>1.1.3</version.yaml-properties.plugin>
         <!-- Forbidden API checks -->
-        <version.forbiddenapis-maven-plugin>3.10</version.forbiddenapis-maven-plugin>
+        <version.forbiddenapis-maven-plugin>3.11</version.forbiddenapis-maven-plugin>
         <forbiddenapis-maven-plugin.phase>verify</forbiddenapis-maven-plugin.phase>
 
         <!-- Code format -->
@@ -49,7 +49,7 @@
 
         <!-- Default properties -->
         <maven.compiler.parameters>true</maven.compiler.parameters>
-        <maven.compiler.release>17</maven.compiler.release>
+        <maven.compiler.release>21</maven.compiler.release>
         <maven.compiler.source>${maven.compiler.release}</maven.compiler.source>
         <maven.compiler.target>${maven.compiler.release}</maven.compiler.target>
         <maven.compiler.testTarget>${maven.compiler.target}</maven.compiler.testTarget>

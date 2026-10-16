@@ -44,6 +44,12 @@
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-test-prometheus-metrics</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
             <artifactId>quarkus-micrometer-registry-prometheus-deployment</artifactId>
             <version>${project.version}</version>
             <type>pom</type>

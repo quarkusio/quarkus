@@ -40,6 +40,7 @@ public class VertxHttpClientMetricsTest {
     @RegisterExtension
     static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withConfigurationResource("test-logging.properties")
+            .overrideConfigKey("quarkus.otel.enabled", "false")
             .overrideConfigKey("quarkus.redis.devservices.enabled", "false")
             .withApplicationRoot((jar) -> jar
                     .addClasses(App.class, HttpClient.class, WsClient.class, Util.class,
@@ -209,8 +210,9 @@ public class VertxHttpClientMetricsTest {
         private WebClient client;
 
         public void init() {
+            // http-client name would collide with the built-in Quarkus metric
             client = WebClient.create(vertx, new WebClientOptions()
-                    .setMetricsName("http-client|my-client"));
+                    .setMetricsName("http-my-client|my-client"));
         }
 
         public String get(String fooHeaderValue) {

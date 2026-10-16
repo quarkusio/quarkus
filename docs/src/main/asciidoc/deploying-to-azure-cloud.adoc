@@ -5,7 +5,6 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Deploying to Microsoft Azure Cloud
 include::_attributes.adoc[]
-:categories: cloud
 :summary: Deploy a Quarkus application to the Microsoft Azure cloud platform.
 :topics: devops,azure,cloud,deployment
 

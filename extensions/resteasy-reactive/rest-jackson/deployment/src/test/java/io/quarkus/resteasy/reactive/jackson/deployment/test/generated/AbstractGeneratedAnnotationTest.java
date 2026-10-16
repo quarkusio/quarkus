@@ -173,6 +173,35 @@ public abstract class AbstractGeneratedAnnotationTest {
                 .body(not(containsString("ignoredField")));
     }
 
+    // --- @java.beans.Transient ---
+
+    @Test
+    public void testJavaBeansTransientSerialization() {
+        RestAssured.get("/generated/java-beans-transient")
+                .then()
+                .statusCode(200)
+                .contentType("application/json")
+                .body("name", Matchers.is("Alice"))
+                .body("visible", Matchers.is("shown"))
+                .body(not(containsString("secret")))
+                .body(not(containsString("hidden-value")));
+    }
+
+    @Test
+    public void testJavaBeansTransientRoundTrip() {
+        given()
+                .contentType("application/json")
+                .body("{\"name\":\"Bob\",\"visible\":\"yes\"}")
+                .when()
+                .post("/generated/java-beans-transient")
+                .then()
+                .statusCode(200)
+                .contentType("application/json")
+                .body("name", Matchers.is("Bob"))
+                .body("visible", Matchers.is("yes"))
+                .body(not(containsString("secret")));
+    }
+
     // --- @JsonUnwrapped + @JsonProperty + @JsonIgnore ---
 
     @Test
@@ -578,6 +607,36 @@ public abstract class AbstractGeneratedAnnotationTest {
                 .body("props_size", CoreMatchers.is(2));
     }
 
+    // --- @JsonAnySetter on field ---
+
+    @Test
+    public void testFieldAnySetterDeserialization() {
+        given()
+                .contentType("application/json")
+                .body("{\"name\":\"test\",\"extra1\":\"a\",\"extra2\":\"b\"}")
+                .when()
+                .post("/generated/field-any-setter")
+                .then()
+                .statusCode(200)
+                .contentType("application/json")
+                .body("name", CoreMatchers.is("test"))
+                .body("extras_size", CoreMatchers.is(2));
+    }
+
+    // --- @JsonAnyGetter on field ---
+
+    @Test
+    public void testFieldAnyGetterSerialization() {
+        RestAssured.get("/generated/field-any-getter")
+                .then()
+                .statusCode(200)
+                .contentType("application/json")
+                .body("name", Matchers.is("test"))
+                .body("color", Matchers.is("red"))
+                .body("size", Matchers.is("large"))
+                .body(not(containsString("additionalProperties")));
+    }
+
     // --- @JsonManagedReference + @JsonBackReference ---
 
     @Test
@@ -613,6 +672,77 @@ public abstract class AbstractGeneratedAnnotationTest {
                 .contentType("application/json")
                 .body("name", Matchers.is("zoned-date-test"))
                 .body("dateTime", Matchers.is("2024-03-13T10:05:01.000Z"));
+    }
+
+    // --- @JsonFormat(shape=NUMBER) with Instant and Duration ---
+
+    @Test
+    public void testFormatTemporalAsNumberSerialization() {
+        RestAssured.get("/generated/number-shaped-temporal")
+                .then()
+                .statusCode(200)
+                .contentType("application/json")
+                .body("name", Matchers.is("number-shaped"))
+                .body("instant", Matchers.is(1710324301.5f))
+                .body("duration", Matchers.is(76975.5f));
+    }
+
+    // --- @JsonFormat(shape=STRING) with Duration ---
+
+    @Test
+    public void testFormatDurationAsStringSerialization() {
+        RestAssured.get("/generated/duration-format")
+                .then()
+                .statusCode(200)
+                .contentType("application/json")
+                .body("name", Matchers.is("duration-test"))
+                .body("duration", Matchers.is("PT21H22M55S"));
+    }
+
+    // --- @JsonFormat(shape = STRING, pattern = "...") on java.util.Date ---
+
+    @Test
+    public void testFormatDateStringShapeWithPatternSerialization() {
+        RestAssured.get("/generated/date-string-shape-pattern")
+                .then()
+                .statusCode(200)
+                .contentType("application/json")
+                .body("name", Matchers.is("date-string-shape"))
+                .body("directDate", Matchers.is("2026-07-20T11:11:11Z"));
+    }
+
+    @Test
+    public void testFormatDateStringShapeWithPatternListSerialization() {
+        RestAssured.get("/generated/date-string-shape-pattern-list")
+                .then()
+                .statusCode(200)
+                .contentType("application/json")
+                .body("[0].name", Matchers.is("date-string-shape"))
+                .body("[0].directDate", Matchers.is("2026-07-20T11:11:11Z"));
+    }
+
+    // --- @JsonFormat(shape = STRING) without pattern on java.util.Date ---
+
+    @Test
+    public void testFormatDateStringShapeWithoutPatternSerialization() {
+        RestAssured.get("/generated/date-string-shape-no-pattern")
+                .then()
+                .statusCode(200)
+                .contentType("application/json")
+                .body("name", Matchers.is("date-string-shape"))
+                .body("utcDate", Matchers.is("2026-07-20T11:11:11.000Z"))
+                .body("pragueDate", Matchers.is("2026-07-20T13:11:11.000+02:00"));
+    }
+
+    @Test
+    public void testFormatDateStringShapeWithoutPatternListSerialization() {
+        RestAssured.get("/generated/date-string-shape-no-pattern-list")
+                .then()
+                .statusCode(200)
+                .contentType("application/json")
+                .body("[0].name", Matchers.is("date-string-shape"))
+                .body("[0].utcDate", Matchers.is("2026-07-20T11:11:11.000Z"))
+                .body("[0].pragueDate", Matchers.is("2026-07-20T13:11:11.000+02:00"));
     }
 
     // --- @JsonFormat ---
@@ -992,6 +1122,32 @@ public abstract class AbstractGeneratedAnnotationTest {
                 .body("orderId", Matchers.is("ORD-001"))
                 .body("billing_city", Matchers.is("Rome"))
                 .body("billing_zip", Matchers.is("00100"));
+    }
+
+    // --- HashMap subclass with declared bean properties ---
+
+    @Test
+    public void testMapSubclassRoundTrip() {
+        given()
+                .contentType("application/json")
+                .body("{\"declared\":\"d\",\"extra\":1}")
+                .when()
+                .post("/generated/map-subclass")
+                .then()
+                .statusCode(200)
+                .contentType("application/json")
+                .body("declared", Matchers.is("d"))
+                .body("extra", Matchers.is(1));
+    }
+
+    @Test
+    public void testMapSubclassSerialization() {
+        RestAssured.get("/generated/map-subclass")
+                .then()
+                .statusCode(200)
+                .contentType("application/json")
+                .body("declared", Matchers.is("d"))
+                .body("extra", Matchers.is(1));
     }
 
     // --- @JsonRawValue ---

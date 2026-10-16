@@ -9,8 +9,7 @@ import io.quarkus.test.junit.QuarkusTest;
 @QuarkusTest
 @QuarkusTestResource(value = OtelCollectorLifecycleManager.class, initArgs = {
         @ResourceArg(name = "enableTLS", value = "true"),
-        @ResourceArg(name = "enableCompression", value = "true"),
-        @ResourceArg(name = "protocol", value = "http/protobuf")
+        @ResourceArg(name = "enableCompression", value = "true")
 }, restrictToAnnotatedClass = true)
 public class HttpWithTLSWithCompressionTest extends AbstractExporterTest {
 

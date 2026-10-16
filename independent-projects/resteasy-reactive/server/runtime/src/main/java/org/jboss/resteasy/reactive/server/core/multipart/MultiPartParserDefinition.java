@@ -30,6 +30,7 @@ import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.common.headers.HeaderUtil;
 import org.jboss.resteasy.reactive.common.util.CaseInsensitiveMap;
 import org.jboss.resteasy.reactive.common.util.MediaTypeHelper;
+import org.jboss.resteasy.reactive.common.util.MultipartParser;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 import org.jboss.resteasy.reactive.server.spi.ServerHttpRequest;
 
@@ -57,6 +58,8 @@ public class MultiPartParserDefinition implements FormParserFactory.ParserDefini
     private long maxAttributeSize = 2048;
     private int maxParameters = 1000;
     private long maxEntitySize = -1;
+    private int maxPartHeaderSize = MultipartParser.ParseState.DEFAULT_MAX_PART_HEADER_SIZE;
+    private int maxHeaderCount = MultipartParser.ParseState.DEFAULT_MAX_HEADER_COUNT;
     private List<String> fileContentTypes;
 
     public MultiPartParserDefinition(Supplier<Executor> executorSupplier) {
@@ -81,7 +84,8 @@ public class MultiPartParserDefinition implements FormParserFactory.ParserDefini
                 return null;
             }
             final MultiPartUploadHandler parser = new MultiPartUploadHandler(exchange, boundary, maxIndividualFileSize,
-                    fileSizeThreshold, defaultCharset, mimeType, maxAttributeSize, maxEntitySize, maxParameters, fileFormNames);
+                    fileSizeThreshold, defaultCharset, mimeType, maxAttributeSize, maxEntitySize, maxParameters,
+                    maxPartHeaderSize, maxHeaderCount, fileFormNames);
             exchange.registerCompletionCallback(new CompletionCallback() {
                 @Override
                 public void onComplete(Throwable throwable) {
@@ -175,11 +179,28 @@ public class MultiPartParserDefinition implements FormParserFactory.ParserDefini
         return this;
     }
 
+    public int getMaxPartHeaderSize() {
+        return maxPartHeaderSize;
+    }
+
+    public MultiPartParserDefinition setMaxPartHeaderSize(int maxPartHeaderSize) {
+        this.maxPartHeaderSize = maxPartHeaderSize;
+        return this;
+    }
+
+    public int getMaxHeaderCount() {
+        return maxHeaderCount;
+    }
+
+    public MultiPartParserDefinition setMaxHeaderCount(int maxHeaderCount) {
+        this.maxHeaderCount = maxHeaderCount;
+        return this;
+    }
+
     private final class MultiPartUploadHandler implements FormDataParser, MultipartParser.PartHandler {
 
         private final ResteasyReactiveRequestContext exchange;
         private final FormData data;
-        private final List<Path> createdFiles = new ArrayList<>();
         private final long maxIndividualFileSize;
         private final long fileSizeThreshold;
         private final long maxAttributeSize;
@@ -191,6 +212,7 @@ public class MultiPartParserDefinition implements FormParserFactory.ParserDefini
         private final ByteArrayOutputStream contentBytes = new ByteArrayOutputStream();
         private String currentName;
         private String fileName;
+        private boolean filePart;
         private Path file;
         private FileChannel fileChannel;
         private CaseInsensitiveMap<String> headers;
@@ -201,7 +223,7 @@ public class MultiPartParserDefinition implements FormParserFactory.ParserDefini
         private MultiPartUploadHandler(final ResteasyReactiveRequestContext exchange, final String boundary,
                 final long maxIndividualFileSize, final long fileSizeThreshold, final String defaultEncoding,
                 String contentType, long maxAttributeSize, long maxEntitySize, int maxParameters,
-                Set<String> fileFormNames) {
+                int maxPartHeaderSize, int maxHeaderCount, Set<String> fileFormNames) {
             this.exchange = exchange;
             this.maxIndividualFileSize = maxIndividualFileSize;
             this.defaultEncoding = defaultEncoding;
@@ -210,7 +232,7 @@ public class MultiPartParserDefinition implements FormParserFactory.ParserDefini
             this.maxEntitySize = maxEntitySize;
             this.maxParameters = maxParameters;
             this.fileFormNames = fileFormNames;
-            this.data = new FormData(maxParameters);
+            this.data = new FormData(maxParameters, tempFileLocation);
             String charset = defaultEncoding;
             if (contentType != null) {
                 String value = HeaderUtil.extractQuotedValueFromHeader(contentType, "charset");
@@ -218,7 +240,8 @@ public class MultiPartParserDefinition implements FormParserFactory.ParserDefini
                     charset = value;
                 }
             }
-            this.parser = MultipartParser.beginParse(this, boundary.getBytes(StandardCharsets.US_ASCII), charset);
+            this.parser = MultipartParser.beginParse(this, boundary.getBytes(StandardCharsets.US_ASCII), charset,
+                    maxPartHeaderSize, maxHeaderCount);
 
         }
 
@@ -244,7 +267,13 @@ public class MultiPartParserDefinition implements FormParserFactory.ParserDefini
                 byte[] buf = new byte[1024];
                 int c;
                 while ((c = inputStream.read(buf)) > 0) {
-                    parser.parse(ByteBuffer.wrap(buf, 0, c));
+                    try {
+                        parser.parse(ByteBuffer.wrap(buf, 0, c));
+                    } catch (MultipartParser.HeaderTooLargeException e) {
+                        throw new WebApplicationException(Response.Status.REQUEST_ENTITY_TOO_LARGE);
+                    } catch (MultipartParser.MalformedMessageException e) {
+                        throw new WebApplicationException(Response.Status.BAD_REQUEST);
+                    }
                 }
                 if (!parser.isComplete()) {
                     throw new IOException("Connection terminated parsing multipart request");
@@ -258,6 +287,8 @@ public class MultiPartParserDefinition implements FormParserFactory.ParserDefini
         public void beginPart(final CaseInsensitiveMap<String> headers) {
             this.currentFileSize = 0;
             this.headers = headers;
+            this.fileName = null;
+            this.filePart = false;
             final String disposition = headers.getFirst(HttpHeaders.CONTENT_DISPOSITION);
             if (disposition != null) {
                 if (disposition.startsWith("form-data")) {
@@ -265,16 +296,10 @@ public class MultiPartParserDefinition implements FormParserFactory.ParserDefini
                     fileName = HeaderUtil.sanitizeFileName(
                             HeaderUtil.extractQuotedValueFromHeaderWithEncoding(disposition, "filename"));
                     String contentType = headers.getFirst(HttpHeaders.CONTENT_TYPE);
-                    if (((fileName != null) || isFileContentType(contentType) || fileFormNames.contains(currentName))
-                            && fileSizeThreshold == 0) {
+                    filePart = (fileName != null) || isFileContentType(contentType) || fileFormNames.contains(currentName);
+                    if (filePart && fileSizeThreshold == 0) {
                         try {
-                            if (tempFileLocation != null) {
-                                Files.createDirectories(tempFileLocation);
-                                file = Files.createTempFile(tempFileLocation, "resteasy-reactive", "upload");
-                            } else {
-                                file = Files.createTempFile("resteasy-reactive", "upload");
-                            }
-                            createdFiles.add(file);
+                            file = data.createTempFile();
                             fileChannel = FileChannel.open(file, StandardOpenOption.READ, StandardOpenOption.WRITE);
                         } catch (IOException e) {
                             throw new RuntimeException(e);
@@ -300,19 +325,13 @@ public class MultiPartParserDefinition implements FormParserFactory.ParserDefini
                 data.deleteFiles();
                 throw new WebApplicationException(Response.Status.REQUEST_ENTITY_TOO_LARGE);
             }
-            if (this.maxIndividualFileSize > 0 && this.currentFileSize > this.maxIndividualFileSize) {
+            if (filePart && this.maxIndividualFileSize > 0 && this.currentFileSize > this.maxIndividualFileSize) {
                 data.deleteFiles();
                 throw new WebApplicationException(Response.Status.REQUEST_ENTITY_TOO_LARGE);
             }
-            if (file == null && fileName != null && fileSizeThreshold < this.currentFileSize) {
+            if (file == null && filePart && fileSizeThreshold < this.currentFileSize) {
                 try {
-                    if (tempFileLocation != null) {
-                        Files.createDirectories(tempFileLocation);
-                        file = Files.createTempFile(tempFileLocation, "resteasy-reactive", "upload");
-                    } else {
-                        file = Files.createTempFile("resteasy-reactive", "upload");
-                    }
-                    createdFiles.add(file);
+                    file = data.createTempFile();
 
                     FileOutputStream fileOutputStream = new FileOutputStream(file.toFile());
                     contentBytes.writeTo(fileOutputStream);
@@ -327,7 +346,8 @@ public class MultiPartParserDefinition implements FormParserFactory.ParserDefini
                 while (buffer.hasRemaining()) {
                     contentBytes.write(buffer.get());
                 }
-                if (maxAttributeSize > 0 && contentBytes.size() > maxAttributeSize) {
+                // file parts kept in memory are bounded by the file size threshold and the file size limits instead
+                if (!filePart && maxAttributeSize > 0 && contentBytes.size() > maxAttributeSize) {
                     data.deleteFiles();
                     throw new WebApplicationException(Response.Status.REQUEST_ENTITY_TOO_LARGE);
                 }
@@ -348,7 +368,7 @@ public class MultiPartParserDefinition implements FormParserFactory.ParserDefini
                 } catch (IOException e) {
                     throw new RuntimeException(e);
                 }
-            } else if (fileName != null) {
+            } else if (filePart) {
                 data.add(currentName, Arrays.copyOf(contentBytes.toByteArray(), contentBytes.size()), fileName, headers);
                 contentBytes.reset();
             } else {
@@ -383,7 +403,7 @@ public class MultiPartParserDefinition implements FormParserFactory.ParserDefini
         }
 
         public List<Path> getCreatedFiles() {
-            return createdFiles;
+            return data.getCreatedFiles();
         }
 
         @Override
@@ -450,6 +470,12 @@ public class MultiPartParserDefinition implements FormParserFactory.ParserDefini
                         try {
                             parser.parse(data);
                             exchange.serverRequest().resumeRequestInput();
+                        } catch (MultipartParser.HeaderTooLargeException e) {
+                            exchange.resume(
+                                    new WebApplicationException(Response.Status.REQUEST_ENTITY_TOO_LARGE));
+                        } catch (MultipartParser.MalformedMessageException e) {
+                            exchange.resume(
+                                    new WebApplicationException(Response.Status.BAD_REQUEST));
                         } catch (Throwable t) {
                             exchange.resume(t);
                         }

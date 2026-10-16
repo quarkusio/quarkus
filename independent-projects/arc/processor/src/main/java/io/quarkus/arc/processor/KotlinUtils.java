@@ -23,9 +23,17 @@ public class KotlinUtils {
         if (method.parametersCount() == 0) {
             return false;
         }
-
         Type lastParameter = method.parameterType(method.parametersCount() - 1);
-        return KotlinDotNames.CONTINUATION.equals(lastParameter.name());
+        if (!KotlinDotNames.CONTINUATION.equals(lastParameter.name())) {
+            return false;
+        }
+        if (lastParameter.kind() == Type.Kind.PARAMETERIZED_TYPE) {
+            return true;
+        }
+        String msg = method.isSynthetic()
+                ? "Synthetic suspend function with raw Continuation parameter type: "
+                : "Suspend function with raw Continuation parameter type: ";
+        throw new IllegalArgumentException(msg + method);
     }
 
     public static boolean isKotlinContinuationParameter(MethodParameterInfo parameter) {

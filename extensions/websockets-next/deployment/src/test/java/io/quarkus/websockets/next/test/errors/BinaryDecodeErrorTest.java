@@ -38,10 +38,11 @@ public class BinaryDecodeErrorTest {
 
     @Test
     void testError() {
-        WSClient client = WSClient.create(vertx).connect(testUri);
-        client.send(Buffer.buffer("1"));
-        client.waitForMessages(1);
-        assertEquals("Problem decoding: 1", client.getLastMessage().toString());
+        try (WSClient client = WSClient.create(vertx).connect(testUri)) {
+            client.send(Buffer.buffer("1"));
+            client.waitForMessages(1);
+            assertEquals("Problem decoding: 1", client.getLastMessage().toString());
+        }
     }
 
     @WebSocket(path = "/echo")

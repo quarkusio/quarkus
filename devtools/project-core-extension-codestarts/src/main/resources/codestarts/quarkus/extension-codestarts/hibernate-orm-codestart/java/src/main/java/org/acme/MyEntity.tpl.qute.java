@@ -1,12 +1,12 @@
 package org.acme;
 
 {#if input.selected-extensions-ga.contains('io.quarkus:quarkus-data-hibernate')}
-import io.quarkus.hibernate.panache.PanacheEntity;
+import io.quarkus.data.hibernate.ManagedEntity;
 import jakarta.persistence.Entity;
 
 
 /**
- * Example JPA entity defined as a Panache Entity.
+ * Example JPA entity defined as a Managed Entity.
  * An ID field of Long type is provided, if you want to define your own ID field extends <code>WithId</code> instead.
  *
  * Documentation: \{@see https://quarkus.io/guides/quarkus-data-hibernate}
@@ -24,7 +24,7 @@ import jakarta.persistence.Entity;
  * }
  */
 @Entity
-public class MyEntity extends PanacheEntity {
+public class MyEntity extends ManagedEntity {
     public String field;
 }
 {#else if input.selected-extensions-ga.contains('io.quarkus:quarkus-hibernate-orm-panache')}
@@ -63,18 +63,18 @@ import jakarta.persistence.Id;
 /**
  * Example JPA entity.
  *
- * To use it, get access to a JPA EntityManager via injection.
+ * To use it, get access to a Hibernate ORM Session via injection.
  *
  * \{@code
  *     @Inject
- *     EntityManager em;
+ *     Session session;
  *
  *     public void doSomething() {
  *         MyEntity entity1 = new MyEntity();
  *         entity1.field = "field-1";
- *         em.persist(entity1);
+ *         session.persist(entity1);
  *
- *         List<MyEntity> entities = em.createQuery("from MyEntity", MyEntity.class).getResultList();
+ *         List<MyEntity> entities = session.createQuery("from MyEntity", MyEntity.class).getResultList();
  *     }
  * }
  */

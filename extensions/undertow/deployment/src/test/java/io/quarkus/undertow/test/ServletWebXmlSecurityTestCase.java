@@ -58,4 +58,16 @@ public class ServletWebXmlSecurityTestCase {
                 .statusCode(200);
     }
 
+    @Test
+    public void testWebXmlSecurityConstraintsWithEncodedSemicolon() {
+        RestAssured.when().get("/secure/servlet%3B").then()
+                .statusCode(401);
+        RestAssured.when().get("/secure/servlet%3Ba").then()
+                .statusCode(401);
+        RestAssured.when().get("/secure%3B/servlet").then()
+                .statusCode(401);
+        RestAssured.given().auth().basic("admin", "admin").when().get("/secure/servlet%3B").then()
+                .statusCode(404);
+    }
+
 }

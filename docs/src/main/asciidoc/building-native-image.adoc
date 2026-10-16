@@ -3,9 +3,8 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= Building a Native Executable
+= Building a native executable
 include::_attributes.adoc[]
-:categories: getting-started, native
 :summary: Build native executables with GraalVM or Mandrel.
 :topics: native,graalvm,mandrel
 
@@ -32,6 +31,7 @@ JVM mode is typically better when:
 
 TIP: Start with JVM mode. Move to native when you have a concrete need. Both modes use the same code and the same Quarkus optimizations: native just changes how the binary is produced.
 
+[[comparing-jvm-aot-native]]
 === Comparing JVM, Leyden AOT, and native modes
 
 Native is one of three runtime options Quarkus supports.
@@ -204,6 +204,17 @@ image:native-executable-process.png[Creating a native executable]
 ====
 You can provide custom options for the `native-image` command using the `quarkus.native.additional-build-args` and `quarkus.native.additional-build-args-append` properties.
 Multiple options may be separated by a comma.
+
+For example, to forward the host `LD_PRELOAD` and `LD_LIBRARY_PATH` environment variables to the `native-image` invocation, pass them as a single comma-separated value using the `-E` option:
+
+[source,bash]
+----
+./mvnw package -Dnative \
+    -Dquarkus.native.additional-build-args="-ELD_PRELOAD=${LD_PRELOAD},-ELD_LIBRARY_PATH=${LD_LIBRARY_PATH}"
+----
+
+All arguments must go into a single `quarkus.native.additional-build-args` value: as with any `-D` system property, repeating it on the command line keeps only the last value rather than appending.
+Depending on your shell, you may need to escape the `$` characters.
 
 You can find more information about how to configure the native image building process in the <<configuration-reference>> section below.
 ====

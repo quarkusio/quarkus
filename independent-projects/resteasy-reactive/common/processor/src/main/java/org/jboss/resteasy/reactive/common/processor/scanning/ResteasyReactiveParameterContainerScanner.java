@@ -7,8 +7,11 @@ import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget.Kind;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
+import org.jboss.jandex.FieldInfo;
 import org.jboss.jandex.IndexView;
+import org.jboss.jandex.Type;
 import org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames;
+import org.jboss.resteasy.reactive.common.processor.transformation.AnnotationStore;
 
 public class ResteasyReactiveParameterContainerScanner {
     public static Set<DotName> scanParameterContainers(IndexView index, ApplicationScanningResult result) {
@@ -25,6 +28,35 @@ public class ResteasyReactiveParameterContainerScanner {
                 } else if (annotationInstance.target().kind() == Kind.METHOD) {
                     ClassInfo klass = annotationInstance.target().asMethod().declaringClass();
                     res.add(klass.name());
+                }
+            }
+        }
+        return res;
+    }
+
+    /**
+     * Finds the parameter containers whose parameter annotations are only added by annotation transformations, and
+     * which therefore cannot be found in the index. Only the classes used as {@code @BeanParam} are examined.
+     */
+    public static Set<DotName> scanTransformedParameterContainers(IndexView index, AnnotationStore annotationStore) {
+        Set<DotName> res = new HashSet<>();
+        for (AnnotationInstance beanParam : index.getAnnotations(ResteasyReactiveDotNames.BEAN_PARAM)) {
+            Type type;
+            if (beanParam.target().kind() == Kind.METHOD_PARAMETER) {
+                type = beanParam.target().asMethodParameter().type();
+            } else if (beanParam.target().kind() == Kind.FIELD) {
+                type = beanParam.target().asField().type();
+            } else {
+                continue;
+            }
+            ClassInfo container = index.getClassByName(type.name());
+            if (container == null || res.contains(container.name())) {
+                continue;
+            }
+            for (FieldInfo field : container.fields()) {
+                if (annotationStore.hasAnyAnnotation(field, ResteasyReactiveDotNames.JAX_RS_ANNOTATIONS_FOR_FIELDS)) {
+                    res.add(container.name());
+                    break;
                 }
             }
         }

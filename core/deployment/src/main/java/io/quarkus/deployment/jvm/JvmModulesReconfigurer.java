@@ -6,6 +6,7 @@ import java.util.List;
 import org.jboss.logging.Logger;
 
 import io.quarkus.changeagent.ClassChangeAgent;
+import io.quarkus.deployment.builditem.ModuleExportBuildItem;
 import io.quarkus.deployment.builditem.ModuleOpenBuildItem;
 import net.bytebuddy.agent.ByteBuddyAgent;
 
@@ -17,6 +18,8 @@ import net.bytebuddy.agent.ByteBuddyAgent;
 public interface JvmModulesReconfigurer {
 
     void openJavaModules(List<ModuleOpenBuildItem> addOpens, ModulesClassloaderContext referenceClassloader);
+
+    void exportJavaModules(List<ModuleExportBuildItem> addExports, ModulesClassloaderContext referenceClassloader);
 
     /**
      * Thread-safe lazy holder for the singleton instance: this is expensive to create and tied to the JVM,

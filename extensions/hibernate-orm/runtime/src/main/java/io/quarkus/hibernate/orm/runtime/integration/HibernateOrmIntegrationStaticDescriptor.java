@@ -2,6 +2,7 @@ package io.quarkus.hibernate.orm.runtime.integration;
 
 import java.util.Optional;
 
+import io.quarkus.hibernate.orm.runtime.spi.HibernateOrmIntegrationStaticInitListener;
 import io.quarkus.runtime.annotations.RecordableConstructor;
 
 public final class HibernateOrmIntegrationStaticDescriptor {

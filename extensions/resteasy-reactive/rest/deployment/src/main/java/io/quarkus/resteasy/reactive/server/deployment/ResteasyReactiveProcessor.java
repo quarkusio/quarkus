@@ -16,6 +16,8 @@ import static org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNa
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.constant.ClassDesc;
+import java.lang.reflect.Modifier;
 import java.nio.file.Path;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -93,14 +95,30 @@ import org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames;
 import org.jboss.resteasy.reactive.common.processor.TargetJavaVersion;
 import org.jboss.resteasy.reactive.common.processor.scanning.ApplicationScanningResult;
 import org.jboss.resteasy.reactive.common.processor.scanning.ResourceScanningResult;
+import org.jboss.resteasy.reactive.common.processor.scanning.ResteasyReactiveParameterContainerScanner;
+import org.jboss.resteasy.reactive.common.processor.transformation.AnnotationStore;
 import org.jboss.resteasy.reactive.common.types.AllWriteableMarker;
 import org.jboss.resteasy.reactive.common.util.Encode;
 import org.jboss.resteasy.reactive.common.util.types.Types;
 import org.jboss.resteasy.reactive.server.core.Deployment;
 import org.jboss.resteasy.reactive.server.core.DeploymentInfo;
 import org.jboss.resteasy.reactive.server.core.ExceptionMapping;
+import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 import org.jboss.resteasy.reactive.server.core.ServerSerialisers;
+import org.jboss.resteasy.reactive.server.handlers.AbortChainHandler;
+import org.jboss.resteasy.reactive.server.handlers.BlockingHandler;
+import org.jboss.resteasy.reactive.server.handlers.ClassRoutingHandler;
+import org.jboss.resteasy.reactive.server.handlers.FixedProducesHandler;
+import org.jboss.resteasy.reactive.server.handlers.InputHandler;
+import org.jboss.resteasy.reactive.server.handlers.InstanceHandler;
+import org.jboss.resteasy.reactive.server.handlers.InvocationHandler;
+import org.jboss.resteasy.reactive.server.handlers.MatrixParamHandler;
+import org.jboss.resteasy.reactive.server.handlers.NonBlockingHandler;
 import org.jboss.resteasy.reactive.server.handlers.ParameterHandler;
+import org.jboss.resteasy.reactive.server.handlers.RequestDeserializeHandler;
+import org.jboss.resteasy.reactive.server.handlers.ResourceRequestFilterHandler;
+import org.jboss.resteasy.reactive.server.handlers.ResponseHandler;
+import org.jboss.resteasy.reactive.server.handlers.ResponseWriterHandler;
 import org.jboss.resteasy.reactive.server.handlers.RestInitialHandler;
 import org.jboss.resteasy.reactive.server.model.ContextResolvers;
 import org.jboss.resteasy.reactive.server.model.DelegatingServerRestHandler;
@@ -120,6 +138,7 @@ import org.jboss.resteasy.reactive.server.processor.scanning.ResponseHeaderMetho
 import org.jboss.resteasy.reactive.server.processor.scanning.ResponseStatusMethodScanner;
 import org.jboss.resteasy.reactive.server.processor.util.ResteasyReactiveServerDotNames;
 import org.jboss.resteasy.reactive.server.providers.serialisers.ServerFileBodyHandler;
+import org.jboss.resteasy.reactive.server.spi.HandlerKindResolver;
 import org.jboss.resteasy.reactive.server.spi.RuntimeConfiguration;
 import org.jboss.resteasy.reactive.server.spi.ServerRestHandler;
 import org.jboss.resteasy.reactive.server.vertx.serializers.ServerMutinyAsyncFileMessageBodyWriter;
@@ -137,9 +156,11 @@ import io.quarkus.arc.deployment.GeneratedBeanBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.arc.processor.KotlinUtils;
 import io.quarkus.arc.runtime.BeanContainer;
+import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.Feature;
+import io.quarkus.deployment.GeneratedClassGizmo2Adaptor;
 import io.quarkus.deployment.GeneratedClassGizmoAdaptor;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -151,10 +172,12 @@ import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
+import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.builditem.LogCategoryBuildItem;
 import io.quarkus.deployment.builditem.RecordableConstructorBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ConstantBootstrapBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveHierarchyBuildItem;
 import io.quarkus.deployment.pkg.builditem.CompiledJavaVersionBuildItem;
@@ -164,6 +187,10 @@ import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.Gizmo;
 import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
+import io.quarkus.gizmo2.Const;
+import io.quarkus.gizmo2.ParamVar;
+import io.quarkus.gizmo2.desc.ClassMethodDesc;
+import io.quarkus.gizmo2.desc.MethodDesc;
 import io.quarkus.netty.deployment.MinNettyAllocatorMaxOrderBuildItem;
 import io.quarkus.resteasy.reactive.common.deployment.AggregatedParameterContainersBuildItem;
 import io.quarkus.resteasy.reactive.common.deployment.ApplicationResultBuildItem;
@@ -178,11 +205,13 @@ import io.quarkus.resteasy.reactive.common.deployment.SerializersUtil;
 import io.quarkus.resteasy.reactive.common.deployment.ServerDefaultProducesHandlerBuildItem;
 import io.quarkus.resteasy.reactive.common.runtime.ResteasyReactiveConfig;
 import io.quarkus.resteasy.reactive.server.EndpointDisabled;
+import io.quarkus.resteasy.reactive.server.runtime.QuarkusResteasyReactiveRequestContext;
 import io.quarkus.resteasy.reactive.server.runtime.QuarkusServerFileBodyHandler;
 import io.quarkus.resteasy.reactive.server.runtime.QuarkusServerPathBodyHandler;
 import io.quarkus.resteasy.reactive.server.runtime.ResteasyReactiveInitialiser;
 import io.quarkus.resteasy.reactive.server.runtime.ResteasyReactiveRecorder;
 import io.quarkus.resteasy.reactive.server.runtime.ResteasyReactiveRuntimeRecorder;
+import io.quarkus.resteasy.reactive.server.runtime.ServerRestHandlerDispatcher;
 import io.quarkus.resteasy.reactive.server.runtime.StandardSecurityCheckInterceptor;
 import io.quarkus.resteasy.reactive.server.runtime.exceptionmappers.AuthenticationCompletionExceptionMapper;
 import io.quarkus.resteasy.reactive.server.runtime.exceptionmappers.AuthenticationFailedExceptionMapper;
@@ -200,6 +229,7 @@ import io.quarkus.resteasy.reactive.server.spi.AnnotationsTransformerBuildItem;
 import io.quarkus.resteasy.reactive.server.spi.ContextTypeBuildItem;
 import io.quarkus.resteasy.reactive.server.spi.GlobalHandlerCustomizerBuildItem;
 import io.quarkus.resteasy.reactive.server.spi.HandlerConfigurationProviderBuildItem;
+import io.quarkus.resteasy.reactive.server.spi.KnownServerRestHandlerBuildItem;
 import io.quarkus.resteasy.reactive.server.spi.MethodScannerBuildItem;
 import io.quarkus.resteasy.reactive.server.spi.NonBlockingReturnTypeBuildItem;
 import io.quarkus.resteasy.reactive.server.spi.PreExceptionMapperHandlerBuildItem;
@@ -241,6 +271,28 @@ public class ResteasyReactiveProcessor {
     private static final int REST_ROUTE_ORDER_OFFSET = 500;
 
     private static final String QUARKUS_INIT_CLASS = "io.quarkus.rest.runtime.__QuarkusInit";
+    private static final String HANDLER_DISPATCHER_CLASS = ServerRestHandlerDispatcher.class.getName() + "$Generated";
+    /**
+     * The RESTEasy Reactive handlers that get a dedicated case in the generated {@link ServerRestHandlerDispatcher}.
+     * Extensions add their own via {@link KnownServerRestHandlerBuildItem}.
+     */
+    private static final List<String> CORE_HANDLERS = List.of(
+            MatrixParamHandler.class.getName(),
+            SecurityContextOverrideHandler.class.getName(),
+            RestInitialHandler.class.getName(),
+            ClassRoutingHandler.class.getName(),
+            AbortChainHandler.class.getName(),
+            NonBlockingHandler.class.getName(),
+            BlockingHandler.class.getName(),
+            ResourceRequestFilterHandler.class.getName(),
+            InputHandler.class.getName(),
+            RequestDeserializeHandler.class.getName(),
+            ParameterHandler.class.getName(),
+            InstanceHandler.class.getName(),
+            InvocationHandler.class.getName(),
+            FixedProducesHandler.class.getName(),
+            ResponseHandler.class.getName(),
+            ResponseWriterHandler.class.getName());
 
     private static final Logger log = Logger.getLogger("io.quarkus.resteasy.reactive.server");
 
@@ -327,11 +379,35 @@ public class ResteasyReactiveProcessor {
                         Priorities.USER));
     }
 
+    /**
+     * Parameter containers are discovered by looking for the parameter annotations in the index. When those annotations
+     * are only added by annotation transformations, the classes used as {@code @BeanParam} are examined through the
+     * transformations instead.
+     */
+    @BuildStep
+    void transformedParameterContainers(Optional<ResourceScanningResultBuildItem> resourceScanningResultBuildItem,
+            List<AnnotationsTransformerBuildItem> annotationTransformerBuildItems,
+            BuildProducer<ParameterContainersBuildItem> producer) {
+        if (resourceScanningResultBuildItem.isEmpty() || annotationTransformerBuildItems.isEmpty()) {
+            return;
+        }
+        List<AnnotationTransformation> annotationTransformations = new ArrayList<>(annotationTransformerBuildItems.size());
+        for (AnnotationsTransformerBuildItem bi : annotationTransformerBuildItems) {
+            annotationTransformations.add(bi.getAnnotationTransformation());
+        }
+        IndexView index = resourceScanningResultBuildItem.get().getResult().getIndex();
+        Set<DotName> containers = ResteasyReactiveParameterContainerScanner.scanTransformedParameterContainers(index,
+                new AnnotationStore(index, annotationTransformations));
+        if (!containers.isEmpty()) {
+            producer.produce(new ParameterContainersBuildItem(containers));
+        }
+    }
+
     @BuildStep
     AggregatedParameterContainersBuildItem aggregateParameterContainers(
             Optional<ResourceScanningResultBuildItem> resourceScanningResultBuildItem,
             List<ParameterContainersBuildItem> parameterContainersBuildItems) {
-        if (!resourceScanningResultBuildItem.isPresent()) {
+        if (resourceScanningResultBuildItem.isEmpty()) {
             return new AggregatedParameterContainersBuildItem(Set.of(), Set.of());
         }
         Set<DotName> scannedParameterContainers = new HashSet<>();
@@ -355,7 +431,7 @@ public class ResteasyReactiveProcessor {
             BuildProducer<GeneratedBeanBuildItem> generatedBeanBuildItemBuildProducer,
             BuildProducer<AdditionalBeanBuildItem> additionalBeanBuildItemBuildProducer,
             AggregatedParameterContainersBuildItem aggregatedParameterContainersBuildItem) {
-        if (!resourceScanningResultBuildItem.isPresent()) {
+        if (resourceScanningResultBuildItem.isEmpty()) {
             return;
         }
 
@@ -392,7 +468,7 @@ public class ResteasyReactiveProcessor {
             BuildProducer<GeneratedClassBuildItem> generatedClass,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<ClassLevelExceptionMappersBuildItem> classLevelExceptionMappers) {
-        if (!resourceScanningResultBuildItem.isPresent()) {
+        if (resourceScanningResultBuildItem.isEmpty()) {
             return;
         }
         List<MethodInfo> methodExceptionMapper = resourceScanningResultBuildItem.get().getResult()
@@ -431,7 +507,7 @@ public class ResteasyReactiveProcessor {
     public void unremovableBeans(Optional<ResourceScanningResultBuildItem> resourceScanningResultBuildItem,
             BuildProducer<UnremovableBeanBuildItem> unremovableBeans,
             AggregatedParameterContainersBuildItem aggregatedParameterContainersBuildItem) {
-        if (!resourceScanningResultBuildItem.isPresent()) {
+        if (resourceScanningResultBuildItem.isEmpty()) {
             return;
         }
         Set<DotName> parameterContainers = getPotentialBeans(resourceScanningResultBuildItem.get().getResult().getIndex(),
@@ -465,7 +541,9 @@ public class ResteasyReactiveProcessor {
             ResteasyReactiveConfig config,
             Optional<ResourceScanningResultBuildItem> resourceScanningResultBuildItem,
             BuildProducer<GeneratedClassBuildItem> generatedClassBuildItemBuildProducer,
+            BuildProducer<GeneratedResourceBuildItem> generatedResourcesBuildProducer,
             BuildProducer<BytecodeTransformerBuildItem> bytecodeTransformerBuildItemBuildProducer,
+            BuildProducer<ConstantBootstrapBuildItem> constantBootstraps,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClassBuildItemBuildProducer,
             ResteasyReactiveRecorder recorder,
             List<ServerDefaultProducesHandlerBuildItem> serverDefaultProducesHandlers,
@@ -488,7 +566,7 @@ public class ResteasyReactiveProcessor {
             List<GeneratedJaxRsResourceBuildItem> generatedJaxRsResourcesBuildItems,
             Optional<TargetJavaVersionBuildItem> maybeTargetJavaVersionBuildItem) {
 
-        if (!resourceScanningResultBuildItem.isPresent()) {
+        if (resourceScanningResultBuildItem.isEmpty()) {
             // no detected @Path, bail out
             return;
         }
@@ -555,7 +633,7 @@ public class ResteasyReactiveProcessor {
                     .setFactoryCreator(new QuarkusFactoryCreator(recorder, beanContainerBuildItem.getValue()))
                     .setEndpointInvokerFactory(
                             new QuarkusInvokerFactory(applicationClassPredicate, generatedClassBuildItemBuildProducer,
-                                    recorder))
+                                    generatedResourcesBuildProducer, constantBootstraps, recorder))
                     .setGeneratedClassBuildItemBuildProducer(generatedClassBuildItemBuildProducer)
                     .setExistingConverters(existingConverters)
                     .setScannedResourcePaths(scannedResourcePaths)
@@ -671,7 +749,7 @@ public class ResteasyReactiveProcessor {
                     .setResteasyReactiveRecorder(recorder)
                     .setApplicationClassPredicate(applicationClassPredicate)
                     .setValidateEndpoint(validationPredicatesBuildItems.stream().map(item -> item.getPredicate())
-                            .collect(Collectors.toUnmodifiableList()))
+                            .toList())
                     .setTargetJavaVersion(
                             determineTargetJavaVersion(compiledJavaVersionBuildItem, maybeTargetJavaVersionBuildItem))
                     .setIsDisabledCreator(new Function<>() {
@@ -773,6 +851,11 @@ public class ResteasyReactiveProcessor {
             for (DotName methodAnnotation : result.getHttpAnnotationToMethod().keySet()) {
                 for (AnnotationInstance instance : index.getAnnotations(methodAnnotation)) {
                     MethodInfo method = instance.target().asMethod();
+
+                    if (method.isSynthetic()) {
+                        continue;
+                    }
+
                     ClassInfo classInfo = method.declaringClass();
 
                     // Reject known client interfaces (See predicate above)
@@ -792,6 +875,11 @@ public class ResteasyReactiveProcessor {
             for (AnnotationInstance instance : index.getAnnotations(ResteasyReactiveDotNames.PATH)) {
                 if (instance.target().kind() == AnnotationTarget.Kind.METHOD) {
                     MethodInfo method = instance.target().asMethod();
+
+                    if (method.isSynthetic()) {
+                        continue;
+                    }
+
                     ClassInfo classInfo = method.declaringClass();
 
                     // Reject known client interfaces (See predicate above)
@@ -815,7 +903,7 @@ public class ResteasyReactiveProcessor {
                 all.add(dotName);
                 index.getAllKnownSubclasses(dotName).forEach(c2 -> all.add(c2.name()));
                 index.getAllKnownSubinterfaces(dotName).forEach(c2 -> all.add(c2.name()));
-                index.getAllKnownImplementors(dotName).forEach(c2 -> all.add(c2.name()));
+                index.getAllKnownImplementations(dotName).forEach(c2 -> all.add(c2.name()));
 
                 subClassesBySubResources.put(dotName, all);
             }
@@ -878,7 +966,7 @@ public class ResteasyReactiveProcessor {
                                 //they may have type variables that need to be handled
                                 index.getAllKnownSubclasses(name).forEach(c2 -> all.add(c2.name()));
                                 index.getAllKnownSubinterfaces(name).forEach(c2 -> all.add(c2.name()));
-                                index.getAllKnownImplementors(name).forEach(c2 -> all.add(c2.name()));
+                                index.getAllKnownImplementations(name).forEach(c2 -> all.add(c2.name()));
                             }
                         } else {
                             // index the returntype, might already be a sub resource locator
@@ -888,7 +976,7 @@ public class ResteasyReactiveProcessor {
                             //they may have type variables that need to be handled
                             index.getAllKnownSubclasses(dotName).forEach(c2 -> all.add(c2.name()));
                             index.getAllKnownSubinterfaces(dotName).forEach(c2 -> all.add(c2.name()));
-                            index.getAllKnownImplementors(dotName).forEach(c2 -> all.add(c2.name()));
+                            index.getAllKnownImplementations(dotName).forEach(c2 -> all.add(c2.name()));
                         }
 
                         return all;
@@ -1095,6 +1183,7 @@ public class ResteasyReactiveProcessor {
                                     }
                                     // also remove @BeanParam annotations targeting records
                                     if (field.declaredAnnotation(ResteasyReactiveDotNames.BEAN_PARAM) != null
+                                            && field.type().kind() == Type.Kind.CLASS
                                             && isRecord(resourceScanningResultBuildItem.getResult().getIndex(),
                                                     field.type().asClassType().name())) {
                                         context.remove(a -> a.name().equals(ResteasyReactiveDotNames.BEAN_PARAM));
@@ -1106,7 +1195,7 @@ public class ResteasyReactiveProcessor {
 
                             private boolean isRecord(IndexView index, DotName name) {
                                 ClassInfo classInfo = index.getClassByName(name);
-                                return classInfo.isRecord();
+                                return classInfo != null && classInfo.isRecord();
                             }
                         })));
     }
@@ -1117,7 +1206,7 @@ public class ResteasyReactiveProcessor {
         allBeanTypes.add(clazz.name());
 
         ClassInfo currentClazz = clazz;
-        while (!ResteasyReactiveDotNames.OBJECT.equals(currentClazz.name()) && currentClazz != null) {
+        while (currentClazz != null && !ResteasyReactiveDotNames.OBJECT.equals(currentClazz.name())) {
             if (currentClazz.isAbstract()) {
                 allBeanTypes.add(currentClazz.name());
             }
@@ -1193,7 +1282,9 @@ public class ResteasyReactiveProcessor {
      */
     @BuildStep
     public void providersFromClasspath(BuildProducer<MessageBodyReaderBuildItem> messageBodyReaderProducer,
-            BuildProducer<MessageBodyWriterBuildItem> messageBodyWriterProducer) {
+            BuildProducer<MessageBodyWriterBuildItem> messageBodyWriterProducer,
+            BuildProducer<JaxrsFeatureBuildItem> featureProducer,
+            BuildProducer<DynamicFeatureBuildItem> dynamicFeatureProducer) {
         String fileName = "META-INF/services/" + Providers.class.getName();
         // we never want to include the Classic RESTEasy providers - these can end up on the classpath by using the Keycloak client for example
         Predicate<String> ignoredProviders = s -> s.startsWith("org.jboss.resteasy.plugins.providers");
@@ -1243,7 +1334,6 @@ public class ResteasyReactiveProcessor {
                         }
                         messageBodyWriterProducer.produce(builder.build()); // TODO: does it make sense to limit these to the Server?
                     }
-                    // TODO: handle other providers as well
                 } catch (ClassNotFoundException e) {
                     log.warn("Unable to load class '" + providerClassName
                             + "' when trying to determine what kind of JAX-RS Provider it is.", e);
@@ -1252,6 +1342,24 @@ public class ResteasyReactiveProcessor {
         } catch (IOException e) {
             log.warn("Unable to properly detect and parse the contents of '" + fileName + "'", e);
         }
+
+        discoverServiceProviders("META-INF/services/" + jakarta.ws.rs.core.Feature.class.getName(),
+                className -> featureProducer.produce(new JaxrsFeatureBuildItem(className, true)));
+        discoverServiceProviders("META-INF/services/" + jakarta.ws.rs.container.DynamicFeature.class.getName(),
+                className -> dynamicFeatureProducer.produce(new DynamicFeatureBuildItem(className, true)));
+    }
+
+    private void discoverServiceProviders(String serviceFile, Consumer<String> producer) {
+        QuarkusClassLoader.visitRuntimeResources(serviceFile, visit -> {
+            try {
+                Set<String> classNames = ServiceUtil.classNamesNamedIn(visit.getPath());
+                for (String className : classNames) {
+                    producer.accept(className);
+                }
+            } catch (IOException e) {
+                log.warn("Unable to properly detect and parse the contents of '" + serviceFile + "'", e);
+            }
+        });
     }
 
     private static String determineHandledGenericTypeOfProviderInterface(Class<?> providerClass,
@@ -1402,6 +1510,143 @@ public class ResteasyReactiveProcessor {
         return new GlobalHandlerCustomizerBuildItem(new SecurityContextOverrideHandler.Customizer());
     }
 
+    /**
+     * Fails the build if a class registered via {@link KnownServerRestHandlerBuildItem} cannot get a dedicated case
+     * in the generated dispatcher, i.e. if it cannot be loaded, does not implement {@link ServerRestHandler}
+     * or is not a concrete class.
+     * The generated case casts the handler to the registered class and invokes {@code handle} on it with
+     * {@code invokevirtual}: for an interface that bytecode is invalid, while for an abstract class the call
+     * is polymorphic again, which defeats the purpose of the dedicated case.
+     */
+    private static void validateKnownHandler(String handlerClass) {
+        Class<?> clazz;
+        try {
+            clazz = Class.forName(handlerClass, false, Thread.currentThread().getContextClassLoader());
+        } catch (ClassNotFoundException e) {
+            throw new IllegalStateException("Unable to load handler class '" + handlerClass + "' registered via "
+                    + KnownServerRestHandlerBuildItem.class.getSimpleName(), e);
+        }
+        if (!ServerRestHandler.class.isAssignableFrom(clazz) || clazz.isInterface()
+                || Modifier.isAbstract(clazz.getModifiers())) {
+            throw new IllegalStateException("Handler class '" + handlerClass + "' registered via "
+                    + KnownServerRestHandlerBuildItem.class.getSimpleName() + " must be a concrete class implementing "
+                    + ServerRestHandler.class.getName());
+        }
+    }
+
+    @BuildStep
+    public void coreHandlers(BuildProducer<KnownServerRestHandlerBuildItem> knownServerRestHandlers) {
+        for (String handlerClass : CORE_HANDLERS) {
+            knownServerRestHandlers.produce(new KnownServerRestHandlerBuildItem(handlerClass));
+        }
+    }
+
+    /**
+     * Generates the {@link ServerRestHandlerDispatcher} used by {@link QuarkusResteasyReactiveRequestContext}
+     * to invoke the handlers of a chain.
+     * <p>
+     * Each class registered via {@link KnownServerRestHandlerBuildItem} gets a kind, which is its position in the
+     * sorted list of registered classes, and a dedicated {@code switch} case in which the handler is cast to that class
+     * and {@code handle} is invoked on it, making it a monomorphic call.
+     * The kinds are assigned to the handlers of a chain once, when the chain is built at deployment.
+     * <p>
+     * For example, if the registered handler classes are {@code AbortChainHandler}, {@code BlockingHandler} and
+     * {@code ClassRoutingHandler}, the generated class is equivalent to:
+     *
+     * <pre>{@code
+     * public final class ServerRestHandlerDispatcher$Generated extends ServerRestHandlerDispatcher {
+     *
+     *     public byte kindOf(ServerRestHandler handler) {
+     *         if (handler instanceof AbortChainHandler) {
+     *             return 1;
+     *         }
+     *         if (handler instanceof BlockingHandler) {
+     *             return 2;
+     *         }
+     *         if (handler instanceof ClassRoutingHandler) {
+     *             return 3;
+     *         }
+     *         return UNKNOWN;
+     *     }
+     *
+     *     public void dispatch(int kind, ServerRestHandler handler, QuarkusResteasyReactiveRequestContext context)
+     *             throws Exception {
+     *         switch (kind) {
+     *             case 1 -> ((AbortChainHandler) handler).handle(context);
+     *             case 2 -> ((BlockingHandler) handler).handle(context);
+     *             case 3 -> ((ClassRoutingHandler) handler).handle(context);
+     *             default -> handler.handle(context);
+     *         }
+     *     }
+     * }
+     * }</pre>
+     */
+    @BuildStep
+    public void generateHandlerDispatcher(Optional<ResourceScanningResultBuildItem> resourceScanningResultBuildItem,
+            List<KnownServerRestHandlerBuildItem> knownServerRestHandlers,
+            BuildProducer<GeneratedClassBuildItem> generatedClass,
+            BuildProducer<GeneratedResourceBuildItem> generatedResource) {
+        if (!resourceScanningResultBuildItem.isPresent()) {
+            // no detected @Path, bail out
+            return;
+        }
+        // sorted so that the kinds don't depend on the order in which the build items were produced
+        List<String> orderedHandlerClasses = knownServerRestHandlers.stream()
+                .map(KnownServerRestHandlerBuildItem::getClassName).distinct().sorted().collect(Collectors.toList());
+        for (String handlerClass : orderedHandlerClasses) {
+            validateKnownHandler(handlerClass);
+        }
+        if (orderedHandlerClasses.size() > Byte.MAX_VALUE) {
+            // kinds are stored as bytes, the remaining handlers simply get the default (megamorphic) treatment
+            orderedHandlerClasses = orderedHandlerClasses.subList(0, Byte.MAX_VALUE);
+        }
+        List<String> handlers = orderedHandlerClasses;
+
+        MethodDesc handleMethod = MethodDesc.of(ServerRestHandler.class, "handle", void.class,
+                ResteasyReactiveRequestContext.class);
+        io.quarkus.gizmo2.Gizmo gizmo = io.quarkus.gizmo2.Gizmo
+                .create(new GeneratedClassGizmo2Adaptor(generatedClass, generatedResource, true));
+        gizmo.class_(HANDLER_DISPATCHER_CLASS, cc -> {
+            cc.final_();
+            cc.extends_(ServerRestHandlerDispatcher.class);
+            cc.defaultConstructor();
+
+            cc.method("kindOf", mc -> {
+                mc.returning(byte.class);
+                ParamVar handler = mc.parameter("handler", ServerRestHandler.class);
+                mc.body(b0 -> {
+                    // this runs once per handler chain at deployment, so a linear scan is fine
+                    for (int i = 0; i < handlers.size(); i++) {
+                        byte kind = (byte) (i + 1);
+                        b0.if_(b0.instanceOf(handler, ClassDesc.of(handlers.get(i))),
+                                b1 -> b1.return_(Const.of(kind)));
+                    }
+                    b0.return_(Const.of(HandlerKindResolver.UNKNOWN));
+                });
+            });
+
+            cc.method("dispatch", mc -> {
+                ParamVar kind = mc.parameter("kind", int.class);
+                ParamVar handler = mc.parameter("handler", ServerRestHandler.class);
+                ParamVar context = mc.parameter("context", QuarkusResteasyReactiveRequestContext.class);
+                mc.body(b0 -> {
+                    b0.switch_(kind, sc -> {
+                        for (int i = 0; i < handlers.size(); i++) {
+                            ClassDesc handlerClass = ClassDesc.of(handlers.get(i));
+                            sc.caseOf(i + 1, b1 -> b1.invokeVirtual(
+                                    ClassMethodDesc.of(handlerClass, "handle", void.class,
+                                            ResteasyReactiveRequestContext.class),
+                                    b1.cast(handler, handlerClass), context));
+                        }
+                        // megamorphic call for other handlers
+                        sc.default_(b1 -> b1.invokeInterface(handleMethod, handler, context));
+                    });
+                    b0.return_();
+                });
+            });
+        });
+    }
+
     @BuildStep
     @Record(value = ExecutionTime.STATIC_INIT, useIdentityComparisonForParameters = false)
     public void setupDeployment(BeanContainerBuildItem beanContainerBuildItem,
@@ -1507,6 +1752,8 @@ public class ResteasyReactiveProcessor {
 
         BeanFactory<ResteasyReactiveInitialiser> initClassFactory = recorder.factory(QUARKUS_INIT_CLASS,
                 beanContainerBuildItem.getValue());
+        // the generated dispatcher is instantiated reflectively by the recorder
+        reflectiveClass.produce(ReflectiveClassBuildItem.builder(HANDLER_DISPATCHER_CLASS).build());
 
         String applicationPath = determineApplicationPath(appResult, getAppPath(serverConfig.path()));
         // spec allows the path contain encoded characters
@@ -1553,7 +1800,7 @@ public class ResteasyReactiveProcessor {
         RuntimeValue<Deployment> deployment = recorder.createDeployment(deploymentPath, deploymentInfo,
                 beanContainerBuildItem.getValue(), shutdownContext, httpBuildTimeConfig,
                 requestContextFactoryBuildItem.map(RequestContextFactoryBuildItem::getFactory).orElse(null),
-                initClassFactory, launchModeBuildItem.getLaunchMode(), servletPresent);
+                initClassFactory, launchModeBuildItem.getLaunchMode(), servletPresent, HANDLER_DISPATCHER_CLASS);
 
         quarkusRestDeploymentBuildItemBuildProducer
                 .produce(new ResteasyReactiveDeploymentBuildItem(deployment, deploymentPath));
@@ -1791,9 +2038,9 @@ public class ResteasyReactiveProcessor {
             return;
         }
 
-        Map<Class<?>, Supplier<?>> runtimeConfigMap = new HashMap<>();
+        Map<String, Supplier<?>> runtimeConfigMap = new HashMap<>();
         for (HandlerConfigurationProviderBuildItem item : items) {
-            runtimeConfigMap.put(item.getConfigClass(), item.getValueSupplier());
+            runtimeConfigMap.put(item.getConfigClass().getName(), item.getValueSupplier());
         }
 
         recorder.configureHandlers(deployment.get().getDeployment(), runtimeConfigMap);

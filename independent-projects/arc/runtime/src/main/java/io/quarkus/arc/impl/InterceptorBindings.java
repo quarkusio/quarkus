@@ -8,12 +8,16 @@ import java.util.Set;
 import java.util.function.BiFunction;
 
 public final class InterceptorBindings {
-    private final Set<String> allInterceptorBindings;
-    private final Map<Class<? extends Annotation>, Set<Annotation>> transitiveInterceptorBindings;
+    final Set<String> allInterceptorBindings;
+    // interceptor binding class name -> non-binding members (can be empty but never null)
+    final Map<String, Set<String>> interceptorBindingNonbindingMembers;
+    final Map<Class<? extends Annotation>, Set<Annotation>> transitiveInterceptorBindings;
 
     InterceptorBindings(Set<String> interceptorBindings,
+            Map<String, Set<String>> interceptorBindingNonbindingMembers,
             Map<Class<? extends Annotation>, Set<Annotation>> transitiveInterceptorBindings) {
         this.allInterceptorBindings = interceptorBindings;
+        this.interceptorBindingNonbindingMembers = interceptorBindingNonbindingMembers;
         this.transitiveInterceptorBindings = transitiveInterceptorBindings;
     }
 

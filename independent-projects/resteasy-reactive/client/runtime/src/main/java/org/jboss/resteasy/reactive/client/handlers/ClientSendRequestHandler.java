@@ -1,5 +1,6 @@
 package org.jboss.resteasy.reactive.client.handlers;
 
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -7,15 +8,19 @@ import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.concurrent.Callable;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
 import jakarta.ws.rs.InternalServerErrorException;
 import jakarta.ws.rs.ProcessingException;
 import jakarta.ws.rs.client.Entity;
+import jakarta.ws.rs.core.EntityPart;
+import jakarta.ws.rs.core.GenericEntity;
 import jakarta.ws.rs.core.HttpHeaders;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.MultivaluedMap;
@@ -38,6 +43,7 @@ import org.jboss.resteasy.reactive.client.impl.multipart.QuarkusMultipartRespons
 import org.jboss.resteasy.reactive.client.spi.ClientRestHandler;
 import org.jboss.resteasy.reactive.client.spi.MultipartResponseData;
 import org.jboss.resteasy.reactive.common.core.Serialisers;
+import org.jboss.resteasy.reactive.common.jaxrs.EntityPartImpl;
 import org.jboss.resteasy.reactive.common.util.MultivaluedTreeMap;
 
 import io.netty.buffer.ByteBufInputStream;
@@ -49,6 +55,7 @@ import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.vertx.ReadStreamSubscriber;
 import io.smallrye.stork.api.ServiceInstance;
+import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.MultiMap;
@@ -69,6 +76,7 @@ import io.vertx.core.internal.buffer.BufferInternal;
 import io.vertx.core.internal.http.HttpClientInternal;
 import io.vertx.core.net.SocketAddress;
 import io.vertx.core.streams.Pipe;
+import io.vertx.core.streams.ReadStream;
 
 public class ClientSendRequestHandler implements ClientRestHandler {
     private static final Logger log = Logger.getLogger(ClientSendRequestHandler.class);
@@ -117,7 +125,7 @@ public class ClientSendRequestHandler implements ClientRestHandler {
             @Override
             public void accept(HttpClientRequest httpClientRequest) {
                 if (requestContext.isUserCanceled()) {
-                    // in this case the user aborted before the request was even created
+                    httpClientRequest.reset();
                     return;
                 }
 
@@ -183,6 +191,7 @@ public class ClientSendRequestHandler implements ClientRestHandler {
 
                                 MultivaluedMap<String, String> headerMap = requestContext.getRequestHeadersAsMap();
                                 updateRequestHeadersFromConfig(requestContext, headerMap);
+                                setEntityRelatedHeaders(headerMap, requestContext.getEntity());
 
                                 // set the Vertx headers after we've run the interceptors because they can modify them
                                 setVertxHeaders(httpClientRequest, headerMap);
@@ -193,6 +202,7 @@ public class ClientSendRequestHandler implements ClientRestHandler {
                 } else if (requestContext.isInputStreamUpload() && !hasWriterInterceptors(requestContext)) {
                     MultivaluedMap<String, String> headerMap = requestContext.getRequestHeadersAsMap();
                     updateRequestHeadersFromConfig(requestContext, headerMap);
+                    setEntityRelatedHeaders(headerMap, requestContext.getEntity());
                     setVertxHeaders(httpClientRequest, headerMap);
                     Future<HttpClientResponse> sent = httpClientRequest.send(
                             new InputStreamReadStream(
@@ -203,17 +213,55 @@ public class ClientSendRequestHandler implements ClientRestHandler {
                     MultivaluedMap<String, String> headerMap = requestContext.getRequestHeadersAsMap();
                     updateRequestHeadersFromConfig(requestContext, headerMap);
                     setVertxHeaders(httpClientRequest, headerMap);
-                    Future<HttpClientResponse> sent = httpClientRequest.send(ReadStreamSubscriber.asReadStream(
-                            (Multi<Buffer>) requestContext.getEntity().getEntity(),
+                    Multi<Buffer> buffers = ((Multi<?>) requestContext.getEntity().getEntity()).onItem()
+                            .transform(ClientSendRequestHandler::toBuffer);
+                    if (!httpClientRequest.headers().contains(HttpHeaders.CONTENT_LENGTH)) {
+                        httpClientRequest.setChunked(true);
+                    }
+                    // a failing Multi must fail the request: with the default pipe behaviour the body would be ended
+                    // normally and the server response to the truncated body would be reported as a success
+                    ReadStream<Buffer> body = ReadStreamSubscriber.asReadStream(buffers,
                             new Function<>() {
                                 @Override
                                 public Buffer apply(Buffer buffer) {
                                     return buffer;
                                 }
-                            }));
+                            });
+                    Pipe<Buffer> pipe = body.pipe();
+                    pipe.endOnFailure(false);
+                    pipe.to(httpClientRequest).onComplete(new Handler<>() {
+                        @Override
+                        public void handle(AsyncResult<Void> ar) {
+                            if (ar.failed()) {
+                                httpClientRequest.reset(0L, ar.cause());
+                            }
+                        }
+                    });
+                    Future<HttpClientResponse> sent = httpClientRequest.response();
                     attachSentHandlers(sent, httpClientRequest, requestContext);
+                } else if (requestContext.isInputStreamUpload() && hasWriterInterceptors(requestContext)) {
+                    // the entity has to be serialized through the writer interceptors, which means reading the whole
+                    // stream; as reading the stream may block (e.g. its data may come from a database), this is done
+                    // on a worker thread
+                    MultivaluedMap<String, String> headerMap = requestContext.getRequestHeadersAsMap();
+                    Vertx.currentContext().executeBlocking(new Callable<Buffer>() {
+                        @Override
+                        public Buffer call() throws Exception {
+                            return ClientSendRequestHandler.this.prepareBody(requestContext, headerMap);
+                        }
+                    }, false).onComplete(new Handler<>() {
+                        @Override
+                        public void handle(AsyncResult<Buffer> ar) {
+                            if (ar.failed()) {
+                                requestContext.resume(ar.cause());
+                                return;
+                            }
+                            // set the Vertx headers after we've run the interceptors because they can modify them
+                            setVertxHeaders(httpClientRequest, headerMap);
+                            sendEntity(httpClientRequest, requestContext, ar.result());
+                        }
+                    });
                 } else {
-                    Future<HttpClientResponse> sent;
                     Buffer actualEntity;
                     try {
                         actualEntity = ClientSendRequestHandler.this
@@ -222,18 +270,7 @@ public class ClientSendRequestHandler implements ClientRestHandler {
                         requestContext.resume(e);
                         return;
                     }
-                    if (actualEntity == AsyncInvokerImpl.EMPTY_BUFFER) {
-                        sent = httpClientRequest.send();
-                        if (loggingScope != LoggingScope.NONE) {
-                            clientLogger.logRequest(httpClientRequest, null, false);
-                        }
-                    } else {
-                        sent = httpClientRequest.send(actualEntity);
-                        if (loggingScope != LoggingScope.NONE) {
-                            clientLogger.logRequest(httpClientRequest, actualEntity, false);
-                        }
-                    }
-                    attachSentHandlers(sent, httpClientRequest, requestContext);
+                    sendEntity(httpClientRequest, requestContext, actualEntity);
                 }
             }
         }, new Consumer<>() {
@@ -319,6 +356,17 @@ public class ClientSendRequestHandler implements ClientRestHandler {
         });
     }
 
+    private static Buffer toBuffer(Object item) {
+        if (item instanceof Buffer buffer) {
+            return buffer;
+        }
+        if (item instanceof byte[] bytes) {
+            return Buffer.buffer(bytes);
+        }
+        throw new IllegalArgumentException("Unsupported item type '" + item.getClass().getName()
+                + "' for a streamed request body. Supported types are io.vertx.core.buffer.Buffer and byte[]");
+    }
+
     private void attachSentHandlers(Future<HttpClientResponse> sent,
             HttpClientRequest httpClientRequest,
             RestClientRequestContext requestContext) {
@@ -341,7 +389,13 @@ public class ClientSendRequestHandler implements ClientRestHandler {
                         QuarkusMultipartResponseDecoder multipartDecoder = new QuarkusMultipartResponseDecoder(
                                 clientResponse);
 
-                        clientResponse.handler(multipartDecoder::offer);
+                        // Collect raw buffers so we can reconstruct an entity stream for MessageBodyReader usage
+                        // (e.g. Response.readEntity with a custom reader), since the Netty decoder consumes the data
+                        List<Buffer> rawBuffers = new ArrayList<>();
+                        clientResponse.handler(buffer -> {
+                            rawBuffers.add(buffer.copy());
+                            multipartDecoder.offer(buffer);
+                        });
 
                         clientResponse.endHandler(new Handler<>() {
                             @Override
@@ -350,6 +404,15 @@ public class ClientSendRequestHandler implements ClientRestHandler {
 
                                 List<InterfaceHttpData> datas = multipartDecoder.getBodyHttpDatas();
                                 requestContext.setResponseMultipartParts(datas);
+
+                                Buffer combined = Buffer.buffer();
+                                for (Buffer b : rawBuffers) {
+                                    combined.appendBuffer(b);
+                                }
+                                if (combined.length() > 0) {
+                                    requestContext.setResponseEntityStream(
+                                            new ByteArrayInputStream(combined.getBytes()));
+                                }
 
                                 if (loggingScope != LoggingScope.NONE) {
                                     clientLogger.logResponse(clientResponse, false);
@@ -564,11 +627,24 @@ public class ClientSendRequestHandler implements ClientRestHandler {
         return isHttps ? 443 : 80;
     }
 
+    @SuppressWarnings("unchecked")
     private QuarkusMultipartFormUpload setMultipartHeadersAndPrepareBody(HttpClientRequest httpClientRequest,
             RestClientRequestContext state) throws Exception {
-        if (!(state.getEntity().getEntity() instanceof QuarkusMultipartForm multipartForm)) {
+        QuarkusMultipartForm multipartForm;
+        Object entityObj = state.getEntity().getEntity();
+        boolean entityPartList = false;
+        if (entityObj instanceof GenericEntity<?> ge) {
+            entityPartList = EntityPartImpl.isEntityPartList(ge.getType());
+            entityObj = ge.getEntity();
+        }
+        if (entityObj instanceof QuarkusMultipartForm) {
+            multipartForm = (QuarkusMultipartForm) entityObj;
+        } else if (entityObj instanceof List<?> list
+                && (entityPartList || (!list.isEmpty() && list.get(0) instanceof EntityPart))) {
+            multipartForm = entityPartsToMultipartForm((List<EntityPart>) list);
+        } else {
             throw new IllegalArgumentException(
-                    "Multipart form upload expects an entity of type MultipartForm, got: " + state.getEntity().getEntity());
+                    "Multipart form upload expects an entity of type MultipartForm or List<EntityPart>, got: " + entityObj);
         }
 
         MultivaluedMap<String, String> headerMap = state.getRequestHeadersAsMap();
@@ -608,10 +684,38 @@ public class ClientSendRequestHandler implements ClientRestHandler {
         return multipartFormUpload;
     }
 
+    private void sendEntity(HttpClientRequest httpClientRequest, RestClientRequestContext requestContext,
+            Buffer actualEntity) {
+        Future<HttpClientResponse> sent;
+        if (actualEntity == AsyncInvokerImpl.EMPTY_BUFFER) {
+            sent = httpClientRequest.send();
+            if (loggingScope != LoggingScope.NONE) {
+                clientLogger.logRequest(httpClientRequest, null, false);
+            }
+        } else {
+            sent = httpClientRequest.send(actualEntity);
+            if (loggingScope != LoggingScope.NONE) {
+                clientLogger.logRequest(httpClientRequest, actualEntity, false);
+            }
+        }
+        attachSentHandlers(sent, httpClientRequest, requestContext);
+    }
+
     private Buffer setRequestHeadersAndPrepareBody(HttpClientRequest httpClientRequest,
             RestClientRequestContext state)
             throws IOException {
         MultivaluedMap<String, String> headerMap = state.getRequestHeadersAsMap();
+        Buffer actualEntity = prepareBody(state, headerMap);
+        // set the Vertx headers after we've run the interceptors because they can modify them
+        setVertxHeaders(httpClientRequest, headerMap);
+        return actualEntity;
+    }
+
+    /**
+     * Serializes the entity, running the writer interceptors, and completes the headers accordingly.
+     */
+    private Buffer prepareBody(RestClientRequestContext state, MultivaluedMap<String, String> headerMap)
+            throws IOException {
         updateRequestHeadersFromConfig(state, headerMap);
 
         Buffer actualEntity = AsyncInvokerImpl.EMPTY_BUFFER;
@@ -627,8 +731,6 @@ public class ClientSendRequestHandler implements ClientRestHandler {
                 headerMap.putSingle(HttpHeaders.CONTENT_LENGTH, "0");
             }
         }
-        // set the Vertx headers after we've run the interceptors because they can modify them
-        setVertxHeaders(httpClientRequest, headerMap);
         return actualEntity;
     }
 
@@ -676,14 +778,48 @@ public class ClientSendRequestHandler implements ClientRestHandler {
         }
     }
 
+    private QuarkusMultipartForm entityPartsToMultipartForm(List<EntityPart> parts) throws IOException {
+        QuarkusMultipartForm form = new QuarkusMultipartForm();
+        for (EntityPart part : parts) {
+            addEntityPartToForm(form, part);
+        }
+        return form;
+    }
+
+    public static void addEntityPartToForm(QuarkusMultipartForm form, EntityPart part) throws IOException {
+        String name = part.getName();
+        String fileName = part.getFileName().orElse(null);
+        MediaType mediaType = part.getMediaType();
+        String mediaTypeStr = mediaType != null ? mediaType.toString() : MediaType.APPLICATION_OCTET_STREAM;
+        Buffer content = Buffer.buffer(part.getContent().readAllBytes());
+
+        if (fileName != null) {
+            boolean isText = mediaType != null && mediaType.getType().equals("text");
+            if (isText) {
+                form.textFileUpload(name, fileName, content, mediaTypeStr);
+            } else {
+                form.binaryFileUpload(name, fileName, content, mediaTypeStr);
+            }
+        } else {
+            boolean isText = mediaType == null || mediaType.equals(MediaType.TEXT_PLAIN_TYPE)
+                    || mediaType.getType().equals("text");
+            if (isText) {
+                form.attribute(name, content.toString(), null);
+            } else {
+                // empty fileName tells PausableHttpPostRequestEncoder to omit filename= from Content-Disposition
+                form.binaryFileUpload(name, "", content, mediaTypeStr);
+            }
+        }
+    }
+
     private void setEntityRelatedHeaders(MultivaluedMap<String, String> headerMap, Entity<?> entity) {
         if (entity.getVariant() != null) {
             Variant v = entity.getVariant();
             if (!headerMap.containsKey(HttpHeaders.CONTENT_TYPE)) {
                 headerMap.putSingle(HttpHeaders.CONTENT_TYPE, v.getMediaType().toString());
             }
-            if ((v.getLanguageString() != null) && !headerMap.containsKey(HttpHeaders.CONTENT_LANGUAGE)) {
-                headerMap.putSingle(HttpHeaders.CONTENT_LANGUAGE, v.getLanguageString());
+            if ((v.getLanguage() != null) && !headerMap.containsKey(HttpHeaders.CONTENT_LANGUAGE)) {
+                headerMap.putSingle(HttpHeaders.CONTENT_LANGUAGE, v.getLanguage().toLanguageTag());
             }
             if ((v.getEncoding() != null) && !headerMap.containsKey(HttpHeaders.CONTENT_ENCODING)) {
                 headerMap.putSingle(HttpHeaders.CONTENT_ENCODING, v.getEncoding());

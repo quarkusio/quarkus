@@ -22,7 +22,7 @@ import io.quarkus.arc.runtime.dev.ui.ArcJsonRPCService;
 import io.quarkus.deployment.IsLocalDevelopment;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
-import io.quarkus.devui.spi.JsonRPCProvidersBuildItem;
+import io.quarkus.devjsonrpc.spi.JsonRPCProvidersBuildItem;
 import io.quarkus.devui.spi.page.CardPageBuildItem;
 import io.quarkus.devui.spi.page.Page;
 
@@ -34,7 +34,7 @@ public class ArcDevUIProcessor {
 
         CardPageBuildItem pageBuildItem = new CardPageBuildItem();
         pageBuildItem.setLogo("cdi_logo.png", "cdi_logo.png");
-        pageBuildItem.addLibraryVersion("jakarta.enterprise", "jakarta.enterprise.cdi-api", "Jakarta CDI",
+        pageBuildItem.addLibraryVersion("jakarta.cdi", "jakarta.cdi-api", "Jakarta CDI",
                 "https://jakarta.ee/specifications/cdi/");
 
         List<DevBeanInfo> beans = beanInfos.getBeans();

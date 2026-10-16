@@ -10,24 +10,26 @@ import java.util.Optional;
 import java.util.OptionalInt;
 
 import org.jboss.logging.Logger;
-import org.testcontainers.containers.OracleContainer;
+import org.testcontainers.oracle.OracleContainer;
 import org.testcontainers.utility.DockerImageName;
 import org.testcontainers.utility.MountableFile;
 
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
 import io.quarkus.datasource.common.runtime.DatabaseKind;
-import io.quarkus.datasource.deployment.spi.DatasourceStartable;
-import io.quarkus.datasource.deployment.spi.DevServicesDatasourceContainerConfig;
-import io.quarkus.datasource.deployment.spi.DevServicesDatasourceProvider;
-import io.quarkus.datasource.deployment.spi.DevServicesDatasourceProviderBuildItem;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.DevServicesComposeProjectBuildItem;
 import io.quarkus.devservices.common.ComposeLocator;
 import io.quarkus.devservices.common.ConfigureUtil;
+import io.quarkus.devservices.common.DevServicesHostUtil;
 import io.quarkus.devservices.common.JBossLoggingConsumer;
 import io.quarkus.devservices.common.Labels;
 import io.quarkus.devservices.common.Volumes;
+import io.quarkus.devservices.datasource.common.DatasourceStartable;
+import io.quarkus.devservices.datasource.common.DatasourceStartableContainer;
+import io.quarkus.devservices.datasource.common.DevServicesDatasourceContainerConfig;
+import io.quarkus.devservices.datasource.common.DevServicesDatasourceProvider;
+import io.quarkus.devservices.datasource.common.DevServicesDatasourceProviderBuildItem;
 import io.quarkus.runtime.LaunchMode;
 
 public class OracleDevServicesProcessor {
@@ -38,7 +40,7 @@ public class OracleDevServicesProcessor {
      * This is the container name as defined by the Testcontainer's OracleContainer:
      * does not necessarily match the container name that Quarkus will default to use.
      */
-    public static final String ORIGINAL_IMAGE_NAME = "gvenzl/oracle-xe";
+    public static final String ORIGINAL_IMAGE_NAME = "gvenzl/oracle-free";
     public static final int PORT = 1521;
 
     private static final OracleDatasourceServiceConfigurator configurator = new OracleDatasourceServiceConfigurator();
@@ -100,7 +102,7 @@ public class OracleDevServicesProcessor {
                     container.withLogConsumer(new JBossLoggingConsumer(LOG));
                 }
 
-                return container;
+                return new DatasourceStartableContainer<>(container);
             }
 
             @Override
@@ -150,6 +152,16 @@ public class OracleDevServicesProcessor {
             }
         }
 
+        // this is always reachable from the host JVM, so that testcontainers can determine the status of the
+        // container (which it does by trying to acquire a connection)
+        @Override
+        public String getJdbcUrl() {
+            String host = DevServicesHostUtil.resolvePublishedPortHost(getContainerId(), getHost());
+            String authority = DevServicesHostUtil.formatHostAndPort(host, getMappedPort(PORT));
+            // Single @ service-name form — works for JDBC and Vert.x reactive (IPv6 via bracketed host).
+            return "jdbc:oracle:thin:@" + authority + "/" + getDatabaseName();
+        }
+
         // this is meant to be called by Quarkus code and is needed in order to not disrupt testcontainers
         // from being able to determine the status of the container (which it does by trying to acquire a connection)
         public String getEffectiveJdbcUrl() {
@@ -157,10 +169,10 @@ public class OracleDevServicesProcessor {
                 // in this case we expose the URL using the network alias we created in 'configure'
                 // and the container port since the application communicating with this container
                 // won't be doing port mapping
-                return "jdbc:oracle:thin:" + "@" + hostName + ":" + PORT + "/" + getDatabaseName();
-            } else {
-                return super.getJdbcUrl();
+                String authority = DevServicesHostUtil.formatHostAndPort(hostName, PORT);
+                return "jdbc:oracle:thin:@" + authority + "/" + getDatabaseName();
             }
+            return getJdbcUrl();
         }
 
         public String getReactiveUrl() {

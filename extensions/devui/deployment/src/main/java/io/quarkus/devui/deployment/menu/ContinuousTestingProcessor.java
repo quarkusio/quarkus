@@ -16,10 +16,10 @@ import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.dev.testing.TestRunResults;
 import io.quarkus.deployment.dev.testing.TestSupport;
 import io.quarkus.dev.spi.DevModeType;
+import io.quarkus.devjsonrpc.spi.JsonRPCProvidersBuildItem;
 import io.quarkus.devui.deployment.InternalPageBuildItem;
 import io.quarkus.devui.runtime.continuoustesting.ContinuousTestingJsonRPCService;
 import io.quarkus.devui.runtime.continuoustesting.ContinuousTestingRecorder;
-import io.quarkus.devui.spi.JsonRPCProvidersBuildItem;
 import io.quarkus.devui.spi.buildtime.BuildTimeActionBuildItem;
 import io.quarkus.devui.spi.page.Page;
 

@@ -11,6 +11,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -79,6 +80,31 @@ public class BytecodeRecorderTestCase {
             TestRecorder recorder = generator.getRecordingProxy(TestRecorder.class);
             recorder.map(new HashMap<>(Collections.singletonMap("a", "b")));
         }, Collections.singletonMap("a", "b"));
+    }
+
+    @Test
+    public void testEnumMapWithMethodSplit() throws Exception {
+        // EnumMap has no no-arg constructor, so the recorder falls back to LinkedHashMap.
+        // When the generated method is split (>300 instruction groups), a checkcast to the
+        // original concrete type was emitted, causing ClassCastException. This test forces
+        // a method split by recording many EnumMap calls.
+        int count = 30;
+        EnumMap<Thread.State, String>[] maps = new EnumMap[count];
+        Map<Thread.State, String>[] expected = new LinkedHashMap[count];
+        for (int i = 0; i < count; i++) {
+            EnumMap<Thread.State, String> map = new EnumMap<>(Thread.State.class);
+            for (Thread.State state : Thread.State.values()) {
+                map.put(state, state.name() + "-" + i);
+            }
+            maps[i] = map;
+            expected[i] = new LinkedHashMap<>(map);
+        }
+        runTest(generator -> {
+            TestRecorder recorder = generator.getRecordingProxy(TestRecorder.class);
+            for (EnumMap<Thread.State, String> map : maps) {
+                recorder.map(map);
+            }
+        }, (Object[]) expected);
     }
 
     @Test

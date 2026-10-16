@@ -8,15 +8,14 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
-
 import io.fabric8.kubernetes.api.model.HasMetadata;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.dataformat.yaml.YAMLMapper;
 
 final class DeserializationUtil {
 
     private static final String DOCUMENT_DELIMITER = "---";
-    static final ObjectMapper MAPPER = new ObjectMapper(new YAMLFactory());
+    static final ObjectMapper MAPPER = new YAMLMapper();
 
     private DeserializationUtil() {
     }

@@ -13,4 +13,4 @@ metadata:
     - "observability"
   status: "stable"
   config:
-  - "quarkus.opentelemetry."
+  - "quarkus.otel."

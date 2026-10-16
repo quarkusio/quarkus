@@ -4,12 +4,10 @@ permissions:
   contents: read
   packages: read
 
-# CI disabled for Vert.x 5 experimental branch - uncomment the 'on' triggers below to re-enable
-#on:
-#  workflow_dispatch:
-#  schedule:
-#    - cron: '0 3 * * 1'
-on: [workflow_dispatch]
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 3 * * 1'
 
 env:
   # Workaround testsuite locale issue
@@ -24,7 +22,7 @@ defaults:
 jobs:
   configure:
     name: "Configure jobs"
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
     outputs:
       m2-monthly-branch-cache-key: ${{ steps.cache-key.outputs.m2-monthly-branch-cache-key }}
       m2-monthly-cache-key: ${{ steps.cache-key.outputs.m2-monthly-cache-key }}
@@ -47,16 +45,22 @@ jobs:
     needs: [ configure ]
     runs-on: ubuntu-latest
     steps:
-      - name: Set up JDK 17
-        uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v5.2.0
-        with:
-          distribution: temurin
-          java-version: 17
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
+      - name: Extract base JDK version from POM
+        id: base-jdk
+        run: |
+          BASE_JDK=$(grep -oP '<maven.compiler.release>\K[0-9]+' independent-projects/parent/pom.xml)
+          echo "base-jdk-version=${BASE_JDK}" >> $GITHUB_OUTPUT
+          echo "Base JDK version: ${BASE_JDK}"
+      - name: Set up JDK ${{ steps.base-jdk.outputs.base-jdk-version }}
+        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+        with:
+          distribution: temurin
+          java-version: ${{ steps.base-jdk.outputs.base-jdk-version }}
       - name: Cache Maven Repository
-        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v5
         with:
           path: ~/.m2/repository
           # A new cache will be stored weekly. After that first store of the day, cache save actions will fail because the cache is immutable but it's not a problem.

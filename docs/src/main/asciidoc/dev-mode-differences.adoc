@@ -5,7 +5,6 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = How dev mode differs from a production application
 include::_attributes.adoc[]
-:categories: architecture
 :summary: How dev mode differs from a production application
 :topics: internals,dev-mode
 

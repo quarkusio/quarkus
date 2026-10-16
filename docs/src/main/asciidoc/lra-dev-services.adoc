@@ -5,7 +5,6 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Dev Services for LRA
 include::_attributes.adoc[]
-:categories: data
 :summary: Start the Narayana LRA coordinator automatically in dev and test modes.
 :topics: data,lra,narayana
 :extensions: io.quarkus:quarkus-narayana-lra

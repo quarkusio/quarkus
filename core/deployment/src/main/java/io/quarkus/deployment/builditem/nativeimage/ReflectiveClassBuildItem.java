@@ -6,8 +6,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 
-import org.jboss.logging.Logger;
-
 import io.quarkus.builder.item.MultiBuildItem;
 
 /**
@@ -18,18 +16,14 @@ public final class ReflectiveClassBuildItem extends MultiBuildItem {
     // The names of the classes that should be registered for reflection
     private final Collection<String> className;
     private final boolean methods;
-    private final boolean queryMethods;
+    private final boolean publicMethods;
     private final boolean fields;
-    private final boolean classes;
     private final boolean constructors;
     private final boolean publicConstructors;
-    private final boolean queryConstructors;
     private final boolean weak;
     private final boolean serialization;
     private final boolean unsafeAllocated;
     private final String reason;
-
-    private static final Logger log = Logger.getLogger(ReflectiveClassBuildItem.class);
 
     public static Builder builder(Class<?>... classes) {
         List<String> classNames = stream(classes)
@@ -52,10 +46,10 @@ public final class ReflectiveClassBuildItem extends MultiBuildItem {
         return new Builder().className(classNames);
     }
 
-    private ReflectiveClassBuildItem(boolean constructors, boolean queryConstructors, boolean methods, boolean queryMethods,
-            boolean fields, boolean getClasses, boolean weak, boolean serialization, boolean unsafeAllocated, String reason,
+    private ReflectiveClassBuildItem(boolean constructors, boolean methods,
+            boolean fields, boolean weak, boolean serialization, boolean unsafeAllocated, String reason,
             Class<?>... classes) {
-        this(constructors, false, queryConstructors, methods, queryMethods, fields, getClasses, weak, serialization,
+        this(constructors, false, methods, false, fields, weak, serialization,
                 unsafeAllocated, reason, stream(classes).map(Class::getName).toArray(String[]::new));
     }
 
@@ -77,25 +71,17 @@ public final class ReflectiveClassBuildItem extends MultiBuildItem {
         return ReflectiveClassBuildItem.builder(classNames).serialization().build();
     }
 
-    @Deprecated(since = "3.14", forRemoval = true)
-    ReflectiveClassBuildItem(boolean constructors, boolean queryConstructors, boolean methods, boolean queryMethods,
+    ReflectiveClassBuildItem(boolean constructors, boolean publicConstructors, boolean methods,
+            boolean publicMethods,
             boolean fields, boolean weak, boolean serialization,
-            boolean unsafeAllocated, String... className) {
-        this(constructors, false, queryConstructors, methods, queryMethods, fields, false, weak, serialization, unsafeAllocated,
-                null, className);
-    }
-
-    ReflectiveClassBuildItem(boolean constructors, boolean publicConstructors, boolean queryConstructors, boolean methods,
-            boolean queryMethods,
-            boolean fields, boolean classes, boolean weak, boolean serialization,
             boolean unsafeAllocated, String reason, String... className) {
-        this(constructors, publicConstructors, queryConstructors, methods, queryMethods, fields, classes, weak, serialization,
-                unsafeAllocated, reason, Arrays.asList(className));
+        this(constructors, publicConstructors, methods, publicMethods, fields, weak,
+                serialization, unsafeAllocated, reason, Arrays.asList(className));
     }
 
-    ReflectiveClassBuildItem(boolean constructors, boolean publicConstructors, boolean queryConstructors, boolean methods,
-            boolean queryMethods,
-            boolean fields, boolean classes, boolean weak, boolean serialization,
+    ReflectiveClassBuildItem(boolean constructors, boolean publicConstructors, boolean methods,
+            boolean publicMethods,
+            boolean fields, boolean weak, boolean serialization,
             boolean unsafeAllocated, String reason, Collection<String> className) {
         for (String i : className) {
             if (i == null) {
@@ -104,26 +90,10 @@ public final class ReflectiveClassBuildItem extends MultiBuildItem {
         }
         this.className = className;
         this.methods = methods;
-        if (methods && queryMethods) {
-            log.warnf(
-                    "Both methods and queryMethods are set to true for classes: %s. queryMethods is redundant and will be ignored",
-                    String.join(", ", className));
-            this.queryMethods = false;
-        } else {
-            this.queryMethods = queryMethods;
-        }
+        this.publicMethods = publicMethods;
         this.fields = fields;
-        this.classes = classes;
         this.constructors = constructors;
         this.publicConstructors = publicConstructors;
-        if (constructors && queryConstructors) {
-            log.warnf(
-                    "Both constructors and queryConstructors are set to true for classes: %s. queryConstructors is redundant and will be ignored",
-                    String.join(", ", className));
-            this.queryConstructors = false;
-        } else {
-            this.queryConstructors = queryConstructors;
-        }
         this.weak = weak;
         this.serialization = serialization;
         this.unsafeAllocated = unsafeAllocated;
@@ -138,16 +108,12 @@ public final class ReflectiveClassBuildItem extends MultiBuildItem {
         return methods;
     }
 
-    public boolean isQueryMethods() {
-        return queryMethods;
+    public boolean isPublicMethods() {
+        return publicMethods;
     }
 
     public boolean isFields() {
         return fields;
-    }
-
-    public boolean isClasses() {
-        return classes;
     }
 
     public boolean isConstructors() {
@@ -156,10 +122,6 @@ public final class ReflectiveClassBuildItem extends MultiBuildItem {
 
     public boolean isPublicConstructors() {
         return publicConstructors;
-    }
-
-    public boolean isQueryConstructors() {
-        return queryConstructors;
     }
 
     public boolean isWeak() {
@@ -182,11 +144,9 @@ public final class ReflectiveClassBuildItem extends MultiBuildItem {
         private Collection<String> className;
         private boolean constructors = true;
         private boolean publicConstructors = false;
-        private boolean queryConstructors;
         private boolean methods;
-        private boolean queryMethods;
+        private boolean publicMethods = false;
         private boolean fields;
-        private boolean classes;
         private boolean weak;
         private boolean serialization;
         private boolean unsafeAllocated;
@@ -234,21 +194,10 @@ public final class ReflectiveClassBuildItem extends MultiBuildItem {
         }
 
         /**
-         * Configures whether constructors should be registered for reflection, for query purposes only.
-         * Setting this enables getting all declared constructors for the class but does not allow invoking them reflectively.
-         */
-        public Builder queryConstructors(boolean queryConstructors) {
-            this.queryConstructors = queryConstructors;
-            return this;
-        }
-
-        public Builder queryConstructors() {
-            return queryConstructors(true);
-        }
-
-        /**
          * Configures whether methods should be registered for reflection.
-         * Setting this enables getting all declared methods for the class as well as invoking them reflectively.
+         * Setting this enables getting all methods <strong>declared</strong> by the class, regardless of their
+         * visibility, as well as invoking them reflectively, i.e. {@link Class#getDeclaredMethods()}.
+         * This does not include methods inherited from superclasses or interfaces.
          */
         public Builder methods(boolean methods) {
             this.methods = methods;
@@ -260,17 +209,19 @@ public final class ReflectiveClassBuildItem extends MultiBuildItem {
         }
 
         /**
-         * Configures whether declared methods should be registered for reflection, for query purposes only,
-         * i.e. {@link Class#getDeclaredMethods()}. Setting this enables getting all declared methods for the class but
-         * does not allow invoking them reflectively.
+         * Configures whether public methods should be registered for reflection.
+         * Setting this enables getting all <strong>public</strong> methods of the class, including those
+         * inherited from superclasses and interfaces, as well as invoking them reflectively.
+         * This is narrower than {@link #methods()} in visibility (public only)
+         * but broader in scope (inherited methods included).
          */
-        public Builder queryMethods(boolean queryMethods) {
-            this.queryMethods = queryMethods;
+        public Builder publicMethods(boolean publicMethods) {
+            this.publicMethods = publicMethods;
             return this;
         }
 
-        public Builder queryMethods() {
-            return queryMethods(true);
+        public Builder publicMethods() {
+            return publicMethods(true);
         }
 
         /**
@@ -284,19 +235,6 @@ public final class ReflectiveClassBuildItem extends MultiBuildItem {
 
         public Builder fields() {
             return fields(true);
-        }
-
-        /**
-         * Configures whether declared classes should be registered for reflection.
-         * Setting this enables getting all declared classes through Class.getClasses().
-         */
-        public Builder classes(boolean classes) {
-            this.classes = classes;
-            return this;
-        }
-
-        public Builder classes() {
-            return classes(true);
         }
 
         /**
@@ -348,8 +286,8 @@ public final class ReflectiveClassBuildItem extends MultiBuildItem {
         }
 
         public ReflectiveClassBuildItem build() {
-            return new ReflectiveClassBuildItem(constructors, publicConstructors, queryConstructors, methods, queryMethods,
-                    fields, classes, weak,
+            return new ReflectiveClassBuildItem(constructors, publicConstructors, methods, publicMethods,
+                    fields, weak,
                     serialization, unsafeAllocated, reason, className);
         }
     }

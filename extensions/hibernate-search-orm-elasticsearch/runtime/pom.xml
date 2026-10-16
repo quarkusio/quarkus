@@ -34,6 +34,10 @@
             <artifactId>hibernate-search-mapper-orm</artifactId>
         </dependency>
         <dependency>
+            <groupId>org.hibernate.accessor</groupId>
+            <artifactId>hibernate-accessor</artifactId>
+        </dependency>
+        <dependency>
             <groupId>jakarta.persistence</groupId>
             <artifactId>jakarta.persistence-api</artifactId>
         </dependency>

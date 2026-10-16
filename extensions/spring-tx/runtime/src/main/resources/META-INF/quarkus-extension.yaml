@@ -7,6 +7,7 @@ metadata:
   - "spring"
   - "transaction"
   - "transactional"
+  guide: "https://quarkus.io/guides/spring-tx"
   categories:
   - "compatibility"
   status: "preview"

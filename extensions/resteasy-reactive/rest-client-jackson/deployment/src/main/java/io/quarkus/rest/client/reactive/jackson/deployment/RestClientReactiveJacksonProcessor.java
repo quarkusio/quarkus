@@ -11,8 +11,6 @@ import jakarta.ws.rs.core.MediaType;
 
 import org.jboss.jandex.DotName;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -32,6 +30,7 @@ import io.quarkus.resteasy.reactive.spi.MessageBodyWriterBuildItem;
 import io.quarkus.vertx.deployment.ReinitializeVertxJsonBuildItem;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
+import tools.jackson.databind.ObjectMapper;
 
 public class RestClientReactiveJacksonProcessor {
 

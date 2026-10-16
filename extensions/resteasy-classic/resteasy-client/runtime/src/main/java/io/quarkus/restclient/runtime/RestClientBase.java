@@ -26,6 +26,8 @@ import org.eclipse.microprofile.rest.client.ext.QueryParamStyle;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.InstanceHandle;
+import io.quarkus.proxy.ProxyConfiguration;
+import io.quarkus.proxy.ProxyConfigurationRegistry;
 import io.quarkus.restclient.NoopHostnameVerifier;
 import io.quarkus.restclient.config.RestClientsConfig;
 import io.quarkus.restclient.config.RestClientsConfig.RestClientConfig;
@@ -96,26 +98,17 @@ public class RestClientBase {
     }
 
     protected void configureProxy(RestClientBuilder builder) {
-        Optional<String> proxyAddress = oneOf(restClientConfig.proxyAddress(), configRoot.proxyAddress());
-        if (proxyAddress.isPresent() && !NONE.equals(proxyAddress.get())) {
-            String proxyString = proxyAddress.get();
-
-            int lastColonIndex = proxyString.lastIndexOf(':');
-
-            if (lastColonIndex <= 0 || lastColonIndex == proxyString.length() - 1) {
-                throw new RuntimeException("Invalid proxy string. Expected <hostname>:<port>, found '" + proxyString + "'");
-            }
-
-            String host = proxyString.substring(0, lastColonIndex);
-            int port;
-            try {
-                port = Integer.parseInt(proxyString.substring(lastColonIndex + 1));
-            } catch (NumberFormatException e) {
-                throw new RuntimeException("Invalid proxy setting. The port is not a number in '" + proxyString + "'", e);
-            }
-
-            builder.proxyAddress(host, port);
+        Optional<String> proxyConfigurationName = oneOf(restClientConfig.proxyConfigurationName(),
+                configRoot.proxyConfigurationName());
+        if (proxyConfigurationName.isPresent() && proxyConfigurationName.get().equals(NONE)) {
+            builder.proxyAddress("none", 0);
+            return;
         }
+
+        ProxyConfigurationRegistry registry = Arc.container().select(ProxyConfigurationRegistry.class).get();
+        registry.get(proxyConfigurationName)
+                .map(ProxyConfiguration::assertHttpType)
+                .ifPresent(proxyConfig -> builder.proxyAddress(proxyConfig.host(), proxyConfig.port()));
     }
 
     protected void configureRedirects(RestClientBuilder builder) {

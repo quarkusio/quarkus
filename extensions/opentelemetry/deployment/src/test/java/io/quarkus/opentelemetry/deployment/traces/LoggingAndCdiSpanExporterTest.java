@@ -17,18 +17,19 @@ import io.opentelemetry.sdk.trace.export.BatchSpanProcessor;
 import io.opentelemetry.sdk.trace.export.SimpleSpanProcessor;
 import io.opentelemetry.sdk.trace.export.SpanExporter;
 import io.quarkus.opentelemetry.deployment.common.TestUtil;
-import io.quarkus.opentelemetry.runtime.exporter.otlp.tracing.VertxGrpcSpanExporter;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.opentelemetry.runtime.exporter.otlp.tracing.VertxHttpSpanExporter;
+import io.quarkus.test.QuarkusExtensionTest;
 
 public class LoggingAndCdiSpanExporterTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest()
+    static final QuarkusExtensionTest TEST = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar.addClass(TestUtil.class))
             .overrideConfigKey("quarkus.otel.traces.exporter", "logging,cdi")
-            .overrideConfigKey("quarkus.otel.metrics.exporter", "none")
-            .overrideConfigKey("quarkus.otel.logs.exporter", "none")
-            .overrideConfigKey("quarkus.otel.bsp.schedule.delay", "50ms");
+            .overrideConfigKey("quarkus.otel.metrics.enabled", "false")
+            .overrideConfigKey("quarkus.otel.logs.enabled", "false")
+            .overrideConfigKey("quarkus.otel.bsp.schedule.delay", "50ms")
+            .overrideConfigKey("quarkus.datasource.devservices.enabled", "false");
 
     @Inject
     OpenTelemetry openTelemetry;
@@ -47,18 +48,18 @@ public class LoggingAndCdiSpanExporterTest {
     }
 
     @Test
-    void bothLoggingAndVertxGrpcExportersAreUsed() throws Exception {
+    void bothLoggingAndVertxHttpExportersAreUsed() throws Exception {
         List<SpanExporter> exporters = TestUtil.getAllSpanExporters(openTelemetry);
 
         boolean hasLogging = exporters.stream()
                 .anyMatch(e -> e instanceof LoggingSpanExporter);
-        boolean hasVertxGrpc = exporters.stream()
-                .anyMatch(e -> e instanceof VertxGrpcSpanExporter);
+        boolean hasVertxHttp = exporters.stream()
+                .anyMatch(e -> e instanceof VertxHttpSpanExporter);
 
         assertTrue(hasLogging,
                 "LoggingSpanExporter should be present. Found exporters: " + exporterNames(exporters));
-        assertTrue(hasVertxGrpc,
-                "VertxGrpcSpanExporter should be present. Found exporters: " + exporterNames(exporters));
+        assertTrue(hasVertxHttp,
+                "VertxHttpSpanExporter should be present. Found exporters: " + exporterNames(exporters));
         assertEquals(2, exporters.size(),
                 "There should be exactly 2 span exporters. Found: " + exporterNames(exporters));
     }

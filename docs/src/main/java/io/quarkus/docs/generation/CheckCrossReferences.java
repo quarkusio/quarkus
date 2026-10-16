@@ -16,13 +16,10 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import com.fasterxml.jackson.core.exc.StreamReadException;
-import com.fasterxml.jackson.databind.DatabindException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
-import com.fasterxml.jackson.dataformat.yaml.YAMLGenerator;
-
 import io.quarkus.docs.generation.ReferenceIndexGenerator.Index;
+import tools.jackson.dataformat.yaml.YAMLFactory;
+import tools.jackson.dataformat.yaml.YAMLMapper;
+import tools.jackson.dataformat.yaml.YAMLWriteFeature;
 
 /**
  * Iterate over the documents in the source directory and check the cross references.
@@ -75,8 +72,7 @@ public class CheckCrossReferences {
         System.out.println("[INFO] Done");
     }
 
-    public CheckCrossReferences(Path srcDir, Path referenceIndexPath)
-            throws StreamReadException, DatabindException, IOException {
+    public CheckCrossReferences(Path srcDir, Path referenceIndexPath) {
         if (!Files.exists(srcDir) || !Files.isDirectory(srcDir)) {
             throw new IllegalStateException(
                     String.format("Source directory (%s) does not exist", srcDir.toAbsolutePath()));
@@ -88,7 +84,9 @@ public class CheckCrossReferences {
                     String.format("Reference index %s does not exist or is not readable", referenceIndexPath.toAbsolutePath()));
         }
 
-        ObjectMapper om = new ObjectMapper(new YAMLFactory().enable(YAMLGenerator.Feature.MINIMIZE_QUOTES));
+        YAMLMapper om = YAMLMapper.builder(
+                YAMLFactory.builder().enable(YAMLWriteFeature.MINIMIZE_QUOTES).build())
+                .build();
         this.referenceIndex = om.readValue(referenceIndexPath.toFile(), Index.class);
     }
 

@@ -245,6 +245,15 @@ public final class BuildStepBuilder {
         return map.keySet();
     }
 
+    /**
+     * Get all produced item IDs, including order-only items.
+     *
+     * @return the full produces key set
+     */
+    Set<ItemId> getAllProduces() {
+        return produces.keySet();
+    }
+
     @Override
     public String toString() {
         StringBuilder builder = new StringBuilder();

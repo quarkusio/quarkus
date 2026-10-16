@@ -90,7 +90,7 @@ public class LettuceRecorder {
             if (checkActive(name).get().value()) {
                 RedisClientConfig clientConfig = runtimeConfig.getValue().clients().get(name);
                 // checkActive() guarantees at least one host for an active client
-                Set<URI> hosts = clientConfig.hosts().orElseThrow();
+                List<URI> hosts = clientConfig.hosts().orElseThrow();
                 warnAboutUnsupportedConfiguration(name, clientConfig, hosts);
                 LettuceClientSettings settings = LettuceClientSettings.create(name, clientConfig, hosts, vertx.getValue(),
                         tlsRegistry.get());
@@ -158,7 +158,7 @@ public class LettuceRecorder {
     }
 
     /**
-     * The Lettuce backend applies the hosts, client-type, timeout, active, password, TLS,
+     * The Lettuce backend applies the hosts, client-type, timeout, active, username, password, TLS,
      * {@code tcp.secure-transport-protocols}, {@code max-pool-size} and {@code max-pool-waiting} properties; for a
      * cluster also {@code replicas} and {@code topology-cache-ttl}, but not the database of a host URI (a cluster
      * only has database 0); for a Sentinel client {@code master-name}, {@code role}, {@code auto-failover} (a
@@ -167,7 +167,7 @@ public class LettuceRecorder {
      * host. Tell users at startup which other configured properties are not applied, instead of silently connecting
      * differently than configured. Properties with a default value are reported only when set to something else.
      */
-    private static void warnAboutUnsupportedConfiguration(String name, RedisClientConfig config, Set<URI> hosts) {
+    private static void warnAboutUnsupportedConfiguration(String name, RedisClientConfig config, List<URI> hosts) {
         List<String> ignored = new ArrayList<>();
         RedisClientType type = config.clientType();
         if (type == RedisClientType.CLUSTER) {
@@ -197,10 +197,6 @@ public class LettuceRecorder {
         if (type == RedisClientType.SENTINEL && config.role().orElse(RedisRole.MASTER) == RedisRole.REPLICA
                 && config.replicas().isPresent()) {
             ignored.add(getPropertyName(name, "replicas") + " (role=replica reads from the replicas)");
-        }
-        // the deprecated alias is applied by neither backend (see LettuceClientSettings.topologyCacheTtl)
-        if (!config.hashSlotCacheTtl().equals(LettuceClientSettings.DEFAULT_TOPOLOGY_CACHE_TTL)) {
-            ignored.add(getPropertyName(name, "hash-slot-cache-ttl") + " (deprecated, use topology-cache-ttl)");
         }
         if (type != RedisClientType.SENTINEL) {
             if (config.masterName().isPresent()) {
@@ -269,7 +265,6 @@ public class LettuceRecorder {
         present.put("idle-timeout", tcp.idleTimeout().isPresent());
         present.put("connection-timeout", tcp.connectionTimeout().isPresent());
         present.put("proxy-configuration-name", tcp.proxyConfigurationName().isPresent());
-        present.put("non-proxy-hosts", tcp.nonProxyHosts().isPresent());
         present.put("read-idle-timeout", tcp.readIdleTimeout().isPresent());
         present.put("receive-buffer-size", tcp.receiveBufferSize().isPresent());
         // The defaults of the client-level reconnect-attempts (0) and reconnect-interval (1s) are registered for every

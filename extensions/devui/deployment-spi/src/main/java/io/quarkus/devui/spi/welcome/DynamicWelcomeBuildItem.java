@@ -1,11 +1,11 @@
 package io.quarkus.devui.spi.welcome;
 
-import io.quarkus.devui.spi.AbstractDevUIBuildItem;
+import io.quarkus.devjsonrpc.spi.AbstractDevBuildItem;
 
 /**
  * Adds dynamic data to the welcome page
  */
-public final class DynamicWelcomeBuildItem extends AbstractDevUIBuildItem {
+public final class DynamicWelcomeBuildItem extends AbstractDevBuildItem {
 
     private final String html;
 

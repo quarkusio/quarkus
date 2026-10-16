@@ -288,6 +288,11 @@ public class OpenshiftProcessor extends BaseKubeProcessor<AddPortToOpenshiftConf
             for (Map.Entry<String, String> label : config.route().labels().entrySet()) {
                 context.add(new AddLabelDecorator(name, label.getKey(), label.getValue(), ROUTE));
             }
+
+            // OpenShift rejects any path (including "/") with passthrough TLS termination.
+            if (config.route().tls().termination().filter("passthrough"::equalsIgnoreCase).isPresent()) {
+                context.add(new RemovePathFromRouteDecorator(name));
+            }
         }
 
         config.containerName().ifPresent(containerName -> {

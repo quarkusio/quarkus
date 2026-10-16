@@ -2,16 +2,15 @@ package io.quarkus.resteasy.reactive.jackson.deployment.test;
 
 import jakarta.inject.Singleton;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.PropertyNamingStrategies;
-
-import io.quarkus.jackson.ObjectMapperCustomizer;
+import io.quarkus.jackson.JsonMapperBuilderCustomizer;
+import tools.jackson.databind.PropertyNamingStrategies;
+import tools.jackson.databind.json.JsonMapper;
 
 @Singleton
-public class SnakeCaseObjectMapperCustomizer implements ObjectMapperCustomizer {
+public class SnakeCaseObjectMapperCustomizer implements JsonMapperBuilderCustomizer {
 
     @Override
-    public void customize(ObjectMapper objectMapper) {
-        objectMapper.setPropertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE);
+    public void customize(JsonMapper.Builder builder) {
+        builder.propertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE);
     }
 }

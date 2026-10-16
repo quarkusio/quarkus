@@ -44,17 +44,19 @@ class Http3AutoTlsRedirectTest {
         HttpClientConfig clientConfig = new HttpClientConfig();
         HttpClientAgent client = vertx.httpClientBuilder().with(clientConfig).build();
 
-        var response = client.request(HttpMethod.GET, httpUrl.getPort(), "localhost", "/hello")
-                .compose(HttpClientRequest::send)
-                .await(10, TimeUnit.SECONDS);
+        try {
+            var response = client.request(HttpMethod.GET, httpUrl.getPort(), "localhost", "/hello")
+                    .compose(HttpClientRequest::send)
+                    .await(10, TimeUnit.SECONDS);
 
-        assertThat(response.statusCode()).isEqualTo(301);
-        String location = response.getHeader("Location");
-        assertThat(location).startsWith("https://");
-        assertThat(location).contains("/hello");
-        assertThat(location).contains(":" + httpsUrl.getPort());
-
-        client.close().await(5, TimeUnit.SECONDS);
+            assertThat(response.statusCode()).isEqualTo(301);
+            String location = response.getHeader("Location");
+            assertThat(location).startsWith("https://");
+            assertThat(location).contains("/hello");
+            assertThat(location).contains(":" + httpsUrl.getPort());
+        } finally {
+            client.close().await(5, TimeUnit.SECONDS);
+        }
     }
 
     @ApplicationScoped

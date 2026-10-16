@@ -5,7 +5,8 @@ import io.smallrye.mutiny.Uni;
 /**
  * Client assertion provider.
  */
-public sealed interface ClientAssertionProvider permits KubernetesServiceClientAssertionProvider {
+public sealed interface ClientAssertionProvider
+        permits KubernetesServiceClientAssertionProvider, SpiffeClientAssertionProvider {
 
     /**
      * Gets current client assertion.

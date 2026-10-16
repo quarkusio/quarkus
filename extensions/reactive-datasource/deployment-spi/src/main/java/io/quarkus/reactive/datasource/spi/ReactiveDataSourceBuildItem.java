@@ -16,13 +16,24 @@ public final class ReactiveDataSourceBuildItem extends MultiBuildItem {
     private final String name;
     private final String dbKind;
     private final boolean isDefault;
-    private final Optional<String> version;
+    private final Optional<String> dbVersion;
+    private final boolean dbVersionUserSpecified;
 
-    public ReactiveDataSourceBuildItem(String name, String dbKind, boolean isDefault, Optional<String> version) {
+    /**
+     * @deprecated Use {@link #ReactiveDataSourceBuildItem(String, String, boolean, Optional, boolean)} instead.
+     */
+    @Deprecated
+    public ReactiveDataSourceBuildItem(String name, String dbKind, boolean isDefault, Optional<String> dbVersion) {
+        this(name, dbKind, isDefault, dbVersion, dbVersion.isPresent());
+    }
+
+    public ReactiveDataSourceBuildItem(String name, String dbKind, boolean isDefault, Optional<String> dbVersion,
+            boolean dbVersionUserSpecified) {
         this.name = name;
         this.dbKind = dbKind;
         this.isDefault = isDefault;
-        this.version = version;
+        this.dbVersion = dbVersion;
+        this.dbVersionUserSpecified = dbVersionUserSpecified;
     }
 
     public String getName() {
@@ -37,7 +48,11 @@ public final class ReactiveDataSourceBuildItem extends MultiBuildItem {
         return isDefault;
     }
 
-    public Optional<String> getVersion() {
-        return version;
+    public Optional<String> getDbVersion() {
+        return dbVersion;
+    }
+
+    public boolean isDbVersionUserSpecified() {
+        return dbVersionUserSpecified;
     }
 }

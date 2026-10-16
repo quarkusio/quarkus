@@ -225,7 +225,8 @@ public abstract class CommonProcessor<C extends CommonConfig> {
             }
 
             if (buildContainerImage) {
-                LOGGER.infof("Starting (local) container image build for jar using %s", getProcessorImplementation());
+                LOGGER.infof("Starting (local) container image build for native binary using %s",
+                        getProcessorImplementation());
             }
 
             var executableName = getExecutableName(config, containerRuntimes);
@@ -241,7 +242,8 @@ public abstract class CommonProcessor<C extends CommonConfig> {
                             "native-container",
                             Map.of(
                                     "container-image", builtContainerImage,
-                                    "pull-required", "false")));
+                                    "pull-required", "false",
+                                    "output-directory", out.getOutputDirectory().toAbsolutePath().toString())));
 
             containerImageBuilder.produce(new ContainerImageBuilderBuildItem(getProcessorImplementation()));
         }

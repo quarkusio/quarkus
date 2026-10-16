@@ -6,7 +6,6 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 = Using Proxy Registry
 :extension-status: preview
 include::_attributes.adoc[]
-:categories: miscellaneous
 :summary: This guide explains how to use the Proxy Registry in your Quarkus application.
 :topics: security,proxy,http
 :extensions: io.quarkus:quarkus-proxy-registry
@@ -16,6 +15,8 @@ This guide covers:
 * How to configure a global proxy
 * How to configure named proxies
 * How to integrate with a Credentials Provider
+
+include::{includes}/extension-status.adoc[]
 
 == Introduction
 
@@ -66,10 +67,9 @@ quarkus.proxy.host=localhost <1>
 quarkus.proxy.port=8443 <2>
 quarkus.proxy.type=HTTP <3>
 ----
-
-1. The proxy host
-2. The proxy port
-3. The proxy type.
+<1> The proxy host
+<2> The proxy port
+<3> The proxy type.
 Possible values are `HTTP` (default), `SOCKS4`, and `SOCKS5`.
 
 Extensions that are aware of the Proxy Registry use the default proxy.
@@ -92,8 +92,7 @@ quarkus.proxy.my-proxy.port=8443
 quarkus.proxy.my-proxy.type=HTTP
 quarkus.proxy.my-proxy.non-proxy-hosts=proxy.mycompany.com,proxy.org.acme <1>
 ----
-
-1. Hostnames or IP addresses that should bypass the proxy
+<1> Hostnames or IP addresses that should bypass the proxy
 
 In this example, two named proxies are configured.
 The proxies are named `local` and `my-proxy`.

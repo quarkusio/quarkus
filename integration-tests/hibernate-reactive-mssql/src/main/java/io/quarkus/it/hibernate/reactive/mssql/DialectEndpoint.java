@@ -10,7 +10,7 @@ import jakarta.ws.rs.core.MediaType;
 
 import org.hibernate.engine.jdbc.spi.JdbcServices;
 import org.hibernate.reactive.mutiny.Mutiny;
-import org.hibernate.reactive.mutiny.impl.MutinySessionFactoryImpl;
+import org.hibernate.reactive.mutiny.internal.MutinySessionFactoryImpl;
 
 import io.quarkus.arc.ClientProxy;
 import io.quarkus.hibernate.orm.runtime.config.DialectVersions;

@@ -66,6 +66,7 @@ import io.quarkus.tls.deployment.spi.TlsRegistryBuildItem;
 import io.quarkus.vertx.core.deployment.CoreVertxBuildItem;
 import io.quarkus.vertx.core.deployment.EventLoopCountBuildItem;
 import io.quarkus.vertx.http.HttpServerConfigCustomizer;
+import io.quarkus.vertx.http.XForwardedForSelector;
 import io.quarkus.vertx.http.deployment.HttpSecurityProcessor.HttpSecurityConfigSetupCompleteBuildItem;
 import io.quarkus.vertx.http.deployment.devmode.NotFoundPageDisplayableEndpointBuildItem;
 import io.quarkus.vertx.http.deployment.spi.FrameworkEndpointsBuildItem;
@@ -74,6 +75,7 @@ import io.quarkus.vertx.http.deployment.spi.HttpServerStartedBuildItem;
 import io.quarkus.vertx.http.deployment.spi.UseManagementInterfaceBuildItem;
 import io.quarkus.vertx.http.runtime.CurrentRequestProducer;
 import io.quarkus.vertx.http.runtime.CurrentVertxRequest;
+import io.quarkus.vertx.http.runtime.HostValidationRecorder;
 import io.quarkus.vertx.http.runtime.HttpCertificateUpdateEventListener;
 import io.quarkus.vertx.http.runtime.HttpStaticDirConfig;
 import io.quarkus.vertx.http.runtime.VertxConfigBuilder;
@@ -169,6 +171,13 @@ class VertxHttpProcessor {
     }
 
     @BuildStep
+    @Record(ExecutionTime.RUNTIME_INIT)
+    FilterBuildItem hostValidation(HostValidationRecorder recorder) {
+        // If the handler is null, it will be automatically filtered out by finalizeRouter.
+        return new FilterBuildItem(recorder.hostValidationHandler(), SecurityHandlerPriorities.HOST_VALIDATION);
+    }
+
+    @BuildStep
     AdditionalBeanBuildItem additionalBeans() {
         return AdditionalBeanBuildItem.builder()
                 .setUnremovable()
@@ -181,6 +190,11 @@ class VertxHttpProcessor {
     @BuildStep
     UnremovableBeanBuildItem shouldNotRemoveHttpServerConfigCustomizers() {
         return UnremovableBeanBuildItem.beanTypes(HttpServerConfigCustomizer.class);
+    }
+
+    @BuildStep
+    UnremovableBeanBuildItem shouldNotRemoveXForwardedForSelector() {
+        return UnremovableBeanBuildItem.beanTypes(XForwardedForSelector.class);
     }
 
     @BuildStep

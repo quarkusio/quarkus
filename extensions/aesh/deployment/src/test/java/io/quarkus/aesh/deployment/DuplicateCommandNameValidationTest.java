@@ -9,7 +9,7 @@ import org.aesh.command.invocation.CommandInvocation;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 /**
  * Tests that duplicate top-level command names are detected at build time.
@@ -19,7 +19,7 @@ import io.quarkus.test.QuarkusUnitTest;
 public class DuplicateCommandNameValidationTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest test = new QuarkusUnitTest()
+    static final QuarkusExtensionTest test = new QuarkusExtensionTest()
             .setExpectedException(DeploymentException.class)
             .withApplicationRoot(jar -> jar.addClasses(GreetCommandA.class, GreetCommandB.class));
 

@@ -59,16 +59,18 @@ class Http3RestClientTest {
                 .setTrustOptions(new PfxOptions().setPath("target/certs/http3-test-truststore.p12").setPassword("secret"));
         HttpClientAgent client = vertx.httpClientBuilder().with(clientConfig).with(sslOptions).build();
 
-        var response = client.request(HttpMethod.GET, port, "localhost", "/client/ping")
-                .compose(HttpClientRequest::send)
-                .compose(resp -> resp.body()
-                        .map(body -> new ResponseStruct(resp.version().name(), body.toString(), resp.statusCode())))
-                .await(10, TimeUnit.SECONDS);
+        try {
+            var response = client.request(HttpMethod.GET, port, "localhost", "/client/ping")
+                    .compose(HttpClientRequest::send)
+                    .compose(resp -> resp.body()
+                            .map(body -> new ResponseStruct(resp.version().name(), body.toString(), resp.statusCode())))
+                    .await(10, TimeUnit.SECONDS);
 
-        assertThat(response.status).isEqualTo(200);
-        assertThat(response.body).isEqualTo("pong");
-
-        client.close().await(5, TimeUnit.SECONDS);
+            assertThat(response.status).isEqualTo(200);
+            assertThat(response.body).isEqualTo("pong");
+        } finally {
+            client.close().await(5, TimeUnit.SECONDS);
+        }
     }
 
     @Test
@@ -82,16 +84,18 @@ class Http3RestClientTest {
                 .setTrustOptions(new PfxOptions().setPath("target/certs/http3-test-truststore.p12").setPassword("secret"));
         HttpClientAgent client = vertx.httpClientBuilder().with(clientConfig).with(sslOptions).build();
 
-        var response = client.request(HttpMethod.GET, port, "localhost", "/ping")
-                .compose(HttpClientRequest::send)
-                .compose(resp -> resp.body()
-                        .map(body -> new ResponseStruct(resp.version().name(), body.toString(), resp.statusCode())))
-                .await(10, TimeUnit.SECONDS);
+        try {
+            var response = client.request(HttpMethod.GET, port, "localhost", "/ping")
+                    .compose(HttpClientRequest::send)
+                    .compose(resp -> resp.body()
+                            .map(body -> new ResponseStruct(resp.version().name(), body.toString(), resp.statusCode())))
+                    .await(10, TimeUnit.SECONDS);
 
-        assertThat(response.version).isEqualTo("HTTP_3");
-        assertThat(response.status).isEqualTo(200);
-        assertThat(response.body).isEqualTo("pong");
-
-        client.close().await(5, TimeUnit.SECONDS);
+            assertThat(response.version).isEqualTo("HTTP_3");
+            assertThat(response.status).isEqualTo(200);
+            assertThat(response.body).isEqualTo("pong");
+        } finally {
+            client.close().await(5, TimeUnit.SECONDS);
+        }
     }
 }

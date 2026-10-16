@@ -7,6 +7,7 @@ import java.util.HashSet;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Predicate;
 
 import jakarta.ws.rs.client.ClientResponseContext;
 import jakarta.ws.rs.core.EntityTag;
@@ -72,6 +73,11 @@ public class ClientResponseContextImpl implements ClientResponseContext {
     @Override
     public String getHeaderString(String name) {
         return HeaderUtil.getHeaderString(state.getResponseHeaders(), name);
+    }
+
+    @Override
+    public boolean containsHeaderString(String name, String valueSeparatorRegex, Predicate<String> valuePredicate) {
+        return HeaderUtil.containsHeaderString(state.getResponseHeaders(), name, valueSeparatorRegex, valuePredicate);
     }
 
     @Override

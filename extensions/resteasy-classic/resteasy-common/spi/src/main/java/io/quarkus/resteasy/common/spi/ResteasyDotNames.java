@@ -29,6 +29,7 @@ public final class ResteasyDotNames {
     public static final DotName PUT = DotName.createSimple("jakarta.ws.rs.PUT");
     public static final DotName APPLICATION_PATH = DotName.createSimple("jakarta.ws.rs.ApplicationPath");
     public static final DotName PATH = DotName.createSimple("jakarta.ws.rs.Path");
+    public static final DotName NAME_BINDING = DotName.createSimple("jakarta.ws.rs.NameBinding");
     public static final DotName DYNAMIC_FEATURE = DotName.createSimple("jakarta.ws.rs.container.DynamicFeature");
     public static final DotName CONTEXT = DotName.createSimple("jakarta.ws.rs.core.Context");
     public static final DotName PATH_PARAM = DotName.createSimple("jakarta.ws.rs.PathParam");
@@ -117,6 +118,7 @@ public final class ResteasyDotNames {
             "jakarta.json.",
             // Jackson
             "com.fasterxml.jackson.databind.",
+            "tools.jackson.databind.",
             // JAX-RS
             "jakarta.ws.rs.",
             // RESTEasy

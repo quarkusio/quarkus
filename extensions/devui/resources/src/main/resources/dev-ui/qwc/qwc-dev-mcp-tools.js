@@ -350,11 +350,11 @@ export class QwcDevMCPTools extends QwcHotReloadElement {
 
     _loadTools(){
         this.jsonRpc.list().then(jsonRpcResponse => {
-            let et = jsonRpcResponse.result.tools;
+            let et = jsonRpcResponse.result?.tools;
             et = (et ?? []).map(o => ({ ...o, enabled: true }));
-            
+
             this.jsonRpc.listDisabled().then(jsonRpcResponse => {
-                let dt = jsonRpcResponse.result.tools;
+                let dt = jsonRpcResponse.result?.tools;
                 dt = (dt ?? []).map(o => ({ ...o, enabled: false }));
                 
                 const collator = new Intl.Collator(undefined, { numeric: true, sensitivity: 'base' });

@@ -10,12 +10,10 @@ import org.jboss.jandex.Type;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.BuildSteps;
-import io.quarkus.deployment.annotations.ExecutionTime;
-import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.oidc.TokenStateManager;
 import io.quarkus.oidc.redis.token.state.manager.runtime.AuthorizationCodeTokensRecord;
-import io.quarkus.oidc.redis.token.state.manager.runtime.OidcRedisTokenStateManagerRecorder;
+import io.quarkus.oidc.redis.token.state.manager.runtime.OidcRedisTokenStateManagerCreator;
 import io.quarkus.redis.client.RedisClientName;
 import io.quarkus.redis.datasource.ReactiveRedisDataSource;
 import io.quarkus.redis.deployment.client.RequestedRedisClientBuildItem;
@@ -35,23 +33,21 @@ public class OidcRedisTokenStateManagerProcessor {
                 .serialization().fields().methods().constructors().build();
     }
 
-    @Record(ExecutionTime.STATIC_INIT)
     @BuildStep
-    SyntheticBeanBuildItem createTokenStateManager(OidcRedisTokenStateManagerRecorder recorder,
-            OidcRedisTokenStateManagerBuildConfig buildConfig) {
+    SyntheticBeanBuildItem createTokenStateManager(OidcRedisTokenStateManagerBuildConfig buildConfig) {
         var redisClientName = buildConfig.redisClientName();
         var beanConfigurator = SyntheticBeanBuildItem.configure(TokenStateManager.class)
                 .priority(1)
                 .alternative(true)
                 .unremovable()
-                .scope(ApplicationScoped.class);
+                .scope(ApplicationScoped.class)
+                .creator(OidcRedisTokenStateManagerCreator.class);
         if (RedisConfig.isDefaultClient(redisClientName)) {
             beanConfigurator
-                    .createWith(recorder.createTokenStateManager(null))
                     .addInjectionPoint(Type.create(ReactiveRedisDataSource.class));
         } else {
             beanConfigurator
-                    .createWith(recorder.createTokenStateManager(redisClientName))
+                    .param(OidcRedisTokenStateManagerCreator.REDIS_CLIENT_NAME_PARAM, redisClientName)
                     .addInjectionPoint(Type.create(ReactiveRedisDataSource.class),
                             AnnotationInstance.builder(RedisClientName.class).value(redisClientName).build());
         }

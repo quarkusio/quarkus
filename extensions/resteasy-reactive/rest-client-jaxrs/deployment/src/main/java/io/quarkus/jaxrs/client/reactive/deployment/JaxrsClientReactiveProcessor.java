@@ -66,6 +66,7 @@ import jakarta.ws.rs.client.Entity;
 import jakarta.ws.rs.client.Invocation;
 import jakarta.ws.rs.client.RxInvoker;
 import jakarta.ws.rs.client.WebTarget;
+import jakarta.ws.rs.core.EntityPart;
 import jakarta.ws.rs.core.GenericType;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.MultivaluedHashMap;
@@ -92,6 +93,7 @@ import org.jboss.jandex.TypeVariable;
 import org.jboss.logging.Logger;
 import org.jboss.resteasy.reactive.client.api.ClientMultipartForm;
 import org.jboss.resteasy.reactive.client.handlers.ClientObservabilityHandler;
+import org.jboss.resteasy.reactive.client.handlers.ClientSendRequestHandler;
 import org.jboss.resteasy.reactive.client.impl.AsyncInvokerImpl;
 import org.jboss.resteasy.reactive.client.impl.ClientBuilderImpl;
 import org.jboss.resteasy.reactive.client.impl.ClientImpl;
@@ -108,6 +110,7 @@ import org.jboss.resteasy.reactive.client.processor.beanparam.CookieParamItem;
 import org.jboss.resteasy.reactive.client.processor.beanparam.FormParamItem;
 import org.jboss.resteasy.reactive.client.processor.beanparam.HeaderParamItem;
 import org.jboss.resteasy.reactive.client.processor.beanparam.Item;
+import org.jboss.resteasy.reactive.client.processor.beanparam.MatrixParamItem;
 import org.jboss.resteasy.reactive.client.processor.beanparam.PathParamItem;
 import org.jboss.resteasy.reactive.client.processor.beanparam.QueryParamItem;
 import org.jboss.resteasy.reactive.client.processor.scanning.ClientEndpointIndexer;
@@ -200,11 +203,13 @@ public class JaxrsClientReactiveProcessor {
     private static final String MULTI_BYTE_SIGNATURE = "L" + Multi.class.getName().replace('.', '/') + "<Ljava/lang/Byte;>;";
     private static final String MULTI_BUFFER_SIGNATURE = "L" + Multi.class.getName().replace('.', '/')
             + "<Lio/vertx/core/buffer/Buffer;>;";
+    private static final String MULTI_BYTE_ARRAY_SIGNATURE = "L" + Multi.class.getName().replace('.', '/') + "<[B>;";
     private static final String FILE_SIGNATURE = "L" + File.class.getName().replace('.', '/') + ";";
     private static final String PATH_SIGNATURE = "L" + java.nio.file.Path.class.getName().replace('.', '/') + ";";
     private static final String BUFFER_SIGNATURE = "L" + Buffer.class.getName().replace('.', '/') + ";";
     private static final String BYTE_ARRAY_SIGNATURE = "[B";
     private static final String FILE_UPLOAD_SIGNATURE = "L" + FileUpload.class.getName().replace('.', '/') + ";";
+    private static final String ENTITY_PART_SIGNATURE = "L" + EntityPart.class.getName().replace('.', '/') + ";";
 
     private static final Logger log = Logger.getLogger(JaxrsClientReactiveProcessor.class);
 
@@ -360,7 +365,18 @@ public class JaxrsClientReactiveProcessor {
                 .setSkipMethodParameter(new Predicate<Map<DotName, AnnotationInstance>>() {
                     @Override
                     public boolean test(Map<DotName, AnnotationInstance> anns) {
-                        return anns.containsKey(NOT_BODY) || anns.containsKey(URL);
+                        if (anns.containsKey(NOT_BODY)) {
+                            return true;
+                        }
+
+                        for (final DotName annotationName : anns.keySet()) {
+                            final ClassInfo type = index.getClassByName(annotationName);
+                            if (type != null && type.declaredAnnotation(NOT_BODY) != null) {
+                                return true;
+                            }
+                        }
+
+                        return false;
                     }
                 })
                 .setValidateEndpoint(validationPredicatesBuildItems.stream().map(item -> item.getPredicate())
@@ -408,6 +424,7 @@ public class JaxrsClientReactiveProcessor {
                 .build();
 
         boolean observabilityIntegrationNeeded = (capabilities.isPresent(Capability.OPENTELEMETRY_TRACER) ||
+                capabilities.isPresent(Capability.JFR) ||
                 (metricsCapability.isPresent()
                         && metricsCapability.get().metricsSupported(MetricsFactory.MICROMETER)));
 
@@ -1106,6 +1123,15 @@ public class JaxrsClientReactiveProcessor {
                                             methodCreator.getMethodParam(paramIdx),
                                             jandexMethod.parameterType(paramIdx), index, methodCreator.getThis(),
                                             getGenericTypeFromArray(methodCreator, methodGenericParametersField, paramIdx),
+                                            getAnnotationsFromArray(methodCreator, methodParamAnnotationsField, paramIdx),
+                                            param.separator));
+                        } else if (param.parameterType == ParameterType.MATRIX) {
+                            // matrix params have to be set on a method-level web target (they vary between invocations)
+                            methodCreator.assign(methodTarget,
+                                    addMatrixParam(jandexMethod, methodCreator, methodTarget, param.name,
+                                            methodCreator.getMethodParam(paramIdx),
+                                            jandexMethod.parameterType(paramIdx), index, methodCreator.getThis(),
+                                            getGenericTypeFromArray(methodCreator, methodGenericParametersField, paramIdx),
                                             getAnnotationsFromArray(methodCreator, methodParamAnnotationsField, paramIdx)));
                         } else if (param.parameterType == ParameterType.BEAN
                                 || param.parameterType == ParameterType.MULTI_PART_FORM) {
@@ -1148,9 +1174,10 @@ public class JaxrsClientReactiveProcessor {
                                     getAnnotationsFromArray(methodCreator, methodParamAnnotationsField, paramIdx));
                         } else if (param.parameterType == ParameterType.BODY) {
                             if (param.declaredType.equals(Multi.class.getName())) {
-                                if (!param.signature.equals(MULTI_BUFFER_SIGNATURE)) {
+                                if (!param.signature.equals(MULTI_BUFFER_SIGNATURE)
+                                        && !param.signature.equals(MULTI_BYTE_ARRAY_SIGNATURE)) {
                                     throw new IllegalArgumentException(
-                                            "When using Multi as body parameter only Multi<io.vertx.core.buffer.Buffer> is supported");
+                                            "When using Multi as body parameter only Multi<io.vertx.core.buffer.Buffer> and Multi<byte[]> are supported");
                                 }
                             }
 
@@ -1224,7 +1251,7 @@ public class JaxrsClientReactiveProcessor {
                                     getGenericTypeFromArray(methodCreator, methodGenericParametersField, paramIdx),
                                     getAnnotationsFromArray(methodCreator, methodParamAnnotationsField, paramIdx),
                                     multipart,
-                                    param.mimeType, param.partFileName,
+                                    param.mimeType, param.partFileName, param.separator,
                                     jandexMethod.declaringClass().name() + "." + jandexMethod.name());
                         }
                     }
@@ -1383,6 +1410,7 @@ public class JaxrsClientReactiveProcessor {
                 || signature.equals(BYTE_ARRAY_SIGNATURE)
                 || signature.equals(MULTI_BYTE_SIGNATURE)
                 || signature.equals(FILE_UPLOAD_SIGNATURE)
+                || signature.equals(ENTITY_PART_SIGNATURE)
                 || partType != null);
     }
 
@@ -1761,6 +1789,17 @@ public class JaxrsClientReactiveProcessor {
                                             getGenericTypeFromArray(subMethodCreator, subParamField.genericsParametersField,
                                                     subParamField.paramIndex),
                                             getAnnotationsFromArray(subMethodCreator, subParamField.paramAnnotationsField,
+                                                    subParamField.paramIndex),
+                                            param.separator));
+                        } else if (param.parameterType == ParameterType.MATRIX) {
+                            // matrix params have to be set on a method-level web target (they vary between invocations)
+                            subMethodCreator.assign(methodTarget,
+                                    addMatrixParam(jandexMethod, subMethodCreator, methodTarget, param.name,
+                                            paramValue, subParamField.type, index,
+                                            subMethodCreator.readInstanceField(clientField, subMethodCreator.getThis()),
+                                            getGenericTypeFromArray(subMethodCreator, subParamField.genericsParametersField,
+                                                    subParamField.paramIndex),
+                                            getAnnotationsFromArray(subMethodCreator, subParamField.paramAnnotationsField,
                                                     subParamField.paramIndex)));
                         } else if (param.parameterType == ParameterType.BEAN
                                 || param.parameterType == ParameterType.MULTI_PART_FORM) {
@@ -1903,6 +1942,18 @@ public class JaxrsClientReactiveProcessor {
                             // query params have to be set on a method-level web target (they vary between invocations)
                             subMethodCreator.assign(methodTarget,
                                     addQueryParam(jandexMethod, subMethodCreator, methodTarget, param.name,
+                                            subMethodCreator.getMethodParam(paramIdx),
+                                            jandexSubMethod.parameterType(paramIdx), index,
+                                            subMethodCreator.readInstanceField(clientField, subMethodCreator.getThis()),
+                                            getGenericTypeFromArray(subMethodCreator, subMethodGenericParametersField,
+                                                    paramIdx),
+                                            getAnnotationsFromArray(subMethodCreator, subMethodParamAnnotationsField,
+                                                    paramIdx),
+                                            param.separator));
+                        } else if (param.parameterType == ParameterType.MATRIX) {
+                            // matrix params have to be set on a method-level web target (they vary between invocations)
+                            subMethodCreator.assign(methodTarget,
+                                    addMatrixParam(jandexMethod, subMethodCreator, methodTarget, param.name,
                                             subMethodCreator.getMethodParam(paramIdx),
                                             jandexSubMethod.parameterType(paramIdx), index,
                                             subMethodCreator.readInstanceField(clientField, subMethodCreator.getThis()),
@@ -2299,6 +2350,11 @@ public class JaxrsClientReactiveProcessor {
         } else if (MULTI_BYTE_SIGNATURE.equals(parameterSignature)) {
             addMultiAsFile(bytecodeCreator, multipartForm, formParamName, mimeType, partFilename, fieldValue,
                     errorLocation);
+        } else if (typeStr.equals(EntityPart.class.getName())) {
+            bytecodeCreator.invokeStaticMethod(
+                    MethodDescriptor.ofMethod(ClientSendRequestHandler.class, "addEntityPartToForm",
+                            void.class, QuarkusMultipartForm.class, EntityPart.class),
+                    multipartForm, fieldValue);
         } else if (mimeType != null) {
             if (partFilename != null) {
                 log.warnf("Using the @PartFilename annotation is unsupported on the type '%s'. Problematic field is: '%s'",
@@ -3018,6 +3074,16 @@ public class JaxrsClientReactiveProcessor {
                                     queryParam.getValueType(),
                                     index, client,
                                     getGenericTypeFromParameter(creator, beanParamDescriptorField, item.fieldName()),
+                                    getAnnotationsFromParameter(creator, beanParamDescriptorField, item.fieldName()), null));
+                    break;
+                case MATRIX_PARAM:
+                    MatrixParamItem matrixParam = (MatrixParamItem) item;
+                    creator.assign(target,
+                            addMatrixParam(jandexMethod, creator, target, matrixParam.name(),
+                                    matrixParam.extract(creator, param),
+                                    matrixParam.getValueType(),
+                                    index, client,
+                                    getGenericTypeFromParameter(creator, beanParamDescriptorField, item.fieldName()),
                                     getAnnotationsFromParameter(creator, beanParamDescriptorField, item.fieldName())));
                     break;
                 case COOKIE:
@@ -3055,7 +3121,7 @@ public class JaxrsClientReactiveProcessor {
                             formParams,
                             getGenericTypeFromParameter(creator, beanParamDescriptorField, item.fieldName()),
                             getAnnotationsFromParameter(creator, beanParamDescriptorField, item.fieldName()),
-                            multipart, formParam.getMimeType(), formParam.getFileName(),
+                            multipart, formParam.getMimeType(), formParam.getFileName(), null,
                             beanParamClass + "." + formParam.getSourceName());
                     break;
                 default:
@@ -3148,10 +3214,43 @@ public class JaxrsClientReactiveProcessor {
             // this client or containing client if we're in a subresource
             ResultHandle client,
             ResultHandle genericType,
+            ResultHandle paramAnnotations,
+            String separator) {
+        return addWebTargetParam(jandexMethod, methodCreator, webTarget, paramName, queryParamHandle, type, index, client,
+                genericType, paramAnnotations, "queryParam", separator);
+    }
+
+    // takes a result handle to target as one of the parameters, returns a result handle to a modified target
+    private ResultHandle addMatrixParam(MethodInfo jandexMethod, BytecodeCreator methodCreator,
+            ResultHandle webTarget,
+            String paramName,
+            ResultHandle matrixParamHandle,
+            Type type,
+            IndexView index,
+            // this client or containing client if we're in a subresource
+            ResultHandle client,
+            ResultHandle genericType,
             ResultHandle paramAnnotations) {
+        return addWebTargetParam(jandexMethod, methodCreator, webTarget, paramName, matrixParamHandle, type, index, client,
+                genericType, paramAnnotations, "matrixParam", null);
+    }
+
+    // takes a result handle to target as one of the parameters, returns a result handle to a modified target
+    private ResultHandle addWebTargetParam(MethodInfo jandexMethod, BytecodeCreator methodCreator,
+            ResultHandle webTarget,
+            String paramName,
+            ResultHandle paramHandle,
+            Type type,
+            IndexView index,
+            // this client or containing client if we're in a subresource
+            ResultHandle client,
+            ResultHandle genericType,
+            ResultHandle paramAnnotations,
+            String webTargetParamMethod,
+            String separator) {
 
         AssignableResultHandle result = methodCreator.createVariable(WebTarget.class);
-        BranchResult isParamNull = methodCreator.ifNull(queryParamHandle);
+        BranchResult isParamNull = methodCreator.ifNull(paramHandle);
         BytecodeCreator notNullParam = isParamNull.falseBranch();
         if (isMap(type, index)) {
             var resolvesTypes = resolveMapTypes(type, jandexMethod);
@@ -3163,7 +3262,7 @@ public class JaxrsClientReactiveProcessor {
             notNullParam.assign(result, webTarget);
             // Loop through the keys
             ResultHandle keySet = notNullParam.invokeInterfaceMethod(ofMethod(Map.class, "keySet", Set.class),
-                    queryParamHandle);
+                    paramHandle);
             ResultHandle keysIterator = notNullParam.invokeInterfaceMethod(
                     ofMethod(Set.class, "iterator", Iterator.class), keySet);
             BytecodeCreator loopCreator = notNullParam.whileLoop(c -> iteratorHasNext(c, keysIterator)).block();
@@ -3171,7 +3270,7 @@ public class JaxrsClientReactiveProcessor {
                     ofMethod(Iterator.class, "next", Object.class), keysIterator);
             // get the value and convert
             ResultHandle value = loopCreator.invokeInterfaceMethod(ofMethod(Map.class, "get", Object.class, Object.class),
-                    queryParamHandle, key);
+                    paramHandle, key);
             var valueType = resolvesTypes.getValue();
             String componentType = valueType.name().toString();
             ResultHandle paramArray;
@@ -3194,8 +3293,8 @@ public class JaxrsClientReactiveProcessor {
                                 value);
             }
             // get the new WebTarget
-            addQueryParamToWebTarget(loopCreator, key, result, client, genericType, paramAnnotations,
-                    paramArray, componentType, result);
+            addWebTargetParamToWebTarget(loopCreator, key, result, client, genericType, paramAnnotations,
+                    paramArray, componentType, result, webTargetParamMethod, separator);
         } else {
             ResultHandle paramArray;
             String componentType = null;
@@ -3207,51 +3306,51 @@ public class JaxrsClientReactiveProcessor {
                         componentType = DotNames.BYTE.toString();
                         paramArray = notNullParam.invokeStaticMethod(
                                 MethodDescriptor.ofMethod(ToObjectArray.class, "primitiveArray", Byte[].class, byte[].class),
-                                queryParamHandle);
+                                paramHandle);
                     } else if (primitiveType == PrimitiveType.CHAR) {
                         componentType = DotNames.CHARACTER.toString();
                         paramArray = notNullParam.invokeStaticMethod(
                                 MethodDescriptor.ofMethod(ToObjectArray.class, "primitiveArray", Character[].class,
                                         char[].class),
-                                queryParamHandle);
+                                paramHandle);
                     } else if (primitiveType == PrimitiveType.DOUBLE) {
                         componentType = DotNames.DOUBLE.toString();
                         paramArray = notNullParam.invokeStaticMethod(
                                 MethodDescriptor.ofMethod(ToObjectArray.class, "primitiveArray", Double[].class,
                                         double[].class),
-                                queryParamHandle);
+                                paramHandle);
                     } else if (primitiveType == PrimitiveType.FLOAT) {
                         componentType = DotNames.FLOAT.toString();
                         paramArray = notNullParam.invokeStaticMethod(
                                 MethodDescriptor.ofMethod(ToObjectArray.class, "primitiveArray", Float[].class, float[].class),
-                                queryParamHandle);
+                                paramHandle);
                     } else if (primitiveType == PrimitiveType.INT) {
                         componentType = DotNames.INTEGER.toString();
                         paramArray = notNullParam.invokeStaticMethod(
                                 MethodDescriptor.ofMethod(ToObjectArray.class, "primitiveArray", Integer[].class, int[].class),
-                                queryParamHandle);
+                                paramHandle);
                     } else if (primitiveType == PrimitiveType.LONG) {
                         componentType = DotNames.LONG.toString();
                         paramArray = notNullParam.invokeStaticMethod(
                                 MethodDescriptor.ofMethod(ToObjectArray.class, "primitiveArray", Long[].class, long[].class),
-                                queryParamHandle);
+                                paramHandle);
                     } else if (primitiveType == PrimitiveType.SHORT) {
                         componentType = DotNames.SHORT.toString();
                         paramArray = notNullParam.invokeStaticMethod(
                                 MethodDescriptor.ofMethod(ToObjectArray.class, "primitiveArray", Short[].class, short[].class),
-                                queryParamHandle);
+                                paramHandle);
                     } else if (primitiveType == PrimitiveType.BOOLEAN) {
                         componentType = DotNames.BOOLEAN.toString();
                         paramArray = notNullParam.invokeStaticMethod(
                                 MethodDescriptor.ofMethod(ToObjectArray.class, "primitiveArray", Boolean[].class,
                                         boolean[].class),
-                                queryParamHandle);
+                                paramHandle);
                     } else {
                         throw new IllegalArgumentException("not supported yet");
                     }
                 } else {
                     componentType = constituentType.name().toString();
-                    paramArray = notNullParam.checkCast(queryParamHandle, Object[].class);
+                    paramArray = notNullParam.checkCast(paramHandle, Object[].class);
                 }
             } else if (isCollection(type, index)) {
                 if (type.kind() == PARAMETERIZED_TYPE) {
@@ -3265,7 +3364,7 @@ public class JaxrsClientReactiveProcessor {
                 }
                 paramArray = notNullParam.invokeStaticMethod(
                         MethodDescriptor.ofMethod(ToObjectArray.class, "collection", Object[].class, Collection.class),
-                        queryParamHandle);
+                        paramHandle);
             } else if (isOptional(type, index)) {
                 if (type.kind() == PARAMETERIZED_TYPE) {
                     Type paramType = type.asParameterizedType().arguments().get(0);
@@ -3278,16 +3377,16 @@ public class JaxrsClientReactiveProcessor {
                 }
                 paramArray = notNullParam.invokeStaticMethod(
                         MethodDescriptor.ofMethod(ToObjectArray.class, "optional", Object[].class, Optional.class),
-                        queryParamHandle);
+                        paramHandle);
             } else {
                 componentType = type.name().toString();
                 paramArray = notNullParam.invokeStaticMethod(
                         MethodDescriptor.ofMethod(ToObjectArray.class, "value", Object[].class, Object.class),
-                        queryParamHandle);
+                        paramHandle);
             }
 
-            addQueryParamToWebTarget(notNullParam, notNullParam.load(paramName), webTarget, client, genericType,
-                    paramAnnotations, paramArray, componentType, result);
+            addWebTargetParamToWebTarget(notNullParam, notNullParam.load(paramName), webTarget, client, genericType,
+                    paramAnnotations, paramArray, componentType, result, webTargetParamMethod, separator);
         }
 
         isParamNull.trueBranch().assign(result, webTarget);
@@ -3323,19 +3422,22 @@ public class JaxrsClientReactiveProcessor {
                 creator.invokeInterfaceMethod(ofMethod(Iterator.class, "hasNext", boolean.class), iterator));
     }
 
-    private void addQueryParamToWebTarget(BytecodeCreator creator, ResultHandle paramName,
+    private void addWebTargetParamToWebTarget(BytecodeCreator creator, ResultHandle paramName,
             ResultHandle webTarget,
             ResultHandle client, ResultHandle genericType,
             ResultHandle paramAnnotations, ResultHandle paramArray,
             String componentType,
-            AssignableResultHandle resultVariable) {
+            AssignableResultHandle resultVariable,
+            String webTargetParamMethod,
+            String separator) {
         ResultHandle convertedParamArray = creator.invokeVirtualMethod(
                 MethodDescriptor.ofMethod(RestClientBase.class, "convertParamArray", Object[].class, Object[].class,
-                        Class.class, java.lang.reflect.Type.class, Annotation[].class),
-                client, paramArray, creator.loadClassFromTCCL(componentType), genericType, paramAnnotations);
+                        Class.class, java.lang.reflect.Type.class, Annotation[].class, String.class),
+                client, paramArray, creator.loadClassFromTCCL(componentType), genericType, paramAnnotations,
+                separator == null ? creator.loadNull() : creator.load(separator));
 
         creator.assign(resultVariable, creator.invokeInterfaceMethod(
-                MethodDescriptor.ofMethod(WebTarget.class, "queryParam", WebTarget.class,
+                MethodDescriptor.ofMethod(WebTarget.class, webTargetParamMethod, WebTarget.class,
                         String.class, Object[].class),
                 webTarget, paramName, convertedParamArray));
     }
@@ -3457,7 +3559,7 @@ public class JaxrsClientReactiveProcessor {
             String restClientInterfaceClassName, ResultHandle client, AssignableResultHandle formParams,
             ResultHandle genericType,
             ResultHandle parameterAnnotations, boolean multipart,
-            String mimeType, String partFilename, String errorLocation) {
+            String mimeType, String partFilename, String separator, String errorLocation) {
         if (multipart) {
             handleMultipartField(index, paramName, mimeType, partFilename, parameterType, parameterSignature,
                     formParamHandle,
@@ -3482,9 +3584,10 @@ public class JaxrsClientReactiveProcessor {
                         formParamHandle);
                 ResultHandle convertedParamArray = creator.invokeVirtualMethod(
                         MethodDescriptor.ofMethod(RestClientBase.class, "convertParamArray", Object[].class, Object[].class,
-                                Class.class, java.lang.reflect.Type.class, Annotation[].class),
+                                Class.class, java.lang.reflect.Type.class, Annotation[].class, String.class),
                         client, paramArray, creator.loadClassFromTCCL(componentType), genericType,
-                        creator.newArray(Annotation.class, 0));
+                        creator.newArray(Annotation.class, 0),
+                        separator == null ? creator.loadNull() : creator.load(separator));
                 creator.invokeInterfaceMethod(MULTIVALUED_MAP_ADD_ALL, formParams,
                         creator.load(paramName), convertedParamArray);
             } else if (isMap(parameterType, index)) {
@@ -3528,9 +3631,9 @@ public class JaxrsClientReactiveProcessor {
                 }
                 ResultHandle convertedParamArray = loopCreator.invokeVirtualMethod(
                         MethodDescriptor.ofMethod(RestClientBase.class, "convertParamArray", Object[].class, Object[].class,
-                                Class.class, java.lang.reflect.Type.class, Annotation[].class),
+                                Class.class, java.lang.reflect.Type.class, Annotation[].class, String.class),
                         client, paramArray, loopCreator.loadClassFromTCCL(componentType), genericType,
-                        loopCreator.newArray(Annotation.class, 0));
+                        loopCreator.newArray(Annotation.class, 0), loopCreator.loadNull());
                 loopCreator.invokeInterfaceMethod(MULTIVALUED_MAP_ADD_ALL, formParams,
                         key, convertedParamArray);
             } else {

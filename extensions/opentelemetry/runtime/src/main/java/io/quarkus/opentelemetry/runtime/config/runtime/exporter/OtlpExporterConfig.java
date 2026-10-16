@@ -17,7 +17,7 @@ public interface OtlpExporterConfig {
 
     /**
      * Sets the OTLP endpoint to send telemetry data. If unset, defaults to
-     * {@value OtlpExporterRuntimeConfig#DEFAULT_GRPC_BASE_URI}.
+     * {@value OtlpExporterRuntimeConfig#DEFAULT_HTTP_BASE_URI}.
      * <p>
      * There is a generic property, that will apply to all signals and a signal specific one, following the pattern:
      * `quarkus.otel.exporter.otlp.<signal-type>.endpoint` where <signal-type> is one of the supported signal types,
@@ -26,7 +26,7 @@ public interface OtlpExporterConfig {
      * If protocol is `http/protobuf` the version and signal will be appended to the path (e.g. v1/traces or v1/metrics)
      * and the default port will be {@value OtlpExporterRuntimeConfig#DEFAULT_HTTP_BASE_URI}.
      */
-    @ConfigDocDefault(DEFAULT_GRPC_BASE_URI)
+    @ConfigDocDefault(DEFAULT_HTTP_BASE_URI)
     Optional<String> endpoint();
 
     /**
@@ -74,7 +74,7 @@ public interface OtlpExporterConfig {
      * `quarkus.otel.exporter.otlp.<signal-type>.protocol` where <signal-type> is one of the supported signal types,
      * like `traces` or `metrics`.
      */
-    @ConfigDocDefault(OtlpExporterConfig.Protocol.GRPC)
+    @ConfigDocDefault(Protocol.HTTP_PROTOBUF)
     Optional<String> protocol();
 
     /**

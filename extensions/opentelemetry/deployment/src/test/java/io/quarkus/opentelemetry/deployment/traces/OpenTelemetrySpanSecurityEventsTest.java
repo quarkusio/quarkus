@@ -39,8 +39,10 @@ public class OpenTelemetrySpanSecurityEventsTest {
                             CustomSecurityEvent.class)
                     .addAsResource(new StringAsset("""
                             quarkus.otel.security-events.enabled=true
-                            quarkus.otel.metrics.exporter=none
+                            quarkus.otel.metrics.enabled=false
+                            quarkus.otel.logs.enabled=false
                             quarkus.otel.security-events.event-types=AUTHENTICATION_SUCCESS,AUTHORIZATION_SUCCESS,OTHER
+                            quarkus.datasource.devservices.enabled=false
                             """), "application.properties"));
 
     @Inject

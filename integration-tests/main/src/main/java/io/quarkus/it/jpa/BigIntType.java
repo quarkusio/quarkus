@@ -7,7 +7,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Types;
 
-import org.hibernate.engine.spi.SharedSessionContractImplementor;
+import org.hibernate.type.descriptor.WrapperOptions;
 
 public class BigIntType extends AbstractCustomUserType<BigInteger> {
 
@@ -21,7 +21,7 @@ public class BigIntType extends AbstractCustomUserType<BigInteger> {
     }
 
     @Override
-    public BigInteger nullSafeGet(ResultSet result, int position, SharedSessionContractImplementor session, Object owner)
+    public BigInteger nullSafeGet(ResultSet result, int position, WrapperOptions options)
             throws SQLException {
         BigDecimal bigDecimal = result.getBigDecimal(position);
         return bigDecimal != null ? bigDecimal.toBigIntegerExact() : null;
@@ -29,7 +29,7 @@ public class BigIntType extends AbstractCustomUserType<BigInteger> {
 
     @Override
     public void nullSafeSet(PreparedStatement preparedStatement, BigInteger value, int index,
-            SharedSessionContractImplementor session)
+            WrapperOptions options)
             throws SQLException {
         if (value == null) {
             preparedStatement.setNull(index, Types.BIGINT);

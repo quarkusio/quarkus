@@ -18,20 +18,20 @@ import io.quarkus.aesh.runtime.CliRunner;
 import io.quarkus.builder.BuildChainBuilder;
 import io.quarkus.builder.BuildContext;
 import io.quarkus.builder.BuildStep;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 /**
  * Tests that {@code quarkus.aesh.start-console=true} forces the local console
  * to start even when remote transports are present.
  * <p>
- * Since this is a QuarkusUnitTest (not prod mode), the CliRunner bean is registered
+ * Since this is a QuarkusExtensionTest (not prod mode), the CliRunner bean is registered
  * but not actually started. We verify that the CliRunner bean IS present in the
  * container, proving the config override works.
  */
 public class RemoteTransportForceConsoleTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot(jar -> jar.addClasses(HelloCommand.class))
             .overrideConfigKey("quarkus.aesh.start-console", "true")
             .addBuildChainCustomizer(injectRemoteTransport());

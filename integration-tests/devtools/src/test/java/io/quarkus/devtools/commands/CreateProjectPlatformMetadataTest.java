@@ -15,8 +15,6 @@ import java.util.function.Consumer;
 import org.assertj.core.util.Files;
 import org.junit.jupiter.api.Test;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import io.quarkus.devtools.commands.data.QuarkusCommandException;
 import io.quarkus.devtools.commands.data.QuarkusCommandOutcome;
 import io.quarkus.devtools.project.BuildTool;
@@ -25,6 +23,7 @@ import io.quarkus.devtools.project.QuarkusProjectHelper;
 import io.quarkus.devtools.testing.PlatformAwareTestBase;
 import io.quarkus.devtools.testing.SnapshotTesting;
 import io.quarkus.registry.catalog.ExtensionCatalog;
+import tools.jackson.databind.ObjectMapper;
 
 public class CreateProjectPlatformMetadataTest extends PlatformAwareTestBase {
 
@@ -70,7 +69,8 @@ public class CreateProjectPlatformMetadataTest extends PlatformAwareTestBase {
     }
 
     private Map<String, Object> getMetadata() throws java.io.IOException {
-        return JSON_MAPPER.reader().readValue(CreateProjectPlatformMetadataTest.class.getResource("/platform-metadata.json"),
+        return JSON_MAPPER.readValue(
+                CreateProjectPlatformMetadataTest.class.getResourceAsStream("/platform-metadata.json"),
                 Map.class);
     }
 

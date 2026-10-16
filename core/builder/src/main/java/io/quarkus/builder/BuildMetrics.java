@@ -47,9 +47,7 @@ public class BuildMetrics {
     private final AtomicInteger idGenerator;
 
     public BuildMetrics(String buildTargetName) {
-        boolean enabled = Boolean.getBoolean(BUILDER_METRICS_ENABLED)
-                // This system property is deprecated and will be removed
-                || Boolean.getBoolean("quarkus.debug.dump-build-metrics");
+        boolean enabled = Boolean.getBoolean(BUILDER_METRICS_ENABLED);
         this.buildTargetName = buildTargetName;
         if (enabled) {
             this.idGenerator = new AtomicInteger();

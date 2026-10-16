@@ -10,7 +10,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.composite.CompositeMeterRegistry;
-import io.micrometer.prometheus.PrometheusMeterRegistry;
+import io.micrometer.prometheusmetrics.PrometheusMeterRegistry;
 import io.quarkus.micrometer.test.Util;
 import io.quarkus.test.QuarkusExtensionTest;
 
@@ -19,6 +19,7 @@ public class NoDefaultPrometheusTest {
     static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .setFlatClassPath(true)
             .withConfigurationResource("test-logging.properties")
+            .overrideConfigKey("quarkus.otel.enabled", "false")
             .overrideConfigKey("quarkus.micrometer.binder-enabled-default", "false")
             .overrideConfigKey("quarkus.micrometer.binder.jvm", "true")
             .overrideConfigKey("quarkus.micrometer.export.prometheus.enabled", "true")

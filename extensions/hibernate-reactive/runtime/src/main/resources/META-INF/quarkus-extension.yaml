@@ -7,6 +7,7 @@ metadata:
   - "hibernate"
   - "reactive"
   - "database"
+  guide: "https://quarkus.io/guides/hibernate-reactive"
   categories:
   - "data"
   - "reactive"

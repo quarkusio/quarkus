@@ -5,7 +5,6 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = SmallRye GraphQL Client
 include::_attributes.adoc[]
-:categories: web
 :summary: This guide explains how to leverage SmallRye GraphQL Client to consume GraphQL services.
 :topics: graphql
 :extensions: io.quarkus:quarkus-smallrye-graphql-client
@@ -333,7 +332,6 @@ public List<Film> getAllFilmsUsingDynamicClient() throws Exception {
     return response.getObject(FilmConnection.class, "allFilms").getFilms();  <4>
 }
 ----
-
 <1> Qualifies the injection point so that we know which named client needs to be injected here.
 
 <2> Here we build a document representing the GraphQL query, using the provided DSL language.

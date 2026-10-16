@@ -1,0 +1,203 @@
+[id='recorders-to-services-migration']
+= Recorders-to-Services Migration Guide
+:diataxis-type: howto
+include::_attributes.adoc[]
+:extension-status: deprecated
+
+This guide describes how to migrate Quarkus extensions from the legacy `@Record`/`@Recorder` pattern to the modern `ServiceRegistrar` service system.
+
+The `ServiceRegistrar` service system replaces `@Recorder` with a typed service model. Services declare dependencies explicitly and execute in dependency order, not build step order. The system is designed for incremental migration — converted and unconverted extensions may coexist.
+
+== Architectural Differences
+
+=== Explicit Dependencies Only
+Services get **no** implicit ordering from the build step graph. All ordering comes from `require()`, `after()`, `before()`, or `afterBuildItem()`.
+
+=== Services are Independent from Recorders in the Same Step
+Even if a build step method contains both a `@Record` call and an `ServiceRegistrar` call, the service and recorder are separate nodes in the build execution plan with no implicit ordering between them.
+
+=== Values Flow Through the Dependency Graph
+Service values are passed from producer to consumer via indexed dependency access on `ServiceNode`, not through the `StartupContext` maps (except when using recorder proxy bridges).
+
+---
+
+== Prerequisites
+
+Before converting, verify that all runtime dependencies of your recorder are available as services:
+
+|===
+|Dependency Type |Availability
+
+|`ArcContainer`
+|Service in `ArcProcessor#initializeContainer`
+
+|`BeanContainer`
+|Service in `ArcProcessor#createBeanContainer`
+
+|`ScheduledExecutorService`
+|Aliased by `ThreadPoolSetup`
+
+|`@ConfigMapping` (`RUN_TIME`)
+|Auto-registered by `ConfigServiceRegistrationStep`
+
+|`@ConfigMapping` (`BUILD_AND_RUN_TIME_FIXED`)
+|Auto-registered as static-init
+
+|`@ConfigMapping` (`BUILD_TIME`)
+|**Cannot be a service** — extract values into local variables first
+|===
+
+If other runtime objects are needed, search the codebase for `aliasRecorderValue` or `forService` to see if they are published as services.
+
+---
+
+== Step-by-Step Conversion
+
+=== 1. Analyze the Recorder
+For each `@Recorder` method, determine:
+
+* **Return type**: becomes the service type. `RuntimeValue<X>` unwraps to `X`. `void` becomes `Void.class` (using `reg.forService(String name)`).
+* **Parameters**: `RuntimeValue<X>` parameters become `.require(X.class)`. Simple values (String, int, boolean, enum) can be captured by the lambda. Immutable collections (`List.of()`, `Set.of()`) can be captured.
+* **Instance fields**: configuration `RuntimeValue`s injected via a constructor should be resolved via `.require(ConfigType.class)`.
+* **Trivial methods**: can be inlined directly into the lambda.
+
+=== 2. Convert the Recorder Class
+* **Trivial methods**: delete them and inline their logic into the lambda.
+* **Complex methods**: remove the `@Recorder` annotation, make methods `static`, and unwrap `RuntimeValue` parameters and return types.
+* If all methods are converted, delete the recorder class. Otherwise, keep `@Recorder` only for remaining legacy methods.
+
+=== 3. Convert the Build Step
+
+Let's look at a classic conversion.
+
+==== Before:
+[source,java]
+----
+@BuildStep
+@Record(ExecutionTime.RUNTIME_INIT)
+ServiceStartBuildItem setup(MyRecorder recorder, SomeBuildItem item) {
+    recorder.initialize(item.getValue());
+    return new ServiceStartBuildItem("my-feature");
+}
+----
+
+==== After:
+[source,java]
+----
+@BuildStep
+ServiceStartBuildItem setup(ServiceRegistrar reg, SomeBuildItem item) {
+    reg.forService("io.quarkus.my-feature.setup")
+       .onStart(ctx -> MyRecorder.initialize(item.getValue()));
+    return new ServiceStartBuildItem("my-feature");
+}
+----
+
+=== 4. Declare Dependencies Explicitly
+
+Every dependency must be explicit. There is no implicit ordering from the build step graph.
+
+|===
+|Old Recorder Pattern |New Service Pattern
+
+|`recorder.method(beanContainer.getValue())`
+|`.require(BeanContainer.class)`
+
+|`recorder.method(someRuntimeValue)`
+|`.require(SomeType.class)`
+
+|`recorder.method(config.maxSize())`
+|Capture `int maxSize = config.maxSize()` before the lambda
+
+|`@Consume(SyntheticBeansRuntimeInitBuildItem.class)` on step
+|`.afterBuildItem(SyntheticBeansRuntimeInitBuildItem.class)` on service
+|===
+
+==== Bridging to Build Step Ordering (`afterBuildItem()`)
+When a service depends on state produced by a legacy recorder (e.g., synthetic beans must be initialized), declare the dependency via `afterBuildItem()`:
+
+[source,java]
+----
+reg.forService("io.quarkus.arc.lifecycle")
+   .afterBuildItem(SyntheticBeansRuntimeInitBuildItem.class)
+   .onStart(ctx -> ArcRecorder.fireLifecycleEvent(new StartupEvent()));
+----
+
+This resolves the producing step's nodes and creates ordering edges.
+NOTE: `afterBuildItem()` is deprecated — it exists only for recorder coexistence. Once the producing recorder is converted to a service, replace with `require()` or `after()`, or drop it as appropriate.
+
+==== Cross-Phase Dependencies
+Runtime services can `require()` static-init services. The framework automatically creates a `CROSS_PHASE_PROXY` node that reads the value from the `serviceValues` map.
+
+[source,java]
+----
+// Static-init service
+reg.forService(ArcContainer.class)
+   .atPhase(Phase.STATIC_INIT)
+   .afterBuildItem(ResourcesGeneratedPhaseBuildItem.class)
+   .onStart(ctx -> Arc.initialize());
+
+// Runtime service that depends on it
+reg.forService("io.quarkus.my-ext.setup")
+   .require(ArcContainer.class)  // Cross-phase proxy resolution
+   .onStart((ctx, container) -> { ... });
+----
+
+---
+
+== Coexistence and Bridge APIs
+
+During the transitional period, the `ServiceRegistrar` provides bridge APIs to allow incremental migration of extensions.
+
+=== 1. Recorder $\rightarrow$ Service Bridge
+If you have a value produced by a legacy recorder that a new service needs to depend on, register it using `aliasRecorderValue`:
+
+[source,java]
+----
+@BuildStep
+@Record(ExecutionTime.RUNTIME_INIT)
+void setupLegacyAndService(MyRecorder recorder, ServiceRegistrar reg) {
+    RuntimeValue<MyLegacyValue> val = recorder.createLegacyValue();
+    
+    // Publish legacy value to the ServiceRegistrar graph
+    reg.aliasRecorderValue(MyLegacyValue.class, val);
+}
+----
+
+Downstream services can now simply use `.require(MyLegacyValue.class)`.
+
+=== 2. Service $\rightarrow$ Recorder Bridge
+If an unconverted legacy recorder or an existing build item consumes a value that is now produced by a service, use the service-to-recorder bridge methods:
+
+* **`serviceAsRuntimeValue`**: Produces a `RuntimeValue<T>` proxy for a runtime service.
+* **`staticInitServiceAsRuntimeValue`**: Produces a `RuntimeValue<T>` proxy for a static-init service.
+* **`getRecorderProxy`**: Produces a bare `T` proxy (for proxyable interfaces/classes).
+
+[source,java]
+----
+@BuildStep
+void bridgeServiceToLegacy(ServiceRegistrar reg, BuildProducer<LegacyBuildItem> producer) {
+    reg.forService(MyConnection.class)
+       .onStart(ctx -> new MyConnection());
+
+    RuntimeValue<MyConnection> runtimeVal = reg.serviceAsRuntimeValue(MyConnection.class);
+    producer.produce(new LegacyBuildItem(runtimeVal));
+}
+----
+
+---
+
+== Common Conversion Pitfalls
+
+=== ClassLoader & Thread Context ClassLoader (TCCL)
+Recorder bytecode always ran with the **runtime classloader as the TCCL**. Any recorder code that captured `Thread.currentThread().getContextClassLoader()` for later use relied on that.
+* After converting, ensure that the service still runs with the runtime CL as TCCL, and that captured/inherited CLs are the runtime CL (not the system `AppClassLoader`).
+* Clean up threads or `ThreadLocal`s your service owns in `onStop()`; never leak the `QuarkusClassLoader`.
+
+=== Concrete Class Proxying
+`staticInitServiceAsRecorderValue(ConcreteClass.class)` fails if the class has a non-trivial constructor. Use `staticInitServiceAsRuntimeValue()` instead — `RuntimeValue` is always proxyable.
+
+=== Package-Private Visibility
+Lambda bytecode runs at runtime but references runtime classes directly. Package-private classes become inaccessible from the generated consolidated class. Ensure any classes referenced within the lambda are `public`.
+
+=== Never Reference Deployment Classes inside Service Lambdas
+Always place helper methods, custom interfaces, or static factory methods inside your **runtime** module classes (which are present at runtime). Doing so inside your processor class compiles successfully but throws `NoClassDefFoundError` at runtime.

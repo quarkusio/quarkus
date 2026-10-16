@@ -1,18 +1,11 @@
 package io.quarkus.websockets.client.deployment;
 
 import io.quarkus.builder.item.SimpleBuildItem;
-import io.quarkus.runtime.RuntimeValue;
-import io.undertow.websockets.WebSocketDeploymentInfo;
 
+/**
+ * Marker build item indicating that a
+ * {@link io.undertow.websockets.WebSocketDeploymentInfo} service has been
+ * registered for static-init.
+ */
 public final class WebSocketDeploymentInfoBuildItem extends SimpleBuildItem {
-
-    private final RuntimeValue<WebSocketDeploymentInfo> info;
-
-    public WebSocketDeploymentInfoBuildItem(RuntimeValue<WebSocketDeploymentInfo> info) {
-        this.info = info;
-    }
-
-    public RuntimeValue<WebSocketDeploymentInfo> getInfo() {
-        return info;
-    }
 }

@@ -2,39 +2,38 @@ package io.quarkus.vertx.runtime.jackson.graal;
 
 import java.util.function.BooleanSupplier;
 
+import com.oracle.svm.core.annotate.Delete;
 import com.oracle.svm.core.annotate.Substitute;
 import com.oracle.svm.core.annotate.TargetClass;
 
-import io.vertx.core.json.jackson.JacksonCodec;
-import io.vertx.core.spi.json.JsonCodec;
+import io.quarkus.vertx.runtime.jackson.QuarkusJacksonFactory;
+import io.vertx.core.spi.JsonFactory;
 
 /**
- * When jackson-databind is not on the classpath, substitute {@code QuarkusJacksonFactory.codec()}
- * to avoid referencing classes that require jackson-databind (such as {@code QuarkusJacksonJsonCodec}
- * and {@code DatabindCodec}). GraalVM's static analysis resolves all referenced types at build time,
- * so the try/catch fallback in the original method is not sufficient.
+ * Break any links to the Jackson 2 code handling in Vert.x
  */
-@TargetClass(className = "io.quarkus.vertx.runtime.jackson.QuarkusJacksonFactory", onlyWith = JacksonDatabindMissingSelector.class)
-final class Target_QuarkusJacksonFactory {
+@TargetClass(JsonFactory.class)
+final class Target_JsonFactory {
 
     @Substitute
-    public JsonCodec codec() {
-        return new JacksonCodec();
+    static JsonFactory load() {
+        return new QuarkusJacksonFactory();
     }
 }
 
-/**
- * Same substitution for Vert.x's own {@code JacksonFactory}, which is reachable as the
- * hardcoded fallback in {@code Utils.load()} and also directly references {@code DatabindCodec}
- * in its static initializer.
- */
-@TargetClass(className = "io.vertx.core.json.jackson.JacksonFactory", onlyWith = JacksonDatabindMissingSelector.class)
-final class Target_JacksonFactory {
+@TargetClass(className = "io.quarkus.vertx.runtime.jackson.QuarkusJacksonFactory$Holder", onlyWith = JacksonDatabindMissingSelector.class)
+final class Target_QuarkusJacksonFactoryHolder {
 
     @Substitute
-    public JsonCodec codec() {
-        return new JacksonCodec();
+    private static boolean databindOnClassPath() {
+        return false;
     }
+}
+
+@TargetClass(className = "io.vertx.core.json.jackson.JacksonFactory")
+@Delete
+final class Target_JacksonFactory {
+
 }
 
 final class JacksonDatabindMissingSelector implements BooleanSupplier {
@@ -42,7 +41,7 @@ final class JacksonDatabindMissingSelector implements BooleanSupplier {
     @Override
     public boolean getAsBoolean() {
         try {
-            Class.forName("com.fasterxml.jackson.databind.ObjectMapper");
+            Class.forName("tools.jackson.databind.ObjectMapper");
             return false;
         } catch (ClassNotFoundException e) {
             return true;

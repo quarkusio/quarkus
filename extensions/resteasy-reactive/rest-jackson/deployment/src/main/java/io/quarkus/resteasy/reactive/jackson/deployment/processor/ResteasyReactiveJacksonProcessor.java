@@ -43,8 +43,6 @@ import org.jboss.resteasy.reactive.common.processor.ResteasyReactiveDotNames;
 import org.jboss.resteasy.reactive.server.util.MethodId;
 
 import com.fasterxml.jackson.annotation.JsonView;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.exc.MismatchedInputException;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.SynthesisFinishedBuildItem;
@@ -98,6 +96,8 @@ import io.quarkus.security.spi.RolesAllowedConfigExpResolverBuildItem;
 import io.quarkus.vertx.deployment.ReinitializeVertxJsonBuildItem;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.exc.MismatchedInputException;
 
 public class ResteasyReactiveJacksonProcessor {
 
@@ -407,39 +407,44 @@ public class ResteasyReactiveJacksonProcessor {
             additionalUnwrapTypes.add(item.getWrapperType());
         }
 
-        Map<String, ClassInfo> serializedClasses = new HashMap<>();
-        Map<String, ClassInfo> deserializedClasses = new HashMap<>();
+        Map<String, Type> serializedTypes = new HashMap<>();
+        Map<String, Type> deserializedTypes = new HashMap<>();
 
         for (ResteasyReactiveResourceMethodEntriesBuildItem.Entry entry : resourceMethodEntries.getEntries()) {
             MethodInfo methodInfo = entry.getMethodInfo();
-            ClassInfo effectiveReturnClassInfo = getEffectiveClassInfo(methodInfo.returnType(), indexView,
-                    additionalUnwrapTypes);
-            if (effectiveReturnClassInfo != null && !effectiveReturnClassInfo.isEnum()) {
-                serializedClasses.put(effectiveReturnClassInfo.name().toString(), effectiveReturnClassInfo);
+            Type effectiveReturnType = getEffectiveType(methodInfo.returnType(), additionalUnwrapTypes);
+            if (effectiveReturnType != null) {
+                ClassInfo classInfo = indexView.getClassByName(effectiveReturnType.name());
+                if (classInfo != null && !classInfo.isEnum()) {
+                    serializedTypes.put(classInfo.name().toString(), effectiveReturnType);
+                }
             }
 
             if (methodInfo.hasAnnotation(POST.class) || methodInfo.hasAnnotation(PUT.class)
                     || methodInfo.hasAnnotation(PATCH.class)) {
                 for (Type paramType : methodInfo.parameterTypes()) {
-                    ClassInfo effectiveParamClassInfo = getEffectiveClassInfo(paramType, indexView, additionalUnwrapTypes);
-                    if (effectiveParamClassInfo != null) {
-                        deserializedClasses.put(effectiveParamClassInfo.name().toString(), effectiveParamClassInfo);
+                    Type effectiveParamType = getEffectiveType(paramType, additionalUnwrapTypes);
+                    if (effectiveParamType != null) {
+                        ClassInfo classInfo = indexView.getClassByName(effectiveParamType.name());
+                        if (classInfo != null) {
+                            deserializedTypes.put(classInfo.name().toString(), effectiveParamType);
+                        }
                     }
                 }
             }
         }
 
-        if (!serializedClasses.isEmpty()) {
+        if (!serializedTypes.isEmpty()) {
             JacksonSerializerFactory factory = new JacksonSerializerFactory(generatedClassBuildItemBuildProducer,
                     index.getComputingIndex());
-            factory.create(serializedClasses.values())
+            factory.createFromTypes(serializedTypes.values())
                     .forEach(recorder::recordGeneratedSerializer);
         }
 
-        if (!deserializedClasses.isEmpty()) {
+        if (!deserializedTypes.isEmpty()) {
             JacksonDeserializerFactory factory = new JacksonDeserializerFactory(generatedClassBuildItemBuildProducer,
                     index.getComputingIndex());
-            factory.create(deserializedClasses.values())
+            factory.createFromTypes(deserializedTypes.values())
                     .forEach(recorder::recordGeneratedDeserializer);
         }
     }
@@ -541,14 +546,15 @@ public class ResteasyReactiveJacksonProcessor {
     }
 
     private static ClassInfo getEffectiveClassInfo(Type type, IndexView indexView, Set<DotName> additionalUnwrapTypes) {
-        if (type.kind() == Type.Kind.VOID) {
-            return null;
-        }
         Type effectiveReturnType = getEffectiveType(type, additionalUnwrapTypes);
         return effectiveReturnType == null ? null : indexView.getClassByName(effectiveReturnType.name());
     }
 
     private static Type getEffectiveType(Type type, Set<DotName> additionalUnwrapTypes) {
+        if (type.kind() == Type.Kind.VOID) {
+            return null;
+        }
+
         Type effectiveReturnType = type;
         if (effectiveReturnType.name().equals(ResteasyReactiveDotNames.REST_RESPONSE) ||
                 effectiveReturnType.name().equals(ResteasyReactiveDotNames.UNI) ||
@@ -613,7 +619,7 @@ public class ResteasyReactiveJacksonProcessor {
                 hasSecureFields = false;
             } else {
                 // check interface implementors as anyone of them can be returned
-                hasSecureFields = indexView.getAllKnownImplementors(currentClassInfo.name()).stream()
+                hasSecureFields = indexView.getAllKnownImplementations(currentClassInfo.name()).stream()
                         .anyMatch(ci -> hasSecureFields(indexView, ci, typeToHasSecureField, needToDeleteCache, null));
             }
         } else {

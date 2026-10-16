@@ -3,6 +3,7 @@ package io.quarkus.hibernate.orm.runtime.service;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.hibernate.action.queue.internal.support.ActionQueueFactoryServiceInitiator;
 import org.hibernate.boot.cfgxml.internal.CfgXmlAccessServiceInitiator;
 import org.hibernate.boot.registry.StandardServiceInitiator;
 import org.hibernate.engine.config.internal.ConfigurationServiceInitiator;
@@ -31,6 +32,7 @@ import io.quarkus.hibernate.orm.runtime.customized.QuarkusJndiServiceInitiator;
 import io.quarkus.hibernate.orm.runtime.customized.QuarkusJtaPlatformInitiator;
 import io.quarkus.hibernate.orm.runtime.customized.QuarkusStaticInitProxyFactoryFactory;
 import io.quarkus.hibernate.orm.runtime.service.internalcache.QuarkusInternalCacheFactoryInitiator;
+import io.quarkus.hibernate.orm.runtime.service.propertyaccessor.QuarkusPropertyAccessorServiceInitiator;
 
 /**
  * Here we define the list of standard Service Initiators to be used by
@@ -57,6 +59,9 @@ public final class StandardHibernateORMInitiatorListProvider implements InitialI
         serviceInitiators.add(CfgXmlAccessServiceInitiator.INSTANCE);
         serviceInitiators.add(ConfigurationServiceInitiator.INSTANCE);
         serviceInitiators.add(PropertyAccessStrategyResolverInitiator.INSTANCE);
+
+        // Default implementation
+        serviceInitiators.add(QuarkusPropertyAccessorServiceInitiator.INSTANCE);
 
         // Custom one!
         serviceInitiators.add(QuarkusImportSqlCommandExtractorInitiator.INSTANCE);
@@ -116,6 +121,9 @@ public final class StandardHibernateORMInitiatorListProvider implements InitialI
 
         // Default implementation: temporal entity / audit changeset coordination
         serviceInitiators.add(ChangesetCoordinatorInitiator.INSTANCE);
+
+        // Default implementation
+        serviceInitiators.add(ActionQueueFactoryServiceInitiator.INSTANCE);
 
         serviceInitiators.trimToSize();
 

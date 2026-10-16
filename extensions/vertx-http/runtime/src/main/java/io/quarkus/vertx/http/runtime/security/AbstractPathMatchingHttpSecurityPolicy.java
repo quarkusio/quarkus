@@ -1,7 +1,5 @@
 package io.quarkus.vertx.http.runtime.security;
 
-import static io.quarkus.security.PermissionsAllowed.PERMISSION_TO_ACTION_SEPARATOR;
-
 import java.lang.reflect.InvocationTargetException;
 import java.security.Permission;
 import java.util.ArrayList;
@@ -12,6 +10,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.stream.Stream;
 
 import jakarta.enterprise.inject.Instance;
 
@@ -19,6 +18,7 @@ import io.quarkus.arc.ClientProxy;
 import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.security.StringPermission;
 import io.quarkus.security.identity.SecurityIdentity;
+import io.quarkus.security.spi.runtime.PermissionToActionUtil;
 import io.quarkus.vertx.http.runtime.PolicyConfig;
 import io.quarkus.vertx.http.runtime.PolicyMappingConfig;
 import io.quarkus.vertx.http.runtime.security.HttpSecurityConfiguration.AuthenticationMechanisms;
@@ -194,7 +194,7 @@ public class AbstractPathMatchingHttpSecurityPolicy {
             HttpMatcher m = new HttpMatcher(httpPermission.getAuthMechanisms(), httpPermission.getMethods(), policy);
             List<HttpMatcher> perms = new ArrayList<>();
             perms.add(m);
-            builder.addPath(path, perms);
+            builder.addPath(HttpSecurityUtils.normalizePath(path), perms);
         }
     }
 
@@ -210,7 +210,26 @@ public class AbstractPathMatchingHttpSecurityPolicy {
     private static List<HttpMatcher> findHttpMatchers(RoutingContext context,
             ImmutablePathMatcher<List<HttpMatcher>> pathMatcher) {
         String normalizedPath = context.normalizedPath();
-        PathMatch<List<HttpMatcher>> toCheck = pathMatcher.match(HttpSecurityUtils.pathWithoutMatrixParams(normalizedPath));
+        String securityPath = HttpSecurityUtils.normalizePath(normalizedPath);
+        PathMatch<List<HttpMatcher>> toCheck = pathMatcher.match(securityPath);
+        if (!securityPath.equals(normalizedPath)) {
+            // Aggressive normalization may map the request path into a different policy prefix.
+            // For example /admin/..;/public/data normalizes to /public/data, matching a permit
+            // policy while the router still dispatches into /admin/*.
+            // Match the router's own normalized path too and combine all matched policies
+            // so that neither normalization form can weaken the other.
+            PathMatch<List<HttpMatcher>> routerCheck = pathMatcher.match(normalizedPath);
+            if (toCheck.getValue() == null || toCheck.getValue().isEmpty()) {
+                toCheck = routerCheck;
+            } else if (routerCheck.getValue() != null && !routerCheck.getValue().isEmpty()
+                    && !toCheck.getMatched().equals(routerCheck.getMatched())) {
+                List<HttpMatcher> merged = Stream.concat(
+                        toCheck.getValue().stream(),
+                        routerCheck.getValue().stream())
+                        .distinct().toList();
+                toCheck = new PathMatch<>(toCheck.getMatched(), merged);
+            }
+        }
         if (toCheck.getValue() == null || toCheck.getValue().isEmpty()) {
             return List.of();
         }
@@ -345,36 +364,21 @@ public class AbstractPathMatchingHttpSecurityPolicy {
     }
 
     private static void addPermissionToAction(Map<String, PermissionToActions> cache, String role, String permissionToAction) {
-        final String permissionName;
-        final String action;
-        // incoming value is either in format perm1:action1 or perm1 (with or withot action)
-        if (permissionToAction.contains(PERMISSION_TO_ACTION_SEPARATOR)) {
-            // perm1:action1
-            var permToActions = permissionToAction.split(PERMISSION_TO_ACTION_SEPARATOR);
-            if (permToActions.length != 2) {
-                throw new ConfigurationException(
-                        String.format("Invalid permission format '%s', please use exactly one permission to action separator",
-                                permissionToAction));
-            }
-            permissionName = permToActions[0].trim();
-            action = permToActions[1].trim();
-        } else {
-            // perm1
-            permissionName = permissionToAction.trim();
-            action = null;
-        }
-
-        if (permissionName.isEmpty()) {
+        final PermissionToActionUtil.ParsedPermission parsed;
+        try {
+            parsed = PermissionToActionUtil.parse(permissionToAction.trim());
+        } catch (IllegalArgumentException e) {
             throw new ConfigurationException(
-                    String.format("Invalid permission name '%s' for role '%s'", permissionToAction, role));
+                    String.format("Invalid permission format '%s' for role '%s': %s", permissionToAction, role,
+                            e.getMessage()));
         }
 
-        cache.computeIfAbsent(permissionName, new Function<String, PermissionToActions>() {
+        cache.computeIfAbsent(parsed.name(), new Function<String, PermissionToActions>() {
             @Override
             public PermissionToActions apply(String s) {
                 return new PermissionToActions(s);
             }
-        }).addAction(action);
+        }).addAction(parsed.action());
     }
 
     private static Class<?> loadClass(String className) {

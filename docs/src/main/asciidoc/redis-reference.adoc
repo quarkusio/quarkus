@@ -3,22 +3,22 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= Redis Extension Reference Guide
-:extension-status: stable
+= Redis extension reference guide
 include::_attributes.adoc[]
 :numbered:
 :sectnums:
-:categories: data
 :topics: data,redis,nosql
 :extensions: io.quarkus:quarkus-redis-client,io.quarkus:quarkus-redis-client-lettuce
 
 Redis is an in-memory data store used as a database, cache, streaming engine, and message broker.
 The Quarkus Redis extension allows integrating Quarkus applications with Redis.
 
+include::{includes}/extension-status.adoc[]
+
 To use this extension, the user must be familiar with Redis, especially understanding the mechanism of commands and how they are organized.
 Typically, we recommend:
 
-1. The https://try.redis.io/[interactive tutorial] introducing Redis.
+1. The https://redis.io/try/sandbox/[interactive tutorial] introducing Redis.
 2. The https://redis.io/commands/[command references] explains Redis commands and contains links to reference documentation.
 
 This extension provides imperative and reactive APIs and low-level and high-level (type-safe) clients.
@@ -217,7 +217,7 @@ The connection url is configured with the `quarkus.redis.hosts` (or `quarkus.red
 
 [source,properties]
 ----
-quarkus.redis.hosts=redis://[:password@]host[:port][/db-number]
+quarkus.redis.hosts=redis://[[username]:password@]host[:port][/db-number]
 ----
 
 === Use Unix Socket
@@ -226,7 +226,7 @@ When using unix-socket, you need:
 
 [source,properties]
 ----
-quarkus.redis.hosts=unix://[:password@]/domain/docker.sock[?select=db-number]
+quarkus.redis.hosts=unix://[[username]:password@]/domain/docker.sock[?select=db-number]
 ----
 
 === Use the Sentinel Mode
@@ -378,6 +378,17 @@ We recommend the latter, and if possible, using secrets or an environment variab
 
 The associated environment variable is `QUARKUS_REDIS_PASSWORD`, or `QUARKUS_REDIS_<NAME>_PASSWORD` for named clients.
 
+When the Redis server uses https://redis.io/docs/latest/operate/oss_and_stack/management/security/acl/[ACL] users (Redis 6 and later), the username can be set in the `redis://` URL or with the `quarkus.redis.username` property, whose environment variable is `QUARKUS_REDIS_USERNAME`, or `QUARKUS_REDIS_<NAME>_USERNAME` for named clients:
+
+[source,properties]
+----
+quarkus.redis.hosts=redis://localhost:6379
+quarkus.redis.username=my-app
+quarkus.redis.password=my-secret
+----
+
+Credentials set in the URL take precedence over the `quarkus.redis.username` and `quarkus.redis.password` properties.
+
 === Connection pooling
 
 Connections to Redis are always pooled.
@@ -498,7 +509,6 @@ public class MyRedisService {
     }
 }
 ----
-
 <1> Inject the `RedisDataSource` in the constructor
 <2> Creates the `HashCommands` object.
 This object has three type parameters: the type of the key, the type of the field, and the type of the member
@@ -695,7 +705,6 @@ public static class MyRedisCounter {
 
 }
 ----
-
 <1> Retrieve the commands.
 This time we will manipulate `Long` values
 <2> Retrieve the counter associated with the given `key`.
@@ -1106,20 +1115,20 @@ extension to your application:
 Adding the dependency is the only switch: the extension builds on `quarkus-redis-client`, so clients are
 configured with the same `quarkus.redis.*` properties and the Redis Dev Services work unchanged.
 In this initial version the Lettuce data sources apply `quarkus.redis[.<name>].hosts`, `client-type` (`standalone`,
-the default, `cluster`, see <<lettuce-cluster>>, `sentinel` and `replication`, see <<lettuce-sentinel>>), `password`,
-`tls.*`, `tls-configuration-name`, `tcp.secure-transport-protocols`, `timeout`, `active`, `max-pool-size` and
-`max-pool-waiting` (see <<connection-pooling-and-blocking-commands>>), for a cluster `replicas` and
+the default, `cluster`, see <<lettuce-cluster>>, `sentinel` and `replication`, see <<lettuce-sentinel>>), `username`,
+`password`, `tls.*`, `tls-configuration-name`, `tcp.secure-transport-protocols`, `timeout`, `active`,
+`max-pool-size` and `max-pool-waiting` (see <<connection-pooling-and-blocking-commands>>), for a cluster `replicas` and
 `topology-cache-ttl`, for a Sentinel client `master-name`, `role`, `auto-failover` and `replicas`, and for a
 replication client `topology` and `replicas`:
 
 * A standalone client connects to the first URI of `hosts`; a cluster client discovers the cluster from all of them;
 a Sentinel client takes them as the sentinels; a replication client as the nodes, or discovers the nodes from the
 first one.
-* The credentials are set with `password` or encoded in the URI, for example `redis://user:password@host:6379` or
-`redis://:password@host:6379`.
-The URI is read as the Vert.x Redis client reads it: a password encoded in the URI takes precedence over
-`password`, the username always comes from the URI, and a user info without a colon (`redis://user@host:6379`)
-is a username.
+* The credentials are set with `username` and `password` or encoded in the URI, for example
+`redis://user:password@host:6379` or `redis://:password@host:6379`.
+The URI is read as the Vert.x Redis client reads it: a username or a password encoded in the URI takes precedence
+over the `username` and `password` properties, and a user info without a colon (`redis://user@host:6379`) is a
+username.
 The `user` and `password` query parameters (`redis://host:6379?password=secret`) are fallbacks, as with the
 Vert.x client.
 * TLS is enabled by a `rediss://` URI or by `tls.enabled=true`.
@@ -1164,9 +1173,9 @@ quarkus.redis.replicas=share # defaults to "never"
 
 The client discovers the cluster topology from the configured hosts (the _seed_ nodes, which need not be all the
 members) and routes every command to the node owning its key, following `MOVED` and `ASK` redirects.
-Its view of the topology is refreshed every `topology-cache-ttl` (or its deprecated alias `hash-slot-cache-ttl`,
-default `1s`), and as soon as a redirect, an uncovered slot, an unknown node or a node that keeps failing to
-reconnect reveals a change. A non-positive TTL disables the periodic refresh and leaves the adaptive one.
+Its view of the topology is refreshed every `topology-cache-ttl` (default `1s`), and as soon as a redirect, an
+uncovered slot, an unknown node or a node that keeps failing to reconnect reveals a change. A non-positive TTL
+disables the periodic refresh and leaves the adaptive one.
 `replicas` selects the nodes read-only commands are sent to: `never` reads from the upstream nodes only,
 `share` from any node and `always` from the replicas, falling back to the upstream node of a shard that has no
 usable replica, as with the Vert.x client; writes always go to the upstream nodes.

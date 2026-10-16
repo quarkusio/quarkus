@@ -10,7 +10,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.builder.Version;
 import io.quarkus.maven.dependency.Dependency;
 import io.quarkus.narayana.jta.runtime.QuarkusRecoveryService;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 /**
  * Tests that the recovery service is automatically enabled when XA datasources
@@ -19,7 +19,7 @@ import io.quarkus.test.QuarkusUnitTest;
 public class TransactionRecoveryXaAutoEnableTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addAsResource("xa-recovery-auto-enable.properties", "application.properties"))
             .setForcedDependencies(List.of(

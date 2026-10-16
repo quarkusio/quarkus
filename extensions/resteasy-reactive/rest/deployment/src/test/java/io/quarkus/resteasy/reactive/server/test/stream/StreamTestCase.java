@@ -47,10 +47,11 @@ public class StreamTestCase {
 
     @Test
     public void testStreamingDoesNotCloseConnection() throws Exception {
+        HttpClient client;
         Vertx v = Vertx.vertx();
         try {
             final CompletableFuture<Object> latch = new CompletableFuture<>();
-            HttpClient client = v
+            client = v
                     .createHttpClient(
                             new HttpClientOptions().setKeepAlive(true).setIdleTimeout(10).setIdleTimeoutUnit(TimeUnit.SECONDS));
             sendRequest(latch, client, () -> sendRequest(latch, client, () -> latch.complete(null)));
@@ -59,7 +60,8 @@ public class StreamTestCase {
             latch.get();
 
         } finally {
-            v.close().toCompletionStage().toCompletableFuture().get();
+            v.close().await(5, TimeUnit.SECONDS);
+            v.close().await(10, TimeUnit.SECONDS);
         }
     }
 

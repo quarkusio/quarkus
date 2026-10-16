@@ -1,5 +1,7 @@
 package io.quarkus.resteasy.reactive.jackson.deployment.test.generated;
 
+import java.time.Duration;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
@@ -302,6 +304,29 @@ public class GeneratedAnnotationResource {
                 + "\",\"props_size\":" + bean.getProperties().size() + "}";
     }
 
+    // --- FieldAnySetterBean: @JsonAnySetter on field ---
+
+    @POST
+    @Path("/field-any-setter")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @Produces(MediaType.APPLICATION_JSON)
+    public String echoFieldAnySetter(FieldAnySetterBean bean) {
+        return "{\"name\":\"" + bean.getName()
+                + "\",\"extras_size\":" + bean.getExtras().size() + "}";
+    }
+
+    // --- FieldAnyGetterBean: @JsonAnyGetter on field ---
+
+    @GET
+    @Path("/field-any-getter")
+    public FieldAnyGetterBean getFieldAnyGetter() {
+        FieldAnyGetterBean bean = new FieldAnyGetterBean();
+        bean.setName("test");
+        bean.addProperty("color", "red");
+        bean.addProperty("size", "large");
+        return bean;
+    }
+
     // --- ManagedReferenceParent/Child: @JsonManagedReference + @JsonBackReference ---
 
     @GET
@@ -335,6 +360,29 @@ public class GeneratedAnnotationResource {
         ZonedDateTimeFormatBean bean = new ZonedDateTimeFormatBean();
         bean.setName("zoned-date-test");
         bean.setDateTime(ZonedDateTime.of(2024, 3, 13, 10, 5, 1, 0, ZoneOffset.UTC));
+        return bean;
+    }
+
+    // --- NumberShapedTemporalBean: @JsonFormat(shape=NUMBER) with Instant and Duration ---
+
+    @GET
+    @Path("/number-shaped-temporal")
+    public NumberShapedTemporalBean getNumberShapedTemporal() {
+        NumberShapedTemporalBean bean = new NumberShapedTemporalBean();
+        bean.setName("number-shaped");
+        bean.setInstant(Instant.ofEpochSecond(1710324301L, 500_000_000));
+        bean.setDuration(Duration.ofSeconds(76975, 500_000_000));
+        return bean;
+    }
+
+    // --- DurationFormatBean: @JsonFormat(shape=STRING) with Duration ---
+
+    @GET
+    @Path("/duration-format")
+    public DurationFormatBean getDurationFormat() {
+        DurationFormatBean bean = new DurationFormatBean();
+        bean.setName("duration-test");
+        bean.setDuration(Duration.ofHours(21).plusMinutes(22).plusSeconds(55));
         return bean;
     }
 
@@ -553,6 +601,44 @@ public class GeneratedAnnotationResource {
         return bean;
     }
 
+    // --- DateStringShapeWithPatternBean: @JsonFormat(shape = STRING, pattern = "...") on java.util.Date ---
+
+    @GET
+    @Path("/date-string-shape-pattern")
+    public DateStringShapeWithPatternBean getDateStringShapePattern() {
+        DateStringShapeWithPatternBean bean = new DateStringShapeWithPatternBean();
+        bean.setName("date-string-shape");
+        bean.setDirectDate(Date.from(Instant.parse("2026-07-20T11:11:11Z")));
+        return bean;
+    }
+
+    @GET
+    @Path("/date-string-shape-pattern-list")
+    public List<DateStringShapeWithPatternBean> getDateStringShapePatternList() {
+        DateStringShapeWithPatternBean bean = new DateStringShapeWithPatternBean();
+        bean.setName("date-string-shape");
+        bean.setDirectDate(Date.from(Instant.parse("2026-07-20T11:11:11Z")));
+        return List.of(bean);
+    }
+
+    // --- DateStringShapeNoPatternBean: @JsonFormat(shape = STRING) without pattern on java.util.Date ---
+
+    @GET
+    @Path("/date-string-shape-no-pattern")
+    public DateStringShapeNoPatternBean getDateStringShapeNoPattern() {
+        DateStringShapeNoPatternBean bean = new DateStringShapeNoPatternBean();
+        bean.setName("date-string-shape");
+        bean.setUtcDate(Date.from(Instant.parse("2026-07-20T11:11:11Z")));
+        bean.setPragueDate(Date.from(Instant.parse("2026-07-20T11:11:11Z")));
+        return bean;
+    }
+
+    @GET
+    @Path("/date-string-shape-no-pattern-list")
+    public List<DateStringShapeNoPatternBean> getDateStringShapeNoPatternList() {
+        return List.of(getDateStringShapeNoPattern());
+    }
+
     // --- FormatArrayShapeBean: @JsonFormat(shape = ARRAY) on class ---
 
     @GET
@@ -587,6 +673,43 @@ public class GeneratedAnnotationResource {
     @Path("/format-array-shape-no-order")
     @Consumes(MediaType.APPLICATION_JSON)
     public FormatArrayShapeNoOrderBean echoFormatArrayShapeNoOrder(FormatArrayShapeNoOrderBean bean) {
+        return bean;
+    }
+
+    // --- JavaBeansTransientBean: @java.beans.Transient ---
+
+    @GET
+    @Path("/java-beans-transient")
+    public JavaBeansTransientBean getJavaBeansTransient() {
+        JavaBeansTransientBean bean = new JavaBeansTransientBean();
+        bean.setName("Alice");
+        bean.setVisible("shown");
+        bean.setSecret("hidden-value");
+        return bean;
+    }
+
+    @POST
+    @Path("/java-beans-transient")
+    @Consumes(MediaType.APPLICATION_JSON)
+    public JavaBeansTransientBean echoJavaBeansTransient(JavaBeansTransientBean bean) {
+        return bean;
+    }
+
+    // --- MapSubclassBean: HashMap subclass with declared bean properties ---
+
+    @POST
+    @Path("/map-subclass")
+    @Consumes(MediaType.APPLICATION_JSON)
+    public MapSubclassBean echoMapSubclass(MapSubclassBean bean) {
+        return bean;
+    }
+
+    @GET
+    @Path("/map-subclass")
+    public MapSubclassBean getMapSubclass() {
+        MapSubclassBean bean = new MapSubclassBean();
+        bean.put("declared", "d");
+        bean.put("extra", 1);
         return bean;
     }
 

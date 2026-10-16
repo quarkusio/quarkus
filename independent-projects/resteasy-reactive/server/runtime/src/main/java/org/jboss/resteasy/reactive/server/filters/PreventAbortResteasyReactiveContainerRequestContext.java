@@ -7,6 +7,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.function.Predicate;
 
 import jakarta.ws.rs.container.ContainerRequestContext;
 import jakarta.ws.rs.core.Cookie;
@@ -87,6 +88,11 @@ public final class PreventAbortResteasyReactiveContainerRequestContext implement
     @Override
     public String getHeaderString(String name) {
         return delegate.getHeaderString(name);
+    }
+
+    @Override
+    public boolean containsHeaderString(String name, String valueSeparatorRegex, Predicate<String> valuePredicate) {
+        return delegate.containsHeaderString(name, valueSeparatorRegex, valuePredicate);
     }
 
     @Override

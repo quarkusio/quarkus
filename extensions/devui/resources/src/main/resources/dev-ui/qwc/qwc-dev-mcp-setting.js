@@ -172,7 +172,7 @@ export class QwcDevMCPSetting extends QwcHotReloadElement {
       ${this._renderAgentMcpSection()}
       <hr class="separator">
       ${this._renderDevMcpSection()}
-      ${this._renderUnlistedPagesLinks()}
+      ${this._configuration?.enabled ? this._renderUnlistedPagesLinks() : ''}
     `;
   }
 

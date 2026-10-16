@@ -7,7 +7,6 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 = Deploying {project-name} Java applications to {openshift} by using a Docker build strategy
 include::_attributes.adoc[]
 :diataxis-type: howto
-:categories: cloud, native
 :summary: This guide describes how to build and deploy a {project-name} application on {openshift} by using the Docker build strategy.
 :topics: devops,kubernetes,openshift,cloud,deployment
 :extensions: io.quarkus:quarkus-openshift

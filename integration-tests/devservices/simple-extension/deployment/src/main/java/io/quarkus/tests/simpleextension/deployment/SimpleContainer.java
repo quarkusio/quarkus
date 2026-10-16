@@ -1,23 +1,36 @@
 package io.quarkus.tests.simpleextension.deployment;
 
+import java.util.Optional;
+
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.utility.DockerImageName;
 
-import io.quarkus.deployment.builditem.Startable;
+import com.github.dockerjava.api.model.ExposedPort;
+import com.github.dockerjava.api.model.HostConfig;
+import com.github.dockerjava.api.model.PortBinding;
+import com.github.dockerjava.api.model.Ports;
 
-public class SimpleContainer extends GenericContainer<io.quarkus.tests.simpleextension.deployment.SimpleContainer>
-        implements Startable {
+public class SimpleContainer extends GenericContainer<io.quarkus.tests.simpleextension.deployment.SimpleContainer> {
 
     private static final DockerImageName dockerImageName = DockerImageName.parse("httpd");
     public static final int HTTPD_PORT = 80;
 
     private String classLoaderNameOnStart;
 
-    public SimpleContainer() {
+    public SimpleContainer(Optional<Integer> fixedPort) {
         super(dockerImageName);
-        this //.waitingFor(Wait.forLogMessage(".*" + "resuming normal operations" + ".*", 1))
-                .withReuse(true)
-                .withExposedPorts(HTTPD_PORT);
+        this.withReuse(true);
+        //.waitingFor(Wait.forLogMessage(".*" + "resuming normal operations" + ".*", 1)) should work, doesn't :(
+        if (fixedPort.isPresent()) {
+            this.withCreateContainerCmdModifier(cmd -> cmd.withHostConfig(
+                    new HostConfig()
+                            .withPortBindings(
+                                    new PortBinding(
+                                            Ports.Binding.bindPort(fixedPort.get()),
+                                            new ExposedPort(HTTPD_PORT)))));
+        } else {
+            this.withExposedPorts(HTTPD_PORT);
+        }
     }
 
     @Override
@@ -27,7 +40,6 @@ public class SimpleContainer extends GenericContainer<io.quarkus.tests.simpleext
         super.start();
     }
 
-    @Override
     public String getConnectionInfo() {
         return "http://" + getHost() + ":" + getMappedPort(HTTPD_PORT);
     }
@@ -39,5 +51,10 @@ public class SimpleContainer extends GenericContainer<io.quarkus.tests.simpleext
 
     public String getClassLoaderNameOnStart() {
         return classLoaderNameOnStart;
+    }
+
+    @Override
+    public String getContainerId() {
+        return super.getContainerId();
     }
 }

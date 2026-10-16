@@ -16,15 +16,6 @@ import org.jboss.logging.Logger;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 
-import com.fasterxml.jackson.core.JsonFactory;
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.JavaType;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-
 import io.quarkus.value.registry.ValueRegistry;
 import io.smallrye.config.Config;
 import io.vertx.core.Vertx;
@@ -32,12 +23,18 @@ import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.WebSocket;
 import io.vertx.core.http.WebSocketClient;
 import io.vertx.core.http.WebSocketClientOptions;
+import tools.jackson.core.JacksonException;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.JavaType;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.node.NullNode;
+import tools.jackson.databind.node.ObjectNode;
 
 public class DevUIJsonRPCTest {
     private static final Logger log = Logger.getLogger(DevUIJsonRPCTest.class);
 
     private final ObjectMapper mapper = new ObjectMapper();
-    private final JsonFactory factory = mapper.getFactory();
     private final Random random = new Random();
     private final String namespace;
 
@@ -113,12 +110,7 @@ public class DevUIJsonRPCTest {
     }
 
     protected JsonNode toJsonNode(String json) {
-        try {
-            JsonParser parser = factory.createParser(json);
-            return mapper.readTree(parser);
-        } catch (IOException ex) {
-            throw new RuntimeException(ex);
-        }
+        return mapper.readTree(json);
     }
 
     private <T> T getJsonRPCResponse(TypeReference typeReference, int id) throws InterruptedException, IOException {
@@ -127,7 +119,7 @@ public class DevUIJsonRPCTest {
 
     @SuppressWarnings("unchecked")
     private <T> T getJsonRPCResponse(TypeReference typeReference, int id, int loopCount)
-            throws InterruptedException, IOException {
+            throws InterruptedException {
         JsonNode object = objectResultFromJsonRPC(id);
         if (object != null) {
             JavaType jt = mapper.getTypeFactory().constructType(typeReference);
@@ -167,18 +159,22 @@ public class DevUIJsonRPCTest {
         return getJsonRPCResponse(classType, id, loopCount + 1);
     }
 
-    private JsonNode objectResultFromJsonRPC(int id) throws InterruptedException, JsonProcessingException {
+    private JsonNode objectResultFromJsonRPC(int id) throws InterruptedException, JacksonException {
         return objectResultFromJsonRPC(id, 0);
     }
 
-    private JsonNode objectResultFromJsonRPC(int id, int loopCount) throws InterruptedException, JsonProcessingException {
+    private JsonNode objectResultFromJsonRPC(int id, int loopCount) throws InterruptedException, JacksonException {
         if (RESPONSES.containsKey(id)) {
             WebSocketResponse response = RESPONSES.remove(id);
             if (response != null) {
                 ObjectNode json = (ObjectNode) new ObjectMapper().readTree(response.message());
                 JsonNode result = json.get("result");
                 if (result != null) {
-                    return result.get("object");
+                    JsonNode object = result.get("object");
+                    // An action that answers null is a valid response and the codec omits the field. Hand back a
+                    // node rather than null, otherwise the caller retries a response that was already consumed and
+                    // can only time out.
+                    return object == null ? NullNode.getInstance() : object;
                 }
             }
             return null;

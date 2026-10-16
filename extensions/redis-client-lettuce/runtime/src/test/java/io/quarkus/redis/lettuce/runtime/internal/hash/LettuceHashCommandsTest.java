@@ -16,8 +16,6 @@ import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-
 import io.quarkus.redis.datasource.ReactiveRedisDataSource;
 import io.quarkus.redis.datasource.RedisDataSource;
 import io.quarkus.redis.datasource.ScanArgs;
@@ -28,6 +26,7 @@ import io.quarkus.redis.datasource.hash.ReactiveHashScanCursor;
 import io.quarkus.redis.lettuce.runtime.internal.CommandsTestBase;
 import io.quarkus.redis.lettuce.runtime.internal.Person;
 import io.vertx.core.json.Json;
+import tools.jackson.core.type.TypeReference;
 
 class LettuceHashCommandsTest extends CommandsTestBase {
 

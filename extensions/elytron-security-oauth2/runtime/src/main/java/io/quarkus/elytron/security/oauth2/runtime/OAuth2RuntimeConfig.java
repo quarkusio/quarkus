@@ -35,7 +35,7 @@ public interface OAuth2RuntimeConfig {
     /**
      * The OAuth2 server certificate file. <em>Warning</em>: this is not supported in native mode where the certificate
      * must be included in the truststore used during the native image generation, see
-     * <a href="native-and-ssl.html">Using SSL With Native Executables</a>.
+     * <a href="/guides/native-and-ssl">Using SSL With Native Executables</a>.
      */
     Optional<String> caCertFile();
 

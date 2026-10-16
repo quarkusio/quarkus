@@ -37,8 +37,8 @@ public class OidcClientTooManyJwtCredentialKeyPropsTestCase {
                 }
                 assertNotNull(te, "Expected ConfigurationException, but got: " + t);
                 assertEquals(
-                        "Only a single OIDC JWT credential key property can be configured, but you have configured:"
-                                + " quarkus.oidc-client.credentials.jwt.key,quarkus.oidc-client.credentials.jwt.secret",
+                        "Only one of JWT secret or JWT private key authentication methods can be configured,"
+                                + " but 'quarkus.oidc-client.credentials.jwt' has both a JWT secret and a JWT key property set",
                         te.getMessage(),
                         "Too many JWT credential key properties are configured");
             });

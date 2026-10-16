@@ -48,10 +48,8 @@ public class FlowerConsumers {
     @RunOnVirtualThread
     void receiveVT(String flower) {
         Context ctx = Vertx.currentContext();
-        if (Runtime.version().feature() >= 21) {
-            VirtualThreadsAssertions.assertThatItRunsOnVirtualThread();
-            VirtualThreadsAssertions.assertThatItRunsOnADuplicatedContext();
-        }
+        VirtualThreadsAssertions.assertThatItRunsOnVirtualThread();
+        VirtualThreadsAssertions.assertThatItRunsOnADuplicatedContext();
         Log.info(ctx + "[" + ctx.getClass() + "]");
         Log.infof("bean: %s, id: %s", reqBean, reqBean.getId());
         System.out.println("Received vt: " + flower);

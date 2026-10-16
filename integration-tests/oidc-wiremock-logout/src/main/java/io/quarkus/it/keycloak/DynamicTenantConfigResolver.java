@@ -25,6 +25,16 @@ public class DynamicTenantConfigResolver implements TenantConfigResolver {
     @Override
     public Uni<OidcTenantConfig> resolve(RoutingContext routingContext, OidcRequestContext<OidcTenantConfig> requestContext) {
         String normalizedPath = routingContext.normalizedPath();
+        if (normalizedPath.endsWith("/resource-metadata-tenant")) {
+            boolean enableResourceMetadata = routingContext.request().getParam("disabled") == null;
+            var builder = OidcTenantConfig.builder(oidcConfig.namedTenants().get("code-flow-form-post"))
+                    .tenantId(enableResourceMetadata ? "resource-metadata-enabled" : "resource-metadata-disabled")
+                    .logout().backchannel().path(null).endLogout();
+            if (enableResourceMetadata) {
+                builder.resourceMetadata().enabled(true).end();
+            }
+            return Uni.createFrom().item(builder.build());
+        }
         if (normalizedPath.contains("dynamic-tenant-")) {
             String tenantId = normalizedPath.substring(normalizedPath.lastIndexOf("/") + 1);
             if (!createdTenants.contains(tenantId)) {

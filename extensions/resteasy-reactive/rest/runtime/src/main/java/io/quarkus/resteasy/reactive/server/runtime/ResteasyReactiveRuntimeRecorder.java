@@ -12,6 +12,7 @@ import org.jboss.resteasy.reactive.server.spi.RuntimeConfiguration;
 
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.annotations.Recorder;
+import io.quarkus.runtime.annotations.RuntimeInit;
 import io.quarkus.vertx.http.runtime.VertxHttpConfig;
 
 @Recorder
@@ -27,6 +28,7 @@ public class ResteasyReactiveRuntimeRecorder {
         this.httpRuntimeConfig = httpRuntimeConfig;
     }
 
+    @RuntimeInit
     public Supplier<RuntimeConfiguration> runtimeConfiguration(RuntimeValue<Deployment> deployment) {
         ResteasyReactiveServerRuntimeConfig runtimeConfig = this.runtimeConfig.getValue();
         VertxHttpConfig httpRuntimeConfig = this.httpRuntimeConfig.getValue();
@@ -41,9 +43,15 @@ public class ResteasyReactiveRuntimeRecorder {
         RuntimeConfiguration runtimeConfiguration = new DefaultRuntimeConfiguration(httpRuntimeConfig.readTimeout(),
                 httpRuntimeConfig.body().deleteUploadedFilesOnEnd(), httpRuntimeConfig.body().uploadsDirectory(),
                 httpRuntimeConfig.body().multipart().fileContentTypes().orElse(null),
+                httpRuntimeConfig.body().multipart().fileSizeThreshold().asLongValue(),
                 runtimeConfig.multipart().inputPart().defaultCharset(), maxBodySize,
                 httpRuntimeConfig.limits().maxFormAttributeSize().asLongValue(),
-                httpRuntimeConfig.limits().maxParameters());
+                httpRuntimeConfig.limits().maxParameters(),
+                (int) httpRuntimeConfig.limits().maxMultipartPartHeaderSize().asLongValue(),
+                httpRuntimeConfig.limits().maxMultipartHeaderCount(),
+                httpRuntimeConfig.limits().maxMultipartFileSize().isPresent()
+                        ? OptionalLong.of(httpRuntimeConfig.limits().maxMultipartFileSize().get().asLongValue())
+                        : OptionalLong.empty());
 
         deployment.getValue().setRuntimeConfiguration(runtimeConfiguration);
 
@@ -56,12 +64,13 @@ public class ResteasyReactiveRuntimeRecorder {
     }
 
     @SuppressWarnings({ "unchecked", "rawtypes", "ForLoopReplaceableByForEach" })
-    public void configureHandlers(RuntimeValue<Deployment> deployment, Map<Class<?>, Supplier<?>> runtimeConfigMap) {
+    @RuntimeInit
+    public void configureHandlers(RuntimeValue<Deployment> deployment, Map<String, Supplier<?>> runtimeConfigMap) {
         List<GenericRuntimeConfigurableServerRestHandler<?>> runtimeConfigurableServerRestHandlers = deployment.getValue()
                 .getRuntimeConfigurableServerRestHandlers();
         for (int i = 0; i < runtimeConfigurableServerRestHandlers.size(); i++) {
             GenericRuntimeConfigurableServerRestHandler handler = runtimeConfigurableServerRestHandlers.get(i);
-            Supplier<?> supplier = runtimeConfigMap.get(handler.getConfigurationClass());
+            Supplier<?> supplier = runtimeConfigMap.get(handler.getConfigurationClass().getName());
             if (supplier == null) {
                 throw new IllegalStateException(
                         "Handler '" + handler.getClass().getName() + "' has not been properly configured.");

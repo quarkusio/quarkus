@@ -2,12 +2,15 @@ package io.quarkus.cache.redis.deployment;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 import jakarta.inject.Inject;
 
 import org.assertj.core.api.Assertions;
+import org.eclipse.microprofile.config.ConfigProvider;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -17,6 +20,12 @@ import io.quarkus.cache.CacheManager;
 import io.quarkus.cache.redis.runtime.RedisCache;
 import io.quarkus.redis.datasource.RedisDataSource;
 import io.quarkus.test.QuarkusExtensionTest;
+import io.vertx.mutiny.core.Vertx;
+import io.vertx.mutiny.redis.client.Redis;
+import io.vertx.mutiny.redis.client.RedisConnection;
+import io.vertx.redis.client.Command;
+import io.vertx.redis.client.Request;
+import io.vertx.redis.client.Response;
 
 public class RedisCacheWithOptimisticLockingTest {
 
@@ -26,10 +35,17 @@ public class RedisCacheWithOptimisticLockingTest {
     @RegisterExtension
     static final QuarkusExtensionTest TEST = new QuarkusExtensionTest()
             .withApplicationRoot(jar -> jar.addClasses(SimpleCachedService.class, TestUtil.class))
-            .overrideRuntimeConfigKey("quarkus.cache.redis.use-optimistic-locking", "true");
+            .overrideRuntimeConfigKey("quarkus.cache.redis.use-optimistic-locking", "true")
+            .overrideRuntimeConfigKey("quarkus.redis.max-pool-size", "1");
 
     @Inject
     SimpleCachedService simpleCachedService;
+
+    @Inject
+    Vertx vertx;
+
+    @Inject
+    Redis redis;
 
     @Test
     public void testTypes() {
@@ -135,6 +151,39 @@ public class RedisCacheWithOptimisticLockingTest {
         // Verified by: different objects references between STEPS 6 and 10 results.
         String value10 = simpleCachedService.cachedMethod(KEY_2);
         assertNotEquals(value6, value10);
+    }
+
+    @Test
+    public void testFailedCacheLoadClearsWatchedKeyBeforeConnectionIsReused() {
+        String key = UUID.randomUUID().toString();
+        String watchedKey = "cache:" + SimpleCachedService.FAILING_CACHE_NAME + ":" + key;
+        String transactionKey = "transaction:" + UUID.randomUUID();
+        String redisUrl = ConfigProvider.getConfig().getValue("quarkus.redis.hosts", String.class);
+        Redis otherRedis = Redis.createClient(vertx, redisUrl);
+
+        try {
+            Assertions.assertThatThrownBy(() -> simpleCachedService.failingCachedMethod(key)
+                    .await().atMost(Duration.ofSeconds(10)))
+                    .hasMessageContaining("value loader failed");
+
+            RedisConnection connection = redis.connect().await().atMost(Duration.ofSeconds(10));
+            try {
+                connection.send(Request.cmd(Command.MULTI)).await().atMost(Duration.ofSeconds(10));
+                connection.send(Request.cmd(Command.SET).arg(transactionKey).arg("value"))
+                        .await().atMost(Duration.ofSeconds(10));
+
+                // Changing the failed load's key must not abort an unrelated transaction on the reused connection.
+                otherRedis.send(Request.cmd(Command.SET).arg(watchedKey).arg("changed"))
+                        .await().atMost(Duration.ofSeconds(10));
+                Response result = connection.send(Request.cmd(Command.EXEC)).await().atMost(Duration.ofSeconds(10));
+                Assertions.assertThat(result).isNotNull();
+                Assertions.assertThat(result.get(0).toString()).isEqualTo("OK");
+            } finally {
+                connection.close().await().atMost(Duration.ofSeconds(10));
+            }
+        } finally {
+            otherRedis.close();
+        }
     }
 
     private static String expectedCacheKey(String key) {

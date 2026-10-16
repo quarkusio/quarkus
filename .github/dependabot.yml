@@ -23,7 +23,6 @@ updates:
       - dependency-name: org.apache.james:apache-mime4j
       - dependency-name: org.quartz-scheduler:quartz
       - dependency-name: com.cronutils:cron-utils
-      - dependency-name: org.eclipse:yasson
       - dependency-name: org.yaml:snakeyaml
       - dependency-name: com.google.guava:guava
       - dependency-name: org.jboss.logging:*
@@ -108,14 +107,16 @@ updates:
       # Caffeine
       - dependency-name: com.github.ben-manes.caffeine:caffeine
       # Jackson
+      - dependency-name: tools.jackson:jackson-bom
       - dependency-name: com.fasterxml.jackson:jackson-bom
       - dependency-name: com.fasterxml:classmate
       # Yasson
-      - dependency-name: org.eclipse:yasson
+      - dependency-name: org.eclipse.yasson:yasson
       # AWS
       - dependency-name: com.amazonaws:*
       # Azure
       - dependency-name: com.microsoft.azure.functions:*
+      - dependency-name: com.microsoft.azure:*
       # Apache Commons
       - dependency-name: commons-io:commons-io
       - dependency-name: org.apache.commons:*
@@ -163,6 +164,7 @@ updates:
       # Others
       - dependency-name: com.puppycrawl.tools:checkstyle
       - dependency-name: com.google.cloud.functions:*
+      - dependency-name: com.google.cloud.functions.invoker:*
       - dependency-name: com.google.code.gson:gson
       - dependency-name: com.google.errorprone:*
       - dependency-name: com.google.http-client:*
@@ -191,6 +193,7 @@ updates:
       - dependency-name: org.json:json
       - dependency-name: de.thetaphi:forbiddenapis
       - dependency-name: org.cyclonedx:*
+      - dependency-name: org.jsoup:*
     groups:
       # Only group Hibernate ORM/Search/Reactive as Hibernate Validator is much more independent.
       Hibernate:
@@ -242,6 +245,12 @@ updates:
       # Expressly, as an EL implementation is tightly coupled with the Jakarta Validation and Hibernate Validator versions in use
       # Hence we update major/minor Expressly versions manually.
       - dependency-name: org.glassfish.expressly:expressly
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
+      # Jakarta Data is managed by the Hibernate team
+      - dependency-name: jakarta.data:jakarta.data-api
+      - dependency-name: tools.jackson:jackson-bom
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
+      - dependency-name: com.fasterxml.jackson:jackson-bom
         update-types: ["version-update:semver-major", "version-update:semver-minor"]
     rebase-strategy: disabled
   - package-ecosystem: maven

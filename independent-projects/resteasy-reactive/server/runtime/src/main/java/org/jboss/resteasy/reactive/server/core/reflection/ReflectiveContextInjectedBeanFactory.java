@@ -23,6 +23,8 @@ import org.jboss.resteasy.reactive.server.core.CurrentRequestManager;
 import org.jboss.resteasy.reactive.server.core.parameters.ContextParamExtractor;
 import org.jboss.resteasy.reactive.spi.BeanFactory;
 
+import io.smallrye.common.annotation.SuppressForbidden;
+
 public class ReflectiveContextInjectedBeanFactory<T> implements BeanFactory<T> {
     public static final Function<Class<?>, BeanFactory<?>> FACTORY = new Function<Class<?>, BeanFactory<?>>() {
         @Override
@@ -90,7 +92,10 @@ public class ReflectiveContextInjectedBeanFactory<T> implements BeanFactory<T> {
                 //we need better SPI's around this
                 //we don't handle conversion at all
                 QueryParam param = i.getAnnotation(QueryParam.class);
-                constructorParams.add(() -> CurrentRequestManager.get().getQueryParameter(param.value(), true, false));
+
+                constructorParams
+                        .add(() -> CurrentRequestManager.get().getQueryParameter(param.value(), true, false, null, false));
+
             } else if (i.isAnnotationPresent(HeaderParam.class)) {
                 HeaderParam param = i.getAnnotation(HeaderParam.class);
                 constructorParams.add(() -> CurrentRequestManager.get().getHeader(param.value(), true));
@@ -126,6 +131,7 @@ public class ReflectiveContextInjectedBeanFactory<T> implements BeanFactory<T> {
         }
     }
 
+    @SuppressForbidden(reason = "Context parameter injection requires dynamic proxy for lazy delegation")
     private Object extractContextParam(Class<?> type) {
         ContextParamExtractor contextParamExtractor = new ContextParamExtractor(type);
         Object contextParam = Proxy.newProxyInstance(Thread.currentThread().getContextClassLoader(),

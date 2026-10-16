@@ -24,16 +24,12 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
-import org.apache.commons.lang3.RandomStringUtils;
-import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
 
 import io.quarkus.bootstrap.util.PropertyUtils;
 import io.quarkus.deployment.pkg.steps.NativeImageBuildLocalContainerRunner;
 import io.quarkus.deployment.util.ContainerRuntimeUtil;
 import io.quarkus.deployment.util.ContainerRuntimeUtil.ContainerRuntime;
-import io.quarkus.runtime.logging.LogRuntimeConfig;
-import io.smallrye.config.SmallRyeConfig;
 import io.smallrye.config.common.utils.StringUtil;
 
 public class DefaultDockerContainerLauncher implements DockerContainerArtifactLauncher {
@@ -60,7 +56,8 @@ public class DefaultDockerContainerLauncher implements DockerContainerArtifactLa
     private Map<String, String> volumeMounts;
     private Map<String, String> labels;
     private final Map<String, String> systemProps = new HashMap<>();
-    private final String containerName = "quarkus-integration-test-" + RandomStringUtils.insecure().next(5, true, false);
+    private final String instanceId = LauncherUtil.generateInstanceId();
+    private final String containerName = "quarkus-integration-test-" + instanceId;
     private String containerRuntimeBinaryName;
     private final ExecutorService executorService = Executors.newSingleThreadExecutor();
     private Optional<String> entryPoint;
@@ -201,10 +198,7 @@ public class DefaultDockerContainerLauncher implements DockerContainerArtifactLa
     }
 
     @Override
-    public Optional<ListeningAddress> start() throws IOException {
-        SmallRyeConfig config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
-        LogRuntimeConfig logRuntimeConfig = config.getConfigMapping(LogRuntimeConfig.class);
-
+    public ListeningResults start() throws IOException {
         final ContainerRuntime containerRuntime = ContainerRuntimeUtil.detectContainerRuntime();
         containerRuntimeBinaryName = containerRuntime.getExecutableName();
 
@@ -292,14 +286,14 @@ public class DefaultDockerContainerLauncher implements DockerContainerArtifactLa
         args.add(containerImage);
         args.addAll(programArgs);
 
-        final Path logPath = logRuntimeConfig.file().path().toPath();
+        Path logFile = LauncherUtil.buildUniqueLogPath(instanceId);
         try {
-            Files.deleteIfExists(logPath);
-            if (logPath.getParent() != null) {
-                Files.createDirectories(logPath.getParent());
+            Files.deleteIfExists(logFile);
+            if (logFile.getParent() != null) {
+                Files.createDirectories(logFile.getParent());
             }
         } catch (FileSystemException e) {
-            log.warnf("Log file %s deletion failed, could happen on Windows, we can carry on.", logPath);
+            log.warnf("Log file %s deletion failed, could happen on Windows, we can carry on.", logFile);
         }
 
         log.infof("Executing \"%s\"", String.join(" ", args));
@@ -310,18 +304,45 @@ public class DefaultDockerContainerLauncher implements DockerContainerArtifactLa
         // to mount /work/ directory to get quarkus.log.
         containerProcess = new ProcessBuilder(args)
                 .redirectErrorStream(true)
-                .redirectOutput(ProcessBuilder.Redirect.appendTo(logPath.toFile()))
+                .redirectOutput(ProcessBuilder.Redirect.appendTo(logFile.toFile()))
                 .start();
 
-        if (startedFunction != null) {
-            waitForStartedFunction(startedFunction, containerProcess, waitTimeSeconds, logPath);
-            return Optional.empty();
-        } else {
-            log.info("Wait for server to start by capturing listening data...");
-            Optional<ListeningAddress> result = waitForCapturedListeningData(containerProcess, logPath, waitTimeSeconds);
-            result.ifPresent(listeningAddress -> log.infof("Server started on port %s", listeningAddress.port()));
-            return result;
+        try {
+            if (startedFunction != null) {
+                waitForStartedFunction(startedFunction, containerProcess, waitTimeSeconds, logFile);
+                return ListeningResults.EMPTY;
+            } else {
+                log.info("Wait for server to start by capturing listening data...");
+                ListeningResults result = waitForCapturedListeningData(containerProcess, logFile, waitTimeSeconds);
+                result.server().ifPresent(r -> log.infof("Server started on port %s", r.address().port()));
+                return result;
+            }
+        } catch (RuntimeException e) {
+            String hint = devServicesNetworkHint(devServicesLaunchResult);
+            if (hint == null) {
+                throw e;
+            }
+            throw new IllegalStateException(e.getMessage() + " " + hint, e);
         }
+    }
+
+    /**
+     * When the application container could not start, explain the most likely cause if the test framework had to
+     * generate a network for it: Dev Services provided configuration for the application, but no build step reported the
+     * network their containers were joined to, so the application container cannot resolve their hostnames.
+     * <p>
+     * {@code null} when this does not apply.
+     */
+    static String devServicesNetworkHint(ArtifactLauncher.InitContext.DevServicesLaunchResult devServicesLaunchResult) {
+        if (!devServicesLaunchResult.manageNetwork() || devServicesLaunchResult.properties().isEmpty()) {
+            return null;
+        }
+        return "The application container was started on the network '" + devServicesLaunchResult.networkId()
+                + "', which was created by the test framework because no Dev Services network id was reported by the build,"
+                + " while Dev Services configured " + String.join(", ", devServicesLaunchResult.properties().keySet())
+                + ". Dev Service containers that are not on that network cannot be reached from the application container."
+                + " The network id is reported when the extension providing the Dev Service depends on"
+                + " io.quarkus:quarkus-devservices-deployment; report this to the maintainers of that extension.";
     }
 
     private void handleAotFileArgs(List<String> args, ContainerRuntime containerRuntime) throws IOException {

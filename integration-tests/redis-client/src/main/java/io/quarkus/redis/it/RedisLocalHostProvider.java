@@ -1,8 +1,8 @@
 package io.quarkus.redis.it;
 
 import java.net.URI;
-import java.util.Collections;
-import java.util.Set;
+import java.util.Collection;
+import java.util.List;
 
 import jakarta.enterprise.context.ApplicationScoped;
 
@@ -15,7 +15,7 @@ public class RedisLocalHostProvider implements RedisHostsProvider {
 
     // Select the database "3"
     @Override
-    public Set<URI> getHosts() {
-        return Collections.singleton(URI.create("redis://localhost:6379/3"));
+    public Collection<URI> getHosts() {
+        return List.of(URI.create("redis://localhost:6379/3"));
     }
 }

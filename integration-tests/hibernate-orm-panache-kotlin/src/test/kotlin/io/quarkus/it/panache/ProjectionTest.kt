@@ -22,5 +22,6 @@ open class ProjectionTest {
             .body(Matchers.`is`("OK"))
         RestAssured.`when`()["/test/projection-no-arguments-constructor"].then()
             .body(Matchers.`is`("OK"))
+        RestAssured.`when`()["/test/projection-value-class"].then().body(Matchers.`is`("OK"))
     }
 }

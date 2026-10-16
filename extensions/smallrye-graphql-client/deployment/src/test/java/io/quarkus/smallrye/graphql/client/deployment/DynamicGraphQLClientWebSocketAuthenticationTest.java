@@ -10,7 +10,6 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import jakarta.annotation.security.RolesAllowed;
-import jakarta.json.JsonValue;
 
 import org.eclipse.microprofile.graphql.GraphQLApi;
 import org.eclipse.microprofile.graphql.Query;
@@ -65,8 +64,8 @@ public class DynamicGraphQLClientWebSocketAuthenticationTest {
             subscription.subscribe().with(item -> {
                 assertFalse(hasData.get());
                 assertTrue(item.hasData());
-                assertEquals(JsonValue.ValueType.OBJECT, item.getData().get("fooSub").getValueType());
-                assertEquals("foo", item.getData().getJsonObject("fooSub").getString("message"));
+                assertTrue(item.getData().get("fooSub").isObject());
+                assertEquals("foo", item.getData().get("fooSub").get("message").asText());
                 hasData.set(true);
             }, Assertions::fail, () -> {
                 hasCompleted.set(true);
@@ -86,7 +85,7 @@ public class DynamicGraphQLClientWebSocketAuthenticationTest {
         try (DynamicGraphQLClient client = clientBuilder.build()) {
             Response response = client.executeSync("{ foo { message} }");
             assertTrue(response.hasData());
-            assertEquals("foo", response.getData().getJsonObject("foo").getString("message"));
+            assertEquals("foo", response.getData().get("foo").get("message").asText());
         }
     }
 
@@ -99,11 +98,11 @@ public class DynamicGraphQLClientWebSocketAuthenticationTest {
         try (DynamicGraphQLClient client = clientBuilder.build()) {
             Response response = client.executeSync("{ foo { message} }");
             assertTrue(response.hasData());
-            assertEquals("foo", response.getData().getJsonObject("foo").getString("message"));
+            assertEquals("foo", response.getData().get("foo").get("message").asText());
 
             // Run a second query with a different result to validate that the result of the first query isn't being cached at all.
             response = client.executeSync("{ bar { message} }");
-            assertEquals(JsonValue.ValueType.NULL, response.getData().get("bar").getValueType());
+            assertTrue(response.getData().get("bar").isNull());
         }
     }
 
@@ -121,7 +120,7 @@ public class DynamicGraphQLClientWebSocketAuthenticationTest {
             AtomicBoolean returned = new AtomicBoolean(false);
 
             subscription.subscribe().with(item -> {
-                assertEquals(JsonValue.ValueType.NULL, item.getData().get("barSub").getValueType());
+                assertTrue(item.getData().get("barSub").isNull());
                 returned.set(true);
             }, throwable -> Assertions.fail(throwable));
 
@@ -138,7 +137,7 @@ public class DynamicGraphQLClientWebSocketAuthenticationTest {
                 .executeSingleOperationsOverWebsocket(true);
         try (DynamicGraphQLClient client = clientBuilder.build()) {
             Response response = client.executeSync("{ foo { message} }");
-            assertEquals(JsonValue.ValueType.NULL, response.getData().get("foo").getValueType());
+            assertTrue(response.getData().get("foo").isNull());
         }
     }
 
@@ -150,7 +149,7 @@ public class DynamicGraphQLClientWebSocketAuthenticationTest {
                 .executeSingleOperationsOverWebsocket(true);
         try (DynamicGraphQLClient client = clientBuilder.build()) {
             Response response = client.executeSync("{ bar { message } }");
-            assertEquals(JsonValue.ValueType.NULL, response.getData().get("bar").getValueType());
+            assertTrue(response.getData().get("bar").isNull());
         }
     }
 
@@ -161,7 +160,7 @@ public class DynamicGraphQLClientWebSocketAuthenticationTest {
                 .executeSingleOperationsOverWebsocket(true);
         try (DynamicGraphQLClient client = clientBuilder.build()) {
             Response response = client.executeSync("{ foo { message} }");
-            assertEquals(JsonValue.ValueType.NULL, response.getData().get("foo").getValueType());
+            assertTrue(response.getData().get("foo").isNull());
         }
     }
 

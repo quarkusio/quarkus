@@ -3,15 +3,18 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
+[id=opentelemetry-tracing]
 = Using OpenTelemetry Tracing
 include::_attributes.adoc[]
-:categories: observability
+:diataxis-type: reference
 :summary: This guide explains how your Quarkus application can utilize OpenTelemetry Tracing to provide distributed tracing for interactive web applications.
 :topics: observability,opentelemetry,tracing
 :extensions: io.quarkus:quarkus-opentelemetry
 
 This guide explains how your Quarkus application can utilize https://opentelemetry.io/[OpenTelemetry] (OTel) to provide
 distributed tracing for interactive web applications.
+
+include::{includes}/extension-status.adoc[]
 
 include::{includes}/observability-include.adoc[]
 
@@ -50,7 +53,7 @@ include::{includes}/devtools/create-app.adoc[]
 
 This command generates the Maven project and imports the `quarkus-opentelemetry` extension,
 which includes the default OpenTelemetry support,
-and a gRPC span exporter for https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/protocol/otlp.md[OTLP].
+and an OTLP span exporter for https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/protocol/otlp.md[OTLP].
 
 If you already have your Quarkus project configured, you can add the `quarkus-opentelemetry` extension
 to your project by running the following command in your project base directory:
@@ -185,6 +188,31 @@ This dependency must be added to the project:
 </dependency>
 ----
 
+=== Traces in the Dev UI
+
+In dev mode, when the OpenTelemetry extension is present, an *Observability* dashboard
+appears in the Dev UI (`/q/dev-ui`) menu, offering a *Traces* card. It captures finished
+spans into a small in-memory ring buffer and renders them grouped by trace as a
+live waterfall, with no containers or Dev Services required. Add the card the first
+time you open the dashboard, or later with *Edit dashboard*, and drag it by its header
+to position it among the other cards. A waterfall benefits from room: the expand icon in
+the card's header gives it the whole dashboard area until you press *Escape*, and
+*Open* links through to the full-page view.
+
+The capture is dev-mode only and does not affect production or native builds.
+
+[cols="1,1,2",options="header"]
+|===
+|Property |Default |Description
+|`quarkus.dev-ui.observability.traces.enabled` |`true` |Enable/disable the Dev UI traces capture (dev mode only).
+|`quarkus.dev-ui.observability.traces.capacity` |`1000` |Maximum number of spans kept in the ring buffer; oldest are evicted first.
+|===
+
+NOTE: Dev mode defaults ratio-based samplers to 100%, so all spans are captured.
+Only sampled spans are recorded; a custom sampler that drops spans will limit what
+appears here. When the buffer is full, the oldest spans are evicted, which can leave
+the oldest trace partially shown.
+
 == Run the application
 
 === Start the application
@@ -193,9 +221,9 @@ Now we are ready to run our application. If using `application.properties` to co
 
 include::{includes}/devtools/dev.adoc[]
 
-or if configuring the OTLP gRPC endpoint via JVM arguments:
+or if configuring the OTLP endpoint via JVM arguments:
 
-:dev-additional-parameters: -Djvm.args="-Dquarkus.otel.exporter.otlp.traces.endpoint=http://localhost:4317"
+:dev-additional-parameters: -Djvm.args="-Dquarkus.otel.exporter.otlp.traces.endpoint=http://localhost:4318"
 include::{includes}/devtools/dev.adoc[]
 :!dev-additional-parameters:
 
@@ -375,6 +403,15 @@ quarkus.otel.traces.sampler=traceidratio
 # Runtime property:
 quarkus.otel.traces.sampler.arg=0.5
 ----
+
+[NOTE]
+====
+As of Quarkus 4, the default sampling ratio changed from 100% (1.0d) to 10% (0.1d) to reduce overhead in production environments.
+In development and test modes, sampling defaults to 100% (1.0d) to ensure all traces are captured for debugging and for deterministic test assertions.
+This applies only when a ratio-based sampler (`parentbased_traceidratio` or `traceidratio`) is used; an explicit `quarkus.otel.traces.sampler.arg` still takes precedence.
+Note that `@QuarkusIntegrationTest` (native or JAR) applications are built in production mode, so they use the production default unless sampling is configured explicitly.
+====
+
 [TIP]
 ====
 
@@ -383,7 +420,7 @@ An interesting use case for the sampler is to activate and deactivate tracing ex
 ----
 # build time property only:
 quarkus.otel.traces.sampler=traceidratio
-# On (default). All traces are exported:
+# On. All traces are exported:
 quarkus.otel.traces.sampler.arg=1.0
 # Off. No traces are exported:
 quarkus.otel.traces.sampler.arg=0.0
@@ -600,6 +637,11 @@ Multi.createFrom().items("Alice", "Bob", "Charlie")
 ----
 Instead of `transformToMultiAndConcatenate` you can use `transformToMultiAndMerge` if you don't care about the order of the items.
 
+The `wrapWithSpan` utility method propagates the whole parent `Context` into the wrapped pipeline, not just the new span.
+Any `Baggage` present in the parent `Context` therefore remains available through `Baggage.current()`
+inside the pipeline. Passing `Optional.empty()` only detaches the trace parent to create a root span; a baggage already
+active in the surrounding context is still propagated.
+
 === Quarkus Messaging - Kafka
 
 When using the Quarkus Messaging extension for Kafka,
@@ -771,7 +813,6 @@ public static class HelloPropagation {
         }
     }
 ----
-
 <1> The `MAP_SETTER` handles how to store data in the carrier map that will transport the context.
 <2> `MAP_GETTER` handles how to retrieve data from the carrier map transporting the context.
 <3> The `createParentContext()` method explains how to create an OpenTelemetry context. In this case we generate the default https://www.w3.org/TR/trace-context/[W3C Trace Context] header: `traceparent`.
@@ -837,6 +878,7 @@ See the main xref:opentelemetry.adoc#exporters[OpenTelemetry Guide exporters] se
 * https://quarkus.io/guides/resteasy[`quarkus-resteasy`]
 * https://quarkus.io/guides/resteasy-client[`quarkus-resteasy-client`]
 * https://quarkus.io/guides/scheduler[`quarkus-scheduler`]
+* https://quarkus.io/guides/signals[`quarkus-signals`]
 * https://quarkus.io/guides/smallrye-graphql[`quarkus-smallrye-graphql`]
 * https://quarkus.io/extensions/io.quarkus/quarkus-mongodb-client[`quarkus-mongodb-client`]
 * https://quarkus.io/extensions/io.quarkus/quarkus-messaging[`quarkus-messaging`]

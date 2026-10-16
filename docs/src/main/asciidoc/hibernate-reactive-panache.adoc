@@ -5,7 +5,6 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Simplified Hibernate Reactive with Panache
 include::_attributes.adoc[]
-:categories: data
 :summary: Simplified reactive ORM layer based on Hibernate Reactive.
 :config-file: application.properties
 :topics: data,hibernate-reactive,panache,sql
@@ -686,7 +685,6 @@ public class DogDto {
 
 PanacheQuery<DogDto> query = Dog.findAll().project(DogDto.class);
 ----
-
 <1> This annotation can be used when you want to project `@Embedded` entity or `@ManyToOne`, `@OneToOne` relation.
 It does not support `@OneToMany` or `@ManyToMany` relation.
 
@@ -752,7 +750,6 @@ public class PersonName {
 // only 'name' will be loaded from the database
 PanacheQuery<PersonName> query = Person.find("status", Status.Alive).project(PersonName.class);
 ----
-
 <1> This will use your annotated constructor to create the query. (`select new PersonName(name) from ...`)
 
 [WARNING]

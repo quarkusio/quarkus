@@ -6,13 +6,13 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import io.quarkus.devui.spi.AbstractDevUIBuildItem;
+import io.quarkus.devjsonrpc.spi.AbstractDevBuildItem;
 import io.quarkus.devui.spi.buildtime.BuildTimeData;
 
 /**
  * Any of card, menu or footer pages
  */
-public abstract class AbstractPageBuildItem extends AbstractDevUIBuildItem {
+public abstract class AbstractPageBuildItem extends AbstractDevBuildItem {
 
     protected final Map<String, BuildTimeData> buildTimeData;
     protected final List<PageBuilder> pageBuilders;

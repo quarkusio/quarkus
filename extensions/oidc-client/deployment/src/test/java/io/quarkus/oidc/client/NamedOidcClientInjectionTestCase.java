@@ -42,6 +42,13 @@ public class NamedOidcClientInjectionTestCase {
     }
 
     @Test
+    public void testInjectedNamedTokenProvider() {
+        String token1 = doTestGetTokenByNamedTokenProvider("client1");
+        String token2 = doTestGetTokenByNamedTokenProvider("client2");
+        validateTokens(token1, token2);
+    }
+
+    @Test
     public void testProgrammaticNamedClientLookup() {
         String token1 = doTestGetTokenByProgrammaticLookup("client1");
         String token2 = doTestGetTokenByProgrammaticLookup("client2");
@@ -73,6 +80,12 @@ public class NamedOidcClientInjectionTestCase {
 
     private String doTestGetTokenByNamedTokensProvider(String clientId) {
         String token = RestAssured.when().get("/" + clientId + "/token/singleton").body().asString();
+        assertThat(token, is(notNullValue()));
+        return token;
+    }
+
+    private String doTestGetTokenByNamedTokenProvider(String clientId) {
+        String token = RestAssured.when().get("/" + clientId + "/tokenprovider").body().asString();
         assertThat(token, is(notNullValue()));
         return token;
     }

@@ -1,12 +1,10 @@
 name: Surge.sh Preview
 
-# CI disabled for Vert.x 5 experimental branch - uncomment the 'on' triggers below to re-enable
-#on:
-#  workflow_run:
-#    workflows: ["Quarkus Documentation CI"]
-#    types:
-#      - completed
-on: [workflow_dispatch]
+on:
+  workflow_run:
+    workflows: ["Quarkus Documentation CI"]
+    types:
+      - completed
 
 defaults:
   run:
@@ -23,21 +21,15 @@ jobs:
       packages: read
     if: github.event.workflow_run.event == 'pull_request' && github.event.workflow_run.conclusion == 'success'
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: quarkusio/quarkusio.github.io
           fetch-depth: 5000
           fetch-tags: false
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: quarkusio/quarkus
           path: quarkus-main
-
-      - name: Install git-restore-time
-        run: sudo apt-get install -y git-restore-mtime
-
-      - name: Restore mtime
-        run: git restore-mtime
 
       - name: Download PR Artifact
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
@@ -47,15 +39,27 @@ jobs:
           path: documentation-temp
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Store PR id as variable
+      - name: Validate and expose PR number
         id: pr
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RAW_PR_NUMBER: ${{ github.event.workflow_run.pull_requests[0].number }}
+          HEAD_OWNER: ${{ github.event.workflow_run.head_repository.owner.login }}
+          HEAD_BRANCH: ${{ github.event.workflow_run.head_branch }}
+          HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
         run: |
-          pr=$(<documentation-temp/pr-id.txt)
-          if ! [[ $pr =~ ^[0-9]+$ ]] ; then
-            echo "PR id extracted from documentation-temp/pr-id.txt is not a number: $pr"
+          # workflow_run.pull_requests is empty for pull requests opened from forks:
+          # look the pull request up from the branch the documentation build ran on instead.
+          if [[ -z "$RAW_PR_NUMBER" ]]; then
+            RAW_PR_NUMBER=$(gh api -X GET "repos/${GITHUB_REPOSITORY}/pulls" \
+              -f state=open -f head="${HEAD_OWNER}:${HEAD_BRANCH}" -f per_page=100 \
+              --jq '.[0].number // empty')
+          fi
+          if ! [[ "$RAW_PR_NUMBER" =~ ^[0-9]+$ ]]; then
+            echo "Invalid PR number: $RAW_PR_NUMBER" >&2
             exit 1
           fi
-          echo "id=$(<documentation-temp/pr-id.txt)" >> $GITHUB_OUTPUT
+          echo "id=$RAW_PR_NUMBER" >> "$GITHUB_OUTPUT"
       - name: Sync documentation
         shell: bash
         # make sure we override the script coming from the artifact with the version from the main repository
@@ -66,43 +70,45 @@ jobs:
           ./documentation-temp/docs/sync-web-site.sh main ../../
           rm -rf documentation-temp
           rm -rf quarkus-main
-      - name: Set up ruby
-        uses: ruby/setup-ruby@9eb537ca036ebaed86729dcb9309076e4c5c3b74 # v1.314.0
+
+      - name: Set up JDK
+        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
         with:
-          ruby-version: 3.2.3
-      - name: Cache Ruby gems
-        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
+          java-version: '25'
+          distribution: 'temurin'
+          cache: 'maven'
+
+      - name: Cache npm packages
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
-          path: vendor/bundle
-          key: ${{ runner.os }}-gems-${{ hashFiles('**/Gemfile.lock') }}
-          restore-keys: ${{ runner.os }}-gems-
-      - name: Install dependencies
-        run: |
-          bundle config path vendor/bundle
-          bundle install --jobs 4 --retry 3
-      - name: Build Jekyll site
-        run: bundle exec jekyll build --config _config.yml,_only_latest_guides_config.yml
+          path: ~/.npm
+          key: ${{ runner.os }}-npm-${{ hashFiles('package-lock.json') }}
+          restore-keys: ${{ runner.os }}-npm-
+
+      - name: Build with Maven
+        run: QUARKUS_ROQ_GENERATOR_BATCH=true QUARKUS_PROFILE=only-latest-guides ./mvnw -B package quarkus:run -DskipTests
 
       - name: Reduce the size of the website to be compatible with surge
         run: |
-          rm -rf _site/assets/images/posts/
-          rm -rf _site/assets/images/books/
-          rm -rf _site/assets/images/events/
-          rm -rf _site/assets/images/quarkus2/
-          rm -rf _site/assets/images/quarkus3/
-          rm -rf _site/assets/images/worldtour/
-          rm -rf _site/assets/stickers
-          rm -rf _site/assets/images/desktopwallpapers
-          rm -rf _site/assets/images/stickers
-          rm -rf _site/newsletter/
+          rm -rf target/roq/assets/images/posts/
+          rm -rf target/roq/assets/images/books/
+          rm -rf target/roq/assets/images/events/
+          rm -rf target/roq/assets/images/quarkus2/
+          rm -rf target/roq/assets/images/quarkus3/
+          rm -rf target/roq/assets/images/worldtour/
+          rm -rf target/roq/assets/stickers
+          rm -rf target/roq/assets/images/desktopwallpapers
+          rm -rf target/roq/assets/images/stickers
+          rm -rf target/roq/newsletter
           # we only need the images from the main version
-          rm -rf _site/guides/images/
-          rm -rf _site/blog/
+          rm -rf target/roq/guides/images/
+          rm -rf target/roq/blog/
       - name: Publishing to surge for preview
         id: deploy
-        run: npx surge@0.23.1 ./_site --domain https://quarkus-pr-main-${PR_ID}-preview.surge.sh --token ${{ secrets.SURGE_TOKEN }}
         env:
           PR_ID: ${{ steps.pr.outputs.id }}
+          SURGE_TOKEN: ${{ secrets.SURGE_TOKEN }}
+        run: npx surge@0.23.1 ./target/roq --domain "https://quarkus-pr-main-${PR_ID}-preview.surge.sh" --token "$SURGE_TOKEN"
 
       - name: Update PR status comment on success
         uses: quarkusio/action-helpers@main
@@ -111,7 +117,7 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           pr-number: ${{ steps.pr.outputs.id }}
           body: |
-            🎊 PR Preview ${{ github.sha }} has been successfully built and deployed to https://quarkus-pr-main-${{ steps.pr.outputs.id }}-preview.surge.sh/version/main/guides/
+            🎊 PR ${{ github.sha }} Documentation Preview has been successfully built and deployed to https://quarkus-pr-main-${{ steps.pr.outputs.id }}-preview.surge.sh/version/main/guides/
 
             - Images of blog posts older than 3 months are not available.
             - Newsletters older than 3 months are not available.
@@ -126,6 +132,6 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           pr-number: ${{ steps.pr.outputs.id }}
           body: |
-            😭 Deploy PR Preview failed.
+            😭 Deploy PR Documentation Preview failed.
             <img width="300" src="https://user-images.githubusercontent.com/507615/90250824-4e066700-de6f-11ea-8230-600ecc3d6a6b.png">
           body-marker: <!-- Preview status comment marker -->

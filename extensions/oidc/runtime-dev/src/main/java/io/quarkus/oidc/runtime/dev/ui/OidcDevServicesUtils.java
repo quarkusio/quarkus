@@ -39,7 +39,7 @@ public final class OidcDevServicesUtils {
         var proxyConfig = OidcConfig.getDefaultTenant(config.getConfigMapping(OidcConfig.class)).proxy();
         var container = Arc.container();
         var proxyConfigurationRegistry = container != null ? container.select(ProxyConfigurationRegistry.class).orNull() : null;
-        OidcCommonUtils.toProxyOptions(proxyConfig, proxyConfigurationRegistry).ifPresent(options::setProxyOptions);
+        OidcCommonUtils.configureProxy(proxyConfig, options, proxyConfigurationRegistry);
         return WebClient.create(new io.vertx.mutiny.core.Vertx(vertx), options);
     }
 

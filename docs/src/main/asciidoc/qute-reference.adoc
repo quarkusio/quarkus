@@ -3,9 +3,8 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-= Qute Reference Guide
+= Qute reference guide
 include::_attributes.adoc[]
-:categories: miscellaneous
 :summary: Learn everything you need to know about the Qute template engine.
 :numbered:
 :sectnums:
@@ -159,6 +158,16 @@ A section may also declare nested section blocks: `{#if item.valid} Valid. {#els
 Unparsed Character Data::
 It is used to mark the content that should be rendered but _not parsed_.
 It starts with the sequence `{|`  and ends with the sequence `|}`: `{| <script>if(true){alert('Qute is cute!')};</script> |}`, and could be multi-line.
++
+The number of `|` (pipe) characters in the opening delimiter can be increased to avoid conflicts with content that itself contains `|}`.
+The closing delimiter must use the same number of pipes as the opening delimiter.
+For example, `{||||` starts an unparsed block that only ends with `||||}`, making it safe to include `|}` in the content: `{|||| content with |} inside ||||}`.
++
+[NOTE]
+====
+Consecutive `|` characters immediately after `{|` are now counted as part of the opening delimiter.
+For example, `{||foo|}` was previously interpreted as single-pipe unparsed character data with content `|foo`, but is now interpreted as a double-pipe opening that requires `||}` to close.
+====
 +
 [WARNING]
 ====
@@ -1460,6 +1469,8 @@ The template is executed with the <<current_context_object>>, i.e. can reference
 NOTE: The evaluated template is parsed and evaluated every time the section is executed.
 In other words, it is not possible to cache the parsed value to conserve resources and optimize performance.
 
+IMPORTANT: The `{#eval}` section helper is not registered automatically. It can be registered manually using `engine.addSectionHelper(new EvalSectionHelper.Factory())`. See <<engine-customization>> for more details.
+
 ==== Cached Section
 
 Sometimes it's practical to cache parts of the template that rarely change.
@@ -1780,7 +1791,7 @@ This can be done by setting a special attribute via `TemplateInstance.setVariant
 class MyService {
 
     @Inject
-    Template items; <1>
+    Template items;
 
     @Inject
     ItemManager manager;
@@ -2480,10 +2491,24 @@ TIP: A list element can be accessed directly via an index: `{list.10}` or even `
 ** `{str:builder('Qute').append("is").append("cool!")}` yields `Qute is cool!`
 ** `{str:builder('Qute') + "is" + whatisqute + "!"}` yields `Qute is cool!` if `whatisqute` resolves to `cool`
 
-* `str:eval`: Evaluates the string representation of the first argument as a template in the <<current_context_object,current context>>. 
+* `str:eval`: Evaluates the string representation of the first argument as a template in the <<current_context_object,current context>>.
 ** `{str:eval('Hello {name}!')` yields `Hello lovely!` if `name` resolves to `lovely`
 ** `{str:eval(myTemplate)}` yields `Hello lovely!` if `myTemplate` resolves to `Hello {name}!` and `name` resolves to `lovely`
 ** `{str:eval('/path/to/{fileName}')}` yields `/path/to/file.txt` if `fileName` resolves to `file.txt`
+** IMPORTANT: For security reasons, the `str:eval` namespace resolver is _not_ registered automatically. Evaluating an untrusted string as a template may result in a server-side template injection. If you need this functionality then you have to register the `io.quarkus.qute.StrEvalNamespaceResolver` manually, e.g. via <<engine-customization,`@Observes EngineBuilder`>>:
++
+[source,java]
+----
+import io.quarkus.qute.EngineBuilder;
+import io.quarkus.qute.StrEvalNamespaceResolver;
+
+class MyBean {
+
+    void configureEngine(@Observes EngineBuilder builder) {
+        builder.addNamespaceResolver(new StrEvalNamespaceResolver());
+    }
+}
+----
 
 ===== Config
 
@@ -3152,6 +3177,34 @@ public class MyBean {
 }
 ----
 <1> The annotation value is a locale tag string (IETF).
+
+===== Locale Aware Message Bundles
+
+An injected message bundle interface is by default bound to the default locale.
+If you need the localized variant to be selected dynamically based on the current locale, e.g. the locale negotiated from the `Accept-Language` header of the current HTTP request, then use the `@LocaleAware` qualifier instead.
+
+.Injected Current-Locale-Aware Message Bundle Example
+[source,java]
+----
+import io.quarkus.qute.i18n.LocaleAware;
+
+@Singleton
+public class MyBean {
+
+    @LocaleAware <1>
+    AppMessages msg;
+
+    String render() {
+       return msg.hello_name("Jachym"); <2>
+    }
+}
+----
+<1> Each message method invocation selects the appropriate localized variant based on the current locale.
+<2> If the current locale is not available, or no matching localized variant exists, then the default locale is used as a fallback.
+
+The current locale is obtained from a `io.quarkus.qute.i18n.CurrentLocaleProvider` bean.
+If the `quarkus-vertx-http` extension is present (e.g. when using `quarkus-rest-qute`) then a default provider that resolves the locale from the `Accept-Language` header of the current HTTP request is used.
+You can supply a custom provider by declaring a CDI bean that implements `CurrentLocaleProvider`; it takes precedence over the default one.
 
 ===== Enums
 

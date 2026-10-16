@@ -141,12 +141,11 @@ public class ConfigAnnotationScanner {
                     configMappingWithoutConfigRoot);
 
             try {
-                // we need to forge a dummy DiscoveryConfigRoot
-                // it's mostly ignored in the listeners, except for checking if it's a config mapping (for mixed modules)
+                // we need to forge a dummy DiscoveryConfigRoot, it's mostly ignored in the listeners
                 DiscoveryConfigRoot discoveryConfigRoot = new DiscoveryConfigRoot(config.getExtension(), "dummy", "dummy",
                         utils.element().getBinaryName(configMappingWithoutConfigRoot),
                         configMappingWithoutConfigRoot.getQualifiedName().toString(),
-                        ConfigPhase.BUILD_TIME, null, true);
+                        ConfigPhase.BUILD_TIME, null);
                 scanElement(configMappingWithoutConfigRootListeners, discoveryConfigRoot, configMappingWithoutConfigRoot);
             } catch (Exception e) {
                 throw new IllegalStateException(

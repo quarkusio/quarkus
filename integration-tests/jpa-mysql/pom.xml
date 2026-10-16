@@ -103,12 +103,18 @@
                 <artifactId>maven-surefire-plugin</artifactId>
                 <configuration>
                     <skip>true</skip>
+                    <systemPropertyVariables combine.children="append">
+                        <mysql.default.version>${mysql.default.version}</mysql.default.version>
+                    </systemPropertyVariables>
                 </configuration>
             </plugin>
             <plugin>
                 <artifactId>maven-failsafe-plugin</artifactId>
                 <configuration>
                     <skip>true</skip>
+                    <systemPropertyVariables combine.children="append">
+                        <mysql.default.version>${mysql.default.version}</mysql.default.version>
+                    </systemPropertyVariables>
                 </configuration>
             </plugin>
             <plugin>
@@ -149,22 +155,6 @@
                     </plugin>
                 </plugins>
             </build>
-        </profile>
-
-        <!-- Disabled pending fix of #33105 -->
-        <profile>
-            <id>podman</id>
-            <activation>
-                <property>
-                    <name>env.IS_PODMAN</name>
-                    <value>true</value>
-                </property>
-            </activation>
-            <properties>
-                <skipTests>true</skipTests>
-                <skipITs>true</skipITs>
-                <enforcer.skip>true</enforcer.skip>
-            </properties>
         </profile>
     </profiles>
 

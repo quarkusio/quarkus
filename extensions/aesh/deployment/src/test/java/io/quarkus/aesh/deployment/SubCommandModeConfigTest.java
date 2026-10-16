@@ -11,7 +11,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.aesh.runtime.CliConfig;
-import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.QuarkusExtensionTest;
 
 /**
  * Tests that all 6 {@link CliConfig.SubCommandModeConfig} properties bind correctly
@@ -20,7 +20,7 @@ import io.quarkus.test.QuarkusUnitTest;
 public class SubCommandModeConfigTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
+    static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot(jar -> jar.addClass(DummyCommand.class))
             .overrideConfigKey("quarkus.aesh.sub-command-mode.enabled", "false")
             .overrideConfigKey("quarkus.aesh.sub-command-mode.exit-command", "quit")

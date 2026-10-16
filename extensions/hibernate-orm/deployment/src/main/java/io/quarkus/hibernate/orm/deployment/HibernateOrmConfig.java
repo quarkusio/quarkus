@@ -43,9 +43,13 @@ public interface HibernateOrmConfig {
      * You can set this property to `false` if you want to disable them
      * despite having a JDBC datasource.
      *
+     * @deprecated Use {@code quarkus.hibernate-orm.jdbc.enabled} for the default persistence unit,
+     *             and {@code quarkus.hibernate-orm."<persistence-unit-name>".jdbc.enabled} for named persistence
+     *             units, to configure this on a per-persistence-unit basis instead.
      * @asciidoclet
      */
     @WithDefault("true")
+    @Deprecated(forRemoval = true, since = "3.39")
     boolean blocking();
 
     /**
@@ -64,7 +68,7 @@ public interface HibernateOrmConfig {
      * Configuration for persistence units.
      */
     @WithParentName
-    @WithUnnamedKey(PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME)
+    @WithUnnamedKey(value = PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME, eager = false)
     @WithDefaults
     @ConfigDocMapKey("persistence-unit-name")
     Map<String, HibernateOrmConfigPersistenceUnit> persistenceUnits();
@@ -119,9 +123,8 @@ public interface HibernateOrmConfig {
 
     default boolean isAnyNonPersistenceXmlPropertySet() {
         // Do NOT include persistenceXml in here.
-        return defaultPersistenceUnit().isAnyPropertySet() ||
-                !namedPersistenceUnits().isEmpty() ||
-                log().isAnyPropertySet() ||
+        return !persistenceUnits().isEmpty() ||
+                log().bindParameters() ||
                 statistics().isPresent() ||
                 logSessionMetrics().isPresent() ||
                 metrics().isAnyPropertySet();
@@ -141,16 +144,6 @@ public interface HibernateOrmConfig {
 
     @ConfigGroup
     interface HibernateOrmConfigLog {
-
-        /**
-         * Logs SQL bind parameter.
-         * <p>
-         * Setting it to true is obviously not recommended in production.
-         */
-        @Deprecated
-        @WithDefault("false")
-        boolean bindParam();
-
         /**
          * Logs SQL bind parameters.
          * <p>
@@ -158,10 +151,6 @@ public interface HibernateOrmConfig {
          */
         @WithDefault("false")
         boolean bindParameters();
-
-        default boolean isAnyPropertySet() {
-            return bindParam() || bindParameters();
-        }
     }
 
     @ConfigGroup
@@ -187,8 +176,11 @@ public interface HibernateOrmConfig {
          * link:https://github.com/quarkusio/quarkus/wiki/Migration-Guide-3.0:-Hibernate-ORM-5-to-6-migration[the Quarkus 3
          * migration guide from Hibernate ORM 5 to 6].
          *
+         * @deprecated This setting will be removed in a future version of Quarkus. Migrate your schema
+         *             to native Hibernate ORM 6 behavior.
          * @asciidoclet
          */
+        @Deprecated(since = "4.0", forRemoval = true)
         @WithName("orm-compatibility.version")
         @WithDefault("latest")
         @WithConverter(DatabaseOrmCompatibilityVersion.Converter.class)
@@ -231,11 +223,20 @@ public interface HibernateOrmConfig {
             /**
              * How the default JSON/XML format mappers are configured.
              *
-             * Only available to mitigate migration from the current Quarkus-preconfigured format mappers (that will be removed
-             * in the future version).
+             * Quarkus no longer pre-builds format mappers and unless a user configures
+             * one explicitly it lets Hibernate ORM create its own internally.
+             *
+             * This property is deprecated and only accepts {@code ignore}. Setting it
+             * to {@code warn} or {@code fail} will result in an exception.
+             *
+             * @deprecated This property is no longer functional. It will be removed in a future version.
+             * @asciidoclet
              */
-            @WithDefault("fail")
+            @Deprecated(since = "4.0", forRemoval = true)
+            @WithDefault("ignore")
             BuiltinFormatMapperBehaviour global();
+
         }
     }
+
 }

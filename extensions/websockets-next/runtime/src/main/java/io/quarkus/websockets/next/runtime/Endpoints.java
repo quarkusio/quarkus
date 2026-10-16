@@ -38,9 +38,21 @@ class Endpoints {
             WebSocketBase ws, String generatedEndpointClass, Optional<Duration> autoPingInterval,
             SecuritySupport securitySupport, UnhandledFailureStrategy unhandledFailureStrategy, TrafficLogger trafficLogger,
             Runnable onClose, boolean activateRequestContext, boolean activateSessionContext,
-            TelemetrySupport telemetrySupport) {
+            TelemetrySupport telemetrySupport, int maxPendingMessages) {
 
         Context context = vertx.getOrCreateContext();
+
+        // If a positive limit is set, bound the number of in-flight messages using Vert.x fetch mode:
+        // the stream is paused during init and fetch(maxPendingMessages) is requested; each processed
+        // message then fetches one more (see ws.fetch(1) calls below).
+        boolean backpressure = maxPendingMessages > 0;
+
+        if (backpressure) {
+            // Pause the stream before any handler is registered so that no message can be delivered until
+            // fetch(maxPendingMessages) is requested at the end of the initialization
+            LOG.debugf("Back-pressure enabled - pause the stream: %s", connection);
+            ws.pause();
+        }
 
         // Initialize and capture the session context state that will be activated
         // during message processing
@@ -78,7 +90,15 @@ class Endpoints {
                         // If Multi is consumed we need to invoke the callback eagerly
                         // but after @OnOpen completes
                         if (textBroadcastProcessor != null) {
-                            Multi<Object> multi = textBroadcastProcessor.onCancellation().call(connection::close);
+                            Multi<Object> processor;
+                            if (backpressure) {
+                                // fetch(1) is tied to downstream emission so that back-pressure follows the actual
+                                // consumption rate of the Multi consumer, not the fire-and-forget dispatch
+                                processor = textBroadcastProcessor.onItem().invoke(() -> fetchOne(ws, connection));
+                            } else {
+                                processor = textBroadcastProcessor;
+                            }
+                            Multi<Object> multi = processor.onCancellation().call(connection::close);
                             onOpenContext.runOnContext(new Handler<Void>() {
                                 @Override
                                 public void handle(Void event) {
@@ -96,7 +116,15 @@ class Endpoints {
                             });
                         }
                         if (binaryBroadcastProcessor != null) {
-                            Multi<Object> multi = binaryBroadcastProcessor.onCancellation().call(connection::close);
+                            Multi<Object> processor;
+                            if (backpressure) {
+                                // fetch(1) is tied to downstream emission so that back-pressure follows the actual
+                                // consumption rate of the Multi consumer, not the fire-and-forget dispatch
+                                processor = binaryBroadcastProcessor.onItem().invoke(() -> fetchOne(ws, connection));
+                            } else {
+                                processor = binaryBroadcastProcessor;
+                            }
+                            Multi<Object> multi = processor.onCancellation().call(connection::close);
                             onOpenContext.runOnContext(new Handler<Void>() {
                                 @Override
                                 public void handle(Void event) {
@@ -130,6 +158,9 @@ class Endpoints {
                     trafficLogger.textMessageReceived(connection, m);
                 }
                 endpoint.onTextMessage(m).onComplete(r -> {
+                    if (backpressure) {
+                        fetchOne(ws, connection);
+                    }
                     if (r.succeeded()) {
                         LOG.debugf("@OnTextMessage callback consumed text message: %s", connection);
                     } else {
@@ -149,6 +180,10 @@ class Endpoints {
                     textBroadcastProcessor.onNext(endpoint.decodeTextMultiItem(m));
                     LOG.debugf("Text message >> Multi: %s", connection);
                 } catch (Throwable throwable) {
+                    if (backpressure) {
+                        // The item was not emitted to the Multi, so the emission-tied fetch(1) won't fire
+                        fetchOne(ws, connection);
+                    }
                     endpoint.doOnError(throwable).subscribe().with(
                             v -> LOG.debugf("Text message >> Multi: %s", connection),
                             t -> handleFailure(unhandledFailureStrategy, t, "Unable to send text message to Multi",
@@ -166,6 +201,9 @@ class Endpoints {
                     trafficLogger.binaryMessageReceived(connection, m);
                 }
                 endpoint.onBinaryMessage(m).onComplete(r -> {
+                    if (backpressure) {
+                        fetchOne(ws, connection);
+                    }
                     if (r.succeeded()) {
                         LOG.debugf("@OnBinaryMessage callback consumed binary message: %s", connection);
                     } else {
@@ -185,6 +223,10 @@ class Endpoints {
                     binaryBroadcastProcessor.onNext(endpoint.decodeBinaryMultiItem(m));
                     LOG.debugf("Binary message >> Multi: %s", connection);
                 } catch (Throwable throwable) {
+                    if (backpressure) {
+                        // The item was not emitted to the Multi, so the emission-tied fetch(1) won't fire
+                        fetchOne(ws, connection);
+                    }
                     endpoint.doOnError(throwable).subscribe().with(
                             v -> LOG.debugf("Binary message >> Multi: %s", connection),
                             t -> handleFailure(unhandledFailureStrategy, t, "Unable to send binary message to Multi",
@@ -195,7 +237,7 @@ class Endpoints {
             }, false);
         }
 
-        pingMessageHandler(connection, endpoint, ws, onOpenContext, m -> {
+        frameHandler(connection, endpoint, ws, onOpenContext, m -> {
             endpoint.onPingMessage(m).onComplete(r -> {
                 if (r.succeeded()) {
                     LOG.debugf("@OnPingMessage callback consumed application message: %s", connection);
@@ -204,7 +246,7 @@ class Endpoints {
                             "Unable to consume application message in @OnPingMessage callback", connection);
                 }
             });
-        });
+        }, backpressure);
 
         pongMessageHandler(connection, endpoint, ws, onOpenContext, m -> {
             endpoint.onPongMessage(m).onComplete(r -> {
@@ -278,6 +320,19 @@ class Endpoints {
                 });
             }
         });
+
+        if (backpressure) {
+            // All handlers are registered - grant the initial frame demand; non-final data frames immediately
+            // return their credit while the final frame returns its credit after message processing, which bounds
+            // the number of in-flight messages even though Vert.x fetch() counts frames
+            LOG.debugf("Back-pressure - fetch %s pending messages: %s", maxPendingMessages, connection);
+            ws.fetch(maxPendingMessages);
+        }
+    }
+
+    private static void fetchOne(WebSocketBase ws, WebSocketConnectionBase connection) {
+        LOG.debugf("Back-pressure - fetch one more message: %s", connection);
+        ws.fetch(1);
     }
 
     private static void handleFailure(UnhandledFailureStrategy strategy, Throwable cause, String message,
@@ -393,11 +448,24 @@ class Endpoints {
         });
     }
 
-    private static void pingMessageHandler(WebSocketConnectionBase connection, WebSocketEndpoint endpoint, WebSocketBase ws,
-            Context context, Consumer<Buffer> pingAction) {
+    static boolean isNonFinalDataFrame(WebSocketFrame frame) {
+        return !frame.isFinal() && (frame.type() == WebSocketFrameType.TEXT
+                || frame.type() == WebSocketFrameType.BINARY || frame.type() == WebSocketFrameType.CONTINUATION);
+    }
+
+    private static void frameHandler(WebSocketConnectionBase connection, WebSocketEndpoint endpoint, WebSocketBase ws,
+            Context context, Consumer<Buffer> pingAction, boolean backpressure) {
+        // The frame handler receives every frame, not just pings. It also replenishes demand for non-final data
+        // frames so that fragmented messages can be assembled before the message callback runs.
         ws.frameHandler(new Handler<WebSocketFrame>() {
             @Override
             public void handle(WebSocketFrame frame) {
+                if (backpressure && isNonFinalDataFrame(frame)) {
+                    // Vert.x demand counts frames; only the final frame waits for message processing.
+                    // PING/PONG frames are not replenished here on purpose - Vert.x returns their demand itself
+                    // (see io.vertx.core.http.impl.websocket.WebSocketImplBase#receiveFrame).
+                    fetchOne(ws, connection);
+                }
                 if (frame.type() == WebSocketFrameType.PING) {
                     Context duplicatedContext = ContextSupport.createNewDuplicatedContext(context, connection);
                     duplicatedContext.runOnContext(new Handler<Void>() {

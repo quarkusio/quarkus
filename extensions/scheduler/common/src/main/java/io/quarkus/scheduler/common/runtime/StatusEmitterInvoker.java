@@ -8,11 +8,13 @@ import org.jboss.logging.Logger;
 
 import io.quarkus.scheduler.FailedExecution;
 import io.quarkus.scheduler.ScheduledExecution;
+import io.quarkus.scheduler.StartedExecution;
 import io.quarkus.scheduler.SuccessfulExecution;
 
 /**
- * An invoker wrapper that fires CDI events when an execution of a scheduled method is finished.
+ * An invoker wrapper that fires CDI events when an execution of a scheduled method is started and finished.
  *
+ * @see StartedExecution
  * @see SuccessfulExecution
  * @see FailedExecution
  */
@@ -22,16 +24,19 @@ public final class StatusEmitterInvoker extends DelegateInvoker {
 
     private final Event<SuccessfulExecution> successfulEvent;
     private final Event<FailedExecution> failedEvent;
+    private final Event<StartedExecution> startedEvent;
 
     public StatusEmitterInvoker(ScheduledInvoker delegate, Event<SuccessfulExecution> successfulEvent,
-            Event<FailedExecution> failedEvent) {
+            Event<FailedExecution> failedEvent, Event<StartedExecution> startedEvent) {
         super(delegate);
         this.successfulEvent = successfulEvent;
         this.failedEvent = failedEvent;
+        this.startedEvent = startedEvent;
     }
 
     @Override
     public CompletionStage<Void> invoke(ScheduledExecution execution) throws Exception {
+        Events.fire(startedEvent, new StartedExecution(execution));
         return invokeDelegate(execution).whenComplete((v, t) -> {
             if (t != null) {
                 LOG.errorf(t, "Error occurred while executing task for trigger %s", execution.getTrigger());

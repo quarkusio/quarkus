@@ -1,10 +1,8 @@
 package io.quarkus.resteasy.reactive.jackson.runtime.mappers;
 
-import java.io.IOException;
-
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.databind.SerializerProvider;
-import com.fasterxml.jackson.databind.ser.std.StdSerializer;
+import tools.jackson.core.JsonGenerator;
+import tools.jackson.databind.SerializationContext;
+import tools.jackson.databind.ser.std.StdSerializer;
 
 public class UnwrappingSerializer extends StdSerializer<Object> {
 
@@ -16,8 +14,8 @@ public class UnwrappingSerializer extends StdSerializer<Object> {
     }
 
     @Override
-    public void serialize(Object value, JsonGenerator gen, SerializerProvider prov) throws IOException {
-        delegate.serializeContent(value, gen, prov);
+    public void serialize(Object value, JsonGenerator gen, SerializationContext ctxt) {
+        delegate.serializeContent(value, gen, ctxt);
     }
 
     @Override

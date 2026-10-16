@@ -81,12 +81,6 @@ public interface KeycloakPolicyEnforcerTenantConfig {
             Optional<String> name();
 
             /**
-             * A URI relative to the application’s context path that should be protected by the policy enforcer
-             */
-            @Deprecated(since = "Quarkus 3.10") // use the 'paths' configuration property
-            Optional<String> path();
-
-            /**
              * HTTP request paths that should be protected by the policy enforcer
              */
             Optional<List<String>> paths();

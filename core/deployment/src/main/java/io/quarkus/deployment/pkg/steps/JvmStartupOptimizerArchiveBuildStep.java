@@ -91,24 +91,23 @@ public class JvmStartupOptimizerArchiveBuildStep {
                     // when the phase was explicitly set to build, we build no matter what the archive type
                     return true;
                 } else if (phase == PackageConfig.JarConfig.AotConfig.AotPhase.AUTO) {
-                    // when the phase is auto, then we default to creating the file only for AppCDS
-                    return type == JvmStartupOptimizerArchiveType.AppCDS;
+                    // when the phase is auto, then we default to creating the file only for AppCDS or SCC
+                    return type == JvmStartupOptimizerArchiveType.AppCDS
+                            || type == JvmStartupOptimizerArchiveType.SCC;
                 }
             } else {
-                // when the phase is not set, then we default to creating the file only for AppCDS
-                return type == JvmStartupOptimizerArchiveType.AppCDS;
+                // when the phase is not set, then we default to creating the file only for AppCDS or SCC
+                return type == JvmStartupOptimizerArchiveType.AppCDS
+                        || type == JvmStartupOptimizerArchiveType.SCC;
             }
         }
 
-        // old config
-        //noinspection removal
-        return jarConfig.appcds().enabled();
+        return false;
     }
 
     private JvmStartupOptimizerArchiveType determineType(PackageConfig packageConfig,
             CompiledJavaVersionBuildItem.JavaVersion javaVersion) {
         PackageConfig.JarConfig jarConfig = packageConfig.jar();
-        // first check new config
         PackageConfig.JarConfig.AotConfig aotConfig = jarConfig.aot();
         if (aotConfig.enabled()) {
             Optional<PackageConfig.JarConfig.AotConfig.AotType> typeOpt = aotConfig.type();
@@ -122,10 +121,7 @@ public class JvmStartupOptimizerArchiveBuildStep {
             }
             return determineTypeAutomatically(javaVersion);
         }
-        // now check the old config
-        PackageConfig.JarConfig.AppcdsConfig appcdsConfig = jarConfig.appcds();
-        return appcdsConfig.useAot() ? JvmStartupOptimizerArchiveType.AOT
-                : JvmStartupOptimizerArchiveType.AppCDS;
+        return JvmStartupOptimizerArchiveType.AppCDS;
     }
 
     private JvmStartupOptimizerArchiveType determineTypeAutomatically(
@@ -236,11 +232,7 @@ public class JvmStartupOptimizerArchiveBuildStep {
 
     private String determineContainerImage(PackageConfig packageConfig,
             Optional<JvmStartupOptimizerArchiveContainerImageBuildItem> jvmStartupOptimizerArchiveContainer) {
-        if (!packageConfig.jar().appcds().useContainer()) {
-            return null;
-        } else if (packageConfig.jar().appcds().builderImage().isPresent()) {
-            return packageConfig.jar().appcds().builderImage().get();
-        } else if (jvmStartupOptimizerArchiveContainer.isPresent()) {
+        if (jvmStartupOptimizerArchiveContainer.isPresent()) {
             return jvmStartupOptimizerArchiveContainer.get().getContainerImage();
         }
         return null;
@@ -480,7 +472,6 @@ public class JvmStartupOptimizerArchiveBuildStep {
                 return false;
             }
 
-            // new config
             if (jarConfig.aot().enabled()) {
                 // Only generate during build phase if phase is explicitly set to BUILD.
                 // When phase is not set or set to AUTO/INTEGRATION_TESTS, the AOT file
@@ -489,9 +480,7 @@ public class JvmStartupOptimizerArchiveBuildStep {
                 return phase.isPresent() && phase.get() == PackageConfig.JarConfig.AotConfig.AotPhase.BUILD;
             }
 
-            // old config
-            //noinspection removal
-            return jarConfig.appcds().enabled();
+            return false;
         }
     }
 

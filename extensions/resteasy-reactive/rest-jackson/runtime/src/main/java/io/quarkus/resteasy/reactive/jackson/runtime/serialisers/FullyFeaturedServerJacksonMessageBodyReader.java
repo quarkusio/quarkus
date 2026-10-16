@@ -1,6 +1,6 @@
 package io.quarkus.resteasy.reactive.jackson.runtime.serialisers;
 
-import static org.jboss.resteasy.reactive.server.jackson.JacksonMessageBodyWriterUtil.setNecessaryJsonFactoryConfig;
+import static org.jboss.resteasy.reactive.server.jackson.JacksonMessageBodyWriterUtil.setNecessaryReadConfig;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -27,15 +27,14 @@ import org.jboss.resteasy.reactive.server.spi.ResteasyReactiveResourceInfo;
 import org.jboss.resteasy.reactive.server.spi.ServerMessageBodyReader;
 import org.jboss.resteasy.reactive.server.spi.ServerRequestContext;
 
-import com.fasterxml.jackson.core.exc.StreamConstraintsException;
-import com.fasterxml.jackson.core.exc.StreamReadException;
-import com.fasterxml.jackson.databind.DatabindException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.ObjectReader;
-import com.fasterxml.jackson.databind.exc.InvalidDefinitionException;
-import com.fasterxml.jackson.databind.exc.MismatchedInputException;
-
 import io.quarkus.resteasy.reactive.jackson.runtime.ResteasyReactiveServerJacksonRecorder;
+import tools.jackson.core.exc.StreamConstraintsException;
+import tools.jackson.core.exc.StreamReadException;
+import tools.jackson.databind.DatabindException;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectReader;
+import tools.jackson.databind.exc.InvalidDefinitionException;
+import tools.jackson.databind.exc.MismatchedInputException;
 
 public class FullyFeaturedServerJacksonMessageBodyReader extends AbstractServerJacksonMessageBodyReader
         implements ServerMessageBodyReader<Object> {
@@ -143,17 +142,19 @@ public class FullyFeaturedServerJacksonMessageBodyReader extends AbstractServerJ
                             mapper));
         }
 
-        // Otherwise, check `@CustomDeserialization` annotated in class. In this case, we use the effective type for caching up
-        // the object.
-        customDeserializationValue = ResteasyReactiveServerJacksonRecorder
-                .customDeserializationForClass(resourceInfo.getResourceClass());
+        // Otherwise, check `@CustomDeserialization` annotated in class. In this case, we use the resource class along with the
+        // effective type for caching up the object.
+        // The resource class needs to be part of the key because different resource classes can consume the same type
+        // while using different `@CustomDeserialization` values
+        Class<?> resourceClass = resourceInfo.getResourceClass();
+        customDeserializationValue = ResteasyReactiveServerJacksonRecorder.customDeserializationForClass(resourceClass);
         if (customDeserializationValue != null) {
             Type effectiveType = type;
             if (type instanceof ParameterizedType) {
                 effectiveType = ((ParameterizedType) type).getActualTypeArguments()[0];
             }
 
-            return perTypeReader.computeIfAbsent(effectiveType.getTypeName(),
+            return perTypeReader.computeIfAbsent(resourceClass.getName() + "-" + effectiveType.getTypeName(),
                     new FullyFeaturedServerJacksonMessageBodyReader.MethodObjectReaderFunction(customDeserializationValue, type,
                             mapper));
         }
@@ -239,8 +240,7 @@ public class FullyFeaturedServerJacksonMessageBodyReader extends AbstractServerJ
             try {
                 BiFunction<ObjectMapper, Type, ObjectReader> biFunctionInstance = clazz.getDeclaredConstructor().newInstance();
                 ObjectReader objectReader = biFunctionInstance.apply(originalMapper, genericType);
-                setNecessaryJsonFactoryConfig(objectReader.getFactory());
-                return objectReader;
+                return setNecessaryReadConfig(objectReader);
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }

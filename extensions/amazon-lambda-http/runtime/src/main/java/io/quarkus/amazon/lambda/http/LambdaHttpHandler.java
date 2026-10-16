@@ -83,6 +83,7 @@ public class LambdaHttpHandler implements RequestHandler<APIGatewayV2HTTPEvent, 
         WritableByteChannel byteChannel;
         final APIGatewayV2HTTPEvent request;
         CompletableFuture<APIGatewayV2HTTPResponse> future = new CompletableFuture<>();
+        String contentType;
 
         public NettyResponseHandler(APIGatewayV2HTTPEvent request) {
             this.request = request;
@@ -100,6 +101,7 @@ public class LambdaHttpHandler implements RequestHandler<APIGatewayV2HTTPEvent, 
                 if (msg instanceof HttpResponse) {
                     HttpResponse res = (HttpResponse) msg;
                     responseBuilder.setStatusCode(res.status().code());
+                    contentType = res.headers().get(HttpHeaderNames.CONTENT_TYPE);
 
                     final Map<String, String> headers = new HashMap<>();
                     responseBuilder.setHeaders(headers);
@@ -150,7 +152,7 @@ public class LambdaHttpHandler implements RequestHandler<APIGatewayV2HTTPEvent, 
                 }
                 if (msg instanceof LastHttpContent) {
                     if (baos != null) {
-                        if (isText(responseBuilder.getHeaders().get("Content-Type"))) {
+                        if (isText(contentType)) {
                             responseBuilder.setBody(baos.toString(StandardCharsets.UTF_8));
                         } else {
                             responseBuilder.setIsBase64Encoded(true);
@@ -188,7 +190,11 @@ public class LambdaHttpHandler implements RequestHandler<APIGatewayV2HTTPEvent, 
             httpMethod = HttpMethod.valueOf(request.getRequestContext().getHttp().getMethod());
         }
         if (httpMethod == null) {
-            throw new IllegalStateException("Missing HTTP method in request event");
+            throw new IllegalStateException("Missing HTTP method in the request event. "
+                    + "quarkus-amazon-lambda-http expects an API Gateway HTTP API (payload format 2.0) event "
+                    + "(APIGatewayV2HTTPEvent). For API Gateway REST API events (payload format 1.0, AwsProxyRequest) "
+                    + "use quarkus-amazon-lambda-rest instead, "
+                    + "and make sure that the Lambda proxy integration is enabled");
         }
         DefaultHttpRequest nettyRequest = new DefaultHttpRequest(HttpVersion.HTTP_1_1,
                 httpMethod, ofNullable(request.getRawQueryString())

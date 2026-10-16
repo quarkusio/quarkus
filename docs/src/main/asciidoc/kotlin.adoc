@@ -5,7 +5,6 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Using Kotlin
 include::_attributes.adoc[]
-:categories: alt-languages
 :summary: This guide explains how to use Kotlin.
 :topics: kotlin
 :extensions: io.quarkus:quarkus-kotlin
@@ -241,7 +240,6 @@ compileTestKotlin {
     kotlinOptions.jvmTarget = JavaVersion.VERSION_21
 }
 ----
-
 <1> The Kotlin plugin version needs to be specified.
 <2> The all-open configuration required, as per Maven guide above
 
@@ -309,7 +307,6 @@ kotlin {
 }
 
 ----
-
 <1> The Kotlin plugin version needs to be specified.
 <2> The all-open configuration required, as per Maven guide above
 

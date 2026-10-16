@@ -9,14 +9,14 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 import io.fabric8.kubernetes.api.model.ObjectMeta;
 import io.fabric8.kubernetes.client.KubernetesClient;
+import io.quarkus.kubernetes.client.KubernetesClientJsonMapperBuilderCustomizer;
 import io.quarkus.kubernetes.client.KubernetesClientObjectMapper;
-import io.quarkus.kubernetes.client.KubernetesClientObjectMapperCustomizer;
 import io.quarkus.test.QuarkusExtensionTest;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 
 public class KubernetesClientObjectMapperCDITest {
 
@@ -28,7 +28,7 @@ public class KubernetesClientObjectMapperCDITest {
     ObjectMapper objectMapper;
 
     @Test
-    public void kubernetesClientObjectMapperCustomizer() throws JsonProcessingException {
+    public void kubernetesClientObjectMapperCustomizer() {
         final var result = objectMapper.readValue("{\"quarkusName\":\"the-name\"}", ObjectMeta.class);
         assertEquals("the-name", result.getName());
     }
@@ -45,10 +45,10 @@ public class KubernetesClientObjectMapperCDITest {
             .overrideConfigKey("quarkus.kubernetes-client.devservices.enabled", "false");
 
     @Singleton
-    public static class Customizer implements KubernetesClientObjectMapperCustomizer {
+    public static class Customizer implements KubernetesClientJsonMapperBuilderCustomizer {
         @Override
-        public void customize(ObjectMapper objectMapper) {
-            objectMapper.addMixIn(ObjectMeta.class, ObjectMetaMixin.class);
+        public void customize(JsonMapper.Builder builder) {
+            builder.addMixIn(ObjectMeta.class, ObjectMetaMixin.class);
         }
 
         private static final class ObjectMetaMixin {

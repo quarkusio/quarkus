@@ -126,7 +126,7 @@ public class LoggingJsonRecorder {
 
     private RuntimeValue<Optional<Formatter>> getDefaultFormatter(JsonConfig config,
             OverridableJsonConfig overridableJsonConfig, List<JsonProvider> providers) {
-        if (!config.enabled().orElse(config.enable())) {
+        if (!config.enabled().orElse(true)) {
             return new RuntimeValue<>(Optional.empty());
         }
 
@@ -141,6 +141,7 @@ public class LoggingJsonRecorder {
             formatter.setTracePrefix("projects/" + applicationConfig.getValue().name().orElse("") + "/traces/");
         }
         formatter.setFlatMdc(config.mdcFlatFields());
+        formatter.setStructuredAccessLog(config.structuredAccessLog());
         formatter.setExcludedKeys(overridableJsonConfig.excludedKeys());
         formatter.setAdditionalFields(overridableJsonConfig.additionalFields());
         formatter.setDiscoveredProviders(providers);
@@ -149,14 +150,19 @@ public class LoggingJsonRecorder {
         if (!dateFormat.equals("default")) {
             formatter.setDateFormat(dateFormat);
         }
-        // ECS requires a flat rendered stack trace string in error.stack_trace.
-        // The FORMATTED output type writes the stack trace via Key.STACK_TRACE (mapped
-        // to "error.stack_trace" by addEcsFieldOverrides) and suppresses the structured
-        // "exception" object that DETAILED would produce.
-        if (JsonConfig.LogFormat.ECS == config.logFormat()) {
-            formatter.setExceptionOutputType(StructuredFormatter.ExceptionOutputType.FORMATTED);
-        } else {
-            formatter.setExceptionOutputType(config.exceptionOutputType());
+        switch (config.logFormat()) {
+            case ECS:
+                formatter.setExceptionOutputType(StructuredFormatter.ExceptionOutputType.FORMATTED);
+                break;
+            case GCP:
+                formatter.setExceptionOutputType(
+                        config.exceptionOutputType() == StructuredFormatter.ExceptionOutputType.DETAILED
+                                ? StructuredFormatter.ExceptionOutputType.DETAILED_AND_FORMATTED
+                                : config.exceptionOutputType());
+                break;
+            default:
+                formatter.setExceptionOutputType(config.exceptionOutputType());
+                break;
         }
         formatter.setPrintDetails(config.printDetails());
         config.recordDelimiter().ifPresent(formatter::setRecordDelimiter);
@@ -185,9 +191,10 @@ public class LoggingJsonRecorder {
         Set<String> excludedKeys = new HashSet<>(overridableJsonConfig.excludedKeys());
         excludedKeys.add(Key.LOGGER_CLASS_NAME.getKey());
         excludedKeys.add(Key.RECORD.getKey());
-        // mdc and ndc are not ECS fields; exclude them from ECS output.
-        excludedKeys.add(Key.MDC.getKey());
-        excludedKeys.add(Key.NDC.getKey());
+        // mdc and ndc are not part of the ECS schema, but ECS allows custom fields and the data was
+        // put there deliberately by the application, so it is kept rather than dropped. Users who
+        // want it elsewhere can flatten it with quarkus.log.console.json.mdc.flat-fields or remove
+        // it with the excluded-keys configuration.
 
         Map<String, AdditionalField> additionalFields = new LinkedHashMap<>(overridableJsonConfig.additionalFields());
         additionalFields.computeIfAbsent(ECS_VERSION.getKey(), k -> new AdditionalField("1.12.2", Type.STRING));
@@ -207,6 +214,7 @@ public class LoggingJsonRecorder {
     private OverridableJsonConfig addGCPFieldOverrides(OverridableJsonConfig overridableJsonConfig) {
         EnumMap<Key, String> keyOverrides = PropertyValues.stringToEnumMap(Key.class, overridableJsonConfig.keyOverrides());
         keyOverrides.putIfAbsent(Key.LEVEL, "severity");
+        keyOverrides.putIfAbsent(Key.STACK_TRACE, "stack_trace");
 
         Set<String> excludedKeys = new HashSet<>(overridableJsonConfig.excludedKeys());
         Map<String, AdditionalField> additionalFields = new LinkedHashMap<>(overridableJsonConfig.additionalFields());

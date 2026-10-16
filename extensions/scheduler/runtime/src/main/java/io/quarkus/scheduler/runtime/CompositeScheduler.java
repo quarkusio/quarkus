@@ -171,6 +171,8 @@ public class CompositeScheduler implements Scheduler {
             to.setOverdueGracePeriod(overdueGracePeriod);
             to.setConcurrentExecution(concurrentExecution);
             to.setTimeZone(timeZone);
+            to.setExecutionMaxDelay(executionMaxDelay);
+            to.setDescription(description);
             to.setExecuteWith(implementation);
             if (skipPredicateClass != null) {
                 to.setSkipPredicate(skipPredicateClass);

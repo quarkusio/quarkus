@@ -1,6 +1,7 @@
 package io.quarkus.vertx.http;
 
 import java.net.URI;
+import java.util.Optional;
 
 import io.quarkus.value.registry.ValueRegistry;
 import io.quarkus.value.registry.ValueRegistry.RuntimeInfo;
@@ -17,6 +18,7 @@ public interface HttpServer {
     RuntimeKey<Integer> MANAGEMENT_PORT = RuntimeKey.intKey("quarkus.management.port");
     RuntimeKey<Integer> MANAGEMENT_TEST_PORT = RuntimeKey.intKey("quarkus.management.test-port");
     RuntimeKey<URI> LOCAL_BASE_URI = RuntimeKey.key("quarkus.http.local-base-uri");
+    RuntimeKey<URI> LOCAL_MANAGEMENT_BASE_URI = RuntimeKey.key("quarkus.management.local-base-uri");
 
     RuntimeKey<HttpServer> HTTP_SERVER = RuntimeKey.key(HttpServer.class);
 
@@ -42,11 +44,19 @@ public interface HttpServer {
     int getManagementPort();
 
     /**
-     * Return the local base URI that Quarkus is serving on.
+     * Return the local base URI that Quarkus is serving on, including the main HTTP/HTTPS port.
      *
      * @return the local base URI that Quarkus is serving on.
      */
     URI getLocalBaseUri();
+
+    /**
+     * Return the local base URI that Quarkus management interface is serving on, including the management port.
+     *
+     * @return the local base URI that Quarkus management interface is serving on, or an empty {@link Optional} if the
+     *         management interface is not enabled.
+     */
+    Optional<URI> getManagementBaseUri();
 
     /**
      * The {@link RuntimeInfo} implementation for {@link HttpServer}. Construct instances of {@link HttpServer} with
@@ -74,6 +84,11 @@ public interface HttpServer {
                 @Override
                 public URI getLocalBaseUri() {
                     return valueRegistry.get(LOCAL_BASE_URI);
+                }
+
+                @Override
+                public Optional<URI> getManagementBaseUri() {
+                    return Optional.ofNullable(valueRegistry.getOrDefault(LOCAL_MANAGEMENT_BASE_URI, null));
                 }
             };
         }

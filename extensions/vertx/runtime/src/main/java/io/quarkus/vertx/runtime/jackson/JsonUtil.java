@@ -11,6 +11,7 @@ import io.vertx.core.buffer.Buffer;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.shareddata.Shareable;
+import io.vertx.core.spi.json.JsonCodec;
 
 /**
  * Implementation utilities (details) affecting the way JSON objects are wrapped.
@@ -107,5 +108,15 @@ public final class JsonUtil {
             throw new IllegalStateException("Illegal type in Json: " + val.getClass());
         }
         return val;
+    }
+
+    public static JsonCodec loadJacksonCodec() {
+        try {
+            // we need to resort to reflection as we can't directly reference `io.vertx.core.json.jackson.v3.JacksonCodec` due to it being part of the MR resources
+            return (JsonCodec) Class.forName("io.vertx.core.json.jackson.v3.JacksonCodec", true, Thread.currentThread()
+                    .getContextClassLoader()).getConstructor().newInstance();
+        } catch (Exception e) {
+            throw new IllegalStateException("Unable to create instance of `io.vertx.core.json.jackson.v3.JacksonCodec`", e);
+        }
     }
 }

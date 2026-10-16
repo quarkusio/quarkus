@@ -67,6 +67,12 @@
     </dependencies>
 
     <build>
+        <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>true</filtering>
+            </resource>
+        </resources>
         <plugins>
             <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>
@@ -92,6 +98,9 @@
                     <excludes>
                         <exclude>**/DevServices*TestCase.java</exclude>
                     </excludes>
+                    <systemPropertyVariables combine.children="append">
+                        <postgres.default.version>${postgres.default.version}</postgres.default.version>
+                    </systemPropertyVariables>
                 </configuration>
             </plugin>
         </plugins>
@@ -115,26 +124,6 @@
                                 <!-- force the default, overriding the DevServices exclude -->
                                 <exclude>**/*$*</exclude>
                             </excludes>
-                        </configuration>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-        <!-- Disabled pending fix of #33092 -->
-        <profile>
-            <id>podman</id>
-            <activation>
-                <property>
-                    <name>env.IS_PODMAN</name>
-                    <value>true</value>
-                </property>
-            </activation>
-            <build>
-                <plugins>
-                    <plugin>
-                        <artifactId>maven-surefire-plugin</artifactId>
-                        <configuration>
-                            <skip>true</skip>
                         </configuration>
                     </plugin>
                 </plugins>

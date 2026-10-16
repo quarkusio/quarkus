@@ -36,7 +36,9 @@ public class VertxOpenTelemetryXForwardedTest {
                             "META-INF/services/io.opentelemetry.sdk.autoconfigure.spi.metrics.ConfigurableMetricExporterProvider")
                     .addAsResource(new StringAsset(InMemoryLogRecordExporterProvider.class.getCanonicalName()),
                             "META-INF/services/io.opentelemetry.sdk.autoconfigure.spi.logs.ConfigurableLogRecordExporterProvider"))
-            .withConfigurationResource("application-default.properties");
+            .withConfigurationResource("application-default.properties")
+            .overrideConfigKey("quarkus.otel.metrics.enabled", "false")
+            .overrideConfigKey("quarkus.otel.logs.enabled", "false");
 
     @Inject
     TestSpanExporter testSpanExporter;

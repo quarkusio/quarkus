@@ -27,7 +27,6 @@ import io.quarkus.runtime.ValueRegistryConfigSource;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.configuration.AbstractConfigBuilder;
 import io.quarkus.runtime.configuration.ConfigDiagnostic;
-import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.runtime.configuration.NameIterator;
 import io.quarkus.runtime.configuration.PropertiesUtil;
 import io.quarkus.runtime.configuration.QuarkusConfigFactory;
@@ -53,12 +52,6 @@ public final class RunTimeConfigurationGenerator {
     public static final MethodDescriptor C_RUN_TIME_CONFIG = ofMethod(CONFIG_CLASS_NAME,
             "runtimeConfig", void.class, ValueRegistry.class);
 
-    static final MethodDescriptor CD_IS_ERROR = ofMethod(ConfigDiagnostic.class,
-            "isError", boolean.class);
-    static final MethodDescriptor CD_GET_ERROR_KEYS = ofMethod(ConfigDiagnostic.class,
-            "getErrorKeys", Set.class);
-    static final MethodDescriptor CD_RESET_ERROR = ofMethod(ConfigDiagnostic.class,
-            "resetError", void.class);
     static final MethodDescriptor CD_REPORT_UNKNOWN = ofMethod(ConfigDiagnostic.class,
             "reportUnknown", void.class, Set.class);
     static final MethodDescriptor CD_REPORT_UNKNOWN_RUNTIME = ofMethod(ConfigDiagnostic.class,
@@ -71,12 +64,6 @@ public final class RunTimeConfigurationGenerator {
     static final MethodDescriptor NI_NEW_STRING = ofConstructor(NameIterator.class, String.class);
     static final MethodDescriptor NI_HAS_NEXT = ofMethod(NameIterator.class, "hasNext", boolean.class);
     static final MethodDescriptor NI_NEXT = ofMethod(NameIterator.class, "next", void.class);
-
-    static final MethodDescriptor OBJ_TO_STRING = ofMethod(Object.class, "toString", String.class);
-
-    static final MethodDescriptor SB_NEW = ofConstructor(StringBuilder.class);
-    static final MethodDescriptor SB_APPEND_STRING = ofMethod(StringBuilder.class,
-            "append", StringBuilder.class, String.class);
 
     static final MethodDescriptor QCF_SET_CONFIG = ofMethod(QuarkusConfigFactory.class,
             "setConfig", void.class, SmallRyeConfig.class);
@@ -198,30 +185,6 @@ public final class RunTimeConfigurationGenerator {
             // generate sweep for clinit
             configSweepLoop(mc, config, getRegisteredRoots(RUN_TIME), unknownSet);
             mc.invokeStaticMethod(CD_REPORT_UNKNOWN_RUNTIME, unknownSet);
-
-            final BytecodeCreator isError = mc.ifNonZero(mc.invokeStaticMethod(CD_IS_ERROR)).trueBranch();
-            ResultHandle niceErrorMessage = isError
-                    .invokeStaticMethod(
-                            ofMethod(ConfigDiagnostic.class, "getNiceErrorMessage", String.class));
-            ResultHandle errorKeys = isError.invokeStaticMethod(CD_GET_ERROR_KEYS);
-            isError.invokeStaticMethod(CD_RESET_ERROR);
-
-            // throw the proper exception
-            final ResultHandle finalErrorMessageBuilder = isError.newInstance(SB_NEW);
-            isError.invokeVirtualMethod(SB_APPEND_STRING, finalErrorMessageBuilder, isError
-                    .load("One or more configuration errors have prevented the application from starting. The errors are:\n"));
-            isError.invokeVirtualMethod(SB_APPEND_STRING, finalErrorMessageBuilder, niceErrorMessage);
-            final ResultHandle finalErrorMessage = isError.invokeVirtualMethod(OBJ_TO_STRING, finalErrorMessageBuilder);
-            final ResultHandle configurationException = isError
-                    .newInstance(ofConstructor(ConfigurationException.class, String.class, Set.class),
-                            finalErrorMessage, errorKeys);
-            final ResultHandle emptyStackTraceElement = isError.newArray(StackTraceElement.class, 0);
-            // empty out the stack trace in order to not make the configuration errors more visible (the stack trace contains generated classes anyway that don't provide any value)
-            isError.invokeVirtualMethod(
-                    ofMethod(ConfigurationException.class, "setStackTrace", void.class,
-                            StackTraceElement[].class),
-                    configurationException, emptyStackTraceElement);
-            isError.throwException(configurationException);
 
             mc.returnValue(null);
             mc.close();

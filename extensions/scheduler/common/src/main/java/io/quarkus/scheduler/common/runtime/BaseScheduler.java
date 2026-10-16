@@ -41,7 +41,7 @@ public class BaseScheduler {
             ConcurrentExecution concurrentExecution, Scheduled.SkipPredicate skipPredicate, JobInstrumenter instrumenter,
             Vertx vertx, boolean skipOffloadingInvoker,
             OptionalLong delay, ScheduledExecutorService blockingExecutor) {
-        invoker = new StatusEmitterInvoker(invoker, events.successExecution, events.failedExecution);
+        invoker = new StatusEmitterInvoker(invoker, events.successExecution, events.failedExecution, events.startedExecution);
         if (concurrentExecution == ConcurrentExecution.SKIP) {
             invoker = new SkipConcurrentExecutionInvoker(invoker, events.skippedExecution);
         }

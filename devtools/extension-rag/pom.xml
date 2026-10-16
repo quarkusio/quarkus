@@ -34,7 +34,7 @@
             <plugin>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-documentation-rag-maven-plugin</artifactId>
-                <version>0.0.7</version>
+                <version>0.0.8</version>
                 <executions>
                     <execution>
                         <id>generate-core-rag</id>

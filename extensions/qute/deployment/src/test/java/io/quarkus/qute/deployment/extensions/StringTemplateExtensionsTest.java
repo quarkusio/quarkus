@@ -5,13 +5,17 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import java.time.LocalDateTime;
 import java.util.Locale;
 
+import jakarta.enterprise.event.Observes;
 import jakarta.inject.Inject;
+import jakarta.inject.Singleton;
 
 import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.qute.Engine;
+import io.quarkus.qute.EngineBuilder;
+import io.quarkus.qute.StrEvalNamespaceResolver;
 import io.quarkus.qute.Template;
 import io.quarkus.test.QuarkusExtensionTest;
 
@@ -20,6 +24,7 @@ public class StringTemplateExtensionsTest {
     @RegisterExtension
     static final QuarkusExtensionTest config = new QuarkusExtensionTest()
             .withApplicationRoot(root -> root
+                    .addClass(StrEvalConfig.class)
                     .addAsResource(
                             new StringAsset("{str:eval('Hello {name}!')}"),
                             "templates/hello.txt")
@@ -28,6 +33,15 @@ public class StringTemplateExtensionsTest {
                             // This will trigger value resolver generation for StringBuilder
                             new StringAsset("{str:builder.append('Qute').append(\" is\").append(' cool!')}"),
                             "templates/builder.txt"));
+
+    // The str:eval namespace resolver is not registered automatically and must be registered manually
+    @Singleton
+    public static class StrEvalConfig {
+
+        void configureEngine(@Observes EngineBuilder builder) {
+            builder.addNamespaceResolver(new StrEvalNamespaceResolver());
+        }
+    }
 
     @Inject
     Engine engine;

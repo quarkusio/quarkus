@@ -57,7 +57,9 @@ public class GrpcOpenInstrumentationDisabledTest {
             .withConfigurationResource("application-default.properties")
             .overrideConfigKey("quarkus.grpc.clients.hello.host", "localhost")
             .overrideConfigKey("quarkus.grpc.clients.hello.port", "8081")
-            .overrideConfigKey("quarkus.otel.instrument.grpc", "false");
+            .overrideConfigKey("quarkus.otel.instrument.grpc", "false")
+            .overrideConfigKey("quarkus.otel.metrics.enabled", "false")
+            .overrideConfigKey("quarkus.otel.logs.enabled", "false");
 
     @Inject
     TestSpanExporter spanExporter;

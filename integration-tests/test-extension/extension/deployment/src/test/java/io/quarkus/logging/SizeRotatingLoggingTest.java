@@ -21,8 +21,7 @@ public class SizeRotatingLoggingTest {
             .withConfigurationResource("application-size-file-log-rotating.properties")
             .withApplicationRoot((jar) -> jar
                     .addClass(LoggingTestsHelper.class)
-                    .addAsManifestResource("application.properties", "microprofile-config.properties"))
-            .setLogFileName("SizeRotatingLoggingTest.log");
+                    .addAsManifestResource("application.properties", "microprofile-config.properties"));
 
     @Test
     public void sizeRotatingConfigurationTest() {

@@ -20,7 +20,7 @@ public class VertxConfigBuilder implements ConfigBuilder {
 
     private static void defineHttpInterface(SmallRyeConfigBuilder builder, String configurationProperty) {
         // It may have been recorded, so only set if it not available in the defaults
-        if (builder.getDefaultValues().get(configurationProperty) != null) {
+        if (builder.getDefaults().get(configurationProperty) != null) {
             return;
         }
 

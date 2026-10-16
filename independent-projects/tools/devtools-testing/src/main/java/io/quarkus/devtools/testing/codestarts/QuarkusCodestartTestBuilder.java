@@ -8,9 +8,10 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
+import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -206,8 +207,8 @@ public class QuarkusCodestartTestBuilder {
     public QuarkusCodestartTestBuilder setupStandaloneExtensionTest(String extensionGA) {
         try {
             String buildWithQuarkusCoreVersion = null;
-            for (URL url : Collections
-                    .list(Thread.currentThread().getContextClassLoader().getResources("META-INF/quarkus-extension.yaml"))) {
+            List<URL> urls = collectExtensionMetadataFiles();
+            for (URL url : urls) {
                 final Extension extension = ResourceLoaders.processAsPath(url, path -> {
                     try {
                         return Extension.fromFile(path);
@@ -238,22 +239,24 @@ public class QuarkusCodestartTestBuilder {
         return this;
     }
 
-    /**
-     * Use withQuarkusBom instead
-     */
-    @Deprecated(forRemoval = true)
-    public QuarkusCodestartTestBuilder standaloneExtensionCatalog(String quarkusBomGroupId, String quarkusBomVersion) {
-        this.quarkusBomGroupId = quarkusBomGroupId;
-        this.quarkusBomVersion = quarkusBomVersion;
-        return this;
-    }
-
-    /**
-     * Use setupStandaloneExtensionTest instead
-     */
-    @Deprecated
-    public QuarkusCodestartTestBuilder standaloneExtensionCatalog() {
-        return this.setupStandaloneExtensionTest();
+    private static List<URL> collectExtensionMetadataFiles() throws IOException {
+        ClassLoader cl = Thread.currentThread().getContextClassLoader();
+        Set<String> seenPaths = new HashSet<>();
+        List<URL> urls = new ArrayList<>();
+        Enumeration<URL> jsonUrls = cl.getResources("META-INF/quarkus-extension.json");
+        while (jsonUrls.hasMoreElements()) {
+            URL url = jsonUrls.nextElement();
+            seenPaths.add(url.getPath().replace("quarkus-extension.json", ""));
+            urls.add(url);
+        }
+        Enumeration<URL> yamlUrls = cl.getResources("META-INF/quarkus-extension.yaml");
+        while (yamlUrls.hasMoreElements()) {
+            URL url = yamlUrls.nextElement();
+            if (!seenPaths.contains(url.getPath().replace("quarkus-extension.yaml", ""))) {
+                urls.add(url);
+            }
+        }
+        return urls;
     }
 
     public QuarkusCodestartTest build() {

@@ -59,6 +59,7 @@ public class NamedDataSourceConfigTest {
         assertEquals(username, configuration.connectionFactoryConfiguration().principal().getName());
         assertEquals(maxSize, configuration.maxSize());
         assertFalse(dataSource.getConfiguration().metricsEnabled()); // metrics not enabled by default
+        assertFalse(configuration.connectionFactoryConfiguration().readOnly());
 
         try (Connection connection = dataSource.getConnection()) {
         }

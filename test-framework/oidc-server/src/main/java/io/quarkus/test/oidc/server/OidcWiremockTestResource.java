@@ -33,6 +33,7 @@ import com.github.tomakehurst.wiremock.extension.TemplateHelperProviderExtension
 import com.google.common.collect.ImmutableSet;
 
 import io.quarkus.test.common.QuarkusTestResourceLifecycleManager;
+import io.smallrye.jwt.algorithm.KeyEncryptionAlgorithm;
 import io.smallrye.jwt.build.Jwt;
 import io.smallrye.jwt.build.JwtClaimsBuilder;
 import wiremock.com.github.jknack.handlebars.Helper;
@@ -98,7 +99,8 @@ public class OidcWiremockTestResource implements QuarkusTestResourceLifecycleMan
                                         "    \"introspection_endpoint\": \"" + server.baseUrl()
                                         + "/auth/realms/quarkus/protocol/openid-connect/token/introspect\","
                                         + "    \"end_session_endpoint\": \"" + server.baseUrl()
-                                        + "/auth/realms/quarkus/protocol/openid-connect/end-session\""
+                                        + "/auth/realms/quarkus/protocol/openid-connect/end-session\","
+                                        + "    \"authorization_response_iss_parameter_supported\": true"
                                         +
                                         "}")));
 
@@ -160,6 +162,7 @@ public class OidcWiremockTestResource implements QuarkusTestResourceLifecycleMan
         // Code Flow Authorization Mock
         defineCodeFlowAuthorizationMockTokenStub();
         defineCodeFlowAuthorizationMockEncryptedTokenStub();
+        defineCodeFlowAuthorizationMockRsaOaep256EncryptedTokenStub();
 
         //JWT bearer token grant
         defineJwtBearerGrantTokenStub();
@@ -209,7 +212,8 @@ public class OidcWiremockTestResource implements QuarkusTestResourceLifecycleMan
                 get(urlPathMatching("/login"))
                         .willReturn(aResponse()
                                 .withHeader("Location",
-                                        "{{request.query.redirect_uri}}?state={{request.query.state}}&code=58af24f2-9093-4674-a431-4a9d66be719c.50437113-cd78-48a2-838e-b936fe458c5d.0ac5df91-e044-4051-bd03-106a3a5fb9cc")
+                                        "{{request.query.redirect_uri}}?state={{request.query.state}}&code=58af24f2-9093-4674-a431-4a9d66be719c.50437113-cd78-48a2-838e-b936fe458c5d.0ac5df91-e044-4051-bd03-106a3a5fb9cc&iss="
+                                                + TOKEN_ISSUER)
                                 .withStatus(302)
                                 .withTransformers("response-template")));
 
@@ -361,11 +365,31 @@ public class OidcWiremockTestResource implements QuarkusTestResourceLifecycleMan
                                 "}")));
     }
 
+    private void defineCodeFlowAuthorizationMockRsaOaep256EncryptedTokenStub() {
+        server.stubFor(post("/auth/realms/quarkus/rsa-oaep-256-encrypted-id-token")
+                .withRequestBody(containing("authorization_code"))
+                .willReturn(aResponse()
+                        .withHeader("Content-Type", "application/json")
+                        .withBody("{\n" +
+                                "  \"access_token\": \""
+                                + getAccessToken("alice", getAdminRoles()) + "\",\n" +
+                                "  \"refresh_token\": \"07e08903-1263-4dd1-9fd1-4a59b0db5283\",\n" +
+                                "  \"id_token\": \""
+                                + getEncryptedIdToken("alice", getAdminRoles(), "123456", KeyEncryptionAlgorithm.RSA_OAEP_256)
+                                + "\"\n" +
+                                "}")));
+    }
+
     public static String getEncryptedIdToken(String userName, Set<String> groups) {
         return getEncryptedIdToken(userName, groups, "123456");
     }
 
     public static String getEncryptedIdToken(String userName, Set<String> groups, String sub) {
+        return getEncryptedIdToken(userName, groups, sub, KeyEncryptionAlgorithm.RSA_OAEP);
+    }
+
+    public static String getEncryptedIdToken(String userName, Set<String> groups, String sub,
+            KeyEncryptionAlgorithm keyEncryptionAlgorithm) {
         return Jwt.preferredUserName(userName)
                 .groups(groups)
                 .issuer(TOKEN_ISSUER)
@@ -373,7 +397,9 @@ public class OidcWiremockTestResource implements QuarkusTestResourceLifecycleMan
                 .subject(sub)
                 .jws()
                 .keyId("1")
-                .innerSign("privateKey.jwk").encrypt("publicKey.jwk");
+                .innerSign("privateKey.jwk")
+                .keyAlgorithm(keyEncryptionAlgorithm)
+                .encrypt("publicKey.jwk");
     }
 
     public static X509Certificate getCertificate() {

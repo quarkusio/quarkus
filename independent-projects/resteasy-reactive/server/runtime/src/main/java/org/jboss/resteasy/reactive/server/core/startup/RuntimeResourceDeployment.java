@@ -24,6 +24,7 @@ import java.util.concurrent.Executor;
 import java.util.function.Supplier;
 
 import jakarta.ws.rs.RuntimeType;
+import jakarta.ws.rs.core.EntityPart;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.MultivaluedMap;
 import jakarta.ws.rs.core.Response;
@@ -47,6 +48,7 @@ import org.jboss.resteasy.reactive.server.core.parameters.AsyncResponseExtractor
 import org.jboss.resteasy.reactive.server.core.parameters.BodyParamExtractor;
 import org.jboss.resteasy.reactive.server.core.parameters.ContextParamExtractor;
 import org.jboss.resteasy.reactive.server.core.parameters.CookieParamExtractor;
+import org.jboss.resteasy.reactive.server.core.parameters.EntityPartListExtractor;
 import org.jboss.resteasy.reactive.server.core.parameters.FormParamExtractor;
 import org.jboss.resteasy.reactive.server.core.parameters.HeaderParamExtractor;
 import org.jboss.resteasy.reactive.server.core.parameters.InjectParamExtractor;
@@ -90,6 +92,7 @@ import org.jboss.resteasy.reactive.server.model.ParamConverterProviders;
 import org.jboss.resteasy.reactive.server.model.ServerMethodParameter;
 import org.jboss.resteasy.reactive.server.model.ServerResourceMethod;
 import org.jboss.resteasy.reactive.server.spi.EndpointInvoker;
+import org.jboss.resteasy.reactive.server.spi.HandlerKindResolver;
 import org.jboss.resteasy.reactive.server.spi.ResteasyReactiveResourceInfo;
 import org.jboss.resteasy.reactive.server.spi.ServerMessageBodyWriter;
 import org.jboss.resteasy.reactive.server.spi.ServerRestHandler;
@@ -108,10 +111,10 @@ public class RuntimeResourceDeployment {
     private static final Logger log = Logger.getLogger(RuntimeResourceDeployment.class);
 
     private final DeploymentInfo info;
+    private final HandlerKindResolver handlerKindResolver;
     private final ServerSerialisers serialisers;
     private final ResteasyReactiveConfig resteasyReactiveConfig;
     private final Supplier<Executor> executorSupplier;
-    private final Supplier<Executor> virtualExecutorSupplier;
     private final RuntimeInterceptorDeployment runtimeInterceptorDeployment;
     private final DynamicEntityWriter dynamicEntityWriter;
     private final ResourceLocatorHandler resourceLocatorHandler;
@@ -123,15 +126,16 @@ public class RuntimeResourceDeployment {
     private final BlockingHandler blockingHandlerVirtualThread;
     private final ResponseWriterHandler responseWriterHandler;
 
-    public RuntimeResourceDeployment(DeploymentInfo info, Supplier<Executor> executorSupplier,
+    public RuntimeResourceDeployment(DeploymentInfo info, HandlerKindResolver handlerKindResolver,
+            Supplier<Executor> executorSupplier,
             Supplier<Executor> virtualExecutorSupplier,
             RuntimeInterceptorDeployment runtimeInterceptorDeployment, DynamicEntityWriter dynamicEntityWriter,
             ResourceLocatorHandler resourceLocatorHandler, boolean defaultBlocking) {
         this.info = info;
+        this.handlerKindResolver = handlerKindResolver;
         this.serialisers = info.getSerialisers();
         this.resteasyReactiveConfig = info.getResteasyReactiveConfig();
         this.executorSupplier = executorSupplier;
-        this.virtualExecutorSupplier = virtualExecutorSupplier;
         this.runtimeInterceptorDeployment = runtimeInterceptorDeployment;
         this.dynamicEntityWriter = dynamicEntityWriter;
         this.resourceLocatorHandler = resourceLocatorHandler;
@@ -184,9 +188,13 @@ public class RuntimeResourceDeployment {
 
         //setup reader and writer interceptors first
         ServerRestHandler interceptorHandler = interceptorDeployment.setupInterceptorHandler();
-        //we want interceptors in the abort handler chain
+        //we want interceptors in the abort handler chain, as the exception may have been thrown
+        //by a handler that runs before the interceptor handler (e.g. a security check)
         List<ServerRestHandler> abortHandlingChain = new ArrayList<>(
                 3 + (interceptorHandler != null ? 1 : 0) + (info.getPreExceptionMapperHandler() != null ? 1 : 0));
+        if (interceptorHandler != null) {
+            abortHandlingChain.add(interceptorHandler);
+        }
 
         List<ServerRestHandler> handlers = new ArrayList<>(HANDLERS_CAPACITY);
         // we add null as the first item to make sure that subsequent items are added in the proper positions
@@ -215,8 +223,8 @@ public class RuntimeResourceDeployment {
             } else {
                 if (method.isRunOnVirtualThread()) {
                     //should not happen
-                    log.error("a method was both non-blocking and @RunOnVirtualThread, it is now considered " +
-                            "@RunOnVirtual and blocking");
+                    log.error("a method was both @NonBlocking and @RunOnVirtualThread, it is now considered " +
+                            "@RunOnVirtualThread and @Blocking");
                     handlers.add(blockingHandlerVirtualThread);
                     score.add(ScoreSystem.Category.Execution, ScoreSystem.Diagnostic.ExecutionVirtualThread);
                 } else {
@@ -294,17 +302,19 @@ public class RuntimeResourceDeployment {
             }
         }
         if (checkWithFormReadRequestFilters && hasWithFormReadRequestFilters) {
-            // we need to remove the corresponding filters from the handlers list and add them to its end in the same order
+            // we need to remove the corresponding filters from the handlers list and add them to its end in the same order.
+            // the list is walked backwards because we remove by index as we go, so the matches come out reversed and
+            // have to be flipped back before they are appended
             List<ServerRestHandler> readBodyRequestFilters = new ArrayList<>(1);
             for (int i = handlers.size() - 2; i >= 0; i--) {
                 var serverRestHandler = handlers.get(i);
-                if (serverRestHandler instanceof ResourceRequestFilterHandler) {
-                    ResourceRequestFilterHandler resourceRequestFilterHandler = (ResourceRequestFilterHandler) serverRestHandler;
+                if (serverRestHandler instanceof ResourceRequestFilterHandler resourceRequestFilterHandler) {
                     if (resourceRequestFilterHandler.isWithFormRead()) {
                         readBodyRequestFilters.add(handlers.remove(i));
                     }
                 }
             }
+            Collections.reverse(readBodyRequestFilters);
             handlers.addAll(readBodyRequestFilters);
         }
 
@@ -373,6 +383,7 @@ public class RuntimeResourceDeployment {
         addHandlers(handlers, clazz, method, info, HandlerChainCustomizer.Phase.BEFORE_METHOD_INVOKE);
         EndpointInvoker invoker = method.getInvoker().get();
         ServerRestHandler alternate = alternateInvoker(method, invoker);
+        //noinspection ReplaceNullCheck
         if (alternate != null) {
             handlers.add(alternate);
         } else {
@@ -428,7 +439,7 @@ public class RuntimeResourceDeployment {
                             handlers.add(new VariableProducesHandler(serverMediaType, serialisers));
                             score.add(ScoreSystem.Category.Writer, ScoreSystem.Diagnostic.WriterRunTime);
                         } else if (isSingleEffectiveWriter(buildTimeWriters)) {
-                            MessageBodyWriter<?> writer = buildTimeWriters.get(0);
+                            MessageBodyWriter<?> writer = buildTimeWriters.getFirst();
                             handlers.add(new FixedProducesHandler(mediaType, new FixedEntityWriter(
                                     writer, serialisers)));
                             if (writer instanceof ServerMessageBodyWriter)
@@ -491,11 +502,13 @@ public class RuntimeResourceDeployment {
 
         handlers.set(0, new AbortChainHandler(abortHandlingChain.toArray(EMPTY_REST_HANDLER_ARRAY)));
 
+        ServerRestHandler[] handlerChain = handlers.toArray(EMPTY_REST_HANDLER_ARRAY);
         return new RuntimeResource(method.getHttpMethod(), methodPathTemplate,
                 classPathTemplate,
                 method.getProduces() == null ? null : serverMediaType,
                 consumesMediaTypes, invoker,
-                clazz.getFactory(), handlers.toArray(EMPTY_REST_HANDLER_ARRAY), method.getName(), parameterDeclaredTypes,
+                clazz.getFactory(), handlerChain, handlerKindResolver.kindsOf(handlerChain), method.getName(),
+                parameterDeclaredTypes,
                 effectiveReturnType, method.isBlocking(), method.isRunOnVirtualThread(), resourceClass,
                 lazyMethod,
                 pathParameterIndexes, info.isDevelopmentMode() ? score : null, streamElementType,
@@ -642,14 +655,16 @@ public class RuntimeResourceDeployment {
         ParameterExtractor extractor;
         switch (param.parameterType) {
             case HEADER:
-                return new HeaderParamExtractor(param.name, param.isSingle());
+                return new HeaderParamExtractor(param.name, param.isSingle(), param.restHeaderMap);
             case COOKIE:
                 return new CookieParamExtractor(param.name, param.type);
             case FORM:
                 MultipartFormParamExtractor.Type multiPartType = null;
                 Class<Object> typeClass = null;
                 Type genericType = null;
-                if (param.type.equals(FileUpload.class.getName())) {
+                if (param.type.equals(EntityPart.class.getName())) {
+                    multiPartType = MultipartFormParamExtractor.Type.EntityPart;
+                } else if (param.type.equals(FileUpload.class.getName())) {
                     multiPartType = MultipartFormParamExtractor.Type.FileUpload;
                 } else if (param.type.equals(File.class.getName())) {
                     multiPartType = MultipartFormParamExtractor.Type.File;
@@ -694,7 +709,8 @@ public class RuntimeResourceDeployment {
             case ASYNC_RESPONSE:
                 return AsyncResponseExtractor.INSTANCE;
             case QUERY:
-                extractor = new QueryParamExtractor(param.name, param.isSingle(), param.encoded, param.separator);
+                extractor = new QueryParamExtractor(param.name, param.isSingle(), param.encoded, param.separator,
+                        param.restQueryMap);
                 return extractor;
             case BODY:
                 return BodyParamExtractor.INSTANCE;
@@ -711,6 +727,8 @@ public class RuntimeResourceDeployment {
                 }
             case MULTI_PART_DATA_INPUT:
                 return MultipartDataInputExtractor.INSTANCE;
+            case ENTITY_PART_LIST:
+                return EntityPartListExtractor.INSTANCE;
             case CUSTOM:
                 return param.customParameterExtractor;
             default:

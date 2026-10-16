@@ -23,12 +23,11 @@ import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-
 import io.quarkus.test.QuarkusExtensionTest;
 import io.smallrye.common.annotation.Blocking;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.node.ArrayNode;
+import tools.jackson.databind.node.ObjectNode;
 
 public class ClientAndServerSharingResponseTest {
 
@@ -91,7 +90,11 @@ public class ClientAndServerSharingResponseTest {
         @Produces(MediaType.APPLICATION_JSON)
         @Blocking
         public Response testCase4() {
-            return headersService.dumpHeaders();
+            try (Response clientResponse = headersService.dumpHeaders()) {
+                return Response.status(clientResponse.getStatus())
+                        .entity(clientResponse.readEntity(String.class))
+                        .build();
+            }
         }
     }
 }

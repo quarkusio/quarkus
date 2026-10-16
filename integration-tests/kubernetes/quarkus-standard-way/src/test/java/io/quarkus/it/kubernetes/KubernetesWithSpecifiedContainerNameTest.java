@@ -82,7 +82,7 @@ public class KubernetesWithSpecifiedContainerNameTest {
                 });
             });
 
-            assertThat(h.getMetadata().getName()).isIn("ofoo", "foo", "openjdk-17");
+            assertThat(h.getMetadata().getName()).isIn("ofoo", "foo", "openjdk-21");
             assertThat(h.getMetadata().getLabels()).contains(entry("app.kubernetes.io/name", "ofoo"));
         });
     }

@@ -1,6 +1,8 @@
 package io.quarkus.qute.deployment.propertynotfound;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
@@ -19,14 +21,20 @@ public class PropertyNotFoundThrowExceptionTest {
 
     @RegisterExtension
     static final QuarkusExtensionTest config = new QuarkusExtensionTest()
-            .withApplicationRoot((jar) -> jar
+            .withApplicationRoot(root -> root
+                    .addClass(Item.class)
                     .addAsResource(new StringAsset("foos:{foos}"), "templates/test.html")
-                    .addAsResource(new StringAsset("quarkus.qute.property-not-found-strategy=throw-exception"
-                            + "\nquarkus.qute.strict-rendering=false"),
-                            "application.properties"));
+                    .addAsResource(
+                            new StringAsset("{item.nonExistent}"),
+                            "templates/beantest.txt"))
+            .overrideConfigKey("quarkus.qute.property-not-found-strategy", "throw-exception")
+            .overrideConfigKey("quarkus.qute.strict-rendering", "false");
 
     @Inject
     Template test;
+
+    @Inject
+    Template beantest;
 
     @Test
     public void testException() {
@@ -38,6 +46,26 @@ public class PropertyNotFoundThrowExceptionTest {
             assertEquals(TemplateException.class, rootCause.getClass());
             assertTrue(rootCause.getMessage().contains("Key \"foos\" not found in the template data map with keys []"),
                     rootCause.getMessage());
+        }
+    }
+
+    @Test
+    public void testExceptionBeanProperty() {
+        // THROW_EXCEPTION strategy should also apply to missing bean properties
+        Exception expected = assertThrows(Exception.class,
+                () -> beantest.data("item", new Item("Hello")).render());
+        Throwable rootCause = ExceptionUtil.getRootCause(expected);
+        assertInstanceOf(TemplateException.class, rootCause);
+        assertTrue(rootCause.getMessage().contains("Property \"nonExistent\" not found on the base object"),
+                rootCause.getMessage());
+    }
+
+    public static class Item {
+
+        public final String name;
+
+        public Item(String name) {
+            this.name = name;
         }
     }
 

@@ -26,7 +26,6 @@ import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.AnnotationsTransformerBuildItem;
 import io.quarkus.arc.deployment.BeanArchiveIndexBuildItem;
 import io.quarkus.arc.deployment.BeanDefiningAnnotationBuildItem;
-import io.quarkus.arc.deployment.OpenTelemetrySdkBuildItem;
 import io.quarkus.arc.deployment.ValidationPhaseBuildItem;
 import io.quarkus.arc.processor.AnnotationStore;
 import io.quarkus.arc.processor.BeanInfo;
@@ -44,8 +43,10 @@ import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
 import io.quarkus.deployment.builditem.GeneratedServiceProviderBuildItem;
+import io.quarkus.deployment.builditem.OpenTelemetrySdkBuildItem;
 import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
 import io.quarkus.deployment.builditem.SystemPropertyBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ConstantBootstrapBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveMethodBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
@@ -237,6 +238,7 @@ public class SmallRyeFaultToleranceProcessor {
             BuildProducer<GeneratedClassBuildItem> generatedClasses,
             BuildProducer<GeneratedResourceBuildItem> generatedResources,
             BuildProducer<GeneratedServiceProviderBuildItem> generatedServiceProviders,
+            BuildProducer<ConstantBootstrapBuildItem> constantBootstraps,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<ReflectiveMethodBuildItem> reflectiveMethod,
             BuildProducer<ValidationPhaseBuildItem.ValidationErrorBuildItem> errors,
@@ -260,7 +262,7 @@ public class SmallRyeFaultToleranceProcessor {
         // only generating annotation literal classes for MicroProfile/SmallRye Fault Tolerance annotations,
         // none of them are application classes
         ClassOutput classOutput = new GeneratedClassGizmo2Adaptor(generatedClasses, generatedResources,
-                generatedServiceProviders, false);
+                generatedServiceProviders, constantBootstraps, false);
 
         FaultToleranceScanner scanner = new FaultToleranceScanner(index, annotationStore, annotationProxy, classOutput,
                 recorderContext, reflectiveMethod);
@@ -312,12 +314,6 @@ public class SmallRyeFaultToleranceProcessor {
                                     "Both @Asynchronous and @AsynchronousNonBlocking present on '" + method + "'"));
                         }
 
-                        if (annotationStore.hasAnnotation(method, DotNames.BLOCKING)
-                                && annotationStore.hasAnnotation(method, DotNames.NON_BLOCKING)) {
-                            exceptions.add(
-                                    new DefinitionException("Both @Blocking and @NonBlocking present on '" + method + "'"));
-                        }
-
                         for (String exceptionConfig : exceptionConfigs) {
                             Optional<String[]> exceptionNames = config.getOptionalValue(beanClass.name().toString()
                                     + "/" + method.name() + "/" + exceptionConfig, String[].class);
@@ -343,11 +339,6 @@ public class SmallRyeFaultToleranceProcessor {
                         && annotationStore.hasAnnotation(beanClass, DotNames.ASYNCHRONOUS_NON_BLOCKING)) {
                     exceptions.add(new DefinitionException(
                             "Both @Asynchronous and @AsynchronousNonBlocking present on '" + beanClass + "'"));
-                }
-
-                if (annotationStore.hasAnnotation(beanClass, DotNames.BLOCKING)
-                        && annotationStore.hasAnnotation(beanClass, DotNames.NON_BLOCKING)) {
-                    exceptions.add(new DefinitionException("Both @Blocking and @NonBlocking present on '" + beanClass + "'"));
                 }
 
                 if (annotationStore.hasAnnotation(beanClass, DotNames.APPLY_GUARD)) {

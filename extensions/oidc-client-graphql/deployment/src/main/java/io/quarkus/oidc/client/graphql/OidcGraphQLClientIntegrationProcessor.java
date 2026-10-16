@@ -4,6 +4,7 @@ import static io.quarkus.deployment.annotations.ExecutionTime.RUNTIME_INIT;
 import static io.quarkus.oidc.client.runtime.OidcClientsConfig.DEFAULT_CLIENT_KEY;
 
 import java.lang.constant.ClassDesc;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -27,6 +28,7 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.gizmo2.ClassOutput;
 import io.quarkus.gizmo2.Const;
 import io.quarkus.gizmo2.Gizmo;
@@ -100,6 +102,7 @@ class OidcGraphQLClientIntegrationProcessor {
      */
     @BuildStep
     void generateGraphQLTokenProducers(GraphQLTokenProducerInfo graphQLTokenProducerInfo,
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClassProducer,
             BuildProducer<GeneratedBeanBuildItem> generatedBeanProducer) {
         graphQLTokenProducerInfo.oidcClientToTokenProducerBeanName.forEach((oidcClientName, generatedClassName) -> {
             ClassOutput classOutput = new GeneratedBeanGizmo2Adaptor(generatedBeanProducer);
@@ -114,12 +117,17 @@ class OidcGraphQLClientIntegrationProcessor {
                     ctorCreator.public_();
                     ctorCreator
                             .body(bc -> {
+                                var oidcClientNameValue = DEFAULT_CLIENT_KEY.equals(oidcClientName) ? Const.ofNull(String.class)
+                                        : Const.of(oidcClientName);
                                 bc.invokeSpecial(ConstructorDesc.of(tokenProviderClassDesc, String.class), cc.this_(),
-                                        Const.of(oidcClientName));
+                                        oidcClientNameValue);
                                 bc.return_();
                             });
                 });
             });
+            reflectiveClassProducer.produce(ReflectiveClassBuildItem.builder(generatedClassName)
+                    .reason(getClass().getName())
+                    .publicConstructors().methods().fields().build());
         });
     }
 
@@ -143,7 +151,8 @@ class OidcGraphQLClientIntegrationProcessor {
         config.additionalOidcClients()
                 .forEach((graphQlClient, oidcClient) -> configKeysToOidcClients.put(graphQlClient, oidcClient.clientName()));
 
-        recorder.enhanceGraphQLClientConfigurationWithOidc(configKeysToOidcClients, config.clientName().orElse(null),
+        recorder.enhanceGraphQLClientConfigurationWithOidc(configKeysToOidcClients,
+                config.clientName().orElse(DEFAULT_CLIENT_KEY),
                 graphQLTokenProducerInfo.oidcClientToTokenProducerBeanName);
     }
 
@@ -190,8 +199,13 @@ class OidcGraphQLClientIntegrationProcessor {
 
         private GraphQLTokenProducerInfo(Map<String, String> oidcClientToTokenProducerBeanName,
                 Map<String, String> configKeysToOidcClientsFromCombinedIndex) {
-            this.oidcClientToTokenProducerBeanName = Map.copyOf(oidcClientToTokenProducerBeanName);
-            this.configKeysToOidcClientsFromCombinedIndex = Map.copyOf(configKeysToOidcClientsFromCombinedIndex);
+            // Avoid using Map.copyOf() here as it creates MapN<K,V> with unstable iteration order.
+            // This leads to bytecode being unstable across builds. Prefer using HashMap and then
+            // wrapping it with Collections.unmodifiableMap() to ensure stable iteration order.
+            this.oidcClientToTokenProducerBeanName = Collections
+                    .unmodifiableMap(new HashMap<>(oidcClientToTokenProducerBeanName));
+            this.configKeysToOidcClientsFromCombinedIndex = Collections
+                    .unmodifiableMap(new HashMap<>(configKeysToOidcClientsFromCombinedIndex));
         }
     }
 }

@@ -5,19 +5,18 @@ import static io.quarkus.oidc.common.runtime.OidcCommonUtils.decodeAsJsonObject;
 import static io.quarkus.oidc.common.runtime.OidcConstants.TOKEN_SCOPE;
 import static io.quarkus.vertx.http.runtime.security.HttpSecurityUtils.getRoutingContextAttribute;
 
+import java.net.URI;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.security.Key;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.security.PrivateKey;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -265,11 +264,17 @@ public final class OidcUtils {
 
     public static JsonObject decodeJwtHeaders(String jwt) {
         StringTokenizer tokens = new StringTokenizer(jwt, ".");
+        if (!tokens.hasMoreTokens()) {
+            return null;
+        }
         return decodeAsJsonObject(tokens.nextToken());
     }
 
     public static String decodeJwtHeadersAsString(String jwt) {
         StringTokenizer tokens = new StringTokenizer(jwt, ".");
+        if (!tokens.hasMoreTokens()) {
+            return null;
+        }
         return base64UrlDecode(tokens.nextToken());
     }
 
@@ -403,7 +408,7 @@ public final class OidcUtils {
             if (Roles.Source.accesstoken == config.roles().source().orElse(null)) {
                 setIntrospectionScopes(builder, codeFlowAccessTokenResult.introspectionResult());
                 if (codeTokens != null && codeTokens.getAccessTokenScope() != null) {
-                    builder.addPermissionsAsString(new HashSet<>(Arrays.asList(codeTokens.getAccessTokenScope().split(" "))));
+                    addTokenScopesAsPermissions(builder, Arrays.asList(codeTokens.getAccessTokenScope().split(" ")));
                 }
             }
         }
@@ -427,7 +432,13 @@ public final class OidcUtils {
 
     static void addTokenScopesAsPermissions(Builder builder, Collection<String> scopes) {
         if (scopes != null && !scopes.isEmpty()) {
-            builder.addPermissionsAsString(new HashSet<>(scopes));
+            for (String scope : scopes) {
+                try {
+                    builder.addPermissionAsString(scope);
+                } catch (IllegalArgumentException e) {
+                    LOG.debugf("Token scope '%s' cannot be converted to a permission: %s", scope, e.getMessage());
+                }
+            }
         }
     }
 
@@ -943,7 +954,7 @@ public final class OidcUtils {
         }
     }
 
-    public static Key readDecryptionKey(String decryptionKeyLocation) throws Exception {
+    public static Key readDecryptionKey(String decryptionKeyLocation, KeyEncryptionAlgorithm algorithm) throws Exception {
         Key key = null;
 
         String keyContent = KeyUtils.readKeyContent(decryptionKeyLocation);
@@ -951,15 +962,25 @@ public final class OidcUtils {
             List<JsonWebKey> keys = KeyUtils.loadJsonWebKeys(keyContent);
             if (keys != null && keys.size() == 1 &&
                     (keys.get(0).getAlgorithm() == null
-                            || keys.get(0).getAlgorithm().equals(KeyEncryptionAlgorithm.RSA_OAEP.getAlgorithm()))
+                            || keys.get(0).getAlgorithm().equals(algorithm.getAlgorithm()))
                     && ("enc".equals(keys.get(0).getUse()) || keys.get(0).getUse() == null)) {
                 key = PublicJsonWebKey.class.cast(keys.get(0)).getPrivateKey();
             }
         }
         if (key == null) {
-            key = KeyUtils.decodeDecryptionPrivateKey(keyContent);
+            key = KeyUtils.decodeDecryptionPrivateKey(keyContent, algorithm);
         }
         return key;
+    }
+
+    /**
+     * Returns the configured ID and access token key decryption algorithm.
+     */
+    public static KeyEncryptionAlgorithm getTokenDecryptionAlgorithm(Token token, Key decryptionKey) {
+        if (token.decryptionAlgorithm().isPresent()) {
+            return KeyEncryptionAlgorithm.valueOf(token.decryptionAlgorithm().get().name());
+        }
+        return decryptionKey instanceof SecretKey ? KeyEncryptionAlgorithm.A256GCMKW : KeyEncryptionAlgorithm.RSA_OAEP;
     }
 
     public static String decryptToken(TenantConfigContext resolvedContext, String token) {
@@ -971,9 +992,8 @@ public final class OidcUtils {
                 throw new AuthenticationFailedException();
             }
 
-            //TODO: Make the encryption algorithm configurable
-            KeyEncryptionAlgorithm encryptionAlgorithm = decryptionKey instanceof PrivateKey ? KeyEncryptionAlgorithm.RSA_OAEP
-                    : KeyEncryptionAlgorithm.A256GCMKW;
+            KeyEncryptionAlgorithm encryptionAlgorithm = getTokenDecryptionAlgorithm(
+                    resolvedContext.oidcConfig().token(), decryptionKey);
 
             try {
                 return OidcUtils.decryptString(token, decryptionKey, encryptionAlgorithm);
@@ -1130,5 +1150,22 @@ public final class OidcUtils {
             return parConfig.enabled().get();
         }
         return metadata.isRequirePushedAuthorizationRequests();
+    }
+
+    public static String resolveRedirectUriForClientIdMetadata(OidcTenantConfig oidcConfig) {
+        String redirectPath = oidcConfig.authentication().redirectPath().get();
+        if (URI.create(redirectPath).isAbsolute()) {
+            return redirectPath;
+        }
+        URI clientIdUri = URI.create(oidcConfig.clientId().get());
+        String authority = getUriAuthority(clientIdUri);
+        if (!redirectPath.startsWith("/")) {
+            redirectPath = "/" + redirectPath;
+        }
+        return authority + redirectPath;
+    }
+
+    public static String getUriAuthority(URI uri) {
+        return uri.getScheme() + "://" + uri.getAuthority();
     }
 }

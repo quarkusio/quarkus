@@ -76,8 +76,10 @@ public class OidcClientRecorder {
 
     protected static OidcClient createOidcClient(OidcClientConfig oidcConfig, String oidcClientId, Vertx vertx,
             OidcTlsSupport tlsSupport, ProxyConfigurationRegistry proxyConfigurationRegistry) {
+        // The discovery branch in createOidcClientUni enforces the connection timeout internally and
+        // recovers to a DeferredOidcClient, so this call will not block beyond the configured connection timeout.
         return createOidcClientUni(oidcConfig, oidcClientId, vertx, tlsSupport, proxyConfigurationRegistry).await()
-                .atMost(oidcConfig.connectionTimeout());
+                .indefinitely();
     }
 
     protected static Uni<OidcClient> createOidcClientUni(OidcClientConfig oidcConfig, String oidcClientId,
@@ -100,7 +102,6 @@ public class OidcClientRecorder {
                         "Either 'quarkus.oidc-client.auth-server-url' or absolute 'quarkus.oidc-client.token-path' URL must be set");
             }
             OidcCommonUtils.verifyEndpointUrl(getEndpointUrl(oidcConfig));
-            OidcCommonUtils.verifyCommonConfiguration(oidcConfig, false, false);
         } catch (Throwable t) {
             LOG.debug(t.getMessage());
             String message = String.format("'%s' client configuration is not initialized", oidcClientId);
@@ -108,6 +109,7 @@ public class OidcClientRecorder {
         }
 
         try {
+            OidcCommonUtils.verifyCommonConfiguration(oidcConfig, false, false);
             OidcCommonUtils.validateCredentialsForAllEndpoints(oidcConfig.credentials());
         } catch (ConfigurationException e) {
             return Uni.createFrom().failure(e);
@@ -141,12 +143,13 @@ public class OidcClientRecorder {
                     oidcConfig, client, oidcRequestFilters, oidcResponseFilters, vertx));
 
             return deferredClient
+                    // Fail with a TimeoutException if discovery does not complete within the connection timeout
+                    // so that it is handled by the recoverWithItem below and a DeferredOidcClient is returned.
+                    .ifNoItem().after(oidcConfig.connectionTimeout()).fail()
                     .onFailure(f -> !(f instanceof ConfigurationException))
                     .recoverWithItem(originalFailure -> {
-                        if (LOG.isDebugEnabled()) {
-                            LOG.debugf(originalFailure, "OIDC metadata discovery for OIDC client '%s' failed. "
-                                    + "Will try again the first time this OIDC client is used", oidcClientId);
-                        }
+                        LOG.warnf(originalFailure, "OIDC metadata discovery for OIDC client '%s' failed. "
+                                + "Will try again the first time this OIDC client is used", oidcClientId);
                         return new DeferredOidcClient(
                                 deferredClient.onFailure().transform(t -> toOidcClientException(getEndpointUrl(oidcConfig), t)),
                                 oidcClientId, client);

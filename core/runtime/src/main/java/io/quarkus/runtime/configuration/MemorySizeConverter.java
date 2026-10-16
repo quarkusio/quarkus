@@ -15,7 +15,7 @@ import org.eclipse.microprofile.config.spi.Converter;
  *             backward compatibility with code that references it explicitly.
  */
 @Priority(DEFAULT_QUARKUS_CONVERTER_PRIORITY)
-@Deprecated(forRemoval = true)
+@Deprecated(forRemoval = true, since = "3.38")
 public class MemorySizeConverter implements Converter<MemorySize>, Serializable {
     private static final long serialVersionUID = -1988485929047973068L;
 

@@ -1,6 +1,5 @@
 package io.quarkus.it.rest.client.selfsigned;
 
-import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.io.Writer;
@@ -23,6 +22,7 @@ import io.quarkus.tls.TlsConfigurationRegistry;
 import io.vertx.core.Future;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
+import io.vertx.core.http.HttpClient;
 import io.vertx.core.http.HttpClientOptions;
 import io.vertx.core.http.HttpMethod;
 import io.vertx.core.http.RequestOptions;
@@ -34,16 +34,8 @@ import io.vertx.core.http.RequestOptions;
 @Path("/self-signed")
 public class ExternalSelfSignedResource {
 
-    @Inject
     @RestClient
     ExternalSelfSignedClient externalSelfSignedClient;
-
-    @GET
-    @Path("/ExternalSelfSignedClient")
-    @Produces(MediaType.TEXT_PLAIN)
-    public Response perform(@PathParam("client") String client) throws IOException {
-        return externalSelfSignedClient.invoke();
-    }
 
     @Inject
     TlsConfigurationRegistry tlsConfigurationRegistry;
@@ -55,6 +47,13 @@ public class ExternalSelfSignedResource {
     int serverPort;
 
     @GET
+    @Path("/ExternalSelfSignedClient")
+    @Produces(MediaType.TEXT_PLAIN)
+    public Response perform() {
+        return externalSelfSignedClient.invoke();
+    }
+
+    @GET
     @Path("/HttpClient/{tlsConfigName}")
     @Produces(MediaType.TEXT_PLAIN)
     public Response client(@PathParam("tlsConfigName") String tlsConfigName)
@@ -62,7 +61,8 @@ public class ExternalSelfSignedResource {
         final HttpClientOptions opts = new HttpClientOptions();
         tlsConfigurationRegistry.get(tlsConfigName)
                 .ifPresent(tlsConfig -> opts.setTrustOptions(tlsConfig.getTrustStoreOptions()));
-        final Future<Response> response = vertx.createHttpClient(opts).request(
+        final HttpClient client = vertx.createHttpClient(opts);
+        final Future<Response> response = client.request(
                 new RequestOptions()
                         .setMethod(HttpMethod.GET)
                         .setHost("localhost")
@@ -75,7 +75,11 @@ public class ExternalSelfSignedResource {
                                 .map(Buffer::toString)
                                 .compose(respBody -> Future.succeededFuture(Response.ok(respBody).build()))))
                 .recover(e -> Future.succeededFuture(Response.status(500).entity(stackTrace(e)).build()));
-        return response.toCompletionStage().toCompletableFuture().get(10, TimeUnit.SECONDS);
+        try {
+            return response.toCompletionStage().toCompletableFuture().get(10, TimeUnit.SECONDS);
+        } finally {
+            client.close();
+        }
     }
 
     static Object stackTrace(Throwable e) {

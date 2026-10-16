@@ -49,19 +49,30 @@ public class JsonRegistryProcessor {
                 .setUnremovable().build());
         registryProviders.produce(new MicrometerRegistryProviderBuildItem(JsonMeterRegistry.class));
 
+        var path = nonApplicationRootPathBuildItem.resolveManagementPath(config.export().json().path(),
+                managementBuildTimeConfig, launchModeBuildItem);
+        var prometheusPath = nonApplicationRootPathBuildItem.resolveManagementPath(config.export().prometheus().path(),
+                managementBuildTimeConfig, launchModeBuildItem);
+        int order = stripTrailingSlash(path).equals(stripTrailingSlash(prometheusPath)) ? 3 : 1;
+
         routes.produce(nonApplicationRootPathBuildItem.routeBuilder()
                 .management()
-                .routeFunction(config.export().json().path(), recorder.route())
+                .routeFunction(config.export().json().path(), recorder.route(order))
                 .routeConfigKey("quarkus.micrometer.export.json.path")
                 .handler(recorder.getHandler())
                 .blockingRoute()
                 .build());
 
-        var path = nonApplicationRootPathBuildItem.resolveManagementPath(config.export().json().path(),
-                managementBuildTimeConfig, launchModeBuildItem);
         log.debug("Initialized a JSON meter registry on path=" + path);
 
         registries.produce(new RegistryBuildItem("JSON", path));
+    }
+
+    private static String stripTrailingSlash(String path) {
+        while (path.length() > 1 && path.endsWith("/")) {
+            path = path.substring(0, path.length() - 1);
+        }
+        return path;
     }
 
 }

@@ -1,0 +1,135 @@
+////
+This document is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
+////
+[id="security-oidc-client-id-metadata-document"]
+= OAuth Client ID Metadata Document
+include::_attributes.adoc[]
+:diataxis-type: concept
+:categories: security,web
+:toclevels: 3
+:topics: security,oidc,authentication,cimd
+:extensions: io.quarkus:quarkus-oidc
+
+Use the OAuth Client ID Metadata Document support in the Quarkus OIDC extension to let your application identify itself to authorization servers without prior client registration during the xref:security-oidc-code-flow-authentication.adoc[OpenID Connect authorization code flow].
+
+== Overview
+
+The link:https://datatracker.ietf.org/doc/html/draft-ietf-oauth-client-id-metadata-document[OAuth Client ID Metadata Document] specification enables OAuth clients to use an HTTPS URL as their `client_id`.
+That URL points to a JSON document containing the client's metadata, which the authorization server fetches on demand instead of requiring the client to be pre-registered.
+
+This is an alternative to xref:security-openid-connect-client-registration.adoc[OpenID Connect dynamic client registration], which requires an explicit registration step with the authorization server.
+
+When a Quarkus application has its `client-id` set to an HTTPS URL, the OIDC extension automatically:
+
+* Serves a Client ID Metadata Document at the URL path derived from the `client-id`
+* Includes the `client_id`, `client_name`, `redirect_uris`, and `token_endpoint_auth_method` in the metadata document
+* Validates the configuration at startup
+
+This enables a registration-free authorization code flow: the authorization server discovers the client's configuration by fetching the metadata document from the `client-id` URL.
+
+== Configuration
+
+=== Basic setup (public client)
+
+To activate Client ID Metadata Document support, set `client-id` to an HTTPS URL and provide a `client-name`:
+
+[source,properties]
+----
+quarkus.oidc.auth-server-url=https://my-oidc-provider.example.com
+quarkus.oidc.client-id=https://my-app.example.com/client-id-metadata/my-app
+quarkus.oidc.client-name=My Application
+quarkus.oidc.authentication.redirect-path=/callback
+quarkus.oidc.application-type=web-app
+----
+
+With this configuration, Quarkus serves the following JSON document at `https://my-app.example.com/client-id-metadata/my-app`:
+
+[source,json]
+----
+{
+  "client_id": "https://my-app.example.com/client-id-metadata/my-app",
+  "client_name": "My Application",
+  "redirect_uris": ["https://my-app.example.com/callback"],
+  "token_endpoint_auth_method": "none"
+}
+----
+
+The `redirect-path` can be either a relative path (which is made absolute using the `client-id` URL authority) or an absolute HTTPS URL that must share the same authority as the `client-id`.
+
+=== Confidential client with `private_key_jwt`
+
+The Client ID Metadata Document specification prohibits shared-secret authentication methods (`client_secret_basic`, `client_secret_post`, `client_secret_jwt`).
+To authenticate as a confidential client, use `private_key_jwt` by configuring a private key for signing JWT client assertions and a public key to publish in the metadata document:
+
+[source,properties]
+----
+quarkus.oidc.auth-server-url=https://my-oidc-provider.example.com
+quarkus.oidc.client-id=https://my-app.example.com/client-id-metadata/my-app
+quarkus.oidc.client-name=My Application
+quarkus.oidc.credentials.jwt.key-file=private-key.pem
+quarkus.oidc.credentials.jwt.public-key-file=public-key.pem
+quarkus.oidc.authentication.redirect-path=/callback
+quarkus.oidc.application-type=web-app
+----
+
+When both a private key and a public key are configured, the metadata document advertises `token_endpoint_auth_method` as `private_key_jwt` and includes the public key in a `jwks` property:
+
+[source,json]
+----
+{
+  "client_id": "https://my-app.example.com/client-id-metadata/my-app",
+  "client_name": "My Application",
+  "redirect_uris": ["https://my-app.example.com/callback"],
+  "token_endpoint_auth_method": "private_key_jwt",
+  "jwks": {
+    "keys": [{
+      "kty": "RSA",
+      "n": "...",
+      "e": "..."
+    }]
+  }
+}
+----
+
+The `public-key-file` property accepts both PEM public keys and PEM certificates.
+The public key can also be provided inline using the `public-key` property.
+
+== Configuration requirements
+
+The following requirements are validated at startup:
+
+* The `client-id` must be an HTTPS URL with a path component
+* The application type must be `web-app` or `hybrid` (not `service`)
+* The `client-name` must be set
+* The `authentication.redirect-path` must be set
+
+If any of these requirements is not met, a configuration error is reported.
+
+== Named tenants
+
+Client ID Metadata Document support works with named OIDC tenants.
+Each tenant with an HTTPS URL `client-id` gets its own metadata document endpoint:
+
+[source,properties]
+----
+quarkus.oidc.tenant-a.client-id=https://my-app.example.com/client-id-metadata/tenant-a
+quarkus.oidc.tenant-a.client-name=Tenant A
+quarkus.oidc.tenant-a.authentication.redirect-path=/tenant-a/callback
+quarkus.oidc.tenant-a.application-type=web-app
+
+quarkus.oidc.tenant-b.client-id=https://my-app.example.com/client-id-metadata/tenant-b
+quarkus.oidc.tenant-b.client-name=Tenant B
+quarkus.oidc.tenant-b.authentication.redirect-path=/tenant-b/callback
+quarkus.oidc.tenant-b.application-type=web-app
+----
+
+Each `client-id` must be unique across all tenants.
+
+== References
+
+* link:https://datatracker.ietf.org/doc/html/draft-ietf-oauth-client-id-metadata-document[OAuth Client ID Metadata Document specification]
+* xref:security-oidc-code-flow-authentication.adoc[OpenID Connect authorization code flow]
+* xref:security-openid-connect-client-registration.adoc[OpenID Connect dynamic client registration]
+* xref:security-oidc-configuration-properties-reference.adoc[OIDC configuration properties reference]

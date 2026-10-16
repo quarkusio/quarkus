@@ -11,6 +11,7 @@ import org.jboss.resteasy.reactive.spi.BeanFactory;
 import io.quarkus.arc.runtime.BeanContainer;
 import io.quarkus.runtime.BlockingOperationControl;
 import io.quarkus.runtime.annotations.Recorder;
+import io.quarkus.runtime.annotations.StaticInit;
 
 @Recorder
 public class ResteasyReactiveCommonRecorder {
@@ -24,16 +25,19 @@ public class ResteasyReactiveCommonRecorder {
             double.class.getName(), double.class,
             long.class.getName(), long.class);
 
+    @StaticInit
     public <T> BeanFactory<T> factory(String targetClass, BeanContainer beanContainer) {
         return new ArcBeanFactory<>(loadClass(targetClass),
                 beanContainer);
     }
 
+    @StaticInit
     public void registerWriter(Serialisers serialisers, String entityClassName,
             ResourceWriter writer) {
         serialisers.addWriter(loadClass(entityClassName), writer);
     }
 
+    @StaticInit
     public void registerReader(Serialisers serialisers, String entityClassName,
             ResourceReader reader) {
         serialisers.addReader(loadClass(entityClassName), reader);

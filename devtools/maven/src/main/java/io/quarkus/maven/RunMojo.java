@@ -29,28 +29,54 @@ import io.smallrye.common.process.ProcessBuilder;
 @Mojo(name = "run")
 public class RunMojo extends QuarkusBootstrapMojo {
     /**
-     * The list of system properties defined for the plugin.
+     * System properties to set on the JVM before running the application.
+     * Defined as a map in the POM configuration.
+     *
+     * Note that if a property is already set, its value will not be overridden.
+     * <p>
+     * Example:
+     *
+     * <pre>
+     * &lt;systemProperties&gt;
+     *   &lt;some.property&gt;value&lt;/some.property&gt;
+     * &lt;/systemProperties&gt;
+     * </pre>
+     *
      */
     @Parameter
     Map<String, String> systemProperties = Collections.emptyMap();
 
     /**
-     * Additional system properties meant to be passed on the command line in a formal like
-     * {@code -DsysProps=prop1=val1,prop2=val2}
+     * Additional system properties to pass to the launched JVM process as command-line arguments.
+     * Specified via Maven property or command line in comma-separated {@code key=value} format.
+     * <p>
+     * Example: {@code sysProps=prop1=val1,prop2=val2} would be passed to the application as
+     * {@code mvn quarkus:run -DsysProps=prop1=val1,prop2=val2}
+     * <p>
+     * These properties are injected into the Java command line as {@code -D} flags and take precedence
+     * over properties defined in the {@link #systemProperties} map.
      */
     @Parameter(defaultValue = "${sysProps}")
     String additionalSystemProperties;
 
     /**
-     * The list of environment variables with which the process will be launched. To be specified in a format like
-     * {@code -DenvVars=VAR1=val1,VAR2=val2}
+     * Environment variables to pass to the launched process.
+     * Specified in comma-separated {@code KEY=value} format.
+     * <p>
+     * Example: {@code mvn quarkus:run -DenvVars=MY_VAR=value1,OTHER_VAR=value2}
+     * <p>
+     * When specified, these variables completely replace the parent process's environment for the child process.
      */
     @Parameter(defaultValue = "${envVars}")
     String environmentVariables;
 
     /**
-     * The list of program arguments with which the process will be launched. To be specified in a format like
-     * {@code -Dargs=1,2,k=v}
+     * Command-line arguments to pass to the application being run.
+     * <p>
+     * Example: {@code mvn quarkus:run -Dargs=arg1,arg2,key=value}
+     * <p>
+     * These arguments are appended to the end of the Java command and made available to the application via its {@code args}
+     * parameter.
      */
     @Parameter(defaultValue = "${args}")
     String programArguments;
@@ -122,7 +148,7 @@ public class RunMojo extends QuarkusBootstrapMojo {
                             String prop = props[i];
                             String[] parts = prop.split("=");
                             if (parts.length == 2) {
-                                // we want to set the system property write after the command
+                                // we want to set the system property right after the command
                                 args.add(1, "-D" + prop);
                             } else {
                                 throw new RuntimeException("Invalid system property: " + prop);

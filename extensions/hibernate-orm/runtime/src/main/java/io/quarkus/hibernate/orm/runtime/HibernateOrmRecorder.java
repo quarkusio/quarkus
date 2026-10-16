@@ -19,8 +19,8 @@ import jakarta.persistence.spi.LoadState;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.StatelessSession;
-import org.hibernate.boot.archive.scan.spi.Scanner;
 import org.hibernate.engine.spi.SessionLazyDelegator;
+import org.hibernate.engine.spi.StatelessSessionLazyDelegator;
 import org.hibernate.integrator.spi.Integrator;
 import org.hibernate.relational.SchemaManager;
 import org.jboss.logging.Logger;
@@ -76,7 +76,7 @@ public class HibernateOrmRecorder {
     }
 
     public BeanContainerListener initMetadata(List<QuarkusPersistenceUnitDefinition> parsedPersistenceXmlDescriptors,
-            Scanner scanner, Collection<Class<? extends Integrator>> additionalIntegrators) {
+            Collection<Class<? extends Integrator>> additionalIntegrators) {
         SchemaManagementIntegrator.clearDsMap();
         for (QuarkusPersistenceUnitDefinition i : parsedPersistenceXmlDescriptors) {
             if (i.getConfig().getDataSource().isPresent()) {
@@ -86,7 +86,7 @@ public class HibernateOrmRecorder {
         return new BeanContainerListener() {
             @Override
             public void created(BeanContainer beanContainer) {
-                PersistenceUnitsHolder.initializeJpa(parsedPersistenceXmlDescriptors, scanner, additionalIntegrators,
+                PersistenceUnitsHolder.initializeJpa(parsedPersistenceXmlDescriptors, additionalIntegrators,
                         proxyDefinitions);
             }
         };
@@ -175,12 +175,12 @@ public class HibernateOrmRecorder {
             @Override
             public Session apply(SyntheticCreationalContext<Session> context) {
                 TransactionSessions transactionSessions = context.getInjectedReference(TransactionSessions.class);
-                return new SessionLazyDelegator(new Supplier<Session>() {
+                return new SessionLazyDelegator() {
                     @Override
-                    public Session get() {
+                    public Session delegate() {
                         return transactionSessions.getSession(persistenceUnitName);
                     }
-                });
+                };
             }
         };
     }
@@ -192,12 +192,12 @@ public class HibernateOrmRecorder {
             @Override
             public StatelessSession apply(SyntheticCreationalContext<StatelessSession> context) {
                 TransactionSessions transactionSessions = context.getInjectedReference(TransactionSessions.class);
-                return new StatelessSessionLazyDelegator(new Supplier<StatelessSession>() {
+                return new StatelessSessionLazyDelegator() {
                     @Override
-                    public StatelessSession get() {
+                    public StatelessSession delegate() {
                         return transactionSessions.getStatelessSession(persistenceUnitName);
                     }
-                });
+                };
             }
         };
     }
@@ -288,8 +288,7 @@ public class HibernateOrmRecorder {
         HibernateOrmRuntimeConfigPersistenceUnit hibernateOrmRuntimeConfigPersistenceUnit = runtimeConfig.getValue()
                 .persistenceUnits().get(puName);
         HibernateOrmRuntimeConfigPersistenceUnit.HibernateGenerationStrategy schemaManagementStrategy = hibernateOrmRuntimeConfigPersistenceUnit
-                .database().generation().generation()
-                .orElse(hibernateOrmRuntimeConfigPersistenceUnit.schemaManagement().strategy());
+                .schemaManagement().strategy();
 
         boolean startsOffline = hibernateOrmRuntimeConfigPersistenceUnit.database().startOffline();
 

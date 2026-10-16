@@ -16,8 +16,10 @@
     <packaging>pom</packaging>
 
     <modules>
+        <module>api</module>
         <module>deployment</module>
         <module>deployment-spi</module>
+        <module>kotlin</module>
         <module>runtime</module>
         <module>runtime-dev</module>
     </modules>

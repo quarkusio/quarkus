@@ -2,12 +2,8 @@ package io.quarkus.test.junit;
 
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.ServiceLoader;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -19,7 +15,6 @@ import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.FieldInfo;
 import org.jboss.jandex.Index;
 import org.jboss.jandex.Type;
-import org.junit.jupiter.api.extension.ExtendWith;
 
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.builder.BuildChainBuilder;
@@ -37,7 +32,6 @@ import io.quarkus.test.junit.buildchain.TestBuildChainCustomizerProducer;
 public class TestBuildChainFunction implements Function<Map<String, Object>, List<Consumer<BuildChainBuilder>>> {
 
     private static final String QUARKUS_TEST_NAME = QuarkusTest.class.getName();
-    private static final String QUARKUS_TEST_EXTENSION_NAME = QuarkusTestExtension.class.getName();
 
     @Override
     public List<Consumer<BuildChainBuilder>> apply(Map<String, Object> stringObjectMap) {
@@ -45,7 +39,6 @@ public class TestBuildChainFunction implements Function<Map<String, Object>, Lis
         // the index was written by the extension
         Index testClassesIndex = TestClassIndexer.readIndex(testLocation,
                 (Class<?>) stringObjectMap.get(AbstractJvmQuarkusTestExtension.TEST_CLASS));
-        Collection<TestAnnotationBuildItem> testAnnotationBuildItems = collectTestAnnotationItems(testClassesIndex);
 
         List<Consumer<BuildChainBuilder>> allCustomizers = new ArrayList<>(1);
         Consumer<BuildChainBuilder> defaultCustomizer = new Consumer<BuildChainBuilder>() {
@@ -85,7 +78,10 @@ public class TestBuildChainFunction implements Function<Map<String, Object>, Lis
                 buildChainBuilder.addBuildStep(new BuildStep() {
                     @Override
                     public void execute(BuildContext context) {
-                        testAnnotationBuildItems.forEach(context::produce);
+                        // Only the "seed" annotation is produced here; meta-annotations composed with
+                        // @QuarkusTest (possibly shipped in another jar) are discovered later against the
+                        // full application index by io.quarkus.arc.deployment.TestsAsBeansProcessor.
+                        context.produce(new TestAnnotationBuildItem(QUARKUS_TEST_NAME));
                     }
                 })
                         .produces(TestAnnotationBuildItem.class)
@@ -168,41 +164,5 @@ public class TestBuildChainFunction implements Function<Map<String, Object>, Lis
         }
 
         return allCustomizers;
-    }
-
-    private static Collection<TestAnnotationBuildItem> collectTestAnnotationItems(Index testClassesIndex) {
-        var result = new HashSet<String>();
-        result.add(QUARKUS_TEST_NAME);
-
-        // collect meta-annotations with @QuarkusTest
-        result.addAll(collectMetaAnnotations(QUARKUS_TEST_NAME, testClassesIndex));
-        // collect meta-annotations with @ExtendWith(QuarkusTestExtension.class)
-        Predicate<AnnotationInstance> isValueQuarkusTestExtension = ai -> ai.value() != null
-                && Arrays.stream(ai.value().asClassArray())
-                        .anyMatch(type -> type.name() != null && QUARKUS_TEST_EXTENSION_NAME.equals(type.name().toString()));
-        result.addAll(collectMetaAnnotations(ExtendWith.class.getName(), testClassesIndex, isValueQuarkusTestExtension));
-
-        return result.stream().map(TestAnnotationBuildItem::new).toList();
-    }
-
-    private static List<String> collectMetaAnnotations(String annotationName, Index testClassesIndex) {
-        return collectMetaAnnotations(annotationName, testClassesIndex, ai -> true);
-    }
-
-    private static List<String> collectMetaAnnotations(String annotationName, Index testClassesIndex,
-            Predicate<AnnotationInstance> initialFilter) {
-        return testClassesIndex.getAnnotations(annotationName)
-                .stream()
-                .filter(initialFilter)
-                .map(AnnotationInstance::target)
-                .filter(Objects::nonNull)
-                .filter(at -> at.kind() == AnnotationTarget.Kind.CLASS)
-                .map(AnnotationTarget::asClass)
-                .filter(ClassInfo::isAnnotation)
-                .<String> mapMulti((ci, consumer) -> {
-                    consumer.accept(ci.name().toString());
-                    collectMetaAnnotations(ci.name().toString(), testClassesIndex).forEach(consumer);
-                })
-                .toList();
     }
 }

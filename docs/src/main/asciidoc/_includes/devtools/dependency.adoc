@@ -1,0 +1,26 @@
+[source,xml,subs=attributes+,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
+.pom.xml
+----
+<dependency>
+    <groupId>{dependency-groupId}</groupId>
+    <artifactId>{dependency-artifactId}</artifactId>
+ifdef::dependency-scope-test[]
+    <scope>test</scope>
+endif::[]
+</dependency>
+----
+
+ifdef::dependency-scope-test[]
+[source,gradle,subs=attributes+,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+testImplementation("{dependency-groupId}:{dependency-artifactId}")
+----
+endif::[]
+ifndef::dependency-scope-test[]
+[source,gradle,subs=attributes+,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation("{dependency-groupId}:{dependency-artifactId}")
+----
+endif::[]

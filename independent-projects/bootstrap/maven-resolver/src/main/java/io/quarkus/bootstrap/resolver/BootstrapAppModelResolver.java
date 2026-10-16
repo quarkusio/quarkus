@@ -299,7 +299,8 @@ public class BootstrapAppModelResolver implements AppModelResolver {
                 version = constraint.getArtifact().getVersion();
             }
             directDeps.add(new Dependency(
-                    new DefaultArtifact(d.getGroupId(), d.getArtifactId(), d.getClassifier(), d.getType(), version),
+                    new DefaultArtifact(d.getGroupId(), d.getArtifactId(), d.getClassifier(), null, version,
+                            mvn.getSession().getArtifactTypeRegistry().get(d.getType())),
                     d.getScope(), d.isOptional(), toAetherExclusions(d.getExclusions())));
         }
 
@@ -336,8 +337,14 @@ public class BootstrapAppModelResolver implements AppModelResolver {
             managedDeps = DependencyUtils.toMap(appArtifactDescr.getManagedDependencies());
         }
 
-        directMvnDeps = DependencyUtils.mergeDependencies(directMvnDeps, appArtifactDescr.getDependencies(),
-                excludedArtifacts, managedDeps, Set.of());
+        if (managingProject != null) {
+            directMvnDeps = DependencyUtils.enforceManagedDependencies(directMvnDeps, appArtifactDescr.getDependencies(),
+                    excludedArtifacts, managedDeps, Set.of());
+        } else {
+            directMvnDeps = DependencyUtils.mergeDependencies(directMvnDeps, appArtifactDescr.getDependencies(),
+                    excludedArtifacts, managedDeps, Set.of());
+        }
+
         aggregatedRepos = mvn.aggregateRepositories(aggregatedRepos,
                 mvn.newResolutionRepositories(appArtifactDescr.getRepositories()));
 

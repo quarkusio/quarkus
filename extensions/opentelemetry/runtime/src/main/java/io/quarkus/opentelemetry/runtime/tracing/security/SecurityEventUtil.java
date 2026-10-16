@@ -1,11 +1,12 @@
 package io.quarkus.opentelemetry.runtime.tracing.security;
 
 import static io.opentelemetry.semconv.incubating.EnduserIncubatingAttributes.ENDUSER_ID;
-import static io.opentelemetry.semconv.incubating.EnduserIncubatingAttributes.ENDUSER_ROLE;
+import static io.opentelemetry.semconv.incubating.UserIncubatingAttributes.USER_ROLES;
 import static io.quarkus.security.spi.runtime.AuthenticationFailureEvent.AUTHENTICATION_FAILURE_KEY;
 import static io.quarkus.security.spi.runtime.AuthorizationFailureEvent.AUTHORIZATION_FAILURE_KEY;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.function.BiConsumer;
 
 import io.opentelemetry.api.common.Attributes;
@@ -233,20 +234,17 @@ public final class SecurityEventUtil {
      */
     private static void addEndUserAttribute(SecurityIdentity securityIdentity, Span span) {
         if (securityIdentity != null && !securityIdentity.isAnonymous() && spanIsValidAndRecording(span)) {
-            span.setAllAttributes(Attributes.of(
-                    ENDUSER_ID,
-                    securityIdentity.getPrincipal().getName(),
-                    ENDUSER_ROLE,
-                    getRoles(securityIdentity)));
+            span.setAttribute(ENDUSER_ID, securityIdentity.getPrincipal().getName());
+            span.setAttribute(USER_ROLES, getRoles(securityIdentity));
         }
     }
 
-    private static String getRoles(SecurityIdentity securityIdentity) {
+    private static List<String> getRoles(SecurityIdentity securityIdentity) {
         try {
-            return securityIdentity.getRoles().toString();
+            return List.copyOf(securityIdentity.getRoles());
         } catch (UnsupportedOperationException e) {
             // getting roles is not supported when the identity is enhanced by custom jakarta.ws.rs.core.SecurityContext
-            return "";
+            return List.of();
         }
     }
 

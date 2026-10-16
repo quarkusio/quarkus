@@ -10,12 +10,11 @@ import java.util.List;
 
 import org.junit.jupiter.api.Test;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import io.quarkus.devui.spi.page.CardAction;
 import io.quarkus.devui.spi.page.CardAction.ActionType;
 import io.quarkus.devui.spi.page.CardPageBuildItem;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 
 public class CardActionTest {
 

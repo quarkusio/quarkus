@@ -23,6 +23,7 @@ public interface ArtifactCoords {
     }
 
     String TYPE_JAR = "jar";
+    String TYPE_TEST_JAR = "test-jar";
     String TYPE_POM = "pom";
     String DEFAULT_CLASSIFIER = "";
 
@@ -39,7 +40,8 @@ public interface ArtifactCoords {
     ArtifactKey getKey();
 
     default boolean isJar() {
-        return TYPE_JAR.equals(getType());
+        final String type = getType();
+        return TYPE_JAR.equals(type) || TYPE_TEST_JAR.equals(type);
     }
 
     default boolean isSnapshot() {
@@ -56,7 +58,7 @@ public interface ArtifactCoords {
         if (!getClassifier().isEmpty()) {
             b.append(getClassifier()).append(':');
         }
-        if (!isJar()) {
+        if (!TYPE_JAR.equals(getType())) {
             b.append(getType()).append(':');
         }
         b.append(getVersion());

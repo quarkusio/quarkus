@@ -3,23 +3,24 @@ package io.quarkus.datasource.deployment.devui;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
-import io.quarkus.datasource.runtime.DataSourcesBuildTimeConfig;
+import io.quarkus.datasource.deployment.spi.DataSourceDefinedBuildItem;
 import io.quarkus.datasource.runtime.dev.ui.DatasourceJsonRpcService;
 import io.quarkus.deployment.IsLocalDevelopment;
 import io.quarkus.deployment.annotations.BuildStep;
-import io.quarkus.devui.spi.JsonRPCProvidersBuildItem;
+import io.quarkus.devjsonrpc.spi.JsonRPCProvidersBuildItem;
 import io.quarkus.devui.spi.page.CardPageBuildItem;
 import io.quarkus.devui.spi.page.Page;
 
 public class DevUIDatasourceProcessor {
 
     @BuildStep(onlyIf = IsLocalDevelopment.class)
-    CardPageBuildItem create(DataSourcesBuildTimeConfig dataSourceBuildTimeConfig) {
+    CardPageBuildItem create(List<DataSourceDefinedBuildItem> definedDataSources) {
         CardPageBuildItem card = new CardPageBuildItem();
 
-        List<String> names = new ArrayList<>();
-        names.addAll(dataSourceBuildTimeConfig.dataSources().keySet());
+        List<String> names = definedDataSources.stream().map(DataSourceDefinedBuildItem::getName)
+                .collect(Collectors.toCollection(ArrayList::new));
         Collections.sort(names);
         card.addBuildTimeData("datasources", names);
 

@@ -17,8 +17,8 @@ public final class DiscoveryConfigRoot extends DiscoveryRootElement {
 
     public DiscoveryConfigRoot(Extension extension, String prefix, String overriddenDocPrefix,
             String binaryName, String qualifiedName,
-            ConfigPhase configPhase, String overriddenDocFileName, boolean configMapping) {
-        super(extension, binaryName, qualifiedName, configMapping);
+            ConfigPhase configPhase, String overriddenDocFileName) {
+        super(extension, binaryName, qualifiedName);
 
         this.prefix = prefix;
         this.overriddenDocPrefix = overriddenDocPrefix;

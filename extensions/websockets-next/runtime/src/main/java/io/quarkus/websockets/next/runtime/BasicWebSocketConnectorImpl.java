@@ -202,41 +202,74 @@ public class BasicWebSocketConnectorImpl extends WebSocketConnectorBase<BasicWeb
             }
             connectionManager.add(BasicWebSocketConnectorImpl.class.getName(), connection);
 
+            // Only text and binary messages count as pending messages, so back-pressure only makes sense
+            // if at least one of these handlers is set
+            int maxPendingMessages = config.maxPendingMessages();
+            boolean backpressure = maxPendingMessages > 0
+                    && (textMessageHandler != null || binaryMessageHandler != null);
+
+            if (backpressure) {
+                // Pause the stream before any handler is registered so that no message can be delivered until
+                // fetch(maxPendingMessages) is requested at the end of the initialization
+                LOG.debugf("Back-pressure enabled - pause the stream: %s", connection);
+                ws.pause();
+            }
+
             if (openHandler != null) {
                 doExecute(connection, null, (c, ignored) -> openHandler.accept(c));
             }
 
-            if (textMessageHandler != null) {
+            if (textMessageHandler != null || backpressure) {
                 ws.textMessageHandler(new Handler<String>() {
                     @Override
                     public void handle(String message) {
+                        if (textMessageHandler == null) {
+                            // No handler set but the stream must be drained to replenish the final frame's credit
+                            fetchOne(ws, connection);
+                            return;
+                        }
                         if (trafficLogger != null) {
                             trafficLogger.textMessageReceived(connection, message);
                         }
-                        doExecute(connection, message, textMessageHandler);
+                        doExecute(connection, message, textMessageHandler,
+                                backpressure ? () -> fetchOne(ws, connection) : null);
                     }
                 });
             }
 
-            if (binaryMessageHandler != null) {
+            if (binaryMessageHandler != null || backpressure) {
                 ws.binaryMessageHandler(new Handler<Buffer>() {
 
                     @Override
                     public void handle(Buffer message) {
+                        if (binaryMessageHandler == null) {
+                            // No handler set but the stream must be drained to replenish the final frame's credit
+                            fetchOne(ws, connection);
+                            return;
+                        }
                         if (trafficLogger != null) {
                             trafficLogger.binaryMessageReceived(connection, message);
                         }
-                        doExecute(connection, message, binaryMessageHandler);
+                        doExecute(connection, message, binaryMessageHandler,
+                                backpressure ? () -> fetchOne(ws, connection) : null);
                     }
                 });
             }
 
-            if (pingMessageHandler != null) {
+            if (pingMessageHandler != null || backpressure) {
+                // The frame handler receives every frame, not just pings. It also replenishes demand for non-final
+                // data frames so that fragmented messages can be assembled before the message callback runs.
                 ws.frameHandler(new Handler<WebSocketFrame>() {
 
                     @Override
                     public void handle(WebSocketFrame frame) {
-                        if (frame.type() == WebSocketFrameType.PING) {
+                        if (backpressure && Endpoints.isNonFinalDataFrame(frame)) {
+                            // Vert.x demand counts frames; only the final frame waits for message processing.
+                            // PING/PONG frames are not replenished here on purpose - Vert.x returns their demand
+                            // itself (see io.vertx.core.http.impl.websocket.WebSocketImplBase#receiveFrame).
+                            fetchOne(ws, connection);
+                        }
+                        if (frame.type() == WebSocketFrameType.PING && pingMessageHandler != null) {
                             doExecute(connection, frame.binaryData(), pingMessageHandler);
                         }
                     }
@@ -267,21 +300,28 @@ public class BasicWebSocketConnectorImpl extends WebSocketConnectorBase<BasicWeb
 
                 @Override
                 public void handle(Void event) {
-                    if (trafficLogger != null) {
-                        trafficLogger.connectionClosed(connection);
-                    }
-                    if (closeHandler != null) {
-                        CloseReason reason = CloseReason.INTERNAL_SERVER_ERROR;
-                        if (ws.closeStatusCode() != null) {
-                            reason = new CloseReason(ws.closeStatusCode(), ws.closeReason());
+                    try {
+                        if (trafficLogger != null) {
+                            trafficLogger.connectionClosed(connection);
                         }
-                        doExecute(connection, reason, closeHandler);
+                        if (closeHandler != null) {
+                            doExecute(connection, connection.closeReason(), closeHandler);
+                        }
+                    } finally {
+                        connectionManager.remove(BasicWebSocketConnectorImpl.class.getName(), connection);
+                        client.get().close();
                     }
-                    connectionManager.remove(BasicWebSocketConnectorImpl.class.getName(), connection);
-                    client.get().close();
                 }
 
             });
+
+            if (backpressure) {
+                // All handlers are registered - grant the initial frame demand; non-final data frames immediately
+                // return their credit while the final frame returns its credit after message processing, which bounds
+                // the number of in-flight messages even though Vert.x fetch() counts frames
+                LOG.debugf("Back-pressure - fetch %s pending messages: %s", maxPendingMessages, connection);
+                ws.fetch(maxPendingMessages);
+            }
 
             return connection;
         });
@@ -289,9 +329,15 @@ public class BasicWebSocketConnectorImpl extends WebSocketConnectorBase<BasicWeb
 
     private <MESSAGE> void doExecute(WebSocketClientConnectionImpl connection, MESSAGE message,
             BiConsumer<WebSocketClientConnection, MESSAGE> consumer) {
+        doExecute(connection, message, consumer, null);
+    }
+
+    private <MESSAGE> void doExecute(WebSocketClientConnectionImpl connection, MESSAGE message,
+            BiConsumer<WebSocketClientConnection, MESSAGE> consumer, Runnable onComplete) {
         // We always invoke callbacks on a new duplicated context and offload if blocking/virtualThread is needed
         Context context = vertx.getOrCreateContext();
-        ContextSupport.createNewDuplicatedContext(context, connection).runOnContext(new Handler<Void>() {
+        Context duplicatedContext = ContextSupport.createNewDuplicatedContext(context, connection);
+        duplicatedContext.runOnContext(new Handler<Void>() {
             @Override
             public void handle(Void event) {
                 if (executionModel == ExecutionModel.VIRTUAL_THREAD) {
@@ -301,6 +347,11 @@ public class BasicWebSocketConnectorImpl extends WebSocketConnectorBase<BasicWeb
                                 consumer.accept(connection, message);
                             } catch (Exception e) {
                                 LOG.errorf(e, "Unable to call handler: " + connection);
+                            } finally {
+                                // fetch() must be called on the connection event loop, not the virtual thread
+                                if (onComplete != null) {
+                                    duplicatedContext.runOnContext(v -> onComplete.run());
+                                }
                             }
                         }
                     });
@@ -315,17 +366,31 @@ public class BasicWebSocketConnectorImpl extends WebSocketConnectorBase<BasicWeb
                             }
                             return null;
                         }
-                    }, false);
+                    }, false).onComplete(ar -> {
+                        // onComplete runs back on the calling event loop context
+                        if (onComplete != null) {
+                            onComplete.run();
+                        }
+                    });
                 } else {
                     // Non-blocking -> event loop
                     try {
                         consumer.accept(connection, message);
                     } catch (Exception e) {
                         LOG.errorf(e, "Unable to call handler: " + connection);
+                    } finally {
+                        if (onComplete != null) {
+                            onComplete.run();
+                        }
                     }
                 }
             }
         });
+    }
+
+    private void fetchOne(WebSocket ws, WebSocketClientConnectionImpl connection) {
+        LOG.debugf("Back-pressure - fetch one more message: %s", connection);
+        ws.fetch(1);
     }
 
     private String mergePath(String path1, String path2) {
@@ -333,7 +398,7 @@ public class BasicWebSocketConnectorImpl extends WebSocketConnectorBase<BasicWeb
         if (path1 != null) {
             ret.append(path1);
         }
-        if (path2 != null) {
+        if (path2 != null && !path2.isEmpty()) {
             if (path1.endsWith("/")) {
                 if (path2.startsWith("/")) {
                     ret.append(path2.substring(1));
@@ -347,6 +412,9 @@ public class BasicWebSocketConnectorImpl extends WebSocketConnectorBase<BasicWeb
                     ret.append("/").append(path2);
                 }
             }
+        }
+        if (ret.isEmpty()) {
+            ret.append("/");
         }
         return ret.toString();
     }

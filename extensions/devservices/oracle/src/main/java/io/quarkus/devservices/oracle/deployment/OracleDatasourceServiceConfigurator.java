@@ -4,11 +4,12 @@ import static io.quarkus.datasource.deployment.spi.DatabaseDefaultSetupConfig.DE
 import static io.quarkus.datasource.deployment.spi.DatabaseDefaultSetupConfig.DEFAULT_DATABASE_PASSWORD;
 import static io.quarkus.datasource.deployment.spi.DatabaseDefaultSetupConfig.DEFAULT_DATABASE_USERNAME;
 
-import io.quarkus.datasource.deployment.spi.DevServicesDatasourceContainerConfig;
-import io.quarkus.datasource.deployment.spi.DevServicesDatasourceProvider.RunningDevServicesDatasource;
 import io.quarkus.deployment.dev.devservices.RunningContainer;
 import io.quarkus.devservices.common.ContainerAddress;
 import io.quarkus.devservices.common.DatasourceServiceConfigurator;
+import io.quarkus.devservices.common.DevServicesHostUtil;
+import io.quarkus.devservices.datasource.common.DevServicesDatasourceContainerConfig;
+import io.quarkus.devservices.datasource.common.DevServicesDatasourceProvider.RunningDevServicesDatasource;
 
 public class OracleDatasourceServiceConfigurator implements DatasourceServiceConfigurator {
 
@@ -35,10 +36,10 @@ public class OracleDatasourceServiceConfigurator implements DatasourceServiceCon
     }
 
     public String getJdbcUrl(ContainerAddress containerAddress, String databaseName) {
-        return "jdbc:%s:@%s:%d/%s%s".formatted(
+        return "jdbc:%s:@%s/%s%s".formatted(
                 getJdbcPrefix(),
-                containerAddress.getHost(),
-                containerAddress.getPort(),
+                DevServicesHostUtil.formatResolvedHostAndPort(containerAddress.getId(), containerAddress.getHost(),
+                        containerAddress.getPort()),
                 databaseName,
                 getParameters(containerAddress.getRunningContainer().containerInfo().labels()));
     }

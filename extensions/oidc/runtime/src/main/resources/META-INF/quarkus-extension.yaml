@@ -7,7 +7,7 @@ metadata:
   - "oauth2"
   - "openid-connect"
   - "oidc"
-  guide: "https://quarkus.io/guides/security-openid-connect"
+  guide: "https://quarkus.io/guides/security-oidc-bearer-token-authentication"
   quickstart: "security-openid-connect-quickstart"
   categories:
   - "security"

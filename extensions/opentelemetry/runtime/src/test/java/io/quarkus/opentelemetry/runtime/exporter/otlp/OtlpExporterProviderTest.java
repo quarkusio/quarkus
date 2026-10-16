@@ -1,6 +1,6 @@
 package io.quarkus.opentelemetry.runtime.exporter.otlp;
 
-import static io.quarkus.opentelemetry.runtime.config.runtime.exporter.OtlpExporterRuntimeConfig.DEFAULT_GRPC_BASE_URI;
+import static io.quarkus.opentelemetry.runtime.config.runtime.exporter.OtlpExporterConfig.DEFAULT_HTTP_BASE_URI;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.time.Duration;
@@ -28,28 +28,28 @@ class OtlpExporterProviderTest {
         assertEquals("http://localhost:1111/",
                 OTelExporterRecorder.resolveTraceEndpoint(createOtlpExporterRuntimeConfig(
                         "http://localhost:1111/",
-                        DEFAULT_GRPC_BASE_URI)));
+                        DEFAULT_HTTP_BASE_URI)));
     }
 
     @Test
     public void resolveTraceEndpoint_legacyTraceWins() {
         assertEquals("http://localhost:2222/",
                 OTelExporterRecorder.resolveTraceEndpoint(createOtlpExporterRuntimeConfig(
-                        DEFAULT_GRPC_BASE_URI,
+                        DEFAULT_HTTP_BASE_URI,
                         "http://localhost:2222/")));
     }
 
     @Test
     public void resolveTraceEndpoint_legacyGlobalWins() {
-        assertEquals(DEFAULT_GRPC_BASE_URI,
+        assertEquals(DEFAULT_HTTP_BASE_URI,
                 OTelExporterRecorder.resolveTraceEndpoint(createOtlpExporterRuntimeConfig(
-                        DEFAULT_GRPC_BASE_URI,
+                        DEFAULT_HTTP_BASE_URI,
                         null)));
     }
 
     @Test
     public void resolveTraceEndpoint_testIsSet() {
-        assertEquals(DEFAULT_GRPC_BASE_URI,
+        assertEquals(DEFAULT_HTTP_BASE_URI,
                 OTelExporterRecorder.resolveTraceEndpoint(createOtlpExporterRuntimeConfig(
                         null,
                         null)));
@@ -68,28 +68,28 @@ class OtlpExporterProviderTest {
         assertEquals("http://localhost:1111/",
                 OTelExporterRecorder.resolveMetricEndpoint(createOtlpExporterRuntimeConfig(
                         "http://localhost:1111/",
-                        DEFAULT_GRPC_BASE_URI)));
+                        DEFAULT_HTTP_BASE_URI)));
     }
 
     @Test
     public void resolveMetricEndpoint_legacyTraceWins() {
         assertEquals("http://localhost:2222/",
                 OTelExporterRecorder.resolveMetricEndpoint(createOtlpExporterRuntimeConfig(
-                        DEFAULT_GRPC_BASE_URI,
+                        DEFAULT_HTTP_BASE_URI,
                         "http://localhost:2222/")));
     }
 
     @Test
     public void resolveMetricEndpoint_legacyGlobalWins() {
-        assertEquals(DEFAULT_GRPC_BASE_URI,
+        assertEquals(DEFAULT_HTTP_BASE_URI,
                 OTelExporterRecorder.resolveMetricEndpoint(createOtlpExporterRuntimeConfig(
-                        DEFAULT_GRPC_BASE_URI,
+                        DEFAULT_HTTP_BASE_URI,
                         null)));
     }
 
     @Test
     public void resolveMetricEndpoint_testIsSet() {
-        assertEquals(DEFAULT_GRPC_BASE_URI,
+        assertEquals(DEFAULT_HTTP_BASE_URI,
                 OTelExporterRecorder.resolveMetricEndpoint(createOtlpExporterRuntimeConfig(
                         null,
                         null)));
@@ -108,28 +108,28 @@ class OtlpExporterProviderTest {
         assertEquals("http://localhost:1111/",
                 OTelExporterRecorder.resolveLogsEndpoint(createOtlpExporterRuntimeConfig(
                         "http://localhost:1111/",
-                        DEFAULT_GRPC_BASE_URI)));
+                        DEFAULT_HTTP_BASE_URI)));
     }
 
     @Test
     public void resolveLogsEndpoint_legacyTraceWins() {
         assertEquals("http://localhost:2222/",
                 OTelExporterRecorder.resolveLogsEndpoint(createOtlpExporterRuntimeConfig(
-                        DEFAULT_GRPC_BASE_URI,
+                        DEFAULT_HTTP_BASE_URI,
                         "http://localhost:2222/")));
     }
 
     @Test
     public void resolveLogsEndpoint_legacyGlobalWins() {
-        assertEquals(DEFAULT_GRPC_BASE_URI,
+        assertEquals(DEFAULT_HTTP_BASE_URI,
                 OTelExporterRecorder.resolveLogsEndpoint(createOtlpExporterRuntimeConfig(
-                        DEFAULT_GRPC_BASE_URI,
+                        DEFAULT_HTTP_BASE_URI,
                         null)));
     }
 
     @Test
     public void resolveLogsEndpoint_testIsSet() {
-        assertEquals(DEFAULT_GRPC_BASE_URI,
+        assertEquals(DEFAULT_HTTP_BASE_URI,
                 OTelExporterRecorder.resolveLogsEndpoint(createOtlpExporterRuntimeConfig(
                         null,
                         null)));

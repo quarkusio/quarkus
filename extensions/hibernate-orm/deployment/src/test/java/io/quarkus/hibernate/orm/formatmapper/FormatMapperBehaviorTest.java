@@ -18,8 +18,7 @@ public class FormatMapperBehaviorTest {
             .withApplicationRoot((jar) -> jar
                     .addClasses(MyJsonEntity.class, MyXmlEntity.class)
                     .addClasses(SchemaUtil.class, SmokeTestUtils.class))
-            .withConfigurationResource("application.properties")
-            .overrideConfigKey("quarkus.hibernate-orm.mapping.format.global", "ignore");
+            .withConfigurationResource("application.properties");
 
     @Inject
     SessionFactory sessionFactory;

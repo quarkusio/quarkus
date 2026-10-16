@@ -29,9 +29,6 @@ import io.quarkus.deployment.builditem.AnnotationProxyBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveMethodBuildItem;
 import io.quarkus.deployment.recording.RecorderContext;
 import io.quarkus.gizmo2.ClassOutput;
-import io.smallrye.common.annotation.Blocking;
-import io.smallrye.common.annotation.NonBlocking;
-import io.smallrye.faulttolerance.api.ApplyFaultTolerance;
 import io.smallrye.faulttolerance.api.ApplyGuard;
 import io.smallrye.faulttolerance.api.AsynchronousNonBlocking;
 import io.smallrye.faulttolerance.api.BeforeRetry;
@@ -135,18 +132,12 @@ final class FaultToleranceScanner {
         result.beanClass = getClassProxy(beanClass);
         result.method = createMethodDescriptor(method);
 
-        result.applyFaultTolerance = getAnnotation(ApplyFaultTolerance.class, DotNames.APPLY_FAULT_TOLERANCE,
-                method, beanClass, annotationsPresentDirectly);
         result.applyGuard = getAnnotation(ApplyGuard.class, DotNames.APPLY_GUARD,
                 method, beanClass, annotationsPresentDirectly);
 
         result.asynchronous = getAnnotation(Asynchronous.class, DotNames.ASYNCHRONOUS,
                 method, beanClass, annotationsPresentDirectly);
         result.asynchronousNonBlocking = getAnnotation(AsynchronousNonBlocking.class, DotNames.ASYNCHRONOUS_NON_BLOCKING,
-                method, beanClass, annotationsPresentDirectly);
-        result.blocking = getAnnotation(Blocking.class, DotNames.BLOCKING,
-                method, beanClass, annotationsPresentDirectly);
-        result.nonBlocking = getAnnotation(NonBlocking.class, DotNames.NON_BLOCKING,
                 method, beanClass, annotationsPresentDirectly);
 
         result.bulkhead = getAnnotation(Bulkhead.class, DotNames.BULKHEAD,
@@ -305,8 +296,8 @@ final class FaultToleranceScanner {
 
     // ---
 
-    // almost all FT annotations are inherited (except `@Blocking` and `@NonBlocking`, which we'll remove soon,
-    // and `@CircuitBreakerName`, which can only be put on methods), so no need to test for that here
+    // almost all FT annotations are inherited (except `@CircuitBreakerName`, which can only be put
+    // on methods), so no need to test for that here
     private <A extends Annotation> A getAnnotationFromClass(Class<A> annotationType, DotName annotationName, ClassInfo clazz) {
         if (annotationStore.hasAnnotation(clazz, annotationName)) {
             AnnotationInstance annotation = annotationStore.getAnnotation(clazz, annotationName);

@@ -17,9 +17,9 @@ import javax.lang.model.SourceVersion;
 
 import org.eclipse.aether.artifact.DefaultArtifact;
 
-import io.quarkus.bootstrap.BootstrapConstants;
 import io.quarkus.bootstrap.resolver.maven.BootstrapMavenException;
 import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
+import io.quarkus.bootstrap.util.ExtensionMetadataUtil;
 import io.quarkus.devtools.commands.CreateProject.CreateProjectKey;
 import io.quarkus.devtools.project.SourceType;
 import io.quarkus.maven.dependency.ArtifactCoords;
@@ -77,11 +77,8 @@ public class CreateProjectHelper {
                 } catch (BootstrapMavenException e) {
                     throw new RuntimeException("Failed to resolve extension " + coords, e);
                 }
-                final Extension ext = PathTree.ofDirectoryOrArchive(extJar)
-                        .apply(BootstrapConstants.EXTENSION_METADATA_PATH, visit -> {
-                            if (visit == null) {
-                                return null;
-                            }
+                final Extension ext = ExtensionMetadataUtil.applyExtensionMetadata(
+                        PathTree.ofDirectoryOrArchive(extJar), visit -> {
                             try {
                                 return Extension.fromFile(visit.getPath());
                             } catch (IOException e) {
@@ -171,7 +168,32 @@ public class CreateProjectHelper {
         if (extensions == null) {
             return extensions = Set.of();
         }
-        return extensions.stream().filter(Objects::nonNull).map(String::trim).collect(Collectors.toSet());
+        return extensions.stream()
+                .filter(Objects::nonNull)
+                .map(String::trim)
+                .map(CreateProjectHelper::stripQuotes)
+                .map(String::trim) // Trim again to handle whitespace inside quotes
+                .filter(s -> !s.isEmpty())
+                .collect(Collectors.toSet());
+    }
+
+    /**
+     * Strips surrounding single or double quotes from a string.
+     * Only removes quotes if they match (both single or both double) and surround the entire string.
+     *
+     * @param str the string to strip quotes from
+     * @return the string without surrounding quotes
+     */
+    private static String stripQuotes(String str) {
+        if (str == null || str.length() < 2) {
+            return str;
+        }
+        char first = str.charAt(0);
+        char last = str.charAt(str.length() - 1);
+        if ((first == '\'' && last == '\'') || (first == '"' && last == '"')) {
+            return str.substring(1, str.length() - 1);
+        }
+        return str;
     }
 
     public static void addSourceTypeExtensions(Set<String> extensions, SourceType sourceType) {

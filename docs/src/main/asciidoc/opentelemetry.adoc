@@ -3,10 +3,10 @@ This guide is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
+[id=opentelemetry]
 = Using OpenTelemetry
 include::_attributes.adoc[]
 :diataxis-type: reference
-:categories: observability
 :summary: This guide explains how your Quarkus application can utilize OpenTelemetry to provide observability for interactive web applications.
 :topics: observability,opentelemetry
 :extensions: io.quarkus:quarkus-opentelemetry
@@ -15,6 +15,8 @@ This guide explains how your Quarkus application can utilize https://opentelemet
 Observability for interactive web applications.
 
 On this page we show the signal independent features of the extension.
+
+include::{includes}/extension-status.adoc[]
 
 include::{includes}/observability-include.adoc[]
 
@@ -52,25 +54,11 @@ The tracing functionality is supported and *on* by default.
 
 === xref:opentelemetry-metrics.adoc[OpenTelemetry Metrics Guide]
 
-==== Enable Metrics
-The metrics functionality is tech preview and *off* by default. You will need to activate it by setting:
-
-[source,properties]
-----
-quarkus.otel.metrics.enabled=true
-----
-At build time on your `application.properties` file.
+The metrics functionality is supported and *on* by default.
 
 === xref:opentelemetry-logging.adoc[OpenTelemetry Logging Guide]
 
-==== Enable Logs
-The logging functionality is tech preview and *off* by default. You will need to activate it by setting:
-
-[source,properties]
-----
-quarkus.otel.logs.enabled=true
-----
-At build time on your `application.properties` file.
+The logging functionality is supported and *on* by default.
 
 == Using the extension
 
@@ -105,7 +93,7 @@ include::{includes}/opentelemetry-config.adoc[]
 
 === Disable all or parts of the OpenTelemetry extension
 
-Once you add the dependency, the extension will generate tracing data by default. To enable metrics or disable the OpenTelemetry extension globally or partially these are the properties to use (they are extracted from the config reference below):
+Once you add the dependency, the extension will generate tracing, metrics and logging data by default. To disable the OpenTelemetry extension globally or partially these are the properties to use (they are extracted from the config reference below):
 
 |===
 |Affected Signal | Property name |Default value |Description
@@ -139,8 +127,8 @@ Telemetry will be generated, contexts will be propagated but no telemetry will b
 
 | Metrics
 |`quarkus.otel.metrics.enabled`
-|false
-|Metrics are disabled by default at *build* time because they are tech preview.
+|true
+|If false, disable the OpenTelemetry metrics usage at *build* time.
 
 | Metrics output
 |`quarkus.otel.metrics.exporter`
@@ -149,8 +137,8 @@ Telemetry will be generated, contexts will be propagated but no telemetry will b
 
 | Logs
 |`quarkus.otel.logs.enabled`
-|false
-|Logs are disabled by default at *build* time because they are tech preview.
+|true
+|If false, disable the OpenTelemetry logs usage at *build* time.
 
 | Logs output
 |`quarkus.otel.logs.exporter`
@@ -333,13 +321,13 @@ When creating manual instrumentation, while naming metrics or attributes you sho
 
 === The Default
 
-The Quarkus OpenTelemetry extension uses its own signal exporters built on top of Vert.x for optimal performance and maintainability. All *Quarkus built in exporters use the OTLP protocol* through a couple of data senders, using `grpc` (the default) and `http/protobuf`.
+The Quarkus OpenTelemetry extension uses its own signal exporters built on top of Vert.x for optimal performance and maintainability. All *Quarkus built in exporters use the OTLP protocol* through a couple of data senders, using `http/protobuf` (the default) and `grpc`.
 
 The active exporter is automatically wired by CDI, that's why the `quarkus.otel.traces.exporter`, `quarkus.otel.metrics.exporter` and `quarkus.otel.logs.exporter` properties default value is `cdi`. This is not because of the protocol being used in the data transfer but because of how the exporters are wired.
 
 CDI (Context Dependency Injection) will manage the exporters to use, according to the selected protocol or when applications implement their own CDI exporter, like in tests.
 
-The `quarkus.otel.exporter.otlp.protocol` property instructs Quarkus to switch the senders and defaults to `grpc` but `http/protobuf` can also be used.
+The `quarkus.otel.exporter.otlp.protocol` property instructs Quarkus to switch the senders and defaults to `http/protobuf` but `grpc` can also be used.
 
 NOTE: If you change the protocol, you also need to change the port in the endpoint. The default port for `grpc` is `4317` and for `http/protobuf` is `4318`.
 
@@ -460,7 +448,6 @@ quarkus.otel.metrics.exporter=logging <1>
 quarkus.otel.metric.export.interval=10000ms <2>
 quarkus.otel.traces.exporter=logging <3>
 ----
-
 <1> Set the metrics exporter to `logging`. Normally you don't need to set this. The default is `cdi`.
 <2> Set the interval to export the metrics. The default is `1m`, which is too long for debugging.
 <3> Set the traces exporter to `logging`. Normally you don't need to set this. The default is `cdi`.
@@ -502,4 +489,5 @@ adding the usual `quarkus.*` prefix.
 
 Quarkus OpenTelemetry configuration properties now have the `quarkus.otel.*` prefix.
 
-include::{generated-dir}/config/quarkus-opentelemetry.adoc[leveloffset=+1, opts=optional]
+// So the bare quarkus-opentelemetry.adoc is only created when the extension has exactly one top-level config prefix. The OTel extension now emits two — quarkus.otel and quarkus.dev-ui
+include::{generated-dir}/config/quarkus-opentelemetry_quarkus.otel.adoc[leveloffset=+1, opts=optional]

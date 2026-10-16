@@ -5,7 +5,6 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Dev Services for Pulsar
 include::_attributes.adoc[]
-:categories: messaging
 :topics: messaging,reactive-messaging,pulsar,dev-services,testing,dev-mode
 :extensions: io.quarkus:quarkus-messaging-pulsar
 

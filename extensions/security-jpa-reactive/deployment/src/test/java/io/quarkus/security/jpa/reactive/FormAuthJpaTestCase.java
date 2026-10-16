@@ -19,7 +19,6 @@ import io.restassured.filter.cookie.CookieFilter;
 public class FormAuthJpaTestCase {
 
     private static final String APP_PROPS = "" +
-            "quarkus.datasource.db-kind=postgresql\n" +
             "quarkus.datasource.username=${postgres.reactive.username}\n" +
             "quarkus.datasource.password=${postgres.reactive.password}\n" +
             "quarkus.datasource.reactive=true\n" +

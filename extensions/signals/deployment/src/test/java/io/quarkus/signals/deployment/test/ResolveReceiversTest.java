@@ -47,6 +47,7 @@ public class ResolveReceiversTest extends AbstractSignalTest {
         assertThat(infos).allMatch(i -> i.kind() == ReceiverKind.DECLARATIVE);
         assertThat(infos).allMatch(i -> i.signalType() == Event.class);
         assertThat(infos).allMatch(i -> i.responseType() == void.class);
+        assertThat(infos).allMatch(i -> i.name().endsWith("MyReceivers#onEvent"));
     }
 
     @Test
@@ -61,7 +62,24 @@ public class ResolveReceiversTest extends AbstractSignalTest {
             assertThat(infos).hasSize(2);
             assertThat(infos).anyMatch(i -> i.kind() == ReceiverKind.PROGRAMMATIC
                     && i.executionModel() == ExecutionModel.NON_BLOCKING
-                    && i.responseType() == String.class);
+                    && i.responseType() == String.class
+                    && i.name() == null);
+        } finally {
+            reg.unregister();
+        }
+    }
+
+    @Test
+    public void testProgrammaticReceiverName() {
+        Consumer<SignalContext<Event>> noop = ctx -> {
+        };
+        Receivers.Registration reg = receivers.newReceiver(Event.class)
+                .setName("my-event-receiver")
+                .notify(noop);
+        try {
+            List<ReceiverInfo> infos = receivers.resolveReceivers(Event.class);
+            assertThat(infos).anyMatch(i -> i.kind() == ReceiverKind.PROGRAMMATIC
+                    && "my-event-receiver".equals(i.name()));
         } finally {
             reg.unregister();
         }

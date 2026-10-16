@@ -1,6 +1,5 @@
 package io.quarkus.amazon.lambda.runtime;
 
-import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.HashMap;
@@ -11,15 +10,17 @@ import java.util.UUID;
 
 import com.amazonaws.services.lambda.runtime.events.APIGatewayV2HTTPEvent;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayV2HTTPResponse;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.MapperFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.ObjectReader;
-import com.fasterxml.jackson.databind.ObjectWriter;
 
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpServerResponse;
 import io.vertx.ext.web.RoutingContext;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.MapperFeature;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectReader;
+import tools.jackson.databind.ObjectWriter;
+import tools.jackson.databind.json.JsonMapper;
 
 public class MockHttpEventServer extends MockEventServer {
 
@@ -27,9 +28,10 @@ public class MockHttpEventServer extends MockEventServer {
     private final ObjectReader responseReader;
 
     public MockHttpEventServer() {
-        ObjectMapper objectMapper = new ObjectMapper();
-        objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
+        JsonMapper.Builder builder = JsonMapper.builder();
+        builder.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
                 .configure(MapperFeature.ACCEPT_CASE_INSENSITIVE_PROPERTIES, true);
+        ObjectMapper objectMapper = builder.build();
         eventWriter = objectMapper.writerFor(APIGatewayV2HTTPEvent.class);
         responseReader = objectMapper.readerFor(APIGatewayV2HTTPResponse.class);
     }
@@ -146,7 +148,7 @@ public class MockHttpEventServer extends MockEventServer {
                     response.end();
                 }
 
-            } catch (IOException e) {
+            } catch (JacksonException e) {
                 log.error("Publish failure", e);
                 pending.fail(500);
             }

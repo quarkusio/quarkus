@@ -48,6 +48,7 @@ import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.StaticInitConfigBuilderBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.NativeImageResourcePatternsBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedPackageBuildItem;
 import io.quarkus.extest.runtime.FinalFieldReflectionObject;
@@ -102,6 +103,18 @@ public final class TestProcessor {
     @BuildStep
     void registerNativeImageResources(BuildProducer<NativeImageResourceBuildItem> resource) {
         resource.produce(new NativeImageResourceBuildItem("/DSAPublicKey.encoded"));
+    }
+
+    @BuildStep
+    void registerNativeImageResourcePatterns(BuildProducer<NativeImageResourcePatternsBuildItem> patterns) {
+        // test globstar prefixed pattern support
+        // Triggers warning in GraalVM, it works, but it's discouraged:
+        //    "Warning: Pattern: **/*.myfiles contains ** without previous literal. This pattern is too generic
+        //    and therefore can match many resources.
+        //    Please make the pattern more specific by adding non-generic level before ** level."
+        patterns.produce(NativeImageResourcePatternsBuildItem.builder().includeGlob("**/*.myfiles").build());
+        // test nested wildcard pattern
+        patterns.produce(NativeImageResourcePatternsBuildItem.builder().includeGlob("config/*/settings/*.properties").build());
     }
 
     /**

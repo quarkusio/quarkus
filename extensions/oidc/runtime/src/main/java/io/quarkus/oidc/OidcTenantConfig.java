@@ -14,6 +14,7 @@ import io.quarkus.oidc.common.runtime.OidcClientCommonConfig;
 import io.quarkus.oidc.common.runtime.OidcConstants;
 import io.quarkus.oidc.common.runtime.config.OidcCommonConfig;
 import io.quarkus.oidc.runtime.OidcConfig;
+import io.quarkus.oidc.runtime.OidcTenantConfig.Token.DecryptionAlgorithm;
 import io.quarkus.oidc.runtime.builders.AuthenticationConfigBuilder;
 import io.quarkus.oidc.runtime.builders.LogoutConfigBuilder;
 import io.quarkus.oidc.runtime.builders.TokenConfigBuilder;
@@ -44,8 +45,10 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
         introspectionCredentials.addConfigMappingValues(mapping.introspectionCredentials());
         roles.addConfigMappingValues(mapping.roles());
         token.addConfigMappingValues(mapping.token());
+        dpop.addConfigMappingValues(mapping.dpop());
         logout.addConfigMappingValues(mapping.logout());
         resourceMetadata.addConfigMappingValues(mapping.resourceMetadata());
+        clientIdMetadata.addConfigMappingValues(mapping.clientIdMetadata());
         certificateChain.addConfigMappingValues(mapping.certificateChain());
         authentication.addConfigMappingValues(mapping.authentication());
         codeGrant.addConfigMappingValues(mapping.codeGrant());
@@ -1489,11 +1492,6 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
         }
 
         @Override
-        public Optional<String> pkceSecret() {
-            return pkceSecret;
-        }
-
-        @Override
         public Optional<String> stateSecret() {
             return stateSecret;
         }
@@ -1844,15 +1842,6 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
         public Optional<Boolean> pkceRequired = Optional.empty();
 
         /**
-         * Secret used to encrypt a Proof Key for Code Exchange (PKCE) code verifier in the code flow state.
-         * This secret should be at least 32 characters long.
-         *
-         * @deprecated This field is deprecated. Use {@link #stateSecret} instead.
-         *
-         */
-        public Optional<String> pkceSecret = Optional.empty();
-
-        /**
          * Secret used to encrypt Proof Key for Code Exchange (PKCE) code verifier and/or nonce in the code flow
          * state.
          * This secret should be at least 32 characters long.
@@ -1895,16 +1884,6 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
 
         public void setPkceRequired(boolean pkceRequired) {
             this.pkceRequired = Optional.of(pkceRequired);
-        }
-
-        @Deprecated(forRemoval = true)
-        public Optional<String> getPkceSecret() {
-            return pkceSecret;
-        }
-
-        @Deprecated(forRemoval = true)
-        public void setPkceSecret(String pkceSecret) {
-            this.pkceSecret = Optional.of(pkceSecret);
         }
 
         public Optional<String> getErrorPath() {
@@ -2160,7 +2139,6 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
             idTokenRequired = mapping.idTokenRequired();
             internalIdTokenLifespan = mapping.internalIdTokenLifespan();
             pkceRequired = mapping.pkceRequired();
-            pkceSecret = mapping.pkceSecret();
             stateSecret = mapping.stateSecret();
             cacheControl = mapping.cacheControl();
             parEnabled = mapping.par().enabled();
@@ -2431,6 +2409,11 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
         boolean decryptAccessToken;
 
         /**
+         * ID and access token key decryption algorithm
+         */
+        Optional<DecryptionAlgorithm> decryptionAlgorithm = Optional.empty();
+
+        /**
          * Allow the remote introspection of JWT tokens when no matching JWK key is available.
          *
          * This property is set to `true` by default for backward-compatibility reasons. It is planned that this default value
@@ -2673,6 +2656,7 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
             decryptionKeyLocation = mapping.decryptionKeyLocation();
             decryptIdToken = mapping.decryptIdToken();
             decryptAccessToken = mapping.decryptAccessToken();
+            decryptionAlgorithm = mapping.decryptionAlgorithm();
             allowJwtIntrospection = mapping.allowJwtIntrospection();
             requireJwtIntrospectionOnly = mapping.requireJwtIntrospectionOnly();
             allowOpaqueTokenIntrospection = mapping.allowOpaqueTokenIntrospection();
@@ -2778,6 +2762,11 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
         }
 
         @Override
+        public Optional<DecryptionAlgorithm> decryptionAlgorithm() {
+            return decryptionAlgorithm;
+        }
+
+        @Override
         public boolean allowJwtIntrospection() {
             return allowJwtIntrospection;
         }
@@ -2831,6 +2820,24 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
     @Deprecated(since = "3.25", forRemoval = true)
     ResourceMetadata resourceMetadata = new ResourceMetadata();
 
+    @Deprecated(forRemoval = true)
+    ClientIdMetadata clientIdMetadata = new ClientIdMetadata();
+
+    @Deprecated(forRemoval = true)
+    public static class ClientIdMetadata implements io.quarkus.oidc.runtime.OidcTenantConfig.ClientIdMetadata {
+
+        public boolean forceHttpsScheme = true;
+
+        @Override
+        public boolean forceHttpsScheme() {
+            return forceHttpsScheme;
+        }
+
+        private void addConfigMappingValues(io.quarkus.oidc.runtime.OidcTenantConfig.ClientIdMetadata mapping) {
+            forceHttpsScheme = mapping.forceHttpsScheme();
+        }
+    }
+
     @Deprecated(since = "3.25", forRemoval = true)
     public static class ResourceMetadata implements io.quarkus.oidc.runtime.OidcTenantConfig.ResourceMetadata {
 
@@ -2871,6 +2878,22 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
             scopes = mapping.scopes();
             authorizationServer = mapping.authorizationServer();
             forceHttpsScheme = mapping.forceHttpsScheme();
+        }
+    }
+
+    private final Dpop dpop = new Dpop();
+
+    private static class Dpop implements io.quarkus.oidc.runtime.OidcTenantConfig.Dpop {
+
+        private Duration proofAge = Duration.ofMinutes(2);
+
+        @Override
+        public Duration proofAge() {
+            return proofAge;
+        }
+
+        private void addConfigMappingValues(io.quarkus.oidc.runtime.OidcTenantConfig.Dpop mapping) {
+            proofAge = mapping.proofAge();
         }
     }
 
@@ -3116,6 +3139,11 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
     }
 
     @Override
+    public io.quarkus.oidc.runtime.OidcTenantConfig.Dpop dpop() {
+        return dpop;
+    }
+
+    @Override
     public io.quarkus.oidc.runtime.OidcTenantConfig.Logout logout() {
         return logout;
     }
@@ -3123,6 +3151,11 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
     @Override
     public io.quarkus.oidc.runtime.OidcTenantConfig.ResourceMetadata resourceMetadata() {
         return resourceMetadata;
+    }
+
+    @Override
+    public io.quarkus.oidc.runtime.OidcTenantConfig.ClientIdMetadata clientIdMetadata() {
+        return clientIdMetadata;
     }
 
     @Override

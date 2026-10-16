@@ -6,7 +6,6 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 = Identity providers
 include::_attributes.adoc[]
 :diataxis-type: concept
-:categories: security
 :topics: security,identity-providers
 :extensions: io.quarkus:quarkus-elytron-security-jdbc,io.quarkus:quarkus-elytron-security-ldap,io.quarkus:quarkus-security-jpa-reactive
 

@@ -6,8 +6,9 @@ import io.quarkus.agroal.spi.JdbcDriverBuildItem;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.datasource.common.runtime.DatabaseKind;
+import io.quarkus.datasource.deployment.spi.DatabaseVersionLoader;
 import io.quarkus.datasource.deployment.spi.DefaultDataSourceDbKindBuildItem;
-import io.quarkus.datasource.deployment.spi.DevServicesDatasourceConfigurationHandlerBuildItem;
+import io.quarkus.datasource.deployment.spi.DefaultDataSourceDbVersionBuildItem;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.Feature;
@@ -18,6 +19,7 @@ import io.quarkus.deployment.builditem.RemovedResourceBuildItem;
 import io.quarkus.deployment.builditem.SslNativeConfigBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageEnableModule;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeInitializedClassBuildItem;
+import io.quarkus.devservices.datasource.common.DevServicesDatasourceConfigurationHandlerBuildItem;
 import io.quarkus.jdbc.h2.runtime.H2AgroalConnectionConfigurer;
 import io.quarkus.maven.dependency.ArtifactKey;
 
@@ -52,8 +54,11 @@ public class JDBCH2Processor {
     }
 
     @BuildStep
-    void registerDefaultDbType(BuildProducer<DefaultDataSourceDbKindBuildItem> dbKind) {
+    void registerDefaults(BuildProducer<DefaultDataSourceDbKindBuildItem> dbKind,
+            BuildProducer<DefaultDataSourceDbVersionBuildItem> dbVersion) {
         dbKind.produce(new DefaultDataSourceDbKindBuildItem(DatabaseKind.H2));
+        dbVersion.produce(new DefaultDataSourceDbVersionBuildItem(DatabaseKind.H2,
+                DatabaseVersionLoader.loadDefaultVersion("h2")));
     }
 
     @BuildStep

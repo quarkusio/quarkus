@@ -6,7 +6,6 @@ https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 = Update projects to the latest Quarkus version
 include::_attributes.adoc[]
 :diataxis-type: howto
-:categories: core
 :extension-status: experimental
 :summary: Learn how to upgrade your projects to the latest version of {project-name}
 :topics: tooling
@@ -14,6 +13,8 @@ include::_attributes.adoc[]
 You can update or upgrade your {project-name} projects to the latest version of {project-name} by using an update command.
 
 The update command primarily employs OpenRewrite recipes to automate updates for most project dependencies, source code, and documentation.
+
+include::{includes}/extension-status.adoc[]
 
 [IMPORTANT]
 ====
@@ -64,7 +65,6 @@ ifdef::devtools-wrapped[+]
 ----
 Optional: To specify a particular stream, use the `-Dstream` option; for example: `-Dstream=3.2`
 endif::[]
-ifndef::devtools-no-gradle[]
 ifdef::devtools-wrapped[+]
 ****
 

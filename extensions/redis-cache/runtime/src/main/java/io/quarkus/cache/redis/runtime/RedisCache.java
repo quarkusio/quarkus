@@ -1,5 +1,6 @@
 package io.quarkus.cache.redis.runtime;
 
+import java.time.Duration;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -53,6 +54,34 @@ public interface RedisCache extends Cache {
     <K, V> Uni<V> get(K key, TypeLiteral<V> type, Function<K, V> valueLoader);
 
     /**
+     * Allows retrieving a value from the Redis cache with a custom expiration duration.
+     *
+     * @param key the key
+     * @param clazz the class of the value
+     * @param valueLoader the value loader called when there is no value stored in the cache
+     * @param expiresAfter the duration after which the cached value should expire; if {@code null}, the default expiration
+     *        policy is used
+     * @param <K> the type of key
+     * @param <V> the type of value
+     * @return the Uni emitting the cached value.
+     */
+    <K, V> Uni<V> get(K key, Class<V> clazz, Function<K, V> valueLoader, Duration expiresAfter);
+
+    /**
+     * Allows retrieving a value from the Redis cache with a custom expiration duration.
+     *
+     * @param key the key
+     * @param type the type of the value
+     * @param valueLoader the value loader called when there is no value stored in the cache
+     * @param expiresAfter the duration after which the cached value should expire; if {@code null}, the default expiration
+     *        policy is used
+     * @param <K> the type of key
+     * @param <V> the type of value
+     * @return the Uni emitting the cached value.
+     */
+    <K, V> Uni<V> get(K key, TypeLiteral<V> type, Function<K, V> valueLoader, Duration expiresAfter);
+
+    /**
      * Allows retrieving a value from the Redis cache.
      *
      * @param key the key
@@ -77,6 +106,34 @@ public interface RedisCache extends Cache {
     <K, V> Uni<V> getAsync(K key, TypeLiteral<V> type, Function<K, Uni<V>> valueLoader);
 
     /**
+     * Allows retrieving a value from the Redis cache with a custom expiration duration.
+     *
+     * @param key the key
+     * @param clazz the class of the value
+     * @param valueLoader the value loader called when there is no value stored in the cache
+     * @param expiresAfter the duration after which the cached value should expire; if {@code null}, the default expiration
+     *        policy is used
+     * @param <K> the type of key
+     * @param <V> the type of value
+     * @return the Uni emitting the cached value.
+     */
+    <K, V> Uni<V> getAsync(K key, Class<V> clazz, Function<K, Uni<V>> valueLoader, Duration expiresAfter);
+
+    /**
+     * Allows retrieving a value from the Redis cache with a custom expiration duration.
+     *
+     * @param key the key
+     * @param type the type of the value
+     * @param valueLoader the value loader called when there is no value stored in the cache
+     * @param expiresAfter the duration after which the cached value should expire; if {@code null}, the default expiration
+     *        policy is used
+     * @param <K> the type of key
+     * @param <V> the type of value
+     * @return the Uni emitting the cached value.
+     */
+    <K, V> Uni<V> getAsync(K key, TypeLiteral<V> type, Function<K, Uni<V>> valueLoader, Duration expiresAfter);
+
+    /**
      * Put a value in the cache.
      *
      * @param key the key
@@ -88,6 +145,20 @@ public interface RedisCache extends Cache {
     <K, V> Uni<Void> put(K key, V value);
 
     /**
+     * Put a value in the cache with a custom expiration duration.
+     *
+     * @param key the key
+     * @param value the value
+     * @param expiresAfter the duration after which the entry should expire; if {@code null}, default expiration is used
+     * @param <K> the type of key
+     * @param <V> the type of value
+     * @return a Uni emitting {@code null} when the operation completes
+     */
+    default <K, V> Uni<Void> put(K key, V value, Duration expiresAfter) {
+        return put(key, () -> value, expiresAfter);
+    }
+
+    /**
      * Put a value in the cache.
      *
      * @param key the key
@@ -97,6 +168,18 @@ public interface RedisCache extends Cache {
      * @return a Uni emitting {@code null} when the operation completes
      */
     <K, V> Uni<Void> put(K key, Supplier<V> supplier);
+
+    /**
+     * Put a value in the cache with a custom expiration duration.
+     *
+     * @param key the key
+     * @param supplier supplier of the value
+     * @param expiresAfter the duration after which the entry should expire; if {@code null}, default expiration is used
+     * @param <K> the type of key
+     * @param <V> the type of value
+     * @return a Uni emitting {@code null} when the operation completes
+     */
+    <K, V> Uni<Void> put(K key, Supplier<V> supplier, Duration expiresAfter);
 
     /**
      * Returns {@link Uni} that completes with a value present in the cache under the given {@code key}.

@@ -41,7 +41,10 @@ public final class DatabaseKindDialectBuildItem extends MultiBuildItem {
      * @param defaultDatabaseProductVersion The default database-product-version to set in Hibernate ORM.
      *        This is useful when the default version of the dialect in Hibernate ORM
      *        is lower than what we expect in Quarkus.
+     * @deprecated Use {@link #forCoreDialect(String, String, Set)}(different arguments!) instead,
+     *             and set the default version of the database through a {@code DefaultDatabaseVersionBuildItem}.
      */
+    @Deprecated
     public static DatabaseKindDialectBuildItem forCoreDialect(String dbKind, String databaseProductName,
             Set<String> dialects, String defaultDatabaseProductVersion) {
         return new DatabaseKindDialectBuildItem(dbKind, Optional.empty(), Optional.of(databaseProductName),
@@ -65,7 +68,10 @@ public final class DatabaseKindDialectBuildItem extends MultiBuildItem {
      * @param defaultDatabaseProductVersion The default database-product-version to set in Hibernate ORM.
      *        This is useful when the default version of the dialect in Hibernate ORM
      *        is lower than what we expect in Quarkus.
+     * @deprecated Use {@link #forThirdPartyDialect(String, String)}(different arguments!) instead,
+     *             and set the default version of the database through a {@code DefaultDatabaseVersionBuildItem}.
      */
+    @Deprecated
     public static DatabaseKindDialectBuildItem forThirdPartyDialect(String dbKind, String dialect,
             String defaultDatabaseProductVersion) {
         return new DatabaseKindDialectBuildItem(dbKind, Optional.of(dialect), Optional.empty(),
@@ -130,6 +136,11 @@ public final class DatabaseKindDialectBuildItem extends MultiBuildItem {
         return databaseProductName;
     }
 
+    /**
+     * @return The default DB version.
+     * @deprecated Set the default version of the database through a {@code DefaultDatabaseVersionBuildItem}.
+     */
+    @Deprecated
     public Optional<String> getDefaultDatabaseProductVersion() {
         return defaultDatabaseProductVersion;
     }

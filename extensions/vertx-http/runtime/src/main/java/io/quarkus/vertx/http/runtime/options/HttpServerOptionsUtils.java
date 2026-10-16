@@ -29,6 +29,8 @@ import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.runtime.util.ClassPathUtils;
 import io.quarkus.tls.TlsConfiguration;
 import io.quarkus.tls.TlsConfigurationRegistry;
+import io.quarkus.vertx.http.runtime.ProxyConfig;
+import io.quarkus.vertx.http.runtime.ProxyConfig.ProxyProtocolListener;
 import io.quarkus.vertx.http.runtime.ServerSslConfig;
 import io.quarkus.vertx.http.runtime.VertxHttpBuildTimeConfig;
 import io.quarkus.vertx.http.runtime.VertxHttpConfig;
@@ -49,6 +51,7 @@ import io.vertx.core.http.QueryParamDecoderConfig;
 import io.vertx.core.http.WebSocketServerConfig;
 import io.vertx.core.net.KeyCertOptions;
 import io.vertx.core.net.LogConfig;
+import io.vertx.core.net.SSLEngineOptions;
 import io.vertx.core.net.ServerSSLOptions;
 import io.vertx.core.net.TcpOption;
 import io.vertx.core.net.TrafficShapingOptions;
@@ -75,10 +78,14 @@ public class HttpServerOptionsUtils {
     public static final int RANDOM_PORT_MANAGEMENT = 30;
 
     /**
-     * Holds the result of building server configuration: an {@link HttpServerConfig} and an optional
-     * {@link ServerSSLOptions}.
+     * Holds the result of building server configuration: an {@link HttpServerConfig}, optional {@link ServerSSLOptions},
+     * and optional {@link SSLEngineOptions} for selecting the SSL engine.
      */
-    public record ServerConfig(HttpServerConfig config, ServerSSLOptions sslOptions) {
+    public record ServerConfig(HttpServerConfig config, ServerSSLOptions sslOptions,
+            SSLEngineOptions sslEngineOptions) {
+        public ServerConfig(HttpServerConfig config, ServerSSLOptions sslOptions) {
+            this(config, sslOptions, null);
+        }
     }
 
     /**
@@ -111,10 +118,12 @@ public class HttpServerOptionsUtils {
         Optional<String> tlsConfigurationName = getHttpServerTlsConfigName(httpConfig, httpBuildTimeConfig, launchMode);
         TlsConfiguration bucket = getTlsConfiguration(tlsConfigurationName, registry);
         if (bucket != null) {
-            ServerSSLOptions sslOptions = createSslOptionsFromTlsConfiguration(bucket);
-            sslOptions.setClientAuth(getTlsClientAuth(httpConfig, httpBuildTimeConfig, launchMode));
-            applyCommonOptions(config, httpBuildTimeConfig, httpConfig, websocketSubProtocols);
-            return new ServerConfig(config, sslOptions);
+            ClientAuth clientAuth = getTlsClientAuth(httpConfig, httpBuildTimeConfig, launchMode);
+            ServerSSLOptions sslOptions = createServerSslOptions(bucket, clientAuth);
+            SSLEngineOptions engineOptions = bucket.getSslEngineOptions().orElse(null);
+            applyCommonOptions(config, httpBuildTimeConfig, httpConfig, websocketSubProtocols,
+                    httpConfig.determineSslHost(), ProxyProtocolListener.HTTPS);
+            return new ServerConfig(config, sslOptions, engineOptions);
         }
 
         // Legacy configuration
@@ -123,7 +132,8 @@ public class HttpServerOptionsUtils {
             return null;
         }
         sslOptions.setClientAuth(getTlsClientAuth(httpConfig, httpBuildTimeConfig, launchMode));
-        applyCommonOptions(config, httpBuildTimeConfig, httpConfig, websocketSubProtocols);
+        applyCommonOptions(config, httpBuildTimeConfig, httpConfig, websocketSubProtocols,
+                httpConfig.determineSslHost(), ProxyProtocolListener.HTTPS);
         return new ServerConfig(config, sslOptions);
     }
 
@@ -149,11 +159,12 @@ public class HttpServerOptionsUtils {
 
         TlsConfiguration bucket = getTlsConfiguration(managementConfig.tlsConfigurationName(), registry);
         if (bucket != null) {
-            ServerSSLOptions sslOptions = createSslOptionsFromTlsConfiguration(bucket);
-            sslOptions.setClientAuth(managementBuildTimeConfig.tlsClientAuth());
+            ClientAuth clientAuth = managementBuildTimeConfig.tlsClientAuth();
+            ServerSSLOptions sslOptions = createServerSslOptions(bucket, clientAuth);
+            SSLEngineOptions engineOptions = bucket.getSslEngineOptions().orElse(null);
             applyCommonOptionsForManagementInterface(config, managementBuildTimeConfig, managementConfig,
-                    websocketSubProtocols);
-            return new ServerConfig(config, sslOptions);
+                    websocketSubProtocols, ProxyProtocolListener.HTTPS);
+            return new ServerConfig(config, sslOptions, engineOptions);
         }
 
         // Legacy configuration
@@ -163,14 +174,14 @@ public class HttpServerOptionsUtils {
         }
         sslOptions.setClientAuth(managementBuildTimeConfig.tlsClientAuth());
         applyCommonOptionsForManagementInterface(config, managementBuildTimeConfig, managementConfig,
-                websocketSubProtocols);
+                websocketSubProtocols, ProxyProtocolListener.HTTPS);
         return new ServerConfig(config, sslOptions);
     }
 
     /**
-     * Create {@link ServerSSLOptions} from a Quarkus TLS registry configuration.
+     * Create {@link ServerSSLOptions} for a server from a TLS registry configuration and client authentication setting.
      */
-    public static ServerSSLOptions createSslOptionsFromTlsConfiguration(TlsConfiguration bucket) {
+    public static ServerSSLOptions createServerSslOptions(TlsConfiguration bucket, ClientAuth clientAuth) {
         ServerSSLOptions sslOptions = new ServerSSLOptions();
 
         KeyCertOptions keyStoreOptions = bucket.getKeyStoreOptions();
@@ -195,7 +206,13 @@ public class HttpServerOptionsUtils {
         if (!other.isUseAlpn()) {
             sslOptions.setUseAlpn(false);
         }
+        if (other.getKeyExchangeGroups() != null && !other.getKeyExchangeGroups().isEmpty()) {
+            sslOptions.setKeyExchangeGroups(other.getKeyExchangeGroups());
+        }
+        sslOptions.setPqcEnforcementPolicy(other.getPqcEnforcementPolicy());
         sslOptions.setEnabledSecureTransportProtocols(other.getEnabledSecureTransportProtocols());
+
+        sslOptions.setClientAuth(clientAuth);
 
         return sslOptions;
     }
@@ -222,7 +239,8 @@ public class HttpServerOptionsUtils {
         int port = httpConfig.determinePort(launchMode);
         config.setPort(port);
 
-        applyCommonOptions(config, buildTimeConfig, httpConfig, websocketSubProtocols);
+        applyCommonOptions(config, buildTimeConfig, httpConfig, websocketSubProtocols, httpConfig.host(),
+                ProxyProtocolListener.HTTP);
         return config;
     }
 
@@ -241,7 +259,8 @@ public class HttpServerOptionsUtils {
         int port = httpConfig.determinePort(launchMode);
         config.setPort(port);
 
-        applyCommonOptionsForManagementInterface(config, buildTimeConfig, httpConfig, websocketSubProtocols);
+        applyCommonOptionsForManagementInterface(config, buildTimeConfig, httpConfig, websocketSubProtocols,
+                ProxyProtocolListener.HTTP);
         return config;
     }
 
@@ -256,7 +275,8 @@ public class HttpServerOptionsUtils {
             return null;
         }
         HttpServerConfig config = new HttpServerConfig();
-        applyCommonOptions(config, buildTimeConfig, httpConfig, websocketSubProtocols);
+        applyCommonOptions(config, buildTimeConfig, httpConfig, websocketSubProtocols, httpConfig.host(),
+                ProxyProtocolListener.DOMAIN_SOCKET);
         config.setHost(httpConfig.domainSocket());
         return config;
     }
@@ -272,20 +292,26 @@ public class HttpServerOptionsUtils {
             return null;
         }
         HttpServerConfig config = new HttpServerConfig();
-        applyCommonOptionsForManagementInterface(config, buildTimeConfig, managementConfig, websocketSubProtocols);
+        applyCommonOptionsForManagementInterface(config, buildTimeConfig, managementConfig, websocketSubProtocols,
+                ProxyProtocolListener.DOMAIN_SOCKET);
         config.setHost(managementConfig.domainSocket());
         return config;
     }
 
     /**
      * Apply common HTTP server options to an {@link HttpServerConfig}.
+     *
+     * @param listener the listener the config is for; the {@code PROXY} protocol is enabled on it only when
+     *        {@code quarkus.http.proxy.proxy-protocol-listeners} contains it
      */
     public static void applyCommonOptions(
             HttpServerConfig config,
             VertxHttpBuildTimeConfig httpBuildTimeConfig,
             VertxHttpConfig httpConfig,
-            List<String> websocketSubProtocols) {
-        config.setHost(httpConfig.host());
+            List<String> websocketSubProtocols,
+            String host,
+            ProxyProtocolListener listener) {
+        config.setHost(host);
         setIdleTimeout(httpConfig, config);
 
         // HTTP/1.1 config
@@ -340,6 +366,7 @@ public class HttpServerOptionsUtils {
 
         // Query param decoder config
         config.setQueryParamConfig(new QueryParamDecoderConfig()
+                .setMaxSize(httpConfig.limits().maxQueryParameters())
                 .setUseSemicolonAsDelimiter(httpConfig.useSemicolonAsQueryParamDelimiter()));
 
         // Compression config
@@ -362,9 +389,7 @@ public class HttpServerOptionsUtils {
                 settings.setHeaderTableSize(httpConfig.limits().headerTableSize().getAsLong());
             }
             settings.setPushEnabled(httpConfig.http2PushEnabled());
-            if (httpConfig.limits().maxConcurrentStreams().isPresent()) {
-                settings.setMaxConcurrentStreams(httpConfig.limits().maxConcurrentStreams().getAsLong());
-            }
+            settings.setMaxConcurrentStreams(httpConfig.limits().maxConcurrentStreams());
             if (httpConfig.initialWindowSize().isPresent()) {
                 settings.setInitialWindowSize(httpConfig.initialWindowSize().getAsInt());
             }
@@ -393,10 +418,26 @@ public class HttpServerOptionsUtils {
         }
 
         // Proxy protocol
-        config.getTcpConfig().setUseProxyProtocol(httpConfig.proxy().useProxyProtocol());
+        config.getTcpConfig().setUseProxyProtocol(httpConfig.proxy().useProxyProtocol()
+                && httpConfig.proxy().proxyProtocolListeners().contains(listener));
 
         // Traffic shaping
         configureTrafficShapingIfEnabled(config, httpConfig);
+    }
+
+    /**
+     * Warn when the {@code PROXY} protocol is enabled but none of the listeners it is expected on is started.
+     *
+     * @param configRoot {@code quarkus.http} or {@code quarkus.management}
+     */
+    public static void warnIfProxyProtocolIsNotUsed(String configRoot, ProxyConfig proxyConfig,
+            Set<ProxyProtocolListener> startedListeners) {
+        if (proxyConfig.useProxyProtocol()
+                && Collections.disjoint(proxyConfig.proxyProtocolListeners(), startedListeners)) {
+            LOGGER.warnf(
+                    "'%1$s.proxy.use-proxy-protocol' is enabled, but the PROXY protocol is not used: '%1$s.proxy.proxy-protocol-listeners' selects %2$s and the started listeners are %3$s",
+                    configRoot, proxyConfig.proxyProtocolListeners(), startedListeners);
+        }
     }
 
     /**
@@ -406,7 +447,8 @@ public class HttpServerOptionsUtils {
             HttpServerConfig config,
             ManagementInterfaceBuildTimeConfig managementBuildTimeConfig,
             ManagementConfig managementConfig,
-            List<String> websocketSubProtocols) {
+            List<String> websocketSubProtocols,
+            ProxyProtocolListener listener) {
         config.setHost(managementConfig.host());
         config.setIdleTimeout(managementConfig.idleTimeout());
 
@@ -439,6 +481,7 @@ public class HttpServerOptionsUtils {
 
         // Query param decoder config
         config.setQueryParamConfig(new QueryParamDecoderConfig()
+                .setMaxSize(managementConfig.limits().maxQueryParameters())
                 .setUseSemicolonAsDelimiter(managementConfig.useSemicolonAsQueryParamDelimiter()));
 
         // Compression
@@ -456,7 +499,8 @@ public class HttpServerOptionsUtils {
         }
 
         // Proxy protocol
-        tcpConfig.setUseProxyProtocol(managementConfig.proxy().useProxyProtocol());
+        tcpConfig.setUseProxyProtocol(managementConfig.proxy().useProxyProtocol()
+                && managementConfig.proxy().proxyProtocolListeners().contains(listener));
         tcpConfig.setProxyProtocolTimeout(managementConfig.proxyProtocolTimeout());
 
         // TCP options
@@ -568,23 +612,11 @@ public class HttpServerOptionsUtils {
 
         Optional<String> keyStoreAliasPassword = Optional.empty();
         if (sslConfig.certificate().keyStoreAliasPassword().isPresent()
-                || sslConfig.certificate().keyStoreKeyPassword().isPresent()
-                || sslConfig.certificate().keyStoreKeyPasswordKey().isPresent()
                 || sslConfig.certificate().keyStoreAliasPasswordKey().isPresent()) {
-            if (sslConfig.certificate().keyStoreKeyPasswordKey().isPresent()
-                    && sslConfig.certificate().keyStoreAliasPasswordKey().isPresent()) {
-                throw new ConfigurationException(
-                        "You cannot specify both `keyStoreKeyPasswordKey` and `keyStoreAliasPasswordKey` - Use `keyStoreAliasPasswordKey` instead");
-            }
-            if (sslConfig.certificate().keyStoreAliasPassword().isPresent()
-                    && sslConfig.certificate().keyStoreKeyPassword().isPresent()) {
-                throw new ConfigurationException(
-                        "You cannot specify both `keyStoreKeyPassword` and `keyStoreAliasPassword` - Use `keyStoreAliasPassword` instead");
-            }
             keyStoreAliasPassword = getCredential(
-                    or(sslConfig.certificate().keyStoreAliasPassword(), sslConfig.certificate().keyStoreKeyPassword()),
+                    sslConfig.certificate().keyStoreAliasPassword(),
                     credentials,
-                    or(sslConfig.certificate().keyStoreAliasPasswordKey(), sslConfig.certificate().keyStoreKeyPasswordKey()));
+                    sslConfig.certificate().keyStoreAliasPasswordKey());
         }
 
         final Optional<String> trustStorePassword = getCredential(sslConfig.certificate().trustStorePassword(), credentials,
@@ -640,12 +672,13 @@ public class HttpServerOptionsUtils {
                         compression.addDeflate();
                     }
                 } else if ("br".equalsIgnoreCase(compressor)) {
-                    // For now, do not configure the quality level for Brotli - See https://github.com/eclipse-vertx/vert.x/issues/6201
-                    //                    if (compressionLevel.isPresent()) {
-                    //                        compression.addBrotli(compressionLevel.getAsInt());
-                    //                    } else {
-                    compression.addBrotli();
-                    //                    }
+                    if (compressionLevel.isPresent()) {
+                        compression.addBrotli(compressionLevel.getAsInt());
+                    } else {
+                        compression.addBrotli();
+                    }
+                } else if ("snappy".equalsIgnoreCase(compressor)) {
+                    compression.addSnappy();
                 } else {
                     LOGGER.errorf("Unknown compressor: %s", compressor);
                 }

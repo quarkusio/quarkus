@@ -1,6 +1,5 @@
 package io.quarkus.docs.vale;
 
-import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -27,18 +26,17 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.core.exc.StreamWriteException;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.DatabindException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializerProvider;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import com.fasterxml.jackson.databind.ser.std.StdSerializer;
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
-import com.fasterxml.jackson.dataformat.yaml.YAMLGenerator;
 
 import io.quarkus.docs.generation.YamlMetadataGenerator.FileMessages;
+import tools.jackson.core.JsonGenerator;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.SerializationContext;
+import tools.jackson.databind.annotation.JsonSerialize;
+import tools.jackson.databind.ser.std.StdSerializer;
+import tools.jackson.dataformat.yaml.YAMLFactory;
+import tools.jackson.dataformat.yaml.YAMLMapper;
+import tools.jackson.dataformat.yaml.YAMLWriteFeature;
 
 public class ValeAsciidocLint {
     public static TypeReference<Map<String, List<Check>>> typeRef = new TypeReference<Map<String, List<Check>>>() {
@@ -127,9 +125,10 @@ public class ValeAsciidocLint {
         return this;
     }
 
-    public void resultsToYaml(Map<String, ChecksBySeverity> lintChecks, Map<String, FileMessages> metadataErrors)
-            throws StreamWriteException, DatabindException, IOException {
-        ObjectMapper yaml = new ObjectMapper(new YAMLFactory().enable(YAMLGenerator.Feature.MINIMIZE_QUOTES));
+    public void resultsToYaml(Map<String, ChecksBySeverity> lintChecks, Map<String, FileMessages> metadataErrors) {
+        YAMLMapper yaml = YAMLMapper.builder(
+                YAMLFactory.builder().enable(YAMLWriteFeature.MINIMIZE_QUOTES).build())
+                .build();
         Map<String, Map<String, Object>> results = lintChecks.entrySet().stream()
                 .collect(Collectors.toMap(e -> e.getKey(), e -> {
                     Map<String, Object> value = new TreeMap<>(); // sort by key for consistency
@@ -290,17 +289,17 @@ public class ValeAsciidocLint {
         }
 
         @Override
-        public void serialize(Check value, JsonGenerator gen, SerializerProvider provider) throws IOException {
+        public void serialize(Check value, JsonGenerator gen, SerializationContext provider) {
             gen.writeStartObject();
-            gen.writeStringField("match",
+            gen.writeStringProperty("match",
                     String.format("%d:%d [%s] %s", value.line, value.span.get(0), value.check, value.message));
             writeIfPresent(gen, "link", value.link);
             gen.writeEndObject();
         }
 
-        void writeIfPresent(JsonGenerator gen, String name, String value) throws IOException {
+        void writeIfPresent(JsonGenerator gen, String name, String value) {
             if (value != null && !value.isBlank()) {
-                gen.writeStringField(name, value);
+                gen.writeStringProperty(name, value);
             }
         }
     }

@@ -35,6 +35,7 @@ class OidcClientProxyTest {
     static final QuarkusExtensionTest test = new QuarkusExtensionTest()
             .withApplicationRoot((jar) -> jar
                     .addClass(OidcClientResource.class)
+                    .addClass(OidcClientProxyTestStartupBean.class)
                     .addAsResource(new StringAsset("""
                             quarkus.keycloak.devservices.enabled=false
                             quarkus.oidc.enabled=false

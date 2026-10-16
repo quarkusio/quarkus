@@ -177,7 +177,8 @@ public interface ResolvedDependency extends Dependency {
                 if (groupParts.get(idx).equals(artifactParts.get(0))) {
                     // slower check
                     int overlap = groupSize - idx;
-                    if (groupParts.subList(idx, groupSize).equals(artifactParts.subList(0, overlap))) {
+                    if (overlap <= artifactParts.size()
+                            && groupParts.subList(idx, groupSize).equals(artifactParts.subList(0, overlap))) {
                         // cut out the overlapping parts from the artifact list
                         artifactParts = artifactParts.subList(overlap, artifactParts.size());
                         break;

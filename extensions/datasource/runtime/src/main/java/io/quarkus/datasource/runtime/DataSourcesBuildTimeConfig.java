@@ -4,6 +4,7 @@ import java.util.Map;
 import java.util.Optional;
 
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
+import io.quarkus.datasource.common.runtime.DbVersionDefaults;
 import io.quarkus.runtime.annotations.ConfigDocIgnore;
 import io.quarkus.runtime.annotations.ConfigDocMapKey;
 import io.quarkus.runtime.annotations.ConfigPhase;
@@ -25,7 +26,7 @@ public interface DataSourcesBuildTimeConfig {
     @ConfigDocMapKey("datasource-name")
     @WithParentName
     @WithDefaults
-    @WithUnnamedKey(DataSourceUtil.DEFAULT_DATASOURCE_NAME)
+    @WithUnnamedKey(value = DataSourceUtil.DEFAULT_DATASOURCE_NAME, eager = false)
     Map<String, DataSourceBuildTimeConfig> dataSources();
 
     /**
@@ -51,6 +52,23 @@ public interface DataSourcesBuildTimeConfig {
     boolean metricsEnabled();
 
     /**
+     * Controls whether default database versions are applied when not explicitly configured.
+     * <p>
+     * This is a global setting and is not specific to a datasource.
+     * <p>
+     * When set to <code>recent</code> (the default), Quarkus will use recent stable versions as defaults
+     * for each database kind. This optimizes for performance and features but requires your database
+     * to be reasonably up-to-date.
+     * <p>
+     * When set to <code>compatible</code>, no default versions are applied. You must explicitly set
+     * <code>quarkus.datasource.db-version</code> (or <code>quarkus.datasource."datasource-name".db-version</code>)
+     * for each datasource.
+     */
+    @WithName("db-version-defaults")
+    @WithDefault("recent")
+    DbVersionDefaults dbVersionDefaults();
+
+    /**
      * Only here to detect configuration errors.
      * <p>
      * This used to be runtime but we don't really care, we just want to catch invalid configurations.
@@ -65,8 +83,7 @@ public interface DataSourcesBuildTimeConfig {
     Optional<String> driver();
 
     default boolean hasNamedDataSources() {
-        return dataSources().keySet().size() > 1
-                || (!dataSources().isEmpty()
-                        && !dataSources().containsKey(DataSourceUtil.DEFAULT_DATASOURCE_NAME));
+        return dataSources().keySet().stream()
+                .anyMatch(name -> !DataSourceUtil.isDefault(name));
     }
 }

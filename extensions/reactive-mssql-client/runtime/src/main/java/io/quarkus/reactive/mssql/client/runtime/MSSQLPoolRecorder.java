@@ -26,6 +26,7 @@ import io.quarkus.tls.TlsConfigurationRegistry;
 import io.vertx.core.Future;
 import io.vertx.core.Vertx;
 import io.vertx.core.internal.VertxInternal;
+import io.vertx.core.net.NetClientOptions;
 import io.vertx.mssqlclient.MSSQLBuilder;
 import io.vertx.mssqlclient.MSSQLConnectOptions;
 import io.vertx.sqlclient.Pool;
@@ -87,7 +88,9 @@ public class MSSQLPoolRecorder {
                 dataSourceReactiveRuntimeConfig, dataSourceReactiveMSSQLConfig, tlsRegistry);
         Supplier<Future<SqlConnectOptions>> databasesSupplier = ReactivePoolUtil.toDatabasesSupplier(
                 List.of(mssqlConnectOptions), dataSourceRuntimeConfig, MSSQLConnectOptions::new);
-        return createPool(vertx, poolOptions, mssqlConnectOptions, dataSourceName, databasesSupplier, context);
+        NetClientOptions netClientOptions = ReactivePoolUtil.toNetClientOptions(dataSourceReactiveRuntimeConfig);
+        return createPool(vertx, poolOptions, netClientOptions, mssqlConnectOptions, dataSourceName, databasesSupplier,
+                context);
     }
 
     private MSSQLConnectOptions toMSSQLConnectOptions(String dataSourceName, DataSourceRuntimeConfig dataSourceRuntimeConfig,
@@ -137,15 +140,17 @@ public class MSSQLPoolRecorder {
         return mssqlConnectOptions;
     }
 
-    private Pool createPool(Vertx vertx, PoolOptions poolOptions, MSSQLConnectOptions mssqlConnectOptions,
+    private Pool createPool(Vertx vertx, PoolOptions poolOptions, NetClientOptions netClientOptions,
+            MSSQLConnectOptions mssqlConnectOptions,
             String dataSourceName, Supplier<Future<SqlConnectOptions>> databases,
             SyntheticCreationalContext<Pool> context) {
         Instance<PoolCreator> instance = context.getInjectedReference(POOL_CREATOR_TYPE_LITERAL, qualifier(dataSourceName));
         if (instance.isResolvable()) {
-            MSSQLPoolCreator.Input input = new DefaultInput(vertx, poolOptions, mssqlConnectOptions);
+            MSSQLPoolCreator.Input input = new DefaultInput(vertx, poolOptions, netClientOptions, mssqlConnectOptions);
             return instance.get().create(input);
         }
         return MSSQLBuilder.pool().with(poolOptions)
+                .with(netClientOptions)
                 .connectingTo(databases)
                 .using(vertx).build();
     }
@@ -153,11 +158,14 @@ public class MSSQLPoolRecorder {
     private static class DefaultInput implements MSSQLPoolCreator.Input {
         private final Vertx vertx;
         private final PoolOptions poolOptions;
+        private final NetClientOptions netClientOptions;
         private final MSSQLConnectOptions connectOptions;
 
-        public DefaultInput(Vertx vertx, PoolOptions poolOptions, MSSQLConnectOptions connectOptions) {
+        public DefaultInput(Vertx vertx, PoolOptions poolOptions, NetClientOptions netClientOptions,
+                MSSQLConnectOptions connectOptions) {
             this.vertx = vertx;
             this.poolOptions = poolOptions;
+            this.netClientOptions = netClientOptions;
             this.connectOptions = connectOptions;
         }
 
@@ -169,6 +177,11 @@ public class MSSQLPoolRecorder {
         @Override
         public PoolOptions poolOptions() {
             return poolOptions;
+        }
+
+        @Override
+        public NetClientOptions netClientOptions() {
+            return netClientOptions;
         }
 
         @Override

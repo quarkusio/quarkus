@@ -43,7 +43,7 @@ public class OidcProviderTest {
         final String token = Jwt.issuer("http://keycloak/realm").jws().keyId("k1").sign(rsaJsonWebKey.getPrivateKey());
         final String newToken = replaceAlgorithm(token, "ES256");
         JsonWebKeySet jwkSet = new JsonWebKeySet("{\"keys\": [" + rsaJsonWebKey.toJson() + "]}");
-        OidcTenantConfig oidcConfig = new OidcTenantConfig();
+        OidcTenantConfig oidcConfig = OidcTenantConfig.builder().build();
 
         try (OidcProvider provider = new OidcProvider(null, oidcConfig, jwkSet)) {
             try {
@@ -76,7 +76,7 @@ public class OidcProviderTest {
 
         final String token = Jwt.issuer("http://keycloak/realm").sign(rsaJsonWebKey.getPrivateKey());
 
-        try (OidcProvider provider = new OidcProvider(null, new OidcTenantConfig(), jwkSet)) {
+        try (OidcProvider provider = new OidcProvider(null, OidcTenantConfig.builder().build(), jwkSet)) {
             TokenVerificationResult result = provider.verifyJwtToken(token, false, false, null);
             assertEquals("http://keycloak/realm", result.localVerificationResult().getString("iss"));
         }
@@ -91,7 +91,7 @@ public class OidcProviderTest {
 
         final String token = Jwt.issuer("http://keycloak/realm").sign(rsaJsonWebKey1.getPrivateKey());
 
-        try (OidcProvider provider = new OidcProvider(null, new OidcTenantConfig(), jwkSet)) {
+        try (OidcProvider provider = new OidcProvider(null, OidcTenantConfig.builder().build(), jwkSet)) {
             try {
                 provider.verifyJwtToken(token, false, false, null);
                 fail("InvalidJwtException expected");
@@ -109,8 +109,7 @@ public class OidcProviderTest {
                 "{\"keys\": [" + rsaJsonWebKey1.toJson() + "," + rsaJsonWebKey2.toJson() + "]}");
 
         final String token = Jwt.issuer("http://keycloak/realm").sign(rsaJsonWebKey2.getPrivateKey());
-        final OidcTenantConfig config = new OidcTenantConfig();
-        config.jwks.tryAll = true;
+        final OidcTenantConfig config = OidcTenantConfig.builder().jwks().tryAll(true).end().build();
 
         try (OidcProvider provider = new OidcProvider(null, config, jwkSet)) {
             TokenVerificationResult result = provider.verifyJwtToken(token, false, false, null);
@@ -127,8 +126,7 @@ public class OidcProviderTest {
                 "{\"keys\": [" + rsaJsonWebKey1.toJson() + "," + rsaJsonWebKey2.toJson() + "]}");
 
         final String token = Jwt.issuer("http://keycloak/realm").sign(rsaJsonWebKey3.getPrivateKey());
-        final OidcTenantConfig config = new OidcTenantConfig();
-        config.jwks.tryAll = true;
+        final OidcTenantConfig config = OidcTenantConfig.builder().jwks().tryAll(true).end().build();
 
         try (OidcProvider provider = new OidcProvider(null, config, jwkSet)) {
             try {
@@ -156,8 +154,7 @@ public class OidcProviderTest {
         rsaJsonWebKey.setKeyId("k1");
         JsonWebKeySet jwkSet = new JsonWebKeySet("{\"keys\": [" + rsaJsonWebKey.toJson() + "]}");
 
-        OidcTenantConfig oidcConfig = new OidcTenantConfig();
-        oidcConfig.token.subjectRequired = true;
+        OidcTenantConfig oidcConfig = OidcTenantConfig.builder().token().subjectRequired(true).end().build();
 
         final String tokenWithSub = Jwt.subject("subject").jws().keyId("k1").sign(rsaJsonWebKey.getPrivateKey());
 
@@ -183,8 +180,7 @@ public class OidcProviderTest {
         rsaJsonWebKey.setKeyId("k1");
         JsonWebKeySet jwkSet = new JsonWebKeySet("{\"keys\": [" + rsaJsonWebKey.toJson() + "]}");
 
-        OidcTenantConfig oidcConfig = new OidcTenantConfig();
-        oidcConfig.authentication.nonceRequired = true;
+        OidcTenantConfig oidcConfig = OidcTenantConfig.builder().authentication().nonceRequired(true).end().build();
 
         final String tokenWithNonce = Jwt.claim("nonce", "123456").jws().keyId("k1").sign(rsaJsonWebKey.getPrivateKey());
 
@@ -222,16 +218,14 @@ public class OidcProviderTest {
 
         JsonWebKeySet jwkSet = new JsonWebKeySet("{\"keys\": [" + rsaJsonWebKey.toJson() + "]}");
 
-        OidcTenantConfig oidcConfig = new OidcTenantConfig();
-        oidcConfig.token.issuedAtRequired = false;
+        OidcTenantConfig oidcConfig = OidcTenantConfig.builder().token().issuedAtRequired(false).end().build();
 
         try (OidcProvider provider = new OidcProvider(null, oidcConfig, jwkSet)) {
             TokenVerificationResult result = provider.verifyJwtToken(token, false, false, null);
             assertNull(result.localVerificationResult().getString(Claims.iat.name()));
         }
 
-        OidcTenantConfig oidcConfigRequireAge = new OidcTenantConfig();
-        oidcConfigRequireAge.token.issuedAtRequired = true;
+        OidcTenantConfig oidcConfigRequireAge = OidcTenantConfig.builder().token().issuedAtRequired(true).end().build();
 
         try (OidcProvider provider = new OidcProvider(null, oidcConfigRequireAge, jwkSet)) {
             try {
@@ -249,7 +243,7 @@ public class OidcProviderTest {
         rsaJsonWebKey.setKeyId("k1");
         JsonWebKeySet jwkSet = new JsonWebKeySet("{\"keys\": [" + rsaJsonWebKey.toJson() + "]}");
 
-        OidcTenantConfig oidcConfig = new OidcTenantConfig();
+        OidcTenantConfig oidcConfig = OidcTenantConfig.builder().build();
 
         String token = Jwt.claim("claim1", "claimValue1").claim("claim2", "claimValue2").jws().keyId("k1")
                 .sign(rsaJsonWebKey.getPrivateKey());

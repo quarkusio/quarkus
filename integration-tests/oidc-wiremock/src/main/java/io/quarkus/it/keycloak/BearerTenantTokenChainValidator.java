@@ -21,7 +21,7 @@ public class BearerTenantTokenChainValidator implements TokenCertificateValidato
     @Override
     public void validate(OidcTenantConfig oidcConfig, List<X509Certificate> chain, String tokenClaims)
             throws CertificateException {
-        if (!"bearer-chain-custom-validator".equals(oidcConfig.tenantId.get())) {
+        if (!"bearer-chain-custom-validator".equals(oidcConfig.tenantId().get())) {
             throw new RuntimeException("Unexpected tenant id");
         }
         String leafCertificateThumbprint = TrustStoreUtils.calculateThumprint(chain.get(0));

@@ -98,7 +98,12 @@ final class AgentBasedModulesReconfigurer implements JvmModulesReconfigurer {
                     k -> new PerModuleExportInstructions());
             final Module exportingModule = modulesContext.findModule(m.exportingModuleName());
             for (String packageName : m.packageNames()) {
-                perModuleExportInstructions.addExports(packageName, exportingModule);
+                if (modulesContext.isPackagePresent(exportedModule, packageName)) {
+                    perModuleExportInstructions.addExports(packageName, exportingModule);
+                } else {
+                    logger.debugf("Package %s not found in module %s, skipping export", packageName,
+                            exportedModule.getName());
+                }
             }
         }
         for (Map.Entry<Module, PerModuleExportInstructions> entry : aggregateByModule.entrySet()) {

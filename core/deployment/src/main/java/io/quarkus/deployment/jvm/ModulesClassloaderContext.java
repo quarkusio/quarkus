@@ -28,6 +28,11 @@ final class ModulesClassloaderContext {
         return moduleCache.computeIfAbsent(moduleName, this::findOrFallbackModule);
     }
 
+    boolean isPackagePresent(Module module, String packageName) {
+        // Unnamed modules export all packages, including those loaded later.
+        return !module.isNamed() || module.getPackages().contains(packageName);
+    }
+
     private Module findOrFallbackModule(final String moduleName) {
         return currentLayer.findModule(moduleName).orElseGet(() -> {
             JVMDeploymentLogger.logger.debugf(

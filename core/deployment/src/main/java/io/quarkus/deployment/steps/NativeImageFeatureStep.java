@@ -95,16 +95,15 @@ public class NativeImageFeatureStep {
             ClassDesc.of(Feature.DuringSetupAccess.class.getName()), "registerBuildTimeBootstrapIndy",
             ConstantDescs.CD_void, CD_Executable);
 
-    /**
-     * Exports the {@code com.oracle.svm.hosted} package from the GraalVM native image builder module
-     * so that the generated feature class can access {@code FeatureImpl.DuringSetupAccessImpl} for
-     * registering constant bootstrap methods.
-     *
-     * @return the JPMS export item
-     */
     @BuildStep
-    JPMSExportBuildItem constantBootstrapJpmsExport() {
-        return new JPMSExportBuildItem("org.graalvm.nativeimage.builder", "com.oracle.svm.hosted");
+    @SuppressWarnings("deprecation")
+    void legacyModuleExports(List<JPMSExportBuildItem> exports, CurateOutcomeBuildItem application,
+            BuildProducer<ModuleExportBuildItem> moduleExports) {
+        String appModuleName = application.getApplicationModel().getAppArtifact().getModuleName();
+        for (JPMSExportBuildItem export : exports) {
+            moduleExports.produce(new ModuleExportBuildItem(export.getModule(), appModuleName,
+                    export.getPackage()));
+        }
     }
 
     /**

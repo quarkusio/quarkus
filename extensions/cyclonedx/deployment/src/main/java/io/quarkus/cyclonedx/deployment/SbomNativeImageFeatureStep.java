@@ -15,8 +15,9 @@ import io.quarkus.deployment.GeneratedClassGizmo2Adaptor;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.GeneratedNativeImageClassBuildItem;
+import io.quarkus.deployment.builditem.ModuleExportBuildItem;
 import io.quarkus.deployment.builditem.NativeImageFeatureBuildItem;
-import io.quarkus.deployment.builditem.nativeimage.JPMSExportBuildItem;
+import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
 import io.quarkus.gizmo2.Const;
 import io.quarkus.gizmo2.Expr;
 import io.quarkus.gizmo2.Gizmo;
@@ -105,7 +106,8 @@ public class SbomNativeImageFeatureStep {
             Optional<EmbeddedSbomMetadataBuildItem> embeddedSbomMetadata,
             BuildProducer<GeneratedNativeImageClassBuildItem> nativeImageClass,
             BuildProducer<NativeImageFeatureBuildItem> features,
-            BuildProducer<JPMSExportBuildItem> jpmsExports) {
+            BuildProducer<ModuleExportBuildItem> moduleExports,
+            CurateOutcomeBuildItem application) {
 
         if (embeddedSbomMetadata.isEmpty()) {
             return;
@@ -114,13 +116,15 @@ public class SbomNativeImageFeatureStep {
         EmbeddedSbomMetadataBuildItem metadata = embeddedSbomMetadata.get();
         String resourceName = metadata.getResourceName();
 
-        jpmsExports.produce(new JPMSExportBuildItem("org.graalvm.nativeimage.builder", "com.oracle.svm.hosted.c"));
+        String appModuleName = application.getApplicationModel().getAppArtifact().getModuleName();
+        moduleExports.produce(
+                new ModuleExportBuildItem("org.graalvm.nativeimage.builder", appModuleName, "com.oracle.svm.hosted.c"));
         // GraalVM <= 25.0
-        jpmsExports.produce(new JPMSExportBuildItem("org.graalvm.nativeimage.builder", "com.oracle.svm.core.c",
-                null, GraalVM.Version.VERSION_25_1_0));
+        moduleExports.produce(new ModuleExportBuildItem("org.graalvm.nativeimage.builder", appModuleName,
+                "com.oracle.svm.core.c"));
         // GraalVM >= 25.1
-        jpmsExports.produce(new JPMSExportBuildItem("org.graalvm.nativeimage.guest.staging",
-                "com.oracle.svm.guest.staging.c", GraalVM.Version.VERSION_25_1_0));
+        moduleExports.produce(new ModuleExportBuildItem("org.graalvm.nativeimage.guest.staging", appModuleName,
+                "com.oracle.svm.guest.staging.c"));
 
         Gizmo g = Gizmo.create(new GeneratedClassGizmo2Adaptor(
                 item -> nativeImageClass

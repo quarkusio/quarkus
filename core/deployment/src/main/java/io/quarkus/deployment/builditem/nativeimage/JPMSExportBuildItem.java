@@ -3,12 +3,18 @@ package io.quarkus.deployment.builditem.nativeimage;
 import java.util.Objects;
 
 import io.quarkus.builder.item.MultiBuildItem;
+import io.quarkus.deployment.builditem.ModuleExportBuildItem;
 import io.quarkus.runtime.graal.GraalVM;
 
 /**
  * A build item that indicates that a Java package should be exported using
  * '-J--add-exports' option to become visible to native-image
+ *
+ * Version bounds are retained for compatibility but are ignored when Quarkus applies exports.
+ *
+ * @deprecated Use {@link ModuleExportBuildItem} instead.
  */
+@Deprecated(since = "4.0")
 public final class JPMSExportBuildItem extends MultiBuildItem {
     private final String moduleName;
     private final String packageName;
@@ -24,7 +30,8 @@ public final class JPMSExportBuildItem extends MultiBuildItem {
     }
 
     /**
-     * Creates a build item that indicates that a Java package should be exported for a specific GraalVM version range.
+     * Creates a build item with a legacy GraalVM version range.
+     * The range is retained for compatibility and ignored when Quarkus applies exports.
      *
      * @param moduleName the module name
      * @param packageName the package name

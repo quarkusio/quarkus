@@ -227,7 +227,6 @@
         <jsoup.version>1.23.2</jsoup.version> <!-- JSoup is used by Camel and LangChain4J so be careful when updating -->
         <reactor.version>3.8.7</reactor.version>
         <zstd-jni.version>1.5.7-16</zstd-jni.version> <!-- used by kafka-clients and some Camel components -->
-        <guava.version>33.7.2-jre</guava.version> <!-- keep in sync with guava.version from independent-project/bootstrap/pom.xml -->
     </properties>
 
     <pluginRepositories>
@@ -7055,23 +7054,6 @@
                 <groupId>com.webauthn4j</groupId>
                 <artifactId>webauthn4j-metadata-async</artifactId>
                 <version>${webauthn4j.version}</version>
-            </dependency>
-            
-            <!-- Used by quarkus-opentelemetry, camel extensions, quarkus-langchain4j, etc. -->
-            <dependency>
-                <groupId>com.google.guava</groupId>
-                <artifactId>guava</artifactId>
-                <version>${guava.version}</version>
-                <exclusions>
-                    <exclusion>
-                        <groupId>com.google.code.findbugs</groupId>
-                        <artifactId>jsr305</artifactId>
-                    </exclusion>
-                    <exclusion>
-                        <groupId>com.google.guava</groupId>
-                        <artifactId>listenablefuture</artifactId>
-                    </exclusion>
-                </exclusions>
             </dependency>
 
             <!-- Relocations -->

@@ -23,19 +23,21 @@ import io.quarkus.arc.deployment.BeanArchiveIndexBuildItem;
 import io.quarkus.arc.deployment.BeanDiscoveryFinishedBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.arc.processor.InjectionPointInfo;
+import io.quarkus.core.deployment.service.ServiceRegistrar;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
-import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
-import io.quarkus.proxy.deployment.ProxyRegistryBuildItem;
 import io.quarkus.redis.datasource.ReactiveRedisDataSource;
 import io.quarkus.redis.datasource.RedisDataSource;
 import io.quarkus.redis.datasource.codecs.Codec;
+import io.quarkus.redis.runtime.client.RedisClientConnection;
 import io.quarkus.redis.runtime.client.RedisClientRecorder;
-import io.quarkus.tls.deployment.spi.TlsRegistryBuildItem;
-import io.quarkus.vertx.deployment.VertxBuildItem;
+import io.quarkus.redis.runtime.client.config.RedisConfig;
+import io.quarkus.redis.runtime.datasource.BlockingRedisDataSourceImpl;
+import io.quarkus.redis.runtime.datasource.ReactiveRedisDataSourceImpl;
+import io.vertx.core.Vertx;
 
 public class RedisDatasourceProcessor {
 
@@ -85,12 +87,9 @@ public class RedisDatasourceProcessor {
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
     public void init(RedisClientRecorder recorder,
+            ServiceRegistrar reg,
             List<RequestedRedisClientBuildItem> clients,
-            ShutdownContextBuildItem shutdown,
-            BuildProducer<SyntheticBeanBuildItem> syntheticBeans,
-            VertxBuildItem vertxBuildItem,
-            TlsRegistryBuildItem tlsRegistryBuildItem,
-            ProxyRegistryBuildItem proxyRegistryBuildItem) {
+            BuildProducer<SyntheticBeanBuildItem> syntheticBeans) {
 
         if (clients.isEmpty()) {
             return;
@@ -99,20 +98,45 @@ public class RedisDatasourceProcessor {
         for (RequestedRedisClientBuildItem client : clients) {
             names.add(client.name);
         }
-        // Inject the creation of the client when the application starts.
-        recorder.initialize(vertxBuildItem.getVertx(), names, tlsRegistryBuildItem.registry(),
-                proxyRegistryBuildItem.registry());
 
-        // Create the supplier and define the beans.
+        // Register codecs from CDI before any data source is created
+        reg.forService("io.quarkus.redis.codecs")
+                .atPhase(io.quarkus.core.Phase.DATA)
+                .require(io.quarkus.arc.runtime.BeanContainer.class)
+                .onStart((ctx, bc) -> {
+                    io.quarkus.redis.datasource.codecs.Codecs.register(
+                            jakarta.enterprise.inject.spi.CDI.current()
+                                    .select(io.quarkus.redis.datasource.codecs.Codec.class).stream());
+                });
+
         for (String name : names) {
             Supplier<ActiveResult> checkActive = recorder.checkActive(name);
-            // Data sources
-            syntheticBeans.produce(configureAndCreateSyntheticBean(name, RedisDataSource.class,
-                    checkActive, recorder.getBlockingDataSource(name)));
-            syntheticBeans.produce(configureAndCreateSyntheticBean(name, ReactiveRedisDataSource.class,
-                    checkActive, recorder.getReactiveDataSource(name)));
-        }
 
-        recorder.cleanup(shutdown);
+            // Reactive data source service
+            reg.forService(ReactiveRedisDataSource.class, name)
+                    .atPhase(io.quarkus.core.Phase.DATA)
+                    .after("io.quarkus.redis.codecs")
+                    .request(RedisClientConnection.class, name)
+                    .require(Vertx.class)
+                    .optional()
+                    .onStart((ctx, connOpt, vertx) -> connOpt.map(conn -> new ReactiveRedisDataSourceImpl(
+                            io.vertx.mutiny.core.Vertx.newInstance(vertx),
+                            conn.redis(), conn.api())));
+
+            // Blocking data source service
+            reg.forService(RedisDataSource.class, name)
+                    .atPhase(io.quarkus.core.Phase.DATA)
+                    .request(ReactiveRedisDataSource.class, name)
+                    .require(RedisConfig.class)
+                    .optional()
+                    .onStart((ctx, dsOpt, config) -> dsOpt.map(ds -> {
+                        java.time.Duration timeout = config.clients().get(name).timeout();
+                        return new BlockingRedisDataSourceImpl((ReactiveRedisDataSourceImpl) ds, timeout);
+                    }));
+
+            // Synthetic beans
+            syntheticBeans.produce(configureAndCreateSyntheticBean(name, ReactiveRedisDataSource.class, checkActive));
+            syntheticBeans.produce(configureAndCreateSyntheticBean(name, RedisDataSource.class, checkActive));
+        }
     }
 }

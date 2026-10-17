@@ -8,6 +8,9 @@ import java.util.TreeMap;
 import java.util.concurrent.Callable;
 
 import io.quarkus.cli.common.RunModeOption;
+import io.quarkus.devtools.plugin.Plugin;
+import io.quarkus.devtools.plugin.PluginManager;
+import io.quarkus.devtools.plugin.PluginType;
 import picocli.CommandLine;
 
 @CommandLine.Command(name = "add", header = "Add plugin(s) to the Quarkus CLI.")

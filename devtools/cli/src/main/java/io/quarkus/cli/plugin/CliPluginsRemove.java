@@ -8,6 +8,8 @@ import java.util.TreeMap;
 import java.util.concurrent.Callable;
 
 import io.quarkus.cli.common.RunModeOption;
+import io.quarkus.devtools.plugin.Plugin;
+import io.quarkus.devtools.plugin.PluginManager;
 import picocli.CommandLine;
 
 @CommandLine.Command(name = "remove", header = "Remove plugin(s) to the Quarkus CLI.")

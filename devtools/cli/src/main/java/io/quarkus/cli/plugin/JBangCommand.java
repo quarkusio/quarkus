@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import io.quarkus.cli.common.OutputOptionMixin;
+import io.quarkus.devtools.plugin.JBangSupport;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.ExitCode;
 

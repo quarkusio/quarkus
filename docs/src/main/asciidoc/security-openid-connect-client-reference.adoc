@@ -276,6 +276,9 @@ public class OidcClientResource {
 
 You can also inject a `TokenProvider` that is bound to a named OIDC client, see <<named-oidc-clients>>.
 
+`TokenProvider` can also acquire the access token with additional grant parameters, for example, `tokenProvider.getAccessToken(Map.of("scope", "openid"))`.
+The tokens acquired with different additional grant parameters are cached separately, see <<additional-grant-parameters-token-cache>>.
+
 When a Quarkus extension must acquire OIDC tokens by using one of the token grants supported by the OIDC client, it can also use `TokenProvider` while depending only on the OIDC Client SPI:
 
 . Add the following dependency:
@@ -1001,6 +1004,22 @@ Some OpenID Connect providers do not return a refresh token in a `client_credent
 For example, starting with Keycloak 12, a refresh token is not returned by default for `client_credentials`.
 Providers might also restrict how many times a refresh token can be used.
 
+[[additional-grant-parameters-token-cache]]
+=== Caching tokens acquired with additional grant parameters
+
+`OidcClientRequestReactiveFilter`, `OidcClientRequestFilter`, `TokenProvider`, and `Tokens` producers always cache the tokens they acquire with the configured grant.
+Tokens acquired with additional grant parameters, for example, with `tokenProvider.getAccessToken(Map.of("scope", "openid"))` or by a custom filter, are cached per set of such parameters, because the parameters, for example, a requested `scope` or a subject token which has to be exchanged, can affect which tokens are issued.
+By default, each filter and each token producer caches the tokens of up to 15 sets of additional grant parameters.
+This limit is approximate, the cache can briefly exceed it when tokens are requested concurrently.
+When the limit is reached, the tokens which are least likely to be needed again, for example, expired or least recently used tokens, are evicted.
+The tokens acquired with the configured grant only, without additional grant parameters, are not counted toward this limit and are never evicted.
+Use the `quarkus.oidc-client.token-cache-max-size` property to change the limit per producer, for example, when many different subject tokens are exchanged:
+
+[source,properties]
+----
+quarkus.oidc-client.token-cache-max-size=30
+----
+
 [[revoke-access-tokens]]
 === Revoking access tokens
 
@@ -1230,6 +1249,9 @@ public class OidcClientRequestCustomFilter extends AbstractOidcClientRequestFilt
     }
 }
 ----
+
+TIP: To make the most of the <<additional-grant-parameters-token-cache,token cache>>, let Quarkus load the client assertion with the `quarkus.oidc-client.credentials.jwt.token-path` property instead of using a custom filter.
+Quarkus then renews the client assertion without affecting the cached tokens.
 
 ==== SPIFFE JWT-SVID
 

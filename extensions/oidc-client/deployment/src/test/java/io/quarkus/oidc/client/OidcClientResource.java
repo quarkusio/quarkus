@@ -29,6 +29,10 @@ public class OidcClientResource {
     TokenProvider scopesAsAdditionalParamsTokenProvider;
 
     @Inject
+    @NamedOidcClient("single-token-cache-entry")
+    TokenProvider singleTokenCacheEntryTokenProvider;
+
+    @Inject
     @NamedOidcClient("key")
     OidcClient keyClient;
 
@@ -54,6 +58,18 @@ public class OidcClientResource {
     @Path("tokenprovider-with-params")
     public Uni<String> tokenProviderWithParams() {
         return scopesAsAdditionalParamsTokenProvider.getAccessToken(Map.of("scope", "openid"));
+    }
+
+    @GET
+    @Path("tokenprovider-with-scope")
+    public Uni<String> tokenProviderWithScope(@QueryParam("scope") String scope) {
+        return scopesAsAdditionalParamsTokenProvider.getAccessToken(Map.of("scope", scope));
+    }
+
+    @GET
+    @Path("tokenprovider-single-token-cache-entry")
+    public Uni<String> tokenProviderWithSingleTokenCacheEntry(@QueryParam("scope") String scope) {
+        return singleTokenCacheEntryTokenProvider.getAccessToken(Map.of("scope", scope));
     }
 
     @GET

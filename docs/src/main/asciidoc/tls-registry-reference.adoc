@@ -603,6 +603,44 @@ quarkus.tls.trust-store.jks.alias=my-alias
 `.jks` files are password-protected, so you need to provide the password to open the truststore.
 However, unlike keystores, the alias does not require a password because it contains a public certificate, not a private key.
 
+[[inline_stores]]
+==== Inline truststores and keystores
+
+Instead of reading a store from a file, you can pass its content inline, encoded in base64.
+This is useful when the store is provided through an environment variable or a secret, as no file needs to be written before the application starts.
+
+The `value` property is available for PKCS12 and JKS truststores and keystores, as an alternative to `path`.
+Exactly one of `path` or `value` must be set:
+
+[source,properties]
+----
+quarkus.tls.trust-store.p12.value=${TRUSTSTORE_BASE64}
+quarkus.tls.trust-store.p12.password=password
+
+quarkus.tls.key-store.jks.value=${KEYSTORE_BASE64}
+quarkus.tls.key-store.jks.password=secret
+----
+
+For PEM truststores, use `cert-values`, a list where each value is the base64-encoded content of a PEM certificate file.
+These certificates are added to the ones configured with `certs` and `cert-dirs`:
+
+[source,properties]
+----
+quarkus.tls.trust-store.pem.cert-values=${CA_PEM_BASE64}
+----
+
+Whitespace, such as line breaks, is ignored when decoding the values.
+When the TLS configuration is reloaded, the inline content is decoded again from the configuration.
+
+For example, to configure the truststore of the Kafka clients from an environment variable:
+
+[source,properties]
+----
+quarkus.tls.kafka.trust-store.jks.value=${KAFKA_SSL_TRUSTSTORE_BASE64}
+quarkus.tls.kafka.trust-store.jks.password=${KAFKA_SSL_TRUSTSTORE_PASSWORD}
+kafka.tls-configuration-name=kafka
+----
+
 ==== Provided truststores
 If you need more control over the truststore used in a TLS configuration, you can provide a CDI bean implementing the `io.quarkus.tls.TrustStoreProvider` interface. Quarkus calls `TrustStoreProvider::getTrustStore` when the TLS configuration is <<startup-checks,initially created>> and any time the configuration is <<reloading-certificates,reloaded>>. The resulting truststore and options are then made available via `TlsConfiguration::getTrustStore` and `TlsConfiguration::getTrustStoreOptions`.
 

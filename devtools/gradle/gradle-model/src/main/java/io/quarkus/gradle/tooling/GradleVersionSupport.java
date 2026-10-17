@@ -1,4 +1,4 @@
-package io.quarkus.gradle;
+package io.quarkus.gradle.tooling;
 
 import org.gradle.api.GradleException;
 import org.gradle.util.GradleVersion;

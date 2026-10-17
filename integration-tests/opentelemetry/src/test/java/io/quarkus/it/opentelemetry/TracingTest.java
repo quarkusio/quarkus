@@ -159,7 +159,7 @@ public class TracingTest {
         assertTrue((Boolean) client.get("parent_valid"));
         assertFalse((Boolean) client.get("parent_remote"));
         assertEquals("GET", client.get("attr_http.request.method"));
-        assertEquals("http://localhost:8081", client.get("attr_url.full"));
+        assertEquals("http://localhost:8081/", client.get("attr_url.full"));
         assertEquals("200", client.get("attr_http.response.status_code"));
         assertEquals(client.get("parentSpanId"), server.get("spanId"));
 
@@ -605,7 +605,8 @@ public class TracingTest {
         assertNotNull(server.get("attr_user_agent.original"));
 
         Map<String, Object> fromInterceptor = getSpanByKindAndParentId(spans, INTERNAL, server.get("spanId"));
-        assertEquals("PingPongRestClient.pingpongIntercept", fromInterceptor.get("name"));
+        assertEquals("PingPongResource$PingPongRestClient$$CDIWrapper.pingpongIntercept",
+                fromInterceptor.get("name"));
         assertEquals(INTERNAL.toString(), fromInterceptor.get("kind"));
         assertTrue((Boolean) fromInterceptor.get("ended"));
         assertTrue((Boolean) fromInterceptor.get("parent_valid"));

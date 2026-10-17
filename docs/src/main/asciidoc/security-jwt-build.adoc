@@ -17,7 +17,7 @@ When the claims contain sensitive information, their confidentiality can be ensu
 
 For enhanced security, you can combine both methods: sign the claims first and then encrypt the resulting nested JWT. This process ensures both the confidentiality and integrity of the claims.
 
-The SmallRye JWT Build API simplifies securing JWT claims by supporting all these options. It uses the link:https://bitbucket.org/b_c/jose4j/src/master/[Jose4J] library internally to provide this functionality.
+The SmallRye JWT Build API simplifies securing JWT claims by supporting all these options. It uses the link:https://connect2id.com/products/nimbus-jose-jwt[Nimbus JOSE + JWT] library internally to provide this functionality.
 
 == Dependency
 
@@ -387,7 +387,7 @@ SmallRye JWT supports the following properties, which can be used to customize h
 * link:https://tools.ietf.org/html/rfc7515[JSON Web Signature]
 * link:https://tools.ietf.org/html/rfc7516[JSON Web Encryption]
 * link:https://tools.ietf.org/html/rfc7518[JSON Web Algorithms]
-* link:https://bitbucket.org/b_c/jose4j/src/master/[Jose4J]
+* link:https://connect2id.com/products/nimbus-jose-jwt[Nimbus JOSE + JWT]
 * xref:security-oidc-bearer-token-authentication.adoc[OIDC Bearer token authentication]
 * xref:security-jwt.adoc[Using SmallRye JWT to Protect Service Applications]
 * xref:security-overview.adoc[Quarkus Security overview]

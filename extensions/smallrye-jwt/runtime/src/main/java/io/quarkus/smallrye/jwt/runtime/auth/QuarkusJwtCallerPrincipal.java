@@ -1,8 +1,7 @@
 package io.quarkus.smallrye.jwt.runtime.auth;
 
-import org.jose4j.jwt.JwtClaims;
-
 import io.smallrye.jwt.auth.principal.DefaultJWTCallerPrincipal;
+import io.smallrye.jwt.common.JwtClaims;
 
 /**
  * An implementation of JWTCallerPrincipal that builds on the Elytron attributes

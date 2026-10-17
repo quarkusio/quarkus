@@ -14,13 +14,11 @@ import jakarta.json.JsonArrayBuilder;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonObjectBuilder;
 
-import org.jose4j.jwk.JsonWebKey.OutputControlLevel;
-import org.jose4j.jwk.PublicJsonWebKey;
-import org.jose4j.lang.JoseException;
-
 import io.quarkus.oidc.client.registration.runtime.OidcClientRegistrationException;
 import io.quarkus.oidc.common.runtime.AbstractJsonObject;
 import io.quarkus.oidc.common.runtime.OidcConstants;
+import io.smallrye.jwk.JsonWebKey;
+import io.smallrye.jwk.JsonWebKeyException;
 import io.smallrye.jwt.algorithm.SignatureAlgorithm;
 
 public class ClientMetadata extends AbstractJsonObject {
@@ -186,8 +184,8 @@ public class ClientMetadata extends AbstractJsonObject {
 
         private static Map<String, Object> convertPublicKeyToJwk(PublicKey key) {
             try {
-                return PublicJsonWebKey.Factory.newPublicJwk(key).toParams(OutputControlLevel.PUBLIC_ONLY);
-            } catch (JoseException ex) {
+                return JsonWebKey.jwk(key).asMap();
+            } catch (JsonWebKeyException ex) {
                 throw new OidcClientRegistrationException(ex);
             }
         }

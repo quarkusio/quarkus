@@ -29,7 +29,6 @@ import java.util.stream.Collectors;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.eclipse.microprofile.jwt.Claims;
 import org.jboss.logging.Logger;
-import org.jose4j.base64url.Base64Url;
 
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.IsDevServicesSupportedByLaunchMode;
@@ -480,7 +479,8 @@ class OidcDevServicesProcessor {
 
         private String createKeyId() {
             try {
-                return Base64Url.encode(MessageDigest.getInstance("SHA-256").digest(kp.getPrivate().getEncoded()));
+                return Base64.getUrlEncoder().withoutPadding().encodeToString(
+                        MessageDigest.getInstance("SHA-256").digest(kp.getPrivate().getEncoded()));
             } catch (NoSuchAlgorithmException e) {
                 throw new RuntimeException("Failed to generate key id", e);
             }

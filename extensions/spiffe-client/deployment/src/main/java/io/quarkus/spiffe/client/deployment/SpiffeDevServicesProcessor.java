@@ -14,10 +14,6 @@ import java.util.function.BooleanSupplier;
 
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
-import org.jose4j.jwk.EcJwkGenerator;
-import org.jose4j.jwk.EllipticCurveJsonWebKey;
-import org.jose4j.jwk.JsonWebKey;
-import org.jose4j.keys.EllipticCurves;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 
@@ -35,6 +31,9 @@ import io.quarkus.spiffe.client.runtime.internal.proto.JWTSVID;
 import io.quarkus.spiffe.client.runtime.internal.proto.JWTSVIDRequest;
 import io.quarkus.spiffe.client.runtime.internal.proto.JWTSVIDResponse;
 import io.smallrye.common.os.OS;
+import io.smallrye.jwk.EcCurve;
+import io.smallrye.jwk.EcJsonWebKey;
+import io.smallrye.jwk.JsonWebKeySet;
 import io.smallrye.jwt.algorithm.SignatureAlgorithm;
 import io.smallrye.jwt.build.Jwt;
 import io.vertx.core.Vertx;
@@ -119,11 +118,14 @@ public final class SpiffeDevServicesProcessor {
         private static final String SECURITY_HEADER = "workload.spiffe.io";
         private static final long DEFAULT_TTL_SECONDS = 300;
         private static final String UNIX = "unix://";
+        private static final String SIGNING_KEY_ID = "quarkus-spiffe-dev-svc";
+        // SPIFFE bundles require the JWK 'use' parameter to name the SVID type the key is authoritative for
+        private static final String SIGNING_KEY_USE = "jwt-svid";
 
         private final Transport transport;
         private final int httpPort;
         private final Set<String> errorMessages;
-        private volatile EllipticCurveJsonWebKey signingKey;
+        private volatile EcJsonWebKey signingJwk;
         private volatile Vertx vertx;
         private volatile HttpServer grpcServer;
         private volatile HttpServer httpServer;
@@ -153,11 +155,12 @@ public final class SpiffeDevServicesProcessor {
 
         private void serveBundleEndpoint(HttpServerRequest request) {
             try {
-                JsonObject jwk = new JsonObject(signingKey.toJson(JsonWebKey.OutputControlLevel.PUBLIC_ONLY));
+                // Only the public key is published, the private key material is dropped
+                JsonArray publicKeys = new JsonObject(JsonWebKeySet.of(signingJwk).asJsonString()).getJsonArray("keys");
                 JsonObject bundle = new JsonObject()
                         .put("spiffe_sequence", 1)
                         .put("spiffe_refresh_hint", 300)
-                        .put("keys", new JsonArray().add(jwk));
+                        .put("keys", publicKeys);
                 request.response()
                         .putHeader("content-type", "application/json")
                         .end(bundle.encode());
@@ -281,8 +284,8 @@ public final class SpiffeDevServicesProcessor {
                         .expiresIn(DEFAULT_TTL_SECONDS)
                         .jws()
                         .algorithm(SignatureAlgorithm.ES256)
-                        .keyId(signingKey.getKeyId())
-                        .sign(signingKey.getPrivateKey());
+                        .keyId(signingJwk.keyId())
+                        .sign(signingJwk.privateKey());
                 JWTSVID svid = JWTSVID.newBuilder()
                         .setSpiffeId(DEFAULT_SPIFFE_ID)
                         .setSvid(token)
@@ -336,9 +339,10 @@ public final class SpiffeDevServicesProcessor {
         @Override
         public void start() {
             try {
-                signingKey = EcJwkGenerator.generateJwk(EllipticCurves.P256);
-                signingKey.setKeyId("quarkus-spiffe-dev-svc");
-                signingKey.setUse("jwt-svid");
+                signingJwk = EcJsonWebKey.builder(EcCurve.P_256)
+                        .keyId(SIGNING_KEY_ID)
+                        .keyUse(SIGNING_KEY_USE)
+                        .build();
             } catch (Exception e) {
                 errorMessages.add("Failed to generate EC P-256 signing key: " + e.getMessage());
                 throw new RuntimeException("Failed to generate EC P-256 signing key", e);

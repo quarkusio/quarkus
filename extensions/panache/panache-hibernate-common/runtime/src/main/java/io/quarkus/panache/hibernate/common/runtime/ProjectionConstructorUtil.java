@@ -7,7 +7,9 @@ import java.lang.reflect.Modifier;
 import java.lang.reflect.Parameter;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.stream.Collectors;
@@ -123,6 +125,12 @@ public final class ProjectionConstructorUtil {
             }
         }
         parameterName = parentParameter == null ? parameterName : parentParameter + "." + parameterName;
+        if (Collection.class.isAssignableFrom(parameter.getType()) || Map.class.isAssignableFrom(parameter.getType())) {
+            throw new PanacheQueryException("Cannot project the collection field '" + parameterName + "' of "
+                    + parentType.getName() + ": a projection is a JPQL constructor expression, which cannot select"
+                    + " a to-many association or an element collection. Remove the field from the projection class,"
+                    + " or fetch the collection with a separate query.");
+        }
         if (hasNestedProjectedClass(parameter.getType())) {
             return nestedProjectionBuilder.apply(parameter.getType(), parameterName);
         }

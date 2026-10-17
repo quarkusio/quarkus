@@ -39,6 +39,11 @@ public abstract class RestMulti<T> extends AbstractMulti<T> {
 
     public abstract Integer getStatus();
 
+    /**
+     * Returns the headers to send with the streamed result, or {@code null} when this is a {@link RestMulti} built by
+     * {@link #fromUniResponse(Uni, Function, Function)} whose headers extractor returned {@code null}. Callers must
+     * therefore treat a {@code null} result as "no headers".
+     */
     public abstract Map<String, List<String>> getHeaders();
 
     public static <T> RestMulti.SyncRestMulti.Builder<T> fromMultiData(Multi<T> multi) {

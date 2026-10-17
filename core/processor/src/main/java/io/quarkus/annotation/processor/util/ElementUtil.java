@@ -99,8 +99,7 @@ public class ElementUtil {
 
     public Map<String, Object> getAnnotationValues(AnnotationMirror annotation) {
         return annotation.getElementValues().entrySet().stream()
-                .collect(Collectors.toMap(e -> e.getKey().toString().substring(0, e.getKey().toString().length() - 2),
-                        e -> e.getValue().getValue()));
+                .collect(Collectors.toMap(e -> e.getKey().getSimpleName().toString(), e -> e.getValue().getValue()));
     }
 
     public PackageElement getPackageOf(TypeElement clazz) {

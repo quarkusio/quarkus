@@ -2,6 +2,7 @@ package io.quarkus.bootstrap.json;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HexFormat;
 import java.util.List;
 import java.util.Map;
 
@@ -236,10 +237,10 @@ public class JsonReader {
     }
 
     private char readUnicode() {
-        final int digit1 = Character.digit(nextChar(), 16);
-        final int digit2 = Character.digit(nextChar(), 16);
-        final int digit3 = Character.digit(nextChar(), 16);
-        final int digit4 = Character.digit(nextChar(), 16);
+        final int digit1 = HexFormat.fromHexDigit(nextChar());
+        final int digit2 = HexFormat.fromHexDigit(nextChar());
+        final int digit3 = HexFormat.fromHexDigit(nextChar());
+        final int digit4 = HexFormat.fromHexDigit(nextChar());
         return (char) (digit1 << 12 | digit2 << 8 | digit3 << 4 | digit4);
     }
 

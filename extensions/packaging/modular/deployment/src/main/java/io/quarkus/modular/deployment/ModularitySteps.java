@@ -7,6 +7,7 @@ import java.io.InputStreamReader;
 import java.io.Reader;
 import java.io.UncheckedIOException;
 import java.lang.constant.ClassDesc;
+import java.lang.module.ModuleFinder;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
@@ -449,7 +450,7 @@ public final class ModularitySteps {
                         // tabulate any used JDK modules.
                         mi.dependencies().stream()
                                 .map(DependencyInfo::moduleName)
-                                .filter(n -> n.startsWith("java.") || n.startsWith("jdk.") || n.startsWith("ibm."))
+                                .filter(ModularitySteps::isJdkModule)
                                 .forEach(usedJdkModuleNames::add);
                         return mi;
                     });
@@ -571,7 +572,7 @@ public final class ModularitySteps {
                     // tabulate any used JDK modules.
                     mi.dependencies().stream()
                             .map(DependencyInfo::moduleName)
-                            .filter(n -> n.startsWith("java.") || n.startsWith("jdk.") || n.startsWith("ibm."))
+                            .filter(ModularitySteps::isJdkModule)
                             .forEach(usedJdkModuleNames::add);
                     return mi;
                 });
@@ -599,6 +600,14 @@ public final class ModularitySteps {
         bootModuleSet.forEach(m -> amb.bootModule(m.name()));
         modulesByName.values().forEach(amb::moduleInfo);
         return new ApplicationModuleInfoBuildItem(amb.build());
+    }
+
+    private static final Set<String> systemModuleNames = ModuleFinder.ofSystem().findAll().stream()
+            .map(ref -> ref.descriptor().name())
+            .collect(Collectors.toUnmodifiableSet());
+
+    static boolean isJdkModule(String moduleName) {
+        return systemModuleNames.contains(moduleName);
     }
 
     private static final Set<String> bootLayerNames = ModuleLayer.boot().modules().stream().map(Module::getName)

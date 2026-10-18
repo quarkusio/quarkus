@@ -43,6 +43,7 @@ categories:
         guides:
           - container-image.adoc
           - quarkus-runtime-base-image.adoc
+          - gitlab-ci.adoc
       - id: packaging-release
         title: Release and distribution
         guides:

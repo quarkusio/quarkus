@@ -1,8 +1,11 @@
 package io.quarkus.arc.deployment;
 
+import java.lang.constant.ClassDesc;
+import java.lang.constant.MethodTypeDesc;
 import java.util.function.Predicate;
 
 import io.quarkus.deployment.annotations.BuildProducer;
+import io.quarkus.deployment.builditem.nativeimage.ConstantBootstrapBuildItem;
 import io.quarkus.gizmo2.ClassOutput;
 import io.smallrye.common.annotation.Experimental;
 
@@ -11,6 +14,7 @@ public class GeneratedBeanGizmo2Adaptor implements ClassOutput {
 
     private final BuildProducer<GeneratedBeanBuildItem> classOutput;
     private final Predicate<String> applicationClassPredicate;
+    private final BuildProducer<ConstantBootstrapBuildItem> constantBootstraps;
 
     public GeneratedBeanGizmo2Adaptor(BuildProducer<GeneratedBeanBuildItem> classOutput) {
         this(classOutput, new Predicate<>() {
@@ -24,8 +28,34 @@ public class GeneratedBeanGizmo2Adaptor implements ClassOutput {
 
     public GeneratedBeanGizmo2Adaptor(BuildProducer<GeneratedBeanBuildItem> classOutput,
             Predicate<String> applicationClassPredicate) {
+        this(classOutput, applicationClassPredicate, null);
+    }
+
+    /**
+     * Use this constructor if the generated code may contain lambdas or other constructs which use bootstrap methods,
+     * so that they can be initialized at build time in native image.
+     */
+    public GeneratedBeanGizmo2Adaptor(BuildProducer<GeneratedBeanBuildItem> classOutput,
+            BuildProducer<ConstantBootstrapBuildItem> constantBootstraps) {
+        this(classOutput, new Predicate<>() {
+
+            @Override
+            public boolean test(String t) {
+                return true;
+            }
+        }, constantBootstraps);
+    }
+
+    /**
+     * Use this constructor if the generated code may contain lambdas or other constructs which use bootstrap methods,
+     * so that they can be initialized at build time in native image.
+     */
+    public GeneratedBeanGizmo2Adaptor(BuildProducer<GeneratedBeanBuildItem> classOutput,
+            Predicate<String> applicationClassPredicate,
+            BuildProducer<ConstantBootstrapBuildItem> constantBootstraps) {
         this.classOutput = classOutput;
         this.applicationClassPredicate = applicationClassPredicate;
+        this.constantBootstraps = constantBootstraps;
     }
 
     @Override
@@ -35,4 +65,14 @@ public class GeneratedBeanGizmo2Adaptor implements ClassOutput {
                 applicationClassPredicate.test(classNameWithoutSuffix)));
     }
 
+    @Override
+    public void registerBootstrapMethod(ClassDesc owner, String name, MethodTypeDesc type) {
+        if (constantBootstraps != null) {
+            constantBootstraps.produce(new ConstantBootstrapBuildItem(null, owner, name, type));
+        } else {
+            throw new IllegalStateException("To use dynamic constants or indy from generated code at this site, "
+                    + "you must provide a build producer for ConstantBootstrapBuildItem to the constructor "
+                    + "of GeneratedBeanGizmo2Adaptor");
+        }
+    }
 }

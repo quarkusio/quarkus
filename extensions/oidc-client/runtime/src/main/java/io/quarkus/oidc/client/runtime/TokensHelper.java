@@ -46,9 +46,9 @@ public class TokensHelper {
     }
 
     public TokensHelper(int tokenCacheMaxSize) {
-        if (tokenCacheMaxSize < 1) {
+        if (tokenCacheMaxSize < 0) {
             throw new IllegalArgumentException(
-                    "The maximum number of sets of additional parameters the tokens are cached for must be at least 1");
+                    "The maximum number of sets of additional parameters the tokens are cached for must not be negative");
         }
         this.tokenCacheMaxSize = tokenCacheMaxSize;
     }
@@ -147,6 +147,10 @@ public class TokensHelper {
             return noParametersHolder;
         }
         Map<String, String> key = Map.copyOf(additionalParameters);
+        if (tokenCacheMaxSize == 0) {
+            // the tokens acquired with additional parameters are not cached, each request manages its own state
+            return new TokenRequestStateHolder(key);
+        }
         TokenRequestStateHolder holder = tokenRequestStateHolders.get(key);
         if (holder != null) {
             holder.lastAccessed = System.nanoTime();

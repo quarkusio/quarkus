@@ -4,8 +4,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.util.function.Consumer;
 
-import jakarta.enterprise.inject.CreationException;
-
 import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -16,6 +14,7 @@ import io.quarkus.builder.BuildContext;
 import io.quarkus.builder.BuildStep;
 import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.builditem.CapabilityBuildItem;
+import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.test.QuarkusExtensionTest;
 
 public class InvalidDeferredDatasourceRuntimeConfigurationTest {
@@ -36,7 +35,7 @@ public class InvalidDeferredDatasourceRuntimeConfigurationTest {
                 }
             })
             .assertException(t -> {
-                assertEquals(CreationException.class, t.getClass());
+                assertEquals(ConfigurationException.class, t.getClass());
                 Assertions.assertTrue(t.getMessage().contains(
                         "Deferred datasource name is missing - you can configure it via quarkus.quartz.deferred-datasource-name"));
             })

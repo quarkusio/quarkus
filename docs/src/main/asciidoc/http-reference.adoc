@@ -155,11 +155,30 @@ TIP: Enabling Brotli adds approximately 1MB to native executable size because it
 The RESTEasy Reactive and Reactive Routes extensions allow enabling or disabling compression on individual endpoints using the `@io.quarkus.vertx.http.Compressed` and `@io.quarkus.vertx.http.Uncompressed` annotations.
 See the xref:rest.adoc#http-compression[Quarkus REST] and xref:reactive-routes.adoc#http-compression[Reactive Routes] guides for details.
 
+[[inbound-http-decompression]]
 ==== Request decompression
 
-Quarkus can also decompress incoming request bodies.
-Enable this with `quarkus.http.enable-decompression=true`.
-The client must indicate the compression format in the `Content-Encoding` request header (e.g., `gzip`, `deflate`, or `br`).
+By default (`quarkus.http.enable-decompression=false`), the HTTP server delivers the request body exactly as sent on the wire and does not interpret the `Content-Encoding` request header.
+
+When you set `quarkus.http.enable-decompression=true`, Vert.x adds Netty's `HttpContentDecompressor`, which decodes the body, when the `Content-Encoding` is recognized, before it reaches Quarkus REST, Reactive Routes, or other application handlers.
+HTTP/2 requests are handled by a different Netty codec (`DelegatingDecompressorFrameListener`) with very similar behavior.
+
+WARNING: Enabling inbound decompression without a sensible request body size limit can expose the server to decompression bomb attacks, where a small compressed payload expands to a very large decompressed body. Set `quarkus.http.limits.max-body-size` (default `10240K`) to cap accepted request bodies; see <<http-limits-configuration>> for other HTTP limits.
+
+Supported inbound codings follow Netty's implementation:
+
+* `gzip` / `x-gzip`
+* `deflate` / `x-deflate`
+* `br` when Brotli is available (same optional native stack as for response compression)
+* `snappy`, using Netty's Snappy *framing* format (`SnappyFrameDecoder`). Payloads must be valid framed Snappy (for example as emitted by Netty's `SnappyFrameEncoder`). Raw Snappy block compression without the framing envelope is not accepted.
+* On the JVM only, `zstd` when Netty's Zstd support is available at runtime.
+
+If the coding is not recognized, Netty passes the request through without decoding; Quarkus does not automatically respond with `415 Unsupported Media Type` in that case.
+If your application needs to reject unsupported encodings, validate `Content-Encoding` in your handler, and return an appropriate error status.
+
+NOTE: Quarkus leaves inbound decompression to Vert.x / Netty. If decompression fails (invalid compressed data, malformed framing, and similar), the client may receive an empty reply or a connection reset; behavior can differ between HTTP versions and inbound pipeline timing.
+
+IMPORTANT: GraalVM native image builds use Netty substitutions for the inbound decompressors (both the HTTP/1.1 `HttpContentDecompressor` and the HTTP/2 `DelegatingDecompressorFrameListener`) that only support `gzip`, `deflate`, `br` (when Brotli loads), and `snappy`. Inbound `zstd` is not decompressed in native executables even when `quarkus.http.enable-decompression=true`.
 
 [[static-resources-config]]
 === Other Configurations
@@ -587,6 +606,7 @@ This works with both the standard `Forwarded` header and the `X-Forwarded-Host` 
 
 include::{generated-dir}/config/quarkus-vertx-http_quarkus.http.host-validation.adoc[leveloffset=+1, opts=optional]
 
+[[http-limits-configuration]]
 == HTTP Limits Configuration
 
 include::{generated-dir}/config/quarkus-vertx-http_quarkus.http.limits.adoc[leveloffset=+1, opts=optional]
